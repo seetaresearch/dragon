@@ -177,3 +177,16 @@ import dragon.vm.theano as theano
     f = theano.function(outputs=y)    # force the training phase even without gradients computation
 ```
 
+## License and Citation
+
+Dragon is released under the [BSD 2-Clause license](https://github.com/neopenx/Dragon/blob/master/LICENSE).
+
+Please cite Dragon in your publications if it helps your research:
+
+    @article{pan2017dragon,
+      Author = {Pan, Ting},
+      Journal = {arXiv preprint arXiv:1707.08265},
+      Title = {Dragon: A Computation Graph Virtual Machine Based Deep Learning Framework},
+      Year = {2017}
+    }
+
