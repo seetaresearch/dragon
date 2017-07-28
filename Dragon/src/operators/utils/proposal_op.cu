@@ -322,20 +322,20 @@ void nms_gpu(const int num_boxes,
 
 template <class Context> template <typename T>
 void ProposalOp<Context>::RunWithType() {
-    auto* p_bottom_item = input(0).template data<T, CUDAContext>();
-    auto* p_d_anchor_item = input(1).template data<T, CUDAContext>();
-    auto* p_img_info_cpu = input(2).template data<T, CPUContext>();
-    auto* p_roi_item = output(0)->template mutable_data<T, CUDAContext>();
-    auto* p_score_item = (OutputSize() > 1) ? output(1)->template mutable_data<T, CUDAContext>() : NULL;
+    auto* p_bottom_item = this->input(0).template data<T, CUDAContext>();
+    auto* p_d_anchor_item = this->input(1).template data<T, CUDAContext>();
+    auto* p_img_info_cpu = this->input(2).template data<T, CPUContext>();
+    auto* p_roi_item = this->output(0)->template mutable_data<T, CUDAContext>();
+    auto* p_score_item = (this->OutputSize() > 1) ? this->output(1)->template mutable_data<T, CUDAContext>() : NULL;
 
     vector<TIndex> proposals_shape(2), top_shape(2);
     proposals_shape[0] = 0; proposals_shape[1] = 5;
     top_shape[0] = 0; top_shape[1] = 5;
 
-    for (int n = 0; n < input(0).dim(0); ++n) {
+    for (int n = 0; n < this->input(0).dim(0); ++n) {
         // bottom shape: (2 x num_anchors) x H x W
-        const int bottom_H = input(0).dim(2);
-        const int bottom_W = input(0).dim(3);
+        const int bottom_H = this->input(0).dim(2);
+        const int bottom_W = this->input(0).dim(3);
         // input image height & width
         const T img_H = p_img_info_cpu[0];
         const T img_W = p_img_info_cpu[1];
@@ -388,10 +388,10 @@ void ProposalOp<Context>::RunWithType() {
         top_shape[0] += num_rois;
     }
 
-    output(0)->Reshape(top_shape);
-    if (OutputSize() > 1) {
+    this->output(0)->Reshape(top_shape);
+    if (this->OutputSize() > 1) {
         top_shape.pop_back();
-        output(1)->Reshape(top_shape);
+        this->output(1)->Reshape(top_shape);
     }
 }
 
