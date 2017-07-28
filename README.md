@@ -31,8 +31,9 @@
 4. Configure Dragon/CMakeLists.txt
 	- Select optional libraries [CUDA / CUDNN / BLAS / SSE / MPI / MPI_CUDA_AWARE / CUDA_FP16]
 	- Set 3rdparty path (recommend to keep defualt)
-	- Set python path
+	- Set python & numpy root path
 	- Set cuda compiling architectures if necessary
+	- GCC version(4.8+, 5.0-) should add ``-std=c++11`` to ``CUDA_NVCC_FLAGS``, if ``nullptr`` is not found.
 
 5. Environment Variables
     ### Linux(Only for OpenMPI):
@@ -100,9 +101,7 @@
 8. Deploy
 
 	```Shell
-	cp Dragon/libs/libdragon.so Dragon/python
-	cp Dragon/python /usr/lib/python2.7/dist-packages/dragon (For Python)
-	cp Dragon/python ANACONDA_DIR/libs/python2.7/dist-packages/dragon (For Anaconda)
+	python Dragon/setup.py install
 	```
 
 ----
@@ -189,4 +188,3 @@ Please cite Dragon in your publications if it helps your research:
       Title = {Dragon: A Computation Graph Virtual Machine Based Deep Learning Framework},
       Year = {2017}
     }
-

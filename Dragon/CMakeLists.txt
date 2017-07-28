@@ -19,11 +19,10 @@ option(WITH_CUDA_FP16              "Set to ON to use FP16"  ON)
 # set your 3rdparty
 set(3RDPARTY_DIR  ${PROJECT_SOURCE_DIR}/3rdparty)
 
-# set if you want to build pydragon
-
-#set(PYTHON_DIR /usr/include/python2.7)
-set(ANACONDA_DIR /xxx/anaconda)
-set(NUMPY_DIR /xxx/numpy)
+# set your py27
+set(PYTHON_DIR /usr/include/python2.7)  # prefer
+#set(ANACONDA_DIR /xxx/anaconda)  # optional
+set(NUMPY_DIR /xxx/numpy)  # require
 
 # set CUDA compiling architecture
 set(CUDA_ARCH     -gencode arch=compute_20,code=sm_20
