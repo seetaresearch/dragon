@@ -19,7 +19,8 @@ class DataReader(Process):
         self._source = GetProperty(kwargs, 'source', '')
         self._use_shuffle = GetProperty(kwargs, 'shuffle', False)
         self._use_step = GetProperty(kwargs, 'node_step', False)
-        self._chunk_size = GetProperty(kwargs, 'chunk_size', 4) # >=4MB
+        self._num_chunks = GetProperty(kwargs, 'num_chunks', 2048)
+        self._chunk_size = GetProperty(kwargs, 'chunk_size', -1)
 
         self._num_parts = 1
         self._part_idx = 0
@@ -91,6 +92,12 @@ class DataReader(Process):
         self._db_size = int(self._db.get('size'))
         self._db_zfill = int(self._db.get('zfill'))
         self._epoch_size = self._db_size / self._num_parts + 1
+        # search a optimal chunk size by chunks
+        if self._chunk_size == -1:
+            max_chunk_size = self._db._total_size / ((self._num_chunks * (1 << 20)))
+            min_chunk_size = 1
+            while min_chunk_size * 2 < max_chunk_size: min_chunk_size *= 2
+            self._chunk_size = min_chunk_size
         self._num_shuffle_parts = int(math.ceil(self._db._total_size * 1.1 /
                                                (self._num_parts * self._chunk_size << 20)))
         self._chunk_size = self._db_size / self._num_shuffle_parts / self._num_parts + 1

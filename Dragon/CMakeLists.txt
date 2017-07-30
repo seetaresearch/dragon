@@ -17,7 +17,7 @@ option(WITH_MPI_CUDA               "Set to ON to use MPI_CUDA_AWARE"  OFF)
 option(WITH_CUDA_FP16              "Set to ON to use FP16"  ON)
 
 # set your 3rdparty
-set(3RDPARTY_DIR  ${PROJECT_SOURCE_DIR}/3rdparty)
+set(3RDPARTY_DIR  ${PROJECT_SOURCE_DIR}/../3rdparty)
 
 # set your py27
 set(PYTHON_DIR /usr/include/python2.7)  # prefer

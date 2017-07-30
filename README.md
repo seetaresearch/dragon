@@ -65,9 +65,13 @@
 	- Run 3rdparty/setup_mpi.sh
 
 		```Shell
-		sudo ./setup_mpi.sh
+		./setup_mpi.sh
 		```
+    - Install
 
+        ```Shell
+		sudo cp openmpi/install/bin/mpirun /usr/bin
+		```
 	#### Windows:
 	- We use Microsoft MPI which can perfectly run at lastest Windows10
 	- Microsoft MPI is intergrated into 3rdparty and you should do nothing
