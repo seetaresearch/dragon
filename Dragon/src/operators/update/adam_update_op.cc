@@ -8,13 +8,18 @@ void AdamUpdateOp<Context>::ComputeRunWithFloat() {
     if (!m.get()) {
         m.reset(new Tensor()); m->ReshapeLike(input(0));
         v.reset(new Tensor()); v->ReshapeLike(input(0));
-        tmp.reset(new Tensor()); tmp->ReshapeLike(input(0));
     }
     t++;
     coeff = sqrt(1. - pow(beta2, t)) / (1. - pow(beta1, t));
     lr = param("base_lr") * coeff * this->lr_mult;
-    kernel::AdamUpdate<float, Context>(&input(0), m.get(), v.get(), tmp.get(),
-                                       beta1, beta2, eps, lr);
+    kernel::AdamUpdate<float, Context>(&input(0), 
+                                         m.get(), 
+                                         v.get(), 
+                                           &temp,
+                                           beta1, 
+                                           beta2, 
+                                             eps, 
+                                             lr);
 }
 
 DEPLOY_CPU(AdamUpdate);

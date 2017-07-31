@@ -24,9 +24,10 @@ class AdamUpdateOp final : public UpdateOpBase<Context> {
     void ComputeRunWithFloat() override;
 
  protected:
-    unique_ptr<Tensor> m, v, tmp;
     float lr, beta1, beta2, eps, coeff;
     int t;
+    unique_ptr<Tensor> m, v;
+    Tensor temp;
 };
 
 }    // namespace dragon

@@ -92,7 +92,7 @@ def conv2d(input, filter, strides, pads=(0, 0, 0, 0),
     if data_format == 'NCHW':
         output = ops.Conv2D([input, filter],
                             num_output=filter.shape[0],
-                            kernel=filter.shape[2:],
+                            kernel_size=filter.shape[2:],
                             stride=strides[2:],
                             pad=pads[2:])
         return output
@@ -127,10 +127,10 @@ def avg_pool(value, ksize, strides, pads=(0, 0, 0, 0),
     if data_format == 'NCHW':
         if pads is None: pads = 0
         return ops.Pool2D(value,
-                          kernel=ksize[2:],
+                          kernel_size=ksize[2:],
                           stride=strides[2:],
                           pad=pads,
-                          way='AVE')
+                          mode='AVG_POOLING')
 
     else: raise NotImplementedError()
 
@@ -162,10 +162,10 @@ def max_pool(value, ksize, strides, pads=(0, 0, 0, 0),
     if data_format == 'NCHW':
         if pads is None: pads = 0
         return ops.Pool2D(value,
-                          kernel=ksize[2:],
+                          kernel_size=ksize[2:],
                           stride=strides[2:],
                           pad=pads,
-                          way='MAX')
+                          mode='MAX_POOLING')
 
     else: raise NotImplementedError()
 

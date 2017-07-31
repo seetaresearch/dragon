@@ -1647,7 +1647,7 @@ template <> void AdamUpdate<float, CUDAContext>(Tensor* x,
                                                 const float beta2, 
                                                 const float eps, 
                                                 const float lr) {
-    const int count = x->count();
+    TIndex count = x->count();
     auto* Xdata = x->mutable_data<float, CUDAContext>();
     auto* Mdata = m->mutable_data<float, CUDAContext>();
     auto* Vdata = v->mutable_data<float, CUDAContext>();
@@ -1659,6 +1659,35 @@ template <> void AdamUpdate<float, CUDAContext>(Tensor* x,
                                                                     beta2, 
                                                                       eps, 
                                                                       lr);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+/******************** update.nesterov_update ********************/
+
+template <typename T>
+__global__ void _NesterovUpdate(const int n, 
+                               T* g, 
+                               T* h,
+                               const T momentum,
+                               const T lr) {
+    CUDA_KERNEL_LOOP(i, n) {
+        T hi = h[i];
+        T hi_new = h[i] = momentum * hi + lr * g[i];
+        g[i] = (1 + momentum) * hi_new - momentum * hi;
+    }
+}
+template <> void NesterovUpdate<float, CUDAContext>(const int count,
+                                                    float* x,
+                                                    float* h,
+                                                    Tensor* t,
+                                                    const float momentum,
+                                                    const float lr,
+                                                    CUDAContext* ctx) {
+    _NesterovUpdate<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                            x, 
+                                                                            h, 
+                                                                     momentum,
+                                                                          lr);
     CUDA_POST_KERNEL_CHECK;
 }
 
@@ -1681,7 +1710,7 @@ __global__ void _RMSPropUpdate(const int n,
 template <> void RMSPropUpdate<float, CUDAContext>(const int count,
                                                    float* x, 
                                                    float* h,
-                                                   Tensor* t_buffer,
+                                                   Tensor* t,
                                                    const float decay, 
                                                    const float eps, 
                                                    const float lr) {

@@ -895,7 +895,36 @@ template <> void AdamUpdate<float, CPUContext>(Tensor* x,
                                                const float beta2, 
                                                const float eps, 
                                                const float lr) {
-    NOT_IMPLEMENTED;
+    TIndex count = x->count();
+    t->Reshape(vector<TIndex>(1, count));
+    auto* Xdata = x->mutable_data<float, CPUContext>();
+    auto* Mdata = m->mutable_data<float, CPUContext>();
+    auto* Vdata = v->mutable_data<float, CPUContext>();
+    auto* Tdata = t->mutable_data<float, CPUContext>();
+    math::Axpby<float, CPUContext>(count, 1.0 - beta1, Xdata, beta1, Mdata);
+    math::Mul<float, CPUContext>(count, Xdata, Xdata, Tdata);
+    math::Axpby<float, CPUContext>(count, 1.0 - beta2, Tdata, beta2, Vdata);
+    math::Sqrt<float, CPUContext>(count, Vdata, Tdata);
+    math::AddScalar<float, CPUContext>(count, eps, Tdata);
+    math::Div<float, CPUContext>(count, Mdata, Tdata, Tdata);
+    math::Scale<float, CPUContext>(count, lr, Tdata, Xdata);
+}
+
+/******************** update.nesterov_update ********************/
+
+template <> void NesterovUpdate<float,  CPUContext>(const int count,
+                                                    float* x,
+                                                    float* h,
+                                                    Tensor* t,
+                                                    const float momentum,
+                                                    const float lr,
+                                                    CPUContext* ctx) {
+    t->Reshape(vector<TIndex>(1, count));
+    float* Tdata = t->mutable_data<float, CPUContext>();
+    ctx->Copy<float, CPUContext, CPUContext>(count, Tdata, h);
+    math::Axpby<float, CPUContext>(count, lr, x, momentum, h);
+    math::Axpby<float, CPUContext>(count, 1.0 + momentum, h, -momentum, Tdata);
+    ctx->Copy<float, CPUContext, CPUContext>(count, x, Tdata);
 }
 
 /******************** update.rmsprop_update ********************/
@@ -903,18 +932,18 @@ template <> void AdamUpdate<float, CPUContext>(Tensor* x,
 template <> void RMSPropUpdate<float, CPUContext>(const int count, 
                                                   float* x, 
                                                   float* h,
-                                                  Tensor* t_buffer,
+                                                  Tensor* t,
                                                   const float decay, 
                                                   const float eps, 
                                                   const float lr) {
-    t_buffer->Reshape(vector<TIndex>(1, count));
-    float* buffer = t_buffer->mutable_data<float, CPUContext>();
-    math::Square<float, CPUContext>(count, x, buffer);
-    math::Axpby<float, CPUContext>(count, 1.0 - decay, buffer, decay, h);
-    math::Sqrt<float, CPUContext>(count, h, buffer);
-    math::AddScalar<float, CPUContext>(count, eps, buffer);
-    math::Div<float, CPUContext>(count, x, buffer, buffer);
-    math::Axpby<float, CPUContext>(count, lr, buffer, 0.0, x);
+    t->Reshape(vector<TIndex>(1, count));
+    float* Tdata = t->mutable_data<float, CPUContext>();
+    math::Square<float, CPUContext>(count, x, Tdata);
+    math::Axpby<float, CPUContext>(count, 1.0 - decay, Tdata, decay, h);
+    math::Sqrt<float, CPUContext>(count, h, Tdata);
+    math::AddScalar<float, CPUContext>(count, eps, Tdata);
+    math::Div<float, CPUContext>(count, x, Tdata, Tdata);
+    math::Axpby<float, CPUContext>(count, lr, Tdata, 0.0, x);
 }
 
 /******************** utils.compare ********************/

@@ -241,6 +241,32 @@ class SGDSolver(Solver):
             if self._param.HasField(param):
                 self._update_param[param] = getattr(self._param, param)
 
+
+class NesterovSolver(Solver):
+    def __init__(self, prototxt):
+        super(NesterovSolver, self).__init__(prototxt=prototxt)
+        self._updater = updaters.NesterovUpdater(**self._update_param)
+
+        # generates update targets
+        for layer, blobs in self._net.params.iteritems():  self._lr_blobs.extend(blobs)
+        for idx, blob in enumerate(self._lr_blobs):
+            if self._net._lr_mults[idx] > 0:
+                if blob.diff is None: continue
+                self._updater.append((blob.data, blob.diff),
+                                     self._net._lr_mults[idx], self._net._decay_mults[idx])
+        self.train = self._net.function
+        self.tests = [test_net.function for test_net in self._test_nets]
+        self.update = function(updater=self._updater)
+
+
+    def CheckUpdateParam(self):
+        super(NesterovSolver, self).CheckUpdateParam()
+        params = ['base_lr', 'momentum']
+        for param in params:
+            if self._param.HasField(param):
+                self._update_param[param] = getattr(self._param, param)
+
+
 class RMSPropSolver(Solver):
     def __init__(self, prototxt):
         super(RMSPropSolver, self).__init__(prototxt=prototxt)
@@ -263,6 +289,7 @@ class RMSPropSolver(Solver):
         self._update_param['base_lr'] = self._param.base_lr
         self._update_param['decay'] = self._param.rms_decay
         self._update_param['eps'] = self._param.delta
+
 
 class AdamSolver(Solver):
     def __init__(self, prototxt):

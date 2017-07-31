@@ -92,7 +92,7 @@ def Pool2D(inputs, kernel_size, stride, pad=0, mode='MAX_POOLING', **kwargs):
     :param kernel_size:      a tuple or a int of the kernel size
     :param stride:           a tuple or a int of the stride size
     :param pad:              a tuple or a int of the zero-padding size
-    :param way:              a string of 'MAX_POOLING' or 'AVG_POOLING'
+    :param mode:             a string of 'MAX_POOLING' or 'AVG_POOLING'
     :return:                 a 3D or 4D Tensor of the pooled output
 
     """

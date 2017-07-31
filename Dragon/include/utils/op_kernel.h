@@ -382,13 +382,24 @@ void AdamUpdate(Tensor* x,
                 const float eps, 
                 const float lr);
 
+/******************** update.nesterov_update ********************/
+
+template <typename T, class Context>
+void NesterovUpdate(const int count,
+                    T* x,
+                    T* h,
+                    Tensor* t,
+                    const float momentum,
+                    const float lr,
+                    Context* ctx);
+
 /******************** update.rmsprop_update ********************/
 
 template <typename T, class Context>
 void RMSPropUpdate(const int count, 
                    T* x, 
                    T* h,
-                   Tensor* t_buffer,
+                   Tensor* t,
                    const float decay, 
                    const float eps, 
                    const float lr);

@@ -15,8 +15,13 @@ void RMSPropUpdateOp<Context>::ComputeRunWithFloat() {
     lr = param("base_lr") * this->lr_mult;
     auto* dXdata = input(0).template mutable_data<float, Context>();
     auto* Hdata = history->template mutable_data<float, Context>();
-    kernel::RMSPropUpdate<float, Context>(input(0).count(), dXdata, Hdata, 
-                                          &buffer, decay, eps, lr);
+    kernel::RMSPropUpdate<float, Context>(input(0).count(), 
+                                                    dXdata, 
+                                                     Hdata, 
+                                                     &temp, 
+                                                     decay, 
+                                                       eps, 
+                                                       lr);
 }
 
 DEPLOY_CPU(RMSPropUpdate);

@@ -8,13 +8,13 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.0)
 # ---------------- User Config ----------------
 
 # set optional libraries
-option(WITH_CUDA                   "Set to ON use CUDA"  ON)
-option(WITH_CUDNN                  "Set to ON use CUDNN" OFF)
-option(WITH_BLAS                   "Set to ON to use BLAS"  OFF)
-option(WITH_SSE                    "Set to ON to use SSE 4.1"  ON)
-option(WITH_MPI                    "Set to ON to use MPI"  OFF)
-option(WITH_MPI_CUDA               "Set to ON to use MPI_CUDA_AWARE"  OFF)
-option(WITH_CUDA_FP16              "Set to ON to use FP16"  ON)
+option(WITH_CUDA                   "Set ON to use CUDA"  ON)
+option(WITH_CUDNN                  "Set ON to use CUDNN" OFF)
+option(WITH_BLAS                   "Set ON to use BLAS"  OFF)
+option(WITH_SSE                    "Set ON to use SSE 4.1"  ON)
+option(WITH_MPI                    "Set ON to use MPI"  OFF)
+option(WITH_MPI_CUDA               "Set ON to use MPI_CUDA_AWARE"  OFF)
+option(WITH_CUDA_FP16              "Set ON to use FP16"  ON)
 
 # set your 3rdparty
 set(3RDPARTY_DIR  ${PROJECT_SOURCE_DIR}/../3rdparty)

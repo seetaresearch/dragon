@@ -63,6 +63,16 @@ class SGDUpdater(Updater):
         self.echo()
 
 
+class NesterovUpdater(Updater):
+    def __init__(self, base_lr=0.01, momentum=0.9, **kwargs):
+        super(NesterovUpdater, self).__init__(**kwargs)
+        self._hyper_params = dict({'base_lr': base_lr,
+                                   'momentum': momentum},
+                                  **self._hyper_params)
+        self._type = 'NesterovUpdate'
+        self.echo()
+
+
 class RMSPropUpdater(Updater):
     def __init__(self, base_lr=0.01, decay=0.9, eps=1e-8, **kwargs):
         super(RMSPropUpdater, self).__init__(**kwargs)

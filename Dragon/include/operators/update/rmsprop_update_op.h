@@ -24,7 +24,7 @@ class RMSPropUpdateOp final : public UpdateOpBase<Context> {
  protected:
     float lr, decay, eps;
     unique_ptr<Tensor> history;
-    Tensor buffer;
+    Tensor temp;
 };
 
 }    // namespace dragon

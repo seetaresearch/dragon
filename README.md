@@ -104,8 +104,30 @@
 
 8. Deploy
 
+- Install Dragon
+
 	```Shell
-	python Dragon/setup.py install
+    cd Dragon
+	python setup.py install
+	```
+
+	``Hint``: If you do not have permission, try as follows:
+
+	```Shell
+    cd Dragon
+	python setup.py install --user
+	```
+
+- Install protobuf
+
+	```Shell
+    pip install protobuf
+	```
+
+- Install lmdb
+
+	```Shell
+    pip install lmdb
 	```
 
 ----
