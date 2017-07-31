@@ -17,7 +17,7 @@ void UpdateOpBase<Context>::InitMPI() {
         this->args().count("root")) {
 #ifdef WITH_MPI
         comm = (MPI_Comm)OperatorBase::GetSingleArg<int64_t>("comm", 0);
-		group = (MPI_Group)OperatorBase::GetSingleArg<int64_t>("group", 0);
+        group = (MPI_Group)OperatorBase::GetSingleArg<int64_t>("group", 0);
         int world_root = OperatorBase::GetSingleArg<int>("root", 0);
         if (comm == MPI_COMM_NULL) return;
         allow_parallel = true;
@@ -46,6 +46,7 @@ void UpdateOpBase<Context>::ReduceRunWithType() {
     segment_ends[0] = segment_sizes[0];
     for (int i = 1; i < segment_ends.size(); i++) 
         segment_ends[i] = segment_sizes[i] + segment_ends[i - 1];
+    buffer = ws()->GetBuffer();
     buffer->Reshape(vector<TIndex>(1, segment_sizes[0]));
 #ifdef WITH_CUDA_AWARE
     auto* Bdata = buffer->mutable_data<T, Context>();
@@ -80,6 +81,7 @@ void UpdateOpBase<Context>::ReduceRunWithType() {
             1.0, Bdata, segment_update);
 #endif // WITH_CUDA_AWARE
     }
+    ws()->ReleaseBuffer(buffer);
 
     //    allgather
     for (int i = 0; i < comm_size - 1; i++) {
@@ -204,15 +206,5 @@ template class UpdateOpBase<CPUContext>;
 #ifdef WITH_CUDA
 template class UpdateOpBase<CUDAContext>;
 #endif
-
-template <class Context>
-void UpdateOpBase<Context>::ShareBeforeRun() {
-    buffer = ws()->GetBuffer();
-}
-template <class Context>
-void UpdateOpBase<Context>::ClearAfterRun() {
-    ws()->ReleaseBuffer(buffer);
-}
-
 
 }    // namespace dragon

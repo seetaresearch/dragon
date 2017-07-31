@@ -89,6 +89,17 @@ class ConcatLayer(Layer):
         return ops.Concat(bottom, **self._param)
 
 
+class DenseConcatLayer(Layer):
+    def __init__(self, LayerParameter):
+        super(DenseConcatLayer, self).__init__(LayerParameter)
+        param = LayerParameter.concat_param
+        self._param = {'axis': param.axis}
+
+    def Setup(self, bottom):
+        super(DenseConcatLayer, self).Setup(bottom)
+        return ops.DenseConcat(bottom, **self._param)
+
+
 class CropLayer(Layer):
     def __init__(self, LayerParameter):
         super(CropLayer, self).__init__(LayerParameter)

@@ -189,6 +189,10 @@ class Tensor {
         memory_.reset();
     }
 
+    void Release() {
+        memory_.reset();
+    }
+
  private:
     vector<TIndex> dims_;
     TIndex size_ = 0, capacity_ = 0;

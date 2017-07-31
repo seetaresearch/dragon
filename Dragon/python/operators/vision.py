@@ -194,9 +194,20 @@ def BiasAdd(inputs, data_format='NCHW', **kwargs):
 
     return output
 
+def DenseConcat(inputs, axis=1, **kwargs):
 
+    if not isinstance(inputs, list) or len(inputs) != 2:
+        raise RuntimeError('DenseConcat Operator accepts 2 Tensors as inputs')
 
+    args = locals(); kwargs = args['kwargs']
+    del args['kwargs']; kwargs = dict(args, **kwargs)
+    kwargs['num_input'] = len(inputs)
 
+    output = Tensor.CreateOperator(nout=1, op_type='DenseConcat', **kwargs)
+    if all(input.shape is not None for input in inputs):
+        if all(input.shape[axis] is not None for input in inputs):
+            output.shape = inputs[0].shape[:]
+            for i in xrange(1, len(inputs)):
+                output.shape[axis] += inputs[i].shape[axis]
 
-
-
+    return output

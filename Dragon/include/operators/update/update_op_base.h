@@ -26,9 +26,7 @@ class UpdateOpBase : public Operator<Context> {
     float param(const string& name) const;
     void InitMPI();
 
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void ReduceRunWithType();
     template <typename T> void PreprocessRunWithType();
     virtual void ComputeRunWithFloat() = 0;

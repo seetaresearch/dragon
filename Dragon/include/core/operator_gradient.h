@@ -74,7 +74,7 @@ class GradientMakerBase {
     const vector<string>& g_outputs_;
 };
 
-//  implemented in operator.cpp
+//  implemented in operator.cc
 Gradient MakeGradientForOp(const OperatorDef& op_def, const vector<string>& g_outputs);
 
 # define GRADIENT_MAKER_CTOR(name) \
@@ -99,7 +99,7 @@ DECLARE_REGISTRY(NoGradientRegistry,
                  const OperatorDef&, 
                  const vector<string>&);
 
-//  define in the operator.cpp
+//  define in the operator.cc
 #define REGISTER_GRADIENT(name, ...) \
     REGISTER_CLASS(GradientRegistry, name, __VA_ARGS__)
 

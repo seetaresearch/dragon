@@ -39,6 +39,7 @@ ROIAlign = vision.ROIAlign
 LRN = vision.LRN
 NNResize = vision.NNResize
 BiasAdd = vision.BiasAdd
+DenseConcat = vision.DenseConcat
 
 # recurrent
 LSTMUnit = recurrent.LSTMUnit

@@ -12,11 +12,14 @@ void ConcatOp<Context>::RunWithType() {
         TIndex count = input(i).count();
         x_concat_dim = input(i).dim(axis);
         kernel::Concat<T, Context>(count, 
-                                   outer_dim, inner_dim,
-                                   x_concat_dim, y_concat_dim, 
-                                   concat_offset, 
-                                   Xdata, Ydata, 
-                                   &ctx());
+                               outer_dim, 
+                               inner_dim,
+                            x_concat_dim, 
+                            y_concat_dim, 
+                           concat_offset, 
+                                   Xdata, 
+                                   Ydata, 
+                                 &ctx());
         concat_offset += x_concat_dim;
     }
 }
@@ -24,7 +27,7 @@ void ConcatOp<Context>::RunWithType() {
 template <class Context>
 void ConcatOp<Context>::RunOnDevice(){
     concat_dims = input(0).dims();
-    for (int i = 1; i < nin; i++){
+    for (int i = 1; i < nin; i++) {
         CHECK_EQ(concat_dims.size(), input(i).ndim())
             << "\nall inputs must have the same ndim.";
         for (int j = 0; j < concat_dims.size(); j++){
@@ -59,17 +62,20 @@ OPERATOR_SCHEMA(Concat).NumInputs(1, INT_MAX).NumOutputs(1);
 template <class Context> template <typename T>
 void ConcatGradientOp<Context>::RunWithType() {
     auto* dYdata = input(-1).template data<T, Context>();
-    for (int i = 0; i < nin; i++){
+    for (int i = 0; i < nin; i++) {
         x_concat_dim = input(i).dim(axis);
         if (output(i)->name() != "ignore") {
             auto* dXdata = output(i)->template mutable_data<T, Context>();
             TIndex count = output(i)->count();
             kernel::ConcatGrad<T, Context>(count, 
-                                           outer_dim, inner_dim,
-                                           x_concat_dim, y_concat_dim, 
-                                           concat_offset,
-                                           dYdata, dXdata, 
-                                           &ctx());
+                                       outer_dim, 
+                                       inner_dim,
+                                    x_concat_dim, 
+                                    y_concat_dim, 
+                                   concat_offset,
+                                          dYdata, 
+                                          dXdata, 
+                                         &ctx());
         }
         concat_offset += x_concat_dim;
     }
@@ -133,4 +139,3 @@ public:
 REGISTER_GRADIENT(Concat, GetConcatGradient);
 
 }    // namespace dragon
-

@@ -12,7 +12,7 @@
 namespace dragon {
 
 template <class Context>
-class ConcatOp final : public Operator<Context> {
+class ConcatOp : public Operator<Context> {
  public:
     ConcatOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),

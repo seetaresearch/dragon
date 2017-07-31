@@ -21,4 +21,4 @@ from common import InnerProductLayer, AccuracyLayer, BatchNormLayer, \
                    ReshapeLayer, EltwiseLayer, ScaleLayer, \
                    SoftmaxLayer, PermuteLayer, FlattenLayer, ConcatLayer, \
                    NormalizeLayer, InstanceNormLayer, TileLayer, \
-                   ExpandDimsLayer, ProposalLayer
+                   ExpandDimsLayer, ProposalLayer, DenseConcatLayer
