@@ -8,4 +8,6 @@ which was described in our arXiv paper: [Dragon: A Computation Graph Virtual Mac
 
 ## <a name="list-of-examples"></a>List of examples
 
-* [cifar10](https://github.com/neopenx/Dragon/tree/master/examples/cifar10) - How to train/infer a basic classification network [**Caffe1** Style]
+* [cifar10](https://github.com/neopenx/Dragon/tree/master/examples/cifar10) - How to train/infer a basic classification network [*Caffe1 Style*]
+
+* [GA3C](https://github.com/neopenx/Dragon/tree/master/examples/GA3C) -  A hybrid CPU/GPU version of the A3C algorithm [*TinyDragon Style*]
