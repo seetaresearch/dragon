@@ -4,18 +4,21 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-from collections import defaultdict
-from dragon.__init__ import *
-import dragon.protos.dragon_pb2 as pb
 import dragon.config as config
-from scope import GetOperatorName
-from dragon.utils import MakeOperatorDef
+import dragon.protos.dragon_pb2 as pb
+from collections import defaultdict
+from dragon.core.utils import MakeOperatorDef
+from dragon.__init__ import *
+
+from .scope import GetOperatorName
 
 class GraphGradientMaker(object):
     @classmethod
     def CreateGradientForOp(cls, op_def, g_output):
         """ parse ops from string """
         g_ops, g_inputs, defaults = CreateGradientDefsCC(op_def.SerializeToString(), g_output)
+        if sys.version_info >= (3, 0):
+            g_inputs = [g_input.decode('ascii') for g_input in g_inputs]
         for idx, g_op in enumerate(g_ops):
             new_def = pb.OperatorDef()
             new_def.ParseFromString(g_op)

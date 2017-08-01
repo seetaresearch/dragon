@@ -4,8 +4,12 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-import numpy as np
-from __init__ import *
+from dragon.__init__ import *
+
+import logging
+logger = logging.getLogger('dragon')
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler(sys.stdout))
 
 option = {}
 
@@ -58,6 +62,14 @@ def SetLoggingLevel(level):
     """
 
     SetLogLevelCC(level)
+    global logger
+    logger.setLevel({
+        'DEBUG': logging.DEBUG,
+        'INFO': logging.INFO,
+        'WARNING': logging.WARNING,
+        'ERROR': logging.ERROR,
+        'FATAL': logging.CRITICAL
+    }[level])
 
 
 

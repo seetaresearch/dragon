@@ -4,6 +4,7 @@ from multiprocessing import Process
 try:
     from flask import Flask, render_template, make_response, jsonify, request
 except ImportError as e: pass
+from six.moves import range as xrange
 
 class DragonBoard(Process):
     def __init__(self, log_dir='', port=5000, max_display=1000):
@@ -20,7 +21,8 @@ class DragonBoard(Process):
                        'port': port,
                        'max_display': max_display}
         def cleanup():
-            print 'Terminating DragonBoard......'
+            from dragon.config import logger
+            logger.info('Terminating DragonBoard......')
             self.terminate()
             self.join()
         import atexit

@@ -5,16 +5,19 @@
 # --------------------------------------------------------
 
 import time
+from six.moves import range as xrange
 
 import dragon.core.mpi as mpi
 import dragon.updaters as updaters
 import dragon.tools.summary_writer as sw
-import proto.caffe_pb2 as pb
+from dragon.vm.caffe.proto import caffe_pb2 as pb
 from dragon.core.workspace import FetchTensor, Snapshot
+from dragon.config import logger
 from dragon.vm.caffe.common import root_solver
 from dragon.vm.caffe.net import Net
 from dragon.vm.theano import function
 from google.protobuf.text_format import Parse
+
 
 class Solver(object):
     def __init__(self, prototxt):
@@ -102,13 +105,13 @@ class Solver(object):
             if root_solver() and self._param.display:
                 if self._iter % self._param.display == 0:
                     base_lr = self._updater.lr
-                    print 'Iteration %d, lr = %s, loss = %f, time = %.2fs' % \
-                          (self._iter, str(base_lr), smoothed_loss, time.time() - tic)
+                    logger.info('Iteration %d, lr = %s, loss = %f, time = %.2fs' % \
+                          (self._iter, str(base_lr), smoothed_loss, time.time() - tic))
                     tic = time.time()
                     for idx, net_output in enumerate(self._net._net_outputs):
                         vals = FetchTensor(self._net.blobs[net_output].data)
                         for val in vals:
-                            print '		Train net output #{}({}): {}'.format(idx, net_output, val)
+                            logger.info('		Train net output #{}({}): {}'.format(idx, net_output, val))
                             self.scalar_writer.add_summary((net_output, val), self._iter)
             self._iter = self._iter + 1
 
@@ -137,9 +140,9 @@ class Solver(object):
                     for idx, val in enumerate(vals):
                         test_score[i] += val; i = i + 1
         if not root_solver(): return
-        print 'Iteration {}, Test net #{}'.format(self._iter, test_idx)
+        logger.info('Iteration {}, Test net #{}'.format(self._iter, test_idx))
         for idx, score in enumerate(test_score):
-            print '		 Test net output #%d(%s): %.4f' % (idx, output_id[idx], score / test_iter)
+            logger.info('		 Test net output #%d(%s): %.4f' % (idx, output_id[idx], score / test_iter))
             self.scalar_writer.add_summary((output_id[idx], score / test_iter), self._iter)
 
 
@@ -164,8 +167,8 @@ class Solver(object):
             if self._current_step < len(self._param.stepvalue) \
                     and self._iter >= self._param.stepvalue[self._current_step]:
                 self._current_step = self._current_step + 1
-                print 'MultiStep Status: Iteration {},  step = {}' \
-                    .format(self._iter, self._current_step)
+                logger.info('MultiStep Status: Iteration {},  step = {}' \
+                    .format(self._iter, self._current_step))
                 new_lr = self._param.base_lr * \
                          pow(self._param.gamma, self._current_step)
                 self._updater.lr = new_lr
@@ -178,8 +181,8 @@ class Solver(object):
             else:
                 if self._current_step + 1 < len(stage_iters):
                     self._current_step = self._current_step + 1
-                    print 'MultiFixed Status: Iteration {},  stage = {}' \
-                        .format(self._iter, self._current_step)
+                    logger.info('MultiFixed Status: Iteration {},  stage = {}' \
+                        .format(self._iter, self._current_step))
                     self._updater.lr = stage_lrs[self._current_step]
 
         if policy == 'inv':
@@ -223,7 +226,7 @@ class SGDSolver(Solver):
         self._updater = updaters.SGDUpdater(**self._update_param)
 
         # generates update targets
-        for layer, blobs in self._net.params.iteritems():  self._lr_blobs.extend(blobs)
+        for layer, blobs in self._net.params.items():  self._lr_blobs.extend(blobs)
         for idx, blob in enumerate(self._lr_blobs):
             if self._net._lr_mults[idx] > 0:
                 if blob.diff is None: continue
@@ -248,7 +251,7 @@ class NesterovSolver(Solver):
         self._updater = updaters.NesterovUpdater(**self._update_param)
 
         # generates update targets
-        for layer, blobs in self._net.params.iteritems():  self._lr_blobs.extend(blobs)
+        for layer, blobs in self._net.params.items():  self._lr_blobs.extend(blobs)
         for idx, blob in enumerate(self._lr_blobs):
             if self._net._lr_mults[idx] > 0:
                 if blob.diff is None: continue
@@ -273,7 +276,7 @@ class RMSPropSolver(Solver):
         self._updater = updaters.RMSPropUpdater(**self._update_param)
 
         # generates update targets
-        for layer, blobs in self._net.params.iteritems():  self._lr_blobs.extend(blobs)
+        for layer, blobs in self._net.params.items():  self._lr_blobs.extend(blobs)
         for idx, blob in enumerate(self._lr_blobs):
             if self._net._lr_mults[idx] > 0:
                 if blob.diff is None: continue
@@ -297,7 +300,7 @@ class AdamSolver(Solver):
         self._updater = updaters.AdamUpdater(**self._update_param)
 
         # generates update targets
-        for layer, blobs in self._net.params.iteritems():  self._lr_blobs.extend(blobs)
+        for layer, blobs in self._net.params.items():  self._lr_blobs.extend(blobs)
         for idx, blob in enumerate(self._lr_blobs):
             if self._net._lr_mults[idx] > 0:
                 if blob.diff is None: continue

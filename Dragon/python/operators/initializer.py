@@ -27,7 +27,7 @@ def Fill(shape, value=1.0, **kwargs):
     del kwargs['shape']
 
     output =  Tensor.CreateOperator([], nout=1, op_type='Fill', **kwargs)
-    output.shape = kwargs['static_shape'] if kwargs.has_key('static_shape') else None
+    output.shape = kwargs['static_shape'] if 'static_shape' in kwargs else None
     return output
 
 
@@ -52,7 +52,7 @@ def RandomalUniform(shape, low=-1.0, high=1.0, **kwargs):
     del kwargs['shape']
 
     output =  Tensor.CreateOperator([], nout=1, op_type='RandomUniform', **kwargs)
-    output.shape = kwargs['static_shape'] if kwargs.has_key('static_shape') else None
+    output.shape = kwargs['static_shape'] if 'static_shape' in kwargs else None
     return output
 
 
@@ -77,7 +77,7 @@ def RandomalNormal(shape, mean=0.0, std=1.0, **kwargs):
     del kwargs['shape']
 
     output = Tensor.CreateOperator([], nout=1, op_type='RandomNormal', **kwargs)
-    output.shape = kwargs['static_shape'] if kwargs.has_key('static_shape') else None
+    output.shape = kwargs['static_shape'] if 'static_shape' in kwargs else None
     return output
 
 
@@ -102,7 +102,7 @@ def TruncatedNormal(shape, mean=0.0, std=1.0, **kwargs):
     del kwargs['shape']
 
     output =  Tensor.CreateOperator([], nout=1, op_type='TruncatedNormal', **kwargs)
-    output.shape = kwargs['static_shape'] if kwargs.has_key('static_shape') else None
+    output.shape = kwargs['static_shape'] if 'static_shape' in kwargs else None
     return output
 
 
@@ -125,7 +125,7 @@ def GlorotUniform(shape, scale=3.0, mode='fan_in', **kwargs):
     del kwargs['shape']
 
     output = Tensor.CreateOperator([], nout=1, op_type='GlorotUniform', **kwargs)
-    output.shape = kwargs['static_shape'] if kwargs.has_key('static_shape') else None
+    output.shape = kwargs['static_shape'] if 'static_shape' in kwargs else None
     return output
 
 
@@ -149,7 +149,7 @@ def GlorotNormal(shape, scale=2.0, mode='fan_in', **kwargs):
     del kwargs['shape']
 
     output = Tensor.CreateOperator([], nout=1, op_type='GlorotNormal', **kwargs)
-    output.shape = kwargs['static_shape'] if kwargs.has_key('static_shape') else None
+    output.shape = kwargs['static_shape'] if 'static_shape' in kwargs else None
     return output
 
 

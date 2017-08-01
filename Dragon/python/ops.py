@@ -4,21 +4,20 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-import operators.initializer as init
-import operators.vision as vision
-import operators.loss as loss
-import operators.data as data
-import operators.activation as act
-import operators.arithmetic as math
-import operators.utils as utils
-import operators.cast as cast
-import operators.mpi as mpi
-import operators.common as common
-import operators.norm as norm
-import operators.recurrent as recurrent
+from .operators import initializer as init
+from .operators import vision as vision
+from .operators import loss as loss
+from .operators import data as data
+from .operators import activation as act
+from .operators import arithmetic as math
+from .operators import utils as utils
+from .operators import cast as cast
+from .operators import mpi as mpi
+from .operators import common as common
+from .operators import norm as norm
+from .operators import recurrent as recurrent
 
 # data
-Imagenet = data.Imagenet
 LMDBData = data.LMDBData
 MemoryData = data.MemoryData
 

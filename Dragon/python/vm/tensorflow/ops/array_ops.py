@@ -15,8 +15,8 @@ __all__ = [
     'reshape'
 ]
 
-import dtypes
 import dragon.ops as ops
+from ..core import dtypes
 
 
 def expand_dims(input, axis=None, name=None, dim=None):

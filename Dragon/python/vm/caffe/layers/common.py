@@ -5,8 +5,9 @@
 # --------------------------------------------------------
 
 from dragon.core.tensor import Tensor
-from layer import Layer
 import dragon.ops as ops
+
+from .layer import Layer
 
 class InnerProductLayer(Layer):
     def __init__(self, LayerParameter):

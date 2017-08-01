@@ -10,6 +10,7 @@ import dragon.ops as ops
 from dragon.core.tensor import Tensor
 import dragon.vm.theano.tensor as T
 import dragon.vm.theano as theano
+from dragon.config import logger
 
 """ How to custom a TemplateOp in Dragon """
 
@@ -97,7 +98,7 @@ if __name__ == '__main__':
     foo()
 
     # fetch
-    print 'y \n-------------- \n', y.get_value(), '\n'
-    print 'dx1 \n-------------- \n', dx1.get_value(), '\n'
-    print 'dx2 \n-------------- \n', dx2.get_value(), '\n'
+    logger.info('y \n-------------- \n', y.get_value(), '\n')
+    logger.info('dx1 \n-------------- \n', dx1.get_value(), '\n')
+    logger.info('dx2 \n-------------- \n', dx2.get_value(), '\n')
 

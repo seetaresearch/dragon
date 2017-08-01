@@ -1,3 +1,5 @@
+syntax = "proto2";
+
 message TensorProto {
   repeated int32 dims = 1;
   enum DataType {

@@ -6,12 +6,14 @@
 
 from collections import OrderedDict
 from google.protobuf.text_format import Parse
+
 import dragon.core.workspace as ws
 from dragon.core.tensor import Tensor
 import dragon.vm.theano as theano
 import dragon.vm.theano.tensor as T
-import proto.caffe_pb2 as pb
-import layers as Layer
+
+from .proto import caffe_pb2 as pb
+from . import layers
 
 class Blob(object):
     def __init__(self, tuple):
@@ -36,7 +38,7 @@ class Net(object):
 
         if len(self._net.input) > 0:
             for input in self._net.input:
-                if not self._blobs.has_key(input):
+                if not input in self._blobs:
                     # create new tensors
                     self._blobs[input] = {'data':Tensor(input).Variable(),
                                           'diff': Tensor(input + '_grad')}
@@ -44,7 +46,7 @@ class Net(object):
 
         for layer in self._net.layer:
             if not self.FilterNet(layer): continue
-            self._layers.append(getattr(Layer, layer.type + 'Layer')(layer))
+            self._layers.append(getattr(layers, layer.type + 'Layer')(layer))
 
         self.Setup()
 
@@ -134,8 +136,8 @@ class Net(object):
             raise TypeError('only type of Net can be shared.')
 
         other_params = other_net.params
-        for name, blobs in self.params.iteritems():
-             if other_params.has_key(name):
+        for name, blobs in self.params.items():
+             if name in other_params:
                 for idx, blob in enumerate(blobs):
                     self._swap_blobs[blob.data] = other_params[name][idx].data
 
@@ -151,7 +153,7 @@ class Net(object):
                 ret[output] = ws.FetchTensor(net.blobs[output].data)
             return ret
         if kwargs:
-            for name, blob in kwargs.iteritems():
+            for name, blob in kwargs.items():
                 ws.FeedTensor(self._inputs_to_tensors[name], blob)
 
         self.function(return_outputs=False, stage='forward')
@@ -167,7 +169,7 @@ class Net(object):
         if not hasattr(self, '_function'): func = self.function
         tensors = []
         for layer in self._net.layer:
-            if self.params.has_key(layer.name):
+            if layer.name in self.params:
                 for param in self.params[layer.name]:
                     tensors.append(param.data)
 
@@ -182,7 +184,7 @@ class Net(object):
     def blobs(self):
         """ simply follow the pycaffe style """
         return OrderedDict([(name,Blob((blob['data'], blob['diff'])))
-                                    for name, blob in self._blobs.iteritems()])
+                                    for name, blob in self._blobs.items()])
     @property
     def params(self):
         """ simply follow the pycaffe style """
@@ -221,6 +223,6 @@ class Net(object):
 class PartialNet(Net):
     def __init__(self, *args, **kwargs):
         self._blobs = {}
-        for input, tensor in kwargs.iteritems():
+        for input, tensor in kwargs.items():
             self._blobs[input] = {'data': tensor, 'diff': None}
         super(PartialNet, self).__init__(*args)

@@ -16,8 +16,8 @@ __all__ = [
     'glorot_normal_initializer',
 ]
 
-import dtypes
 import dragon.ops as ops
+from ..core import dtypes
 
 
 class Initializer(object):

@@ -41,7 +41,7 @@ def scan(fn, sequences, outputs_info, n_steps=None, axis=0):
     for output in outputs:
         graph_def.target.extend([output._name])
         all_exprs = dict(all_exprs, **output.expressions)
-    all_exprs = sorted(all_exprs.iteritems(), key=lambda d:d[0])
+    all_exprs = sorted(all_exprs.items(), key=lambda d:d[0])
     forward_ops = copy.deepcopy([v for k,v in all_exprs])
     graph_def.op.extend(forward_ops)
 

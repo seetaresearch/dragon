@@ -4,4 +4,4 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-from nn_ops import *
+from .nn_ops import *

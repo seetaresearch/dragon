@@ -6,8 +6,9 @@
 
 import numpy as np
 import pprint
-import core.workspace as ws
-from core.tensor import Tensor
+from dragon.config import logger
+import dragon.core.workspace as ws
+from dragon.core.tensor import Tensor
 
 class Updater(object):
     def __init__(self,
@@ -47,10 +48,10 @@ class Updater(object):
         ws.FeedTensor(self._prefix + 'base_lr', np.array([lr], dtype=np.float32))
 
     def echo(self):
-        print '---------------------------------------------------------'
-        print 'Optimizer: {}, Using config:'.format(self._type.split('Update')[0])
+        logger.info('---------------------------------------------------------')
+        logger.info('Optimizer: {}, Using config:'.format(self._type.split('Update')[0]))
         pprint.pprint(self._hyper_params)
-        print '---------------------------------------------------------'
+        logger.info('---------------------------------------------------------')
 
 
 class SGDUpdater(Updater):

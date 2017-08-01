@@ -4,8 +4,9 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-from layer import Layer
 import dragon.ops as ops
+
+from .layer import Layer
 
 class ReLULayer(Layer):
     def __init__(self, LayerParameter):

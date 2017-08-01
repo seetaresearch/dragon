@@ -8,29 +8,6 @@ import numpy as np
 from dragon.core.tensor import Tensor
 from dragon.operators.utils import Run
 
-def Imagenet(**kwargs):
-    """
-    :param kwargs:              a dict of imagenet data param
-    :param --> mean_value:      a list of mean values for channles [B-G-R]
-    :param --> source:          a str of the images root directory
-    :param --> imageset:        a str of text file contains image name / label
-    :param --> prefetch:        a int of the prefetching size
-    :param --> batch_size:      a int of the batch size
-    :param --> force_gray       a bool of whether to use only 1 channel
-    :param --> shuffle          a bool of whether to use shuffle
-    :param --> scale            a float of the coeff to scale
-    :return:                    2 Tensors of data and label
-    """
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-
-    kwargs['module'] =  'dragon.vm.caffe.io.data_layer'
-    kwargs['op'] = 'DataLayer'
-
-    return Run([], param_str=str(kwargs), nout=2, **kwargs)
-
-
 def LMDBData(**kwargs):
     """
     :param kwargs:                   a dict of imagenet data param

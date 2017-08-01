@@ -4,9 +4,11 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-from core.swap import shared
-from core.function import function
-from core.scan import scan
-import config
+import numpy as np
 
+from .core.swap import shared
+from .core.function import function
+from .core.scan import scan
+
+floatX = np.float32
 

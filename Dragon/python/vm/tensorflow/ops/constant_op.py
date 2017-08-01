@@ -7,9 +7,10 @@
 __all__ = ['constant']
 
 import numpy as np
+
 import dragon.core.workspace as ws
 from dragon.core.tensor import Tensor
-import dtypes
+from ..core import dtypes
 
 
 def constant(value, dtype=None, shape=None, name=None):

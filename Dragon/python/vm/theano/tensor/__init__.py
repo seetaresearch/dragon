@@ -5,8 +5,9 @@
 # --------------------------------------------------------
 
 from dragon.core.tensor import Tensor
-import nnet
-import ops
+
+from . import nnet
+from . import ops
 
 def matrix(name=None):
     if name is None: return Tensor().Variable()

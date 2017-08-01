@@ -28,7 +28,7 @@ namespace dragon {
  *    it seems not necessary to create handles for different threads
  *************************************************************************/
 
-class CUDAObject{
+class CUDAObject {
  public:
     CUDAObject(): cur_gpu(0) {
         for (int i = 0; i < MAX_GPUS; i++) {

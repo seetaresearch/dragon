@@ -6,7 +6,7 @@
 
 import dragon.vm.caffe as caffe
 import dragon.core.workspace as ws
-from minibatch import DataBatch
+from .minibatch import DataBatch
 
 class DataLayer(caffe.Layer):
     def setup(self, bottom, top):

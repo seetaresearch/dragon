@@ -4,4 +4,4 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-from layers import *
+from .layers import *

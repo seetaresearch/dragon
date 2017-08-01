@@ -4,8 +4,9 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-from layer import Layer
 from dragon.ops import MPIBroadcast, MPIGather
+
+from .layer import Layer
 
 class MPIBroadcastLayer(Layer):
     def __init__(self, LayerParameter):

@@ -4,13 +4,15 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
+import dragon.config as config
+import dragon.core.workspace as ws
+import dragon.protos.dragon_pb2 as pb
 import numpy as np
 from collections import OrderedDict
-import dragon.config as config
-import dragon.protos.dragon_pb2 as pb
-import workspace as ws
-from scope import GetOperatorName, GetTensorName
-from dragon.utils import MakeOperatorDef
+from dragon.core.utils import MakeOperatorDef
+from dragon.core.scope import GetOperatorName, GetTensorName
+from six.moves import range as xrange
+
 
 class Tensor(object):
     REGISTERED_FILLERS = {'Constant', 'Normal', 'TruncatedNormal',
@@ -39,7 +41,7 @@ class Tensor(object):
 
     @name.setter
     def name(self, value):
-        from scope import TENSOR_SCOPE
+        from .scope import TENSOR_SCOPE
         if value is None: self._name = TENSOR_SCOPE + GetTensorName()
         else: self._name = TENSOR_SCOPE + value
 
@@ -237,15 +239,15 @@ class Tensor(object):
         # 1. collect inputs
         if not isinstance(inputs, list): inputs = [inputs]
         for input in inputs:
-            for op_idx, expr in input.expressions.iteritems():
-                if not expressions.has_key(op_idx):
+            for op_idx, expr in input.expressions.items():
+                if not op_idx in expressions:
                     expressions[op_idx] = expr
 
         if extra_inputs is not None:
             if not isinstance(extra_inputs, list): extra_inputs = [extra_inputs]
             for input in extra_inputs:
-                for op_idx, expr in input.expressions.iteritems():
-                    if not expressions.has_key(op_idx):
+                for op_idx, expr in input.expressions.items():
+                    if not op_idx in expressions:
                         expressions[op_idx] = expr
 
         # 2. generate outputs
@@ -286,7 +288,7 @@ class Tensor(object):
                     output.extra_targets.add(input.name)
 
         # 5. utils
-        if kwargs.has_key('static_shape'):
+        if 'static_shape' in kwargs:
             outputs[0].tf_shape = kwargs['static_shape']
 
         if nout > 1:
@@ -302,26 +304,26 @@ class Tensor(object):
         filler.type = type.lower()
 
         if filler.type == 'constant':
-            filler.value = kwargs['value'] if kwargs.has_key('value') else 0
+            filler.value = kwargs['value'] if 'value' in kwargs else 0
         elif filler.type == 'normal' or filler.type == 'gaussian':
-            filler.mean = kwargs['mean'] if kwargs.has_key('mean') else 0
-            filler.std = kwargs['std'] if kwargs.has_key('std') else 1
+            filler.mean = kwargs['mean'] if 'mean' in kwargs else 0
+            filler.std = kwargs['std'] if 'std' in kwargs else 1
             filler.type = 'normal'
         elif filler.type == 'uniform':
-            filler.low = kwargs['low'] if kwargs.has_key('low') else 0
-            filler.high = kwargs['high'] if kwargs.has_key('high') else 1
+            filler.low = kwargs['low'] if 'low' in kwargs else 0
+            filler.high = kwargs['high'] if 'high' in kwargs else 1
             filler.type = 'uniform'
         elif filler.type == 'truncated_normal' or filler.type == 'truncatednormal':
-            filler.mean = kwargs['mean'] if kwargs.has_key('mean') else 0
-            filler.std = kwargs['std'] if kwargs.has_key('std') else 1
+            filler.mean = kwargs['mean'] if 'mean' in kwargs else 0
+            filler.std = kwargs['std'] if 'std' in kwargs else 1
             filler.low = filler.mean - 2.0 * filler.std
             filler.high = filler.mean + 2.0 * filler.std
             filler.type = 'truncated_normal'
         elif filler.type == 'parameterized_truncated_normal':
-            filler.mean = kwargs['mean'] if kwargs.has_key('mean') else 0
-            filler.std = kwargs['std'] if kwargs.has_key('std') else 1
-            filler.low = kwargs['low'] if kwargs.has_key('low') else -2.0
-            filler.high = kwargs['high'] if kwargs.has_key('high') else 2.0
+            filler.mean = kwargs['mean'] if 'mean' in kwargs else 0
+            filler.std = kwargs['std'] if 'std' in kwargs else 1
+            filler.low = kwargs['low'] if 'low' in kwargs else -2.0
+            filler.high = kwargs['high'] if 'high' in kwargs else 2.0
         ws.CreateFiller(filler)
         return self
 
@@ -331,7 +333,7 @@ class Tensor(object):
         buffer0 = '-------------------Expressions-------------------\n'
         buffer1 = ''; buffer2 = 'Inputs: ['
 
-        for k,v in self.expressions.iteritems():
+        for k,v in self.expressions.items():
             buffer1 = buffer1 + '>>>  ' + str(k).zfill(3) + '. ('
             for input in v.input:
                 if input not in outputs:

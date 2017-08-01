@@ -11,6 +11,10 @@
 
 #include "core/operator.h"
 
+#ifdef WITH_PYTHON3
+#define PyBytes_FromStringAndSize PyUnicode_FromStringAndSize
+#endif
+
 namespace dragon {
 
 template <class Context>

@@ -4,8 +4,11 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-from dragon import MPIInitCC, MPIRankCC, MPISizeCC, MPICreateGroupCC, MPIFinalizeCC
 import numpy as np
+from six.moves import range as xrange
+
+from dragon import MPIInitCC, MPIRankCC, MPISizeCC, \
+                   MPICreateGroupCC, MPIFinalizeCC
 
 _is_init = False
 _snapshot_ranks = []

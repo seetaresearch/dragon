@@ -5,10 +5,12 @@
 # --------------------------------------------------------
 
 import os
+from six.moves import range as xrange
 
 from dragon.vm.caffe import layers as L
 from dragon.vm.caffe import params as P
 from dragon.vm.caffe.proto import caffe_pb2
+
 
 def check_if_exist(path):
     return os.path.exists(path)

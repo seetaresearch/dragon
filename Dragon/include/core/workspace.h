@@ -51,21 +51,21 @@ class Workspace{
         return tensor_map_[query].get();
     }
 
-    inline Tensor* GetTensor(const string& name){
+    inline Tensor* GetTensor(const string& name) {
         string query = GetTensorName(name);
         CHECK(HasTensor(query))
             << "Tensor(" << name << ") does not exist.";
         return tensor_map_[query].get();
     }
 
-    inline void LockTensor(const string& name){
+    inline void LockTensor(const string& name) {
         string query = GetTensorName(name);
         if (!lock_map_.count(query))
             lock_map_[query] = unique_ptr<mutex>(new mutex);
         lock_map_[query]->lock();
     }
 
-    inline void UnlockTensor(const string& name){
+    inline void UnlockTensor(const string& name) {
         string query = GetTensorName(name);
         if (!lock_map_.count(query))
             lock_map_[query] = unique_ptr<mutex>(new mutex);

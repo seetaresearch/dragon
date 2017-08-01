@@ -19,6 +19,10 @@
 #include "core/operator_gradient.h"
 #include "core/workspace.h"
 
+#ifdef WITH_PYTHON3
+#define PyString_AsString PyUnicode_AsUTF8
+#endif
+
 using namespace dragon;
 
 inline std::string PyBytesToStdString(PyObject* pystring) {

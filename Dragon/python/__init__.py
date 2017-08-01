@@ -17,4 +17,3 @@ except ImportError as e:
 from dragon.core.scope import TensorScope as name_scope
 from dragon.core.scope import PhaseScope as phase_scope
 from dragon.core.scope import DeviceScope as device_scope
-

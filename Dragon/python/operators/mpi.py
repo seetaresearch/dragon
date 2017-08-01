@@ -4,8 +4,11 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
+from six.moves import range as xrange
+
 from dragon.core.tensor import Tensor
 import dragon.core.mpi as mpi
+
 
 def MPIBroadcast(inputs, root, mpi_rank=None, **kwargs):
     """
@@ -52,7 +55,7 @@ def MPIGather(inputs, root, mpi_rank=None, **kwargs):
     if not isinstance(kwargs['mpi_rank'], list):
         kwargs['mpi_rank'] = [kwargs['mpi_rank']]
 
-    if kwargs.has_key('nout'):
+    if 'nout' in kwargs:
         if kwargs['nout'] != len(kwargs['mpi_rank']):
             raise RuntimeError('specfied nout is {}, but provide {} mpi nodes'
                                .format(kwargs['nout'], len(kwargs['mpi_rank'])))

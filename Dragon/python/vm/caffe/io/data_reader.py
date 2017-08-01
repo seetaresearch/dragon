@@ -9,9 +9,11 @@ import numpy.random as npr
 from multiprocessing import Process
 
 import dragon.config as config
+from dragon.config import logger
 from dragon.tools.db import LMDB
 
-from __init__ import GetProperty
+from .__init__ import GetProperty
+
 
 class DataReader(Process):
     def __init__(self, **kwargs):
@@ -33,7 +35,7 @@ class DataReader(Process):
         self.daemon = True
 
         def cleanup():
-            print 'Terminating DataReader......'
+            logger.info('Terminating DataReader......')
             self.terminate()
             self.join()
         import atexit
@@ -46,8 +48,8 @@ class DataReader(Process):
         if self._use_shuffle:
             self._cur_chunk_idx = 0
             self._perm = npr.permutation(self._num_shuffle_parts)
-            self._start_idx = self._part_idx * self._num_shuffle_parts + self._perm[self._cur_chunk_idx]
-            self._start_idx = self._start_idx * self._chunk_size
+            self._start_idx = int(self._part_idx * self._num_shuffle_parts + self._perm[self._cur_chunk_idx])
+            self._start_idx = int(self._start_idx * self._chunk_size)
             if self._start_idx >= self._db_size: self.next_chunk()
             self._end_idx = self._start_idx + self._chunk_size
             self._end_idx = min(self._db_size, self._end_idx)
@@ -91,7 +93,7 @@ class DataReader(Process):
         self._db.open(self._source)
         self._db_size = int(self._db.get('size'))
         self._db_zfill = int(self._db.get('zfill'))
-        self._epoch_size = self._db_size / self._num_parts + 1
+        self._epoch_size = int(self._db_size / self._num_parts + 1)
         # search a optimal chunk size by chunks
         if self._chunk_size == -1:
             max_chunk_size = self._db._total_size / ((self._num_chunks * (1 << 20)))
@@ -100,7 +102,7 @@ class DataReader(Process):
             self._chunk_size = min_chunk_size
         self._num_shuffle_parts = int(math.ceil(self._db._total_size * 1.1 /
                                                (self._num_parts * self._chunk_size << 20)))
-        self._chunk_size = self._db_size / self._num_shuffle_parts / self._num_parts + 1
+        self._chunk_size = int(self._db_size / self._num_shuffle_parts / self._num_parts + 1)
 
         # init env
         self.reset()

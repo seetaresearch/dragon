@@ -15,5 +15,5 @@ if __name__ == '__main__':
 
     # solve
     solver = caffe.SGDSolver('cifar10_full_solver.prototxt')
-    solver.step(5000)
+    solver.step(70000)
     solver.snapshot()

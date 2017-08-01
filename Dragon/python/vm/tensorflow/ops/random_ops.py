@@ -11,7 +11,8 @@ __all__ = [
 ]
 
 import dragon.ops as ops
-import dtypes
+from ..core import dtypes
+
 
 def random_normal(shape,
                   mean=0.0,

@@ -25,6 +25,8 @@ __all__ = [
     'add_n'
 ]
 
+from six.moves import range as xrange
+
 import dragon.ops as ops
 
 

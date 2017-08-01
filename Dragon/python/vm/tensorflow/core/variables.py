@@ -20,7 +20,7 @@ TRAINABLE_VARIABLES = {}
 
 def initialize_all_variables():
     outputs = []
-    for tensor, initializer in VARIABLES.iteritems():
+    for tensor, initializer in VARIABLES.items():
         outputs.append(initializer)
     return outputs
 

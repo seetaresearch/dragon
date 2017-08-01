@@ -14,7 +14,7 @@ classes = ['airplane', 'automobile', 'bird', 'cat', 'deer',
            'dog', 'frog', 'horse', 'ship', 'truck']
 
 # init
-caffe.set_mode_gpu()
+#caffe.set_mode_gpu()
 # load net
 net = caffe.Net("cifar10_quick_deploy.prototxt",
                 'snapshots/cifar10_quick_iter_5000.caffemodel', caffe.TEST)
@@ -39,7 +39,7 @@ def run(filename):
     pred = score.argmax(0)
 
     # show
-    print classes[pred]
+    print(classes[pred])
 
 
 if __name__ == '__main__':

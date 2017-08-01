@@ -13,6 +13,11 @@
 #ifdef WITH_MPI 
 #include <mpi/mpi.h>
 
+#ifdef WITH_PYTHON3
+#define PyInt_FromLong PyLong_FromLong
+#define _PyInt_AsInt _PyLong_AsInt 
+#endif
+
 using namespace dragon;
 
 inline PyObject* MPIInitCC(PyObject* self, PyObject* args) {

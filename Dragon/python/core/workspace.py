@@ -4,15 +4,19 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-import cPickle
-import os
-import numpy as np
-from google.protobuf.message import Message
-
-from dragon import *
-import dragon.protos.dragon_pb2 as pb
+try:
+    import cPickle
+except:
+    import pickle as cPickle
+import dragon.core.utils as utils
 import dragon.core.mpi as mpi
-import dragon.utils as utils
+import dragon.protos.dragon_pb2 as pb
+import numpy as np
+import os
+from dragon import *
+from dragon.config import logger
+from google.protobuf.message import Message
+from six.moves import range as xrange
 
 CURRENT_GRAPH_IDX = 0
 
@@ -32,7 +36,7 @@ def CreateGraph(graph_def):
 def WriteOptimizedGraph(graph_def):
     with open(graph_def.name + '.txt', 'w') as f:
         f.write(str(graph_def))
-        print 'write serialized graph to: {}'.format(graph_def.name + '.txt')
+        logger.info('write serialized graph to: {}'.format(graph_def.name + '.txt'))
 
 
 def HasTensor(tensor):
@@ -113,19 +117,19 @@ def RunGraph(graph_name, inputs=(), outputs=[], stage=None, return_outputs=True)
 
 
 def PrintRawGraphDef(graph_def):
-    print graph_def
+    logger.info(graph_def)
 
 def PrintOptimizedGraph(graph_def):
     graph_name = graph_def.name
     graph_tensor = 'GraphDef_' + graph_name
 
     if not HasTensorCC(graph_tensor):
-        print 'graph: {} does not exist, ignore printing....'.format(graph_name)
+        logger.info('graph: {} does not exist, ignore printing....'.format(graph_name))
         return
 
     graph_def = pb.GraphDef()
     graph_def.ParseFromString(FetchTensor(graph_tensor))
-    print graph_def
+    logger.info(graph_def)
 
 
 def Snapshot(tensors, filename, prefix='', suffix='.bin', format=0):
@@ -144,8 +148,8 @@ def Snapshot(tensors, filename, prefix='', suffix='.bin', format=0):
             content[tensor.name] = FetchTensor(tensor)
         with open(filepath, 'wb') as f:
             cPickle.dump(content, f, cPickle.HIGHEST_PROTOCOL)
-        print 'Snapshot Model@: ' + filepath
-        print 'Model Format: cPickle'
+        logger.info('Snapshot Model@: ' + filepath)
+        logger.info('Model Format: cPickle')
 
     elif format is 1:
         # caffe-store
@@ -162,13 +166,13 @@ def Restore(filename, format=0):
     assert os.path.exists(filename), 'model of path({}) does not exist.'.format(filename)
     if format is 0:
         content = cPickle.load(open(filename, 'rb'))
-        print 'Restore From Model@: ' + filename
-        print 'Model Format: cPickle'
-        for key, ndarray in content.iteritems():
+        logger.info('Restore From Model@: ' + filename)
+        logger.info('Model Format: cPickle')
+        for key, ndarray in content.items():
             if not HasTensor(key):
-                print '[Warning]:  Tensor({}) of model does not exist in any Graphs, skip.'.format(key)
+                logger.info('[Warning]:  Tensor({}) of model does not exist in any Graphs, skip.'.format(key))
             else:
-                print '[Info]: Tensor({}) restored.'.format(key)
+                logger.info('[Info]: Tensor({}) restored.'.format(key))
                 FeedTensor(key, ndarray)
 
     elif format is 1:

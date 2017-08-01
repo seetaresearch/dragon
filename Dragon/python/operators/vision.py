@@ -5,7 +5,10 @@
 # --------------------------------------------------------
 
 import math
+from six.moves import range as xrange
+
 from dragon.core.tensor import Tensor
+
 
 def Conv2D(inputs, num_output, kernel_size,
            stride=1, pad=0, dilation=1, group=1, **kwargs):

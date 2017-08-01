@@ -5,7 +5,6 @@
 # --------------------------------------------------------
 
 from collections import OrderedDict, Counter
-
 from .proto import caffe_pb2
 import six
 

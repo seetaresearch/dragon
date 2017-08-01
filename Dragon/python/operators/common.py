@@ -4,9 +4,12 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
+import numpy as np
+from six.moves import range as xrange
+
 from dragon.core.tensor import Tensor, GetTensorName
 import dragon.core.workspace as ws
-import numpy as np
+
 
 def At(inputs, indices=[], axis=0, acc_gradient=False, **kwargs):
 

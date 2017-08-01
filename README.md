@@ -3,7 +3,7 @@
 ### Compile Requirements for C++
 
 0. Google Protocol Buffer
-1. Python (2.7, 64bit) &nbsp; | &nbsp; Anaconda (2.7, 64bit)
+1. Python (2 or 3, 64bit) &nbsp; | &nbsp; Anaconda (2 or 3, 64bit)
 2. CUDA [Optional]
 3. CUDNN [Optional]
 4. OpenMPI [Optional]
@@ -24,16 +24,17 @@
 
 3. (Optional) Download 3rdparty.zip and unzip to Dragon/3rdparty (Out of source code dir)
 
-    [*Win64*](https://pan.baidu.com/s/1pLmGOLt) (OpenBLAS / Protobuf for VS2013 / CUDNN v6 / Microsoft MPI)
+    [*Win64*](https://pan.baidu.com/s/1pLmGOLt) (OpenBLAS / Protobuf2.6 for VS2013 / CUDNN v6 / Microsoft MPI)
 
     [*Linux64*](https://pan.baidu.com/s/1qXPEOWG) (OpenMPI)
 
 4. Configure Dragon/CMakeLists.txt
-	- Select optional libraries [CUDA / CUDNN / BLAS / SSE / MPI / MPI_CUDA_AWARE / CUDA_FP16]
+	- Select optional libraries [PYTHON3 / CUDA / CUDNN / BLAS / SSE / MPI / MPI_CUDA_AWARE / CUDA_FP16]
 	- Set 3rdparty path (recommend to keep defualt)
-	- Set python & numpy root path
-	- Set cuda compiling architectures if necessary
-	- GCC version(4.8+, 5.0-) should add ``-std=c++11`` to ``CUDA_NVCC_FLAGS``, if ``nullptr`` is not found.
+	- Set Python include path & Numpy root path
+	- Set CUDA compiling architectures if necessary
+	- GCC version(4.8+, 5.0-) should add ``-std=c++11`` to ``CUDA_NVCC_FLAGS``, if ``nullptr`` is not found
+	- We generate *.h and *.cc files under the ``Dragon/src/protos`` with protobuf2.6, run protoc by yourself if higher are required
 
 5. Environment Variables
     ### Linux(Only for OpenMPI):

@@ -11,6 +11,7 @@ import sys
 import time
 import shutil
 import tarfile
+from six.moves import range as xrange
 
 import cv2
 
@@ -22,6 +23,11 @@ ZFILL = 8
 def untar(tar_file):
     t = tarfile.open(tar_file)
     t.extractall(path='data')
+
+def wrapper_str(raw_str):
+    if sys.version_info >= (3, 0):
+        return raw_str.encode()
+    return raw_str
 
 def extract_images():
     prefix = 'data/cifar-10-batches-py'
@@ -48,10 +54,9 @@ def extract_images():
                 import cPickle
                 with open(batch, 'rb') as f:
                     dict = cPickle.load(f)
-
-            for item_idx in xrange(len(dict['labels'])):
-                im = dict['data'][item_idx].reshape((3, 32, 32))
-                label = dict['labels'][item_idx]
+            for item_idx in xrange(len(dict[wrapper_str('labels')])):
+                im = dict[wrapper_str('data')][item_idx].reshape((3, 32, 32))
+                label = dict[wrapper_str('labels')][item_idx]
                 im = im.transpose((1, 2, 0))
                 im = im[:, :, ::-1]
                 filename = str(total_idx).zfill(ZFILL) + '.jpg'
@@ -79,7 +84,7 @@ def make_db(image_path, label_path, database_path):
     if os.path.isdir(database_path) is True:
         raise ValueError('the database path is already exist.')
 
-    print 'start time: ', time.strftime("%a, %d %b %Y %H:%M:%S", time.gmtime())
+    print('start time: ', time.strftime("%a, %d %b %Y %H:%M:%S", time.gmtime()))
 
     db = LMDB(max_commit=10000)
     db.open(database_path, mode='w')
@@ -97,8 +102,8 @@ def make_db(image_path, label_path, database_path):
             count += 1
             if count % 10000 == 0:
                 now_time = time.time()
-                print '{0} / {1} in {2:.2f} sec'.format(
-                    count, total_line, now_time - start_time)
+                print('{0} / {1} in {2:.2f} sec'.format(
+                    count, total_line, now_time - start_time))
                 db.commit()
 
             record = record.split()
@@ -116,26 +121,26 @@ def make_db(image_path, label_path, database_path):
             db.put(zfill_flag.format(count - 1), datum.SerializeToString())
 
     now_time = time.time()
-    print '{0} / {1} in {2:.2f} sec'.format(count, total_line, now_time - start_time)
-    db.put('size', str(count))
-    db.put('zfill', str(ZFILL))
+    print('{0} / {1} in {2:.2f} sec'.format(count, total_line, now_time - start_time))
+    db.put('size', wrapper_str(str(count)))
+    db.put('zfill', wrapper_str(str(ZFILL)))
     db.commit()
     db.close()
 
     shutil.copy(label_path, database_path + '/image_list.txt')
     end_time = time.time()
-    print '{0} images have been stored in the database.'.format(total_line)
-    print 'This task finishes within {0:.2f} seconds.'.format(
-        end_time - start_time)
-    print 'The size of database is {0} MB.'.format(
-        float(os.path.getsize(database_path + '/data.mdb') / 1000 / 1000))
+    print('{0} images have been stored in the database.'.format(total_line))
+    print('This task finishes within {0:.2f} seconds.'.format(
+        end_time - start_time))
+    print('The size of database is {0} MB.'.format(
+        float(os.path.getsize(database_path + '/data.mdb') / 1000 / 1000)))
 
 
 if __name__ == '__main__':
 
-    untar('data/cifar-10-python.tar.gz')
+    #untar('data/cifar-10-python.tar.gz')
 
-    extract_images()
+    #extract_images()
 
     make_db('data/extract/JPEGImages',
             'data/extract/ImageSets/train.txt',

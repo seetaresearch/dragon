@@ -4,11 +4,14 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
+from six.moves import range as xrange
+
 from dragon.vm.tensorflow.core.variables import placeholder
+
 
 def feed_check(feed_dict):
     if feed_dict is not None:
-        for key, value in feed_dict.iteritems():
+        for key, value in feed_dict.items():
             if type(key) != placeholder:
                 raise TypeError('only a placeholder can be feeded.')
             if key.shape is not None:

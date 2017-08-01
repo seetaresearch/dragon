@@ -6,4 +6,4 @@
 
 def GetProperty(kwargs, name, default):
     return kwargs[name] \
-        if kwargs.has_key(name) else default
+        if name in kwargs else default

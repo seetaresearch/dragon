@@ -403,7 +403,7 @@ PyMethodDef* GetAllMethods() {
     return g_python_methods;
 }
 
-static void import_array_wrapper() { import_array(); }
+static void import_array_wrapper() { import_array1(); }
 
 void common_init() {
     import_array_wrapper();
@@ -414,10 +414,24 @@ void common_init() {
     initialized = true;
 }
 
+#ifdef WITH_PYTHON3
+static struct PyModuleDef libdragon = { PyModuleDef_HEAD_INIT,
+                                        "libdragon", "", -1,
+                                        GetAllMethods() };
+
+PyMODINIT_FUNC PyInit_libdragon(void) {
+    PyObject* module = PyModule_Create(&libdragon);
+    if (module == nullptr) return nullptr;
+    common_init();
+    return module;
+}
+
+#else   // WITH_PYTHON2
 PyMODINIT_FUNC initlibdragon(void) {
     PyObject* moudle = Py_InitModule("libdragon", GetAllMethods());
     if (moudle == nullptr) return;
     common_init();
 }
+#endif
 
 }

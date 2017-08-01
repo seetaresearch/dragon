@@ -8,6 +8,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.0)
 # ---------------- User Config ----------------
 
 # set optional libraries
+option(WITH_PYTHON3                "Set ON to use PYTHON3 otherwise PYTHON2"  OFF)
 option(WITH_CUDA                   "Set ON to use CUDA"  ON)
 option(WITH_CUDNN                  "Set ON to use CUDNN" OFF)
 option(WITH_BLAS                   "Set ON to use BLAS"  OFF)
@@ -19,10 +20,11 @@ option(WITH_CUDA_FP16              "Set ON to use FP16"  ON)
 # set your 3rdparty
 set(3RDPARTY_DIR  ${PROJECT_SOURCE_DIR}/../3rdparty)
 
-# set your py27
+# set your python environment
 set(PYTHON_DIR /usr/include/python2.7)  # prefer
-#set(ANACONDA_DIR /xxx/anaconda)  # optional
-set(NUMPY_DIR /xxx/numpy)  # require
+#set(PYTHON_DIR /usr/include/python3.x)  # optional, set specific version
+#set(ANACONDA_DIR /xxx/anaconda)  # optional, set specific version below if using py3
+set(NUMPY_DIR /xxx/numpy)  # require£¬ root folder of numpy package
 
 # set CUDA compiling architecture
 set(CUDA_ARCH     -gencode arch=compute_20,code=sm_20
@@ -78,7 +80,10 @@ include_directories(${3RDPARTY_DIR}/include/mpi)
 include_directories(${CUDA_INCLUDE_DIRS})
 include_directories(${PROJECT_SOURCE_DIR}/src)
 include_directories(${NUMPY_DIR}/core/include)
+include_directories(${NUMPY_DIR})
+include_directories(${NUMPY_DIR}/numpy)
 include_directories(${ANACONDA_DIR}/include/python2.7)
+include_directories(${ANACONDA_DIR}/include/python3.x)
 include_directories(${PYTHON_DIR})
 include_directories(${ANACONDA_DIR}/include)
 
@@ -91,50 +96,54 @@ link_directories(/usr/local/cuda/lib64)
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR} CACHE STRING "set install prefix" FORCE)
 
 # ---[ defines
+if (WITH_PYTHON3) 
+    ADD_DEFINITIONS(-DWITH_PYTHON3)
+    message(STATUS "Use PYTHON3 [Optional]")
+endif()
 if (WITH_CUDA) 
-	ADD_DEFINITIONS(-DWITH_CUDA)
-	message(STATUS "Use CUDA [Optional]")
+    ADD_DEFINITIONS(-DWITH_CUDA)
+    message(STATUS "Use CUDA [Optional]")
 endif()
 if (WITH_CUDNN)
-	ADD_DEFINITIONS(-DWITH_CUDNN)
-	message(STATUS "Use CUDNN [Optional]")
+    ADD_DEFINITIONS(-DWITH_CUDNN)
+    message(STATUS "Use CUDNN [Optional]")
 endif()
 if (WITH_BLAS) 
-	ADD_DEFINITIONS(-DWITH_BLAS)
-              message(STATUS "Use BLAS [Optional]")
+    ADD_DEFINITIONS(-DWITH_BLAS)
+    message(STATUS "Use BLAS [Optional]")
 else()
-	message(STATUS "Unuse BLAS [Optional]"
-		"\n -- > GEMM/GEMV is disabled"
-		"\n -- > prefer not to run as CPU Mode")
+    message(STATUS "Unuse BLAS [Optional]"
+        "\n -- > GEMM/GEMV is disabled"
+        "\n -- > prefer not to run as CPU Mode")
 endif()
 if (WITH_SSE) 
-	ADD_DEFINITIONS(-DWITH_SSE)
-              message(STATUS "Use SSE [Optional]")
-	if(UNIX)
-              	     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1")
-              endif()
+    ADD_DEFINITIONS(-DWITH_SSE)
+    message(STATUS "Use SSE [Optional]")
+    if(UNIX)
+         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1")
+    endif()
 endif()
 if (WITH_MPI)
-	ADD_DEFINITIONS(-DWITH_MPI)
-              message(STATUS "Use MPI [Optional]")
+    ADD_DEFINITIONS(-DWITH_MPI)
+    message(STATUS "Use MPI [Optional]")
 endif()
 if (WITH_MPI_CUDA)
-	ADD_DEFINITIONS(-DWITH_CUDA_AWARE)
-              message(STATUS "Use MPI-CUDA [Optional]")
+    ADD_DEFINITIONS(-DWITH_CUDA_AWARE)
+    message(STATUS "Use MPI-CUDA [Optional]")
 endif()
 if (WITH_CUDA_FP16)
-	ADD_DEFINITIONS(-DWITH_CUDA_FP16)
-              message(STATUS "Use CUDA FP16 [Optional]")
+    ADD_DEFINITIONS(-DWITH_CUDA_FP16)
+    message(STATUS "Use CUDA FP16 [Optional]")
 endif()
 
 # ---[ Flags
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")
 if(WIN32)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 endif()
 if(UNIX)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -O2 -m64 -fpermissive -std=c++11")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -O2 -m64 -fpermissive -std=c++11")
 endif()
 
 # ---[ Warnings
