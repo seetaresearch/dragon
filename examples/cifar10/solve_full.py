@@ -12,6 +12,7 @@ if __name__ == '__main__':
 
     # init
     caffe.set_mode_gpu()
+    caffe.set_device(0)
 
     # solve
     solver = caffe.SGDSolver('cifar10_full_solver.prototxt')

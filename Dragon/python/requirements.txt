@@ -1,0 +1,6 @@
+numpy==1.12.1
+six==1.10.0
+protobuf==3.3.0
+lmdb==0.93
+opencv-python==3.1.0
+Pillow==4.1.1

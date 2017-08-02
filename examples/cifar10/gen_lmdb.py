@@ -138,9 +138,9 @@ def make_db(image_path, label_path, database_path):
 
 if __name__ == '__main__':
 
-    #untar('data/cifar-10-python.tar.gz')
+    untar('data/cifar-10-python.tar.gz')
 
-    #extract_images()
+    extract_images()
 
     make_db('data/extract/JPEGImages',
             'data/extract/ImageSets/train.txt',

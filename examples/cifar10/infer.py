@@ -14,7 +14,8 @@ classes = ['airplane', 'automobile', 'bird', 'cat', 'deer',
            'dog', 'frog', 'horse', 'ship', 'truck']
 
 # init
-#caffe.set_mode_gpu()
+caffe.set_mode_gpu()
+caffe.set_device(0)
 # load net
 net = caffe.Net("cifar10_quick_deploy.prototxt",
                 'snapshots/cifar10_quick_iter_5000.caffemodel', caffe.TEST)

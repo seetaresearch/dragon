@@ -9,12 +9,6 @@
 4. OpenMPI [Optional]
 
 -----
-### Runtime Requirements for Python
-
-0. Package: protobuf
-1. Package: lmdb
-
------
 ### Installation
 1. Clone this repository
 
@@ -28,15 +22,22 @@
 
     [*Linux64*](https://pan.baidu.com/s/1qXPEOWG) (OpenMPI)
 
-4. Configure Dragon/CMakeLists.txt
+4. Install Python Requirements
+
+    ```Shell
+    cd Dragon/python
+    pip install -r requirements.txt
+	```
+
+5. Configure Dragon/CMakeLists.txt
 	- Select optional libraries [PYTHON3 / CUDA / CUDNN / BLAS / SSE / MPI / MPI_CUDA_AWARE / CUDA_FP16]
 	- Set 3rdparty path (recommend to keep defualt)
 	- Set Python include path & Numpy root path
 	- Set CUDA compiling architectures if necessary
 	- GCC version(4.8+, 5.0-) should add ``-std=c++11`` to ``CUDA_NVCC_FLAGS``, if ``nullptr`` is not found
-	- We generate *.h and *.cc files under the ``Dragon/src/protos`` with protobuf2.6, run protoc by yourself if higher are required
+	- We pre-generated files under the ``Dragon/src/protos`` with protobuf-2.6, run protoc by yourself if higher are required
 
-5. Environment Variables
+6. Environment Variables
     ### Linux(Only for OpenMPI):
 	- Create dragon.conf
 
@@ -57,7 +58,7 @@
 		- PATH=........;C:\Dragon\3rdparty\bin;
 
 
-6. Setup MPI [Optional]
+7. Setup MPI [Optional]
 	#### Linux:
 	- We use OpenMPI which support "cuda-aware-mpi"
 	- See more:
@@ -77,7 +78,7 @@
 	- We use Microsoft MPI which can perfectly run at lastest Windows10
 	- Microsoft MPI is intergrated into 3rdparty and you should do nothing
 
-7. Compile
+8. Compile
     #### Linux:
 	- Install cmake
 
@@ -105,30 +106,16 @@
 
 8. Deploy
 
-- Install Dragon
-
 	```Shell
-    cd Dragon
+    cd Dragon/python
 	python setup.py install
 	```
 
 	``Hint``: If you do not have permission, try as follows:
 
 	```Shell
-    cd Dragon
+    cd Dragon/python
 	python setup.py install --user
-	```
-
-- Install protobuf
-
-	```Shell
-    pip install protobuf
-	```
-
-- Install lmdb
-
-	```Shell
-    pip install lmdb
 	```
 
 ----
@@ -142,6 +129,14 @@ import dragon
 ```
 
 ### Virtual DL Frameworks
+
+**------------------- Attention -------------------**
+
+``tensorflow`` and ``theano`` are incomplete yet, prefer not to use it.
+
+Currently, we recommend ``caffe`` and ``tiny-dragon``(ops + thenao.function + theano.tensor.grad + updaters)
+
+**-------------------------------------------------**
 
 ```Shell
 import dragon.vm.theano as theano

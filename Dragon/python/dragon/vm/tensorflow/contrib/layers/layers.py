@@ -4,10 +4,11 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-__all__ = ['equal']
-
 import dragon.ops as ops
 
+__all__ = ['flatten']
 
-def equal(a, b, name=None):
-    return ops.Equal([a, b])
+def flatten(inputs, name=None):
+
+    return ops.Flatten(inputs, axis=1)
+

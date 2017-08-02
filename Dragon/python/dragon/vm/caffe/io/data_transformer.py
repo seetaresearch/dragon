@@ -114,7 +114,10 @@ class DataTransformer(Process):
        # handle mean subtraction
        if len(self._mean_value) > 0:
            if self._mean_file:
-               im = im - self._mean_value[h_off : h_off + self._crop_size, w_off : w_off + self._crop_size, :]
+               if self._crop_size > 0:
+                   im = im - self._mean_value[h_off: h_off + self._crop_size,
+                                              w_off: w_off + self._crop_size, :]
+               else: im = im - self._mean_value[:, :, :]
            else: im = im - self._mean_value
 
        # handle range scale
