@@ -36,7 +36,7 @@ def GetTensorName():
 class TensorScope(object):
     SEPARATOR = '/'
     def __init__(self, prefix):
-        assert isinstance(prefix, basestring), \
+        assert isinstance(prefix, type('str')), \
             "TensorScope takes in a string as its argument."
         self.prefix = prefix + TensorScope.SEPARATOR
 
@@ -51,7 +51,7 @@ class TensorScope(object):
 
 class PhaseScope(object):
     def __init__(self, phase):
-        assert isinstance(phase, basestring), \
+        assert isinstance(phase, type('str')), \
             "PhaseScope takes in a string as its argument."
         self.phase = phase
 

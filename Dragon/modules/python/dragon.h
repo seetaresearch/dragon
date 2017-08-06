@@ -21,6 +21,7 @@
 
 #ifdef WITH_PYTHON3
 #define PyString_AsString PyUnicode_AsUTF8
+#define PyBytes_FromStringAndSize PyUnicode_FromStringAndSize
 #endif
 
 using namespace dragon;

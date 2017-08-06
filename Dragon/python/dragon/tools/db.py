@@ -49,7 +49,7 @@ class LMDB(object):
 
 
     def put(self, key, value):
-        self._buffer.append((wrapper_str(key), wrapper_str(value)))
+        self._buffer.append((wrapper_str(key), value))
         self._cur_put += 1
         if (self._cur_put >= self._max_commit): self._try_put()
 

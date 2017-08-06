@@ -260,7 +260,7 @@ class BNLayer(Layer):
                        'eps': param.eps}
         mean = Tensor(LayerParameter.name + '@param0').Constant()
         var = Tensor(LayerParameter.name + '@param1').Constant()
-        scale = Tensor(LayerParameter.name + '@param2').Uniform(low=0.0, high=1.0)
+        scale = Tensor(LayerParameter.name + '@param2').Constant(value=1.0)
         bias = Tensor(LayerParameter.name + '@param3').Constant(value=0.0)
         self.norm_blobs = [{'data': mean, 'diff': None},
                            {'data': var, 'diff': None}]

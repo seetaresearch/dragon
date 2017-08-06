@@ -70,8 +70,3 @@ def SetLoggingLevel(level):
         'ERROR': logging.ERROR,
         'FATAL': logging.CRITICAL
     }[level])
-
-
-
-
-

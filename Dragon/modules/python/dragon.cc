@@ -132,15 +132,14 @@ bool SwitchWorkspaceInternal(const string& name, const bool create_if_missing) {
 }
 
 PyObject* SwitchWorkspaceCC(PyObject* self, PyObject *args) {
-    PyObject* name = nullptr;
+    char* cname;
     PyObject* create_if_missing = nullptr;
-    if (!PyArg_ParseTuple(args, "S|O", &name, &create_if_missing)) {
+    if (!PyArg_ParseTuple(args, "s|O", &cname, &create_if_missing)) {
         PyErr_SetString(PyExc_ValueError, "SwitchWorkspaceCC takes a workspace name and a optional "
                                           "bool value that specific whether to create the workspace if missing.");
         return nullptr;
     }
-    bool success = SwitchWorkspaceInternal(PyBytesToStdString(name), 
-                                           PyObject_IsTrue(create_if_missing));
+    bool success = SwitchWorkspaceInternal(string(cname), PyObject_IsTrue(create_if_missing));
     if (!success) {
         PyErr_SetString(PyExc_RuntimeError, "workspace of the given name is not exist and "
                                             "is not allowed to create. (try alllow ?)");
@@ -162,15 +161,16 @@ PyObject* WorkspacesCC(PyObject* self, PyObject* args) {
 }
 
 PyObject* ResetWorkspaceCC(PyObject* self, PyObject* args) {
-    PyObject* root_folder = nullptr;
-    if (!PyArg_ParseTuple(args, "|S", &root_folder)) {
+    char* cname;
+    if (!PyArg_ParseTuple(args, "|s", &cname)) {
         PyErr_SetString(PyExc_ValueError, "ResetWorkspaceCC takes in either no args or a string "
-                                          "specifing the root folder of the workspace.");
+                                          "specifing the name of the workspace.");
         return nullptr;
     }
     LOG(INFO) << "Reset the Workspace(" << g_current_workspace << ")";
-    if (root_folder == nullptr) g_workspaces[g_current_workspace].reset(new Workspace());
-    else g_workspaces[g_current_workspace].reset(new Workspace(PyBytesToStdString(root_folder)));
+	string workspace_name = string(cname);
+	if (workspace_name.empty()) g_workspaces[g_current_workspace].reset(new Workspace());
+    else g_workspaces[g_current_workspace].reset(new Workspace(workspace_name));
     g_workspace = g_workspaces[g_current_workspace].get();
     Py_RETURN_TRUE;
 }
@@ -343,12 +343,12 @@ PyObject* SnapshotCC(PyObject* self, PyObject* args) {
         return nullptr;
     }
     switch (format) {
-        case 0:     // cPickle
+        case 0:    //  cPickle
             PyErr_SetString(PyExc_NotImplementedError, "format(0) depends on cPickle, should not be used in CC.");
             break;
-        case 1:     // caffemodel
+        case 1:    //  caffemodel
             for (int i = 0; i < PyList_Size(names); i++)
-                tensors.push_back(g_workspace->GetTensor(PyBytesToStdString(PyList_GetItem(names, i))));
+                tensors.push_back(g_workspace->GetTensor(PyString_AsString(PyList_GetItem(names, i))));
             SavaCaffeModel(string(cname), tensors);
             break;
         default: LOG(FATAL) << "Unknwon Restore Format, code: " << format;
