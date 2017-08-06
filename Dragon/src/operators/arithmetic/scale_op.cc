@@ -85,12 +85,12 @@ void ScaleGradientOp<Context>::ScaleRunWithType() {
         T* SRes_data = nullptr;
         if (inner_dim == 1) {
             SRes_data = tmp_data;
-        } else if (sum_result.count() == 1) {    // handle inner only
+        } else if (sum_result.count() == 1) {    //  handle inner only
             dScale = output(1)->template mutable_data<T, CPUContext>();
             T result = math::Dot<T, Context>(inner_dim, tmp_data, SMul_data);
             *dScale += result;
         } else {
-            SRes_data = (outer_dim == 1) ?  // handle scale only
+            SRes_data = (outer_dim == 1) ?  //  handle scale only
                 dScale : sum_result.template mutable_data<T, Context>();
             math::Gemv<T, Context>(CblasNoTrans, sum_result.count(), inner_dim,
                                                                            1.0, 
@@ -99,7 +99,7 @@ void ScaleGradientOp<Context>::ScaleRunWithType() {
                                                                     SRes_data);
         } 
         if (outer_dim != 1) {
-            if (scale_dim == 1) {    //    handle outer only
+            if (scale_dim == 1) {    //  handle outer only
                 T result = math::Dot<T, Context>(outer_dim, SMul_data, SRes_data);
                 *dScale += result;
             } else {

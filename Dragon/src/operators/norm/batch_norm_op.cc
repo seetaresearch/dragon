@@ -120,7 +120,7 @@ void BatchNormOp<Context>::RunOnDevice() {
 
     if (use_stats == -1) use_global_stats = phase() == "TEST" ? true : false;
     else use_global_stats = use_stats == 1 ? true : false;
-    //    if true, Act/Exp/Pow/Norm Ops can not exist before when train
+    //  if true, Act/Exp/Pow/Norm Ops can not exist before when train
     if (inplace) output(0)->Share(input(0));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
@@ -171,7 +171,7 @@ void BatchNormGradientOp<Context>::RunWithType() {
     auto* Ydata = input(-2).template data<T, Context>();
     math::Mul<T, Context>(output(0)->count(), Ydata, dYdata, dXdata);
 
-    //    sum(dE/dY \cdot Y)
+    //  sum(dE/dY \cdot Y)
     math::Gemv<T, Context>(CblasNoTrans, nbychans, spatial_dim,
                                                            1.0, 
                                              dXdata, SMul_data, 
@@ -193,10 +193,10 @@ void BatchNormGradientOp<Context>::RunWithType() {
                                                                             0.0, 
                                                                         dXdata);
 
-    //    sum(dE/dY \cdot Y) \cdot Y  
+    //  sum(dE/dY \cdot Y) \cdot Y  
     math::Mul<T, Context>(output(0)->count(), Ydata, dXdata, dXdata);
 
-    //    sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y
+    //  sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y
     math::Gemv<T, Context>(CblasNoTrans, nbychans, spatial_dim,
                                                            1.0, 
                                              dYdata, SMul_data, 
@@ -224,7 +224,7 @@ void BatchNormGradientOp<Context>::RunWithType() {
                                  -1.0 / (num * spatial_dim), 
                                                     dXdata);
 
-    //    divide by stddev
+    //  divide by stddev
     math::Div<T, Context>(output(0)->count(), dXdata, Std_data, dXdata);
 
     //  release buffer

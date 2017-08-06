@@ -69,7 +69,7 @@ void SoftmaxCrossEntropyLossGradientOp<Context>::RunWithType() {
         return;
     }
 
-    //    normalize
+    //  normalize
     T normalizer;
     if (normalization == "BATCH_SIZE") normalizer = outer_dim;
     else if (normalization == "FULL") normalizer = outer_dim * inner_dim;

@@ -1,5 +1,5 @@
 # --------------------------------------------------------
-# Caffe for Dragon
+# Dragon
 # Copyright(c) 2017 SeetaTech
 # Written by Ting Pan
 # --------------------------------------------------------
@@ -12,7 +12,7 @@ import dragon.config as config
 from dragon.config import logger
 import dragon.vm.caffe.proto.caffe_pb2 as pb
 
-from .__init__ import GetProperty
+from .utils import GetProperty
 
 try:
     import cv2
@@ -131,5 +131,3 @@ class DataTransformer(Process):
         while True:
             serialized = self.Q_in.get()
             self.Q_out.put(self.transform_image_label(serialized))
-
-

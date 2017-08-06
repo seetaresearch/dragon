@@ -7,7 +7,7 @@ namespace dragon {
 template <class Context> template <typename T>
 void ConcatOp<Context>::RunWithType() {
     auto* Ydata = output(0)->template mutable_data<T, Context>();
-    for (int i = 0; i < nin; i++){
+    for (int i = 0; i < nin; i++) {
         auto* Xdata = input(i).template data<T, Context>();
         TIndex count = input(i).count();
         x_concat_dim = input(i).dim(axis);
@@ -25,12 +25,12 @@ void ConcatOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void ConcatOp<Context>::RunOnDevice(){
+void ConcatOp<Context>::RunOnDevice() {
     concat_dims = input(0).dims();
     for (int i = 1; i < nin; i++) {
         CHECK_EQ(concat_dims.size(), input(i).ndim())
             << "\nall inputs must have the same ndim.";
-        for (int j = 0; j < concat_dims.size(); j++){
+        for (int j = 0; j < concat_dims.size(); j++) {
             if (j == axis) continue;
             CHECK_EQ(concat_dims[j], input(i).dim(j))
                 << "\nall inputs must have the same dims"
@@ -82,7 +82,7 @@ void ConcatGradientOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void ConcatGradientOp<Context>::RunOnDevice(){
+void ConcatGradientOp<Context>::RunOnDevice() {
     if (input(-1).name() == "ignore") return;
     concat_dims = input(-1).dims();
     y_concat_dim = concat_dims[axis];

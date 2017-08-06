@@ -71,9 +71,8 @@ void DropoutGradientOp<Context>::RunOnDevice() {
 
 template <class Context>
 void DropoutGradientOp<Context>::ClearAfterRun() {
-    ws()->ReleaseBuffer(mask);
+    ws()->ReleaseBuffer(mask, true);
 }
-
 
 DEPLOY_CPU(DropoutGradient);
 #ifdef WITH_CUDA

@@ -14,12 +14,12 @@ void SmoothL1LossOp<Context>::RunWithType() {
     auto* Ydata = output(0)->template mutable_data<T, CPUContext>();
 
     math::Sub<T, Context>(diff->count(), X0data, X1data, diff_data);
-    if (InputSize() > 2){
+    if (InputSize() > 2) {
         auto* inside_w_data = input(2).template data<T, Context>();
         math::Mul<T, Context>(diff->count(), inside_w_data, diff_data, diff_data);
     }
     kernel::SmoothL1<T, Context>(diff->count(), sigma2, diff_data, error_data);
-    if (InputSize() > 3){
+    if (InputSize() > 3) {
         auto* outside_w_data = input(3).template data<T, Context>();
         math::Mul<T, Context>(diff->count(), outside_w_data, error_data, error_data);
     }

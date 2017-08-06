@@ -52,7 +52,7 @@ class CPUContext{
     inline static void Delete(void* data) { free(data); }
 
     template<typename T, class DstContext, class SrcContext>
-    inline static void Copy(int n, T* dst, const T* src){
+    inline static void Copy(int n, T* dst, const T* src) {
         if (dst == src) return;
         //  only the basic types(e.g. int/float) can memcpy correctly
         if (std::is_fundamental<T>::value)

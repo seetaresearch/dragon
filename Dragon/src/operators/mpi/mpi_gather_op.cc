@@ -51,7 +51,7 @@ template <class Context> template <typename T>
 void MPIGatherGradientOp<Context>::RunWithType() {
     if (this->comm_rank == this->comm_root) {
         output(0)->Share(input(this->comm_rank + 1));
-        for (int i = 0; i < this->comm_size; i++){
+        for (int i = 0; i < this->comm_size; i++) {
             if (i == this->comm_root) continue;
 #ifdef WITH_CUDA_AWARE
             auto* dYdata = input(this->comm_rank + 1).template data<T, Context>();

@@ -98,7 +98,7 @@ void LRNOp<Context>::ProdRunWithType() {
 }
 
 template <class Context>
-void LRNOp<Context>::RunOnDevice(){
+void LRNOp<Context>::RunOnDevice() {
     if (mode == ACROSS_CHANNELS) {
         if (input(0).template IsType<float>()) {
             AcrossRunWithType<float>();
@@ -223,7 +223,7 @@ void LRNGradientOp<Context>::SplitRunWithType() {
 }
 
 template <class Context>
-void LRNGradientOp<Context>::RunOnDevice(){
+void LRNGradientOp<Context>::RunOnDevice() {
     if (mode == ACROSS_CHANNELS) {
         if (input(0).template IsType<float>()) {
             AcrossRunWithType<float>();

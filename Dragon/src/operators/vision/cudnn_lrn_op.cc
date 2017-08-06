@@ -54,7 +54,7 @@ void CuDNNLRNGradientOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void CuDNNLRNGradientOp<Context>::RunOnDevice(){
+void CuDNNLRNGradientOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
 
     if (this->mode == ACROSS_CHANNELS) {

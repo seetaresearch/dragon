@@ -16,7 +16,7 @@ void NNResizeOp<Context>::RunWithType() {
 template <class Context>
 void NNResizeOp<Context>::RunOnDevice() {
     dims = input(0).dims();
-    if (dsize.size() == 0){
+    if (dsize.size() == 0) {
         CHECK(fy != -1.0 && fx != -1.0);
         dims[2] = int(dims[2] * fy);
         dims[3] = int(dims[3] * fx);
@@ -47,7 +47,7 @@ void NNResizeGradientOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void NNResizeGradientOp<Context>::RunOnDevice(){
+void NNResizeGradientOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
     
     if (input(0).template IsType<float>()) return RunWithType<float>();

@@ -1,19 +1,19 @@
 # --------------------------------------------------------
-# Caffe for Dragon
+# Dragon
 # Copyright(c) 2017 SeetaTech
 # Written by Ting Pan
 # --------------------------------------------------------
 
-import dragon.vm.caffe as caffe
 import dragon.core.workspace as ws
-from .minibatch import DataBatch
+from dragon.io.data_batch import DataBatch
 
-class DataLayer(caffe.Layer):
-    def setup(self, bottom, top):
+class MiniBatchOp(object):
+
+    def setup(self, inputs, outputs):
         kwargs = eval(self.param_str)
         self._data_batch = DataBatch(**kwargs)
 
-    def forward(self, bottom, top):
-        blobs = self._data_batch.blobs
+    def run(self, inputs, outputs):
+        blobs = self._data_batch.get()
         for idx, blob in enumerate(blobs):
-            ws.FeedTensor(top[idx], blob)
+            ws.FeedTensor(outputs[idx], blob)

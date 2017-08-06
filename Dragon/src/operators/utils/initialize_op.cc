@@ -26,7 +26,7 @@ void InitializeOp<Context>::RunOnDevice() {
     RunWithType<float>();
 }
 
-//    constant
+//  constant
 DEPLOY_CPU(Fill);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Fill);
@@ -34,7 +34,7 @@ DEPLOY_CUDA(Fill);
 OPERATOR_SCHEMA(Fill).NumInputs(0, 1).NumOutputs(1);
 NO_GRADIENT(Fill);
 
-//    uniform
+//  uniform
 DEPLOY_CPU(RandomUniform);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(RandomUniform);
@@ -42,7 +42,7 @@ DEPLOY_CUDA(RandomUniform);
 OPERATOR_SCHEMA(RandomUniform).NumInputs(0, 1).NumOutputs(1);
 NO_GRADIENT(RandomUniform);
 
-//    normal
+//  normal
 DEPLOY_CPU(RandomNormal);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(RandomNormal);
@@ -50,7 +50,7 @@ DEPLOY_CUDA(RandomNormal);
 OPERATOR_SCHEMA(RandomNormal).NumInputs(0, 1).NumOutputs(1);
 NO_GRADIENT(RandomNormal);
 
-//    truncated normal
+//  truncated normal
 DEPLOY_CPU(TruncatedNormal);
 #ifdef WITH_CUDA
 DEPLOY_CPU_CUDA(TruncatedNormal);
@@ -58,7 +58,7 @@ DEPLOY_CPU_CUDA(TruncatedNormal);
 OPERATOR_SCHEMA(TruncatedNormal).NumInputs(0, 1).NumOutputs(1);
 NO_GRADIENT(TruncatedNormal);
 
-//    glorot uniform
+//  glorot uniform
 DEPLOY_CPU(GlorotUniform);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(GlorotUniform);
@@ -66,7 +66,7 @@ DEPLOY_CUDA(GlorotUniform);
 OPERATOR_SCHEMA(GlorotUniform).NumInputs(0, 1).NumOutputs(1);
 NO_GRADIENT(GlorotUniform);
 
-//    glorot normal
+//  glorot normal
 DEPLOY_CPU(GlorotNormal);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(GlorotNormal);

@@ -44,7 +44,7 @@ class Workspace{
         return tensor_map_.count(query) > 0; 
     }
 
-    inline Tensor* CreateTensor(const string& name){
+    inline Tensor* CreateTensor(const string& name) {
         string query = GetTensorName(name);
         if (!HasTensor(query))
             tensor_map_[query] = unique_ptr<Tensor>(new Tensor(query));
@@ -143,7 +143,7 @@ class Workspace{
         return graph_map_[graph_name]->Run(include, exclude);
     }
 
-    inline vector<string> GetGraphs(){
+    inline vector<string> GetGraphs() {
         vector<string> names;
         for (auto& it : graph_map_) names.push_back(it.first);
         return names;

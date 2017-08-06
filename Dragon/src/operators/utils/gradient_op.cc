@@ -6,7 +6,7 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void GradientGenerateOp<Context>::RunWithType() {
-    for (int i = 0; i < OutputSize(); i++){
+    for (int i = 0; i < OutputSize(); i++) {
         if (output(i)->name() == "ignore") continue;
         output(i)->ReshapeLike(input(i));
         auto* dXdata = output(0)->template mutable_data<T, Context>();

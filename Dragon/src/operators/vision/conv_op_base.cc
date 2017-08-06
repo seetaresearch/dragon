@@ -125,7 +125,7 @@ void ConvOpBase<Context>::Reshape() {
     col_offset = kernel_dim * conv_out_spatial_dim;
     output_offset = conv_out_channels * conv_out_spatial_dim / group;
 
-    //    compute col buffer shape
+    //  compute col buffer shape
     col_buffer_shape.clear();
     col_buffer_shape.push_back(kernel_dim * group);
     for (int i = 0; i < num_spatial_axes; i++) {
@@ -159,9 +159,9 @@ void ConvOpBase<Context>::GradientReshape() {
         conv_out_spatial_dim = input(2).count(channel_axis + 1);
     }
 
-    //    compute input shape
+    //  compute input shape
     input_shape.clear();
-    for (int i = 0; i < num_spatial_axes; i++){
+    for (int i = 0; i < num_spatial_axes; i++) {
         if (ReverseDimensions()) {
             input_shape.push_back(input(2).dim(channel_axis + i + 1));
         } else {
@@ -169,7 +169,7 @@ void ConvOpBase<Context>::GradientReshape() {
         }
     }
 
-    kernel_dim = input(1).count(1);    //    in * kh * kw
+    kernel_dim = input(1).count(1);    //  in * kh * kw
     out_spatial_dim = input(2).count(channel_axis + 1);
 
     x_offset = input(0).count(channel_axis);
@@ -178,10 +178,10 @@ void ConvOpBase<Context>::GradientReshape() {
     col_offset = kernel_dim * conv_out_spatial_dim;
     output_offset = conv_out_channels * conv_out_spatial_dim / group;
 
-    //    compute col buffer shape
+    //  compute col buffer shape
     col_buffer_shape.clear();
     col_buffer_shape.push_back(kernel_dim * group);
-    for (int i = 0; i < num_spatial_axes; i++){
+    for (int i = 0; i < num_spatial_axes; i++) {
         if (ReverseDimensions()) {
             col_buffer_shape.push_back(bottom_shape[channel_axis + i + 1]);
         } else {

@@ -81,7 +81,7 @@ void MatmulGradientOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void MatmulGradientOp<Context>::RunOnDevice(){
+void MatmulGradientOp<Context>::RunOnDevice() {
     CHECK(input(0).ndim() == input(1).ndim())
         << "both matrices must have the same number of dimensions.";
     CHECK_GE(input(0).ndim(), 2)

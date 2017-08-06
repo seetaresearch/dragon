@@ -228,13 +228,13 @@ void CuDNNConvGradientOp<Context>::RunWithType() {
 
     const T* dYdata = input(2).template data<T, Context>();
     for (int g = 0; g < this->group; g++) {
-        if (output(2)->name() != "ignore"){
+        if (output(2)->name() != "ignore") {
             T* dBdata = output(2)->template mutable_data<T, Context>();
             CUDNN_CHECK(cudnnConvolutionBackwardBias(handle[g],
                         CUDNNType<T>::one, input_desc, dYdata + this->y_offset * g,
                         CUDNNType<T>::one, bias_desc, dBdata + bias_offset * g));
         }
-        if (output(1)->name() != "ignore"){
+        if (output(1)->name() != "ignore") {
             auto* Xdata = input(0).template data<T, Context>();
             auto* dWdata = output(1)->template mutable_data<T, Context>();
             auto* workspace = buffer2->mutable_data<char, Context>();
@@ -246,7 +246,7 @@ void CuDNNConvGradientOp<Context>::RunWithType() {
               workspace + g * workspace_bwd_filter_size, workspace_bwd_filter_size,
                 CUDNNType<T>::one, filter_desc, dWdata + this->weight_offset * g));
         }
-        if (output(0)->name() != "ignore"){
+        if (output(0)->name() != "ignore") {
             auto* Wdata = input(1).template data<T, Context>();
             auto* dXdata = output(0)->template mutable_data<T, Context>();
             auto* workspace = buffer1->mutable_data<char, Context>();

@@ -7,7 +7,7 @@ namespace dragon {
 template <class Context> template <typename T>
 void SliceOp<Context>::RunWithType() {
     auto* Xdata = input(0).template data<T, Context>();
-    for (int i = 0; i < nout; i++){
+    for (int i = 0; i < nout; i++) {
         auto* Ydata = output(i)->template mutable_data<T, Context>();
         TIndex count = output(i)->count();
         kernel::Slice<T, Context>(count, outer_dim, inner_dim,
@@ -46,7 +46,7 @@ OPERATOR_SCHEMA(Slice).NumInputs(1).NumOutputs(1, INT_MAX);
 template <class Context> template <typename T>
 void SliceGradientOp<Context>::RunWithType() {
     auto* dXdata = output(0)->template mutable_data<T, Context>();
-    for (int i = 0; i < nout; i++){
+    for (int i = 0; i < nout; i++) {
         if (input(i + 1).name() == "ignore") continue;
         auto* dYdata = input(i + 1).template data<T, Context>();
         TIndex count = input(i + 1).count();

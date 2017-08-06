@@ -11,6 +11,7 @@ import sys
 import time
 import shutil
 import tarfile
+import numpy as np
 from six.moves import range as xrange
 
 import cv2
@@ -78,7 +79,7 @@ def extract_images():
             f.write(item)
 
 
-def make_db(image_path, label_path, database_path):
+def make_db(image_path, label_path, database_path, pad=0):
     if os.path.isfile(label_path) is False:
         raise ValueError('input path is empty or wrong.')
     if os.path.isdir(database_path) is True:
@@ -111,6 +112,12 @@ def make_db(image_path, label_path, database_path):
             label = record[1]
 
             img = cv2.imread(os.path.join(image_path ,path))
+            if pad > 0:
+                pad_img = np.zeros((img.shape[0] + 2 * pad,
+                                    img.shape[1] + 2 * pad, 3), dtype=np.uint8)
+                pad_img[pad : pad + img.shape[0],
+                        pad : pad + img.shape[1], :] = img
+                img = pad_img
             result, imgencode = cv2.imencode('.jpg', img, encode_param)
 
             datum = caffe_pb2.Datum()

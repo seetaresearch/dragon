@@ -229,16 +229,16 @@ __global__ static void nms_mask(const Dtype boxes[],
                 }
             }
 
-            // mask: "num_boxes x num_blocks" array
-            //   for mask[j][bi], "di-th bit = 1" means:
-            //     box j is significantly overlapped with box i = i_start + di,
-            //     where i_start = bi * block_size
+            //  mask: "num_boxes x num_blocks" array
+            //  for mask[j][bi], "di-th bit = 1" means:
+            //  box j is significantly overlapped with box i = i_start + di,
+            //  where i_start = bi * block_size
       {
           const int num_blocks = DIV_THEN_CEIL(num_boxes, nms_block_size);
           const int bi = blockIdx.x;
           mask[(j_start + dj) * num_blocks + bi] = mask_j;
       }
-        } // endif dj < dj_end
+        }   //  endif dj < dj_end
     }
 }
 

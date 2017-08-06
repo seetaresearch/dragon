@@ -8,7 +8,7 @@ RunOp<Context>::RunOp(const OperatorDef& op_def, Workspace* ws)
       module(OperatorBase::GetSingleArg<string>("module", "")),
       op(OperatorBase::GetSingleArg<string>("op", "")),
       param_str((OperatorBase::GetSingleArg<string>("param_str", ""))) {
-    //    init interpreter & load module
+    //  init interpreter & load module
     Py_Initialize();
     PyObject* py_module = PyImport_ImportModule(module.c_str());
     CHECK(py_module) << "\ncan not import py module: " << module;
@@ -18,11 +18,11 @@ RunOp<Context>::RunOp(const OperatorDef& op_def, Workspace* ws)
                  << " from module: " << module;
     self = PyObject_CallObject(py_op, NULL);
 
-    //    pass param string
+    //  pass param string
     PyObject_SetAttr(self, String("param_str"), String(param_str.c_str()));
     PyObject_SetAttr(self, String("param_str_"), String(param_str.c_str()));
 
-    //    build inputs and outputs for Python
+    //  build inputs and outputs for Python
     inputs = PyList_New(InputSize());
     for (int i = 0; i < InputSize(); i++)
         PyList_SetItem(inputs, i, String(input(i).name().c_str()));
@@ -31,21 +31,21 @@ RunOp<Context>::RunOp(const OperatorDef& op_def, Workspace* ws)
         PyList_SetItem(outputs, i, String(output(i)->name().c_str()));
     if (!this->allow_run()) return;
 
-    //    setup
+    //  setup
     if (PyObject_HasAttr(self, String("setup")))
         PyObject_CallMethod(self, "setup", "OO", inputs, outputs);
 }
 
 template <class Context>
 void RunOp<Context>::RunOnDevice() {
-    //    init phase
+    //  init phase
     PyObject_SetAttr(self, String("phase"), String(this->phase().c_str()));
 
-    //    reshape
+    //  reshape
     if (PyObject_HasAttr(self, String("reshape")))
         PyObject_CallMethod(self, "reshape", "OO", inputs, outputs);
     
-    //    run 
+    //  run 
     if (PyObject_HasAttr(self, String("forward"))) {
         PyObject_CallMethod(self, "forward", "OO", inputs, outputs);
     } else if (PyObject_HasAttr(self, String("run"))) {
@@ -63,14 +63,14 @@ NO_GRADIENT(Run);
 
 template <class Context>
 void TemplateGradientOp<Context>::RunOnDevice() {
-    //    init phase
+    //  init phase
     PyObject_SetAttr(this->self, String("phase"), String(this->phase().c_str()));
 
-    //    reshape
+    //  reshape
     if (PyObject_HasAttr(this->self, String("reshape"))) 
         PyObject_CallMethod(this->self, "reshape", "OO", this->inputs, this->outputs);
         
-    //    run 
+    //  run 
     if (PyObject_HasAttr(this->self, String("backward"))) {
         PyObject_CallMethod(this->self, "forward", "OO", this->inputs, this->outputs);
     } else if (PyObject_HasAttr(this->self, String("grad"))) {

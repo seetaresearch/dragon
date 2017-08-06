@@ -24,7 +24,7 @@ set(3RDPARTY_DIR  ${PROJECT_SOURCE_DIR}/../3rdparty)
 set(PYTHON_DIR /usr/include/python2.7)  # prefer
 #set(PYTHON_DIR /usr/include/python3.x)  # optional, set specific version
 #set(ANACONDA_DIR /xxx/anaconda)  # optional, set specific version below if using py3
-set(NUMPY_DIR /xxx/numpy)  # require， root folder of numpy package
+set(NUMPY_DIR /xxx/numpy)  # require, root folder of numpy package
 
 # set CUDA compiling architecture
 set(CUDA_ARCH     -gencode arch=compute_20,code=sm_20

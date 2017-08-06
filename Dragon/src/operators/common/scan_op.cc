@@ -25,7 +25,7 @@ void ScanOp<Context>::InitTemplate() {
     slice_def.add_arg()->CopyFrom(arg_nout);
     template_def.mutable_device_option()->CopyFrom(op_def().device_option());
     template_def.set_debug_mode(debug_mode);
-    //    init for the first step
+    //  init for the first step
     for (int i = 0; i < nseqs; i++) {
         OperatorDef* op = template_def.add_op();
         op->CopyFrom(slice_def);
@@ -37,19 +37,19 @@ void ScanOp<Context>::InitTemplate() {
         OperatorDef* op = template_def.add_op();
         op->CopyFrom(func_def.op(i));
         op->set_name(name() + "(BodyOp." + str(i + nseqs) + ")@1");
-        //    replace inputs term
+        //  replace inputs term
         for (int j = 0; j < op->input_size(); j++) {
             string* input = op->mutable_input(j);
             if (terms.count(*input)) *input = terms[*input];
         }
-        //    replace outputs term
+        //  replace outputs term
         for (int j = 0; j < op->output_size(); j++) {
             string* output = op->mutable_output(j);
             terms[*output] = *output + "@1";
             *output = terms[*output];
         }
     }
-    //    handle pre outputs
+    //  handle pre outputs
     for (int i = 0; i < nout; i++) {
         if (default_outputs[i].empty()) continue;
         terms[default_outputs[i]] = func_def.target(i) + "@1";
@@ -59,15 +59,15 @@ void ScanOp<Context>::InitTemplate() {
 template <class Context>
 void ScanOp<Context>::UpdateTerms(int cur_step) {
     string prev, now;
-    //    update sequences term
+    //  update sequences term
     for (int i = 0; i < nseqs; i++) {
         prev = input(i).name() + "@" + str(cur_step - 1);
         now = input(i).name() + "@" + str(cur_step);
         terms[prev] = now;
     }
     if (cur_step < 3) return;
-    //    update recurrent term
-    //    only support the latest one-step (as Theano's done)
+    //  update recurrent term
+    //  only support the latest one-step (as Theano's done)
     for (int i = 0; i < nout; i++) {
         if (default_outputs[i].empty()) continue;
         prev = output(i)->name() + "@" + str(cur_step - 2);
@@ -93,15 +93,15 @@ void ScanOp<Context>::UnrollTemplate() {
     for (int idx = 0; idx < nseqs; idx++) {
         OperatorDef *op = new_def.mutable_op(idx);
         int nslices = input(idx).dim(axis);
-        //    alter the num of slices for all sequences
+        //  alter the num of slices for all sequences
         op->mutable_arg(1)->set_i(nslices);
-        //    add slices as outputs
+        //  add slices as outputs
         for (int t = 1; t <= nslices; t++) {
             string slice = op->input(0) + "@" + str(t);
             op->add_output(slice);
         }
     }
-    //    main loop
+    //  main loop
     for (int t = 2; t <= nsteps; t++) {
         UpdateTerms(t);
         int copy_r = new_def.op_size(), copy_l = copy_r - nrepeats;
@@ -109,12 +109,12 @@ void ScanOp<Context>::UnrollTemplate() {
             OperatorDef* op = new_def.add_op();
             op->CopyFrom(new_def.op(idx));
             op->set_name(SplitString(op->name(), "@")[0] + "@" + str(t));
-            //    replace inputs
+            //  replace inputs
             for (int j = 0; j < op->input_size(); j++) {
                 string* input = op->mutable_input(j);
                 if (terms.count(*input)) *input = terms[*input];
             }
-            //    replace outputs
+            //  replace outputs
             for (int j = 0; j < op->output_size(); j++) {
                 string* output = op->mutable_output(j);
                 terms[*output] = SplitString(*output, "@")[0] + "@" + str(t);
@@ -123,9 +123,9 @@ void ScanOp<Context>::UnrollTemplate() {
         }
     }
     for (int i = 0; i < nout; i++) {
-        //    solve the last step only
+        //  solve the last step only
         new_def.add_target(func_def.target(i) + "@" + str(nsteps));
-        //    concat all steps if necessary
+        //  concat all steps if necessary
         if (output(i)->name() == "ignore") continue;
         OperatorDef* op = new_def.add_op();
         op->set_name(name() + "(BodyOp." + str(nseqs + nrepeats + i) + ")");
@@ -138,10 +138,10 @@ void ScanOp<Context>::UnrollTemplate() {
         for (int t = 1; t <= nsteps; t++)
             op->add_input(output(i)->name() + "@" + str(t));
         op->add_output(output(i)->name());
-        //    solve all the all steps
+        //  solve all the all steps
         new_def.add_target(output(i)->name());
     }
-    //    upload
+    //  upload
     Tensor* string_tensor = ws()->CreateTensor("_t_" + anchor() + "_raw_ops");
     string_tensor->Reshape(vector<TIndex>(1, 1));
     string* data = string_tensor->mutable_data <string, CPUContext>();
@@ -150,13 +150,11 @@ void ScanOp<Context>::UnrollTemplate() {
 
 template <class Context>
 void ScanOp<Context>::RunOnDevice() {
-    //    unroll
     UnrollTemplate();
-    if (!graphs.count(nsteps))
+    if (!graphs.count(nsteps)) {
         graphs[nsteps].reset(new Graph(new_def, ws()));
+    }
     cur_graph = graphs[nsteps].get();
-
-    //    forward
     cur_graph->Run("", "");
 }
 
@@ -201,13 +199,11 @@ void ScanGradientOp<Context>::MakeGradientOps() {
 
 template <class Context>
 void ScanGradientOp<Context>::RunOnDevice() {
-    //    make graph
     MakeGradientOps();
-    if (!graphs.count(nsteps))
+    if (!graphs.count(nsteps)) {
         graphs[nsteps].reset(new Graph(new_def, ws()));
+    }
     cur_graph = graphs[nsteps].get();
-
-    //    backward
     cur_graph->Run("Gradient", "");
 }
 

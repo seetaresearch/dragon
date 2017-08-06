@@ -8,9 +8,9 @@ CPUObject CPUContext::cpu_object_;
 CUDAObject CUDAContext::cuda_object_;
 #endif // WITH_CUDA
 
-//    cpu <- gpu
+//  cpu <- gpu
 template<> void CPUContext::Memcpy<CPUContext, CUDAContext>(
-    size_t nbytes, void* dst, const void* src){
+    size_t nbytes, void* dst, const void* src) {
 #ifdef WITH_CUDA
     CUDAContext ctx(POINTER_DEVICE(src));
     ctx.Memcpy<CPUContext, CUDAContext>(nbytes, dst, src);
@@ -19,9 +19,9 @@ template<> void CPUContext::Memcpy<CPUContext, CUDAContext>(
 #endif
 }
 
-// gpu <- cpu
+//  gpu <- cpu
 template<> void CPUContext::Memcpy<CUDAContext, CPUContext>(
-    size_t nbytes, void* dst, const void* src){
+    size_t nbytes, void* dst, const void* src) {
 #ifdef WITH_CUDA
         CUDAContext ctx(POINTER_DEVICE(dst));
         ctx.Memcpy<CUDAContext, CPUContext>(nbytes, dst, src);

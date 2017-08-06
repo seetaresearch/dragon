@@ -65,7 +65,7 @@ void EltwiseGradientOp<Context>::SumRunWithType() {
     auto* dYdata = input(-1).template data<T, Context>();
     TIndex count = input(-1).count();
 
-    for (int i = 0; i < OutputSize(); i++){
+    for (int i = 0; i < OutputSize(); i++) {
         if (output(i)->name() == "ignore") continue;
         auto* dXdata = output(i)->template mutable_data<T, Context>();
         if (coeffs[i] == float(1)) {

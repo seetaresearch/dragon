@@ -12,7 +12,7 @@ void CompareOp<Context>::EqualRunWithType() {
 }
 
 template <class Context>
-void CompareOp<Context>::RunOnDevice(){
+void CompareOp<Context>::RunOnDevice() {
     CHECK_EQ(input(0).count(), input(1).count())
         << "both conditioned tensor must have same elements.";
     output(0)->ReshapeLike(input(0));

@@ -12,7 +12,7 @@ void SquareOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void SquareOp<Context>::RunOnDevice(){
+void SquareOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
 
     if (input(0).template IsType<float>()) RunWithType<float>();

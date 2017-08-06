@@ -18,10 +18,10 @@ void LSTMUnitOp<Context>::RunWithType() {
 
 template <class Context>
 void LSTMUnitOp<Context>::RunOnDevice() {
-    //    input(0):    ----- c_t_1
-    //    input(1):    ----- gate_input
-    //    output(0):  ----- c_t
-    //    output(1):  ----- h_t
+    //  input(0):  ----- c_t_1
+    //  input(1):  ----- gate_input
+    //  output(0): ----- c_t
+    //  output(1): ----- h_t
     num = input(0).dim(0);
     channels = input(0).ndim() == 2 ? input(0).dim(1) : input(0).dim(2);
     if (!has_cont.empty()) {
@@ -57,13 +57,13 @@ void LSTMUnitGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void LSTMUnitGradientOp<Context>::RunOnDevice() {
-    //    input(0):    ----- c_t_1
-    //    input(1):    ----- x_act
-    //    input(2):    ----- c_t
-    //    input(3):   ----- d(c_t)
-    //    input(4):   ----- d(h_t)
-    //    output(0):  ----- d(c_t_1)
-    //    output(1):  ----- d(gate_input)
+    //  input(0):   ----- c_t_1
+    //  input(1):   ----- x_act
+    //  input(2):   ----- c_t
+    //  input(3):   ----- d(c_t)
+    //  input(4):   ----- d(h_t)
+    //  output(0):  ----- d(c_t_1)
+    //  output(1):  ----- d(gate_input)
     num = input(0).dim(0);
     channels = input(0).ndim() == 2 ? input(0).dim(1) : input(0).dim(2);
     output(0)->ReshapeLike(input(0));
@@ -92,7 +92,7 @@ public:
             vector<string> {I(0), I(1), O(0), GO(0), GO(1)},
             vector<string> {GI(0), GI(1)});
     }
-    //    fill zero for dc_{T+1}
+    //  fill zero for dc_{T+1}
     vector<float> DefaultValues() override{ return{ 0.0, 1.0 }; }
 };
 REGISTER_GRADIENT(LSTMUnit, GetLSTMUnitGradient);

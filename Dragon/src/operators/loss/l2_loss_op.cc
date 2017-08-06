@@ -11,7 +11,7 @@ void L2LossOp<Context>::RunWithType() {
     auto* diff_data = diff->template mutable_data<T, Context>();
     auto* Ydata = output(0)->template mutable_data<T, CPUContext>();
     math::Sub<T, Context>(diff->count(), X0data, X1data, diff_data);
-    if (InputSize() > 2){
+    if (InputSize() > 2) {
         CHECK_EQ(input(0).count(), input(2).count());
         auto* Wdata = input(2).template data<T, Context>();
         math::Mul<T, Context>(diff->count(), Wdata, diff_data, diff_data);

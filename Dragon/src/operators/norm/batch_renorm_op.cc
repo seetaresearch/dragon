@@ -60,7 +60,7 @@ void BatchRenormOp<Context>::RunWithType() {
         ctx().template Copy<T, Context, Context>(input(0).count(), Ydata, Xdata);
     }
 
-    //    subtract mean
+    //  subtract mean
     math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, num, channels, 1,
                                                                     1.0, 
                                                   NMul_data, tMean_data, 
@@ -73,7 +73,7 @@ void BatchRenormOp<Context>::RunWithType() {
                                                                          Ydata);
 
     if (!use_global_stats) {
-        // Var(X) = E((X - EX) ^ 2)
+        //  Var(X) = E((X - EX) ^ 2)
         math::Pow<T, Context>(stddev->count(), 2, Ydata, Std_data);
         math::Gemv<T, Context>(CblasNoTrans, nbychans, spatial_dim,
                                          1.0 / (num * spatial_dim), 
@@ -85,7 +85,7 @@ void BatchRenormOp<Context>::RunWithType() {
                                     NByC_data, NMul_data, 
                                                      0.0, 
                                               tVar_data);
-        //    update moving average
+        //  update moving average
         hFact_data[0] *= momentum; hFact_data[0] += 1;
         int m = input(0).count() / channels;
         T factor = m > 1 ? T(m) / (m - 1) : 1;
@@ -93,31 +93,31 @@ void BatchRenormOp<Context>::RunWithType() {
         math::Axpby<T, Context>(mean.count(), factor, tVar_data, momentum, hVar_data);
     }
 
-    //    normalize var
+    //  normalize var
     math::AddScalar<T, Context>(mean.count(), eps, tVar_data);
     math::Pow<T, Context>(mean.count(), 0.5, tVar_data, tVar_data);
 
     if (!use_global_stats) {
-        //    normalize history var
+        //  normalize history var
         math::AddScalar<T, Context>(mean.count(), eps, thVar_data);
         math::Pow<T, Context>(mean.count(), 0.5, thVar_data, thVar_data);
 
-        //    compute r
+        //  compute r
         math::Div<T, Context>(mean.count(), tVar_data, thVar_data, tRdata);
         math::Clip<T, Context>(mean.count(), 1.0 / t_r_max, t_r_max, tRdata);
 
-        //    compute d
+        //  compute d
         math::Sub<T, Context>(mean.count(), tMean_data, thMean_data, tDdata);
         math::Div<T, Context>(mean.count(), tDdata, thVar_data, tDdata);
         math::Clip<T, Context>(mean.count(), -t_d_max, t_d_max, tDdata);
 
-        //    update the bound of r & d
+        //  update the bound of r & d
         t_r_max = r_max / (1.0 + (r_max - 1.0) * exp(-t_val));
         t_d_max = d_max / (1.0 + (d_max - 1.0) * exp(-2 * t_val));
         t_val += t_delta;
     }
 
-    //    divide by var
+    //  divide by var
     math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, num, channels, 1,
                                                                     1.0, 
                                                    NMul_data, tVar_data, 
@@ -131,11 +131,11 @@ void BatchRenormOp<Context>::RunWithType() {
     math::Div<T, Context>(stddev->count(), Ydata, Std_data, Ydata);
 
     if (!use_global_stats) {
-        //    store x_norm for backward
+        //  store x_norm for backward
         XNorm_data = x_norm->template mutable_data<T, Context>();
         ctx().template Copy<T, Context, Context>(output(0)->count(), XNorm_data, Ydata);
 
-        //    correction: mul by r
+        //  correction: mul by r
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, num, channels, 1,
                                                                         1.0, 
                                                           NMul_data, tRdata,
@@ -183,7 +183,7 @@ void BatchRenormOp<Context>::RunOnDevice() {
 
     if (use_stats == -1) use_global_stats = phase() == "TEST" ? true : false;
     else use_global_stats = use_stats == 1 ? true : false;
-    //    if true, Act/Exp/Pow/Norm Ops can not exist before when train
+    //  if true, Act/Exp/Pow/Norm Ops can not exist before when train
     if (inplace) output(0)->Share(input(0));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
@@ -233,7 +233,7 @@ void BatchRenormGradientOp<Context>::RunWithType() {
     auto* XNorm_data = x_norm->template data<T, Context>();
     auto* tMean_data = mean.template mutable_data<T, Context>();
 
-    //    buffer <- dE/dY \cdot r
+    //  buffer <- dE/dY \cdot r
     math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, num, channels, 1,
                                                                     1.0, 
                                                       NMul_data, tRdata, 
@@ -246,7 +246,7 @@ void BatchRenormGradientOp<Context>::RunWithType() {
                                                                       Std_data);
     math::Mul<T, Context>(output(0)->count(), dYdata, Std_data, Std_data);
 
-    //    sum(dE/dY \cdot Y)
+    //  sum(dE/dY \cdot Y)
     math::Mul<T, Context>(output(0)->count(), XNorm_data, Std_data, dXdata);
     math::Gemv<T, Context>(CblasNoTrans, nbychans, spatial_dim,
                                                            1.0, 
@@ -269,10 +269,10 @@ void BatchRenormGradientOp<Context>::RunWithType() {
                                                                             0.0, 
                                                                         dXdata);
 
-    //    sum(dE/dY \cdot Y) \cdot Y  
+    //  sum(dE/dY \cdot Y) \cdot Y  
     math::Mul<T, Context>(output(0)->count(), XNorm_data, dXdata, dXdata);
 
-    //    sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y
+    //  sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y
     math::Gemv<T, Context>(CblasNoTrans, nbychans, spatial_dim,
                                                            1.0, 
                                            Std_data, SMul_data, 
@@ -293,13 +293,13 @@ void BatchRenormGradientOp<Context>::RunWithType() {
                                                            NByC_data, SMul_data, 
                                                                    1.0, dXdata);
 
-    //   dE/dY - mean(dE/dY)- mean(dE/dY \cdot Y) \cdot Y
-    // = dE/dY - mean(sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y)
+    //  dE/dY - mean(dE/dY)- mean(dE/dY \cdot Y) \cdot Y
+    //  = dE/dY - mean(sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y)
     math::Axpby<T, Context>(output(0)->count(), 1.0, Std_data,
                                    -1.0 / (num * spatial_dim),
                                                       dXdata);
 
-    //    divide var
+    //  divide var
     math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, num, channels, 1,
                                                                     1.0, 
                                                    NMul_data, tVar_data, 

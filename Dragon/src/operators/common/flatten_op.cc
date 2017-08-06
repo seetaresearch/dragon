@@ -27,7 +27,7 @@ OPERATOR_SCHEMA(Flatten).NumInputs(1).NumOutputs(1);
 
 
 template <class Context>
-void FlattenGradientOp<Context>::RunOnDevice(){
+void FlattenGradientOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
     output(0)->Share(input(1));
 }

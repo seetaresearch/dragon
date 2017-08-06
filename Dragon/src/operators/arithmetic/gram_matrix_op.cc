@@ -8,7 +8,7 @@ template <class Context> template <typename T>
 void GramMatrixOp<Context>::RunWithType() {
     auto* Xdata = input(0).template data<T, Context>();
     auto* Ydata = output(0)->template mutable_data<T, Context>();
-    for (int i = 0; i < outer_dim; i++){
+    for (int i = 0; i < outer_dim; i++) {
         math::Gemm<T, Context>(CblasNoTrans, CblasTrans,
             dim, dim, inner_dim, 1.0, Xdata, Xdata, 0.0, Ydata);
         Xdata += x_offset;
@@ -40,7 +40,7 @@ void GramMatrixGradientOp<Context>::RunWithType() {
     auto* dYdata = input(-1).template data<T, Context>();
     auto* Xdata = input(0).template data<T, Context>();
     auto* dXdata = output(0)->template mutable_data<T, Context>();
-    for (int i = 0; i < outer_dim; i++){
+    for (int i = 0; i < outer_dim; i++) {
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans,
             dim, inner_dim, dim, 2.0, dYdata, Xdata, 0.0, dXdata);
         dYdata += y_offset;
@@ -49,7 +49,7 @@ void GramMatrixGradientOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void GramMatrixGradientOp<Context>::RunOnDevice(){
+void GramMatrixGradientOp<Context>::RunOnDevice() {
     outer_dim = input(0).count(0, axis);
     dim = input(0).dim(axis);
     inner_dim = input(0).count(axis + 1);

@@ -7,7 +7,7 @@ namespace dragon {
 template <class Context>
 void ConvOp<Context>::ComputeOutputShape() {
     this->output_shape.clear();
-    for (int i = 0; i < this->num_spatial_axes; i++){
+    for (int i = 0; i < this->num_spatial_axes; i++) {
         const int input_dim = this->bottom_shape[this->channel_axis + i + 1];
         const int dilated_kernel = this->dilation[i] * (this->kernel_size[i] - 1) + 1;
         const int output_dim = (input_dim + 2 * this->pad[i] - dilated_kernel) / this->stride[i] + 1;
@@ -43,7 +43,7 @@ void ConvOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void ConvOp<Context>::RunOnDevice(){
+void ConvOp<Context>::RunOnDevice() {
     Reshape();
 
     if (input(0).template IsType<float>()) RunWithType<float>();
@@ -71,7 +71,7 @@ void ConvGradientOp<Context>::RunWithType() {
             Db(dYdata + n * this->y_offset, dBdata);
     }
 
-    for (int n = 0; n < input(2).dim(0); n++){
+    for (int n = 0; n < input(2).dim(0); n++) {
         if (output(1)->name() != "ignore") {
             auto* Xdata = input(0).template data<T, Context>();
             auto* dWdata = output(1)->template mutable_data<T, Context>();

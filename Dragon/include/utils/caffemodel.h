@@ -54,7 +54,7 @@ inline void LoadCaffeModel(string file, string scope, Workspace* ws) {
     ReadProtoFromBinaryFile(file.c_str(), &net_param);
     LOG(INFO) << "Restore From Model @: " << file << "......";
     LOG(INFO) << "Model Format: CaffeModel";
-    for (int i = 0; i < net_param.layer_size(); i++){
+    for (int i = 0; i < net_param.layer_size(); i++) {
         const LayerParameter& layer = net_param.layer(i);
         const string& layer_name = layer.name();
         string prefix = scope + layer_name + "@param";

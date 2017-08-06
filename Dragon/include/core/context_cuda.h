@@ -119,7 +119,7 @@ class CUDAContext {
     inline static void Delete(void* data) { cudaFree(data); }
 
     template<typename T, class DstContext, class SrcContext>
-    static void Copy(int n, T* dst, const T* src){
+    static void Copy(int n, T* dst, const T* src) {
         if (dst == src) return;
         Memcpy<SrcContext, DstContext>(n * sizeof(T), (void*)dst, (const void*)src);
     }
@@ -148,7 +148,7 @@ class CUDAContext {
     }
 
 #ifdef WITH_CUDNN
-    cudnnHandle_t cudnn_handle(){
+    cudnnHandle_t cudnn_handle() {
         auto& handle = cuda_object_.cudnn_handle[gpu_id_];
         if (handle)  {
             return handle;

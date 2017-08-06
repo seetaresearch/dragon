@@ -18,12 +18,12 @@ CheckTuple GraphGradientMaker::CheckMissingGrad(OperatorDef* forward_op) {
             string g_output = output + "_grad";
             if (terms_.count(g_output)) g_output = terms_[g_output];
     
-            //    check if having external grad first
+            //  check if having external grad first
             if (external_grads_.count(g_output))
                 inputs_to_grads_[output] = g_output;
 
-            //    consider generate virtual grad
-            else if (targets_set_.count(output) && g_output != "ignore"){
+            //  consider generate virtual grad
+            else if (targets_set_.count(output) && g_output != "ignore") {
                 gen_grads.push_back({ output, idx });
                 inputs_to_grads_[output] = g_output;
             }
@@ -36,7 +36,7 @@ CheckTuple GraphGradientMaker::CheckMissingGrad(OperatorDef* forward_op) {
             if (forward_op->output_size() == 1) return { true, gen_grads };
         }
     }
-    //    check pass, even if missing some grads
+    //  check pass, even if missing some grads
     return { false, gen_grads };
 }
 
@@ -50,7 +50,7 @@ GraphDef GraphGradientMaker::Make() {
     Set<string> all_split_grads;
 
     // PLAY for the forward
-    for (auto& op : forward_def_.op()){
+    for (auto& op : forward_def_.op()) {
         if (NoGradientRegistry()->Has(op.type())) continue;
         for (auto& input : op.input()) inputs_count[input]++;
     }
@@ -73,17 +73,17 @@ GraphDef GraphGradientMaker::Make() {
         Gradient grad = MakeGradientForOp(*op, g_outputs);
 
         // replace terms
-        for (auto& g_op : grad.ops){
+        for (auto& g_op : grad.ops) {
             g_op.set_name(GetOperatorName());
-            for (int i = 0; i < g_op.input_size(); i++){
+            for (int i = 0; i < g_op.input_size(); i++) {
                 string* input = g_op.mutable_input(i);
                 if (terms_.count(*input)) *input = terms_[*input];
             }
-            for (int i = 0; i < g_op.output_size(); i++){
+            for (int i = 0; i < g_op.output_size(); i++) {
                 string* output = g_op.mutable_output(i);
                 if (terms_.count(*output)) *output = terms_[*output];
             }
-            for (int i = 0; i < grad.g_inputs.size(); i++){
+            for (int i = 0; i < grad.g_inputs.size(); i++) {
                 if (terms_.count(grad.g_inputs[i]))
                     grad.g_inputs[i] = terms_[grad.g_inputs[i]];
             }
@@ -106,14 +106,14 @@ GraphDef GraphGradientMaker::Make() {
                     string split_name = *output + "_autosplit_" + str(grads_count[*output]++);
                     if (!is_skip) all_split_grads.insert(split_name);
                     //  gather
-                    if (grads_count[*output] == inputs_count[original_name]){
+                    if (grads_count[*output] == inputs_count[original_name]) {
                         gather_op = new OperatorDef();
                         gather_op->set_name(GetOperatorName());
                         gather_op->set_type("GradientGather");
                         gather_op->add_output(*output);
                         if (g_op.has_device_option())
                             gather_op->mutable_device_option()->CopyFrom(g_op.device_option());
-                        for (int j = 0; j < grads_count[*output]; j++){
+                        for (int j = 0; j < grads_count[*output]; j++) {
                             string key = *output + "_autosplit_" + str(j);
                             if (all_split_grads.count(key)) gather_op->add_input(key);
                         }
@@ -123,7 +123,7 @@ GraphDef GraphGradientMaker::Make() {
             }
         }
 
-        //    append ops
+        //  append ops
         if (!is_skip) {
             if (gen_grads.size() > 0) {
                 vector<string> op_inputs, op_outputs;
@@ -148,7 +148,7 @@ GraphDef GraphGradientMaker::Make() {
         }
         if (gather_op != nullptr) new_def_.add_op()->CopyFrom(*gather_op);
 
-        //    done
+        //  done
         if (!is_skip) {
             for (int i = 0; i < op->input_size(); i++) {
                 if (!grad.g_inputs[i].empty())

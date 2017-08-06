@@ -66,8 +66,8 @@ template <> void RandomUniform<uint32_t, CUDAContext>(const int n,
                                                       const float low, 
                                                       const float high, 
                                                       uint32_t* x) {
-    //    note that we ignore the low / high
-    //    curand could only generates in the range of [0, uint32]
+    //  note that we ignore the low / high
+    //  curand could only generates in the range of [0, uint32]
     CURAND_CHECK(curandGenerate(curand_generator(), x, n));
 }
 
@@ -95,8 +95,8 @@ template <> void RandomNormal<float16, CUDAContext>(const int n,
 template <> void RandomBernoulli<float, CUDAContext>(const int n,
                                                      const float p, 
                                                      unsigned int* x) {
-    //    curand could not generate bernoulli distribution
-    //    we recommend implement it within specfic case, e.g. Dropout
+    //  curand could not generate bernoulli distribution
+    //  we recommend implement it within specfic case, e.g. Dropout
     NOT_IMPLEMENTED;
 }
 

@@ -125,7 +125,7 @@ void DotGradientOp<Context>::GemvRunWithType() {
 }
 
 template <class Context>
-void DotGradientOp<Context>::RunOnDevice(){
+void DotGradientOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
     output(1)->ReshapeLike(input(1));
 

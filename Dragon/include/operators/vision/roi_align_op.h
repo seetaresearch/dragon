@@ -39,7 +39,7 @@ class ROIAlignGradientOp : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           pool_h(OperatorBase::GetSingleArg<int>("pool_h", 0)),
           pool_w(OperatorBase::GetSingleArg<int>("pool_w", 0)),
-          spatial_scale(OperatorBase::GetSingleArg<float>("spatial_scale", 1.0)){
+          spatial_scale(OperatorBase::GetSingleArg<float>("spatial_scale", 1.0)) {
         CHECK_GT(pool_h, 0) << "\npool_h must > 0";
         CHECK_GT(pool_w, 0) << "\npool_w must > 0";
     }

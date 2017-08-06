@@ -1,12 +1,18 @@
 # --------------------------------------------------------
-# Caffe for Dragon
+# Dragon
 # Copyright(c) 2017 SeetaTech
 # Written by Ting Pan
 # --------------------------------------------------------
 
+import sys
 import time
 import pprint
 from multiprocessing import Queue
+if sys.version_info >= (3,0):
+    from queue import Queue as Queue2
+else:
+    from Queue import Queue as Queue2
+import threading
 from six.moves import range as xrange
 
 import dragon.core.mpi as mpi
@@ -16,10 +22,11 @@ from .data_reader import DataReader
 from .data_transformer import DataTransformer
 from .blob_fetcher import BlobFetcher
 
-from .__init__ import GetProperty
+from .utils import GetProperty
 
-class DataBatch(object):
+class DataBatch(threading.Thread):
     def __init__(self, **kwargs):
+        super(DataBatch, self).__init__()
 
         """DataBatch use Triple-Buffering to speed up"""
 
@@ -35,10 +42,10 @@ class DataBatch(object):
         kwargs['group_size'] = group_size
 
         # configuration
-        self._prefetch = GetProperty(kwargs, 'prefetch', 40)
+        self._prefetch = GetProperty(kwargs, 'prefetch', 5)
         self._num_readers = GetProperty(kwargs, 'num_readers', 1)
         self._num_transformers = GetProperty(kwargs, 'num_transformers', -1)
-        self._num_fetchers = GetProperty(kwargs, 'num_fetchers', 3)
+        self._num_fetchers = GetProperty(kwargs, 'num_fetchers', 1)
 
         # default policy
         if self._num_transformers == -1:
@@ -60,6 +67,7 @@ class DataBatch(object):
         self.Q_level_1 = Queue(self._prefetch * self._num_readers * self._batch_size)
         self.Q_level_2 = Queue(self._prefetch * self._num_readers * self._batch_size)
         self.Q_level_3 = Queue(self._prefetch * self._num_readers)
+        self.Q_level_4 = Queue2(self._prefetch * self._num_readers)
 
         # init readers
         self._readers = []
@@ -102,11 +110,16 @@ class DataBatch(object):
             self._fetchers.append(fetcher)
             time.sleep(0.1)
 
+        self.daemon = True
+        self.start()
         #self.echo()
 
-    @property
-    def blobs(self):
-        return self.Q_level_3.get()
+    def run(self):
+        while True:
+            self.Q_level_4.put(self.Q_level_3.get())
+
+    def get(self):
+        return self.Q_level_4.get()
 
     def echo(self):
         logger.info('---------------------------------------------------------')

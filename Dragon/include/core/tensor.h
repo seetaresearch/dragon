@@ -77,7 +77,7 @@ class Tensor {
     inline TIndex offset(const vector<TIndex>& vec) {
         CHECK_LE(vec.size(), ndim());
         TIndex offset = 0;
-        for (int i = 0; i < ndim(); i++){
+        for (int i = 0; i < ndim(); i++) {
             offset = offset * dim(i);
             if (vec.size() > i) offset += vec[i];
         }
@@ -130,7 +130,7 @@ class Tensor {
     }
 
     template <class Context>
-    void* raw_mutable_data(const TypeMeta& meta){
+    void* raw_mutable_data(const TypeMeta& meta) {
         void* data_ptr;
         active_data_ptr<Context>(&data_ptr);
         if (meta_ == meta && data_ptr) {

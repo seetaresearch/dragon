@@ -26,14 +26,14 @@ void MPIBroadcastOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void MPIBroadcastOp<Context>::RunOnDevice(){
+void MPIBroadcastOp<Context>::RunOnDevice() {
     CHECK(this->comm != MPI_COMM_NULL)
         << "\nMPIBroadcastOp, name: " << name()
         << ", does not belong to any group, can't run.";
 
     size_t ndim[1];
     TIndex* dims = nullptr;
-    if (this->comm_rank == this->comm_root){
+    if (this->comm_rank == this->comm_root) {
         ndim[0] = input(0).ndim();
         dims = new TIndex[ndim[0]];
         for (int i = 0; i < input(0).ndim(); i++)
@@ -90,7 +90,7 @@ void MPIBroadcastGradientOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void MPIBroadcastGradientOp<Context>::RunOnDevice(){
+void MPIBroadcastGradientOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(-1));
 
     if (input(0).template IsType<float>()) RunWithType<float>();

@@ -151,13 +151,13 @@ GraphDef Graph::Prune(const GraphDef& graph_def) {
         OperatorDef op_def;
         op_def.CopyFrom(graph_def.op(it));
         //  handle inputs
-        for (int i = 0; i < graph_def.op(it).input_size(); i++){
+        for (int i = 0; i < graph_def.op(it).input_size(); i++) {
             string input = graph_def.op(it).input(i);
             if (!colored_[input] || !outputs.count(input))
                 *op_def.mutable_input(i) = "ignore";
         }
         //  handle outputs
-        for (int i = 0; i < graph_def.op(it).output_size(); i++){
+        for (int i = 0; i < graph_def.op(it).output_size(); i++) {
             string output = graph_def.op(it).output(i);
             if (!colored_[output]) *op_def.mutable_output(i) = "ignore";
             else outputs.insert(op_def.output(i));
@@ -212,7 +212,7 @@ GraphDef Graph::MakeUpdate(const GraphDef& graph_def) {
     for (int i = 0; i < graph_def.u_target_size(); i++) {
         UpdateTarget target = graph_def.u_target(i);
         vector<string> missing_tensors;
-        //    missing check
+        //  missing check
         for (auto& tensor : target.tensor()) {
             if (!ws()->HasTensor(tensor)) {
                 LOG(INFO) << "missing Tensor: " << tensor;

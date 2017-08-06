@@ -33,7 +33,7 @@ inline PyObject* StdStringToPyBytes(const std::string& str) {
     return PyBytes_FromStringAndSize(str.c_str(), str.size());
 }
 template <typename T>
-inline void MakeStringInternal(std::stringstream& ss, const T& t){ ss << t; }
+inline void MakeStringInternal(std::stringstream& ss, const T& t) { ss << t; }
 
 template <typename T,typename ... Args>
 inline void MakeStringInternal(std::stringstream& ss, const T& t, const Args& ... args) {
@@ -124,7 +124,7 @@ class NumpyFeeder : public TensorFeederBase {
                    Tensor* tensor) override {
         PyArrayObject* array = PyArray_GETCONTIGUOUS(original_array);
         const TypeMeta& meta = NumpyTypeToDragon(PyArray_TYPE(array));
-        if (meta.id() == 0){
+        if (meta.id() == 0) {
             PyErr_SetString(PyExc_TypeError, "numpy data type is not supported.");
             return nullptr;
         }

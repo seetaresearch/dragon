@@ -10,7 +10,6 @@ from dragon.operators.utils import Run
 
 def LMDBData(**kwargs):
     """
-    :param kwargs:                   a dict of imagenet data param
     :param --> mean_value:           a list of mean values for channles [B-G-R]
     :param --> source:               a str of the images root directory
     :param --> imageset:             a str of text file contains image name / label
@@ -30,8 +29,8 @@ def LMDBData(**kwargs):
     args = locals(); kwargs = args['kwargs']
     del args['kwargs']; kwargs = dict(args, **kwargs)
 
-    kwargs['module'] =  'dragon.vm.caffe.io.data_layer'
-    kwargs['op'] = 'DataLayer'
+    kwargs['module'] =  'dragon.operators.custom.minibatch'
+    kwargs['op'] = 'MiniBatchOp'
 
     return Run([], param_str=str(kwargs), nout=2, **kwargs)
 

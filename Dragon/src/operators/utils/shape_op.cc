@@ -4,10 +4,10 @@ namespace dragon {
 
 template <class Context>
 void ShapeOp<Context>::RunOnDevice() {
-    // reshape
+    //  reshape
     output(0)->Reshape(vector<TIndex>(1, input(0).ndim()));
 
-    //    forward
+    //  forward
     auto* Ydata = output(0)->template mutable_data<float, CPUContext>();
     for (int i = 0; i < input(0).ndim(); i++) Ydata[i] = input(0).dim(i);
 }

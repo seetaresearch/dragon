@@ -10,12 +10,12 @@ void FloatToHalfOp<Context>::RunOnDevice() {
         << "the type of tensor must be float32.";
     output(0)->ReshapeLike(input(0));
     
-    //    cast
+    //  cast
     auto* Xdata = input(0).template data<float, Context>();
     auto* Ydata = output(0)->template mutable_data<float16, Context>();
     kernel::Float2Half<float, Context>(output(0)->count(), Xdata, Ydata);
 
-    // release & share
+    //  release & share
     input(0).Reset();
     input(0).ReshapeLike(*output(0));
     input(0).Share(*output(0));

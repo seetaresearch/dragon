@@ -9,7 +9,7 @@ void PowOp<Context>::RunWithType() {
     TIndex count = input(0).count();
     auto* Ydata = output(0)->template mutable_data<T, Context>();
 
-    if (power_scale == float(0)){
+    if (power_scale == float(0)) {
         float value = (power == float(0)) ? float(1) : pow(shift, power);
         math::Set<T, Context>(count, dragon_cast<T, float>(value), Ydata);
         return;

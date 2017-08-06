@@ -54,11 +54,11 @@ class ScanGradientOp final: public Operator<Context> {
           step_tensor(OperatorBase::GetSingleArg<string>("step_tensor", "")),
           forward_inputs(OperatorBase::GetRepeatedArg<string>("inputs_name")),
           forward_outputs(OperatorBase::GetRepeatedArg<string>("outputs_name")) {
-        //    handle GO(x)
+        //  handle GO(x)
         for (int i = 0; i < forward_outputs.size(); i++)
             terms[forward_outputs[i] + "_grad"] = input(i + (int)OutputSize()).name();
             
-        //    handle GI(x)
+        //  handle GI(x)
         for (int i = 0; i < forward_inputs.size(); i++)
             terms[forward_inputs[i] + "_grad"] = output(i)->name();
     }

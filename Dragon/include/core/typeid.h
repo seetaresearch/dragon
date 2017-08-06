@@ -75,20 +75,20 @@ class TypeMeta {
     bool Match() const { return (id_ == Id<T>()); } 
 
     template <typename T>
-    static void Ctor(void* ptr, size_t n){
+    static void Ctor(void* ptr, size_t n) {
         T* typed_ptr = static_cast<T*>(ptr);
         for (unsigned int i = 0; i < n; i++) new(typed_ptr + i) T;
     }
 
     template <typename T>
-    static void Copy(const void* src, void* dst, size_t n){
+    static void Copy(const void* src, void* dst, size_t n) {
         const T* typed_src = static_cast<const T*>(src);
         T* typed_dst = static_cast<T*>(dst);
         for (unsigned int i = 0; i < n; i++) typed_dst[i] = typed_src[i];
     }
 
     template <typename T>
-    static void Dtor(void* ptr, size_t n){
+    static void Dtor(void* ptr, size_t n) {
         T* typed_ptr = static_cast<T*>(ptr);
         for (unsigned int i = 0; i < n; i++) typed_ptr[i].~T();
     }

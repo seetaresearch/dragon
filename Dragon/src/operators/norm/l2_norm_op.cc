@@ -41,9 +41,9 @@ void L2NormOp<Context>::RunWithType() {
                                               Bdata, DMuldata, 
                                                           1.0, 
                                                        Ndata);
-            //    compute T2 = \sqrt{T1}
+            //  compute T2 = \sqrt{T1}
             math::Sqrt<T, Context>(inner_dim, Ndata, Ndata);
-            //    compute T3 = x / [(T2)]_{dim} 
+            //  compute T3 = x / [(T2)]_{dim} 
             math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, dim, inner_dim, 1,
                                                                              1.0, 
                                                                  DMuldata, Ndata, 
@@ -109,7 +109,7 @@ void L2NormGradientOp<Context>::RunWithType() {
     auto* Bdata = buffer->template mutable_data<T, Context>();
     auto* BInnerdata = buffer_inner->template mutable_data<T, Context>();
 
-    for (int n = 0; n < outer_dim; n++){
+    for (int n = 0; n < outer_dim; n++) {
         if (across_inner) {
             Ndata = norm->template data<T, CPUContext>();
             T sum_of_x_mul_dy = math::Dot<T, Context>(buffer->count(), Xdata, dYdata);
@@ -117,21 +117,21 @@ void L2NormGradientOp<Context>::RunWithType() {
             math::Sub<T, Context>(buffer->count(), dYdata, dXdata, dXdata);
             math::Scal<T, Context>(buffer->count(), T(1.0 / Ndata[n]), dXdata);
         } else {
-            //    compute \sum_{i} x_{i, j}dy_{i, j}
+            //  compute \sum_{i} x_{i, j}dy_{i, j}
             math::Mul<T, Context>(buffer->count(), Xdata, dYdata, Bdata);
             math::Gemv<T, Context>(CblasTrans, dim, inner_dim, 
                                                           1.0, 
                                               Bdata, DMuldata, 
                                                           0.0, 
                                                   BInnerdata);
-            //    compute T1 = x[(\sum_{i} x_{i, j}dy_{i, j})]_{dim}
+            //  compute T1 = x[(\sum_{i} x_{i, j}dy_{i, j})]_{dim}
             math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, dim, inner_dim, 1, 
                                                                              1.0, 
                                                             DMuldata, BInnerdata, 
                                                                              0.0, 
                                                                           Bdata);
             math::Mul<T, Context>(buffer->count(), Xdata, Bdata, dXdata);
-            //    compute T2 = T1 / Normalizer^{2}
+            //  compute T2 = T1 / Normalizer^{2}
             math::Pow<T, Context>(inner_dim, 2.0, Ndata, BInnerdata);
             math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, dim, inner_dim, 1, 
                                                                              1.0, 
@@ -139,7 +139,7 @@ void L2NormGradientOp<Context>::RunWithType() {
                                                                              0.0, 
                                                                           Bdata);
             math::Div<T, Context>(buffer->count(), dXdata, Bdata, dXdata);
-            //    compute T3 = (dy - T2) / Normalizer
+            //  compute T3 = (dy - T2) / Normalizer
             math::Sub<T, Context>(buffer->count(), dYdata, dXdata, dXdata);
             math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, dim, inner_dim, 1, 
                                                                              1.0, 

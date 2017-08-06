@@ -44,7 +44,7 @@ void SubOp<Context>::BroadcastRunWithType(int type) {
 }
 
 template <class Context>
-void SubOp<Context>::RunOnDevice(){
+void SubOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
 
     if (input(0).dims() == input(1).dims()) {

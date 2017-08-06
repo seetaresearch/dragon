@@ -6,7 +6,7 @@ namespace dragon {
 template <class Context> template <typename T>
 void ArgmaxOp<Context>::RunWithType() {
     if (top_k != 1) {
-        //    it's difficult to implement device code when top_k > 1
+        //  it's difficult to implement device code when top_k > 1
         auto* Xdata = input(0).template data<T, CPUContext>();
         auto* Ydata = output(0)->template mutable_data<T, CPUContext>();
         kernel::Argmax<T, CPUContext>(count, input(0).dim(axis), inner_dim,

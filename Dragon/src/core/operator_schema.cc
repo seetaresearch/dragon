@@ -17,7 +17,7 @@ bool OpSchema::Verify(const OperatorDef& def) const {
     }
     for (int in = 0; in < def.input_size(); in++) {
         if (def.input(in) == "ignore") continue;
-        for (int out = 0; out < def.output_size(); out++){
+        for (int out = 0; out < def.output_size(); out++) {
             if (def.output(out) == "ignore") continue;
             if (def.input(in) == def.output(out) && (!CheckInplace(in, out)))
                 LOG(FATAL) << "[" << def.name() << "] input("

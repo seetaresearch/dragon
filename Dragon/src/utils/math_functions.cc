@@ -142,7 +142,7 @@ template <> void Add<float, CPUContext>(const int n,
 template <> void Sub<float, CPUContext>(const int n, 
                                         const float* a, 
                                         const float* b,
-                                        float* y){
+                                        float* y) {
 #ifdef WITH_SSE
     sse::Sub<float>(n, a, b, y);
 #else  // naive implement

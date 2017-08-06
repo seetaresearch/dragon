@@ -8,18 +8,18 @@ void ReshapeOp<Context>::RunOnDevice() {
     int infer_dim = -1;
     TIndex total_count = 1;
     for (int i = 0; i < shape.size(); i++) {
-        //    handle unchanged dim
+        //  handle unchanged dim
         if (shape[i] == 0) {
             CHECK_LT(i, (int)Xdims.size())
                 << "\ndim(" << i << ") is out of the Xdims range of (0, "
                 << Xdims.size() << ").";
             new_shape[i] = Xdims[i];
         }
-        //    handle reseted dim
+        //  handle reseted dim
         else if (shape[i] > 0) {
             new_shape[i] = shape[i];
         }
-        //    handle inferred dim
+        //  handle inferred dim
         else {
             CHECK_EQ(infer_dim, -1)
                 << "\ndim(" << infer_dim << ") required infer before"
@@ -30,7 +30,7 @@ void ReshapeOp<Context>::RunOnDevice() {
         if (new_shape[i] != -1) total_count *= new_shape[i];
     }
 
-    // solve inferred dim if necessary
+    //  solve inferred dim if necessary
     if (infer_dim != -1) {
         for (int i = 0; i < new_shape.size(); i++) {
             if (new_shape[i] == -1) {

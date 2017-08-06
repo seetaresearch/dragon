@@ -1,5 +1,5 @@
 # --------------------------------------------------------
-# Caffe for Dragon
+# Dragon
 # Copyright(c) 2017 SeetaTech
 # Written by Ting Pan
 # --------------------------------------------------------
@@ -12,8 +12,7 @@ import dragon.config as config
 from dragon.config import logger
 from dragon.tools.db import LMDB
 
-from .__init__ import GetProperty
-
+from .utils import GetProperty
 
 class DataReader(Process):
     def __init__(self, **kwargs):

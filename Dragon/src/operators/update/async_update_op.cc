@@ -21,7 +21,7 @@ void AsyncUpdateOp<Context>::UpdateTimestamp(int tag) {
 }
 
 template <class Context>
-int AsyncUpdateOp<Context>::GetDelay(int tag){
+int AsyncUpdateOp<Context>::GetDelay(int tag) {
     Tensor* t = ws()->GetTensor("_t_" + this->domain + "async_timestamp");
     int* global_timestamp = t->template mutable_data<int, CPUContext>();
     return global_timestamp[tag] - local_timestamp[tag] + 1;
@@ -35,33 +35,33 @@ AsyncUpdateOp<Context>::AsyncUpdateOp(const OperatorDef& op_def, Workspace* ws)
       mode(OperatorBase::GetSingleArg<string>("mode", "Async")),
       nsync(OperatorBase::GetSingleArg<int>("nsync", -1)) {
 
-    //    make key-val tags
+    //  make key-val tags
     Tensor* t = this->ws()->CreateTensor("_t_" + this->domain + "async_tags");
     t->Reshape(vector<TIndex>(1, InputSize()));
     tags = t->template mutable_data<string, CPUContext>();
     for (int i = 0; i < OutputSize(); i++) tags[i] = output(i)->name();
 
-    //    make recv logs
+    //  make recv logs
     t = this->ws()->CreateTensor("_t_" + this->domain + "async_logs");
     t->Reshape(vector<TIndex>(1, InputSize()));
 
-    //    make recv buffers
-    acc_buffers = new Tensor*[InputSize()];      // for soft-sync
-    recv_buffer.reset(new Tensor());    //    for async
+    //  make recv buffers
+    acc_buffers = new Tensor*[InputSize()];    //  for soft-sync
+    recv_buffer.reset(new Tensor());    //  for async
 
-    //    setup for server
+    //  setup for server
     if (this->comm_rank == this->comm_root) {
-        if (nsync == -1) nsync = this->comm_size; // fully async
+        if (nsync == -1) nsync = this->comm_size;    //  fully async
         max_recv = this->comm_size / nsync;
-        //    make global timestamp
+        //  make global timestamp
         t = this->ws()->CreateTensor("_t_" + this->domain + "async_timestamp");
         t->Reshape(vector<TIndex>(1, InputSize()));
-        //    make global buffers
+        //  make global buffers
         for (int i = 0; i < OutputSize(); i++)
             acc_buffers[i] = this->ws()->CreateTensor(tags[i] + "_grad_async_acc");
     }
 
-    //    create independent stream for thread if using cuda-aware
+    //  create independent stream for thread if using cuda-aware
 #ifdef WITH_CUDA_AWARE
     cudaStreamCreate(&stream);
     cublasCreate_v2(&handle);
@@ -71,7 +71,7 @@ AsyncUpdateOp<Context>::AsyncUpdateOp(const OperatorDef& op_def, Workspace* ws)
 
 template <class Context> template <typename T>
 void AsyncUpdateOp<Context>::RootRunWithType() {
-    for (int i = 0; i < InputSize(); i++){
+    for (int i = 0; i < InputSize(); i++) {
         auto* dXdata = input(i).template mutable_data<T, Context>();
         auto* Xdata = output(i)->template mutable_data<T, Context>();
 
@@ -88,7 +88,7 @@ void AsyncUpdateOp<Context>::RootRunWithType() {
 }
 
 template <class Context>
-void AsyncUpdateOp<Context>::RunOnDevice(){
+void AsyncUpdateOp<Context>::RunOnDevice() {
     if (this->comm_rank != this->comm_root) return;
 
     if (input(0).template IsType<float>()) {
@@ -102,11 +102,11 @@ void AsyncUpdateOp<Context>::RunOnDevice(){
 template <class Context> template <typename T>
 void AsyncUpdateOp<Context>::ThreadRunWithType() {
     while (1) {
-        //    pull from specfic client
+        //  pull from specfic client
         MPI_Status status;
         MPI_Probe(node_id, MPI_ANY_TAG, this->comm, &status);
         Tensor* X = ws()->GetTensor(tags[status.MPI_TAG]);
-        if (X->count() == 0) continue; //    wait for server 
+        if (X->count() == 0) continue; //  wait for server 
         recv_buffer->ReshapeLike(*X);
 #ifdef WITH_CUDA_AWARE
         auto* Bdata = recv_buffer->template mutable_data<T, Context>();
@@ -114,7 +114,7 @@ void AsyncUpdateOp<Context>::ThreadRunWithType() {
         auto* Bdata = recv_buffer->template mutable_data<T, CPUContext>();
 #endif
         MPI_Recv(Bdata, X->count(), MPI_FLOAT, status.MPI_SOURCE, status.MPI_TAG, this->comm, MPI_STATUS_IGNORE);
-        //    update
+        //  update
 #ifdef WITH_CUDA_AWARE
         auto* Xdata = X->template mutable_data<T, Context>();
         if (mode != "Async_No_Lock") ws()->LockTensor(output(status.MPI_TAG)->name());
@@ -132,9 +132,9 @@ void AsyncUpdateOp<Context>::ThreadRunWithType() {
         math::Axpy<T, CPUContext>(X->count(), -1.0 / delay, Bdata, Xdata);
         if (mode != "Async_No_Lock") ws()->UnlockTensor(output(status.MPI_TAG)->name());
 #endif
-        //    push back to this client
+        //  push back to this client
         MPI_Send(Xdata, X->count(), MPI_FLOAT, status.MPI_SOURCE, status.MPI_TAG, this->comm);
-        //    do statistics
+        //  do statistics
         update_count++;
         if (update_count % (100 * InputSize()) == 0)
             LOG(INFO) << "Server[" << node_id << "]: "

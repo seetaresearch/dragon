@@ -61,13 +61,13 @@ inline PyObject* MPICreateGroupCC(PyObject* self, PyObject* args) {
     for (int i = 0; i < world_size; i++) all_ranks.insert(i);
     local_group = world_group;
 
-    //    check inclue ranks
+    //  check inclue ranks
     int size = PyList_Size(incl);
-    if (size > 0){
+    if (size > 0) {
         all_ranks.clear();
         unique_ptr<int> incl_ranks(new int[size]);
         int* ranks = incl_ranks.get();
-        for (int i = 0; i < size; i++){
+        for (int i = 0; i < size; i++) {
             ranks[i] = _PyInt_AsInt(PyList_GetItem(incl, i));
             all_ranks.insert(ranks[i]);
         }
@@ -75,13 +75,13 @@ inline PyObject* MPICreateGroupCC(PyObject* self, PyObject* args) {
         CHECK(err_code == MPI_SUCCESS) << "failed to create mpi group.";
     }
 
-    //    check exclude ranks
+    //  check exclude ranks
     size = PyList_Size(excl);
     if (size > 0) {
         all_ranks.clear(); Set<int> tmp;
         unique_ptr<int> excl_ranks(new int[size]);
         int* ranks = excl_ranks.get();
-        for (int i = 0; i < size; i++){
+        for (int i = 0; i < size; i++) {
             ranks[i] = _PyInt_AsInt(PyList_GetItem(excl, i));
             tmp.insert(ranks[i]);
         }
@@ -97,7 +97,7 @@ inline PyObject* MPICreateGroupCC(PyObject* self, PyObject* args) {
     if (local_comm != MPI_COMM_NULL) {
         int world_rank, local_size;
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-        if (world_rank == local_root){
+        if (world_rank == local_root) {
             MPI_Comm_size(local_comm, &local_size);
             std::stringstream ss;
             ss << "Rank[" << world_rank << "]: "

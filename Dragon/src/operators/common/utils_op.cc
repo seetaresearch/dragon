@@ -60,11 +60,11 @@ void AccuracyOp<Context>::RunWithType() {
                 }
             }
             count++;
-        }    //    end inner_num
+        }    //  end inner_num
     }    // end outer_num
 
     output(0)->template mutable_data<T, CPUContext>()[0] = acc / count;
-    if (OutputSize() > 1){
+    if (OutputSize() > 1) {
         auto* acc_per_class = output(1)->template mutable_data<T, CPUContext>();
         for (int i = 0; i < classes; i++)
             acc_per_class[i] = num_per_class[i] == 0 ? 0 : acc_per_class[i] / acc_per_class[i];

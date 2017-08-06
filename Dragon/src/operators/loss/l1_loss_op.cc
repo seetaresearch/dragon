@@ -28,7 +28,7 @@ void L1LossOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void L1LossOp<Context>::RunOnDevice(){
+void L1LossOp<Context>::RunOnDevice() {
     CHECK_EQ(input(0).count(), input(1).count());
     output(0)->Reshape(vector<TIndex>(1, 1));
     diff = ws()->CreateTensor("_t_" + anchor() + "_l1_loss_diff");
@@ -53,7 +53,7 @@ void L1LossGradientOp<Context>::RunWithType() {
     else if (normalization == "FULL") normalizer = input(0).count();
     else if (normalization == "NONE") normalizer = 1;
     alpha = alpha / normalizer;
-    for (int i = 0; i < 2; i++){
+    for (int i = 0; i < 2; i++) {
         if (output(i)->name() == "ignore") continue;
         output(i)->ReshapeLike(input(i));
         auto* dXdata = output(i)->template mutable_data<T, Context>();

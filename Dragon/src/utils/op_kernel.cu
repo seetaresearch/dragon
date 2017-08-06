@@ -130,7 +130,7 @@ __global__ void _ReluGrad(const int count,
                           const T* y, 
                           const float slope, 
                           T* dx) {
-    CUDA_KERNEL_LOOP(i, count){
+    CUDA_KERNEL_LOOP(i, count) {
         dx[i] = dy[i] * ((y[i] > 0) + slope * (y[i] <= 0));
     }
 }
@@ -912,7 +912,7 @@ __global__ void _Sum(const int count,
 
 template<> void Sum<float, CUDAContext>(
         const int count, const int axis_dim,
-        const int inner_dim, const float* x, float* y){
+        const int inner_dim, const float* x, float* y) {
     _Sum<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
                                                           axis_dim, 
                                                          inner_dim, 
@@ -954,7 +954,7 @@ template<> void SumGrad<float, CUDAContext>(const int count,
 
 template <typename T>
     __global__ void _Slice(const int count, const int outer_dim, const int inner_dim,
-        const int x_slice_dim, const int y_slice_dim, const int slice_offset, const T* x, T* y){
+        const int x_slice_dim, const int y_slice_dim, const int slice_offset, const T* x, T* y) {
         CUDA_KERNEL_LOOP(idx, count) {
             const int tmp = y_slice_dim * inner_dim;
             const int outer_idx = idx / tmp;
@@ -1238,7 +1238,7 @@ template <typename T>
 __global__ void _AbsGrad(const int count, const T* dy, T* dx) {
     CUDA_KERNEL_LOOP(idx, count) {
        const T val = dy[idx];
-       //    val > 0: 1 | val == 0: 0 | val < 0: -1
+       //  val > 0: 1 | val == 0: 0 | val < 0: -1
        dx[idx] = (val > T(0)) - (val < T(0));
     }
 }
@@ -1298,7 +1298,7 @@ __global__ void _SmoothL1Grad(const int count, const float sigma2, const T* dy, 
         const T val = dy[idx];
         const T abs_val = abs(val);
         if (abs_val < 1.0 / sigma2) dx[idx] = val * sigma2;
-        //    val > 0: 1 | val == 0: 0 | val < 0: -1
+        //  val > 0: 1 | val == 0: 0 | val < 0: -1
         else dx[idx] = (val > T(0)) - (val < T(0));
     }
 }
@@ -1952,8 +1952,8 @@ __global__ void _Col2Im(const int count,
         const int ex_kernel_w = (kernel_w - 1) * dilation_w + 1;
         const int w_start = (im_w < ex_kernel_w) ? 0 : (im_w - ex_kernel_w) / stride_w + 1;
 
-        //    redundant pixels will be ignored when conv
-        //    note to clip them by min(x,col_w)
+        //  redundant pixels will be ignored when conv
+        //  note to clip them by min(x,col_w)
         const int w_end = min(im_w / stride_w + 1, col_w);
         const int h_start = (im_h < ex_kernel_h) ? 0 : (im_h - ex_kernel_h) / stride_h + 1;
         const int h_end = min(im_h / stride_h + 1, col_h);
@@ -1962,8 +1962,8 @@ __global__ void _Col2Im(const int count,
             for (int w = w_start; w < w_end; ++w) {
                 int kh_off = (im_h - h * stride_h);
                 int kw_off = (im_w - w * stride_w);
-                //    only the serval im pixels used in dilated-conv
-                //    ignore the corresponding col pixels
+                //  only the serval im pixels used in dilated-conv
+                //  ignore the corresponding col pixels
                 if (kh_off % dilation_h == 0 && kw_off % dilation_w == 0) {
                     kh_off /= dilation_h;
                     kw_off /= dilation_w;
@@ -2222,11 +2222,11 @@ __global__ void _MAXPoolingGrad(const int count,
         const int c = (idx / width / height) % channels;
         const int n = idx / width / height / channels;
 
-        //    allow overlapping
+        //  allow overlapping
         const int start_ph = (h + pad_h < kernel_h) ? 0 : (h + pad_h - kernel_h) / stride_h + 1;
         const int start_pw = (w + pad_w < kernel_w) ? 0 : (w + pad_w - kernel_w) / stride_w + 1;
 
-        //    allow clip
+        //  allow clip
         const int end_ph = min((h + pad_h) / stride_h + 1, pool_height);
         const int end_pw = min((w + pad_w) / stride_w + 1, pool_width);
 
@@ -2436,7 +2436,7 @@ __global__ void _ROIPoolingGrad(const int count,
             const T* cur_roi = roi + n * 5;
             const int im_idx_spec = cur_roi[0];
 
-            //    ignore wrong im_batch_idx
+            //  ignore wrong im_batch_idx
             if (im_idx != im_idx_spec) continue;
 
             int x1 = round(cur_roi[1] * spatial_scale);
@@ -2474,9 +2474,9 @@ __global__ void _ROIPoolingGrad(const int count,
                     if (mask_off[pool_idx] == (h * width + w)) {
                         diff += dy_off[pool_idx];
                     }
-                }    //    end pw
-            }    // end ph
-        }    //    end n
+                }    //  end pw
+            }    //  end ph
+        }    //  end n
         dx[idx] = diff;
     }
 }
@@ -2647,7 +2647,7 @@ __global__ void _ROIAlignGrad(const int count,
             const T* cur_roi = roi + n * 5;
             const int im_idx_spec = cur_roi[0];
 
-            //    ignore wrong im_batch_idx
+            //  ignore wrong im_batch_idx
             if (im_idx != im_idx_spec) continue;
 
             T x1 = cur_roi[1] * spatial_scale;
@@ -2693,9 +2693,9 @@ __global__ void _ROIAlignGrad(const int count,
                         else gradient_factor *= mw - w1;
                         diff += dy_off[ph * pool_w + pw] * gradient_factor;
                     }
-                }    //    end pw
-            }    // end ph
-        }    //    end n
+                }    //  end pw
+            }    //  end ph
+        }    //  end n
         dx[idx] = diff;
     }
 }

@@ -98,7 +98,7 @@ template<> void Softmax<float, CPUContext>(const int count,
     const int dim = count / outer_dim;
     for (int i = 0; i < outer_dim; ++i) {
         context->Copy<float, CPUContext, CPUContext>(inner_dim, scale, x + i*dim);
-        for (int j = 0; j < classes; ++j){
+        for (int j = 0; j < classes; ++j) {
             for (int k = 0; k < inner_dim; k++)
                 scale[k] = std::max(scale[k], x[i * dim + j * inner_dim + k]);
         }
@@ -668,7 +668,7 @@ template <> void OneHot<float, CPUContext>(const int count,
 template<> void AbsGrad<float, CPUContext>(const int count, const float* dy, float* dx) {
     for (int i = 0; i < count; ++i) {
         const float val = dy[i];
-        //    val > 0: 1 | val == 0: 0 | val < 0: -1
+        //  val > 0: 1 | val == 0: 0 | val < 0: -1
         dx[i] = (val > float(0)) - (val < float(0));
     }
 }
@@ -707,7 +707,7 @@ template<> void SmoothL1Grad<float, CPUContext>(const int count,
         const float val = dy[i];
         const float abs_val = abs(val);
         if (abs_val < 1.0 / sigma2) dx[i] = val * sigma2;
-        //    val > 0: 1 | val == 0: 0 | val < 0: -1
+        //  val > 0: 1 | val == 0: 0 | val < 0: -1
         else dx[i] = (val > float(0)) - (val < float(0));
     }
 }
@@ -862,11 +862,11 @@ template <> void LSTMUnitGrad<float, CPUContext>(const int count,
             p_df = dx + f_offset + ch;
             p_do = dx + o_offset + ch;
             p_dg = dx + g_offset + ch;
-            //    BPTT compute the dc_{t-1} at the time of t
-            //    dc_{t-1} =    dl / d(h_{t}) * d(h_{t}) / d(c_{t}) * d(c_{t}) / d(c_{t-1})
+            //  BPTT compute the dc_{t-1} at the time of t
+            //  dc_{t-1} =  dl / d(h_{t}) * d(h_{t}) / d(c_{t}) * d(c_{t}) / d(c_{t-1})
             //                  + d(c_{t+1}) / d(c_{t}) * d(c_{t}) / d(c_{t-1})
-            //             =   (dl / d(h_{t}) * d(h_{t}) / d(c_{t}) + d(c_{t+1}) / d(c_{t}))
-            //                * d(c_{t}) / d(c_{t-1})
+            //           =  (dl / d(h_{t}) * d(h_{t}) / d(c_{t}) + d(c_{t+1}) / d(c_{t}))
+            //                  * d(c_{t}) / d(c_{t-1})
             tanh_c_t = tanh(c[ch]);
             dc_1_sum_term = dh[ch] * o * (1 - tanh_c_t * tanh_c_t) + dc[ch];
             dc_1[ch] = dc_1_sum_term * f;
@@ -1182,18 +1182,18 @@ template<> void MAXPooling<float, CPUContext>(const int count,
                                 max_val = x[idx];
                                 max_idx = idx;
                             }
-                        }    //    end w
-                    }    //    end h
+                        }    //  end w
+                    }    //  end h
                     y[pool_idx] = max_val;
                     mask[pool_idx] = max_idx;
-                }    //    end pw
-            }    //    end ph
-            //    offset a channel
+                }    //  end pw
+            }    //  end ph
+            //  offset a channel
             x += x_offset;
             y += y_offset;
             mask += y_offset;
-        }    //    end c
-    }    //    end n
+        }    //  end c
+    }    //  end n
 }
 
 template<> void AVEPooling<float, CPUContext>(const int count, 
@@ -1257,13 +1257,13 @@ template<> void MAXPoolingGrad<float, CPUContext>(const int count,
                         const int pool_idx = ph * pool_width + pw;
                         const int idx = mask[pool_idx];
                         dx[idx] += dy[pool_idx];
-                    }    //    end pw
-            }    //    end ph
+                    }    //  end pw
+            }    //  end ph
             dx += x_offset;
             dy += y_offset;
             mask += y_offset;
-        }    // end c
-    }    //    end n
+        }    //  end c
+    }    //  end n
 }
 
 template<> void AVEPoolingGrad<float, CPUContext>(const int count, 
@@ -1298,12 +1298,12 @@ template<> void AVEPoolingGrad<float, CPUContext>(const int count,
                             dx[idx] += (dy[pool_idx] / pool_size);
                         }
                     }
-                }    //    end pw
-            }    //    end ph
+                }    //  end pw
+            }    //  end ph
             dx += x_offset;
             dy += y_offset;
-        }    // end c
-    }    //    end n
+        }    //  end c
+    }    //  end n
 }
 
 /******************** vision.roi_pooling ********************/
@@ -1362,18 +1362,18 @@ template<> void ROIPooling<float, CPUContext>(const float spatial_scale,
                                     Ydata[pool_idx] = Idata[idx];
                                     Mdata[pool_idx] = idx;
                             }
-                        }    //end w
-                    }    // end h
-                }    // end pw
-            }    // end ph
-            //    offset image channels
+                        }    //  end w
+                    }    //  end h
+                }    //  end pw
+            }    //  end ph
+            //  offset image channels
             Idata += x->offset(0, 1);
             Ydata += y->offset(0, 1);
             Mdata += mask->offset(0, 1);
-        }    // end c
-        // offset roi region
+        }    //  end c
+        //  offset roi region
         Rdata += roi->offset(1);
-    }    //end n
+    }    //  end n
 }
 
 template<> void ROIPoolingGrad<float, CPUContext>(const float spatial_scale, 

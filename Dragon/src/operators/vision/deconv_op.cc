@@ -43,7 +43,7 @@ void DeConvOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void DeConvOp<Context>::RunOnDevice(){
+void DeConvOp<Context>::RunOnDevice() {
     Reshape();
 
     if (input(0).template IsType<float>()) RunWithType<float>();

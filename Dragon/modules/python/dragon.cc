@@ -31,7 +31,7 @@ const TypeMeta& NumpyTypeToDragon(int numpy_type) {
             { NPY_FLOAT16, TypeMeta::Make<float16>() },
             { NPY_UINT8, TypeMeta::Make<uint8_t>() }};
 
-    static TypeMeta unknown_type;  //  id = 0
+    static TypeMeta unknown_type;
     return dragon_type_map.count(numpy_type) ? dragon_type_map[numpy_type] : unknown_type;
 }
 
@@ -50,7 +50,7 @@ REGISTER_TENSOR_FETCHER(TypeMeta::Id<NumpyFetcher>(), NumpyFetcher);
 REGISTER_TENSOR_FETCHER(TypeMeta::Id<StringFetcher>(), StringFetcher);
 REGISTER_TENSOR_FEEDER(TypeMeta::Id<NumpyFeeder>(), NumpyFeeder);
 
-extern "C"{
+extern "C" {
 
 PyObject* RegisteredOperatorsCC(PyObject* self, PyObject* args) {
     set<string> all_keys;
@@ -123,7 +123,7 @@ bool SwitchWorkspaceInternal(const string& name, const bool create_if_missing) {
     } else if (create_if_missing) {
         unique_ptr<Workspace> new_workspace(new Workspace());
         g_workspace = new_workspace.get();
-        g_workspaces[name] = std::move(new_workspace);  //  ???
+        g_workspaces[name] = std::move(new_workspace);
         g_current_workspace = name;
         return true;
     } else {

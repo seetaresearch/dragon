@@ -60,7 +60,7 @@ void InstanceNormOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void InstanceNormOp<Context>::RunOnDevice(){
+void InstanceNormOp<Context>::RunOnDevice() {
     num = input(0).dim(0); channels = input(0).dim(1);
     spatial_dim = input(0).count(2); nbychans = num * channels;
     vector<TIndex> dims({ num, channels });
@@ -69,7 +69,7 @@ void InstanceNormOp<Context>::RunOnDevice(){
 
     output(0)->ReshapeLike(input(0));
 
-    //    if true, Act/Exp/Pow/Norm Ops can not exist before when train
+    //  if true, Act/Exp/Pow/Norm Ops can not exist before when train
     if (inplace) output(0)->Share(input(0));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
@@ -105,7 +105,7 @@ void InstanceNormGradientOp<Context>::RunWithType() {
     auto* Ydata = input(-2).template data<T, Context>();
     math::Mul<T, Context>(output(0)->count(), Ydata, dYdata, dXdata);
 
-    //    sum(dE/dY \cdot Y)
+    //  sum(dE/dY \cdot Y)
     math::Gemv<T, Context>(CblasNoTrans, nbychans, spatial_dim, 
                                                            1.0, 
                                              dXdata, SMul_data, 
@@ -116,10 +116,10 @@ void InstanceNormGradientOp<Context>::RunWithType() {
                                                                             0.0, 
                                                                         dXdata);
 
-    //    sum(dE/dY \cdot Y) \cdot Y
+    //  sum(dE/dY \cdot Y) \cdot Y
     math::Mul<T, Context>(output(0)->count(), Ydata, dXdata, dXdata);
 
-    //    sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y
+    //  sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y
     math::Gemv<T, Context>(CblasNoTrans, nbychans, spatial_dim, 
                                                            1.0, 
                                              dYdata, SMul_data, 
@@ -130,13 +130,13 @@ void InstanceNormGradientOp<Context>::RunWithType() {
                                                                             1.0, 
                                                                         dXdata);
 
-    //   dE/dY - mean(dE/dY)- mean(dE/dY \cdot Y) \cdot Y
-    // = dE/dY - mean(sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y)
+    //  dE/dY - mean(dE/dY)- mean(dE/dY \cdot Y) \cdot Y
+    //  = dE/dY - mean(sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y)
     math::Axpby<T, Context>(output(0)->count(), 1.0, dYdata,
                                          -1.0 / spatial_dim, 
                                                     dXdata);
 
-    //    divide by var
+    //  divide by var
     math::Div<T, Context>(output(0)->count(), dXdata, Std_data, dXdata);
 
     //  release buffer

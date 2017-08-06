@@ -37,7 +37,7 @@ void cudnnSetTensorDesc(cudnnTensorDescriptor_t* desc, const vector<TIndex>& dim
     int* dimA = new int[ndim];
     int* strideA = new int[ndim];
     TIndex stride = 1;
-    for (int i = ndim - 1; i >= 0; i--){
+    for (int i = ndim - 1; i >= 0; i--) {
         strideA[i] = stride;
         dimA[i] = dims[i];
         stride *= dimA[i];
@@ -55,7 +55,7 @@ void cudnnSetTensorDesc(cudnnTensorDescriptor_t* desc,
     int ndim = (int)dims.size();
     int* dimA = new int[ndim];
     int* strideA = new int[ndim];
-    for (int i = ndim - 1; i >= 0; i--){
+    for (int i = ndim - 1; i >= 0; i--) {
         strideA[i] = strides[i];
         dimA[i] = dims[i];
     }
@@ -66,10 +66,10 @@ void cudnnSetTensorDesc(cudnnTensorDescriptor_t* desc,
 
 template <typename T>
 void cudnnSetTensorDesc(cudnnTensorDescriptor_t* desc, Tensor* tensor) {
-    //    CUDNN only support ndim from 3 to 8
-    //    we fake a reshaped dims to pass check
+    //  cuDNN requires ndim from 3 to 8
+    //  we fake a reshaped dims to pass check
     vector<TIndex> fake_dims(tensor->dims());
-    if (fake_dims.size() < 3 || fake_dims.size() > 8){
+    if (fake_dims.size() < 3 || fake_dims.size() > 8) {
         fake_dims.assign({ 1, 1 });
         fake_dims.push_back(tensor->count());
     }

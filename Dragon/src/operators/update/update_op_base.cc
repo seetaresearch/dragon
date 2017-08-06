@@ -59,7 +59,7 @@ void UpdateOpBase<Context>::ReduceRunWithType() {
     int recv_from = (comm_rank - 1 + comm_size) % comm_size;
     int send_to = (comm_rank + 1) % comm_size;
 
-    //    scatter-reduce
+    //  scatter-reduce
     for (int i = 0; i < comm_size - 1; i++) {
         int recv_chunk = (comm_rank - i - 1 + comm_size) % comm_size;
         int send_chunk = (comm_rank - i + comm_size) % comm_size;
@@ -83,7 +83,7 @@ void UpdateOpBase<Context>::ReduceRunWithType() {
     }
     ws()->ReleaseBuffer(buffer);
 
-    //    allgather
+    //  allgather
     for (int i = 0; i < comm_size - 1; i++) {
         int send_chunk = (comm_rank - i + 1 + comm_size) % comm_size;
         int recv_chunk = (comm_rank - i + comm_size) % comm_size;
@@ -97,8 +97,8 @@ void UpdateOpBase<Context>::ReduceRunWithType() {
                      0, comm, MPI_STATUS_IGNORE);
     }
 
-    //    ave-normalize
-    if (comm_size > 1){
+    //  ave-normalize
+    if (comm_size > 1) {
 #ifdef WITH_CUDA_AWARE
         math::Scal<T, Context>(count, T(1.0 / comm_size), dXdata);
 #else
@@ -110,13 +110,13 @@ void UpdateOpBase<Context>::ReduceRunWithType() {
 
 template <class Context> template <typename T>
 void UpdateOpBase<Context>::PreprocessRunWithType() {
-    //    scale
+    //  scale
     scale_factor = param("scale_gradient");
-    if (scale_factor != 1){
+    if (scale_factor != 1) {
         auto* dXdata = input(0).template mutable_data<T, Context>();
         math::Scal<T, Context>(input(0).count(), scale_factor, dXdata);
     }
-    //    clip
+    //  clip
     clip_thresh = param("clip_gradient");
     if (clip_thresh > 0) {
         auto* dXdata = input(0).template mutable_data<T, Context>();
@@ -127,12 +127,12 @@ void UpdateOpBase<Context>::PreprocessRunWithType() {
             math::Scal<T, Context>(input(0).count(), factor, dXdata);
         }
     }
-    //    decay
-    l2_decay = param("l2_decay");
-    if (l2_decay > 0){
+    //  decay
+    l2_decay = param("l2_decay") * decay_mult;
+    if (l2_decay > 0) {
         auto* dXdata = input(0).template mutable_data<T, Context>();
         auto* Xdata = output(0)->template data<T, Context>();
-        math::Axpy<T, Context>(input(0).count(), l2_decay * decay_mult, Xdata, dXdata);
+        math::Axpy<T, Context>(input(0).count(), l2_decay, Xdata, dXdata);
     }
 }
 
@@ -141,9 +141,9 @@ void UpdateOpBase<Context>::UpdateRunWithType() {
     if (!allow_parallel || (allow_parallel && mode == "Sync")) {
         auto* dXdata = input(0).template mutable_data<T, Context>();
         auto* Xdata = output(0)->template mutable_data<T, Context>();
-        //    update
+        //  update
         math::Axpy<T, Context>(output(0)->count(), -1.0, dXdata, Xdata);
-        //    clear accumulated grads
+        //  clear accumulated grads
         math::Set<T, Context>(input(0).count(), 0, dXdata);
     } else {
 #ifdef WITH_MPI

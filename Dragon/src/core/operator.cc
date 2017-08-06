@@ -66,7 +66,7 @@ DEFINE_REGISTRY(GradientRegistry, GradientMakerBase, const OperatorDef&, const v
 DEFINE_REGISTRY(NoGradientRegistry, GradientMakerBase, const OperatorDef&, const vector<string>&);
 
 #define INSTANTIATE_GET_SINGLE_ARGUMENT(T, fieldname) \
-template <> T OperatorBase::GetSingleArg(const string& name, const T& default_value){ \
+template <> T OperatorBase::GetSingleArg(const string& name, const T& default_value) { \
     if(args_.count(name) == 0) { \
         return default_value; \
     } \
@@ -82,7 +82,7 @@ INSTANTIATE_GET_SINGLE_ARGUMENT(int64_t, i64);
 
 
 #define INSTANTIATE_GET_REPEATED_ARGUMENT(T, fieldname) \
-template<> vector<T> OperatorBase::GetRepeatedArg<T>(const string& name){ \
+template<> vector<T> OperatorBase::GetRepeatedArg<T>(const string& name) { \
     if(args_.count(name) == 0) return vector<T>(); \
     vector<T> values; \
     for(const auto& v : args_[name]->fieldname()) values.push_back(v); \

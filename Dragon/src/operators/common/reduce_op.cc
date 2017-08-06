@@ -78,7 +78,7 @@ void ReduceGradientOp<Context>::SumRunWithType() {
 template <class Context> template <typename T>
 void ReduceGradientOp<Context>::MeanRunWithType() {
     auto* dXdata = output(0)->template mutable_data<T, Context>();
-    if (axis == -1){
+    if (axis == -1) {
         auto* dYdata = input(-1).template data<T, CPUContext>();
         math::Set<T, Context>(output(0)->count(), dYdata[0] / input(0).count(), dXdata);
     } else {
