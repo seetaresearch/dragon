@@ -58,7 +58,7 @@ PyObject* RegisteredOperatorsCC(PyObject* self, PyObject* args) {
     PyObject* list = PyList_New(all_keys.size());
     int idx = 0;
     for (const string& name : all_keys) 
-        CHECK_EQ(PyList_SetItem(list, idx++, StdStringToPyBytes(name)), 0);
+        CHECK_EQ(PyList_SetItem(list, idx++, StdStringToPyUnicode(name)), 0);
     return list;
 }
 
@@ -68,7 +68,7 @@ PyObject* NoGradientOperatorsCC(PyObject* self, PyObject* args) {
     PyObject* list = PyList_New(all_keys.size());
     int idx = 0;
     for (const string& name : all_keys) 
-        CHECK_EQ(PyList_SetItem(list, idx++, StdStringToPyBytes(name)), 0);
+        CHECK_EQ(PyList_SetItem(list, idx++, StdStringToPyUnicode(name)), 0);
     return list;
 }
 
@@ -106,7 +106,7 @@ PyObject* CreateGradientDefsCC(PyObject* self, PyObject* args) {
 
     PyObject* g_input_py = PyList_New(grad.g_inputs.size());
     for (int i = 0; i < grad.g_inputs.size(); i++) 
-        CHECK_EQ(PyList_SetItem(g_input_py, i, StdStringToPyBytes(grad.g_inputs[i])), 0);
+        CHECK_EQ(PyList_SetItem(g_input_py, i, StdStringToPyUnicode(grad.g_inputs[i])), 0);
 
     PyObject* defaults_py = PyList_New(grad.defaults.size());
     for (int i = 0; i < grad.defaults.size(); i++) 
@@ -149,14 +149,14 @@ PyObject* SwitchWorkspaceCC(PyObject* self, PyObject *args) {
 }
 
 PyObject* CurrentWorkspaceCC(PyObject* self, PyObject* args) { 
-    return StdStringToPyBytes(g_current_workspace);
+    return StdStringToPyUnicode(g_current_workspace);
 }
 
 PyObject* WorkspacesCC(PyObject* self, PyObject* args) {
     PyObject* list = PyList_New(g_workspaces.size());
     int i = 0;
     for (auto const& it : g_workspaces) 
-        CHECK_EQ(PyList_SetItem(list, i++, StdStringToPyBytes(it.first)), 0);
+        CHECK_EQ(PyList_SetItem(list, i++, StdStringToPyUnicode(it.first)), 0);
     return list;
 }
 
@@ -176,14 +176,14 @@ PyObject* ResetWorkspaceCC(PyObject* self, PyObject* args) {
 }
 
 PyObject* RootFolderCC(PyObject* self, PyObject* args) {
-    return StdStringToPyBytes(g_workspace->GetRootFolder());
+    return StdStringToPyUnicode(g_workspace->GetRootFolder());
 }
 
 PyObject* TensorsCC(PyObject* self, PyObject* args) {
     vector<string> tensor_strings = g_workspace->GetTensors();
     PyObject* list = PyList_New(tensor_strings.size());
     for (int i = 0; i < tensor_strings.size(); i++)
-        CHECK_EQ(PyList_SetItem(list, i, StdStringToPyBytes(tensor_strings[i])), 0);
+        CHECK_EQ(PyList_SetItem(list, i, StdStringToPyUnicode(tensor_strings[i])), 0);
     return list;
 }
 
@@ -224,7 +224,7 @@ PyObject* GetTensorNameCC(PyObject* self, PyObject* args) {
     char* cname;
     if (!PyArg_ParseTuple(args, "s", &cname)) return nullptr;
     string query = g_workspace->GetTensorName(string(cname));
-    return StdStringToPyBytes(query);
+    return StdStringToPyUnicode(query);
 }
 
 PyObject* CreateGraphCC(PyObject* self, PyObject* args) {
@@ -263,7 +263,7 @@ PyObject* GraphsCC(PyObject* self, PyObject* args) {
     vector<string> graph_string = g_workspace->GetGraphs();
     PyObject* list = PyList_New(graph_string.size());
     for (int i = 0; i < graph_string.size(); i++)
-        CHECK_EQ(PyList_SetItem(list, i, StdStringToPyBytes(graph_string[i])), 0);
+        CHECK_EQ(PyList_SetItem(list, i, StdStringToPyUnicode(graph_string[i])), 0);
     return list;
 }
 

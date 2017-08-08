@@ -21,7 +21,6 @@
 
 #ifdef WITH_PYTHON3
 #define PyString_AsString PyUnicode_AsUTF8
-#define PyBytes_FromStringAndSize PyUnicode_FromStringAndSize
 #endif
 
 using namespace dragon;
@@ -33,6 +32,15 @@ inline std::string PyBytesToStdString(PyObject* pystring) {
 inline PyObject* StdStringToPyBytes(const std::string& str) {
     return PyBytes_FromStringAndSize(str.c_str(), str.size());
 }
+
+inline PyObject* StdStringToPyUnicode(const std::string& str) {
+#ifdef WITH_PYTHON3
+    return PyUnicode_FromStringAndSize(str.c_str(), str.size());
+#else
+    return PyBytes_FromStringAndSize(str.c_str(), str.size());
+#endif
+}
+
 template <typename T>
 inline void MakeStringInternal(std::stringstream& ss, const T& t) { ss << t; }
 
@@ -114,7 +122,7 @@ class StringFetcher : public TensorFetcherBase {
  public:
     PyObject* Fetch(const Tensor& tensor) override {
         CHECK_GT(tensor.count(), 0);
-        return StdStringToPyBytes(*tensor.data<string,CPUContext>());
+        return StdStringToPyBytes(*tensor.data<string, CPUContext>());
     }
 };
 

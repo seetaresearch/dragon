@@ -18,7 +18,6 @@ class GraphGradientMaker(object):
         """ parse ops from string """
         g_ops, g_inputs, defaults = CreateGradientDefsCC(op_def.SerializeToString(), g_output)
         for idx, g_op in enumerate(g_ops):
-            if sys.version_info >= (3, 0): g_op = g_op.encode()
             new_def = pb.OperatorDef()
             new_def.ParseFromString(g_op)
             _, new_def.name = GetOperatorName()
