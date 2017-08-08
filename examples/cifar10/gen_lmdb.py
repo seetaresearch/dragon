@@ -32,12 +32,6 @@ def wrapper_str(raw_str):
 
 def extract_images():
     prefix = 'data/cifar-10-batches-py'
-    extract_path = 'data/extract'
-    if not os.path.exists(os.path.join(extract_path, 'JPEGImages')):
-        os.makedirs(os.path.join(extract_path, 'JPEGImages'))
-    if not os.path.exists(os.path.join(extract_path, 'ImageSets')):
-        os.makedirs(os.path.join(extract_path, 'ImageSets'))
-
     batches = [os.path.join(prefix, 'data_batch_{}'.format(i)) for i in xrange(1, 6)]
     batches += [os.path.join(prefix, 'test_batch')]
 
@@ -60,28 +54,13 @@ def extract_images():
                 label = dict[wrapper_str('labels')][item_idx]
                 im = im.transpose((1, 2, 0))
                 im = im[:, :, ::-1]
-                filename = str(total_idx).zfill(ZFILL) + '.jpg'
-                cv2.imwrite(os.path.join(extract_path, 'JPEGImages', filename), im)
-                images_list.append((filename, str(label)))
+                images_list.append((im, str(label)))
                 total_idx += 1
 
-    # make list
-    with open(os.path.join(extract_path, 'ImageSets', 'train.txt'), 'w') as f:
-        for i in xrange(50000):
-            item = images_list[i][0] + ' ' + images_list[i][1]
-            if i != 49999: item += '\n'
-            f.write(item)
-
-    with open(os.path.join(extract_path, 'ImageSets', 'test.txt'), 'w') as f:
-        for i in xrange(50000, 60000):
-            item = images_list[i][0] + ' ' + images_list[i][1]
-            if i != 59999: item += '\n'
-            f.write(item)
+    return images_list
 
 
-def make_db(image_path, label_path, database_path, pad=0):
-    if os.path.isfile(label_path) is False:
-        raise ValueError('input path is empty or wrong.')
+def make_db(images_list, database_path, pad=0):
     if os.path.isdir(database_path) is True:
         raise ValueError('the database path is already exist.')
 
@@ -90,42 +69,35 @@ def make_db(image_path, label_path, database_path, pad=0):
     db = LMDB(max_commit=10000)
     db.open(database_path, mode='w')
 
-    total_line = sum(1 for line in open(label_path))
+    total_line = len(images_list)
     count = 0
     zfill_flag = '{0:0%d}' % (ZFILL)
 
-    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 95]
-
     start_time = time.time()
 
-    with open(label_path, 'r') as input_file:
-        for record in input_file:
-            count += 1
-            if count % 10000 == 0:
-                now_time = time.time()
-                print('{0} / {1} in {2:.2f} sec'.format(
-                    count, total_line, now_time - start_time))
-                db.commit()
+    for record in images_list:
+        count += 1
+        if count % 10000 == 0:
+            now_time = time.time()
+            print('{0} / {1} in {2:.2f} sec'.format(
+                count, total_line, now_time - start_time))
+            db.commit()
 
-            record = record.split()
-            path = record[0]
-            label = record[1]
-
-            img = cv2.imread(os.path.join(image_path ,path))
-            if pad > 0:
-                pad_img = np.zeros((img.shape[0] + 2 * pad,
-                                    img.shape[1] + 2 * pad, 3), dtype=np.uint8)
-                pad_img[pad : pad + img.shape[0],
+        img = record[0]
+        label = record[1]
+        if pad > 0:
+            pad_img = np.zeros((img.shape[0] + 2 * pad,
+                                img.shape[1] + 2 * pad, 3), dtype=np.uint8)
+            pad_img[pad : pad + img.shape[0],
                         pad : pad + img.shape[1], :] = img
-                img = pad_img
-            result, imgencode = cv2.imencode('.jpg', img, encode_param)
+            img = pad_img
 
-            datum = caffe_pb2.Datum()
-            datum.height, datum.width, datum.channels = img.shape
-            datum.label = int(label)
-            datum.encoded = True
-            datum.data = imgencode.tostring()
-            db.put(zfill_flag.format(count - 1), datum.SerializeToString())
+        datum = caffe_pb2.Datum()
+        datum.height, datum.width, datum.channels = img.shape
+        datum.label = int(label)
+        datum.encoded = False
+        datum.data = img.tostring()
+        db.put(zfill_flag.format(count - 1), datum.SerializeToString())
 
     now_time = time.time()
     print('{0} / {1} in {2:.2f} sec'.format(count, total_line, now_time - start_time))
@@ -134,7 +106,6 @@ def make_db(image_path, label_path, database_path, pad=0):
     db.commit()
     db.close()
 
-    shutil.copy(label_path, database_path + '/image_list.txt')
     end_time = time.time()
     print('{0} images have been stored in the database.'.format(total_line))
     print('This task finishes within {0:.2f} seconds.'.format(
@@ -147,12 +118,8 @@ if __name__ == '__main__':
 
     untar('data/cifar-10-python.tar.gz')
 
-    extract_images()
+    images_list = extract_images()
 
-    make_db('data/extract/JPEGImages',
-            'data/extract/ImageSets/train.txt',
-            'data/train_lmdb')
+    make_db(images_list[0:50000], 'data/train_lmdb')
 
-    make_db('data/extract/JPEGImages',
-            'data/extract/ImageSets/test.txt',
-            'data/test_lmdb')
+    make_db(images_list[50000:60000], 'data/test_lmdb')

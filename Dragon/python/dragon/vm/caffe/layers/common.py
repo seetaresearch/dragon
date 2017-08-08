@@ -177,9 +177,9 @@ class BatchNormLayer(Layer):
                        'momentum': param.moving_average_fraction,
                        'eps': param.eps}
         # mean, var, factor are set to 0 in order to do statistics
-        mean = Tensor(LayerParameter.name + '@param0').Constant()
-        var  = Tensor(LayerParameter.name + '@param1').Constant()
-        factor = Tensor(LayerParameter.name + '@param2').Constant()
+        mean = Tensor(LayerParameter.name + '@param0').Constant(value=0.0)
+        var  = Tensor(LayerParameter.name + '@param1').Constant(value=0.0)
+        factor = Tensor(LayerParameter.name + '@param2').Constant(value=0.0)
         # in dragon, set diff as None will ignore computing grad automatically
         # but in bvlc-caffe1, you must set lr_mult = 0 manually
         self._blobs.append({'data': mean, 'diff': None})
@@ -202,9 +202,9 @@ class BatchRenormLayer(Layer):
                        'r_max': float(param.r_max),
                        'd_max': float(param.d_max),
                        't_delta': float(param.t_delta)}
-        mean = Tensor(LayerParameter.name + '@param0').Constant()
-        var  = Tensor(LayerParameter.name + '@param1').Constant()
-        factor = Tensor(LayerParameter.name + '@param2').Constant()
+        mean = Tensor(LayerParameter.name + '@param0').Constant(value=0.0)
+        var  = Tensor(LayerParameter.name + '@param1').Constant(value=0.0)
+        factor = Tensor(LayerParameter.name + '@param2').Constant(value=0.0)
         self._blobs.append({'data': mean, 'diff': None})
         self._blobs.append({'data': var, 'diff': None})
         self._blobs.append({'data': factor, 'diff': None})
@@ -253,19 +253,27 @@ class BNLayer(Layer):
 
     def __init__(self, LayerParameter):
         super(BNLayer, self).__init__(LayerParameter)
-        param = LayerParameter.batch_norm_param
-        self._param = {'use_stats': int(param.use_global_stats)
-                                        if param.HasField('use_global_stats') else -1,
-                       'momentum': param.moving_average_fraction,
-                       'eps': param.eps}
-        mean = Tensor(LayerParameter.name + '@param0').Constant()
-        var = Tensor(LayerParameter.name + '@param1').Constant()
-        scale = Tensor(LayerParameter.name + '@param2').Constant(value=1.0)
-        bias = Tensor(LayerParameter.name + '@param3').Constant(value=0.0)
+        bn_param = LayerParameter.batch_norm_param
+        scale_param = LayerParameter.scale_param
+        self._param = {'use_stats': int(bn_param.use_global_stats)
+                                        if bn_param.HasField('use_global_stats') else -1,
+                       'momentum': bn_param.moving_average_fraction,
+                       'eps': bn_param.eps}
+        mean = Tensor(LayerParameter.name + '@param0').Constant(value=0.0)
+        var = Tensor(LayerParameter.name + '@param1').Constant(value=0.0)
+        scale = Tensor(LayerParameter.name + '@param2')
+        scale_diff = Tensor(LayerParameter.name + '@param2_grad')
+        bias = Tensor(LayerParameter.name + '@param3')
+        bias_diff = Tensor(LayerParameter.name + '@param3_grad')
+
+        if scale_param.HasField('filler'):
+            self.Fill(scale, scale_param, 'filler')
+        else: scale.Constant(value=1.0)
+        self.Fill(bias, scale_param, 'bias_filler')
         self.norm_blobs = [{'data': mean, 'diff': None},
                            {'data': var, 'diff': None}]
-        self.scale_blobs = [{'data': scale, 'diff': Tensor(scale.name + '_grad')},
-                            {'data': bias, 'diff': Tensor(bias.name + '_grad')}]
+        self.scale_blobs = [{'data': scale, 'diff': scale_diff},
+                            {'data': bias, 'diff': bias_diff}]
         self._blobs.extend(self.norm_blobs)
         self._blobs.extend(self.scale_blobs)
 

@@ -22,7 +22,7 @@ class BatchRenormOp : public Operator<Context> {
           d_max(OperatorBase::GetSingleArg<float>("d_max", float(5.0))),
           t_delta(OperatorBase::GetSingleArg<float>("t_delta", float(1.0))),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)),
-          inplace(OperatorBase::GetSingleArg<bool>("inplace", true)),
+          inplace(OperatorBase::GetSingleArg<bool>("inplace", false)),
           t_r_max(float(1.0)), t_d_max(float(0.0)), t_val(float(0.0)) {}
 
     void RunOnDevice() override;

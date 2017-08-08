@@ -19,7 +19,7 @@ class BatchNormOp : public Operator<Context> {
           momentum(OperatorBase::GetSingleArg<float>("momentum", float(0.9))),
           eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)),
-          inplace(OperatorBase::GetSingleArg<bool>("inplace", true)) {}
+          inplace(OperatorBase::GetSingleArg<bool>("inplace", false)) {}
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

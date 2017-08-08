@@ -17,7 +17,7 @@ class InstanceNormOp : public Operator<Context> {
     InstanceNormOp(const OperatorDef& op_def, Workspace* ws) 
         : Operator<Context>(op_def, ws),
           eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
-          inplace(OperatorBase::GetSingleArg<bool>("inplace", true)) {}
+          inplace(OperatorBase::GetSingleArg<bool>("inplace", false)) {}
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

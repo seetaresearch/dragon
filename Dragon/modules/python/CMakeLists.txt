@@ -20,6 +20,9 @@ endforeach()
 if (UNIX AND WITH_CUDNN)
 	TARGET_LINK_LIBRARIES(${PROJECT_NAME}_python cudnn)
 endif()
+if (UNIX AND WITH_BLAS)
+	TARGET_LINK_LIBRARIES(${PROJECT_NAME}_python openblas)
+endif()
 
 # ---[ link platforms
 if(UNIX)

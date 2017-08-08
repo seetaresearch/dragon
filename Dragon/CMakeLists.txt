@@ -23,7 +23,7 @@ set(3RDPARTY_DIR  ${PROJECT_SOURCE_DIR}/../3rdparty)
 # set your python environment
 set(PYTHON_DIR /usr/include/python2.7)  # prefer
 #set(PYTHON_DIR /usr/include/python3.x)  # optional, set specific version
-#set(ANACONDA_DIR /xxx/anaconda)  # optional, set specific version below if using py3
+#set(ANACONDA_DIR /xxx/anaconda)  # optional, root folder of anaconda, preset for 2.7, 3.5, and 3.6 
 set(NUMPY_DIR /xxx/numpy)  # require, root folder of numpy package
 
 # set CUDA compiling architecture
@@ -83,7 +83,8 @@ include_directories(${NUMPY_DIR}/core/include)
 include_directories(${NUMPY_DIR})
 include_directories(${NUMPY_DIR}/numpy)
 include_directories(${ANACONDA_DIR}/include/python2.7)
-include_directories(${ANACONDA_DIR}/include/python3.x)
+include_directories(${ANACONDA_DIR}/include/python3.5)
+include_directories(${ANACONDA_DIR}/include/python3.6)
 include_directories(${PYTHON_DIR})
 include_directories(${ANACONDA_DIR}/include)
 

@@ -18,9 +18,15 @@
 
 3. (Optional) Download 3rdparty.zip and unzip to Dragon/3rdparty (Out of source code dir)
 
-    [*Win64*](https://pan.baidu.com/s/1pLmGOLt) (OpenBLAS / Protobuf2.6 for VS2013 / CUDNN v6 / Microsoft MPI)
+    [*Win64-VS2013*](https://pan.baidu.com/s/1miGAZl2) (OpenBLAS / Protobuf2.6 for VS2013 / CUDNN v7 / Microsoft MPI)
+
+    [*Win64-VS2015*](https://pan.baidu.com/s/1c2eX6lq) (OpenBLAS / Protobuf2.6 for VS2015 / CUDNN v7 / Microsoft MPI)
 
     [*Linux64*](https://pan.baidu.com/s/1qXPEOWG) (OpenMPI)
+
+    For Windows, ``python27/35/36.lib`` should be copied to ``Dragon/3rdparty/lib``, it depends on the version of Python.
+
+    For Linux, ``libpython-dev``, ``libprotobuf-dev``, ``libopenblas-dev`` and ``cuDNN`` should be installed by yourself.
 
 4. Install Python Requirements
 
@@ -30,12 +36,12 @@
 	```
 
 5. Configure Dragon/CMakeLists.txt
-	- Select optional libraries [PYTHON3 / CUDA / CUDNN / BLAS / SSE / MPI / MPI_CUDA_AWARE / CUDA_FP16]
+	- Select optional libraries [PYTHON3 / CUDA / CUDNN / BLAS / SSE / MPI]
 	- Set 3rdparty path (recommend to keep defualt)
 	- Set Python include path & Numpy root path
 	- Set CUDA compiling architectures if necessary
 	- GCC version(4.8+, 5.0-) should add ``-std=c++11`` to ``CUDA_NVCC_FLAGS``, if ``nullptr`` is not found
-	- We pre-generated files under the ``Dragon/src/protos`` with protobuf-2.6, run protoc by yourself if higher are required
+	- We pre-generated files under ``Dragon/src/protos`` with protobuf-2.6, run ``protoc`` by yourself if higher are required
 
 6. Environment Variables
     ### Linux(Only for OpenMPI):
