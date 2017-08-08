@@ -9,17 +9,19 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void SoftmaxCrossEntropyLossOp<Context>::RunWithType() {
-    auto* prob_data = prob->template data<T, Context>();
-    auto* label_data = input(1).template data<T, Context>();
-    auto* loss_data = losses.template mutable_data<T, Context>();
-    kernel::SoftmaxCrossEntropy<T, Context>(input(0).count(), 
-        prob_data, label_data, loss_data);
+    auto* Pdata = prob->template data<T, Context>();
+    auto* Tdata = input(1).template data<T, Context>();
+    auto* Ldata = losses.template mutable_data<T, Context>();
+    kernel::SoftmaxCrossEntropy<T, Context>(input(0).count(), Pdata, Tdata, Ldata);
 
     if (normalization == "UNIT") {
         output(0)->Reshape(vector<TIndex>(1, outer_dim * inner_dim));
         auto* Ydata = output(0)->template mutable_data<T, Context>();
         kernel::Sum<T, Context>(losses.count(), 
-            input(0).dim(axis), inner_dim, loss_data, Ydata);
+                            input(0).dim(axis), 
+                                     inner_dim, 
+                                         Ldata, 
+                                        Ydata);
         return;
     }
 
@@ -27,7 +29,7 @@ void SoftmaxCrossEntropyLossOp<Context>::RunWithType() {
     if (normalization == "BATCH_SIZE") normalizer = outer_dim;
     else if (normalization == "FULL") normalizer = outer_dim * inner_dim;
     else if (normalization == "NONE") normalizer = 1;
-    T loss = math::ASum<T, Context>(losses.count(), loss_data);
+    T loss = math::ASum<T, Context>(losses.count(), Ldata);
     output(0)->Reshape(vector<TIndex>(1, 1));
     auto* Ydata = output(0)->template mutable_data<T, Context>();
     Ydata[0] = loss / normalizer;
@@ -55,17 +57,21 @@ OPERATOR_SCHEMA(SoftmaxCrossEntropyLoss).NumInputs(2).NumOutputs(1);
 
 template <class Context> template <typename T>
 void SoftmaxCrossEntropyLossGradientOp<Context>::RunWithType() {
-    auto* label_data = input(1).template data<T, Context>();
-    auto* prob_data = prob->template mutable_data<T, Context>();
+    auto* Tdata = input(1).template data<T, Context>();
+    auto* Pdata = prob->template mutable_data<T, Context>();
     auto* dXdata = output(0)->template mutable_data<T, Context>();
-    kernel::SoftmaxCrossEntropyGrad<T, Context>(output(0)->count(),
-        prob_data, label_data, dXdata);
+    ctx().template Copy<T, Context, Context>(prob->count(), dXdata, Pdata);
+    math::Axpy<T, Context>(output(0)->count(), -1.0, Tdata, dXdata);
 
     if (normalization == "UNIT") {
         auto* dYdata = input(-1).template data<T, Context>();
         kernel::SumGrad<T, Context>(input(0).count() / input(0).dim(axis),
-            input(0).dim(axis), inner_dim, 1.0, dYdata, prob_data);
-        math::Mul<T, Context>(output(0)->count(), prob_data, dXdata, dXdata);
+                                                       input(0).dim(axis), 
+                                                                inner_dim, 
+                                                                      1.0, 
+                                                                   dYdata, 
+                                                                   Pdata);
+        math::Mul<T, Context>(output(0)->count(), Pdata, dXdata, dXdata);
         return;
     }
 

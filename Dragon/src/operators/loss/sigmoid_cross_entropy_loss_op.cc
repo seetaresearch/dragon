@@ -8,13 +8,12 @@ namespace dragon {
 template <class Context> template <typename T>
 void SigmoidCrossEntropyLossOp<Context>::RunWithType() {
     auto* Xdata = input(0).template data<T, Context>();
-    auto* prob_data = prob->template mutable_data<T, Context>();
-    kernel::Sigmoid<T, Context>(prob->count(), Xdata, prob_data);
+    auto* Pdata = prob->template mutable_data<T, Context>();
+    kernel::Sigmoid<T, Context>(prob->count(), Xdata, Pdata);
 
-    auto* label_data = input(1).template data<T, Context>();
-    auto* loss_data = losses.template mutable_data<T, Context>();
-    kernel::SigmoidCrossEntropy<T, Context>(input(0).count(),
-        Xdata, label_data, loss_data);
+    auto* Tdata = input(1).template data<T, Context>();
+    auto* Ldata = losses.template mutable_data<T, Context>();
+    kernel::SigmoidCrossEntropy<T, Context>(input(0).count(), Xdata, Tdata, Ldata);
 
     if (normalization == "UNIT") {
         output(0)->ReshapeLike(losses);
@@ -26,7 +25,7 @@ void SigmoidCrossEntropyLossOp<Context>::RunWithType() {
     if (normalization == "BATCH_SIZE") normalizer = input(0).dim(0);
     else if (normalization == "FULL") normalizer = input(0).count();
     else if (normalization == "NONE") normalizer = 1;
-    T loss = math::ASum<T, Context>(losses.count(), loss_data);
+    T loss = math::ASum<T, Context>(losses.count(), Ldata);
     output(0)->Reshape(vector<TIndex>(1, 1));
     auto* Ydata = output(0)->template mutable_data<T, CPUContext>();
     Ydata[0] = loss / normalizer;
@@ -52,11 +51,11 @@ OPERATOR_SCHEMA(SigmoidCrossEntropyLoss).NumInputs(2).NumOutputs(1);
 
 template <class Context> template <typename T>
 void SigmoidCrossEntropyLossGradientOp<Context>::RunWithType() {
-    auto* prob_data = prob->template data<T, Context>();
-    auto* label_data = input(1).template data<T, Context>();
+    auto* Pdata = prob->template data<T, Context>();
+    auto* Tdata = input(1).template data<T, Context>();
     auto* dXdata = output(0)->template mutable_data<T, Context>();
-    ctx().template Copy<T, Context, Context>(prob->count(), dXdata, prob_data);
-    math::Axpy<T, Context>(output(0)->count(), -1.0, label_data, dXdata);
+    ctx().template Copy<T, Context, Context>(prob->count(), dXdata, Pdata);
+    math::Axpy<T, Context>(output(0)->count(), -1.0, Tdata, dXdata);
 
     if (normalization == "UNIT") {
         auto* dYdata = input(-1).template data<T, Context>();

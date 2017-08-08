@@ -303,7 +303,7 @@ void AbsGrad(const int count, const T* dy, T* dx);
 /******************** loss.sigmoid_cross_entropy_loss ********************/
 
 template <typename T, class Context>
-void SigmoidCrossEntropy(const int count, const T* x, const T* targets, T* loss);
+void SigmoidCrossEntropy(const int count, const T* x, const T* target, T* loss);
 
 /******************** loss.smooth_l1_loss ********************/
 
@@ -316,10 +316,7 @@ void SmoothL1Grad(const int count, const float sigma2, const T* dy, T* dx);
 /******************** loss.softmax_cross_entropy_loss ********************/
 
 template <typename T, class Context>
-void SoftmaxCrossEntropy(const int count, const T* prob, const T* labels, T* loss);
-
-template <typename T, class Context>
-void SoftmaxCrossEntropyGrad(const int count, const T* prob, const T* labels, T* dx);
+void SoftmaxCrossEntropy(const int count, const T* prob, const T* target, T* loss);
 
 /******************** loss.softmax_loss ********************/
 

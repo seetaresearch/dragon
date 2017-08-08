@@ -677,11 +677,11 @@ template<> void AbsGrad<float, CPUContext>(const int count, const float* dy, flo
 
 template <> void SigmoidCrossEntropy<float, CPUContext>(const int count, 
                                                         const float* x, 
-                                                        const float* targets, 
+                                                        const float* target, 
                                                         float* loss) {
     for (int i = 0; i < count; ++i) {
         loss[i] = std::log(1 + std::exp(x[i] - 2 * x[i] * (x[i] >= 0)))
-                      + x[i] * ((x[i] >= 0) - targets[i]);
+                      + x[i] * ((x[i] >= 0) - target[i]);
     }
 }
 
@@ -716,19 +716,10 @@ template<> void SmoothL1Grad<float, CPUContext>(const int count,
 
 template <> void SoftmaxCrossEntropy<float, CPUContext>(const int count, 
                                                         const float* prob, 
-                                                        const float* labels, 
+                                                        const float* target, 
                                                         float* loss) {
     for (int i = 0; i < count; ++i) {
-        loss[i] = - labels[i] * std::log(std::max(prob[i], FLT_MIN));
-    }
-}
-
-template <> void SoftmaxCrossEntropyGrad<float, CPUContext>(const int count, 
-                                                            const float* prob, 
-                                                            const float* labels, 
-                                                            float* dx) {
-    for (int i = 0; i < count; ++i) {
-        dx[i] = prob[i] - (labels[i] > 0);
+        loss[i] = - target[i] * std::log(std::max(prob[i], FLT_MIN));
     }
 }
 

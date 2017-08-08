@@ -66,7 +66,7 @@
 
 7. Setup MPI [Optional]
 	#### Linux:
-	- We use OpenMPI which support "cuda-aware-mpi"
+	- We use OpenMPI which supports "cuda-aware-mpi"
 	- See more:
 		- https://devblogs.nvidia.com/parallelforall/introduction-cuda-aware-mpi/
 		- https://www.open-mpi.org/faq/?category=buildcuda

@@ -1316,42 +1316,21 @@ template<> void SmoothL1Grad<float, CUDAContext>(const int count,
 template <typename T>
 __global__ void _SoftmaxCrossEntropy(const int count, 
                                      const T* prob, 
-                                     const T* labels, 
+                                     const T* target, 
                                      T* loss) {
     CUDA_KERNEL_LOOP(idx, count) {
-        loss[idx] = - labels[idx] * log(max(prob[idx], FLT_MIN));
+        loss[idx] = -target[idx] * log(max(prob[idx], FLT_MIN));
     }
 }
 
 template <> void SoftmaxCrossEntropy<float, CUDAContext>(const int count, 
                                                          const float* prob, 
-                                                         const float* labels, 
+                                                         const float* target,
                                                          float* loss) {
     _SoftmaxCrossEntropy<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
                                                                               prob, 
-                                                                            labels, 
+                                                                            target,
                                                                              loss);
-    CUDA_POST_KERNEL_CHECK;
-}
-
-template <typename T>
-__global__ void _SoftmaxCrossEntropyGrad(const int count, 
-                                         const T* prob, 
-                                         const T* labels, 
-                                         T* dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        dx[idx] = prob[idx] - (labels[idx] > 0);
-    }
-}
-
-template <> void SoftmaxCrossEntropyGrad<float, CUDAContext>(const int count, 
-                                                             const float* prob, 
-                                                             const float* labels, 
-                                                             float* dx) {
-    _SoftmaxCrossEntropyGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                                  prob, 
-                                                                                labels, 
-                                                                                   dx);
     CUDA_POST_KERNEL_CHECK;
 }
 
