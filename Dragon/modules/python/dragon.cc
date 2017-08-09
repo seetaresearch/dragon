@@ -168,8 +168,8 @@ PyObject* ResetWorkspaceCC(PyObject* self, PyObject* args) {
         return nullptr;
     }
     LOG(INFO) << "Reset the Workspace(" << g_current_workspace << ")";
-	string workspace_name = string(cname);
-	if (workspace_name.empty()) g_workspaces[g_current_workspace].reset(new Workspace());
+    string workspace_name = string(cname);
+    if (workspace_name.empty()) g_workspaces[g_current_workspace].reset(new Workspace());
     else g_workspaces[g_current_workspace].reset(new Workspace(workspace_name));
     g_workspace = g_workspaces[g_current_workspace].get();
     Py_RETURN_TRUE;
@@ -281,7 +281,7 @@ PyObject* FetchTensorCC(PyObject* self, PyObject* args) {
     TypeId type_id = CTypeToFetcher(tensor->meta().id());
     CHECK(type_id != 0) << "\nTensor(" << tensor->name()
                         << ") has not been computed yet.";
-    unique_ptr<TensorFetcherBase> fetcher(createFetcher(type_id));
+    unique_ptr<TensorFetcherBase> fetcher(CreateFetcher(type_id));
     if (fetcher.get()) {
         return fetcher->Fetch(*tensor);  // copy the tensor data to a numpy object
     } else {
