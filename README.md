@@ -22,7 +22,7 @@
 
     [*Win64-VS2015*](https://pan.baidu.com/s/1c2eX6lq) (OpenBLAS / Protobuf2.6 for VS2015 / CUDNN v7 / Microsoft MPI)
 
-    [*Linux64*](https://pan.baidu.com/s/1qXPEOWG) (OpenMPI)
+    [*Linux64*](https://pan.baidu.com/s/1c2ChKHy) (OpenMPI)
 
     For Windows, ``python27/35/36.lib`` should be copied to ``Dragon/3rdparty/lib``, it depends on the version of Python.
 
@@ -73,12 +73,12 @@
 	- Run 3rdparty/setup_mpi.sh
 
 		```Shell
-		./setup_mpi.sh
+		bash ./setup_mpi.sh
 		```
     - Install
 
         ```Shell
-		sudo cp openmpi/install/bin/mpirun /usr/bin
+		sudo cp 3rdparty/openmpi/install/bin/mpirun /usr/bin
 		```
 	#### Windows:
 	- We use Microsoft MPI which can perfectly run at lastest Windows10

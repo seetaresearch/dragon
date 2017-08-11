@@ -23,7 +23,7 @@ class Tensor(object):
         self.name = name
         self.shape = shape
 
-# ------------------------  Properies  ------------------------
+# ------------------------  Properties  ------------------------
 
     @property
     def expressions(self):

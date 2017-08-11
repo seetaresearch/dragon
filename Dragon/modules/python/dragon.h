@@ -57,8 +57,8 @@ std::string MakeString(const Args&... args) {
     return std::string(ss.str());
 }
 
-inline void PrErr_SetString(PyObject* type, const std::string& str) { 
-    PyErr_SetString(type, str.c_str()); 
+inline void PrErr_SetString(PyObject* type, const std::string& str) {
+    PyErr_SetString(type, str.c_str());
 }
 
 class TensorFetcherBase {
@@ -70,8 +70,8 @@ class TensorFetcherBase {
 class TensorFeederBase {
  public:
     virtual ~TensorFeederBase() {}
-    virtual PyObject* Feed(const DeviceOption& option, 
-                           PyArrayObject* array, 
+    virtual PyObject* Feed(const DeviceOption& option,
+                           PyArrayObject* array,
                            Tensor* tensor) = 0;
 };
 
@@ -79,8 +79,8 @@ DECLARE_TYPED_REGISTRY(TensorFetcherRegistry, TypeId, TensorFetcherBase);
 #define REGISTER_TENSOR_FETCHER(type, ...) \
     REGISTER_TYPED_CLASS(TensorFetcherRegistry, type, __VA_ARGS__)
 
-inline TensorFetcherBase* createFetcher(TypeId type) { 
-    return TensorFetcherRegistry()->Create(type); 
+inline TensorFetcherBase* CreateFetcher(TypeId type) {
+    return TensorFetcherRegistry()->Create(type);
 }
 
 DECLARE_TYPED_REGISTRY(TensorFeederRegistry, TypeId, TensorFeederBase);
@@ -107,11 +107,11 @@ class NumpyFetcher : public TensorFetcherBase {
         //  copy the tensor data to the numpy array
         if (tensor.memory_state() == MixedMemory::STATE_AT_CUDA) {
             CUDAContext::Memcpy<CPUContext, CUDAContext>(tensor.nbytes(),
-                                                         PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)), 
+                                                         PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)),
                                                                                tensor.raw_data<CUDAContext>());
         } else {
             CPUContext::Memcpy<CPUContext, CPUContext>(tensor.nbytes(),
-                                                       PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)), 
+                                                       PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)),
                                                                               tensor.raw_data<CPUContext>());
         }
         return array;
@@ -128,8 +128,8 @@ class StringFetcher : public TensorFetcherBase {
 
 class NumpyFeeder : public TensorFeederBase {
  public:
-    PyObject* Feed(const DeviceOption& option, 
-                   PyArrayObject* original_array, 
+    PyObject* Feed(const DeviceOption& option,
+                   PyArrayObject* original_array,
                    Tensor* tensor) override {
         PyArrayObject* array = PyArray_GETCONTIGUOUS(original_array);
         const TypeMeta& meta = NumpyTypeToDragon(PyArray_TYPE(array));
@@ -150,14 +150,14 @@ class NumpyFeeder : public TensorFeederBase {
 #ifdef WITH_CUDA
             CUDAContext context(option);
             context.SwitchToDevice();
-            context.Memcpy<CUDAContext, CPUContext>(tensor->nbytes(), 
-                                                    tensor->raw_mutable_data<CUDAContext>(), 
+            context.Memcpy<CUDAContext, CPUContext>(tensor->nbytes(),
+                                                    tensor->raw_mutable_data<CUDAContext>(),
                                                     static_cast<void*>(PyArray_DATA(array)));
-#else   
+#else
             LOG(FATAL) << "CUDA is not compilied.";
 #endif
         } else{
-            CPUContext::Memcpy<CPUContext, CPUContext>(tensor->nbytes(), 
+            CPUContext::Memcpy<CPUContext, CPUContext>(tensor->nbytes(),
                                                        tensor->raw_mutable_data<CPUContext>(),
                                                        static_cast<void*>(PyArray_DATA(array)));
         }

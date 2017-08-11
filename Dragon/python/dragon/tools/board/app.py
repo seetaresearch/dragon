@@ -79,4 +79,4 @@ class DragonBoard(Process):
                 return make_response(jsonify(sample_scalar))
             else: return make_response(jsonify(sclar))
 
-        app.run(host='0.0.0.0', port=self.config['port'])
+        app.run(host='0.0.0.0', port=self.config['port'], threaded=True)
