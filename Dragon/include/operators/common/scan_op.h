@@ -61,6 +61,8 @@ class ScanGradientOp final: public Operator<Context> {
         //  handle GI(x)
         for (int i = 0; i < forward_inputs.size(); i++)
             terms[forward_inputs[i] + "_grad"] = output(i)->name();
+
+        DISABLE_SHARE_GRADIENT;
     }
 
     void RunOnDevice() override;

@@ -43,7 +43,9 @@ template <class Context>
 class TemplateGradientOp : public TemplateOp<Context> {
 public:
     TemplateGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : TemplateOp<Context>(op_def, ws) {}
+        : TemplateOp<Context>(op_def, ws) {
+        DISABLE_SHARE_GRADIENT;
+    }
     void RunOnDevice() override;
 };
 

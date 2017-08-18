@@ -20,7 +20,11 @@ option['device'] = 'CPU'
 option['gpu_id'] = 0
 option['use_cudnn'] = False
 option['random_seed'] = 3
-option['debug_mode'] = True
+
+# if True, disable Dragon-Memonger
+option['debug_mode'] = False
+option['share_grads'] = False # set it by Dragon-Memonger
+option['allow_mirrow_stage'] = True # default
 
 def EnableCPU():
     global option
@@ -32,8 +36,8 @@ def EnableCUDA(gpu_id=0, use_cudnn=True):
     option['gpu_id'] = gpu_id
     option['use_cudnn'] = use_cudnn
 
-# TODO(Pan): please not use @setter
-# TODO(Pan): seems that it can't change the global value
+# TODO(PhyscalX): please not use @setter
+# TODO(PhyscalX): seems that it can't change the global value
 
 def SetRandomSeed(seed):
     global option

@@ -23,7 +23,10 @@ class TanhOp final : public Operator<Context> {
 template <class Context>
 class TanhGradientOp final : public Operator<Context> {
  public:
-    USE_SIMPLE_CTOR_DTOR(TanhGradientOp);
+     TanhGradientOp(const OperatorDef& op_def, Workspace* ws)
+         : Operator<Context>(op_def, ws) {
+         DISABLE_SHARE_GRADIENT;
+     }
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

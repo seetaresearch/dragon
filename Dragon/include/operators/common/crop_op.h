@@ -57,9 +57,7 @@ class CropGradientOp final : public Operator<Context > {
     }
 
     void ComputeOutputShape();
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void RunWithType();
     template <typename T> void RecursiveRunWithType(vector<TIndex> idxs, 
                                                     const vector<TIndex>& offsets,

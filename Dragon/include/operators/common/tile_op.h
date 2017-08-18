@@ -43,9 +43,7 @@ class TileGradientOp : public Operator<Context> {
                 process_axes.push_back({ i, multiples[i] });
     }
 
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template<typename T> void TileRunWithType();
 
  protected:

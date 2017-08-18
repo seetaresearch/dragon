@@ -54,7 +54,7 @@ void CuDNNBNOp<Context>::SpatialRunWithType() {
                                                                   bn_desc,
                                                                     Sdata,
                                                                     Bdata,
-                                                     1.0 - this->momentum,
+                              is_recomputing ? 0.0 : 1.0 - this->momentum,
                                                                hMean_data,
                                                                 hVar_data,
                                                                 this->eps,
@@ -110,7 +110,7 @@ void CuDNNBNOp<Context>::PerActivationRunWithType() {
                                                                   bn_desc,
                                                                     Sdata,
                                                                     Bdata,
-                                                     1.0 - this->momentum,
+                              is_recomputing ? 0.0 : 1.0 - this->momentum,
                                                                hMean_data,
                                                                 hVar_data,
                                                                 this->eps,
@@ -133,6 +133,8 @@ void CuDNNBNOp<Context>::RunOnDevice() {
 
     if (this->use_stats == -1) use_global_stats = phase() == "TEST" ? true : false;
     else use_global_stats = this->use_stats == 1 ? true : false;
+    is_recomputing = ws()->GetTensor("_t_global_recompute_flag")
+                         ->template data<bool, CPUContext>()[0];
 
     if (input(0).template IsType<float>()) {
         if (input(0).ndim() == 4) SpatialRunWithType<float>();
@@ -344,26 +346,20 @@ void CuDNNBNGradientOp<Context>::RunOnDevice() {
 }
 
 template <class Context>
-void BNGradientOp<Context>::ShareBeforeRun() {
+void BNGradientOp<Context>::ShareGradient() {
     if (use_global_stats) {
         if (output(0)->name() != "ignore") {
-            Tensor* dX = ws()->GetBuffer();
-            if (dX != nullptr) output(0)->Replace(*dX);
+            Tensor* dX = ws()->GetBuffer("Grad");
+            output(0)->Replace(*dX);
         }
     } else {
         if (output(0)->name() != "ignore" ||
             output(1)->name() != "ignore" ||
             output(2)->name() != "ignore") {
-            Tensor* dX = ws()->GetBuffer();
-            if (dX != nullptr) output(0)->Replace(*dX);
+            Tensor* dX = ws()->GetBuffer("Grad");
+            output(0)->Replace(*dX);
         }
     }
-}
-
-template <class Context>
-void BNGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
 }
 
 DEPLOY_CPU(BNGradient);
@@ -374,7 +370,7 @@ OPERATOR_SCHEMA(BNGradient).NumInputs(5).NumOutputs(3);
 DEPLOY_CUDNN(BNGradient);
 
 class GetBNGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetBNGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

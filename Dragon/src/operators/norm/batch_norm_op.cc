@@ -62,8 +62,8 @@ void BatchNormOp<Context>::RunWithType() {
                                                            NByC_data, SMul_data,
                                                                             1.0,
                                                                          Ydata);
-
-    if (!use_global_stats) {
+    
+    if (!use_global_stats && !is_recomputing) {
         //  Var(X) = E((X - EX) ^ 2)
         math::Square<T, Context>(output(0)->count(), Ydata, Std_data);
         math::Gemv<T, Context>(CblasNoTrans, nbychans, spatial_dim,
@@ -120,8 +120,11 @@ void BatchNormOp<Context>::RunOnDevice() {
 
     if (use_stats == -1) use_global_stats = phase() == "TEST" ? true : false;
     else use_global_stats = use_stats == 1 ? true : false;
+    is_recomputing = ws()->GetTensor("_t_global_recompute_flag")
+                         ->template data<bool, CPUContext>()[0];
     //  if true, Act/Exp/Pow/Norm Ops can not exist before when train
     if (inplace) output(0)->Share(input(0));
+
 
     if (input(0).template IsType<float>()) RunWithType<float>();
     else if (input(0).template IsType<float16>()) RunWithType<float16>();
@@ -248,18 +251,6 @@ void BatchNormGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-template <class Context>
-void BatchNormGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void BatchNormGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
-
 DEPLOY_CPU(BatchNormGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(BatchNormGradient);
@@ -267,7 +258,7 @@ DEPLOY_CUDA(BatchNormGradient);
 OPERATOR_SCHEMA(BatchNormGradient).NumInputs(3).NumOutputs(1);
 
 class GetBatchNormGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetBatchNormGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

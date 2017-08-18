@@ -36,9 +36,8 @@ class MatmulGradientOp final : public Operator<Context> {
         transA(OperatorBase::GetSingleArg<bool>("TransA", false)),
         transB(OperatorBase::GetSingleArg<bool>("TransB", false)) {}
 
-    void ShareBeforeRun() override;
+    void ShareGradient() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void RunWithType();
 
  protected:

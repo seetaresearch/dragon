@@ -286,21 +286,12 @@ void TransposeGrad(const int count,
                    const T* dy, 
                    T* dx);
 
-/******************** common.utils ********************/
-
-template <typename T, class Context>
-void OneHot(const int count, 
-            const int depth, 
-            const int on_value, 
-            const T* x, 
-            T* y);
-
 /******************** loss.l1_loss ********************/
 
 template <typename T, class Context>
 void AbsGrad(const int count, const T* dy, T* dx);
 
-/******************** loss.sigmoid_cross_entropy_loss ********************/
+/******************** loss.sigmoid_cross_entropy ********************/
 
 template <typename T, class Context>
 void SigmoidCrossEntropy(const int count, const T* x, const T* target, T* loss);
@@ -313,12 +304,12 @@ void SmoothL1(const int count, const float sigma2, const T* x,  T* y);
 template <typename T, class Context>
 void SmoothL1Grad(const int count, const float sigma2, const T* dy, T* dx);
 
-/******************** loss.softmax_cross_entropy_loss ********************/
+/******************** loss.softmax_cross_entropy ********************/
 
 template <typename T, class Context>
 void SoftmaxCrossEntropy(const int count, const T* prob, const T* target, T* loss);
 
-/******************** loss.softmax_loss ********************/
+/******************** loss.sparse_softmax_cross_entropy ********************/
 
 template <typename T, class Context>
 void SparseSoftmaxCrossEntropy(const int count, 
@@ -332,15 +323,45 @@ void SparseSoftmaxCrossEntropy(const int count,
                                Tensor* ignore);
 
 template <typename T, class Context>
-void SoftmaxLossGrad(const int count, 
-                     const int classes, 
-                     const int outer_dim, 
-                     const int inner_dim, 
-                     const T* labels, 
-                     const T* prob, 
-                     T* valid, 
-                     Tensor* ignore, 
-                     T* dXdata);
+void SparseSoftmaxCrossEntropyGrad(const int count,
+                                   const int classes, 
+                                   const int outer_dim, 
+                                   const int inner_dim, 
+                                   const T* prob, 
+                                   const T* labels,
+                                   T* valid, 
+                                   Tensor* ignore, 
+                                   T* dXdata);
+
+/******************** loss.sparse_softmax_focal_loss ********************/
+
+template <typename T, class Context>
+void SparseSoftmaxFocalLoss(const int count, 
+                            const int classes, 
+                            const int outer_dim, 
+                            const int inner_dim, 
+                            const float alpha,
+                            const float gamma,
+                            const T* prob, 
+                            const T* labels,
+                            T* scale,
+                            T* loss, 
+                            T* valid,
+                            Tensor* ignore);
+
+template <typename T, class Context>
+void SparseSoftmaxFocalLossGrad(const int count,
+                                const int classes, 
+                                const int outer_dim, 
+                                const int inner_dim,
+                                const float gamma,
+                                const float eps,
+                                const T* scale,
+                                const T* prob,
+                                const T* labels,
+                                T* valid, 
+                                Tensor* ignore, 
+                                T* dXdata);
 
 /******************** recurrent.lstm_uint ********************/
 
@@ -421,6 +442,15 @@ void MemoryData(const int count,
                 const int width, 
                 const Tx* x, 
                 Ty* y);
+
+/******************** utils.one_hot ********************/
+
+template <typename T, class Context>
+void OneHot(const int count, 
+            const int depth, 
+            const int on_value, 
+            const T* x, 
+            T* y);
 
 /******************** vision.conv ********************/
 

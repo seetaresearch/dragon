@@ -179,20 +179,14 @@ void MulGradientOp<Context>::RunOnDevice() {
 }
 
 template <class Context>
-void MulGradientOp<Context>::ShareBeforeRun() {
+void MulGradientOp<Context>::ShareGradient() {
     for (int i = 0; i < OutputSize(); i++) {
         if (output(i)->name() != "ignore") {
-            Tensor* dX = ws()->GetBuffer();
-            if (dX != nullptr) output(i)->Replace(*dX);
+            Tensor* dX = ws()->GetBuffer("Grad");
+            output(i)->Replace(*dX);
             break;
         }
     }
-}
-
-template <class Context>
-void MulGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
 }
 
 DEPLOY_CPU(MulGradient);
@@ -202,7 +196,7 @@ DEPLOY_CUDA(MulGradient);
 OPERATOR_SCHEMA(MulGradient).NumInputs(3).NumOutputs(2);
 
 class GetMulGradient : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetMulGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

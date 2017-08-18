@@ -110,20 +110,14 @@ void MatmulGradientOp<Context>::RunOnDevice() {
 }
 
 template <class Context>
-void MatmulGradientOp<Context>::ShareBeforeRun() {
+void MatmulGradientOp<Context>::ShareGradient() {
     for (int i = 0; i < OutputSize(); i++) {
         if (output(i)->name() != "ignore") {
-            Tensor* dX = ws()->GetBuffer();
-            if (dX != nullptr) output(i)->Replace(*dX);
+            Tensor* dX = ws()->GetBuffer("Grad");
+            output(i)->Replace(*dX);
             break;
         }
     }
-}
-
-template <class Context>
-void MatmulGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
 }
 
 DEPLOY_CPU(MatmulGradient);
@@ -133,7 +127,7 @@ DEPLOY_CUDA(MatmulGradient);
 OPERATOR_SCHEMA(MatmulGradient).NumInputs(3).NumOutputs(2);
 
 class GetMatmulGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetMatmulGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

@@ -33,9 +33,7 @@ class TransposeGradientOp final : public Operator<Context> {
     TransposeGradientOp(const OperatorDef& op_def, Workspace* ws) 
         : Operator<Context>(op_def, ws) {}
 
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void RunWithType();
 
  protected:

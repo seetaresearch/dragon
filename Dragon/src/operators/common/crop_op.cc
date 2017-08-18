@@ -139,18 +139,6 @@ void CropGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-template <class Context>
-void CropGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void CropGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
-
 DEPLOY_CPU(CropGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(CropGradient);
@@ -158,7 +146,7 @@ DEPLOY_CUDA(CropGradient);
 OPERATOR_SCHEMA(CropGradient).NumInputs(2).NumOutputs(1);
 
 class GetCropGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetCropGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

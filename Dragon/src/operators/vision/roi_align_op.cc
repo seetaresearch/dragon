@@ -57,17 +57,10 @@ void ROIAlignGradientOp<Context>::RunOnDevice() {
 }
 
 template <class Context>
-void ROIAlignGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void ROIAlignGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-    ws()->ReleaseBuffer(mask_h);
-    ws()->ReleaseBuffer(mask_w);
+void ROIAlignGradientOp<Context>::CleanResource() {
+    Operator<Context>::CleanResource(); 
+    ws()->ReleaseBuffer(mask_h, "Common", true);
+    ws()->ReleaseBuffer(mask_w, "Common", true);
 }
 
 DEPLOY_CPU(ROIAlignGradient);
@@ -77,7 +70,7 @@ DEPLOY_CUDA(ROIAlignGradient);
 OPERATOR_SCHEMA(ROIAlignGradient).NumInputs(3).NumOutputs(1);
 
 class GetROIAlignGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetROIAlignGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

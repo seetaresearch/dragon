@@ -36,7 +36,7 @@ class BatchRenormOp : public Operator<Context> {
     Tensor* stddev, *r, *var, *x_norm;
     TIndex num, channels, spatial_dim, nbychans;
     int use_stats;
-    bool use_global_stats, inplace;
+    bool use_global_stats, inplace, is_recomputing;
 };
 
 template <class Context>
@@ -46,9 +46,7 @@ class BatchRenormGradientOp final : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {}
 
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void RunWithType();
 
  protected:

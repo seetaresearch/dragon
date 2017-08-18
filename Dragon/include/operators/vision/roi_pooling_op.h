@@ -41,9 +41,8 @@ class ROIPoolingGradientOp final : public Operator<Context> {
         pool_w(OperatorBase::GetSingleArg<int>("pool_w", 0)),
         spatial_scale(OperatorBase::GetSingleArg<float>("spatial_scale", 1.0)) {}
 
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
+    void CleanResource() override;
     template <typename T> void RunWithType();
 
  protected:

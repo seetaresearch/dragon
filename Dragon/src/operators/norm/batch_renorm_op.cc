@@ -72,7 +72,7 @@ void BatchRenormOp<Context>::RunWithType() {
                                                                             1.0, 
                                                                          Ydata);
 
-    if (!use_global_stats) {
+    if (!use_global_stats && !is_recomputing) {
         //  Var(X) = E((X - EX) ^ 2)
         math::Pow<T, Context>(stddev->count(), 2, Ydata, Std_data);
         math::Gemv<T, Context>(CblasNoTrans, nbychans, spatial_dim,
@@ -97,7 +97,7 @@ void BatchRenormOp<Context>::RunWithType() {
     math::AddScalar<T, Context>(mean.count(), eps, tVar_data);
     math::Pow<T, Context>(mean.count(), 0.5, tVar_data, tVar_data);
 
-    if (!use_global_stats) {
+    if (!use_global_stats && !is_recomputing) {
         //  normalize history var
         math::AddScalar<T, Context>(mean.count(), eps, thVar_data);
         math::Pow<T, Context>(mean.count(), 0.5, thVar_data, thVar_data);
@@ -183,6 +183,8 @@ void BatchRenormOp<Context>::RunOnDevice() {
 
     if (use_stats == -1) use_global_stats = phase() == "TEST" ? true : false;
     else use_global_stats = use_stats == 1 ? true : false;
+    is_recomputing = ws()->GetTensor("_t_global_recompute_flag")
+                        ->template data<bool, CPUContext>()[0];
     //  if true, Act/Exp/Pow/Norm Ops can not exist before when train
     if (inplace) output(0)->Share(input(0));
 
@@ -314,7 +316,7 @@ void BatchRenormGradientOp<Context>::RunWithType() {
 
     //  release buffer
     ws()->ReleaseBuffer(stddev);
-    ws()->ReleaseBuffer(x_norm, true);
+    ws()->ReleaseBuffer(x_norm, "Common", true);
 }
 
 template <class Context>
@@ -331,21 +333,9 @@ void BatchRenormGradientOp<Context>::RunOnDevice() {
 
     if (use_stats == -1) use_global_stats = phase() == "TEST" ? true : false;
     else use_global_stats = use_stats == 1 ? true : false;
-    
+
     if (input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "unsupported input types.";
-}
-
-template <class Context>
-void BatchRenormGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void BatchRenormGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
 }
 
 DEPLOY_CPU(BatchRenormGradient);
@@ -355,7 +345,7 @@ DEPLOY_CUDA(BatchRenormGradient);
 OPERATOR_SCHEMA(BatchRenormGradient).NumInputs(3).NumOutputs(1);
 
 class GetBatchRenormGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetBatchRenormGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

@@ -30,7 +30,7 @@ DEPLOY_CUDA(ExpandDimsGradient);
 OPERATOR_SCHEMA(ExpandDimsGradient).NumInputs(2).NumOutputs(1);
 
 class GetExpandDimsGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetExpandDimsGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

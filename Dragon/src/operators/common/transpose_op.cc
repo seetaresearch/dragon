@@ -78,18 +78,6 @@ void TransposeGradientOp<Context>::RunOnDevice() {
     else if (input(0).template IsType<float16>()) RunWithType<float16>();
     else LOG(FATAL) << "unsupported input types.";
 }
-
-template <class Context>
-void TransposeGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void TransposeGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
     
 DEPLOY_CPU(TransposeGradient);
 #ifdef WITH_CUDA
@@ -98,7 +86,7 @@ DEPLOY_CUDA(TransposeGradient);
 OPERATOR_SCHEMA(TransposeGradient).NumInputs(2).NumOutputs(1);
 
 class GetTransposeGradient final : public GradientMakerBase{
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetTransposeGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

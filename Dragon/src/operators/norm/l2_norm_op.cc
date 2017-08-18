@@ -180,18 +180,6 @@ void L2NormGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-template <class Context>
-void L2NormGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void L2NormGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
-
 DEPLOY_CPU(L2NormGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(L2NormGradient);
@@ -199,7 +187,7 @@ DEPLOY_CUDA(L2NormGradient);
 OPERATOR_SCHEMA(L2NormGradient).NumInputs(2).NumOutputs(1);
 
 class GetL2NormGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetL2NormGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

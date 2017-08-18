@@ -43,10 +43,11 @@ class DropoutGradientOp final : public Operator<Context> {
         threshold = static_cast<unsigned int>(UINT_MAX * prob);
         if (use_scale) scale = 1.0 / (1.0 - prob);
         else scale = 1.0;
+        DISABLE_SHARE_GRADIENT;
     }
-         
+
     void RunOnDevice() override;
-    void ClearAfterRun() override;
+    void CleanResource() override;
     template <typename T> void RunWithType();
 
  protected:

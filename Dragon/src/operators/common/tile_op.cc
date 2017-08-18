@@ -114,18 +114,6 @@ void TileGradientOp<Context>::RunOnDevice() {
     ws()->ReleaseBuffer(dest);
 }
 
-template <class Context>
-void TileGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void TileGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
-
 DEPLOY_CPU(TileGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(TileGradient);
@@ -133,7 +121,7 @@ DEPLOY_CUDA(TileGradient);
 OPERATOR_SCHEMA(TileGradient).NumInputs(1).NumOutputs(1);
 
 class GetTileGradient final : public GradientMakerBase { 
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetTileGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

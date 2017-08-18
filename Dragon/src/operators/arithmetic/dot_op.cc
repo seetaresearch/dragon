@@ -1,4 +1,5 @@
 #include "operators/arithmetic/dot_op.h"
+#include "core/workspace.h"
 #include "utils/math_functions.h" 
 
 namespace dragon {
@@ -169,6 +170,17 @@ void DotGradientOp<Context>::RunOnDevice() {
     }
 }
 
+template <class Context>
+void DotGradientOp<Context>::ShareGradient() {
+    for (int i = 0; i < OutputSize(); i++) {
+        if (output(i)->name() != "ignore") {
+            Tensor* dX = ws()->GetBuffer("Grad");
+            output(i)->Replace(*dX);
+            break;
+        }
+    }
+}
+
 DEPLOY_CPU(DotGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(DotGradient);
@@ -176,7 +188,7 @@ DEPLOY_CUDA(DotGradient);
 OPERATOR_SCHEMA(DotGradient).NumInputs(3).NumOutputs(2);
 
 class GetDotGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetDotGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

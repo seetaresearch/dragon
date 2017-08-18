@@ -118,20 +118,14 @@ void EltwiseGradientOp<Context>::RunOnDevice() {
 }
 
 template <class Context>
-void EltwiseGradientOp<Context>::ShareBeforeRun() {
+void EltwiseGradientOp<Context>::ShareGradient() {
     for (int i = 0; i < OutputSize(); i++) {
         if (output(i)->name() != "ignore") {
-            Tensor* dX = ws()->GetBuffer();
-            if (dX != nullptr) output(i)->Replace(*dX);
+            Tensor* dX = ws()->GetBuffer("Grad");
+            output(i)->Replace(*dX);
             break;
         }
     }
-}
-
-template <class Context>
-void EltwiseGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
 }
 
 DEPLOY_CPU(EltwiseGradient);
@@ -141,7 +135,7 @@ DEPLOY_CUDA(EltwiseGradient);
 OPERATOR_SCHEMA(EltwiseGradient).NumInputs(3, INT_MAX).NumOutputs(2, INT_MAX);
 
 class GetEltwiseGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetEltwiseGradient);
     vector<OperatorDef> MakeDefs() override {
         vector<string> inputs, outputs;

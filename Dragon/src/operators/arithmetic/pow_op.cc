@@ -80,18 +80,6 @@ void PowGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-template <class Context>
-void PowGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void PowGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
-
 DEPLOY_CPU(PowGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(PowGradient);
@@ -99,7 +87,7 @@ DEPLOY_CUDA(PowGradient);
 OPERATOR_SCHEMA(PowGradient).NumInputs(3).NumOutputs(1);
 
 class GetPowGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetPowGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

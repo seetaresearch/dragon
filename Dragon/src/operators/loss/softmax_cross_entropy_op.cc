@@ -1,5 +1,5 @@
 #include "operators/activation/softmax_op.h"
-#include "operators/loss/softmax_cross_entropy_loss_op.h"
+#include "operators/loss/softmax_cross_entropy_op.h"
 #include "core/workspace.h"
 #include "utils/math_functions.h"
 #include "utils/op_kernel.h"
@@ -8,7 +8,7 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void SoftmaxCrossEntropyLossOp<Context>::RunWithType() {
+void SoftmaxCrossEntropyOp<Context>::RunWithType() {
     auto* Pdata = prob->template data<T, Context>();
     auto* Tdata = input(1).template data<T, Context>();
     auto* Ldata = losses.template mutable_data<T, Context>();
@@ -36,7 +36,7 @@ void SoftmaxCrossEntropyLossOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void SoftmaxCrossEntropyLossOp<Context>::RunOnDevice() {
+void SoftmaxCrossEntropyOp<Context>::RunOnDevice() {
     outer_dim = input(0).count(0, axis);
     inner_dim = input(0).count(axis + 1);
     CHECK_EQ(input(0).count(), input(1).count())
@@ -49,14 +49,14 @@ void SoftmaxCrossEntropyLossOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-DEPLOY_CPU(SoftmaxCrossEntropyLoss);
+DEPLOY_CPU(SoftmaxCrossEntropy);
 #ifdef WITH_CUDA
-DEPLOY_CUDA(SoftmaxCrossEntropyLoss);
+DEPLOY_CUDA(SoftmaxCrossEntropy);
 #endif
-OPERATOR_SCHEMA(SoftmaxCrossEntropyLoss).NumInputs(2).NumOutputs(1);
+OPERATOR_SCHEMA(SoftmaxCrossEntropy).NumInputs(2).NumOutputs(1);
 
 template <class Context> template <typename T>
-void SoftmaxCrossEntropyLossGradientOp<Context>::RunWithType() {
+void SoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
     auto* Tdata = input(1).template data<T, Context>();
     auto* Pdata = prob->template mutable_data<T, Context>();
     auto* dXdata = output(0)->template mutable_data<T, Context>();
@@ -75,7 +75,6 @@ void SoftmaxCrossEntropyLossGradientOp<Context>::RunWithType() {
         return;
     }
 
-    //  normalize
     T normalizer;
     if (normalization == "BATCH_SIZE") normalizer = outer_dim;
     else if (normalization == "FULL") normalizer = outer_dim * inner_dim;
@@ -85,7 +84,7 @@ void SoftmaxCrossEntropyLossGradientOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void SoftmaxCrossEntropyLossGradientOp<Context>::RunOnDevice() {
+void SoftmaxCrossEntropyGradientOp<Context>::RunOnDevice() {
     prob = ws()->GetTensor("_t_" + anchor() + "_softmax_prob");
     outer_dim = prob->count(0, axis);
     inner_dim = prob->count(axis + 1);
@@ -95,21 +94,21 @@ void SoftmaxCrossEntropyLossGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-DEPLOY_CPU(SoftmaxCrossEntropyLossGradient);
+DEPLOY_CPU(SoftmaxCrossEntropyGradient);
 #ifdef WITH_CUDA
-DEPLOY_CUDA(SoftmaxCrossEntropyLossGradient);
+DEPLOY_CUDA(SoftmaxCrossEntropyGradient);
 #endif
-OPERATOR_SCHEMA(SoftmaxCrossEntropyLossGradient).NumInputs(3).NumOutputs(1);
+OPERATOR_SCHEMA(SoftmaxCrossEntropyGradient).NumInputs(3).NumOutputs(1);
 
-class GetSoftmaxCrossEntropyLossGradient final : public GradientMakerBase { 
-public:
-    GRADIENT_MAKER_CTOR(GetSoftmaxCrossEntropyLossGradient);
+class GetSoftmaxCrossEntropyGradient final : public GradientMakerBase { 
+ public:
+    GRADIENT_MAKER_CTOR(GetSoftmaxCrossEntropyGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
             vector<string> {I(0), I(1), GO(0)},
             vector<string> {GI(0)});
     }
 };
-REGISTER_GRADIENT(SoftmaxCrossEntropyLoss, GetSoftmaxCrossEntropyLossGradient);
+REGISTER_GRADIENT(SoftmaxCrossEntropy, GetSoftmaxCrossEntropyGradient);
 
 }    // namespace dragon

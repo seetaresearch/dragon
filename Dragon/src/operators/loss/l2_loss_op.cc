@@ -16,8 +16,8 @@ void L2LossOp<Context>::RunWithType() {
         auto* Wdata = input(2).template data<T, Context>();
         math::Mul<T, Context>(diff->count(), Wdata, diff_data, diff_data);
     }
-    T dot = math::Dot<T, Context>(diff->count(), diff_data, diff_data);
-    Ydata[0] = T(0.5) * coeff * dot;
+    Ydata[0] = T(0.5) * math::Dot<T, Context>(diff->count(), diff_data, diff_data);
+
     T normalizer;
     if (normalization == "BATCH_SIZE") normalizer = input(0).dim(0);
     else if (normalization == "FULL") normalizer = input(0).count();
@@ -44,8 +44,10 @@ OPERATOR_SCHEMA(L2Loss).NumInputs(2, 3).NumOutputs(1);
 
 template <class Context> template <typename T>
 void L2LossGradientOp<Context>::RunWithType() {
-    auto* dYdata = diff->template mutable_data<T, Context>();
-    T alpha = coeff, normalizer;
+    auto* diff_data = diff->template mutable_data<T, Context>();
+    auto* dYdata = input(-1).template data<T, CPUContext>();
+
+    T alpha = dYdata[0], normalizer;
     if (normalization == "BATCH_SIZE") normalizer = input(0).dim(0);
     else if (normalization == "FULL") normalizer = input(0).count();
     else if (normalization == "NONE") normalizer = 1;
@@ -56,7 +58,7 @@ void L2LossGradientOp<Context>::RunWithType() {
         auto* dXdata = output(i)->template mutable_data<T, Context>();
         const T sign = (i == 0) ? 1 : -1;
         alpha *= sign;
-        math::Axpby<T, Context>(output(i)->count(), alpha, dYdata, 0, dXdata);
+        math::Axpby<T, Context>(output(i)->count(), alpha, diff_data, 0, dXdata);
     }
 }
 
@@ -68,6 +70,17 @@ void L2LossGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
+template <class Context>
+void L2LossGradientOp<Context>::ShareGradient() {
+    for (int i = 0; i < OutputSize(); i++) {
+        if (output(i)->name() != "ignore") {
+            Tensor* dX = ws()->GetBuffer("Grad");
+            output(i)->Replace(*dX);
+            break;
+        }
+    }
+}
+
 DEPLOY_CPU(L2LossGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(L2LossGradient);
@@ -75,9 +88,9 @@ DEPLOY_CUDA(L2LossGradient);
 OPERATOR_SCHEMA(L2LossGradient).NumInputs(3).NumOutputs(2);
 
 class GetL2LossGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetL2LossGradient);
-    vector<OperatorDef> MakeDefs() override{
+    vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
             vector<string> {I(0), I(1), GO(0)},
             vector<string> {GI(0), GI(1)});
@@ -86,5 +99,3 @@ public:
 REGISTER_GRADIENT(L2Loss, GetL2LossGradient);
 
 }    // namespace dragon
-
-

@@ -137,7 +137,7 @@ void protobuf_AssignDesc_dragon_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(DeviceOption));
   OperatorDef_descriptor_ = file->message_type(4);
-  static const int OperatorDef_offsets_[7] = {
+  static const int OperatorDef_offsets_[8] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OperatorDef, input_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OperatorDef, output_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OperatorDef, name_),
@@ -145,6 +145,7 @@ void protobuf_AssignDesc_dragon_2eproto() {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OperatorDef, arg_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OperatorDef, device_option_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OperatorDef, debug_mode_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(OperatorDef, share_grads_),
   };
   OperatorDef_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -217,7 +218,7 @@ void protobuf_AssignDesc_dragon_2eproto() {
       sizeof(TensorFiller));
   TensorFiller_VarianceNorm_descriptor_ = TensorFiller_descriptor_->enum_type(0);
   GraphDef_descriptor_ = file->message_type(8);
-  static const int GraphDef_offsets_[9] = {
+  static const int GraphDef_offsets_[10] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GraphDef, name_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GraphDef, op_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GraphDef, graph_type_),
@@ -227,6 +228,7 @@ void protobuf_AssignDesc_dragon_2eproto() {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GraphDef, g_target_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GraphDef, u_target_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GraphDef, debug_mode_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(GraphDef, share_grads_),
   };
   GraphDef_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -316,29 +318,31 @@ void protobuf_AddDesc_dragon_2eproto() {
     "oats\030\005 \003(\002\022\014\n\004ints\030\006 \003(\005\022\017\n\007strings\030\007 \003("
     "\t\"p\n\014DeviceOption\022%\n\013device_type\030\001 \001(\0162\013"
     ".DeviceType:\003CPU\022\021\n\006gpu_id\030\002 \001(\005:\0010\022\026\n\013r"
-    "andom_seed\030\003 \001(\r:\0013\022\016\n\006engine\030\004 \001(\t\"\241\001\n\013"
+    "andom_seed\030\003 \001(\r:\0013\022\016\n\006engine\030\004 \001(\t\"\275\001\n\013"
     "OperatorDef\022\r\n\005input\030\001 \003(\t\022\016\n\006output\030\002 \003"
     "(\t\022\014\n\004name\030\003 \001(\t\022\014\n\004type\030\004 \001(\t\022\026\n\003arg\030\005 "
     "\003(\0132\t.Argument\022$\n\rdevice_option\030\006 \001(\0132\r."
-    "DeviceOption\022\031\n\ndebug_mode\030\007 \001(\010:\005false\""
-    "=\n\016GradientTarget\022\014\n\004cost\030\001 \001(\t\022\013\n\003wrt\030\002"
-    " \001(\t\022\020\n\010external\030\003 \001(\t\"R\n\014UpdateTarget\022\014"
-    "\n\004name\030\001 \001(\t\022\014\n\004type\030\002 \001(\t\022\016\n\006tensor\030\003 \003"
-    "(\t\022\026\n\003arg\030\004 \003(\0132\t.Argument\"\215\002\n\014TensorFil"
-    "ler\022\016\n\006tensor\030\001 \001(\t\022\026\n\004type\030\002 \001(\t:\010const"
-    "ant\022\020\n\005value\030\003 \001(\002:\0010\022\016\n\003low\030\004 \001(\002:\0010\022\017\n"
-    "\004high\030\005 \001(\002:\0011\022\017\n\004mean\030\006 \001(\002:\0010\022\016\n\003std\030\007"
-    " \001(\002:\0011\022\020\n\005scale\030\010 \001(\002:\0013\0229\n\rvariance_no"
-    "rm\030\t \001(\0162\032.TensorFiller.VarianceNorm:\006FA"
-    "N_IN\"4\n\014VarianceNorm\022\n\n\006FAN_IN\020\000\022\013\n\007FAN_"
-    "OUT\020\001\022\013\n\007FAN_AVG\020\002\"\363\001\n\010GraphDef\022\014\n\004name\030"
-    "\001 \001(\t\022\030\n\002op\030\002 \003(\0132\014.OperatorDef\022\022\n\ngraph"
-    "_type\030\003 \001(\t\022$\n\rdevice_option\030\005 \001(\0132\r.Dev"
-    "iceOption\022\026\n\003arg\030\006 \003(\0132\t.Argument\022\016\n\006tar"
-    "get\030\007 \003(\t\022!\n\010g_target\030\010 \003(\0132\017.GradientTa"
-    "rget\022\037\n\010u_target\030\t \003(\0132\r.UpdateTarget\022\031\n"
-    "\ndebug_mode\030\n \001(\010:\005false*+\n\nDeviceType\022\007"
-    "\n\003CPU\020\000\022\010\n\004CUDA\020\001\022\n\n\006OPENCL\020\002", 1429);
+    "DeviceOption\022\031\n\ndebug_mode\030\007 \001(\010:\005false\022"
+    "\032\n\013share_grads\030\010 \001(\010:\005false\"=\n\016GradientT"
+    "arget\022\014\n\004cost\030\001 \001(\t\022\013\n\003wrt\030\002 \001(\t\022\020\n\010exte"
+    "rnal\030\003 \001(\t\"R\n\014UpdateTarget\022\014\n\004name\030\001 \001(\t"
+    "\022\014\n\004type\030\002 \001(\t\022\016\n\006tensor\030\003 \003(\t\022\026\n\003arg\030\004 "
+    "\003(\0132\t.Argument\"\215\002\n\014TensorFiller\022\016\n\006tenso"
+    "r\030\001 \001(\t\022\026\n\004type\030\002 \001(\t:\010constant\022\020\n\005value"
+    "\030\003 \001(\002:\0010\022\016\n\003low\030\004 \001(\002:\0010\022\017\n\004high\030\005 \001(\002:"
+    "\0011\022\017\n\004mean\030\006 \001(\002:\0010\022\016\n\003std\030\007 \001(\002:\0011\022\020\n\005s"
+    "cale\030\010 \001(\002:\0013\0229\n\rvariance_norm\030\t \001(\0162\032.T"
+    "ensorFiller.VarianceNorm:\006FAN_IN\"4\n\014Vari"
+    "anceNorm\022\n\n\006FAN_IN\020\000\022\013\n\007FAN_OUT\020\001\022\013\n\007FAN"
+    "_AVG\020\002\"\217\002\n\010GraphDef\022\014\n\004name\030\001 \001(\t\022\030\n\002op\030"
+    "\002 \003(\0132\014.OperatorDef\022\022\n\ngraph_type\030\003 \001(\t\022"
+    "$\n\rdevice_option\030\005 \001(\0132\r.DeviceOption\022\026\n"
+    "\003arg\030\006 \003(\0132\t.Argument\022\016\n\006target\030\007 \003(\t\022!\n"
+    "\010g_target\030\010 \003(\0132\017.GradientTarget\022\037\n\010u_ta"
+    "rget\030\t \003(\0132\r.UpdateTarget\022\031\n\ndebug_mode\030"
+    "\n \001(\010:\005false\022\032\n\013share_grads\030\013 \001(\010:\005false"
+    "*+\n\nDeviceType\022\007\n\003CPU\020\000\022\010\n\004CUDA\020\001\022\n\n\006OPE"
+    "NCL\020\002", 1485);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "dragon.proto", &protobuf_RegisterTypes);
   TensorProto::default_instance_ = new TensorProto();
@@ -2171,6 +2175,7 @@ const int OperatorDef::kTypeFieldNumber;
 const int OperatorDef::kArgFieldNumber;
 const int OperatorDef::kDeviceOptionFieldNumber;
 const int OperatorDef::kDebugModeFieldNumber;
+const int OperatorDef::kShareGradsFieldNumber;
 #endif  // !_MSC_VER
 
 OperatorDef::OperatorDef()
@@ -2197,6 +2202,7 @@ void OperatorDef::SharedCtor() {
   type_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   device_option_ = NULL;
   debug_mode_ = false;
+  share_grads_ = false;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -2239,7 +2245,18 @@ OperatorDef* OperatorDef::New() const {
 }
 
 void OperatorDef::Clear() {
-  if (_has_bits_[0 / 32] & 108) {
+#define OFFSET_OF_FIELD_(f) (reinterpret_cast<char*>(      \
+  &reinterpret_cast<OperatorDef*>(16)->f) - \
+   reinterpret_cast<char*>(16))
+
+#define ZR_(first, last) do {                              \
+    size_t f = OFFSET_OF_FIELD_(first);                    \
+    size_t n = OFFSET_OF_FIELD_(last) - f + sizeof(last);  \
+    ::memset(&first, 0, n);                                \
+  } while (0)
+
+  if (_has_bits_[0 / 32] & 236) {
+    ZR_(debug_mode_, share_grads_);
     if (has_name()) {
       if (name_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
         name_->clear();
@@ -2253,8 +2270,11 @@ void OperatorDef::Clear() {
     if (has_device_option()) {
       if (device_option_ != NULL) device_option_->::DeviceOption::Clear();
     }
-    debug_mode_ = false;
   }
+
+#undef OFFSET_OF_FIELD_
+#undef ZR_
+
   input_.Clear();
   output_.Clear();
   arg_.Clear();
@@ -2382,6 +2402,21 @@ bool OperatorDef::MergePartialFromCodedStream(
         } else {
           goto handle_unusual;
         }
+        if (input->ExpectTag(64)) goto parse_share_grads;
+        break;
+      }
+
+      // optional bool share_grads = 8 [default = false];
+      case 8: {
+        if (tag == 64) {
+         parse_share_grads:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &share_grads_)));
+          set_has_share_grads();
+        } else {
+          goto handle_unusual;
+        }
         if (input->ExpectAtEnd()) goto success;
         break;
       }
@@ -2468,6 +2503,11 @@ void OperatorDef::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteBool(7, this->debug_mode(), output);
   }
 
+  // optional bool share_grads = 8 [default = false];
+  if (has_share_grads()) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(8, this->share_grads(), output);
+  }
+
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -2539,6 +2579,11 @@ void OperatorDef::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(7, this->debug_mode(), target);
   }
 
+  // optional bool share_grads = 8 [default = false];
+  if (has_share_grads()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(8, this->share_grads(), target);
+  }
+
   if (!unknown_fields().empty()) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         unknown_fields(), target);
@@ -2574,6 +2619,11 @@ int OperatorDef::ByteSize() const {
 
     // optional bool debug_mode = 7 [default = false];
     if (has_debug_mode()) {
+      total_size += 1 + 1;
+    }
+
+    // optional bool share_grads = 8 [default = false];
+    if (has_share_grads()) {
       total_size += 1 + 1;
     }
 
@@ -2641,6 +2691,9 @@ void OperatorDef::MergeFrom(const OperatorDef& from) {
     if (from.has_debug_mode()) {
       set_debug_mode(from.debug_mode());
     }
+    if (from.has_share_grads()) {
+      set_share_grads(from.share_grads());
+    }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
@@ -2671,6 +2724,7 @@ void OperatorDef::Swap(OperatorDef* other) {
     arg_.Swap(&other->arg_);
     std::swap(device_option_, other->device_option_);
     std::swap(debug_mode_, other->debug_mode_);
+    std::swap(share_grads_, other->share_grads_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
@@ -4066,6 +4120,7 @@ const int GraphDef::kTargetFieldNumber;
 const int GraphDef::kGTargetFieldNumber;
 const int GraphDef::kUTargetFieldNumber;
 const int GraphDef::kDebugModeFieldNumber;
+const int GraphDef::kShareGradsFieldNumber;
 #endif  // !_MSC_VER
 
 GraphDef::GraphDef()
@@ -4092,6 +4147,7 @@ void GraphDef::SharedCtor() {
   graph_type_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   device_option_ = NULL;
   debug_mode_ = false;
+  share_grads_ = false;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -4134,6 +4190,16 @@ GraphDef* GraphDef::New() const {
 }
 
 void GraphDef::Clear() {
+#define OFFSET_OF_FIELD_(f) (reinterpret_cast<char*>(      \
+  &reinterpret_cast<GraphDef*>(16)->f) - \
+   reinterpret_cast<char*>(16))
+
+#define ZR_(first, last) do {                              \
+    size_t f = OFFSET_OF_FIELD_(first);                    \
+    size_t n = OFFSET_OF_FIELD_(last) - f + sizeof(last);  \
+    ::memset(&first, 0, n);                                \
+  } while (0)
+
   if (_has_bits_[0 / 32] & 13) {
     if (has_name()) {
       if (name_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
@@ -4149,7 +4215,11 @@ void GraphDef::Clear() {
       if (device_option_ != NULL) device_option_->::DeviceOption::Clear();
     }
   }
-  debug_mode_ = false;
+  ZR_(debug_mode_, share_grads_);
+
+#undef OFFSET_OF_FIELD_
+#undef ZR_
+
   op_.Clear();
   arg_.Clear();
   target_.Clear();
@@ -4301,6 +4371,21 @@ bool GraphDef::MergePartialFromCodedStream(
         } else {
           goto handle_unusual;
         }
+        if (input->ExpectTag(88)) goto parse_share_grads;
+        break;
+      }
+
+      // optional bool share_grads = 11 [default = false];
+      case 11: {
+        if (tag == 88) {
+         parse_share_grads:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &share_grads_)));
+          set_has_share_grads();
+        } else {
+          goto handle_unusual;
+        }
         if (input->ExpectAtEnd()) goto success;
         break;
       }
@@ -4395,6 +4480,11 @@ void GraphDef::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteBool(10, this->debug_mode(), output);
   }
 
+  // optional bool share_grads = 11 [default = false];
+  if (has_share_grads()) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(11, this->share_grads(), output);
+  }
+
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -4477,6 +4567,11 @@ void GraphDef::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(10, this->debug_mode(), target);
   }
 
+  // optional bool share_grads = 11 [default = false];
+  if (has_share_grads()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(11, this->share_grads(), target);
+  }
+
   if (!unknown_fields().empty()) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         unknown_fields(), target);
@@ -4514,6 +4609,11 @@ int GraphDef::ByteSize() const {
   if (_has_bits_[8 / 32] & (0xffu << (8 % 32))) {
     // optional bool debug_mode = 10 [default = false];
     if (has_debug_mode()) {
+      total_size += 1 + 1;
+    }
+
+    // optional bool share_grads = 11 [default = false];
+    if (has_share_grads()) {
       total_size += 1 + 1;
     }
 
@@ -4602,6 +4702,9 @@ void GraphDef::MergeFrom(const GraphDef& from) {
     if (from.has_debug_mode()) {
       set_debug_mode(from.debug_mode());
     }
+    if (from.has_share_grads()) {
+      set_share_grads(from.share_grads());
+    }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
@@ -4634,6 +4737,7 @@ void GraphDef::Swap(GraphDef* other) {
     g_target_.Swap(&other->g_target_);
     u_target_.Swap(&other->u_target_);
     std::swap(debug_mode_, other->debug_mode_);
+    std::swap(share_grads_, other->share_grads_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);

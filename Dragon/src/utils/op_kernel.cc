@@ -650,19 +650,6 @@ template <> void TransposeGrad<float16, CPUContext>(const int count,
     }
 }
 
-/******************** common.utils ********************/
-
-template <> void OneHot<float, CPUContext>(const int count,
-                                           const int depth,
-                                           const int on_value,
-                                           const float* x,
-                                           float* y) {
-    for (int i = 0; i < count; ++i) {
-        const int val = x[i];
-        y[i * depth + val] = on_value;
-    }
-}
-
 /******************** loss.l1_loss ********************/
 
 template<> void AbsGrad<float, CPUContext>(const int count, const float* dy, float* dx) {
@@ -673,7 +660,7 @@ template<> void AbsGrad<float, CPUContext>(const int count, const float* dy, flo
     }
 }
 
-/******************** loss.sigmoid_cross_entropy_loss ********************/
+/******************** loss.sigmoid_cross_entropy ********************/
 
 template <> void SigmoidCrossEntropy<float, CPUContext>(const int count, 
                                                         const float* x, 
@@ -712,7 +699,7 @@ template<> void SmoothL1Grad<float, CPUContext>(const int count,
     }
 }
 
-/******************** loss.softmax_cross_entropy_loss ********************/
+/******************** loss.softmax_cross_entropy ********************/
 
 template <> void SoftmaxCrossEntropy<float, CPUContext>(const int count, 
                                                         const float* prob, 
@@ -723,7 +710,7 @@ template <> void SoftmaxCrossEntropy<float, CPUContext>(const int count,
     }
 }
 
-/******************** loss.softmax_loss ********************/
+/******************** loss.sparse_softmax_cross_entropy ********************/
 
 template <> void SparseSoftmaxCrossEntropy<float, CPUContext>(const int count, 
                                                               const int classes, 
@@ -735,8 +722,7 @@ template <> void SparseSoftmaxCrossEntropy<float, CPUContext>(const int count,
                                                               float* valid, 
                                                               Tensor* ignore) {
     const int* ignores = ignore->count() > 0 ? 
-                         ignore->data<int, CPUContext>() : 
-                         nullptr;
+                         ignore->data<int, CPUContext>() : nullptr;
     const int dim = count / outer_dim;
     for (int i = 0; i < outer_dim; ++i) {
         for (int j = 0; j < inner_dim; ++j) {
@@ -751,27 +737,25 @@ template <> void SparseSoftmaxCrossEntropy<float, CPUContext>(const int count,
             }
             if (k == ignore->count()) {
                 float labeled_prob = prob[i * dim + label * inner_dim + j];
-                labeled_prob = std::max(labeled_prob, FLT_MIN);
-                loss[idx] = log(labeled_prob);
+                loss[idx] = -std::log(std::max(labeled_prob, FLT_MIN));
                 valid[idx] = 1;
             }
         }
     }
 }
 
-template<> void SoftmaxLossGrad<float, CPUContext>(const int count, 
-                                                   const int classes, 
-                                                   const int outer_dim, 
-                                                   const int inner_dim, 
-                                                   const float* labels, 
-                                                   const float* prob, 
-                                                   float* valid, 
-                                                   Tensor* ignore, 
-                                                   float* dXdata) {
+template<> void SparseSoftmaxCrossEntropyGrad<float, CPUContext>(const int count,
+                                                                 const int classes,
+                                                                 const int outer_dim,
+                                                                 const int inner_dim,
+                                                                 const float* prob,
+                                                                 const float* labels,
+                                                                 float* valid,
+                                                                 Tensor* ignore,
+                                                                 float* dXdata) {
     int dim = count / outer_dim;
     const int* ignores = ignore->count() > 0 ?
-                         ignore->data <int, CPUContext>() : 
-                         nullptr;
+                         ignore->data <int, CPUContext>() : nullptr;
     valid[0] = 0;
     for (int i = 0; i < outer_dim; ++i) {
         for (int j = 0; j < inner_dim; ++j) {
@@ -784,6 +768,93 @@ template<> void SoftmaxLossGrad<float, CPUContext>(const int count,
                     dXdata[i * dim + c * inner_dim + j] = 0;
             } else {
                 dXdata[i * dim + label * inner_dim + j] -= 1;
+                valid[0]++;
+            }
+        }
+    }
+}
+
+/******************** loss.sparse_softmax_focal_loss ********************/
+
+template <> void SparseSoftmaxFocalLoss<float, CPUContext>(const int count,
+                                                           const int classes,
+                                                           const int outer_dim,
+                                                           const int inner_dim,
+                                                           const float alpha,
+                                                           const float gamma,
+                                                           const float* prob,
+                                                           const float* labels,
+                                                           float* scale,
+                                                           float* loss,
+                                                           float* valid,
+                                                           Tensor* ignore) {
+    const int* ignores = ignore->count() > 0 ? 
+                         ignore->data<int, CPUContext>() : nullptr;
+    const int dim = count / outer_dim;
+
+    for (int i = 0; i < count; ++i) {
+        scale[i] = alpha * std::pow((1.0f - prob[i]), gamma);
+    }
+
+    for (int i = 0; i < outer_dim; ++i) {
+        for (int j = 0; j < inner_dim; ++j) {
+            const int idx = i * inner_dim + j;
+            const int label = labels[idx];
+            int k;
+            for (k = 0; k < ignore->count(); ++k) {
+                if (label == ignores[k]) {
+                    loss[idx] = valid[idx] = 0;
+                    break;
+                }
+            }
+            if (k == ignore->count()) {
+                const int t_ = i * dim + label * inner_dim + j;
+                float labeled_prob = prob[t_];
+                loss[idx] = -scale[t_] * std::log(std::max(labeled_prob, FLT_MIN));
+                valid[idx] = 1;
+            }
+        }
+    }
+}
+
+template<> void SparseSoftmaxFocalLossGrad<float, CPUContext>(const int count,
+                                                              const int classes, 
+                                                              const int outer_dim, 
+                                                              const int inner_dim,
+                                                              const float gamma,
+                                                              const float eps,
+                                                              const float* scale,
+                                                              const float* prob, 
+                                                              const float* labels, 
+                                                              float* valid, 
+                                                              Tensor* ignore, 
+                                                              float* dXdata) {
+    int dim = count / outer_dim;
+    const int* ignores = ignore->count() > 0 ?
+                         ignore->data <int, CPUContext>() : nullptr;
+    valid[0] = 0;
+    for (int i = 0; i < outer_dim; ++i) {
+        for (int j = 0; j < inner_dim; ++j) {
+            const int label = labels[i * inner_dim + j];
+            int k;
+            for (k = 0; k < ignore->count(); ++k)
+                if (label == ignores[k]) break;
+            if (k != ignore->count()) {
+                for (int c = 0; c < classes; ++c)
+                    dXdata[i * dim + c * inner_dim + j] = 0;
+            } else {
+                const int t_ = i * dim + label * inner_dim + j;
+                float grad = -gamma * (scale[t_] / std::max((1.0f - prob[t_]), eps))
+                                    * std::log(std::max(prob[t_], FLT_MIN)) 
+                                    * prob[t_] + scale[t_];
+                for (int c = 0; c < classes; ++c) {
+                    const int i_ = i * dim + c * inner_dim + j;
+                    if (c == label) {
+                        dXdata[i_] = grad * (prob[t_] - 1);
+                    } else {
+                        dXdata[i_] = grad * prob[i_];
+                    }
+                }
                 valid[0]++;
             }
         }
@@ -1011,6 +1082,19 @@ template <> void MemoryData<uint8_t, float16, CPUContext>(const int count,
                                                           const uint8_t* x, 
                                                           float16* y) {
     LOG(FATAL) << "unsupport float16 with CPU";
+}
+
+/******************** utils.one_hot ********************/
+
+template <> void OneHot<float, CPUContext>(const int count,
+                                           const int depth,
+                                           const int on_value,
+                                           const float* x,
+                                           float* y) {
+    for (int i = 0; i < count; ++i) {
+        const int val = x[i];
+        y[i * depth + val] = on_value;
+    }
 }
 
 /******************** vision.conv ********************/

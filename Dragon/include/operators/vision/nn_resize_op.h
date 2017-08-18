@@ -35,9 +35,7 @@ class NNResizeGradientOp : public Operator<Context> {
     NNResizeGradientOp(const OperatorDef& op_def, Workspace* ws) 
         : Operator<Context>(op_def, ws) {}
 
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void RunWithType();
 };
 

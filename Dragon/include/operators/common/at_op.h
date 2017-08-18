@@ -34,9 +34,7 @@ class AtGradientOp final : public Operator<Context> {
           axis(OperatorBase::GetSingleArg<int>("axis", 0)),
           acc_grad(OperatorBase::GetSingleArg<bool>("acc_gradient", false)) {}
 
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void RunWithType();
 
  protected:

@@ -37,6 +37,7 @@ class DotGradientOp final : public Operator<Context> {
         transA(OperatorBase::GetSingleArg<bool>("TransA", false)),
         transB(OperatorBase::GetSingleArg<bool>("TransB", false)) {}
 
+    void ShareGradient() override;
     void RunOnDevice() override;
     template <typename T> void DotRunWithType();
     template <typename T> void GemmRunWithType();

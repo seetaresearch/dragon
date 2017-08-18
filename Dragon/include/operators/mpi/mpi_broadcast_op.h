@@ -27,7 +27,9 @@ template <class Context>
 class MPIBroadcastGradientOp final : public ModelMPIBase<Context> {
 public:
     MPIBroadcastGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : ModelMPIBase<Context>(op_def, ws) {}
+        : ModelMPIBase<Context>(op_def, ws) {
+        DISABLE_SHARE_GRADIENT;
+    }
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

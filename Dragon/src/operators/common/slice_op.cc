@@ -81,7 +81,7 @@ DEPLOY_CUDA(SliceGradient);
 OPERATOR_SCHEMA(SliceGradient).NumInputs(2, INT_MAX).NumOutputs(1);
 
 class GetSliceGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetSliceGradient);
     vector<OperatorDef> MakeDefs() override {
         vector<string> inputs(1, I(0));

@@ -42,6 +42,7 @@ class Graph final : public GraphBase {
     GraphDef Prune(const GraphDef& graph_def);
     GraphDef Share(const GraphDef& graph_def);
     GraphDef MakeUpdate(const GraphDef& graph_def);
+    void RecomputingAware(const GraphDef& graph_def, Workspace* ws);
 
     inline Workspace* ws() const { return ws_; }
 

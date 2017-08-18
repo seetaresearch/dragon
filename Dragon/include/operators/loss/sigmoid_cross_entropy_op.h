@@ -4,19 +4,20 @@
 // Written by Ting Pan
 // --------------------------------------------------------
 
-#ifndef DRAGON_OPERATORS_LOSS_SIGMOID_CROSS_ENTROPY_LOSS_OP_H_
-#define DRAGON_OPERATORS_LOSS_SIGMOID_CROSS_ENTROPY_LOSS_OP_H_
+#ifndef DRAGON_OPERATORS_LOSS_SIGMOID_CROSS_ENTROPY_OP_H_
+#define DRAGON_OPERATORS_LOSS_SIGMOID_CROSS_ENTROPY_OP_H_
 
 #include "core/operator.h"
 
 namespace dragon {
 
 template <class Context>
-class SigmoidCrossEntropyLossOp final : public Operator<Context> {
+class SigmoidCrossEntropyOp final : public Operator<Context> {
  public:
-    SigmoidCrossEntropyLossOp(const OperatorDef& op_def, Workspace* ws)
+    SigmoidCrossEntropyOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           normalization(OperatorBase::GetSingleArg<string>("normalization", "FULL")) {}
+
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
@@ -27,9 +28,9 @@ class SigmoidCrossEntropyLossOp final : public Operator<Context> {
 };
 
 template <class Context>
-class SigmoidCrossEntropyLossGradientOp final : public Operator<Context> {
+class SigmoidCrossEntropyGradientOp final : public Operator<Context> {
  public:
-    SigmoidCrossEntropyLossGradientOp(const OperatorDef& op_def, Workspace* ws)
+    SigmoidCrossEntropyGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           normalization(OperatorBase::GetSingleArg<string>("normalization", "FULL")) {}
 
@@ -43,4 +44,4 @@ class SigmoidCrossEntropyLossGradientOp final : public Operator<Context> {
 
 }    // namespace dragon
 
-#endif    // DRAGON_OPERATORS_LOSS_SIGMOID_CROSS_ENTROPY_LOSS_OP_H_
+#endif    // DRAGON_OPERATORS_LOSS_SIGMOID_CROSS_ENTROPY_OP_H_

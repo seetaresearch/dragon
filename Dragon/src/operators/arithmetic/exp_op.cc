@@ -41,19 +41,6 @@ void ExpGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-template <class Context>
-void ExpGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void ExpGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
-
-
 DEPLOY_CPU(ExpGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(ExpGradient);
@@ -61,7 +48,7 @@ DEPLOY_CUDA(ExpGradient);
 OPERATOR_SCHEMA(ExpGradient).NumInputs(2).NumOutputs(1);
 
 class GetExpGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetExpGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

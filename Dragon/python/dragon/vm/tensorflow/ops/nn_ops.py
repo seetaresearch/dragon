@@ -119,7 +119,7 @@ def bias_add(value, bias, data_format='NCHW', name=None):
 
 def sigmoid_cross_entropy_with_logits(logits, targets, name=None):
 
-    return ops.SigmoidCrossEntropyLoss([logits, targets], normalization='UNIT', name=None)
+    return ops.SigmoidCrossEntropy([logits, targets], normalization='UNIT', name=None)
 
 
 def softmax_cross_entropy_with_logits(_sentinel=None,
@@ -131,13 +131,13 @@ def softmax_cross_entropy_with_logits(_sentinel=None,
                          'with named arguments (labels=..., logits=..., ...)')
 
     if dim == -1: dim = 1
-    return ops.SoftmaxCrossEntropyLoss([logits, labels], axis=dim, normalization='UNIT', name=name)
+    return ops.SoftmaxCrossEntropy([logits, labels], axis=dim, normalization='UNIT', name=name)
 
 
 def sparse_softmax_cross_entropy_with_logits(logits, labels, dim=-1, name=None):
 
     if dim == -1: dim = 1
-    return ops.SoftmaxLoss([logits, labels], axis=dim, normalization='UNIT', name=name)
+    return ops.SparseSoftmaxCrossEntropy([logits, labels], axis=dim, normalization='UNIT', name=name)
 
 
 def l2_loss(t, name=None):

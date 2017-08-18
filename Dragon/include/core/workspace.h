@@ -13,23 +13,28 @@
 
 namespace dragon {
 
-#define WORKSPACE_MIN_BUFFER_SIZE 3
-#define WORKSPACE_MAX_BUFFER_SIZE 3
+#define WORKSPACE_COMMON_BUFFER_SIZE 2
+#define WORKSPACE_GRAD_BUFFER_SIZE 1
+#define WORKSPACE_MAX_CORRUPTED_SIZE 2
 
 class Workspace{
  public:
     typedef Map<string, unique_ptr<Tensor> > TensorMap;
+    typedef Map<string, stack<string> > BufferMap;
     typedef Map<string, unique_ptr<mutex> > LockMap;
     typedef Map<string, unique_ptr<GraphBase> > GraphMap;
     typedef Map<string, TensorFiller> FillerMap;
     typedef Map<string, string> RenameMap;
+    typedef Map<string, vector<OperatorBase*> > RecomputeMap;
 
     Workspace(): root_folder_(".") { init(); }
     Workspace(string root_folder) : root_folder_(root_folder) { init(); }
+    ~Workspace();
 
     void init() { 
         CreateTensor("ignore"); 
-        for (int i = 0; i < WORKSPACE_MIN_BUFFER_SIZE; i++) CreateBuffer();
+        CreateBuffer("Common", WORKSPACE_COMMON_BUFFER_SIZE);
+        CreateBuffer("Grad", WORKSPACE_GRAD_BUFFER_SIZE);
     }
 
     /******************** Tensor ********************/
@@ -101,33 +106,39 @@ class Workspace{
 
     /******************** Buffer ********************/
 
-    inline Tensor* CreateBuffer() {
-        int buffer_idx = 1;
-        string name;
-        while (1) {
-            name = "_t_buffer_" + dragon_cast<string, int>(buffer_idx++);
-            if (!HasTensor(name)) break;
+    inline void CreateBuffer(string category, int num) {
+        CHECK(!buffer_map_.count(category));
+        buffer_map_[category] = stack<string>();
+        for (int i = 1; i <= num; i++) {
+            string name = "_t_" + category + "_buffer_" + dragon_cast<string, int>(i);
+            buffer_map_[category].push(name);
+            CreateTensor(name);
         }
-        buffer_stack_.push(name);
-        return CreateTensor(name);
     }
 
-    inline Tensor* GetBuffer() {
-        if (!buffer_stack_.empty()) {
-            string name = buffer_stack_.top();
-            buffer_stack_.pop();
+    inline Tensor* GetBuffer(string category = "Common") {
+        if (!buffer_map_[category].empty()) {
+            string name = buffer_map_[category].top();
+            buffer_map_[category].pop();
             return GetTensor(name);
         }
-        LOG(FATAL) << "buffers are not enough, add more if necessary.";
+        LOG(FATAL) << "buffers of [" << category << "] "
+                   << "are not enough, add more if necessary.";
         return nullptr;
     }
 
-    inline void ReleaseBuffer(Tensor* tensor, bool force_release=false) {
-        //  release directly
-        if (buffer_stack_.size() >= WORKSPACE_MAX_BUFFER_SIZE || force_release) {
+    inline void ReleaseBuffer(Tensor* tensor, 
+                              string category = "Common",
+                              bool enforce = false) {
+        static Map<string, int> limits = {
+            { "Common", WORKSPACE_COMMON_BUFFER_SIZE },
+            { "Grad", WORKSPACE_GRAD_BUFFER_SIZE }};
+        if (buffer_map_[category].size() >= limits[category] || enforce) {
+            //  release directly
             ReleaseTensor(tensor->name());
-        } else {    //  recover as a available buffer
-            buffer_stack_.push(tensor->name());
+        } else {    
+            //  recover as a available buffer
+            buffer_map_[category].push(tensor->name());
         }
     }
 
@@ -158,14 +169,30 @@ class Workspace{
         rename_map_[old_tensor] = new_tensor;
     }
 
+    inline void AddRecompute(const string& tensor, OperatorBase* op) {
+        if (!recompute_map_.count(tensor)) {
+            recompute_map_[tensor] = vector<OperatorBase*>();
+        }
+        recompute_map_[tensor].push_back(op);
+    }
+
+    inline vector<OperatorBase*> GetRecompute(const string& tensor) {
+        if (recompute_map_.count(tensor)) {
+            return recompute_map_[tensor];
+        } else {
+            return vector<OperatorBase*>();
+        }
+    }
+
  private:
     TensorMap tensor_map_;
+    BufferMap buffer_map_;
     LockMap lock_map_;
     GraphMap graph_map_;
     FillerMap filler_map_;
-    RenameMap rename_map_;
+    RenameMap rename_map_;   
+    RecomputeMap recompute_map_;
     string root_folder_;
-    stack<string> buffer_stack_;
 };
 
 }    // namespace dragon

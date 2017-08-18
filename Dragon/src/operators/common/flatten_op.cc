@@ -39,7 +39,7 @@ DEPLOY_CUDA(FlattenGradient);
 OPERATOR_SCHEMA(FlattenGradient).NumInputs(2).NumOutputs(1);
 
 class GetFlattenGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetFlattenGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

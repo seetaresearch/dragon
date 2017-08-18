@@ -31,9 +31,7 @@ class DeConvGradientOp : public DeConvOp<Context> {
     DeConvGradientOp(const OperatorDef& def, Workspace* ws) :
         DeConvOp<Context>(def, ws) {}
 
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void RunWithType();
 };
 

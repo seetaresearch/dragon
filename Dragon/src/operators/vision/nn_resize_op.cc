@@ -54,18 +54,6 @@ void NNResizeGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-template <class Context>
-void NNResizeGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void NNResizeGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
-
 DEPLOY_CPU(NNResizeGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(NNResizeGradient);
@@ -73,7 +61,7 @@ DEPLOY_CUDA(NNResizeGradient);
 OPERATOR_SCHEMA(NNResizeGradient).NumInputs(2).NumOutputs(1);
 
 class GetNNResizeGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetNNResizeGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

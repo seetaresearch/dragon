@@ -176,6 +176,6 @@ def Restore(filename, format=0):
                 FeedTensor(key, ndarray)
 
     elif format is 1:
-        # TODO(pan): caffemodel can't save the tensor name
-        # TODO(pan): we simply use 'Scope + LayerName + @paramX'
+        # TODO(PhyscalX): caffemodel can't save the tensor name
+        # TODO(PhyscalX): we simply use 'Scope + LayerName + @paramX'
         RestoreCC(filename, '', format)

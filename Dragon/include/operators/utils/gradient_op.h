@@ -19,6 +19,7 @@ class GradientGenerateOp final: public Operator<Context> {
           defaults(OperatorBase::GetRepeatedArg<float>("defaults")) {
         CHECK_EQ(InputSize(), OutputSize());
         CHECK_EQ(defaults.size(), OutputSize());
+        DISABLE_SHARE_GRADIENT;
     }
 
     void RunOnDevice() override;
@@ -35,6 +36,7 @@ class GradientGatherOp final : public Operator<Context> {
         : Operator<Context>(op_def, ws) {
         for (int i = 0; i < InputSize(); i++)
             if (input(i).name() != "ignore") indices.push_back(i);
+        DISABLE_SHARE_GRADIENT;
     }
 
     void RunOnDevice() override;
@@ -47,7 +49,11 @@ class GradientGatherOp final : public Operator<Context> {
 template <class Context>
 class StopGradientOp final : public Operator<Context> {
  public:
-    USE_SIMPLE_CTOR_DTOR(StopGradientOp);
+    StopGradientOp(const OperatorDef& op_def, Workspace* ws)
+         : Operator<Context>(op_def, ws) {
+         DISABLE_SHARE_GRADIENT;
+    }
+
     void RunOnDevice() override;
 };
 

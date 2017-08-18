@@ -1,4 +1,4 @@
-#include "operators/loss/sigmoid_cross_entropy_loss_op.h"
+#include "operators/loss/sigmoid_cross_entropy_op.h"
 #include "core/workspace.h"
 #include "utils/math_functions.h"
 #include "utils/op_kernel.h"
@@ -6,7 +6,7 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void SigmoidCrossEntropyLossOp<Context>::RunWithType() {
+void SigmoidCrossEntropyOp<Context>::RunWithType() {
     auto* Xdata = input(0).template data<T, Context>();
     auto* Pdata = prob->template mutable_data<T, Context>();
     kernel::Sigmoid<T, Context>(prob->count(), Xdata, Pdata);
@@ -32,7 +32,7 @@ void SigmoidCrossEntropyLossOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void SigmoidCrossEntropyLossOp<Context>::RunOnDevice() {
+void SigmoidCrossEntropyOp<Context>::RunOnDevice() {
     CHECK_EQ(input(0).count(), input(1).count())
         << "\nnumber of predictions must match the number of labels.";
     prob = ws()->CreateTensor("_t_" + anchor() + "_sigmoid_prob");
@@ -43,14 +43,14 @@ void SigmoidCrossEntropyLossOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-DEPLOY_CPU(SigmoidCrossEntropyLoss);
+DEPLOY_CPU(SigmoidCrossEntropy);
 #ifdef WITH_CUDA
-DEPLOY_CUDA(SigmoidCrossEntropyLoss);
+DEPLOY_CUDA(SigmoidCrossEntropy);
 #endif
-OPERATOR_SCHEMA(SigmoidCrossEntropyLoss).NumInputs(2).NumOutputs(1);
+OPERATOR_SCHEMA(SigmoidCrossEntropy).NumInputs(2).NumOutputs(1);
 
 template <class Context> template <typename T>
-void SigmoidCrossEntropyLossGradientOp<Context>::RunWithType() {
+void SigmoidCrossEntropyGradientOp<Context>::RunWithType() {
     auto* Pdata = prob->template data<T, Context>();
     auto* Tdata = input(1).template data<T, Context>();
     auto* dXdata = output(0)->template mutable_data<T, Context>();
@@ -72,7 +72,7 @@ void SigmoidCrossEntropyLossGradientOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void SigmoidCrossEntropyLossGradientOp<Context>::RunOnDevice() {
+void SigmoidCrossEntropyGradientOp<Context>::RunOnDevice() {
     prob = ws()->GetTensor("_t_" + anchor() + "_sigmoid_prob");
     output(0)->ReshapeLike(input(0));
 
@@ -80,21 +80,21 @@ void SigmoidCrossEntropyLossGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-DEPLOY_CPU(SigmoidCrossEntropyLossGradient);
+DEPLOY_CPU(SigmoidCrossEntropyGradient);
 #ifdef WITH_CUDA
-DEPLOY_CUDA(SigmoidCrossEntropyLossGradient);
+DEPLOY_CUDA(SigmoidCrossEntropyGradient);
 #endif
-OPERATOR_SCHEMA(SigmoidCrossEntropyLossGradient).NumInputs(3).NumOutputs(1);
+OPERATOR_SCHEMA(SigmoidCrossEntropyGradient).NumInputs(3).NumOutputs(1);
 
-class GetSigmoidCrossEntropyLossGradient final : public GradientMakerBase {
-public:
-    GRADIENT_MAKER_CTOR(GetSigmoidCrossEntropyLossGradient);
+class GetSigmoidCrossEntropyGradient final : public GradientMakerBase {
+ public:
+    GRADIENT_MAKER_CTOR(GetSigmoidCrossEntropyGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
             vector<string> {I(0), I(1), GO(0)},
             vector<string> {GI(0)});
     }
 };
-REGISTER_GRADIENT(SigmoidCrossEntropyLoss, GetSigmoidCrossEntropyLossGradient);
+REGISTER_GRADIENT(SigmoidCrossEntropy, GetSigmoidCrossEntropyGradient);
 
 }    // namespace dragon

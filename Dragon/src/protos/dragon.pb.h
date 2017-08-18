@@ -815,6 +815,13 @@ class OperatorDef : public ::google::protobuf::Message {
   inline bool debug_mode() const;
   inline void set_debug_mode(bool value);
 
+  // optional bool share_grads = 8 [default = false];
+  inline bool has_share_grads() const;
+  inline void clear_share_grads();
+  static const int kShareGradsFieldNumber = 8;
+  inline bool share_grads() const;
+  inline void set_share_grads(bool value);
+
   // @@protoc_insertion_point(class_scope:OperatorDef)
  private:
   inline void set_has_name();
@@ -825,6 +832,8 @@ class OperatorDef : public ::google::protobuf::Message {
   inline void clear_has_device_option();
   inline void set_has_debug_mode();
   inline void clear_has_debug_mode();
+  inline void set_has_share_grads();
+  inline void clear_has_share_grads();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
@@ -837,6 +846,7 @@ class OperatorDef : public ::google::protobuf::Message {
   ::google::protobuf::RepeatedPtrField< ::Argument > arg_;
   ::DeviceOption* device_option_;
   bool debug_mode_;
+  bool share_grads_;
   friend void  protobuf_AddDesc_dragon_2eproto();
   friend void protobuf_AssignDesc_dragon_2eproto();
   friend void protobuf_ShutdownFile_dragon_2eproto();
@@ -1441,6 +1451,13 @@ class GraphDef : public ::google::protobuf::Message {
   inline bool debug_mode() const;
   inline void set_debug_mode(bool value);
 
+  // optional bool share_grads = 11 [default = false];
+  inline bool has_share_grads() const;
+  inline void clear_share_grads();
+  static const int kShareGradsFieldNumber = 11;
+  inline bool share_grads() const;
+  inline void set_share_grads(bool value);
+
   // @@protoc_insertion_point(class_scope:GraphDef)
  private:
   inline void set_has_name();
@@ -1451,6 +1468,8 @@ class GraphDef : public ::google::protobuf::Message {
   inline void clear_has_device_option();
   inline void set_has_debug_mode();
   inline void clear_has_debug_mode();
+  inline void set_has_share_grads();
+  inline void clear_has_share_grads();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
@@ -1465,6 +1484,7 @@ class GraphDef : public ::google::protobuf::Message {
   ::google::protobuf::RepeatedPtrField< ::GradientTarget > g_target_;
   ::google::protobuf::RepeatedPtrField< ::UpdateTarget > u_target_;
   bool debug_mode_;
+  bool share_grads_;
   friend void  protobuf_AddDesc_dragon_2eproto();
   friend void protobuf_AssignDesc_dragon_2eproto();
   friend void protobuf_ShutdownFile_dragon_2eproto();
@@ -2712,6 +2732,30 @@ inline void OperatorDef::set_debug_mode(bool value) {
   // @@protoc_insertion_point(field_set:OperatorDef.debug_mode)
 }
 
+// optional bool share_grads = 8 [default = false];
+inline bool OperatorDef::has_share_grads() const {
+  return (_has_bits_[0] & 0x00000080u) != 0;
+}
+inline void OperatorDef::set_has_share_grads() {
+  _has_bits_[0] |= 0x00000080u;
+}
+inline void OperatorDef::clear_has_share_grads() {
+  _has_bits_[0] &= ~0x00000080u;
+}
+inline void OperatorDef::clear_share_grads() {
+  share_grads_ = false;
+  clear_has_share_grads();
+}
+inline bool OperatorDef::share_grads() const {
+  // @@protoc_insertion_point(field_get:OperatorDef.share_grads)
+  return share_grads_;
+}
+inline void OperatorDef::set_share_grads(bool value) {
+  set_has_share_grads();
+  share_grads_ = value;
+  // @@protoc_insertion_point(field_set:OperatorDef.share_grads)
+}
+
 // -------------------------------------------------------------------
 
 // GradientTarget
@@ -3902,6 +3946,30 @@ inline void GraphDef::set_debug_mode(bool value) {
   set_has_debug_mode();
   debug_mode_ = value;
   // @@protoc_insertion_point(field_set:GraphDef.debug_mode)
+}
+
+// optional bool share_grads = 11 [default = false];
+inline bool GraphDef::has_share_grads() const {
+  return (_has_bits_[0] & 0x00000200u) != 0;
+}
+inline void GraphDef::set_has_share_grads() {
+  _has_bits_[0] |= 0x00000200u;
+}
+inline void GraphDef::clear_has_share_grads() {
+  _has_bits_[0] &= ~0x00000200u;
+}
+inline void GraphDef::clear_share_grads() {
+  share_grads_ = false;
+  clear_has_share_grads();
+}
+inline bool GraphDef::share_grads() const {
+  // @@protoc_insertion_point(field_get:GraphDef.share_grads)
+  return share_grads_;
+}
+inline void GraphDef::set_share_grads(bool value) {
+  set_has_share_grads();
+  share_grads_ = value;
+  // @@protoc_insertion_point(field_set:GraphDef.share_grads)
 }
 
 

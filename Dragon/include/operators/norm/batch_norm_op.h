@@ -30,7 +30,7 @@ class BatchNormOp : public Operator<Context> {
     Tensor* num_multiplier, *spatial_multiplier, *stddev, *var;
     TIndex num, channels, spatial_dim, nbychans;
     int use_stats;
-    bool use_global_stats, inplace;
+    bool use_global_stats, inplace, is_recomputing;
 };
 
 template <class Context>
@@ -40,9 +40,7 @@ class BatchNormGradientOp final : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {}
 
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void RunWithType();
 
  protected:
@@ -68,7 +66,7 @@ class BNOp : public Operator<Context> {
  protected:
     float momentum, eps;
     int use_stats;
-    bool use_global_stats;
+    bool use_global_stats, is_recomputing;
 };
 
 template <class Context>
@@ -79,9 +77,8 @@ class BNGradientOp : public Operator<Context> {
           eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) { }
 
-    void ShareBeforeRun() override;
+    void ShareGradient() override;
     void RunOnDevice() override { NOT_IMPLEMENTED; }
-    void ClearAfterRun() override;
     template <typename T> void RunWithType() { NOT_IMPLEMENTED; }
   
  protected:
@@ -115,7 +112,7 @@ class CuDNNBNOp final : public BNOp<Context> {
     cudnnTensorDescriptor_t input_desc, output_desc, bn_desc;
     TIndex num, channels, spatial_dim;
     Tensor* mean, *var;
-    bool use_global_stats;
+    bool use_global_stats, is_recomputing;
 };
 
 template <class Context>

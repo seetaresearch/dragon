@@ -257,6 +257,7 @@ GraphDef Graph::MakeUpdate(const GraphDef& graph_def) {
 bool Graph::Create(const GraphDef& graph_def, Workspace* ws) {
     bool has_device_option = graph_def.has_device_option();
     bool has_debug_mode = graph_def.has_debug_mode();
+    bool has_share_grads = graph_def.has_share_grads();
     for (const OperatorDef& plain_op_def: graph_def.op()) {
         OperatorDef op_def(plain_op_def);
         LOG(DEBUG) << "Create Operator " << plain_op_def.name() 
@@ -270,10 +271,81 @@ bool Graph::Create(const GraphDef& graph_def, Workspace* ws) {
         if (!op_def.has_debug_mode() && has_debug_mode)
             op_def.set_debug_mode(graph_def.debug_mode());
 
+        //  inherit share_grads if necessary
+        if (!op_def.has_share_grads() && has_share_grads)
+            op_def.set_share_grads(graph_def.share_grads());
+
         OperatorBase* op = CreateOperator(op_def, ws);
         ops_.push_back(op);
     }
     return true;
+}
+
+void Graph::RecomputingAware(const GraphDef& graph_def, Workspace* ws) {
+    GraphDef fake_graph(graph_def);
+    Map<string, vector<OperatorBase*> > fake_recompute_map;
+    Map<string, string> rename_map;
+    Map<string, Set<string> > hash_map;
+    Map<string, int> multi_use_count;
+
+    //  check mirrow stage
+    for (int i = 0; i < ops_.size(); i++) {
+        if (ops_[i]->type().find("Gradient") != string::npos) continue;
+        bool mirrow_stage = ops_[i]->GetSingleArg<bool>("mirrow_stage", false);
+        for (auto& u : graph_def.op(i).input()) {
+            bool inplace_flag = false;
+            for (auto& v : graph_def.op(i).output()) if (u == v) inplace_flag = true;
+            mirrow_stage &= (!inplace_flag);
+            if (!inplace_flag) multi_use_count[u]++;
+        }
+        if (mirrow_stage) {
+            //  TODO(PhyscalX):  we assume that input(0)-output(0) as a force in-place currently
+            OperatorDef* op = fake_graph.mutable_op(i);
+            if (rename_map.count(op->input(0))) 
+                *op->mutable_input(0) = rename_map[op->input(0)];
+            rename_map[op->output(0)] = op->input(0);
+            *op->mutable_output(0) = op->input(0);
+            ops_[i]->input(0).Corrupt();    //  mark a flag
+        }
+    }
+
+    //  sub-graph aware
+    for (int i = 0; i < ops_.size(); i++) {
+        if (ops_[i]->type().find("Gradient") != string::npos) continue;
+        OperatorDef fake_op = fake_graph.op(i);
+        OperatorDef op = graph_def.op(i);
+        for (int j = 0; j < op.output_size(); j++) {
+            string v = op.output(j);
+            string fake_v = fake_op.output(j);  
+            if (!fake_recompute_map.count(fake_v))
+                fake_recompute_map[fake_v] = vector<OperatorBase*>(); 
+            if (v != fake_v) {
+                if (multi_use_count[fake_v] >= 2)
+                    fake_recompute_map[fake_v] = ws->GetRecompute(fake_v);
+            }    
+            fake_recompute_map[fake_v].push_back(ops_[i]);
+            for (int k = 0; k < fake_recompute_map[fake_v].size(); k++) {
+                if (!hash_map.count(v)) hash_map[v] = Set<string>();
+                string op_name = fake_recompute_map[fake_v][k]->name();
+                if (!hash_map[v].count(op_name)) {
+                    ws->AddRecompute(v, fake_recompute_map[fake_v][k]);
+                    hash_map[v].insert(op_name);
+                }
+            }
+        }
+    }
+    
+    //  prepare resources
+    Tensor* head = ws->CreateTensor("_t_mirrow_stage_head");
+    head->Reshape(vector<TIndex>(1, WORKSPACE_MAX_CORRUPTED_SIZE));
+    Tensor* recompute_flag = ws->CreateTensor("_t_global_recompute_flag");
+    recompute_flag->Reshape(vector<TIndex>(1, 1));
+    recompute_flag->mutable_data<bool, CPUContext>()[0] = false;
+    for (int i = 0; i < WORKSPACE_MAX_CORRUPTED_SIZE; i++) {
+        string name = "_t_mirrow_stage_buffer_" + dragon_cast<string, int>(i);
+        Tensor* buffer = ws->CreateTensor(name);
+        head->mutable_data<string, CPUContext>()[i] = "";
+    }
 }
 
 Graph::Graph(const GraphDef& graph_def, Workspace* ws)
@@ -297,6 +369,9 @@ Graph::Graph(const GraphDef& graph_def, Workspace* ws)
 
     //  create
     Create(optimized_graph, ws);
+
+    //  recomputing-aware
+    RecomputingAware(optimized_graph, ws);
 }
 
 bool Graph::Run(const string& include, const string& exclude) {
@@ -306,7 +381,7 @@ bool Graph::Run(const string& include, const string& exclude) {
         if (!exclude.empty())
             if (op->type().find(exclude) != string::npos) continue;
         op->SwitchToPhase(this->args_["phase"].s());
-        op->Run(); 
+        op->Run();
     }
     return true;
 }

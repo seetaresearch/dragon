@@ -160,20 +160,14 @@ void SubGradientOp<Context>::RunOnDevice() {
 }
 
 template <class Context>
-void SubGradientOp<Context>::ShareBeforeRun() {
+void SubGradientOp<Context>::ShareGradient() {
     for (int i = 0; i < OutputSize(); i++) {
         if (output(i)->name() != "ignore") {
-            Tensor* dX = ws()->GetBuffer();
-            if (dX != nullptr) output(i)->Replace(*dX);
+            Tensor* dX = ws()->GetBuffer("Grad");
+            output(i)->Replace(*dX);
             break;
         }
     }
-}
-
-template <class Context>
-void SubGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
 }
 
 DEPLOY_CPU(SubGradient);
@@ -183,7 +177,7 @@ DEPLOY_CUDA(SubGradient);
 OPERATOR_SCHEMA(SubGradient).NumInputs(3).NumOutputs(2);
 
 class GetSubGradient : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetSubGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

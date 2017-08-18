@@ -52,12 +52,13 @@ Softmax = act.Softmax
 Dropout = act.Dropout
 
 # loss
-SoftmaxLoss = loss.SoftmaxLoss
-SigmoidCrossEntropyLoss = loss.SigmoidCrossEntropyLoss
-SoftmaxCrossEntropyLoss = loss.SoftmaxCrossEntropyLoss
+SparseSoftmaxCrossEntropy = loss.SparseSoftmaxCrossEntropy
+SigmoidCrossEntropy = loss.SigmoidCrossEntropy
+SoftmaxCrossEntropy = loss.SoftmaxCrossEntropy
 SmoothL1Loss = loss.SmoothL1Loss
 L1Loss = loss.L1Loss
 L2Loss = loss.L2Loss
+SparseSoftmaxFocalLoss = loss.SparseSoftmaxFocalLoss
 
 # arithmetic
 Add = math.Add

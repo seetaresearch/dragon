@@ -27,7 +27,9 @@ template <class Context>
 class MPIGatherGradientOp final : public ModelMPIBase<Context> {
  public:
     MPIGatherGradientOp(const OperatorDef& op_def, Workspace *ws) 
-        : ModelMPIBase<Context>(op_def, ws) {}
+        : ModelMPIBase<Context>(op_def, ws) {
+        DISABLE_SHARE_GRADIENT;
+    }
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

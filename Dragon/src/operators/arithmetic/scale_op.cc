@@ -137,18 +137,6 @@ void ScaleGradientOp<Context>::RunOnDevice() {
     }
 }
 
-template <class Context>
-void ScaleGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void ScaleGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
-
 DEPLOY_CPU(ScaleGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(ScaleGradient);
@@ -156,7 +144,7 @@ DEPLOY_CUDA(ScaleGradient);
 OPERATOR_SCHEMA(ScaleGradient).NumInputs(3).NumOutputs(3);
 
 class GetScaleGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetScaleGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

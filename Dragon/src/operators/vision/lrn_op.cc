@@ -247,7 +247,7 @@ DEPLOY_CUDA(LRNGradient);
 OPERATOR_SCHEMA(LRNGradient).NumInputs(3).NumOutputs(1);
 
 class GetLRNGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetLRNGradient);
     vector<OperatorDef> MakeDefs() override{
         return SingleDef(def.type() + "Gradient", "",

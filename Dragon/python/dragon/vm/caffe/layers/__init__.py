@@ -11,7 +11,7 @@ from .vision import ConvolutionLayer, DeconvolutionLayer, PoolingLayer, \
 
 from .neuron import ReLULayer, DropoutLayer, TanhLayer, PowerLayer
 from .loss import SoftmaxWithLossLayer, SigmoidCrossEntropyLossLayer, \
-                  L2LossLayer, SmoothL1LossLayer
+                  L2LossLayer, SmoothL1LossLayer, SoftmaxWithFocalLossLayer
 
 from .mpi import MPIBroadcastLayer, MPIGatherLayer
 

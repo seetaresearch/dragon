@@ -91,7 +91,7 @@ DEPLOY_CUDA(TemplateGradient);
 OPERATOR_SCHEMA(TemplateGradient);
 
 class GetTemplateGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetTemplateGradient);
     vector<OperatorDef> MakeDefs() override {
         vector<string> inputs, outputs;
@@ -104,5 +104,3 @@ public:
 REGISTER_GRADIENT(Template, GetTemplateGradient);
 
 }    // namespace dragon
-
-

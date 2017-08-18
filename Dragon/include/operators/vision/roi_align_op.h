@@ -44,9 +44,8 @@ class ROIAlignGradientOp : public Operator<Context> {
         CHECK_GT(pool_w, 0) << "\npool_w must > 0";
     }
 
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
+    void CleanResource() override;
     template <typename T> void RunWithType();
 
  protected:

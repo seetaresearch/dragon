@@ -45,18 +45,6 @@ void ClipGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-template <class Context>
-void ClipGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void ClipGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
-
 DEPLOY_CPU(ClipGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(ClipGradient);
@@ -64,7 +52,7 @@ DEPLOY_CUDA(ClipGradient);
 OPERATOR_SCHEMA(ClipGradient).NumInputs(2).NumOutputs(1);
 
 class GetClipGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetClipGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

@@ -61,18 +61,6 @@ void GramMatrixGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-template <class Context>
-void GramMatrixGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void GramMatrixGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
-
 DEPLOY_CPU(GramMatrixGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(GramMatrixGradient);
@@ -80,7 +68,7 @@ DEPLOY_CUDA(GramMatrixGradient);
 OPERATOR_SCHEMA(GramMatrixGradient).NumInputs(2).NumOutputs(1);
 
 class GetGramMatrixGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetGramMatrixGradient);
     vector<OperatorDef> MakeDefs() override{
         return SingleDef(def.type() + "Gradient", "",

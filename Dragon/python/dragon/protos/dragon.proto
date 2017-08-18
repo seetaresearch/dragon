@@ -50,6 +50,7 @@ message OperatorDef {
     repeated Argument arg= 5;
     optional DeviceOption device_option = 6;
     optional bool debug_mode = 7 [default = false];
+    optional bool share_grads = 8 [default = false];
 }
 
 message GradientTarget {
@@ -65,7 +66,6 @@ message UpdateTarget {
     repeated Argument arg = 4;
 }
 
-//  simply copy from caffe1
 message TensorFiller {
     optional string tensor = 1;
     optional string type = 2 [default = 'constant'];
@@ -89,4 +89,5 @@ message GraphDef {
     repeated GradientTarget g_target = 8;
     repeated UpdateTarget u_target = 9;
     optional bool debug_mode = 10 [default = false];
+    optional bool share_grads = 11 [default = false];
 }

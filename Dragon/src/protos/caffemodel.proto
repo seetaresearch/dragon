@@ -22,5 +22,3 @@ message LayerParameter {
   optional string name = 1; // the layer name
   repeated BlobProto blobs = 7;
 }
-
-

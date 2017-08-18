@@ -36,9 +36,8 @@ class ConcatGradientOp : public Operator<Context> {
           axis(OperatorBase::GetSingleArg<int>("axis", 1)),
           nin(OperatorBase::GetSingleArg<int>("num_input", 1)) {}
 
-    void ShareBeforeRun() override;
+    void ShareGradient() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void RunWithType();
 
  protected:

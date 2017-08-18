@@ -57,18 +57,6 @@ void AtGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-template <class Context>
-void AtGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void AtGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
-
 DEPLOY_CPU(AtGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(AtGradient);
@@ -76,7 +64,7 @@ DEPLOY_CUDA(AtGradient);
 OPERATOR_SCHEMA(AtGradient).NumInputs(3).NumOutputs(1);
 
 class GetAtGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetAtGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "", 

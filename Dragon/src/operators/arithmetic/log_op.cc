@@ -41,18 +41,6 @@ void LogGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-template <class Context>
-void LogGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void LogGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
-
 DEPLOY_CPU(LogGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(LogGradient);
@@ -60,7 +48,7 @@ DEPLOY_CUDA(LogGradient);
 OPERATOR_SCHEMA(LogGradient).NumInputs(2).NumOutputs(1);
 
 class GetLogGradient : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetLogGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

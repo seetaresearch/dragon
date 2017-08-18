@@ -97,20 +97,6 @@ void DeConvGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-template <class Context>
-void DeConvGradientOp<Context>::ShareBeforeRun() {
-    if (output(0)->name() != "ignore") {
-        Tensor* dX = ws()->GetBuffer();
-        if (dX != nullptr) output(0)->Replace(*dX);
-    }
-}
-
-template <class Context>
-void DeConvGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
-
 DEPLOY_CPU(DeConvGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(DeConvGradient);
@@ -118,7 +104,7 @@ DEPLOY_CUDA(DeConvGradient);
 OPERATOR_SCHEMA(DeConvGradient).NumInputs(3).NumOutputs(3);
 
 class GetDeConvGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetDeConvGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

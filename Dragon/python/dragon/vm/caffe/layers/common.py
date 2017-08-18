@@ -93,8 +93,9 @@ class ConcatLayer(Layer):
 class DenseConcatLayer(Layer):
     def __init__(self, LayerParameter):
         super(DenseConcatLayer, self).__init__(LayerParameter)
-        param = LayerParameter.concat_param
-        self._param = {'axis': param.axis}
+        param = LayerParameter.dense_concat_param
+        self._param = {'axis': param.axis,
+                       'growth_rate': param.growth_rate}
 
     def Setup(self, bottom):
         super(DenseConcatLayer, self).Setup(bottom)
@@ -268,7 +269,7 @@ class BNLayer(Layer):
 
         if scale_param.HasField('filler'):
             self.Fill(scale, scale_param, 'filler')
-        else: scale.Constant(value=1.0)
+        else: scale.Uniform(low=0.0, high=1.0)
         self.Fill(bias, scale_param, 'bias_filler')
         self.norm_blobs = [{'data': mean, 'diff': None},
                            {'data': var, 'diff': None}]

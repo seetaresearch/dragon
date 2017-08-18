@@ -30,7 +30,7 @@ class Tensor {
             CHECK_GT(d, 0);
             new_size *= d;
         }
-        if (size_ != new_size && 
+        if (size_ != new_size && own_mem_ &&
             capacity_ < TIndex(new_size * meta_.itemsize())) {
             memory_.reset();
             capacity_ = 0;
@@ -38,9 +38,7 @@ class Tensor {
         size_ = new_size;
     }
 
-    void ReshapeLike(const Tensor& other) { 
-        Reshape(other.dims_); 
-    }
+    void ReshapeLike(const Tensor& other) { Reshape(other.dims_); }
 
     inline const string& name() const { return name_; }
 
@@ -92,63 +90,86 @@ class Tensor {
         return ss.str();
     }
 
-    MixedMemory::State memory_state() const { return memory_->state(); }
-    MixedMemory* memory() const { return memory_.get(); }
-    void SwitchToDevice() { if(memory_) memory_->SwitchToDevice(); }
+    inline bool is_corrupted() const { return is_corrupted_; }
+    inline void Corrupt() { is_corrupted_ = true; }
+
+    MixedMemory* memory() const { return own_mem_ ? memory_.get() : ex_memory_; }
+    MixedMemory::State memory_state() const { 
+        MixedMemory* mem = memory();
+        CHECK(mem) << "memory access before allowcating.";
+        return memory()->state(); 
+    }
+
+    void SwitchToDevice() { 
+        MixedMemory* mem = own_mem_ ? memory_.get() : ex_memory_;
+        if (mem) mem->SwitchToDevice();
+    }
 
     const TypeMeta& meta() const { return meta_; }
     void SetMeta(const TypeMeta& meta) { meta_ = meta; }
     template <typename T> inline bool IsType() { return meta_.Match<T>(); }
 
     template <class Context>
-    const void* raw_data() const {
-        CHECK(memory_.get()) << "memory access before allowcating.";
-        if (TypeMeta::Id<Context>() == TypeMeta::Id<CPUContext>())
-            return memory_->cpu_data();
-        else if (TypeMeta::Id<Context>() == TypeMeta::Id<CUDAContext>())
-            return memory_->cuda_data();
-        else LOG(FATAL) << "unknown memory type access. only CPU or CUDA are supported.";
-        return nullptr;
-    }
-
-    template <typename T, class Context>
-    const T* data() const {
-        return static_cast<const T*>(raw_data<Context>());
-    }
-
-    template <class Context>
-    void active_data_ptr(void** data_ptr) {
-        if (!memory_) {
+    void mutable_data_ptr(void** data_ptr) {
+        MixedMemory* mem = memory();
+        if (!mem) {
             *data_ptr = nullptr;
         } else {
             if (TypeMeta::Id<Context>() == TypeMeta::Id<CPUContext>()) {
-                *data_ptr = memory_->mutable_cpu_data();
+                *data_ptr = mem->mutable_cpu_data();
             } else if (TypeMeta::Id<Context>() == TypeMeta::Id<CUDAContext>()) {
-                *data_ptr = memory_->mutable_cuda_data();
+                *data_ptr = mem->mutable_cuda_data();
+            } else {
+                LOG(FATAL) << "unknown memory type access. only CPU or CUDA are supported.";
             }
+        }
+    }
+
+    template <class Context>
+    const void* const_data_ptr() const {
+        MixedMemory* mem = memory();
+        CHECK(mem) << "memory access before allowcating.";
+        if (TypeMeta::Id<Context>() == TypeMeta::Id<CPUContext>()) {
+             return mem->cpu_data();
+        } else if (TypeMeta::Id<Context>() == TypeMeta::Id<CUDAContext>()) {
+             return mem->cuda_data();
+        } else {
+             LOG(FATAL) << "unknown memory type access. only CPU or CUDA are supported.";
+             return nullptr;
         }
     }
 
     template <class Context>
     void* raw_mutable_data(const TypeMeta& meta) {
         void* data_ptr;
-        active_data_ptr<Context>(&data_ptr);
-        if (meta_ == meta && data_ptr) {
+        if (own_mem_) {
+            mutable_data_ptr<Context>(&data_ptr);
+            if (meta_ == meta && data_ptr) {
+                return data_ptr;
+            } else {
+                meta_ = meta;
+                CHECK_GT(size_, 0);
+                memory_.reset(new MixedMemory(meta, size_* meta_.itemsize()));
+                mutable_data_ptr<Context>(&data_ptr);  //  malloc
+                if (meta.ctor()) meta_.ctor()(data_ptr, size_);
+            }
+            capacity_ = size_ * meta_.itemsize();
             return data_ptr;
         } else {
-            meta_ = meta;    //  copy-assign the meta
-            CHECK_GT(size_, 0);    //  must specify a valid size
-            memory_.reset(new MixedMemory(meta, size_* meta_.itemsize()));
-            //  malloc
-            if (TypeMeta::Id<Context>() == TypeMeta::Id<CPUContext>())
-                data_ptr = memory_->mutable_cpu_data();
-            else if (TypeMeta::Id<Context>() == TypeMeta::Id<CUDAContext>())
-                data_ptr = memory_->mutable_cuda_data();
-            //  init for each structed element if necessary
-            if (meta.ctor()) meta_.ctor()(data_ptr, size_);
+            meta_ = meta;
+            CHECK_GT(size_, 0);
+            TIndex ex_capacity_ = ex_memory_->nbytes();
+            if (ex_capacity_ >= TIndex(size_ * meta.itemsize())) {
+                mutable_data_ptr<Context>(&data_ptr);
+            } else {
+                delete ex_memory_;
+                ex_memory_ = new MixedMemory(meta, size_* meta_.itemsize());
+                mutable_data_ptr<Context>(&data_ptr);  //  malloc
+                if (meta.ctor()) meta_.ctor()(data_ptr, size_);
+                capacity_ = size_ * meta.itemsize();
+            }
+            return data_ptr;
         }
-        capacity_ = size_ * meta_.itemsize();
-        return data_ptr;
     }
 
     template <class Context>
@@ -159,22 +180,30 @@ class Tensor {
         return raw_mutable_data<Context>(meta_);
     }
 
+    template <class Context>
+    const void* raw_data() const { return const_data_ptr<Context>(); }
+
     template <typename T, class Context>
     T* mutable_data() {
         void* data_ptr;
-        active_data_ptr<Context>(&data_ptr);
+        mutable_data_ptr<Context>(&data_ptr);
         if (data_ptr && meta_ == TypeMeta::Make<T>()) return static_cast<T*>(data_ptr);
         return static_cast<T*>(raw_mutable_data<Context>(TypeMeta::Make<T>()));
     }
 
-    void Share(const Tensor& other) {
+    template <typename T, class Context>
+    const T* data() const {
+        return static_cast<const T*>(raw_data<Context>());
+    }
+
+    inline void Share(const Tensor& other) {
         CHECK_EQ(size_, other.size_);
         memory_ = other.memory_;
         meta_ = other.meta_;
         capacity_ = other.capacity_;
     }
 
-    void Replace(const Tensor& other) {
+    inline void Replace(const Tensor& other) {
         memory_ = other.memory_;
         meta_ = other.meta_;
         capacity_ = other.capacity_;
@@ -182,14 +211,16 @@ class Tensor {
         dims_ = other.dims_;
     }
 
-    void Reset() {
+    inline void Move(MixedMemory* mem) {
+        if (mem != nullptr) ex_memory_ = mem; 
+        else ex_memory_ = new MixedMemory(TypeMeta::Make<float>(), 4);
+        own_mem_ = false;
+    }
+
+    inline void Reset() {
         size_ = capacity_ = 0;
         meta_ = TypeMeta();
         dims_.clear();
-        memory_.reset();
-    }
-
-    void Release() {
         memory_.reset();
     }
 
@@ -199,6 +230,8 @@ class Tensor {
     TypeMeta meta_;
     string name_;
     shared_ptr<MixedMemory> memory_;
+    MixedMemory* ex_memory_ = nullptr;
+    bool is_corrupted_ = false, own_mem_ = true;
 };
 
 }    // namespace dragon

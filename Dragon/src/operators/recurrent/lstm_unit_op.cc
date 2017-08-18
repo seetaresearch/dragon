@@ -85,7 +85,7 @@ DEPLOY_CUDA(LSTMUnitGradient);
 OPERATOR_SCHEMA(LSTMUnitGradient).NumInputs(5).NumOutputs(2);
 
 class GetLSTMUnitGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetLSTMUnitGradient);
     vector<OperatorDef> MakeDefs() override{
         return SingleDef(def.type() + "Gradient", "",

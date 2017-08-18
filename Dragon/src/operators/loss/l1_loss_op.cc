@@ -18,8 +18,8 @@ void L1LossOp<Context>::RunWithType() {
         auto* Wdata = input(2).template data<T, Context>();
         math::Mul<T, Context>(diff->count(), Wdata, diff_data, diff_data);
     }
-    T abs_val = math::ASum<T, Context>(diff->count(), diff_data);
-    Ydata[0] = coeff * abs_val;
+    Ydata[0] = math::ASum<T, Context>(diff->count(), diff_data);
+
     T normalizer;
     if (normalization == "BATCH_SIZE") normalizer = input(0).dim(0);
     else if (normalization == "FULL") normalizer = input(0).count();
@@ -46,9 +46,11 @@ OPERATOR_SCHEMA(L1Loss).NumInputs(2, 3).NumOutputs(1);
 
 template <class Context> template <typename T>
 void L1LossGradientOp<Context>::RunWithType() {
-    auto* dYdata = diff->template mutable_data<T, Context>();
-    kernel::AbsGrad<T, Context>(diff->count(), dYdata, dYdata);
-    T alpha = coeff, normalizer;
+    auto* diff_data = diff->template mutable_data<T, Context>();
+    auto* dYdata = input(-1).template data<T, CPUContext>();
+    kernel::AbsGrad<T, Context>(diff->count(), diff_data, diff_data);
+
+    T alpha = dYdata[0], normalizer;
     if (normalization == "BATCH_SIZE") normalizer = input(0).dim(0);
     else if (normalization == "FULL") normalizer = input(0).count();
     else if (normalization == "NONE") normalizer = 1;
@@ -59,7 +61,7 @@ void L1LossGradientOp<Context>::RunWithType() {
         auto* dXdata = output(i)->template mutable_data<T, Context>();
         const T sign = (i == 0) ? 1 : -1;
         alpha *= sign;
-        math::Axpby<T, Context>(output(i)->count(), alpha, dYdata, 0, dXdata);
+        math::Axpby<T, Context>(output(i)->count(), alpha, diff_data, 0, dXdata);
     }
 }
 
@@ -71,6 +73,17 @@ void L1LossGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
+template <class Context>
+void L1LossGradientOp<Context>::ShareGradient() {
+    for (int i = 0; i < OutputSize(); i++) {
+        if (output(i)->name() != "ignore") {
+            Tensor* dX = ws()->GetBuffer("Grad");
+            output(i)->Replace(*dX);
+            break;
+        }
+    }
+}
+
 DEPLOY_CPU(L1LossGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(L1LossGradient);
@@ -78,7 +91,7 @@ DEPLOY_CUDA(L1LossGradient);
 OPERATOR_SCHEMA(L1LossGradient).NumInputs(3).NumOutputs(2);
 
 class GetL1LossGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetL1LossGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

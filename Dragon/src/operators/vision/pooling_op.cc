@@ -151,18 +151,6 @@ void PoolingGradientOp<Context>::RunOnDevice() {
     }
 }
 
-template <class Context>
-void PoolingGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void PoolingGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
-
 DEPLOY_CPU(PoolingGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(PoolingGradient);
@@ -170,7 +158,7 @@ DEPLOY_CUDA(PoolingGradient);
 OPERATOR_SCHEMA(PoolingGradient).NumInputs(3).NumOutputs(1);
 
 class GetPoolingGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetPoolingGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

@@ -48,7 +48,7 @@ DEPLOY_CUDA(ReluGradient);
 OPERATOR_SCHEMA(ReluGradient).NumInputs(2).NumOutputs(1).Inplace({ { 1, 0 }});
 
 class GetReluGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetReluGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

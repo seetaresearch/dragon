@@ -25,9 +25,7 @@ class SquareGradientOp final : public Operator<Context> {
 public:
     USE_SIMPLE_CTOR_DTOR(SquareGradientOp);
 
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void RunWithType();
 };
 

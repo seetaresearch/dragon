@@ -77,10 +77,11 @@ def GraphDef_Update(graph_def, updater):
             u_target.arg.add().CopyFrom(MakeArgument(k, v))
         graph_def.u_target.extend([u_target])
 
-def GraphDef_Debug(graph_def):
-    """ generate debug mode for CC Graph """
+def GraphDef_Opt(graph_def):
+    """ generate opt options for CC Graph """
     from dragon.config import option
     graph_def.debug_mode = option['debug_mode']
+    graph_def.share_grads = option['share_grads']
 
 def GraphDef_Device(graph_def):
     """ generate deivce info for CC Graph """
@@ -155,13 +156,13 @@ def function(inputs=[], outputs=[], swaps=None, updater=None):
 
     if len(outputs) > 0:
         GraphDef_Device(graph_def)
-        GraphDef_Debug(graph_def)
+        GraphDef_Opt(graph_def)
         GraphDef_Grad(graph_def, outputs)
         GraphDef_Phase(graph_def, outputs)
 
     elif updater is not None:
         GraphDef_Device(graph_def)
-        GraphDef_Debug(graph_def)
+        GraphDef_Opt(graph_def)
         GraphDef_Update(graph_def, updater)
 
     # call c api to create graph

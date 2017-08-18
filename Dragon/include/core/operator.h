@@ -80,30 +80,35 @@ class Operator : public OperatorBase {
         allow_run_ = true;
         allow_run_ &= _MPICheck();
         allow_run_ &= (!(OutputSize() == 1 && output(0)->name() == "ignore"));
+        allow_share_grads_ = (!op_def.debug_mode());
+        allow_share_grads_ &= op_def.share_grads(); 
+        allow_share_grads_ &= (type().find("Gradient") != string::npos);
     }
 
     virtual void Run() final {
         if (!allow_run_)  return;
+        MakeResource();
         ctx_.SwitchToDevice();
-        if (!op_def_.debug_mode()) ShareBeforeRun();
         MemorySwitch();
         RunOnDevice();
-        if (!op_def_.debug_mode()) ClearAfterRun();
         ctx_.FinishDeviceCompution();
+        CleanResource();
     }
+
+    virtual void ElimateCorruption();
+    virtual void ShareGradient();
+
+    virtual void MakeResource();
+    virtual void CleanResource();
 
     void MemorySwitch() {
         for (int i = 0; i < InputSize(); i++)
-            if (input(i).name() != "ignore")
-                input(i).SwitchToDevice();
+            if (input(i).name() != "ignore") input(i).SwitchToDevice();
         for (int i = 0; i < OutputSize(); i++)
-            if (output(i)->name() != "ignore")
-                output(i)->SwitchToDevice();
+            if (output(i)->name() != "ignore") output(i)->SwitchToDevice();
     }
 
-    virtual void ShareBeforeRun() { /*** share tensors here if necessary ***/ }
     virtual void RunOnDevice() = 0;
-    virtual void ClearAfterRun()  { /*** clear tensors here if necessary ***/ }
 
     inline Context& ctx() { return ctx_; }
     inline string anchor() { return GetSingleArg("anchor", name()); }
@@ -111,7 +116,7 @@ class Operator : public OperatorBase {
 
  protected:
     Context ctx_;
-    bool allow_run_;
+    bool allow_run_, allow_share_grads_;
 
  private:
     bool _MPICheck() {
@@ -168,6 +173,9 @@ DECLARE_REGISTRY(CUDNNOperatorRegistry, OperatorBase, const OperatorDef&, Worksp
             ptr_tensor->template mutable_data<T, Context>()); \
     } \
   }
+
+#define DISABLE_SHARE_GRADIENT   \
+    this->allow_share_grads_ = false
 
 #define INSTANTIATE_OPERATOR(name, context) \
   template class name##Op<context>;

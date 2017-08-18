@@ -101,20 +101,14 @@ void ConcatGradientOp<Context>::RunOnDevice() {
 }
 
 template <class Context>
-void ConcatGradientOp<Context>::ShareBeforeRun() {
+void ConcatGradientOp<Context>::ShareGradient() {
     for (int i = 0; i < OutputSize(); i++) {
         if (output(i)->name() != "ignore") {
-            Tensor* dX = ws()->GetBuffer();
-            if (dX != nullptr) output(i)->Replace(*dX);
+            Tensor* dX = ws()->GetBuffer("Grad");
+            output(i)->Replace(*dX);
             break;
         }
     }
-}
-
-template <class Context>
-void ConcatGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
 }
 
 DEPLOY_CPU(ConcatGradient);
@@ -124,7 +118,7 @@ DEPLOY_CUDA(ConcatGradient);
 OPERATOR_SCHEMA(ConcatGradient).NumInputs(2, INT_MAX).NumOutputs(1, INT_MAX);
 
 class GetConcatGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetConcatGradient);
     vector<OperatorDef> MakeDefs() override {
         vector<string> inputs, outputs;

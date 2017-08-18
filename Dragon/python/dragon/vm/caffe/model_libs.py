@@ -20,7 +20,6 @@ def make_if_not_exist(path):
         os.makedirs(path)
 
 def UnpackVariable(var, num):
-  assert len > 0
   if type(var) is list and len(var) == num:
     return var
   else:
@@ -277,7 +276,7 @@ def VGGNetBody(net, from_layer, need_fc=True, fully_conv=False, reduced=False,
             dilation = 1
 
     kernel_size = 3
-    pad = int((kernel_size + (dilation - 1) * (kernel_size - 1)) - 1) / 2
+    pad = int(int((kernel_size + (dilation - 1) * (kernel_size - 1)) - 1) / 2)
     net.conv5_1 = L.Convolution(net[name], num_output=512, pad=pad, kernel_size=kernel_size, dilation=dilation, **kwargs)
     net.relu5_1 = L.ReLU(net.conv5_1, in_place=True)
     net.conv5_2 = L.Convolution(net.relu5_1, num_output=512, pad=pad, kernel_size=kernel_size, dilation=dilation, **kwargs)
@@ -319,7 +318,7 @@ def VGGNetBody(net, from_layer, need_fc=True, fully_conv=False, reduced=False,
                 else:
                     kernel_size = 7
                     num_output = 4096
-            pad = int((kernel_size + (dilation - 1) * (kernel_size - 1)) - 1) / 2
+            pad = int(int((kernel_size + (dilation - 1) * (kernel_size - 1)) - 1) / 2)
             net.fc6 = L.Convolution(net[name], num_output=num_output, pad=pad, kernel_size=kernel_size, dilation=dilation, **kwargs)
 
             net.relu6 = L.ReLU(net.fc6, in_place=True)

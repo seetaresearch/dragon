@@ -164,18 +164,37 @@ dragon.config.EnableCPU()
 dragon.config.EnableCUDA(device_id, use_cudnn=True)
 ```
 
-### Automatic Memory Optimization(AMC)
+### Memonger
 
+Dragon is a extremely memory efficient framework.
+
+It is supported to drop intermediate results(mirrow stage) during forward phase, and share grads during backward phase,
+
+takes 25% and 50% memory-usage comparing caffe and tensorflow respectively.
+
+To use it, just:
+ 
 ```Shell
-import dragon.config
-dragon.config.SetDebugMode(False)
+import dragon.memonger as opt
 ```
 
-This option will make all gradients share a global tensor(debugging is intractable).
+- ShareGrads
 
-which prefers a 50% memory-usage and 15% slower solution during training phase.
+```Shell
+opt.share_grads()
+```
+
+- Drop
+
+```Shell
+import dragon.ops as ops
+y = opt.drop(ops.Relu, x)
+```
+
 
 ### Scope
+
+As a graph based framework, Dragon supports various scopes.
 
 - NameScope
 

@@ -40,9 +40,7 @@ class PowGradientOp final : public Operator<Context> {
         power_scale = power * scale;
     }
 
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void RunWithType();
 
  protected:

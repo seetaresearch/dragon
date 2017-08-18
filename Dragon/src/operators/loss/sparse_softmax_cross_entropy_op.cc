@@ -1,5 +1,5 @@
 ﻿#include "operators/activation/softmax_op.h"
-#include "operators/loss/softmax_loss_op.h"
+#include "operators/loss/sparse_softmax_cross_entropy_op.h"
 #include "core/workspace.h"
 #include "utils/math_functions.h"
 #include "utils/op_kernel.h"
@@ -8,13 +8,21 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void SoftmaxLossOp<Context>::RunWithType() {
+void SparseSoftmaxCrossEntropyOp<Context>::RunWithType() {
     auto* prob_data = prob->template data<T, Context>();
     auto* label_data = input(1).template data<T, Context>();
     auto* loss_data = losses.template mutable_data<T, Context>();
     auto* valid_data = valid.template mutable_data<T, Context>();
-    kernel::SparseSoftmaxCrossEntropy<T, Context>(input(0).count(), input(0).dim(axis),
-        outer_dim, inner_dim, prob_data, label_data, loss_data, valid_data, &ignore);
+
+    kernel::SparseSoftmaxCrossEntropy<T, Context>(input(0).count(),
+                                                input(0).dim(axis),
+                                                         outer_dim,
+                                                         inner_dim,
+                                                         prob_data,
+                                                        label_data,
+                                                         loss_data,
+                                                        valid_data,
+                                                          &ignore);
 
     if (normalization == "UNIT") {
         output(0)->ReshapeLike(losses);
@@ -35,7 +43,7 @@ void SoftmaxLossOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void SoftmaxLossOp<Context>::RunOnDevice() {
+void SparseSoftmaxCrossEntropyOp<Context>::RunOnDevice() {
     outer_dim = input(0).count(0, axis);
     inner_dim = input(0).count(axis + 1);
     CHECK_EQ(outer_dim * inner_dim, input(1).count())
@@ -49,21 +57,29 @@ void SoftmaxLossOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-DEPLOY_CPU(SoftmaxLoss);
+DEPLOY_CPU(SparseSoftmaxCrossEntropy);
 #ifdef WITH_CUDA
-DEPLOY_CUDA(SoftmaxLoss);
+DEPLOY_CUDA(SparseSoftmaxCrossEntropy);
 #endif
-OPERATOR_SCHEMA(SoftmaxLoss).NumInputs(2).NumOutputs(1);
+OPERATOR_SCHEMA(SparseSoftmaxCrossEntropy).NumInputs(2).NumOutputs(1);
 
 template <class Context> template <typename T>
-void SoftmaxLossGradientOp<Context>::RunWithType() {
+void SparseSoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
     auto* label_data = input(1).template data<T, Context>();
     auto* prob_data = prob->template mutable_data<T, Context>();
     auto* dXdata = output(0)->template mutable_data<T, Context>();
     auto* valid_data = valid.template mutable_data<T, Context>();
     ctx().template Copy<T, Context, Context>(prob->count(), dXdata, prob_data);
-    kernel::SoftmaxLossGrad<T, Context>(output(0)->count(), output(0)->dim(axis),
-        outer_dim, inner_dim, label_data, prob_data, valid_data, &ignore, dXdata);
+
+    kernel::SparseSoftmaxCrossEntropyGrad<T, Context>(output(0)->count(),
+                                                    output(0)->dim(axis),
+                                                               outer_dim,
+                                                               inner_dim,
+                                                               prob_data,
+                                                              label_data,
+                                                              valid_data,
+                                                                 &ignore,
+                                                                 dXdata);
 
     if (normalization == "UNIT") {
         auto* dYdata = input(-1).template data<T, Context>();
@@ -83,7 +99,7 @@ void SoftmaxLossGradientOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void SoftmaxLossGradientOp<Context>::RunOnDevice() {
+void SparseSoftmaxCrossEntropyGradientOp<Context>::RunOnDevice() {
     prob = ws()->GetTensor("_t_" + anchor() + "_softmax_prob");
     outer_dim = prob->count(0, axis);
     inner_dim = prob->count(axis + 1);
@@ -94,21 +110,21 @@ void SoftmaxLossGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-DEPLOY_CPU(SoftmaxLossGradient);
+DEPLOY_CPU(SparseSoftmaxCrossEntropyGradient);
 #ifdef WITH_CUDA
-DEPLOY_CUDA(SoftmaxLossGradient);
+DEPLOY_CUDA(SparseSoftmaxCrossEntropyGradient);
 #endif
-OPERATOR_SCHEMA(SoftmaxLossGradient).NumInputs(3).NumOutputs(1);
+OPERATOR_SCHEMA(SparseSoftmaxCrossEntropyGradient).NumInputs(3).NumOutputs(1);
 
-class GetSoftmaxLossGradient final : public GradientMakerBase {
-public:
-    GRADIENT_MAKER_CTOR(GetSoftmaxLossGradient);
-    vector<OperatorDef> MakeDefs() override{
+class GetSparseSoftmaxCrossEntropyGradient final : public GradientMakerBase {
+ public:
+    GRADIENT_MAKER_CTOR(GetSparseSoftmaxCrossEntropyGradient);
+    vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
             vector<string> {I(0), I(1), GO(0)},
             vector<string> {GI(0)});
     }
 };
-REGISTER_GRADIENT(SoftmaxLoss, GetSoftmaxLossGradient);
+REGISTER_GRADIENT(SparseSoftmaxCrossEntropy, GetSparseSoftmaxCrossEntropyGradient);
 
 }    // namespace dragon

@@ -35,9 +35,7 @@ class BiasAddGradientOp final : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
 
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void NCHWRunWithType();
     template <typename T> void NHWCRunWithType();
 

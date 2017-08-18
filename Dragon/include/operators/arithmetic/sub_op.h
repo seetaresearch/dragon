@@ -29,9 +29,8 @@ class SubGradientOp final : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(SubGradientOp);
 
-    void ShareBeforeRun() override;
+    void ShareGradient() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void EltwiseRunWithType();
     template <typename T> void BroadcastRunWithType(int type);
 

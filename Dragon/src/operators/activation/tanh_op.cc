@@ -48,7 +48,7 @@ DEPLOY_CUDA(TanhGradient);
 OPERATOR_SCHEMA(TanhGradient).NumInputs(2).NumOutputs(1).Inplace({ { 1, 0 } });
 
 class GetTanhGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetTanhGradient);
     vector<OperatorDef>    MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
@@ -59,4 +59,3 @@ public:
 REGISTER_GRADIENT(Tanh, GetTanhGradient);
 
 }    // namespace dragon
-

@@ -4,12 +4,12 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
+from __future__ import print_function
 import numpy as np
 import dragon.core.workspace as ws
 import dragon.ops as ops
 import dragon.vm.theano as theano
 from multiprocessing import Process, Queue
-from dragon.config import logger
 
 """ How to custom a RunOp in Dragon """
 
@@ -32,7 +32,7 @@ class Fetcher(Process):
         self.daemon = True
 
         def cleanup():
-            logger.info('Terminating Fetcher......')
+            print('Terminating Fetcher......')
             self.terminate()
             self.join()
 
@@ -104,4 +104,4 @@ if __name__ == '__main__':
     foo()
 
     # fetch
-    logger.info('y \n-------------- \n', y.get_value(), '\n')
+    print('y \n-------------- \n', y.get_value(), '\n')

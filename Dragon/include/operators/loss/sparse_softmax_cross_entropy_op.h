@@ -4,17 +4,17 @@
 // Written by Ting Pan
 // --------------------------------------------------------
 
-#ifndef DRAGON_OPERATORS_LOSS_SOFTMAX_LOSS_OP_H_
-#define DRAGON_OPERATORS_LOSS_SOFTMAX_LOSS_OP_H_
+#ifndef DRAGON_OPERATORS_LOSS_SPARSE_SOFTMAX_CROSS_ENTROPY_OP_H_
+#define DRAGON_OPERATORS_LOSS_SPARSE_SOFTMAX_CROSS_ENTROPY_OP_H_
 
 #include "core/operator.h"
 
 namespace dragon {
 
 template <class Context>
-class SoftmaxLossOp final : public Operator<Context> {
+class SparseSoftmaxCrossEntropyOp : public Operator<Context> {
  public:
-    SoftmaxLossOp(const OperatorDef& op_def, Workspace* ws) 
+     SparseSoftmaxCrossEntropyOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", 1)),
           normalization(OperatorBase::GetSingleArg<string>("normalization", "VALID")) {
@@ -45,9 +45,9 @@ class SoftmaxLossOp final : public Operator<Context> {
 };
 
 template <class Context>
-class SoftmaxLossGradientOp final : public Operator<Context> {
+class SparseSoftmaxCrossEntropyGradientOp : public Operator<Context> {
  public:
-    SoftmaxLossGradientOp(const OperatorDef& op_def, Workspace* ws) 
+     SparseSoftmaxCrossEntropyGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", 1)),
           normalization(OperatorBase::GetSingleArg<string>("normalization", "VALID")) {
@@ -71,4 +71,4 @@ class SoftmaxLossGradientOp final : public Operator<Context> {
 
 }    // namespace dragon
 
-#endif    // DRAGON_OPERATORS_LOSS_SOFTMAX_LOSS_OP_H_
+#endif    // DRAGON_OPERATORS_LOSS_SPARSE_SOFTMAX_CROSS_ENTROPY_OP_H_

@@ -30,9 +30,7 @@ class ConvGradientOp : public ConvOp<Context> {
     ConvGradientOp(const OperatorDef& def, Workspace* ws) 
         : ConvOp<Context>(def, ws) {}
 
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void RunWithType();
 };
 

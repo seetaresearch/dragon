@@ -40,9 +40,7 @@ class L2NormGradientOp final : public Operator<Context> {
           axis(OperatorBase::GetSingleArg<int>("axis", 0)),
           num_axes(OperatorBase::GetSingleArg<int>("num_axes", -1)) {}
 
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void RunWithType();
 
  protected:

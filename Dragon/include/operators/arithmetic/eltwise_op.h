@@ -48,9 +48,8 @@ class EltwiseGradientOp final : public Operator<Context> {
         } else coeffs.resize(InputSize(), float(1));
     }
 
-    void ShareBeforeRun() override;
+    void ShareGradient() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void SumRunWithType();
     template <typename T> void ProdRunWithType();
 

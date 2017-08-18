@@ -30,7 +30,10 @@ class LSTMUnitOp : public Operator<Context> {
 template <class Context>
 class LSTMUnitGradientOp : public Operator<Context> {
  public:
-    USE_SIMPLE_CTOR_DTOR(LSTMUnitGradientOp);
+     LSTMUnitGradientOp(const OperatorDef& op_def, Workspace* ws)
+         : Operator<Context>(op_def, ws) {
+         this->allow_share_grads_ = false;
+     }
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

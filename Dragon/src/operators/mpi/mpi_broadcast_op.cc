@@ -104,7 +104,7 @@ DEPLOY_CUDA(MPIBroadcastGradient);
 OPERATOR_SCHEMA(MPIBroadcastGradient).NumInputs(1).NumOutputs(1);
 
 class GetMPIBroadcastGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetMPIBroadcastGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

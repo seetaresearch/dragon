@@ -120,20 +120,6 @@ void InnerProductGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-template <class Context>
-void InnerProductGradientOp<Context>::ShareBeforeRun() {
-    if (output(0)->name() != "ignore") {
-        Tensor* dX = ws()->GetBuffer();
-        if (dX != nullptr) output(0)->Replace(*dX);
-    }
-}
-
-template <class Context>
-void InnerProductGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
-
 DEPLOY_CPU(InnerProductGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(InnerProductGradient);
@@ -141,7 +127,7 @@ DEPLOY_CUDA(InnerProductGradient);
 OPERATOR_SCHEMA(InnerProductGradient).NumInputs(3).NumOutputs(3);
 
 class GetInnerProductGradient : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetInnerProductGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

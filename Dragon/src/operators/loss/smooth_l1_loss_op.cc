@@ -52,17 +52,18 @@ OPERATOR_SCHEMA(SmoothL1Loss).NumInputs(2, 4).NumOutputs(1);
 
 template <class Context> template <typename T>
 void SmoothL1LossGradientOp<Context>::RunWithType() {
-    auto* dYdata = diff->template mutable_data<T, Context>();
+    auto* diff_data = diff->template mutable_data<T, Context>();
+    auto* dYdata = input(-1).template data<T, CPUContext>();
 
-    kernel::SmoothL1Grad<T, Context>(diff->count(), sigma2, dYdata, dYdata);
+    kernel::SmoothL1Grad<T, Context>(diff->count(), sigma2, diff_data, diff_data);
 
     for (int i = 0; i < 2; i++) {
         if (output(i)->name() == "ignore") continue;
         output(i)->ReshapeLike(input(i));
         auto* dXdata = output(i)->template mutable_data<T, Context>();
         const T sign = (i == 0) ? 1 : -1;
-        const T coeff = sign / input(i).dim(0);
-        math::Axpby<T, Context>(output(i)->count(), coeff, dYdata, 0, dXdata);
+        const T coeff = sign / input(i).dim(0) * dYdata[0];
+        math::Axpby<T, Context>(output(i)->count(), coeff, diff_data, 0, dXdata);
         if (InputSize() > 3) {
             auto* inside_w_data = input(2).template data<T, Context>();
             math::Mul<T, Context>(output(i)->count(), inside_w_data, dXdata, dXdata);
@@ -89,7 +90,7 @@ DEPLOY_CUDA(SmoothL1LossGradient);
 OPERATOR_SCHEMA(SmoothL1LossGradient).NumInputs(3, 5).NumOutputs(2);
 
 class GetSmoothL1LossGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetSmoothL1LossGradient);
     vector<OperatorDef> MakeDefs() override {
         vector<string> inputs;

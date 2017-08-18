@@ -86,7 +86,7 @@ DEPLOY_CUDA(MPIGatherGradient);
 OPERATOR_SCHEMA(MPIGatherGradient).NumInputs(2, INT_MAX).NumOutputs(1);
 
 class GetMPIGatherGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetMPIGatherGradient);
     vector<OperatorDef> MakeDefs() override {
         vector<string> inputs(1, I(0));

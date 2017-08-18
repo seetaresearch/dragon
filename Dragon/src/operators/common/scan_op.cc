@@ -214,7 +214,7 @@ DEPLOY_CUDA(ScanGradient);
 OPERATOR_SCHEMA(ScanGradient).NumInputs(2, INT_MAX).NumOutputs(1, INT_MAX);
 
 class GetScanGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetScanGradient);
     vector<OperatorDef> MakeDefs() override {
         vector<string> inputs, outputs;

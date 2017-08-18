@@ -107,18 +107,6 @@ void ReduceGradientOp<Context>::RunOnDevice() {
     }
 }
 
-template <class Context>
-void ReduceGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void ReduceGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
-
 DEPLOY_CPU(ReduceGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(ReduceGradient);
@@ -126,7 +114,7 @@ DEPLOY_CUDA(ReduceGradient);
 OPERATOR_SCHEMA(ReduceGradient).NumInputs(2).NumOutputs(1);
 
 class GetReduceGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetReduceGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

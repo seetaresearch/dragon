@@ -39,9 +39,7 @@ class InnerProductGradientOp final : public Operator<Context> {
           num_output(OperatorBase::GetSingleArg<int>("num_output", 0)),
           transW(OperatorBase::GetSingleArg<bool>("TransW", true)) {}
 
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void RunWithType();
 
  protected:

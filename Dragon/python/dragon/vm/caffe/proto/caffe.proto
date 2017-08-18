@@ -318,6 +318,9 @@ message LayerParameter {
   repeated string bottom = 3; // the name of each bottom blob
   repeated string top = 4; // the name of each top blob
 
+  // The mirrow stage optimization
+  optional bool mirrow_stage = 162 [default = false];  
+
   // The train / test phase for computation.
   optional Phase phase = 10;
 
@@ -418,6 +421,8 @@ message LayerParameter {
   optional ExpandDimsParameter expand_dims_param = 159;
   optional ProposalParameter proposal_param = 160;
   optional BatchRenormParameter batch_renorm_param = 161;
+  optional DenseConcatParameter dense_concat_param = 163;
+  optional FocalLossParameter focal_loss_param = 164;
 }
 
 // Message that stores parameters used to apply transformation
@@ -1494,3 +1499,16 @@ message BatchRenormParameter {
   optional float d_max = 5 [default = 5.0];
   optional float t_delta = 6 [default = 1.0];
 }
+
+message DenseConcatParameter {
+  optional int32 axis = 1 [default = 1];
+  optional int32 growth_rate = 2 [default = 0];
+}
+
+message FocalLossParameter {
+  optional float alpha = 1 [default = 1.0];
+  optional float gamma = 2 [default = 0.25];
+  optional float eps = 3 [default = 1e-10];
+  optional bool use_pseudo_metric = 4 [default = true];
+}
+

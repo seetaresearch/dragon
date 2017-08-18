@@ -4,12 +4,6 @@
 
 namespace dragon {
 
-template <class Context>
-void DenseConcatOp<Context>::RunOnDevice() {
-    ConcatOp<Context>::RunOnDevice();
-    input(0).Release();  // keep shape, just release mem
-}
-
 DEPLOY_CPU(DenseConcat);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(DenseConcat);
@@ -17,16 +11,18 @@ DEPLOY_CUDA(DenseConcat);
 OPERATOR_SCHEMA(DenseConcat).NumInputs(2).NumOutputs(1);
 
 template <class Context> template <typename T>
-void DenseConcatGradientOp<Context>::RunWithType() {
-    //  restore X1 from Y
-    auto* Ydata = input(-2).template data<T, Context>();
-    auto* Xdata = input(0).template mutable_data<T, Context>();
-    this->x_concat_dim = input(0).dim(this->axis);
-    TIndex count = input(0).count();
+void DenseConcatGradientOp<Context>::RestoreX1() {
+    CHECK_GT(growth_rate, 0) << "invalid growth rate, please preset it.";
     this->concat_dims = input(-1).dims();
     this->y_concat_dim = this->concat_dims[this->axis];
     this->outer_dim = input(-1).count(0, this->axis);
     this->inner_dim = input(-1).count(this->axis + 1);
+    this->concat_dims[this->axis] -= growth_rate;
+    input(0).Reshape(this->concat_dims);
+    this->x_concat_dim = input(0).dim(this->axis);
+    TIndex count = input(0).count();
+    auto* Ydata = input(-2).template data<T, Context>();
+    auto* Xdata = input(0).template mutable_data<T, Context>();
     kernel::ConcatGrad<T, Context>(count,
                          this->outer_dim, 
                          this->inner_dim,
@@ -39,26 +35,65 @@ void DenseConcatGradientOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void DenseConcatGradientOp<Context>::RunOnDevice() {
-    if (input(0).template IsType<float>()) RunWithType<float>();
-    else if (input(0).template IsType<float16>()) RunWithType<float16>();
-    else LOG(FATAL) << "unsupported input types.";
+void DenseConcatGradientOp<Context>::ElimateCorruption() {
+    Set<string> all_heads;
+    queue<int> safe_heads;
+    Tensor* head = ws()->GetTensor("_t_mirrow_stage_head");
+    string* head_data = head->mutable_data<string, CPUContext>();
+    for (int i = 0; i < head->count(); i++) all_heads.insert(head_data[i]);
 
-    ConcatGradientOp<Context>::RunOnDevice();
-}
+    //  sub-graph run
+    if (input(0).is_corrupted() && !all_heads.count(input(0).name())) {
+        //  pre-process
+        LOG(DEBUG) << "Tensor(" << input(0).name() << ") is corrupted, recompute...  ";
+        for (int i = 0; i < head->count(); i++) {
+            bool safe = true;
+            for (int j = 0; j < InputSize(); j++)
+                if (head_data[i] == input(j).name()) safe = false;
+            if (safe) safe_heads.push(i);
+        }
+        int idx = safe_heads.front();
+        safe_heads.pop();
+        Tensor* buffer = ws()->GetTensor("_t_mirrow_stage_buffer_" + dragon_cast<string, int>(idx));
+        input(0).Move(buffer->memory());
+        head_data[idx] = input(0).name();
+        if (input(-2).template IsType<float>()) RestoreX1<float>();
+        else if (input(-2).template IsType<float16>()) RestoreX1<float16>();
+        else LOG(FATAL) << "unsupported input types.";
+        //  post-process
+        if (input(0).memory() != buffer->memory()) buffer->Move(input(0).memory());
+    }
 
-template <class Context>
-void DenseConcatGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
+    //  check available head
+    while (!safe_heads.empty()) safe_heads.pop();
+    all_heads.clear();
+    for (int i = 0; i < head->count(); i++) {
+        bool safe = true;
+        for (int j = 0; j < InputSize(); j++) 
+            if (head_data[i] == input(j).name()) safe = false;
+        if (safe) safe_heads.push(i);
+        all_heads.insert(head_data[i]);
+    }
 
-template <class Context>
-void DenseConcatGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    Tensor* Y = &input(-2);
-    ws()->ReleaseBuffer(dY);
-    ws()->ReleaseBuffer(Y, true);
+    //  pre-process
+    for (int i = 0; i < OutputSize(); i++) {
+        if (output(i)->is_corrupted()) {
+            bool inplace_flag = false;
+            for (int j = 0; j < InputSize(); j++)
+                if (output(i)->name() == input(j).name()) inplace_flag = true;
+            if (inplace_flag || all_heads.count(output(i)->name())) continue;    //  skip to use new buffer
+            CHECK(!safe_heads.empty())
+                << "\nat most (" << safe_heads.size() << " [safe] / "
+                << all_heads.size() << " [total] can be used for corrupted output in "
+                << "(" << name() << ", " << type() << "), "
+                << "\nadd WORKSPACE_MAX_CORRUPTED_SIZE for more powerful mirrow stage ?";
+            int idx = safe_heads.front();
+            safe_heads.pop();
+            Tensor* buffer = ws()->GetTensor("_t_mirrow_stage_buffer_" + dragon_cast<string, int>(idx));
+            output(i)->Move(buffer->memory());
+            head_data[idx] = output(i)->name();
+        }
+    }
 }
 
 DEPLOY_CPU(DenseConcatGradient);
@@ -68,7 +103,7 @@ DEPLOY_CUDA(DenseConcatGradient);
 OPERATOR_SCHEMA(DenseConcatGradient).NumInputs(4).NumOutputs(2);
 
 class GetDenseConcatGradient : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetDenseConcatGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

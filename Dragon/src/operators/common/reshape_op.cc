@@ -67,7 +67,7 @@ DEPLOY_CUDA(ReshapeGradient);
 OPERATOR_SCHEMA(ReshapeGradient).NumInputs(2).NumOutputs(1);
 
 class GetReshapeGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetReshapeGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
@@ -78,4 +78,3 @@ public:
 REGISTER_GRADIENT(Reshape, GetReshapeGradient);
 
 }    // namespace dragon
-

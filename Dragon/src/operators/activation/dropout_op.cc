@@ -70,8 +70,9 @@ void DropoutGradientOp<Context>::RunOnDevice() {
 }
 
 template <class Context>
-void DropoutGradientOp<Context>::ClearAfterRun() {
-    ws()->ReleaseBuffer(mask, true);
+void DropoutGradientOp<Context>::CleanResource() {
+    Operator<Context>::CleanResource();
+    ws()->ReleaseBuffer(mask, "Common", true);
 }
 
 DEPLOY_CPU(DropoutGradient);
@@ -81,7 +82,7 @@ DEPLOY_CUDA(DropoutGradient);
 OPERATOR_SCHEMA(DropoutGradient).NumInputs(2).NumOutputs(1).Inplace({ { 1, 0 } });
 
 class GetDropoutGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetDropoutGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
@@ -92,4 +93,3 @@ public:
 REGISTER_GRADIENT(Dropout, GetDropoutGradient);
 
 }    // namepsace dragon
-

@@ -95,18 +95,6 @@ void BiasAddGradientOp<Context>::RunOnDevice() {
     }
 }
 
-template <class Context>
-void BiasAddGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void BiasAddGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
-
 DEPLOY_CPU(BiasAddGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(BiasAddGradient);
@@ -114,7 +102,7 @@ DEPLOY_CUDA(BiasAddGradient);
 OPERATOR_SCHEMA(BiasAddGradient).NumInputs(3).NumOutputs(2);
 
 class GetBiasAddGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetBiasAddGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

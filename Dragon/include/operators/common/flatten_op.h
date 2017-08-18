@@ -28,7 +28,10 @@ class FlattenOp final : public Operator<Context> {
 template <class Context>
 class FlattenGradientOp final : public Operator<Context> {
  public:
-    USE_SIMPLE_CTOR_DTOR(FlattenGradientOp);
+    FlattenGradientOp(const OperatorDef& op_def, Workspace* ws)
+         : Operator<Context>(op_def, ws) {
+         DISABLE_SHARE_GRADIENT;
+    }
     void RunOnDevice() override;
 };
 

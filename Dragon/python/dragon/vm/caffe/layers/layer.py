@@ -19,14 +19,17 @@ class Layer(object):
         self._name = LayerParameter.name
         self._blobs = []
         self._param = {}
-        self._mpi_param = {}
+        self._common_param = {}
 
         for include in LayerParameter.include:
             mpi_rank = [int(rank) for rank in include.mpi_rank]
-            if len(mpi_rank) > 0: self._mpi_param['mpi_rank'] = mpi_rank
+            if len(mpi_rank) > 0: self._common_param['mpi_rank'] = mpi_rank
+
+        if LayerParameter.HasField('mirrow_stage'):
+            self._common_param['mirrow_stage'] = LayerParameter.mirrow_stage
 
     def Setup(self, bottom):
-        self._param = dict(self._param, **self._mpi_param)
+        self._param = dict(self._param, **self._common_param)
 
     def Fill(self, tensor, param, filler):
         """ wrapper for caffe filler """

@@ -69,9 +69,7 @@ class PoolingGradientOp: public Operator<Context> {
     }
 
     void Reshape();
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void MaxRunWithType();
     template <typename T> void AvgRunWithType();
 

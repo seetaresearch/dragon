@@ -42,18 +42,6 @@ void SquareGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "unsupported input types.";
 }
 
-template <class Context>
-void SquareGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void SquareGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-}
-
 DEPLOY_CPU(SquareGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(SquareGradient);
@@ -61,7 +49,7 @@ DEPLOY_CUDA(SquareGradient);
 OPERATOR_SCHEMA(SquareGradient).NumInputs(2).NumOutputs(1);
 
 class GetSquareGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetSquareGradient);
     vector<OperatorDef> MakeDefs() override{
         return SingleDef(def.type() + "Gradient", "",

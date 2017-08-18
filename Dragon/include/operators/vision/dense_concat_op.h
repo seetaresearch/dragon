@@ -15,21 +15,21 @@ template <class Context>
 class DenseConcatOp final : public ConcatOp<Context> {
  public:
      DenseConcatOp(const OperatorDef& op_def, Workspace* ws)
-         : ConcatOp<Context>(op_def, ws) { }
-
-    void RunOnDevice() override;
+         : ConcatOp<Context>(op_def, ws) {}
 };
 
 template <class Context>
 class DenseConcatGradientOp : public ConcatGradientOp<Context> {
-public:
+ public:
     DenseConcatGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : ConcatGradientOp<Context>(op_def, ws) {}
+        : ConcatGradientOp<Context>(op_def, ws),
+          growth_rate(OperatorBase::GetSingleArg<int>("growth_rate", 0)) {}
 
-    void ShareBeforeRun() override;
-    void RunOnDevice() override;
-    void ClearAfterRun() override;
-    template <typename T> void RunWithType();
+    void ElimateCorruption() override;
+    template <typename T> void RestoreX1();
+
+ protected:
+     TIndex growth_rate;
 };
 
 

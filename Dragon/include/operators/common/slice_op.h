@@ -35,7 +35,9 @@ class SliceGradientOp final : public Operator<Context> {
     SliceGradientOp(const OperatorDef& op_def, Workspace* ws):
         Operator<Context>(op_def, ws),
         axis(OperatorBase::GetSingleArg<int>("axis", 1)),
-        nout(OperatorBase::GetSingleArg<int>("num_output", 1)) {}
+        nout(OperatorBase::GetSingleArg<int>("num_output", 1)) {
+        DISABLE_SHARE_GRADIENT;
+    }
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

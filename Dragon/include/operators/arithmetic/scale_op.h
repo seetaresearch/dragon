@@ -35,9 +35,7 @@ class ScaleGradientOp final : public Operator<Context> {
         axis(OperatorBase::GetSingleArg<int>("axis", 1)),
         num_axes(OperatorBase::GetSingleArg<int>("num_axes", -1)) {}
 
-    void ShareBeforeRun() override;
     void RunOnDevice() override;
-    void ClearAfterRun() override;
     template <typename T> void BiasRunWithType();
     template <typename T> void ScaleRunWithType();
     template <typename T> void RunWithType();

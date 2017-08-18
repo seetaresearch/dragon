@@ -30,7 +30,9 @@ class ReluGradientOp : public Operator<Context> {
  public:
     ReluGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          slope(OperatorBase::GetSingleArg<float>("slope", 0.0)) {}
+          slope(OperatorBase::GetSingleArg<float>("slope", 0.0)) {
+        DISABLE_SHARE_GRADIENT;
+    }
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

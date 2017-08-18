@@ -55,16 +55,9 @@ void ROIPoolingGradientOp<Context>::RunOnDevice() {
 }
 
 template <class Context>
-void ROIPoolingGradientOp<Context>::ShareBeforeRun() {
-    Tensor* dX = ws()->GetBuffer();
-    if (dX != nullptr) output(0)->Replace(*dX);
-}
-
-template <class Context>
-void ROIPoolingGradientOp<Context>::ClearAfterRun() {
-    Tensor* dY = &input(-1);
-    ws()->ReleaseBuffer(dY);
-    ws()->ReleaseBuffer(mask);
+void ROIPoolingGradientOp<Context>::CleanResource() {
+    Operator<Context>::CleanResource();
+    ws()->ReleaseBuffer(mask, "Common", true);
 }
 
 DEPLOY_CPU(ROIPoolingGradient);
@@ -74,7 +67,7 @@ DEPLOY_CUDA(ROIPoolingGradient);
 OPERATOR_SCHEMA(ROIPoolingGradient).NumInputs(3).NumOutputs(1);
 
 class GetROIPoolingGradient final : public GradientMakerBase {
-public:
+ public:
     GRADIENT_MAKER_CTOR(GetROIPoolingGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",

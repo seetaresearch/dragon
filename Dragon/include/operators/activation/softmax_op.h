@@ -32,7 +32,9 @@ class SoftmaxGradientOp final : public Operator<Context> {
  public:
     SoftmaxGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 1)) {}
+          axis(OperatorBase::GetSingleArg<int>("axis", 1)) {
+        DISABLE_SHARE_GRADIENT;
+    }
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
