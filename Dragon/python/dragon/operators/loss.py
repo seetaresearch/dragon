@@ -123,7 +123,7 @@ def L2Loss(inputs, normalization='BATCH_SIZE', **kwargs):
 
 
 def SparseSoftmaxFocalLoss(inputs, axis=1, normalization='VALID', ignore_labels=(),
-                           alpha=0.25, gamma=2.0, eps=1e-10, use_pseudo_metric=True, **kwargs):
+                           alpha=0.5, gamma=2.0, eps=1e-10, neg_id=-1, **kwargs):
     """
     :param inputs:          a list of Tensor contains [input, label]
     :param axis             a int of using which axis to compute softmax

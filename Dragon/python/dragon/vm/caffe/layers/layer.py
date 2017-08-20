@@ -21,6 +21,9 @@ class Layer(object):
         self._param = {}
         self._common_param = {}
 
+        self._loss_weight = None if len(LayerParameter.loss_weight) == 0 \
+                                 else LayerParameter.loss_weight
+
         for include in LayerParameter.include:
             mpi_rank = [int(rank) for rank in include.mpi_rank]
             if len(mpi_rank) > 0: self._common_param['mpi_rank'] = mpi_rank

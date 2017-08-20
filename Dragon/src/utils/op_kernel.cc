@@ -780,8 +780,10 @@ template <> void SparseSoftmaxFocalLoss<float, CPUContext>(const int count,
                                                            const int classes,
                                                            const int outer_dim,
                                                            const int inner_dim,
-                                                           const float alpha,
+                                                           const float pos_alpha,
+                                                           const float neg_alpha,
                                                            const float gamma,
+                                                           const int neg_id,
                                                            const float* prob,
                                                            const float* labels,
                                                            float* scale,
@@ -793,7 +795,7 @@ template <> void SparseSoftmaxFocalLoss<float, CPUContext>(const int count,
     const int dim = count / outer_dim;
 
     for (int i = 0; i < count; ++i) {
-        scale[i] = alpha * std::pow((1.0f - prob[i]), gamma);
+        scale[i] = std::pow((1.0f - prob[i]), gamma);
     }
 
     for (int i = 0; i < outer_dim; ++i) {
@@ -809,9 +811,11 @@ template <> void SparseSoftmaxFocalLoss<float, CPUContext>(const int count,
             }
             if (k == ignore->count()) {
                 const int t_ = i * dim + label * inner_dim + j;
-                float labeled_prob = prob[t_];
-                loss[idx] = -scale[t_] * std::log(std::max(labeled_prob, FLT_MIN));
-                valid[idx] = 1;
+                float labeled_prob = std::max(labeled_prob, FLT_MIN);
+                scale[t_] = label > neg_id ? pos_alpha * scale[t_] :
+                                             neg_alpha * scale[t_];
+                loss[idx] = -scale[t_] * std::log(labeled_prob);
+                valid[idx] = label > neg_id ? 1 : 0;
             }
         }
     }
@@ -822,6 +826,7 @@ template<> void SparseSoftmaxFocalLossGrad<float, CPUContext>(const int count,
                                                               const int outer_dim, 
                                                               const int inner_dim,
                                                               const float gamma,
+                                                              const int neg_id,
                                                               const float eps,
                                                               const float* scale,
                                                               const float* prob, 
@@ -855,7 +860,7 @@ template<> void SparseSoftmaxFocalLossGrad<float, CPUContext>(const int count,
                         dXdata[i_] = grad * prob[i_];
                     }
                 }
-                valid[0]++;
+                if (label > neg_id) valid[0]++;
             }
         }
     }

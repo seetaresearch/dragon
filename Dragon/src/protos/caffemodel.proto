@@ -19,6 +19,8 @@ message NetParameter {
 }
 
 message LayerParameter {
-  optional string name = 1; // the layer name
+  optional string name = 1;
   repeated BlobProto blobs = 7;
 }
+
+

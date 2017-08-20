@@ -1509,6 +1509,6 @@ message FocalLossParameter {
   optional float alpha = 1 [default = 1.0];
   optional float gamma = 2 [default = 0.25];
   optional float eps = 3 [default = 1e-10];
-  optional bool use_pseudo_metric = 4 [default = true];
+  optional int32 neg_id = 4 [default = -1];
 }
 

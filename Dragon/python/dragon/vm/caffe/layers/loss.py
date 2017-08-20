@@ -24,7 +24,9 @@ class SoftmaxWithLossLayer(Layer):
 
     def Setup(self, bottom):
         super(SoftmaxWithLossLayer, self).Setup(bottom)
-        return ops.SparseSoftmaxCrossEntropy(bottom, **self._param)
+        loss = ops.SparseSoftmaxCrossEntropy(bottom, **self._param)
+        if self._loss_weight is not None: loss *= self._loss_weight
+        return loss
 
 
 class SigmoidCrossEntropyLossLayer(Layer):
@@ -40,7 +42,8 @@ class SigmoidCrossEntropyLossLayer(Layer):
 
     def Setup(self, bottom):
         super(SigmoidCrossEntropyLossLayer, self).Setup(bottom)
-        return ops.SigmoidCrossEntropy(bottom, **self._param)
+        loss = ops.SigmoidCrossEntropy(bottom, **self._param)
+        if self._loss_weight is not None: loss *= self._loss_weight
 
 
 class L2LossLayer(Layer):
@@ -52,7 +55,9 @@ class L2LossLayer(Layer):
 
     def Setup(self, bottom):
         super(L2LossLayer, self).Setup(bottom)
-        return ops.L2Loss(bottom, **self._param)
+        loss = ops.L2Loss(bottom, **self._param)
+        if self._loss_weight is not None: loss *= self._loss_weight
+        return loss
 
 
 class SmoothL1LossLayer(Layer):
@@ -63,7 +68,9 @@ class SmoothL1LossLayer(Layer):
 
     def Setup(self, bottom):
         super(SmoothL1LossLayer, self).Setup(bottom)
-        return ops.SmoothL1Loss(bottom, **self._param)
+        loss = ops.SmoothL1Loss(bottom, **self._param)
+        if self._loss_weight is not None: loss *= self._loss_weight
+        return loss
 
 
 class SoftmaxWithFocalLossLayer(Layer):
@@ -83,8 +90,10 @@ class SoftmaxWithFocalLossLayer(Layer):
                        'alpha': float(focal_loss_param.alpha),
                        'gamma': float(focal_loss_param.gamma),
                        'eps': float(focal_loss_param.eps),
-                       'use_pseudo_metric': focal_loss_param.use_pseudo_metric}
+                       'neg_id': focal_loss_param.neg_id}
 
     def Setup(self, bottom):
         super(SoftmaxWithFocalLossLayer, self).Setup(bottom)
-        return ops.SparseSoftmaxFocalLoss(bottom, **self._param)
+        loss = ops.SparseSoftmaxFocalLoss(bottom, **self._param)
+        if self._loss_weight is not None: loss *= self._loss_weight
+        return loss

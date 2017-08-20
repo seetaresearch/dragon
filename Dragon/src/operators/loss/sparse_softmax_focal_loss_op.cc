@@ -19,8 +19,10 @@ void SparseSoftmaxFocalLossOp<Context>::RunWithType() {
                                              input(0).dim(axis),
                                                       outer_dim, 
                                                       inner_dim,
-                                                          alpha,
+                                                      pos_alpha,
+                                                      neg_alpha,
                                                           gamma,
+                                                         neg_id,
                                                       prob_data, 
                                                      label_data, 
                                                      scale_data,
@@ -29,11 +31,6 @@ void SparseSoftmaxFocalLossOp<Context>::RunWithType() {
                                                  &this->ignore);
 
     if (normalization == "UNIT") {
-        if (use_pseudo_metric) {
-            math::MulScalar<T, Context>(this->losses.count(), 
-                                                 1.0 / alpha, 
-                                                  loss_data);
-        }
         output(0)->ReshapeLike(this->losses);
         output(0)->Share(this->losses);
         return;
@@ -42,11 +39,10 @@ void SparseSoftmaxFocalLossOp<Context>::RunWithType() {
     T normalizer;
     if (normalization == "VALID")
         normalizer = math::ASum<T, Context>(this->valid.count(), valid_data);
-    else if (normalization == "BATCH_SIZE") normalizer = outer_dim;
+    else if (normalization == "BATCH_SIZE") normalizer = input(0).dim(0);
     else if (normalization == "FULL") normalizer = outer_dim * inner_dim;
     else if (normalization == "NONE") normalizer = 1;
     T loss = math::ASum<T, Context>(this->losses.count(), loss_data);
-    loss = use_pseudo_metric ? loss / alpha : loss;
     output(0)->Reshape(vector<TIndex>(1, 1));
     auto* Ydata = output(0)->template mutable_data<T, CPUContext>();
     Ydata[0] = loss / normalizer;
@@ -88,6 +84,7 @@ void SparseSoftmaxFocalLossGradientOp<Context>::RunWithType() {
                                                             outer_dim, 
                                                             inner_dim, 
                                                                 gamma,
+                                                               neg_id,
                                                                   eps,
                                                            scale_data,
                                                             prob_data,
@@ -110,7 +107,7 @@ void SparseSoftmaxFocalLossGradientOp<Context>::RunWithType() {
 
     T normalizer;
     if (normalization == "VALID") normalizer = math::ASum<T, Context>(this->valid.count(), valid_data);
-    else if (normalization == "BATCH_SIZE") normalizer = outer_dim;
+    else if (normalization == "BATCH_SIZE") normalizer = input(0).dim(0);
     else if (normalization == "FULL") normalizer = outer_dim * inner_dim;
     else if (normalization == "NONE") normalizer = 1;
     auto* dYdata = input(-1).template data<T, CPUContext>();

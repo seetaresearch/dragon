@@ -26,7 +26,7 @@ void SoftmaxCrossEntropyOp<Context>::RunWithType() {
     }
 
     T normalizer;
-    if (normalization == "BATCH_SIZE") normalizer = outer_dim;
+    if (normalization == "BATCH_SIZE") normalizer = input(0).dim(0);
     else if (normalization == "FULL") normalizer = outer_dim * inner_dim;
     else if (normalization == "NONE") normalizer = 1;
     T loss = math::ASum<T, Context>(losses.count(), Ldata);
@@ -76,7 +76,7 @@ void SoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
     }
 
     T normalizer;
-    if (normalization == "BATCH_SIZE") normalizer = outer_dim;
+    if (normalization == "BATCH_SIZE") normalizer = input(0).dim(0);
     else if (normalization == "FULL") normalizer = outer_dim * inner_dim;
     else if (normalization == "NONE") normalizer = 1;
     auto* dYdata = input(-1).template data<T, CPUContext>();

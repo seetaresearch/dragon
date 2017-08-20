@@ -1417,19 +1417,21 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, CUDAContext>(const int coun
 /******************** loss.sparse_softmax_focal_loss ********************/
 
 template <typename T>
-__global__ void _FocalScale(const int count,
-                            const float alpha,
-                            const float gamma,
-                            const T* prob,
-                            T* scale) {
+__global__ void _SparseSoftmaxFocalScale(const int count,
+                                         const float gamma,
+                                         const T* prob,
+                                         T* scale) {
     CUDA_KERNEL_LOOP(idx, count) {
-        scale[idx] = alpha * std::pow((1.0f - prob[idx]), gamma);
+        scale[idx] = std::pow((1.0f - prob[idx]), gamma);
     }
 }
 
 template <typename T>
 __global__ void _SparseSoftmaxFocalLoss(const int count,
-                                        const T* scale,
+                                        const float pos_alpha,
+                                        const float neg_alpha,
+                                        const int neg_id,
+                                        T* scale,
                                         const T* prob, 
                                         const T* labels,
                                         T* loss,
@@ -1445,14 +1447,16 @@ __global__ void _SparseSoftmaxFocalLoss(const int count,
         int k;
         for (k = 0; k < ignore_num; k++) {
             if (label == ignores[k]) {
-                loss[idx] = valid[idx]  = 0;
+                loss[idx] = valid[idx] = 0;
                 break;
             }
         }
         if (k == ignore_num) {
             const int t_ = (o_idx * classes + label) * inner_dim + i_idx;
+            scale[t_] = label > neg_id ? pos_alpha * scale[t_] : 
+                                         neg_alpha * scale[t_];
             loss[idx] = -scale[t_] * std::log(max(prob[t_], FLT_MIN));
-            valid[idx] = 1;
+            valid[idx] = label > neg_id ? 1 : 0;
         }
     }
 }
@@ -1461,8 +1465,10 @@ template <> void SparseSoftmaxFocalLoss<float, CUDAContext>(const int count,
                                                             const int classes,
                                                             const int outer_dim,
                                                             const int inner_dim,
-                                                            const float alpha,
+                                                            const float pos_alpha,
+                                                            const float neg_alpha,
                                                             const float gamma,
+                                                            const int neg_id,
                                                             const float* prob,
                                                             const float* labels,
                                                             float* scale,
@@ -1472,12 +1478,14 @@ template <> void SparseSoftmaxFocalLoss<float, CUDAContext>(const int count,
     const int* ignores = ignore->count() > 0 ?
                          ignore->data<int, CUDAContext>() : nullptr;
     const int num_preds = outer_dim * inner_dim;
-    _FocalScale<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                                                    alpha,
-                                                                    gamma,
-                                                                     prob,
-                                                                   scale);
+    _SparseSoftmaxFocalScale<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                                 gamma,
+                                                                                  prob,
+                                                                                scale);
     _SparseSoftmaxFocalLoss<float> << <GET_BLOCKS(num_preds), CUDA_NUM_THREADS >> >(num_preds,
+                                                                                    pos_alpha,
+                                                                                    neg_alpha,
+                                                                                       neg_id,
                                                                                         scale,
                                                                                          prob,
                                                                                        labels, 
@@ -1493,6 +1501,7 @@ template <> void SparseSoftmaxFocalLoss<float, CUDAContext>(const int count,
 template <typename T>
 __global__ void _SparseSoftmaxFocalLossGrad(const int count,
                                             const float gamma,
+                                            const int neg_id,
                                             const float eps,
                                             const T* scale,
                                             const T* prob, 
@@ -1517,7 +1526,7 @@ __global__ void _SparseSoftmaxFocalLossGrad(const int count,
         } else {
             const int t_ = (o_idx * classes + label) * inner_dim + i_idx;
             T grad = -gamma * (scale[t_] / max((1.0f - prob[t_]), eps))
-                            * std::log(max(prob[t_], FLT_MIN)) 
+                            * std::log(max(prob[t_], FLT_MIN))
                             * prob[t_] + scale[t_];
             for (int c = 0; c < classes; c++) {
                 const int i_ = (o_idx * classes + c) * inner_dim + i_idx;
@@ -1527,7 +1536,7 @@ __global__ void _SparseSoftmaxFocalLossGrad(const int count,
                     dx[i_] = grad * prob[i_];
                 }
             }
-            valid[idx] = 1;
+            valid[idx] = label > neg_id ? 1 : 0;
         }
     }
 }
@@ -1537,6 +1546,7 @@ template<> void SparseSoftmaxFocalLossGrad<float, CUDAContext>(const int count,
                                                                const int outer_dim, 
                                                                const int inner_dim,
                                                                const float gamma,
+                                                               const int neg_id,
                                                                const float eps,
                                                                const float* scale,
                                                                const float* prob, 
@@ -1549,6 +1559,7 @@ template<> void SparseSoftmaxFocalLossGrad<float, CUDAContext>(const int count,
     const int num_preds = outer_dim * inner_dim;
     _SparseSoftmaxFocalLossGrad<float> << <GET_BLOCKS(num_preds), CUDA_NUM_THREADS >> >(num_preds,
                                                                                             gamma,
+                                                                                           neg_id,
                                                                                               eps,
                                                                                             scale,
                                                                                              prob, 

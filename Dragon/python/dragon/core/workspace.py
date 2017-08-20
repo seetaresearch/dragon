@@ -90,6 +90,7 @@ def FeedTensor(tensor, ndarray, force_cpu=False, dtype=None):
     ndarray = np.array(ndarray, dtype=dtype)
     FeedTensorCC(tensor, ndarray, StringfyProto(dev))
 
+
 stages = {
     'forward': {'include': '', 'exclude': 'Gradient'},
     'backward': {'include': 'Gradient', 'exclude': 'Generate'},
@@ -118,6 +119,7 @@ def RunGraph(graph_name, inputs=(), outputs=[], stage=None, return_outputs=True)
 
 def PrintRawGraphDef(graph_def):
     logger.info(graph_def)
+
 
 def PrintOptimizedGraph(graph_def):
     graph_name = graph_def.name
@@ -155,6 +157,7 @@ def Snapshot(tensors, filename, prefix='', suffix='.bin', format=0):
         # caffe-store
         names = [tensor.name for tensor in tensors]
         SnapshotCC(filepath, names, format)
+
 
 def Restore(filename, format=0):
     if mpi.is_init():
