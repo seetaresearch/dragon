@@ -4,9 +4,9 @@
 
 #ifdef WITH_MPI
 
-#ifdef WITH_CUDA_AWARE
+#ifdef WITH_MPI_CUDA
 #include <cublas_v2.h>
-#endif // WITH_CUDA_AWARE
+#endif // WITH_MPI_CUDA
 
 namespace dragon {
 
@@ -62,7 +62,7 @@ AsyncUpdateOp<Context>::AsyncUpdateOp(const OperatorDef& op_def, Workspace* ws)
     }
 
     //  create independent stream for thread if using cuda-aware
-#ifdef WITH_CUDA_AWARE
+#ifdef WITH_MPI_CUDA
     cudaStreamCreate(&stream);
     cublasCreate_v2(&handle);
     cublasSetStream(handle, stream);
@@ -78,7 +78,7 @@ void AsyncUpdateOp<Context>::RootRunWithType() {
         if (mode != "Async_No_Lock") ws()->LockTensor(output(i)->name());
         int delay = GetDelay(i); UpdateTimestamp(i);
         math::Axpy<T, Context>(input(i).count(), -1.0 / delay, dXdata, Xdata);
-#ifdef WITH_CUDA_AWARE
+#ifdef WITH_MPI_CUDA
         cudaStreamSynchronize(cudaStreamDefault);
 #endif
         if (mode != "Async_No_Lock") ws()->UnlockTensor(output(i)->name());
@@ -108,14 +108,14 @@ void AsyncUpdateOp<Context>::ThreadRunWithType() {
         Tensor* X = ws()->GetTensor(tags[status.MPI_TAG]);
         if (X->count() == 0) continue; //  wait for server 
         recv_buffer->ReshapeLike(*X);
-#ifdef WITH_CUDA_AWARE
+#ifdef WITH_MPI_CUDA
         auto* Bdata = recv_buffer->template mutable_data<T, Context>();
 #else 
         auto* Bdata = recv_buffer->template mutable_data<T, CPUContext>();
 #endif
         MPI_Recv(Bdata, X->count(), MPI_FLOAT, status.MPI_SOURCE, status.MPI_TAG, this->comm, MPI_STATUS_IGNORE);
         //  update
-#ifdef WITH_CUDA_AWARE
+#ifdef WITH_MPI_CUDA
         auto* Xdata = X->template mutable_data<T, Context>();
         if (mode != "Async_No_Lock") ws()->LockTensor(output(status.MPI_TAG)->name());
         int delay = GetDelay(status.MPI_TAG);

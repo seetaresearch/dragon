@@ -14,6 +14,10 @@
 #include <curand.h>
 #include <cuda.h>
 
+#ifdef WITH_MPI_NCCL
+#include <nccl/nccl.h>
+#endif  // WITH_MPI_NCCL
+
 #include "core/common.h"
 
 namespace dragon {
@@ -25,19 +29,27 @@ static const int CUDA_NUM_THREADS = 1024;
   do { \
     cudaError_t error = condition; \
     CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
-      } while (0)
+  } while (0)
 
 #define CUBLAS_CHECK(condition) \
   do { \
     cublasStatus_t status = condition; \
     CHECK_EQ(status, CUBLAS_STATUS_SUCCESS); \
-      } while (0)
+  } while (0)
 
 #define CURAND_CHECK(condition) \
   do { \
     curandStatus_t status = condition; \
     CHECK_EQ(status, CURAND_STATUS_SUCCESS); \
-    } while (0)
+  } while (0)
+
+#ifdef WITH_MPI_NCCL
+#define NCCL_CHECK(condition) \
+  do { \
+    ncclResult_t status = condition; \
+    CHECK_EQ(status, ncclSuccess) << " " << ncclGetErrorString(status); \
+  } while (0)
+#endif  // WITH_MPI_NCCL
 
 #define CUDA_KERNEL_LOOP(i, n) \
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; \

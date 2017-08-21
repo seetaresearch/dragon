@@ -11,7 +11,7 @@ void MPIGatherOp<Context>::RunWithType() {
         output(this->comm_rank)->Share(input(0));
         for (int i = 0; i < this->comm_size; i++) {
             if (i == this->comm_root) continue;
-#ifdef WITH_CUDA_AWARE
+#ifdef WITH_MPI_CUDA
             auto* Ydata = output(i)->template mutable_data<T, Context>();
 #else
             auto* Ydata = output(i)->template mutable_data<T, CPUContext>();
@@ -20,7 +20,7 @@ void MPIGatherOp<Context>::RunWithType() {
         }
     }
     else{
-#ifdef WITH_CUDA_AWARE
+#ifdef WITH_MPI_CUDA
         auto* Xdata = input(0).template data<T, Context>();
 #else
         auto* Xdata = input(0).template data<T, CPUContext>();
@@ -53,7 +53,7 @@ void MPIGatherGradientOp<Context>::RunWithType() {
         output(0)->Share(input(this->comm_rank + 1));
         for (int i = 0; i < this->comm_size; i++) {
             if (i == this->comm_root) continue;
-#ifdef WITH_CUDA_AWARE
+#ifdef WITH_MPI_CUDA
             auto* dYdata = input(this->comm_rank + 1).template data<T, Context>();
 #else
             auto* dYdata = input(this->comm_rank + 1).template data<T, CPUContext>();
@@ -62,7 +62,7 @@ void MPIGatherGradientOp<Context>::RunWithType() {
         }
     }
     else{
-#ifdef WITH_CUDA_AWARE
+#ifdef WITH_MPI_CUDA
         auto* dXdata = output(0)->template mutable_data<T, Context>();
 #else
         auto* dXdata = output(0)->template mutable_data<T, CPUContext>();

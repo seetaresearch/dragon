@@ -37,7 +37,7 @@ class AsyncUpdateOp final: public UpdateOpBase<Context> {
     Map<int, int> local_timestamp;
     std::unique_ptr<std::thread> thread;
 
-#ifdef WITH_CUDA_AWARE
+#ifdef WITH_MPI_CUDA
     cudaStream_t stream;
     cublasHandle_t handle;
 #endif

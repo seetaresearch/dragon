@@ -14,7 +14,8 @@ option(WITH_CUDNN                  "Set ON to use CUDNN" OFF)
 option(WITH_BLAS                   "Set ON to use BLAS"  OFF)
 option(WITH_SSE                    "Set ON to use SSE 4.1"  ON)
 option(WITH_MPI                    "Set ON to use MPI"  OFF)
-option(WITH_MPI_CUDA               "Set ON to use MPI_CUDA_AWARE"  OFF)
+option(WITH_MPI_CUDA               "Set ON to use MPI-CUDA"  OFF)
+option(WITH_MPI_NCCL               "Set ON to use MPI-NCCL"  OFF)
 option(WITH_CUDA_FP16              "Set ON to use FP16"  ON)
 
 # set your 3rdparty
@@ -24,7 +25,7 @@ set(3RDPARTY_DIR  ${PROJECT_SOURCE_DIR}/../3rdparty)
 set(PYTHON_DIR /usr/include/python2.7)  # prefer
 #set(PYTHON_DIR /usr/include/python3.x)  # optional, set specific version
 #set(ANACONDA_DIR /xxx/anaconda)  # optional, root folder of anaconda, preset for 2.7, 3.5, and 3.6 
-set(NUMPY_DIR /xxx/numpy)  # require, root folder of numpy package
+set(NUMPY_DIR /xxx/numpy)  # required, root folder of numpy package
 
 # set CUDA compiling architecture
 set(CUDA_ARCH     -gencode arch=compute_20,code=sm_20
@@ -61,7 +62,7 @@ set(CUDA_ARCH     -gencode arch=compute_20,code=sm_20
 
 # ---[ Dependencies
 if (WITH_CUDA) 
-	FIND_PACKAGE(CUDA REQUIRED)
+    FIND_PACKAGE(CUDA REQUIRED)
 endif()
 
 set(CMAKE_CXX_STANDARD 11)
@@ -129,8 +130,12 @@ if (WITH_MPI)
     message(STATUS "Use MPI [Optional]")
 endif()
 if (WITH_MPI_CUDA)
-    ADD_DEFINITIONS(-DWITH_CUDA_AWARE)
+    ADD_DEFINITIONS(-DWITH_MPI_CUDA)
     message(STATUS "Use MPI-CUDA [Optional]")
+endif()
+if (WITH_MPI_NCCL)
+    ADD_DEFINITIONS(-DWITH_MPI_NCCL)
+    message(STATUS "Use MPI-NCCL [Optional]")
 endif()
 if (WITH_CUDA_FP16)
     ADD_DEFINITIONS(-DWITH_CUDA_FP16)

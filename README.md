@@ -7,6 +7,7 @@
 2. CUDA [Optional]
 3. CUDNN [Optional]
 4. OpenMPI [Optional]
+5. NCCL [Optional]
 
 -----
 ### Installation
@@ -15,6 +16,8 @@
 2. (Optional) Download and install [CUDA](https://developer.nvidia.com/cuda-toolkit)
 
       (Optional) Download and install [CUDNN](https://developer.nvidia.com/cudnn)
+
+      (Optional, Linux Only) Download and install [NCCL](https://developer.nvidia.com/nccl)
 
 3. (Optional) Download 3rdparty.zip and unzip to Dragon/3rdparty (Out of source code dir)
 
@@ -42,6 +45,7 @@
 	- Set CUDA compiling architectures if necessary
 	- GCC version(4.8+, 5.0-) should add ``-std=c++11`` to ``CUDA_NVCC_FLAGS``, if ``nullptr`` is not found
 	- We pre-generated files under ``Dragon/src/protos`` with protobuf-2.6, run ``protoc`` by yourself if higher are required
+	- OpenMPI can take NCCL and our CUDA impl at the same time, prefer not to use NCCL(*memory inefficient*)
 
 6. Environment Variables
     ### Linux(Only for OpenMPI):

@@ -46,7 +46,12 @@ class UpdateOpBase : public Operator<Context> {
 #ifdef WITH_MPI
     MPI_Comm comm;
     MPI_Group group;
-#endif // WITH_MPI
+#endif  // WITH_MPI
+
+#ifdef WITH_MPI_NCCL
+    ncclComm_t nccl_comm;
+    cudaStream_t stream;
+#endif  // WITH_MPI_NCCL
 
 };
 

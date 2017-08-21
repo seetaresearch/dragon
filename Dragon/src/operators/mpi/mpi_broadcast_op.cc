@@ -8,7 +8,7 @@ namespace dragon {
 template <class Context> template <typename T>
 void MPIBroadcastOp<Context>::RunWithType() {
     if (this->comm_rank == this->comm_root) {
-#ifdef WITH_CUDA_AWARE
+#ifdef WITH_MPI_CUDA
         auto* Xdata = input(0).template mutable_data<T, Context>();
 #else
         auto* Xdata = input(0).template mutable_data<T, CPUContext>();
@@ -16,7 +16,7 @@ void MPIBroadcastOp<Context>::RunWithType() {
         MPI_Bcast(Xdata, input(0).count(), MPI_FLOAT, this->comm_root, this->comm);
         output(0)->Share(input(0));
     } else { 
-#ifdef WITH_CUDA_AWARE
+#ifdef WITH_MPI_CUDA
         auto* Ydata = output(0)->template mutable_data<T, Context>();
 #else
         auto* Ydata = output(0)->template mutable_data<T, CPUContext>();
@@ -59,7 +59,7 @@ OPERATOR_SCHEMA(MPIBroadcast).NumInputs(1).NumOutputs(1);
 template <class Context> template <typename T>
 void MPIBroadcastGradientOp<Context>::RunWithType() {
     if (this->comm_rank == this->comm_root) {
-#ifdef WITH_CUDA_AWARE
+#ifdef WITH_MPI_CUDA
         auto* dYdata = input(-1).template mutable_data<T, Context>();
         auto* dXdata = output(0)->template mutable_data<T, Context>();
         ctx().template Copy<T, Context, Context>(output(0)->count(), dXdata, dYdata);
@@ -72,7 +72,7 @@ void MPIBroadcastGradientOp<Context>::RunWithType() {
         for (int i = 0; i < this->comm_size; i++) {
             if (i == this->comm_root) continue;
             MPI_Recv(dYdata, output(0)->count(), MPI_FLOAT, i, 0, this->comm, MPI_STATUS_IGNORE);
-#ifdef WITH_CUDA_AWARE
+#ifdef WITH_MPI_CUDA
             math::Add<T, Context>(output(0)->count(), dYdata, dXdata, dXdata);
 #else
             math::Add<T, CPUContext>(output(0)->count(), dYdata, dXdata, dXdata);
@@ -80,7 +80,7 @@ void MPIBroadcastGradientOp<Context>::RunWithType() {
         }
     }
     else {
-#ifdef WITH_CUDA_AWARE
+#ifdef WITH_MPI_CUDA
         auto* dYdata = input(-1).template data<T, Context>();
 #else
         auto* dYdata = input(-1).template data<T, CPUContext>();
