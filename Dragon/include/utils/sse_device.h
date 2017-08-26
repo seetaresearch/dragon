@@ -15,11 +15,10 @@
 namespace dragon {
 
 #define SSE_LOOP1(i, n) \
-  int32_t i; \
   for (i = 0; i < n - 4; i += 4) \
 
 #define SSE_LOOP2(i, n) \
-  for (; i < n; i++)
+  for (; i < n; ++i)
 
 #define SSE_FP32_LOAD _mm_loadu_ps
 #define SSE_FP32_STORE _mm_storeu_ps

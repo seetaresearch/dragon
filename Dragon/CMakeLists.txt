@@ -12,6 +12,7 @@ option(WITH_PYTHON3                "Set ON to use PYTHON3 otherwise PYTHON2"  OF
 option(WITH_CUDA                   "Set ON to use CUDA"  ON)
 option(WITH_CUDNN                  "Set ON to use CUDNN" OFF)
 option(WITH_BLAS                   "Set ON to use BLAS"  OFF)
+option(WITH_OMP                    "Set ON to use OpenMP"  OFF)
 option(WITH_SSE                    "Set ON to use SSE 4.1"  ON)
 option(WITH_MPI                    "Set ON to use MPI"  OFF)
 option(WITH_MPI_CUDA               "Set ON to use MPI-CUDA"  OFF)
@@ -22,7 +23,7 @@ option(WITH_CUDA_FP16              "Set ON to use FP16"  ON)
 set(3RDPARTY_DIR  ${PROJECT_SOURCE_DIR}/../3rdparty)
 
 # set your python environment
-set(PYTHON_DIR /usr/include/python2.7)  # prefer
+set(PYTHON_DIR /usr/include/python2.7)  # preferred
 #set(PYTHON_DIR /usr/include/python3.x)  # optional, set specific version
 #set(ANACONDA_DIR /xxx/anaconda)  # optional, root folder of anaconda, preset for 2.7, 3.5, and 3.6 
 set(NUMPY_DIR /xxx/numpy)  # required, root folder of numpy package
@@ -118,6 +119,10 @@ else()
         "\n -- > GEMM/GEMV is disabled"
         "\n -- > prefer not to run as CPU Mode")
 endif()
+if (WITH_OMP)
+    ADD_DEFINITIONS(-DWITH_OMP)
+    message(STATUS "Use OpenMP [Optional]")
+endif() 
 if (WITH_SSE) 
     ADD_DEFINITIONS(-DWITH_SSE)
     message(STATUS "Use SSE [Optional]")
@@ -145,11 +150,18 @@ endif()
 # ---[ Flags
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")
 if(WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /O2")
+    if (WITH_OMP)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp")
+    endif()
 endif()
 if(UNIX)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -O2 -m64 -fpermissive -std=c++11")
+    if (WITH_OMP)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+    endif()
 endif()
 
 # ---[ Warnings

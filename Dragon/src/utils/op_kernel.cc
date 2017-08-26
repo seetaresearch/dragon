@@ -3,11 +3,9 @@
 
 #include "core/tensor.h"
 #include "utils/op_kernel.h"
-#include "utils/math_functions.h"
-
-#ifdef WITH_SSE
+#include "utils/omp_alternative.h"
 #include "utils/sse_alternative.h"
-#endif
+#include "utils/math_functions.h"
 
 bool judge(int a, int b)  { return unsigned(a) < unsigned(b); }
 
@@ -28,8 +26,10 @@ template<> void Dropout<float, CPUContext>(const int count,
                                            CPUContext* context) {
     uint32_t thresh = static_cast<uint32_t>(UINT_MAX * prob);
     math::RandomBernoulli<float, CPUContext>(count, 1 - prob, mask);
-    for (int i = 0; i < count; ++i) 
-        y[i] = x[i] * mask[i] * scale;
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) y[i] = x[i] * mask[i] * scale;
 }
 
 template<> void DropoutGrad<float, CPUContext>(const int count, 
@@ -38,8 +38,10 @@ template<> void DropoutGrad<float, CPUContext>(const int count,
                                                const float* dy, 
                                                const uint32_t* mask,
                                                float* dx) {
-    for (int i = 0; i < count; ++i) 
-        dx[i] = dy[i] * mask[i] * scale;
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) dx[i] = dy[i] * mask[i] * scale;
 }
 
 /******************** activation.relu ********************/
@@ -48,6 +50,9 @@ template<> void Relu<float, CPUContext>(const int count,
                                         const float* x, 
                                         const float slope, 
                                         float* y) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
     for (int i = 0; i < count; ++i) {
         y[i] = std::max(x[i], 0.f) + slope * std::min(x[i], 0.f);
     }
@@ -58,10 +63,12 @@ template<> void ReluGrad<float, CPUContext>(const int count,
                                             const float* y, 
                                             const float slope, 
                                             float* dx) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
     for (int i = 0; i < count; ++i) {
         dx[i] = dy[i] * ((y[i] > 0) + slope * (y[i] <= 0));
     }
-
 }
 
 /******************** activation.sigmoid ********************/
@@ -70,15 +77,19 @@ template <typename T>
 T _sigmoid(T x) { return T(1) / (T(1) + exp(-x)); }
 
 template<> void Sigmoid<float, CPUContext>(const int count, const float* x, float* y) {
-    for (int i = 0; i < count; ++i)  {
-        y[i] = _sigmoid<float>(x[i]);
-    }
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i)  y[i] = _sigmoid<float>(x[i]);
 }
 
 template<> void SigmoidGrad<float, CPUContext>(const int count, 
                                                const float* dy, 
                                                const float* y, 
                                                float* dx) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
     for (int i = 0; i < count; ++i) {
         dx[i] = dy[i] * y[i] * (1 - y[i]);
     }
@@ -149,6 +160,9 @@ template<> void SoftmaxGrad<float, CPUContext>(const int count,
 /******************** activation.tanh ********************/
 
 template<> void Tanh<float, CPUContext>(const int count, const float* x, float* y) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
     for (int i = 0; i < count; ++i) {
         y[i] = std::tanh(x[i]);
     }
@@ -158,6 +172,9 @@ template<> void TanhGrad<float, CPUContext>(const int count,
                                             const float* dy, 
                                             const float* y, 
                                             float* dx) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
     for (int i = 0; i < count; ++i) {
         dx[i] = dy[i] * (1 - y[i] * y[i]);
     }
@@ -197,6 +214,9 @@ template <> void Clip<float, CPUContext>(const int count,
                                          const float* x,
                                          float* mask,
                                          float* y) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
     for (int i = 0; i < count; ++i) {
         mask[i] = 1.0;
         if (x[i] < low || x[i] > high) mask[i] = 0.0;
@@ -300,8 +320,10 @@ template<> void Argmax<float, CPUContext>(const int count,
 /******************** common.at ********************/
 
 template <> void CanonicalAxis<float, CPUContext>(const int count, const int dim, float* y) {
-    for (int i = 0; i < count; ++i) 
-        if (y[i] < 0) y[i] += dim;
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) if (y[i] < 0) y[i] += dim;
 }
 
 template <> void At<float, CPUContext>(const int count, 
@@ -478,6 +500,9 @@ template<> void Sum<float, CPUContext>(const int count,
                                        const int inner_dim, 
                                        const float* x, 
                                        float* y) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
     for (int i = 0; i < count; ++i) {
         float sum_val = 0.0;
         for (int j = 0; j < axis_dim; ++j)
@@ -492,6 +517,9 @@ template<> void SumGrad<float, CPUContext>(const int count,
                                            const float coeff, 
                                            const float* dy, 
                                            float* dx) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
     for (int i = 0; i < count; ++i) {
         for (int j = 0; j < axis_dim; ++j)
             dx[(i / inner_dim * axis_dim + j) * inner_dim + i % inner_dim] = dy[i] * coeff;
@@ -585,6 +613,9 @@ template <> void Transpose<float, CPUContext>(const int count,
                                               const int* new_steps, 
                                               const float* x, 
                                               float* y) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
     for (int i = 0; i < count; ++i) {
        int x_idx = 0, y_idx = i;
        for (int j = 0; j < ndim; ++j) {
@@ -603,15 +634,7 @@ template <> void Transpose<float16, CPUContext>(const int count,
                                                 const int* new_steps, 
                                                 const float16* x, 
                                                 float16* y) {
-    for (int i = 0; i < count; ++i) {
-       int x_idx = 0, y_idx = i;
-       for (int j = 0; j < ndim; ++j) {
-           int k = order[j];
-           x_idx += (y_idx / new_steps[j]) * old_steps[k];
-           y_idx %= new_steps[j];
-       }
-       y[i] = x[x_idx];
-    }
+    LOG(FATAL) << "unsupport float16 with CPU";
 }
 
 template <> void TransposeGrad<float, CPUContext>(const int count, 
@@ -621,6 +644,9 @@ template <> void TransposeGrad<float, CPUContext>(const int count,
                                                   const int* new_steps, 
                                                   const float* dy, 
                                                   float* dx) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
     for (int i = 0; i < count; ++i) {
         int x_idx = 0, y_idx = i;
         for (int j = 0; j < ndim; ++j) {
@@ -639,20 +665,15 @@ template <> void TransposeGrad<float16, CPUContext>(const int count,
                                                     const int* new_steps, 
                                                     const float16* dy, 
                                                     float16* dx) {
-    for (int i = 0; i < count; ++i) {
-        int x_idx = 0, y_idx = i;
-        for (int j = 0; j < ndim; ++j) {
-            int k = order[j];
-            x_idx += (y_idx / new_steps[j]) * old_steps[k];
-            y_idx %= new_steps[j];
-        }
-        dx[x_idx] = dy[i];
-    }
+    LOG(FATAL) << "unsupport float16 with CPU";
 }
 
 /******************** loss.l1_loss ********************/
 
 template<> void AbsGrad<float, CPUContext>(const int count, const float* dy, float* dx) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
     for (int i = 0; i < count; ++i) {
         const float val = dy[i];
         //  val > 0: 1 | val == 0: 0 | val < 0: -1
@@ -666,6 +687,9 @@ template <> void SigmoidCrossEntropy<float, CPUContext>(const int count,
                                                         const float* x, 
                                                         const float* target, 
                                                         float* loss) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
     for (int i = 0; i < count; ++i) {
         loss[i] = std::log(1 + std::exp(x[i] - 2 * x[i] * (x[i] >= 0)))
                       + x[i] * ((x[i] >= 0) - target[i]);
@@ -678,6 +702,9 @@ template<> void SmoothL1<float, CPUContext>(const int count,
                                             const float sigma2, 
                                             const float* x, 
                                             float* y) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
     for (int i = 0; i < count; ++i) {
         const float val = x[i];
         const float abs_val = abs(val);
@@ -690,6 +717,9 @@ template<> void SmoothL1Grad<float, CPUContext>(const int count,
                                                 const float sigma2, 
                                                 const float* dy, 
                                                 float* dx) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
     for (int i = 0; i < count; ++i) {
         const float val = dy[i];
         const float abs_val = abs(val);
@@ -705,6 +735,9 @@ template <> void SoftmaxCrossEntropy<float, CPUContext>(const int count,
                                                         const float* prob, 
                                                         const float* target, 
                                                         float* loss) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
     for (int i = 0; i < count; ++i) {
         loss[i] = - target[i] * std::log(std::max(prob[i], FLT_MIN));
     }
@@ -1016,9 +1049,12 @@ template <> void RMSPropUpdate<float, CPUContext>(const int count,
 /******************** utils.compare ********************/
 
 template <> void Equal<float, CPUContext>(const int count,
-    const float* a,
-    const float* b,
-    float* y) {
+                                          const float* a,
+                                          const float* b,
+                                          float* y) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
     for (int i = 0; i < count; ++i)
         y[i] = fabs(a[i] - b[i]) < FLT_EPSILON ? 1.0 : 0.0;
 }
@@ -1096,6 +1132,9 @@ template <> void OneHot<float, CPUContext>(const int count,
                                            const int on_value,
                                            const float* x,
                                            float* y) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
     for (int i = 0; i < count; ++i) {
         const int val = x[i];
         y[i * depth + val] = on_value;

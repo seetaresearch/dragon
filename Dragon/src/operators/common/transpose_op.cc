@@ -45,7 +45,9 @@ void TransposeOp<Context>::RunOnDevice() {
     }
 
     if (input(0).template IsType<float>()) RunWithType<float>();
+#ifdef WITH_CUDA_FP16
     else if (input(0).template IsType<float16>()) RunWithType<float16>();
+#endif
     else LOG(FATAL) << "unsupported input types.";
 }
 
@@ -75,7 +77,9 @@ void TransposeGradientOp<Context>::RunOnDevice() {
     new_steps = ws()->GetTensor("_t_" + anchor() + "_new_steps");
 
     if (input(0).template IsType<float>()) RunWithType<float>();
+#ifdef WITH_CUDA_FP16
     else if (input(0).template IsType<float16>()) RunWithType<float16>();
+#endif
     else LOG(FATAL) << "unsupported input types.";
 }
     

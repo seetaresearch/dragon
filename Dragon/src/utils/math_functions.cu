@@ -40,6 +40,7 @@ template <> void Set<int, CUDAContext>(const int n,
     _Set<int> << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n, alpha, x);
 }
 
+#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _SetHalf2(const int n, const half2 alpha, half2* x) {
     CUDA_KERNEL_LOOP(idx, n) {
@@ -61,6 +62,7 @@ template <> void Set<float16, CUDAContext>(const int n,
         _Set<float16> << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n, alpha, x);
     }
 }
+#endif
 
 template <> void RandomUniform<uint32_t, CUDAContext>(const int n, 
                                                       const float low, 
@@ -144,6 +146,7 @@ template <> void Mul<float, CUDAContext>(int n,
     _Mul<float> << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n, a, b, y);
 }
 
+#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _MulHalf(const int n, const half* a, const half* b, half* y) {
     CUDA_KERNEL_LOOP(idx, n) {
@@ -161,7 +164,7 @@ __global__ void _MulHalf2(const int n, const half2* a, const half2* b, half2* y)
 #endif
     }
 }
-    
+
 template <> void Mul<float16, CUDAContext>(int n, 
                                            const float16* a, 
                                            const float16* b, 
@@ -176,6 +179,7 @@ template <> void Mul<float16, CUDAContext>(int n,
                                   reinterpret_cast<const half*>(b),
                                   reinterpret_cast<half*>(y));
 }
+#endif
 
 template <typename T>
 __global__ void _Div(const int n, const T* a, const T* b, T* y) {
@@ -191,6 +195,7 @@ template <> void Div<float, CUDAContext>(int n,
     _Div<float> << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n, a, b, y);
 }
 
+#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _DivHalf(const int n, const half* a, const half* b, half* y) {
     CUDA_KERNEL_LOOP(idx, n) {
@@ -209,6 +214,7 @@ template <> void Div<float16, CUDAContext>(int n,
                              reinterpret_cast<const half*>(b),
                              reinterpret_cast<half*>(y));
 }
+#endif
 
 template <typename T>
 __global__ void _Clip(const int n, const T low, const T high, T* x) {
@@ -260,6 +266,7 @@ template <> void Square<float, CUDAContext>(int n,
     _Square<float> << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n, x, y);
 }
 
+#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _SquareHalf(const int n, const half* x, half* y) {
     CUDA_KERNEL_LOOP(idx, n) {
@@ -290,6 +297,7 @@ template <> void Square<float16, CUDAContext>(int n,
                                       reinterpret_cast<half*>(y));
     CUDA_POST_KERNEL_CHECK;
 }
+#endif
 
 template <typename T>
 __global__ void _Sqrt(const int n, const T* x, T* y) {
@@ -304,6 +312,7 @@ template <> void Sqrt<float, CUDAContext>(int n,
     _Sqrt<float> << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n, x, y);
 }
 
+#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _SqrtHalf(const int n, const half* x, half* y) {
     CUDA_KERNEL_LOOP(idx, n) {
@@ -334,6 +343,7 @@ template <> void Sqrt<float16, CUDAContext>(int n,
                                      reinterpret_cast<half*>(y));
     CUDA_POST_KERNEL_CHECK;
 }
+#endif
 
 template <typename T>
 __global__ void _Pow(const int n, const T alpha, const T* a, T* y) {
@@ -349,6 +359,7 @@ template <> void Pow<float, CUDAContext>(int n,
     _Pow<float> << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n, alpha, x, y);
 }
 
+#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _PowHalf(const int n, const float alpha, const half* a, half* y) {
     CUDA_KERNEL_LOOP(idx, n) {
@@ -384,6 +395,7 @@ template <> void Pow<float16, CUDAContext>(int n,
                                     reinterpret_cast<half*>(y));
     CUDA_POST_KERNEL_CHECK;
 }
+#endif
 
 template <typename T>
 __global__ void _Inv(const int n, const float numerator, const T* x, T* y) {
@@ -399,6 +411,7 @@ template <> void Inv<float, CUDAContext>(const int n,
     _Inv<float> << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n, numerator, x, y);
 }
 
+#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _InvHalf(const int n, const half numerator, const half* x, half* y) {
     CUDA_KERNEL_LOOP(idx, n) {
@@ -439,6 +452,7 @@ template <> void Inv<float16, CUDAContext>(const int n,
     }
     CUDA_POST_KERNEL_CHECK;
 }
+#endif
 
 /******************** Level-2 ********************/
 
@@ -518,6 +532,7 @@ template <> void AddScalar<float, CUDAContext>(const int n, const float alpha, f
     _AddScalar<float> << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n, alpha, y);
 }
 
+#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _AddScalarHalf(const int n, half alpha, half* y) {
     CUDA_KERNEL_LOOP(idx, n) {
@@ -552,6 +567,7 @@ template <> void AddScalar<float16, CUDAContext>(const int n, const float alpha,
     }
     CUDA_POST_KERNEL_CHECK;
 }
+#endif
 
 template <typename T>
 __global__ void _MulScalar(const int n, T alpha, T* y) {
@@ -641,6 +657,7 @@ template <> void Gemm<float, CUDAContext>(const CBLAS_TRANSPOSE transA,
                                 C, N));
 }
 
+#ifdef WITH_CUDA_FP16
 template <> void Gemm<float16, CUDAContext>(const CBLAS_TRANSPOSE transA, 
                                             const CBLAS_TRANSPOSE transB,
                                             const int M, 
@@ -682,6 +699,7 @@ template <> void Gemm<float16, CUDAContext>(const CBLAS_TRANSPOSE transA,
         LOG(FATAL) << "unsupported math type";
     }
 }
+#endif
 
 template <> void Gemv<float, CUDAContext>(const CBLAS_TRANSPOSE transA, 
                                           const int M, const int N,
@@ -702,6 +720,7 @@ template <> void Gemv<float, CUDAContext>(const CBLAS_TRANSPOSE transA,
                                 y, 1));
 }
 
+#ifdef WITH_CUDA_FP16
 template <> void Gemv<float16, CUDAContext>(const CBLAS_TRANSPOSE transA, 
                                             const int M, 
                                             const int N,
@@ -742,6 +761,7 @@ template <> void Gemv<float16, CUDAContext>(const CBLAS_TRANSPOSE transA,
             LOG(FATAL) << "unsupported math type";
     }
 }
+#endif
 
 }    // namespace math
 

@@ -48,7 +48,9 @@ void MatmulOp<Context>::RunOnDevice() {
     dims[dims.size() - 1] = N;
     output(0)->Reshape(dims);
     if (input(0).template IsType<float>()) RunWithType<float>();
+#ifdef WITH_CUDA_FP16
     else if (input(0).template IsType<float16>()) RunWithType<float16>();
+#endif
     else LOG(FATAL) << "unsupported input types.";
 }
 
@@ -105,7 +107,9 @@ void MatmulGradientOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
     output(1)->ReshapeLike(input(1));
     if (input(0).template IsType<float>()) RunWithType<float>();
+#ifdef WITH_CUDA_FP16
     else if (input(0).template IsType<float16>()) RunWithType<float16>();
+#endif
     else LOG(FATAL) << "unsupported input types.";
 }
 

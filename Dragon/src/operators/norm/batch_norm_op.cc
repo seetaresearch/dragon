@@ -127,7 +127,9 @@ void BatchNormOp<Context>::RunOnDevice() {
 
 
     if (input(0).template IsType<float>()) RunWithType<float>();
+#ifdef WITH_CUDA_FP16
     else if (input(0).template IsType<float16>()) RunWithType<float16>();
+#endif
     else LOG(FATAL) << "unsupported input types.";
 }
 
@@ -247,7 +249,9 @@ void BatchNormGradientOp<Context>::RunOnDevice() {
     else use_global_stats = use_stats == 1 ? true : false;
     
     if (input(0).template IsType<float>()) RunWithType<float>();
+#ifdef WITH_CUDA_FP16
     else if (input(0).template IsType<float16>()) RunWithType<float16>();
+#endif
     else LOG(FATAL) << "unsupported input types.";
 }
 

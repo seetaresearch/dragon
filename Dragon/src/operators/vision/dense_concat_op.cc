@@ -58,7 +58,9 @@ void DenseConcatGradientOp<Context>::ElimateCorruption() {
         input(0).Move(buffer->memory());
         head_data[idx] = input(0).name();
         if (input(-2).template IsType<float>()) RestoreX1<float>();
+#ifdef WITH_CUDA_FP16
         else if (input(-2).template IsType<float16>()) RestoreX1<float16>();
+#endif
         else LOG(FATAL) << "unsupported input types.";
         //  post-process
         if (input(0).memory() != buffer->memory()) buffer->Move(input(0).memory());

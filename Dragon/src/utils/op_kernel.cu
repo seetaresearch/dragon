@@ -21,7 +21,7 @@ template<> void Empty<float, CUDAContext>() {
 }
 
 template<> void Empty<float16, CUDAContext>() {
-    _Empty<float> << <1, 1 >> >();
+    _Empty<float16> << <1, 1 >> >();
      CUDA_POST_KERNEL_CHECK;
 }
 
@@ -102,6 +102,7 @@ template<> void Relu<float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
+#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _ReluHalf(const int count, const half* x, const float slope, half* y) {
     const half kSlope = __float2half(slope);
@@ -123,6 +124,7 @@ template<> void Relu<float16, CUDAContext>(const int count,
                                             reinterpret_cast<half*>(y));
     CUDA_POST_KERNEL_CHECK;
 }
+#endif
 
 template <typename T>
 __global__ void _ReluGrad(const int count, 
@@ -477,6 +479,7 @@ template<> void Scale<float, CUDAContext>(const int axis,
                                                                               Ydata);
 }
 
+#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _ScaleWithoutBiasHalf(const int n, 
                                       const half* x, 
@@ -538,6 +541,7 @@ template<> void Scale<float16, CUDAContext>(const int axis,
                                                                               inner_dim, 
                                                         reinterpret_cast<half*>(Ydata));
 }
+#endif
 
 template <> void ScaleGrad<float, CUDAContext>(const int axis, 
                                                Tensor* dy, 
@@ -730,6 +734,7 @@ template <> void Concat<float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
+#ifdef WITH_CUDA_FP16
 template <> void Concat<float16, CUDAContext>(const int count, 
                                               const int outer_dim, 
                                               const int inner_dim,
@@ -749,6 +754,7 @@ template <> void Concat<float16, CUDAContext>(const int count,
                                          reinterpret_cast<half*>(y));
     CUDA_POST_KERNEL_CHECK;
 }
+#endif
 
 template <typename T>
 __global__ void _ConcatGrad(const int count, 
@@ -789,6 +795,7 @@ template <> void ConcatGrad<float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
+#ifdef WITH_CUDA_FP16
 template <> void ConcatGrad<float16, CUDAContext>(const int count, 
                                                   const int outer_dim, 
                                                   const int inner_dim,
@@ -808,6 +815,7 @@ template <> void ConcatGrad<float16, CUDAContext>(const int count,
                                             reinterpret_cast<half*>(dx));
     CUDA_POST_KERNEL_CHECK;
 }
+#endif
 
 /******************** common.crop ********************/
 
@@ -1134,6 +1142,7 @@ template <> void Transpose<float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
+#ifdef WITH_CUDA_FP16
 template <> void Transpose<float16, CUDAContext>(const int count, 
                                                  const int ndim, 
                                                  const int* order, 
@@ -1150,6 +1159,7 @@ template <> void Transpose<float16, CUDAContext>(const int count,
                                             reinterpret_cast<half*>(y));
     CUDA_POST_KERNEL_CHECK;
 }
+#endif
 
 template <typename T>
 __global__ void _TransposeGrad(const int count, 
@@ -1187,6 +1197,7 @@ template <> void TransposeGrad<float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
+#ifdef WITH_CUDA_FP16
 template <> void TransposeGrad<float16, CUDAContext>(const int count, 
                                                      const int ndim,
                                                      const int* order, 
@@ -1203,6 +1214,7 @@ template <> void TransposeGrad<float16, CUDAContext>(const int count,
                                                reinterpret_cast<half*>(dx));
     CUDA_POST_KERNEL_CHECK;
 }
+#endif
 
 /******************** loss.l1_loss ********************/
 
@@ -1834,6 +1846,7 @@ template <> void RMSPropUpdate<float, CUDAContext>(const int count,
 
 /******************** utils.cast ********************/
 
+#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _FloatToHalfKernel(const int count, const float* x, half* y) {
     CUDA_KERNEL_LOOP(idx, count) {
@@ -1849,6 +1862,7 @@ template <> void Float2Half<float, CUDAContext>(const int count,
                                                      reinterpret_cast<half*>(y));
      CUDA_POST_KERNEL_CHECK;
 }
+#endif
 
 /******************** utils.compare ********************/
 
@@ -1943,6 +1957,7 @@ template <> void MemoryData<uint8_t, float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
+#ifdef WITH_CUDA_FP16
 template <> void MemoryData<float, float16, CUDAContext>(const int count, 
                                                          const int num, 
                                                          const int channels, 
@@ -1976,6 +1991,7 @@ template <> void MemoryData<uint8_t, float16, CUDAContext>(const int count,
                                                           reinterpret_cast<half*>(y));
     CUDA_POST_KERNEL_CHECK;
 }
+#endif
 
 /******************** utils.one_hot ********************/
 

@@ -37,7 +37,9 @@ void ScaleOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
+#ifdef WITH_CUDA_FP16
     else if (input(0).template IsType<float16>()) RunWithType<float16>();
+#endif
     else LOG(FATAL) << "unsupported input types.";
 }
 

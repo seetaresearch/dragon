@@ -23,12 +23,16 @@ void MemoryDataOp<Context>::RunOnDevice() {
 
     if (input(0).template IsType<float>()) {
         if (data_type == TensorProto_DataType_FLOAT) RunWithType<float, float>();
+#ifdef WITH_CUDA_FP16
         else if (data_type == TensorProto_DataType_FLOAT16) RunWithType<float, float16>();
+#endif
         else LOG(FATAL) << "unsupported input types.";
     } 
     else if (input(0).template IsType<uint8_t>()) {
         if (data_type == TensorProto_DataType_FLOAT) RunWithType<uint8_t, float>();
+#ifdef WITH_CUDA_FP16
         if (data_type == TensorProto_DataType_FLOAT16) RunWithType<uint8_t, float16>();
+#endif
     } 
     else { LOG(FATAL) << "unsupported input types."; }
 }

@@ -1,5 +1,6 @@
 # Dragon: A Computation Graph Virtual Machine Based Deep Learning Framework
-
+![](http://images.cnblogs.com/cnblogs_com/neopenx/690760/o_dragon_logo.png)
+-----
 ### Compile Requirements for C++
 
 0. Google Protocol Buffer

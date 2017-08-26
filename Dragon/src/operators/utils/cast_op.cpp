@@ -4,6 +4,8 @@
 
 namespace dragon {
 
+#ifdef WITH_CUDA_FP16
+
 template <class Context>
 void FloatToHalfOp<Context>::RunOnDevice() {
     CHECK(input(0).template IsType<float>())
@@ -27,5 +29,7 @@ DEPLOY_CUDA(FloatToHalf);
 OPERATOR_SCHEMA(FloatToHalf).NumInputs(1).NumOutputs(1);
 
 NO_GRADIENT(FloatToHalf);
+
+#endif
 
 }    // namespace dragon

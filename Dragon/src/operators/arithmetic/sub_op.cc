@@ -53,18 +53,24 @@ void SubOp<Context>::RunOnDevice() {
     }
     else if (input(0).dim(0) == input(1).dim(0) && input(1).count(1) == 1) {
         if (input(0).template IsType<float>()) BroadcastRunWithType<float>(2);
+#ifdef WITH_CUDA_FP16
         else if (input(0).template IsType<float16>()) BroadcastRunWithType<float16>(2);
+#endif
         else LOG(FATAL) << "unsupported input types.";
     }
     else if (input(0).dim(-1) == input(1).dim(-1) && 
              input(1).count(0, input(1).axis(-1)) == 1) {
         if (input(0).template IsType<float>()) BroadcastRunWithType<float>(1);
+#ifdef WITH_CUDA_FP16
         else if (input(0).template IsType<float16>()) BroadcastRunWithType<float16>(1);
+#endif
         else LOG(FATAL) << "unsupported input types.";
     } 
     else if (input(1).ndim() == 1 && input(1).dim(0) == 1) {
         if (input(0).template IsType<float>()) BroadcastRunWithType<float>(0);
+#ifdef WITH_CUDA_FP16
         else if (input(0).template IsType<float16>()) BroadcastRunWithType<float16>(0);
+#endif
         else LOG(FATAL) << "unsupported input types.";
     } 
     else {
@@ -139,18 +145,24 @@ void SubGradientOp<Context>::RunOnDevice() {
     } 
     else if (input(-1).dim(0) == input(0).dim(0) && input(0).count(1) == 1) {
         if (input(0).template IsType<float>()) BroadcastRunWithType<float>(2);
+#ifdef WITH_CUDA_FP16
         else if (input(0).template IsType<float16>()) BroadcastRunWithType<float16>(2);
+#endif
         else LOG(FATAL) << "unsupported input types.";
     }
     else if (input(-1).dim(-1) == input(0).dim(-1) && 
              input(0).count(0, input(0).axis(-1)) == 1) {
         if (input(0).template IsType<float>()) BroadcastRunWithType<float>(1);
+#ifdef WITH_CUDA_FP16
         else if (input(0).template IsType<float16>()) BroadcastRunWithType<float16>(1);
+#endif
         else LOG(FATAL) << "unsupported input types.";
     } 
     else if (input(0).ndim() == 1 && input(0).dim(0) == 1) {
         if (input(0).template IsType<float>()) BroadcastRunWithType<float>(0);
+#ifdef WITH_CUDA_FP16
         else if (input(0).template IsType<float16>()) BroadcastRunWithType<float16>(0);
+#endif
         else LOG(FATAL) << "unsupported input types.";
     }
     else {
