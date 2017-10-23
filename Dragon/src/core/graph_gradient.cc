@@ -45,7 +45,7 @@ string GraphGradientMaker::GetOperatorName() {
 }
 
 GraphDef GraphGradientMaker::Make() {
-    CHECK(!op_prefix_.empty()) << "please set a prefix before making.";
+    CHECK(!op_prefix_.empty()) << "\nPlease set a prefix before making.";
     Map<string, int> inputs_count, grads_count;
     Set<string> all_split_grads;
 

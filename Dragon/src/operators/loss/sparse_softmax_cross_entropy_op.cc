@@ -47,14 +47,14 @@ void SparseSoftmaxCrossEntropyOp<Context>::RunOnDevice() {
     outer_dim = input(0).count(0, axis);
     inner_dim = input(0).count(axis + 1);
     CHECK_EQ(outer_dim * inner_dim, input(1).count())
-        << "\nnumber of predictions must match the number of labels.";
+        << "\nNumber of predictions must match the number of labels.";
     valid.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
     losses.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
     softmax_op->Run();
     prob = ws()->GetTensor("_t_" + anchor() + "_softmax_prob");
     
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(SparseSoftmaxCrossEntropy);
@@ -107,7 +107,7 @@ void SparseSoftmaxCrossEntropyGradientOp<Context>::RunOnDevice() {
     valid.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(SparseSoftmaxCrossEntropyGradient);

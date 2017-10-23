@@ -24,7 +24,7 @@ void ROIPoolingOp<Context>::RunOnDevice() {
     mask->Reshape(dims);
 
     if (input(0).template IsType<float>()) return RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(ROIPooling);
@@ -51,7 +51,7 @@ void ROIPoolingGradientOp<Context>::RunOnDevice() {
     mask = ws()->GetTensor("_t_" + anchor() + "_roi_pool_mask");
 
     if (input(0).template IsType<float>()) return RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 template <class Context>

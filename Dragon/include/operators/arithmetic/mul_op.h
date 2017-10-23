@@ -38,6 +38,33 @@ class MulGradientOp final : public Operator<Context> {
     Tensor* bcast_multiplier;
 };
 
+template <class Context>
+class RMulOp final : public Operator<Context> {
+ public:
+    USE_SIMPLE_CTOR_DTOR(RMulOp);
+
+    void RunOnDevice() override;
+    template <typename T> void EltwiseRunWithType();
+    template <typename T> void BroadcastRunWithType(int type);
+
+ protected:
+    Tensor* bcast_multiplier;
+};
+
+template <class Context>
+class RMulGradientOp final : public Operator<Context> {
+ public:
+    USE_SIMPLE_CTOR_DTOR(RMulGradientOp);
+
+    void ShareGradient() override;
+    void RunOnDevice() override;
+    template <typename T> void EltwiseRunWithType();
+    template <typename T> void BroadcastRunWithType(int type);
+
+ protected:
+    Tensor* bcast_multiplier;
+};
+
 }    // namespace dragon
 
 #endif    // DRAGON_OPERATORS_ARITHMETIC_MUL_OP_H_

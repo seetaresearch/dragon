@@ -45,7 +45,7 @@ using Set = std::unordered_set<Value> ;
 #define CONCATENATE_IMPL(s1, s2) s1##s2
 #define CONCATENATE(s1, s2) CONCATENATE_IMPL(s1,s2)
 #define ANONYMOUS_VARIABLE(str) CONCATENATE(str, __LINE__)
-#define NOT_IMPLEMENTED LOG(FATAL) << "this moudle is not implemented"
+#define NOT_IMPLEMENTED LOG(FATAL) << "This module has not been implemented yet."
 
 }    // namespace dragon
 

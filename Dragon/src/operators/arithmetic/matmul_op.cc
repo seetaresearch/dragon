@@ -24,7 +24,7 @@ void MatmulOp<Context>::RunWithType() {
 template <class Context>
 void MatmulOp<Context>::RunOnDevice() {
     CHECK(input(0).ndim() == input(1).ndim())
-        << "both matrices must have the same number of dimensions.";
+        << "Both matrices must have the same number of dimensions.";
     CHECK_GE(input(0).ndim(), 2)
         << "Tensor(" << input(0).name() + ") must be a matrix"
         << "(or rank > 2, representing batches of matrices).";
@@ -51,7 +51,7 @@ void MatmulOp<Context>::RunOnDevice() {
 #ifdef WITH_CUDA_FP16
     else if (input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(Matmul);
@@ -85,7 +85,7 @@ void MatmulGradientOp<Context>::RunWithType() {
 template <class Context>
 void MatmulGradientOp<Context>::RunOnDevice() {
     CHECK(input(0).ndim() == input(1).ndim())
-        << "both matrices must have the same number of dimensions.";
+        << "Both matrices must have the same number of dimensions.";
     CHECK_GE(input(0).ndim(), 2)
         << "Tensor(" << input(0).name() + ") must be a matrix"
         << "(or rank > 2, representing batches of matrices).";
@@ -110,7 +110,7 @@ void MatmulGradientOp<Context>::RunOnDevice() {
 #ifdef WITH_CUDA_FP16
     else if (input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 template <class Context>

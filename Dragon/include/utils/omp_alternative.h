@@ -14,7 +14,7 @@
 
 namespace dragon {
 
-#define OMP_MIN_ITERATORS_PER_CORE 256
+#define OMP_MIN_ITERATORS_PER_CORE 200000
 
 inline int GET_OMP_THREADS(const int N) { 
    int threads = std::max(N / OMP_MIN_ITERATORS_PER_CORE, 1); 

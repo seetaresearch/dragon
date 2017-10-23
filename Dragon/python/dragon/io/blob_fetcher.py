@@ -13,7 +13,24 @@ from dragon.config import logger
 from .utils import GetProperty
 
 class BlobFetcher(Process):
+    """
+    BlobFetcher is deployed to queue blobs from `DataTransformer`_.
+
+    It is supported to form ``NCHW`` image blobs and ``1D`` label blobs.
+    """
     def __init__(self, **kwargs):
+        """Construct a ``BlobFetcher``.
+
+        Parameters
+        ----------
+        batch_size : int
+            The size of a training batch.
+        partition : boolean
+            Whether to partition batch. Default is ``False``.
+        prefetch : int
+            The prefetch count. Default is ``5``.
+
+        """
         super(BlobFetcher, self).__init__()
         self._batch_size = GetProperty(kwargs, 'batch_size', 100)
         self._partition  = GetProperty(kwargs, 'partition', False)
@@ -30,6 +47,14 @@ class BlobFetcher(Process):
         atexit.register(cleanup)
 
     def im_list_to_blob(self):
+        """Get image and label blobs.
+
+        Returns
+        -------
+        tuple
+            The blob of image and labels.
+
+        """
         datum = self.Q_in.get()
         im_blob = []
         label_blob = np.zeros((self._batch_size, len(datum[1])), dtype=np.float32) \
@@ -44,5 +69,12 @@ class BlobFetcher(Process):
         return (im_blob, label_blob)
 
     def run(self):
+        """Start the process.
+
+        Returns
+        -------
+        None
+
+        """
         while True:
             self.Q_out.put(self.im_list_to_blob())

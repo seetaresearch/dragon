@@ -32,14 +32,14 @@ void BiasAddOp<Context>::RunOnDevice() {
 
     if (data_format == "NCHW") {
         if (input(0).template IsType<float>()) NCHWRunWithType<float>();
-        else LOG(FATAL) << "unsupported input types.";
+        else LOG(FATAL) << "Unsupported input types.";
     } 
     else if (data_format == "NHWC") {
         if (input(0).template IsType<float>()) NHWCRunWithType<float>();
-        else LOG(FATAL) << "unsupported input types.";
+        else LOG(FATAL) << "Unsupported input types.";
     } 
     else {
-        LOG(FATAL) << "unknown data format: " << data_format;
+        LOG(FATAL) << "Unknown data format: " << data_format;
     }
 }
 
@@ -79,14 +79,14 @@ template <class Context>
 void BiasAddGradientOp<Context>::RunOnDevice() {
     if (data_format == "NCHW") {
         if (input(0).template IsType<float>()) NCHWRunWithType<float>();
-        else LOG(FATAL) << "unsupported input types.";
+        else LOG(FATAL) << "Unsupported input types.";
     } 
     else if (data_format == "NHWC") {
         if (input(0).template IsType<float>()) NHWCRunWithType<float>();
-        else LOG(FATAL) << "unsupported input types.";
+        else LOG(FATAL) << "Unsupported input types.";
     } 
     else {
-        LOG(FATAL) << "unknown data format: " << data_format;
+        LOG(FATAL) << "Unknown data format: " << data_format;
     }
 
     if (output(0)->name() != "ignore") {

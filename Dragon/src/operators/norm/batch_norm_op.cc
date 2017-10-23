@@ -130,7 +130,7 @@ void BatchNormOp<Context>::RunOnDevice() {
 #ifdef WITH_CUDA_FP16
     else if (input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(BatchNorm);
@@ -252,7 +252,7 @@ void BatchNormGradientOp<Context>::RunOnDevice() {
 #ifdef WITH_CUDA_FP16
     else if (input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(BatchNormGradient);
@@ -271,5 +271,16 @@ class GetBatchNormGradient final : public GradientMakerBase {
     }
 };
 REGISTER_GRADIENT(BatchNorm, GetBatchNormGradient);
+
+class GetBNGradient final : public GradientMakerBase {
+ public:
+    GRADIENT_MAKER_CTOR(GetBNGradient);
+    vector<OperatorDef> MakeDefs() override {
+        return SingleDef(def.type() + "Gradient", "",
+            vector<string> {I(0), I(1), I(2), I(3), GO(0)},
+            vector<string> {GI(0), GI(3), GI(4)});
+    }
+};
+REGISTER_GRADIENT(BN, GetBNGradient);
 
 }    // namespace dragon

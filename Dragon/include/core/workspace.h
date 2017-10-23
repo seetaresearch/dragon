@@ -25,10 +25,8 @@ class Workspace{
     typedef Map<string, unique_ptr<GraphBase> > GraphMap;
     typedef Map<string, TensorFiller> FillerMap;
     typedef Map<string, string> RenameMap;
-    typedef Map<string, vector<OperatorBase*> > RecomputeMap;
 
-    Workspace(): root_folder_(".") { init(); }
-    Workspace(string root_folder) : root_folder_(root_folder) { init(); }
+    Workspace() { init(); }
     ~Workspace();
 
     void init() { 
@@ -122,7 +120,7 @@ class Workspace{
             buffer_map_[category].pop();
             return GetTensor(name);
         }
-        LOG(FATAL) << "buffers of [" << category << "] "
+        LOG(FATAL) << "Buffers of [" << category << "] "
                    << "are not enough, add more if necessary.";
         return nullptr;
     }
@@ -161,27 +159,10 @@ class Workspace{
     }
 
     /******************** Utility ********************/
-    
-    inline const string& GetRootFolder() const { return root_folder_; }
 
     inline void CreateRename(const string& old_tensor,
                              const string& new_tensor) {
         rename_map_[old_tensor] = new_tensor;
-    }
-
-    inline void AddRecompute(const string& tensor, OperatorBase* op) {
-        if (!recompute_map_.count(tensor)) {
-            recompute_map_[tensor] = vector<OperatorBase*>();
-        }
-        recompute_map_[tensor].push_back(op);
-    }
-
-    inline vector<OperatorBase*> GetRecompute(const string& tensor) {
-        if (recompute_map_.count(tensor)) {
-            return recompute_map_[tensor];
-        } else {
-            return vector<OperatorBase*>();
-        }
     }
 
  private:
@@ -190,9 +171,7 @@ class Workspace{
     LockMap lock_map_;
     GraphMap graph_map_;
     FillerMap filler_map_;
-    RenameMap rename_map_;   
-    RecomputeMap recompute_map_;
-    string root_folder_;
+    RenameMap rename_map_;
 };
 
 }    // namespace dragon

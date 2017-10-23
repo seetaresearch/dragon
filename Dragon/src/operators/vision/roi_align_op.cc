@@ -26,7 +26,7 @@ void ROIAlignOp<Context>::RunOnDevice() {
     mask_w->Reshape(dims);
 
     if (input(0).template IsType<float>()) return RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(ROIAlign);
@@ -53,7 +53,7 @@ void ROIAlignGradientOp<Context>::RunOnDevice() {
     mask_w = ws()->GetTensor("_t_" + anchor() + "_roi_align_mask_w");
 
     if (input(0).template IsType<float>()) return RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 template <class Context>

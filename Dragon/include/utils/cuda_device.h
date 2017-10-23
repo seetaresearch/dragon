@@ -15,7 +15,7 @@
 #include <cuda.h>
 
 #ifdef WITH_MPI_NCCL
-#include <nccl/nccl.h>
+#include <nccl.h>
 #endif  // WITH_MPI_NCCL
 
 #include "core/common.h"
@@ -24,6 +24,12 @@ namespace dragon {
 
 static const int CUDA_NUM_THREADS = 1024;
 #define MAX_GPUS 8
+
+#define CUDA_VERSION_MIN(major, minor, patch) \
+    (CUDA_VERSION >= (major * 1000 + minor * 100 + patch))
+
+#define CUDA_VERSION_MAX(major, minor, patch) \
+    (CUDA_VERSION < (major * 1000 + minor * 100 + patch))
 
 #define CUDA_CHECK(condition) \
   do { \
@@ -60,6 +66,10 @@ inline int GET_BLOCKS(const int N) {
 }
 
 #define CUDA_POST_KERNEL_CHECK CUDA_CHECK(cudaPeekAtLastError())
+
+#if CUDA_VERSION_MAX(9, 0, 0)
+#define __hdiv hdiv
+#endif
 
 inline int NUM_DEVICES() {
     static int count = -1;

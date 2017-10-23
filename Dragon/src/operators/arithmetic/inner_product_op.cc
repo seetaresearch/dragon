@@ -11,9 +11,9 @@ void InnerProductOp<Context>::TransRunWithType() {
     TENSOR_FILL(input(1), weight_shape);
     if (InputSize() > 2) TENSOR_FILL(input(2), bias_shape);
     CHECK(input(1).ndim() == 2 && input(1).dim(1) == K)
-        << "inner_product accepts weights as shape [num_output, dim]\n"
-        << "input dims are (" << M << ", " << K << ")\n"
-        << "weight dims are " << input(1).dim_string();
+        << "\nWeights should shape as [num_output, dim].\n"
+        << "Input dims are (" << M << ", " << K << ").\n"
+        << "Weights dims are " << input(1).dim_string();
     output(0)->Reshape(vector<TIndex>({ M, num_output }));
     if (InputSize() > 2) INIT_MULTIPLIER(bias_multiplier, M);
 
@@ -36,9 +36,9 @@ void InnerProductOp<Context>::NoTransRunWithType() {
     TENSOR_FILL(input(1), weight_shape);
     if (InputSize() > 2) TENSOR_FILL(input(2), bias_shape);
     CHECK(input(1).ndim() == 2 && input(1).dim(0) == K)
-        << "inner_product accepts weights as shape [dim, num_output]\n"
-        << "input dims are (" << M << ", " << K << ")\n"
-        << "weight dims are " << input(1).dim_string();
+        << "\nWeights should shape as [num_output, dim].\n"
+        << "Input dims are (" << M << ", " << K << ").\n"
+        << "Weights dims are " << input(1).dim_string();
     output(0)->Reshape(vector<TIndex>({ M, num_output }));
     if (InputSize() > 2) INIT_MULTIPLIER(bias_multiplier, M);
 
@@ -60,11 +60,11 @@ void InnerProductOp<Context>::RunOnDevice() {
 
     if (transW) {
         if (input(0).template IsType<float>()) TransRunWithType<float>();
-        else LOG(FATAL) << "unsupported input types.";
+        else LOG(FATAL) << "Unsupported input types.";
     } 
     else {
         if (input(0).template IsType<float>()) NoTransRunWithType<float>();
-        else LOG(FATAL) << "unsupported input types.";
+        else LOG(FATAL) << "Unsupported input types.";
     }
 }
 

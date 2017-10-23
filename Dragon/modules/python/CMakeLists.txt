@@ -23,6 +23,9 @@ endif()
 if (UNIX AND WITH_BLAS)
     TARGET_LINK_LIBRARIES(${PROJECT_NAME}_python openblas)
 endif()
+if (UNIX AND WITH_MPI_NCCL)
+    TARGET_LINK_LIBRARIES(${PROJECT_NAME}_python nccl)
+endif()
 
 # ---[ link platforms
 if(UNIX)

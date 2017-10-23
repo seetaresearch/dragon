@@ -1,20 +1,39 @@
 # --------------------------------------------------------
-# Caffe for Dragon
+# Dragon
 # Copyright(c) 2017 SeetaTech
 # Written by Ting Pan
 # --------------------------------------------------------
 
-from dragon.core.tensor import Tensor
 import dragon.ops as ops
+from dragon.core.tensor import Tensor
 
-from .layer import Layer
+from ..layer import Layer
 
 class InnerProductLayer(Layer):
+    """The implementation of ``InnerProductLayer``.
+
+    Parameters
+    ----------
+    num_output : int
+         The output dim. Refer `InnerProductParameter.num_output`_.
+    bias_term : boolean
+         Whether to use bias. Refer `InnerProductParameter.bias_term`_.
+    weight_filler : caffe_pb2.FillerParameter
+         The filler of weight. Refer `InnerProductParameter.weight_filler`_.
+    bias_filler : caffe_pb2.FillerParameter
+         The filler of bias. Refer `InnerProductParameter.bias_filler`_.
+    axis : int
+        The start axis to calculate. Refer `InnerProductParameter.axis`_.
+    transpose : boolean
+        Whether to transpose the weights. Refer `InnerProductParameter.transpose`_.
+
+    """
     def __init__(self, LayerParameter):
         super(InnerProductLayer, self).__init__(LayerParameter)
         param = LayerParameter.inner_product_param
         self._param = {'axis': param.axis,
-                       'num_output': param.num_output}
+                       'num_output': param.num_output,
+                       'TransW': not param.transpose}
         weight = Tensor(LayerParameter.name + '@param0')
         weight_diff = Tensor(LayerParameter.name + '@param0_grad')
         self.Fill(weight, param, 'weight_filler')
@@ -32,6 +51,18 @@ class InnerProductLayer(Layer):
 
 
 class AccuracyLayer(Layer):
+    """The implementation of ``AccuracyLayer``.
+
+    Parameters
+    ----------
+    top_k : int
+        The top-k accuracy. Refer `AccuracyParameter.top_k`_.
+    axis : int
+        The axis of classes. Refer `AccuracyParameter.axis`_.
+    ignore_label : int
+        The label to ignore. Refer `AccuracyParameter.ignore_label`_.
+
+    """
     def __init__(self, LayerParameter):
         super(AccuracyLayer, self).__init__(LayerParameter)
         param = LayerParameter.accuracy_param
@@ -45,6 +76,18 @@ class AccuracyLayer(Layer):
 
 
 class PythonLayer(Layer):
+    """The implementation of ``PythonLayer``.
+
+    Parameters
+    ----------
+    module : str
+        The module. Refer `PythonParameter.module`_.
+    layer : str
+        The class name of layer. Refer `PythonParameter.layer`_.
+    param_str : str
+        The str describing parameters. Refer `PythonParameter.param_str`_.
+
+    """
     def __init__(self, LayerParameter):
         super(PythonLayer, self).__init__(LayerParameter)
         param = LayerParameter.python_param
@@ -58,6 +101,16 @@ class PythonLayer(Layer):
 
 
 class EltwiseLayer(Layer):
+    """The implementation of ``EltwiseLayer``.
+
+    Parameters
+    ----------
+    operation : EltwiseParameter.EltwiseOp
+        The operation. Refer `EltwiseParameter.operation`_.
+    coeff : list of float
+        The coefficients. Refer `EltwiseParameter.coeff`_.
+
+    """
     def __init__(self, LayerParameter):
         super(EltwiseLayer, self).__init__(LayerParameter)
         param = LayerParameter.eltwise_param
@@ -71,6 +124,9 @@ class EltwiseLayer(Layer):
 
 
 class AddLayer(Layer):
+    """
+    The extended implementation of ``EltwiseLayer``.
+    """
     def __init__(self, LayerParameter):
         super(AddLayer, self).__init__(LayerParameter)
 
@@ -80,6 +136,14 @@ class AddLayer(Layer):
 
 
 class ConcatLayer(Layer):
+    """The implementation of ``ConcatLayer``.
+
+    Parameters
+    ----------
+    axis : int
+        The axis to concatenate. Refer `ConcatParameter.axis`_.
+
+    """
     def __init__(self, LayerParameter):
         super(ConcatLayer, self).__init__(LayerParameter)
         param = LayerParameter.concat_param
@@ -91,6 +155,16 @@ class ConcatLayer(Layer):
 
 
 class DenseConcatLayer(Layer):
+    """The extended implementation for `DenseNet`_.
+
+    Parameters
+    ----------
+    axis : int
+        The axis to concatenate. Refer `ConcatParameter.axis`_.
+    growth_rate : int
+        The growth rate.
+
+    """
     def __init__(self, LayerParameter):
         super(DenseConcatLayer, self).__init__(LayerParameter)
         param = LayerParameter.dense_concat_param
@@ -103,6 +177,16 @@ class DenseConcatLayer(Layer):
 
 
 class CropLayer(Layer):
+    """The implementation of ``CropLayer``.
+
+    Parameters
+    ----------
+    axis : int
+        The start axis. Refer `CropParameter.axis`_.
+    offset : list of int
+        The offsets. Refer `CropParameter.offset`_.
+
+    """
     def __init__(self, LayerParameter):
         super(CropLayer, self).__init__(LayerParameter)
         param = LayerParameter.crop_param
@@ -116,6 +200,14 @@ class CropLayer(Layer):
 
 
 class ReshapeLayer(Layer):
+    """The implementation of ``ReshapeLayer``.
+
+    Parameters
+    ----------
+    shape : list of int
+        The output shape. Refer `ReshapeParameter.shape`_.
+
+    """
     def __init__(self, LayerParameter):
         super(ReshapeLayer, self).__init__(LayerParameter)
         param = LayerParameter.reshape_param
@@ -129,13 +221,18 @@ class ReshapeLayer(Layer):
 
 
 class PermuteLayer(Layer):
+    """The implementation of ``PermuteLayer``.
 
-    """ Introduced in SSD by Wei Liu """
+    Parameters
+    ----------
+    order : list of int
+        The permutation. Refer `PermuteParameter.order`_.
 
+    """
     def __init__(self, LayerParameter):
         super(PermuteLayer, self).__init__(LayerParameter)
         param = LayerParameter.permute_param
-        self._param = {'perm': [int(element) for element in param.order]}
+        self._param = {'perms': [int(element) for element in param.order]}
 
     def Setup(self, bottom):
         super(PermuteLayer, self).Setup(bottom)
@@ -144,12 +241,23 @@ class PermuteLayer(Layer):
 
 
 class FlattenLayer(Layer):
+    """The implementation of ``FlattenLayer``.
+
+    Parameters
+    ----------
+    axis : int
+        The start axis. Refer `FlattenParameter.axis`_.
+    end_axis : int
+        The end axis. Refer `FlattenParameter.end_axis`_.
+
+    """
     def __init__(self, LayerParameter):
         super(FlattenLayer, self).__init__(LayerParameter)
         param = LayerParameter.flatten_param
         axis = param.axis; end_axis = param.end_axis
         num_axes =  end_axis - axis + 1 if end_axis != -1 else -1
         self._param = {'axis': axis, 'num_axes': num_axes}
+
 
     def Setup(self, bottom):
         super(FlattenLayer, self).Setup(bottom)
@@ -158,6 +266,14 @@ class FlattenLayer(Layer):
 
 
 class SoftmaxLayer(Layer):
+    """The implementation of ``SoftmaxLayer``.
+
+    Parameters
+    ----------
+    axis : int
+        The axis to perform softmax. Refer `SoftmaxParameter.axis`_.
+
+    """
     def __init__(self, LayerParameter):
         super(SoftmaxLayer, self).__init__(LayerParameter)
         param = LayerParameter.softmax_param
@@ -170,6 +286,18 @@ class SoftmaxLayer(Layer):
 
 
 class BatchNormLayer(Layer):
+    """The implementation of ``BatchNormLayer``.
+
+    Parameters
+    ----------
+    use_global_stats : boolean
+        Refer `BatchNormParameter.use_global_stats`_.
+    moving_average_fraction : float
+        Refer `BatchNormParameter.moving_average_fraction`_.
+    eps : float
+        Refer `BatchNormParameter.eps`_.
+
+    """
     def __init__(self, LayerParameter):
         super(BatchNormLayer, self).__init__(LayerParameter)
         param = LayerParameter.batch_norm_param
@@ -193,6 +321,24 @@ class BatchNormLayer(Layer):
 
 
 class BatchRenormLayer(Layer):
+    """The implementation of ``BatchRenormLayer``.
+
+    Parameters
+    ----------
+    use_global_stats : boolean
+        Refer ``BatchRenormParameter.use_global_stats``.
+    moving_average_fraction : float
+        Refer ``BatchRenormParameter.moving_average_fraction``.
+    eps : float
+        Refer ``BatchRenormParameter.eps``.
+    r_max : float
+        Refer ``BatchRenormParameter.r_max``.
+    d_max : float
+        Refer ``BatchRenormParameter.d_max``.
+    t_delta : float
+        Refer ``BatchRenormParameter.t_delta``.
+
+    """
     def __init__(self, LayerParameter):
         super(BatchRenormLayer, self).__init__(LayerParameter)
         param = LayerParameter.batch_renorm_param
@@ -216,6 +362,11 @@ class BatchRenormLayer(Layer):
 
 
 class InstanceNormLayer(Layer):
+    """
+    The implementation of ``InstanceNormLayer``.
+
+    Introduced by `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_
+    """
     def __init__(self, LayerParameter):
         super(InstanceNormLayer, self).__init__(LayerParameter)
 
@@ -225,6 +376,22 @@ class InstanceNormLayer(Layer):
 
 
 class ScaleLayer(Layer):
+    """The implementation of ``ScaleLayer``.
+
+    Parameters
+    ----------
+    axis : int
+        The start axis. Refer `ScaleParameter.axis`_.
+    num_axes : int
+        The number of axes. Refer `ScaleParameter.num_axes`_.
+    filler : FillerParameter
+        The filler of scale parameter. Refer `ScaleParameter.filler`_.
+    bias_term : boolean
+        Whether to use bias. Refer `ScaleParameter.bias_term`_.
+    bias_filler : FillerParameter
+        The filler of bias parameter. Refer `ScaleParameter.bias_filler`_.
+
+    """
     def __init__(self, LayerParameter):
         super(ScaleLayer, self).__init__(LayerParameter)
         param = LayerParameter.scale_param
@@ -249,9 +416,22 @@ class ScaleLayer(Layer):
 
 
 class BNLayer(Layer):
+    """The implementation of ``BNLayer``.
 
-    """ Introduced in some forked caffe or CUDNN """
+    Parameters
+    ----------
+    use_global_stats : boolean
+        Refer `BatchNormParameter.use_global_stats`_.
+    moving_average_fraction : float
+        Refer `BatchNormParameter.moving_average_fraction`_.
+    eps : float
+        Refer `BatchNormParameter.eps`_.
+    filler : FillerParameter
+        The filler of scale parameter. Refer `ScaleParameter.filler`_.
+    bias_filler : FillerParameter
+        The filler of bias parameter. Refer `ScaleParameter.bias_filler`_.
 
+    """
     def __init__(self, LayerParameter):
         super(BNLayer, self).__init__(LayerParameter)
         bn_param = LayerParameter.batch_norm_param
@@ -269,7 +449,7 @@ class BNLayer(Layer):
 
         if scale_param.HasField('filler'):
             self.Fill(scale, scale_param, 'filler')
-        else: scale.Uniform(low=0.0, high=1.0)
+        else: scale.Constant(value=1.0)
         self.Fill(bias, scale_param, 'bias_filler')
         self.norm_blobs = [{'data': mean, 'diff': None},
                            {'data': var, 'diff': None}]
@@ -284,9 +464,20 @@ class BNLayer(Layer):
 
 
 class NormalizeLayer(Layer):
+    """The implementation of ``NormalizeLayer``.
 
-    """ Introduced in SSD by Wei Liu """
+    Parameters
+    ----------
+    across_spatial : boolean
+        Whether to stat spatially. Refer `NormalizeParameter.across_spatial`_.
+    scale_filler : FillerParameter
+        The filler of scale parameter. Refer `NormalizeParameter.scale_filler`_.
+    channel_shared : boolean
+        Whether to scale across channels. Refer `NormalizeParameter.channel_shared`_.
+    eps : float
+        The eps. Refer `NormalizeParameter.eps`_.
 
+    """
     def __init__(self, LayerParameter):
         super(NormalizeLayer, self).__init__(LayerParameter)
         param = LayerParameter.normalize_param
@@ -311,6 +502,14 @@ class NormalizeLayer(Layer):
 
 
 class TileLayer(Layer):
+    """The extended implementation of ``TileLayer``.
+
+    Parameters
+    ----------
+    multiples : caffe_pb2.BlobShape
+        The multiples. Refer `TileParameter.multiples`_.
+
+    """
     def __init__(self, LayerParameter):
         super(TileLayer, self).__init__(LayerParameter)
         param = LayerParameter.tile_param
@@ -324,6 +523,14 @@ class TileLayer(Layer):
 
 
 class ExpandDimsLayer(Layer):
+    """The implementation of ``ExpandDimsLayer``.
+
+    Parameters
+    ----------
+    axis : int
+        This axis to expand at. Refer `ExpandDimsParameter.axis`_.
+
+    """
     def __init__(self, LayerParameter):
         super(ExpandDimsLayer, self).__init__(LayerParameter)
         param = LayerParameter.expand_dims_param
@@ -336,6 +543,28 @@ class ExpandDimsLayer(Layer):
 
 
 class ProposalLayer(Layer):
+    """The implementation of ``ProposalLayer``.
+
+    Parameters
+    ----------
+    feat_stride : int
+        The stride of input. Refer `ProposalParameter.feat_stride`_.
+    base_size : int
+        The base size of anchors. Refer `ProposalParameter.base_size`_.
+    min_size : int
+        The min size of anchors. Refer `ProposalParameter.min_size`_.
+    ratio : list of float
+        The ratios of anchors. Refer `ProposalParameter.ratio`_.
+    scale : list of float
+        The scales of anchors. Refer `ProposalParameter.scale`_.
+    pre_nms_topn : int
+         The num of anchors before nms. Refer `ProposalParameter.pre_nms_topn`_.
+    post_nms_topn : int
+        The num of anchors after nms. Refer `ProposalParameter.post_nms_topn`_.
+    nms_thresh : float
+        The threshold of nms. Refer `ProposalParameter.nms_thresh`_.
+
+    """
     def __init__(self, LayerParameter):
         super(ProposalLayer, self).__init__(LayerParameter)
         param = LayerParameter.proposal_param
@@ -345,8 +574,8 @@ class ProposalLayer(Layer):
                        'pre_nms_topn': param.pre_nms_topn,
                        'post_nms_topn': param.post_nms_topn,
                        'nms_thresh': param.nms_thresh,
-                       'ratio': param.ratio,
-                       'scale': param.scale}
+                       'ratios': param.ratio,
+                       'scales': param.scale}
 
     def Setup(self, bottom):
         super(ProposalLayer, self).Setup(bottom)

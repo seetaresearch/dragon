@@ -16,22 +16,24 @@ enum PoolingMode { MAX_POOLING, AVG_POOLING };
 template <class Context>
 class PoolingOp: public Operator <Context> {
  public:
-    PoolingOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws) {
-
-        vector<int> ks = OperatorBase::GetRepeatedArg<int>("kernel_size");
-        for (int i = 0; i < 2; i++)
-            kernel_size.push_back(i < ks.size() ? ks[i] : ks[0]);
-
-        vector<int> s = OperatorBase::GetRepeatedArg<int>("stride");
-        for (int i = 0; i < 2; i++)
-            stride.push_back(i < s.size() ? s[i] : s[0]);
-
-        vector<int> p = OperatorBase::GetRepeatedArg<int>("pad");
-        for (int i = 0; i < 2; i++)
-            pad.push_back(i < p.size() ? p[i] : p[0]);
-
-        mode = PoolingMode(OperatorBase::GetSingleArg<int>("mode", MAX_POOLING));
+     PoolingOp(const OperatorDef& op_def, Workspace* ws)
+         : Operator<Context>(op_def, ws),
+           mode(PoolingMode(OperatorBase::GetSingleArg<int>("mode", MAX_POOLING))),
+           global_pooling(OperatorBase::GetSingleArg<bool>("global_pooling", false)) {
+         vector<int> ks = OperatorBase::GetRepeatedArg<int>("kernel_size");
+         vector<int> s = OperatorBase::GetRepeatedArg<int>("stride");
+         vector<int> p = OperatorBase::GetRepeatedArg<int>("pad");
+         for (int i = 0; i < 2; i++) {
+             if (global_pooling) {
+                 kernel_size.push_back(-1);
+                 stride.push_back(1);
+                 pad.push_back(0);
+             } else {
+                 kernel_size.push_back(i < ks.size() ? ks[i] : ks[0]);
+                 stride.push_back(i < s.size() ? s[i] : s[0]);
+                 pad.push_back(i < p.size() ? p[i] : p[0]);
+             }
+         }
     }
 
     void Reshape();
@@ -45,27 +47,30 @@ class PoolingOp: public Operator <Context> {
     PoolingMode mode;
     TIndex num, channels, height, width;
     TIndex pool_height, pool_width;
+    bool global_pooling;
 };
 
 template <class Context>
 class PoolingGradientOp: public Operator<Context> {
  public:
     PoolingGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws) {
-
-        vector<int> ks = OperatorBase::GetRepeatedArg<int>("kernel_size");
-        for (int i = 0; i < 2; i++)
-            kernel_size.push_back(i < ks.size() ? ks[i] : ks[0]);
-
-        vector<int> s = OperatorBase::GetRepeatedArg<int>("stride");
-        for (int i = 0; i < 2; i++)
-            stride.push_back(i < s.size() ? s[i] : s[0]);
-
-        vector<int> p = OperatorBase::GetRepeatedArg<int>("pad");
-        for (int i = 0; i < 2; i++)
-            pad.push_back(i < p.size() ? p[i] : p[0]);
-
-        mode = PoolingMode(OperatorBase::GetSingleArg<int>("mode", MAX_POOLING));
+         : Operator<Context>(op_def, ws),
+           mode(PoolingMode(OperatorBase::GetSingleArg<int>("mode", MAX_POOLING))),
+           global_pooling(OperatorBase::GetSingleArg<bool>("global_pooling", false)) {
+         vector<int> ks = OperatorBase::GetRepeatedArg<int>("kernel_size");
+         vector<int> s = OperatorBase::GetRepeatedArg<int>("stride");
+         vector<int> p = OperatorBase::GetRepeatedArg<int>("pad");
+         for (int i = 0; i < 2; i++) {
+             if (global_pooling) {
+                 kernel_size.push_back(-1);
+                 stride.push_back(1);
+                 pad.push_back(0);
+             } else {
+                 kernel_size.push_back(i < ks.size() ? ks[i] : ks[0]);
+                 stride.push_back(i < s.size() ? s[i] : s[0]);
+                 pad.push_back(i < p.size() ? p[i] : p[0]);
+             }
+         }
     }
 
     void Reshape();
@@ -79,6 +84,7 @@ class PoolingGradientOp: public Operator<Context> {
     PoolingMode mode;
     TIndex num, channels, height, width;
     TIndex pool_height, pool_width;
+    bool global_pooling;
 };
 
 #ifdef WITH_CUDNN

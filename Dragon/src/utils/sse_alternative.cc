@@ -2,8 +2,8 @@
 
 #include <cmath>
 #include <algorithm>
+#include <iostream>
 
-#include "utils/omp_alternative.h"
 #include "utils/sse_alternative.h"
 
 namespace dragon {
@@ -13,9 +13,6 @@ namespace sse {
 template<> void Set(const int n, const float alpha, float* x) {
     __m128 scalar = SSE_FP32_SCALAR(alpha);
     int32_t i = 0;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
-#endif
     SSE_LOOP1(i, n) SSE_FP32_STORE(x + i, scalar);
     SSE_LOOP2(i, n) x[i] = alpha;
 }
@@ -24,9 +21,6 @@ template<> void Set(const int n, const int alpha, int* x) {
     __m128i scalar = SSE_INT32_SCALAR(alpha);
     __m128i* x1 = reinterpret_cast<__m128i*>(x);
     int32_t i = 0;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
-#endif
     SSE_LOOP1(i, n) SSE_INT128_STORE(x1++, scalar);
     SSE_LOOP2(i, n) x[i] = alpha;
 }
@@ -34,9 +28,6 @@ template<> void Set(const int n, const int alpha, int* x) {
 template<> void Add(const int n, const float* a, const float* b, float* y) {
     __m128 x1, y1, z1;
     int32_t i = 0;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
-#endif
     SSE_LOOP1(i, n) {
         x1 = SSE_FP32_LOAD(a + i);
         y1 = SSE_FP32_LOAD(b + i);
@@ -49,9 +40,6 @@ template<> void Add(const int n, const float* a, const float* b, float* y) {
 template<> void Sub(const int n, const float* a, const float* b, float* y) {
     __m128 x1, y1, z1;
     int32_t i = 0;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
-#endif
     SSE_LOOP1(i, n) {
         x1 = SSE_FP32_LOAD(a + i);
         y1 = SSE_FP32_LOAD(b + i);
@@ -64,9 +52,6 @@ template<> void Sub(const int n, const float* a, const float* b, float* y) {
 template<> void Mul(const int n, const float* a, const float* b, float* y) {
     __m128 x1, y1, z1;
     int32_t i = 0;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
-#endif
     SSE_LOOP1(i, n) {
         x1 = SSE_FP32_LOAD(a + i);
         y1 = SSE_FP32_LOAD(b + i);
@@ -79,9 +64,6 @@ template<> void Mul(const int n, const float* a, const float* b, float* y) {
 template<> void Div(const int n, const float* a, const float* b, float* y) {
     __m128 x1, y1, z1;
     int32_t i = 0;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
-#endif
     SSE_LOOP1(i, n) {
         x1 = SSE_FP32_LOAD(a + i);
         y1 = SSE_FP32_LOAD(b + i);
@@ -94,9 +76,6 @@ template<> void Div(const int n, const float* a, const float* b, float* y) {
 template<> void Scal(const int n, const float alpha, float* y) {
     __m128 y1, scalar = SSE_FP32_SCALAR(alpha);
     int32_t i = 0;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
-#endif
     SSE_LOOP1(i, n) {
         y1 = SSE_FP32_LOAD(y + i);
         y1 = SSE_FP32_MUL(y1, scalar);
@@ -108,9 +87,6 @@ template<> void Scal(const int n, const float alpha, float* y) {
 template<> void Scale(const int n, const float alpha, const float* x, float* y) {
     __m128 x1, scalar = SSE_FP32_SCALAR(alpha);
     int32_t i = 0;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
-#endif
     SSE_LOOP1(i, n) {
         x1 = SSE_FP32_LOAD(x + i);
         x1 = SSE_FP32_MUL(x1, scalar);
@@ -122,9 +98,6 @@ template<> void Scale(const int n, const float alpha, const float* x, float* y) 
 template<> void Axpy(const int n, float alpha, const float* x, float *y) {
     __m128 x1, y1, scalar = SSE_FP32_SCALAR(alpha);
     int32_t i = 0;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
-#endif
     SSE_LOOP1(i, n) {
         x1 = SSE_FP32_LOAD(x + i);
         y1 = SSE_FP32_LOAD(y + i);
@@ -144,9 +117,6 @@ template<> void Axpby(const int n,
     __m128 scalar1 = SSE_FP32_SCALAR(alpha);
     __m128 scalar2 = SSE_FP32_SCALAR(beta);
     int32_t i = 0;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
-#endif
     SSE_LOOP1(i, n) {
         x1 = SSE_FP32_LOAD(x + i);
         y1 = SSE_FP32_LOAD(y + i);
@@ -161,9 +131,6 @@ template<> void Axpby(const int n,
 template<> float ASum(const int n, const float *x) {
     __m128 x1, sum = SSE_FP32_ZERO;
     int32_t i = 0;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
-#endif
     SSE_LOOP1(i, n) {
         x1 = SSE_FP32_LOAD(x + i);
         sum = SSE_FP32_ADD(sum, x1);
@@ -178,10 +145,7 @@ template<> float ASum(const int n, const float *x) {
 template<> void AddScalar(const int n, const float alpha, float* y) {
     __m128 y1, scalar = SSE_FP32_SCALAR(alpha);
     int32_t i = 0;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
-#endif
-     SSE_LOOP1(i, n) {
+    SSE_LOOP1(i, n) {
          y1 = SSE_FP32_LOAD(y + i);
          y1 = SSE_FP32_ADD(y1, scalar);
          SSE_FP32_STORE(y + i, y1);
@@ -192,9 +156,6 @@ template<> void AddScalar(const int n, const float alpha, float* y) {
 template<> void MulScalar(const int n, const float alpha, float* y) {
     __m128 y1, scalar = SSE_FP32_SCALAR(alpha);
     int32_t i = 0;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
-#endif
     SSE_LOOP1(i, n) {
         y1 = SSE_FP32_LOAD(y + i);
         y1 = SSE_FP32_MUL(y1, scalar);
@@ -206,9 +167,6 @@ template<> void MulScalar(const int n, const float alpha, float* y) {
 template <> float Dot(const int n, const float* a, const float* b) {
     __m128 x1, y1, sum = SSE_FP32_ZERO;
     int32_t i = 0;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
-#endif
     SSE_LOOP1(i, n) {
         x1 = SSE_FP32_LOAD(a + i);
         y1 = SSE_FP32_LOAD(b + i);

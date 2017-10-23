@@ -53,7 +53,7 @@ void SparseSoftmaxFocalLossOp<Context>::RunOnDevice() {
     outer_dim = input(0).count(0, axis);
     inner_dim = input(0).count(axis + 1);
     CHECK_EQ(outer_dim * inner_dim, input(1).count())
-        << "\nnumber of predictions must match the number of labels.";
+        << "\nNumber of predictions must match the number of labels.";
     this->valid.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
     this->losses.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
     this->softmax_op->Run();
@@ -62,7 +62,7 @@ void SparseSoftmaxFocalLossOp<Context>::RunOnDevice() {
     scale->ReshapeLike(*this->prob);
     
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(SparseSoftmaxFocalLoss);
@@ -124,7 +124,7 @@ void SparseSoftmaxFocalLossGradientOp<Context>::RunOnDevice() {
     this->valid.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(SparseSoftmaxFocalLossGradient);

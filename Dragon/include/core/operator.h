@@ -61,12 +61,17 @@ class OperatorBase{
     inline const Map<std::string, const Argument*>& args() { return args_; }
     inline const Argument& arg(const string& name) { return *(args_[name]); }
 
+    typedef Map<string, vector<OperatorBase*> > RecomputeMap;
+    inline RecomputeMap& recompute_map() { return recompute_map_; }
+    void set_recompute_map(RecomputeMap recompute_map) { recompute_map_ = recompute_map; }
+
     inline const OperatorDef& op_def() const { return op_def_; }
     inline const string debug_string() const { return op_def_.DebugString(); }
 
  protected:
     string phase_;
     Map<std::string, const Argument*> args_;
+    Map<string, vector<OperatorBase*> > recompute_map_;
     vector<Tensor*> inputs_, outputs_;
     OperatorDef op_def_;
     Workspace* ws_;
@@ -158,10 +163,10 @@ DECLARE_REGISTRY(CUDNNOperatorRegistry, OperatorBase, const OperatorDef&, Worksp
          TIndex count = 1; \
          for(int i = 0; i < shape.size(); i++) count *= shape[i]; \
          CHECK_EQ(count, tensor.count()) \
-            << "\nmodel request " << "Tensor(" << tensor.name() << ")'s " \
-            << "size is " << count << "\n" \
-            << "but now is " << tensor.count() << "\n" \
-            << "may be feed the incorrect Tensor before ?"; \
+            << "\nModel request " << "Tensor(" << tensor.name() << ")'s " \
+            << "size is " << count << ", \n" \
+            << "but now is " << tensor.count() << ", " \
+            << "did you feed the incorrect Tensor before ?"; \
         tensor.Reshape(shape); \
     }
 

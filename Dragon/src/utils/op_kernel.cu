@@ -85,12 +85,53 @@ template<> void DropoutGrad<float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
+/******************** activation.elu ********************/
+
+template <typename T>
+__global__ void _Elu(const int count, const T* x, const float alpha, T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        y[idx] = x[idx] > 0 ? x[idx] : alpha * (std::exp(x[idx]) - 1);
+    }
+}
+
+template<> void Elu<float, CUDAContext>(const int count, 
+                                        const float* x, 
+                                        const float alpha, 
+                                        float* y) {
+    _Elu<float> << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, x, alpha, y);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template <typename T>
+__global__ void _EluGrad(const int count, 
+                         const T* dy, 
+                         const T* y, 
+                         const float alpha, 
+                          T* dx) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        dx[idx] = y[idx] > 0 ? dy[idx] : dy[idx] * (y[idx] + alpha);
+    }
+}
+
+template<> void EluGrad<float, CUDAContext>(const int count, 
+                                            const float* dy, 
+                                            const float* y, 
+                                            const float alpha, 
+                                            float* dx) {
+    _EluGrad<float> << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                                     dy, 
+                                                                      y, 
+                                                                  alpha, 
+                                                                    dx);
+    CUDA_POST_KERNEL_CHECK;
+}
+
 /******************** activation.relu ********************/
 
 template <typename T>
 __global__ void _Relu(const int count, const T* x, const float slope, T* y) {
-    CUDA_KERNEL_LOOP(i, count) {
-        y[i] = x[i] > 0 ? x[i] : x[i] * slope;
+    CUDA_KERNEL_LOOP(idx, count) {
+        y[idx] = x[idx] > 0 ? x[idx] : x[idx] * slope;
     }
 }
 
@@ -107,9 +148,9 @@ template <typename T>
 __global__ void _ReluHalf(const int count, const half* x, const float slope, half* y) {
     const half kSlope = __float2half(slope);
     const half kZero = __float2half(0.0);
-    CUDA_KERNEL_LOOP(i, count) {
+    CUDA_KERNEL_LOOP(idx, count) {
 #if __CUDA_ARCH__ >= 530
-        y[i] = __hgt(x[i], kZero) ? x[i] : __hmul(x[i], kSlope);
+        y[idx] = __hgt(x[idx], kZero) ? x[idx] : __hmul(x[idx], kSlope);
 #endif
     }
 }
@@ -132,8 +173,8 @@ __global__ void _ReluGrad(const int count,
                           const T* y, 
                           const float slope, 
                           T* dx) {
-    CUDA_KERNEL_LOOP(i, count) {
-        dx[i] = dy[i] * ((y[i] > 0) + slope * (y[i] <= 0));
+    CUDA_KERNEL_LOOP(idx, count) {
+        dx[idx] = dy[idx] * ((y[idx] > 0) + slope * (y[idx] <= 0));
     }
 }
 
@@ -159,8 +200,8 @@ __device__ T _SigmoidUnit(const T x) {
 
 template <typename T>
 __global__ void _Sigmoid(const int n, const T* x, T* y) {
-    CUDA_KERNEL_LOOP(i, n) {
-        y[i] = _SigmoidUnit<T>(x[i]);
+    CUDA_KERNEL_LOOP(idx, n) {
+        y[idx] = _SigmoidUnit<T>(x[idx]);
     }
 }
 
@@ -171,8 +212,8 @@ template<> void Sigmoid<float, CUDAContext>(const int count, const float* x, flo
 
 template <typename T>
 __global__ void _SigmoidGrad(const int count, const T* dy, const T* y, T* dx) {
-    CUDA_KERNEL_LOOP(i, count) {
-        dx[i] = dy[i] * y[i] * (1 - y[i]);
+    CUDA_KERNEL_LOOP(idx, count) {
+        dx[idx] = dy[idx] * y[idx] * (1 - y[idx]);
     }
 }
 
@@ -561,660 +602,42 @@ template <> void ScaleGrad<float, CUDAContext>(const int axis,
                                                                         dXdata);
 }
 
-/******************** common.argmax ********************/
-
-template <typename T>
-__global__ void _Argmax(const int count, 
-                        const int axis_dim, 
-                        const int inner_dim, 
-                        const T* x, 
-                        T* y) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        T max_val = -FLT_MAX;
-        int max_idx = -1;
-        for (int j = 0; j < axis_dim; ++j) {
-            const T val = x[(idx / inner_dim * axis_dim + j) 
-                                * inner_dim + idx % inner_dim];
-            if (val > max_val) {
-                max_val = val;
-                max_idx = j;
-            }
-        }
-        y[idx] = max_idx;
-    }
-}
-
-template<> void Argmax<float, CUDAContext>(const int count, 
-                                           const int axis_dim, 
-                                           const int inner_dim, 
-                                           const int top_k, 
-                                           const float* x, 
-                                           float* y) {
-    CHECK_EQ(top_k, 1) << "top_k > 1 is not implemented with CUDA";
-    _Argmax<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                             axis_dim, 
-                                                            inner_dim, 
-                                                                    x, 
-                                                                   y);
-    CUDA_POST_KERNEL_CHECK;
-}
-
-/******************** common.at ********************/
-
-template <typename T>
-__global__ void _CanonicalAxis(const int count, const int dim, T* y) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        if (y[idx] < 0) y[idx] += dim;
-    }
-}
-
-template <> void CanonicalAxis<float, CUDAContext>(const int count, const int dim, float* y) {
-    _CanonicalAxis<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, dim, y);
-    CUDA_POST_KERNEL_CHECK;
-}
-
-template <typename T>
-__global__ void _At(const int count, 
-                    const int outer_dim, 
-                    const int inner_dim,
-                    const int x_slice_dim, 
-                    const int y_slice_dim, 
-                    const T* indices, 
-                    const T* x, 
-                    T* y) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        const int outer_idx = idx / inner_dim / y_slice_dim;
-        const int slice_idx = idx % inner_dim;
-        const int y_idx_offset = (idx / inner_dim) % y_slice_dim;
-        const int x_idx_offset = indices[y_idx_offset];
-        const int x_idx = (outer_idx * x_slice_dim + x_idx_offset)
-                                     * inner_dim + slice_idx;
-        y[idx] = x[x_idx];
-    }
-}
-
-template <> void At<float, CUDAContext>(const int count, 
-                                        const int outer_dim, 
-                                        const int inner_dim,
-                                        const int x_slice_dim, 
-                                        const int y_slice_dim, 
-                                        const float* indices,
-                                        const float* x, 
-                                        float* y, 
-                                        CUDAContext* context) {
-    _At<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                        outer_dim, 
-                                                        inner_dim, 
-                                                      x_slice_dim, 
-                                                      y_slice_dim,
-                                                          indices, 
-                                                                x, 
-                                                               y);
-    CUDA_POST_KERNEL_CHECK;
-}
-
-template <typename T>
-__global__ void _AtGrad(const int count, 
-                        const int outer_dim, 
-                        const int inner_dim,
-                        const int x_slice_dim, 
-                        const int y_slice_dim, 
-                        const T* indices, 
-                        const T* dy, 
-                        T* dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        const int outer_idx = idx / inner_dim / y_slice_dim;
-        const int slice_idx = idx % inner_dim;
-        const int y_idx_offset = (idx / inner_dim) % y_slice_dim;
-        const int x_idx_offset = indices[y_idx_offset];
-        const int x_idx = (outer_idx * x_slice_dim + x_idx_offset)
-                                     * inner_dim + slice_idx;
-        atomicAdd(dx + x_idx, dy[idx]);
-    }
-}
-
-template <> void AtGrad<float, CUDAContext>(const int count, 
-                                            const int outer_dim, 
-                                            const int inner_dim,
-                                            const int x_slice_dim, 
-                                            const int y_slice_dim, 
-                                            const float* indices,
-                                            const float* dy, 
-                                            float* dx, 
-                                            CUDAContext* context) {
-    _AtGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                            outer_dim, 
-                                                            inner_dim, 
-                                                          x_slice_dim, 
-                                                          y_slice_dim,
-                                                              indices, 
-                                                                   dy, 
-                                                                  dx);
-    CUDA_POST_KERNEL_CHECK;
-}
-
-/******************** common.concat ********************/
-
-template <typename T>
-__global__ void _Concat(const int count, 
-                        const int outer_dim, 
-                        const int inner_dim,
-                        const int x_concat_dim, 
-                        const int y_concat_dim, 
-                        const int concat_offset, 
-                        const T* x, 
-                        T* y) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        const int tmp = x_concat_dim * inner_dim;
-        const int outer_idx = idx / tmp;
-        const int concat_idx = idx % tmp;
-        const int y_idx = (outer_idx * y_concat_dim + concat_offset) 
-                                     * inner_dim + concat_idx;
-        y[y_idx] = x[idx];
-    }
-}
-
-template <> void Concat<float, CUDAContext>(const int count, 
-                                            const int outer_dim, 
-                                            const int inner_dim,
-                                            const int x_concat_dim, 
-                                            const int y_concat_dim, 
-                                            const int concat_offset,
-                                            const float* x, 
-                                            float* y, 
-                                            CUDAContext* context) {
-    _Concat<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                            outer_dim, 
-                                                            inner_dim, 
-                                                         x_concat_dim, 
-                                                         y_concat_dim,
-                                                        concat_offset, 
-                                                                    x, 
-                                                                   y);
-    CUDA_POST_KERNEL_CHECK;
-}
+/******************** cast.float2half ********************/
 
 #ifdef WITH_CUDA_FP16
-template <> void Concat<float16, CUDAContext>(const int count, 
-                                              const int outer_dim, 
-                                              const int inner_dim,
-                                              const int x_concat_dim, 
-                                              const int y_concat_dim, 
-                                              const int concat_offset,
-                                              const float16* x, 
-                                              float16* y, 
-                                              CUDAContext* context) {
-    _Concat<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                           outer_dim, 
-                                                           inner_dim, 
-                                                        x_concat_dim, 
-                                                        y_concat_dim,
-                                                       concat_offset, 
-                                    reinterpret_cast<const half*>(x),
-                                         reinterpret_cast<half*>(y));
-    CUDA_POST_KERNEL_CHECK;
-}
-#endif
-
 template <typename T>
-__global__ void _ConcatGrad(const int count, 
-                            const int outer_dim, 
-                            const int inner_dim,
-                            const int x_concat_dim, 
-                            const int y_concat_dim, 
-                            const int concat_offset, 
-                            const T* dy, 
-                            T* dx) {
+__global__ void _FloatToHalfKernel(const int count, const float* x, half* y) {
     CUDA_KERNEL_LOOP(idx, count) {
-        const int tmp = x_concat_dim * inner_dim;
-        const int outer_idx = idx / tmp;
-        const int concat_idx = idx % tmp;
-        const int y_idx = (outer_idx * y_concat_dim + concat_offset)
-                                     * inner_dim + concat_idx;
-        dx[idx] = dy[y_idx];
+        y[idx] = __float2half(x[idx]);
     }
 }
 
-template <> void ConcatGrad<float, CUDAContext>(const int count, 
-                                                const int outer_dim, 
-                                                const int inner_dim,
-                                                const int x_concat_dim, 
-                                                const int y_concat_dim, 
-                                                const int concat_offset,
-                                                const float* dy, 
-                                                float* dx, 
-                                                CUDAContext* context) {
-    _ConcatGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                outer_dim, 
-                                                                inner_dim, 
-                                                             x_concat_dim, 
-                                                             y_concat_dim,
-                                                            concat_offset, 
-                                                                       dy, 
-                                                                      dx);
-    CUDA_POST_KERNEL_CHECK;
-}
-
-#ifdef WITH_CUDA_FP16
-template <> void ConcatGrad<float16, CUDAContext>(const int count, 
-                                                  const int outer_dim, 
-                                                  const int inner_dim,
-                                                  const int x_concat_dim, 
-                                                  const int y_concat_dim, 
-                                                  const int concat_offset,
-                                                  const float16* dy, 
-                                                  float16* dx, 
-                                                  CUDAContext* context) {
-    _ConcatGrad<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                               outer_dim, 
-                                                               inner_dim, 
-                                                            x_concat_dim, 
-                                                            y_concat_dim,
-                                                           concat_offset, 
-                                       reinterpret_cast<const half*>(dy),
-                                            reinterpret_cast<half*>(dx));
-    CUDA_POST_KERNEL_CHECK;
-}
-#endif
-
-/******************** common.crop ********************/
-
-template<typename T>
-__global__ void _Crop2D(const int count, 
-                        const int x_w_dim, 
-                        const int y_w_dim, 
-                        const int x_h_offset,
-                        const int x_w_offset,
-                        const T* x, 
-                        T* y) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        const int y_w = idx % y_w_dim;
-        const int y_h = (idx / y_w_dim);
-        y[idx] = x[(y_h + x_h_offset) * x_w_dim + x_w_offset + y_w];
-    }
-}
-
-template<> void Crop2D<float, CUDAContext>(vector<TIndex> idxs,
-                                           const vector<TIndex>& offsets,
-                                           const int cur_dim,
-                                           Tensor* x,
-                                           Tensor* y,
-                                           CUDAContext* context) {
-    TIndex inner_dim = 1;
-    for (int i = 0; i < 2; i++) inner_dim *= y->dim(cur_dim + i);
-    TIndex x_w_dim = x->dim(cur_dim + 1), y_w_dim = y->dim(cur_dim + 1);
-    TIndex x_h_offset = offsets[cur_dim], x_w_offset = offsets[cur_dim + 1];
-
-    auto* Xdata = x->data<float, CUDAContext>();
-    auto* Ydata = y->mutable_data<float, CUDAContext>();
-    Xdata += x->offset(idxs);
-    Ydata += y->offset(idxs);
-
-    _Crop2D<float> << <GET_BLOCKS(inner_dim), CUDA_NUM_THREADS >> >(inner_dim,
-                                                                      x_w_dim,
-                                                                      y_w_dim,
-                                                                   x_h_offset,
-                                                                   x_w_offset,
-                                                                        Xdata,
-                                                                       Ydata);
-    CUDA_POST_KERNEL_CHECK;
-}
-
-template<typename T>
-__global__ void _Crop2DGrad(const int count, 
-                            const int x_w_dim, 
-                            const int y_w_dim, 
-                            const int x_h_offset,
-                            const int x_w_offset,
-                            const T* dy, 
-                            T* dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        const int y_w = idx % y_w_dim;
-        const int y_h = (idx / y_w_dim);
-        dx[(y_h + x_h_offset) * x_w_dim + x_w_offset + y_w] = dy[idx];
-    }
-}
-
-template<> void Crop2DGrad<float, CUDAContext>(vector<TIndex> idxs,
-                                               const vector<TIndex>& offsets,
-                                               const int cur_dim,
-                                               Tensor* dy,
-                                               Tensor* dx,
-                                               CUDAContext* context) {
-    TIndex inner_dim = 1;
-    for (int i = 0; i < 2; i++) inner_dim *= dy->dim(cur_dim + i);
-    TIndex x_w_dim = dx->dim(cur_dim + 1), y_w_dim = dy->dim(cur_dim + 1);
-    TIndex x_h_offset = offsets[cur_dim], x_w_offset = offsets[cur_dim + 1];
-
-    auto* dYdata = dy->data<float, CUDAContext>();
-    auto* dXdata = dx->mutable_data<float, CUDAContext>();
-    dYdata += dy->offset(idxs);
-    dXdata += dx->offset(idxs);
-
-    _Crop2DGrad<float> << <GET_BLOCKS(inner_dim), CUDA_NUM_THREADS >> >(inner_dim,
-                                                                          x_w_dim,
-                                                                          y_w_dim,
-                                                                       x_h_offset,
-                                                                       x_w_offset,
-                                                                           dYdata,
-                                                                          dXdata);
-    CUDA_POST_KERNEL_CHECK;
-}
-
-/******************** common.reduce ********************/
-
-template <typename T>
-__global__ void _Sum(const int count, 
-                     const int axis_dim,
-                     const int inner_dim, 
-                     const T* x, 
-                     float* y) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        T sum_val = 0.0;
-        for (int j = 0; j < axis_dim; j++)
-            sum_val += x[(idx / inner_dim * axis_dim + j) 
-                          * inner_dim + idx % inner_dim];
-        y[idx] = sum_val;
-   }
-}
-
-template<> void Sum<float, CUDAContext>(
-        const int count, const int axis_dim,
-        const int inner_dim, const float* x, float* y) {
-    _Sum<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                          axis_dim, 
-                                                         inner_dim, 
-                                                                 x, 
-                                                                y);
+template <> void Float2Half<float, CUDAContext>(const int count, 
+                                                const float* x, 
+                                                float16* y) {
+    _FloatToHalfKernel<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                                               x, 
+                                                     reinterpret_cast<half*>(y));
      CUDA_POST_KERNEL_CHECK;
 }
-
-template <typename T>
-__global__ void _SumGrad(const int count, 
-                         const int axis_dim,
-                         const int inner_dim, 
-                         const T coeff, 
-                         const T* dy, 
-                         float* dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        for (int j = 0; j < axis_dim; j++)
-            dx[(idx / inner_dim * axis_dim + j) 
-                    * inner_dim + idx % inner_dim] = dy[idx] * coeff;
-    }
-}
-
-template<> void SumGrad<float, CUDAContext>(const int count, 
-                                            const int axis_dim, 
-                                            const int inner_dim, 
-                                            const float coeff, 
-                                            const float* dy, 
-                                            float* dx) {
-    _SumGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                              axis_dim, 
-                                                             inner_dim,
-                                                                 coeff, 
-                                                                    dy, 
-                                                                   dx);
-    CUDA_POST_KERNEL_CHECK;
-}
-
-/******************** common.slice ********************/
-
-template <typename T>
-    __global__ void _Slice(const int count, const int outer_dim, const int inner_dim,
-        const int x_slice_dim, const int y_slice_dim, const int slice_offset, const T* x, T* y) {
-        CUDA_KERNEL_LOOP(idx, count) {
-            const int tmp = y_slice_dim * inner_dim;
-            const int outer_idx = idx / tmp;
-            const int slice_idx = idx % tmp;
-            const int x_idx = (outer_idx * x_slice_dim + slice_offset)
-                * inner_dim + slice_idx;
-            y[idx] = x[x_idx];
-        }
-}
-
-template <> void Slice<float, CUDAContext>(const int count, 
-                                           const int outer_dim, 
-                                           const int inner_dim,
-                                           const int x_slice_dim, 
-                                           const int y_slice_dim, 
-                                           const int slice_offset,
-                                           const float* x, 
-                                           float* y, 
-                                           CUDAContext* context) {
-    _Slice<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                           outer_dim, 
-                                                           inner_dim, 
-                                                         x_slice_dim, 
-                                                         y_slice_dim, 
-                                                        slice_offset, 
-                                                                   x, 
-                                                                  y);
-    CUDA_POST_KERNEL_CHECK;
-}
-
-template <typename T>
-__global__ void _SliceGrad(const int count, 
-                           const int outer_dim, 
-                           const int inner_dim,
-                           const int x_slice_dim, 
-                           const int y_slice_dim, 
-                           const int slice_offset, 
-                           const T* dy, 
-                           T* dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        const int tmp = y_slice_dim * inner_dim;
-        const int outer_idx = idx / tmp;
-        const int slice_idx = idx % tmp;
-        const int x_idx = (outer_idx * x_slice_dim + slice_offset)
-                                     * inner_dim + slice_idx;
-        dx[x_idx] = dy[idx];
-    }
-}
-
-template <> void SliceGrad<float, CUDAContext>(const int count, 
-                                               const int outer_dim, 
-                                               const int inner_dim,
-                                               const int x_slice_dim, 
-                                               const int y_slice_dim, 
-                                               const int slice_offset,
-                                               const float* dy, 
-                                               float* dx, 
-                                               CUDAContext* context) {
-    _SliceGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                               outer_dim, 
-                                                               inner_dim, 
-                                                             x_slice_dim, 
-                                                             y_slice_dim,
-                                                            slice_offset, 
-                                                                      dy, 
-                                                                     dx);
-    CUDA_POST_KERNEL_CHECK;
-}
-
-/******************** common.tile ********************/
-
-template <typename T>
-__global__ void _Tile(const int count, 
-                      const int inner_dim, 
-                      const int multiple, 
-                      const int dim, 
-                      const T* x, 
-                      T* y) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        const int d = idx % inner_dim;
-        const int b = (idx / inner_dim / multiple) % dim;
-        const int n = idx / inner_dim / multiple / dim;
-        const int x_idx = (n * dim + b) * inner_dim + d;
-        y[idx] = x[x_idx];
-    }
-}
-
-template <> void Tile<float, CUDAContext>(const int count, 
-                                          const int outer_dim, 
-                                          const int inner_dim,
-                                          const int dim,
-                                          const int multiple, 
-                                          const float* x, 
-                                          float* y, 
-                                          CUDAContext* context) {
-    _Tile<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                          inner_dim, 
-                                                           multiple, 
-                                                                dim, 
-                                                                  x, 
-                                                                 y);
-    CUDA_POST_KERNEL_CHECK;
-}
-
-template <typename T>
-__global__ void _TileGrad(const int count, 
-                          const int inner_dim,
-                          const int multiple, 
-                          const int dim, 
-                          const T* dy, 
-                          T* dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        const int d = idx % inner_dim;
-        const int b = (idx / inner_dim) % dim;
-        const int n = idx / inner_dim / dim;
-        int y_idx = (n * multiple * dim + b) * inner_dim + d;
-        dx[idx] = 0;
-        for (int t = 0; t < multiple; t++) {
-            dx[idx] += dy[y_idx];
-            dy += dim * inner_dim;
-        }
-    }
-}
-
-template <> void TileGrad<float, CUDAContext>(const int count, 
-                                              const int outer_dim, 
-                                              const int inner_dim, 
-                                              const int dim,
-                                              const int multiple, 
-                                              const float* dy, 
-                                              float* dx, 
-                                              CUDAContext* context) {
-    _TileGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                        inner_dim / dim, 
-                                                               multiple, 
-                                                                    dim, 
-                                                                     dy, 
-                                                                    dx);
-    CUDA_POST_KERNEL_CHECK;
-}
-
-/******************** common.transpose ********************/
-
-template <typename T>
-__global__ void _Transpose(const int count, 
-                           const int ndim, 
-                           const int* order, 
-                           const int* old_steps, 
-                           const int* new_steps, 
-                           const T* x, 
-                           T* y) {
-    CUDA_KERNEL_LOOP(idx, count) {
-       int x_idx = 0, y_idx = idx;
-       for (int j = 0; j < ndim; ++j) {
-           int k = order[j];
-           x_idx += (y_idx / new_steps[j]) * old_steps[k];
-           y_idx %= new_steps[j];
-       }
-       y[idx] = x[x_idx];
-   }
-}
-
-template <> void Transpose<float, CUDAContext>(const int count, 
-                                               const int ndim, 
-                                               const int* order, 
-                                               const int* old_steps,
-                                               const int* new_steps, 
-                                               const float* x, 
-                                               float* y) {
-    _Transpose<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                    ndim, 
-                                                                   order, 
-                                                               old_steps, 
-                                                               new_steps, 
-                                                                       x, 
-                                                                      y);
-    CUDA_POST_KERNEL_CHECK;
-}
-
-#ifdef WITH_CUDA_FP16
-template <> void Transpose<float16, CUDAContext>(const int count, 
-                                                 const int ndim, 
-                                                 const int* order, 
-                                                 const int* old_steps,
-                                                 const int* new_steps, 
-                                                 const float16* x, 
-                                                 float16* y) {
-    _Transpose<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                   ndim, 
-                                                                  order, 
-                                                              old_steps, 
-                                                              new_steps, 
-                                       reinterpret_cast<const half*>(x),
-                                            reinterpret_cast<half*>(y));
-    CUDA_POST_KERNEL_CHECK;
-}
 #endif
 
+/******************** control_flow.compare ********************/
+
 template <typename T>
-__global__ void _TransposeGrad(const int count, 
-                               const int ndim, 
-                               const int* order,
-                               const int* old_steps, 
-                               const int* new_steps,
-                               const T* dy, 
-                               T* dx) {
+__global__ void _Equal(const int count, const T* a, const T* b, T* y) {
     CUDA_KERNEL_LOOP(idx, count) {
-        int x_idx = 0, y_idx = idx;
-        for (int j = 0; j < ndim; ++j) {
-            int k = order[j];
-            x_idx += (y_idx / new_steps[j]) * old_steps[k];
-            y_idx %= new_steps[j];
-        }
-        dx[x_idx] = dy[idx];
+        y[idx] = fabs(a[idx] - b[idx]) < FLT_EPSILON ? 1.0 : 0.0;
     }
 }
 
-template <> void TransposeGrad<float, CUDAContext>(const int count, 
-                                                   const int ndim,
-                                                   const int* order, 
-                                                   const int* old_steps,
-                                                   const int* new_steps, 
-                                                   const float* dy, 
-                                                   float* dx) {
-    _TransposeGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                        ndim, 
-                                                                       order, 
-                                                                   old_steps, 
-                                                                   new_steps, 
-                                                                          dy, 
-                                                                         dx);
-    CUDA_POST_KERNEL_CHECK;
+template <> void Equal<float, CUDAContext>(const int count, 
+                                           const float* a,
+                                           const float* b, 
+                                           float* y) {
+    _Equal<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, a, b, y);
+     CUDA_POST_KERNEL_CHECK;
 }
-
-#ifdef WITH_CUDA_FP16
-template <> void TransposeGrad<float16, CUDAContext>(const int count, 
-                                                     const int ndim,
-                                                     const int* order, 
-                                                     const int* old_steps,
-                                                     const int* new_steps, 
-                                                     const float16* dy, 
-                                                     float16* dx) {
-    _TransposeGrad<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                       ndim, 
-                                                                      order, 
-                                                                  old_steps, 
-                                                                  new_steps, 
-                                          reinterpret_cast<const half*>(dy),
-                                               reinterpret_cast<half*>(dx));
-    CUDA_POST_KERNEL_CHECK;
-}
-#endif
 
 /******************** loss.l1_loss ********************/
 
@@ -1585,6 +1008,926 @@ template<> void SparseSoftmaxFocalLossGrad<float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
+/******************** misc.memory_data ********************/
+
+template <typename Tx, typename Ty>
+__global__ void _MemoryData(const int count, 
+                            const int num, 
+                            const int channels, 
+                            const int height, 
+                            const int width, 
+                            const Tx* x, 
+                            Ty* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int w = idx % width;
+        const int h = (idx / width) % height;
+        const int c = (idx / width / height) % channels;
+        const int n = idx / width / height / channels;
+        const int x_idx = ((n * height + h) * width + w) * channels + c;
+        if (c == 0) y[idx] = x[x_idx] - 102.9801;
+        else if (c == 1) y[idx] = x[x_idx] - 115.9465;
+        else y[idx] = x[x_idx] - 122.7717;
+    }
+}
+
+template <typename Tx, typename Ty>
+__global__ void _MemoryDataHalf(const int count, 
+                                const int num, 
+                                const int channels, 
+                                const int height, 
+                                const int width, 
+                                const Tx* x, 
+                                Ty* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int w = idx % width;
+        const int h = (idx / width) % height;
+        const int c = (idx / width / height) % channels;
+        const int n = idx / width / height / channels;
+        const int x_idx = ((n * height + h) * width + w) * channels + c;
+        if (c == 0) y[idx] = __float2half(x[x_idx] - 102.9801);
+        else if (c == 1) y[idx] = __float2half(x[x_idx] - 115.9465);
+        else y[idx] = __float2half(x[x_idx] - 122.7717);
+    }
+}
+
+template <> void MemoryData<float, float, CUDAContext>(const int count, 
+                                                       const int num, 
+                                                       const int channels, 
+                                                       const int height, 
+                                                       const int width, 
+                                                       const float* x, 
+                                                       float* y) {
+    _MemoryData<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                                      num, 
+                                                                 channels, 
+                                                                   height, 
+                                                                    width, 
+                                                                        x, 
+                                                                       y);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template <> void MemoryData<uint8_t, float, CUDAContext>(const int count, 
+                                                       const int num, 
+                                                       const int channels, 
+                                                       const int height, 
+                                                       const int width, 
+                                                       const uint8_t* x, 
+                                                       float* y) {
+    _MemoryData<uint8_t, float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                                               num, 
+                                                                          channels, 
+                                                                            height, 
+                                                                             width, 
+                                                                                 x, 
+                                                                                y);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+#ifdef WITH_CUDA_FP16
+template <> void MemoryData<float, float16, CUDAContext>(const int count, 
+                                                         const int num, 
+                                                         const int channels, 
+                                                         const int height, 
+                                                         const int width, 
+                                                         const float* x, 
+                                                         float16* y) {
+    _MemoryDataHalf<float, half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                                                num, 
+                                                                           channels, 
+                                                                             height, 
+                                                                              width, 
+                                                                                  x, 
+                                                        reinterpret_cast<half*>(y));
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template <> void MemoryData<uint8_t, float16, CUDAContext>(const int count, 
+                                                           const int num, 
+                                                           const int channels, 
+                                                           const int height, 
+                                                           const int width, 
+                                                           const uint8_t* x, 
+                                                           float16* y) {
+    _MemoryDataHalf<uint8_t, half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                                                  num, 
+                                                                             channels, 
+                                                                               height, 
+                                                                                width, 
+                                                                                    x, 
+                                                          reinterpret_cast<half*>(y));
+    CUDA_POST_KERNEL_CHECK;
+}
+#endif
+
+/******************** ndarray.argmax ********************/
+
+template <typename T>
+__global__ void _Arange(const int count,
+                        const int start,
+                        const int step,
+                        T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        y[idx] = start + idx * step;
+    }
+}
+
+template<> void Arange<float, CUDAContext>(const int count,
+                                           const int start,
+                                           const int step,
+                                           float* y) {
+    _Arange<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, start, step, y);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template<> void Arange<int, CUDAContext>(const int count,
+                                         const int start,
+                                         const int step,
+                                         int* y) {
+    _Arange<int> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, start, step, y);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+/******************** ndarray.argmax ********************/
+
+template <typename T>
+__global__ void _Argmax(const int count, 
+                        const int axis_dim, 
+                        const int inner_dim, 
+                        const T* x, 
+                        T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        T max_val = -FLT_MAX;
+        int max_idx = -1;
+        for (int j = 0; j < axis_dim; ++j) {
+            const T val = x[(idx / inner_dim * axis_dim + j) 
+                                * inner_dim + idx % inner_dim];
+            if (val > max_val) {
+                max_val = val;
+                max_idx = j;
+            }
+        }
+        y[idx] = max_idx;
+    }
+}
+
+template<> void Argmax<float, CUDAContext>(const int count, 
+                                           const int axis_dim, 
+                                           const int inner_dim, 
+                                           const int top_k, 
+                                           const float* x, 
+                                           float* y) {
+    CHECK_EQ(top_k, 1) << "top_k > 1 is not supported with CUDA";
+    _Argmax<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                             axis_dim, 
+                                                            inner_dim, 
+                                                                    x, 
+                                                                   y);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+/******************** ndarray.argmin ********************/
+
+template <typename T>
+__global__ void _Argmin(const int count, 
+                        const int axis_dim, 
+                        const int inner_dim, 
+                        const T* x, 
+                        T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        T min_val = FLT_MAX;
+        int min_idx = -1;
+        for (int j = 0; j < axis_dim; ++j) {
+            const T val = x[(idx / inner_dim * axis_dim + j) 
+                                * inner_dim + idx % inner_dim];
+            if (val < min_val) {
+                min_val = val;
+                min_idx = j;
+            }
+        }
+        y[idx] = min_idx;
+    }
+}
+
+template<> void Argmin<float, CUDAContext>(const int count, 
+                                           const int axis_dim, 
+                                           const int inner_dim, 
+                                           const int top_k, 
+                                           const float* x, 
+                                           float* y) {
+    CHECK_EQ(top_k, 1) << "top_k > 1 is not supported with CUDA";
+    _Argmin<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                             axis_dim, 
+                                                            inner_dim, 
+                                                                    x, 
+                                                                   y);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+/******************** ndarray.at ********************/
+
+template <typename T>
+__global__ void _CanonicalAxis(const int count, const int dim, T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        if (y[idx] < 0) y[idx] += dim;
+    }
+}
+
+template <> void CanonicalAxis<float, CUDAContext>(const int count, const int dim, float* y) {
+    _CanonicalAxis<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, dim, y);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template <typename T>
+__global__ void _At(const int count, 
+                    const int outer_dim, 
+                    const int inner_dim,
+                    const int x_slice_dim, 
+                    const int y_slice_dim, 
+                    const T* indices, 
+                    const T* x, 
+                    T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int outer_idx = idx / inner_dim / y_slice_dim;
+        const int slice_idx = idx % inner_dim;
+        const int y_idx_offset = (idx / inner_dim) % y_slice_dim;
+        const int x_idx_offset = indices[y_idx_offset];
+        const int x_idx = (outer_idx * x_slice_dim + x_idx_offset)
+                                     * inner_dim + slice_idx;
+        y[idx] = x[x_idx];
+    }
+}
+
+template <> void At<float, CUDAContext>(const int count, 
+                                        const int outer_dim, 
+                                        const int inner_dim,
+                                        const int x_slice_dim, 
+                                        const int y_slice_dim, 
+                                        const float* indices,
+                                        const float* x, 
+                                        float* y, 
+                                        CUDAContext* context) {
+    _At<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                        outer_dim, 
+                                                        inner_dim, 
+                                                      x_slice_dim, 
+                                                      y_slice_dim,
+                                                          indices, 
+                                                                x, 
+                                                               y);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template <typename T>
+__global__ void _AtGrad(const int count, 
+                        const int outer_dim, 
+                        const int inner_dim,
+                        const int x_slice_dim, 
+                        const int y_slice_dim, 
+                        const T* indices, 
+                        const T* dy, 
+                        T* dx) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int outer_idx = idx / inner_dim / y_slice_dim;
+        const int slice_idx = idx % inner_dim;
+        const int y_idx_offset = (idx / inner_dim) % y_slice_dim;
+        const int x_idx_offset = indices[y_idx_offset];
+        const int x_idx = (outer_idx * x_slice_dim + x_idx_offset)
+                                     * inner_dim + slice_idx;
+        atomicAdd(dx + x_idx, dy[idx]);
+    }
+}
+
+template <> void AtGrad<float, CUDAContext>(const int count, 
+                                            const int outer_dim, 
+                                            const int inner_dim,
+                                            const int x_slice_dim, 
+                                            const int y_slice_dim, 
+                                            const float* indices,
+                                            const float* dy, 
+                                            float* dx, 
+                                            CUDAContext* context) {
+    _AtGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                            outer_dim, 
+                                                            inner_dim, 
+                                                          x_slice_dim, 
+                                                          y_slice_dim,
+                                                              indices, 
+                                                                   dy, 
+                                                                  dx);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+/******************** ndarray.concat ********************/
+
+template <typename T>
+__global__ void _Concat(const int count, 
+                        const int outer_dim, 
+                        const int inner_dim,
+                        const int x_concat_dim, 
+                        const int y_concat_dim, 
+                        const int concat_offset, 
+                        const T* x, 
+                        T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int tmp = x_concat_dim * inner_dim;
+        const int outer_idx = idx / tmp;
+        const int concat_idx = idx % tmp;
+        const int y_idx = (outer_idx * y_concat_dim + concat_offset) 
+                                     * inner_dim + concat_idx;
+        y[y_idx] = x[idx];
+    }
+}
+
+template <> void Concat<float, CUDAContext>(const int count, 
+                                            const int outer_dim, 
+                                            const int inner_dim,
+                                            const int x_concat_dim, 
+                                            const int y_concat_dim, 
+                                            const int concat_offset,
+                                            const float* x, 
+                                            float* y, 
+                                            CUDAContext* context) {
+    _Concat<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                            outer_dim, 
+                                                            inner_dim, 
+                                                         x_concat_dim, 
+                                                         y_concat_dim,
+                                                        concat_offset, 
+                                                                    x, 
+                                                                   y);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+#ifdef WITH_CUDA_FP16
+template <> void Concat<float16, CUDAContext>(const int count, 
+                                              const int outer_dim, 
+                                              const int inner_dim,
+                                              const int x_concat_dim, 
+                                              const int y_concat_dim, 
+                                              const int concat_offset,
+                                              const float16* x, 
+                                              float16* y, 
+                                              CUDAContext* context) {
+    _Concat<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                           outer_dim, 
+                                                           inner_dim, 
+                                                        x_concat_dim, 
+                                                        y_concat_dim,
+                                                       concat_offset, 
+                                    reinterpret_cast<const half*>(x),
+                                         reinterpret_cast<half*>(y));
+    CUDA_POST_KERNEL_CHECK;
+}
+#endif
+
+template <typename T>
+__global__ void _ConcatGrad(const int count, 
+                            const int outer_dim, 
+                            const int inner_dim,
+                            const int x_concat_dim, 
+                            const int y_concat_dim, 
+                            const int concat_offset, 
+                            const T* dy, 
+                            T* dx) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int tmp = x_concat_dim * inner_dim;
+        const int outer_idx = idx / tmp;
+        const int concat_idx = idx % tmp;
+        const int y_idx = (outer_idx * y_concat_dim + concat_offset)
+                                     * inner_dim + concat_idx;
+        dx[idx] = dy[y_idx];
+    }
+}
+
+template <> void ConcatGrad<float, CUDAContext>(const int count, 
+                                                const int outer_dim, 
+                                                const int inner_dim,
+                                                const int x_concat_dim, 
+                                                const int y_concat_dim, 
+                                                const int concat_offset,
+                                                const float* dy, 
+                                                float* dx, 
+                                                CUDAContext* context) {
+    _ConcatGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                                outer_dim, 
+                                                                inner_dim, 
+                                                             x_concat_dim, 
+                                                             y_concat_dim,
+                                                            concat_offset, 
+                                                                       dy, 
+                                                                      dx);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+#ifdef WITH_CUDA_FP16
+template <> void ConcatGrad<float16, CUDAContext>(const int count, 
+                                                  const int outer_dim, 
+                                                  const int inner_dim,
+                                                  const int x_concat_dim, 
+                                                  const int y_concat_dim, 
+                                                  const int concat_offset,
+                                                  const float16* dy, 
+                                                  float16* dx, 
+                                                  CUDAContext* context) {
+    _ConcatGrad<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                               outer_dim, 
+                                                               inner_dim, 
+                                                            x_concat_dim, 
+                                                            y_concat_dim,
+                                                           concat_offset, 
+                                       reinterpret_cast<const half*>(dy),
+                                            reinterpret_cast<half*>(dx));
+    CUDA_POST_KERNEL_CHECK;
+}
+#endif
+
+/******************** ndarray.crop ********************/
+
+template<typename T>
+__global__ void _Crop2D(const int count, 
+                        const int x_w_dim, 
+                        const int y_w_dim, 
+                        const int x_h_offset,
+                        const int x_w_offset,
+                        const T* x, 
+                        T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int y_w = idx % y_w_dim;
+        const int y_h = (idx / y_w_dim);
+        y[idx] = x[(y_h + x_h_offset) * x_w_dim + x_w_offset + y_w];
+    }
+}
+
+template<> void Crop2D<float, CUDAContext>(vector<TIndex> idxs,
+                                           const vector<TIndex>& offsets,
+                                           const int cur_dim,
+                                           Tensor* x,
+                                           Tensor* y,
+                                           CUDAContext* context) {
+    TIndex inner_dim = 1;
+    for (int i = 0; i < 2; i++) inner_dim *= y->dim(cur_dim + i);
+    TIndex x_w_dim = x->dim(cur_dim + 1), y_w_dim = y->dim(cur_dim + 1);
+    TIndex x_h_offset = offsets[cur_dim], x_w_offset = offsets[cur_dim + 1];
+
+    auto* Xdata = x->data<float, CUDAContext>();
+    auto* Ydata = y->mutable_data<float, CUDAContext>();
+    Xdata += x->offset(idxs);
+    Ydata += y->offset(idxs);
+
+    _Crop2D<float> << <GET_BLOCKS(inner_dim), CUDA_NUM_THREADS >> >(inner_dim,
+                                                                      x_w_dim,
+                                                                      y_w_dim,
+                                                                   x_h_offset,
+                                                                   x_w_offset,
+                                                                        Xdata,
+                                                                       Ydata);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template<typename T>
+__global__ void _Crop2DGrad(const int count, 
+                            const int x_w_dim, 
+                            const int y_w_dim, 
+                            const int x_h_offset,
+                            const int x_w_offset,
+                            const T* dy, 
+                            T* dx) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int y_w = idx % y_w_dim;
+        const int y_h = (idx / y_w_dim);
+        dx[(y_h + x_h_offset) * x_w_dim + x_w_offset + y_w] = dy[idx];
+    }
+}
+
+template<> void Crop2DGrad<float, CUDAContext>(vector<TIndex> idxs,
+                                               const vector<TIndex>& offsets,
+                                               const int cur_dim,
+                                               Tensor* dy,
+                                               Tensor* dx,
+                                               CUDAContext* context) {
+    TIndex inner_dim = 1;
+    for (int i = 0; i < 2; i++) inner_dim *= dy->dim(cur_dim + i);
+    TIndex x_w_dim = dx->dim(cur_dim + 1), y_w_dim = dy->dim(cur_dim + 1);
+    TIndex x_h_offset = offsets[cur_dim], x_w_offset = offsets[cur_dim + 1];
+
+    auto* dYdata = dy->data<float, CUDAContext>();
+    auto* dXdata = dx->mutable_data<float, CUDAContext>();
+    dYdata += dy->offset(idxs);
+    dXdata += dx->offset(idxs);
+
+    _Crop2DGrad<float> << <GET_BLOCKS(inner_dim), CUDA_NUM_THREADS >> >(inner_dim,
+                                                                          x_w_dim,
+                                                                          y_w_dim,
+                                                                       x_h_offset,
+                                                                       x_w_offset,
+                                                                           dYdata,
+                                                                          dXdata);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+/******************** ndarray.one_hot ********************/
+
+template <typename T>
+__global__ void _OneHot(const int count,
+                        const int depth, 
+                        const int on_value, 
+                        const float* x,
+                        float* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int val = x[idx];
+        y[idx * depth + val] = on_value;
+    }
+}
+
+template <> void OneHot<float, CUDAContext>(const int count,
+                                            const int depth,
+                                            const int on_value,
+                                            const float* x,
+                                            float* y) {
+    _OneHot<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                depth,
+                                                             on_value,
+                                                                    x,
+                                                                   y);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+/******************** ndarray.reduce ********************/
+
+template <typename T>
+__global__ void _Sum(const int count, 
+                     const int axis_dim,
+                     const int inner_dim, 
+                     const T* x, 
+                     float* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        T sum_val = 0.0;
+        for (int j = 0; j < axis_dim; j++)
+            sum_val += x[(idx / inner_dim * axis_dim + j) 
+                          * inner_dim + idx % inner_dim];
+        y[idx] = sum_val;
+   }
+}
+
+template<> void Sum<float, CUDAContext>(
+        const int count, const int axis_dim,
+        const int inner_dim, const float* x, float* y) {
+    _Sum<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                          axis_dim, 
+                                                         inner_dim, 
+                                                                 x, 
+                                                                y);
+     CUDA_POST_KERNEL_CHECK;
+}
+
+template <typename T>
+__global__ void _SumGrad(const int count, 
+                         const int axis_dim,
+                         const int inner_dim, 
+                         const T coeff, 
+                         const T* dy, 
+                         float* dx) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        for (int j = 0; j < axis_dim; j++)
+            dx[(idx / inner_dim * axis_dim + j) 
+                    * inner_dim + idx % inner_dim] = dy[idx] * coeff;
+    }
+}
+
+template<> void SumGrad<float, CUDAContext>(const int count, 
+                                            const int axis_dim, 
+                                            const int inner_dim, 
+                                            const float coeff, 
+                                            const float* dy, 
+                                            float* dx) {
+    _SumGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                              axis_dim, 
+                                                             inner_dim,
+                                                                 coeff, 
+                                                                    dy, 
+                                                                   dx);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+/******************** ndarray.repeat ********************/
+
+template <typename T>
+__global__ void _Repeat(const int count, 
+                        const int inner_dim, 
+                        const int repeats, 
+                        const int dim, 
+                        const T* x, 
+                        T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int d = idx % inner_dim;
+        const int b = (idx / inner_dim / repeats) % dim;
+        const int n = idx / inner_dim / repeats / dim;
+        const int x_idx = (n * dim + b) * inner_dim + d;
+        y[idx] = x[x_idx];
+    }
+}
+
+template <> void Repeat<float, CUDAContext>(const int count,
+                                            const int outer_dim,
+                                            const int dim,
+                                            const int inner_dim,
+                                            const int repeats,
+                                            const float* x,
+                                            float* y,
+                                            CUDAContext* context) {
+    _Repeat<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                            inner_dim,
+                                                              repeats,
+                                                                  dim,
+                                                                    x,
+                                                                   y);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template <typename T>
+__global__ void _RepeatGrad(const int count,
+                            const int inner_dim,
+                            const int repeats,
+                            const int dim,
+                            const T* dy,
+                            T* dx) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int d = idx % inner_dim;
+        const int b = (idx / inner_dim) % dim;
+        const int n = idx / inner_dim  / dim;
+        T gradient = 0;
+        for (int t = 0; t < repeats; t++)
+            gradient += dy[(((n * dim + b) * repeats) + t) * inner_dim + d];
+        dx[idx] = gradient;
+    }
+}
+
+template <> void RepeatGrad<float, CUDAContext>(const int count,
+                                                const int outer_dim,
+                                                const int dim,
+                                                const int inner_dim,
+                                                const int repeats,
+                                                const float* dy,
+                                                float* dx,
+                                                CUDAContext* context) {
+    _RepeatGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                inner_dim,
+                                                                  repeats,
+                                                                      dim,
+                                                                       dy,
+                                                                      dx);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+/******************** ndarray.slice ********************/
+
+template <typename T>
+    __global__ void _Slice(const int count, const int outer_dim, const int inner_dim,
+        const int x_slice_dim, const int y_slice_dim, const int slice_offset, const T* x, T* y) {
+        CUDA_KERNEL_LOOP(idx, count) {
+            const int tmp = y_slice_dim * inner_dim;
+            const int outer_idx = idx / tmp;
+            const int slice_idx = idx % tmp;
+            const int x_idx = (outer_idx * x_slice_dim + slice_offset)
+                * inner_dim + slice_idx;
+            y[idx] = x[x_idx];
+        }
+}
+
+template <> void Slice<float, CUDAContext>(const int count, 
+                                           const int outer_dim, 
+                                           const int inner_dim,
+                                           const int x_slice_dim, 
+                                           const int y_slice_dim, 
+                                           const int slice_offset,
+                                           const float* x, 
+                                           float* y, 
+                                           CUDAContext* context) {
+    _Slice<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                           outer_dim, 
+                                                           inner_dim, 
+                                                         x_slice_dim, 
+                                                         y_slice_dim, 
+                                                        slice_offset, 
+                                                                   x, 
+                                                                  y);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template <typename T>
+__global__ void _SliceGrad(const int count, 
+                           const int outer_dim, 
+                           const int inner_dim,
+                           const int x_slice_dim, 
+                           const int y_slice_dim, 
+                           const int slice_offset, 
+                           const T* dy, 
+                           T* dx) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int tmp = y_slice_dim * inner_dim;
+        const int outer_idx = idx / tmp;
+        const int slice_idx = idx % tmp;
+        const int x_idx = (outer_idx * x_slice_dim + slice_offset)
+                                     * inner_dim + slice_idx;
+        dx[x_idx] = dy[idx];
+    }
+}
+
+template <> void SliceGrad<float, CUDAContext>(const int count, 
+                                               const int outer_dim, 
+                                               const int inner_dim,
+                                               const int x_slice_dim, 
+                                               const int y_slice_dim, 
+                                               const int slice_offset,
+                                               const float* dy, 
+                                               float* dx, 
+                                               CUDAContext* context) {
+    _SliceGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                               outer_dim, 
+                                                               inner_dim, 
+                                                             x_slice_dim, 
+                                                             y_slice_dim,
+                                                            slice_offset, 
+                                                                      dy, 
+                                                                     dx);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+/******************** ndarray.tile ********************/
+
+template <typename T>
+__global__ void _Tile(const int count, 
+                      const int ex_inner_dim, 
+                      const int multiple, 
+                      const T* x, 
+                      T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int d = idx % ex_inner_dim;
+        const int n = idx / ex_inner_dim / multiple;
+        const int x_idx = n * ex_inner_dim + d;
+        y[idx] = x[x_idx];
+    }
+}
+
+template <> void Tile<float, CUDAContext>(const int count, 
+                                          const int outer_dim, 
+                                          const int ex_inner_dim,
+                                          const int multiple, 
+                                          const float* x, 
+                                          float* y, 
+                                          CUDAContext* context) {
+    _Tile<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                       ex_inner_dim,
+                                                           multiple,
+                                                                  x,
+                                                                 y);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template <typename T>
+__global__ void _TileGrad(const int count, 
+                          const int ex_inner_dim,
+                          const int multiple, 
+                          const T* dy, 
+                          T* dx) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int d = idx % ex_inner_dim;
+        const int n = idx / ex_inner_dim;
+        T gradient = 0;
+        for (int t = 0; t < multiple; t++) 
+            gradient += dy[(n * multiple + t) * ex_inner_dim + d];
+        dx[idx] = gradient;
+    }
+}
+
+template <> void TileGrad<float, CUDAContext>(const int count,
+                                              const int outer_dim,
+                                              const int ex_inner_dim,
+                                              const int multiple,
+                                              const float* dy,
+                                              float* dx,
+                                              CUDAContext* context) {
+    _TileGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                           ex_inner_dim,
+                                                               multiple,
+                                                                     dy,
+                                                                    dx);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+/******************** ndarray.transpose ********************/
+
+template <typename T>
+__global__ void _Transpose(const int count, 
+                           const int ndim, 
+                           const int* order, 
+                           const int* old_steps, 
+                           const int* new_steps, 
+                           const T* x, 
+                           T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+       int x_idx = 0, y_idx = idx;
+       for (int j = 0; j < ndim; ++j) {
+           int k = order[j];
+           x_idx += (y_idx / new_steps[j]) * old_steps[k];
+           y_idx %= new_steps[j];
+       }
+       y[idx] = x[x_idx];
+   }
+}
+
+template <> void Transpose<float, CUDAContext>(const int count, 
+                                               const int ndim, 
+                                               const int* order, 
+                                               const int* old_steps,
+                                               const int* new_steps, 
+                                               const float* x, 
+                                               float* y) {
+    _Transpose<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                                    ndim, 
+                                                                   order, 
+                                                               old_steps, 
+                                                               new_steps, 
+                                                                       x, 
+                                                                      y);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+#ifdef WITH_CUDA_FP16
+template <> void Transpose<float16, CUDAContext>(const int count, 
+                                                 const int ndim, 
+                                                 const int* order, 
+                                                 const int* old_steps,
+                                                 const int* new_steps, 
+                                                 const float16* x, 
+                                                 float16* y) {
+    _Transpose<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                                   ndim, 
+                                                                  order, 
+                                                              old_steps, 
+                                                              new_steps, 
+                                       reinterpret_cast<const half*>(x),
+                                            reinterpret_cast<half*>(y));
+    CUDA_POST_KERNEL_CHECK;
+}
+#endif
+
+template <typename T>
+__global__ void _TransposeGrad(const int count, 
+                               const int ndim, 
+                               const int* order,
+                               const int* old_steps, 
+                               const int* new_steps,
+                               const T* dy, 
+                               T* dx) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        int x_idx = 0, y_idx = idx;
+        for (int j = 0; j < ndim; ++j) {
+            int k = order[j];
+            x_idx += (y_idx / new_steps[j]) * old_steps[k];
+            y_idx %= new_steps[j];
+        }
+        dx[x_idx] = dy[idx];
+    }
+}
+
+template <> void TransposeGrad<float, CUDAContext>(const int count, 
+                                                   const int ndim,
+                                                   const int* order, 
+                                                   const int* old_steps,
+                                                   const int* new_steps, 
+                                                   const float* dy, 
+                                                   float* dx) {
+    _TransposeGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                                        ndim, 
+                                                                       order, 
+                                                                   old_steps, 
+                                                                   new_steps, 
+                                                                          dy, 
+                                                                         dx);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+#ifdef WITH_CUDA_FP16
+template <> void TransposeGrad<float16, CUDAContext>(const int count, 
+                                                     const int ndim,
+                                                     const int* order, 
+                                                     const int* old_steps,
+                                                     const int* new_steps, 
+                                                     const float16* dy, 
+                                                     float16* dx) {
+    _TransposeGrad<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
+                                                                       ndim, 
+                                                                      order, 
+                                                                  old_steps, 
+                                                                  new_steps, 
+                                          reinterpret_cast<const half*>(dy),
+                                               reinterpret_cast<half*>(dx));
+    CUDA_POST_KERNEL_CHECK;
+}
+#endif
+
 /******************** recurrent.lstm_uint ********************/
 
 template <typename T>
@@ -1844,182 +2187,119 @@ template <> void RMSPropUpdate<float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
-/******************** utils.cast ********************/
-
-#ifdef WITH_CUDA_FP16
-template <typename T>
-__global__ void _FloatToHalfKernel(const int count, const float* x, half* y) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        y[idx] = __float2half(x[idx]);
-    }
-}
-
-template <> void Float2Half<float, CUDAContext>(const int count, 
-                                                const float* x, 
-                                                float16* y) {
-    _FloatToHalfKernel<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                               x, 
-                                                     reinterpret_cast<half*>(y));
-     CUDA_POST_KERNEL_CHECK;
-}
-#endif
-
-/******************** utils.compare ********************/
+/******************** vision.bilinear_resize ********************/
 
 template <typename T>
-__global__ void _Equal(const int count, const T* a, const T* b, T* y) {
+__global__ void _BilinearResize(const int count, 
+                                const float h_scale, 
+                                const float w_scale,
+                                const int num, const int channels, 
+                                const int h_in, const int w_in, 
+                                const int h_out, const int w_out, 
+                                const T* x, 
+                                T* y) {
     CUDA_KERNEL_LOOP(idx, count) {
-        y[idx] = fabs(a[idx] - b[idx]) < FLT_EPSILON ? 1.0 : 0.0;
+        const int w = idx % w_out;
+        const int h = (idx / w_out) % h_out;
+        const int c = (idx / w_out / h_out) % channels;
+        const int n = idx / w_out / h_out / channels;
+
+        const float in_h = h * h_scale;
+        const int top_y_idx = floorf(in_h);
+        const int bottom_y_idx = (in_h < h_in - 1) ? ceilf(in_h) : h_in - 1;
+        const float y_lerp = in_h - top_y_idx;
+
+        const float in_w = w * w_scale;
+        const int left_x_idx = floorf(in_w);
+        const int right_x_idx = (in_w < w_in - 1) ? ceilf(in_w) : w_in - 1;
+        const float x_lerp = in_w - left_x_idx;
+
+        const float top_left(x[((n * channels + c) * h_in + top_y_idx) * w_in + left_x_idx]);
+        const float top_right(x[((n * channels + c) * h_in + top_y_idx) * w_in + right_x_idx]);
+        const float bottom_left(x[((n * channels + c) * h_in + bottom_y_idx) * w_in + left_x_idx]);
+        const float bottom_right(x[((n * channels + c) * h_in + bottom_y_idx) * w_in + right_x_idx]);
+
+        const float top = top_left + (top_right - top_left) * x_lerp;
+        const float bottom = bottom_left + (bottom_right - bottom_left) * x_lerp;
+        y[idx] = top + (bottom - top) * y_lerp;
     }
 }
 
-template <> void Equal<float, CUDAContext>(const int count, 
-                                           const float* a,
-                                           const float* b, 
-                                           float* y) {
-    _Equal<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, a, b, y);
-     CUDA_POST_KERNEL_CHECK;
-}
-
-/******************** utils.memory_data ********************/
-
-template <typename Tx, typename Ty>
-__global__ void _MemoryData(const int count, 
-                            const int num, 
-                            const int channels, 
-                            const int height, 
-                            const int width, 
-                            const Tx* x, 
-                            Ty* y) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        const int w = idx % width;
-        const int h = (idx / width) % height;
-        const int c = (idx / width / height) % channels;
-        const int n = idx / width / height / channels;
-        const int x_idx = ((n * height + h) * width + w) * channels + c;
-        if (c == 0) y[idx] = x[x_idx] - 102.9801;
-        else if (c == 1) y[idx] = x[x_idx] - 115.9465;
-        else y[idx] = x[x_idx] - 122.7717;
-    }
-}
-
-template <typename Tx, typename Ty>
-__global__ void _MemoryDataHalf(const int count, 
-                                const int num, 
-                                const int channels, 
-                                const int height, 
-                                const int width, 
-                                const Tx* x, 
-                                Ty* y) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        const int w = idx % width;
-        const int h = (idx / width) % height;
-        const int c = (idx / width / height) % channels;
-        const int n = idx / width / height / channels;
-        const int x_idx = ((n * height + h) * width + w) * channels + c;
-        if (c == 0) y[idx] = __float2half(x[x_idx] - 102.9801);
-        else if (c == 1) y[idx] = __float2half(x[x_idx] - 115.9465);
-        else y[idx] = __float2half(x[x_idx] - 122.7717);
-    }
-}
-
-template <> void MemoryData<float, float, CUDAContext>(const int count, 
-                                                       const int num, 
-                                                       const int channels, 
-                                                       const int height, 
-                                                       const int width, 
-                                                       const float* x, 
-                                                       float* y) {
-    _MemoryData<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                      num, 
-                                                                 channels, 
-                                                                   height, 
-                                                                    width, 
-                                                                        x, 
-                                                                       y);
+template <> void BilinearResize<float, CUDAContext>(const int count,
+                                                    const int num, const int channels,
+                                                    const int h_in, const int w_in, 
+                                                    const int h_out, const int w_out,
+                                                    const float* x, float* y) {
+    const float h_scale = (float)h_in / h_out;
+    const float w_scale = (float)w_in / w_out;
+    _BilinearResize<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                      h_scale,
+                                                                      w_scale,
+                                                                num, channels,
+                                                                   h_in, w_in,
+                                                                 h_out, w_out,
+                                                                            x,
+                                                                           y);
     CUDA_POST_KERNEL_CHECK;
 }
 
-template <> void MemoryData<uint8_t, float, CUDAContext>(const int count, 
-                                                       const int num, 
-                                                       const int channels, 
-                                                       const int height, 
-                                                       const int width, 
-                                                       const uint8_t* x, 
-                                                       float* y) {
-    _MemoryData<uint8_t, float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                               num, 
-                                                                          channels, 
-                                                                            height, 
-                                                                             width, 
-                                                                                 x, 
-                                                                                y);
-    CUDA_POST_KERNEL_CHECK;
-}
-
-#ifdef WITH_CUDA_FP16
-template <> void MemoryData<float, float16, CUDAContext>(const int count, 
-                                                         const int num, 
-                                                         const int channels, 
-                                                         const int height, 
-                                                         const int width, 
-                                                         const float* x, 
-                                                         float16* y) {
-    _MemoryDataHalf<float, half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                                num, 
-                                                                           channels, 
-                                                                             height, 
-                                                                              width, 
-                                                                                  x, 
-                                                        reinterpret_cast<half*>(y));
-    CUDA_POST_KERNEL_CHECK;
-}
-
-template <> void MemoryData<uint8_t, float16, CUDAContext>(const int count, 
-                                                           const int num, 
-                                                           const int channels, 
-                                                           const int height, 
-                                                           const int width, 
-                                                           const uint8_t* x, 
-                                                           float16* y) {
-    _MemoryDataHalf<uint8_t, half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                                  num, 
-                                                                             channels, 
-                                                                               height, 
-                                                                                width, 
-                                                                                    x, 
-                                                          reinterpret_cast<half*>(y));
-    CUDA_POST_KERNEL_CHECK;
-}
-#endif
-
-/******************** utils.one_hot ********************/
 
 template <typename T>
-__global__ void _OneHot(const int count,
-                        const int depth, 
-                        const int on_value, 
-                        const float* x,
-                        float* y) {
+__global__ void _BilinearResizeGrad(const int count,
+                                    const float h_scale, const float w_scale,
+                                    const int num, const int channels, 
+                                    const int h_in, const int w_in,
+                                    const int h_out, const int w_out, 
+                                    const T* dy, 
+                                    T* dx) {
     CUDA_KERNEL_LOOP(idx, count) {
-        const int val = x[idx];
-        y[idx * depth + val] = on_value;
+        const int w = idx % w_in;
+        const int h = (idx / w_in) % h_in;
+        const int c = (idx / w_in / h_in) % channels;
+        const int n = idx / w_in / h_in / channels;
+
+        const float original_h = h * h_scale;
+        const int top_y_idx = floorf(original_h);
+        const int bottom_y_idx = (original_h < h_out - 1) ? ceilf(original_h) : h_out - 1;
+        const float y_lerp = original_h - top_y_idx;
+
+        const float original_w = w * w_scale;
+        const int left_x_idx = floorf(original_w);
+        const int right_x_idx = (original_w < w_out - 1) ? ceilf(original_w) : w_out - 1;
+        const float x_lerp = original_w - left_x_idx;
+
+        const float dtop = (1 - y_lerp) * dy[idx];
+        atomicAdd(dx + ((n * channels + c) * h_out + top_y_idx) * w_out + left_x_idx, 
+            static_cast<T>((1 - x_lerp) * dtop));
+        atomicAdd(dx + ((n * channels + c) * h_out + top_y_idx) * w_out + right_x_idx,
+            static_cast<T>(x_lerp * dtop));
+
+        const float dbottom = y_lerp * dy[idx];
+        atomicAdd(dx + ((n * channels + c) * h_out + bottom_y_idx) * w_out + left_x_idx,
+            static_cast<T>((1 - x_lerp) * dbottom));
+        atomicAdd(dx + ((n * channels + c) * h_out + bottom_y_idx) * w_out + right_x_idx,
+            static_cast<T>(x_lerp * dbottom));
     }
 }
 
-
-template <> void OneHot<float, CUDAContext>(const int count,
-                                            const int depth,
-                                            const int on_value,
-                                            const float* x,
-                                            float* y) {
-    _OneHot<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                                                depth,
-                                                             on_value,
-                                                                    x,
-                                                                   y);
+template <> void BilinearResizeGrad<float, CUDAContext>(const int count,
+                                                        const int num, 
+                                                        const int channels,
+                                                        const int h_in, const int w_in, 
+                                                        const int h_out, const int w_out,
+                                                        const float* dy, float* dx) {
+    const float h_scale = (float)h_out / h_in;
+    const float w_scale = (float)w_out / w_in;
+    _BilinearResizeGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                          h_scale,
+                                                                          w_scale,
+                                                                    num, channels,
+                                                                       h_in, w_in,
+                                                                     h_out, w_out,
+                                                                               dy,
+                                                                              dx);
     CUDA_POST_KERNEL_CHECK;
-}
+} 
 
 /******************** vision.conv ********************/
 
@@ -2166,10 +2446,11 @@ __global__ void _NNResize(const int count,
     CUDA_KERNEL_LOOP(idx, count) {
         const int w = idx % w_out;
         const int h = (idx / w_out) % h_out;
-        const int in_h = min(int(floorf(h * h_scale)), h_in - 1);
-        const int in_w = min(int(floorf(w * w_scale)), w_in - 1);
         const int c = (idx / w_out / h_out) % channels;
         const int n = idx / w_out / h_out / channels;
+
+        const int in_h = min(int(floorf(h * h_scale)), h_in - 1);
+        const int in_w = min(int(floorf(w * w_scale)), w_in - 1);
         const int x_idx = ((n * channels + c) * h_in + in_h) * w_in + in_w;
         y[idx] = x[x_idx];
     }
@@ -2204,10 +2485,11 @@ template <typename T>
     CUDA_KERNEL_LOOP(idx, count) {
         const int w = idx % w_in;
         const int h = (idx / w_in) % h_in;
-        const int out_h = min(int(floorf(h * h_scale)), h_out - 1);
-        const int out_w = min(int(floorf(w * w_scale)), w_out - 1);
         const int c = (idx / w_in / h_in) % channels;
         const int n = idx / w_in / h_in / channels;
+
+        const int out_h = min(int(floorf(h * h_scale)), h_out - 1);
+        const int out_w = min(int(floorf(w * w_scale)), w_out - 1);
         const int x_idx = ((n * channels + c) * h_out + out_h) * w_out + out_w;
         atomicAdd(dx + x_idx, dy[idx]);
     }

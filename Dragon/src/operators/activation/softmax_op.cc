@@ -15,7 +15,12 @@ void SoftmaxOp<Context>::RunWithType() {
 
     ctx().template Copy<T, Context, Context>(input(0).count(), Ydata, Xdata);
     kernel::Softmax<T, Context>(output(0)->count(), input(0).dim(axis),
-        outer_dim, inner_dim, SMul_data, Xdata, Sdata, Ydata, &ctx());
+                                                  outer_dim, inner_dim,
+                                                             SMul_data,
+                                                                 Xdata,
+                                                                 Sdata,
+                                                                 Ydata,
+                                                               &ctx());
 }
 
 template <class Context>
@@ -28,7 +33,7 @@ void SoftmaxOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(Softmax);
@@ -48,7 +53,12 @@ void SoftmaxGradientOp<Context>::RunWithType() {
 
     ctx().template Copy<T, Context, Context>(input(0).count(), dXdata, dYdata);
     kernel::SoftmaxGrad<T, Context>(output(0)->count(), input(0).dim(axis),
-        outer_dim, inner_dim, SMul_data, dYdata, Ydata, Sdata, dXdata);
+                                                      outer_dim, inner_dim,
+                                                                 SMul_data,
+                                                                    dYdata,
+                                                                     Ydata,
+                                                                     Sdata,
+                                                                   dXdata);
 }
 
 template <class Context>
@@ -61,7 +71,7 @@ void SoftmaxGradientOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(SoftmaxGradient);

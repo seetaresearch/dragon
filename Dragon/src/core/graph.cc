@@ -18,7 +18,7 @@ GraphBase::GraphBase(const GraphDef& graph_def, Workspace* ws)
         //  check inputs
         for (auto& in : op.input())
             CHECK(known_tensors.count(in) || ws_->HasTensor(in))
-                << "input: " << in << " for op: " 
+                << "\nInput: " << in << " for op: " 
                 << op.name() << " is unknown.";
         //  add outputs
         for (auto& out : op.output()) known_tensors.insert(out);
@@ -28,7 +28,7 @@ GraphBase::GraphBase(const GraphDef& graph_def, Workspace* ws)
     Set<string> objective_targets;
     for (auto& target : graph_def.target()) {
         CHECK(known_tensors.count(target) || ws_->HasTensor(target))
-            << "target: " << target << " does not exist in computional graph.";
+            << "\nTarget: " << target << " does not exist in computional graph.";
         objective_targets.insert(target);
     }
 
@@ -37,12 +37,12 @@ GraphBase::GraphBase(const GraphDef& graph_def, Workspace* ws)
         string cost = g_target.cost();
         string wrt = g_target.wrt();
         CHECK(known_tensors.count(cost) || ws_->HasTensor(cost))
-            << "target: " << cost << "_grad does not exist in computional graph.";
+            << "\nTarget: " << cost << "_grad does not exist in computional graph.";
         CHECK(known_tensors.count(wrt) || ws_->HasTensor(wrt))
-            << "target: " << wrt << "_grad does not exist in computional graph.";
+            << "\nTarget: " << wrt << "_grad does not exist in computional graph.";
         CHECK_GT(objective_targets.count(cost), 0)
-            << "\nto solve d(" << cost << ")/d(" << wrt << "), "
-            << "you must set " << cost
+            << "\nTo solve d(" << cost << ")/d(" << wrt << "), "
+            << "must set " << cost
             << "\nas a objective tensor to solve before derivating it.";
     }
 }
@@ -107,7 +107,7 @@ GraphDef Graph::Prune(const GraphDef& graph_def) {
         }
     }
 
-    //  backward dyeing for all objective targets (e.g loss)
+    //  backward dyeing for all objective targets (e.g. loss)
     for (int i = 0; i < graph_def.target_size(); i++) {
         targets_.insert(graph_def.target(i));
         if (colored_[graph_def.target(i)]) continue;
@@ -127,14 +127,14 @@ GraphDef Graph::Prune(const GraphDef& graph_def) {
         ForwardPruneDyeing(u, v, vector<string>({ u }));
     }
 
-    //  select all dyed operators
+    //  select all colored operators
     set<int> selected_op_indices;    //  note that we use set to keep topo-order
     for (auto it : colored_) {
         if (dag_[it.first].op_idx == -1) continue;
         selected_op_indices.insert(dag_[it.first].op_idx);
     }
 
-    //  ensure that the update target will not be removed(colored_ it)
+    //  ensure that the update target will not be removed(color it)
     for (int i = 0; i < graph_def.u_target_size(); i++) {
         UpdateTarget target = graph_def.u_target(i);
         for (auto& tensor : target.tensor())
@@ -176,7 +176,7 @@ GraphDef Graph::Prune(const GraphDef& graph_def) {
 GraphDef Graph::Share(const GraphDef& graph_def) {
     renamed_.clear();
 
-    //  forward dyeing to check all available sharing tensors
+    //  forward dyeing to search available tensors that be shared
     for (int i = 0; i< graph_def.op_size(); i++) {
         const OperatorDef& op = graph_def.op(i);
         for (auto& u : op.input()) ForwardShareDyeing(u, u);
@@ -206,51 +206,73 @@ GraphDef Graph::Share(const GraphDef& graph_def) {
 }
 
 GraphDef Graph::MakeUpdate(const GraphDef& graph_def) {
-    GraphDef update_graph; 
-    update_graph.CopyFrom(graph_def);
-    OperatorDef async_update; async_update.set_type("AsyncUpdate");
+    OperatorDef collective_op;
+    collective_op.set_type("CollectiveUpdate");
+
+    //  make update ops
+    vector<OperatorDef> update_ops;
     for (int i = 0; i < graph_def.u_target_size(); i++) {
         UpdateTarget target = graph_def.u_target(i);
         vector<string> missing_tensors;
-        //  missing check
         for (auto& tensor : target.tensor()) {
             if (!ws()->HasTensor(tensor)) {
-                LOG(INFO) << "missing Tensor: " << tensor;
+                LOG(INFO) << "Missing Tensor: " << tensor;
                 missing_tensors.push_back(tensor);
             }
         }
         if (missing_tensors.size() == 0) {
             vector<Argument> args;
             for (auto& arg : target.arg()) args.push_back(arg);
-            OperatorDef op_def = MakeOperatorDef(target.type(), target.name(),
-                vector < string >({ target.tensor(1) }),
-                vector < string >({ target.tensor(0) }));
-            async_update.add_input(target.tensor(1));
-            async_update.add_output(target.tensor(0));
+            OperatorDef op_def = MakeOperatorDef(target.type(),
+                                                 target.name(),
+                          vector<string>({ target.tensor(1) }),  // dx
+                          vector<string>({ target.tensor(0) })); // x
+            collective_op.add_input(target.tensor(1));
+            collective_op.add_output(target.tensor(1));
             op_def.mutable_arg()->CopyFrom(target.arg());
-            async_update.mutable_arg()->CopyFrom(target.arg());
-            update_graph.add_op()->CopyFrom(op_def);
+            update_ops.push_back(op_def);
         } else {
-            LOG(INFO) << "missing tensors. skip update Tensor("
+            LOG(INFO) << "Missing tensors. Skip update Tensor("
                       << target.tensor(0) << ")";
         }
     }
-    bool allow_async = false;
-    int group_size = 1;
-    for (auto& arg : async_update.arg()) {
-        if (arg.name() == "mode")
-            if (arg.s() == "Async" || arg.s() == "Async_No_Lock") allow_async = true;
-        if (arg.name() == "group_size") group_size = arg.i();
-    }
-    if (allow_async) {
-        for (int i = 0; i < group_size; i++) {
-            OperatorDef server_op; server_op.CopyFrom(async_update);
-            Argument arg_node_id; arg_node_id.set_name("node_id");
-            arg_node_id.set_i(i); server_op.add_arg()->CopyFrom(arg_node_id);
-            update_graph.add_op()->CopyFrom(server_op);
+
+    //  make collective ops if necessary
+    vector<OperatorDef> collective_ops;
+    if (this->args_.count("parallel_mode")) {
+        if (this->args_["parallel_mode"].s() == "MPI" ||
+            this->args_["parallel_mode"].s() == "NCCL") {
+            OperatorDef op_def;
+            op_def.CopyFrom(collective_op);
+            Argument collective_mode;
+            collective_mode.set_name("mode");
+            collective_mode.set_s(this->args_["parallel_mode"].s() + "_ALLREDUCE");
+            op_def.add_arg()->CopyFrom(collective_mode);
+            if (this->args_.count("comm") &&
+                this->args_.count("group") &&
+                this->args_.count("root")) {
+                op_def.add_arg()->CopyFrom(this->args_["comm"]);
+                op_def.add_arg()->CopyFrom(this->args_["group"]);
+                op_def.add_arg()->CopyFrom(this->args_["root"]);
+            } else {
+                LOG(FATAL) << "MPI was not initialized.";
+            }
+            collective_ops.push_back(op_def);
+        } else if (this->args_["parallel_mode"].s() == "MIXED") {
+            /*
+                See:  Accurate, Large Minibatch SGD: Training ImageNet in 1 Hour 
+                Links: http://arxiv.org/abs/1706.02677
+            */
+            NOT_IMPLEMENTED;
         }
     }
+
+    //  generate graph
+    GraphDef update_graph;
+    update_graph.CopyFrom(graph_def);
     update_graph.clear_u_target();
+    for (auto& op : collective_ops) update_graph.add_op()->CopyFrom(op);
+    for (auto& op : update_ops) update_graph.add_op()->CopyFrom(op);
     return update_graph;
 }
 
@@ -283,29 +305,29 @@ bool Graph::Create(const GraphDef& graph_def, Workspace* ws) {
 
 void Graph::RecomputingAware(const GraphDef& graph_def, Workspace* ws) {
     GraphDef fake_graph(graph_def);
-    Map<string, vector<OperatorBase*> > fake_recompute_map;
+    Map<string, vector<OperatorBase*> > fake_recompute_map, recompute_map;
     Map<string, string> rename_map;
     Map<string, Set<string> > hash_map;
     Map<string, int> multi_use_count;
 
-    //  check mirrow stage
+    //  check mirror stage
     for (int i = 0; i < ops_.size(); i++) {
         if (ops_[i]->type().find("Gradient") != string::npos) continue;
-        bool mirrow_stage = ops_[i]->GetSingleArg<bool>("mirrow_stage", false);
+        bool mirror_stage = ops_[i]->GetSingleArg<bool>("mirror_stage", false);
         for (auto& u : graph_def.op(i).input()) {
             bool inplace_flag = false;
             for (auto& v : graph_def.op(i).output()) if (u == v) inplace_flag = true;
-            mirrow_stage &= (!inplace_flag);
+            mirror_stage &= (!inplace_flag);
             if (!inplace_flag) multi_use_count[u]++;
         }
-        if (mirrow_stage) {
-            //  TODO(PhyscalX):  we assume that input(0)-output(0) as a force in-place currently
+        if (mirror_stage) {
+            //  TODO(PhyscalX):  we assume input(0)->output(0) as a in-place currently
             OperatorDef* op = fake_graph.mutable_op(i);
             if (rename_map.count(op->input(0))) 
                 *op->mutable_input(0) = rename_map[op->input(0)];
             rename_map[op->output(0)] = op->input(0);
             *op->mutable_output(0) = op->input(0);
-            ops_[i]->input(0).Corrupt();    //  mark a flag
+            ops_[i]->input(0).Corrupt();    //  mark as a flag
         }
     }
 
@@ -321,28 +343,31 @@ void Graph::RecomputingAware(const GraphDef& graph_def, Workspace* ws) {
                 fake_recompute_map[fake_v] = vector<OperatorBase*>(); 
             if (v != fake_v) {
                 if (multi_use_count[fake_v] >= 2)
-                    fake_recompute_map[fake_v] = ws->GetRecompute(fake_v);
+                    fake_recompute_map[fake_v] = recompute_map[fake_v];
             }    
             fake_recompute_map[fake_v].push_back(ops_[i]);
             for (int k = 0; k < fake_recompute_map[fake_v].size(); k++) {
                 if (!hash_map.count(v)) hash_map[v] = Set<string>();
                 string op_name = fake_recompute_map[fake_v][k]->name();
                 if (!hash_map[v].count(op_name)) {
-                    ws->AddRecompute(v, fake_recompute_map[fake_v][k]);
+                    if (!recompute_map.count(v)) 
+                        recompute_map[v] = vector<OperatorBase*>();
+                    recompute_map[v].push_back(fake_recompute_map[fake_v][k]);
                     hash_map[v].insert(op_name);
                 }
             }
         }
     }
-    
+   
     //  prepare resources
-    Tensor* head = ws->CreateTensor("_t_mirrow_stage_head");
+    for (auto& ops : ops_) ops->set_recompute_map(recompute_map);
+    Tensor* head = ws->CreateTensor("_t_mirror_stage_head");
     head->Reshape(vector<TIndex>(1, WORKSPACE_MAX_CORRUPTED_SIZE));
     Tensor* recompute_flag = ws->CreateTensor("_t_global_recompute_flag");
     recompute_flag->Reshape(vector<TIndex>(1, 1));
     recompute_flag->mutable_data<bool, CPUContext>()[0] = false;
     for (int i = 0; i < WORKSPACE_MAX_CORRUPTED_SIZE; i++) {
-        string name = "_t_mirrow_stage_buffer_" + dragon_cast<string, int>(i);
+        string name = "_t_mirror_stage_buffer_" + dragon_cast<string, int>(i);
         Tensor* buffer = ws->CreateTensor(name);
         head->mutable_data<string, CPUContext>()[i] = "";
     }
@@ -361,7 +386,7 @@ Graph::Graph(const GraphDef& graph_def, Workspace* ws)
         optimized_graph = Share(optimized_graph);
     }
 
-    //  store the final graph as a tensor for python to draw
+    //  store the final graph as a tensor for visualization
     Tensor* string_tensor = ws_->CreateTensor("GraphDef_" + optimized_graph.name());
     string_tensor->Reshape(vector<TIndex>(1, 1));
     string* data = string_tensor->mutable_data<string, CPUContext>();

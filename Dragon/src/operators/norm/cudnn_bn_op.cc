@@ -139,8 +139,8 @@ void CuDNNBNOp<Context>::RunOnDevice() {
     if (input(0).template IsType<float>()) {
         if (input(0).ndim() == 4) SpatialRunWithType<float>();
         else if (input(0).ndim() == 2) PerActivationRunWithType<float>();
-        else LOG(FATAL) << "the ndim of input tensor must be 2 or 4.";
-    } else { LOG(FATAL) << "unsupported input types."; }
+        else LOG(FATAL) << "The ndim of input tensor should be 2 or 4.";
+    } else { LOG(FATAL) << "Unsupported input types."; }
 }
 
 DEPLOY_CPU(BN);
@@ -341,8 +341,8 @@ void CuDNNBNGradientOp<Context>::RunOnDevice() {
     if (input(0).template IsType<float>()) {
         if (input(0).ndim() == 4) SpatialRunWithType<float>();
         else if (input(0).ndim() == 2) PerActivationRunWithType<float>();
-        else LOG(FATAL) << "the ndim of input tensor must be 2 or 4.";
-    } else { LOG(FATAL) << "unsupported input types."; }
+        else LOG(FATAL) << "The ndim of input tensor must be 2 or 4.";
+    } else { LOG(FATAL) << "Unsupported input types."; }
 }
 
 template <class Context>
@@ -368,17 +368,6 @@ DEPLOY_CUDA(BNGradient);
 #endif
 OPERATOR_SCHEMA(BNGradient).NumInputs(5).NumOutputs(3);
 DEPLOY_CUDNN(BNGradient);
-
-class GetBNGradient final : public GradientMakerBase {
- public:
-    GRADIENT_MAKER_CTOR(GetBNGradient);
-    vector<OperatorDef> MakeDefs() override {
-        return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), I(1), I(2), I(3), GO(0)},
-            vector<string> {GI(0), GI(3), GI(4)});
-    }
-};
-REGISTER_GRADIENT(BN, GetBNGradient);
 
 }    // namespace dragon
 

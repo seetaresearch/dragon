@@ -53,4 +53,4 @@ class ROIPoolingGradientOp final : public Operator<Context> {
 
 }    // namespace dragon
 
-#endif  // DRAGON_OPERATORS_VISION_ROI_POOLING_OP_H_
+#endif    // DRAGON_OPERATORS_VISION_ROI_POOLING_OP_H_

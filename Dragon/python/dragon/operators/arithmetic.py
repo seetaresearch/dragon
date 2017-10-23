@@ -4,22 +4,26 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-from dragon.core.tensor import Tensor
+from . import *
 
 def Add(inputs, **kwargs):
+    """Calculate A + B.
+
+    Parameters
+    ----------
+    inputs : list of Tensor
+        The inputs, represent A and B respectively.
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
     """
+    CheckInputs(inputs, 2)
+    arguments = ParseArguments(locals())
 
-    :param inputs:      a list of 2 Tensors
-    :return:            a Tensor of input[0] + input[1]
-
-    """
-    if not isinstance(inputs, list) or len(inputs) is not 2:
-        raise RuntimeError('Add Operator accepts a list of 2 Tensors')
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-
-    output = Tensor.CreateOperator(nout=1, op_type='Add', **kwargs)
+    output = Tensor.CreateOperator(nout=1, op_type='Add', **arguments)
 
     if inputs[0].shape is not None:
         output.shape = inputs[0].shape[:]
@@ -28,40 +32,47 @@ def Add(inputs, **kwargs):
 
 
 def Sub(inputs, **kwargs):
+    """Calculate A - B.
+
+    Parameters
+    ----------
+    inputs : list of Tensor
+        The inputs, represent A and B respectively.
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
     """
+    CheckInputs(inputs, 2)
+    arguments = ParseArguments(locals())
 
-    :param inputs:      a list of 2 Tensors
-    :return:            a Tensor of input[0] - input[1]
-
-    """
-    if not isinstance(inputs, list) or len(inputs) is not 2:
-        raise RuntimeError('Sub Operator accepts a list of 2 Tensors')
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-
-    output = Tensor.CreateOperator(nout=1, op_type='Sub', **kwargs)
+    output = Tensor.CreateOperator(nout=1, op_type='Add', **arguments)
 
     if inputs[0].shape is not None:
         output.shape = inputs[0].shape[:]
 
     return output
 
-
 def Mul(inputs, **kwargs):
+    """Calculate A * B.
+
+    Parameters
+    ----------
+    inputs : list of Tensor
+        The inputs, represent A and B respectively.
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
     """
+    CheckInputs(inputs, 2)
+    arguments = ParseArguments(locals())
 
-    :param inputs:      a list of 2 Tensors
-    :return:            a Tensor of input[0] * input[1]
-
-    """
-    if not isinstance(inputs, list) or len(inputs) is not 2:
-        raise RuntimeError('Mul Operator accepts a list of 2 Tensors')
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-
-    output = Tensor.CreateOperator(nout=1, op_type='Mul', **kwargs)
+    output =  Tensor.CreateOperator(nout=1, op_type='Mul', **arguments)
 
     if inputs[0].shape is not None:
         output.shape = inputs[0].shape[:]
@@ -70,19 +81,23 @@ def Mul(inputs, **kwargs):
 
 
 def Div(inputs, **kwargs):
+    """Calculate A / B.
+
+    Parameters
+    ----------
+    inputs : list of Tensor
+        The inputs, represent A and B respectively.
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
     """
+    CheckInputs(inputs, 2)
+    arguments = ParseArguments(locals())
 
-    :param inputs:      a list of 2 Tensors
-    :return:            a Tensor of input[0] / input[1]
-
-    """
-    if not isinstance(inputs, list) or len(inputs) is not 2:
-        raise RuntimeError('Div Operator accepts a list of 2 Tensors')
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-
-    output = Tensor.CreateOperator(nout=1, op_type='Div', **kwargs)
+    output =  Tensor.CreateOperator(nout=1, op_type='Div', **arguments)
 
     if inputs[0].shape is not None:
         output.shape = inputs[0].shape[:]
@@ -91,20 +106,29 @@ def Div(inputs, **kwargs):
 
 
 def Clip(inputs, low=None, high=None, **kwargs):
+    """Clip the input to be between lower and higher bounds.
+
+    Parameters
+    ----------
+    inputs : Tensor
+        The input tensor.
+    low : basic numerical type or None
+        The lower bound. Default is ``None`` (Ignore).
+    high : basic numerical type or None
+        The higher bound. Default is ``None`` (Ignore).
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
     """
-    :param inputs:       a Tensor with any shape
-    :return:             a Tensor of clip(x)
+    CheckInputs(inputs, 1)
+    arguments = ParseArguments(locals())
+    if low is not None: arguments['low'] = float(arguments['low'])
+    if high is not None: arguments['high'] = float(arguments['high'])
 
-        """
-    if not isinstance(inputs, Tensor):
-        raise RuntimeError('Log Operator accepts a Tensor as inputs')
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-    if low is None: del kwargs['low']
-    if high is None: del kwargs['high']
-
-    output = Tensor.CreateOperator(nout=1, op_type='Clip', **kwargs)
+    output = Tensor.CreateOperator(nout=1, op_type='Clip', **arguments)
 
     if inputs.shape is not None:
         output.shape = inputs.shape[:]
@@ -113,40 +137,63 @@ def Clip(inputs, low=None, high=None, **kwargs):
 
 
 def Matmul(inputs, TransA=False, TransB=False, **kwargs):
+    """Matrix Multiplication.
+
+    This operator can calculate a batch of matrix multiplication.
+
+    To trigger ``Batch Matrix Multiplication``, the ``ndim`` of A must greater than ``2``.
+
+    Parameters
+    ----------
+    inputs : list of Tensor
+        The inputs, represent A and B respectively.
+    TransA : boolean
+        Whether to transpose A.
+    TransB : boolean
+        Whether to transpose B.
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
     """
+    CheckInputs(inputs, 2)
+    arguments = ParseArguments(locals())
 
-    :param inputs:      a list of 2 Tensors with same shape
-    :return:            a Tensor of input[0] * input[1]
+    output = Tensor.CreateOperator(nout=1, op_type='Matmul', **arguments)
 
-    """
-    if not isinstance(inputs, list) or len(inputs) is not 2:
-        raise RuntimeError('Matmul Operator accepts a list of 2 Tensors')
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-
-    output = Tensor.CreateOperator(nout=1, op_type='Matmul', **kwargs)
-
-    if inputs[0].shape is not None and inputs[1].shape is not None:
+    if inputs[0].shape is not None and \
+            inputs[1].shape is not None:
         pass
 
     return output
 
 
 def Dot(inputs, TransA=False, TransB=False, **kwargs):
+    """DotProduct Function.
+
+    This operator can trigger ``Matrix Multiplication`` or ``Matrix Vector Multiplication`` also.
+
+    Parameters
+    ----------
+    inputs : list of Tensor
+        The inputs, represent A and B respectively.
+    TransA : boolean
+        Whether to transpose A.
+    TransB : boolean
+        Whether to transpose B.
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
     """
+    CheckInputs(inputs, 2)
+    arguments = ParseArguments(locals())
 
-    :param inputs:      a list of 2 Tensors
-    :return:            a Tensor of input[0] \dot input[1]
-
-    """
-    if not isinstance(inputs, list) or len(inputs) is not 2:
-        raise RuntimeError('Dot Operator accepts a list of 2 Tensors')
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-
-    output = Tensor.CreateOperator(nout=1, op_type='Dot', **kwargs)
+    output = Tensor.CreateOperator(nout=1, op_type='Dot', **arguments)
 
     if inputs[0].shape is not None and inputs[1].shape is not None:
         a_shape = inputs[0].shape[:] if not TransA else inputs[0].shape[::-1]
@@ -158,22 +205,31 @@ def Dot(inputs, TransA=False, TransB=False, **kwargs):
 
 
 def InnerProduct(inputs, num_output, axis=1, TransW=True, **kwargs):
+    """InnerProduct Function.
+
+    The number of inputs vary from ``2`` to ``3`` (Without or With ``bias``).
+
+    Parameters
+    ----------
+    inputs : list of Tensor
+        The inputs, represent [input, weights, bias].
+    num_output : int
+        The output dim.
+    axis : int
+        The start axis to calculate.
+    TransW : boolean
+        Whether to transpose the weights.
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
     """
+    CheckInputs(inputs, 2, 3)
+    arguments = ParseArguments(locals())
 
-    :param inputs:       a list contains [input, weight] or [input, weight, bias]
-    :param num_output:   a int of the output dim
-    :param axis          a int of the start axis
-    :param TransW        a bool of whether to transpose the weights
-    :return:             a Tensor of { input * weight + bias }
-
-    """
-    if not isinstance(inputs, list) or len(inputs) < 2:
-        raise RuntimeError('InnerProduct Operator accpets a list of at least 2 Tensors')
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-
-    output = Tensor.CreateOperator(nout=1, op_type='InnerProduct', **kwargs)
+    output = Tensor.CreateOperator(nout=1, op_type='InnerProduct', **arguments)
 
     if inputs[0].shape is not None:
         output.shape = inputs[0].shape[: axis + 1]
@@ -183,19 +239,29 @@ def InnerProduct(inputs, num_output, axis=1, TransW=True, **kwargs):
 
 
 def Eltwise(inputs, operation='SUM', coeffs=None, **kwargs):
+    """Eltwise Sum/Product Function.
+
+    Parameters
+    ----------
+    inputs : list of Tensor
+        The inputs.
+    operation : str
+        The operation, ``SUM`` or ``PROD``.
+    coeffs : list of float or None
+        The coefficients on inputs. Default is ``None`` (All are ``1.0``) .
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
     """
+    CheckInputs(inputs, 2, INT_MAX)
+    arguments = ParseArguments(locals())
+    if arguments['coeffs'] is not None:
+        arguments['coeffs'] = [float(ele) for ele in arguments['coeffs']]
 
-    :param inputs:       a list several Tensors with same shape
-    :param operation:    a str of 'SUM' or 'PRODUCT'
-    :param coeffs:       a float list of coeffs (None uses 1.0)
-    :return:             a Tensor of Operation{ input(0), input(1), ... }
-
-    """
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-    if kwargs['coeffs'] is None: del kwargs['coeffs']
-
-    output = Tensor.CreateOperator(nout=1, op_type='Eltwise', **kwargs)
+    output = Tensor.CreateOperator(nout=1, op_type='Eltwise', **arguments)
 
     if all(input.shape is not None for input in inputs):
         output.shape = inputs[0].shape[:]
@@ -204,18 +270,23 @@ def Eltwise(inputs, operation='SUM', coeffs=None, **kwargs):
 
 
 def Log(inputs, **kwargs):
-    """
-    :param inputs:       a Tensor with any shape
-    :return:             a Tensor of log(x)
+    """Calculate the logarithm of input.
+
+    Parameters
+    ----------
+    inputs : Tensor
+        The input tensor.
+
+    Returns
+    -------
+    Tensor
+        The logarithm tensor.
 
     """
-    if not isinstance(inputs, Tensor):
-        raise RuntimeError('Log Operator accepts a Tensor as inputs')
+    CheckInputs(inputs, 1)
+    arguments = ParseArguments(locals())
 
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-
-    output = Tensor.CreateOperator(nout=1, op_type='Log', **kwargs)
+    output = Tensor.CreateOperator(nout=1, op_type='Log', **arguments)
 
     if inputs.shape is not None:
         output.shape = inputs.shape[:]
@@ -224,18 +295,23 @@ def Log(inputs, **kwargs):
 
 
 def Exp(inputs, **kwargs):
-    """
-    :param inputs:       a Tensor with any shape
-    :return:             a Tensor of exp(x)
+    """Calculate the exponential of input.
+
+    Parameters
+    ----------
+    inputs : Tensor
+        The input tensor.
+
+    Returns
+    -------
+    Tensor
+        The exponential result.
 
     """
-    if not isinstance(inputs, Tensor):
-        raise RuntimeError('Exp Operator accepts a Tensor as inputs')
+    CheckInputs(inputs, 1)
+    arguments = ParseArguments(locals())
 
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-
-    output = Tensor.CreateOperator(nout=1, op_type='Exp', **kwargs)
+    output = Tensor.CreateOperator(nout=1, op_type='Exp', **arguments)
 
     if inputs.shape is not None:
         output.shape = inputs.shape[:]
@@ -244,26 +320,33 @@ def Exp(inputs, **kwargs):
 
 
 def Pow(inputs, power, shift=None, scale=None, **kwargs):
+    """Calculate the power of input.
+
+    Parameters
+    ----------
+    inputs : Tensor
+        The input tensor.
+    power : float
+        The power factor.
+    shift : float or None
+        The shift magnitude. Default is ``None`` (Ignore).
+    scale : float or None
+        The scale factor. Default is ``None`` (Ignore).
+
+    Returns
+    -------
+    Tensor
+        The power result, calculated as: |power_function|
+
     """
+    CheckInputs(inputs, 1)
+    arguments = ParseArguments(locals())
 
-    :param inputs:       a Tensor with any shape
-    :param power:        a float of power
-    :param shift:        a float of shift
-    :param scale:        a float of scale
-    :return:             a Tensor of { [(x + shift) * scale] ^ power }
+    arguments['power']= float(power)
+    if arguments['scale'] is not None: arguments['scale'] = float(scale)
+    if arguments['shift'] is not None: arguments['shift'] = float(shift)
 
-    """
-    if not isinstance(inputs, Tensor):
-        raise RuntimeError('Pow Operator accepts a Tensor as inputs')
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-
-    kwargs['power']= float(power)
-    if kwargs['scale'] is not None: kwargs['scale'] = float(scale)
-    if kwargs['shift'] is not None: kwargs['shift'] = float(shift)
-
-    output =  Tensor.CreateOperator(nout=1, op_type='Pow', **kwargs)
+    output =  Tensor.CreateOperator(nout=1, op_type='Pow', **arguments)
 
     if inputs.shape is not None:
         output.shape = inputs.shape[:]
@@ -272,19 +355,49 @@ def Pow(inputs, power, shift=None, scale=None, **kwargs):
 
 
 def Square(inputs, **kwargs):
+    """Calculate the square of input.
+
+    Parameters
+    ----------
+    inputs : Tensor
+        The input tensor.
+
+    Returns
+    -------
+    Tensor
+        The square result.
+
     """
+    CheckInputs(inputs, 1)
+    arguments = ParseArguments(locals())
 
-    :param inputs:       a Tensor with any shape
-    :return:             a Tensor of x^{2}
+    output = Tensor.CreateOperator(nout=1, op_type='Square', **arguments)
+
+    if inputs.shape is not None:
+        output.shape = inputs.shape[:]
+
+    return output
+
+
+def Sqrt(inputs, **kwargs):
+    """Calculate the sqrt of input.
+
+    Parameters
+    ----------
+    inputs : Tensor
+        The input tensor.
+
+    Returns
+    -------
+    Tensor
+        The sqrt result.
 
     """
-    if not isinstance(inputs, Tensor):
-        raise RuntimeError('Square Operator accepts a Tensor as inputs')
+    CheckInputs(inputs, 1)
+    arguments = ParseArguments(locals())
+    arguments['power'] = 0.5
 
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-
-    output = Tensor.CreateOperator(nout=1, op_type='Square', **kwargs)
+    output = Tensor.CreateOperator(nout=1, op_type='Pow', **arguments)
 
     if inputs.shape is not None:
         output.shape = inputs.shape[:]
@@ -293,14 +406,31 @@ def Square(inputs, **kwargs):
 
 
 def Scale(inputs, axis=1, num_axes=1, **kwargs):
+    """Scale Function.
 
-    if not isinstance(inputs, list) or len(inputs) < 2:
-        raise RuntimeError('Scale Operator accpets a list of at least 2 Tensors')
+    The number of inputs vary from ``2`` to ``3`` (Without or With ``bias``).
 
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
+    The scale ranges are: |scale_function|
 
-    output = Tensor.CreateOperator(nout=1, op_type='Scale', **kwargs)
+    Parameters
+    ----------
+    inputs : list of Tensor
+        The inputs, represent [input, scale, bias].
+    axis : int
+        The start axis to scale.
+    num_axes : int
+        The number of axes to scale.
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
+    """
+    CheckInputs(inputs, 2, 3)
+    arguments = ParseArguments(locals())
+
+    output = Tensor.CreateOperator(nout=1, op_type='Scale', **arguments)
 
     if inputs[0].shape is not None:
         output.shape = inputs[0].shape[:]
@@ -308,33 +438,26 @@ def Scale(inputs, axis=1, num_axes=1, **kwargs):
     return output
 
 
-def Argmax(inputs, axis=0, top_k=1, **kwargs):
-
-    if not isinstance(inputs, Tensor):
-        raise RuntimeError('Argmax Operator accepts a Tensor as inputs')
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-
-    output = Tensor.CreateOperator(nout=1, op_type='Argmax', **kwargs)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-        if top_k > 1: output.shape[axis] = top_k
-        else: del output.shape[axis]
-
-    return output
-
-
 def GramMatrix(inputs, axis=1, **kwargs):
+    """Calculate the gram matrix, introduced by `[Gatys et.al, 2016] <https://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Gatys_Image_Style_Transfer_CVPR_2016_paper.pdf>`_.
 
-    if not isinstance(inputs, Tensor):
-        raise RuntimeError('GramMatrix Operator accepts a Tensor as inputs')
+    Parameters
+    ---------=
+    inputs : Tensor
+        The input tensor.
+    axis : int
+        The start axis to calculate.
 
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
+    Returns
+    -------
+    Tensor
+        The output tensor, calculated as: |gram_matrix_function|
 
-    output = Tensor.CreateOperator(nout=1, op_type='GramMatrix', **kwargs)
+    """
+    CheckInputs(inputs, 1)
+    arguments = ParseArguments(locals())
+
+    output = Tensor.CreateOperator(nout=1, op_type='GramMatrix', **arguments)
 
     if inputs.shape is not None:
         output.shape = inputs.shape[: axis + 2]

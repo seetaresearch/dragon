@@ -49,7 +49,7 @@ inline bool ReadProtoFromBinaryFile(const char* filename, Message* proto) {
     return success;
 }
 
-inline void LoadCaffeModel(string file, string scope, Workspace* ws) {
+inline void LoadCaffeModel(string file, Workspace* ws) {
     NetParameter net_param;
     ReadProtoFromBinaryFile(file.c_str(), &net_param);
     LOG(INFO) << "Restore From Model @: " << file << "......";
@@ -57,7 +57,7 @@ inline void LoadCaffeModel(string file, string scope, Workspace* ws) {
     for (int i = 0; i < net_param.layer_size(); i++) {
         const LayerParameter& layer = net_param.layer(i);
         const string& layer_name = layer.name();
-        string prefix = scope + layer_name + "@param";
+        string prefix = layer_name + "@param";
         for (int j = 0; j < layer.blobs_size(); j++) {
             string tensor_name = prefix + dragon_cast<string, int>(j);
             if (!ws->HasTensor(tensor_name))
@@ -111,8 +111,8 @@ inline void SavaCaffeModel(string file, const vector<Tensor*>& tensors) {
     }
     std::fstream output(file, std::ios::out | std::ios::trunc | std::ios::binary);
     CHECK(net_param.SerializeToOstream(&output));
-    LOG(INFO) << "save the model @: " << file << "......";
-    LOG(INFO) << "model format: caffemodel";
+    LOG(INFO) << "Save the model @: " << file << "......";
+    LOG(INFO) << "Model format: caffemodel";
 }
 
 }    // namespace dragon

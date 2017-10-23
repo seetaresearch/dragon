@@ -40,7 +40,7 @@ void MixedMemory::ToCUDA() {
         state_ = SYNCED;
         break;
     case SWITCHED:
-        CHECK(cuda_ptr_) << "switching from an invalid cuda mem.";
+        CHECK(cuda_ptr_) << "\nSwitched from an invalid cuda mem.";
         new_ptr_ = CUDAContext::New(nbytes_);
         CUDAContext::Memcpy<CUDAContext, CUDAContext>(nbytes_, new_ptr_, cuda_ptr_);
         CUDAContext::Delete(cuda_ptr_);

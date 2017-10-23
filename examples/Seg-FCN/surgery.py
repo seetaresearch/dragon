@@ -10,7 +10,10 @@ import dragon.core.workspace as ws
 import numpy as np
 
 def transplant(new_net, net):
-    func = net.function; func = new_net.function
+    # create graph
+    net.function()
+    new_net.function()
+
     for p in net.params:
         if p not in new_net.params:
             print 'dropping', p
@@ -30,6 +33,7 @@ def transplant(new_net, net):
             new_net_param.flat = new_net_param.flat
             ws.FeedTensor(name, new_net_param)
 
+
 def upsample_filt(size):
     factor = (size + 1) // 2
     if size % 2 == 1:
@@ -39,6 +43,7 @@ def upsample_filt(size):
     og = np.ogrid[:size, :size]
     return (1 - abs(og[0] - center) / factor) * \
            (1 - abs(og[1] - center) / factor)
+
 
 def interp(net, layers):
     print 'bilinear-interp for layers:', layers

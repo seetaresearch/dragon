@@ -16,7 +16,8 @@ class NNResizeOp : public Operator<Context> {
  public:
     NNResizeOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          dsize(OperatorBase::GetRepeatedArg<int>("dsize")),
+          static_dsize(OperatorBase::GetRepeatedArg<int>("static_dsize")),
+          dynamic_dsize(OperatorBase::GetRepeatedArg<string>("dynamic_dsize")),
           fy(OperatorBase::GetSingleArg<float>("fy", -1.0)),
           fx(OperatorBase::GetSingleArg<float>("fx", -1.0)) {}
 
@@ -24,7 +25,8 @@ class NNResizeOp : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    vector<int> dsize;
+    vector<int> static_dsize;
+    vector<string> dynamic_dsize;
     vector<TIndex> dims;
     float h_scale, w_scale, fy, fx;
 };

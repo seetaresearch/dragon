@@ -14,8 +14,9 @@ void CuDNNSoftmaxOp<Context>::RunWithType() {
     auto* Xdata = input(0).template data<T, Context>();
     auto* Ydata = output(0)->template mutable_data<T, Context>();
     CUDNN_CHECK(cudnnSoftmaxForward(cudnn_handle(), CUDNN_SOFTMAX_ACCURATE,
-        CUDNN_SOFTMAX_MODE_CHANNEL, CUDNNType<T>::one, input_desc, Xdata,
-        CUDNNType<T>::zero, output_desc, Ydata));
+                                                CUDNN_SOFTMAX_MODE_CHANNEL, 
+                                      CUDNNType<T>::one, input_desc, Xdata,
+                                  CUDNNType<T>::zero, output_desc, Ydata));
 }
 
 template <class Context>
@@ -29,7 +30,7 @@ void CuDNNSoftmaxOp<Context>::RunOnDevice() {
 #ifdef WITH_CUDA_FP16
     else if (input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CUDNN(Softmax);
@@ -45,8 +46,10 @@ void CuDNNSoftmaxGradientOp<Context>::RunWithType() {
     auto* Ydata = input(0).template data<T, Context>();
     auto* dXdata = output(0)->template mutable_data<T, Context>();
     CUDNN_CHECK(cudnnSoftmaxBackward(cudnn_handle(), CUDNN_SOFTMAX_ACCURATE,
-        CUDNN_SOFTMAX_MODE_CHANNEL, CUDNNType<T>::one, input_desc, Ydata,
-        input_desc, dYdata, CUDNNType<T>::zero, output_desc, dXdata));
+                                                 CUDNN_SOFTMAX_MODE_CHANNEL,
+                                       CUDNNType<T>::one, input_desc, Ydata,
+                                                         input_desc, dYdata,
+                                  CUDNNType<T>::zero, output_desc, dXdata));
 }
 
 template <class Context>
@@ -61,7 +64,7 @@ void CuDNNSoftmaxGradientOp<Context>::RunOnDevice() {
 #ifdef WITH_CUDA_FP16
     else if (input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CUDNN(SoftmaxGradient);

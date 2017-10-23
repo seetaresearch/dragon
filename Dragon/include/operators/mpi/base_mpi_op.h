@@ -33,7 +33,7 @@ class ModelMPIBase : public Operator<Context> {
         int world_root = OperatorBase::GetSingleArg<int>("root", 0);
         MPI_Group_translate_ranks(world_group, 1, &world_root, group, &comm_root);
 
-        CHECK(comm_root != MPI_UNDEFINED) << "mpi root is not included in layer group.";
+        CHECK(comm_root != MPI_UNDEFINED) << "MPI root is not included in layer group.";
     }
 
  protected:

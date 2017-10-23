@@ -8,7 +8,9 @@
 #define DRAGON_UTILS_CAST_H_
 
 #include <cstring>
+
 #include "core/types.h"
+#include "utils/cuda_device.h"
 
 namespace dragon {
 
@@ -113,6 +115,45 @@ template<> inline float32 dragon_cast<float32, float>(float val) {
     return dragon_cast<float32, float16>(t);
 }
 
+#ifdef WITH_CUDA_FP16
+
+template<> inline half dragon_cast<half, float>(float val) {
+#if CUDA_VERSION_MIN(9, 0, 0)
+    __half_raw fp16_raw;
+    fp16_raw.x = dragon_cast<float16, float>(val).x;
+    return half(fp16_raw);
+#else
+    half fp16;
+    fp16.x =  dragon_cast<float16, float>(val).x;
+    return fp16;
+#endif
+}
+
+template<> inline half2 dragon_cast<half2, float>(float val) {
+#if CUDA_VERSION_MIN(9, 0, 0)
+    half fp16 = dragon_cast<half, float>(val);
+    return half2(fp16, fp16);
+#else
+    half2 fp32;
+    fp32.x = dragon_cast<float32, float>(val).x;
+    return fp32;
+#endif
+}
+
+template<> inline half2 dragon_cast<half2, float16>(float16 val) {
+#if CUDA_VERSION_MIN(9, 0, 0)
+        __half_raw fp16_raw;
+        fp16_raw.x = val.x;
+        return half2(half(fp16_raw), half(fp16_raw));
+#else
+        half2 fp32;
+        fp32.x = dragon_cast<float32, float16>(val).x;
+        return fp32;
+#endif
+
+}
+
+#endif    // WITH_CUDA_FP16
 
 }    // namespace dragon
 

@@ -32,14 +32,14 @@ OperatorBase* TryCreateOperator(const string& key, const OperatorDef& op_def, Wo
                 return CUDNNOperatorRegistry()->Create(key, op_def, ws);
             return CUDAOperatorRegistry()->Create(key, op_def, ws);
         default:
-            LOG(FATAL) << "unknown device type: " << op_def.device_option().device_type();
+            LOG(FATAL) << "Unknown device type: " << op_def.device_option().device_type();
             return nullptr;
     }
 }
 
 OperatorBase* CreateOperator(const OperatorDef& op_def, Workspace* ws) {
     auto* schema = OpSchemaRegistry::Schema(op_def.type());
-    CHECK(schema->Verify(op_def)) << "operator failed to pass the schema checking.";
+    CHECK(schema->Verify(op_def)) << "\nOperator failed to pass the schema checking.";
     OperatorBase* op = TryCreateOperator(op_def.type(), op_def, ws);
     return op;
 }
@@ -63,7 +63,7 @@ template <class Context>
 void Operator<Context>::ElimateCorruption() {
     Set<string> all_heads;
     queue<int> safe_heads;
-    Tensor* head = ws()->GetTensor("_t_mirrow_stage_head");
+    Tensor* head = ws()->GetTensor("_t_mirror_stage_head");
     string* head_data = head->mutable_data<string, CPUContext>();
     for (int i = 0; i < head->count(); i++) all_heads.insert(head_data[i]);
     //  sub-graph run
@@ -72,7 +72,7 @@ void Operator<Context>::ElimateCorruption() {
             if (all_heads.count(input(i).name())) continue;
             LOG(DEBUG) << "Tensor(" << input(i).name() << ") is corrupted, recompute...  ";
             Tensor* recompute_flag = ws()->GetTensor("_t_global_recompute_flag");
-            vector<OperatorBase*> list = ws()->GetRecompute(input(i).name());
+            vector<OperatorBase*>& list = recompute_map()[input(i).name()];
             recompute_flag->mutable_data<bool, CPUContext>()[0] = true;
             for (int j = 0; j < list.size(); j++) list[j]->Run();
             recompute_flag->mutable_data<bool, CPUContext>()[0] = false;
@@ -95,13 +95,13 @@ void Operator<Context>::ElimateCorruption() {
                 if (output(i)->name() == input(j).name()) inplace_flag = true;
             if (inplace_flag || all_heads.count(output(i)->name())) continue;    //  skip to use new buffer
             CHECK(!safe_heads.empty())
-                << "\nat most (" << safe_heads.size() << " [safe] / "
+                << "\nAt most (" << safe_heads.size() << " [safe] / "
                 << all_heads.size() << " [total] can be used for corrupted output in "
                 << "(" << name() << ", " << type() << "), "
-                << "\nadd WORKSPACE_MAX_CORRUPTED_SIZE for more powerful mirrow stage ?";
+                << "\nadd WORKSPACE_MAX_CORRUPTED_SIZE for more powerful mirror stage ?";
             int idx = safe_heads.front();
             safe_heads.pop();
-            Tensor* buffer = ws()->GetTensor("_t_mirrow_stage_buffer_" + dragon_cast<string, int>(idx));
+            Tensor* buffer = ws()->GetTensor("_t_mirror_stage_buffer_" + dragon_cast<string, int>(idx));
             output(i)->Move(buffer->memory());
             head_data[idx] = output(i)->name();
         }
@@ -125,14 +125,14 @@ void Operator<Context>::MakeResource() {
 
 template <class Context>
 void Operator<Context>::CleanResource() {
-    //  post-process for mirrow stage
+    //  post-process for mirror stage
     Map<string, int> head_to_idx;
-    Tensor* head = ws()->GetTensor("_t_mirrow_stage_head");
+    Tensor* head = ws()->GetTensor("_t_mirror_stage_head");
     string* head_data = head->mutable_data<string, CPUContext>();
     for (int i = 0; i < head->count(); i++) head_to_idx[head_data[i]] = i;
     for (int i = 0; i < OutputSize(); i++) {
         if (output(i)->is_corrupted() && head_to_idx.count(output(i)->name())) {
-            string used = "_t_mirrow_stage_buffer_" + dragon_cast<string, int>(head_to_idx[output(i)->name()]);
+            string used = "_t_mirror_stage_buffer_" + dragon_cast<string, int>(head_to_idx[output(i)->name()]);
             Tensor* buffer = ws()->GetTensor(used);
             if (output(i)->memory() != buffer->memory()) buffer->Move(output(i)->memory());
         }

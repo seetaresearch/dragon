@@ -4,12 +4,36 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-from dragon.core.tensor import Tensor
 import dragon.ops as ops
+from dragon.core.tensor import Tensor
 
-from .layer import Layer
+from ..layer import Layer
 
 class ConvolutionLayer(Layer):
+    """The implementation of ``ConvolutionLayer``.
+
+    Parameters
+    ----------
+    num_output : int
+        The output channels. Refer `ConvolutionParameter.num_output`_.
+    bias_term : boolean
+        Whether to use bias. Refer `ConvolutionParameter.bias_term`_.
+    pad : list of int
+        The zero padding size(s). Refer `ConvolutionParameter.pad`_.
+    kernel_size : list of int
+        The kernel size(s). Refer `ConvolutionParameter.kernel_size`_.
+    stride : list of int
+        The stride(s). Refer `ConvolutionParameter.stride`_.
+    dilation : list of int
+        The dilation(s). Refer `ConvolutionParameter.dilation`_.
+    group : int
+         The group size. Refer `ConvolutionParameter.group`_.
+    weight_filler : FillerParameter
+        The filler of weights. Refer `ConvolutionParameter.weight_filler`_.
+    bias_filler : FillerParameters
+        The filler of bias. Refer `ConvolutionParameter.bias_filler`_.
+
+    """
     def __init__(self, LayerParameter):
         super(ConvolutionLayer, self).__init__(LayerParameter)
         param = LayerParameter.convolution_param
@@ -49,6 +73,30 @@ class ConvolutionLayer(Layer):
 
 
 class DeconvolutionLayer(ConvolutionLayer):
+    """The implementation of ``DeconvolutionLayer``.
+
+    Parameters
+    ----------
+    num_output : int
+        The output channels. Refer `ConvolutionParameter.num_output`_.
+    bias_term : boolean
+        Whether to use bias. Refer `ConvolutionParameter.bias_term`_.
+    pad : list of int
+        The zero padding size(s). Refer `ConvolutionParameter.pad`_.
+    kernel_size : list of int
+        The kernel size(s). Refer `ConvolutionParameter.kernel_size`_.
+    stride : list of int
+        The stride(s). Refer `ConvolutionParameter.stride`_.
+    dilation : list of int
+        The dilation(s). Refer `ConvolutionParameter.dilation`_.
+    group : int
+         The group size. Refer `ConvolutionParameter.group`_.
+    weight_filler : FillerParameter
+        The filler of weights. Refer `ConvolutionParameter.weight_filler`_.
+    bias_filler : FillerParameters
+        The filler of bias. Refer `ConvolutionParameter.bias_filler`_.
+
+    """
     def __init__(self, LayerParameter):
         super(DeconvolutionLayer, self).__init__(LayerParameter)
 
@@ -58,13 +106,46 @@ class DeconvolutionLayer(ConvolutionLayer):
 
 
 class PoolingLayer(Layer):
+    """The implementation of ``PoolingLayer``.
+
+    Parameters
+    ----------
+    pool : PoolMethod
+        The method. Refer `PoolingParameter.pool`_.
+    pad : list of int
+        The zero padding size(s). Refer `PoolingParameter.pad`_.
+    pad_h : int
+        The padding size of height. Refer `PoolingParameter.pad_h`_.
+    pad_w : int
+        The padding size of width. Refer `PoolingParameter.pad_w`_.
+    kernel_size : list of int
+        The kernel size(s). Refer `PoolingParameter.kernel_size`_.
+    kernel_h : int
+        The kernel size of height. Refer `PoolingParameter.kernel_h`_.
+    kernel_w : int
+        The kernel size of width. Refer `PoolingParameter.kernel_w`_.
+    stride : list of int
+        The strides. Refer `PoolingParameter.stride`_.
+    stride_h : int
+        The stride of height. Refer `PoolingParameter.stride_h`_.
+    stride_w : int
+        The stride of width. Refer `PoolingParameter.stride_w`_.
+
+    """
     def __init__(self, LayerParameter):
         super(PoolingLayer, self).__init__(LayerParameter)
         param = LayerParameter.pooling_param
-        self._param = {'kernel_size': [param.kernel_size],
-                       'stride': [param.stride],
-                       'pad': [param.pad],
-                       'mode': {0: 'MAX_POOLING', 1: 'AVG_POOLING'}[param.pool]}
+        self._param = {'mode': {0: 'MAX_POOLING', 1: 'AVG_POOLING'}[param.pool],
+                       'global_pooling': param.global_pooling}
+
+        if not param.HasField('kernel_h'): self._param['kernel_size'] = [param.kernel_size]
+        else: self._param['kernel_size'] = [param.kernel_h, param.kernel_w]
+
+        if not param.HasField('pad_h'): self._param['pad'] = [param.pad]
+        else: self._param['pad'] = [param.pad_h, param.pad_w]
+
+        if not param.HasField('stride_h'): self._param['stride'] = [param.stride]
+        else: self._param['stride'] = [param.stride_h, param.stride_w]
 
     def Setup(self, bottom):
         input = bottom[0] if isinstance(bottom, list) else bottom
@@ -73,6 +154,18 @@ class PoolingLayer(Layer):
 
 
 class ROIPoolingLayer(Layer):
+    """The implementation of ``ROIPoolingLayer``.
+
+    Parameters
+    ----------
+    pooled_h : int
+        The height of pooled output. Refer `ROIPoolingParameter.pooled_h`_.
+    pooled_w : int
+        The width of pooled output. Refer `ROIPoolingParameter.pooled_w`_.
+    spatial_scale : float
+         The ``inverse`` of down-sampling multiples. Refer `ROIPoolingParameter.spatial_scale`_.
+
+    """
     def __init__(self, LayerParameter):
         super(ROIPoolingLayer, self).__init__(LayerParameter)
         param = LayerParameter.roi_pooling_param
@@ -86,6 +179,18 @@ class ROIPoolingLayer(Layer):
 
 
 class ROIAlignLayer(Layer):
+    """The implementation of ``ROIAlignLayer``.
+
+    Parameters
+    ----------
+    pooled_h : int
+        The height of pooled output. Refer `ROIPoolingParameter.pooled_h`_.
+    pooled_w : int
+        The width of pooled output. Refer `ROIPoolingParameter.pooled_w`_.
+    spatial_scale : float
+         The ``inverse`` of down-sampling multiples. Refer `ROIPoolingParameter.spatial_scale`_.
+
+    """
     def __init__(self, LayerParameter):
         super(ROIAlignLayer, self).__init__(LayerParameter)
         param = LayerParameter.roi_pooling_param
@@ -99,6 +204,22 @@ class ROIAlignLayer(Layer):
 
 
 class LRNLayer(Layer):
+    """The implementation of ``LRNLayer``.
+
+    Parameters
+    ----------
+    local_size : int
+        Refer `LRNParameter.local_size`_.
+    alpha : float
+        Refer `LRNParameter.alpha`_.
+    beta : float
+        Refer `LRNParameter.beta`_.
+    norm_region : NormRegion
+        Refer `LRNParameter.norm_region`_.
+    k : float
+        Refer `LRNParameter.k`_.
+
+    """
     def __init__(self, LayerParameter):
         super(LRNLayer, self).__init__(LayerParameter)
         param = LayerParameter.lrn_param
@@ -113,9 +234,21 @@ class LRNLayer(Layer):
 
 
 class NNResizeLayer(Layer):
+    """The implementation of ``NNResizeLayer``.
+
+    Parameters
+    ----------
+    shape : caffe_pb2. BlobShape
+        The output shape. Refer `ResizeParameter.shape`_.
+    fx : float
+        The scale factor of height. Refer `ResizeParameter.fx`_.
+    fy : float
+        The scale factor of width. Refer `ResizeParameter.fy`_.
+
+    """
     def __init__(self, LayerParameter):
         super(NNResizeLayer, self).__init__(LayerParameter)
-        param = LayerParameter.nnresize_param
+        param = LayerParameter.resize_param
         dsize = [int(dim) for dim in param.shape.dim] \
             if param.HasField('shape') else []
         self._param = {'dsize': dsize,
@@ -125,4 +258,38 @@ class NNResizeLayer(Layer):
     def Setup(self, bottom):
         super(NNResizeLayer, self).Setup(bottom)
         input = bottom[0] if isinstance(bottom, list) else bottom
+        if isinstance(bottom, list) and len(bottom) > 1:
+            dshape = ops.Shape(bottom[1])
+            self._param['dsize'] = (dshape[2], dshape[3])
         return ops.NNResize(input, **self._param)
+
+
+class BilinearResizeLayer(Layer):
+    """The implementation of ``BilinearResizeLayer``.
+
+    Parameters
+    ----------
+    shape : caffe_pb2. BlobShape
+        The output shape. Refer `ResizeParameter.shape`_.
+    fx : float
+        The scale factor of height. Refer `ResizeParameter.fx`_.
+    fy : float
+        The scale factor of width. Refer `ResizeParameter.fy`_.
+
+    """
+    def __init__(self, LayerParameter):
+        super(BilinearResizeLayer, self).__init__(LayerParameter)
+        param = LayerParameter.resize_param
+        dsize = [int(dim) for dim in param.shape.dim] \
+            if param.HasField('shape') else []
+        self._param = {'dsize': dsize,
+                       'fx': float(param.fx),
+                       'fy': float(param.fy)}
+
+    def Setup(self, bottom):
+        super(BilinearResizeLayer, self).Setup(bottom)
+        input = bottom[0] if isinstance(bottom, list) else bottom
+        if isinstance(bottom, list) and len(bottom) > 1:
+            dshape = ops.Shape(bottom[1])
+            self._param['dsize'] = (dshape[2], dshape[3])
+        return ops.BilinearResize(input, **self._param)

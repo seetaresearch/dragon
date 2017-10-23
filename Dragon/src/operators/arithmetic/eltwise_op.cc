@@ -44,17 +44,17 @@ void EltwiseOp<Context>::RunOnDevice() {
 #ifdef WITH_CUDA_FP16
         else if (input(0).template IsType<float16>()) SumRunWithType<float16>();
 #endif
-        else LOG(FATAL) << "unsupported input types.";
+        else LOG(FATAL) << "Unsupported input types.";
     } 
     else if (operation == "PROD") {
         if (input(0).template IsType<float>()) ProdRunWithType<float>();
 #ifdef WITH_CUDA_FP16
         else if (input(0).template IsType<float16>()) ProdRunWithType<float16>();
 #endif
-        else LOG(FATAL) << "unsupported input types.";
+        else LOG(FATAL) << "Unsupported input types.";
     } 
     else {
-        LOG(FATAL) << "unknwon operation: " << operation;
+        LOG(FATAL) << "Unknwon operation: " << operation;
     }
 }
 
@@ -111,17 +111,17 @@ void EltwiseGradientOp<Context>::RunOnDevice() {
 #ifdef WITH_CUDA_FP16
         else if (input(0).template IsType<float16>()) SumRunWithType<float16>();
 #endif
-        else LOG(FATAL) << "unsupported input types.";
+        else LOG(FATAL) << "Unsupported input types.";
     } 
     else if (operation == "PROD") {
         if (input(0).template IsType<float>()) ProdRunWithType<float>();
 #ifdef WITH_CUDA_FP16
         else if (input(0).template IsType<float16>()) ProdRunWithType<float16>();
 #endif
-        else LOG(FATAL) << "unsupported input types.";
+        else LOG(FATAL) << "Unsupported input types.";
     } 
     else {
-        LOG(FATAL) << "unknwon operation: " << operation;
+        LOG(FATAL) << "Unknwon operation: " << operation;
     }
 }
 

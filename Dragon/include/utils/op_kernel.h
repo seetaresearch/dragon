@@ -37,6 +37,18 @@ void DropoutGrad(const int count,
                  const uint32_t* mask,
                  T* dx);
 
+/******************** activation.elu ********************/
+
+template <typename T, class Context>
+void Elu(const int count, const T* x, const float alpha, T* y);
+
+template <typename T, class Context>
+void EluGrad(const int count,
+             const T* dy,
+             const T* y,
+             const float alpha,
+             T* dx);
+
 /******************** activation.relu ********************/
 
 template <typename T, class Context>
@@ -124,167 +136,15 @@ void Scale(const int axis,
 template <typename T, class Context>
 void ScaleGrad(const int axis, Tensor* dy, Tensor* gamma, Tensor* dx);
 
-/******************** common.argmax ********************/
+/******************** cast.float2half ********************/
 
 template <typename T, class Context>
-void Argmax(const int count, 
-            const int axis_dim,
-            const int inner_dim, 
-            const int top_k, 
-            const T* x, 
-            T* y);
+void Float2Half(const int count, const float* x, float16* y);
 
-/******************** common.at ********************/
+/******************** control_flow.compare ********************/
 
 template <typename T, class Context>
-void CanonicalAxis(const int count, const int dim, T* y);
-
-template <typename T, class Context>
-void At(const int count, 
-        const int outer_dim, 
-        const int inner_dim,
-        const int x_slice_dim, 
-        const int y_slice_dim, 
-        const T* indices, 
-        const T* x,
-        T* y,
-        Context* context);
-
-template <typename T, class Context>
-void AtGrad(const int count, 
-            const int outer_dim, 
-            const int inner_dim,
-            const int x_slice_dim, 
-            const int y_slice_dim, 
-            const T* indices,
-            const T* dy, 
-            T* dx, 
-            Context* context);
-
-/******************** common.concat ********************/
-
-template <typename T, class Context>
-void Concat(const int count, 
-            const int outer_dim, 
-            const int inner_dim,
-            const int x_concat_dim, 
-            const int y_concat_dim, 
-            const int concat_offset,
-            const T* x, 
-            T* y, 
-            Context* context);
-
-template <typename T, class Context>
-void ConcatGrad(const int count, 
-                const int outer_dim,
-                const int inner_dim,
-                const int x_concat_dim, 
-                const int y_concat_dim, 
-                const int concat_offset,
-                const T* dy, 
-                T* dx, 
-                Context* context);
-
-/******************** common.crop ********************/
-
-template <typename T, class Context>
-void Crop2D(vector<TIndex> idxs,
-            const vector<TIndex>& offsets,
-            const int cur_dim,
-            Tensor* x, 
-            Tensor* y, 
-            Context* context);
-
-template <typename T, class Context>
-void Crop2DGrad(vector<TIndex> idxs,
-                const vector<TIndex>& offsets,
-                const int cur_dim,
-                Tensor* dy,
-                Tensor* dx,
-                Context* context);
-
-/******************** common.reduce ********************/
-
-template <typename T, class Context>
-void Sum(const int count, 
-         const int axis_dim, 
-         const int inner_dim,
-         const T* x, 
-         T* y);
-
-template <typename T, class Context>
-void SumGrad(const int count, 
-             const int axis_dim, 
-             const int inner_dim,
-             const T coeff, 
-             const T* dy, 
-             T* dx);
-
-/******************** common.slice ********************/
-
-template <typename T, class Context>
-void Slice(const int count, 
-           const int outer_dim, 
-           const int inner_dim,
-           const int x_slice_dim, 
-           const int y_slice_dim, 
-           const int slice_offset,
-           const T* x, 
-           T* y, 
-           Context* context);
-
-template <typename T, class Context>
-void SliceGrad(const int count, 
-               const int outer_dim, 
-               const int inner_dim,
-               const int x_slice_dim, 
-               const int y_slice_dim, 
-               const int slice_offset,
-               const T* dy, 
-               T* x, 
-               Context* context);
-
-/******************** common.tile ********************/
-
-template <typename T, class Context>
-void Tile(const int count, 
-          const int outer_dim, 
-          const int inner_dim,
-          const int dim, 
-          const int multiple, 
-          const T* x, 
-          T* y, 
-          Context* context);
-
-template <typename T, class Context>
-void TileGrad(const int count, 
-              const int outer_dim, 
-              const int inner_dim,
-              const int dim, 
-              const int multiple, 
-              const T* dy, 
-              T* dx, 
-              Context* context);
-
-/******************** common.transpose ********************/
-
-template <typename T, class Context>
-void Transpose(const int count, 
-               const int ndim, 
-               const int* order, 
-               const int* old_steps, 
-               const int* new_steps,
-               const T* x, 
-               T* y);
-
-template <typename T, class Context>
-void TransposeGrad(const int count, 
-                   const int ndim, 
-                   const int* order,
-                   const int* old_steps,
-                   const int* new_steps, 
-                   const T* dy, 
-                   T* dx);
+void Equal(const int count, const T* a, const T* b, T* y);
 
 /******************** loss.l1_loss ********************/
 
@@ -331,7 +191,7 @@ void SparseSoftmaxCrossEntropyGrad(const int count,
                                    const T* labels,
                                    T* valid, 
                                    Tensor* ignore, 
-                                   T* dXdata);
+                                   T* dx);
 
 /******************** loss.sparse_softmax_focal_loss ********************/
 
@@ -364,7 +224,227 @@ void SparseSoftmaxFocalLossGrad(const int count,
                                 const T* labels,
                                 T* valid, 
                                 Tensor* ignore, 
-                                T* dXdata);
+                                T* dx);
+
+/******************** misc.memory_data ********************/
+
+template <typename Tx, typename Ty, class Context>
+void MemoryData(const int count, 
+                const int num, 
+                const int channels,
+                const int height, 
+                const int width, 
+                const Tx* x, 
+                Ty* y);
+
+/******************** ndarray.arange ********************/
+
+template <typename T, class Context>
+void Arange(const int count,
+            const int start,
+            const int step,
+            T* y);
+
+/******************** ndarray.argmax ********************/
+
+template <typename T, class Context>
+void Argmax(const int count, 
+            const int axis_dim,
+            const int inner_dim, 
+            const int top_k, 
+            const T* x, 
+            T* y);
+
+/******************** ndarray.argmin ********************/
+
+template <typename T, class Context>
+void Argmin(const int count, 
+            const int axis_dim,
+            const int inner_dim, 
+            const int top_k, 
+            const T* x, 
+            T* y);
+
+/******************** ndarray.at ********************/
+
+template <typename T, class Context>
+void CanonicalAxis(const int count, const int dim, T* y);
+
+template <typename T, class Context>
+void At(const int count, 
+        const int outer_dim, 
+        const int inner_dim,
+        const int x_slice_dim, 
+        const int y_slice_dim, 
+        const T* indices, 
+        const T* x,
+        T* y,
+        Context* context);
+
+template <typename T, class Context>
+void AtGrad(const int count, 
+            const int outer_dim, 
+            const int inner_dim,
+            const int x_slice_dim, 
+            const int y_slice_dim, 
+            const T* indices,
+            const T* dy, 
+            T* dx, 
+            Context* context);
+
+/******************** ndarray.concat ********************/
+
+template <typename T, class Context>
+void Concat(const int count, 
+            const int outer_dim, 
+            const int inner_dim,
+            const int x_concat_dim, 
+            const int y_concat_dim, 
+            const int concat_offset,
+            const T* x, 
+            T* y, 
+            Context* context);
+
+template <typename T, class Context>
+void ConcatGrad(const int count, 
+                const int outer_dim,
+                const int inner_dim,
+                const int x_concat_dim, 
+                const int y_concat_dim, 
+                const int concat_offset,
+                const T* dy, 
+                T* dx, 
+                Context* context);
+
+/******************** ndarray.crop ********************/
+
+template <typename T, class Context>
+void Crop2D(vector<TIndex> idxs,
+            const vector<TIndex>& offsets,
+            const int cur_dim,
+            Tensor* x, 
+            Tensor* y, 
+            Context* context);
+
+template <typename T, class Context>
+void Crop2DGrad(vector<TIndex> idxs,
+                const vector<TIndex>& offsets,
+                const int cur_dim,
+                Tensor* dy,
+                Tensor* dx,
+                Context* context);
+
+/******************** ndarray.one_hot ********************/
+
+template <typename T, class Context>
+void OneHot(const int count, 
+            const int depth, 
+            const int on_value, 
+            const T* x, 
+            T* y);
+
+/******************** ndarray.reduce ********************/
+
+template <typename T, class Context>
+void Sum(const int count, 
+         const int axis_dim, 
+         const int inner_dim,
+         const T* x, 
+         T* y);
+
+template <typename T, class Context>
+void SumGrad(const int count, 
+             const int axis_dim, 
+             const int inner_dim,
+             const T coeff, 
+             const T* dy, 
+             T* dx);
+
+/******************** ndarray.repeat ********************/
+
+template <typename T, class Context>
+void Repeat(const int count,
+            const int outer_dim,
+            const int dim,
+            const int inner_dim,
+            const int repeats,
+            const T* x,
+            T* y,
+            Context* context);
+
+template <typename T, class Context>
+void RepeatGrad(const int count,
+                const int outer_dim,
+                const int dim,
+                const int inner_dim,
+                const int repeats,
+                const T* dy,
+                T* dx,
+                Context* context);
+
+/******************** ndarray.slice ********************/
+
+template <typename T, class Context>
+void Slice(const int count, 
+           const int outer_dim, 
+           const int inner_dim,
+           const int x_slice_dim, 
+           const int y_slice_dim, 
+           const int slice_offset,
+           const T* x, 
+           T* y, 
+           Context* context);
+
+template <typename T, class Context>
+void SliceGrad(const int count, 
+               const int outer_dim, 
+               const int inner_dim,
+               const int x_slice_dim, 
+               const int y_slice_dim, 
+               const int slice_offset,
+               const T* dy, 
+               T* x, 
+               Context* context);
+
+/******************** ndarray.tile ********************/
+
+template <typename T, class Context>
+void Tile(const int count, 
+          const int outer_dim, 
+          const int ex_inner_dim,
+          const int multiple, 
+          const T* x, 
+          T* y, 
+          Context* context);
+
+template <typename T, class Context>
+void TileGrad(const int count, 
+              const int outer_dim, 
+              const int ex_inner_dim,
+              const int multiple, 
+              const T* dy, 
+              T* dx, 
+              Context* context);
+
+/******************** ndarray.transpose ********************/
+
+template <typename T, class Context>
+void Transpose(const int count, 
+               const int ndim, 
+               const int* order, 
+               const int* old_steps, 
+               const int* new_steps,
+               const T* x, 
+               T* y);
+
+template <typename T, class Context>
+void TransposeGrad(const int count, 
+                   const int ndim, 
+                   const int* order,
+                   const int* old_steps,
+                   const int* new_steps, 
+                   const T* dy, 
+                   T* dx);
 
 /******************** recurrent.lstm_uint ********************/
 
@@ -417,43 +497,37 @@ void NesterovUpdate(const int count,
 /******************** update.rmsprop_update ********************/
 
 template <typename T, class Context>
-void RMSPropUpdate(const int count, 
-                   T* x, 
+void RMSPropUpdate(const int count,
+                   T* x,
                    T* h,
                    Tensor* t,
-                   const float decay, 
-                   const float eps, 
+                   const float decay,
+                   const float eps,
                    const float lr);
 
-/******************** utils.cast ********************/
+/******************** vision.bilinear_resize ********************/
 
 template <typename T, class Context>
-void Float2Half(const int count, const float* x, float16* y);
-
-/******************** utils.compare ********************/
-
-template <typename T, class Context>
-void Equal(const int count, const T* a, const T* b, T* y);
-
-/******************** utils.memory_data ********************/
-
-template <typename Tx, typename Ty, class Context>
-void MemoryData(const int count, 
-                const int num, 
-                const int channels,
-                const int height, 
-                const int width, 
-                const Tx* x, 
-                Ty* y);
-
-/******************** utils.one_hot ********************/
+void BilinearResize(const int count, 
+              const int num, 
+              const int channels,
+              const int h_in,
+              const int w_in, 
+              const int h_out, 
+              const int w_out, 
+              const T* x, 
+              T* y);
 
 template <typename T, class Context>
-void OneHot(const int count, 
-            const int depth, 
-            const int on_value, 
-            const T* x, 
-            T* y);
+void BilinearResizeGrad(const int count,
+                        const int num, 
+                        const int channels,
+                        const int h_in, 
+                        const int w_in, 
+                        const int h_out, 
+                        const int w_out,
+                        const T* dy, 
+                        T* dx);
 
 /******************** vision.conv ********************/
 

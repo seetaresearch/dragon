@@ -4,22 +4,26 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-from dragon.core.tensor import Tensor
+from . import *
 
 def FloatToHalf(inputs, **kwargs):
+    """Cast the type of tensor from ``float32`` to ``float16``.
+
+    Parameters
+    ----------
+    inputs : Tensor
+        The ``float32`` tensor.
+
+    Returns
+    -------
+    Tensor
+        The ``float16`` tensor.
+
     """
+    CheckInputs(inputs, 1)
+    arguments = ParseArguments(locals())
 
-    :param inputs:      a Tensor with type of float32
-    :return:            a Tensor with type of float16
-
-    """
-    if not isinstance(inputs, Tensor):
-        raise RuntimeError('Relu Operator accepts a Tensor as inputs')
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-
-    output = Tensor.CreateOperator(nout=1, op_type='FloatToHalf', **kwargs)
+    output = Tensor.CreateOperator(nout=1, op_type='FloatToHalf', **arguments)
 
     if inputs.shape is not None:
         output.shape = inputs.shape[:]

@@ -48,7 +48,7 @@ template <> void Set<int, CPUContext>(const int n,
 template <> void Set<float16, CPUContext>(const int n, 
                                           const float16 alpha, 
                                           float16* x) {
-    LOG(FATAL) << "unsupport float16 with CPU";
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
 template <> void RandomUniform<float, CPUContext>(const int n, 
@@ -66,7 +66,7 @@ template <> void RandomUniform<float16, CPUContext>(const int n,
                                                     const float low, 
                                                     const float high, 
                                                     float16* x) {
-    LOG(FATAL) << "unsupport float16 with CPU";
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
 template <> void RandomUniform<uint32_t, CPUContext>(const int n, 
@@ -95,7 +95,7 @@ template <> void RandomNormal<float16, CPUContext>(const int n,
                                                    const float mu, 
                                                    const float sigma, 
                                                    float16* x) {
-    LOG(FATAL) << "unsupport float16 with CPU";
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
 template <> void RandomTruncatedNormal<float, CPUContext>(const int n, 
@@ -182,7 +182,7 @@ template <> void Mul<float16, CPUContext>(const int n,
                                           const float16* a, 
                                           const float16* b,
                                           float16* y) {
-    LOG(FATAL) << "unsupport float16 with CPU";
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
 template <> void Div<float, CPUContext>(const int n, 
@@ -203,7 +203,7 @@ template <> void Div<float16, CPUContext>(const int n,
                                         const float16* a, 
                                         const float16* b,
                                         float16* y) {
-    LOG(FATAL) << "unsupport float16 with CPU";
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
 template <> void Clip<float, CPUContext>(const int n, 
@@ -254,7 +254,7 @@ template <> void Square<float, CPUContext>(int n,
 template <> void Square<float16, CPUContext>(int n,
                                              const float16* x,
                                              float16* y) {
-    LOG(FATAL) << "unsupport float16 with CPU";
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
 template <> void Sqrt<float, CPUContext>(int n,
@@ -271,7 +271,7 @@ template <> void Sqrt<float, CPUContext>(int n,
 template <> void Sqrt<float16, CPUContext>(int n,
                                            const float16* x,
                                            float16* y) {
-    LOG(FATAL) << "unsupport float16 with CPU";
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
 template <> void Pow<float, CPUContext>(int n, 
@@ -290,7 +290,7 @@ template <> void Pow<float16, CPUContext>(int n,
                                           const float alpha, 
                                           const float16* x,
                                           float16* y) {
-    LOG(FATAL) << "unsupport float16 with CPU";
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
 template <> void Inv<float, CPUContext>(const int n,
@@ -309,7 +309,7 @@ template <> void Inv<float16, CPUContext>(const int n,
                                           const float numerator,
                                           const float16* x,
                                           float16* y) {
-    LOG(FATAL) << "unsupport float16 with CPU";
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
 /******************** Level-2 ********************/
@@ -332,14 +332,14 @@ template <> void Scal<float, CPUContext>(const int n,
 template <> void Scal<float16, CPUContext>(const int n, 
                                            const float alpha, 
                                            float16* y) {
-    LOG(FATAL) << "unsupport float16 with CPU";
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
 template <> void Scale<float16, CPUContext>(const int n, 
                                             const float alpha, 
                                             const float16* x,
                                             float16* y) {
-    LOG(FATAL) << "unsupport float16 with CPU";
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
 template <> void Scale<float, CPUContext>(const int n, 
@@ -396,7 +396,7 @@ template <> float Dot<float, CPUContext>(int n,
 template <> float Dot<float16, CPUContext>(int n, 
                                            const float16* a, 
                                            const float16* b) {
-    LOG(FATAL) << "unsupport float16 with CPU";
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
     return 0;
 }
 
@@ -431,7 +431,7 @@ template <> void AddScalar<float, CPUContext>(const int n,
 template <> void AddScalar<float16, CPUContext>(const int n, 
                                                 const float alpha, 
                                                 float16* y) {
-    LOG(FATAL) << "unsupport float16 with CPU";
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
 template <> void MulScalar<float, CPUContext>(const int n, 
@@ -445,6 +445,12 @@ template <> void MulScalar<float, CPUContext>(const int n,
 #endif
     for (int i = 0; i < n; ++i) y[i] *= alpha;
 #endif  // WITH_SSE
+}
+
+template <> void MulScalar<float16, CPUContext>(const int n,
+                                                const float alpha,
+                                                float16* y) {
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
 template <> void Axpy<float, CPUContext>(const int n, 
@@ -467,7 +473,7 @@ template <> void Axpy<float16, CPUContext>(const int n,
                                            float alpha,
                                            const float16* x,
                                            float16* y) {
-    LOG(FATAL) << "unsupport float16 with CPU";
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
 template <> void Axpby<float, CPUContext>(const int n, 
@@ -493,7 +499,7 @@ template <> void Axpby<float16, CPUContext>(const int n,
                                             const float16* x,
                                             float beta,
                                             float16* y) {
-    LOG(FATAL) << "unsupport float16 with CPU";
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
 /******************** Level-3 ********************/
@@ -521,7 +527,7 @@ template <> void Gemm<float, CPUContext>(const CBLAS_TRANSPOSE transA,
                 beta, 
                 C, N);
 #else    // WITH_BLAS
-    LOG(FATAL) << "GEMM with CPU requires BLAS library";
+    LOG(FATAL) << "GEMM for CPUContext requires BLAS Library.";
 #endif
 }
 
@@ -536,7 +542,7 @@ template <> void Gemm<float16, CPUContext>(const CBLAS_TRANSPOSE transA,
                                            const float beta,
                                            float16* C,
                                            TensorProto_DataType math_type) {
-    LOG(FATAL) << "GEMM with CPU unsupport float16";
+    LOG(FATAL) << "GEMM for CPUContext unsupport float16.";
 }
 
 template <> void Gemv<float, CPUContext>(const CBLAS_TRANSPOSE transA, 
@@ -559,7 +565,7 @@ template <> void Gemv<float, CPUContext>(const CBLAS_TRANSPOSE transA,
                 beta, 
                 y, 1);
 #else    // WITH_BLAS
-    LOG(FATAL) << "GEMV with CPU requires BLAS library";
+    LOG(FATAL) << "GEMV for CPUContext requires BLAS Library.";
 #endif
 }
 
@@ -572,7 +578,7 @@ template <> void Gemv<float16, CPUContext>(const CBLAS_TRANSPOSE transA,
                                            const float beta,
                                            float16* y,
                                            TensorProto_DataType math_type) {
-    LOG(FATAL) << "GEMV with CPU unsupport float16";
+    LOG(FATAL) << "GEMV for CPUContext unsupport float16.";
 }
  
 }    // namespace math

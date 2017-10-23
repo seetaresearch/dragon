@@ -9,8 +9,8 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void LRNOp<Context>::AcrossRunWithType() {
-    LOG(FATAL) << "lrn with across channels is not implemented,"
-               << "\n please compile cuDNN for this module.";
+    LOG(FATAL) << "Across Channels is not implemented."
+               << "\nCompile cuDNN for this module.";
 }
 
 template <class Context> template <typename T>
@@ -102,7 +102,7 @@ void LRNOp<Context>::RunOnDevice() {
     if (mode == ACROSS_CHANNELS) {
         if (input(0).template IsType<float>()) {
             AcrossRunWithType<float>();
-        } else { LOG(FATAL) << "unsupported input types."; }
+        } else { LOG(FATAL) << "Unsupported input types."; }
     } 
     else {
         if (input(0).template IsType<float>()) {
@@ -111,7 +111,7 @@ void LRNOp<Context>::RunOnDevice() {
             PoolRunWithType<float>();
             PowRunWithType<float>();
             ProdRunWithType<float>();
-        } else { LOG(FATAL) << "unsupported input types."; }
+        } else { LOG(FATAL) << "Unsupported input types."; }
     }
 }
 
@@ -123,8 +123,8 @@ OPERATOR_SCHEMA(LRN).NumInputs(1).NumOutputs(1);
 
 template <class Context> template <typename T>
 void LRNGradientOp<Context>::AcrossRunWithType() {
-    LOG(FATAL) << "lrn with across channels is not implemented,"
-               << "\n please compile cuDNN for this module.";
+    LOG(FATAL) << "Across Channels is not implemented,"
+               << "\nCompile cuDNN for this module.";
 }
 
 template <class Context> template <typename T>
@@ -227,7 +227,7 @@ void LRNGradientOp<Context>::RunOnDevice() {
     if (mode == ACROSS_CHANNELS) {
         if (input(0).template IsType<float>()) {
             AcrossRunWithType<float>();
-        } else { LOG(FATAL) << "unsupported input types."; }
+        } else { LOG(FATAL) << "Unsupported input types."; }
     } 
     else {
         if (input(0).template IsType<float>()) {
@@ -236,7 +236,7 @@ void LRNGradientOp<Context>::RunOnDevice() {
             PoolRunWithType<float>();
             SquareRunWithType<float>();
             SplitRunWithType<float>();
-        } else { LOG(FATAL) << "unsupported input types."; }
+        } else { LOG(FATAL) << "Unsupported input types."; }
     }
 }
 

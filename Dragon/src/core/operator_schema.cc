@@ -2,7 +2,8 @@
 
 namespace dragon {
 
-bool OpSchema::Verify(const OperatorDef& def) const { 
+bool OpSchema::Verify(const OperatorDef& def) const {
+    if (ignore_verify_) return true;
     if (def.input_size() < min_input_ || def.input_size() > max_input_) {
         LOG(FATAL) << "[" << def.name() << "] input size: " 
                           << def.input_size()

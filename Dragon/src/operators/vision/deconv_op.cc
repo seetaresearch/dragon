@@ -47,7 +47,7 @@ void DeConvOp<Context>::RunOnDevice() {
     Reshape();
 
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(DeConv);
@@ -94,7 +94,7 @@ void DeConvGradientOp<Context>::RunOnDevice() {
     GradientReshape();
 
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(DeConvGradient);

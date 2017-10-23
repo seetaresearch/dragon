@@ -1,0 +1,82 @@
+{%- extends "layout.html" %}
+
+{% if theme_bootstrap_version == "3" %}
+  {% set bootstrap_version, navbar_version = "3.3.7", "" %}
+  {% set bs_span_prefix = "col-md-" %}
+{% else %}
+  {% set bootstrap_version, navbar_version = "2.3.2", "-2" %}
+  {% set bs_span_prefix = "span" %}
+{% endif %}
+{%- set render_sidebar = False %}
+
+{% set title = _('Search') %}
+{% set script_files = script_files + ['_static/searchtools.js'] %}
+
+{% block extrahead %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html">
+    jQuery(function () { Search.loadIndex("{{ pathto('searchindex.js', 1) }}"); });
+</script>
+  {# this is used when loading the search index using $.ajax fails,
+     such as on Chrome for documents on localhost #}
+<script type="text/javascript" id="searchindexloader"></script>
+  {{ super() }}
+{% endblock %}
+
+
+{% block content %}
+{% include "navbar.html" %}
+<div class="container doc-container">
+    <div class="col-lg-2"></div>
+    <div class="col-lg-8">
+        {% block sidebar1 %}{{ bsidebar() }}{% endblock %}
+        <div class="content" style="width: 100%">
+            <h1 id="search-documentation">{{ _('Search') }}</h1>
+            <div id="fallback" class="admonition warning">
+                <script type="text/javascript">$('#fallback').hide();</script>
+                <p>
+                    {% trans %}Please activate JavaScript to enable the search
+                    functionality.{% endtrans %}
+                </p>
+            </div>
+            <p>
+                From here you can search these documents. Enter your search words into the box below and click <strong>Search</strong>.
+            </p>
+            {% if theme_bootstrap_version == "3" %}
+            <form class="form-inline" action="" method="get">
+                <div class="form-group">
+                    <input type="text" class="form-control" name="q" value="" />
+                </div>
+                <input type="submit" class="btn btn-default" value="Search" />
+                <span id="search-progress" style="padding-left: 10px"></span>
+            </form>
+            {% else %}
+            <form class="form-search">
+                <input type="text" class="input-medium search-query" name="q" value="" />
+                <input type="submit" class="btn btn-default" value="{{ _('search') }}" />
+                <span id="search-progress" style="padding-left: 10px"></span>
+            </form>
+            {% endif %}
+
+            {% if search_performed %}
+            <h2>{{ _('Search Results') }}</h2>
+            {% if not search_results %}
+            <p>{{ _('Your search did not match any documents. Please make sure that all words are spelled correctly and that you\'ve selected enough categories.') }}</p>
+            {% endif %}
+            {% endif %}
+            <div id="search-results">
+                {% if search_results %}
+                <ul>
+                    {% for href, caption, context in search_results %}
+                    <li>
+                        <a href="{{ pathto(item.href) }}">{{ caption }}</a>
+                        <div class="context">{{ context|e }}</div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-2"></div>
+</div>
+{% endblock %}

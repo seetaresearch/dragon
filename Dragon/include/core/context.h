@@ -42,7 +42,7 @@ class CPUContext{
 #else
         data = malloc(nbytes);
 #endif
-        CHECK(data) << "malloc mem: " << nbytes << " bytes failed.";
+        CHECK(data) << "Malloc mem: " << nbytes << " bytes failed.";
         return data;
     }
 

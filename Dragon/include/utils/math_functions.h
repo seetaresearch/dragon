@@ -107,7 +107,7 @@ template<typename T, class Context>
 void AddScalar(const int n, const float alpha, T* y);
 
 template<typename T, class Context>
-void MulScalar(const int n, const T alpha, T* y);
+void MulScalar(const int n, const float alpha, T* y);
 
 template<typename T, class Context>
 void Axpy(const int n, float alpha, const T* x, T *y);

@@ -4,21 +4,52 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-from .data import DataLayer, MemoryDataLayer
+from .data import DataLayer, \
+                  MemoryDataLayer
 
-from .vision import ConvolutionLayer, DeconvolutionLayer, PoolingLayer, \
-                   LRNLayer, ROIPoolingLayer, ROIAlignLayer, NNResizeLayer
+from .vision import ConvolutionLayer, \
+                    DeconvolutionLayer, \
+                    PoolingLayer, \
+                    LRNLayer, \
+                    ROIPoolingLayer, \
+                    ROIAlignLayer, \
+                    NNResizeLayer, \
+                    BilinearResizeLayer
 
-from .neuron import ReLULayer, DropoutLayer, TanhLayer, PowerLayer
-from .loss import SoftmaxWithLossLayer, SigmoidCrossEntropyLossLayer, \
-                  L2LossLayer, SmoothL1LossLayer, SoftmaxWithFocalLossLayer
+from .neuron import ReLULayer, \
+                    ELULayer, \
+                    DropoutLayer, \
+                    TanHLayer, \
+                    PowerLayer
 
-from .mpi import MPIBroadcastLayer, MPIGatherLayer
+from .loss import SoftmaxWithLossLayer, \
+                  SigmoidCrossEntropyLossLayer, \
+                  L2LossLayer, \
+                  SmoothL1LossLayer, \
+                  SoftmaxWithFocalLossLayer
 
-from .common import InnerProductLayer, AccuracyLayer, BatchNormLayer, \
-                   BatchRenormLayer, BNLayer, ConcatLayer, \
-                   CropLayer, PythonLayer, AddLayer, \
-                   ReshapeLayer, EltwiseLayer, ScaleLayer, \
-                   SoftmaxLayer, PermuteLayer, FlattenLayer, ConcatLayer, \
-                   NormalizeLayer, InstanceNormLayer, TileLayer, \
-                   ExpandDimsLayer, ProposalLayer, DenseConcatLayer
+from .mpi import MPIBroadcastLayer,\
+                 MPIGatherLayer
+
+from .common import InnerProductLayer, \
+                    AccuracyLayer, \
+                    BatchNormLayer, \
+                    BatchRenormLayer,\
+                    BNLayer, \
+                    ConcatLayer, \
+                    CropLayer, \
+                    PythonLayer, \
+                    AddLayer, \
+                    ReshapeLayer, \
+                    EltwiseLayer, \
+                    ScaleLayer, \
+                    SoftmaxLayer, \
+                    PermuteLayer, \
+                    FlattenLayer, \
+                    ConcatLayer, \
+                    NormalizeLayer, \
+                    InstanceNormLayer, \
+                    TileLayer, \
+                    ExpandDimsLayer, \
+                    ProposalLayer, \
+                    DenseConcatLayer

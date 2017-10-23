@@ -34,13 +34,13 @@ void SigmoidCrossEntropyOp<Context>::RunWithType() {
 template <class Context>
 void SigmoidCrossEntropyOp<Context>::RunOnDevice() {
     CHECK_EQ(input(0).count(), input(1).count())
-        << "\nnumber of predictions must match the number of labels.";
+        << "\nNumber of predictions must match the number of labels.";
     prob = ws()->CreateTensor("_t_" + anchor() + "_sigmoid_prob");
     prob->ReshapeLike(input(0));
     losses.ReshapeLike(input(0));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(SigmoidCrossEntropy);
@@ -77,7 +77,7 @@ void SigmoidCrossEntropyGradientOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(SigmoidCrossEntropyGradient);

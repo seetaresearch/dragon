@@ -14,4 +14,4 @@ if __name__ == '__main__':
     net = caffe.Net('net.prototxt', 'VGG16.v2.caffemodel', caffe.TEST)
     new_net = caffe.Net('new_net.prototxt', caffe.TEST)
     surgery.transplant(new_net, net)
-    new_net.save('VGG16.fcn.caffemodel', suffix='')
+    new_net.save('VGG16.fcn.caffemodel')

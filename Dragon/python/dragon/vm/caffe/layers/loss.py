@@ -1,14 +1,28 @@
 # --------------------------------------------------------
-# Caffe for Dragon
+# Dragon
 # Copyright(c) 2017 SeetaTech
 # Written by Ting Pan
 # --------------------------------------------------------
 
 import dragon.ops as ops
 
-from .layer import Layer
+from ..layer import Layer
 
 class SoftmaxWithLossLayer(Layer):
+    """The implementation of ``SoftmaxWithLossLayer``.
+
+    Parameters
+    ----------
+    axis : int
+        The axis of softmax. Refer `SoftmaxParameter.axis`_.
+    ignore_label : int
+        The label id to ignore. Refer `LossParameter.ignore_label`_.
+    normalization : NormalizationMode
+        The normalization. Refer `LossParameter.normalization`_.
+    normalize : boolean
+        Wheter to normalize. Refer `LossParameter.normalize`_.
+
+    """
     def __init__(self, LayerParameter):
         super(SoftmaxWithLossLayer, self).__init__(LayerParameter)
         param = LayerParameter.loss_param
@@ -16,7 +30,7 @@ class SoftmaxWithLossLayer(Layer):
         norm_mode = {0: 'FULL', 1: 'VALID', 2: 'BATCH_SIZE', 3: 'NONE'}
         normalization = 'VALID'
         if param.HasField('normalize'):
-            if not param.normalize: normalization='BATCH_SIZE'
+            if not param.normalize: normalization = 'BATCH_SIZE'
         else: normalization = norm_mode[param.normalization]
         self._param = {'axis': softmax_param.axis,
                        'normalization': normalization,
@@ -30,6 +44,16 @@ class SoftmaxWithLossLayer(Layer):
 
 
 class SigmoidCrossEntropyLossLayer(Layer):
+    """The implementation of ``SigmoidCrossEntropyLossLayer``.
+
+    Parameters
+    ----------
+    normalization : NormalizationMode
+        The normalization. Refer `LossParameter.normalization`_.
+    normalize : boolean
+        Wheter to normalize. Refer `LossParameter.normalize`_.
+
+    """
     def __init__(self, LayerParameter):
         super(SigmoidCrossEntropyLossLayer, self).__init__(LayerParameter)
         param = LayerParameter.loss_param
@@ -47,11 +71,21 @@ class SigmoidCrossEntropyLossLayer(Layer):
 
 
 class L2LossLayer(Layer):
+    """The implementation of ``L2LossLayer``.
+
+    Parameters
+    ----------
+    normalization : NormalizationMode
+        The normalization. Refer `LossParameter.normalization`_.
+    normalize : boolean
+        Wheter to normalize. Refer `LossParameter.normalize`_.
+
+    """
     def __init__(self, LayerParameter):
         super(L2LossLayer, self).__init__(LayerParameter)
         param = LayerParameter.loss_param
-        self._param = { 'normalize': param.normalize
-            if param.HasField('normalize') else True }
+        self._param = {'normalize': param.normalize
+            if param.HasField('normalize') else True}
 
     def Setup(self, bottom):
         super(L2LossLayer, self).Setup(bottom)
@@ -61,6 +95,18 @@ class L2LossLayer(Layer):
 
 
 class SmoothL1LossLayer(Layer):
+    """The implementation of ``SmoothL1LossLayer``.
+
+    Parameters
+    ----------
+    sigma : float
+        The sigma. Refer `SmoothL1LossParameter.sigma`_.
+    normalization : NormalizationMode
+        The normalization. Refer `LossParameter.normalization`_.
+    normalize : boolean
+        Wheter to normalize. Refer `LossParameter.normalize`_.
+
+    """
     def __init__(self, LayerParameter):
         super(SmoothL1LossLayer, self).__init__(LayerParameter)
         param = LayerParameter.smooth_l1_loss_param
@@ -74,6 +120,22 @@ class SmoothL1LossLayer(Layer):
 
 
 class SoftmaxWithFocalLossLayer(Layer):
+    """The implementation of ``SoftmaxWithFocalLossLayer``.
+
+    Parameters
+    ----------
+    axis : int
+        The axis of softmax. Refer `SoftmaxParameter.axis`_.
+    alpha : float
+        The scale on the rare class. Refer `FocalLossParameter.alpha`_.
+    gamma : float
+        The exponetial decay. Refer `FocalLossParameter.gamma`_.
+    eps : float
+        The eps. Refer `FocalLossParameter.eps`_.
+    neg_id : int
+        The negative id. Refer `FocalLossParameter.neg_id`_.
+
+    """
     def __init__(self, LayerParameter):
         super(SoftmaxWithFocalLossLayer, self).__init__(LayerParameter)
         param = LayerParameter.loss_param

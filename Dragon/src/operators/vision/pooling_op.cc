@@ -42,21 +42,18 @@ void PoolingOp<Context>::AvgRunWithType() {
 
 template <class Context>
 void PoolingOp<Context>::Reshape() {
-    CHECK_GE(input(0).ndim(), 3) 
-        << "input ndim must >= 3 (channels, height, width).";
-
-    num = input(0).ndim() == 3 ? 1 : input(0).dim(0);
-    channels = input(0).ndim() == 3 ? input(0).dim(0) : input(0).dim(1);
-    height = input(0).ndim() == 3 ? input(0).dim(1) : input(0).dim(2);
-    width = input(0).ndim() == 3 ? input(0).dim(2) : input(0).dim(3);
-
+    num = input(0).dim(0);
+    channels = input(0).dim(1);
+    height = input(0).dim(2);
+    width = input(0).dim(3);
+    if (global_pooling) {
+        for (int i = 0; i < 2; i++)
+            kernel_size[i] = input(0).dim(i + 2);
+    }
     pool_height = ceil((height + 2 * pad[0] - kernel_size[0]) / (float)stride[0]) + 1;
     pool_width = ceil((width + 2 * pad[1] - kernel_size[1]) / (float)stride[1]) + 1;
-    if (pad.size()) {
-        if ((pool_height - 1) * stride[0] >= (height + pad[0])) pool_height--;
-        if ((pool_width - 1) * stride[1] >= (width + pad[1])) pool_width--;
-    }
-
+    if ((pool_height - 1) * stride[0] >= (height + pad[0])) pool_height--;
+    if ((pool_width - 1) * stride[1] >= (width + pad[1])) pool_width--;
     vector<TIndex> top_shape({ num, channels, pool_height, pool_width });
     if (input(0).ndim() == 3) top_shape.erase(top_shape.begin());
     output(0)->Reshape(top_shape);
@@ -68,14 +65,14 @@ void PoolingOp<Context>::RunOnDevice() {
 
     if (mode == MAX_POOLING) {
         if (input(0).template IsType<float>()) MaxRunWithType<float>();
-        else LOG(FATAL) << "unsupported input types.";
+        else LOG(FATAL) << "Unsupported input types.";
     } 
     else if (mode == AVG_POOLING) {
         if (input(0).template IsType<float>()) AvgRunWithType<float>();
-        else LOG(FATAL) << "unsupported input types.";
+        else LOG(FATAL) << "Unsupported input types.";
     }
     else { 
-        LOG(FATAL) << "unsupported pooling mode."; 
+        LOG(FATAL) << "Unsupported pooling mode."; 
     }
 }
 
@@ -121,16 +118,18 @@ void PoolingGradientOp<Context>::AvgRunWithType() {
 
 template <class Context>
 void PoolingGradientOp<Context>::Reshape() {
-    num = input(0).ndim() == 3 ? 1 : input(0).dim(0);
-    channels = input(0).ndim() == 3 ? input(0).dim(0) : input(0).dim(1);
-    height = input(0).ndim() == 3 ? input(0).dim(1) : input(0).dim(2);
-    width = input(0).ndim() == 3 ? input(0).dim(2) : input(0).dim(3);
+    num = input(0).dim(0);
+    channels = input(0).dim(1);
+    height = input(0).dim(2);
+    width = input(0).dim(3);
+    if (global_pooling) {
+        for (int i = 0; i < 2; i++)
+            kernel_size[i] = input(0).dim(i + 2);
+    }
     pool_height = ceil((height + 2 * pad[0] - kernel_size[0]) / (float)stride[0]) + 1;
     pool_width = ceil((width + 2 * pad[1] - kernel_size[1]) / (float)stride[1]) + 1;
-    if (pad.size()) {
-        if ((pool_height - 1) * stride[0] >= (height + pad[0])) pool_height--;
-        if ((pool_width - 1)* stride[1] >= (width + pad[1])) pool_width--;
-    }
+    if ((pool_height - 1) * stride[0] >= (height + pad[0])) pool_height--;
+    if ((pool_width - 1)* stride[1] >= (width + pad[1])) pool_width--;
     output(0)->ReshapeLike(input(0));
 }
 
@@ -140,14 +139,14 @@ void PoolingGradientOp<Context>::RunOnDevice() {
 
     if (mode == MAX_POOLING) {
         if (input(0).template IsType<float>()) MaxRunWithType<float>();
-        else LOG(FATAL) << "unsupported input types.";
+        else LOG(FATAL) << "Unsupported input types.";
     }
     else if (mode == AVG_POOLING) {
         if (input(0).template IsType<float>()) AvgRunWithType<float>();
-        else LOG(FATAL) << "unsupported input types.";
+        else LOG(FATAL) << "Unsupported input types.";
     } 
     else { 
-        LOG(FATAL) << "unsupported pooling mode."; 
+        LOG(FATAL) << "Unsupported pooling mode."; 
     }
 }
 

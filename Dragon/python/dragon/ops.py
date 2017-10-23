@@ -5,17 +5,18 @@
 # --------------------------------------------------------
 
 from .operators import initializer as init
-from .operators import vision as vision
-from .operators import loss as loss
-from .operators import data as data
+from .operators import vision
+from .operators import loss
+from .operators import data
 from .operators import activation as act
 from .operators import arithmetic as math
-from .operators import utils as utils
-from .operators import cast as cast
-from .operators import mpi as mpi
-from .operators import common as common
-from .operators import norm as norm
-from .operators import recurrent as recurrent
+from .operators import control_flow
+from .operators import misc as misc
+from .operators import cast
+from .operators import mpi
+from .operators import ndarray
+from .operators import norm
+from .operators import recurrent
 
 # data
 LMDBData = data.LMDBData
@@ -23,8 +24,8 @@ MemoryData = data.MemoryData
 
 # init
 Fill = init.Fill
-RandomUniform = init.RandomalUniform
-RandomNormal = init.RandomalNormal
+RandomUniform = init.RandomUniform
+RandomNormal = init.RandomNormal
 TruncatedNormal = init.TruncatedNormal
 GlorotUniform = init.GlorotUniform
 GlorotNormal = init.GlorotNormal
@@ -37,6 +38,7 @@ ROIPooling = vision.ROIPooling
 ROIAlign = vision.ROIAlign
 LRN = vision.LRN
 NNResize = vision.NNResize
+BilinearResize = vision.BilinearResize
 BiasAdd = vision.BiasAdd
 DenseConcat = vision.DenseConcat
 
@@ -48,6 +50,7 @@ Sigmoid = act.Sigmoid
 Tanh = act.Tanh
 Relu = act.Relu
 LRelu = act.LRelu
+Elu = act.Elu
 Softmax = act.Softmax
 Dropout = act.Dropout
 
@@ -72,10 +75,10 @@ Dot = math.Dot
 Log = math.Log
 Exp = math.Exp
 Square = math.Square
+Sqrt = math.Sqrt
 InnerProduct = math.InnerProduct
 Eltwise = math.Eltwise
 Scale = math.Scale
-Argmax = math.Argmax
 GramMatrix = math.GramMatrix
 
 # normalization
@@ -85,31 +88,39 @@ BN = norm.BN
 InstanceNorm = norm.InstanceNorm
 L2Norm = norm.L2Norm
 
-# common
-At = common.At
-Crop = common.Crop
-Reduce = common.Reduce
-Sum = common.Sum
-Mean = common.Mean
-Slice = common.Slice
-Concat = common.Concat
-Transpose = common.Transpose
-Tile = common.Tile
-Flatten = common.Flatten
-Reshape = common.Reshape
-ExpandDims = common.ExpandDims
-Shape = common.Shape
+# ndarray
+At = ndarray.At
+RandomPick = ndarray.RandomPick
+Crop = ndarray.Crop
+Reduce = ndarray.Reduce
+Sum = ndarray.Sum
+Mean = ndarray.Mean
+Argmax = ndarray.Argmax
+Argmin = ndarray.Argmin
+Slice = ndarray.Slice
+Stack = ndarray.Stack
+Concat = ndarray.Concat
+Transpose = ndarray.Transpose
+Repeat = ndarray.Repeat
+Tile = ndarray.Tile
+OneHot = ndarray.OneHot
+Flatten = ndarray.Flatten
+Reshape = ndarray.Reshape
+ExpandDims = ndarray.ExpandDims
+Shape = ndarray.Shape
+Arange = ndarray.Arange
 
-# utils
-Run = utils.Run
-Template = utils.Template
-Accuracy = utils.Accuracy
-StopGradient = utils.StopGradient
-OneHot = utils.OneHot
-MovingAverage = utils.MovingAverage
-Copy = utils.Copy
-Equal = utils.Equal
-Proposal = utils.Proposal
+# control flow
+Copy = control_flow.Copy
+Equal = control_flow.Equal
+
+# misc
+Run = misc.Run
+Template = misc.Template
+Accuracy = misc.Accuracy
+StopGradient = misc.StopGradient
+MovingAverage = misc.MovingAverage
+Proposal = misc.Proposal
 
 # cast
 FloatToHalf = cast.FloatToHalf

@@ -15,7 +15,7 @@ GraphBase* Workspace::CreateGraph(const GraphDef& graph_def) {
 
 Workspace::~Workspace() {
     for (int i = 0; i < WORKSPACE_MAX_CORRUPTED_SIZE; i++) {
-        string name = "_t_mirrow_stage_buffer_" + dragon_cast<string, int>(i);
+        string name = "_t_mirror_stage_buffer_" + dragon_cast<string, int>(i);
         if (HasTensor(name)) {
             MixedMemory* mem = GetTensor(name)->memory();
             if (mem != nullptr) delete mem;

@@ -24,7 +24,7 @@ inline PyObject* MPIInitCC(PyObject* self, PyObject* args) {
     int thread_type;
     MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &thread_type);
     CHECK_EQ(thread_type, MPI_THREAD_MULTIPLE)
-        << "require enable <MPI_THREAD_MULTIPLE> support.";
+        << "\nRequire to enable <MPI_THREAD_MULTIPLE> support.";
     Py_RETURN_TRUE;
 }
 
@@ -72,7 +72,7 @@ inline PyObject* MPICreateGroupCC(PyObject* self, PyObject* args) {
             all_ranks.insert(ranks[i]);
         }
         err_code = MPI_Group_incl(world_group, size, ranks, &local_group);
-        CHECK(err_code == MPI_SUCCESS) << "failed to create mpi group.";
+        CHECK(err_code == MPI_SUCCESS) << "\nFail to create mpi group.";
     }
 
     //  check exclude ranks
@@ -88,11 +88,11 @@ inline PyObject* MPICreateGroupCC(PyObject* self, PyObject* args) {
         for (int i = 0; i < world_size; i++)
             if (!tmp.count(i)) all_ranks.insert(i);
         err_code = MPI_Group_excl(world_group, size, ranks, &local_group);
-        CHECK(err_code == MPI_SUCCESS) << "failed to create mpi group.";
+        CHECK(err_code == MPI_SUCCESS) << "Fail to create mpi group.";
     }
 
     err_code = MPI_Comm_create(MPI_COMM_WORLD, local_group, &local_comm);
-    CHECK(err_code == MPI_SUCCESS) << "failed to create mpi group.";
+    CHECK(err_code == MPI_SUCCESS) << "Fail to create mpi group.";
 
     if (local_comm != MPI_COMM_NULL) {
         int world_rank, local_size;
@@ -120,7 +120,7 @@ inline PyObject* MPICreateGroupCC(PyObject* self, PyObject* args) {
 #else  // WITH_MPI
 
 #define MPI_NOT_IMPLEMENTED \
-    LOG(FATAL) << "MPI is not compilied."; \
+    LOG(FATAL) << "MPI was not compiled."; \
     Py_RETURN_TRUE
 
 inline PyObject* MPIInitCC(PyObject* self, PyObject* args) { MPI_NOT_IMPLEMENTED; }

@@ -5,65 +5,93 @@
 # --------------------------------------------------------
 
 from six.moves import range as xrange
-
-from dragon.core.tensor import Tensor
 import dragon.core.mpi as mpi
 
+from . import *
 
-def MPIBroadcast(inputs, root, mpi_rank=None, **kwargs):
+def MPIBroadcast(inputs, root, mpi_ranks=None, **kwargs):
+    """Broadcast a tensor to all nodes in the ``MPIGroup``.
+
+    Parameters
+    ----------
+    inputs : Tensor
+        The tensor to broadcast.
+    root : int
+        The world rank of root node.
+    mpi_ranks: int, list of int or None
+        The world rank of nodes in group. Default is ``None`` (Use All).
+
+    Returns
+    -------
+    Tensor
+        The broadcast output.
+
+    Notes
+    -----
+    For root, the output **shares** the input.
+
+    For others, the input is **inaccessible**.
+
     """
-    :param inputs:          a Tensor which to broadcast
-    :param root:            a int of the root in a broadcast group
-    :return:                a Tensor that be broadcast
+    CheckInputs(inputs, 1)
+    arguments = ParseArguments(locals())
+    if mpi_ranks is None:
+        num_nodes = mpi.Size()
+        mpi_ranks = [i for i in xrange(0, num_nodes)]
+    if not isinstance(mpi_ranks, list): mpi_rank = [mpi_ranks]
+
+    comm, group = mpi.CreateGroup(root, incl=mpi_ranks)
+    arguments = {'inputs': arguments['inputs'], 'comm': comm, 'group': group}
+
+    output = Tensor.CreateOperator(nout=1, op_type='MPIBroadcast', **arguments)
+
+    if inputs.shape is not None:
+        output.shape = inputs.shape[:]
+
+    return output
+
+
+def MPIGather(inputs, root, mpi_ranks=None, **kwargs):
+    """Gather a tensor from all nodes to root in the ``MPIGroup``.
+
+    Parameters
+    ----------
+    inputs : Tensor
+        The tensor to gather.
+    root : int
+        The world rank of root node.
+    mpi_ranks: int, list of int or None
+        The world rank of nodes in group. Default is ``None`` (Use All).
+
+    Returns
+    -------
+    Tensor or list of Tensor
+        The gathered outputs.
+
+    Notes
+    -----
+    The number of outputs is decided on the number of ``mpi_ranks``.
+
+    The outputs are **accessible** only for root and vice versa.
+
     """
+    CheckInputs(inputs, 1)
+    arguments = ParseArguments(locals())
 
-    if not isinstance(inputs, Tensor):
-        raise RuntimeError('MPIBroadcast Operator accepts a Tensor as inputs')
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-
-    if mpi_rank is None:
-        num_nodes = mpi.size()
+    if mpi_ranks is None:
+        num_nodes = mpi.Size()
         mpi_rank = [i for i in xrange(0, num_nodes)]
-    if not isinstance(kwargs['mpi_rank'], list):
-        kwargs['mpi_rank'] = [kwargs['mpi_rank']]
+    if not isinstance(mpi_ranks, list): mpi_ranks = [mpi_ranks]
 
-    comm, group = mpi.group(root, incl=mpi_rank)
-    new_kwargs = {'inputs': kwargs['inputs'], 'mpi_rank': mpi_rank,
-                  'comm': comm, 'group': group}
+    comm, group = mpi.CreateGroup(root, incl=mpi_ranks)
+    arguments = {'inputs': arguments['inputs'], 'comm': comm, 'group': group}
 
-    return Tensor.CreateOperator(nout=1, op_type='MPIBroadcast', **new_kwargs)
+    outputs = Tensor.CreateOperator(nout=len(mpi_ranks), op_type='MPIGather', **arguments)
 
+    if inputs.shape is not None:
+        if isinstance(outputs, list):
+            for output in outputs:
+                output.shape = inputs.shape[:]
+        else: outputs.shape = inputs.shape[:]
 
-def MPIGather(inputs, root, mpi_rank=None, **kwargs):
-    """
-    :param inputs:          a Tensor which to broadcast
-    :param root:            a int of the root in a broadcast group
-    :return:                a Tensor that be broadcast
-    """
-
-    if not isinstance(inputs, Tensor):
-        raise RuntimeError('MPIGather Operator accepts a Tensor as inputs')
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-
-    if mpi_rank is None:
-        num_nodes = mpi.size()
-        kwargs['mpi_rank'] = [i for i in xrange(0, num_nodes)]
-    if not isinstance(kwargs['mpi_rank'], list):
-        kwargs['mpi_rank'] = [kwargs['mpi_rank']]
-
-    if 'nout' in kwargs:
-        if kwargs['nout'] != len(kwargs['mpi_rank']):
-            raise RuntimeError('specfied nout is {}, but provide {} mpi nodes'
-                               .format(kwargs['nout'], len(kwargs['mpi_rank'])))
-        safe_nout = kwargs['nout']
-    else: safe_nout = len(kwargs['mpi_rank'])
-
-    comm, group = mpi.group(root, incl=mpi_rank)
-    new_kwargs = {'inputs': kwargs['inputs'], 'mpi_rank': kwargs['mpi_rank'],
-                  'comm': comm, 'group': group}
-
-    return Tensor.CreateOperator(nout=safe_nout, op_type='MPIGather', **new_kwargs)
+    return outputs

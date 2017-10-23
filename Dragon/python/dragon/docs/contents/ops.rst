@@ -1,0 +1,279 @@
+=================
+:mod:`dragon.ops`
+=================
+
+.. toctree::
+   :hidden:
+
+Data
+----
+==============    ========================================================================
+List              Brief
+==============    ========================================================================
+`LMDBData`_       Prefetch Image data with LMDB database.
+`MemoryData`_     Perform ``NHWC <-> NCHW``, ``Mean Subtraction`` and ``Type Converting``.
+==============    ========================================================================
+
+Initializer
+-----------
+==================   ======================================================================
+List                 Brief
+==================   ======================================================================
+`Fill`_              Fill a Tensor with a specific value.
+`RandomUniform`_     Randomly initialize a Tensor with uniform distribution.
+`RandomNormal`_      Randomly initialize a Tensor with normal distribution.
+`TruncatedNormal`_   Randomly initialize a Tensor with truncated normal distribution.
+`GlorotUniform`_     Randomly initialize a Tensor with Xavier uniform distribution.
+`GlorotNormal`_      Randomly initialize a Tensor with MSRA normal distribution.
+==================   ======================================================================
+
+Vision
+------
+===================    ======================================================================
+List                   Brief
+===================    ======================================================================
+`Conv2D`_              2D Convolution.
+`Deconv2D`_            2D Deconvolution.
+`Pool2D`_              2D Pooling, MAX or AVG.
+`ROIPooling`_          ROIPoolin(MAX), introduced by `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
+`ROIAlign`_            ROIAlign(MAX), introduced by `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
+`LRN`_                 Local Response Normalization, introduced by `[Krizhevsky et.al, 2012] <http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks>`_.
+`NNResize`_            Resize the image with Nearest-Neighbor method.
+`BilinearResize`_      Resize the image with Bi-linear method.
+`BiasAdd`_             Add the bias across channels to a ``NCHW`` or ``NHWC`` input.
+`DenseConcat`_         Memory-efficient concatenation for DenseNet `[Huang et.al, 2017] <http://arxiv.org/abs/1608.06993>`_.
+===================    ======================================================================
+
+Recurrent
+---------
+===============    ======================================================================
+List               Brief
+===============    ======================================================================
+`LSTMUnit`_        Simple LSTMCell module.
+===============    ======================================================================
+
+Activation
+----------
+===============    ======================================================================
+List               Brief
+===============    ======================================================================
+`Sigmoid`_         Sigmoid function.
+`Tanh`_            Tanh function.
+`Relu`_            Rectified Linear Unit function, introduces by `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.
+`LRelu`_           Leaky Rectified Linear Unit function.
+`Elu`_             Exponential Linear Unit function, introduces by `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
+`Softmax`_         Softmax function.
+`Dropout`_         Randomly set a unit into zero, introduced by `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
+===============    ======================================================================
+
+Loss
+----
+=============================      ======================================================================
+List                               Brief
+=============================      ======================================================================
+`SparseSoftmaxCrossEntropy`_       SoftmaxCrossEntropy with sparse labels.
+`SigmoidCrossEntropy`_             SigmoidCrossEntropy.
+`SoftmaxCrossEntropy`_             SoftmaxCrossEntropy with dense(one-hot) labels.
+`SmoothL1Loss`_                    SmoothL1Loss, introduced by `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
+`L1Loss`_                          L1Loss.
+`L2Loss`_                          L2Loss(EuclideanLoss).
+`SparseSoftmaxFocalLoss`_          SoftmaxFocalLoss with sparse labels, introduced by `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`_.
+=============================      ======================================================================
+
+Arithmetic
+----------
+===============    ======================================================================
+List               Brief
+===============    ======================================================================
+`Add`_             Calculate A + B.
+`Sub`_             Calculate A - B.
+`Mul`_             Calculate A * B.
+`Div`_             Calculate A / B.
+`Dot`_             Calculate A dot B.
+`Pow`_             Calculate the power of input.
+`Log`_             Calculate the logarithm of input.
+`Exp`_             Calculate the exponential of input.
+`Square`_          Calculate the square of input.
+`Sqrt`_            Calculate the sqrt of input.
+`Clip`_            Clip the input to be between lower and higher bounds.
+`Matmul`_          Matrix Multiplication.
+`InnerProduct`_    InnerProduct Function.
+`Eltwise`_         Eltwise Sum/Product Function.
+`Scale`_           Scale Function.
+`GramMatrix`_      Calculate the gram matrix, introduced by `[Gatys et.al, 2016] <https://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Gatys_Image_Style_Transfer_CVPR_2016_paper.pdf>`_.
+===============    ======================================================================
+
+Normalization
+-------------
+===============    ======================================================================
+List               Brief
+===============    ======================================================================
+`BatchNorm`_       Batch Normalization, introduced by `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
+`BatchRenorm`_     Batch Renormalization, introduced by `[Ioffe, 2017] <https://arxiv.org/abs/1702.03275>`_.
+`BN`_              Batch Normalization, with scale procedure after normalization.
+`InstanceNorm`_    Instance Normalization, introduced by `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_.
+`L2Norm`_          L2 Normalization, introduced by `[Liu et.al, 2015] <https://arxiv.org/abs/1506.04579>`_.
+===============    ======================================================================
+
+NDArray
+-------
+===============    ======================================================================
+List               Brief
+===============    ======================================================================
+`At`_              1D At interface of NDArray.
+`RandomPick`_      1D RandomPick interface of NDArray.
+`Crop`_            2D Crop interface interface of NDArray.
+`Reduce`_          The general reduce operator.
+`Sum`_             Compute the sum along the given axis.
+`Mean`_            Compute the mean along the given axis.
+`Argmax`_          Compute the indices of maximum elements along the given axis.
+`Argmin`_          Compute the indices of minimum elements along the given axis.
+`Slice`_           Slice interface of NDArray.
+`Stack`_           Stack the inputs along the given axis.
+`Concat`_          Concatenate the inputs along the given axis.
+`Repeat`_          Repeat the input along the given axis.
+`Transpose`_       Transpose the input according to the given permutations.
+`Tile`_            Tile the input according to the given multiples.
+`Flatten`_         Flatten the input along the given axes.
+`Reshape`_         Reshape the dimensions of input.
+`ExpandDims`_      ExpandDims interface of NDArray.
+`Shape`_           Get the dynamic shape of a Tensor.
+`Arange`_          Return a vector of elements by arange.
+===============    ======================================================================
+
+Control Flow
+------------
+===============    ======================================================================
+List               Brief
+===============    ======================================================================
+`Copy`_            Copy A to B.
+`Equal`_           Equal Comparing between A and B.
+===============    ======================================================================
+
+Misc
+----
+=================    ======================================================================
+List                 Brief
+=================    ======================================================================
+`Run`_               Run a custom operator. (Without GradientFlow)
+`Template`_          Run a custom operator. (With GradientFlow)
+`Accuracy`_          Calculate the Top-K accuracy.
+`StopGradient`_      Return the identity of input with truncated gradient flow.
+`MovingAverage`_     Calculate the moving average.
+`Proposal`_          Generate Regional Proposals, introduced by `[Ren et.al, 2015] <https://arxiv.org/abs/1506.01497>`_.
+=================    ======================================================================
+
+Cast
+----
+=================    ======================================================================
+List                 Brief
+=================    ======================================================================
+`FloatToHalf`_       Cast the type of tensor from ``float32`` to ``float16``.
+=================    ======================================================================
+
+MPI
+---
+=================    ======================================================================
+List                 Brief
+=================    ======================================================================
+`MPIBroadcast`_      Broadcast a tensor to all nodes in the ``MPIGroup``.
+`MPIGather`_         Gather a tensor from all nodes to root in the ``MPIGroup``.
+=================    ======================================================================
+
+
+.. _LMDBData: operators/data.html#dragon.operators.data.LMDBData
+.. _MemoryData: operators/data.html#dragon.operators.data.MemoryData
+
+.. _Fill: operators/initializer.html#dragon.operators.initializer.Fill
+.. _RandomUniform: operators/initializer.html#dragon.operators.initializer.RandomUniform
+.. _RandomNormal: operators/initializer.html#dragon.operators.initializer.RandomNormal
+.. _TruncatedNormal: operators/initializer.html#dragon.operators.initializer.TruncatedNormal
+.. _GlorotUniform: operators/initializer.html#dragon.operators.initializer.GlorotUniform
+.. _GlorotNormal: operators/initializer.html#dragon.operators.initializer.GlorotNormal
+
+.. _Conv2D: operators/vision.html#dragon.operators.vision.Conv2D
+.. _Deconv2D: operators/vision.html#dragon.operators.vision.Deconv2D
+.. _Pool2D: operators/vision.html#dragon.operators.vision.Pool2D
+.. _ROIPooling: operators/vision.html#dragon.operators.vision.ROIPooling
+.. _ROIAlign: operators/vision.html#dragon.operators.vision.ROIAlign
+.. _LRN: operators/vision.html#dragon.operators.vision.LRN
+.. _NNResize: operators/vision.html#dragon.operators.vision.NNResize
+.. _BilinearResize: operators/vision.html#dragon.operators.vision.BilinearResize
+.. _BiasAdd: operators/vision.html#dragon.operators.vision.BiasAdd
+.. _DenseConcat: operators/vision.html#dragon.operators.vision.DenseConcat
+
+.. _LSTMUnit: operators/recurrent.html#dragon.operators.recurrent.LSTMUnit
+
+.. _Sigmoid: operators/activation.html#dragon.operators.activation.Sigmoid
+.. _Tanh: operators/activation.html#dragon.operators.activation.Tanh
+.. _Relu: operators/activation.html#dragon.operators.activation.Relu
+.. _LRelu: operators/activation.html#dragon.operators.activation.LRelu
+.. _Elu: operators/activation.html#dragon.operators.activation.Elu
+.. _Softmax: operators/activation.html#dragon.operators.activation.Softmax
+.. _Dropout: operators/activation.html#dragon.operators.activation.Dropout
+
+.. _SparseSoftmaxCrossEntropy: operators/loss.html#dragon.operators.loss.SparseSoftmaxCrossEntropy
+.. _SigmoidCrossEntropy: operators/loss.html#dragon.operators.loss.SigmoidCrossEntropy
+.. _SoftmaxCrossEntropy: operators/loss.html#dragon.operators.loss.SoftmaxCrossEntropy
+.. _SmoothL1Loss: operators/loss.html#dragon.operators.loss.SmoothL1Loss
+.. _L1Loss: operators/loss.html#dragon.operators.loss.L1Loss
+.. _L2Loss: operators/loss.html#dragon.operators.loss.L2Loss
+.. _SparseSoftmaxFocalLoss: operators/loss.html#dragon.operators.loss.SparseSoftmaxFocalLoss
+
+.. _Add: operators/arithmetic.html#dragon.operators.arithmetic.Add
+.. _Sub: operators/arithmetic.html#dragon.operators.arithmetic.Sub
+.. _Mul: operators/arithmetic.html#dragon.operators.arithmetic.Mul
+.. _Div: operators/arithmetic.html#dragon.operators.arithmetic.Div
+.. _Clip: operators/arithmetic.html#dragon.operators.arithmetic.Clip
+.. _Pow: operators/arithmetic.html#dragon.operators.arithmetic.Pow
+.. _Log: operators/arithmetic.html#dragon.operators.arithmetic.Log
+.. _Exp: operators/arithmetic.html#dragon.operators.arithmetic.Exp
+.. _Square: operators/arithmetic.html#dragon.operators.arithmetic.Square
+.. _Sqrt: operators/arithmetic.html#dragon.operators.arithmetic.Square
+.. _Matmul: operators/arithmetic.html#dragon.operators.arithmetic.Matmul
+.. _Dot: operators/arithmetic.html#dragon.operators.arithmetic.Dot
+.. _InnerProduct: operators/arithmetic.html#dragon.operators.arithmetic.InnerProduct
+.. _Eltwise: operators/arithmetic.html#dragon.operators.arithmetic.Eltwise
+.. _Scale: operators/arithmetic.html#dragon.operators.arithmetic.Scale
+.. _GramMatrix: operators/arithmetic.html#dragon.operators.arithmetic.GramMatrix
+
+.. _BatchNorm: operators/norm.html#dragon.operators.norm.BatchNorm
+.. _BatchRenorm: operators/norm.html#dragon.operators.norm.BatchRenorm
+.. _BN: operators/norm.html#dragon.operators.norm.BN
+.. _InstanceNorm: operators/norm.html#dragon.operators.norm.InstanceNorm
+.. _L2Norm: operators/norm.html#dragon.operators.norm.L2Norm
+
+.. _At: operators/ndarray.html#dragon.operators.ndarray.At
+.. _RandomPick: operators/ndarray.html#dragon.operators.ndarray.RandomPick
+.. _Crop: operators/ndarray.html#dragon.operators.ndarray.Crop
+.. _Reduce: operators/ndarray.html#dragon.operators.ndarray.Reduce
+.. _Sum: operators/ndarray.html#dragon.operators.ndarray.Sum
+.. _Mean: operators/ndarray.html#dragon.operators.ndarray.Mean
+.. _Argmax: operators/ndarray.html#dragon.operators.ndarray.Argmax
+.. _Argmin: operators/ndarray.html#dragon.operators.ndarray.Argmin
+.. _Slice: operators/ndarray.html#dragon.operators.ndarray.Slice
+.. _Stack: operators/ndarray.html#dragon.operators.ndarray.Stack
+.. _Concat: operators/ndarray.html#dragon.operators.ndarray.Concat
+.. _Transpose: operators/ndarray.html#dragon.operators.ndarray.Transpose
+.. _Repeat: operators/ndarray.html#dragon.operators.ndarray.Repeat
+.. _Tile: operators/ndarray.html#dragon.operators.ndarray.Tile
+.. _Flatten: operators/ndarray.html#dragon.operators.ndarray.Flatten
+.. _Reshape: operators/ndarray.html#dragon.operators.ndarray.Reshape
+.. _ExpandDims: operators/ndarray.html#dragon.operators.ndarray.ExpandDims
+.. _Shape: operators/ndarray.html#dragon.operators.ndarray.Shape
+.. _Arange: operators/ndarray.html#dragon.operators.ndarray.Arange
+
+.. _Copy: operators/control_flow.html#dragon.operators.control_flow.Copy
+.. _Equal: operators/control_flow.html#dragon.operators.control_flow.Equal
+
+.. _Run: operators/misc.html#dragon.operators.misc.Run
+.. _Template: operators/misc.html#dragon.operators.misc.Template
+.. _Accuracy: operators/misc.html#dragon.operators.misc.Accuracy
+.. _StopGradient: operators/misc.html#dragon.operators.misc.StopGradient
+.. _MovingAverage: operators/misc.html#dragon.operators.misc.MovingAverage
+.. _Proposal: operators/misc.html#dragon.operators.misc.Proposal
+
+.. _FloatToHalf: operators/cast.html#dragon.operators.misc.FloatToHalf
+
+.. _MPIBroadcast: operators/mpi.html#dragon.operators.mpi.MPIBroadcast
+.. _MPIGather: operators/mpi.html#dragon.operators.mpi.MPIGather

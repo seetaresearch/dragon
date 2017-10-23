@@ -16,7 +16,7 @@ void TanhOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(Tanh);
@@ -38,7 +38,7 @@ void TanhGradientOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(TanhGradient);

@@ -4,153 +4,206 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-from dragon.core.tensor import Tensor
-import numpy as np
-dtype = np.float32
+from . import *
 
-def Fill(shape, value=1.0, **kwargs):
+def Fill(shape, value=0, **kwargs):
+    """Return a Tensor with specific value filled.
+
+    Parameters
+    ----------
+    shape : list, tuple or Tensor
+        The shape of the new tensor.
+    value : basic numerical type
+        The value of the new tensor.
+
+    Returns
+    -------
+    Tensor
+        The value-filled Tensor.
+
     """
-
-    :param shape:       the shape to fill
-    :param value:       the value to fill
-    :return:            a value-filled Tensor
-
-    """
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-    kwargs['value'] = float(kwargs['value'])
-    if not isinstance(shape, Tensor): kwargs['static_shape'] = shape
+    arguments = ParseArguments(locals())
+    arguments['value'] = float(value)
+    if not isinstance(shape, Tensor):
+        arguments['static_shape'] = shape
     else:
-        kwargs['dynamic_shape'] = shape.name
-        kwargs['extra_inputs'] = shape
-    del kwargs['shape']
+        arguments['dynamic_shape'] = shape.name
+        arguments['extra_inputs'] = shape
+    del arguments['shape']
 
-    output =  Tensor.CreateOperator([], nout=1, op_type='Fill', **kwargs)
-    output.shape = kwargs['static_shape'] if 'static_shape' in kwargs else None
+    output =  Tensor.CreateOperator([], nout=1, op_type='Fill', **arguments)
+    output.shape = arguments['static_shape'] if 'static_shape' in arguments else None
     return output
 
 
-def RandomalUniform(shape, low=-1.0, high=1.0, **kwargs):
+def RandomUniform(shape, low=-1.0, high=1.0, **kwargs):
+    """Return a Tensor randomly initialized with uniform distribution.
+
+    Parameters
+    ----------
+    shape : list, tuple or Tensor
+        The shape of the new tensor.
+    low : basic numerical type
+        The lower bound of uniform distribution.
+    high : basic numerical type
+        The higher bound of uniform distribution.
+
+    Returns
+    -------
+    Tensor
+        The random-initialized Tensor.
+
     """
-
-    :param shape:       the shape to fill
-    :param mean:        the low_bound of a uniform distribution
-    :param std:         the high_bound of a uniform distribution
-    :return:            a random uniform-filled Tensor
-
-    """
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-    kwargs['low'] = float(kwargs['low'])
-    kwargs['high'] = float(kwargs['high'])
-    if not isinstance(shape, Tensor): kwargs['static_shape'] = shape
+    arguments = ParseArguments(locals())
+    arguments['low'] = float(low)
+    arguments['high'] = float(high)
+    if not isinstance(shape, Tensor):
+        arguments['static_shape'] = shape
     else:
-        kwargs['dynamic_shape'] = shape.name
-        kwargs['extra_inputs'] = shape
-    del kwargs['shape']
+        arguments['dynamic_shape'] = shape.name
+        arguments['extra_inputs'] = shape
+    del arguments['shape']
 
-    output =  Tensor.CreateOperator([], nout=1, op_type='RandomUniform', **kwargs)
-    output.shape = kwargs['static_shape'] if 'static_shape' in kwargs else None
+    output =  Tensor.CreateOperator([], nout=1, op_type='RandomUniform', **arguments)
+    output.shape = arguments['static_shape'] if 'static_shape' in arguments else None
     return output
 
 
-def RandomalNormal(shape, mean=0.0, std=1.0, **kwargs):
+def RandomNormal(shape, mean=0.0, std=1.0, **kwargs):
+    """Return a Tensor randomly initialized with normal distribution.
+
+    Parameters
+    ----------
+    shape : list, tuple or Tensor
+        The shape of the new tensor.
+    mean : basic numerical type
+        The mean(mu) of normal distribution.
+    std : basic numerical type
+        The std(sigma) of normal distribution.
+
+    Returns
+    -------
+    Tensor
+        The random-initialized Tensor.
+
     """
-
-    :param shape:       the shape to fill
-    :param mean:        the mean of a normal distribution
-    :param std:         the std of a normal distribution
-    :return:            a random normal-filled Tensor
-
-    """
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-    kwargs['mean'] = float(kwargs['mean'])
-    kwargs['std'] = float(kwargs['std'])
-    if not isinstance(shape, Tensor): kwargs['static_shape'] = shape
+    arguments = ParseArguments(locals())
+    arguments['mean'] = float(mean)
+    arguments['std'] = float(std)
+    if not isinstance(shape, Tensor):
+        arguments['static_shape'] = shape
     else:
-        kwargs['dynamic_shape'] = shape.name
-        kwargs['extra_inputs'] = shape
-    del kwargs['shape']
+        arguments['dynamic_shape'] = shape.name
+        arguments['extra_inputs'] = shape
+    del arguments['shape']
 
-    output = Tensor.CreateOperator([], nout=1, op_type='RandomNormal', **kwargs)
-    output.shape = kwargs['static_shape'] if 'static_shape' in kwargs else None
+    output = Tensor.CreateOperator([], nout=1, op_type='RandomNormal', **arguments)
+    output.shape = arguments['static_shape'] if 'static_shape' in arguments else None
     return output
 
 
 def TruncatedNormal(shape, mean=0.0, std=1.0, **kwargs):
-    """
+    """Return a Tensor randomly initialized with truncated normal distribution.
 
-    :param shape:       the shape to fill
-    :param mean:        the mean of a normal distribution
-    :param std:         the std of a normal distribution
-    :return:            a truncated normal-filled Tensor
+    The bounds of truncated distribution are |truncated_normal_bounds|.
 
-    """
+    Parameters
+    ----------
+    shape : list, tuple or Tensor
+        The shape of the new tensor.
+    mean : basic numerical type
+        The mean(mu) of normal distribution.
+    std : basic numerical type
+        The std(sigma) of normal distribution.
 
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
-    kwargs['low'] = float(mean - 2.0 * std)
-    kwargs['high'] = float(mean + 2.0 * std)
-    if not isinstance(shape, Tensor): kwargs['static_shape'] = shape
-    else:
-        kwargs['dynamic_shape'] = shape.name
-        kwargs['extra_inputs'] = shape
-    del kwargs['shape']
-
-    output =  Tensor.CreateOperator([], nout=1, op_type='TruncatedNormal', **kwargs)
-    output.shape = kwargs['static_shape'] if 'static_shape' in kwargs else None
-    return output
-
-
-def GlorotUniform(shape, scale=3.0, mode='fan_in', **kwargs):
-    """
-
-    :param shape:       the shape to fill
-    :param scale:       scaling factor (positive float)
-    :param mode:        one of "fan_in", "fan_out", "fan_avg"
-    :return:            a glorot uniform-filled Tensor
+    Returns
+    -------
+    Tensor
+        The random-initialized Tensor.
 
     """
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs'];  kwargs = dict(args, **kwargs)
-    if not isinstance(shape, Tensor): kwargs['static_shape'] = shape
-    else:
-        kwargs['dynamic_shape'] = shape.name
-        kwargs['extra_inputs'] = shape
-    del kwargs['shape']
-
-    output = Tensor.CreateOperator([], nout=1, op_type='GlorotUniform', **kwargs)
-    output.shape = kwargs['static_shape'] if 'static_shape' in kwargs else None
-    return output
-
-
-def GlorotNormal(shape, scale=2.0, mode='fan_in', **kwargs):
-    """
-
-    :param shape:       the shape to fill
-    :param scale:       scaling factor (positive float)
-    :param mode:        one of "fan_in", "fan_out", "fan_avg"
-    :return:            a glorot uniform-filled Tensor
-
-    """
-
-    args = locals(); kwargs = args['kwargs']
-    del args['kwargs']; kwargs = dict(args, **kwargs)
+    arguments = ParseArguments(locals())
+    arguments['mean'] = float(mean)
+    arguments['std'] = float(std)
+    arguments['low'] = float(mean - 2.0 * std)
+    arguments['high'] = float(mean + 2.0 * std)
     if not isinstance(shape, Tensor):
-        kwargs['static_shape'] = shape
+        arguments['static_shape'] = shape
     else:
-        kwargs['dynamic_shape'] = shape.name
-        kwargs['extra_inputs'] = shape
-    del kwargs['shape']
+        arguments['dynamic_shape'] = shape.name
+        arguments['extra_inputs'] = shape
+    del arguments['shape']
 
-    output = Tensor.CreateOperator([], nout=1, op_type='GlorotNormal', **kwargs)
-    output.shape = kwargs['static_shape'] if 'static_shape' in kwargs else None
+    output =  Tensor.CreateOperator([], nout=1, op_type='TruncatedNormal', **arguments)
+    output.shape = arguments['static_shape'] if 'static_shape' in arguments else None
     return output
 
 
+def GlorotUniform(shape, scale=3.0, mode='FAN_IN', **kwargs):
+    """Return a Tensor randomly initialized with Xavier uniform distribution.
 
+    The bounds of uniform distribution are |glorot_uniform_bounds|.
+
+    Parameters
+    ----------
+    shape : list, tuple or Tensor
+        The shape of the new tensor.
+    scale : basic numerical type
+        The scale of xavier uniform distribution.
+    mode : str
+        The mode, ``FAN_IN``, ``FAN_OUT`` or ``FAN_AVG``.
+
+    Returns
+    -------
+    Tensor
+        The random-initialized Tensor.
+
+    """
+    arguments = ParseArguments(locals())
+    arguments['scale'] = float(scale)
+    arguments['mode'] = mode.lower()
+    if not isinstance(shape, Tensor):
+        arguments['static_shape'] = shape
+    else:
+        arguments['dynamic_shape'] = shape.name
+        arguments['extra_inputs'] = shape
+    del arguments['shape']
+
+    output = Tensor.CreateOperator([], nout=1, op_type='GlorotUniform', **arguments)
+    output.shape = arguments['static_shape'] if 'static_shape' in arguments else None
+    return output
+
+
+def GlorotNormal(shape, scale=2.0, mode='FAN_IN', **kwargs):
+    """Return a Tensor randomly initialized with MSRA normal distribution.
+
+    The parameters of normal distribution are |glorot_normal_parameters|.
+
+    Parameters
+    ----------
+    shape : list, tuple or Tensor
+        The shape of the new tensor.
+    scale : basic numerical type
+        The scale of msra normal distribution.
+    mode : str
+        The mode, ``FAN_IN``, ``FAN_OUT`` or ``FAN_AVG``.
+
+    Returns
+    -------
+    Tensor
+        The random-initialized Tensor.
+
+    """
+    arguments = ParseArguments(locals())
+    arguments['scale'] = float(scale)
+    arguments['mode'] = mode.lower()
+    if not isinstance(shape, Tensor):
+        arguments['static_shape'] = shape
+    else:
+        arguments['dynamic_shape'] = shape.name
+        arguments['extra_inputs'] = shape
+    del arguments['shape']
+
+    output = Tensor.CreateOperator([], nout=1, op_type='GlorotNormal', **arguments)
+    output.shape = arguments['static_shape'] if 'static_shape' in arguments else None
+    return output

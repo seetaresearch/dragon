@@ -30,10 +30,19 @@ class Tensor {
             CHECK_GT(d, 0);
             new_size *= d;
         }
-        if (size_ != new_size && own_mem_ &&
-            capacity_ < TIndex(new_size * meta_.itemsize())) {
-            memory_.reset();
-            capacity_ = 0;
+        if (own_mem_) {
+            if (size_ != new_size &&
+                capacity_ < TIndex(new_size * meta_.itemsize())) {
+                memory_.reset();
+                capacity_ = 0;
+            }
+        } else {
+            if (ex_memory_ && TIndex(ex_memory_->nbytes()) < 
+                              TIndex(new_size * meta_.itemsize())) {
+                delete ex_memory_;
+                ex_memory_ = nullptr;
+                capacity_ = 0;
+            }
         }
         size_ = new_size;
     }
@@ -96,7 +105,7 @@ class Tensor {
     MixedMemory* memory() const { return own_mem_ ? memory_.get() : ex_memory_; }
     MixedMemory::State memory_state() const { 
         MixedMemory* mem = memory();
-        CHECK(mem) << "memory access before allowcating.";
+        CHECK(mem) << "Memory access before allowcating.";
         return memory()->state(); 
     }
 
@@ -120,7 +129,7 @@ class Tensor {
             } else if (TypeMeta::Id<Context>() == TypeMeta::Id<CUDAContext>()) {
                 *data_ptr = mem->mutable_cuda_data();
             } else {
-                LOG(FATAL) << "unknown memory type access. only CPU or CUDA are supported.";
+                LOG(FATAL) << "Unknown memory type. Only CPU or CUDA is supported.";
             }
         }
     }
@@ -142,34 +151,16 @@ class Tensor {
     template <class Context>
     void* raw_mutable_data(const TypeMeta& meta) {
         void* data_ptr;
-        if (own_mem_) {
-            mutable_data_ptr<Context>(&data_ptr);
-            if (meta_ == meta && data_ptr) {
-                return data_ptr;
-            } else {
-                meta_ = meta;
-                CHECK_GT(size_, 0);
-                memory_.reset(new MixedMemory(meta, size_* meta_.itemsize()));
-                mutable_data_ptr<Context>(&data_ptr);  //  malloc
-                if (meta.ctor()) meta_.ctor()(data_ptr, size_);
-            }
-            capacity_ = size_ * meta_.itemsize();
-            return data_ptr;
-        } else {
-            meta_ = meta;
-            CHECK_GT(size_, 0);
-            TIndex ex_capacity_ = ex_memory_->nbytes();
-            if (ex_capacity_ >= TIndex(size_ * meta.itemsize())) {
-                mutable_data_ptr<Context>(&data_ptr);
-            } else {
-                delete ex_memory_;
-                ex_memory_ = new MixedMemory(meta, size_* meta_.itemsize());
-                mutable_data_ptr<Context>(&data_ptr);  //  malloc
-                if (meta.ctor()) meta_.ctor()(data_ptr, size_);
-                capacity_ = size_ * meta.itemsize();
-            }
-            return data_ptr;
-        }
+        mutable_data_ptr<Context>(&data_ptr);
+        if (meta_ == meta && data_ptr) return data_ptr;
+        meta_ = meta;
+        CHECK_GT(size_, 0);
+        if (own_mem_) memory_.reset(new MixedMemory(meta, size_* meta_.itemsize()));
+        else ex_memory_ = new MixedMemory(meta, size_* meta_.itemsize());
+        mutable_data_ptr<Context>(&data_ptr);    //  malloc memory
+        if (meta.ctor()) meta_.ctor()(data_ptr, size_);  //  call the constructor
+        capacity_ = size_ * meta.itemsize();
+        return data_ptr;
     }
 
     template <class Context>
@@ -181,7 +172,9 @@ class Tensor {
     }
 
     template <class Context>
-    const void* raw_data() const { return const_data_ptr<Context>(); }
+    const void* raw_data() const { 
+        return const_data_ptr<Context>(); 
+    }
 
     template <typename T, class Context>
     T* mutable_data() {
@@ -192,8 +185,8 @@ class Tensor {
     }
 
     template <typename T, class Context>
-    const T* data() const {
-        return static_cast<const T*>(raw_data<Context>());
+    const T* data() const { 
+        return static_cast<const T*>(raw_data<Context>()); 
     }
 
     inline void Share(const Tensor& other) {

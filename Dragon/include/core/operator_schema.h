@@ -23,6 +23,8 @@ class OpSchema{
 
     bool Verify(const OperatorDef& def) const;
 
+    inline OpSchema& IgnoreVerify() { ignore_verify_ = true; return *this; }
+
     OpSchema& Inplace(set<pair<int, int> > inplace);
     std::function<bool(int, int)> CheckInplace;
     inline bool AllowInplace() const { return allow_inplace_; }
@@ -38,14 +40,13 @@ class OpSchema{
         min_input_ = min_output_= 0;
         max_input_ = max_output_ = std::numeric_limits<int>::max();
         CheckInplace = [](int, int) { return false; };
-        allow_inplace_ = false;
+        ignore_verify_ =  allow_inplace_ = false;
     }
 
     string op_type_, file_;
     int line_, min_input_, max_input_;
     int min_output_, max_output_;
-    bool allow_inplace_;
-    
+    bool allow_inplace_, ignore_verify_;
 };
 
 class OpSchemaRegistry {

@@ -20,7 +20,7 @@ void ClipOp<Context>::RunOnDevice() {
     mask = ws()->CreateTensor("_t_" + anchor() + "_clip_mask");
     mask->ReshapeLike(input(0));
     if (input(0).template IsType<float>()) return RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(Clip);
@@ -42,7 +42,7 @@ void ClipGradientOp<Context>::RunOnDevice() {
     output(0)->Share(input(-1));
     mask = ws()->GetTensor("_t_" + anchor() + "_clip_mask");
     if (input(0).template IsType<float>()) return RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(ClipGradient);

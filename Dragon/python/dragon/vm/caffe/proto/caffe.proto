@@ -318,8 +318,8 @@ message LayerParameter {
   repeated string bottom = 3; // the name of each bottom blob
   repeated string top = 4; // the name of each top blob
 
-  // The mirrow stage optimization
-  optional bool mirrow_stage = 162 [default = false];  
+  // The mirror stage optimization
+  optional bool mirror_stage = 162 [default = false];  
 
   // The train / test phase for computation.
   optional Phase phase = 10;
@@ -410,14 +410,13 @@ message LayerParameter {
   optional ThresholdParameter threshold_param = 128;
   optional TileParameter tile_param = 138;
   optional WindowDataParameter window_data_param = 129;
-  optional ImagenetParameter imagenet_param = 150;
   optional ROIPoolingParameter roi_pooling_param = 151;
   optional SmoothL1LossParameter smooth_l1_loss_param = 152;
   optional MPIParameter mpi_param = 153;
   optional PermuteParameter permute_param = 154;
   optional NormalizeParameter normalize_param = 155;
   optional ParallelParameter parallel_param = 157;
-  optional NNResizeParameter nnresize_param = 158;
+  optional ResizeParameter resize_param = 158;
   optional ExpandDimsParameter expand_dims_param = 159;
   optional ProposalParameter proposal_param = 160;
   optional BatchRenormParameter batch_renorm_param = 161;
@@ -436,6 +435,7 @@ message TransformationParameter {
   optional bool mirror = 2 [default = false];
   // Specify if we would like to randomly crop an image.
   optional uint32 crop_size = 3 [default = 0];
+  optional uint32 padding = 11 [default = 0];
   // mean_file and mean_value cannot be specified at the same time
   optional string mean_file = 4;
   // if specified can be repeated once (would substract it from all the channels)
@@ -1424,16 +1424,6 @@ message PReLUParameter {
   optional bool channel_shared = 2 [default = false];
 }
 
-//  From Dragon
-message ImagenetParameter{
-    optional string source = 1;
-    optional uint32 batch_size = 2;
-    optional uint32 prefetch = 4 [default = 4];
-    optional string imageset = 5;
-    optional bool shuffle = 6 [default = false];
-    optional uint32 step = 7 [default = 1];
-}
-
 message SmoothL1LossParameter {
   // SmoothL1Loss(x) =
   //   0.5 * (sigma * x) ** 2    -- if x < 1.0 / sigma / sigma
@@ -1464,19 +1454,19 @@ message NormalizeParameter {
   optional float eps = 4 [default = 1e-10];
 }
 
-message ParallelParameter{
+message ParallelParameter {
     optional bool shuffle = 1 [default = false];
     optional bool node_step = 2 [default = false];
     optional bool partition = 3 [default = false];
 }
 
-message NNResizeParameter{
+message ResizeParameter {
     optional BlobShape shape = 1;
     optional float fx = 2 [default = -1.0];
     optional float fy = 3 [default = -1.0];
 }
 
-message ExpandDimsParameter{
+message ExpandDimsParameter {
     optional int32 axis = 1 [default = -1];
 }
 
@@ -1506,8 +1496,8 @@ message DenseConcatParameter {
 }
 
 message FocalLossParameter {
-  optional float alpha = 1 [default = 1.0];
-  optional float gamma = 2 [default = 0.25];
+  optional float alpha = 1 [default = 0.5];
+  optional float gamma = 2 [default = 2.0];
   optional float eps = 3 [default = 1e-10];
   optional int32 neg_id = 4 [default = -1];
 }

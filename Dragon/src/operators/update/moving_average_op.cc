@@ -16,7 +16,7 @@ void MovingAverageOp<Context>::RunOnDevice() {
 
     if (input(0).template IsType<float>()) RunWithType<float>();
     else if (input(0).template IsType<float16>()) RunWithType<float16>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(MovingAverage);

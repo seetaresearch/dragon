@@ -96,9 +96,9 @@ class NumpyFetcher : public TensorFetcherBase {
         CHECK_GT(tensor.count(), 0);
         vector<npy_intp> npy_dims;
         for (const auto dim : tensor.dims()) npy_dims.push_back(dim);
-        int numpy_type = DragonToNumpyType(tensor.meta());    // translate a Meta to a int
+        int numpy_type = DragonToNumpyType(tensor.meta());
         if (numpy_type == -1) {
-            string s = "Tensor(" + tensor.name() + "): unknown type yet, really run the net?";
+            string s = "The data type of Tensor(" + tensor.name() + ") is unknown. Have you solved it ?";
             PyErr_SetString(PyExc_RuntimeError, s.c_str());
             return nullptr;
         }
@@ -134,12 +134,12 @@ class NumpyFeeder : public TensorFeederBase {
         PyArrayObject* array = PyArray_GETCONTIGUOUS(original_array);
         const TypeMeta& meta = NumpyTypeToDragon(PyArray_TYPE(array));
         if (meta.id() == 0) {
-            PyErr_SetString(PyExc_TypeError, "numpy data type is not supported.");
+            PyErr_SetString(PyExc_TypeError, "Unsupported data type.");
             return nullptr;
         }
         if (meta.id() != tensor->meta().id() && tensor->meta().id() != 0)
-            LOG(WARNING) << "feed Tensor(" << tensor->name() << ")"
-                         << " with different dtype from original's.";
+            LOG(WARNING) << "Feed Tensor(" << tensor->name() << ")"
+                         << " with different data type from original one.";
         tensor->SetMeta(meta);
         int ndim = PyArray_NDIM(array);
         npy_intp* npy_dims = PyArray_DIMS(array);
@@ -154,7 +154,7 @@ class NumpyFeeder : public TensorFeederBase {
                                                     tensor->raw_mutable_data<CUDAContext>(), 
                                                     static_cast<void*>(PyArray_DATA(array)));
 #else   
-            LOG(FATAL) << "CUDA is not compilied.";
+            LOG(FATAL) << "CUDA was not compiled.";
 #endif
         } else{
             CPUContext::Memcpy<CPUContext, CPUContext>(tensor->nbytes(), 

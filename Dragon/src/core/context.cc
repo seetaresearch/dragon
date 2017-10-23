@@ -15,7 +15,7 @@ template<> void CPUContext::Memcpy<CPUContext, CUDAContext>(
     CUDAContext ctx(POINTER_DEVICE(src));
     ctx.Memcpy<CPUContext, CUDAContext>(nbytes, dst, src);
 #else
-    LOG(FATAL) << "CUDA is not compilied.";
+    LOG(FATAL) << "CUDA was not compiled.";
 #endif
 }
 
@@ -26,7 +26,7 @@ template<> void CPUContext::Memcpy<CUDAContext, CPUContext>(
         CUDAContext ctx(POINTER_DEVICE(dst));
         ctx.Memcpy<CUDAContext, CPUContext>(nbytes, dst, src);
 #else
-    LOG(FATAL) << "CUDA is not compilied.";
+    LOG(FATAL) << "CUDA was not compiled.";
 #endif
 }
     

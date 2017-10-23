@@ -27,7 +27,7 @@ void CuDNNLRNOp<Context>::RunOnDevice() {
 #ifdef WITH_CUDA_FP16
         else if (input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
-        else LOG(FATAL) << "unsupported input types."; 
+        else LOG(FATAL) << "Unsupported input types."; 
     } else { 
         LRNOp<Context>::RunOnDevice(); 
     }
@@ -62,7 +62,7 @@ void CuDNNLRNGradientOp<Context>::RunOnDevice() {
 #ifdef WITH_CUDA_FP16
         else if (input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
-        else LOG(FATAL) << "unsupported input types."; 
+        else LOG(FATAL) << "Unsupported input types."; 
     } else { 
         LRNGradientOp<Context>::RunOnDevice(); 
     }

@@ -7,7 +7,7 @@
 #ifndef DRAGON_OPERATORS_VISION_DENSE_CONCAT_OP_H_
 #define DRAGON_OPERATORS_VISION_DENSE_CONCAT_OP_H_
 
-#include "operators/common/concat_op.h"
+#include "operators/ndarray/concat_op.h"
 
 namespace dragon {
 

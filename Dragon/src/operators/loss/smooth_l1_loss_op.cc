@@ -41,7 +41,7 @@ void SmoothL1LossOp<Context>::RunOnDevice() {
     error->ReshapeLike(input(0));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(SmoothL1Loss);
@@ -80,7 +80,7 @@ void SmoothL1LossGradientOp<Context>::RunOnDevice() {
     diff = ws()->GetTensor("_t_" + anchor() + "_smoothl1_loss_diff");
     
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(SmoothL1LossGradient);

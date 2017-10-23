@@ -13,10 +13,34 @@ from dragon.__init__ import *
 from .scope import GetOperatorName
 
 class GraphGradientMaker(object):
+    """
+    GraphGradientMaker is deigned to generate gradient operators automatically.
+
+    It relies on the generating rules defined in the C++ backend.
+    """
     @classmethod
-    def CreateGradientForOp(cls, op_def, g_output):
-        """ parse ops from string """
-        g_ops, g_inputs, defaults = CreateGradientDefsCC(op_def.SerializeToString(), g_output)
+    def CreateGradientForOp(cls, forward_op, g_output):
+        """Generate the OperatorDef for ``BackwardOp`` by ``ForwardOp``.
+
+        Parameters
+        ----------
+        forward_op : dragon_pb2.OperatorDef
+            The OperatorDef of ``ForwardOp``.
+        g_output : list of str
+            The inputs of ``BackwardOp`` (Precomputed Grads).
+
+        Returns
+        -------
+        tuple
+            The OpDef, outputs and defaults of ``BackwardOp``.
+
+        References
+        ----------
+        The wrapper of ``CreateGradientDefsCC``.
+
+        """
+        g_ops, g_inputs, defaults = \
+            CreateGradientDefsCC(forward_op.SerializeToString(), g_output)
         for idx, g_op in enumerate(g_ops):
             new_def = pb.OperatorDef()
             new_def.ParseFromString(g_op)
@@ -24,9 +48,28 @@ class GraphGradientMaker(object):
             g_ops[idx] = new_def
         return g_ops, g_inputs, defaults
 
+
     @classmethod
     def CheckMissingGrad(cls, forward_op, inputs_to_grads, blacklist, targets):
-        """ check the missing grads, if True, skip this op """
+        """Check if missing Grads. If True, skip this Op.
+
+        Parameters
+        ----------
+        forward_op : dragon_pb2.OperatorDef
+            The OperatorDef of ``ForwardOp``.
+        inputs_to_grads : dict
+            The dict of <input, g_input>.
+        blacklist : set of str
+            The set of ``NoGradient`` tensors.
+        targets : list of str
+            The solving targets.
+
+        Returns
+        -------
+        tuple
+            The result of checking and generated filling grads.
+
+        """
         if forward_op.type in config.NO_GRADIENT_OPERATORS:
             for input in forward_op.input: blacklist.add(input)
             return (True, None)
@@ -49,22 +92,44 @@ class GraphGradientMaker(object):
         # check pass, even if missing some grads
         return (False, gen_grads)
 
+
     @classmethod
-    def Make(cls, ops, targets):
+    def Make(cls, forward_ops, targets):
+        """Make ``BackwardOps`` based on ``ForwardOps``.
+
+        Parameters
+        ----------
+        forward_ops : list of dragon_pb2.OperatorDef
+            The operators of ``ForwardOp``.
+        targets : list of str
+            The solving targets.
+
+        Returns
+        -------
+        tuple
+            The ``ForwardOps`` and ``BackwardOps``.
+
+        See Also
+        --------
+        `theano.function(*args, **kwargs)`_ - How to make a graph. [**Theano Style**]
+
+        """
         inputs_to_grads = {}
         inputs_count = defaultdict(int)
         grads_count = defaultdict(int)
-        all_g_ops = []
+
         all_split_grads = set()
         blacklist = set()
 
+        backward_ops = []
+
         # PLAY for the forward
-        for op in ops:
-            if op.type in config.NO_GRADIENT_OPERATORS: continue
-            for input in op.input: inputs_count[input] += 1
+        for forward_op in forward_ops:
+            if forward_op.type in config.NO_GRADIENT_OPERATORS: continue
+            for input in forward_op.input: inputs_count[input] += 1
 
         # PLAY for the backward
-        for forward_op in ops[::-1]:
+        for forward_op in forward_ops[::-1]:
             is_skip, gen_grads = cls.CheckMissingGrad(forward_op, inputs_to_grads, blacklist, targets)
             g_outputs = list(inputs_to_grads.get(name, None) for name in forward_op.output)
             g_ops, g_inputs, defaults = cls.CreateGradientForOp(forward_op, g_outputs)
@@ -81,8 +146,8 @@ class GraphGradientMaker(object):
                                              GetOperatorName()[1], defaults=values)
                     if forward_op.HasField('device_option'):
                         gen_op.device_option.CopyFrom(forward_op.device_option)
-                    all_g_ops.append(gen_op)
-                for g_op in g_ops: all_g_ops.append(g_op)
+                    backward_ops.append(gen_op)
+                for g_op in g_ops: backward_ops.append(g_op)
 
             # split & gather grads for multi-used input
             for g_op in g_ops:
@@ -107,11 +172,11 @@ class GraphGradientMaker(object):
                             if g_op.HasField('device_option'):
                                 gather_op.device_option.CopyFrom(g_op.device_option)
                             _, gather_op.name = GetOperatorName()
-                            all_g_ops.append(gather_op)
+                            backward_ops.append(gather_op)
                         g_op.output[g_output_idx] = split_name
 
             # done
             if not is_skip:
                 for name, grad in zip(forward_op.input, g_inputs):
                     if grad != '': inputs_to_grads[name] = grad
-        return ops, all_g_ops
+        return forward_ops, backward_ops

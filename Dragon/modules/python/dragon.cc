@@ -76,17 +76,17 @@ PyObject* CreateGradientDefsCC(PyObject* self, PyObject* args) {
     PyObject* def_string = nullptr;
     PyObject* g_outputs_py = nullptr;
     if (!PyArg_ParseTuple(args, "SO!", &def_string, &PyList_Type, &g_outputs_py)) {
-        PyErr_SetString(PyExc_ValueError, "CreateGradientDefsCC requires an input that is a serialized "
-                                          "OperatorDef protobuf, and a list containing the gradient of the op's output.");
+        PyErr_SetString(PyExc_ValueError, "You should provide a serialized string of OperatorDef "
+                                          "and a list containing the outputs of GradientOp.");
          return nullptr;
     }
     OperatorDef def;
     if (!def.ParseFromString(PyBytesToStdString(def_string))) {
-        PyErr_SetString(PyExc_ValueError, "provied string is not a valid Operator protobuf.");
+        PyErr_SetString(PyExc_ValueError, "Failed to parse the OperatorDef.");
         return nullptr;
     }
     if (!GradientRegistry()->Has(def.type())) {
-        PyErr_SetString(PyExc_KeyError, "gradient is not registered before.");
+        PyErr_SetString(PyExc_KeyError, "This Operator does not register the GradientOp.");
         return nullptr;
     }
 
@@ -135,14 +135,14 @@ PyObject* SwitchWorkspaceCC(PyObject* self, PyObject *args) {
     char* cname;
     PyObject* create_if_missing = nullptr;
     if (!PyArg_ParseTuple(args, "s|O", &cname, &create_if_missing)) {
-        PyErr_SetString(PyExc_ValueError, "SwitchWorkspaceCC takes a workspace name and a optional "
-                                          "bool value that specific whether to create the workspace if missing.");
+        PyErr_SetString(PyExc_ValueError, "You should provide a workspace name and a optional "
+                                          "boolean value that specific whether to create if missing.");
         return nullptr;
     }
     bool success = SwitchWorkspaceInternal(string(cname), PyObject_IsTrue(create_if_missing));
     if (!success) {
-        PyErr_SetString(PyExc_RuntimeError, "workspace of the given name is not exist and "
-                                            "is not allowed to create. (try alllow ?)");
+        PyErr_SetString(PyExc_RuntimeError, "Workspace of the given name does not exist."
+                                            "\n And, it is not allowed to create. (Try alllow ?)");
         return nullptr;
     }
     Py_RETURN_TRUE;
@@ -163,20 +163,17 @@ PyObject* WorkspacesCC(PyObject* self, PyObject* args) {
 PyObject* ResetWorkspaceCC(PyObject* self, PyObject* args) {
     char* cname;
     if (!PyArg_ParseTuple(args, "|s", &cname)) {
-        PyErr_SetString(PyExc_ValueError, "ResetWorkspaceCC takes in either no args or a string "
-                                          "specifing the name of the workspace.");
+        PyErr_SetString(PyExc_ValueError, "You can only provide a optional name for the new workspace.");
         return nullptr;
     }
-    LOG(INFO) << "Reset the Workspace(" << g_current_workspace << ")";
-    string workspace_name = string(cname);
-    if (workspace_name.empty()) g_workspaces[g_current_workspace].reset(new Workspace());
-    else g_workspaces[g_current_workspace].reset(new Workspace(workspace_name));
-    g_workspace = g_workspaces[g_current_workspace].get();
+    string target_workspace = g_current_workspace;
+    if (cname) target_workspace = string(cname);
+    CHECK(g_workspaces.count(target_workspace))
+        << "\nWorkspace(" << target_workspace << ") does not exist, can not be reset.";
+    LOG(INFO) << "Reset the Workspace(" << target_workspace << ")";
+    g_workspaces[target_workspace].reset(new Workspace());
+    g_workspace = g_workspaces[target_workspace].get();
     Py_RETURN_TRUE;
-}
-
-PyObject* RootFolderCC(PyObject* self, PyObject* args) {
-    return StdStringToPyUnicode(g_workspace->GetRootFolder());
 }
 
 PyObject* TensorsCC(PyObject* self, PyObject* args) {
@@ -190,7 +187,7 @@ PyObject* TensorsCC(PyObject* self, PyObject* args) {
 PyObject* CreateTensorCC(PyObject* self, PyObject* args) {
     char* cname;
     if (!PyArg_ParseTuple(args, "s", &cname)) {
-        PyErr_SetString(PyExc_ValueError, "CreateTensorCC must accept a tensor name to create.");
+        PyErr_SetString(PyExc_ValueError, "You shoule provide a tensor name.");
         return nullptr;
     }
     g_workspace->CreateTensor(string(cname));
@@ -200,12 +197,12 @@ PyObject* CreateTensorCC(PyObject* self, PyObject* args) {
 PyObject* CreateFillerCC(PyObject* self, PyObject* args) {
     PyObject* filler_string;
     if (!PyArg_ParseTuple(args, "S", &filler_string)) {
-        PyErr_SetString(PyExc_ValueError, "CreateFillerCC requires an input that is a serialized filler protobuf.");
+        PyErr_SetString(PyExc_ValueError, "You should provide a serialized string of TensorFiller.");
         return nullptr;
     }
     TensorFiller filler_def;
     if (!filler_def.ParseFromString(PyBytesToStdString(filler_string))) {
-        PyErr_SetString(PyExc_RuntimeError, "CreateFillerCC can't parse the filler.");
+        PyErr_SetString(PyExc_RuntimeError, "Failed to parse the TensorFiller.");
         return nullptr;
     }
     g_workspace->CreateFiller(filler_def);
@@ -230,16 +227,16 @@ PyObject* GetTensorNameCC(PyObject* self, PyObject* args) {
 PyObject* CreateGraphCC(PyObject* self, PyObject* args) {
     PyObject* graph_str;
     if (!PyArg_ParseTuple(args, "S", &graph_str)) {
-        PyErr_SetString(PyExc_ValueError, "CreateGraphCC requires an input that is a serialized net protobuf.");
+        PyErr_SetString(PyExc_ValueError, "You should provide a serialized string of GraphDef.");
         return nullptr;
     }
     GraphDef graph_def;
     if (!graph_def.ParseFromString(PyBytesToStdString(graph_str))) {
-        PyErr_SetString(PyExc_RuntimeError, "CreateGraphCC can not parse the net.");
+        PyErr_SetString(PyExc_RuntimeError, "Failed to parse the GraphDef.");
         return nullptr;
     } 
     if (!g_workspace->CreateGraph(graph_def)) {
-        PyErr_SetString(PyExc_RuntimeError, "CreateGraphCC can not create the net.");
+        PyErr_SetString(PyExc_RuntimeError, "Failed to create the Graph.");
         return nullptr;
     }
     Py_RETURN_TRUE;
@@ -248,12 +245,12 @@ PyObject* CreateGraphCC(PyObject* self, PyObject* args) {
 PyObject* RunGraphCC(PyObject* self, PyObject* args) {
     char* cname, *include, *exclude;
     if (!PyArg_ParseTuple(args, "sss", &cname, &include, &exclude)) {
-        PyErr_SetString(PyExc_ValueError, "RunGraphCC requires a net name and rules.");
+        PyErr_SetString(PyExc_ValueError, "You should provide a graph name, include and exclude rules.");
         return nullptr;
     }
     bool result = g_workspace->RunGraph(string(cname), string(include), string(exclude));
-    if (!result) { 
-        PyErr_SetString(PyExc_RuntimeError, "RunGraphCC can' t run the net.");
+    if (!result) {
+        PyErr_SetString(PyExc_RuntimeError, "Failed to run the Graph.");
         return nullptr;
     }
     Py_RETURN_TRUE;
@@ -270,11 +267,11 @@ PyObject* GraphsCC(PyObject* self, PyObject* args) {
 PyObject* FetchTensorCC(PyObject* self, PyObject* args) {
     char* cname;
     if (!PyArg_ParseTuple(args, "s", &cname)) {
-        PyErr_SetString(PyExc_ValueError, "FetchTensorCC must specify a tensor name to fetch.");
+        PyErr_SetString(PyExc_ValueError, "You should provide a tensor name.");
         return nullptr;
     }
     if (!g_workspace->HasTensor(string(cname))) {
-        PyErr_SetString(PyExc_ValueError, "FetchTensorCC found tensor doesn't exist, try create it before.");
+        PyErr_SetString(PyExc_ValueError, "Tensor does not exist. Have you solved it ?");
         return nullptr;
     }
     Tensor* tensor = g_workspace->GetTensor(string(cname));
@@ -295,13 +292,13 @@ PyObject* FeedTensorCC(PyObject* self, PyObject* args) {
     PyArrayObject* array = nullptr;
     PyObject *device_option = nullptr;
     if (!PyArg_ParseTuple(args, "sO|O", &cname, &array, &device_option)) {
-        PyErr_SetString(PyExc_ValueError, "FeedTensorCC accpets incorrect args.");
+        PyErr_SetString(PyExc_ValueError, "You should provide a name, values and serialized DeviceOption.");
         return nullptr;
     }
     DeviceOption option;
     if (device_option != nullptr) {
         if (!option.ParseFromString(PyBytesToStdString(device_option))) {
-            PyErr_SetString(PyExc_ValueError, "FeedTensorCC can't parse the device option.");
+            PyErr_SetString(PyExc_ValueError, "Failed to parse the DeviceOption.");
             return nullptr;
         }
     }
@@ -310,26 +307,26 @@ PyObject* FeedTensorCC(PyObject* self, PyObject* args) {
     if (feeder.get()) {
         return feeder->Feed(option, array, tensor);
     } else {
-        PyErr_SetString(PyExc_TypeError, "FeedTensorCC encounters the unknown device type.");
+        PyErr_SetString(PyExc_TypeError, "Unknown device type.");
         return nullptr;
     }
 }
 
 PyObject* RestoreCC(PyObject* self, PyObject* args) {
-    char* cname, *namescope;
+    char* cname;
     int format;
-    if (!PyArg_ParseTuple(args, "ssi", &cname, &namescope, &format)) {
-        PyErr_SetString(PyExc_ValueError, "RestoreCC accpets incorrect args.");
+    if (!PyArg_ParseTuple(args, "si", &cname, &format)) {
+        PyErr_SetString(PyExc_ValueError, "You should provide a model path and the format.");
         return nullptr;
     }
     switch (format) {
-        case 0:  // cPickle
-            PyErr_SetString(PyExc_NotImplementedError, "format(0) depends on cPickle, should not be used in CC.");
+        case 0:    // cPickle
+            PyErr_SetString(PyExc_NotImplementedError, "This format depends on cPickle. Can't be used in C++.");
             break;
-        case 1:    // caffemodel
-            LoadCaffeModel(string(cname), string(namescope), g_workspace);
+        case 1:    // caffe
+            LoadCaffeModel(string(cname), g_workspace);
             break;
-        default: LOG(FATAL) << "unknwon Restore Format, code: " << format;
+        default: LOG(FATAL) << "Unknwon format, code: " << format;
     }
     Py_RETURN_TRUE;
 }
@@ -339,19 +336,19 @@ PyObject* SnapshotCC(PyObject* self, PyObject* args) {
     int format;
     PyObject* names; vector<Tensor*> tensors;
     if (!PyArg_ParseTuple(args, "sOi", &cname, &names, &format)) {
-        PyErr_SetString(PyExc_ValueError, "SnapshotCC accpets incorrect args.");
+        PyErr_SetString(PyExc_ValueError, "You should provide a model path, tensor names, and the format.");
         return nullptr;
     }
     switch (format) {
         case 0:    //  cPickle
-            PyErr_SetString(PyExc_NotImplementedError, "format(0) depends on cPickle, should not be used in CC.");
+            PyErr_SetString(PyExc_NotImplementedError, "This format depends on cPickle. Can't be used in C++.");
             break;
-        case 1:    //  caffemodel
+        case 1:    //  caffe
             for (int i = 0; i < PyList_Size(names); i++)
                 tensors.push_back(g_workspace->GetTensor(PyString_AsString(PyList_GetItem(names, i))));
             SavaCaffeModel(string(cname), tensors);
             break;
-        default: LOG(FATAL) << "Unknwon Restore Format, code: " << format;
+        default: LOG(FATAL) << "Unknwon format, code: " << format;
    }
    Py_RETURN_TRUE;
 }
@@ -359,8 +356,7 @@ PyObject* SnapshotCC(PyObject* self, PyObject* args) {
 PyObject* SetLogLevelCC(PyObject* self, PyObject* args) {
     char* cname;
     if (!PyArg_ParseTuple(args, "s", &cname)) {
-        PyErr_SetString(PyExc_ValueError, "SetLogLevelCC accpets a str of DEBUG, or "
-                                          "INFO, WARNING, ERROR and FATAL.");
+        PyErr_SetString(PyExc_ValueError, "You should provide a string of logging level.");
         return nullptr;
     }
     SetLogDestination(StrToLogSeverity(string(cname)));
@@ -379,7 +375,6 @@ PyMethodDef* GetAllMethods() {
         PYFUNC(CurrentWorkspaceCC),
         PYFUNC(WorkspacesCC),
         PYFUNC(ResetWorkspaceCC),
-        PYFUNC(RootFolderCC),
         PYFUNC(TensorsCC),
         PYFUNC(HasTensorCC),
         PYFUNC(GetTensorNameCC),

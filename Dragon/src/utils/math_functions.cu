@@ -52,11 +52,8 @@ template <> void Set<float16, CUDAContext>(const int n,
                                            const float16 alpha, 
                                            float16* x) {
     if (n % 2 == 0) {
-        float16 alpha_fp16 = alpha;
-        half2 alpha_fp32;
-        alpha_fp32.x = dragon_cast<float32, float16>(alpha_fp16).x;
         _SetHalf2<half2> << <GET_BLOCKS(n / 2), CUDA_NUM_THREADS >> >(n / 2, 
-                                                                 alpha_fp32, 
+                                         dragon_cast<half2, float16>(alpha),
                                                reinterpret_cast<half2*>(x));
     } else {
         _Set<float16> << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n, alpha, x);
@@ -196,11 +193,12 @@ template <> void Div<float, CUDAContext>(int n,
 }
 
 #ifdef WITH_CUDA_FP16
+
 template <typename T>
 __global__ void _DivHalf(const int n, const half* a, const half* b, half* y) {
     CUDA_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
-        y[idx] = hdiv(a[idx], b[idx]);
+        y[idx] = __hdiv(a[idx], b[idx]);
 #endif
     }
 }
@@ -434,19 +432,15 @@ template <> void Inv<float16, CUDAContext>(const int n,
                                            const float numerator, 
                                            const float16* x, 
                                            float16* y) {
-    half numerator_fp16;
-    numerator_fp16.x = dragon_cast<float16, float>(numerator).x;
     if (n % 2 == 0) {
-        half2 numerator_fp32;
-        numerator_fp32.x = dragon_cast<float32, float>(numerator).x;
         _InvHalf2<half2> << < GET_BLOCKS(n / 2), CUDA_NUM_THREADS >> >(n / 2,
-                                                               numerator_fp32,
+                                        dragon_cast<half2, float>(numerator),
                                             reinterpret_cast<const half2*>(x),
                                                 reinterpret_cast<half2*>(y));
     }
     else {
         _InvHalf<half> << < GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n,
-                                                    numerator_fp16,
+                               dragon_cast<half, float>(numerator),
                                   reinterpret_cast<const half*>(x),
                                        reinterpret_cast<half*>(y));
     }
@@ -552,17 +546,13 @@ __global__ void _AddScalarHalf2(const int n, half2 alpha, half2* y) {
 }
 
 template <> void AddScalar<float16, CUDAContext>(const int n, const float alpha, float16* y) {
-    half alpha_fp16;
-    alpha_fp16.x = dragon_cast<float16, float>(alpha).x;
     if (n % 2 == 0) {
-        half2 alpha_fp32;
-        alpha_fp32.x = dragon_cast<float32, float>(alpha).x;
         _AddScalarHalf2<half2> << <GET_BLOCKS(n / 2), CUDA_NUM_THREADS >> >(n / 2,
-                                                                       alpha_fp32,
+                                                 dragon_cast<half2, float>(alpha),
                                                      reinterpret_cast<half2*>(y));
     } else {
         _AddScalarHalf<half> << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n,
-                                                             alpha_fp16,
+                                        dragon_cast<half, float>(alpha),
                                             reinterpret_cast<half*>(y));
     }
     CUDA_POST_KERNEL_CHECK;
@@ -579,6 +569,39 @@ __global__ void _MulScalar(const int n, T alpha, T* y) {
 template <> void MulScalar<float, CUDAContext>(const int n, const float alpha, float* y) {
     _MulScalar<float> << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n, alpha, y);
 }
+
+#ifdef WITH_CUDA_FP16
+template <typename T>
+__global__ void _MulScalarHalf(const int n, half alpha, half* y) {
+    CUDA_KERNEL_LOOP(idx, n) {
+#if __CUDA_ARCH__ >= 530
+        y[idx] = __hmul(y[idx], alpha);
+#endif
+    }
+}
+
+template <typename T>
+__global__ void _MulScalarHalf2(const int n, half2 alpha, half2* y) {
+    CUDA_KERNEL_LOOP(idx, n) {
+#if __CUDA_ARCH__ >= 530
+        y[idx] = __hmul2(y[idx], alpha);
+#endif
+    }
+}
+
+template <> void MulScalar<float16, CUDAContext>(const int n, const float alpha, float16* y) {
+    if (n % 2 == 0) {
+        _MulScalarHalf2<half2> << <GET_BLOCKS(n / 2), CUDA_NUM_THREADS >> >(n / 2,
+                                                 dragon_cast<half2, float>(alpha),
+                                                     reinterpret_cast<half2*>(y));
+    } else {
+        _MulScalarHalf<half> << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n,
+                                        dragon_cast<half, float>(alpha),
+                                            reinterpret_cast<half*>(y));
+    }
+    CUDA_POST_KERNEL_CHECK;
+}
+#endif
 
 template <> void Axpy<float, CUDAContext>(const int n, 
                                           float alpha, 
@@ -683,20 +706,16 @@ template <> void Gemm<float16, CUDAContext>(const CBLAS_TRANSPOSE transA,
                                    &beta, 
                                    C, CUDA_R_16F, N));
     } else if (math_type == TensorProto_DataType_FLOAT16) {
-        half alpha_fp16;
-        alpha_fp16.x = dragon_cast<float16, float>(alpha).x;
-        half beta_fp16;
-        beta_fp16.x = dragon_cast<float16, float>(beta).x;
         CUBLAS_CHECK(cublasHgemm(cublas_handle(), 
                                  cuTransB, cuTransA,
                                  N, M, K, 
-                                 &alpha_fp16, 
+                                 &dragon_cast<half, float>(alpha),
                                  reinterpret_cast<const half*>(B), ldb,
                                  reinterpret_cast<const half*>(A), lda,
-                                 &beta_fp16, 
+                                 &dragon_cast<half, float>(beta),
                                  reinterpret_cast<half*>(C), N));
     } else {
-        LOG(FATAL) << "unsupported math type";
+        LOG(FATAL) << "Unsupported math type";
     }
 }
 #endif
@@ -745,20 +764,16 @@ template <> void Gemv<float16, CUDAContext>(const CBLAS_TRANSPOSE transA,
                                     &beta,
                                     y, CUDA_R_16F, LDC));
     } else if (math_type == TensorProto_DataType_FLOAT16) {
-        half alpha_fp16;
-        alpha_fp16.x = dragon_cast<float16, float>(alpha).x;
-        half beta_fp16;
-        beta_fp16.x = dragon_cast<float16, float>(beta).x;
         CUBLAS_CHECK(cublasHgemm(cublas_handle(), 
                                  cuTransA, CUBLAS_OP_N,
                                  m, 1, k, 
-                                 &alpha_fp16, 
+                                 &dragon_cast<half, float>(alpha),
                                  reinterpret_cast<const half*>(A), LDA, 
                                  reinterpret_cast<const half*>(x), k, 
-                                 &beta_fp16,
+                                 &dragon_cast<half, float>(beta),
                                  reinterpret_cast<half*>(y), LDC));
     } else {
-            LOG(FATAL) << "unsupported math type";
+            LOG(FATAL) << "Unsupported math type";
     }
 }
 #endif

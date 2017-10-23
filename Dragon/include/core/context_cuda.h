@@ -91,13 +91,13 @@ class CUDAContext {
         cudaStreamSynchronize(cudaStreamDefault);
         cudaError_t error = cudaGetLastError();
         CHECK_EQ(error, cudaSuccess) 
-            << "cuda error: " << cudaGetErrorString(error);
+            << "CUDA Error: " << cudaGetErrorString(error);
     }
 
     inline static void* New(size_t nbytes) {
         void* data;
         cudaMalloc(&data, nbytes);
-        CHECK(data) << "malloc cuda mem: " << nbytes << " bytes failed.";
+        CHECK(data) << "Malloc cuda mem: " << nbytes << " bytes failed.";
         return data;
     }
 
@@ -190,12 +190,12 @@ static inline cudnnHandle_t& cudnn_handle() {
 #else  // WITH_CUDA
 class CUDAContext{
  public:
-    CUDAContext(const DeviceOption& option) { LOG(FATAL) << "CUDA is not compilied."; }
-    CUDAContext(const int gpu_id = 0) { LOG(FATAL) << "CUDA is not compilied."; }
+    CUDAContext(const DeviceOption& option) { LOG(FATAL) << "CUDA was not compiled."; }
+    CUDAContext(const int gpu_id = 0) { LOG(FATAL) << "CUDA was not compiled."; }
 
     template<class DstContext, class SrcContext>
     static void Memcpy(size_t nbytes, void* dst, const void* src) { 
-        LOG(FATAL) << "CUDA is not compilied.";
+        LOG(FATAL) << "CUDA was not compiled.";
     }
 };
 #endif // WITH_CUDA

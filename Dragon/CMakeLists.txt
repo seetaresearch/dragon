@@ -1,7 +1,7 @@
 ﻿# ---------------- Welcom To Use Dragon  ----------------
 
 PROJECT(dragon)
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0.0)
 
 # ---------------- Welcom To Use Dragon   ----------------
 
@@ -12,7 +12,7 @@ option(WITH_PYTHON3                "Set ON to use PYTHON3 otherwise PYTHON2"  OF
 option(WITH_CUDA                   "Set ON to use CUDA"  ON)
 option(WITH_CUDNN                  "Set ON to use CUDNN" OFF)
 option(WITH_BLAS                   "Set ON to use BLAS"  OFF)
-option(WITH_OMP                    "Set ON to use OpenMP"  OFF)
+option(WITH_OMP                    "Set ON to use OpenMP"  ON)
 option(WITH_SSE                    "Set ON to use SSE 4.1"  ON)
 option(WITH_MPI                    "Set ON to use MPI"  OFF)
 option(WITH_MPI_CUDA               "Set ON to use MPI-CUDA"  OFF)
@@ -23,14 +23,13 @@ option(WITH_CUDA_FP16              "Set ON to use FP16"  ON)
 set(3RDPARTY_DIR  ${PROJECT_SOURCE_DIR}/../3rdparty)
 
 # set your python environment
-set(PYTHON_DIR /usr/include/python2.7)  # preferred
-#set(PYTHON_DIR /usr/include/python3.x)  # optional, set specific version
-#set(ANACONDA_DIR /xxx/anaconda)  # optional, root folder of anaconda, preset for 2.7, 3.5, and 3.6 
-set(NUMPY_DIR /xxx/numpy)  # required, root folder of numpy package
+set(PYTHON_INCLUDE_DIR /usr/include/python2.7)  # preferred
+#set(PYTHON_INCLUDE_DIR /usr/include/python3.x)  # optional, set specific version
+#set(ANACONDA_ROOT_DIR /xxx/anaconda)  # optional, preset for 2.7, 3.5, and 3.6
+set(NUMPY_ROOT_DIR /xxx/numpy)  # required
 
 # set CUDA compiling architecture
-set(CUDA_ARCH     -gencode arch=compute_20,code=sm_20
-                  -gencode arch=compute_30,code=sm_30
+set(CUDA_ARCH     -gencode arch=compute_30,code=sm_30
                   -gencode arch=compute_35,code=sm_35
                   -gencode arch=compute_50,code=sm_50
                   -gencode arch=compute_60,code=sm_60)
@@ -81,19 +80,20 @@ include_directories(${3RDPARTY_DIR}/include)
 include_directories(${3RDPARTY_DIR}/include/mpi)
 include_directories(${CUDA_INCLUDE_DIRS})
 include_directories(${PROJECT_SOURCE_DIR}/src)
-include_directories(${NUMPY_DIR}/core/include)
-include_directories(${NUMPY_DIR})
-include_directories(${NUMPY_DIR}/numpy)
-include_directories(${ANACONDA_DIR}/include/python2.7)
-include_directories(${ANACONDA_DIR}/include/python3.5)
-include_directories(${ANACONDA_DIR}/include/python3.6)
-include_directories(${PYTHON_DIR})
-include_directories(${ANACONDA_DIR}/include)
+include_directories(${PYTHON_INCLUDE_DIR})
+include_directories(${ANACONDA_ROOT_DIR}/include)
+include_directories(${ANACONDA_ROOT_DIR}/include/python2.7)
+include_directories(${ANACONDA_ROOT_DIR}/include/python3.5)
+include_directories(${ANACONDA_ROOT_DIR}/include/python3.6)
+include_directories(${NUMPY_ROOT_DIR}/core/include)
+include_directories(${NUMPY_ROOT_DIR}/include)
+include_directories(${NUMPY_ROOT_DIR})
 
 # ---[ libs
 set(3RDPARTY_LIBS ${3RDPARTY_DIR}/lib)
+set(UINX_CUDNN_LIBS /usr/local/cuda/lib64)
 link_directories(${3RDPARTY_LIBS})
-link_directories(/usr/local/cuda/lib64)
+link_directories(${UINX_CUDNN_LIBS})
 
 # ---[ Install
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR} CACHE STRING "set install prefix" FORCE)
@@ -165,6 +165,12 @@ if(UNIX)
 endif()
 
 # ---[ Warnings
+
+# ---[ execute
+set (PROTOS_DIR ${PROJECT_SOURCE_DIR}/src/protos)
+message(STATUS "Generate Protobuf Files")
+execute_process(COMMAND protoc -I=${PROTOS_DIR} --cpp_out=${PROTOS_DIR} ${PROTOS_DIR}/caffemodel.proto)
+execute_process(COMMAND protoc -I=${PROTOS_DIR} --cpp_out=${PROTOS_DIR} ${PROTOS_DIR}/dragon.proto)
 
 # ---[ Subdirectories
 add_subdirectory(modules/python)

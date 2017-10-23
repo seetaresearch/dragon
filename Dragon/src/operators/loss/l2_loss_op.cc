@@ -33,7 +33,7 @@ void L2LossOp<Context>::RunOnDevice() {
     diff->ReshapeLike(input(0));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(L2Loss);
@@ -67,7 +67,7 @@ void L2LossGradientOp<Context>::RunOnDevice() {
     diff = ws()->GetTensor("_t_" + anchor() + "_l2_loss_diff");
 
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 template <class Context>

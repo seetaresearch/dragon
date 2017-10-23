@@ -141,7 +141,7 @@ void CuDNNDeConvOp<Context>::RunOnDevice() {
 #endif
         RunWithType<float16>();
 #endif  // WITH_CUDA_FP16
-    } else { LOG(FATAL) << "unsupported input types."; }
+    } else { LOG(FATAL) << "Unsupported input types."; }
 }
 
 DEPLOY_CUDNN(DeConv);
@@ -309,7 +309,7 @@ void CuDNNDeConvGradientOp<Context>::RunOnDevice() {
 #endif
         RunWithType<float16>();
 #endif  // WITH_CUDA_FP16
-    } else { LOG(FATAL) << "unsupported input types."; }
+    } else { LOG(FATAL) << "Unsupported input types."; }
 }
 
 DEPLOY_CUDNN(DeConvGradient);

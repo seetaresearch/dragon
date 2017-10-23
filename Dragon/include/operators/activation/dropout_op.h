@@ -17,7 +17,7 @@ class DropoutOp final : public Operator<Context> {
  public:
     DropoutOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          prob(OperatorBase::GetSingleArg<float>("prob", 0)) {
+          prob(OperatorBase::GetSingleArg<float>("prob", 0.5)) {
         bool use_scale = OperatorBase::GetSingleArg<bool>("scale", true);
         threshold = static_cast<unsigned int>(UINT_MAX * prob);
         if (use_scale) scale = 1.0 / (1.0 - prob);
@@ -38,7 +38,7 @@ class DropoutGradientOp final : public Operator<Context> {
  public:
     DropoutGradientOp(const OperatorDef& op_def, Workspace* ws) 
         : Operator<Context>(op_def, ws),
-          prob(OperatorBase::GetSingleArg<float>("prob", 0)) {
+          prob(OperatorBase::GetSingleArg<float>("prob", 0.5)) {
         bool use_scale = OperatorBase::GetSingleArg<bool>("scale", true);
         threshold = static_cast<unsigned int>(UINT_MAX * prob);
         if (use_scale) scale = 1.0 / (1.0 - prob);

@@ -9,12 +9,9 @@
 import os
 import sys
 import time
-import shutil
 import tarfile
 import numpy as np
 from six.moves import range as xrange
-
-import cv2
 
 from dragon.tools.db import LMDB
 from dragon.vm.caffe.proto import caffe_pb2
@@ -60,7 +57,7 @@ def extract_images():
     return images_list
 
 
-def make_db(images_list, database_path, pad=0):
+def make_db(images_list, database_path):
     if os.path.isdir(database_path) is True:
         raise ValueError('the database path is already exist.')
 
@@ -85,12 +82,6 @@ def make_db(images_list, database_path, pad=0):
 
         img = record[0]
         label = record[1]
-        if pad > 0:
-            pad_img = np.zeros((img.shape[0] + 2 * pad,
-                                img.shape[1] + 2 * pad, 3), dtype=np.uint8)
-            pad_img[pad : pad + img.shape[0],
-                        pad : pad + img.shape[1], :] = img
-            img = pad_img
 
         datum = caffe_pb2.Datum()
         datum.height, datum.width, datum.channels = img.shape

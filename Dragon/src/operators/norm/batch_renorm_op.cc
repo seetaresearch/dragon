@@ -189,7 +189,7 @@ void BatchRenormOp<Context>::RunOnDevice() {
     if (inplace) output(0)->Share(input(0));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(BatchRenorm);
@@ -335,7 +335,7 @@ void BatchRenormGradientOp<Context>::RunOnDevice() {
     else use_global_stats = use_stats == 1 ? true : false;
 
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(BatchRenormGradient);

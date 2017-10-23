@@ -12,7 +12,7 @@ OPERATOR_SCHEMA(DenseConcat).NumInputs(2).NumOutputs(1);
 
 template <class Context> template <typename T>
 void DenseConcatGradientOp<Context>::RestoreX1() {
-    CHECK_GT(growth_rate, 0) << "invalid growth rate, please preset it.";
+    CHECK_GT(growth_rate, 0) << "\nInvalid growth rate, please preset it.";
     this->concat_dims = input(-1).dims();
     this->y_concat_dim = this->concat_dims[this->axis];
     this->outer_dim = input(-1).count(0, this->axis);
@@ -38,7 +38,7 @@ template <class Context>
 void DenseConcatGradientOp<Context>::ElimateCorruption() {
     Set<string> all_heads;
     queue<int> safe_heads;
-    Tensor* head = ws()->GetTensor("_t_mirrow_stage_head");
+    Tensor* head = ws()->GetTensor("_t_mirror_stage_head");
     string* head_data = head->mutable_data<string, CPUContext>();
     for (int i = 0; i < head->count(); i++) all_heads.insert(head_data[i]);
 
@@ -54,14 +54,14 @@ void DenseConcatGradientOp<Context>::ElimateCorruption() {
         }
         int idx = safe_heads.front();
         safe_heads.pop();
-        Tensor* buffer = ws()->GetTensor("_t_mirrow_stage_buffer_" + dragon_cast<string, int>(idx));
+        Tensor* buffer = ws()->GetTensor("_t_mirror_stage_buffer_" + dragon_cast<string, int>(idx));
         input(0).Move(buffer->memory());
         head_data[idx] = input(0).name();
         if (input(-2).template IsType<float>()) RestoreX1<float>();
 #ifdef WITH_CUDA_FP16
         else if (input(-2).template IsType<float16>()) RestoreX1<float16>();
 #endif
-        else LOG(FATAL) << "unsupported input types.";
+        else LOG(FATAL) << "Unsupported input types.";
         //  post-process
         if (input(0).memory() != buffer->memory()) buffer->Move(input(0).memory());
     }
@@ -85,13 +85,13 @@ void DenseConcatGradientOp<Context>::ElimateCorruption() {
                 if (output(i)->name() == input(j).name()) inplace_flag = true;
             if (inplace_flag || all_heads.count(output(i)->name())) continue;    //  skip to use new buffer
             CHECK(!safe_heads.empty())
-                << "\nat most (" << safe_heads.size() << " [safe] / "
+                << "\nAt most (" << safe_heads.size() << " [safe] / "
                 << all_heads.size() << " [total] can be used for corrupted output in "
                 << "(" << name() << ", " << type() << "), "
-                << "\nadd WORKSPACE_MAX_CORRUPTED_SIZE for more powerful mirrow stage ?";
+                << "\nadd WORKSPACE_MAX_CORRUPTED_SIZE for more powerful mirror stage ?";
             int idx = safe_heads.front();
             safe_heads.pop();
-            Tensor* buffer = ws()->GetTensor("_t_mirrow_stage_buffer_" + dragon_cast<string, int>(idx));
+            Tensor* buffer = ws()->GetTensor("_t_mirror_stage_buffer_" + dragon_cast<string, int>(idx));
             output(i)->Move(buffer->memory());
             head_data[idx] = output(i)->name();
         }

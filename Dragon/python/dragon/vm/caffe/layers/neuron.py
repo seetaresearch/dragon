@@ -1,19 +1,27 @@
 # --------------------------------------------------------
-# Caffe for Dragon
+# Dragon
 # Copyright(c) 2017 SeetaTech
 # Written by Ting Pan
 # --------------------------------------------------------
 
 import dragon.ops as ops
 
-from .layer import Layer
+from ..layer import Layer
 
 class ReLULayer(Layer):
+    """The implementation of ``ReLULayer``.
+
+    Parameters
+    ----------
+    negative_slope : float
+        The slope of negative side. Refer `ReLUParameter.negative_slope`_.
+
+    """
     def __init__(self, LayerParameter):
         super(ReLULayer, self).__init__(LayerParameter)
         param = LayerParameter.relu_param
         if param.HasField('negative_slope'):
-            self._param = { 'slope': param.negative_slope }
+            self._param = {'slope': param.negative_slope}
 
     def Setup(self, bottom):
         super(ReLULayer, self).Setup(bottom)
@@ -21,17 +29,63 @@ class ReLULayer(Layer):
         return ops.Relu(input, **self._param)
 
 
-class TanhLayer(Layer):
+class ELULayer(Layer):
+    """The implementation of ``ELULayer``.
+
+    Parameters
+    ----------
+    alpha : float
+        The alpha. Refer `ELUParameter.alpha`_.
+
+    """
     def __init__(self, LayerParameter):
-        super(TanhLayer, self).__init__(LayerParameter)
+        super(ELULayer, self).__init__(LayerParameter)
+        param = LayerParameter.elu_param
+        self._param = {'alpha': param.alpha}
 
     def Setup(self, bottom):
-        super(TanhLayer, self).Setup(bottom)
+        super(ELULayer, self).Setup(bottom)
+        input = bottom[0] if isinstance(bottom, list) else bottom
+        return ops.Elu(input, **self._param)
+
+
+class SigmoidLayer(Layer):
+    """
+    The implementation of ``SigmoidLayer``.
+    """
+    def __init__(self, LayerParameter):
+        super(SigmoidLayer, self).__init__(LayerParameter)
+
+    def Setup(self, bottom):
+        super(SigmoidLayer, self).Setup(bottom)
+        input = bottom[0] if isinstance(bottom, list) else bottom
+        return ops.Sigmoid(input, **self._param)
+
+
+class TanHLayer(Layer):
+    """
+    The implementation of ``TanHLayer``.
+    """
+    def __init__(self, LayerParameter):
+        super(TanHLayer, self).__init__(LayerParameter)
+
+    def Setup(self, bottom):
+        super(TanHLayer, self).Setup(bottom)
         input = bottom[0] if isinstance(bottom, list) else bottom
         return ops.Tanh(input, **self._param)
 
 
 class DropoutLayer(Layer):
+    """The implementation of ``DropoutLayer``.
+
+    Parameters
+    ----------
+    dropout_ratio : float
+        The prob of dropping. Refer `DropoutParameter.dropout_ratio`_.
+    scale_train : boolean
+        Whether to scale the output. Refer `DropoutParameter.scale_train`_.
+
+    """
     def __init__(self, LayerParameter):
         super(DropoutLayer, self).__init__(LayerParameter)
         param = LayerParameter.dropout_param
@@ -46,6 +100,18 @@ class DropoutLayer(Layer):
 
 
 class PowerLayer(Layer):
+    """The implementation of ``PowerLayer``.
+
+    Parameters
+    ----------
+    power : float
+         The power factor. Refer `PowerParameter.power`_.
+    scale : float
+         The scale factor. Refer `PowerParameter.scale`_.
+    shift : float
+         The shift magnitude. Refer `PowerParameter.shift`_.
+
+    """
     def __init__(self, LayerParameter):
         super(PowerLayer, self).__init__(LayerParameter)
         param = LayerParameter.power_param

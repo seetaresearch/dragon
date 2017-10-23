@@ -26,8 +26,6 @@ class MovingAverageOp final : public Operator<Context> {
 
 };
 
-
-
 }   // namespace dragon
 
 

@@ -47,7 +47,7 @@ void MPIBroadcastOp<Context>::RunOnDevice() {
     output(0)->Reshape(_dims);
 
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(MPIBroadcast);
@@ -94,7 +94,7 @@ void MPIBroadcastGradientOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(-1));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
     
 DEPLOY_CPU(MPIBroadcastGradient);

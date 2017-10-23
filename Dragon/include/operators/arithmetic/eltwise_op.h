@@ -20,7 +20,7 @@ class EltwiseOp final : public Operator<Context> {
           coeffs(OperatorBase::GetRepeatedArg<float>("coeffs")) {
         if (coeffs.size() > 0) {
             CHECK_EQ(coeffs.size(), InputSize())
-                << "\nop has " << InputSize() << " inputs, "
+                << "\nOp has " << InputSize() << " inputs, "
                 << "but provided " << coeffs.size() << " coeffs.";
         } else coeffs.resize(InputSize(), float(1));
     }

@@ -29,7 +29,7 @@ void PowOp<Context>::RunOnDevice() {
 #ifdef WITH_CUDA_FP16
     else if (input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(Pow);
@@ -81,7 +81,7 @@ void PowGradientOp<Context>::RunOnDevice() {
 #ifdef WITH_CUDA_FP16
     else if (input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
-    else LOG(FATAL) << "unsupported input types.";
+    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CPU(PowGradient);
