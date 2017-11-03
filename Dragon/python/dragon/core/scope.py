@@ -6,10 +6,10 @@
 
 from collections import defaultdict
 
-TENSOR_SCOPE = ''
-PHASE_SCOPE = ''
-DEVICE_SCOPE = ''
-ENGINE_SCOPE = ''
+_TENSOR_SCOPE = ''
+_PHASE_SCOPE = ''
+_DEVICE_SCOPE = ''
+_ENGINE_SCOPE = ''
 
 SEPARATOR = '/'
 
@@ -50,8 +50,8 @@ def GetTensorIdx():
 
     """
     global _SCOPE_TENSOR_IDX
-    _SCOPE_TENSOR_IDX[TENSOR_SCOPE] += 1
-    return _SCOPE_TENSOR_IDX[TENSOR_SCOPE] - 1
+    _SCOPE_TENSOR_IDX[_TENSOR_SCOPE] += 1
+    return _SCOPE_TENSOR_IDX[_TENSOR_SCOPE] - 1
 
 
 def GetOperatorName(name=None):
@@ -107,13 +107,19 @@ class TensorScope(object):
         self.prefix = prefix + SEPARATOR
 
     def __enter__(self):
-        global TENSOR_SCOPE
-        TENSOR_SCOPE += self.prefix
+        global _TENSOR_SCOPE
+        _TENSOR_SCOPE += self.prefix
+        return self.prefix.split(SEPARATOR)[0]
 
     def __exit__(self, type, value, traceback):
-        global TENSOR_SCOPE
-        assert TENSOR_SCOPE.endswith(self.prefix)
-        TENSOR_SCOPE = TENSOR_SCOPE[:-len(self.prefix)]
+        global _TENSOR_SCOPE
+        assert _TENSOR_SCOPE.endswith(self.prefix)
+        _TENSOR_SCOPE = _TENSOR_SCOPE[:-len(self.prefix)]
+
+
+def set_tensor_scope(name_scope):
+    global _TENSOR_SCOPE
+    _TENSOR_SCOPE = name_scope
 
 
 class PhaseScope(object):
@@ -135,13 +141,13 @@ class PhaseScope(object):
         self.phase = phase
 
     def __enter__(self):
-        global PHASE_SCOPE
-        PHASE_SCOPE = self.phase
+        global _PHASE_SCOPE
+        _PHASE_SCOPE = self.phase
 
     def __exit__(self, type, value, traceback):
-        global PHASE_SCOPE
-        assert PHASE_SCOPE == self.phase
-        PHASE_SCOPE = ''
+        global _PHASE_SCOPE
+        assert _PHASE_SCOPE == self.phase
+        _PHASE_SCOPE = ''
 
 
 class DeviceScope(object):
@@ -163,11 +169,11 @@ class DeviceScope(object):
         self.id = id
 
     def __enter__(self):
-        global DEVICE_SCOPE, ENGINE_SCOPE
-        DEVICE_SCOPE = '/' + self.device + ':' + str(self.id)
-        ENGINE_SCOPE = self.engine
+        global _DEVICE_SCOPE, _ENGINE_SCOPE
+        _DEVICE_SCOPE = '/' + self.device + ':' + str(self.id)
+        _ENGINE_SCOPE = self.engine
 
     def __exit__(self, type, value, traceback):
-        global DEVICE_SCOPE, ENGINE_SCOPE
-        DEVICE_SCOPE = ''
-        ENGINE_SCOPE = ''
+        global _DEVICE_SCOPE, _ENGINE_SCOPE
+        _DEVICE_SCOPE = ''
+        _ENGINE_SCOPE = ''

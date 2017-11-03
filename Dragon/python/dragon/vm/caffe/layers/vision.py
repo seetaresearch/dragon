@@ -1,5 +1,5 @@
 # --------------------------------------------------------
-# Caffe for Dragon
+# Caffe @ Dragon
 # Copyright(c) 2017 SeetaTech
 # Written by Ting Pan
 # --------------------------------------------------------
@@ -45,7 +45,7 @@ class ConvolutionLayer(Layer):
                        'group': int(param.group)}
         if param.HasField('kernel_h'):
             assert param.HasField('kernel_w')
-            self._param['kernel'] = [param.kernel_h, param.kernel_w]
+            self._param['kernel_size'] = [param.kernel_h, param.kernel_w]
         if param.HasField('stride_h'):
             assert param.HasField('stride_w')
             self._param['stride'] = [param.stride_h, param.stride_w]

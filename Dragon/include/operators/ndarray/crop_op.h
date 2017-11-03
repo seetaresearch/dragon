@@ -16,29 +16,24 @@ class CropOp: public Operator<Context> {
  public:
     CropOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 2)),
-          offsets_param(OperatorBase::GetRepeatedArg<int>("offsets")),
+          starts(OperatorBase::GetRepeatedArg<int>("starts")),
+          ends(OperatorBase::GetRepeatedArg<int>("ends")),
+          start_axis(OperatorBase::GetSingleArg<int>("start_axis", -1)),
+          offsets(OperatorBase::GetRepeatedArg<int>("offsets")),
           shape(OperatorBase::GetRepeatedArg<int>("shape")),
-          shape_like(OperatorBase::GetSingleArg<string>("shape_like", "")) {
-        CHECK(shape.size() * shape_like.size() == 0)
-            << "\nCan not set shape and shape_like both.";
-        CHECK(shape.size() + shape_like.size() != 0)
-            << "\nMust set shape and shape_like either.";
-    }
+          shape_like(OperatorBase::GetSingleArg<string>("shape_like", "")) {}
 
-    void ComputeOutputShape();
+    void Setup();
     void RunOnDevice() override;
     template <typename T> void RunWithType();
-    template <typename T> void RecursiveRunWithType(vector<TIndex> idxs, 
-                                                    const vector<TIndex>& offsets,
-                                                    int cur_dim,
-                                                    Tensor* x,
-                                                    Tensor* y);
+
  protected:
-    TIndex axis;
-    vector<int> offsets_param, shape;
-    vector<TIndex> output_shape, offsets;
+    TIndex start_axis;
     string shape_like;
+    vector<int> starts, ends, offsets, shape;
+    vector< pair<int, int> > process_axes;
+    TIndex axis, inner_dim, dim;
+    Tensor* dest, *source;
 };
 
 template <class Context>
@@ -46,29 +41,24 @@ class CropGradientOp final : public Operator<Context > {
  public:
     CropGradientOp(const OperatorDef& op_def, Workspace* ws) 
         : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 2)),
-          offsets_param(OperatorBase::GetRepeatedArg<int>("offsets")),
+          starts(OperatorBase::GetRepeatedArg<int>("starts")),
+          ends(OperatorBase::GetRepeatedArg<int>("ends")),
+          start_axis(OperatorBase::GetSingleArg<int>("start_axis", -1)),
+          offsets(OperatorBase::GetRepeatedArg<int>("offsets")),
           shape(OperatorBase::GetRepeatedArg<int>("shape")),
-          shape_like(OperatorBase::GetSingleArg<string>("shape_like", "")) {
-        CHECK(shape.size() * shape_like.size() == 0)
-            << "\ncan not set shape and shape_like both.";
-        CHECK(shape.size() + shape_like.size() != 0)
-            << "\nmust set shape and shape_like either.";
-    }
+          shape_like(OperatorBase::GetSingleArg<string>("shape_like", "")) {}
 
-    void ComputeOutputShape();
+    void Setup();
     void RunOnDevice() override;
     template <typename T> void RunWithType();
-    template <typename T> void RecursiveRunWithType(vector<TIndex> idxs, 
-                                                    const vector<TIndex>& offsets,
-                                                    int cur_dim,
-                                                    Tensor* dy,
-                                                    Tensor* dx);
+
  protected:
-    TIndex axis;
-    vector<int> offsets_param, shape;
-    vector<TIndex> output_shape, offsets;
+    TIndex start_axis;
     string shape_like;
+    vector<int> starts, ends, offsets, shape;
+    vector< pair<int, int> > process_axes;
+    TIndex axis, inner_dim, dim;
+    Tensor* dest, *source;
 };
 
 }    // namespace dragon

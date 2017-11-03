@@ -14,16 +14,13 @@ void TileOp<Context>::TileRunWithType() {
 
     auto* Xdata = source->template data<T, Context>();
     auto* Ydata = dest->template mutable_data<T, Context>();
-    kernel::Tile<T, Context>(dest->count(), 
-                                 outer_dim, 
+    kernel::Tile<T, Context>(dest->count(),
+                                 outer_dim,
                               ex_inner_dim,
                                   multiple,
                                      Xdata,
                                      Ydata,
                                    &ctx());
-
-    //  swap source & dest
-    std::swap(source, dest);
 }
 
 template <class Context>
@@ -32,8 +29,8 @@ void TileOp<Context>::RunOnDevice() {
 
     //  do nothing 
     if (process_axes.size() == 0) {
-        output(0)->ReshapeLike(input(-1));
-        output(0)->Share(input(-1));
+        output(0)->ReshapeLike(input(0));
+        output(0)->Share(input(0));
         return;
     }
 
@@ -43,11 +40,11 @@ void TileOp<Context>::RunOnDevice() {
     else dest = ws()->GetBuffer();
 
     for (auto& task : process_axes) {
-        axis = task.first; multiple = task.second;
+        axis = task.second; multiple = task.first;
         if (input(0).template IsType<float>()) TileRunWithType<float>();
         else LOG(FATAL) << "Unsupported input types.";
-
-        //  allow buffer to protect X if num axes >= 2
+        //  allow buffer to protect X if the num of tasks >= 2
+        std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
             if (dest == &input(0)) dest = ws()->GetBuffer();
         } else {
@@ -80,9 +77,6 @@ void TileGradientOp<Context>::TileRunWithType() {
                                         dYdata,
                                         dXdata,
                                        &ctx());
-
-    //  swap source & dest
-    std::swap(source, dest);
 }
 
 template <class Context>
@@ -102,11 +96,11 @@ void TileGradientOp<Context>::RunOnDevice() {
     else dest = ws()->GetBuffer();
 
     for (auto& task : process_axes) {
-        axis = task.first; multiple = task.second;
+        axis = task.second; multiple = task.first;
         if (input(0).template IsType<float>()) TileRunWithType<float>();
         else LOG(FATAL) << "Unsupported input types.";
-
-        //  allow buffer to protect dY if num axes >= 2
+        //  allow buffer to protect X if the num of tasks >= 2
+        std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
             if (dest == &input(-1)) dest = ws()->GetBuffer();
         } else {

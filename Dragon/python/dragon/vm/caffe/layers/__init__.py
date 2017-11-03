@@ -1,5 +1,5 @@
 # --------------------------------------------------------
-# Caffe for Dragon
+# Caffe @ Dragon
 # Copyright(c) 2017 SeetaTech
 # Written by Ting Pan
 # --------------------------------------------------------
@@ -44,6 +44,7 @@ from .common import InnerProductLayer, \
                     EltwiseLayer, \
                     ScaleLayer, \
                     SoftmaxLayer, \
+                    ArgMaxLayer, \
                     PermuteLayer, \
                     FlattenLayer, \
                     ConcatLayer, \

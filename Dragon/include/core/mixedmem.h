@@ -13,7 +13,7 @@
 
 namespace dragon {
 
-class MixedMemory{
+class MixedMemory {
  public:
     enum State { UNINITIALIZED, STATE_AT_CPU, STATE_AT_CUDA, SWITCHED, SYNCED };
     MixedMemory()

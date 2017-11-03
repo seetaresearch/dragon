@@ -227,9 +227,9 @@ class Tensor(object):
 
     @name.setter
     def name(self, value):
-        from .scope import TENSOR_SCOPE
-        if value is None: self._name = TENSOR_SCOPE + GetTensorName()
-        else: self._name = TENSOR_SCOPE + value
+        from .scope import _TENSOR_SCOPE
+        if value is None: self._name = _TENSOR_SCOPE + GetTensorName()
+        else: self._name = _TENSOR_SCOPE + value
 
     @property
     def grad_wrts(self):
@@ -399,27 +399,45 @@ class Tensor(object):
             ws.FeedTensor(tensor, np.array(indices, dtype=np.float32))
             return tensor
 
-        if isinstance(item, int):
-            output = self.CreateOperator(inputs=[self, wrapper_indices([item])], nout=1, op_type='At')
-            if self.shape is not None:
-                output.shape = self.shape[:]
-                output.shape[0] = 1
-            return output
-
-        elif isinstance(item, slice):
-            indices = [i for i in xrange(item.start, item.stop, item.step
-                                         if item.step is not None else 1)]
-            outputs = []
-            for idx in indices:
-                output = self.CreateOperator(inputs=[self, wrapper_indices([idx])], nout=1, op_type='At')
+        if not isinstance(item, tuple):
+            # 1D At
+            if isinstance(item, int):
+                output = self.CreateOperator(inputs=[self, wrapper_indices([item])], nout=1, op_type='At')
                 if self.shape is not None:
                     output.shape = self.shape[:]
                     output.shape[0] = 1
-                outputs.append(output)
-            return outputs
+                return output
+            else:
+                # ND Crop
+                item = (item, )
+        starts = []
+        ends = []
+        output_dims = []
+        for it in item:
+            if isinstance(it, slice):
+                # handle start
+                if it.start is None: starts.append(0)
+                else: starts.append(it.start)
+                # handle stop
+                if it.stop is None: ends.append(0)
+                else: ends.append(it.stop)
+                # handle step
+                if it.step is not None:
+                    raise NotImplementedError('Cropping with step has not been implemented yet. ')
+                output_dims.append(min(ends[-1] - starts[-1], 1))
+            elif isinstance(it, int):
+                starts.append(it)
+                ends.append(it + 1)
+                output_dims.append(1)
+            else:
+                raise TypeError('Unsupported type of indices: {}'.format(type(type(it))))
 
-        elif isinstance(item, Tensor):
-            return self.CreateOperator(inputs=[self, item], nout=1, op_type='At')
+        output = self.CreateOperator(inputs=self, nout=1, op_type='Crop', starts=starts, ends=ends)
+
+        if self.shape is not None:
+            output.shape = output_dims[:]
+
+        return output
 
     def __add__(self, other):
         """Calculate x + y.
@@ -926,13 +944,13 @@ class Tensor(object):
         outputs_name = [output.name for output in outputs]
         op_idx, op_name = GetOperatorName(name)
         device_option = None
-        from dragon.core.scope import DEVICE_SCOPE, ENGINE_SCOPE
-        if DEVICE_SCOPE != '':
+        from dragon.core.scope import _DEVICE_SCOPE, _ENGINE_SCOPE
+        if _DEVICE_SCOPE != '':
             supports = {'/cpu': 0, '/gpu': 1}
             device_option = pb.DeviceOption()
-            device_option.device_type = supports[DEVICE_SCOPE.split(':')[0]]
-            device_option.gpu_id = int(DEVICE_SCOPE.split(':')[1])
-            device_option.engine = ENGINE_SCOPE
+            device_option.device_type = supports[_DEVICE_SCOPE.split(':')[0]]
+            device_option.gpu_id = int(_DEVICE_SCOPE.split(':')[1])
+            device_option.engine = _ENGINE_SCOPE
         op_def = MakeOperatorDef(op_type, inputs_name, outputs_name, op_name,
                                  device_option=device_option, **kwargs)
         expressions[op_idx] = op_def

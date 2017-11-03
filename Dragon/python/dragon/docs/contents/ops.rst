@@ -122,7 +122,6 @@ List               Brief
 ===============    ======================================================================
 `At`_              1D At interface of NDArray.
 `RandomPick`_      1D RandomPick interface of NDArray.
-`Crop`_            2D Crop interface interface of NDArray.
 `Reduce`_          The general reduce operator.
 `Sum`_             Compute the sum along the given axis.
 `Mean`_            Compute the mean along the given axis.
@@ -134,6 +133,8 @@ List               Brief
 `Repeat`_          Repeat the input along the given axis.
 `Transpose`_       Transpose the input according to the given permutations.
 `Tile`_            Tile the input according to the given multiples.
+`Pad`_             Pad the input according to the given paddings.
+`Crop`_            Crop the input according to the given starts and ends.
 `Flatten`_         Flatten the input along the given axes.
 `Reshape`_         Reshape the dimensions of input.
 `ExpandDims`_      ExpandDims interface of NDArray.
@@ -257,6 +258,7 @@ List                 Brief
 .. _Transpose: operators/ndarray.html#dragon.operators.ndarray.Transpose
 .. _Repeat: operators/ndarray.html#dragon.operators.ndarray.Repeat
 .. _Tile: operators/ndarray.html#dragon.operators.ndarray.Tile
+.. _Pad: operators/ndarray.html#dragon.operators.ndarray.Pad
 .. _Flatten: operators/ndarray.html#dragon.operators.ndarray.Flatten
 .. _Reshape: operators/ndarray.html#dragon.operators.ndarray.Reshape
 .. _ExpandDims: operators/ndarray.html#dragon.operators.ndarray.ExpandDims

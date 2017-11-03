@@ -67,6 +67,7 @@ List                        Brief
 `PermuteLayer`_             The implementation of ``PermuteLayer``.
 `FlattenLayer`_             The implementation of ``FlattenLayer``.
 `SoftmaxLayer`_             The implementation of ``SoftmaxLayer``.
+`ArgMaxLayer`_              The implementation of ``ArgMaxLayer``.
 `BatchNormLayer`_           The implementation of ``BatchNormLayer``.
 `BatchRenormLayer`_         The implementation of ``BatchRenormLayer``.
 `InstanceNormLayer`_        The implementation of ``InstanceNormLayer``.
@@ -170,6 +171,7 @@ API Reference
 .. _PermuteLayer: #dragon.vm.caffe.layers.common.PermuteLayer
 .. _FlattenLayer: #dragon.vm.caffe.layers.common.FlattenLayer
 .. _SoftmaxLayer: #dragon.vm.caffe.layers.common.SoftmaxLayer
+.. _ArgMaxLayer: #dragon.vm.caffe.layers.common.ArgMaxLayer
 .. _BatchNormLayer: #dragon.vm.caffe.layers.common.BatchNormLayer
 .. _BatchRenormLayer: #dragon.vm.caffe.layers.common.BatchRenormLayer
 .. _InstanceNormLayer: #dragon.vm.caffe.layers.common.InstanceNormLayer
@@ -258,6 +260,8 @@ API Reference
 .. _FlattenParameter.axis: https://github.com/BVLC/caffe/blob/effcdb0b62410b2a6a54f18f23cf90733a115673/src/caffe/proto/caffe.proto#L748
 .. _FlattenParameter.end_axis: https://github.com/BVLC/caffe/blob/effcdb0b62410b2a6a54f18f23cf90733a115673/src/caffe/proto/caffe.proto#L753
 .. _SoftmaxParameter.axis: https://github.com/BVLC/caffe/blob/effcdb0b62410b2a6a54f18f23cf90733a115673/src/caffe/proto/caffe.proto#L1142
+.. _ArgMaxParameter.top_k: https://github.com/BVLC/caffe/blob/effcdb0b62410b2a6a54f18f23cf90733a115673/src/caffe/proto/caffe.proto#L485
+.. _ArgMaxParameter.axis: https://github.com/BVLC/caffe/blob/effcdb0b62410b2a6a54f18f23cf90733a115673/src/caffe/proto/caffe.proto#L490
 .. _BatchNormParameter.use_global_stats: https://github.com/BVLC/caffe/blob/effcdb0b62410b2a6a54f18f23cf90733a115673/src/caffe/proto/caffe.proto#L511
 .. _BatchNormParameter.moving_average_fraction: https://github.com/BVLC/caffe/blob/effcdb0b62410b2a6a54f18f23cf90733a115673/src/caffe/proto/caffe.proto#L520
 .. _BatchNormParameter.eps: https://github.com/BVLC/caffe/blob/effcdb0b62410b2a6a54f18f23cf90733a115673/src/caffe/proto/caffe.proto#L523

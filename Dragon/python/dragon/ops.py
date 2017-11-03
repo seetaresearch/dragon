@@ -103,6 +103,7 @@ Concat = ndarray.Concat
 Transpose = ndarray.Transpose
 Repeat = ndarray.Repeat
 Tile = ndarray.Tile
+Pad = ndarray.Pad
 OneHot = ndarray.OneHot
 Flatten = ndarray.Flatten
 Reshape = ndarray.Reshape

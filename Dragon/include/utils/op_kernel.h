@@ -319,20 +319,80 @@ void ConcatGrad(const int count,
 /******************** ndarray.crop ********************/
 
 template <typename T, class Context>
-void Crop2D(vector<TIndex> idxs,
-            const vector<TIndex>& offsets,
-            const int cur_dim,
-            Tensor* x, 
-            Tensor* y, 
-            Context* context);
+void Crop1D(const int count,
+            const int dim,
+            const int ex_dim,
+            const int inner_dim,
+            const int start,
+            const T* x,
+            T* y);
 
 template <typename T, class Context>
-void Crop2DGrad(vector<TIndex> idxs,
-                const vector<TIndex>& offsets,
-                const int cur_dim,
-                Tensor* dy,
-                Tensor* dx,
-                Context* context);
+void Crop1DGrad(const int count,
+                const int dim,
+                const int ex_dim,
+                const int inner_dim,
+                const int start,
+                const int end,
+                const T* dy,
+                T* dx);
+
+/******************** ndarray.pad ********************/
+
+template <typename T, class Context>
+void ConstPad1D(const int count,
+                const int dim,
+                const int ex_dim,
+                const int inner_dim,
+                const int pad_l,
+                const float value,
+                const T* x,
+                T* y);
+
+template <typename T, class Context>
+void ReflectPad1D(const int count,
+                  const int dim,
+                  const int ex_dim,
+                  const int inner_dim,
+                  const int pad_l,
+                  const T* x,
+                  T* y);
+
+template <typename T, class Context>
+void EdgePad1D(const int count,
+               const int dim,
+               const int ex_dim,
+               const int inner_dim,
+               const int pad_l,
+               const T* x,
+               T* y);
+
+template <typename T, class Context>
+void ConstPad1DGrad(const int count,
+                    const int dim,
+                    const int ex_dim,
+                    const int inner_dim,
+                    const int pad_l,
+                    const T* dy,
+                    T* dx);
+
+template <typename T, class Context>
+void ReflectPad1DGrad(const int count,
+                      const int dim,
+                      const int ex_dim,
+                      const int inner_dim,
+                      const int pad_l,
+                      const T* dy,
+                      T* dx);
+
+template <typename T, class Context>
+void EdgePad1DGrad(const int count,
+                   const int dim,
+                   const int ex_dim,
+                   const int inner_dim,
+                   const int pad_l,
+                   const T* dy,
+                   T* dx);
 
 /******************** ndarray.one_hot ********************/
 

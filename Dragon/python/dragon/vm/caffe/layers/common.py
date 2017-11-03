@@ -1,5 +1,5 @@
 # --------------------------------------------------------
-# Dragon
+# Caffe @ Dragon
 # Copyright(c) 2017 SeetaTech
 # Written by Ting Pan
 # --------------------------------------------------------
@@ -190,12 +190,13 @@ class CropLayer(Layer):
     def __init__(self, LayerParameter):
         super(CropLayer, self).__init__(LayerParameter)
         param = LayerParameter.crop_param
-        self._param = {'axis': param.axis,
+        self._param = {'start_axis': param.axis,
                        'offsets': [int(element) for element in param.offset]}
 
     def Setup(self, bottom):
         super(CropLayer, self).Setup(bottom)
         self._param['shape_like'] = bottom[1]
+        self._param['starts'] = self._param['ends'] = None
         return ops.Crop(bottom[0], **self._param)
 
 
@@ -283,6 +284,30 @@ class SoftmaxLayer(Layer):
         super(SoftmaxLayer, self).Setup(bottom)
         input = bottom[0] if isinstance(bottom, list) else bottom
         return ops.Softmax(input, **self._param)
+
+
+class ArgMaxLayer(Layer):
+    """The implementation of ``ArgMaxLayer``.
+
+    Parameters
+    ----------
+    top_k : int
+        The top k results to keep. Refer `ArgMaxParameter.top_k`_.
+    axis : int
+        The axis to perform argmax. Refer `ArgMaxParameter.axis`_.
+
+    """
+    def __init__(self, LayerParameter):
+        super(ArgMaxLayer, self).__init__(LayerParameter)
+        param = LayerParameter.argmax_param
+        self._param = {'top_k': param.top_k,
+                       'axis': param.axis,
+                       'keep_dims': True}
+
+    def Setup(self, bottom):
+        super(ArgMaxLayer, self).Setup(bottom)
+        input = bottom[0] if isinstance(bottom, list) else bottom
+        return ops.Argmax(input, **self._param)
 
 
 class BatchNormLayer(Layer):

@@ -18,6 +18,9 @@ List                    Brief
 `SetGPU`_               Set the global id GPU.
 `GetGPU`_               Get the global id of GPU.
 `SetDebugMode`_         Enable Debug mode globally.
+`LogMetaGraph`_         Enable to log meta graph globally.
+`LogOptimizedGraph`_    Enable to log optimized graph globally.
+`ExportMetaGraph`_      Enable to export all runnable meta graphs into text files.
 `SetLoggingLevel`_      Set the minimum level of Logging.
 ====================    =============================================================================
 
@@ -34,4 +37,7 @@ API Reference
 .. _SetGPU: #dragon.config.SetGPU
 .. _GetGPU: #dragon.config.GetGPU
 .. _SetDebugMode: #dragon.config.SetDebugMode
+.. _LogMetaGraph: #dragon.config.LogMetaGraph
+.. _LogOptimizedGraph: #dragon.config.LogOptimizedGraph
+.. _ExportMetaGraph: #dragon.config.ExportMetaGraph
 .. _SetLoggingLevel: #dragon.config.SetLoggingLevel

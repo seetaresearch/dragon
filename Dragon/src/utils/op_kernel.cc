@@ -842,44 +842,157 @@ template <> void ConcatGrad<float16, CPUContext>(const int count,
 
 /******************** ndarray.crop ********************/
 
-template<> void Crop2D<float, CPUContext>(vector<TIndex> idxs,
-                                          const vector<TIndex>& offsets, 
-                                          const int cur_dim, 
-                                          Tensor* x,
-                                          Tensor* y,
-                                          CPUContext* context) {
-    //  run as Crop1D
-    auto* Xdata = x->data<float, CPUContext>();
-    auto* Ydata = y->mutable_data<float, CPUContext>();
-
-    for (int i = 0; i < y->dim(cur_dim); ++i) {
-        vector<TIndex> idx_off(cur_dim + 1, 0);
-        for (int j = 0; j < cur_dim; j++) idx_off[j] = idxs[j] + offsets[j];
-        idx_off[cur_dim] = offsets[cur_dim];
-        context->Copy<float, CPUContext, CPUContext>(y->dim(cur_dim),
-                                                     Ydata + y->offset(idxs),
-                                                     Xdata + x->offset(idx_off));
-     }
+template<> void Crop1D<float, CPUContext>(const int count,
+                                          const int dim,
+                                          const int ex_dim,
+                                          const int inner_dim,
+                                          const int start,
+                                          const float* x,
+                                          float* y) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int idx = 0; idx < count; idx++) {
+        const int i = idx % inner_dim;
+        const int ex_d = (idx / inner_dim) % ex_dim;
+        const int o = idx / inner_dim / ex_dim;
+        y[idx] = x[(o * dim + ex_d + start) * inner_dim + i];
+    }
 }
 
-template<> void Crop2DGrad<float, CPUContext>(vector<TIndex> idxs,
-                                              const vector<TIndex>& offsets, 
-                                              const int cur_dim, 
-                                              Tensor* dy,
-                                              Tensor* dx,
-                                              CPUContext* context) {
-    //  run as Crop1D
-    auto* dYdata = dy->data<float, CPUContext>();
-    auto* dXdata = dx->mutable_data<float, CPUContext>();
+template<> void Crop1DGrad<float, CPUContext>(const int count,
+                                              const int dim,
+                                              const int ex_dim,
+                                              const int inner_dim,
+                                              const int start,
+                                              const int end,
+                                              const float* dy,
+                                              float* dx) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int idx = 0; idx < count; idx++) {
+        const int i = idx % inner_dim;
+        const int d = (idx / inner_dim) % dim;
+        const int o = idx / inner_dim / dim;
+        if (d >= start && d < end)
+            dx[idx] = dy[(o * ex_dim + d - start) * inner_dim + i];
+    }
 
-    for (int i = 0; i < dy->dim(cur_dim); ++i) {
-        vector<TIndex> idx_off(cur_dim + 1, 0);
-        for (int j = 0; j < cur_dim; j++) idx_off[j] = idxs[j] + offsets[j];
-        idx_off[cur_dim] = offsets[cur_dim];
-        context->Copy<float, CPUContext, CPUContext>(dy->dim(cur_dim),
-                                                     dXdata + dx->offset(idx_off),
-                                                     dXdata + dy->offset(idxs));
-     }
+}
+
+/******************** ndarray.pad ********************/
+
+template <> void ConstPad1D<float, CPUContext>(const int count,
+                                               const int dim,
+                                               const int ex_dim,
+                                               const int inner_dim,
+                                               const int pad_l,
+                                               const float value,
+                                               const float* x,
+                                               float* y) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int idx = 0; idx < count; idx++) {
+        const int i = idx % inner_dim;
+        const int ex_d = (idx / inner_dim) % ex_dim;
+        const int o = idx / inner_dim / ex_dim;
+        const int d = ex_d - pad_l;
+        y[idx] = (d < 0 || d >= dim) ? value : x[(o * dim + d) * inner_dim + i];
+    }
+}
+
+template <> void ReflectPad1D<float, CPUContext>(const int count,
+                                               const int dim,
+                                               const int ex_dim,
+                                               const int inner_dim,
+                                               const int pad_l,
+                                               const float* x,
+                                               float* y) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int idx = 0; idx < count; idx++) {
+        const int i = idx % inner_dim;
+        const int ex_d = (idx / inner_dim) % ex_dim;
+        const int o = idx / inner_dim / ex_dim;
+        int d = ex_d - pad_l;
+        d = std::max(d, -d);
+        d = std::min(d, 2 * dim - d - 2);
+        y[idx] = x[(o * dim + d) * inner_dim + i];
+    }
+}
+
+template <> void EdgePad1D<float, CPUContext>(const int count,
+                                              const int dim,
+                                              const int ex_dim,
+                                              const int inner_dim,
+                                              const int pad_l,
+                                              const float* x,
+                                              float* y) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int idx = 0; idx < count; idx++) {
+        const int i = idx % inner_dim;
+        const int ex_d = (idx / inner_dim) % ex_dim;
+        const int o = idx / inner_dim / ex_dim;
+        const int d = std::min(dim - 1, std::max(ex_d - pad_l, 0));
+        y[idx] = x[(o * dim + d) * inner_dim + i];
+    }
+}
+
+template <> void ConstPad1DGrad<float, CPUContext>(const int count,
+                                                   const int dim,
+                                                   const int ex_dim,
+                                                   const int inner_dim,
+                                                   const int pad_l,
+                                                   const float* dy,
+                                                   float* dx) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int idx = 0; idx < count; idx++) {
+        const int i = idx % inner_dim;
+        const int ex_d = (idx / inner_dim) % dim + pad_l;
+        const int o = idx / inner_dim / dim;
+        dx[idx] = dy[(o * ex_dim + ex_d) * inner_dim + i];
+    }
+}
+
+template <> void ReflectPad1DGrad<float, CPUContext>(const int count,
+                                                     const int dim,
+                                                     const int ex_dim,
+                                                     const int inner_dim,
+                                                     const int pad_l,
+                                                     const float* dy,
+                                                     float* dx) {
+    for (int idx = 0; idx < count; idx++) {
+        const int i = idx % inner_dim;
+        const int ex_d = (idx / inner_dim) % ex_dim;
+        const int o = idx / inner_dim / ex_dim;
+        int d = ex_d - pad_l;
+        d = std::max(d, -d);
+        d = std::min(d, 2 * dim - d - 2);
+        dx[(o * dim + d) * inner_dim + i] += dy[idx];
+    }
+}
+
+template <> void EdgePad1DGrad<float, CPUContext>(const int count,
+                                                  const int dim,
+                                                  const int ex_dim,
+                                                  const int inner_dim,
+                                                  const int pad_l,
+                                                  const float* dy,
+                                                  float* dx) {
+    for (int idx = 0; idx < count; idx++) {
+        const int i = idx % inner_dim;
+        const int ex_d = (idx / inner_dim) % ex_dim;
+        const int o = idx / inner_dim / ex_dim;
+        const int d = std::min(dim - 1, std::max(ex_d - pad_l, 0));
+        dx[(o * dim + d) * inner_dim + i] += dy[idx];
+    }
 }
 
 /******************** ndarray.one_hot ********************/
@@ -1692,7 +1805,7 @@ template<> void ROIPooling<float, CPUContext>(const float spatial_scale,
             Mdata += mask->offset(0, 1);
         }    //  end c
         //  offset roi region
-        Rdata += roi->offset(1);
+        Rdata += 5;
     }    //  end n
 }
 

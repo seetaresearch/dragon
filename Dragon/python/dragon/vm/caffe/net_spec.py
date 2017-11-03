@@ -1,9 +1,3 @@
-# --------------------------------------------------------
-# Caffe for Dragon
-# Copyright(c) 2017 SeetaTech
-# Written by Ting Pan
-# --------------------------------------------------------
-
 from collections import OrderedDict, Counter
 from .proto import caffe_pb2
 import six

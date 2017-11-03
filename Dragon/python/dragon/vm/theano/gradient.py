@@ -1,5 +1,5 @@
 # --------------------------------------------------------
-# Dragon
+# Theano @ Dragon
 # Copyright(c) 2017 SeetaTech
 # Written by Ting Pan
 # --------------------------------------------------------
@@ -38,7 +38,11 @@ def grad(cost, wrt, **kwargs):
     for w in wrt:
         cost.grad_wrts.append(w.name)
         w.grad_objs.append(cost.name)
-        grads.append(Tensor(w.name + '_grad'))
+        w_grad = Tensor(w.name + '_grad')
+        w_grad.extra_targets.add(cost.name)
+        w_grad.expressions = cost.expressions
+        w_grad.grad_wrts.append(w.name)
+        grads.append(w_grad)
     if len(grads) == 1: return grads[0]
     return grads
 

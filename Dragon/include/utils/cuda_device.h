@@ -34,7 +34,7 @@ static const int CUDA_NUM_THREADS = 1024;
 #define CUDA_CHECK(condition) \
   do { \
     cudaError_t error = condition; \
-    CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
+    CHECK_EQ(error, cudaSuccess) << "\n" << cudaGetErrorString(error); \
   } while (0)
 
 #define CUBLAS_CHECK(condition) \
@@ -53,7 +53,7 @@ static const int CUDA_NUM_THREADS = 1024;
 #define NCCL_CHECK(condition) \
   do { \
     ncclResult_t status = condition; \
-    CHECK_EQ(status, ncclSuccess) << " " << ncclGetErrorString(status); \
+    CHECK_EQ(status, ncclSuccess) << "\n" << ncclGetErrorString(status); \
   } while (0)
 #endif  // WITH_MPI_NCCL
 

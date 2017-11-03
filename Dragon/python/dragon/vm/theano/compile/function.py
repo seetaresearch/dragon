@@ -1,5 +1,5 @@
 # --------------------------------------------------------
-# Dragon
+# Theano @ Dragon
 # Copyright(c) 2017 SeetaTech
 # Written by Ting Pan
 # --------------------------------------------------------
@@ -17,13 +17,13 @@ from dragon.core.gradient_maker import GraphGradientMaker
 from dragon.core.scope import GetOperatorName, GetTensorName
 from dragon.core.tensor import Tensor
 
-def GraphDef_Grad(graph_def, targets):
+def GraphDef_Grad(meta_graph, targets):
     """Inject the gradient targets into GraphDef.
 
     Parameters
     ----------
-    graph_def : dragon_pb2.GraphDef
-        The definition of graph.
+    meta_graph : dragon_pb2.GraphDef
+        The definition of meta graph.
     targets : list
         The solving targets.
 
@@ -45,18 +45,18 @@ def GraphDef_Grad(graph_def, targets):
         g_target = pb.GradientTarget()
         g_target.cost = str(pair[0])
         g_target.wrt = str(pair[1])
-        graph_def.g_target.extend([g_target])
+        meta_graph.g_target.extend([g_target])
 
 
-def GraphDef_Phase(graph_def, targets):
+def GraphDef_Phase(meta_graph, targets):
     """Inject the phase into GraphDef.
 
     If existing gradients, we assume it should be ``TRAIN``, and vice versa.
 
     Parameters
     ----------
-    graph_def : dragon_pb2.GraphDef
-        The definition of graph.
+    meta_graph : dragon_pb2.GraphDef
+        The definition of meta graph.
     targets : list
         The solving targets.
 
@@ -66,26 +66,25 @@ def GraphDef_Phase(graph_def, targets):
 
     """
     phase = 'TEST'
-    from dragon.core.scope import PHASE_SCOPE
-    global PHASE_SCOPE
-    if PHASE_SCOPE != '': phase = PHASE_SCOPE.upper()
+    from dragon.core.scope import _PHASE_SCOPE
+    if _PHASE_SCOPE != '': phase = _PHASE_SCOPE.upper()
     else:
         for target in targets:
             if len(target.grad_wrts) > 0:
                 phase = 'TRAIN'
                 break
-    graph_def.arg.extend([MakeArgument('phase', phase)])
+    meta_graph.arg.extend([MakeArgument('phase', phase)])
 
 
-def GraphDef_Update(graph_def, updater):
+def GraphDef_Update(meta_graph, updater):
     """Inject the update targets into GraphDef.
 
     The ``updater`` should generate update targets before.
 
     Parameters
     ----------
-    graph_def : dragon_pb2.GraphDef
-        The definition of graph.
+    meta_graph : dragon_pb2.GraphDef
+        The definition of meta graph.
     updater : BaseUpdater
         The updater.
 
@@ -96,7 +95,7 @@ def GraphDef_Update(graph_def, updater):
     """
     if updater is None: return
 
-    updater._prefix = graph_def.name + '_'
+    updater._prefix = meta_graph.name + '_'
     extra_arguments = updater._extra_kwargs
     extra_arguments['domain'] = updater._prefix
     parallel_arguments = {}
@@ -114,7 +113,7 @@ def GraphDef_Update(graph_def, updater):
                 = mpi.CreateGroup(root=group[0], incl=group)
             parallel_arguments['root'] = group[0]
         for k, v in parallel_arguments.items():
-            graph_def.arg.add().CopyFrom(MakeArgument(k, v))
+            meta_graph.arg.add().CopyFrom(MakeArgument(k, v))
 
     for tuple in updater._tuples:
         tensors = tuple[0]; arguments = tuple[1]
@@ -126,16 +125,16 @@ def GraphDef_Update(graph_def, updater):
             u_target.tensor.append(tensor)
         for k, v in kwargs.items():
             u_target.arg.add().CopyFrom(MakeArgument(k, v))
-        graph_def.u_target.extend([u_target])
+        meta_graph.u_target.extend([u_target])
 
 
-def GraphDef_Opt(graph_def):
+def GraphDef_Opt(meta_graph):
     """Inject the optimization options into GraphDef.
 
     Parameters
     ----------
-    graph_def : dragon_pb2.GraphDef
-        The definition of graph.
+    meta_graph : dragon_pb2.GraphDef
+        The definition of meta graph.
 
     Returns
     -------
@@ -149,17 +148,17 @@ def GraphDef_Opt(graph_def):
 
     """
     from dragon.config import option
-    graph_def.debug_mode = option['debug_mode']
-    graph_def.share_grads = option['share_grads']
+    meta_graph.debug_mode = option['debug_mode']
+    meta_graph.share_grads = option['share_grads']
 
 
-def GraphDef_Device(graph_def):
+def GraphDef_Device(meta_graph):
     """Inject the device option into GraphDef.
 
     Parameters
     ----------
-    graph_def : dragon_pb2.GraphDef
-        The definition of graph.
+    meta_graph : dragon_pb2.GraphDef
+        The definition of meta graph.
 
     Returns
     -------
@@ -182,7 +181,7 @@ def GraphDef_Device(graph_def):
         device_option.gpu_id = option['gpu_id']
         device_option.random_seed = option['random_seed']
         if option['use_cudnn']: device_option.engine = 'CUDNN'
-        graph_def.device_option.CopyFrom(device_option)
+        meta_graph.device_option.CopyFrom(device_option)
 
 
 def function(inputs=None, outputs=None, givens=None, updater=None):
@@ -239,22 +238,22 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
     all_exprs = {}; all_extra_targets = set()
     if not isinstance(outputs, list): outputs = [outputs]
 
-    graph_def = pb.GraphDef()
+    meta_graph = pb.GraphDef()
 
-    graph_def.name = 'Graph_' + str(ws.CURRENT_GRAPH_IDX)
+    meta_graph.name = 'Graph_' + str(ws.CURRENT_GRAPH_IDX)
     ws.CURRENT_GRAPH_IDX += 1
 
     # extract operators and targets from expressions
     existing_grads = False
     for output in outputs:
-        graph_def.target.extend([output.name])
+        meta_graph.target.extend([output.name])
         if sys.version_info >= (3, 0):
             all_exprs = OrderedDict(all_exprs, **output.expressions)
         else:
             all_exprs = dict(all_exprs, **output.expressions)
         all_extra_targets = all_extra_targets.union(output.extra_targets)
         if len(output.grad_wrts) > 0: existing_grads = True
-    for extra_target in all_extra_targets: graph_def.target.extend([extra_target])
+    for extra_target in all_extra_targets: meta_graph.target.extend([extra_target])
 
     # we should sort out the topology of these operators before using
     all_exprs = sorted(all_exprs.items(), key=lambda d:d[0])
@@ -284,24 +283,25 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
     # handle grads
     if existing_grads:
         targets = [output.name for output in outputs]
+        targets.extend(all_extra_targets)
         forward_ops, grad_ops = GraphGradientMaker.Make(forward_ops, targets)
     else: grad_ops = []
-    graph_def.op.extend(forward_ops + grad_ops)
+    meta_graph.op.extend(forward_ops + grad_ops)
 
     if len(outputs) > 0:
-        GraphDef_Device(graph_def)
-        GraphDef_Opt(graph_def)
-        GraphDef_Grad(graph_def, outputs)
-        GraphDef_Phase(graph_def, outputs)
+        GraphDef_Device(meta_graph)
+        GraphDef_Opt(meta_graph)
+        GraphDef_Grad(meta_graph, outputs)
+        GraphDef_Phase(meta_graph, outputs)
 
     elif updater is not None:
-        GraphDef_Device(graph_def)
-        GraphDef_Opt(graph_def)
-        GraphDef_Update(graph_def, updater)
+        GraphDef_Device(meta_graph)
+        GraphDef_Opt(meta_graph)
+        GraphDef_Update(meta_graph, updater)
 
     # call c api to create graph
-    ws.CreateGraph(graph_def)
+    ws.CreateGraph(meta_graph)
 
     # return a lambda point to run this graph
     return lambda *args, **kwargs: \
-        ws.RunGraph(graph_def.name, (inputs, args), outputs, **kwargs)
+        ws.RunGraph(meta_graph.name, (inputs, args), outputs, **kwargs)

@@ -19,12 +19,12 @@
 
 namespace dragon {
 
-class CPUObject{
+class CPUObject {
 public:
     unique_ptr<std::mt19937> rand_generator;
 };
 
-class CPUContext{
+class CPUContext {
  public:
     CPUContext(): random_seed_(3) { generator(); }
     CPUContext(unsigned int random_seed): random_seed_(random_seed) { generator(); }

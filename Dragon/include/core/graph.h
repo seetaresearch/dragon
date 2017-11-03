@@ -21,10 +21,12 @@ class GraphBase {
         string op_type;
     };
 
-    GraphBase(const GraphDef& graph_def, Workspace* ws);
+    GraphBase(const GraphDef& meta_graph, Workspace* ws);
 
-    virtual bool Create(const GraphDef& graph_def, Workspace* ws) = 0;
+    virtual bool Create(const GraphDef& optimized_graph, Workspace* ws) = 0;
     virtual bool Run(const string& include, const string& exclude) = 0;
+
+    inline string name() const { return name_; }
 
  protected:
     string name_, phase_;
@@ -34,15 +36,15 @@ class GraphBase {
 
 class Graph final : public GraphBase {
  public:
-    Graph(const GraphDef& graph_def, Workspace* ws);
+    Graph(const GraphDef& meta_graph, Workspace* ws);
 
-    bool Create(const GraphDef& graph_def, Workspace* ws) override;
+    bool Create(const GraphDef& optimized_graph, Workspace* ws) override;
     bool Run(const string& include, const string& exclude) override;
 
-    GraphDef Prune(const GraphDef& graph_def);
-    GraphDef Share(const GraphDef& graph_def);
-    GraphDef MakeUpdate(const GraphDef& graph_def);
-    void RecomputingAware(const GraphDef& graph_def, Workspace* ws);
+    GraphDef Prune(const GraphDef& meta_graph);
+    GraphDef MakeUpdate(const GraphDef& meta_graph);
+    GraphDef Share(const GraphDef& optimized_graph);
+    void RecomputingAware(const GraphDef& optimized_graph, Workspace* ws);
 
     inline Workspace* ws() const { return ws_; }
 
@@ -58,7 +60,7 @@ class Graph final : public GraphBase {
     Set<string> targets_;
 };
 
-GraphBase* NewGraph(const GraphDef& graph_def, Workspace* ws);
+GraphBase* NewGraph(const GraphDef& meta_graph, Workspace* ws);
 DECLARE_REGISTRY(GraphRegistry, GraphBase, const GraphDef&, Workspace*);
 
 }    // namespace dragon

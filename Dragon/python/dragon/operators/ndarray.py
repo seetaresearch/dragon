@@ -83,8 +83,11 @@ def RandomPick(inputs, max_samples=1, axis=0, **kwargs):
     return outputs
 
 
-def Crop(inputs, shape, shape_like=None, axis=2, offsets=(), **kwargs):
-    """2D Crop interface interface of NDArray.
+def Crop(inputs, starts, ends, start_axis=None,
+         offsets=None, shape=None, shape_like=None, **kwargs):
+    """Crop the input according to the given starts and ends.
+
+    Set ``starts`` and ``ends`` to None, if want to use ``start_axis``, ``offsets`` and ``shape``.
 
     Set ``shape`` to None, if you want to use ``shape_like``.
 
@@ -92,23 +95,44 @@ def Crop(inputs, shape, shape_like=None, axis=2, offsets=(), **kwargs):
     ----------
     inputs : Tensor
         The input tensor.
-    shape : list or None
-        The shape of cropping.
+    starts : int, list of int or None
+        The starts.
+    ends : int, list of int or None
+        The ends.
+    start_axis : int or None
+        The axis to start. Default is ``None`` (Disabled).
+    offsets : int, list of int or None
+        The offsets. Ignore the axes before ``start_axis``.
+    shape : list, tuple or None
+        The referring shape. Use ``-1`` to represent the unknown dimensions.
     shape_like : Tensor or None
-        The shape of cropping. Default is ``None`` (Use ``shape``).
-    axis : int
-        The start axis of cropping.
-    offsets : int or list of int
-        The offsets. A single value or list of values.
+       The referring shape. Default is ``None`` (Disabled).
 
     Returns
     -------
     Tensor
         The output tensor.
 
+    Examples
+    --------
+    >>> x = Tensor('x', dtype='float32').Variable()
+    >>> x.set_value(np.arange(1, 25).reshape((1, 2, 3, 4)))
+    >>> y = Crop(x, starts=[0, 1, 0, 2], ends=[1, 2, 0, 0])
+    >>> y = x[0:1, 1:2, :, 2:] # the same as above
+    >>> y = Crop(x, None, None, start_axis=1, offsets=(1, 0, 2), shape=(-1, 1, 3, 2)) # the same as above
+
     """
     CheckInputs(inputs, 1)
     arguments = ParseArguments(locals())
+    if starts is not None:
+        if not isinstance(starts, (list, tuple)):
+            arguments['starts'] = [starts]
+    if ends is not None:
+        if not isinstance(ends, (list, tuple)):
+            arguments['ends'] = [ends]
+    if offsets is not None:
+        if not isinstance(offsets, (list, tuple)):
+            arguments['offsets'] = [offsets]
     if shape is None: arguments['shape'] = []
     if shape_like is not None:
         if not isinstance(shape_like, Tensor):
@@ -467,6 +491,51 @@ def Tile(inputs, multiples, **kwargs):
         output.shape = inputs.shape[:]
         for i, multiple in enumerate(multiples):
             output.shape[i] *= multiple
+
+    return output
+
+
+def Pad(inputs, paddings, mode='CONSTANT', value=0, **kwargs):
+    """Pad the input according to the given paddings.
+
+    Parameters
+    ----------
+    input : Tensor
+        The input tensor.
+    paddings : list or tuple
+        The paddings, 1D/2D list or tuple.
+    mode : str
+        The padding mode, ``CONSTANT``, ``REFLECT`` or ``EDGE``.
+    value : basic numerical type
+        The value to use on the ``CONSTANT`` mode.
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
+    """
+    CheckInputs(inputs, 1)
+    arguments = ParseArguments(locals())
+
+    pad_l = []; pad_r = []
+    for padding in paddings:
+        if isinstance(padding, (list, tuple)):
+            if len(padding) != 2:
+                raise ValueError('The padding should be a list or tuple of length 2.')
+            pad_l.append(int(padding[0]))
+            pad_r.append(int(padding[1]))
+        else:
+            pad_l.append(int(padding))
+            pad_r.append(int(padding))
+    arguments['paddings'] = None
+    arguments['pad_l'] = pad_l
+    arguments['pad_r'] = pad_r
+    arguments['value'] = float(arguments['value'])
+
+    output = Tensor.CreateOperator(nout=1, op_type='Pad', **arguments)
+
+
 
     return output
 

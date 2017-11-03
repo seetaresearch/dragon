@@ -22,7 +22,7 @@ namespace dragon {
 
 class Workspace;
 
-class OperatorBase{
+class OperatorBase {
  public:
     OperatorBase(const OperatorDef& op_def, Workspace* ws);
 

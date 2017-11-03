@@ -14,7 +14,7 @@ void CuDNNSoftmaxOp<Context>::RunWithType() {
     auto* Xdata = input(0).template data<T, Context>();
     auto* Ydata = output(0)->template mutable_data<T, Context>();
     CUDNN_CHECK(cudnnSoftmaxForward(cudnn_handle(), CUDNN_SOFTMAX_ACCURATE,
-                                                CUDNN_SOFTMAX_MODE_CHANNEL, 
+                                                CUDNN_SOFTMAX_MODE_CHANNEL,
                                       CUDNNType<T>::one, input_desc, Xdata,
                                   CUDNNType<T>::zero, output_desc, Ydata));
 }
@@ -72,5 +72,3 @@ DEPLOY_CUDNN(SoftmaxGradient);
 }    // namespace dragon
 
 #endif    // WITH_CUDNN
-
-

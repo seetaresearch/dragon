@@ -121,7 +121,7 @@ bool SwitchWorkspaceInternal(const string& name, const bool create_if_missing) {
         g_workspace = g_workspaces[name].get();
         return true;
     } else if (create_if_missing) {
-        unique_ptr<Workspace> new_workspace(new Workspace());
+        unique_ptr<Workspace> new_workspace(new Workspace(name));
         g_workspace = new_workspace.get();
         g_workspaces[name] = std::move(new_workspace);
         g_current_workspace = name;
@@ -171,7 +171,7 @@ PyObject* ResetWorkspaceCC(PyObject* self, PyObject* args) {
     CHECK(g_workspaces.count(target_workspace))
         << "\nWorkspace(" << target_workspace << ") does not exist, can not be reset.";
     LOG(INFO) << "Reset the Workspace(" << target_workspace << ")";
-    g_workspaces[target_workspace].reset(new Workspace());
+    g_workspaces[target_workspace].reset(new Workspace(target_workspace));
     g_workspace = g_workspaces[target_workspace].get();
     Py_RETURN_TRUE;
 }

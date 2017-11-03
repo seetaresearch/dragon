@@ -37,9 +37,9 @@ List                              Brief
 `Snapshot`_                       Snapshot tensors into a binary file.
 `Restore`_                        Restore tensors from a binary file.
 `SwitchWorkspace`_                Switch to the specific Workspace.
-`PrintRawGraphDef`_               Print the raw prototxt.
-`PrintOptimizedGraph`_            Print the optimized prototxt.
-`WriteOptimizedGraph`_            Generate the optimized prototxt into a file.
+`LogMetaGraph`_                   Log the meta graph.
+`LogOptimizedGraph`_              Log the optimized graph.
+`ExportMetaGraph`_                Export the meta graph into a file under specific folder.
 ==============================    =============================================================================
 
 API Reference
@@ -60,8 +60,9 @@ API Reference
 .. _RunGraph: #dragon.core.workspace.RunGraph
 .. _Snapshot: #dragon.core.workspace.Snapshot
 .. _Restore: #dragon.core.workspace.Restore
-.. _PrintRawGraphDef: #dragon.core.workspace.PrintRawGraphDef
-.. _PrintOptimizedGraph: #dragon.core.workspace.PrintOptimizedGraph
-.. _WriteOptimizedGraph: #dragon.core.workspace.WriteOptimizedGraph
+.. _LogMetaGraph: #dragon.core.workspace.LogMetaGraph
+.. _LogOptimizedGraph: #dragon.core.workspace.LogOptimizedGraph
+.. _ExportMetaGraph: #dragon.core.workspace.ExportMetaGraph
 
 .. _theano.function(*args, **kwargs): ../vm/theano/compile.html#dragon.vm.theano.compile.function.function
+.. _config.ExportMetaGraph(prefix): ../config.html#dragon.config.ExportMetaGraph

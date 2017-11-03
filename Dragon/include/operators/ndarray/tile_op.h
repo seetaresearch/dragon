@@ -18,8 +18,9 @@ class TileOp : public Operator<Context> {
         : Operator<Context>(op_def, ws), 
           multiples(OperatorBase::GetRepeatedArg<int>("multiples")) {
         for (int i = 0; i < multiples.size(); i++)
-            if (multiples[i] > 1)
-                process_axes.push_back({ i, multiples[i] });
+            if (multiples[i] > 1) 
+                process_axes.push_back({ multiples[i], i });
+        std::sort(process_axes.begin(), process_axes.end());
     }
 
     void RunOnDevice() override;
@@ -38,9 +39,11 @@ class TileGradientOp : public Operator<Context> {
     TileGradientOp(const OperatorDef& op_def, Workspace* ws) 
         : Operator<Context>(op_def, ws),
           multiples(OperatorBase::GetRepeatedArg<int>("multiples")) {
-        for (int i = (int)multiples.size() - 1; i >= 0; i--)
+        for (int i = 0; i < multiples.size(); i++)
             if (multiples[i] > 1)
-                process_axes.push_back({ i, multiples[i] });
+                process_axes.push_back({ multiples[i], i });
+        std::sort(process_axes.begin(), process_axes.end());
+        std::reverse(process_axes.begin(), process_axes.end());
     }
 
     void RunOnDevice() override;

@@ -686,7 +686,7 @@ __global__ void _SmoothL1(const int count, const float sigma2, const T* x, T* y)
     CUDA_KERNEL_LOOP(idx, count) {
         const T val = x[idx];
         const T abs_val = abs(val);
-        if (abs_val < 1.0 / sigma2) y[idx] = 0.5 * val * val *sigma2;
+        if (abs_val < 1.0 / sigma2) y[idx] = 0.5 * val * val * sigma2;
         else y[idx] = abs_val - 0.5 / sigma2;
     }
 }
@@ -1445,85 +1445,280 @@ template <> void ConcatGrad<float16, CUDAContext>(const int count,
 /******************** ndarray.crop ********************/
 
 template<typename T>
-__global__ void _Crop2D(const int count, 
-                        const int x_w_dim, 
-                        const int y_w_dim, 
-                        const int x_h_offset,
-                        const int x_w_offset,
+__global__ void _Crop1D(const int count,
+                        const int dim, 
+                        const int ex_dim,
+                        const int inner_dim,
+                        const int start,
                         const T* x, 
                         T* y) {
     CUDA_KERNEL_LOOP(idx, count) {
-        const int y_w = idx % y_w_dim;
-        const int y_h = (idx / y_w_dim);
-        y[idx] = x[(y_h + x_h_offset) * x_w_dim + x_w_offset + y_w];
+        const int i = idx % inner_dim;
+        const int ex_d = (idx / inner_dim) % ex_dim;
+        const int o = idx / inner_dim / ex_dim;
+        y[idx] = x[(o * dim + ex_d + start) * inner_dim + i];
     }
 }
 
-template<> void Crop2D<float, CUDAContext>(vector<TIndex> idxs,
-                                           const vector<TIndex>& offsets,
-                                           const int cur_dim,
-                                           Tensor* x,
-                                           Tensor* y,
-                                           CUDAContext* context) {
-    TIndex inner_dim = 1;
-    for (int i = 0; i < 2; i++) inner_dim *= y->dim(cur_dim + i);
-    TIndex x_w_dim = x->dim(cur_dim + 1), y_w_dim = y->dim(cur_dim + 1);
-    TIndex x_h_offset = offsets[cur_dim], x_w_offset = offsets[cur_dim + 1];
-
-    auto* Xdata = x->data<float, CUDAContext>();
-    auto* Ydata = y->mutable_data<float, CUDAContext>();
-    Xdata += x->offset(idxs);
-    Ydata += y->offset(idxs);
-
-    _Crop2D<float> << <GET_BLOCKS(inner_dim), CUDA_NUM_THREADS >> >(inner_dim,
-                                                                      x_w_dim,
-                                                                      y_w_dim,
-                                                                   x_h_offset,
-                                                                   x_w_offset,
-                                                                        Xdata,
-                                                                       Ydata);
+template<> void Crop1D<float, CUDAContext>(const int count,
+                                           const int dim,
+                                           const int ex_dim,
+                                           const int inner_dim,
+                                           const int start,
+                                           const float* x,
+                                           float* y) {
+    _Crop1D<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                  dim,
+                                                               ex_dim,
+                                                            inner_dim,
+                                                                start,
+                                                                    x, 
+                                                                   y);
+       
     CUDA_POST_KERNEL_CHECK;
 }
 
 template<typename T>
-__global__ void _Crop2DGrad(const int count, 
-                            const int x_w_dim, 
-                            const int y_w_dim, 
-                            const int x_h_offset,
-                            const int x_w_offset,
+__global__ void _Crop1DGrad(const int count,
+                            const int dim, 
+                            const int ex_dim,
+                            const int inner_dim,
+                            const int start,
+                            const int end,
                             const T* dy, 
                             T* dx) {
     CUDA_KERNEL_LOOP(idx, count) {
-        const int y_w = idx % y_w_dim;
-        const int y_h = (idx / y_w_dim);
-        dx[(y_h + x_h_offset) * x_w_dim + x_w_offset + y_w] = dy[idx];
+        const int i = idx % inner_dim;
+        const int d = (idx / inner_dim) % dim;
+        const int o = idx / inner_dim / dim;
+        if (d >= start && d < end) 
+            dx[idx] = dy[(o * ex_dim + d - start) * inner_dim + i];
     }
 }
 
-template<> void Crop2DGrad<float, CUDAContext>(vector<TIndex> idxs,
-                                               const vector<TIndex>& offsets,
-                                               const int cur_dim,
-                                               Tensor* dy,
-                                               Tensor* dx,
-                                               CUDAContext* context) {
-    TIndex inner_dim = 1;
-    for (int i = 0; i < 2; i++) inner_dim *= dy->dim(cur_dim + i);
-    TIndex x_w_dim = dx->dim(cur_dim + 1), y_w_dim = dy->dim(cur_dim + 1);
-    TIndex x_h_offset = offsets[cur_dim], x_w_offset = offsets[cur_dim + 1];
-
-    auto* dYdata = dy->data<float, CUDAContext>();
-    auto* dXdata = dx->mutable_data<float, CUDAContext>();
-    dYdata += dy->offset(idxs);
-    dXdata += dx->offset(idxs);
-
-    _Crop2DGrad<float> << <GET_BLOCKS(inner_dim), CUDA_NUM_THREADS >> >(inner_dim,
-                                                                          x_w_dim,
-                                                                          y_w_dim,
-                                                                       x_h_offset,
-                                                                       x_w_offset,
-                                                                           dYdata,
-                                                                          dXdata);
+template<> void Crop1DGrad<float, CUDAContext>(const int count,
+                                               const int dim,
+                                               const int ex_dim,
+                                               const int inner_dim,
+                                               const int start,
+                                               const int end,
+                                               const float* dy,
+                                               float* dx) {
+    _Crop1DGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                      dim,
+                                                                   ex_dim,
+                                                                inner_dim,
+                                                                    start,
+                                                                      end,
+                                                                       dy,
+                                                                      dx);
     CUDA_POST_KERNEL_CHECK;
+}
+
+/******************** ndarray.pad ********************/
+
+template <typename T>
+__global__ void _ConstPad1D(const int count,
+                            const int dim,
+                            const int ex_dim,
+                            const int inner_dim,
+                            const int pad_l,
+                            const T value,
+                            const T* x,
+                            T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int i = idx % inner_dim;
+        const int ex_d = (idx / inner_dim) % ex_dim;
+        const int o = idx / inner_dim / ex_dim;
+        const int d = ex_d - pad_l;
+        y[idx] = (d < 0 || d >= dim) ? value : x[(o * dim + d) * inner_dim + i];
+    }
+}
+
+template <> void ConstPad1D<float, CUDAContext>(const int count,
+                                                const int dim,
+                                                const int ex_dim,
+                                                const int inner_dim,
+                                                const int pad_l,
+                                                const float value,
+                                                const float* x,
+                                                float* y) {
+    _ConstPad1D<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                      dim,
+                                                                   ex_dim,
+                                                                inner_dim,
+                                                                    pad_l,
+                                                                    value,
+                                                                        x,
+                                                                        y);
+}
+
+template <typename T>
+__global__ void _ReflectPad1D(const int count,
+                              const int dim,
+                              const int ex_dim,
+                              const int inner_dim,
+                              const int pad_l,
+                              const T* x,
+                              T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int i = idx % inner_dim;
+        const int ex_d = (idx / inner_dim) % ex_dim;
+        const int o = idx / inner_dim / ex_dim;
+        int d = ex_d - pad_l;
+        d = max(d, -d);
+        d = min(d, 2 * dim - d - 2);
+        y[idx] = x[(o * dim + d) * inner_dim + i];
+    }
+}
+
+template <> void ReflectPad1D<float, CUDAContext>(const int count,
+                                                  const int dim,
+                                                  const int ex_dim,
+                                                  const int inner_dim,
+                                                  const int pad_l,
+                                                  const float* x,
+                                                  float* y) {
+    _ReflectPad1D<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                        dim,
+                                                                     ex_dim,
+                                                                  inner_dim,
+                                                                      pad_l,
+                                                                          x,
+                                                                         y);
+}
+
+template <typename T>
+__global__ void _EdgePad1D(const int count,
+                           const int dim,
+                           const int ex_dim,
+                           const int inner_dim,
+                           const int pad_l,
+                           const T* x,
+                           T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int i = idx % inner_dim;
+        const int ex_d = (idx / inner_dim) % ex_dim;
+        const int o = idx / inner_dim / ex_dim;
+        const int d = min(dim - 1, max(ex_d - pad_l, 0));
+        y[idx] = x[(o * dim + d) * inner_dim + i];
+    }
+}
+
+template <> void EdgePad1D<float, CUDAContext>(const int count,
+                                                  const int dim,
+                                                  const int ex_dim,
+                                                  const int inner_dim,
+                                                  const int pad_l,
+                                                  const float* x,
+                                                  float* y) {
+    _EdgePad1D<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                     dim,
+                                                                  ex_dim,
+                                                               inner_dim,
+                                                                   pad_l,
+                                                                       x,
+                                                                      y);
+}
+
+template <typename T>
+__global__ void _ConstPad1DGrad(const int count,
+                            const int dim,
+                            const int ex_dim,
+                            const int inner_dim,
+                            const int pad_l,
+                            const T* dy,
+                            T* dx) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int i = idx % inner_dim;
+        const int ex_d = (idx / inner_dim) % dim + pad_l;
+        const int o = idx / inner_dim / dim;
+        dx[idx] = dy[(o * ex_dim + ex_d) * inner_dim + i];
+    }
+}
+
+template <> void ConstPad1DGrad<float, CUDAContext>(const int count,
+                                                    const int dim,
+                                                    const int ex_dim,
+                                                    const int inner_dim,
+                                                    const int pad_l,
+                                                    const float* dy,
+                                                    float* dx) {
+    _ConstPad1DGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                          dim,
+                                                                       ex_dim,
+                                                                    inner_dim,
+                                                                        pad_l,
+                                                                           dy,
+                                                                          dx);
+}
+
+template <typename T>
+__global__ void _ReflectPad1DGrad(const int count,
+                                  const int dim,
+                                  const int ex_dim,
+                                  const int inner_dim,
+                                  const int pad_l,
+                                  const T* dy,
+                                  T* dx) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int i = idx % inner_dim;
+        const int ex_d = (idx / inner_dim) % ex_dim;
+        const int o = idx / inner_dim / ex_dim;
+        int d = ex_d - pad_l;
+        d = max(d, -d);
+        d = min(d, 2 * dim - d - 2);
+        atomicAdd(&dx[(o * dim + d) * inner_dim + i], dy[idx]);
+    }
+}
+
+template <> void ReflectPad1DGrad<float, CUDAContext>(const int count,
+                                                      const int dim,
+                                                      const int ex_dim,
+                                                      const int inner_dim,
+                                                      const int pad_l,
+                                                      const float* dy,
+                                                      float* dx) {
+    _ReflectPad1DGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                            dim,
+                                                                         ex_dim,
+                                                                      inner_dim,
+                                                                          pad_l,
+                                                                             dy,
+                                                                            dx);
+}
+
+template <typename T>
+__global__ void _EdgePad1DGrad(const int count,
+                               const int dim,
+                               const int ex_dim,
+                               const int inner_dim,
+                               const int pad_l,
+                               const T* dy,
+                               T* dx) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int i = idx % inner_dim;
+        const int ex_d = (idx / inner_dim) % ex_dim;
+        const int o = idx / inner_dim / ex_dim;
+        const int d = min(dim - 1, max(ex_d - pad_l, 0));
+        atomicAdd(&dx[(o * dim + d) * inner_dim + i], dy[idx]);
+    }
+}
+
+template <> void EdgePad1DGrad<float, CUDAContext>(const int count,
+                                                   const int dim,
+                                                   const int ex_dim,
+                                                   const int inner_dim,
+                                                   const int pad_l,
+                                                   const float* dy,
+                                                   float* dx) {
+    _EdgePad1DGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                         dim,
+                                                                      ex_dim,
+                                                                   inner_dim,
+                                                                       pad_l,
+                                                                          dy,
+                                                                         dx);
 }
 
 /******************** ndarray.one_hot ********************/
@@ -1570,13 +1765,15 @@ __global__ void _Sum(const int count,
    }
 }
 
-template<> void Sum<float, CUDAContext>(
-        const int count, const int axis_dim,
-        const int inner_dim, const float* x, float* y) {
-    _Sum<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                          axis_dim, 
-                                                         inner_dim, 
-                                                                 x, 
+template<> void Sum<float, CUDAContext>(const int count, 
+                                        const int axis_dim,
+                                        const int inner_dim, 
+                                        const float* x, 
+                                        float* y) {
+    _Sum<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                          axis_dim,
+                                                         inner_dim,
+                                                                 x,
                                                                 y);
      CUDA_POST_KERNEL_CHECK;
 }
@@ -1683,16 +1880,22 @@ template <> void RepeatGrad<float, CUDAContext>(const int count,
 /******************** ndarray.slice ********************/
 
 template <typename T>
-    __global__ void _Slice(const int count, const int outer_dim, const int inner_dim,
-        const int x_slice_dim, const int y_slice_dim, const int slice_offset, const T* x, T* y) {
-        CUDA_KERNEL_LOOP(idx, count) {
-            const int tmp = y_slice_dim * inner_dim;
-            const int outer_idx = idx / tmp;
-            const int slice_idx = idx % tmp;
-            const int x_idx = (outer_idx * x_slice_dim + slice_offset)
-                * inner_dim + slice_idx;
-            y[idx] = x[x_idx];
-        }
+__global__ void _Slice(const int count,
+                       const int outer_dim,
+                       const int inner_dim,
+                       const int x_slice_dim,
+                       const int y_slice_dim,
+                       const int slice_offset,
+                       const T* x, 
+                       T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int tmp = y_slice_dim * inner_dim;
+        const int outer_idx = idx / tmp;
+        const int slice_idx = idx % tmp;
+        const int x_idx = (outer_idx * x_slice_dim + slice_offset)
+                        * inner_dim + slice_idx;
+        y[idx] = x[x_idx];
+    }
 }
 
 template <> void Slice<float, CUDAContext>(const int count, 
@@ -1728,8 +1931,8 @@ __global__ void _SliceGrad(const int count,
         const int tmp = y_slice_dim * inner_dim;
         const int outer_idx = idx / tmp;
         const int slice_idx = idx % tmp;
-        const int x_idx = (outer_idx * x_slice_dim + slice_offset)
-                                     * inner_dim + slice_idx;
+        const int x_idx = (outer_idx * x_slice_dim + slice_offset) 
+                        * inner_dim + slice_idx;
         dx[x_idx] = dy[idx];
     }
 }

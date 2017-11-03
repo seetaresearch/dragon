@@ -14,7 +14,7 @@
 
 namespace dragon {
 
-class OpSchema{
+class OpSchema {
  public:
     OpSchema() 
         : op_type_("unknown"), file_("unknown"), line_(0) { Init(); }

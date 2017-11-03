@@ -18,7 +18,7 @@ List                              Brief
 `Tensor.get_value`_               Fetch the values from C++ backend.
 `Tensor.copy`_                    Return a Tensor with same content.
 `Tensor.reshape`_                 Reshape the dimensions of input.
-`Tensor.dimshuffle`_              Shuffle the dimen`sions.
+`Tensor.dimshuffle`_              Shuffle the dimensions.
 `Tensor.CreateOperator`_          Construct a new Tensor with specific operator descriptor.
 `Tensor.Fill`_                    Fill self with the specific type of filler.
 `Tensor.PrintExpressions`_        Return the stringified internal expressions.

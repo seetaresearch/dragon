@@ -28,7 +28,7 @@ class Tensor;
 #define CUDNN_CHECK(condition) \
   do { \
     cudnnStatus_t status = condition; \
-    CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << " "\
+    CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << "\n" \
       << cudnnGetErrorString(status); \
     } while (0)
 

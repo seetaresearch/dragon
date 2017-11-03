@@ -31,9 +31,9 @@ __all__ = [
     'CreateFiller',
     'Snapshot',
     'Restore',
-    'PrintRawGraphDef',
-    'PrintOptimizedGraph',
-    'WriteOptimizedGraph'
+    'LogMetaGraph',
+    'LogOptimizedGraph',
+    'ExportMetaGraph'
 ]
 
 _DATA_TYPES = {
@@ -55,7 +55,7 @@ def _stringify_proto(obj):
 
 
 def SwitchWorkspace(workspace, create_if_missing=True):
-    """Switch to the specific Workspace.
+    """Switch to the specific workspace.
 
     Parameters
     ----------
@@ -76,35 +76,27 @@ def SwitchWorkspace(workspace, create_if_missing=True):
     SwitchWorkspaceCC(workspace, create_if_missing)
 
 
-def CreateGraph(graph_def):
-    """Create the graph in the backend.
+def CreateGraph(meta_graph):
+    """Create the graph in the VM backend.
 
     Parameters
     ----------
-    graph_def : dragon_pb2.GraphDef
-        The definition of the raw graph.
+    meta_graph : dragon_pb2.GraphDef
+        The definition of meta graph.
 
     Returns
     -------
     None
-
-    Notes
-    -----
-    Uncomment `PrintRawGraphDef`_ will print the raw prototxt.
-
-    Uncomment `PrintOptimizedGraph`_ will print the optimized prototxt.
-
-    Uncomment `WriteOptimizedGraph`_ will generate the optimized prototxt file.
 
     References
     ----------
     The wrapper of ``CreateGraphCC``.
 
     """
-    #PrintRawGraphDef(graph_def)
-    CreateGraphCC(_stringify_proto(graph_def))
-    #PrintOptimizedGraph(graph_def)
-    #WriteOptimizedGraph(graph_def)
+    LogMetaGraph(meta_graph)
+    ExportMetaGraph(meta_graph)
+    CreateGraphCC(_stringify_proto(meta_graph))
+    LogOptimizedGraph(meta_graph)
 
 
 def HasTensor(tensor):
@@ -248,12 +240,12 @@ def FeedTensor(tensor, ndarray, force_cpu=False, dtype=None):
     dev = None
     if force_cpu is True: dev = utils.MakeDeviceOption(0, 0)
     else:
-        from dragon.core.scope import DEVICE_SCOPE
-        if DEVICE_SCOPE != '':
+        from dragon.core.scope import _DEVICE_SCOPE
+        if _DEVICE_SCOPE != '':
             supports = {'/cpu': 0, '/gpu': 1}
             dev = pb.DeviceOption()
-            dev.device_type = supports[DEVICE_SCOPE.split(':')[0]]
-            dev.gpu_id = int(DEVICE_SCOPE.split(':')[1])
+            dev.device_type = supports[_DEVICE_SCOPE.split(':')[0]]
+            dev.gpu_id = int(_DEVICE_SCOPE.split(':')[1])
         else:
             from dragon.config import option
             if  option['device'] == 'CUDA':
@@ -267,16 +259,20 @@ def FeedTensor(tensor, ndarray, force_cpu=False, dtype=None):
         auto_dtype = np.float32 if dtype is None else dtype
     else:
         auto_dtype = ndarray.dtype if dtype is None else dtype
-        if hasattr(tensor, 'dtype') and tensor.dtype is not None:
-            preset_dtype = _DATA_TYPES[tensor.dtype]
-            if dtype is not None:
-                if dtype != preset_dtype:
-                    raise TypeError('The preset data type is {}, but force to {}.'
-                                    .format(preset_dtype, dtype))
-            auto_dtype = preset_dtype
+
+    if hasattr(tensor, 'dtype') and tensor.dtype is not None:
+        if tensor.dtype not in _DATA_TYPES:
+            raise TypeError('Unsupported data types: {}.'.format(tensor.dtype))
+        preset_dtype = _DATA_TYPES[tensor.dtype]
+        if dtype is not None:
+            if dtype != preset_dtype:
+                raise TypeError('The preset data type is {}, but force to {}.'.
+                                format(preset_dtype, dtype))
+        auto_dtype = preset_dtype
     ndarray = np.array(ndarray, dtype=auto_dtype)
     if hasattr(tensor, 'shape'): tensor.shape = list(ndarray.shape)
     FeedTensorCC(name, ndarray, _stringify_proto(dev))
+
 
 stages = {
     'forward': {'include': '', 'exclude': 'Gradient'},
@@ -284,6 +280,7 @@ stages = {
     'backward_v2': {'include': 'Gradient', 'exclude': ''},
     'external_grads': {'include': '', 'exclude': 'Generate'}
 }
+
 
 def RunGraph(graph_name, inputs=(), outputs=[], stage=None, return_outputs=True):
     """Run the specific graph.
@@ -329,37 +326,39 @@ def RunGraph(graph_name, inputs=(), outputs=[], stage=None, return_outputs=True)
         else: return [outputs[i].get_value() for i in xrange(len(outputs))]
 
 
-def PrintRawGraphDef(graph_def):
-    """Print the raw prototxt.
+def LogMetaGraph(meta_graph):
+    """Log the meta graph.
 
     Parameters
     ----------
-    graph_def : dragon_pb2.GraphDef
-        The definition of the raw graph.
+    meta_graph : dragon_pb2.GraphDef
+        The definition of meta graph.
 
     Returns
     -------
     None
+
     """
+    from dragon.config import option
+    if option['log_meta_graph']:
+        logger.info(meta_graph)
 
-    logger.info(graph_def)
 
-
-def GetOptimizedGraph(graph_def):
-    """Return the optimized prototxt.
+def GetOptimizedGraph(meta_graph):
+    """Return the optimized graph.
 
     Parameters
     ----------
-    graph_def : dragon_pb2.GraphDef
-        The definition of the raw graph.
+    meta_graph : dragon_pb2.GraphDef
+        The definition of meta graph.
 
     Returns
     -------
     graph_def : dragon_pb2.GraphDef
-        The definition of the optimized graph.
+        The definition of optimized graph.
 
     """
-    graph_name = graph_def.name
+    graph_name = meta_graph.name
     graph_tensor = 'GraphDef_' + graph_name
 
     if not HasTensorCC(graph_tensor):
@@ -371,40 +370,52 @@ def GetOptimizedGraph(graph_def):
     return opt_graph_def
 
 
-def PrintOptimizedGraph(graph_def):
-    """Print the optimized prototxt.
+def LogOptimizedGraph(meta_graph):
+    """Log the optimized graph.
 
     Parameters
     ----------
-    graph_def : dragon_pb2.GraphDef
-        The definition of the raw graph.
+    meta_graph : dragon_pb2.GraphDef
+        The definition of meta graph.
 
     Returns
     -------
     None
+
     """
+    from dragon.config import option
+    if option['log_optimized_graph']:
+        optimized_graph = GetOptimizedGraph(meta_graph)
+        logger.info(optimized_graph)
 
-    opt_graph_def = GetOptimizedGraph(graph_def)
-    logger.info(opt_graph_def)
 
+def ExportMetaGraph(meta_graph):
+    """Export the meta graph into a file under specific folder.
 
-def WriteOptimizedGraph(graph_def):
-    """Generate the optimized prototxt file under ``__main__`` folder.
+    You can set the exporting prefix by `config.ExportMetaGraph(prefix)`_.
 
     Parameters
     ----------
-    graph_def : dragon_pb2.GraphDef
-        The definition of the raw graph.
+    meta_graph : dragon_pb2.GraphDef
+        The definition of meta graph.
 
     Returns
     -------
     None
-    """
 
-    opt_graph_def = GetOptimizedGraph(graph_def)
-    with open(opt_graph_def.name + '.txt', 'w') as f:
-        f.write(str(opt_graph_def))
-        logger.info('write serialized graph to: {}'.format(opt_graph_def.name + '.txt'))
+    """
+    from dragon.config import option
+    if option['export_meta_graph']:
+        if not os.path.exists(option['export_meta_graph']):
+            try:
+                os.makedirs(option['export_meta_graph'])
+            except Exception:
+                raise ValueError('The given prefix is invalid.')
+        filepath = os.path.join(option['export_meta_graph'],
+                                meta_graph.name + '.metatxt')
+        with open(filepath, 'w') as f:
+            f.write(str(meta_graph))
+        logger.info('Export meta graph into: {}'.format(filepath))
 
 
 def Snapshot(tensors, filename, prefix='', suffix='.bin', format='default'):
