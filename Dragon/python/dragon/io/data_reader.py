@@ -9,7 +9,6 @@ import numpy.random as npr
 from multiprocessing import Process
 
 import dragon.config as config
-from dragon.config import logger
 from dragon.tools.db import LMDB
 
 from .utils import GetProperty
@@ -55,6 +54,7 @@ class DataReader(Process):
         self.daemon = True
 
         def cleanup():
+            from dragon.config import logger
             logger.info('Terminating DataReader......')
             self.terminate()
             self.join()

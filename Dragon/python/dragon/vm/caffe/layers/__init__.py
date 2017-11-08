@@ -17,7 +17,9 @@ from .vision import ConvolutionLayer, \
                     BilinearResizeLayer
 
 from .neuron import ReLULayer, \
+                    PReLULayer, \
                     ELULayer, \
+                    SELULayer, \
                     DropoutLayer, \
                     TanHLayer, \
                     PowerLayer

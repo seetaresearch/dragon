@@ -12,11 +12,15 @@
 
 .. |tanh_function| mathmacro:: \, y = \frac{e^{x} - e^{-x}}{e^{x} + e^{-x}}
 
-.. |relu_function| mathmacro:: \, y = \max(0, x)
+.. |relu_function| mathmacro:: \, y = \left\{ \begin{array} \\ x & & (x > 0) \\ 0 & & (x <= 0) \\ \end{array} \right.
+
+.. |lrelu_function| mathmacro::  \, y = \left\{ \begin{array} \\ x & & (x > 0) \\ Slope * x & & (x <= 0) \\ \end{array} \right.
+
+.. |prelu_function| mathmacro:: \, y_{i} = \left\{ \begin{array} \\ x_{i} & & (x_{i} > 0) \\ \alpha_{i} * x_{i} & & (x <= 0) \\ \end{array} \right.
 
 .. |elu_function| mathmacro:: \, y = \left\{ \begin{array} \\ x & & (x > 0) \\ Alpha * (e^{x} - 1) & & (x <= 0) \\ \end{array} \right.
 
-.. |leaky_relu_function| mathmacro:: \, y = \max(x, 0) + Slope * \min(x, 0)
+.. |selu_function| mathmacro:: \, y = 1.0507 \left\{ \begin{array} \\ x & & (x > 0) \\ 1.6733 * (e^{x} - 1) & & (x <= 0) \\ \end{array} \right.
 
 .. |dropout_function| mathmacro:: \, y = x * Bernoulli(p=1 - prob)
 

@@ -42,7 +42,9 @@ Neuron
 List                    Brief
 ====================    =============================================================================
 `ReLULayer`_            The implementation of ``ReLULayer``.
+`PReLULayer`_           The implementation of ``PReLULayer``.
 `ELULayer`_             The implementation of ``ELULayer``.
+`SELULayer`_            The implementation of ``SELULayer``.
 `SigmoidLayer`_         The implementation of ``SigmoidLayer``.
 `TanHLayer`_            The implementation of ``TanHLayer``.
 `DropoutLayer`_         The implementation of ``DropoutLayer``.
@@ -154,7 +156,9 @@ API Reference
 .. _BilinearResizeLayer: #dragon.vm.caffe.layers.vision.BilinearResizeLayer
 
 .. _ReLULayer: #dragon.vm.caffe.layers.neuron.ReLULayer
+.. _PReLULayer: #dragon.vm.caffe.layers.neuron.PReLULayer
 .. _ELULayer: #dragon.vm.caffe.layers.neuron.ELULayer
+.. _SELULayer: #dragon.vm.caffe.layers.neuron.SELULayer
 .. _SigmoidLayer: #dragon.vm.caffe.layers.neuron.SigmoidLayer
 .. _TanHLayer: #dragon.vm.caffe.layers.neuron.TanHLayer
 .. _DropoutLayer: #dragon.vm.caffe.layers.neuron.DropoutLayer
@@ -232,6 +236,8 @@ API Reference
 .. _ResizeParameter.fy: https://github.com/neopenx/Dragon/tree/master/Dragon/python/dragon/vm/caffe/proto/caffe.proto#L1466
 
 .. _ReLUParameter.negative_slope: https://github.com/BVLC/caffe/blob/effcdb0b62410b2a6a54f18f23cf90733a115673/src/caffe/proto/caffe.proto#L1000
+.. _PReLUParameter.filler: https://github.com/BVLC/caffe/blob/effcdb0b62410b2a6a54f18f23cf90733a115673/src/caffe/proto/caffe.proto#L1409
+.. _PReLUParameter.channel_shared: https://github.com/BVLC/caffe/blob/effcdb0b62410b2a6a54f18f23cf90733a115673/src/caffe/proto/caffe.proto#L1411
 .. _ELUParameter.alpha: https://github.com/BVLC/caffe/blob/effcdb0b62410b2a6a54f18f23cf90733a115673/src/caffe/proto/caffe.proto#L717
 .. _DropoutParameter.dropout_ratio: https://github.com/BVLC/caffe/blob/effcdb0b62410b2a6a54f18f23cf90733a115673/src/caffe/proto/caffe.proto#L676
 .. _DropoutParameter.scale_train: https://github.com/rbgirshick/caffe-fast-rcnn/blob/0dcd397b29507b8314e252e850518c5695efbb83/src/caffe/proto/caffe.proto#L638

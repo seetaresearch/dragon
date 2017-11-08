@@ -85,6 +85,219 @@ template<> void DropoutGrad<float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
+/******************** activation.prelu ********************/
+
+template <typename T>
+__global__ void _PRelu(const int count,
+                       const int channels,
+                       const int dim,
+                       const T* x,
+                       const T* w,
+                       T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        y[idx] = (x[idx] > 0) * x[idx] + (x[idx] < 0) * x[idx] * w[0];
+    }
+}
+
+template <typename T>
+__global__ void _PReluNCHW(const int count,
+                           const int channels,
+                           const int dim,
+                           const T* x,
+                           const T* w,
+                           T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int c = (idx / dim) % channels;
+        y[idx] = (x[idx] > 0) * x[idx] + (x[idx] < 0) * x[idx] * w[c];
+    }
+}
+
+template <typename T>
+__global__ void _PReluNHWC(const int count,
+                           const int channels,
+                           const int dim,
+                           const T* x,
+                           const T* w,
+                           T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int c = idx % channels;
+        y[idx] = (x[idx] > 0) * x[idx] + (x[idx] < 0) * x[idx] * w[c];
+    }
+}
+
+template<> void PRelu<float, CUDAContext>(const int count,
+                                          const int channels,
+                                          const int dim,
+                                          const bool channel_shared,
+                                          const string& data_format,
+                                          const float* x,
+                                          const float* w,
+                                          float* y) {
+    if (channel_shared) {
+        _PRelu<float> << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                 channels,
+                                                                      dim,
+                                                                        x,
+                                                                        w,
+                                                                       y);
+
+    } else {
+        if (data_format == "NCHW") {
+            _PReluNCHW<float> << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                         channels,
+                                                                              dim,
+                                                                                x,
+                                                                                w,
+                                                                               y);
+        } else if (data_format == "NHWC") {
+            _PReluNHWC<float> << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                         channels,
+                                                                              dim,
+                                                                                x,
+                                                                                w,
+                                                                               y);
+        } else LOG(FATAL) << "Unknown data format: " << data_format;
+    }
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template <typename T>
+__global__ void _PReluGrad(const int count,
+                           const int channels,
+                           const int dim,
+                           const T* dy,
+                           const T* x,
+                           const T* w,
+                           T* dx) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        dx[idx] = dy[idx] * ((x[idx] > 0) + (x[idx] <= 0) * w[0]);
+    }
+}
+
+template <typename T>
+__global__ void _PReluGradNCHW(const int count,
+                               const int channels,
+                               const int dim,
+                               const T* dy,
+                               const T* x,
+                               const T* w,
+                               T* dx) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int c = (idx / dim) % channels;
+        dx[idx] = dy[idx] * ((x[idx] > 0) + (x[idx] <= 0) * w[c]);
+    }
+}
+
+template <typename T>
+__global__ void _PReluGradNHWC(const int count,
+                               const int channels,
+                               const int dim,
+                               const T* dy,
+                               const T* x,
+                               const T* w,
+                               T* dx) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int c = idx % channels;
+        dx[idx] = dy[idx] * ((x[idx] > 0) + (x[idx] <= 0) * w[c]);
+    }
+}
+
+template<> void PReluGrad<float, CUDAContext>(const int count,
+                                              const int channels,
+                                              const int dim,
+                                              const bool channel_shared,
+                                              const string& data_format,
+                                              const float* dy,
+                                              const float* x,
+                                              const float* w,
+                                              float* dx) {
+    if (channel_shared) {
+        _PReluGrad<float> << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                     channels,
+                                                                          dim,
+                                                                           dy,
+                                                                            x,
+                                                                            w,
+                                                                          dx);
+
+    } else {
+        if (data_format == "NCHW") {
+            _PReluGradNCHW<float> << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                             channels,
+                                                                                  dim,
+                                                                                   dy,
+                                                                                    x,
+                                                                                    w,
+                                                                                  dx);
+        } else if (data_format == "NHWC") {
+            _PReluGradNHWC<float> << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                             channels,
+                                                                                  dim,
+                                                                                   dy,
+                                                                                    x,
+                                                                                    w,
+                                                                                  dx);
+        } else LOG(FATAL) << "Unknown data format: " << data_format;
+    }
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template <typename T>
+__global__ void _PReluWGradBcast(const int count,
+                                 const int rows,
+                                 const int row_offset,
+                                 const T* dy,
+                                 const T* x, 
+                                 T* bcast_dw) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        bcast_dw[idx] = dy[idx] * x[idx] * (x[idx] <= 0);
+        for (int n = 1; n < rows; n++) {
+            const int cur_idx = idx + n * row_offset;
+            bcast_dw[idx] += dy[cur_idx] * x[cur_idx] * (x[cur_idx] <= 0);
+        }
+    }
+}
+
+template<> void PReluWGrad<float, CUDAContext>(const int rows,
+                                               const int row_offset,
+                                               const int channels,
+                                               const int dim,
+                                               const bool channel_shared,
+                                               const string& data_format,
+                                               const float* dy,
+                                               const float* x,
+                                               const float* multiplier,
+                                               float* bcast_dw,
+                                               float* dw) {
+    const int cdim = channels * dim;
+    _PReluWGradBcast<float> << < GET_BLOCKS(cdim), CUDA_NUM_THREADS >> >(cdim,
+                                                                         rows,
+                                                                   row_offset,
+                                                                           dy,
+                                                                            x,
+                                                                    bcast_dw);
+    CUDA_POST_KERNEL_CHECK;
+    if (channel_shared) {
+        float w_sum = math::Dot<float, CUDAContext>(channels * dim, bcast_dw, multiplier);
+        math::AddScalar<float, CUDAContext>(1, w_sum, dw);
+    } else {
+        if (data_format == "NCHW") {
+            math::Gemv<float, CUDAContext>(CblasNoTrans, channels, dim,
+                                                                   1.0,
+                                                  bcast_dw, multiplier,
+                                                                   1.0,
+                                                                   dw);
+        } else if (data_format == "NHWC") {
+            math::Gemv<float, CUDAContext>(CblasTrans, dim, channels,
+                                                                 1.0,
+                                                bcast_dw, multiplier,
+                                                                 1.0,
+                                                                 dw);
+
+        } else LOG(FATAL) << "Unknown data format: " << data_format;
+    }
+}
+
 /******************** activation.elu ********************/
 
 template <typename T>
@@ -103,13 +316,13 @@ template<> void Elu<float, CUDAContext>(const int count,
 }
 
 template <typename T>
-__global__ void _EluGrad(const int count, 
-                         const T* dy, 
-                         const T* y, 
-                         const float alpha, 
-                          T* dx) {
+__global__ void _EluGrad(const int count,
+                         const T* dy,
+                         const T* y,
+                         const float alpha,
+                         T* dx) {
     CUDA_KERNEL_LOOP(idx, count) {
-        dx[idx] = y[idx] > 0 ? dy[idx] : dy[idx] * (y[idx] + alpha);
+        dx[idx] = dy[idx] * ((y[idx] > 0) + (alpha + y[idx]) * (y[idx] <= 0));
     }
 }
 
@@ -168,10 +381,10 @@ template<> void Relu<float16, CUDAContext>(const int count,
 #endif
 
 template <typename T>
-__global__ void _ReluGrad(const int count, 
-                          const T* dy, 
-                          const T* y, 
-                          const float slope, 
+__global__ void _ReluGrad(const int count,
+                          const T* dy,
+                          const T* y,
+                          const float slope,
                           T* dx) {
     CUDA_KERNEL_LOOP(idx, count) {
         dx[idx] = dy[idx] * ((y[idx] > 0) + slope * (y[idx] <= 0));
@@ -187,6 +400,43 @@ template<> void ReluGrad<float, CUDAContext>(const int count,
                                                                       dy, 
                                                                        y, 
                                                                    slope, 
+                                                                     dx);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+/******************** activation.selu ********************/
+
+template <typename T>
+__global__ void _SElu(const int count, const T* x, T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        y[idx] = x[idx] > 0 ? 1.0507 * x[idx] : 1.7581 * (std::exp(x[idx]) - 1);
+    }
+}
+
+template<> void SElu<float, CUDAContext>(const int count,
+                                         const float* x,
+                                         float* y) {
+    _SElu<float> << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, x, y);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template <typename T>
+__global__ void _SEluGrad(const int count,
+                          const T* dy,
+                          const T* y,
+                          T* dx) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        dx[idx] = y[idx] > 0 ? 1.0507 * dy[idx] : (1.7581 + y[idx]) * dy[idx];
+    }
+}
+
+template<> void SEluGrad<float, CUDAContext>(const int count,
+                                             const float* dy,
+                                             const float* y,
+                                             float* dx) {
+    _SEluGrad<float> << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                      dy,
+                                                                       y,
                                                                      dx);
     CUDA_POST_KERNEL_CHECK;
 }
@@ -3154,8 +3404,7 @@ __global__ void _ROIAlign(const int count,
                           const int pool_h, const int pool_w, 
                           const T* x,
                           const T* roi,
-                          T* mask_h,
-                          T* mask_w,
+                          T* mask,
                           T* y) {
     CUDA_KERNEL_LOOP(idx, count) {
         int pw = idx % pool_w;
@@ -3164,90 +3413,73 @@ __global__ void _ROIAlign(const int count,
         int n = idx / pool_w / pool_h / channels;
 
         roi += n * 5;
-        int im_idx = roi[0];
+        int roi_batch_ind = roi[0];
 
-        T x1 = roi[1] * spatial_scale;
-        T y1 = roi[2] * spatial_scale;
-        T x2 = roi[3] * spatial_scale;
-        T y2 = roi[4] * spatial_scale;
+        T roi_start_w = (roi[1]) * spatial_scale;
+        T roi_start_h = (roi[2]) * spatial_scale;
+        T roi_end_w = (roi[3]) * spatial_scale;
+        T roi_end_h = (roi[4]) * spatial_scale;
 
-        T roi_height = max(y2 - y1, T(1));
-        T roi_width = max(x2 - x1, T(1));
+        T roi_width = max(roi_end_w - roi_start_w, static_cast<T>(1));
+        T roi_height = max(roi_end_h - roi_start_h, static_cast<T>(1));
+        T bin_size_h = static_cast<T>(roi_height) / static_cast<T>(pool_h);
+        T bin_size_w = static_cast<T>(roi_width) / static_cast<T>(pool_w);
 
-        const T bin_size_h = roi_height / pool_h;
-        const T bin_size_w = roi_width / pool_w;
+        T hstart = static_cast<T>((ph)* bin_size_h);
+        T wstart = static_cast<T>((pw)* bin_size_w);
+        T hend = static_cast<T>((ph + 1) * bin_size_h);
+        T wend = static_cast<T>((pw + 1) * bin_size_w);
 
-        T start_h = bin_size_h * ph;
-        T start_w = bin_size_w * pw;
-        T end_h = bin_size_h * (ph + 1);
-        T end_w = bin_size_w * (pw + 1);
+        hstart = min(max(hstart + roi_start_h, static_cast<T>(0)), static_cast<T>(height));
+        hend = min(max(hend + roi_start_h, static_cast<T>(0)), static_cast<T>(height));
+        wstart = min(max(wstart + roi_start_w, static_cast<T>(0)), static_cast<T>(width));
+        wend = min(max(wend + roi_start_w, static_cast<T>(0)), static_cast<T>(width));
+        bool is_empty = (hend <= hstart) || (wend <= wstart);
 
-        start_h = max(start_h + y1, T(0));
-        start_w = max(start_w + x1, T(0));
-        end_h = max(end_h + y1, T(0));
-        end_w = max(end_w + x1, T(0));
+        T maxval = is_empty ? 0 : -FLT_MAX;
+        int maxidx = -1;
+        int x_idx = 0;
+        x += (roi_batch_ind * channels + c) * height * width;
+        T h_stride = (hend - hstart) / 3.0;
+        T w_stride = (wend - wstart) / 3.0;
+        for (T h = hstart + h_stride; h <= hend - h_stride + 0.01; h += max(h_stride, 0.01)) {
+            for (T w = wstart + w_stride; w <= wend - w_stride + 0.01; w += max(w_stride, 0.01)) {
+                x_idx++;
+                int hlow = min(max(static_cast<int>(floor(h)), 0), height - 1);
+                int hhigh = hlow + 1;
+                int wleft = min(max(static_cast<int>(floor(w)), 0), width - 1);
+                int wright = wleft + 1;
+                int topleft = hlow * width + wleft;
+                int topright = hlow * width + wright;
+                int bottomleft = hhigh * width + wleft;
+                int bottomright = hhigh * width + wright;
 
-        start_h = min(start_h, T(height));
-        start_w = min(start_w, T(width));
-        end_h = min(end_h, T(height));
-        end_w = min(end_w, T(width));
+                T alpha = (hlow == hhigh) ? static_cast<T>(0.5) : (h - hlow) / (hhigh - hlow);
+                T beta = (wleft == wright) ? static_cast<T>(0.5) : (w - wleft) / (wright - wleft);
+                T value = (1 - alpha) * (1 - beta) * x[topleft] + alpha * (1 - beta) * x[bottomleft]
+                    + (1 - alpha) * beta * x[topright] + alpha * beta * x[bottomright];
 
-        bool is_empty = (end_h <= start_h) || (end_w <= start_w);
-        T max_val = is_empty ? 0 : -FLT_MAX;
-        T max_h = -1, max_w = -1;
-        x += ((im_idx * channels + c) * height * width);
-
-        for (T h = start_h; h < end_h; ++h) {
-            for (T w = start_w; w < end_w; ++w) {
-                if (int(ceil(h)) == height) h = height - 1;
-                if (int(ceil(w)) == width) w = width - 1;
-
-                int h1 = h, h2 = int(ceil(h));
-                int w1 = int(w), w2 = int(ceil(w));
-
-                T q11 = x[h1 * width + w1];
-                T q21 = x[h2 * width + w1];
-                T q12 = x[h1 * width + w2];
-                T q22 = x[h2 * width + w2];
-
-                T val;
-
-                if (h1 == h2) {
-                    if (w1 == w2) val = q11;
-                    else val = q11 * (w2 - w) + q12 * (w - w1);
-                } else if (w1 == w2) {
-                    val = q11 * (h2 - h) + q21 * (h - h1);
-                } else {
-                    val = q11 * (h2 - h) * (w2 - w) +
-                    q12 * (h2 - h) * (w - w1) +
-                    q21 * (h - h1) * (w2 - w) +
-                    q22 * (h - h1) * (w - w1);
+                if (value > maxval) {
+                    maxval = value;
+                    maxidx = x_idx;
                 }
-
-                if (val > max_val) {
-                    max_val = val;
-                    max_h = h;
-                    max_w = w;
-                }
-            }    //end w
-        }    // end h
-        y[idx] = max_val;
-        mask_h[idx] = max_h;
-        mask_w[idx] = max_w;
+            }
+        }
+        y[idx] = maxval;
+        mask[idx] = maxidx;
     }
 }
-
+                                                  
 template<> void ROIAlign<float, CUDAContext>(const float spatial_scale, 
                                              const int pool_h, const int pool_w,
                                              Tensor* x,
                                              Tensor* roi,
-                                             Tensor* mask_h, Tensor* mask_w,
+                                             Tensor* mask,
                                              Tensor* y) {
     auto* Xdata = x->data<float, CUDAContext>();
     auto* Rdata = roi->data<float, CUDAContext>();
     auto* Ydata = y->mutable_data<float, CUDAContext>();
-    auto* MHdata = mask_h->mutable_data<float, CUDAContext>();
-    auto* MWdata = mask_w->mutable_data<float, CUDAContext>();
+    auto* Mdata = mask->mutable_data<float, CUDAContext>();
     TIndex channels = x->dim(1), count = y->count();
     TIndex height = x->dim(2), width = x->dim(3);
     _ROIAlign<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
@@ -3257,7 +3489,7 @@ template<> void ROIAlign<float, CUDAContext>(const float spatial_scale,
                                                          pool_h, pool_w,
                                                                   Xdata,
                                                                   Rdata,
-                                                         MHdata, MWdata,
+                                                                  Mdata,
                                                                  Ydata);
     CUDA_POST_KERNEL_CHECK;
 }
@@ -3271,70 +3503,84 @@ __global__ void _ROIAlignGrad(const int count,
                               const int pool_h, const int pool_w, 
                               const T* dy,
                               const T* roi,
-                              const T* mask_h, const T* mask_w,
+                              const T* mask,
                               T* dx) {
     CUDA_KERNEL_LOOP(idx, count) {
         int w = idx % width;
         int h = (idx / width) % height;
         int c = (idx / width / height) % channels;
-        int im_idx = idx / width / height / channels;
+        int n = idx / width / height / channels;
 
-        T diff = 0;
+        T gradient = 0;
+        for (int roi_n = 0; roi_n < num_rois; ++roi_n) {
+            const T* offset_roi = roi + roi_n * 5;
+            int roi_batch_ind = offset_roi[0];
+            if (n != roi_batch_ind) continue;
 
-        for (int n = 0; n < num_rois; n++) {
-            const T* cur_roi = roi + n * 5;
-            const int im_idx_spec = cur_roi[0];
+            T roi_start_w = (offset_roi[1]) * spatial_scale;
+            T roi_start_h = (offset_roi[2]) * spatial_scale;
+            T roi_end_w = (offset_roi[3]) * spatial_scale;
+            T roi_end_h = (offset_roi[4]) * spatial_scale;
 
-            //  ignore wrong im_batch_idx
-            if (im_idx != im_idx_spec) continue;
+            const bool in_roi = (w > roi_start_w - 1.0 && 
+                                 w < roi_end_w + 1.0 && 
+                                 h > roi_start_h - 1.0 
+                                 && h < roi_end_h + 1.0);
+            if (!in_roi) continue;
 
-            T x1 = cur_roi[1] * spatial_scale;
-            T y1 = cur_roi[2] * spatial_scale;
-            T x2 = cur_roi[3] * spatial_scale;
-            T y2 = cur_roi[4] * spatial_scale;
+            int offset = (roi_n * channels + c) * pool_h * pool_w;
+            const T* offset_dy = dy + offset;
+            const T* offset_mask = mask + offset;
 
-            const bool is_in = (w + 1 > x1 && w < x2 + 1 && h + 1 > y1 && h < y2 + 1);
-            if (!is_in) continue;
+            T roi_width = max(roi_end_w - roi_start_w, static_cast<T>(1));
+            T roi_height = max(roi_end_h - roi_start_h, static_cast<T>(1));
 
-            T roi_height = max(y2 - y1, T(1));
-            T roi_width = max(x2 - x1, T(1));
+            T bin_size_h = static_cast<T>(roi_height) / static_cast<T>(pool_h);
+            T bin_size_w = static_cast<T>(roi_width) / static_cast<T>(pool_w);
 
-            const T bin_size_h = roi_height / pool_h;
-            const T bin_size_w = roi_width / pool_w;
+            for (int ph = 0; ph < pool_h; ++ph) {
+                for (int pw = 0; pw < pool_w; ++pw) {
+                    T hstart = static_cast<T>((ph)* bin_size_h);
+                    T wstart = static_cast<T>((pw)* bin_size_w);
+                    T hend = static_cast<T>((ph + 1) * bin_size_h);
+                    T wend = static_cast<T>((pw + 1) * bin_size_w);
 
-            int start_ph = ceil((h - 1 - y1) / bin_size_h - 1);
-            int end_ph = ceil((h + 1 - y1) / bin_size_h);
-            int start_pw = ceil((w - 1 - x1) / bin_size_w - 1);
-            int end_pw = ceil((w + 1 - x1) / bin_size_w);
+                    hstart = min(max(hstart + roi_start_h, static_cast<T>(0)), static_cast<T>(height));
+                    hend = min(max(hend + roi_start_h, static_cast<T>(0)), static_cast<T>(height));
+                    wstart = min(max(wstart + roi_start_w, static_cast<T>(0)), static_cast<T>(width));
+                    wend = min(max(wend + roi_start_w, static_cast<T>(0)), static_cast<T>(width));
 
-            start_ph = min(max(start_ph, 0), pool_h);
-            start_pw = min(max(start_pw, 0), pool_w);
-            end_ph = min(max(end_ph, 0), pool_h);
-            end_pw = min(max(end_pw, 0), pool_w);
+                    bool in_bin = (w > wstart - 1.0 && 
+                                   w < wend + 1.0 && 
+                                   h > hstart - 1.0 
+                                   && h < hend + 1.0);
+                    if (!in_bin) continue;
 
-            int y_offset = (n * channels + c) * pool_h * pool_w;
-            const T* dy_off = dy + y_offset;
-            const T* mask_h_off = mask_h + y_offset;
-            const T* mask_w_off = mask_w + y_offset;
-
-            for (int ph = start_ph; ph < end_ph; ++ph) {
-                for (int pw = start_pw; pw < end_pw; ++pw) {
-                    T mh = mask_h_off[ph * pool_w + pw];
-                    T mw = mask_w_off[ph * pool_w + pw];
-                    int h1 = int(mh), h2 = int(ceil(mh));
-                    int w1 = int(mw), w2 = int(ceil(mw));
-                    if (h1 <= h && h <= h2 && w1 <= w && w <= w2) {
-                        T gradient_factor = 1.0;
-                        if (h == h1) gradient_factor *= h2 - mh;
-                        else gradient_factor *= mh - h1;
-                        if (w == w1) gradient_factor *= w2 - mw;
-                        else gradient_factor *= mw - w1;
-                        diff += dy_off[ph * pool_w + pw] * gradient_factor;
+                    const int pool_idx = ph * pool_w + pw;
+                    int x_idx = 0;
+                    T h_stride = (hend - hstart) / 3.0;
+                    T w_stride = (wend - wstart) / 3.0;
+                    for (T rh = hstart + h_stride; rh <= hend - h_stride + 0.01; rh += max(h_stride, 0.01)) {
+                        for (T rw = wstart + w_stride; rw <= wend - w_stride + 0.01; rw += max(w_stride, 0.01)) {
+                            x_idx++;
+                            if (offset_mask[pool_idx] != x_idx) continue;
+                            int hlow = min(max(static_cast<int>(floor(rh)), 0), height - 1);
+                            int hhigh = hlow + 1;
+                            int wleft = min(max(static_cast<int>(floor(rw)), 0), width - 1);
+                            int wright = wleft + 1;
+                            if (h != hlow && h != hhigh && w != wleft && w != wright) continue;
+                            T alpha = (hlow == hhigh) ? static_cast<T>(0.5) : (rh - hlow) / (hhigh - hlow);
+                            T beta = (wleft == wright) ? static_cast<T>(0.5) : (rw - wleft) / (wright - wleft);
+                            if (h == hlow && w == wleft) gradient += offset_dy[pool_idx] * (1 - alpha) * (1 - beta);
+                            else if (h == hlow && w == wright) gradient += offset_dy[pool_idx] * (1 - alpha) * beta;
+                            else if (h == hhigh && w == wleft) gradient += offset_dy[pool_idx] * alpha * (1 - beta);
+                            else if (h == hhigh && w == wright) gradient += offset_dy[pool_idx] * alpha * beta;
+                        }
                     }
-                }    //  end pw
-            }    //  end ph
-        }    //  end n
-        dx[idx] = diff;
+                }
+            }
+        }
+        dx[idx] = gradient;
     }
 }
 
@@ -3342,24 +3588,23 @@ template<> void ROIAlignGrad<float, CUDAContext>(const float spatial_scale,
                                                  const int pool_h, const int pool_w,
                                                  Tensor* dy,
                                                  Tensor* roi,
-                                                 Tensor* mask_h, Tensor* mask_w,
+                                                 Tensor* mask,
                                                  Tensor* dx) {
     auto* dYdata = dy->data<float, CUDAContext>();
     auto* Rdata = roi->data<float, CUDAContext>();
-    auto* MHdata = mask_h->data<float, CUDAContext>();
-    auto* MWdata = mask_w->data<float, CUDAContext>();
+    auto* Mdata = mask->data<float, CUDAContext>();
     auto* dXdata = dx->mutable_data<float, CUDAContext>();
     TIndex channels = dx->dim(1), count = dx->count();
     TIndex height = dx->dim(2), width = dx->dim(3);
-    _ROIAlignGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                roi->dim(0), 
-                                                              spatial_scale, 
-                                                                   channels, 
+    _ROIAlignGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                roi->dim(0),
+                                                              spatial_scale,
+                                                                   channels,
                                                               height, width,
                                                              pool_h, pool_w,
                                                                      dYdata,
                                                                       Rdata,
-                                                             MHdata, MWdata,
+                                                                      Mdata,
                                                                     dXdata);
     CUDA_POST_KERNEL_CHECK;
 }

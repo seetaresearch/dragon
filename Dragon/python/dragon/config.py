@@ -243,3 +243,24 @@ def SetLoggingLevel(level):
         'ERROR': logging.ERROR,
         'FATAL': logging.CRITICAL
     }[level])
+
+
+def SetLoggingFile(log_file):
+    """Redirect the logging into the specific file.
+
+    Parameters
+    ----------
+    log_file : str
+        The file for logging.
+
+    Notes
+    -----
+    The function will disable all possible logging at the terminal.
+
+    """
+    global logger
+    new_logger = logging.getLogger('dragon_filehandler')
+    new_logger.setLevel(logger.level)
+    file_handler = logging.FileHandler(log_file, mode="w", encoding="UTF-8")
+    new_logger.addHandler(file_handler)
+    logger = new_logger

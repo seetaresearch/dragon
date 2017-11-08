@@ -9,7 +9,6 @@ import numpy.random as npr
 from multiprocessing import Process
 
 import dragon.config as config
-from dragon.config import logger
 import dragon.vm.caffe.proto.caffe_pb2 as pb
 
 from .utils import GetProperty
@@ -72,6 +71,7 @@ class DataTransformer(Process):
         self.daemon = True
 
         def cleanup():
+            from dragon.config import logger
             logger.info('Terminating DataTransformer......')
             self.terminate()
             self.join()

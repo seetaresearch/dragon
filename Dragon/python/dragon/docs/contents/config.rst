@@ -22,6 +22,7 @@ List                    Brief
 `LogOptimizedGraph`_    Enable to log optimized graph globally.
 `ExportMetaGraph`_      Enable to export all runnable meta graphs into text files.
 `SetLoggingLevel`_      Set the minimum level of Logging.
+`SetLoggingFile`_       Redirect the logging into the specific file.
 ====================    =============================================================================
 
 API Reference
@@ -41,3 +42,4 @@ API Reference
 .. _LogOptimizedGraph: #dragon.config.LogOptimizedGraph
 .. _ExportMetaGraph: #dragon.config.ExportMetaGraph
 .. _SetLoggingLevel: #dragon.config.SetLoggingLevel
+.. _SetLoggingFile: #dragon.config.SetLoggingFile

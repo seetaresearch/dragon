@@ -14,7 +14,6 @@ import dragon.protos.dragon_pb2 as pb
 import numpy as np
 import os
 from dragon import *
-from dragon.config import logger
 from google.protobuf.message import Message
 from six.moves import range as xrange
 
@@ -339,7 +338,7 @@ def LogMetaGraph(meta_graph):
     None
 
     """
-    from dragon.config import option
+    from dragon.config import option, logger
     if option['log_meta_graph']:
         logger.info(meta_graph)
 
@@ -358,11 +357,12 @@ def GetOptimizedGraph(meta_graph):
         The definition of optimized graph.
 
     """
+    from dragon.config import logger
     graph_name = meta_graph.name
     graph_tensor = 'GraphDef_' + graph_name
 
     if not HasTensorCC(graph_tensor):
-        logger.info('graph: {} does not exist, ignore printing....'.format(graph_name))
+        logger.info('Graph({}) does not exist, ignore printing....'.format(graph_name))
         return
 
     opt_graph_def = pb.GraphDef()
@@ -383,7 +383,7 @@ def LogOptimizedGraph(meta_graph):
     None
 
     """
-    from dragon.config import option
+    from dragon.config import option, logger
     if option['log_optimized_graph']:
         optimized_graph = GetOptimizedGraph(meta_graph)
         logger.info(optimized_graph)
@@ -404,7 +404,7 @@ def ExportMetaGraph(meta_graph):
     None
 
     """
-    from dragon.config import option
+    from dragon.config import option, logger
     if option['export_meta_graph']:
         if not os.path.exists(option['export_meta_graph']):
             try:
@@ -445,6 +445,7 @@ def Snapshot(tensors, filename, prefix='', suffix='.bin', format='default'):
     Available formats: ['default', 'caffe'].
 
     """
+    from dragon.config import logger
     filepath = prefix + filename + suffix
     if mpi.Is_Init():
         if not mpi.AllowSnapshot(): return
@@ -488,6 +489,7 @@ def Restore(filepath, format='default'):
     Available formats: ['default', 'caffe'].
 
     """
+    from dragon.config import logger
     assert os.path.exists(filepath), 'model of path({}) does not exist.'.format(filepath)
     if format == 'default':
         content = cPickle.load(open(filepath, 'rb'))

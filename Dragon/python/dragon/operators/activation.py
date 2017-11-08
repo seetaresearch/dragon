@@ -44,7 +44,7 @@ def LRelu(inputs, slope=0.2, **kwargs):
     Returns
     -------
     Tensor
-        The output tensor, calculated as: |leaky_relu_function|.
+        The output tensor, calculated as: |lrelu_function|.
 
     """
     CheckInputs(inputs, 1)
@@ -58,6 +58,35 @@ def LRelu(inputs, slope=0.2, **kwargs):
     return output
 
 
+def PRelu(inputs, channel_shared=False, data_format='NCHW', **kwargs):
+    """Parametric Rectified Linear Unit function, introduces by `[He et.al, 2015] <https://arxiv.org/abs/1502.01852>`_.
+
+    Parameters
+    ----------
+    inputs : list of Tensor
+        The input and trainable parameter(slope).
+    channel_shared : boolean
+        Whether to share the parameter(slope) across channels.
+    data_format : str
+        The data format, ``NCHW`` or ``NHWC``.
+
+    Returns
+    -------
+    Tensor
+        The output tensor, calculated as: |prelu_function|
+
+    """
+    CheckInputs(inputs, 2)
+    arguments = ParseArguments(locals())
+
+    output = Tensor.CreateOperator(nout=1, op_type='PRelu', **arguments)
+
+    if inputs[0].shape is not None:
+        output.shape = inputs[0].shape[:]
+
+    return output
+
+
 def Elu(inputs, alpha=1.0, **kwargs):
     """Exponential Linear Unit function, introduces by `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
@@ -65,6 +94,8 @@ def Elu(inputs, alpha=1.0, **kwargs):
     ----------
     inputs : Tensor
         The input tensor.
+    alpha : float
+        The alpha.
 
     Returns
     -------
@@ -76,6 +107,31 @@ def Elu(inputs, alpha=1.0, **kwargs):
     arguments = ParseArguments(locals())
 
     output = Tensor.CreateOperator(nout=1, op_type='Elu', **arguments)
+
+    if inputs.shape is not None:
+        output.shape = inputs.shape[:]
+
+    return output
+
+
+def SElu(inputs, **kwargs):
+    """Scaled Exponential Linear Unit function, introduces by `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
+
+    Parameters
+    ----------
+    inputs : Tensor
+        The input tensor.
+
+    Returns
+    -------
+    Tensor
+        The output tensor, calculated as: |selu_function|
+
+    """
+    CheckInputs(inputs, 1)
+    arguments = ParseArguments(locals())
+
+    output = Tensor.CreateOperator(nout=1, op_type='SElu', **arguments)
 
     if inputs.shape is not None:
         output.shape = inputs.shape[:]

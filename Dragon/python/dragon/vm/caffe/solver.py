@@ -14,7 +14,6 @@ import dragon.tools.summary_writer as sw
 import dragon.vm.theano as theano
 from dragon.vm.caffe.proto import caffe_pb2 as pb
 
-from dragon.config import logger
 from dragon.vm.caffe.misc import root_solver
 from dragon.vm.caffe.net import Net
 from google.protobuf.text_format import Parse
@@ -172,6 +171,7 @@ class Solver(object):
         The implementation of `GetLearningRate(solver.cpp, L27)`_.
 
         """
+        from dragon.config import logger
         policy = self._param.lr_policy
 
         if policy == "step":
@@ -232,6 +232,7 @@ class Solver(object):
         The implementation of `Test(solver.cpp, L328)`_.
 
         """
+        from dragon.config import logger
         test_score = []
         output_id = []
         test_iter = self._param.test_iter[test_idx]
@@ -278,6 +279,7 @@ class Solver(object):
         The implementation of `Step(solver.cpp, L180)`_.
 
         """
+        from dragon.config import logger
         start_iter = self._iter; stop_iter = self._iter + iters
         loss_vec = []; smoothed_loss = 0
         tic = time.time()

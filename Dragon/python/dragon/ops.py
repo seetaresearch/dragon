@@ -50,7 +50,9 @@ Sigmoid = act.Sigmoid
 Tanh = act.Tanh
 Relu = act.Relu
 LRelu = act.LRelu
+PRelu = act.PRelu
 Elu = act.Elu
+SElu = act.SElu
 Softmax = act.Softmax
 Dropout = act.Dropout
 

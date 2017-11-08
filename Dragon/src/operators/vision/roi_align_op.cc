@@ -7,11 +7,11 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void ROIAlignOp<Context>::RunWithType() {
-    kernel::ROIAlign<T, Context>(spatial_scale, 
+    kernel::ROIAlign<T, Context>(spatial_scale,
                                 pool_h, pool_w,
                                      &input(0),
                                      &input(1),
-                                mask_h, mask_w,
+                                          mask,
                                     output(0));
 }
 
@@ -20,10 +20,8 @@ void ROIAlignOp<Context>::RunOnDevice() {
     vector<TIndex> dims({input(1).dim(0), input(0).dim(1), pool_h, pool_w});
     output(0)->Reshape(dims);
 
-    mask_h = ws()->CreateTensor("_t_" + anchor() + "_roi_align_mask_h");
-    mask_h->Reshape(dims);
-    mask_w = ws()->CreateTensor("_t_" + anchor() + "_roi_align_mask_w");
-    mask_w->Reshape(dims);
+    mask = ws()->CreateTensor("_t_" + anchor() + "_roi_align_mask");
+    mask->Reshape(dims);
 
     if (input(0).template IsType<float>()) return RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
@@ -41,7 +39,7 @@ void ROIAlignGradientOp<Context>::RunWithType() {
                                     pool_h, pool_w,
                                         &input(-1),
                                          &input(1),
-                                    mask_h, mask_w,
+                                              mask,
                                         output(0));
 }
 
@@ -49,8 +47,7 @@ template <class Context>
 void ROIAlignGradientOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
 
-    mask_h = ws()->GetTensor("_t_" + anchor() + "_roi_align_mask_h");
-    mask_w = ws()->GetTensor("_t_" + anchor() + "_roi_align_mask_w");
+    mask = ws()->GetTensor("_t_" + anchor() + "_roi_align_mask");
 
     if (input(0).template IsType<float>()) return RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
@@ -59,8 +56,7 @@ void ROIAlignGradientOp<Context>::RunOnDevice() {
 template <class Context>
 void ROIAlignGradientOp<Context>::CleanResource() {
     Operator<Context>::CleanResource(); 
-    ws()->ReleaseBuffer(mask_h, "Common", true);
-    ws()->ReleaseBuffer(mask_w, "Common", true);
+    ws()->ReleaseBuffer(mask, "Common", true);
 }
 
 DEPLOY_CPU(ROIAlignGradient);

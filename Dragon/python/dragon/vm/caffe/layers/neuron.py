@@ -5,6 +5,7 @@
 # --------------------------------------------------------
 
 import dragon.ops as ops
+from dragon.core.tensor import Tensor
 
 from ..layer import Layer
 
@@ -29,6 +30,35 @@ class ReLULayer(Layer):
         return ops.Relu(input, **self._param)
 
 
+class PReLULayer(Layer):
+    """The implementation of ``PReLULayer``.
+
+    Parameters
+    ----------
+    filler : FillerParameter
+        The filler of parameter(slope). Refer `PReLUParameter.filler`_.
+    channel_shared : boolean
+       Whether to share the parameter across channels. Refer `PReLUParameter.channel_shared`_.
+
+    """
+    def __init__(self, LayerParameter):
+        super(PReLULayer, self).__init__(LayerParameter)
+        param = LayerParameter.prelu_param
+        self._param = {'channel_shared': param.channel_shared,
+                       'data_format': 'NCHW'}
+        slope = Tensor(LayerParameter.name + '@param0')
+        slope_diff = Tensor(LayerParameter.name + '@param0_grad')
+        if param.HasField('filler'):
+            self.Fill(slope, param, 'filler')
+        else:
+            slope.Constant(value=0.25)
+        self._blobs.append({'data': slope, 'diff': slope_diff})
+
+    def Setup(self, bottom):
+        super(PReLULayer, self).Setup(bottom)
+        return ops.PRelu(bottom + [blob['data'] for blob in self._blobs], **self._param)
+
+
 class ELULayer(Layer):
     """The implementation of ``ELULayer``.
 
@@ -41,12 +71,25 @@ class ELULayer(Layer):
     def __init__(self, LayerParameter):
         super(ELULayer, self).__init__(LayerParameter)
         param = LayerParameter.elu_param
-        self._param = {'alpha': param.alpha}
+        self._param = {'alpha': float(param.alpha)}
 
     def Setup(self, bottom):
         super(ELULayer, self).Setup(bottom)
         input = bottom[0] if isinstance(bottom, list) else bottom
         return ops.Elu(input, **self._param)
+
+
+class SELULayer(Layer):
+    """
+    The implementation of ``SELULayer``.
+    """
+    def __init__(self, LayerParameter):
+        super(SELULayer, self).__init__(LayerParameter)
+
+    def Setup(self, bottom):
+        super(SELULayer, self).Setup(bottom)
+        input = bottom[0] if isinstance(bottom, list) else bottom
+        return ops.SElu(input, **self._param)
 
 
 class SigmoidLayer(Layer):

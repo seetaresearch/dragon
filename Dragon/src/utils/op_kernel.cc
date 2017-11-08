@@ -72,6 +72,124 @@ template<> void EluGrad<float, CPUContext>(const int count,
     }
 }
 
+/******************** activation.prelu ********************/
+
+template<> void PRelu<float, CPUContext>(const int count,
+                                         const int channels,
+                                         const int dim,
+                                         const bool channel_shared,
+                                         const string& data_format,
+                                         const float* x,
+                                         const float* w,
+                                         float* y) {
+    if (channel_shared) {
+#ifdef WITH_OMP
+        #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+        for (int i = 0; i < count; ++i) {
+            y[i] = std::max(x[i], float(0)) + w[0] * std::min(x[i], float(0));
+        }
+    } else {
+        if (data_format == "NCHW") {
+#ifdef WITH_OMP
+            #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+            for (int i = 0; i < count; ++i) {
+                int c = (i / dim) % channels;
+                y[i] = std::max(x[i], float(0)) + w[c] * std::min(x[i], float(0));
+            }
+        } else if (data_format == "NHWC") {
+#ifdef WITH_OMP
+            #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+            for (int i = 0; i < count; ++i) {
+                int c = i % channels;
+                y[i] = std::max(x[i], float(0)) + w[c] * std::min(x[i], float(0));
+            }
+        } else LOG(FATAL) << "Unknown data format: " << data_format;
+    }
+}
+
+template<> void PReluGrad<float, CPUContext>(const int count,
+                                             const int channels, 
+                                             const int dim,
+                                             const bool channel_shared,
+                                             const string& data_format,
+                                             const float* dy,
+                                             const float* x,
+                                             const float* w,
+                                             float* dx) {
+    if (channel_shared) {
+#ifdef WITH_OMP
+        #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+        for (int i = 0; i < count; ++i) {
+            dx[i] = dy[i] * ((x[i] > 0) + w[0] * (x[i] <= 0));
+        }
+    } else {
+        if (data_format == "NCHW") {
+#ifdef WITH_OMP
+            #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+            for (int i = 0; i < count; ++i) {
+                int c = (i / dim) % channels;
+                dx[i] = dy[i] * ((x[i] > 0) + w[c] * (x[i] <= 0));
+            }
+        } else if (data_format == "NHWC") {
+#ifdef WITH_OMP
+            #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+            for (int i = 0; i < count; ++i) {
+                int c = i % channels;
+                dx[i] = dy[i] * ((x[i] > 0) + w[c] * (x[i] <= 0));
+            }
+        } else LOG(FATAL) << "Unknown data format: " << data_format;
+    }
+}
+
+template<> void PReluWGrad<float, CPUContext>(const int rows,
+                                              const int row_offset,
+                                              const int channels,
+                                              const int dim,
+                                              const bool channel_shared,
+                                              const string& data_format,
+                                              const float* dy,
+                                              const float* x,
+                                              const float* multiplier,
+                                              float* bcast_dw,
+                                              float* dw) {
+    const int cdim = channels * dim;
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(cdim))
+#endif
+    for (int i = 0; i < cdim; ++i) {
+        bcast_dw[i] = dy[i] * x[i] * (x[i] <= 0);
+        for (int n = 1; n < rows; n++) {
+            const int cur_idx = i + n * row_offset;
+            bcast_dw[i] += dy[cur_idx] * x[cur_idx] * (x[cur_idx] <= 0);
+        }
+    }
+    if (channel_shared) {
+        float w_sum = math::Dot<float, CPUContext>(channels * dim, bcast_dw, multiplier);
+        math::AddScalar<float, CPUContext>(1, w_sum, dw);
+    } else {
+        if (data_format == "NCHW") {
+            math::Gemv<float, CPUContext>(CblasNoTrans, channels, dim,
+                                                                  1.0,
+                                                 bcast_dw, multiplier,
+                                                                  1.0,
+                                                                  dw);
+        } else if (data_format == "NHWC") {
+            math::Gemv<float, CPUContext>(CblasTrans, dim, channels,
+                                                                1.0,
+                                               bcast_dw, multiplier,
+                                                                1.0,
+                                                                dw);
+
+        } else LOG(FATAL) << "Unknown data format: " << data_format;
+    }
+}
+
 /******************** activation.relu ********************/
 
 template<> void Relu<float, CPUContext>(const int count, 
@@ -96,6 +214,32 @@ template<> void ReluGrad<float, CPUContext>(const int count,
 #endif
     for (int i = 0; i < count; ++i) {
         dx[i] = dy[i] * ((y[i] > 0) + slope * (y[i] <= 0));
+    }
+}
+
+/******************** activation.selu ********************/
+
+template<> void SElu<float, CPUContext>(const int count,
+                                        const float* x,
+                                        float* y) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        y[i] = 1.0507 * std::max(x[i], float(0))
+             + 1.7581 * (std::exp(std::min(x[i], float(0))) - float(1));
+    }
+}
+
+template<> void SEluGrad<float, CPUContext>(const int count,
+                                            const float* dy,
+                                            const float* y,
+                                            float* dx) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        dx[i] = y[i] > 0 ? 1.0507 * dy[i] : (1.7581 + y[i]) * dy[i];
     }
 }
 
@@ -210,22 +354,22 @@ template<> void TanhGrad<float, CPUContext>(const int count,
 
 /******************** arithmetic.bias_add ********************/
 
-template<> void BiasAdd<float, CPUContext>(const int count, 
-                                           const int outer_dim, 
-                                           const int dim, 
-                                           const int inner_dim, 
-                                           const string& format, 
-                                           const float* bias, 
-                                           const float* bias_multiplier, 
+template<> void BiasAdd<float, CPUContext>(const int count,
+                                           const int outer_dim,
+                                           const int dim,
+                                           const int inner_dim,
+                                           const string& format,
+                                           const float* bias,
+                                           const float* bias_multiplier,
                                            float* y) {
     if (format == "NCHW") {
         const int y_offset = dim * inner_dim;
         for (int n = 0; n < outer_dim; ++n) {
-            math::Gemm<float, CPUContext>(CblasNoTrans, CblasNoTrans, 
-                                                   dim, inner_dim, 1, 
-                                                                 1.0, 
-                                               bias, bias_multiplier, 
-                                                                 1.0, 
+            math::Gemm<float, CPUContext>(CblasNoTrans, CblasNoTrans,
+                                                   dim, inner_dim, 1,
+                                                                 1.0,
+                                               bias, bias_multiplier,
+                                                                 1.0,
                                                                   y);
             y += y_offset;
         }
@@ -1824,7 +1968,7 @@ template<> void ROIAlign<float, CPUContext>(const float spatial_scale,
                                             const int pool_h, const int pool_w,
                                             Tensor* x,
                                             Tensor* roi,
-                                            Tensor* mask_h, Tensor* mask_w,
+                                            Tensor* mask,
                                             Tensor* y) {
     NOT_IMPLEMENTED;
 }
@@ -1833,7 +1977,7 @@ template<> void ROIAlignGrad<float, CPUContext>(const float spatial_scale,
                                                 const int pool_h, const int pool_w,
                                                 Tensor* dy,
                                                 Tensor* roi,
-                                                Tensor* mask_h, Tensor* mask_w,
+                                                Tensor* mask,
                                                 Tensor* dx) {
     NOT_IMPLEMENTED;
 }

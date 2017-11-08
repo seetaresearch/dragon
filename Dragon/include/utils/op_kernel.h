@@ -49,6 +49,42 @@ void EluGrad(const int count,
              const float alpha,
              T* dx);
 
+/******************** activation.prelu ********************/
+
+template <typename T, class Context>
+void PRelu(const int count,
+           const int channels,
+           const int dim,
+           const bool channel_shared,
+           const string& data_format,
+           const T* x, 
+           const T* w,
+           T* y);
+
+template <typename T, class Context>
+void PReluGrad(const int count,
+               const int channels,
+               const int dim,
+               const bool channel_shared,
+               const string& data_format,
+               const T* dy,
+               const T* x,
+               const T* w,
+               T* dx);
+
+template <typename T, class Context>
+void PReluWGrad(const int rows,
+                const int row_offset,
+                const int channels,
+                const int dim,
+                const bool channel_shared,
+                const string& data_format,
+                const T* dy,
+                const T* x,
+                const T* multiplier,
+                T* bcast_dw,
+                T* dw);
+
 /******************** activation.relu ********************/
 
 template <typename T, class Context>
@@ -60,6 +96,14 @@ void ReluGrad(const int count,
               const T* y,
               const float slope,
               T* dx);
+
+/******************** activation.selu ********************/
+
+template <typename T, class Context>
+void SElu(const int count, const T* x, T* y);
+
+template <typename T, class Context>
+void SEluGrad(const int count, const T* dy, const T* y, T* dx);
 
 /******************** activation.sigmoid ********************/
 
@@ -745,8 +789,7 @@ void ROIAlign(const float spatial_scale,
               const int pool_w,
               Tensor* x,
               Tensor* roi,
-              Tensor* mask_h,
-              Tensor* mask_y,
+              Tensor* mask,
               Tensor* y);
 
 template <typename T, class Context>
@@ -755,8 +798,7 @@ void ROIAlignGrad(const float spatial_scale,
                   const int pool_w,
                   Tensor* dy,
                   Tensor* roi,
-                  Tensor* mask_h,
-                  Tensor* mask_y,
+                  Tensor* mask,
                   Tensor* dx);
 
 }    // namespace kernel

@@ -61,7 +61,9 @@ List               Brief
 `Tanh`_            Tanh function.
 `Relu`_            Rectified Linear Unit function, introduces by `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.
 `LRelu`_           Leaky Rectified Linear Unit function.
+`PRelu`_           Parametric Rectified Linear Unit function, introduces by `[He et.al, 2015] <https://arxiv.org/abs/1502.01852>`_.
 `Elu`_             Exponential Linear Unit function, introduces by `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
+`SElu`_            Scaled Exponential Linear Unit function, introduces by `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 `Softmax`_         Softmax function.
 `Dropout`_         Randomly set a unit into zero, introduced by `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 ===============    ======================================================================
@@ -209,7 +211,9 @@ List                 Brief
 .. _Tanh: operators/activation.html#dragon.operators.activation.Tanh
 .. _Relu: operators/activation.html#dragon.operators.activation.Relu
 .. _LRelu: operators/activation.html#dragon.operators.activation.LRelu
+.. _PRelu: operators/activation.html#dragon.operators.activation.PRelu
 .. _Elu: operators/activation.html#dragon.operators.activation.Elu
+.. _SElu: operators/activation.html#dragon.operators.activation.SElu
 .. _Softmax: operators/activation.html#dragon.operators.activation.Softmax
 .. _Dropout: operators/activation.html#dragon.operators.activation.Dropout
 

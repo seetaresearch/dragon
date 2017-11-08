@@ -10,7 +10,6 @@ from multiprocessing import Queue
 from six.moves import range as xrange
 
 import dragon.core.mpi as mpi
-from dragon.config import logger
 
 from .data_reader import DataReader
 from .data_transformer import DataTransformer
@@ -171,6 +170,7 @@ class DataBatch(object):
         """
         Print I/O Information.
         """
+        from dragon.config import logger
         logger.info('---------------------------------------------------------')
         logger.info('BatchReader, Using config:')
         params = {'prefetching': self._prefetch,

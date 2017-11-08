@@ -8,8 +8,6 @@ import numpy as np
 from multiprocessing import Process
 from six.moves import range as xrange
 
-from dragon.config import logger
-
 from .utils import GetProperty
 
 class BlobFetcher(Process):
@@ -40,6 +38,7 @@ class BlobFetcher(Process):
         self.daemon = True
 
         def cleanup():
+            from dragon.config import logger
             logger.info('Terminating BlobFetcher......')
             self.terminate()
             self.join()

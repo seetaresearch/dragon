@@ -6,7 +6,6 @@
 
 import numpy as np
 import pprint
-from dragon.config import logger
 import dragon.core.workspace as ws
 from dragon.core.tensor import Tensor
 
@@ -85,6 +84,7 @@ class BaseUpdater(object):
         """
         Print Updater Information.
         """
+        from dragon.config import logger
         logger.info('---------------------------------------------------------')
         logger.info('Optimizer: {}, Using config:'.format(self._type.split('Update')[0]))
         pprint.pprint(self._hyper_params)
