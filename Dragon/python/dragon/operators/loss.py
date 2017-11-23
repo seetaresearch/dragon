@@ -18,7 +18,7 @@ def SparseSoftmaxCrossEntropy(inputs, axis=1, normalization='VALID', ignore_labe
     axis : int
         The axis of softmax function.
     normalization : str
-        The normalization, ``UINT``, ``FULL``, ``VALID``, ``BATCH_SIZE`` or ``NONE``.
+        The normalization, ``UNIT``, ``FULL``, ``VALID``, ``BATCH_SIZE`` or ``NONE``.
     ignore_label : tuple or list
         The label id to ignore. Default is ``empty``.
 
@@ -29,7 +29,7 @@ def SparseSoftmaxCrossEntropy(inputs, axis=1, normalization='VALID', ignore_labe
 
     Notes
     -----
-    Set the normalization to ``UINT`` will return unreduced losses.
+    Set the normalization to ``UNIT`` will return unreduced losses.
 
     """
     CheckInputs(inputs, 2)
@@ -56,7 +56,7 @@ def SigmoidCrossEntropy(inputs, normalization='FULL', **kwargs):
     inputs : list of Tensor
         The inputs, represent [input, labels].
     normalization : str
-        The normalization, ``UINT``, ``FULL``, ``BATCH_SIZE`` or ``NONE``.
+        The normalization, ``UNIT``, ``FULL``, ``BATCH_SIZE`` or ``NONE``.
 
     Returns
     -------
@@ -65,7 +65,7 @@ def SigmoidCrossEntropy(inputs, normalization='FULL', **kwargs):
 
     Notes
     -----
-    Set the normalization to ``UINT`` will return unreduced losses.
+    Set the normalization to ``UNIT`` will return unreduced losses.
 
     """
     CheckInputs(inputs, 2)
@@ -90,7 +90,7 @@ def SoftmaxCrossEntropy(inputs, axis=1, normalization='FULL', **kwargs):
     axis : int
         The axis of softmax function.
     normalization : str
-        The normalization, ``UINT``, ``FULL``, ``BATCH_SIZE`` or ``NONE``.
+        The normalization, ``UNIT``, ``FULL``, ``BATCH_SIZE`` or ``NONE``.
 
     Returns
     -------
@@ -99,7 +99,7 @@ def SoftmaxCrossEntropy(inputs, axis=1, normalization='FULL', **kwargs):
 
     Notes
     -----
-    Set the normalization to ``UINT`` will return unreduced losses.
+    Set the normalization to ``UNIT`` will return unreduced losses.
 
     """
     CheckInputs(inputs, 2)
@@ -213,13 +213,13 @@ def SparseSoftmaxFocalLoss(inputs, axis=1, normalization='VALID', ignore_labels=
     axis : int
         The axis of softmax function.
     normalization : str
-        The normalization, ``UINT``, ``FULL``, ``VALID``, ``BATCH_SIZE`` or ``NONE``.
+        The normalization, ``UNIT``, ``FULL``, ``VALID``, ``BATCH_SIZE`` or ``NONE``.
     ignore_label : tuple or list
         The label id to ignore. Default is ``empty``.
     alpha : float
         The scale factor on the rare class. Default is ``0.5``.
     gamma : float
-        The exponetial decay factor on the easy examples. Default is ``2.0``.
+        The exponential decay factor on the easy examples. Default is ``2.0``.
     eps : float
         The eps.
     neg_id : int
@@ -232,7 +232,7 @@ def SparseSoftmaxFocalLoss(inputs, axis=1, normalization='VALID', ignore_labels=
 
     Notes
     -----
-    Set the normalization to ``UINT`` will return unreduced losses.
+    Set the normalization to ``UNIT`` will return unreduced losses.
 
     """
     CheckInputs(inputs, 2)

@@ -13,7 +13,7 @@ void MPIBroadcastOp<Context>::RunWithType() {
 #else
         auto* Xdata = input(0).template mutable_data<T, CPUContext>();
 #endif
-        MPI_Bcast(Xdata, input(0).count(), MPI_FLOAT, this->comm_root, this->comm);
+        MPI_Bcast(Xdata, input(0).count(), mpi_dtype(), this->comm_root, this->comm);
         output(0)->Share(input(0));
     } else { 
 #ifdef WITH_MPI_CUDA
@@ -21,7 +21,7 @@ void MPIBroadcastOp<Context>::RunWithType() {
 #else
         auto* Ydata = output(0)->template mutable_data<T, CPUContext>();
 #endif
-        MPI_Bcast(Ydata, output(0)->count(), MPI_FLOAT, this->comm_root, this->comm);
+        MPI_Bcast(Ydata, output(0)->count(), mpi_dtype(), this->comm_root, this->comm);
     }
 }
 
@@ -41,13 +41,13 @@ void MPIBroadcastOp<Context>::RunOnDevice() {
     }
     MPI_Bcast(ndim, 1, MPI_UNSIGNED_LONG_LONG, this->comm_root, this->comm);
     if (dims == nullptr) dims = new TIndex[ndim[0]];
-    MPI_Bcast(dims, 4, MPI_LONG_LONG, this->comm_root, this->comm);
+    MPI_Bcast(dims, (int)ndim[0], MPI_LONG_LONG, this->comm_root, this->comm);
     vector<TIndex> _dims;
-    for (int i = 0; i < ndim[0]; i++)  _dims.push_back(dims[i]);
+    for (int i = 0; i < (int)ndim[0]; i++)  _dims.push_back(dims[i]);
     output(0)->Reshape(_dims);
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (this->dtype == "FLOAT32") RunWithType<float>();
+    else LOG(FATAL) << "Unsupported input type: " << this->dtype;
 }
 
 DEPLOY_CPU(MPIBroadcast);
@@ -71,7 +71,7 @@ void MPIBroadcastGradientOp<Context>::RunWithType() {
 #endif
         for (int i = 0; i < this->comm_size; i++) {
             if (i == this->comm_root) continue;
-            MPI_Recv(dYdata, output(0)->count(), MPI_FLOAT, i, 0, this->comm, MPI_STATUS_IGNORE);
+            MPI_Recv(dYdata, output(0)->count(), mpi_dtype(), i, 0, this->comm, MPI_STATUS_IGNORE);
 #ifdef WITH_MPI_CUDA
             math::Add<T, Context>(output(0)->count(), dYdata, dXdata, dXdata);
 #else
@@ -85,7 +85,7 @@ void MPIBroadcastGradientOp<Context>::RunWithType() {
 #else
         auto* dYdata = input(-1).template data<T, CPUContext>();
 #endif
-        MPI_Send(dYdata, input(-1).count(), MPI_FLOAT, this->comm_root, 0, this->comm);
+        MPI_Send(dYdata, input(-1).count(), mpi_dtype(), this->comm_root, 0, this->comm);
     }
 }
 
@@ -93,10 +93,10 @@ template <class Context>
 void MPIBroadcastGradientOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(-1));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (this->dtype == "FLOAT32") RunWithType<float>();
+    else LOG(FATAL) << "Unsupported input type: " << this->dtype;
 }
-    
+
 DEPLOY_CPU(MPIBroadcastGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(MPIBroadcastGradient);

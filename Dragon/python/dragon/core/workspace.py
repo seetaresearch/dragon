@@ -269,7 +269,6 @@ def FeedTensor(tensor, ndarray, force_cpu=False, dtype=None):
                                 format(preset_dtype, dtype))
         auto_dtype = preset_dtype
     ndarray = np.array(ndarray, dtype=auto_dtype)
-    if hasattr(tensor, 'shape'): tensor.shape = list(ndarray.shape)
     FeedTensorCC(name, ndarray, _stringify_proto(dev))
 
 

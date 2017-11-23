@@ -514,7 +514,7 @@ class NormalizeLayer(Layer):
         scale = Tensor(LayerParameter.name + '@param0')
         if param.HasField('scale_filler'):
             self.Fill(scale, param, 'scale_filler')
-        else: scale.Contant(value=1.0)
+        else: scale.Constant(value=1.0)
         self.scale_blobs = [{'data': scale, 'diff': Tensor(scale.name + '_grad')}]
         self._blobs.extend(self.scale_blobs)
 

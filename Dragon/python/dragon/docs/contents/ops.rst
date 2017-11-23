@@ -11,7 +11,7 @@ Data
 List              Brief
 ==============    ========================================================================
 `LMDBData`_       Prefetch Image data with LMDB database.
-`MemoryData`_     Perform ``NHWC <-> NCHW``, ``Mean Subtraction`` and ``Type Converting``.
+`ImageData`_      Process the images from 4D raw data.
 ==============    ========================================================================
 
 Initializer
@@ -185,7 +185,7 @@ List                 Brief
 
 
 .. _LMDBData: operators/data.html#dragon.operators.data.LMDBData
-.. _MemoryData: operators/data.html#dragon.operators.data.MemoryData
+.. _ImageData: operators/data.html#dragon.operators.data.ImageData
 
 .. _Fill: operators/initializer.html#dragon.operators.initializer.Fill
 .. _RandomUniform: operators/initializer.html#dragon.operators.initializer.RandomUniform

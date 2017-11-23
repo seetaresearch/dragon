@@ -35,6 +35,7 @@ else:
         argument.name = key
         if type(value) is float: argument.f = value
         elif type(value) is int: argument.i = value
+        elif type(value) is long: argument.i = value
         elif type(value) is np.int64: argument.i64 = int(value)
         elif type(value) is str: argument.s = value
         elif type(value) is unicode: argument.s = value
@@ -42,6 +43,7 @@ else:
         elif isinstance(value, Message): argument.s = value.SerializeToString()
         elif all(type(v) is float for v in value): argument.floats.extend(value)
         elif all(type(v) is int for v in value): argument.ints.extend(value)
+        elif all(type(v) is long for v in value): argument.ints.extend(value)
         elif all(type(v) is str for v in value): argument.strings.extend(value)
         elif all(type(v) is unicode or type(v) is str for v in value):
             argument.strings.extend(value)

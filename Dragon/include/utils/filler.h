@@ -54,7 +54,7 @@ class TruncatedNormalFiller final : public Filler < T, Context > {
  public:
     TruncatedNormalFiller(const TensorFiller& filler): Filler<T, Context>(filler) {}
     void Fill(Tensor* tensor) override {
-        //  implement of gpu is diffcult 
+        //  implement it on gpu is difficult
         math::RandomTruncatedNormal<T, CPUContext>(tensor->count(), 
                                                    filler().mean(), 
                                                     filler().std(), 

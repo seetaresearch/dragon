@@ -354,6 +354,25 @@ class Net(object):
         return lambda net = self, net_outputs = self.outputs \
             : GetOutputs(net, net_outputs)
 
+    def forward_v2(self, **kwargs):
+        """Forward pass while silencing all net outputs.
+
+        Parameters
+        ----------
+        inputs : dict or None
+            The blobs to feed before.
+
+        Returns
+        -------
+        None
+
+        """
+        if kwargs:
+            for name, blob in kwargs.items():
+                ws.FeedTensor(self._inputs_to_tensors[name], blob)
+        self.function()(return_outputs=False, stage='forward')
+        return None
+
     def backward(self, **kwargs):
         """Backward pass. [**PyCaffe Style**]
 

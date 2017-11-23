@@ -4,32 +4,40 @@
 // Written by Ting Pan
 // --------------------------------------------------------
 
-#ifndef DRAGON_OPERATORS_VISION_DECONV_OP_H_
-#define DRAGON_OPERATORS_VISION_DECONV_OP_H_
+#ifndef DRAGON_OPERATORS_VISION_CONV_TRANSPOSE_OP_H_
+#define DRAGON_OPERATORS_VISION_CONV_TRANSPOSE_OP_H_
 
 #include "operators/vision/conv_op_base.h"
 
 namespace dragon {
 
 template <class Context>
-class DeConvOp: public ConvOpBase<Context>  {
+class Conv2dTransposeOp: public ConvOpBase<Context>  {
  public:
-    DeConvOp(const OperatorDef& def, Workspace* ws) 
-        : ConvOpBase<Context>(def, ws) {}
+    Conv2dTransposeOp(const OperatorDef& def, Workspace* ws) 
+        : ConvOpBase<Context>(def, ws) {
+        this->num_spatial_axes = 2;
+        Setup(); 
+    }
 
-    void ComputeOutputShape() override;
     bool ReverseDimensions() override { return true; }
+    virtual bool HasBias() { return InputSize() > 2; }
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
+ protected:
+    vector<int> static_dsize;
+    vector<string> dynamic_dsize;
 };
 
 template <class Context>
-class DeConvGradientOp : public DeConvOp<Context> {
+class Conv2dTransposeGradientOp : public Conv2dTransposeOp<Context> {
  public:
-    DeConvGradientOp(const OperatorDef& def, Workspace* ws) :
-        DeConvOp<Context>(def, ws) {}
+    Conv2dTransposeGradientOp(const OperatorDef& def, Workspace* ws)
+        : Conv2dTransposeOp<Context>(def, ws) {}
+
+    bool HasBias() override { return output(2)->name() != "ignore"; }
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -40,10 +48,10 @@ class DeConvGradientOp : public DeConvOp<Context> {
 #include "utils/cudnn_device.h"
 
 template <class Context>
-class CuDNNDeConvOp : public DeConvOp<Context> {
+class CuDNNConv2dTransposeOp : public Conv2dTransposeOp<Context> {
  public:
-    CuDNNDeConvOp(const OperatorDef& def, Workspace* ws) 
-        : DeConvOp<Context>(def, ws) {
+    CuDNNConv2dTransposeOp(const OperatorDef& def, Workspace* ws)
+        : Conv2dTransposeOp<Context>(def, ws) {
         handle = new cudnnHandle_t[this->group];
         stream = new cudaStream_t[this->group];
         for (int g = 0; g < this->group; g++) {
@@ -55,8 +63,10 @@ class CuDNNDeConvOp : public DeConvOp<Context> {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
-        if (InputSize() > 2)
-            CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
+        if (HasBias()) CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
+        if (this->data_format == "NCHW") format = CUDNN_TENSOR_NCHW;
+        else if (this->data_format == "NHWC") format = CUDNN_TENSOR_NHWC;
+        else LOG(FATAL) << "Unknown data format: " << this->data_format;
     }
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -64,6 +74,7 @@ class CuDNNDeConvOp : public DeConvOp<Context> {
  protected:
     cudnnHandle_t* handle;
     cudaStream_t*  stream;
+    cudnnTensorFormat_t format;
     cudnnConvolutionBwdDataAlgo_t fwd_algo;
     cudnnTensorDescriptor_t input_desc, output_desc, bias_desc;
     cudnnConvolutionDescriptor_t conv_desc;
@@ -73,10 +84,10 @@ class CuDNNDeConvOp : public DeConvOp<Context> {
 };
 
 template <class Context>
-class CuDNNDeConvGradientOp : public DeConvGradientOp<Context> {
+class CuDNNConv2dTransposeGradientOp : public Conv2dTransposeGradientOp<Context> {
 public:
-    CuDNNDeConvGradientOp(const OperatorDef& def, Workspace* ws) 
-        : DeConvGradientOp<Context>(def, ws) {
+    CuDNNConv2dTransposeGradientOp(const OperatorDef& def, Workspace* ws)
+        : Conv2dTransposeGradientOp<Context>(def, ws) {
         handle = new cudnnHandle_t[this->group * 3];
         stream = new cudaStream_t[this->group * 3];
         for (int g = 0; g < this->group * 3; g++) {
@@ -88,8 +99,10 @@ public:
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
-        if (InputSize() > 2)
-            CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
+        if (HasBias()) CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
+        if (this->data_format == "NCHW") format = CUDNN_TENSOR_NCHW;
+        else if (this->data_format == "NHWC") format = CUDNN_TENSOR_NHWC;
+        else LOG(FATAL) << "Unknown data format: " << this->data_format;
     }
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -97,6 +110,7 @@ public:
  protected:
     cudnnHandle_t* handle;
     cudaStream_t*  stream;
+    cudnnTensorFormat_t format;
     cudnnConvolutionBwdFilterAlgo_t bwd_filter_algo;
     cudnnConvolutionFwdAlgo_t bwd_data_algo;
     cudnnTensorDescriptor_t input_desc, output_desc, bias_desc;
@@ -110,4 +124,4 @@ public:
 
 }    // namespace dragon
 
-#endif    // DRAGON_OPERATORS_VISION_DECONV_OP_H_
+#endif    // DRAGON_OPERATORS_VISION_CONV_TRANSPOSE_OP_H_

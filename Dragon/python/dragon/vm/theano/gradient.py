@@ -37,7 +37,7 @@ def grad(cost, wrt, **kwargs):
     if not isinstance(wrt, list): wrt = [wrt]
     for w in wrt:
         cost.grad_wrts.append(w.name)
-        w.grad_objs.append(cost.name)
+        w.grad_objs.append(cost)
         w_grad = Tensor(w.name + '_grad')
         w_grad.extra_targets.add(cost.name)
         w_grad.expressions = cost.expressions

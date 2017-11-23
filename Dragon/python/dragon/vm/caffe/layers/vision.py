@@ -42,7 +42,9 @@ class ConvolutionLayer(Layer):
                        'stride': [int(element) for element in param.stride] if len(param.stride) > 0 else [1],
                        'pad': [int(element) for element in param.pad] if len(param.pad) > 0 else [0],
                        'dilation': [int(element) for element in param.dilation] if len(param.dilation) > 0 else [1],
-                       'group': int(param.group)}
+                       'group': int(param.group),
+                       'padding': 'VALID',
+                       'data_format': 'NCHW'}
         if param.HasField('kernel_h'):
             assert param.HasField('kernel_w')
             self._param['kernel_size'] = [param.kernel_h, param.kernel_w]
@@ -69,7 +71,7 @@ class ConvolutionLayer(Layer):
 
     def Setup(self, bottom):
         super(ConvolutionLayer, self).Setup(bottom)
-        return ops.Conv2D(bottom + [blob['data'] for blob in self._blobs], **self._param)
+        return ops.Conv2d(bottom + [blob['data'] for blob in self._blobs], **self._param)
 
 
 class DeconvolutionLayer(ConvolutionLayer):
@@ -102,7 +104,7 @@ class DeconvolutionLayer(ConvolutionLayer):
 
     def Setup(self, bottom):
         super(DeconvolutionLayer, self).Setup(bottom)
-        return ops.Deconv2D(bottom + [blob['data'] for blob in self._blobs], **self._param)
+        return ops.Deconv2d(bottom + [blob['data'] for blob in self._blobs], **self._param)
 
 
 class PoolingLayer(Layer):
@@ -135,7 +137,8 @@ class PoolingLayer(Layer):
     def __init__(self, LayerParameter):
         super(PoolingLayer, self).__init__(LayerParameter)
         param = LayerParameter.pooling_param
-        self._param = {'mode': {0: 'MAX_POOLING', 1: 'AVG_POOLING'}[param.pool],
+        self._param = {'mode': {0: 'MAX', 1: 'AVG'}[param.pool],
+                       'data_format': 'NCHW',
                        'global_pooling': param.global_pooling}
 
         if not param.HasField('kernel_h'): self._param['kernel_size'] = [param.kernel_size]
@@ -150,7 +153,7 @@ class PoolingLayer(Layer):
     def Setup(self, bottom):
         input = bottom[0] if isinstance(bottom, list) else bottom
         super(PoolingLayer, self).Setup(bottom)
-        return ops.Pool2D(input, **self._param)
+        return ops.Pool2d(input, **self._param)
 
 
 class ROIPoolingLayer(Layer):
@@ -253,7 +256,8 @@ class NNResizeLayer(Layer):
             if param.HasField('shape') else []
         self._param = {'dsize': dsize,
                        'fx': float(param.fx),
-                       'fy': float(param.fy)}
+                       'fy': float(param.fy),
+                       'data_format': 'NCHW'}
 
     def Setup(self, bottom):
         super(NNResizeLayer, self).Setup(bottom)
@@ -284,7 +288,8 @@ class BilinearResizeLayer(Layer):
             if param.HasField('shape') else []
         self._param = {'dsize': dsize,
                        'fx': float(param.fx),
-                       'fy': float(param.fy)}
+                       'fy': float(param.fy),
+                       'data_format': 'NCHW'}
 
     def Setup(self, bottom):
         super(BilinearResizeLayer, self).Setup(bottom)

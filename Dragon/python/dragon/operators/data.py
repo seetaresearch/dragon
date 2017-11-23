@@ -74,25 +74,39 @@ def LMDBData(**kwargs):
     return Run([], param_str=str(kwargs), nout=2, **arguments)
 
 
-def MemoryData(inputs, dtype=np.float32, **kwargs):
-    """Perform ``NHWC <-> NCHW``, ``Mean Subtraction`` and ``Type Converting``.
+def ImageData(inputs, mean_values=None, std_values=None,
+              dtype='FLOAT32', data_format='NCHW', **kwargs):
+    """Process the images from 4D raw data.
+
+    Note that we assume the data format of raw data is **NHWC**.
 
     Parameters
     ----------
     inputs : Tensor
-        The input tensor, with type of uint8 or float32.
-    dtype : np.float32 or np.float16
-        The dtype of output tensor.
+        The input tensor, with type of **uint8** or **float32**.
+    mean_values : list of float or None
+        The optional mean values to subtract.
+    std_values : list of float or None
+        The optional std values to divide.
+    dtype : str
+        The type of output. ``FLOAT32`` or ``FLOAT16``.
+    data_format : str
+        The data format of output. ``NCHW`` or ``NHWC``.
 
     Returns
     -------
     Tensor
-        The post-processing Tensor.
+        The output tensor.
 
     """
     arguments = ParseArguments(locals())
-    if dtype is np.float32: arguments['dtype'] = 1
-    elif dtype is np.float16: arguments['dtype'] = 12
-    else: raise TypeError('Unsupported data type.')
+    if mean_values is not None:
+        if len(mean_values) != 3:
+            raise ValueError('The length of mean values should be 3.')
+        arguments['mean_values'] = [float(v) for v in mean_values]
+    if std_values is not None:
+        if len(std_values) != 3:
+            raise ValueError('The length of std values should be 3.')
+        arguments['std_values'] = [float(v) for v in std_values]
 
-    return Tensor.CreateOperator(nout=1, op_type='MemoryData', **arguments)
+    return Tensor.CreateOperator(nout=1, op_type='ImageData', **arguments)

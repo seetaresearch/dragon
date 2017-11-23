@@ -809,7 +809,7 @@ class Tensor(object):
 
             if self.shape is not None:
                 output.shape = input_shape[:]
-                output.shape.insert(axis, 1L)
+                output.shape.insert(axis, np.long(1))
 
         return output
 

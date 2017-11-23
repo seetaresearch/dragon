@@ -18,14 +18,14 @@ namespace dragon {
 
 #define MAX_GPUS 8
 
-/**************************************************************************    
- *    cuXXX libraries wrapper "Context" as "Handle"
- *    it's well known that each "Context" binds to some "Devices" in OpenCL
- *    so, we must create different handles to associate different devices
- *    or the computations will be dispatched to the same GPU
- *    read more: http://docs.nvidia.com/cuda/cublas/, section 2.1.2
- *  also, "Handle" is thread safe
- *    it seems not necessary to create handles for different threads
+/**************************************************************************
+ *  cuXXX libraries wrapper "Context" as "Handle".
+ *  It's well known that each "Context" binds to some "Devices" in OpenCL.
+ *  So, we must create different handles to associate different devices or
+    the computations will be dispatched to the same GPU.
+ *  Read more: http://docs.nvidia.com/cuda/cublas/, Sec 2.1.2.
+ *  Also, "Handle" is thread safe,
+    it seems not necessary to create handles for different threads
  *************************************************************************/
 
 class CUDAObject {

@@ -7,13 +7,28 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void BilinearResizeOp<Context>::RunWithType() {
+    if (data_format == "NCHW") {
+        n = dims[0];
+        c = dims[1];
+        h = input(0).dim(2);
+        w = input(0).dim(3);
+        out_h = dims[2];
+        out_w = dims[3];
+    } else if (data_format == "NHWC") {
+        n = dims[0];
+        h = input(0).dim(1);
+        w = input(0).dim(2);
+        out_h = dims[1];
+        out_w = dims[2];
+        c = dims[3];
+    }
     auto* Xdata = input(0).template data<T, Context>();
     auto* Ydata = output(0)->template mutable_data<T, Context>();
-    kernel::BilinearResize<T, Context>(output(0)->count(), dims[0], dims[1],
-                                           input(0).dim(2), input(0).dim(3),
-                                                           dims[2], dims[3],
-                                                                      Xdata,
-                                                                     Ydata);
+    kernel::BilinearResize<T, Context>(output(0)->count(), n, c, h, w,
+                                                         out_h, out_w,
+                                                          data_format,
+                                                                Xdata,
+                                                                Ydata);
 }
 
 template <class Context>
@@ -25,9 +40,9 @@ void BilinearResizeOp<Context>::RunOnDevice() {
         for (int i = 0; i < 2; i++) {
             Tensor* t = ws()->GetTensor(dynamic_dsize[i]);
             if (t->IsType<int>()) {
-                dims[2 + i] = t->template data<int, CPUContext>()[0];
+                dims[spatial_axis + i] = t->template data<int, CPUContext>()[0];
             } else if (t->IsType<float>()) {
-                dims[2 + i] = t->template data<float, CPUContext>()[0];
+                dims[spatial_axis + i] = t->template data<float, CPUContext>()[0];
             } else {
                 LOG(FATAL) << "Unsupported types of dsize.";
             }
@@ -35,12 +50,12 @@ void BilinearResizeOp<Context>::RunOnDevice() {
     } else if (static_dsize.size() > 0) {
         CHECK_EQ(static_dsize.size(), 2)
             << "\nThe dsize should be a scalar with 2 elements.";
-        for (int i = 0; i < 2; i++) dims[2 + i] = static_dsize[i];
+        for (int i = 0; i < 2; i++) dims[spatial_axis + i] = static_dsize[i];
     } else {
         CHECK(fy != -1.0 && fx != -1.0)
             << "\nThe fx and fy should be set.";
-        dims[2] = int(dims[2] * fy);
-        dims[3] = int(dims[3] * fx);
+        dims[spatial_axis] = int(dims[spatial_axis] * fy);
+        dims[spatial_axis + 1] = int(dims[spatial_axis + 1] * fx);
     }
     output(0)->Reshape(dims);
     
@@ -56,14 +71,28 @@ OPERATOR_SCHEMA(BilinearResize).NumInputs(1).NumOutputs(1);
 
 template <class Context> template <typename T>
 void BilinearResizeGradientOp<Context>::RunWithType() {
+    if (data_format == "NCHW") {
+        n = input(0).dim(0);
+        c = input(0).dim(1);
+        h = input(0).dim(2);
+        w = input(0).dim(3);
+        out_h = input(-1).dim(2);
+        out_w = input(-1).dim(3);
+    } else if (data_format == "NHWC") {
+        n = input(0).dim(0);
+        h = input(0).dim(1);
+        w = input(0).dim(2);
+        c = input(0).dim(3);
+        out_h = input(-1).dim(1);
+        out_w = input(-1).dim(2);
+    }
     auto* dYdata = input(-1).template data<T, Context>();
     auto* dXdata = output(0)->template mutable_data<T, Context>();
-    math::Set<T, Context>(output(0)->count(), 0, dXdata);
-    kernel::BilinearResizeGrad<T, Context>(input(-1).count(), input(0).dim(0), input(0).dim(1),
-                                                            input(-1).dim(2), input(-1).dim(3),
-                                                          output(0)->dim(2), output(0)->dim(3),
-                                                                                        dYdata,
-                                                                                       dXdata);
+    kernel::BilinearResizeGrad<T, Context>(input(-1).count(), n, c, h, w,
+                                                            out_h, out_w,
+                                                             data_format,
+                                                                  dYdata,
+                                                                  dXdata);
 }
 
 template <class Context>

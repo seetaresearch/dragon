@@ -19,8 +19,9 @@ class ModelMPIBase : public Operator<Context> {
  public:
     ModelMPIBase(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          comm((MPI_Comm)OperatorBase::GetSingleArg<int>("comm", 0)),
-          group((MPI_Group)OperatorBase::GetSingleArg<int>("group", 0)) {
+          comm((MPI_Comm)OperatorBase::GetSingleArg<int64_t>("comm", 0)),
+          group((MPI_Group)OperatorBase::GetSingleArg<int64_t>("group", 0)),
+          dtype(OperatorBase::GetSingleArg<string>("dtype", "FLOAT32")) {
 
         if (comm == MPI_COMM_NULL) return;
         MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -36,11 +37,18 @@ class ModelMPIBase : public Operator<Context> {
         CHECK(comm_root != MPI_UNDEFINED) << "MPI root is not included in layer group.";
     }
 
+    MPI_Datatype mpi_dtype() {
+        if (dtype == "FLOAT32") return MPI_FLOAT;
+        else LOG(FATAL) << "Unsupported input type: " << dtype;
+        return MPI_DATATYPE_NULL;
+    }
+
  protected:
     MPI_Comm comm;
     MPI_Group group;
     int comm_size, comm_rank, comm_root;
     int world_size, world_rank;
+    string dtype;
 };
 
 }    // namespace dragon

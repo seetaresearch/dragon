@@ -17,11 +17,11 @@ void SoftmaxCrossEntropyOp<Context>::RunWithType() {
     if (normalization == "UNIT") {
         output(0)->Reshape(vector<TIndex>(1, outer_dim * inner_dim));
         auto* Ydata = output(0)->template mutable_data<T, Context>();
-        kernel::Sum<T, Context>(losses.count(), 
-                            input(0).dim(axis), 
-                                     inner_dim, 
-                                         Ldata, 
-                                        Ydata);
+        kernel::Sum<T, Context>(outer_dim * inner_dim,
+                                   input(0).dim(axis),
+                                            inner_dim,
+                                                Ldata,
+                                               Ydata);
         return;
     }
 
@@ -65,12 +65,12 @@ void SoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
 
     if (normalization == "UNIT") {
         auto* dYdata = input(-1).template data<T, Context>();
-        kernel::SumGrad<T, Context>(input(0).count() / input(0).dim(axis),
-                                                       input(0).dim(axis), 
-                                                                inner_dim, 
-                                                                      1.0, 
-                                                                   dYdata, 
-                                                                   Pdata);
+        kernel::SumGrad<T, Context>(outer_dim * inner_dim,
+                                       input(0).dim(axis),
+                                                inner_dim,
+                                                      1.0,
+                                                   dYdata,
+                                                   Pdata);
         math::Mul<T, Context>(output(0)->count(), Pdata, dXdata, dXdata);
         return;
     }

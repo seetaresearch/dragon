@@ -15,7 +15,8 @@ void CropOp<Context>::RunWithType() {
                                    inner_dim,
                                 starts[axis],
                                        Xdata,
-                                      Ydata);
+                                       Ydata,
+                                     &ctx());
 }
 
 template <class Context>
@@ -219,7 +220,6 @@ template <class Context> template <typename T>
 void CropGradientOp<Context>::RunWithType() {
     auto* dYdata = source->template data<T, Context>();
     auto* dXdata = dest->template mutable_data<T, Context>();
-    math::Set<T, Context>(dest->count(), 0, dXdata);
     kernel::Crop1DGrad<T, Context>(dest->count(),
                               input(0).dim(axis),
                                              dim,
@@ -227,7 +227,8 @@ void CropGradientOp<Context>::RunWithType() {
                                     starts[axis],
                                       ends[axis],
                                           dYdata,
-                                         dXdata);
+                                          dXdata,
+                                         &ctx());
 }
 
 template <class Context>

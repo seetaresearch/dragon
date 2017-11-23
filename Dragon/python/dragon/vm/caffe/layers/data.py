@@ -48,22 +48,22 @@ class DataLayer(Layer):
         super(DataLayer, self).__init__(LayerParameter)
 
         param = LayerParameter.data_param
-        transformer_param = LayerParameter.transform_param
+        transform_param = LayerParameter.transform_param
         parallel_param = LayerParameter.parallel_param
 
         self._param = {'source': param.source,
                        'prefetch': param.prefetch,
                        'batch_size': param.batch_size,
                        'phase': {0: 'TRAIN', 1: 'TEST'}[int(LayerParameter.phase)],
-                       'scale': transformer_param.scale,
-                       'mirror': transformer_param.mirror,
-                       'crop_size': transformer_param.crop_size,
-                       'mean_values': [float(element) for element in transformer_param.mean_value],
-                       'force_color': transformer_param.force_color,
-                       'color_augmentation': transformer_param.color_augmentation,
-                       'padding': transformer_param.padding,
-                       'min_random_scale': transformer_param.min_random_scale,
-                       'max_random_scale': transformer_param.max_random_scale,
+                       'scale': transform_param.scale,
+                       'mirror': transform_param.mirror,
+                       'crop_size': transform_param.crop_size,
+                       'mean_values': [float(element) for element in transform_param.mean_value],
+                       'force_color': transform_param.force_color,
+                       'color_augmentation': transform_param.color_augmentation,
+                       'padding': transform_param.padding,
+                       'min_random_scale': transform_param.min_random_scale,
+                       'max_random_scale': transform_param.max_random_scale,
                        'shuffle': parallel_param.shuffle,
                        'node_step': parallel_param.node_step,
                        'partition': parallel_param.partition}
@@ -76,20 +76,25 @@ class DataLayer(Layer):
 class MemoryDataLayer(Layer):
     """The implementation of ``MemoryDataLayer``.
 
-    We extend it with ``FP16`` and ``NHWC <=> NCHW``.
+    We extend it with ``FP16`` and ``NHWC => NCHW``.
 
     Parameters
     ----------
     dtype : caffe_pb2.MemoryDataParameter.DataType
         The dest data type. ``FLOAT32`` or ``FLOAT16``.
+    mean_value : list of float
+        The mean of each channel. Refer `TransformationParameter.mean_value`_.
 
     """
     def __init__(self, LayerParameter):
         super(MemoryDataLayer, self).__init__(LayerParameter)
         param = LayerParameter.memory_data_param
-        import numpy as np
-        self._param = {'dtype': {0: np.float32, 1: np.float16}[param.dtype]}
+        transform_param = LayerParameter.transform_param
+        self._param = {'dtype': {0: 'FLOAT32', 1: 'FLOAT16'}[param.dtype]}
+        if len(transform_param.mean_value) > 0:
+            self._param['mean_values'] = \
+                [float(element) for element in transform_param.mean_value]
 
     def Setup(self, bottom):
         super(MemoryDataLayer, self).Setup(bottom)
-        return ops.MemoryData(bottom[0], **self._param)
+        return ops.ImageData(bottom[0], **self._param)

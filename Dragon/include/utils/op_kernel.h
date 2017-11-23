@@ -148,12 +148,12 @@ void TanhGrad(const int count, const T* dy, const T* y, T* dx);
 /******************** arithmetic.bias_add ********************/
 
 template <typename T, class Context>
-void BiasAdd(const int count, 
-             const int outer_dim, 
-             const int dim, 
+void BiasAdd(const int count,
+             const int outer_dim,
+             const int dim,
              const int inner_dim,
-             const string& format, 
-             const T* bias, 
+             const string& data_format,
+             const T* bias,
              const T* bias_multiplier, 
              T* y);
 
@@ -270,16 +270,19 @@ void SparseSoftmaxFocalLossGrad(const int count,
                                 Tensor* ignore, 
                                 T* dx);
 
-/******************** misc.memory_data ********************/
+/******************** misc.image_data ********************/
 
 template <typename Tx, typename Ty, class Context>
-void MemoryData(const int count, 
-                const int num, 
-                const int channels,
-                const int height, 
-                const int width, 
-                const Tx* x, 
-                Ty* y);
+void ImageData(const int count,
+               const int N,
+               const int C,
+               const int H,
+               const int W,
+               const float* mean_values,
+               const float* std_values,
+               const string& data_format,
+               const Tx* x,
+               Ty* y);
 
 /******************** ndarray.arange ********************/
 
@@ -369,7 +372,8 @@ void Crop1D(const int count,
             const int inner_dim,
             const int start,
             const T* x,
-            T* y);
+            T* y, 
+            Context* context);
 
 template <typename T, class Context>
 void Crop1DGrad(const int count,
@@ -379,7 +383,8 @@ void Crop1DGrad(const int count,
                 const int start,
                 const int end,
                 const T* dy,
-                T* dx);
+                T* dx,
+                Context* context);
 
 /******************** ndarray.pad ********************/
 
@@ -391,7 +396,8 @@ void ConstPad1D(const int count,
                 const int pad_l,
                 const float value,
                 const T* x,
-                T* y);
+                T* y,
+                Context* context);
 
 template <typename T, class Context>
 void ReflectPad1D(const int count,
@@ -400,7 +406,8 @@ void ReflectPad1D(const int count,
                   const int inner_dim,
                   const int pad_l,
                   const T* x,
-                  T* y);
+                  T* y, 
+                  Context* context);
 
 template <typename T, class Context>
 void EdgePad1D(const int count,
@@ -409,7 +416,8 @@ void EdgePad1D(const int count,
                const int inner_dim,
                const int pad_l,
                const T* x,
-               T* y);
+               T* y, 
+               Context* context);
 
 template <typename T, class Context>
 void ConstPad1DGrad(const int count,
@@ -418,7 +426,8 @@ void ConstPad1DGrad(const int count,
                     const int inner_dim,
                     const int pad_l,
                     const T* dy,
-                    T* dx);
+                    T* dx, 
+                    Context* context);
 
 template <typename T, class Context>
 void ReflectPad1DGrad(const int count,
@@ -436,7 +445,8 @@ void EdgePad1DGrad(const int count,
                    const int inner_dim,
                    const int pad_l,
                    const T* dy,
-                   T* dx);
+                   T* dx,
+                   Context* context);
 
 /******************** ndarray.one_hot ********************/
 
@@ -612,154 +622,168 @@ void RMSPropUpdate(const int count,
 /******************** vision.bilinear_resize ********************/
 
 template <typename T, class Context>
-void BilinearResize(const int count, 
-              const int num, 
-              const int channels,
-              const int h_in,
-              const int w_in, 
-              const int h_out, 
-              const int w_out, 
-              const T* x, 
-              T* y);
+void BilinearResize(const int count,
+                    const int N,
+                    const int C,
+                    const int H,
+                    const int W,
+                    const int out_h,
+                    const int out_w,
+                    const string& data_format,
+                    const T* x,
+                    T* y);
 
 template <typename T, class Context>
 void BilinearResizeGrad(const int count,
-                        const int num, 
-                        const int channels,
-                        const int h_in, 
-                        const int w_in, 
-                        const int h_out, 
-                        const int w_out,
-                        const T* dy, 
+                        const int N,
+                        const int C,
+                        const int H,
+                        const int W,
+                        const int out_h,
+                        const int out_w,
+                        const string& data_format,
+                        const T* dy,
                         T* dx);
 
 /******************** vision.conv ********************/
 
 template <typename T, class Context>
-void Im2Col(const int channels, 
-            const int height, 
-            const int width,
-            const int kernel_h, 
-            const int kernel_w, 
-            const int stride_h, 
-            const int stride_w, 
-            const int pad_h,
-            const int pad_w,
-            const int dilation_h, 
-            const int dilation_w, 
-            const T* im,
-            T* col);
+void Im2Col2d(const int C,
+              const int H,
+              const int W,
+              const int col_h,
+              const int col_w,
+              const int kernel_h,
+              const int kernel_w,
+              const int stride_h,
+              const int stride_w,
+              const int pad_h,
+              const int pad_w,
+              const int dilation_h,
+              const int dilation_w,
+              const string& data_format,
+              const T* im,
+              T* col);
 
 template <typename T, class Context>
-void Col2Im(const int channels, 
-            const int height, 
-            const int width,
-            const int kernel_h, 
-            const int kernel_w, 
-            const int stride_h, 
-            const int stride_w, 
-            const int pad_h,
-            const int pad_w,
-            const int dilation_h, 
-            const int dilation_w,
-            const T* col,
-            T* im);
+void Col2Im2d(const int C,
+              const int H,
+              const int W,
+              const int col_h,
+              const int col_w,
+              const int kernel_h,
+              const int kernel_w,
+              const int stride_h,
+              const int stride_w,
+              const int pad_h,
+              const int pad_w,
+              const int dilation_h,
+              const int dilation_w,
+              const string& data_format,
+              const T* col,
+              T* im);
 
 /******************** vision.nn_resize ********************/
 
 template <typename T, class Context>
-void NNResize(const int count, 
-              const int num, 
-              const int channels,
-              const int h_in,
-              const int w_in, 
-              const int h_out, 
-              const int w_out, 
+void NNResize(const int count,
+              const int N,
+              const int C,
+              const int H,
+              const int W,
+              const int out_h,
+              const int out_w,
+              const string& data_format,
               const T* x, 
               T* y);
 
 template <typename T, class Context>
-void NNResizeGrad(const int count, 
-                  const int num, 
-                  const int channels,
-                  const int h_in, 
-                  const int w_in, 
-                  const int h_out, 
-                  const int w_out,
+void NNResizeGrad(const int count,
+                  const int N,
+                  const int C,
+                  const int H,
+                  const int W,
+                  const int out_h,
+                  const int out_w,
+                  const string& data_format,
                   const T* dy, 
                   T* dx);
 
 /******************** vision.pooling ********************/
 
 template <typename T, class Context>
-void MAXPooling(const int count, 
-                const int num, 
-                const int channels, 
-                const int height, 
-                const int width, 
-                const int pool_height, 
-                const int pool_width,
-                const int kernel_h, 
-                const int kernel_w,
-                const int stride_h,
-                const int stride_w,
-                const int pad_h, 
-                const int pad_w,
-                const T* x, 
-                int* mask, 
-                T* y);
+void MAXPooling2d(const int count,
+                  const int N,
+                  const int C,
+                  const int H,
+                  const int W,
+                  const int pool_h,
+                  const int pool_w,
+                  const int kernel_h,
+                  const int kernel_w,
+                  const int stride_h,
+                  const int stride_w,
+                  const int pad_h,
+                  const int pad_w,
+                  const string& data_format,
+                  const T* x,
+                  int* mask,
+                  T* y);
 
 template <typename T, class Context>
-void AVEPooling(const int count, 
-                const int num, 
-                const int channels,
-                const int height, 
-                const int width, 
-                const int pool_height, 
-                const int pool_width,
-                const int kernel_h, 
-                const int kernel_w, 
-                const int stride_h, 
-                const int stride_w, 
-                const int pad_h,
-                const int pad_w,
-                const T* x, 
-                T* y);
+void AVGPooling2d(const int count, 
+                  const int N,
+                  const int C,
+                  const int H,
+                  const int W,
+                  const int pool_h,
+                  const int pool_w,
+                  const int kernel_h,
+                  const int kernel_w,
+                  const int stride_h,
+                  const int stride_w,
+                  const int pad_h,
+                  const int pad_w,
+                  const string& data_format,
+                  const T* x,
+                  T* y);
 
 template <typename T, class Context>
-void MAXPoolingGrad(const int count, 
-                    const int num, 
-                    const int channels,
-                    const int height, 
-                    const int width, 
-                    const int pool_height, 
-                    const int pool_width,
-                    const int kernel_h, 
-                    const int kernel_w, 
-                    const int stride_h, 
-                    const int stride_w, 
-                    const int pad_h,
-                    const int pad_w,
-                    const T* dy, 
-                    const int* mask, 
-                    T* dx);
+void MAXPooling2dGrad(const int count,
+                      const int N,
+                      const int C,
+                      const int H,
+                      const int W,
+                      const int pool_h,
+                      const int pool_w,
+                      const int kernel_h,
+                      const int kernel_w,
+                      const int stride_h,
+                      const int stride_w,
+                      const int pad_h,
+                      const int pad_w,
+                      const string& data_format,
+                      const T* dy,
+                      const int* mask,
+                      T* dx);
 
 template <typename T, class Context>
-void AVEPoolingGrad(const int count, 
-                    const int num, 
-                    const int channels,
-                    const int height, 
-                    const int width, 
-                    const int pool_height, 
-                    const int pool_width,
-                    const int kernel_h, 
-                    const int kernel_w, 
-                    const int stride_h, 
-                    const int stride_w, 
-                    const int pad_h,
-                    const int pad_w,
-                    const T* dy, 
-                    T* dx);
+void AVGPooling2dGrad(const int count,
+                      const int N,
+                      const int C,
+                      const int H,
+                      const int W,
+                      const int pool_h,
+                      const int pool_w,
+                      const int kernel_h,
+                      const int kernel_w,
+                      const int stride_h,
+                      const int stride_w,
+                      const int pad_h,
+                      const int pad_w,
+                      const string& data_format,
+                      const T* dy,
+                      T* dx);
 
 /******************** vision.roi_pooling ********************/
 

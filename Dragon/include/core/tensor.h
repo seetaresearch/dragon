@@ -105,7 +105,7 @@ class Tensor {
     MixedMemory* memory() const { return own_mem_ ? memory_.get() : ex_memory_; }
     MixedMemory::State memory_state() const { 
         MixedMemory* mem = memory();
-        CHECK(mem) << "Memory access before allowcating.";
+        CHECK(mem) << "\nMemory access before allowcating.";
         return memory()->state(); 
     }
 

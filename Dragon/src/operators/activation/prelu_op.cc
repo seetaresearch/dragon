@@ -34,7 +34,7 @@ void PReluOp<Context>::RunOnDevice() {
         dim = input(0).count(2);
     } else {
         channels = input(0).dim(-1);
-        dim = input(0).count() / channels;
+        dim = input(0).count(1) / channels;
     }
     output(0)->ReshapeLike(input(0));
 
@@ -95,7 +95,7 @@ void PReluGradientOp<Context>::RunOnDevice() {
         dim = input(0).count(2);
     } else {
         channels = input(0).dim(-1);
-        dim = input(0).count() / channels;
+        dim = input(0).count(1) / channels;
     }
 
     output(0)->ReshapeLike(input(0));

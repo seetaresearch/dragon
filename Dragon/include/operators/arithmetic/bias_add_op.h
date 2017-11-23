@@ -19,8 +19,7 @@ class BiasAddOp : public Operator<Context> {
           data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
 
     void RunOnDevice() override;
-    template <typename T> void NCHWRunWithType();
-    template <typename T> void NHWCRunWithType();
+    template <typename T> void RunWithType();
 
  protected:
     TIndex outer_dim, dim, inner_dim;
@@ -36,8 +35,7 @@ class BiasAddGradientOp final : public Operator<Context> {
           data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
 
     void RunOnDevice() override;
-    template <typename T> void NCHWRunWithType();
-    template <typename T> void NHWCRunWithType();
+    template <typename T> void RunWithType();
 
  protected:
     int outer_dim, dim, inner_dim;

@@ -80,7 +80,7 @@ def MPIGather(inputs, root, mpi_ranks=None, **kwargs):
 
     if mpi_ranks is None:
         num_nodes = mpi.Size()
-        mpi_rank = [i for i in xrange(0, num_nodes)]
+        mpi_ranks = [i for i in xrange(0, num_nodes)]
     if not isinstance(mpi_ranks, list): mpi_ranks = [mpi_ranks]
 
     comm, group = mpi.CreateGroup(root, incl=mpi_ranks)

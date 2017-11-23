@@ -9,8 +9,9 @@ from six.moves import range as xrange
 
 from . import *
 
-def Conv2D(inputs, num_output, kernel_size,
-           stride=1, pad=0, dilation=1, group=1, **kwargs):
+def Conv2d(inputs, num_output, kernel_size,
+           stride=1, pad=0, dilation=1, group=1,
+           padding='VALID', data_format='NCHW', **kwargs):
     """2D Convolution.
 
     The number of inputs vary from ``2`` to ``3`` (Without or With ``bias``).
@@ -18,6 +19,8 @@ def Conv2D(inputs, num_output, kernel_size,
     The spatial output dimension of convolution can be computed as follows:
 
     |conv_output_dim|
+
+    Set ``padding`` to  **VALID** will use the value of ``pad``.
 
     Parameters
     ----------
@@ -35,21 +38,25 @@ def Conv2D(inputs, num_output, kernel_size,
         The dilation multiple(s) of convolution. Default is ``1``.
     group : int
         The group size of convolution. Default is ``1``.
+    padding : str
+        The padding algorithm. ``VALID`` or ``SAME``.
+    data_format : str
+        The data format. ``NCHW`` or ``NHWC``.
 
     Returns
     -------
     Tensor
-        The tensor of 2d convolution.
+        The output tensor.
 
     Examples
     --------
     >>> input = Tensor().Variable()
     >>> weights = Tensor().Normal(std=0.001)
     >>> biases = Tensor().Constant(value=0)
-    >>> conv1 = Conv2D([input, weights, biases], num_output=64, kernel_size=3)
+    >>> conv1 = Conv2d([input, weights, biases], num_output=64, kernel_size=3)
 
     >>> weights = Tensor().Gaussian(std=0.001)
-    >>> conv2 = Conv2D([conv1, weights], num_output=128, kernel_size=3, stride=1)
+    >>> conv2 = Conv2d([conv1, weights], num_output=128, kernel_size=3, stride=1)
 
     """
     CheckInputs(inputs, 2, 3)
@@ -63,7 +70,7 @@ def Conv2D(inputs, num_output, kernel_size,
     if not isinstance(arguments['dilation'], list):
         arguments['dilation'] = [arguments['dilation']]
 
-    output = Tensor.CreateOperator(nout=1, op_type='Conv', **arguments)
+    output = Tensor.CreateOperator(nout=1, op_type='Conv2d', **arguments)
 
     if inputs[0].shape is not None:
         output.shape = inputs[0].shape[:]
@@ -83,8 +90,9 @@ def Conv2D(inputs, num_output, kernel_size,
     return output
 
 
-def Deconv2D(inputs, num_output, kernel_size,
-             stride=1, pad=0, dilation=1, group=1, **kwargs):
+def Conv2dTranspose(inputs, num_output, kernel_size,
+                    stride=1, pad=0, dilation=1, group=1, output_shape=None,
+                    padding='VALID', data_format='NCHW', **kwargs):
     """2D Deconvolution.
 
     The number of inputs vary from ``2`` to ``3`` (Without or With ``bias``).
@@ -92,6 +100,10 @@ def Deconv2D(inputs, num_output, kernel_size,
     The spatial output dimension of deconvolution can be computed as follows:
 
     |deconv_output_dim|
+
+    Set ``padding`` to  **VALID** will use the value of ``pad``.
+
+    Provide ``output_shape`` if using **SAME** padding.
 
     Parameters
     ----------
@@ -109,25 +121,45 @@ def Deconv2D(inputs, num_output, kernel_size,
         The dilation multiple(s) of deconvolution. Default is ``1``.
     group : int
         The group size of deconvolution. Default is ``1``.
+    output_shape : list of int or None
+        The deterministic output shape for **SAME** padding.
+    padding : str
+        The padding algorithm. ``VALID`` or ``SAME``.
+    data_format : str
+        The data format. ``NCHW`` or ``NHWC``.
 
     Returns
     -------
     Tensor
-        The tensor of 2d deconvolution.
+        The output tensor.
 
     Examples
     --------
     >>> input = Tensor().Variable()
     >>> weights = Tensor().Normal(std=0.001)
     >>> biases = Tensor().Constant(value=0)
-    >>> deconv1 = Deconv2D([input, weights, biases], num_output=64, kernel_size=3)
+    >>> deconv1 = Conv2dTranspose([input, weights, biases], num_output=64, kernel_size=3)
 
     >>> weights = Tensor().Gaussian(std=0.001)
-    >>> deconv2 = Deconv2D([conv1, weights], num_output=128, kernel_size=3, stride=1)
+    >>> deconv2 = Conv2dTranspose([deconv1, weights], num_output=128, kernel_size=3, stride=1)
 
     """
     CheckInputs(inputs, 2, 3)
     arguments = ParseArguments(locals())
+
+    arguments['output_shape'] = None
+    if output_shape is not None:
+        if not isinstance(output_shape, list):
+            raise TypeError('The output shape should be a list.')
+        if isinstance(output_shape[0], Tensor):
+            arguments['dynamic_dsize'] = []
+            arguments['extra_inputs'] = list(output_shape)
+            for dim in output_shape:
+                arguments['dynamic_dsize'].append(dim)
+        else:
+            arguments['static_dsize'] = []
+            for dim in output_shape:
+                arguments['static_dsize'].append(int(dim))
 
     if not isinstance(arguments['kernel_size'], list):
         arguments['kernel_size'] = [arguments['kernel_size']]
@@ -141,44 +173,48 @@ def Deconv2D(inputs, num_output, kernel_size,
     if not isinstance(arguments['dilation'], list):
         arguments['dilation'] = [arguments['dilation']]
 
-    return Tensor.CreateOperator(nout=1, op_type='DeConv', **arguments)
+    return Tensor.CreateOperator(nout=1, op_type='Conv2dTranspose', **arguments)
 
 
-def Pool2D(inputs, kernel_size, stride, pad=0,
-           mode='MAX_POOLING', global_pooling=False, **kwargs):
+def Pool2d(inputs, kernel_size, stride, pad=0, padding='VALID',
+           mode='MAX', data_format='NCHW', global_pooling=False, **kwargs):
     """2D Pooling, MAX or AVG.
 
     The spatial output dimension of pooling can be computed as follows:
 
     |pooling_output_dim|
 
+    Set ``padding`` to  **VALID** will use the value of ``pad``.
+
     If use ``global_pooling``, the stride and pad will be set to ``1`` and ``0`` automatically.
 
     Parameters
     ----------
     inputs : Tensor
-        The tensor to down-sample.
+        The input tensor.
     kernel_size : int or list
         The kernel size(s) of pooling.
     stride : int or list
         The stride(s) of of pooling,
     pad : int or list
         The zero padding size(s) of pooling. Default is ``0``.
+    padding : str
+        The padding algorithm. ``VALID`` or ``SAME``.
     mode : str
-        The mode, ``MAX_POOLING`` or ``AVG_POOLING``.
+        The mode, ``MAX`` or ``AVG``.
+    data_format : str
+        The data format, ``NCHW`` or ``NHWC``.
     global_pooling : boolean
         Whether to use global pooling.
 
     Returns
     -------
     Tensor
-        The down-sampled tensor.
+        The output tensor.
 
     """
     CheckInputs(inputs, 1)
     arguments = ParseArguments(locals())
-    SUPPORT_MODES = {'MAX_POOLING': 0, 'AVG_POOLING': 1}
-    arguments['mode'] = SUPPORT_MODES[mode]
     if not isinstance(arguments['kernel_size'], list):
         arguments['kernel_size'] = [arguments['kernel_size']]
     if not isinstance(arguments['stride'], list):
@@ -186,10 +222,11 @@ def Pool2D(inputs, kernel_size, stride, pad=0,
     if not isinstance(arguments['pad'], list):
         arguments['pad'] = [arguments['pad']]
 
-    output = Tensor.CreateOperator(nout=1, op_type='Pooling', **arguments)
+    output = Tensor.CreateOperator(nout=1, op_type='Pooling2d', **arguments)
 
     if inputs.shape is not None:
         output.shape = inputs.shape[:]
+        axis = 2 if data_format == 'NCHW' else 1
         for i in xrange(2):
             k = arguments['kernel_size'][i] if i < len(arguments['kernel_size']) \
                                             else arguments['kernel_size'][-1]
@@ -197,10 +234,17 @@ def Pool2D(inputs, kernel_size, stride, pad=0,
                                             else arguments['stride'][-1]
             p = arguments['pad'][i]         if i < len(arguments['pad']) \
                                             else arguments['pad'][-1]
+            if padding == 'SAME':
+                input_size = output.shape[i + axis]
+                output_size = (input_size + s - 1) / float(s)
+                padding_needed = max(0, (output_size - 1) * s + k - input_size)
+                p_l = padding_needed / 2
+                p_r = padding_needed - p_l
+                p = min(p_l, p_r)
             if not global_pooling:
-                output.shape[i + 2] = int(math.ceil(float(output.shape[i + 2] + 2 * p - k) / s) + 1)
+                output.shape[i + axis] = int(math.ceil(float(output.shape[i + axis] + 2 * p - k) / s) + 1)
             else:
-                output.shape[i + 2] = 1
+                output.shape[i + axis] = 1
 
     return output
 
@@ -296,7 +340,7 @@ def LRN(inputs, local_size=5, alpha=0.0001, beta=0.75, k=2.0, mode='ACROSS_CHANN
     return output
 
 
-def NNResize(inputs, dsize, fy=-1.0, fx=-1.0, **kwargs):
+def NNResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
     """Resize the image with Nearest-Neighbor method.
 
     Set ``dsize`` to None if you want to use ``fy`` and ``fx``.
@@ -306,16 +350,18 @@ def NNResize(inputs, dsize, fy=-1.0, fx=-1.0, **kwargs):
     inputs : Tensor
         The input tenosr.
     dsize : tuple, list, Tensor or None
-        The dest output size.
+        The output size.
     fy : float
         The scale factor based on src height. Default is ``-1.0`` (Discarded).
     fx : float
         The scale factor based on src width. Default is ``-1.0`` (Discarded).
+    data_format : str
+        The data_format. ``NCHW`` or ``NHWC``.
 
     Returns
     -------
     Tensor
-        The resized tensor.
+        The output tensor.
 
     """
     CheckInputs(inputs, 1)
@@ -337,7 +383,7 @@ def NNResize(inputs, dsize, fy=-1.0, fx=-1.0, **kwargs):
     return output
 
 
-def BilinearResize(inputs, dsize, fy=-1.0, fx=-1.0, **kwargs):
+def BilinearResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
     """Resize the image with Bi-linear method.
 
     Set ``dsize`` to None if you want to use ``fy`` and ``fx``.
@@ -352,11 +398,13 @@ def BilinearResize(inputs, dsize, fy=-1.0, fx=-1.0, **kwargs):
         The scale factor based on src height. Default is ``-1.0`` (Discarded).
     fx : float
         The scale factor based on src width. Default is ``-1.0`` (Discarded).
+    data_format : str
+        The data_format. ``NCHW`` or ``NHWC``.
 
     Returns
     -------
     Tensor
-        The resized tensor.
+        The output tensor.
 
     """
     CheckInputs(inputs, 1)
@@ -383,7 +431,7 @@ def BiasAdd(inputs, data_format='NCHW', **kwargs):
 
     Parameters
     ----------
-    inputs : Tensor
+    inputs : list of Tensor
         The inputs, represent [input, bias].
     data_format : str
         The data format, ``NCHW`` or ``NHWC``.
@@ -394,7 +442,7 @@ def BiasAdd(inputs, data_format='NCHW', **kwargs):
         The bias-added tensor.
 
     """
-    CheckInputs(inputs, 1)
+    CheckInputs(inputs, 2)
     arguments = ParseArguments(locals())
 
     output =  Tensor.CreateOperator(nout=1, op_type='BiasAdd', **arguments)

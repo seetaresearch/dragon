@@ -49,7 +49,7 @@ void LRNOp<Context>::PoolRunWithType() {
         ks.set_name("kernel_size"); ks.add_ints(local_size);
         s.set_name("stride"); s.add_ints(1);
         p.set_name("pad"); p.add_ints((local_size - 1) / 2);
-        mode.set_name("mode"); mode.set_i(AVG_POOLING);
+        mode.set_name("mode"); mode.set_s("AVG");
         OperatorDef pool_op_def = MakeOperatorDef("Pooling", "",
                                                   vector<string>({ sqr_out->name() }),
                                                   vector<string>({ pool_out->name() }), 
@@ -177,7 +177,7 @@ void LRNGradientOp<Context>::PoolRunWithType() {
         ks.set_name("kernel_size"); ks.add_ints(local_size);
         s.set_name("stride"); s.add_ints(1);
         p.set_name("pad"); p.add_ints((local_size - 1) / 2);
-        mode.set_name("mode"); mode.set_i(AVG_POOLING);
+        mode.set_name("mode"); mode.set_s("AVG");
         OperatorDef pool_op_def = MakeOperatorDef("PoolingGradient", "",
                                                   vector<string>({ sqr_out->name(), 
                                                                    pool_out->name(),

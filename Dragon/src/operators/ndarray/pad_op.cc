@@ -16,7 +16,8 @@ void PadOp<Context>::ConstRunWithType() {
                                      pad_l[axis],
                                            value,
                                            Xdata,
-                                          Ydata);
+                                           Ydata,
+                                         &ctx());
 }
 
 template <class Context> template <typename T>
@@ -29,7 +30,8 @@ void PadOp<Context>::ReflectRunWithType() {
                                          inner_dim,
                                        pad_l[axis],
                                              Xdata,
-                                            Ydata);
+                                             Ydata,
+                                           &ctx());
 }
 
 template <class Context> template <typename T>
@@ -42,7 +44,8 @@ void PadOp<Context>::EdgeRunWithType() {
                                       inner_dim,
                                     pad_l[axis],
                                           Xdata,
-                                         Ydata);
+                                          Ydata,
+                                        &ctx());
 }
 
 template <class Context>
@@ -109,14 +112,14 @@ template <class Context> template <typename T>
 void PadGradientOp<Context>::ConstRunWithType() {
     auto* dYdata = source->template data<T, Context>();
     auto* dXdata = dest->template mutable_data<T, Context>();
-    math::Set<T, Context>(dest->count(), 0, dXdata);
     kernel::ConstPad1DGrad<T, Context>(dest->count(),
                      dim - pad_l[axis] - pad_r[axis],
                                                  dim,
                                            inner_dim,
                                          pad_l[axis],
                                               dYdata,
-                                             dXdata);
+                                              dXdata,
+                                             &ctx());
 }
 
 template <class Context> template <typename T>
@@ -144,7 +147,8 @@ void PadGradientOp<Context>::EdgeRunWithType() {
                                             inner_dim,
                                           pad_l[axis],
                                                dYdata,
-                                              dXdata);
+                                               dXdata,
+                                              &ctx());
 }
 
 template <class Context>

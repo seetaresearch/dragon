@@ -18,53 +18,38 @@ class ConvOpBase : public Operator<Context> {
  public:
     ConvOpBase(const OperatorDef& op_def, Workspace* ws) 
         : Operator<Context>(op_def, ws),
-          num_output(OperatorBase::GetSingleArg<int>("num_output", 1)), 
-          group(OperatorBase::GetSingleArg<int>("group", 1)) {
-
-        channel_axis = 1, num_spatial_axes = 2;    // Conv2D support only Now
-        vector<TIndex> spatial_shape(1, num_spatial_axes);
-
-        vector<int> ks = OperatorBase::GetRepeatedArg<int>("kernel_size");
-        for (int i = 0; i < num_spatial_axes; i++) 
-            kernel_size.push_back(i < ks.size() ? ks[i]: ks[0]);
-
-        vector<int> s = OperatorBase::GetRepeatedArg<int>("stride");
-        for (int i = 0; i < num_spatial_axes; i++)
-            stride.push_back(i < s.size() ? s[i] : s[0]);
-
-        vector<int> p = OperatorBase::GetRepeatedArg<int>("pad");
-        for (int i = 0; i < num_spatial_axes; i++)
-            pad.push_back(i < p.size() ? p[i] : p[0]);
-
-        vector<int> d = OperatorBase::GetRepeatedArg<int>("dilation");
-        for (int i = 0; i < num_spatial_axes; i++)
-            dilation.push_back(i < d.size() ? d[i] : d[0]);
-
-        is_1x1 = true;
-        for (int i = 0; i < num_spatial_axes; i++) {
-            is_1x1 &= (kernel_size[i] == 1 && 
-                       stride[i] == 1 && 
-                       pad[i] == 0);
-            if (!is_1x1) break;
-        }
+          data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")),
+          padding(OperatorBase::GetSingleArg<string>("padding", "VALID")),
+          num_output(OperatorBase::GetSingleArg<int>("num_output", 1)),
+          group(OperatorBase::GetSingleArg<int>("group", 1)),
+          static_dsize(OperatorBase::GetRepeatedArg<int>("static_dsize")),
+          dynamic_dsize(OperatorBase::GetRepeatedArg<string>("dynamic_dsize")) {
+        if (data_format == "NCHW") spatial_axis = 2;
+        else if (data_format == "NHWC") spatial_axis = 1;
+        else LOG(FATAL) << "Unknown data format: " << data_format;
+        num_spatial_axes = -1;  // unknown
     }
 
  protected:
     vector<TIndex> kernel_size, stride, pad, dilation;
-    vector<TIndex> input_shape, output_shape, bottom_shape, col_buffer_shape;
+    string data_format, padding;
+    vector<TIndex> input_shape, output_shape, bottom_shape, top_shape, col_shape;
     vector<TIndex> weight_shape, bias_shape;
     Tensor* col_buffer, *bias_multiplier;
     TIndex num_output, group;
-    TIndex channel_axis, num_spatial_axes;
+    TIndex spatial_axis, num_spatial_axes;
     TIndex channels, out_spatial_dim;
     TIndex conv_in_channels, conv_out_channels;
     TIndex conv_out_spatial_dim, kernel_dim;
     TIndex col_offset, output_offset, weight_offset, x_offset, y_offset;
+    vector<int> static_dsize;
+    vector<string> dynamic_dsize;
     bool is_1x1;
 
+    void Setup();
     void Reshape();
     void GradientReshape();
-    virtual void ComputeOutputShape() = 0;
+    virtual void ComputeOutputShape();
     virtual bool ReverseDimensions() = 0;
 
     template <typename T> void Wx(const T* x, const T* weights, T* y, bool skip_im2col = false);
@@ -74,25 +59,33 @@ class ConvOpBase : public Operator<Context> {
     template <typename T> void Db(const T* dy, T* db);
 
  private:
-    template <typename T> void Im2Col(const T* im, T* col_buffer) {
-        kernel::Im2Col<T, Context>(conv_in_channels, 
-                     input_shape[0], input_shape[1],
-                     kernel_size[0], kernel_size[1], 
-                               stride[0], stride[1],
-                                     pad[0], pad[1],
-                           dilation[0], dilation[1], 
-                                                 im,
-                                        col_buffer);
+    template <typename T> void Im2Col(const T* im, T* col) {
+        if (input(0).ndim() == 4) {
+             kernel::Im2Col2d<T, Context>(conv_in_channels,
+                            input_shape[0], input_shape[1],
+                          output_shape[0], output_shape[1],
+                            kernel_size[0], kernel_size[1],
+                                      stride[0], stride[1],
+                                            pad[0], pad[1],
+                                  dilation[0], dilation[1],
+                                               data_format,
+                                                        im,
+                                                      col);
+        } else LOG(FATAL) << "ConvNd has not been implemented yet";
     }
-    template <typename T> void Col2Im(const T* col_buffer, T* im) {
-        kernel::Col2Im<T, Context>(conv_in_channels, 
-                     input_shape[0], input_shape[1],
-                     kernel_size[0], kernel_size[1],  
-                               stride[0], stride[1],
-                                     pad[0], pad[1],
-                           dilation[0], dilation[1],
-                                         col_buffer,
-                                                im);
+    template <typename T> void Col2Im(const T* col, T* im) {
+        if (input(0).ndim() == 4) {
+             kernel::Col2Im2d<T, Context>(conv_in_channels,
+                            input_shape[0], input_shape[1],
+                          output_shape[0], output_shape[1],
+                            kernel_size[0], kernel_size[1],
+                                      stride[0], stride[1],
+                                            pad[0], pad[1],
+                                  dilation[0], dilation[1],
+                                               data_format,
+                                                       col,
+                                                       im);
+        } else LOG(FATAL) << "ConvNd has not been implemented yet";
     }
 };
 

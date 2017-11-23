@@ -128,7 +128,7 @@ class Operator : public OperatorBase {
 #ifndef WITH_MPI
         return true;
 #else
-        vector<int> allow_ranks = Operator::GetRepeatedArg<int>("mpi_rank");
+        vector<int> allow_ranks = Operator::GetRepeatedArg<int>("mpi_ranks");
         if (allow_ranks.empty()) return true;
         int cur_rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &cur_rank);

@@ -20,7 +20,7 @@ from .operators import recurrent
 
 # data
 LMDBData = data.LMDBData
-MemoryData = data.MemoryData
+ImageData = data.ImageData
 
 # init
 Fill = init.Fill
@@ -31,9 +31,10 @@ GlorotUniform = init.GlorotUniform
 GlorotNormal = init.GlorotNormal
 
 # vision
-Conv2D = vision.Conv2D
-Deconv2D = vision.Deconv2D
-Pool2D = vision.Pool2D
+Conv2d = vision.Conv2d
+Conv2dTranspose = vision.Conv2dTranspose
+Deconv2d = vision.Conv2dTranspose
+Pool2d = vision.Pool2d
 ROIPooling = vision.ROIPooling
 ROIAlign = vision.ROIAlign
 LRN = vision.LRN

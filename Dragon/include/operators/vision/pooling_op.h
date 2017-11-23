@@ -11,14 +11,14 @@
 
 namespace dragon {
 
-enum PoolingMode { MAX_POOLING, AVG_POOLING };
-
 template <class Context>
-class PoolingOp: public Operator <Context> {
+class Pooling2dOp: public Operator <Context> {
  public:
-     PoolingOp(const OperatorDef& op_def, Workspace* ws)
+    Pooling2dOp(const OperatorDef& op_def, Workspace* ws)
          : Operator<Context>(op_def, ws),
-           mode(PoolingMode(OperatorBase::GetSingleArg<int>("mode", MAX_POOLING))),
+           mode(OperatorBase::GetSingleArg<string>("mode", "MAX")),
+           data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")),
+           padding(OperatorBase::GetSingleArg<string>("padding", "VALID")),
            global_pooling(OperatorBase::GetSingleArg<bool>("global_pooling", false)) {
          vector<int> ks = OperatorBase::GetRepeatedArg<int>("kernel_size");
          vector<int> s = OperatorBase::GetRepeatedArg<int>("stride");
@@ -38,24 +38,25 @@ class PoolingOp: public Operator <Context> {
 
     void Reshape();
     void RunOnDevice() override;
-    template <typename T> void MaxRunWithType();
-    template <typename T> void AvgRunWithType();
+    template <typename T> void MAXRunWithType();
+    template <typename T> void AVGRunWithType();
 
  protected:
     vector<TIndex> kernel_size, stride, pad;
     Tensor* mask;
-    PoolingMode mode;
-    TIndex num, channels, height, width;
-    TIndex pool_height, pool_width;
+    string mode, data_format, padding;
+    TIndex n, c, h, w, pool_h, pool_w;
     bool global_pooling;
 };
 
 template <class Context>
-class PoolingGradientOp: public Operator<Context> {
+class Pooling2dGradientOp: public Operator<Context> {
  public:
-    PoolingGradientOp(const OperatorDef& op_def, Workspace* ws)
+    Pooling2dGradientOp(const OperatorDef& op_def, Workspace* ws)
          : Operator<Context>(op_def, ws),
-           mode(PoolingMode(OperatorBase::GetSingleArg<int>("mode", MAX_POOLING))),
+           mode(OperatorBase::GetSingleArg<string>("mode", "MAX")),
+           data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")),
+           padding(OperatorBase::GetSingleArg<string>("padding", "VALID")),
            global_pooling(OperatorBase::GetSingleArg<bool>("global_pooling", false)) {
          vector<int> ks = OperatorBase::GetRepeatedArg<int>("kernel_size");
          vector<int> s = OperatorBase::GetRepeatedArg<int>("stride");
@@ -75,46 +76,36 @@ class PoolingGradientOp: public Operator<Context> {
 
     void Reshape();
     void RunOnDevice() override;
-    template <typename T> void MaxRunWithType();
-    template <typename T> void AvgRunWithType();
+    template <typename T> void MAXRunWithType();
+    template <typename T> void AVGRunWithType();
 
  protected:
     vector<TIndex> kernel_size, stride, pad;
     Tensor* mask;
-    PoolingMode mode;
-    TIndex num, channels, height, width;
-    TIndex pool_height, pool_width;
+    string mode, data_format, padding;
+    TIndex n, c, h, w, pool_h, pool_w;
     bool global_pooling;
 };
 
 #ifdef WITH_CUDNN
 
 template <class Context>
-class CuDNNPoolingOp final : public PoolingOp<Context> {
+class CuDNNPooling2dOp final : public Pooling2dOp<Context> {
  public:
-    CuDNNPoolingOp(const OperatorDef& op_def, Workspace* ws)
-        : PoolingOp<Context>(op_def, ws) {
+    CuDNNPooling2dOp(const OperatorDef& op_def, Workspace* ws)
+        : Pooling2dOp<Context>(op_def, ws) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreatePoolingDescriptor(&pool_desc));
-        pool_mode = this->mode == MAX_POOLING ? 
-                                  CUDNN_POOLING_MAX :
-                                  CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
-#if CUDNN_VERSION_MIN(5, 0, 0)
-        CUDNN_CHECK(cudnnSetPooling2dDescriptor(pool_desc, 
-                                                pool_mode,
-                                      CUDNN_PROPAGATE_NAN, 
-               this->kernel_size[0], this->kernel_size[1],
-                               this->pad[0], this->pad[1], 
-                       this->stride[0], this->stride[1]));
+        if (this->mode == "MAX") {
+#if CUDNN_VERSION_MIN(6,0,0)
+            pool_mode = CUDNN_POOLING_MAX_DETERMINISTIC;
 #else
-        CUDNN_CHECK(cudnnSetPooling2dDescriptor_v4(pool_desc, 
-                                                   pool_mode,
-                                         CUDNN_PROPAGATE_NAN, 
-                  this->kernel_size[0], this->kernel_size[1],
-                                  this->pad[0], this->pad[1], 
-                          this->stride[0], this->stride[1]));
+            pool_mode = CUDNN_POOLING_MAX;
 #endif
+        } else if (this->mode == "AVG") {
+            pool_mode = CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
+        } else LOG(FATAL) << "Unsupported pooling mode: " << this->mode;
     }
 
     void RunOnDevice() override;
@@ -122,34 +113,40 @@ class CuDNNPoolingOp final : public PoolingOp<Context> {
 
  protected:
     cudnnTensorDescriptor_t input_desc, output_desc;
-    cudnnPoolingDescriptor_t  pool_desc;
-    cudnnPoolingMode_t        pool_mode;
+    cudnnPoolingDescriptor_t pool_desc;
+    cudnnPoolingMode_t pool_mode;
 };
 
 template <class Context>
-class CuDNNPoolingGradientOp final : public PoolingGradientOp<Context> {
+class CuDNNPooling2dGradientOp final : public Pooling2dGradientOp<Context> {
  public:
-    CuDNNPoolingGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : PoolingGradientOp<Context>(op_def, ws) {
+    CuDNNPooling2dGradientOp(const OperatorDef& op_def, Workspace* ws)
+        : Pooling2dGradientOp<Context>(op_def, ws) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreatePoolingDescriptor(&pool_desc));
-        pool_mode = this->mode == MAX_POOLING ? 
-                                  CUDNN_POOLING_MAX :
-                                  CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
+        if (this->mode == "MAX") {
+#if CUDNN_VERSION_MIN(6,0,0)
+            pool_mode = CUDNN_POOLING_MAX_DETERMINISTIC;
+#else
+            pool_mode = CUDNN_POOLING_MAX;
+#endif
+        } else if (this->mode == "AVG") {
+            pool_mode = CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
+        } else LOG(FATAL) << "Unsupported pooling mode: " << this->mode;
 #if CUDNN_VERSION_MIN(5, 0, 0)
-        CUDNN_CHECK(cudnnSetPooling2dDescriptor(pool_desc, 
+        CUDNN_CHECK(cudnnSetPooling2dDescriptor(pool_desc,
                                                 pool_mode,
-                                      CUDNN_PROPAGATE_NAN, 
+                                      CUDNN_PROPAGATE_NAN,
                this->kernel_size[0], this->kernel_size[1],
-                               this->pad[0], this->pad[1], 
+                               this->pad[0], this->pad[1],
                        this->stride[0], this->stride[1]));
 #else
-        CUDNN_CHECK(cudnnSetPooling2dDescriptor_v4(pool_desc, 
+        CUDNN_CHECK(cudnnSetPooling2dDescriptor_v4(pool_desc,
                                                    pool_mode,
-                                         CUDNN_PROPAGATE_NAN, 
+                                         CUDNN_PROPAGATE_NAN,
                   this->kernel_size[0], this->kernel_size[1],
-                                  this->pad[0], this->pad[1], 
+                                  this->pad[0], this->pad[1],
                           this->stride[0], this->stride[1]));
 #endif
     }
@@ -159,8 +156,8 @@ class CuDNNPoolingGradientOp final : public PoolingGradientOp<Context> {
 
  protected:
     cudnnTensorDescriptor_t input_desc, output_desc;
-    cudnnPoolingDescriptor_t  pool_desc;
-    cudnnPoolingMode_t        pool_mode;
+    cudnnPoolingDescriptor_t pool_desc;
+    cudnnPoolingMode_t pool_mode;
 };
 
 #endif    // WITH_CUDNN

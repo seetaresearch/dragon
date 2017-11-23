@@ -10,4 +10,3 @@ from .compile import (
     shared)
 
 from .configdefaults import config
-import gradient

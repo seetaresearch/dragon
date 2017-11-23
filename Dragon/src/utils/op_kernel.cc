@@ -178,13 +178,13 @@ template<> void PReluWGrad<float, CPUContext>(const int rows,
                                                                   1.0,
                                                  bcast_dw, multiplier,
                                                                   1.0,
-                                                                  dw);
+                                                                   dw);
         } else if (data_format == "NHWC") {
             math::Gemv<float, CPUContext>(CblasTrans, dim, channels,
                                                                 1.0,
                                                bcast_dw, multiplier,
                                                                 1.0,
-                                                                dw);
+                                                                 dw);
 
         } else LOG(FATAL) << "Unknown data format: " << data_format;
     }
@@ -285,18 +285,18 @@ template<> void Softmax<float, CPUContext>(const int count,
             for (int k = 0; k < inner_dim; k++)
                 scale[k] = std::max(scale[k], x[i * dim + j * inner_dim + k]);
         }
-        math::Gemm<float, CPUContext>(CblasNoTrans, CblasNoTrans, 
-                                           classes, inner_dim, 1, 
-                                                            -1.0, 
-                                           sum_multiplier, scale, 
+        math::Gemm<float, CPUContext>(CblasNoTrans, CblasNoTrans,
+                                           classes, inner_dim, 1,
+                                                            -1.0,
+                                           sum_multiplier, scale,
                                                              1.0,
-                                                              y);
+                                                               y);
         math::Exp<float, CPUContext>(dim, y, y);
         math::Gemv<float, CPUContext>(CblasTrans, classes, inner_dim,
-                                                                 1.0, 
-                                                   y, sum_multiplier, 
-                                                                 0.0, 
-                                                              scale);
+                                                                 1.0,
+                                                   y, sum_multiplier,
+                                                                 0.0,
+                                                               scale);
         for (int j = 0; j < classes; ++j) {
             math::Div<float, CPUContext>(inner_dim, y, scale, y);
             y += inner_dim;
@@ -316,15 +316,15 @@ template<> void SoftmaxGrad<float, CPUContext>(const int count,
     const int dim = count / outer_dim;
     for (int i = 0; i < outer_dim; ++i) {
         for (int k = 0; k < inner_dim; ++k)
-            scale[k] = math::StridedDot<float, CPUContext>(classes, 
-                                       dx + i * dim + k, inner_dim, 
-                                         y + i*dim + k, inner_dim);
-         math::Gemm<float, CPUContext>(CblasNoTrans, CblasNoTrans, 
-                                            classes, inner_dim, 1, 
-                                                             -1.0, 
-                                            sum_multiplier, scale, 
-                                                              1.0, 
-                                                      dx + i*dim);
+            scale[k] = math::StridedDot<float, CPUContext>(classes,
+                                       dx + i * dim + k, inner_dim,
+                                          y + i*dim + k, inner_dim);
+         math::Gemm<float, CPUContext>(CblasNoTrans, CblasNoTrans,
+                                            classes, inner_dim, 1,
+                                                             -1.0,
+                                            sum_multiplier, scale,
+                                                              1.0,
+                                                       dx + i*dim);
     }
     math::Mul<float, CPUContext>(count, dx, y, dx);
 }
@@ -358,23 +358,28 @@ template<> void BiasAdd<float, CPUContext>(const int count,
                                            const int outer_dim,
                                            const int dim,
                                            const int inner_dim,
-                                           const string& format,
+                                           const string& data_format,
                                            const float* bias,
                                            const float* bias_multiplier,
                                            float* y) {
-    if (format == "NCHW") {
-        const int y_offset = dim * inner_dim;
-        for (int n = 0; n < outer_dim; ++n) {
+    const int y_offset = dim * inner_dim;
+    for (int n = 0; n < outer_dim; ++n) {
+        if (data_format == "NCHW") {
             math::Gemm<float, CPUContext>(CblasNoTrans, CblasNoTrans,
                                                    dim, inner_dim, 1,
                                                                  1.0,
                                                bias, bias_multiplier,
                                                                  1.0,
-                                                                  y);
-            y += y_offset;
-        }
-    } else {
-        NOT_IMPLEMENTED;
+                                                                   y);
+        } else if (data_format == "NHWC") {
+            math::Gemm<float, CPUContext>(CblasNoTrans, CblasNoTrans,
+                                                   inner_dim, dim, 1,
+                                                                 1.0,
+                                               bias_multiplier, bias,
+                                                                 1.0,
+                                                                   y);
+        } else LOG(FATAL) << "Unknown data format: " << data_format;
+        y += y_offset;
     }
 }
 
@@ -428,12 +433,12 @@ template<> void Scale<float, CPUContext>(const int axis,
         int dim = scale_dim * inner_dim;
         Ydata = y->mutable_data<float, CPUContext>();
         for (int n = 0; n < outer_dim; ++n) {
-            math::Gemm<float, CPUContext>(CblasNoTrans, CblasNoTrans, 
-                                             scale_dim, inner_dim, 1, 
-                                                                 1.0, 
-                                                    Bdata, BMul_data, 
-                                                                 1.0, 
-                                                              Ydata);
+            math::Gemm<float, CPUContext>(CblasNoTrans, CblasNoTrans,
+                                             scale_dim, inner_dim, 1,
+                                                                 1.0,
+                                                    Bdata, BMul_data,
+                                                                 1.0,
+                                                               Ydata);
              Ydata += dim;
         }
     }
@@ -520,7 +525,7 @@ template<> void SmoothL1<float, CPUContext>(const int count,
     for (int i = 0; i < count; ++i) {
         const float val = x[i];
         const float abs_val = abs(val);
-        if (abs_val < 1.0 / sigma2) y[i] = 0.5 * val * val *sigma2;
+        if (abs_val < 1.0 / sigma2) y[i] = 0.5 * val * val * sigma2;
         else y[i] = abs_val - 0.5 / sigma2;
     }
 }
@@ -713,69 +718,116 @@ template<> void SparseSoftmaxFocalLossGrad<float, CPUContext>(const int count,
     }
 }
 
-/******************** misc.memory_data ********************/
+/******************** misc.image_data ********************/
 
-template <> void MemoryData<float, float, CPUContext>(const int count, 
-                                                      const int num, 
-                                                      const int channels,
-                                                      const int height, 
-                                                      const int width,
-                                                      const float* x, 
-                                                      float* y) {
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
-#endif
-    for (int i = 0; i < count; ++i) {
-        const int w = i % width;
-        const int h = (i / width) % height;
-        const int c = (i / width / height) % channels;
-        const int n = i / width / height / channels;
-        const int x_idx = ((n * height + h) * width + w) * channels + c;
-        if (c == 0) y[i] = x[x_idx] - 102.9801;
-        else if (c == 1) y[i] = x[x_idx] - 115.9465;
-        else y[i] = x[x_idx] - 122.7717;
+template <typename Tx, typename Ty>
+void _ImageData_NCHW(const int N, const int C,
+                     const int H, const int W,
+                     const float* mean_values,
+                     const float* std_values,
+                     const Tx* x,
+                     Ty* y) {
+    for (int n = 0; n < N; ++n) {
+        for (int c = 0; c < C; ++c) {
+            for (int h = 0; h < H; ++h) {
+                const int NH = n * H + h;
+                for (int w = 0; w < W; ++w) {
+                    Ty raw_value = x[(NH * W + w) * C + c];
+                    if (mean_values != nullptr) raw_value -= mean_values[c];
+                    if (std_values != nullptr) raw_value /= std_values[c];
+                    *(y++) = raw_value;
+                }
+            }
+        }
     }
 }
 
-template <> void MemoryData<uint8_t, float, CPUContext>(const int count, 
-                                                        const int num, 
-                                                        const int channels,
-                                                        const int height, 
-                                                        const int width,
-                                                        const uint8_t* x, 
-                                                        float* y) {
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
-#endif
-    for (int i = 0; i < count; ++i) {
-        const int w = i % width;
-        const int h = (i / width) % height;
-        const int c = (i / width / height) % channels;
-        const int n = i / width / height / channels;
-        const int x_idx = ((n * height + h) * width + w) * channels + c;
-        if (c == 0) y[i] = x[x_idx] - 102.9801;
-        else if (c == 1) y[i] = x[x_idx] - 115.9465;
-        else y[i] = x[x_idx] - 122.7717;
+template <typename Tx, typename Ty>
+void _ImageData_NHWC(const int N, const int C,
+                     const int H, const int W,
+                     const float* mean_values,
+                     const float* std_values,
+                     const Tx* x,
+                     Ty* y) {
+    for (int n = 0; n < N; ++n) {
+        for (int h = 0; h < H; ++h) {
+            for (int w = 0; w < W; ++w) {
+                for (int c = 0; c < C; ++c) {
+                    Ty raw_value = *(x++);
+                    if (mean_values != nullptr) raw_value -= mean_values[c];
+                    if (std_values != nullptr) raw_value /= std_values[c]; 
+                    *(y++) = raw_value;
+                }
+            }
+        }
     }
 }
 
-template <> void MemoryData<float, float16, CPUContext>(const int count, 
-                                                        const int num, 
-                                                        const int channels,
-                                                        const int height, 
-                                                        const int width,
-                                                        const float* x, 
-                                                        float16* y) {
+template <> void ImageData<float, float, CPUContext>(const int count,
+                                                     const int N, const int C,
+                                                     const int H, const int W,
+                                                     const float* mean_values,
+                                                     const float* std_values,
+                                                     const string& data_format,
+                                                     const float* x,
+                                                     float* y) {
+    if (data_format == "NCHW") {
+        _ImageData_NCHW<float, float>(N, C, H, W,
+                                     mean_values,
+                                      std_values,
+                                               x,
+                                               y);
+    } else if (data_format == "NHWC") {
+        _ImageData_NHWC<float, float>(N, C, H, W,
+                                     mean_values,
+                                      std_values,
+                                               x,
+                                               y);
+    } else LOG(FATAL) << "Unknown data format: " << data_format;
+}
+
+template <> void ImageData<uint8_t, float, CPUContext>(const int count,
+                                                       const int N, const int C,
+                                                       const int H, const int W,
+                                                       const float* mean_values,
+                                                       const float* std_values,
+                                                       const string& data_format,
+                                                       const uint8_t* x,
+                                                       float* y) {
+    if (data_format == "NCHW") {
+        _ImageData_NCHW<uint8_t, float>(N, C, H, W,
+                                     mean_values,
+                                      std_values,
+                                               x,
+                                               y);
+    } else if (data_format == "NHWC") {
+        _ImageData_NHWC<uint8_t, float>(N, C, H, W,
+                                     mean_values,
+                                      std_values,
+                                               x,
+                                               y);
+    } else LOG(FATAL) << "Unknown data format: " << data_format;
+}
+
+template <> void ImageData<float, float16, CPUContext>(const int count,
+                                                       const int N, const int C,
+                                                       const int H, const int W,
+                                                       const float* mean_values,
+                                                       const float* std_values,
+                                                       const string& data_format,
+                                                       const float* x,
+                                                       float16* y) {
     LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
-template <> void MemoryData<uint8_t, float16, CPUContext>(const int count, 
-                                                          const int num, 
-                                                          const int channels,
-                                                          const int height, 
-                                                          const int width,
-                                                          const uint8_t* x, 
-                                                          float16* y) {
+template <> void ImageData<uint8_t, float16, CPUContext>(const int count,
+                                                         const int N, const int C,
+                                                         const int H, const int W,
+                                                         const float* mean_values,
+                                                         const float* std_values,
+                                                         const string& data_format,
+                                                         const uint8_t* x,
+                                                         float16* y) {
     LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
@@ -875,8 +927,8 @@ template <> void At<float, CPUContext>(const int count,
         for (int n = 0; n < outer_dim; ++n) {
             x_offset = (n * x_slice_dim + x_idx_offset) * inner_dim;
             y_offset = (n * y_slice_dim + y_idx_offset) * inner_dim;
-            context->Copy<float, CPUContext, CPUContext>(inner_dim, 
-                                                         y + y_offset, 
+            context->Copy<float, CPUContext, CPUContext>(inner_dim,
+                                                         y + y_offset,
                                                          x + x_offset);
         }
     }
@@ -898,9 +950,9 @@ template <> void AtGrad<float, CPUContext>(const int count,
         for (int n = 0; n < outer_dim; ++n) {
             x_offset = (n * x_slice_dim + x_idx_offset) * inner_dim;
             y_offset = (n * y_slice_dim + y_idx_offset) * inner_dim;
-            math::Add<float, CPUContext>(inner_dim, 
-                                         dy + y_offset, 
-                                         dx + x_offset, 
+            math::Add<float, CPUContext>(inner_dim,
+                                         dy + y_offset,
+                                         dx + x_offset,
                                          dx + x_offset);
         }
     }
@@ -921,20 +973,20 @@ template <> void Concat<float, CPUContext>(const int count,
     for (int n = 0; n < outer_dim; ++n) {
         x_offset = n * x_concat_dim * inner_dim;
         y_offset = (n * y_concat_dim + concat_offset) * inner_dim;
-        context->Copy<float, CPUContext, CPUContext>(x_concat_dim * inner_dim, 
-                                                     y + y_offset, 
+        context->Copy<float, CPUContext, CPUContext>(x_concat_dim * inner_dim,
+                                                     y + y_offset,
                                                      x + x_offset);
     }
 }
 
-template <> void Concat<float16, CPUContext>(const int count, 
-                                             const int outer_dim, 
+template <> void Concat<float16, CPUContext>(const int count,
+                                             const int outer_dim,
                                              const int inner_dim,
-                                             const int x_concat_dim, 
-                                             const int y_concat_dim, 
+                                             const int x_concat_dim,
+                                             const int y_concat_dim,
                                              const int concat_offset,
-                                             const float16* x, 
-                                             float16* y, 
+                                             const float16* x,
+                                             float16* y,
                                              CPUContext* context) {
     TIndex x_offset, y_offset;
     for (int n = 0; n < outer_dim; ++n) {
@@ -959,8 +1011,8 @@ template <> void ConcatGrad<float, CPUContext>(const int count,
     for (int n = 0; n < outer_dim; ++n) {
         x_offset = n * x_concat_dim * inner_dim;
         y_offset = (n * y_concat_dim + concat_offset) * inner_dim;
-        context->Copy<float, CPUContext, CPUContext>(x_concat_dim * inner_dim, 
-                                                     dx + x_offset, 
+        context->Copy<float, CPUContext, CPUContext>(x_concat_dim * inner_dim,
+                                                     dx + x_offset,
                                                      dy + y_offset);
     }
 }
@@ -978,8 +1030,8 @@ template <> void ConcatGrad<float16, CPUContext>(const int count,
     for (int n = 0; n < outer_dim; ++n) {
         x_offset = n * x_concat_dim * inner_dim;
         y_offset = (n * y_concat_dim + concat_offset) * inner_dim;
-        context->Copy<float16, CPUContext, CPUContext>(x_concat_dim * inner_dim, 
-                                                       dx + x_offset, 
+        context->Copy<float16, CPUContext, CPUContext>(x_concat_dim * inner_dim,
+                                                       dx + x_offset,
                                                        dy + y_offset);
     }
 }
@@ -992,15 +1044,18 @@ template<> void Crop1D<float, CPUContext>(const int count,
                                           const int inner_dim,
                                           const int start,
                                           const float* x,
-                                          float* y) {
+                                          float* y, 
+                                          CPUContext* context) {
+    const int count_v2 = count / inner_dim;
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
 #endif
-    for (int idx = 0; idx < count; idx++) {
-        const int i = idx % inner_dim;
-        const int ex_d = (idx / inner_dim) % ex_dim;
-        const int o = idx / inner_dim / ex_dim;
-        y[idx] = x[(o * dim + ex_d + start) * inner_dim + i];
+    for (int idx = 0; idx < count_v2; ++idx) {
+        const int ex_d = idx % ex_dim;
+        const int o = idx / ex_dim;
+        const float* x_ptr = x + (o * dim + ex_d + start) * inner_dim;
+        float* y_ptr = y + (o * ex_dim + ex_d) * inner_dim;
+        context->Copy<float, CPUContext, CPUContext>(inner_dim, y_ptr, x_ptr);
     }
 }
 
@@ -1011,18 +1066,23 @@ template<> void Crop1DGrad<float, CPUContext>(const int count,
                                               const int start,
                                               const int end,
                                               const float* dy,
-                                              float* dx) {
+                                              float* dx, 
+                                              CPUContext* context) {
+    const int count_v2 = count / inner_dim;
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
 #endif
-    for (int idx = 0; idx < count; idx++) {
-        const int i = idx % inner_dim;
-        const int d = (idx / inner_dim) % dim;
-        const int o = idx / inner_dim / dim;
-        if (d >= start && d < end)
-            dx[idx] = dy[(o * ex_dim + d - start) * inner_dim + i];
+    for (int idx = 0; idx < count_v2; ++idx) {
+        const int d = idx % dim;
+        const int o = idx / dim;
+        float* dx_ptr = dx + (o * dim + d) * inner_dim;
+        if (d < start || d >= end) {
+            for (int i = 0; i < inner_dim; ++i) dx_ptr[i] = 0;
+        } else {
+            const float* dy_ptr = dy + (o * ex_dim + d - start) * inner_dim;
+            context->Copy<float, CPUContext, CPUContext>(inner_dim, dx_ptr, dy_ptr);
+        }
     }
-
 }
 
 /******************** ndarray.pad ********************/
@@ -1034,37 +1094,52 @@ template <> void ConstPad1D<float, CPUContext>(const int count,
                                                const int pad_l,
                                                const float value,
                                                const float* x,
-                                               float* y) {
+                                               float* y,
+                                               CPUContext* context) {
+    const int count_v2 = count / inner_dim;
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
 #endif
-    for (int idx = 0; idx < count; idx++) {
-        const int i = idx % inner_dim;
-        const int ex_d = (idx / inner_dim) % ex_dim;
-        const int o = idx / inner_dim / ex_dim;
+    for (int idx = 0; idx < count_v2; ++idx) {
+        const int ex_d = idx % ex_dim;
+        const int o = idx / ex_dim;
         const int d = ex_d - pad_l;
-        y[idx] = (d < 0 || d >= dim) ? value : x[(o * dim + d) * inner_dim + i];
+        float* y_ptr = y + (o * ex_dim + ex_d) * inner_dim;
+        if (d < 0 || d >= dim) {
+            for (int i = 0; i < inner_dim; ++i) y_ptr[i] = value;
+        } else {
+            const float* x_ptr = x + (o * dim + d) * inner_dim;
+            context->Copy<float, CPUContext, CPUContext>(inner_dim, y_ptr, x_ptr);
+        }
     }
 }
 
 template <> void ReflectPad1D<float, CPUContext>(const int count,
-                                               const int dim,
-                                               const int ex_dim,
-                                               const int inner_dim,
-                                               const int pad_l,
-                                               const float* x,
-                                               float* y) {
+                                                 const int dim,
+                                                 const int ex_dim,
+                                                 const int inner_dim,
+                                                 const int pad_l,
+                                                 const float* x,
+                                                 float* y,
+                                                 CPUContext* context) {
+    const int count_v2 = count / inner_dim;
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
 #endif
-    for (int idx = 0; idx < count; idx++) {
-        const int i = idx % inner_dim;
-        const int ex_d = (idx / inner_dim) % ex_dim;
-        const int o = idx / inner_dim / ex_dim;
+    for (int idx = 0; idx < count_v2; ++idx) {
+        const int ex_d = idx % ex_dim;
+        const int o = idx / ex_dim;
         int d = ex_d - pad_l;
         d = std::max(d, -d);
         d = std::min(d, 2 * dim - d - 2);
-        y[idx] = x[(o * dim + d) * inner_dim + i];
+        float* y_ptr = y + (o * ex_dim + ex_d) * inner_dim;
+        if (d < 0 || d >= dim) {
+            for (int i = 0; i < inner_dim; ++i) 
+                y_ptr[i] = x[(o * dim + d) * inner_dim + i];
+        } else {
+            const float* x_ptr = x + (o * dim + d) * inner_dim;
+            context->Copy<float, CPUContext, CPUContext>(inner_dim, y_ptr, x_ptr);
+        }
     }
 }
 
@@ -1074,16 +1149,24 @@ template <> void EdgePad1D<float, CPUContext>(const int count,
                                               const int inner_dim,
                                               const int pad_l,
                                               const float* x,
-                                              float* y) {
+                                              float* y, 
+                                              CPUContext* context) {
+    const int count_v2 = count / inner_dim;
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
 #endif
-    for (int idx = 0; idx < count; idx++) {
-        const int i = idx % inner_dim;
-        const int ex_d = (idx / inner_dim) % ex_dim;
-        const int o = idx / inner_dim / ex_dim;
+    for (int idx = 0; idx < count_v2; ++idx) {
+        const int ex_d = idx % ex_dim;
+        const int o = idx / ex_dim;
         const int d = std::min(dim - 1, std::max(ex_d - pad_l, 0));
-        y[idx] = x[(o * dim + d) * inner_dim + i];
+        float* y_ptr = y + (o * ex_dim + ex_d) * inner_dim;
+        if (d < 0 || d >= dim) {
+            for (int i = 0; i < inner_dim; ++i) 
+                y_ptr[i] = x[(o * dim + d) * inner_dim + i];
+        } else {
+            const float* x_ptr = x + (o * dim + d) * inner_dim;
+            context->Copy<float, CPUContext, CPUContext>(inner_dim, y_ptr, x_ptr);
+        }
     }
 }
 
@@ -1093,15 +1176,19 @@ template <> void ConstPad1DGrad<float, CPUContext>(const int count,
                                                    const int inner_dim,
                                                    const int pad_l,
                                                    const float* dy,
-                                                   float* dx) {
+                                                   float* dx,
+                                                   CPUContext* context) {
+    const int count_v2 = count / inner_dim;
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
 #endif
-    for (int idx = 0; idx < count; idx++) {
-        const int i = idx % inner_dim;
-        const int ex_d = (idx / inner_dim) % dim + pad_l;
-        const int o = idx / inner_dim / dim;
-        dx[idx] = dy[(o * ex_dim + ex_d) * inner_dim + i];
+    for (int idx = 0; idx < count_v2; ++idx) {
+        const int d = idx % dim;
+        const int o = idx / dim;
+        const int ex_d = d + pad_l;
+        const float* dy_ptr = dy + (o * ex_dim + ex_d) * inner_dim;
+        float* dx_ptr = dx + (o * dim + d) * inner_dim;
+        context->Copy<float, CPUContext, CPUContext>(inner_dim, dx_ptr, dy_ptr);
     }
 }
 
@@ -1112,7 +1199,7 @@ template <> void ReflectPad1DGrad<float, CPUContext>(const int count,
                                                      const int pad_l,
                                                      const float* dy,
                                                      float* dx) {
-    for (int idx = 0; idx < count; idx++) {
+    for (int idx = 0; idx < count; ++idx) {
         const int i = idx % inner_dim;
         const int ex_d = (idx / inner_dim) % ex_dim;
         const int o = idx / inner_dim / ex_dim;
@@ -1129,13 +1216,21 @@ template <> void EdgePad1DGrad<float, CPUContext>(const int count,
                                                   const int inner_dim,
                                                   const int pad_l,
                                                   const float* dy,
-                                                  float* dx) {
-    for (int idx = 0; idx < count; idx++) {
-        const int i = idx % inner_dim;
-        const int ex_d = (idx / inner_dim) % ex_dim;
-        const int o = idx / inner_dim / ex_dim;
+                                                  float* dx,
+                                                  CPUContext* context) {
+    const int count_v2 = count / inner_dim;
+    for (int idx = 0; idx < count_v2; ++idx) {
+        const int ex_d = idx % ex_dim;
+        const int o = idx / ex_dim;
         const int d = std::min(dim - 1, std::max(ex_d - pad_l, 0));
-        dx[(o * dim + d) * inner_dim + i] += dy[idx];
+        const float* dy_ptr = dy + (o * ex_dim + ex_d) * inner_dim;
+        if (d == 0 || d == dim - 1) {
+            for (int i = 0; i < inner_dim; ++i)
+                dx[(o * dim + d) * inner_dim + i] += dy_ptr[i];
+        } else {
+            float* dx_ptr = dx + (o * dim + d) * inner_dim;
+            context->Copy<float, CPUContext, CPUContext>(inner_dim, dx_ptr, dy_ptr);
+        }
     }
 }
 
@@ -1404,7 +1499,7 @@ template <> void LSTMUnit<float, CPUContext>(const int count,
             x_act[f_offset + ch] = f;
             x_act[o_offset + ch] = o;
             x_act[g_offset + ch] = g;
-        }  //  end ch
+        }
         c_1 += channels;
         c += channels;
         h += channels;
@@ -1448,7 +1543,7 @@ template <> void LSTMUnitGrad<float, CPUContext>(const int count,
             *p_df = dc_1_sum_term * c_1[ch] * f * (1 - f);
             *p_do = dh[ch] * tanh_c_t * o * (1 - o);
             *p_dg = dc_1_sum_term * i * (1 - g * g);
-        }    //  end ch
+        }
         c_1 += channels;
         c += channels;
         x_act += x_offset;
@@ -1520,367 +1615,944 @@ template <> void RMSPropUpdate<float, CPUContext>(const int count,
     math::Axpby<float, CPUContext>(count, lr, Tdata, 0.0, x);
 }
 
-/******************** vision.nn_resize ********************/
+/******************** vision.bilinear_resize ********************/
 
-template <> void BilinearResize<float, CPUContext>(const int count, 
-                                                   const int num, const int channels,
-                                                   const int h_in, const int w_in, 
-                                                   const int h_out, const int w_out,
-                                                   const float* x, 
-                                                   float* y) {
-    const float h_scale = (float)h_in / h_out;
-    const float w_scale = (float)w_in / w_out;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
-#endif
-    for (int i = 0; i < count; ++i) {
-        const int w = i % w_out;
-        const int h = (i / w_out) % h_out;
-        const int c = (i / w_out / h_out) % channels;
-        const int n = i / w_out / h_out / channels;
+template <typename T>
+void _BilinearResize_NCHW(const int N, const int C,
+                          const int H, const int W,
+                          const int out_h, const int out_w,
+                          const float scale_h, const float scale_w,
+                          const T* x,
+                          T* y) {
+    for (int n = 0; n < N; ++n) {
+        for (int c = 0; c < C; ++c) {
+            const int NC = n * C + c;
+            for (int h = 0; h < out_h; ++h) {
+                const float h_in = h * scale_h;
+                const int top_y_idx = floorf(h_in);
+                const int bottom_y_idx = (h_in < H - 1) ? ceilf(h_in) : H - 1;
+                const int NCHT = NC * H + top_y_idx;
+                const int NCHB = NC * H + bottom_y_idx;
+                const float y_lerp = h_in - top_y_idx;
+                for (int w = 0; w < out_w; ++w) {
+                    const float w_in = w * scale_w;
+                    const int left_x_idx = floorf(w_in);
+                    const int right_x_idx = (w_in < W - 1) ? ceilf(w_in) : W - 1;
+                    const float x_lerp = w_in - left_x_idx;
 
-        const float in_h = h * h_scale;
-        const int top_y_idx = floorf(in_h);
-        const int bottom_y_idx = (in_h < h_in - 1) ? ceilf(in_h) : h_in - 1;
-        const float y_lerp = in_h - top_y_idx;
+                    const float top_left(x[NCHT * W + left_x_idx]);
+                    const float top_right(x[NCHT * W + right_x_idx]);
+                    const float bottom_left(x[NCHB * W + left_x_idx]);
+                    const float bottom_right(x[NCHB * W + right_x_idx]);
 
-        const float in_w = w * w_scale;
-        const int left_x_idx = floorf(in_w);
-        const int right_x_idx = (in_w < w_in - 1) ? ceilf(in_w) : w_in - 1;
-        const float x_lerp = in_w - left_x_idx;
-
-        const float top_left(x[((n * channels + c) * h_in + top_y_idx) * w_in + left_x_idx]);
-        const float top_right(x[((n * channels + c) * h_in + top_y_idx) * w_in + right_x_idx]);
-        const float bottom_left(x[((n * channels + c) * h_in + bottom_y_idx) * w_in + left_x_idx]);
-        const float bottom_right(x[((n * channels + c) * h_in + bottom_y_idx) * w_in + right_x_idx]);
-
-        const float top = top_left + (top_right - top_left) * x_lerp;
-        const float bottom = bottom_left + (bottom_right - bottom_left) * x_lerp;
-        y[i] = top + (bottom - top) * y_lerp;
-    }
-}
-
-template <> void BilinearResizeGrad<float, CPUContext>(const int count,
-                                                       const int num, const int channels,
-                                                       const int h_in, const int w_in, 
-                                                       const int h_out, const int w_out,
-                                                       const float* dy, 
-                                                       float* dx) {
-    const float h_scale = (float)h_out / h_in;
-    const float w_scale = (float)w_out / w_in;
-
-    for (int i = 0; i < count; i++) {
-        const int w = i % w_in;
-        const int h = (i / w_in) % h_in;
-        const int c = (i / w_in / h_in) % channels;
-        const int n = i / w_in / h_in / channels;
-
-        const float original_h = h * h_scale;
-        const int top_y_idx = floorf(original_h);
-        const int bottom_y_idx = (original_h < h_out - 1) ? ceilf(original_h) : h_out - 1;
-        const float y_lerp = original_h - top_y_idx;
-
-        const float original_w = w * w_scale;
-        const int left_x_idx = floorf(original_w);
-        const int right_x_idx = (original_w < w_out - 1) ? ceilf(original_w) : w_out - 1;
-        const float x_lerp = original_w - left_x_idx;
-
-        const float dtop = (1 - y_lerp) * dy[i];
-        *(dx + ((n * channels + c) * h_out + top_y_idx) * w_out + left_x_idx)
-            += static_cast<float>((1 - x_lerp) * dtop);
-        *(dx + ((n * channels + c) * h_out + top_y_idx) * w_out + right_x_idx)
-            += static_cast<float>(x_lerp * dtop);
-
-        const float dbottom = y_lerp * dy[i];
-        *(dx + ((n * channels + c) * h_out + bottom_y_idx) * w_out + left_x_idx)
-            += static_cast<float>((1 - x_lerp) * dbottom);
-        *(dx + ((n * channels + c) * h_out + bottom_y_idx) * w_out + right_x_idx)
-            += static_cast<float>(x_lerp * dbottom);
-    }
-}
-
-/******************** vision.conv ********************/
-
-template <> void Im2Col<float, CPUContext>(const int channels, 
-                                           const int height, const int width,
-                                           const int kernel_h, const int kernel_w, 
-                                           const int stride_h, const int stride_w, 
-                                           const int pad_h, const int pad_w,
-                                           const int dilation_h, const int dilation_w, 
-                                           const float* im,
-                                           float* col) {
-    const int col_h = (height + 2 * pad_h - (dilation_h*(kernel_h - 1) + 1)) / stride_h + 1;
-    const int col_w = (width + 2 * pad_w - (dilation_w*(kernel_w - 1) + 1)) / stride_w + 1;
-    const int input_spatial = height * width;
-
-    //  for each element in kernel, create a row-col-map for a input feature map
-    for (int channel = 0; channel < channels; ++channel, im += input_spatial) {
-        for (int kh_off = 0; kh_off < kernel_h; ++kh_off) {
-            for (int kw_off = 0; kw_off < kernel_w; ++kw_off) {
-                int input_row = -pad_h + kh_off * dilation_h;
-                //  scan all output pixels and find the corresponding input pixels
-                for (int output_row = 0; output_row < col_h; ++output_row ) {
-                    //  set '0' for all output pixels out of the input map
-                    if (!judge(input_row, height)) {
-                        for (int output_col = 0; output_col < col_w; ++output_col) *(col++) = 0;
-                    } else {    //  find the corresponding input pixels
-                        int input_col = -pad_w + kw_off * dilation_w;
-                        for (int output_col = 0; output_col < col_w; ++output_col) {
-                            if (!judge(input_col, width)) *(col++) = 0;
-                            else *(col++) = im[input_row * width + input_col];
-                            input_col += stride_w;
-                        }
-                    }
-                    input_row += stride_h;
-                }    //  end output_row
-            }    //  end kw_off
-        }    //  end kh_off
-    }    //  end channel
-}
-
-template<> void Col2Im<float, CPUContext>(const int channels, 
-                                          const int height, const int width,
-                                          const int kernel_h, const int kernel_w, 
-                                          const int stride_h, const int stride_w,
-                                          const int pad_h, const int pad_w,
-                                          const int dilation_h, const int dilation_w, 
-                                          const float* col,
-                                          float* im) {
-    //  must memset before use '+='
-    math::Set<float, CPUContext>(channels * height * width, 0, im);
-    const int col_h = (height + 2 * pad_h - (dilation_h * (kernel_h - 1) + 1)) / stride_h + 1;
-    const int col_w = (width + 2 * pad_w - (dilation_w * (kernel_w - 1) + 1)) / stride_w + 1;
-    const int input_spatial = height * width;
-
-    //  for each element in kernel, create a row-col-map for a input feature map
-    for (int channel = 0; channel < channels; ++channel, im += input_spatial) {
-        for (int kh_off = 0; kh_off < kernel_h; ++kh_off) {
-            for (int kw_off = 0; kw_off < kernel_w; ++kw_off) {
-                int input_row = -pad_h + kh_off * dilation_h;
-                //  scan all output pixels and find the corresponding input pixels
-                for (int output_row = 0; output_row < col_h; ++output_row) {
-                    //  skip the num of col_w pixels
-                    if (!judge(input_row, height)) {
-                        col += col_w;
-                    } else {    //  find the corresponding input pixels
-                        int input_col = -pad_w + kw_off * dilation_w;
-                        for (int output_col = 0; output_col < col_w; output_col++) {
-                            if (judge(input_col, width)) im[input_row * width + input_col] += *col;
-                            ++col;
-                            input_col += stride_w;
-                        }
-                    }
-                    input_row += stride_h;
-                }    //  end output_row
-            }    //  end kw_off
-        }    //  end kh_off
-    }    //  end channel
-}
-
-/******************** vision.nn_resize ********************/
-
-template <> void NNResize<float, CPUContext>(const int count, 
-                                             const int num, const int channels,
-                                             const int h_in, const int w_in, 
-                                             const int h_out, const int w_out,
-                                             const float* x, 
-                                             float* y) {
-    const float h_scale = (float)h_in / h_out;
-    const float w_scale = (float)w_in / w_out;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
-#endif
-    for (int i = 0; i < count; ++i) {
-        const int w = i % w_out;
-        const int h = (i / w_out) % h_out;
-        const int in_h = std::min(int(floorf(h * h_scale)), h_in - 1);
-        const int in_w = std::min(int(floorf(w * w_scale)), w_in - 1);
-        const int c = (i / w_out / h_out) % channels;
-        const int n = i / w_out / h_out / channels;
-        const int x_idx = ((n * channels + c) * h_in + in_h) * w_in + in_w;
-        y[i] = x[x_idx];
-    }
-}
-
-template <> void NNResizeGrad<float, CPUContext>(const int count, 
-                                                 const int num, const int channels,
-                                                 const int h_in, const int w_in, 
-                                                 const int h_out, const int w_out,
-                                                 const float* dy, 
-                                                 float* dx) {
-    const float h_scale = (float)h_out / h_in;
-    const float w_scale = (float)w_out / w_in;
-    for (int n = 0; n < num; n++) {
-        for (int c = 0; c < channels; ++c) {
-            for (int h = 0; h < h_in; ++h) {
-                const int out_h = std::min(int(floorf(h * h_scale)), (h_out - 1));
-                for (int w = 0; w < w_in; ++w) {
-                    const int out_w = std::min(int(floorf(w * w_scale)), (w_out - 1));
-                    const int y_idx = ((n * channels + c) * h_in + h) * w_in + w;
-                    const int x_idx = ((n * channels + c) * h_out + out_h) * w_out + out_w;
-                    dx[x_idx] += dy[y_idx];
+                    const float top = top_left + (top_right - top_left) * x_lerp;
+                    const float bottom = bottom_left + (bottom_right - bottom_left) * x_lerp;
+                    *(y++) = top + (bottom - top) * y_lerp;
                 }
             }
         }
     }
 }
 
+template <typename T>
+void _BilinearResize_NHWC(const int N, const int C,
+                          const int H, const int W,
+                          const int out_h, const int out_w,
+                          const float scale_h, const float scale_w,
+                          const T* x,
+                          T* y) {
+    for (int n = 0; n < N; ++n) {
+        for (int h = 0; h < out_h; ++h) {
+            const float h_in = h * scale_h;
+            const int top_y_idx = floorf(h_in);
+            const int bottom_y_idx = (h_in < H - 1) ? ceilf(h_in) : H - 1;
+            const int NHT = n * H + top_y_idx;
+            const int NHB = n * H + bottom_y_idx;
+            const float y_lerp = h_in - top_y_idx;
+            for (int w = 0; w < out_w; ++w) {
+                const float w_in = w * scale_w;
+                const int left_x_idx = floorf(w_in);
+                const int right_x_idx = (w_in < W - 1) ? ceilf(w_in) : W - 1;
+                const float x_lerp = w_in - left_x_idx;
+                for (int c = 0; c < C; ++c) {
+                    const float top_left(x[(NHT * W + left_x_idx) * C + c]);
+                    const float top_right(x[(NHT * W + right_x_idx) * C + c]);
+                    const float bottom_left(x[(NHB * W + left_x_idx) * C + c]);
+                    const float bottom_right(x[(NHB * W + right_x_idx) * C + c]);
+                    const float top = top_left + (top_right - top_left) * x_lerp;
+                    const float bottom = bottom_left + (bottom_right - bottom_left) * x_lerp;
+                    *(y++) = top + (bottom - top) * y_lerp;
+                }
+            }
+        }
+    }
+}
+
+template <> void BilinearResize<float, CPUContext>(const int count,
+                                                   const int N, const int C,
+                                                   const int H, const int W,
+                                                   const int out_h, const int out_w,
+                                                   const string& data_format,
+                                                   const float* x, 
+                                                   float* y) {
+    const float scale_h = (float)H / out_h;
+    const float scale_w = (float)W / out_w;
+    if (data_format == "NCHW") {
+        _BilinearResize_NCHW<float>(N, C, H, W,
+                                  out_h, out_w,
+                              scale_h, scale_w,
+                                             x,
+                                             y);
+    } else if (data_format == "NHWC"){
+        _BilinearResize_NHWC<float>(N, C, H, W,
+                                  out_h, out_w,
+                              scale_h, scale_w,
+                                             x,
+                                             y);
+    } else LOG(FATAL) << "Unknown data format: " << data_format;
+}
+
+template <typename T>
+void _BilinearResizeGrad_NCHW(const int N, const int C,
+                              const int H, const int W,
+                              const int out_h, const int out_w,
+                              const float scale_h, const float scale_w,
+                              const T* dy,
+                              T* dx) {
+    for (int n = 0; n < N; ++n) {
+        for (int c = 0; c < C; ++c) {
+            const int NC = n * C + c;
+            for (int h = 0; h < out_h; ++h) {
+                const float h_in = h * scale_h;
+                const int top_y_idx = floorf(h_in);
+                const int bottom_y_idx = (h_in < H - 1) ? ceilf(h_in) : H - 1;
+                const int NCHT = NC * H + top_y_idx;
+                const int NCHB = NC * H + bottom_y_idx;
+                const float y_lerp = h_in - top_y_idx;
+                for (int w = 0; w < out_w; ++w) {
+                    const float w_in = w * scale_w;
+                    const int left_x_idx = floorf(w_in);
+                    const int right_x_idx = (w_in < W - 1) ? ceilf(w_in) : W - 1;
+                    const float x_lerp = w_in - left_x_idx;
+                    const float dtop = (1 - y_lerp) * (*(dy));
+                    const float dbottom = y_lerp * (*(dy++));
+                    dx[NCHT * W + left_x_idx] += static_cast<T>((1 - x_lerp) * dtop);
+                    dx[NCHT * W + right_x_idx] += static_cast<T>(x_lerp * dtop);
+                    dx[NCHB * W + left_x_idx] += static_cast<T>((1 - x_lerp) * dbottom);
+                    dx[NCHB * W + right_x_idx] += static_cast<T>(x_lerp * dbottom);
+                }
+            }
+        }
+    }
+}
+
+template <typename T>
+void _BilinearResizeGrad_NHWC(const int N, const int C,
+                              const int H, const int W,
+                              const int out_h, const int out_w,
+                              const float scale_h, const float scale_w,
+                              const T* dy,
+                              T* dx) {
+    for (int n = 0; n < N; ++n) {
+        for (int h = 0; h < out_h; ++h) {
+            const float h_in = h * scale_h;
+            const int top_y_idx = floorf(h_in);
+            const int bottom_y_idx = (h_in < H - 1) ? ceilf(h_in) : H - 1;
+            const int NHT = n * H + top_y_idx;
+            const int NHB = n * H + bottom_y_idx;
+            const float y_lerp = h_in - top_y_idx;
+            for (int w = 0; w < out_w; ++w) {
+                const float w_in = w * scale_w;
+                const int left_x_idx = floorf(w_in);
+                const int right_x_idx = (w_in < W - 1) ? ceilf(w_in) : W - 1;
+                const float x_lerp = w_in - left_x_idx;
+                const float dtop = (1 - y_lerp) * (*(dy));
+                const float dbottom = y_lerp * (*(dy++));
+                for (int c = 0; c < C; ++c) {
+                    dx[(NHT * W + left_x_idx) * C + c] += static_cast<T>((1 - x_lerp) * dtop);
+                    dx[(NHT * W + right_x_idx) * C + c] += static_cast<T>(x_lerp * dtop);
+                    dx[(NHB * W + left_x_idx) * C + c] += static_cast<T>((1 - x_lerp) * dbottom);
+                    dx[(NHB * W + right_x_idx) * C + c] += static_cast<T>(x_lerp * dbottom);
+                }
+            }
+        }
+    }
+}
+
+template <> void BilinearResizeGrad<float, CPUContext>(const int count,
+                                                       const int N, const int C,
+                                                       const int H, const int W,
+                                                       const int out_h, const int out_w,
+                                                       const string& data_format,
+                                                       const float* dy,
+                                                       float* dx) {
+    const float scale_h = (float)H / out_h;
+    const float scale_w = (float)W / out_w;
+    math::Set<float, CPUContext>(N * C * H * W, 0, dx);
+    if (data_format == "NCHW") {
+        _BilinearResizeGrad_NCHW<float>(N, C, H, W,
+                                      out_h, out_w,
+                                  scale_h, scale_w,
+                                                dy,
+                                                dx);
+    } else if (data_format == "NHWC"){
+        _BilinearResizeGrad_NHWC<float>(N, C, H, W,
+                                      out_h, out_w,
+                                  scale_h, scale_w,
+                                                dy,
+                                                dx);
+    } else LOG(FATAL) << "Unknown data format: " << data_format;
+}
+
+/******************** vision.conv ********************/
+
+template<typename T>
+void _Im2Col2d_NCHW(const int C, const int H, const int W,
+                    const int col_h, const int col_w,
+                    const int kernel_h, const int kernel_w,
+                    const int stride_h, const int stride_w,
+                    const int pad_h, const int pad_w,
+                    const int dilation_h, const int dilation_w,
+                    const T* im,
+                    T* col) {
+    const int im_offset = H * W;
+    for (int c = 0; c < C; ++c, im += im_offset) {
+        for (int kh = 0; kh < kernel_h; ++kh) {
+            for (int kw = 0; kw < kernel_w; ++kw) {
+                int h = -pad_h + kh * dilation_h;
+                for (int output_h = 0; output_h < col_h; ++output_h) {
+                    if (!judge(h, H)) {
+                        for (int output_w = 0; output_w < col_w; ++output_w) *(col++) = 0;
+                    } else {
+                        int w = -pad_w + kw * dilation_w;
+                        for (int output_w = 0; output_w < col_w; ++output_w) {
+                            if (!judge(w, W)) *(col++) = 0;
+                            else *(col++) = im[h * W + w];
+                            w += stride_w;
+                        }
+                    }
+                    h += stride_h;
+                }
+            }
+        }
+    }
+}
+
+template<typename T>
+void _Im2Col2d_NHWC(const int C, const int H, const int W,
+                    const int col_h, const int col_w,
+                    const int kernel_h, const int kernel_w,
+                    const int stride_h, const int stride_w,
+                    const int pad_h, const int pad_w,
+                    const int dilation_h, const int dilation_w,
+                    const T* im,
+                    T* col) {
+    for (int output_h = 0; output_h < col_h; ++output_h) {
+        const int base_h = -pad_h + stride_h * output_h;
+        for (int output_w = 0; output_w < col_w; ++output_w) {
+            const int base_w = -pad_w + stride_w * output_w;
+            for (int kh = 0; kh < kernel_h; ++kh) {
+                int h = base_h + kh * dilation_h;
+                if (!judge(h, H)) {
+                    for (int kw = 0; kw < kernel_w; ++kw)
+                        for (int c = 0; c < C; ++c) *(col++) = 0;
+                } else {
+                    for (int kw = 0; kw < kernel_w; ++kw) {
+                        int w = base_w + kw * dilation_w;
+                        for (int c = 0; c < C; ++c) {
+                            if (!judge(w, W)) *(col++) = 0;
+                            else *(col++) = im[(h * W + w) * C + c];
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+template <> void Im2Col2d<float, CPUContext>(const int C, const int H, const int W,
+                                             const int col_h, const int col_w,
+                                             const int kernel_h, const int kernel_w, 
+                                             const int stride_h, const int stride_w, 
+                                             const int pad_h, const int pad_w,
+                                             const int dilation_h, const int dilation_w,
+                                             const string& data_format,
+                                             const float* im,
+                                             float* col) {
+    if (data_format == "NCHW") {
+        const int count = (C * col_h * col_w);
+        _Im2Col2d_NCHW<float>(C, H, W, col_h, col_w,
+                                 kernel_h, kernel_w,
+                                 stride_h, stride_w,
+                                       pad_h, pad_w,
+                             dilation_h, dilation_w,
+                                                 im,
+                                                col);
+    } else if (data_format == "NHWC") {
+        const int count = (col_h * col_w * C);
+        _Im2Col2d_NHWC<float>(C, H, W, col_h, col_w,
+                                 kernel_h, kernel_w,
+                                 stride_h, stride_w,
+                                       pad_h, pad_w,
+                             dilation_h, dilation_w,
+                                                 im,
+                                                col);
+    } else LOG(FATAL) << "Unknown data format: " << data_format;
+}
+
+template<typename T>
+void _Col2Im2d_NCHW(const int C, const int H, const int W,
+                    const int col_h, const int col_w,
+                    const int kernel_h, const int kernel_w,
+                    const int stride_h, const int stride_w,
+                    const int pad_h, const int pad_w,
+                    const int dilation_h, const int dilation_w,
+                    const T* col,
+                    T* im) {
+    math::Set<float, CPUContext>(C * H * W, 0, im);
+    const int im_offset = H * W;
+    for (int c = 0; c < C; ++c, im += im_offset) {
+        for (int kh = 0; kh < kernel_h; ++kh) {
+            for (int kw = 0; kw < kernel_w; ++kw) {
+                int h = -pad_h + kh * dilation_h;
+                for (int output_h = 0; output_h < col_h; ++output_h) {
+                    if (!judge(h, H)) {
+                        col += col_w;
+                    } else {
+                        int w = -pad_w + kw * dilation_w;
+                        for (int output_w = 0; output_w < col_w; ++output_w) {
+                            if (judge(w, W)) im[h * W + w] += *col;
+                            ++col;
+                            w += stride_w;
+                        }
+                    }
+                    h += stride_h;
+                }
+            }
+        } 
+    }
+}
+
+template<typename T>
+void _Col2Im2d_NHWC(const int C, const int H, const int W,
+                    const int col_h, const int col_w,
+                    const int kernel_h, const int kernel_w,
+                    const int stride_h, const int stride_w,
+                    const int pad_h, const int pad_w,
+                    const int dilation_h, const int dilation_w,
+                    const T* col,
+                    T* im) {
+    math::Set<float, CPUContext>(C * H * W, 0, im);
+    for (int output_h = 0; output_h < col_h; ++output_h) {
+        const int base_h = -pad_h + stride_h * output_h;
+        for (int output_w = 0; output_w < col_w; ++output_w) {
+            const int base_w = -pad_w + stride_w * output_w;
+            for (int kh = 0; kh < kernel_h; ++kh) {
+                int h = base_h + kh * dilation_h;
+                if (!judge(h, H)) {
+                    col += (kernel_w * C);
+                } else {
+                    for (int kw = 0; kw < kernel_w; ++kw) {
+                        int w = base_w + kw * dilation_w;
+                        for (int c = 0; c < C; ++c) {
+                            if (judge(w, W)) im[(h * W + w) * C + c] += *(col);
+                            ++col;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+template<> void Col2Im2d<float, CPUContext>(const int C, const int H, const int W,
+                                            const int col_h, const int col_w,
+                                            const int kernel_h, const int kernel_w,
+                                            const int stride_h, const int stride_w,
+                                            const int pad_h, const int pad_w,
+                                            const int dilation_h, const int dilation_w,
+                                            const string& data_format,
+                                            const float* col,
+                                            float* im) {
+    if (data_format == "NCHW") {
+        const int count = (C * H * W);
+        _Col2Im2d_NCHW<float>(C, H, W, col_h, col_w,
+                                 kernel_h, kernel_w,
+                                 stride_h, stride_w,
+                                       pad_h, pad_w,
+                             dilation_h, dilation_w,
+                                                col,
+                                                 im);
+    } else if (data_format == "NHWC") {
+        const int count = (H * W * C);
+        _Col2Im2d_NHWC<float>(C, H, W, col_h, col_w,
+                                 kernel_h, kernel_w,
+                                 stride_h, stride_w,
+                                       pad_h, pad_w,
+                             dilation_h, dilation_w,
+                                                col,
+                                                 im);
+    } else LOG(FATAL) << "Unknown data format: " << data_format;
+}
+
+/******************** vision.nn_resize ********************/
+
+template <typename T>
+void _NNResize_NCHW(const int N, const int C,
+                    const int H, const int W,
+                    const int out_h, const int out_w,
+                    const float scale_h, const float scale_w,
+                    const T* x,
+                    T* y) {
+    for (int n = 0; n < N; ++n) {
+        for (int c = 0; c < C; ++c) {
+            const int NC = n * C + c;
+            for (int h = 0; h < out_h; ++h) {
+                const int h_in = std::min(int(floorf(h * scale_h)), H - 1);
+                const int NCH = NC * H + h_in;
+                for (int w = 0; w < out_w; ++w) {
+                    const int w_in = std::min(int(floorf(w * scale_w)), W - 1);
+                    *(y++) = x[NCH * W + w_in];
+                }
+            }
+        }
+    }
+}
+
+template <typename T>
+void _NNResize_NHWC(const int N, const int C,
+                    const int H, const int W,
+                    const int out_h, const int out_w,
+                    const float scale_h, const float scale_w,
+                    const T* x,
+                    T* y) {
+    for (int n = 0; n < N; ++n) {
+        for (int h = 0; h < out_h; ++h) {
+            const int h_in = std::min(int(floorf(h * scale_h)), H - 1);
+            const int NH = n * H + h_in;
+            for (int w = 0; w < out_w; ++w) {
+                const int w_in = std::min(int(floorf(w * scale_w)), W - 1);
+                const int NHW = NH * W + w_in;
+                for (int c = 0; c < C; ++c) *(y++) = x[NHW * C + c];
+            }
+        }
+    }
+}
+
+template <> void NNResize<float, CPUContext>(const int count, 
+                                             const int N, const int C,
+                                             const int H, const int W, 
+                                             const int out_h, const int out_w,
+                                             const string& data_format,
+                                             const float* x,
+                                             float* y) {
+    const float scale_h = (float)H / out_h;
+    const float scale_w = (float)W / out_w;
+    if (data_format == "NCHW") {
+        _NNResize_NCHW<float>(N, C, H, W, out_h, out_w,
+                                      scale_h, scale_w,
+                                                     x,
+                                                     y);
+    } else if (data_format == "NHWC"){
+        _NNResize_NHWC<float>(N, C, H, W, out_h, out_w,
+                                      scale_h, scale_w,
+                                                     x,
+                                                     y);
+    } else LOG(FATAL) << "Unknown data format: " << data_format;
+}
+
+template <typename T>
+void _NNResizeGrad_NCHW(const int N, const int C,
+                        const int H, const int W,
+                        const int out_h, const int out_w,
+                        const float scale_h, const float scale_w,
+                        const T* dy,
+                        T* dx) {
+    for (int n = 0; n < N; ++n) {
+        for (int c = 0; c < C; ++c) {
+            const int NC = n * C + c;
+            for (int h = 0; h < out_h; ++h) {
+                const int h_in = std::min(int(floorf(h * scale_h)), H - 1);
+                const int NCH = NC * H + h_in;
+                for (int w = 0; w < out_w; ++w) {
+                    const int w_in = std::min(int(floorf(w * scale_w)), W - 1);
+                    dx[NCH * W + w_in] += *(dy++);
+                }
+            }
+        }
+    }
+}
+
+template <typename T>
+void _NNResizeGrad_NHWC(const int N, const int C,
+                    const int H, const int W,
+                    const int out_h, const int out_w,
+                    const float scale_h, const float scale_w,
+                    const T* dy,
+                    T* dx) {
+    for (int n = 0; n < N; ++n) {
+        for (int h = 0; h < out_h; ++h) {
+            const int h_in = std::min(int(floorf(h * scale_h)), H - 1);
+            const int NH = n * H + h_in;
+            for (int w = 0; w < out_w; ++w) {
+                const int w_in = std::min(int(floorf(w * scale_w)), W - 1);
+                const int NHW = NH * W + w_in;
+                for (int c = 0; c < C; ++c) dx[NHW * C + c] += *(dy++);
+            }
+        }
+    }
+}
+
+template <> void NNResizeGrad<float, CPUContext>(const int count,
+                                                 const int N, const int C,
+                                                 const int H, const int W, 
+                                                 const int out_h, const int out_w,
+                                                 const string& data_format,
+                                                 const float* dy,
+                                                 float* dx) {
+    const float scale_h = (float)H / out_h;
+    const float scale_w = (float)W / out_w;
+    math::Set<float, CPUContext>(N * C * H * W, 0, dx);
+    if (data_format == "NCHW") {
+        _NNResizeGrad_NCHW<float>(N, C, H, W, out_h, out_w,
+                                          scale_h, scale_w,
+                                                        dy,
+                                                        dx);
+    } else if (data_format == "NHWC"){
+        _NNResizeGrad_NHWC<float>(N, C, H, W, out_h, out_w,
+                                          scale_h, scale_w,
+                                                        dy,
+                                                        dx);
+    } else LOG(FATAL) << "Unknown data format: " << data_format;
+}
+
 /******************** vision.pooling ********************/
 
-template<> void MAXPooling<float, CPUContext>(const int count, 
-                                              const int num, const int channels,
-                                              const int height, const int width, 
-                                              const int pool_height, const int pool_width,
-                                              const int kernel_h, const int kernel_w, 
-                                              const int stride_h, const int stride_w,
-                                              const int pad_h, const int pad_w,
-                                              const float* x, 
-                                              int* mask, 
-                                              float* y) {
-    int x_offset = height * width;
-    int y_offset = pool_height * pool_width;
-    for (int n = 0; n < num; ++n) {
-        for (int c = 0; c < channels; ++c) {
-            for (int ph = 0; ph < pool_height; ++ph) {
-                for (int pw = 0; pw < pool_width; ++pw) {
+template <typename T>
+void _MAXPooling2d_NCHW(const int N, const int C,
+                        const int H, const int W,
+                        const int pool_h, const int pool_w,
+                        const int kernel_h, const int kernel_w, 
+                        const int stride_h, const int stride_w,
+                        const int pad_h, const int pad_w,
+                        const float* x,
+                        int* mask,
+                        float* y) {
+    int x_offset = H * W;
+    int y_offset = pool_h * pool_w;
+    for (int n = 0; n < N; ++n) {
+        for (int c = 0; c < C; ++c) {
+            for (int ph = 0; ph < pool_h; ++ph) {
+                for (int pw = 0; pw < pool_w; ++pw) {
                     int start_h = ph * stride_h - pad_h;
                     int start_w = pw * stride_w - pad_w;
-                    int end_h = std::min(start_h + kernel_h, height);
-                    int end_w = std::min(start_w + kernel_w, width);
+                    int end_h = std::min(start_h + kernel_h, H);
+                    int end_w = std::min(start_w + kernel_w, W);
                     start_h = std::max(start_h, 0);
                     start_w = std::max(start_w, 0);
-                    const int pool_idx = ph * pool_width + pw;
+                    const int pool_idx = ph * pool_w + pw;
                     float max_val = -FLT_MAX;
                     int max_idx = -1;
                     for (int h = start_h; h < end_h; ++h) {
                         for (int w = start_w; w < end_w; ++w) {
-                            const int idx = h * width + w;
-                            if (x[idx]>max_val) {
+                            const int idx = h * W + w;
+                            if (x[idx] > max_val) {
                                 max_val = x[idx];
                                 max_idx = idx;
                             }
-                        }    //  end w
-                    }    //  end h
+                        }
+                    }
                     y[pool_idx] = max_val;
                     mask[pool_idx] = max_idx;
-                }    //  end pw
-            }    //  end ph
-            //  offset a channel
+                }
+            } 
             x += x_offset;
             y += y_offset;
             mask += y_offset;
-        }    //  end c
-    }    //  end n
+        }
+    }
 }
 
-template<> void AVEPooling<float, CPUContext>(const int count, 
-                                              const int num, const int channels,
-                                              const int height, const int width, 
-                                              const int pool_height, const int pool_width,
-                                              const int kernel_h, const int kernel_w, 
-                                              const int stride_h, const int stride_w, 
-                                              const int pad_h, const int pad_w,
-                                              const float* x, 
-                                              float* y) {
-    int x_offset = height * width;
-    int y_offset = pool_height * pool_width;
-    math::Set<float, CPUContext>(count, 0, y);
-    for (int n = 0; n < num; ++n) {
-        for (int c = 0; c < channels; ++c) {
-            for (int ph = 0; ph < pool_height; ++ph) {
-                for (int pw = 0; pw < pool_width; ++pw) {
-                    int start_h = ph * stride_h - pad_h;
-                    int start_w = pw * stride_w - pad_w;
-                    int end_h = std::min(start_h + kernel_h, height + pad_h);
-                    int end_w = std::min(start_w + kernel_w, width + pad_w);
-                    int pool_size = (end_h - start_h) * (end_w - start_w);
-                    end_h = std::min(end_h, height);
-                    end_w = std::min(end_w, width);
-                    start_h = std::max(start_h, 0);
-                    start_w = std::max(start_w, 0);
-                    const int pool_idx = ph * pool_width + pw;
+template <typename T>
+void _MAXPooling2d_NHWC(const int N, const int C,
+                        const int H, const int W,
+                        const int pool_h, const int pool_w,
+                        const int kernel_h, const int kernel_w,
+                        const int stride_h, const int stride_w,
+                        const int pad_h, const int pad_w,
+                        const float* x,
+                        int* mask,
+                        float* y) {
+    int x_offset = H * W * C;
+    int y_offset = pool_h * pool_w * C;
+    for (int n = 0; n < N; ++n) {
+        for (int ph = 0; ph < pool_h; ph++) {
+            for (int pw = 0; pw < pool_w; ++pw) {
+                int start_h = ph * stride_h - pad_h;
+                int start_w = pw * stride_w - pad_w;
+                int end_h = std::min(start_h + kernel_h, H);
+                int end_w = std::min(start_w + kernel_w, W);
+                start_h = std::max(start_h, 0);
+                start_w = std::max(start_w, 0);
+                const int base_pool_idx = ph * pool_w + pw;
+                for (int c = 0; c < C; ++c) {
+                    const int pool_idx = base_pool_idx * C + c;
+                    float max_val = -FLT_MAX;
+                    int max_idx = -1;
                     for (int h = start_h; h < end_h; ++h) {
                         for (int w = start_w; w < end_w; ++w) {
-                            const int idx = h * width + w;
-                            y[pool_idx] += x[idx];
+                            const int idx = (h * W + w) * C + c;
+                            if (x[idx] > max_val) {
+                                max_val = x[idx];
+                                max_idx = idx;
+                            }
                         }
                     }
-                    y[pool_idx] /= pool_size;
-                }    //end pw
-            }    //end ph
-            x += x_offset;
-            y += y_offset;
-        }    //end c
-    }    //end n
+                    y[pool_idx] = max_val;
+                    mask[pool_idx] = max_idx;
+                }
+            }
+        }
+        x += x_offset;
+        y += y_offset;
+        mask += y_offset;
+    }
 }
 
-template<> void MAXPoolingGrad<float, CPUContext>(const int count, 
-                                                  const int num, const int channels,
-                                                  const int height, const int width, 
-                                                  const int pool_height, const int pool_width,
-                                                  const int kernel_h, const int kernel_w, 
-                                                  const int stride_h, const int stride_w, 
-                                                  const int pad_h, const int pad_w,
-                                                  const float* dy, 
-                                                  const int* mask, 
-                                                  float* dx) {
-    int x_offset = height * width;
-    int y_offset = pool_height * pool_width;
-    math::Set<float, CPUContext>(count, 0, dx);
-    for (int n = 0; n < num; ++n) {
-        for (int c = 0; c < channels; ++c) {
-            for (int ph = 0; ph < pool_height; ++ph) {
-                    for (int pw = 0; pw < pool_width; ++pw) {
-                        const int pool_idx = ph * pool_width + pw;
-                        const int idx = mask[pool_idx];
-                        dx[idx] += dy[pool_idx];
-                    }    //  end pw
-            }    //  end ph
+template<> void MAXPooling2d<float, CPUContext>(const int count, 
+                                                const int N, const int C,
+                                                const int H, const int W,
+                                                const int pool_h, const int pool_w,
+                                                const int kernel_h, const int kernel_w,
+                                                const int stride_h, const int stride_w,
+                                                const int pad_h, const int pad_w,
+                                                const string& data_format,
+                                                const float* x, 
+                                                int* mask, 
+                                                float* y) {
+    if (data_format == "NCHW") {
+        _MAXPooling2d_NCHW<float>(N, C, H, W, pool_h, pool_w,
+                                          kernel_h, kernel_w,
+                                          stride_h, stride_w,
+                                                pad_h, pad_w,
+                                                           x,
+                                                        mask,
+                                                          y);
+
+    } else if (data_format == "NHWC") {
+        _MAXPooling2d_NHWC<float>(N, C, H, W, pool_h, pool_w,
+                                          kernel_h, kernel_w,
+                                          stride_h, stride_w,
+                                                pad_h, pad_w,
+                                                           x,
+                                                        mask,
+                                                          y);
+
+    } else LOG(FATAL) << "Unknown data format: " << data_format;
+}
+
+template<typename T>
+void _AVGPooling2d_NCHW(const int N, const int C,
+                        const int H, const int W,
+                        const int pool_h, const int pool_w,
+                        const int kernel_h, const int kernel_w,
+                        const int stride_h, const int stride_w,
+                        const int pad_h, const int pad_w,
+                        const float* x,
+                        float* y) {
+    int x_offset = H * W;
+    int y_offset = pool_h * pool_w;
+    for (int n = 0; n < N; ++n) {
+        for (int c = 0; c < C; ++c) {
+            for (int ph = 0; ph < pool_h; ++ph) {
+                for (int pw = 0; pw < pool_w; ++pw) {
+                    int start_h = ph * stride_h - pad_h;
+                    int start_w = pw * stride_w - pad_w;
+                    int end_h = std::min(start_h + kernel_h, H + pad_h);
+                    int end_w = std::min(start_w + kernel_w, W + pad_w);
+                    int pool_area = (end_h - start_h) * (end_w - start_w);
+                    end_h = std::min(end_h, H);
+                    end_w = std::min(end_w, W);
+                    start_h = std::max(start_h, 0);
+                    start_w = std::max(start_w, 0);
+                    const int pool_idx = ph * pool_w + pw;
+                    T sum_val = 0;
+                    for (int h = start_h; h < end_h; ++h)
+                        for (int w = start_w; w < end_w; ++w)
+                            sum_val += x[h * W + w];
+                    y[pool_idx] = sum_val / pool_area;
+                } 
+            }
+            x += x_offset;
+            y += y_offset;
+        }
+    }
+}
+
+template<typename T>
+void _AVGPooling2d_NHWC(const int N, const int C,
+                        const int H, const int W,
+                        const int pool_h, const int pool_w,
+                        const int kernel_h, const int kernel_w,
+                        const int stride_h, const int stride_w,
+                        const int pad_h, const int pad_w,
+                        const float* x,
+                        float* y) {
+    int x_offset = H * W * C;
+    int y_offset = pool_h * pool_w * C;
+    for (int n = 0; n < N; ++n) {
+        for (int ph = 0; ph < pool_h; ph++) {
+            for (int pw = 0; pw < pool_w; ++pw) {
+                int start_h = ph * stride_h - pad_h;
+                int start_w = pw * stride_w - pad_w;
+                int end_h = std::min(start_h + kernel_h, H + pad_h);
+                int end_w = std::min(start_w + kernel_w, W + pad_w);
+                int pool_area = (end_h - start_h) * (end_w - start_w);
+                end_h = std::min(end_h, H);
+                end_w = std::min(end_w, W);
+                start_h = std::max(start_h, 0);
+                start_w = std::max(start_w, 0);
+                const int base_pool_idx = ph * pool_w + pw;
+                for (int c = 0; c < C; ++c) {
+                    const int pool_idx = base_pool_idx * C + c;
+                    T sum_val = 0;
+                    for (int h = start_h; h < end_h; ++h)
+                        for (int w = start_w; w < end_w; ++w)
+                            sum_val += x[(h * W + w) * C + c];
+                    y[pool_idx] = sum_val / pool_area;
+                }
+            }
+        }
+        x += x_offset;
+        y += y_offset;
+    }
+}
+
+template<> void AVGPooling2d<float, CPUContext>(const int count,
+                                                const int N, const int C,
+                                                const int H, const int W,
+                                                const int pool_h, const int pool_w,
+                                                const int kernel_h, const int kernel_w,
+                                                const int stride_h, const int stride_w,
+                                                const int pad_h, const int pad_w,
+                                                const string& data_format,
+                                                const float* x,
+                                                float* y) {
+    if (data_format == "NCHW") {
+        _AVGPooling2d_NCHW<float>(N, C, H, W, pool_h, pool_w,
+                                          kernel_h, kernel_w,
+                                          stride_h, stride_w,
+                                                pad_h, pad_w,
+                                                           x,
+                                                          y);
+
+    } else if (data_format == "NHWC") {
+        _AVGPooling2d_NHWC<float>(N, C, H, W, pool_h, pool_w,
+                                          kernel_h, kernel_w,
+                                          stride_h, stride_w,
+                                                pad_h, pad_w,
+                                                           x,
+                                                          y);
+    } else LOG(FATAL) << "Unknown data format: " << data_format;
+}
+
+template <typename T>
+void _MAXPooling2dGrad_NCHW(const int N, const int C,
+                            const int H, const int W,
+                            const int pool_h, const int pool_w,
+                            const int kernel_h, const int kernel_w,
+                            const int stride_h, const int stride_w,
+                            const int pad_h, const int pad_w,
+                            const float* dy,
+                            const int* mask,
+                            float* dx) {
+    int x_offset = H * W;
+    int y_offset = pool_h * pool_w;
+    math::Set<float, CPUContext>(N * C * H * W, 0, dx);
+    for (int n = 0; n < N; ++n) {
+        for (int c = 0; c < C; ++c) {
+            for (int ph = 0; ph < pool_h; ++ph) {
+                for (int pw = 0; pw < pool_w; ++pw) {
+                    const int pool_idx = ph * pool_w + pw;
+                    const int idx = mask[pool_idx];
+                    dx[idx] += dy[pool_idx];
+                }
+            }
             dx += x_offset;
             dy += y_offset;
             mask += y_offset;
-        }    //  end c
-    }    //  end n
+        }
+    }
 }
 
-template<> void AVEPoolingGrad<float, CPUContext>(const int count, 
-                                                  const int num, const int channels,
-                                                  const int height, const int width, 
-                                                  const int pool_height, const int pool_width,
-                                                  const int kernel_h, const int kernel_w, 
-                                                  const int stride_h, const int stride_w, 
-                                                  const int pad_h, const int pad_w,
-                                                  const float* dy, 
-                                                  float* dx) {
-    int x_offset = height * width;
-    int y_offset = pool_height * pool_width;
-    math::Set<float, CPUContext>(count, 0, dx);
-    for (int n = 0; n < num; ++n) {
-        for (int c = 0; c < channels; ++c) {
-            for (int ph = 0; ph < pool_height; ++ph) {
-                for (int pw = 0; pw < pool_width; ++pw) {
+template <typename T>
+void _MAXPooling2dGrad_NHWC(const int N, const int C,
+                            const int H, const int W,
+                            const int pool_h, const int pool_w,
+                            const int kernel_h, const int kernel_w,
+                            const int stride_h, const int stride_w,
+                            const int pad_h, const int pad_w,
+                            const float* dy,
+                            const int* mask,
+                            float* dx) {
+    int x_offset = H * W * C;
+    int y_offset = pool_h * pool_w * C;
+    math::Set<float, CPUContext>(N * H * W * C, 0, dx);
+    for (int n = 0; n < N; ++n) {
+        for (int ph = 0; ph < pool_h; ph++) {
+            for (int pw = 0; pw < pool_w; ++pw) {
+                const int base_pool_idx = ph * pool_w + pw;
+                for (int c = 0; c < C; ++c) {
+                    const int pool_idx = base_pool_idx * C + c;
+                    const int idx = mask[pool_idx];
+                    dx[idx] += dy[pool_idx];
+                }
+            }
+        }
+        dx += x_offset;
+        dy += y_offset;
+    }
+}
+
+template<> void MAXPooling2dGrad<float, CPUContext>(const int count,
+                                                    const int N, const int C,
+                                                    const int H, const int W,
+                                                    const int pool_h, const int pool_w,
+                                                    const int kernel_h, const int kernel_w,
+                                                    const int stride_h, const int stride_w,
+                                                    const int pad_h, const int pad_w,
+                                                    const string& data_format,
+                                                    const float* dy,
+                                                    const int* mask,
+                                                    float* dx) {
+
+
+   if (data_format == "NCHW") {
+        _MAXPooling2dGrad_NCHW<float>(N, C, H, W, pool_h, pool_w,
+                                              kernel_h, kernel_w,
+                                              stride_h, stride_w,
+                                                    pad_h, pad_w,
+                                                              dy,
+                                                            mask,
+                                                             dx);
+
+    } else if (data_format == "NHWC") {
+        _MAXPooling2dGrad_NHWC<float>(N, C, H, W, pool_h, pool_w,
+                                              kernel_h, kernel_w,
+                                              stride_h, stride_w,
+                                                    pad_h, pad_w,
+                                                              dy,
+                                                            mask,
+                                                             dx);
+
+    } else LOG(FATAL) << "Unknown data format: " << data_format;
+}
+
+template <typename T>
+void _AVGPooling2dGrad_NCHW(const int N, const int C,
+                            const int H, const int W,
+                            const int pool_h, const int pool_w,
+                            const int kernel_h, const int kernel_w,
+                            const int stride_h, const int stride_w,
+                            const int pad_h, const int pad_w,
+                            const float* dy,
+                            float* dx) {
+    int x_offset = H * W;
+    int y_offset = pool_h * pool_w;
+    math::Set<float, CPUContext>(N * C * H * W, 0, dx);
+    for (int n = 0; n < N; ++n) {
+        for (int c = 0; c < C; ++c) {
+            for (int ph = 0; ph < pool_h; ++ph) {
+                for (int pw = 0; pw < pool_w; ++pw) {
                     int start_h = ph * stride_h - pad_h;
                     int start_w = pw * stride_w - pad_w;
-                    int end_h = std::min(start_h + kernel_h, height + pad_h);
-                    int end_w = std::min(start_w + kernel_w, width + pad_w);
-                    int pool_size = (end_h - start_h)*(end_w - start_w);
-                    end_h = std::min(end_h, height);
-                    end_w = std::min(end_w, width);
+                    int end_h = std::min(start_h + kernel_h, H + pad_h);
+                    int end_w = std::min(start_w + kernel_w, W + pad_w);
+                    int pool_area = (end_h - start_h) * (end_w - start_w);
+                    end_h = std::min(end_h, H);
+                    end_w = std::min(end_w, W);
                     start_h = std::max(start_h, 0);
                     start_w = std::max(start_w, 0);
-                    const int pool_idx = ph * pool_width + pw;
+                    const int pool_idx = ph * pool_w + pw;
                     for (int h = start_h; h < end_h; ++h) {
                         for (int w = start_w; w < end_w; ++w) {
-                            const int idx = h * width + w;
-                            dx[idx] += (dy[pool_idx] / pool_size);
+                            const int idx = h * W + w;
+                            dx[idx] += (dy[pool_idx] / pool_area);
                         }
                     }
-                }    //  end pw
-            }    //  end ph
+                }
+            } 
             dx += x_offset;
             dy += y_offset;
-        }    //  end c
-    }    //  end n
+        }
+    }
+}
+
+template <typename T>
+void _AVGPooling2dGrad_NHWC(const int N, const int C,
+                            const int H, const int W,
+                            const int pool_h, const int pool_w,
+                            const int kernel_h, const int kernel_w,
+                            const int stride_h, const int stride_w,
+                            const int pad_h, const int pad_w,
+                            const float* dy,
+                            float* dx) {
+    int x_offset = H * W * C;
+    int y_offset = pool_h * pool_w * C;
+    math::Set<float, CPUContext>(N * H * W * C, 0, dx);
+    for (int n = 0; n < N; ++n) {
+        for (int ph = 0; ph < pool_h; ph++) {
+            for (int pw = 0; pw < pool_w; ++pw) {
+                int start_h = ph * stride_h - pad_h;
+                int start_w = pw * stride_w - pad_w;
+                int end_h = std::min(start_h + kernel_h, H + pad_h);
+                int end_w = std::min(start_w + kernel_w, W + pad_w);
+                int pool_area = (end_h - start_h) * (end_w - start_w);
+                end_h = std::min(end_h, H);
+                end_w = std::min(end_w, W);
+                start_h = std::max(start_h, 0);
+                start_w = std::max(start_w, 0);
+                const int base_pool_idx = ph * pool_w + pw;
+                for (int c = 0; c < C; ++c) {
+                    const int pool_idx = base_pool_idx * C + c;
+                    for (int h = start_h; h < end_h; ++h)
+                        for (int w = start_w; w < end_w; ++w)
+                            dx[(h * W + w) * C + c] += (dy[pool_idx] / pool_area);
+                }
+            }
+        }
+        dx += x_offset;
+        dy += y_offset;
+    }
+}
+
+template<> void AVGPooling2dGrad<float, CPUContext>(const int count, 
+                                                    const int N, const int C,
+                                                    const int H, const int W,
+                                                    const int pool_h, const int pool_w,
+                                                    const int kernel_h, const int kernel_w,
+                                                    const int stride_h, const int stride_w,
+                                                    const int pad_h, const int pad_w,
+                                                    const string& data_format,
+                                                    const float* dy, 
+                                                    float* dx) {
+    if (data_format == "NCHW") {
+        _AVGPooling2dGrad_NCHW<float>(N, C, H, W, pool_h, pool_w,
+                                              kernel_h, kernel_w,
+                                              stride_h, stride_w,
+                                                    pad_h, pad_w,
+                                                              dy,
+                                                             dx);
+
+    } else if (data_format == "NHWC") {
+        _AVGPooling2dGrad_NHWC<float>(N, C, H, W, pool_h, pool_w,
+                                              kernel_h, kernel_w,
+                                              stride_h, stride_w,
+                                                    pad_h, pad_w,
+                                                              dy,
+                                                             dx);
+
+    } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
 /******************** vision.roi_pooling ********************/

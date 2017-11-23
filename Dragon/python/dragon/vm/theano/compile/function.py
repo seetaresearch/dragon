@@ -17,6 +17,7 @@ from dragon.core.gradient_maker import GraphGradientMaker
 from dragon.core.scope import GetOperatorName, GetTensorName
 from dragon.core.tensor import Tensor
 
+
 def GraphDef_Grad(meta_graph, targets):
     """Inject the gradient targets into GraphDef.
 
@@ -67,7 +68,8 @@ def GraphDef_Phase(meta_graph, targets):
     """
     phase = 'TEST'
     from dragon.core.scope import _PHASE_SCOPE
-    if _PHASE_SCOPE != '': phase = _PHASE_SCOPE.upper()
+    if _PHASE_SCOPE != '':
+        phase = _PHASE_SCOPE.upper()
     else:
         for target in targets:
             if len(target.grad_wrts) > 0:
@@ -101,7 +103,7 @@ def GraphDef_Update(meta_graph, updater):
     parallel_arguments = {}
 
     # wrap hyper-parameters as Tensor for CC
-    for k,v in updater._hyper_params.items():
+    for k, v in updater._hyper_params.items():
         ws.FeedTensor(updater._prefix + k, np.array([v], dtype=np.float32))
 
     # check data parallel if necessary
@@ -116,7 +118,8 @@ def GraphDef_Update(meta_graph, updater):
             meta_graph.arg.add().CopyFrom(MakeArgument(k, v))
 
     for tuple in updater._tuples:
-        tensors = tuple[0]; arguments = tuple[1]
+        tensors = tuple[0];
+        arguments = tuple[1]
         kwargs = dict(arguments, **extra_arguments)
         u_target = pb.UpdateTarget()
         u_target.type = updater._type
@@ -226,16 +229,21 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
 
     """
     if not isinstance(inputs, list):
-        if inputs is None: inputs = []
-        else: inputs = [inputs]
+        if inputs is None:
+            inputs = []
+        else:
+            inputs = [inputs]
     if not isinstance(outputs, list):
-        if outputs is None: outputs = []
-        else: outputs = [outputs]
+        if outputs is None:
+            outputs = []
+        else:
+            outputs = [outputs]
 
     if len(outputs) > 0 and updater is not None:
         raise RuntimeError('You can specific either outputs or updater, not both.')
 
-    all_exprs = {}; all_extra_targets = set()
+    all_exprs = {};
+    all_extra_targets = set()
     if not isinstance(outputs, list): outputs = [outputs]
 
     meta_graph = pb.GraphDef()
@@ -256,8 +264,8 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
     for extra_target in all_extra_targets: meta_graph.target.extend([extra_target])
 
     # we should sort out the topology of these operators before using
-    all_exprs = sorted(all_exprs.items(), key=lambda d:d[0])
-    forward_ops = copy.deepcopy([v for k,v in all_exprs])
+    all_exprs = sorted(all_exprs.items(), key=lambda d: d[0])
+    forward_ops = copy.deepcopy([v for k, v in all_exprs])
 
     # handle givens
     if givens is not None:
@@ -271,12 +279,13 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
                     external_input_exprs = OrderedDict(external_input_exprs, **new_tensor.expressions)
                 else:
                     external_input_exprs = dict(external_input_exprs, **new_tensor.expressions)
-            elif isinstance(new_tensor, np.ndarray): ws.FeedTensor(new_tensor, GetTensorName())
-        external_input_ops = [v for k,v in external_input_exprs.items()]
+            elif isinstance(new_tensor, np.ndarray):
+                ws.FeedTensor(new_tensor, GetTensorName())
+        external_input_ops = [v for k, v in external_input_exprs.items()]
         for op in forward_ops:
             op.input.extend([name_dict[input] if input in name_dict
-                                              else input for input in op.input])
-            del op.input[:int(len(op.input)/2)]
+                             else input for input in op.input])
+            del op.input[:int(len(op.input) / 2)]
 
         forward_ops = external_input_ops + forward_ops
 
@@ -285,7 +294,8 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
         targets = [output.name for output in outputs]
         targets.extend(all_extra_targets)
         forward_ops, grad_ops = GraphGradientMaker.Make(forward_ops, targets)
-    else: grad_ops = []
+    else:
+        grad_ops = []
     meta_graph.op.extend(forward_ops + grad_ops)
 
     if len(outputs) > 0:
@@ -305,3 +315,35 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
     # return a lambda point to run this graph
     return lambda *args, **kwargs: \
         ws.RunGraph(meta_graph.name, (inputs, args), outputs, **kwargs)
+
+
+def eval(self, feed_dict=None):
+    if not hasattr(self, '_eval_func'):
+        if feed_dict is not None:
+            self._eval_func = function(inputs=feed_dict.keys(), outputs=self)
+        else:
+            self._eval_func = function(outputs=self)
+
+    # cond.1: run by feeding
+    if feed_dict is not None:
+        # checking
+        for key, value in feed_dict.items():
+            if not isinstance(key, Tensor):
+                raise TypeError('The key of feed_dict key should be a Tensor.')
+            if key.shape is not None:
+                if len(key.shape) != len(value.shape):
+                    raise RuntimeError('The Tensor({}) was limited to {} dimensions, \
+                                                    while feed a value with {} dimensions.'.
+                                       format(key.name, len(key.shape), len(value.shape)))
+                for i in xrange(len(key.shape)):
+                    if key.shape[i] is None: continue
+                    if key.shape[i] != value.shape[i]:
+                        raise RuntimeError('The shape of Tensor({}) was limited as ('.format(key.name) +
+                                           ','.join([str(dim) for dim in key.shape]) + '), ' +
+                                           'while feed a value with (' + ','.join([str(dim) for dim in value.shape]) + ').')
+        return self._eval_func(*feed_dict.values())
+    else:
+        # cond.2: run without feeding
+        return self._eval_func()
+
+Tensor.eval = eval
