@@ -102,8 +102,8 @@ class CUDAContext {
     }
 
     inline static void Memset(size_t nbytes, void* ptr) { cudaMemset(ptr, 0, nbytes); }
-    template<class DstContext, class SrcContext>
 
+    template<class DstContext, class SrcContext>
     inline static void Memcpy(size_t nbytes, void* dst, const void* src) {
         CUDA_CHECK(cudaMemcpy(dst, src, nbytes, cudaMemcpyDefault));
     }
@@ -188,16 +188,19 @@ static inline cudnnHandle_t& cudnn_handle() {
 #endif
 
 #else  // WITH_CUDA
-class CUDAContext{
+
+class CUDAContext {
  public:
-    CUDAContext(const DeviceOption& option) { LOG(FATAL) << "CUDA was not compiled."; }
-    CUDAContext(const int gpu_id = 0) { LOG(FATAL) << "CUDA was not compiled."; }
+    CUDAContext(const DeviceOption& option) { CUDA_NOT_COMPILED; }
+    CUDAContext(const int gpu_id = 0) { CUDA_NOT_COMPILED; }
+
+    void SwitchToDevice() { CUDA_NOT_COMPILED; }
+    void FinishDeviceCompution() { CUDA_NOT_COMPILED; }
 
     template<class DstContext, class SrcContext>
-    static void Memcpy(size_t nbytes, void* dst, const void* src) { 
-        LOG(FATAL) << "CUDA was not compiled.";
-    }
+    static void Memcpy(size_t nbytes, void* dst, const void* src) { CUDA_NOT_COMPILED; }
 };
+
 #endif // WITH_CUDA
 
 }    // namespace dragon

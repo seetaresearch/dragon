@@ -106,6 +106,11 @@ class DeviceGuard {
 
 }    // namespace dragon
 
+#else
+
+#define CUDA_NOT_COMPILED \
+    LOG(FATAL) << "CUDA was not compiled.";
+
 #endif // WITH_CUDA
 
 #endif    // DRAGON_UTILS_CUDA_DEVICE_H_
