@@ -329,7 +329,9 @@ class BatchNormLayer(Layer):
         self._param = {'use_stats': int(param.use_global_stats)
                             if param.HasField('use_global_stats') else -1,
                        'momentum': param.moving_average_fraction,
-                       'eps': param.eps}
+                       'eps': param.eps,
+                       'axis': 1,
+                       'mode': 'CAFFE'}
         # mean, var, factor are set to 0 in order to do statistics
         mean = Tensor(LayerParameter.name + '@param0').Constant(value=0.0)
         var  = Tensor(LayerParameter.name + '@param1').Constant(value=0.0)
@@ -373,7 +375,9 @@ class BatchRenormLayer(Layer):
                        'eps': param.eps,
                        'r_max': float(param.r_max),
                        'd_max': float(param.d_max),
-                       't_delta': float(param.t_delta)}
+                       't_delta': float(param.t_delta),
+                       'axis': 1,
+                       'mode': 'CAFFE'}
         mean = Tensor(LayerParameter.name + '@param0').Constant(value=0.0)
         var  = Tensor(LayerParameter.name + '@param1').Constant(value=0.0)
         factor = Tensor(LayerParameter.name + '@param2').Constant(value=0.0)
@@ -394,6 +398,7 @@ class InstanceNormLayer(Layer):
     """
     def __init__(self, LayerParameter):
         super(InstanceNormLayer, self).__init__(LayerParameter)
+        self._param = {'axis': 1}
 
     def Setup(self, bottom):
         super(InstanceNormLayer, self).Setup(bottom)
@@ -464,7 +469,8 @@ class BNLayer(Layer):
         self._param = {'use_stats': int(bn_param.use_global_stats)
                                         if bn_param.HasField('use_global_stats') else -1,
                        'momentum': bn_param.moving_average_fraction,
-                       'eps': bn_param.eps}
+                       'eps': bn_param.eps,
+                       'axis': 1}
         mean = Tensor(LayerParameter.name + '@param0').Constant(value=0.0)
         var = Tensor(LayerParameter.name + '@param1').Constant(value=0.0)
         scale = Tensor(LayerParameter.name + '@param2')
@@ -485,7 +491,7 @@ class BNLayer(Layer):
 
     def Setup(self, bottom):
         super(BNLayer, self).Setup(bottom)
-        return ops.BN(bottom + [blob['data'] for blob in self._blobs], **self._param)
+        return ops.FusedBatchNorm(bottom + [blob['data'] for blob in self._blobs], **self._param)
 
 
 class NormalizeLayer(Layer):

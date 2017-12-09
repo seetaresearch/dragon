@@ -31,9 +31,8 @@ template <class Context>
 class ReshapeGradientOp final : public Operator<Context> {
  public:
     ReshapeGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws) {
-        DISABLE_SHARE_GRADIENT; 
-    }
+        : Operator<Context>(op_def, ws) {}
+
     void RunOnDevice() override;
 };
 

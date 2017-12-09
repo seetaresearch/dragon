@@ -51,7 +51,7 @@ void SparseSoftmaxCrossEntropyOp<Context>::RunOnDevice() {
     valid.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
     losses.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
     softmax_op->Run();
-    prob = ws()->GetTensor("_t_" + anchor() + "_softmax_prob");
+    prob = ws()->GetTensor("/mnt/" + anchor() + "/softmax_prob");
     
     if (input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
@@ -100,7 +100,7 @@ void SparseSoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void SparseSoftmaxCrossEntropyGradientOp<Context>::RunOnDevice() {
-    prob = ws()->GetTensor("_t_" + anchor() + "_softmax_prob");
+    prob = ws()->GetTensor("/mnt/" + anchor() + "/softmax_prob");
     outer_dim = prob->count(0, axis);
     inner_dim = prob->count(axis + 1);
     output(0)->ReshapeLike(input(0));

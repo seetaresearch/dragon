@@ -16,21 +16,31 @@ class BatchNormOp : public Operator<Context> {
  public:
     BatchNormOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
+          axis(OperatorBase::GetSingleArg<int>("axis", -1)),
           momentum(OperatorBase::GetSingleArg<float>("momentum", float(0.9))),
           eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)),
-          inplace(OperatorBase::GetSingleArg<bool>("inplace", false)) {}
+          mode(OperatorBase::GetSingleArg<string>("mode", "DEFAULT")) {
+        if (axis != -1) 
+            CHECK_EQ(axis, 1) 
+                << "\nThe axis can only be set to 1.";
+    }
+
+    void Setup();
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void TrainingRunWithType();
+    template <typename T> void InferenceRunWithType();
 
  protected:
     float momentum, eps;
     Tensor mean, num_by_chans;
-    Tensor* num_multiplier, *spatial_multiplier, *stddev, *var;
-    TIndex num, channels, spatial_dim, nbychans;
+    Tensor* multiplier, *num_multiplier, *spatial_multiplier;
+    Tensor* stddev, *var;
+    TIndex axis, N, C, S, NC, NS;
+    string data_format, mode;
     int use_stats;
-    bool use_global_stats, inplace, is_recomputing;
+    bool use_global_stats, is_recomputing;
 };
 
 template <class Context>
@@ -38,51 +48,72 @@ class BatchNormGradientOp final : public Operator<Context> {
  public:
     BatchNormGradientOp(const OperatorDef& op_def, Workspace *ws)
         : Operator<Context>(op_def, ws),
-          use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {}
+          axis(OperatorBase::GetSingleArg<int>("axis", -1)),
+          use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {
+        if (axis != -1)
+            CHECK_EQ(axis, 1)
+                << "\nThe axis can only be set to 1.";
+    }
+
+    void Setup();
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void TrainingRunWithType();
+    template <typename T> void InferenceRunWithType();
 
  protected:
     Tensor num_by_chans;
-    Tensor* num_multiplier, *spatial_multiplier, *stddev, *var;
-    TIndex num, channels, spatial_dim, nbychans;
+    Tensor* multiplier, *num_multiplier, *spatial_multiplier;
+    Tensor* stddev, *var;
+    TIndex axis, N, C, S, NC, NS;
+    string data_format;
     int use_stats;
     bool use_global_stats;
 };
 
 template <class Context>
-class BNOp : public Operator<Context> {
+class FusedBatchNormOp : public Operator<Context> {
  public:
-    BNOp(const OperatorDef& op_def, Workspace* ws)
+    FusedBatchNormOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
+          axis(OperatorBase::GetSingleArg<int>("axis", -1)),
           momentum(OperatorBase::GetSingleArg<float>("momentum", float(0.9))),
           eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
-          use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) { }
+          use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {}
+
+    void Setup() { NOT_IMPLEMENTED; }
 
     void RunOnDevice() override { NOT_IMPLEMENTED; }
     template <typename T> void RunWithType() { NOT_IMPLEMENTED; }
-  
+
  protected:
     float momentum, eps;
+    TIndex axis, N, C, S, NC, NS;
+    string data_format;
     int use_stats;
     bool use_global_stats, is_recomputing;
 };
 
 template <class Context>
-class BNGradientOp : public Operator<Context> {
+class FusedBatchNormGradientOp : public Operator<Context> {
  public:
-    BNGradientOp(const OperatorDef& op_def, Workspace* ws)
+    FusedBatchNormGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
+          axis(OperatorBase::GetSingleArg<int>("axis", -1)),
           eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) { }
 
+    void Setup() { NOT_IMPLEMENTED; }
+
     void ShareGradient() override;
+
     void RunOnDevice() override { NOT_IMPLEMENTED; }
     template <typename T> void RunWithType() { NOT_IMPLEMENTED; }
-  
+
  protected:
     float eps;
+    TIndex axis, N, C, S, NC, NS;
+    string data_format;
     int use_stats;
     bool use_global_stats;
 };
@@ -94,49 +125,54 @@ class BNGradientOp : public Operator<Context> {
 #include "utils/cudnn_device.h"
 
 template <class Context>
-class CuDNNBNOp final : public BNOp<Context> {
+class CuDNNBatchNormOp final : public FusedBatchNormOp<Context> {
  public:
-    CuDNNBNOp(const OperatorDef& op_def, Workspace* ws)
-        : BNOp<Context>(op_def, ws) {
+    CuDNNBatchNormOp(const OperatorDef& op_def, Workspace* ws)
+        : FusedBatchNormOp<Context>(op_def, ws) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&bn_desc));
         this->eps = std::max(this->eps, float(CUDNN_BN_MIN_EPSILON));
     }
 
+    void Setup();
+
     void RunOnDevice() override;
-    template <typename T> void SpatialRunWithType();
-    template <typename T> void PerActivationRunWithType();
+    template <typename T> void RunWithType();
 
  protected:
     cudnnTensorDescriptor_t input_desc, output_desc, bn_desc;
-    TIndex num, channels, spatial_dim;
+    cudnnBatchNormMode_t bn_mode;
+    TIndex N, C;
+    string data_format;
     Tensor* mean, *var;
-    bool use_global_stats, is_recomputing;
 };
 
 template <class Context>
-class CuDNNBNGradientOp final : public BNGradientOp<Context> {
+class CuDNNBatchNormGradientOp final : public FusedBatchNormGradientOp<Context> {
  public:
-    CuDNNBNGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : BNGradientOp<Context>(op_def, ws) {
+    CuDNNBatchNormGradientOp(const OperatorDef& op_def, Workspace* ws)
+        : FusedBatchNormGradientOp<Context>(op_def, ws) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&bn_desc));
         this->eps = std::max(this->eps, float(CUDNN_BN_MIN_EPSILON));
     }
 
+    void Setup();
+
     void RunOnDevice() override;
-    template <typename T> void SpatialRunWithType();
-    template <typename T> void PerActivationRunWithType();
+    template <typename T> void TrainingRunWithType();
+    template <typename T> void InferenceRunWithType();
 
  protected:
     cudnnTensorDescriptor_t input_desc, output_desc, bn_desc;
+    cudnnBatchNormMode_t bn_mode;
+    TIndex N, C, S, NC, NS;
+    string data_format;
     Tensor num_by_chans;
-    Tensor* num_multiplier, *spatial_multiplier;
+    Tensor* multiplier, *num_multiplier, *spatial_multiplier;
     Tensor* mean, *var, *stddev;
-    TIndex num, channels, spatial_dim, nbychans;
-    bool use_global_stats;
 };
 
 #endif

@@ -142,7 +142,7 @@ void ScanOp<Context>::UnrollTemplate() {
         new_def.add_target(output(i)->name());
     }
     //  upload
-    Tensor* string_tensor = ws()->CreateTensor("_t_" + anchor() + "_raw_ops");
+    Tensor* string_tensor = ws()->CreateTensor("/mnt/" + anchor() + "/raw_ops");
     string_tensor->Reshape(vector<TIndex>(1, 1));
     string* data = string_tensor->mutable_data <string, CPUContext>();
     data[0] = new_def.SerializeAsString();
@@ -171,7 +171,7 @@ void ScanGradientOp<Context>::MakeGradientOps() {
     else if (step_type == "Default") nsteps = input(0).dim(axis);
     if (graphs.count(nsteps)) return;
 
-    Tensor* ops = ws()->GetTensor("_t_" + anchor() + "_raw_ops");
+    Tensor* ops = ws()->GetTensor("/mnt/" + anchor() + "/raw_ops");
     forward_def.ParseFromString(ops->data<string, CPUContext>()[0]);
     vector<string> targets;
     for (auto& target : forward_def.target()) targets.push_back(target);

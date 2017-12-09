@@ -122,7 +122,7 @@ void DivGradientOp<Context>::BroadcastRunWithType(int type) {
     }
 
     if (output(1)->name() != "ignore") {
-        Tensor* buffer = ws()->CreateTensor("_t_buffer_0");
+        Tensor* buffer = ws()->GetBuffer();
         buffer->ReshapeLike(input(1));
         auto* X1data = input(0).template data<T, Context>();
         auto* X2data = input(1).template data<T, Context>();
@@ -147,6 +147,7 @@ void DivGradientOp<Context>::BroadcastRunWithType(int type) {
                                    dX1data, BMul_data, 0.0, Bdata);
         }
         math::Mul<T, Context>(input(1).count(), Bdata, dX2data, dX2data);
+        ws()->ReleaseBuffer(buffer);
     }
 
     if (output(0)->name() != "ignore") {
@@ -207,7 +208,7 @@ void DivGradientOp<Context>::ShareGradient() {
     for (int i = 0; i < OutputSize(); i++) {
         if (output(i)->name() != "ignore") {
             Tensor* dX = ws()->GetBuffer("Grad");
-            output(i)->Replace(*dX);
+            ws()->CreateAvatar(output(i), dX);
             break;
         }
     }

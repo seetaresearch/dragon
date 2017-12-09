@@ -109,7 +109,7 @@ class DeviceGuard {
 #else
 
 #define CUDA_NOT_COMPILED \
-    LOG(FATAL) << "CUDA was not compiled.";
+    LOG(FATAL) << "CUDA was not compiled."
 
 #endif // WITH_CUDA
 

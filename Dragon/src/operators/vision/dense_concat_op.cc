@@ -38,7 +38,7 @@ template <class Context>
 void DenseConcatGradientOp<Context>::ElimateCorruption() {
     Set<string> all_heads;
     queue<int> safe_heads;
-    Tensor* head = ws()->GetTensor("_t_mirror_stage_head");
+    Tensor* head = ws()->GetTensor("/opt/mirror_stage/head");
     string* head_data = head->mutable_data<string, CPUContext>();
     for (int i = 0; i < head->count(); i++) all_heads.insert(head_data[i]);
 
@@ -54,7 +54,7 @@ void DenseConcatGradientOp<Context>::ElimateCorruption() {
         }
         int idx = safe_heads.front();
         safe_heads.pop();
-        Tensor* buffer = ws()->GetTensor("_t_mirror_stage_buffer_" + dragon_cast<string, int>(idx));
+        Tensor* buffer = ws()->GetTensor("/opt/mirror_stage/buffer_" + dragon_cast<string, int>(idx));
         input(0).Move(buffer->memory());
         head_data[idx] = input(0).name();
         if (input(-2).template IsType<float>()) RestoreX1<float>();
@@ -91,7 +91,7 @@ void DenseConcatGradientOp<Context>::ElimateCorruption() {
                 << "\nadd WORKSPACE_MAX_CORRUPTED_SIZE for more powerful mirror stage ?";
             int idx = safe_heads.front();
             safe_heads.pop();
-            Tensor* buffer = ws()->GetTensor("_t_mirror_stage_buffer_" + dragon_cast<string, int>(idx));
+            Tensor* buffer = ws()->GetTensor("/opt/mirror_stage/buffer_" + dragon_cast<string, int>(idx));
             output(i)->Move(buffer->memory());
             head_data[idx] = output(i)->name();
         }

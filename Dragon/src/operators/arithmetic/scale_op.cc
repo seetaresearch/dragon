@@ -7,28 +7,33 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void ScaleOp<Context>::RunWithType() {
-    CHECK_LT(axis, (int)input(0).ndim());
-    const vector<TIndex>::const_iterator& dim_start =
-        input(0).dims().begin() + axis;
-    if (num_axes == -1) num_axes = (int)input(0).ndim() - axis;
-    CHECK_LE(axis + num_axes, (int)input(0).ndim());
+    start_axis = axis;
+    if (start_axis < 0) start_axis += (int)input(0).ndim();
+    if (num_axes == -1) num_axes = (int)input(0).ndim() - start_axis;
+    else if (num_axes == 0) num_axes = 1;
+
+    CHECK_LT(start_axis, (int)input(0).ndim());
+    CHECK_LE(start_axis + num_axes, (int)input(0).ndim());
+
+    const vector<TIndex>::const_iterator& dim_start = input(0).dims().begin() + start_axis;
     const vector<TIndex>::const_iterator& dim_end = dim_start + num_axes;
     vector<TIndex> param_dims(dim_start, dim_end);
+
     TENSOR_FILL(input(1), param_dims);
     if (InputSize() > 2) {
         TENSOR_FILL(input(2), param_dims);
-        inner_dim = input(0).count(axis + num_axes);
+        inner_dim = input(0).count(start_axis + num_axes);
         INIT_MULTIPLIER(bias_multiplier, inner_dim);
     }
 
     if (InputSize() > 2) {
-        kernel::Scale<T, Context>(axis, &input(0), &input(1),
-                                  &input(2), bias_multiplier, 
-                                                  output(0));
+        kernel::Scale<T, Context>(start_axis, &input(0), &input(1),
+                                        &input(2), bias_multiplier,
+                                                        output(0));
     } else {
-        kernel::Scale<T, Context>(axis, &input(0), &input(1),
-                                            nullptr, nullptr, 
-                                                  output(0));
+        kernel::Scale<T, Context>(start_axis, &input(0), &input(1),
+                                                  nullptr, nullptr,
+                                                        output(0));
     }
 }
 
@@ -95,9 +100,9 @@ void ScaleGradientOp<Context>::ScaleRunWithType() {
             SRes_data = (outer_dim == 1) ?  //  handle scale only
                 dScale : sum_result.template mutable_data<T, Context>();
             math::Gemv<T, Context>(CblasNoTrans, sum_result.count(), inner_dim,
-                                                                           1.0, 
-                                                           tmp_data, SMul_data, 
-                                               SRes_data == dScale ? 1.0 : 0.0, 
+                                                                           1.0,
+                                                           tmp_data, SMul_data,
+                                               SRes_data == dScale ? 1.0 : 0.0,
                                                                     SRes_data);
         } 
         if (outer_dim != 1) {
@@ -106,9 +111,9 @@ void ScaleGradientOp<Context>::ScaleRunWithType() {
                 *dScale += result;
             } else {
                 math::Gemv<T, Context>(CblasTrans, outer_dim, scale_dim,
-                                                                    1.0, 
-                                                   SRes_data, SMul_data, 
-                                                                    1.0, 
+                                                                    1.0,
+                                                   SRes_data, SMul_data,
+                                                                    1.0,
                                                                 dScale);
             }
         }
@@ -118,14 +123,21 @@ void ScaleGradientOp<Context>::ScaleRunWithType() {
 template <class Context> template <typename T>
 void ScaleGradientOp<Context>::RunWithType() {
     output(0)->ReshapeLike(input(0));
-    kernel::ScaleGrad<float, Context>(axis, &input(-1), &input(1), output(0));
+    kernel::ScaleGrad<float, Context>(start_axis, &input(-1), &input(1), output(0));
 }
 
 template <class Context>
 void ScaleGradientOp<Context>::RunOnDevice() {
-    if (num_axes == -1) num_axes = (int)input(0).ndim() - axis;
-    outer_dim = input(0).count(0, axis);
-    inner_dim = input(0).count(axis + num_axes);
+    start_axis = axis;
+    if (start_axis < 0) start_axis += (int)input(0).ndim();
+    if (num_axes == -1) num_axes = (int)input(0).ndim() - start_axis;
+    else if (num_axes == 0) num_axes = 1;
+
+    CHECK_LT(start_axis, (int)input(0).ndim());
+    CHECK_LE(start_axis + num_axes, (int)input(0).ndim());
+
+    outer_dim = input(0).count(0, start_axis);
+    inner_dim = input(0).count(start_axis + num_axes);
     scale_dim = input(1).count();
     sum_dim = std::max(outer_dim, inner_dim);
     dim = scale_dim * inner_dim;

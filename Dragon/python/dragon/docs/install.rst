@@ -170,34 +170,15 @@ Installation - Linux (Distributed, CPU)
 
 **$** Set ``PYTHON_INCLUDE_DIR`` / ``ANACONDA_ROOT_DIR`` and ``NUMPY_ROOT_DIR``
 
-**Step 5:** Set Environment Variables
-
-**$** Create dragon.conf
-
-.. code-block:: shell
-
-    sudo vim /etc/ld.so.conf.d/dragon.conf
-
-**$** Append 1 line for ``REPO_ROOT/3rdparty/lib``
-
-.. code-block:: shell
-
-    /xyz/Dragon/3rdparty/lib
-
-**$** Rebuild the scanning cache
-
-.. code-block:: shell
-
-    sudo ldconfig
-
-**Step 6:** Setup MPI
+**Step 5:** Setup MPI
 
 .. code-block:: shell
 
     cd $REPO_ROOT/3rdparty
     bash ./setup_mpi.sh
+    sudo cp openmpi/install/bin/mpirun /usr/bin
 
-**Step 7:** Compile Dragon
+**Step 6:** Compile Dragon
 
 **$** Install CMake
 
@@ -215,7 +196,7 @@ Installation - Linux (Distributed, CPU)
     cmake ..
     make install -j16
 
-**Step 8:** Install Dragon
+**Step 7:** Install Dragon
 
 .. code-block:: shell
 
@@ -275,34 +256,15 @@ Installation - Linux (Distributed, GPU)
 
 **$** OpenMPI can take ``NCCL`` and our ``CUDA-AWARE`` communications at the same time.
 
-**Step 6:** Set Environment Variables
-
-**$** Create dragon.conf
-
-.. code-block:: shell
-
-    sudo vim /etc/ld.so.conf.d/dragon.conf
-
-**$** Append 1 line for ``REPO_ROOT/3rdparty/lib``
-
-.. code-block:: shell
-
-    /xyz/Dragon/3rdparty/lib
-
-**$** Rebuild the scanning cache
-
-.. code-block:: shell
-
-    sudo ldconfig
-
-**Step 7:** Setup MPI
+**Step 6:** Setup MPI
 
 .. code-block:: shell
 
     cd $REPO_ROOT/3rdparty
     bash ./setup_mpi.sh
+    sudo cp openmpi/install/bin/mpirun /usr/bin
 
-**Step 8:** Compile Dragon
+**Step 7:** Compile Dragon
 
 **$** Install CMake
 
@@ -320,7 +282,7 @@ Installation - Linux (Distributed, GPU)
     cmake ..
     make install -j16
 
-**Step 9:** Install Dragon
+**Step 8:** Install Dragon
 
 .. code-block:: shell
 
@@ -379,7 +341,7 @@ Add ``REPO_ROOT/3rdparty/bin`` to system environment variables
 
 **$** Open ``DRAGON_ROOT/build/Dragon.sln``
 
-**$** Compile and generate for ``INSTAL`` solution
+**$** Compile and generate for ``INSTALL`` solution
 
 **Step 6:** Install Dragon
 

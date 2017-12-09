@@ -26,7 +26,7 @@ void SoftmaxOp<Context>::RunWithType() {
 template <class Context>
 void SoftmaxOp<Context>::RunOnDevice() {
     if (axis == -1) axis = (int)input(0).ndim() - 1;
-    scale = ws()->CreateTensor("_t_softmax_scale");
+    scale = ws()->CreateTensor("/share/softmax_scale");
     scale->ReshapeLike(input(0));
     outer_dim = input(0).count(0, axis);
     inner_dim = input(0).count(axis + 1);
@@ -64,7 +64,7 @@ void SoftmaxGradientOp<Context>::RunWithType() {
 template <class Context>
 void SoftmaxGradientOp<Context>::RunOnDevice() {
     if (axis == -1) axis = (int)input(0).ndim() - 1;
-    scale = ws()->CreateTensor("_t_softmax_scale");
+    scale = ws()->CreateTensor("/share/softmax_scale");
     scale->ReshapeLike(input(0));
     outer_dim = input(0).count(0, axis);
     inner_dim = input(0).count(axis + 1);

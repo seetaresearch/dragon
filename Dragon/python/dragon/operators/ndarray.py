@@ -612,22 +612,24 @@ def Flatten(inputs, axis=0, num_axes=-1, keep_axes=None, **kwargs):
     output = Tensor.CreateOperator(nout=1, op_type='Flatten', **arguments)
 
     if inputs.shape is not None:
+        fake_shape = inputs.shape[:]
+        fake_shape = [1 if dim is None else dim for dim in fake_shape]
         if keep_axes is not None:
             if keep_axes > len(inputs.shape):
                 raise ValueError('The total number of axes is {}, can not keep {}.'
                                  .format(len(inputs.shape), keep_axes))
-            total_count = np.prod(inputs.shape)
+            total_count = np.prod(fake_shape)
             output.shape = []
             for i in xrange(keep_axes - 1):
                 output.shape.append(inputs.shape[i])
-                total_count *= inputs.shape[i]
+                total_count *= fake_shape[i]
             if total_count != 1:
-                output.shape.append(np.long(total_count))
+                output.shape.append(total_count)
         else:
             if num_axes == -1: num_axes = len(inputs.shape) - axis
             elif num_axes == 0:
                 raise ValueError('num_axes must > 0 or be -1.')
-            num_flatten = np.prod(inputs.shape[axis : axis + num_axes])
+            num_flatten = np.prod(fake_shape[axis : axis + num_axes])
             output.shape = inputs.shape[: axis] + [num_flatten] + inputs.shape[axis + num_axes :]
 
     return output

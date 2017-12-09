@@ -35,7 +35,7 @@ template <class Context>
 void SigmoidCrossEntropyOp<Context>::RunOnDevice() {
     CHECK_EQ(input(0).count(), input(1).count())
         << "\nNumber of predictions must match the number of labels.";
-    prob = ws()->CreateTensor("_t_" + anchor() + "_sigmoid_prob");
+    prob = ws()->CreateTensor("/mnt/" + anchor() + "/sigmoid_prob");
     prob->ReshapeLike(input(0));
     losses.ReshapeLike(input(0));
 
@@ -73,7 +73,7 @@ void SigmoidCrossEntropyGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void SigmoidCrossEntropyGradientOp<Context>::RunOnDevice() {
-    prob = ws()->GetTensor("_t_" + anchor() + "_sigmoid_prob");
+    prob = ws()->GetTensor("/mnt/" + anchor() + "/sigmoid_prob");
     output(0)->ReshapeLike(input(0));
 
     if (input(0).template IsType<float>()) RunWithType<float>();

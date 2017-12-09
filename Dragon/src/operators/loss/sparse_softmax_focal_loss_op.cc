@@ -57,8 +57,8 @@ void SparseSoftmaxFocalLossOp<Context>::RunOnDevice() {
     this->valid.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
     this->losses.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
     this->softmax_op->Run();
-    this->prob = ws()->GetTensor("_t_" + anchor() + "_softmax_prob");
-    scale = ws()->CreateTensor("_t_" + anchor() + "_focal_scale");
+    this->prob = ws()->GetTensor("/mnt/" + anchor() + "/softmax_prob");
+    scale = ws()->CreateTensor("/mnt/" + anchor() + "/focal_scale");
     scale->ReshapeLike(*this->prob);
     
     if (input(0).template IsType<float>()) RunWithType<float>();
@@ -116,8 +116,8 @@ void SparseSoftmaxFocalLossGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void SparseSoftmaxFocalLossGradientOp<Context>::RunOnDevice() {
-    this->prob = ws()->GetTensor("_t_" + anchor() + "_softmax_prob");
-    scale = ws()->GetTensor("_t_" + anchor() + "_focal_scale");
+    this->prob = ws()->GetTensor("/mnt/" + anchor() + "/softmax_prob");
+    scale = ws()->GetTensor("/mnt/" + anchor() + "/focal_scale");
     outer_dim = this->prob->count(0, axis);
     inner_dim = this->prob->count(axis + 1);
     output(0)->ReshapeLike(input(0));

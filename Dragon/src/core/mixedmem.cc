@@ -88,7 +88,7 @@ void MixedMemory::async_cuda_data(const cudaStream_t& stream) {
 
 MixedMemory::~MixedMemory() {
     bool use_cudahost_mem = false;
-#ifdef WITH_CUDA_HOST_MEN
+#ifdef WITH_CUDA_HOST_MEM
     use_cudahost_mem = true;
 #endif
     if (cpu_ptr_ && !use_cudahost_mem) {

@@ -23,9 +23,13 @@ void SmoothL1LossOp<Context>::RunWithType() {
         auto* outside_w_data = input(3).template data<T, Context>();
         math::Mul<T, Context>(diff->count(), outside_w_data, error_data, error_data);
     }
+    Ydata[0] = math::ASum<T, Context>(error->count(), error_data);
 
-    T loss = math::ASum<T, Context>(error->count(), error_data);
-    Ydata[0] = loss / input(0).dim(0);
+    T normalizer;
+    if (normalization == "BATCH_SIZE") normalizer = input(0).dim(0);
+    else if (normalization == "FULL") normalizer = input(0).count();
+    else if (normalization == "NONE") normalizer = 1;
+    Ydata[0] = Ydata[0] / normalizer;
 }
 
 template <class Context>
@@ -35,8 +39,8 @@ void SmoothL1LossOp<Context>::RunOnDevice() {
     if (InputSize() > 3) CHECK(input(0).dims() == input(3).dims());
     output(0)->Reshape(vector<TIndex>(1, 1));
 
-    diff = ws()->CreateTensor("_t_" + anchor() + "_smoothl1_loss_diff");
-    error = ws()->CreateTensor("_t_smoothl1_loss_error");
+    diff = ws()->CreateTensor("/mnt/" + anchor() + "/smoothl1_loss_diff");
+    error = ws()->CreateTensor("/share/smoothl1_loss_error");
     diff->ReshapeLike(input(0));
     error->ReshapeLike(input(0));
 
@@ -54,16 +58,21 @@ template <class Context> template <typename T>
 void SmoothL1LossGradientOp<Context>::RunWithType() {
     auto* diff_data = diff->template mutable_data<T, Context>();
     auto* dYdata = input(-1).template data<T, CPUContext>();
-
     kernel::SmoothL1Grad<T, Context>(diff->count(), sigma2, diff_data, diff_data);
+
+    T alpha = dYdata[0], normalizer;
+    if (normalization == "BATCH_SIZE") normalizer = input(0).dim(0);
+    else if (normalization == "FULL") normalizer = input(0).count();
+    else if (normalization == "NONE") normalizer = 1;
+    alpha = alpha / normalizer;
 
     for (int i = 0; i < 2; i++) {
         if (output(i)->name() == "ignore") continue;
         output(i)->ReshapeLike(input(i));
         auto* dXdata = output(i)->template mutable_data<T, Context>();
         const T sign = (i == 0) ? 1 : -1;
-        const T coeff = sign / input(i).dim(0) * dYdata[0];
-        math::Axpby<T, Context>(output(i)->count(), coeff, diff_data, 0, dXdata);
+        alpha *= sign;
+        math::Axpby<T, Context>(output(i)->count(), alpha, diff_data, 0, dXdata);
         if (InputSize() > 3) {
             auto* inside_w_data = input(2).template data<T, Context>();
             math::Mul<T, Context>(output(i)->count(), inside_w_data, dXdata, dXdata);
@@ -77,7 +86,7 @@ void SmoothL1LossGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void SmoothL1LossGradientOp<Context>::RunOnDevice() {
-    diff = ws()->GetTensor("_t_" + anchor() + "_smoothl1_loss_diff");
+    diff = ws()->GetTensor("/mnt/" + anchor() + "/smoothl1_loss_diff");
     
     if (input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";

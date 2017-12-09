@@ -15,7 +15,7 @@ void L2NormOp<Context>::RunWithType() {
     buffer->Reshape(dims);
 
     //  normalize by inner_dim independently if not across it
-    norm = ws()->CreateTensor("_t_" + anchor() + "_l2norm_normalizer");
+    norm = ws()->CreateTensor("/mnt/" + anchor() + "/l2norm_normalizer");
     dims = input(0).dims();
     for (int i = axis; i < end_axis; i++) dims[i] = 1;
     norm->Reshape(dims);
@@ -95,7 +95,7 @@ void L2NormGradientOp<Context>::RunWithType() {
     INIT_MULTIPLIER(multiplier, dim);
 
     //  normalize by inner_dim independently if not across it
-    norm = ws()->GetTensor("_t_" + anchor() + "_l2norm_normalizer");
+    norm = ws()->GetTensor("/mnt/" + anchor() + "/l2norm_normalizer");
     buffer = ws()->GetBuffer();
     vector<TIndex> dims = input(0).dims();
     for (int i = 0; i < axis; i++) dims[i] = 1;
@@ -121,32 +121,32 @@ void L2NormGradientOp<Context>::RunWithType() {
         } else {
             //  compute \sum_{i} x_{i, j}dy_{i, j}
             math::Mul<T, Context>(buffer->count(), Xdata, dYdata, Bdata);
-            math::Gemv<T, Context>(CblasTrans, dim, inner_dim, 
-                                                          1.0, 
-                                              Bdata, DMuldata, 
-                                                          0.0, 
+            math::Gemv<T, Context>(CblasTrans, dim, inner_dim,
+                                                          1.0,
+                                              Bdata, DMuldata,
+                                                          0.0,
                                                   BInnerdata);
             //  compute T1 = x[(\sum_{i} x_{i, j}dy_{i, j})]_{dim}
-            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, dim, inner_dim, 1, 
-                                                                             1.0, 
-                                                            DMuldata, BInnerdata, 
-                                                                             0.0, 
+            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, dim, inner_dim, 1,
+                                                                             1.0,
+                                                            DMuldata, BInnerdata,
+                                                                             0.0,
                                                                           Bdata);
             math::Mul<T, Context>(buffer->count(), Xdata, Bdata, dXdata);
             //  compute T2 = T1 / Normalizer^{2}
             math::Pow<T, Context>(inner_dim, 2.0, Ndata, BInnerdata);
-            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, dim, inner_dim, 1, 
-                                                                             1.0, 
-                                                            DMuldata, BInnerdata, 
-                                                                             0.0, 
+            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, dim, inner_dim, 1,
+                                                                             1.0,
+                                                            DMuldata, BInnerdata,
+                                                                             0.0,
                                                                           Bdata);
             math::Div<T, Context>(buffer->count(), dXdata, Bdata, dXdata);
             //  compute T3 = (dy - T2) / Normalizer
             math::Sub<T, Context>(buffer->count(), dYdata, dXdata, dXdata);
-            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, dim, inner_dim, 1, 
-                                                                             1.0, 
-                                                                 DMuldata, Ndata, 
-                                                                             0.0, 
+            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, dim, inner_dim, 1,
+                                                                             1.0,
+                                                                 DMuldata, Ndata,
+                                                                             0.0,
                                                                           Bdata);
             math::Div<T, Context>(buffer->count(), dXdata, Bdata, dXdata);
             Ndata += inner_dim;

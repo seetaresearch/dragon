@@ -165,7 +165,20 @@ def Matmul(inputs, TransA=False, TransB=False, **kwargs):
 
     if inputs[0].shape is not None and \
             inputs[1].shape is not None:
-        pass
+        if len(inputs[0].shape) < 2 or \
+            len(inputs[1].shape) < 2:
+                raise ValueError('The rank of A and B should be at least 2.')
+        if len(inputs[0].shape) != len(inputs[1].shape):
+            raise ValueError('Both A and B should have the same number of dimensions.')
+        M = inputs[0].shape[-1] if TransA else inputs[0].shape[-2]
+        K1 = inputs[0].shape[-2] if TransA else inputs[0].shape[-1]
+        K2 = inputs[1].shape[-1] if TransB else inputs[1].shape[-2]
+        N = inputs[1].shape[-2] if TransB else inputs[1].shape[-1]
+        if K1 != K2:
+            raise ValueError('Can not multiply A: ({}, {}} with B: ({}, {})'.format(M, K1, K2, N))
+        output.shape = inputs[0].shape[:]
+        output.shape[-2] = M
+        output.shape[-1] = N
 
     return output
 
@@ -411,6 +424,10 @@ def Scale(inputs, axis=1, num_axes=1, **kwargs):
     The number of inputs vary from ``2`` to ``3`` (Without or With ``bias``).
 
     The scale ranges are: |scale_function|
+
+    Set ``axis`` to specific the start axis(can be negative).
+
+    Set ``num_axes`` to -1 will scale all remained axes.
 
     Parameters
     ----------

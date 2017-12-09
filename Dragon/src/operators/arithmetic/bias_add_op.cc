@@ -30,8 +30,7 @@ void BiasAddOp<Context>::RunOnDevice() {
         dim = input(0).dim(-1);
         inner_dim = input(0).count(1) / dim;
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-    output(0)->ReshapeLike(input(0));
-    output(0)->Share(input(0));
+    ws()->CreateAvatar(output(0), &input(0));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
@@ -70,8 +69,7 @@ void BiasAddGradientOp<Context>::RunWithType() {
     }
 
     if (output(0)->name() != "ignore") {
-        output(0)->ReshapeLike(input(-1));
-        output(0)->Share(input(-1));
+        ws()->CreateAvatar(output(0), &input(-1));
     }
 }
 

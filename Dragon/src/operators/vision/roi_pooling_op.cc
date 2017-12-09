@@ -17,10 +17,10 @@ void ROIPoolingOp<Context>::RunWithType() {
 
 template <class Context>
 void ROIPoolingOp<Context>::RunOnDevice() {
+    mask = ws()->CreateTensor("/mnt/" + anchor() + "/roi_pool_mask");
+
     vector<TIndex> dims({input(1).dim(0), input(0).dim(1), pool_h, pool_w});
     output(0)->Reshape(dims);
-
-    mask = ws()->CreateTensor("_t_" + anchor() + "_roi_pool_mask");
     mask->Reshape(dims);
 
     if (input(0).template IsType<float>()) return RunWithType<float>();
@@ -33,10 +33,9 @@ DEPLOY_CUDA(ROIPooling);
 #endif
 OPERATOR_SCHEMA(ROIPooling).NumInputs(2).NumOutputs(1);
 
-
 template <class Context> template <typename T>
 void ROIPoolingGradientOp<Context>::RunWithType() {
-    kernel::ROIPoolingGrad<T, Context>(spatial_scale, 
+    kernel::ROIPoolingGrad<T, Context>(spatial_scale,
                                       pool_h, pool_w,
                                           &input(-1),
                                            &input(1),
@@ -46,18 +45,12 @@ void ROIPoolingGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void ROIPoolingGradientOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
+    mask = ws()->GetTensor("/mnt/" + anchor() + "/roi_pool_mask");
 
-    mask = ws()->GetTensor("_t_" + anchor() + "_roi_pool_mask");
+    output(0)->ReshapeLike(input(0));
 
     if (input(0).template IsType<float>()) return RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
-}
-
-template <class Context>
-void ROIPoolingGradientOp<Context>::CleanResource() {
-    Operator<Context>::CleanResource();
-    ws()->ReleaseBuffer(mask, "Common", true);
 }
 
 DEPLOY_CPU(ROIPoolingGradient);

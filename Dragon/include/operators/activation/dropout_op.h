@@ -47,7 +47,6 @@ class DropoutGradientOp final : public Operator<Context> {
     }
 
     void RunOnDevice() override;
-    void CleanResource() override;
     template <typename T> void RunWithType();
 
  protected:

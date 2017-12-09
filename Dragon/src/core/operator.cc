@@ -20,6 +20,19 @@ OperatorBase::OperatorBase(const OperatorDef& op_def, Workspace* ws)
         outputs_.push_back(tensor);
     }
 }
+inline Tensor& OperatorBase::input(int idx) {
+    CHECK_LT(idx, (int)inputs_.size());
+    CHECK_GE(idx, -(int)inputs_.size());
+    if (idx >= 0) return *(ws()->SearchAvatar(inputs_[idx]));
+    else return *(ws()->SearchAvatar(inputs_[idx + inputs_.size()]));
+}
+
+inline Tensor* OperatorBase::output(int idx) {
+    CHECK_LT(idx, (int)outputs_.size());
+    CHECK_GE(idx, -(int)outputs_.size());
+    if (idx >= 0) return ws()->SearchAvatar(outputs_[idx]);
+    else return ws()->SearchAvatar(outputs_[idx + outputs_.size()]);
+}
 
 OperatorBase* TryCreateOperator(const string& key, const OperatorDef& op_def, Workspace* ws) {
     switch (op_def.device_option().device_type()) {
@@ -49,11 +62,11 @@ Gradient MakeGradientForOp(const OperatorDef& def, const vector<string>& g_outpu
     if (maker.get() == nullptr) 
         LOG(FATAL) << "Gradient maker for operator " << def.type() << "not implemented.";
     Gradient grad = maker->Make();
-    // copy device option, engine, and arguments if needed.
-    if (maker->CopyDeviceOption() && def.has_device_option()) 
+    // copy device option, engine, and arguments if needed
+    if (maker->CopyDeviceOption() && def.has_device_option())
         for (auto& grad_def : grad.ops) 
             grad_def.mutable_device_option()->CopyFrom(def.device_option());
-    // copy arguments if needed.
+    // copy arguments if needed
     if (maker->CopyArguments() && def.arg_size()) 
         for (auto& grad_def : grad.ops) grad_def.mutable_arg()->MergeFrom(def.arg());
     return grad;
@@ -63,7 +76,7 @@ template <class Context>
 void Operator<Context>::ElimateCorruption() {
     Set<string> all_heads;
     queue<int> safe_heads;
-    Tensor* head = ws()->GetTensor("_t_mirror_stage_head");
+    Tensor* head = ws()->GetTensor("/opt/mirror_stage/head");
     string* head_data = head->mutable_data<string, CPUContext>();
     for (int i = 0; i < head->count(); i++) all_heads.insert(head_data[i]);
     //  sub-graph run
@@ -71,7 +84,7 @@ void Operator<Context>::ElimateCorruption() {
         if (input(i).is_corrupted())   {
             if (all_heads.count(input(i).name())) continue;
             LOG(DEBUG) << "Tensor(" << input(i).name() << ") is corrupted, recompute...  ";
-            Tensor* recompute_flag = ws()->GetTensor("_t_global_recompute_flag");
+            Tensor* recompute_flag = ws()->GetTensor("/opt/mirror_stage/recompute_flag");
             vector<OperatorBase*>& list = recompute_map()[input(i).name()];
             recompute_flag->mutable_data<bool, CPUContext>()[0] = true;
             for (int j = 0; j < list.size(); j++) list[j]->Run();
@@ -101,7 +114,7 @@ void Operator<Context>::ElimateCorruption() {
                 << "\nadd WORKSPACE_MAX_CORRUPTED_SIZE for more powerful mirror stage ?";
             int idx = safe_heads.front();
             safe_heads.pop();
-            Tensor* buffer = ws()->GetTensor("_t_mirror_stage_buffer_" + dragon_cast<string, int>(idx));
+            Tensor* buffer = ws()->GetTensor("/opt/mirror_stage/buffer_" + dragon_cast<string, int>(idx));
             output(i)->Move(buffer->memory());
             head_data[idx] = output(i)->name();
         }
@@ -113,7 +126,7 @@ void Operator<Context>::ShareGradient() {
     //  TODO(PhyscalX):  we preset input(-1)->output(0) to share
     if (output(0)->name() != "ignore") {
         Tensor* dX = ws()->GetBuffer("Grad");
-        output(0)->Replace(*dX);
+        ws()->CreateAvatar(output(0), dX);
     }
 }
 
@@ -127,12 +140,12 @@ template <class Context>
 void Operator<Context>::CleanResource() {
     //  post-process for mirror stage
     Map<string, int> head_to_idx;
-    Tensor* head = ws()->GetTensor("_t_mirror_stage_head");
+    Tensor* head = ws()->GetTensor("/opt/mirror_stage/head");
     string* head_data = head->mutable_data<string, CPUContext>();
     for (int i = 0; i < head->count(); i++) head_to_idx[head_data[i]] = i;
     for (int i = 0; i < OutputSize(); i++) {
         if (output(i)->is_corrupted() && head_to_idx.count(output(i)->name())) {
-            string used = "_t_mirror_stage_buffer_" + dragon_cast<string, int>(head_to_idx[output(i)->name()]);
+            string used = "/opt/mirror_stage/buffer_" + dragon_cast<string, int>(head_to_idx[output(i)->name()]);
             Tensor* buffer = ws()->GetTensor(used);
             if (output(i)->memory() != buffer->memory()) buffer->Move(output(i)->memory());
         }

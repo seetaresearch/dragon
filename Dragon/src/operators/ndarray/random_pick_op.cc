@@ -33,7 +33,7 @@ void RandomPickOp<Context>::RunOnDevice() {
     inner_dim = input(0).count(axis + 1);
     output(0)->Reshape(output_dims);
 
-    pick_indices = ws()->CreateTensor("_t_" + anchor() + "_pick_indices");
+    pick_indices = ws()->CreateTensor("/mnt/" + anchor() + "/pick_indices");
     pick_indices->Reshape(vector<TIndex>(1, max_samples));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
@@ -68,7 +68,7 @@ void RandomPickGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void RandomPickGradientOp<Context>::RunOnDevice() {
-    pick_indices = ws()->GetTensor("_t_" + anchor() + "_pick_indices");
+    pick_indices = ws()->GetTensor("/mnt/" + anchor() + "/pick_indices");
 
     x_slice_dim = input(0).dim(axis);
     y_slice_dim = pick_indices->count();

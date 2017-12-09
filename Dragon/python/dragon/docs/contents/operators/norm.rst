@@ -20,7 +20,9 @@
                                              \sigma_{B}^{2} = \frac{1}{m} \sum_{i=1}^{m}(x_{i} - \mu_{B})^{2} \\
                                              \hat{x}_{i} = \frac{x_{i} - \mu_{B}}{\sqrt{\sigma_{B}^{2} + \epsilon}} \cdot r + d \\ \,
 
-.. |moving_average_function| mathmacro:: \\ \, \\ x_{moving} = Momentum * x_{moving} + x_{stat}
+.. |default_moving_average_function| mathmacro:: \\ \, \\ x_{moving} \leftarrow Momentum * x_{moving} + (1 - Momentum) * x_{stat} \\ \,
+
+.. |caffe_moving_average_function| mathmacro:: \\ \, \\ x_{moving} \leftarrow Momentum * x_{moving} + x_{stat} \\ \,
 
 
 .. _ops.Scale(*args, **kwargs): arithmetic.html#dragon.operators.arithmetic.Scale

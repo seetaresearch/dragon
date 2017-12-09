@@ -27,9 +27,9 @@ void TransposeOp<Context>::RunOnDevice() {
         << "\nbut Tensor(" << input(0).name() << ")'s dims are "
         << input(0).dim_string();
     vector<TIndex> output_dims;
-    order = ws()->CreateTensor("_t_" + anchor() + "_order");
-    old_steps = ws()->CreateTensor("_t_" + anchor() + "_old_steps");
-    new_steps = ws()->CreateTensor("_t_" + anchor() + "_new_steps");
+    order = ws()->CreateTensor("/mnt/" + anchor() + "/transpose_order");
+    old_steps = ws()->CreateTensor("/mnt/" + anchor() + "/transpose_old_steps");
+    new_steps = ws()->CreateTensor("/mnt/" + anchor() + "/transpose_new_steps");
     order->Reshape(vector<TIndex>(1, perms.size()));
     old_steps->Reshape(vector<TIndex>(1, perms.size()));
     new_steps->Reshape(vector<TIndex>(1, perms.size()));
@@ -76,9 +76,9 @@ void TransposeGradientOp<Context>::RunWithType() {
 template <class Context>
 void TransposeGradientOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
-    order = ws()->GetTensor("_t_" + anchor() + "_order");
-    old_steps = ws()->GetTensor("_t_" + anchor() + "_old_steps");
-    new_steps = ws()->GetTensor("_t_" + anchor() + "_new_steps");
+    order = ws()->GetTensor("/mnt/" + anchor() + "/transpose_order");
+    old_steps = ws()->GetTensor("/mnt/" + anchor() + "/transpose_old_steps");
+    new_steps = ws()->GetTensor("/mnt/" + anchor() + "/transpose_new_steps");
 
     if (input(0).template IsType<float>()) RunWithType<float>();
 #ifdef WITH_CUDA_FP16

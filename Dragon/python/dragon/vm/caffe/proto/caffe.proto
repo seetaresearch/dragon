@@ -1487,7 +1487,7 @@ message BatchRenormParameter {
   optional float eps = 3 [default = 1e-3];
   optional float r_max = 4 [default = 3.0];
   optional float d_max = 5 [default = 5.0];
-  optional float t_delta = 6 [default = 1.0];
+  optional float t_delta = 6 [default = 0.001];
 }
 
 message DenseConcatParameter {
@@ -1497,7 +1497,7 @@ message DenseConcatParameter {
 
 message FocalLossParameter {
   optional float alpha = 1 [default = 0.5];
-  optional float gamma = 2 [default = 2.0];
+  optional float gamma = 2 [default = 0.0];
   optional float eps = 3 [default = 1e-10];
   optional int32 neg_id = 4 [default = -1];
 }

@@ -31,7 +31,7 @@ template <class Context>
 void L1LossOp<Context>::RunOnDevice() {
     CHECK_EQ(input(0).count(), input(1).count());
     output(0)->Reshape(vector<TIndex>(1, 1));
-    diff = ws()->CreateTensor("_t_" + anchor() + "_l1_loss_diff");
+    diff = ws()->CreateTensor("/mnt/" + anchor() + "/l1_loss_diff");
     diff->ReshapeLike(input(0));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
@@ -67,7 +67,7 @@ void L1LossGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void L1LossGradientOp<Context>::RunOnDevice() {
-    diff = ws()->GetTensor("_t_" + anchor() + "_l1_loss_diff");
+    diff = ws()->GetTensor("/mnt/" + anchor() + "/l1_loss_diff");
 
     if (input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
@@ -78,7 +78,7 @@ void L1LossGradientOp<Context>::ShareGradient() {
     for (int i = 0; i < OutputSize(); i++) {
         if (output(i)->name() != "ignore") {
             Tensor* dX = ws()->GetBuffer("Grad");
-            output(i)->Replace(*dX);
+            ws()->CreateAvatar(output(i), dX);
             break;
         }
     }

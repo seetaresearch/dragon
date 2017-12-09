@@ -27,10 +27,9 @@ class ExpandDimsOp final : public Operator<Context> {
 template <class Context>
 class ExpandDimsGradientOp final : public Operator<Context> {
  public:
-     ExpandDimsGradientOp(const OperatorDef& op_def, Workspace* ws)
-         : Operator<Context>(op_def, ws) {
-         DISABLE_SHARE_GRADIENT;
-     }
+    ExpandDimsGradientOp(const OperatorDef& op_def, Workspace* ws)
+        : Operator<Context>(op_def, ws) {}
+
     void RunOnDevice() override;
 };
 

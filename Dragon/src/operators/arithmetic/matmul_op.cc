@@ -118,7 +118,7 @@ void MatmulGradientOp<Context>::ShareGradient() {
     for (int i = 0; i < OutputSize(); i++) {
         if (output(i)->name() != "ignore") {
             Tensor* dX = ws()->GetBuffer("Grad");
-            output(i)->Replace(*dX);
+            ws()->CreateAvatar(output(i), dX);
             break;
         }
     }

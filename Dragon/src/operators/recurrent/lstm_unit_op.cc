@@ -69,7 +69,7 @@ void LSTMUnitGradientOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
     output(1)->ReshapeLike(input(1));
     if (InputSize() != 5) {
-        zeros = ws()->CreateTensor("_t_zeros");
+        zeros = ws()->CreateTensor("/share/zeros");
         if (zeros->count() < input(0).count())
             zeros->ReshapeLike(input(0));
     }

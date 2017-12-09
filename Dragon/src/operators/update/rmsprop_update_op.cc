@@ -9,7 +9,7 @@ void RMSPropUpdateOp<Context>::ComputeRunWithFloat() {
     if (!history.get()) {
         string slot = OperatorBase::GetSingleArg<string>("slot", "");
         if (slot.empty()) history.reset(new Tensor());
-        else history.reset(ws()->CreateTensor("_t_" + output(0)->name() + "_" + slot));
+        else history.reset(ws()->CreateTensor("/mnt/" + name() + "/history"));
         history->ReshapeLike(input(0));
     }
     lr = param("base_lr") * this->lr_mult;

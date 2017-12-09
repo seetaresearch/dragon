@@ -16,8 +16,7 @@ void ClipOp<Context>::RunWithType() {
 template <class Context>
 void ClipOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
-    output(0)->Share(input(0));
-    mask = ws()->CreateTensor("_t_" + anchor() + "_clip_mask");
+    mask = ws()->CreateTensor("/mnt/" + anchor() + "/clip_mask");
     mask->ReshapeLike(input(0));
     if (input(0).template IsType<float>()) return RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
@@ -27,7 +26,7 @@ DEPLOY_CPU(Clip);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Clip);
 #endif
-OPERATOR_SCHEMA(Clip).NumInputs(1).NumOutputs(1);
+OPERATOR_SCHEMA(Clip).NumInputs(1).NumOutputs(1).Inplace({ { 0, 0 } });
 
 template <class Context> template <typename T>
 void ClipGradientOp<Context>::RunWithType() {
@@ -39,8 +38,7 @@ void ClipGradientOp<Context>::RunWithType() {
 template <class Context>
 void ClipGradientOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
-    output(0)->Share(input(-1));
-    mask = ws()->GetTensor("_t_" + anchor() + "_clip_mask");
+    mask = ws()->GetTensor("/mnt/" + anchor() + "/clip_mask");
     if (input(0).template IsType<float>()) return RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
@@ -49,14 +47,14 @@ DEPLOY_CPU(ClipGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(ClipGradient);
 #endif
-OPERATOR_SCHEMA(ClipGradient).NumInputs(2).NumOutputs(1);
+OPERATOR_SCHEMA(ClipGradient).NumInputs(2).NumOutputs(1).Inplace({ { 1, 0 } });
 
 class GetClipGradient final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetClipGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), GO(0)},
+            vector<string> {O(0), GO(0)},
             vector<string> {GI(0)});
     }
 };

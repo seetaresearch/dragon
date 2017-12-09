@@ -127,14 +127,14 @@ void Softmax(const int count,
              Context* context);
 
 template <typename T, class Context>
-void SoftmaxGrad(const int count, 
-                 const int classes, 
-                 const int outer_dim, 
+void SoftmaxGrad(const int count,
+                 const int classes,
+                 const int outer_dim,
                  const int inner_dim,
-                 const T* sum_multiplier, 
-                 const T* dy, 
-                 const T* y, 
-                 T* scale, 
+                 const T* sum_multiplier,
+                 const T* dy,
+                 const T* y,
+                 T* scale,
                  T* dx);
 
 /******************** activation.tanh ********************/

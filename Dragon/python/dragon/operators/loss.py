@@ -118,7 +118,7 @@ def SoftmaxCrossEntropy(inputs, axis=1, normalization='FULL', **kwargs):
     return output
 
 
-def SmoothL1Loss(inputs, sigma=1.0, **kwargs):
+def SmoothL1Loss(inputs, sigma=1.0, normalization='BATCH_SIZE', **kwargs):
     """SmoothL1Loss, introduced by `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
 
     Parameters
@@ -127,6 +127,8 @@ def SmoothL1Loss(inputs, sigma=1.0, **kwargs):
         The inputs, represent [input, targets, inside_w, outside_w].
     sigma : float
         The sigma of L1 bound.
+    normalization : str
+        The normalization, ``FULL``, ``BATCH_SIZE``, or ``NONE``.
 
     Returns
     -------
@@ -203,7 +205,7 @@ def L2Loss(inputs, normalization='BATCH_SIZE', **kwargs):
 
 
 def SparseSoftmaxFocalLoss(inputs, axis=1, normalization='VALID', ignore_labels=(),
-                           alpha=0.5, gamma=2.0, eps=1e-10, neg_id=-1, **kwargs):
+                           alpha=0.5, gamma=0.0, eps=1e-10, neg_id=-1, **kwargs):
     """SoftmaxFocalLoss with sparse labels, introduced by `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`_.
 
     Parameters
@@ -219,7 +221,7 @@ def SparseSoftmaxFocalLoss(inputs, axis=1, normalization='VALID', ignore_labels=
     alpha : float
         The scale factor on the rare class. Default is ``0.5``.
     gamma : float
-        The exponential decay factor on the easy examples. Default is ``2.0``.
+        The exponential decay factor on the easy examples. Default is ``0.0``.
     eps : float
         The eps.
     neg_id : int

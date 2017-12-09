@@ -17,10 +17,10 @@ void ROIAlignOp<Context>::RunWithType() {
 
 template <class Context>
 void ROIAlignOp<Context>::RunOnDevice() {
+    mask = ws()->CreateTensor("/mnt/" + anchor() + "/roi_align_mask");
     vector<TIndex> dims({input(1).dim(0), input(0).dim(1), pool_h, pool_w});
-    output(0)->Reshape(dims);
 
-    mask = ws()->CreateTensor("_t_" + anchor() + "_roi_align_mask");
+    output(0)->Reshape(dims);
     mask->Reshape(dims);
 
     if (input(0).template IsType<float>()) return RunWithType<float>();
@@ -35,7 +35,7 @@ OPERATOR_SCHEMA(ROIAlign).NumInputs(2).NumOutputs(1);
 
 template <class Context> template <typename T>
 void ROIAlignGradientOp<Context>::RunWithType() {
-    kernel::ROIAlignGrad<T, Context>(spatial_scale, 
+    kernel::ROIAlignGrad<T, Context>(spatial_scale,
                                     pool_h, pool_w,
                                         &input(-1),
                                          &input(1),
@@ -45,18 +45,12 @@ void ROIAlignGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void ROIAlignGradientOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
+    mask = ws()->GetTensor("/mnt/" + anchor() + "/roi_align_mask");
 
-    mask = ws()->GetTensor("_t_" + anchor() + "_roi_align_mask");
+    output(0)->ReshapeLike(input(0));
 
     if (input(0).template IsType<float>()) return RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
-}
-
-template <class Context>
-void ROIAlignGradientOp<Context>::CleanResource() {
-    Operator<Context>::CleanResource(); 
-    ws()->ReleaseBuffer(mask, "Common", true);
 }
 
 DEPLOY_CPU(ROIAlignGradient);

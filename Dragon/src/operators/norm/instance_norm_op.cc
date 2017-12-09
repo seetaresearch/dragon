@@ -7,11 +7,7 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void InstanceNormOp<Context>::RunWithType() {
-    INIT_MULTIPLIER(spatial_multiplier, spatial_dim);
-
-    //  get buffer
-    stddev = ws()->GetBuffer();
-    stddev->ReshapeLike(input(0));
+    INIT_MULTIPLIER(spatial_multiplier, S);
 
     auto* tMean_data = mean.template mutable_data<T, Context>();
     auto* tVar_data = var->template mutable_data<T, Context>();
@@ -19,58 +15,114 @@ void InstanceNormOp<Context>::RunWithType() {
     auto* Ydata = output(0)->template mutable_data<T, Context>();
     auto* SMul_data = spatial_multiplier->template data<T, Context>();
     auto* Std_data = stddev->template mutable_data<T, Context>();
+    ctx().template Copy<T, Context, Context>(output(0)->count(), Ydata, Xdata);
 
-    math::Gemv<T, Context>(CblasNoTrans, nbychans, spatial_dim,
-                                             1.0 / spatial_dim, 
-                                              Xdata, SMul_data, 
-                                                0, tMean_data);
-
-    if (!inplace) {
-        ctx().template Copy<T, Context, Context>(input(0).count(), Ydata, Xdata);
+    //  compute mean
+    if (data_format == "NCHW") {
+        math::Gemv<T, Context>(CblasNoTrans, NC, S,
+                         1.0 / S, Xdata, SMul_data,
+                                    0, tMean_data);
+    } else if (data_format == "NHWC") {
+        auto* x = Xdata;
+        auto* tm = tMean_data;
+        for (int i = 0; i < N; i++) {
+            math::Gemv<T, Context>(CblasTrans, S, C,
+                              1.0 / S, x, SMul_data,
+                                             0, tm);
+            x += CS;
+            tm += C;
+        }
     }
 
     //  subtract mean
-    math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, nbychans, spatial_dim, 1, 
-                                                                           -1.0, 
-                                                          tMean_data, SMul_data, 
-                                                                    1.0, Ydata);
+    if (data_format == "NCHW") {
+        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
+                                        -1.0, tMean_data, SMul_data,
+                                                        1.0, Ydata);
+    } else if (data_format == "NHWC") {
+        auto* y = Ydata;
+        auto* tm = tMean_data;
+        for (int i = 0; i < N; i++) {
+            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, S, C, 1,
+                                                   -1.0, SMul_data, tm,
+                                                               1.0, y);
+            y += CS;
+            tm += C;
+        }
+    }
+  
+    //  compute variance
+    //  note that we use VAR(X) = E((X - EX) ^ 2)
+    math::Square<T, Context>(output(0)->count(), Ydata, Std_data);
+    if (data_format == "NCHW") {
+        math::Gemv<T, Context>(CblasNoTrans, NC, S,
+                      1.0 / S, Std_data, SMul_data,
+                                   0.0, tVar_data);
+    } else if (data_format == "NHWC") {
+        auto* x2 = Std_data;
+        auto* tv = tVar_data;
+        for (int i = 0; i < N; i++) {
+            math::Gemv<T, Context>(CblasTrans, S, C,
+                             1.0 / S, x2, SMul_data,
+                                             0, tv);
+            x2 += CS;
+            tv += C;
+        }
+    }
 
-    //  Var(X) = E((X - EX) ^ 2)
-    math::Pow<T, Context>(output(0)->count(), 2, Ydata, Std_data);
-    math::Gemv<T, Context>(CblasNoTrans, nbychans, spatial_dim,
-                                             1.0 / spatial_dim, 
-                                           Std_data, SMul_data, 
-                                                           0.0, 
-                                                    tVar_data);
+    //  compute stddev
+    math::AddScalar<T, Context>(var->count(), eps, tVar_data);
+    math::Sqrt<T, Context>(var->count(), tVar_data, tVar_data);
 
-    //  normalize var
-    math::AddScalar<T, Context>(mean.count(), eps, tVar_data);
-    math::Pow<T, Context>(mean.count(), 0.5, tVar_data, tVar_data);
-
-    //  divide by var
-    math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, nbychans, spatial_dim, 1, 
-                                                                            1.0, 
-                                                           tVar_data, SMul_data, 
-                                                                            0.0, 
-                                                                      Std_data);
+    //  divide by stddev
+    if (data_format == "NCHW") {
+        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
+                                          1.0, tVar_data, SMul_data,
+                                                     0.0, Std_data);
+    } else if (data_format == "NHWC") {
+        auto* std = Std_data;
+        auto* tv = tVar_data;
+        for (int i = 0; i < N; i++) {
+            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, S, C, 1,
+                                                    1.0, SMul_data, tv,
+                                                             0.0, std);
+            std += CS;
+            tv += C;
+        }
+    }
     math::Div<T, Context>(output(0)->count(), Ydata, Std_data, Ydata);
-
-    //  release buffer
     ws()->ReleaseBuffer(stddev);
 }
 
 template <class Context>
-void InstanceNormOp<Context>::RunOnDevice() {
-    num = input(0).dim(0); channels = input(0).dim(1);
-    spatial_dim = input(0).count(2); nbychans = num * channels;
-    vector<TIndex> dims({ num, channels });
-    var = ws()->CreateTensor("_t_" + anchor() + "_bn_var");
-    mean.Reshape(dims); var->Reshape(dims);
+void InstanceNormOp<Context>::Setup() {
+    //  determine the data format
+    TIndex channel_axis = axis;
+    data_format = "NCHW";
+    if (channel_axis == -1) channel_axis += (int)input(0).ndim();
+    if (channel_axis + 1 == (int)input(0).ndim()) data_format = "NHWC";
+    if (input(0).ndim() == 2) LOG(WARNING) << "The 2d input will output all zeros.";
 
+    N = input(0).dim(0);
+    C = input(0).dim(channel_axis);
+    NC = N * C;
+    S = input(0).count() / NC;
+    CS = C * S;
+
+    //  make resource
+    var = ws()->CreateTensor("/mnt/" + anchor() + "/ins_norm_var");
+    stddev = ws()->GetBuffer();
+    stddev->ReshapeLike(input(0));
+
+    //  reshape
+    mean.Reshape(vector<TIndex>(1, NC));
+    var->Reshape(vector<TIndex>(1, NC));
     output(0)->ReshapeLike(input(0));
+}
 
-    //  if true, Act/Exp/Pow/Norm Ops can not exist before when train
-    if (inplace) output(0)->Share(input(0));
+template <class Context>
+void InstanceNormOp<Context>::RunOnDevice() {
+    Setup();
 
     if (input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
@@ -84,11 +136,7 @@ OPERATOR_SCHEMA(InstanceNorm).NumInputs(1).NumOutputs(1);
 
 template <class Context> template <typename T>
 void InstanceNormGradientOp<Context>::RunWithType() {
-    INIT_MULTIPLIER(spatial_multiplier, spatial_dim);
-
-    //  get buffer
-    stddev = ws()->GetBuffer();
-    stddev->ReshapeLike(input(0));
+    INIT_MULTIPLIER(spatial_multiplier, S);
 
     auto* dYdata = input(-1).template data<T, Context>();
     auto* dXdata = output(0)->template mutable_data<T, Context>();
@@ -96,60 +144,117 @@ void InstanceNormGradientOp<Context>::RunWithType() {
     auto* tVar_data = var->template mutable_data<T, Context>();
     auto* SMul_data = spatial_multiplier->template data<T, Context>();
 
-    math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, nbychans, spatial_dim, 1, 
-                                                                            1.0, 
-                                                           tVar_data, SMul_data, 
-                                                                            0.0, 
-                                                                      Std_data);
+    if (data_format == "NCHW") {
+        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
+                                          1.0, tVar_data, SMul_data,
+                                                     0.0, Std_data);
+    } else if (data_format == "NHWC") {
+        auto* std = Std_data;
+        auto* tv = tVar_data;
+        for (int i = 0; i < N; i++) {
+            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, S, C, 1,
+                                                    1.0, SMul_data, tv,
+                                                             0.0, std);
+            std += CS;
+            tv += C;
+        }
+    }
 
     auto* Ydata = input(-2).template data<T, Context>();
     math::Mul<T, Context>(output(0)->count(), Ydata, dYdata, dXdata);
 
     //  sum(dE/dY \cdot Y)
-    math::Gemv<T, Context>(CblasNoTrans, nbychans, spatial_dim, 
-                                                           1.0, 
-                                             dXdata, SMul_data, 
-                                               0.0, tVar_data);
-    math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, nbychans, spatial_dim, 1, 
-                                                                            1.0, 
-                                                           tVar_data, SMul_data, 
-                                                                            0.0, 
-                                                                        dXdata);
+    if (data_format == "NCHW") {
+        math::Gemv<T, Context>(CblasNoTrans, NC, S,
+                            1.0, dXdata, SMul_data,
+                                   0.0, tVar_data);
+        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
+                                          1.0, tVar_data, SMul_data,
+                                                       0.0, dXdata);
+    } else if (data_format == "NHWC") {
+        for (int i = 0; i < N; i++) {
+            auto* dx = dXdata;
+            auto* tv = tVar_data;
+            for (int i = 0; i < N; i++) {
+                math::Gemv<T, Context>(CblasTrans, S, C,
+                                     1.0, dx, SMul_data,
+                                                 0, tv);
+                math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, S, C, 1,
+                                                        1.0, SMul_data, tv,
+                                                                  0.0, dx);
+                dx += CS;
+                tv += C;
+            }
+        }
+    }
 
     //  sum(dE/dY \cdot Y) \cdot Y
     math::Mul<T, Context>(output(0)->count(), Ydata, dXdata, dXdata);
 
     //  sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y
-    math::Gemv<T, Context>(CblasNoTrans, nbychans, spatial_dim, 
-                                                           1.0, 
-                                             dYdata, SMul_data, 
-                                               0.0, tVar_data);
-    math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, nbychans, spatial_dim, 1, 
-                                                                            1.0, 
-                                                           tVar_data, SMul_data, 
-                                                                            1.0, 
-                                                                        dXdata);
-
+    if (data_format == "NCHW") {
+        math::Gemv<T, Context>(CblasNoTrans, NC, S,
+                            1.0, dYdata, SMul_data,
+                                   0.0, tVar_data);
+        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
+                                          1.0, tVar_data, SMul_data,
+                                                       1.0, dXdata);
+    } else if (data_format == "NHWC") {
+        for (int i = 0; i < N; i++) {
+            auto* dy = dYdata;
+            auto* dx = dXdata;
+            auto* tv = tVar_data;
+            for (int i = 0; i < N; i++) {
+                math::Gemv<T, Context>(CblasTrans, S, C,
+                                     1.0, dy, SMul_data,
+                                                 0, tv);
+                math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, S, C, 1,
+                                                        1.0, SMul_data, tv,
+                                                                  1.0, dx);
+                dy += CS;
+                dx += CS;
+                tv += C;
+            }
+        }
+    }
+   
     //  dE/dY - mean(dE/dY)- mean(dE/dY \cdot Y) \cdot Y
     //  = dE/dY - mean(sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y)
-    math::Axpby<T, Context>(output(0)->count(), 1.0, dYdata,
-                                         -1.0 / spatial_dim, 
-                                                    dXdata);
+    math::Axpby<T, Context>(output(0)->count(), 1.0, dYdata, -1.0 / S, dXdata);
 
-    //  divide by var
+    //  divide by stddev
     math::Div<T, Context>(output(0)->count(), dXdata, Std_data, dXdata);
-
-    //  release buffer
     ws()->ReleaseBuffer(stddev);
 }
 
 template <class Context>
-void InstanceNormGradientOp<Context>::RunOnDevice() {
-    num = input(0).dim(0); channels = input(0).dim(1);
-    spatial_dim = input(0).count(2); nbychans = num * channels;
-    var = ws()->GetTensor("_t_" + anchor() + "_bn_var");
+void InstanceNormGradientOp<Context>::Setup() {
+    //  determine the data format
+    TIndex channel_axis = axis;
+    data_format = "NCHW";
+    if (channel_axis == -1) channel_axis += (int)input(0).ndim();
+    if (channel_axis + 1 == (int)input(0).ndim()) data_format = "NHWC";
+    if (input(0).ndim() == 2) LOG(WARNING) << "The 2d input will output all zeros.";
 
+    N = input(0).dim(0);
+    C = input(0).dim(channel_axis);
+    NC = N * C;
+    S = input(0).count() / NC;
+    CS = C * S;
+
+    //  make resource
+    var = ws()->GetTensor("/mnt/" + anchor() + "/ins_norm_var");
+    stddev = ws()->GetBuffer();
+    stddev->ReshapeLike(input(0));
+
+    //  reshape
     output(0)->ReshapeLike(input(0));
+}
+
+
+template <class Context>
+void InstanceNormGradientOp<Context>::RunOnDevice() {
+    Setup();
 
     if (input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";

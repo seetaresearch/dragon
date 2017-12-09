@@ -97,6 +97,7 @@ link_directories(${UINX_CUDNN_LIBS})
 
 # ---[ Install
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR} CACHE STRING "set install prefix" FORCE)
+set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH} ${3RDPARTY_LIBS})
 
 # ---[ defines
 if (WITH_PYTHON3) 

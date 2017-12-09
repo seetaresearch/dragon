@@ -27,7 +27,7 @@ void DropoutOp<Context>::RunWithType() {
 template <class Context>
 void DropoutOp<Context>::RunOnDevice() {
     output(0)->ReshapeLike(input(0));
-    mask = ws()->CreateTensor("_t_" + anchor() + "_dropout_mask");
+    mask = ws()->CreateTensor("/mnt/" + anchor() + "/dropout_mask");
     mask->ReshapeLike(input(0));
 
     if (input(0).template IsType<float>()) RunWithType<float>();
@@ -42,23 +42,21 @@ OPERATOR_SCHEMA(Dropout).NumInputs(1).NumOutputs(1).Inplace({ { 0, 0 } });
 
 template <class Context> template <typename T>
 void DropoutGradientOp<Context>::RunWithType() {
-    mask = ws()->GetTensor("_t_" + anchor() + "_dropout_mask");
-
+    mask = ws()->GetTensor("/mnt/" + anchor() + "/dropout_mask");
     auto* dYdata = input(-1).template data<T, Context>();
     auto* dXdata = output(0)->template mutable_data<T, Context>();
     auto* Mdata = mask->template data<uint32_t, Context>();
 
     if (this->phase() == "TRAIN") {
-        kernel::DropoutGrad<T, Context>(output(0)->count(), 
-                                                      prob, 
+        kernel::DropoutGrad<T, Context>(output(0)->count(),
+                                                      prob,
                                                      scale,
-                                                    dYdata, 
+                                                    dYdata,
                                                      Mdata,
                                                    dXdata);
 
-    } else if (this->phase() == "TEST") {
-        NOT_IMPLEMENTED;
-    }
+    } else if (this->phase() == "TEST") { NOT_IMPLEMENTED; }
+    mask->Reset();
 }
 
 template <class Context>
@@ -67,12 +65,6 @@ void DropoutGradientOp<Context>::RunOnDevice() {
 
     if (input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
-}
-
-template <class Context>
-void DropoutGradientOp<Context>::CleanResource() {
-    Operator<Context>::CleanResource();
-    ws()->ReleaseBuffer(mask, "Common", true);
 }
 
 DEPLOY_CPU(DropoutGradient);

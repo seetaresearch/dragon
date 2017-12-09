@@ -20,8 +20,8 @@ typedef size_t TSize;
 
 class Tensor {
  public:
-    Tensor() {} 
-    Tensor(const string& name) : name_(name) {} 
+    Tensor() {}
+    Tensor(const string& name) : name_(name) {}
 
     void Reshape(const vector<TIndex>& dims) {
         dims_ = dims;
@@ -153,6 +153,7 @@ class Tensor {
         void* data_ptr;
         mutable_data_ptr<Context>(&data_ptr);
         if (meta_ == meta && data_ptr) return data_ptr;
+        if (meta_ != meta && data_ptr && !own_mem_) delete ex_memory_;
         meta_ = meta;
         CHECK_GT(size_, 0);
         if (own_mem_) memory_.reset(new MixedMemory(meta, size_* meta_.itemsize()));
@@ -194,14 +195,6 @@ class Tensor {
         memory_ = other.memory_;
         meta_ = other.meta_;
         capacity_ = other.capacity_;
-    }
-
-    inline void Replace(const Tensor& other) {
-        memory_ = other.memory_;
-        meta_ = other.meta_;
-        capacity_ = other.capacity_;
-        size_ = other.size_;
-        dims_ = other.dims_;
     }
 
     inline void Move(MixedMemory* mem) {

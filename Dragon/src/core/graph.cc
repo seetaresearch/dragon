@@ -362,13 +362,13 @@ void Graph::RecomputingAware(const GraphDef& optimized_graph, Workspace* ws) {
    
     //  prepare resources
     for (auto& ops : ops_) ops->set_recompute_map(recompute_map);
-    Tensor* head = ws->CreateTensor("_t_mirror_stage_head");
+    Tensor* head = ws->CreateTensor("/opt/mirror_stage/head");
     head->Reshape(vector<TIndex>(1, WORKSPACE_MAX_CORRUPTED_SIZE));
-    Tensor* recompute_flag = ws->CreateTensor("_t_global_recompute_flag");
+    Tensor* recompute_flag = ws->CreateTensor("/opt/mirror_stage/recompute_flag");
     recompute_flag->Reshape(vector<TIndex>(1, 1));
     recompute_flag->mutable_data<bool, CPUContext>()[0] = false;
     for (int i = 0; i < WORKSPACE_MAX_CORRUPTED_SIZE; i++) {
-        string name = "_t_mirror_stage_buffer_" + dragon_cast<string, int>(i);
+        string name = "/opt/mirror_stage/buffer_" + dragon_cast<string, int>(i);
         Tensor* buffer = ws->CreateTensor(name);
         head->mutable_data<string, CPUContext>()[i] = "";
     }

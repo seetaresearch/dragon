@@ -13,8 +13,8 @@ _ENGINE_SCOPE = ''
 
 SEPARATOR = '/'
 
-_CURRENT_OP_IDX = 0
-_SCOPE_TENSOR_IDX = defaultdict(int)
+_CURRENT_OP_UID = 0
+_CURRENT_TENSOR_UID = 0
 
 __all__ = [
     'GetTensorIdx',
@@ -35,9 +35,9 @@ def GetOperatorIdx():
         The operator index.
 
     """
-    global _CURRENT_OP_IDX
-    _CURRENT_OP_IDX = _CURRENT_OP_IDX + 1
-    return _CURRENT_OP_IDX - 1
+    global _CURRENT_OP_UID
+    _CURRENT_OP_UID += 1
+    return _CURRENT_OP_UID - 1
 
 
 def GetTensorIdx():
@@ -49,9 +49,9 @@ def GetTensorIdx():
         The tensor index.
 
     """
-    global _SCOPE_TENSOR_IDX
-    _SCOPE_TENSOR_IDX[_TENSOR_SCOPE] += 1
-    return _SCOPE_TENSOR_IDX[_TENSOR_SCOPE] - 1
+    global _CURRENT_TENSOR_UID
+    _CURRENT_TENSOR_UID += 1
+    return _CURRENT_TENSOR_UID - 1
 
 
 def GetOperatorName(name=None):
@@ -104,7 +104,11 @@ class TensorScope(object):
     def __init__(self, prefix):
         assert isinstance(prefix, type('str')), \
             "TensorScope takes in a string as its argument."
-        self.prefix = prefix + SEPARATOR
+        if prefix != '':
+            self.prefix = prefix + SEPARATOR
+        else:
+            # avoid duplicated separators
+            self.prefix = ''
 
     def __enter__(self):
         global _TENSOR_SCOPE
@@ -114,7 +118,13 @@ class TensorScope(object):
     def __exit__(self, type, value, traceback):
         global _TENSOR_SCOPE
         assert _TENSOR_SCOPE.endswith(self.prefix)
-        _TENSOR_SCOPE = _TENSOR_SCOPE[:-len(self.prefix)]
+        if self.prefix != '':
+            _TENSOR_SCOPE = _TENSOR_SCOPE[:-len(self.prefix)]
+
+
+def get_tensor_scope():
+    global _TENSOR_SCOPE
+    return _TENSOR_SCOPE
 
 
 def set_tensor_scope(name_scope):

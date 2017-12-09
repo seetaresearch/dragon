@@ -17,13 +17,14 @@ class ScaleOp : public Operator<Context> {
     ScaleOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", 1)),
-          num_axes(OperatorBase::GetSingleArg<int>("num_axes", -1)) {}
+          num_axes(OperatorBase::GetSingleArg<int>("num_axes", 1)) {}
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    TIndex axis, num_axes, inner_dim;
+    TIndex axis, start_axis, num_axes;
+    TIndex inner_dim;
     Tensor* bias_multiplier;
 };
 
@@ -41,7 +42,7 @@ class ScaleGradientOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    TIndex axis, num_axes;
+    TIndex axis, start_axis, num_axes;
     TIndex outer_dim, inner_dim, scale_dim, sum_dim, dim;
     Tensor* bias_multiplier, *sum_multiplier;
     Tensor sum_result;

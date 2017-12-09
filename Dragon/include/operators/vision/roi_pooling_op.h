@@ -42,7 +42,6 @@ class ROIPoolingGradientOp final : public Operator<Context> {
         spatial_scale(OperatorBase::GetSingleArg<float>("spatial_scale", 1.0)) {}
 
     void RunOnDevice() override;
-    void CleanResource() override;
     template <typename T> void RunWithType();
 
  protected:

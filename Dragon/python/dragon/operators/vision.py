@@ -74,7 +74,9 @@ def Conv2d(inputs, num_output, kernel_size,
 
     if inputs[0].shape is not None:
         output.shape = inputs[0].shape[:]
-        output.shape[1] = num_output
+        channel_axis = 1 if data_format == 'NCHW' else -1
+        spatial_axis = 2 if data_format == 'NCHW' else 1
+        output.shape[channel_axis] = num_output
         for i in xrange(2):
             k = arguments['kernel_size'][i] if i < len(arguments['kernel_size']) \
                                             else arguments['kernel_size'][-1]
@@ -85,7 +87,12 @@ def Conv2d(inputs, num_output, kernel_size,
             d = arguments['dilation'][i]    if i < len(arguments['dilation']) \
                                             else arguments['dilation'][-1]
             dk = d * (k - 1) + 1
-            output.shape[i + 2] = (output.shape[i + 2] + 2 * p - dk) / s + 1
+            dp = 2 * p
+            if padding == 'SAME':
+                input_size = output.shape[i + spatial_axis]
+                output_size = (input_size + s - 1) / float(s)
+                dp = int(max(0, (output_size - 1) * s + k - input_size))
+            output.shape[i + spatial_axis] = (output.shape[i + spatial_axis] + dp - dk) / s + 1
 
     return output
 
@@ -226,7 +233,7 @@ def Pool2d(inputs, kernel_size, stride, pad=0, padding='VALID',
 
     if inputs.shape is not None:
         output.shape = inputs.shape[:]
-        axis = 2 if data_format == 'NCHW' else 1
+        spatial_axis = 2 if data_format == 'NCHW' else 1
         for i in xrange(2):
             k = arguments['kernel_size'][i] if i < len(arguments['kernel_size']) \
                                             else arguments['kernel_size'][-1]
@@ -234,17 +241,18 @@ def Pool2d(inputs, kernel_size, stride, pad=0, padding='VALID',
                                             else arguments['stride'][-1]
             p = arguments['pad'][i]         if i < len(arguments['pad']) \
                                             else arguments['pad'][-1]
-            if padding == 'SAME':
-                input_size = output.shape[i + axis]
-                output_size = (input_size + s - 1) / float(s)
-                padding_needed = max(0, (output_size - 1) * s + k - input_size)
-                p_l = padding_needed / 2
-                p_r = padding_needed - p_l
-                p = min(p_l, p_r)
             if not global_pooling:
-                output.shape[i + axis] = int(math.ceil(float(output.shape[i + axis] + 2 * p - k) / s) + 1)
+                if padding != 'SAME':
+                    input_size = output.shape[i + spatial_axis]
+                    output_size = int(math.ceil(float(output.shape[i + spatial_axis] + 2 * p - k) / s) + 1)
+                    if ((output_size - 1) * s >= input_size + p):
+                        output_size = output_size - 1
+                    output.shape[i + spatial_axis] = output_size
+                else:
+                    output.shape[i + spatial_axis] = \
+                        int((output.shape[i + spatial_axis] + s - 1) / float(s))
             else:
-                output.shape[i + axis] = 1
+                output.shape[i + spatial_axis] = 1
 
     return output
 

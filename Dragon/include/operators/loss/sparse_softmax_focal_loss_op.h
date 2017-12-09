@@ -19,7 +19,7 @@ class SparseSoftmaxFocalLossOp final : public SparseSoftmaxCrossEntropyOp<Contex
            axis(OperatorBase::GetSingleArg<int>("axis", 1)),
            normalization(OperatorBase::GetSingleArg<string>("normalization", "VALID")),
            alpha(OperatorBase::GetSingleArg<float>("alpha", 0.5)),
-           gamma(OperatorBase::GetSingleArg<float>("gamma", 2.0)),
+           gamma(OperatorBase::GetSingleArg<float>("gamma", 0.0)),
            neg_id(OperatorBase::GetSingleArg<int>("neg_id", -1)) {
          pos_alpha = alpha * 2.0;
          neg_alpha = (1 - alpha) * 2.0;
@@ -44,7 +44,7 @@ class SparseSoftmaxFocalLossGradientOp final : public SparseSoftmaxCrossEntropyG
          : SparseSoftmaxCrossEntropyGradientOp<Context>(op_def, ws),
            axis(OperatorBase::GetSingleArg<int>("axis", 1)),
            normalization(OperatorBase::GetSingleArg<string>("normalization", "VALID")),
-           gamma(OperatorBase::GetSingleArg<float>("gamma", 2.0)),
+           gamma(OperatorBase::GetSingleArg<float>("gamma", 0.0)),
            eps(OperatorBase::GetSingleArg<float>("eps", float(1e-10))),
            neg_id(OperatorBase::GetSingleArg<int>("neg_id", -1)) {}
 

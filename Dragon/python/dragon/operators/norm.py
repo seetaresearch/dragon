@@ -6,21 +6,28 @@
 
 from . import *
 
-def BatchNorm(inputs, momentum=0.9, eps=1e-3, use_stats=-1, inplace=False, **kwargs):
-    """Batch Normalization, introduced by `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_
+def BatchNorm(inputs, axis=-1, momentum=0.9, eps=1e-3,
+              use_stats=-1, mode='DEFAULT', **kwargs):
+    """Batch Normalization, introduced by `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
+
+    It follows the implementation of `Caffe`_, that scale procedure is moved to `ops.Scale(*args, **kwargs)`_.
+
+    The number of inputs vary from ``3`` to ``4`` (``DEFAULT`` or ``CAFFE`` mode).
 
     Parameters
     ----------
     inputs : list of Tensor
-        The inputs, represent [input, mean, var, factor].
+        The inputs, represent [input, mean, var] or [input, mean, var, factor].
+    axis : int
+        The channel axis.
     momentum : float
         The momentum of moving average.
     eps : float
         The eps.
     use_stats : int
         Whether to use global stats. Default is ``-1`` (Auto).
-    inplace : boolean
-        Whether to share input for the output.
+    mode : str
+        The moving average mode. ``DEFAULT`` or ``CAFFE``.
 
     Returns
     -------
@@ -29,19 +36,21 @@ def BatchNorm(inputs, momentum=0.9, eps=1e-3, use_stats=-1, inplace=False, **kwa
 
         |batchnorm_function|
 
-        The moving average of mean/var, calculated as:
+        The ``DEFAULT`` moving average of mean/var, calculated as:
 
-        |moving_average_function|
+        |default_moving_average_function|
 
-    Notes
-    -----
-    This operator follows the implementation of `Caffe`_, without scale after normalization.
+        The ``CAFFE`` moving average of mean/var, calculated as:
 
-    The scale procedure is moved to `ops.Scale(*args, **kwargs)`_.
+        |caffe_moving_average_function|
 
     """
-    CheckInputs(inputs, 4)
+    CheckInputs(inputs, 3, 4)
     arguments = ParseArguments(locals())
+
+    if len(inputs) > 3:
+        if mode != 'CAFFE':
+            raise ValueError('Only the CAFFE mode will take 4 inputs.')
 
     output = Tensor.CreateOperator(nout=1, op_type='BatchNorm', **arguments)
 
@@ -51,14 +60,21 @@ def BatchNorm(inputs, momentum=0.9, eps=1e-3, use_stats=-1, inplace=False, **kwa
     return output
 
 
-def BatchRenorm(inputs, momentum=0.9, eps=1e-3, r_max=3.0, d_max=5.0,
-                t_delta=1.0, use_stats=-1, inplace=False, **kwargs):
-    """Batch Renormalization, introduced by `[Ioffe, 2017] <https://arxiv.org/abs/1702.03275>`_
+def BatchRenorm(inputs, axis=-1, momentum=0.9, eps=1e-3,
+                r_max=3.0, d_max=5.0, t_delta=0.001,
+                use_stats=-1, mode='DEFAULT', **kwargs):
+    """Batch Renormalization, introduced by `[Ioffe, 2017] <https://arxiv.org/abs/1702.03275>`_.
+
+    It follows the implementation of `Caffe`_, that scale procedure is moved to `ops.Scale(*args, **kwargs)`_.
+
+    The number of inputs vary from ``3`` to ``4`` (``DEFAULT`` or ``CAFFE`` mode).
 
     Parameters
     ----------
     inputs : list of Tensor
         The inputs, represent [input, mean, var, factor].
+    axis : int
+        The channel axis.
     momentum : float
         The momentum of moving average.
     eps : float
@@ -71,8 +87,8 @@ def BatchRenorm(inputs, momentum=0.9, eps=1e-3, r_max=3.0, d_max=5.0,
         The magnitude of incrementing after each iteration.
     use_stats : int
         Whether to use global stats. Default is ``-1`` (Auto).
-    inplace : boolean
-        Whether to share input for the output.
+    mode : str
+        The moving average mode. ``DEFAULT`` or ``CAFFE``.
 
     Returns
     -------
@@ -81,19 +97,21 @@ def BatchRenorm(inputs, momentum=0.9, eps=1e-3, r_max=3.0, d_max=5.0,
 
         |batchrenorm_function|
 
-        The moving average of mean/var, calculated as:
+        The ``DEFAULT`` moving average of mean/var, calculated as:
 
-        |moving_average_function|
+        |default_moving_average_function|
 
-    Notes
-    -----
-    This operator follows the implementation of `Caffe`_, without scale after normalization.
+        The ``CAFFE`` moving average of mean/var, calculated as:
 
-    The scale procedure is moved to `ops.Scale(*args, **kwargs)`_.
+        |caffe_moving_average_function|
 
     """
-    CheckInputs(inputs, 4)
+    CheckInputs(inputs, 3, 4)
     arguments = ParseArguments(locals())
+
+    if len(inputs) > 3:
+        if mode != 'CAFFE':
+            raise ValueError('Only the CAFFE mode will take 4 inputs.')
 
     output = Tensor.CreateOperator(nout=1, op_type='BatchRenorm', **arguments)
 
@@ -103,13 +121,15 @@ def BatchRenorm(inputs, momentum=0.9, eps=1e-3, r_max=3.0, d_max=5.0,
     return output
 
 
-def BN(inputs, momentum=0.9, eps=1e-3, use_stats=-1, **kwargs):
+def FusedBatchNorm(inputs, axis=-1, momentum=0.9, eps=1e-3, use_stats=-1, **kwargs):
     """Batch Normalization, with scale procedure after normalization.
 
     Parameters
     ----------
     inputs : list of Tensor
         The inputs, represent [input, mean, var, scale, bias].
+    axis : int
+        The channel axis.
     momentum : float
         The momentum of moving average.
     eps : float
@@ -126,13 +146,13 @@ def BN(inputs, momentum=0.9, eps=1e-3, use_stats=-1, **kwargs):
 
         The moving average of mean/var, calculated as:
 
-        |moving_average_function|
+        |default_moving_average_function|
 
     """
     CheckInputs(inputs, 5)
     arguments = ParseArguments(locals())
 
-    output = Tensor.CreateOperator(nout=1, op_type='BN', **arguments)
+    output = Tensor.CreateOperator(nout=1, op_type='FusedBatchNorm', **arguments)
 
     if inputs[0].shape is not None:
         output.shape = inputs[0].shape[:]
@@ -140,17 +160,17 @@ def BN(inputs, momentum=0.9, eps=1e-3, use_stats=-1, **kwargs):
     return output
 
 
-def InstanceNorm(inputs, eps=1e-3, inplace=False, **kwargs):
+def InstanceNorm(inputs, axis=-1, eps=1e-3, **kwargs):
     """Instance Normalization, introduced by `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_
 
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
+    axis : int
+        The channel axis.
     eps : float
         The eps.
-    inplace : boolean
-        Whether to share input for the output.
 
     Returns
     -------

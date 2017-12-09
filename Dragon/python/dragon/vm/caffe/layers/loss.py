@@ -20,7 +20,7 @@ class SoftmaxWithLossLayer(Layer):
     normalization : NormalizationMode
         The normalization. Refer `LossParameter.normalization`_.
     normalize : boolean
-        Wheter to normalize. Refer `LossParameter.normalize`_.
+        Whether to normalize. Refer `LossParameter.normalize`_.
 
     """
     def __init__(self, LayerParameter):
@@ -51,16 +51,16 @@ class SigmoidCrossEntropyLossLayer(Layer):
     normalization : NormalizationMode
         The normalization. Refer `LossParameter.normalization`_.
     normalize : boolean
-        Wheter to normalize. Refer `LossParameter.normalize`_.
+        Whether to normalize. Refer `LossParameter.normalize`_.
 
     """
     def __init__(self, LayerParameter):
         super(SigmoidCrossEntropyLossLayer, self).__init__(LayerParameter)
         param = LayerParameter.loss_param
-        norm_mode = {0: 'FULL', 1: 'FULL', 2: 'BATCH_SIZE', 3: 'NONE'}
-        normalization = 'FULL'
+        norm_mode = {0: 'FULL', 1: 'BATCH_SIZE', 2: 'BATCH_SIZE', 3: 'NONE'}
+        normalization = 'BATCH_SIZE'
         if param.HasField('normalize'):
-            if not param.normalize: normalization = 'BATCH_SIZE'
+            if param.normalize: normalization = 'FULL'
         else: normalization = norm_mode[param.normalization]
         self._param = { 'normalization': normalization }
 
@@ -78,14 +78,18 @@ class L2LossLayer(Layer):
     normalization : NormalizationMode
         The normalization. Refer `LossParameter.normalization`_.
     normalize : boolean
-        Wheter to normalize. Refer `LossParameter.normalize`_.
+        Whether to normalize. Refer `LossParameter.normalize`_.
 
     """
     def __init__(self, LayerParameter):
         super(L2LossLayer, self).__init__(LayerParameter)
         param = LayerParameter.loss_param
-        self._param = {'normalize': param.normalize
-            if param.HasField('normalize') else True}
+        norm_mode = {0: 'FULL', 1: 'BATCH_SIZE', 2: 'BATCH_SIZE', 3: 'NONE'}
+        normalization = 'BATCH_SIZE'
+        if param.HasField('normalize'):
+            if param.normalize: normalization = 'FULL'
+        else: normalization = norm_mode[param.normalization]
+        self._param = {'normalization': normalization}
 
     def Setup(self, bottom):
         super(L2LossLayer, self).Setup(bottom)
@@ -104,13 +108,20 @@ class SmoothL1LossLayer(Layer):
     normalization : NormalizationMode
         The normalization. Refer `LossParameter.normalization`_.
     normalize : boolean
-        Wheter to normalize. Refer `LossParameter.normalize`_.
+        Whether to normalize. Refer `LossParameter.normalize`_.
 
     """
     def __init__(self, LayerParameter):
         super(SmoothL1LossLayer, self).__init__(LayerParameter)
-        param = LayerParameter.smooth_l1_loss_param
-        self._param = {'sigma': float(param.sigma)}
+        param = LayerParameter.loss_param
+        smooth_l1_param = LayerParameter.smooth_l1_loss_param
+        norm_mode = {0: 'FULL', 1: 'BATCH_SIZE', 2: 'BATCH_SIZE', 3: 'NONE'}
+        normalization = 'BATCH_SIZE'
+        if param.HasField('normalize'):
+            if param.normalize: normalization = 'FULL'
+        else: normalization = norm_mode[param.normalization]
+        self._param = {'sigma': float(smooth_l1_param.sigma),
+                       'normalization': normalization}
 
     def Setup(self, bottom):
         super(SmoothL1LossLayer, self).Setup(bottom)
@@ -129,11 +140,15 @@ class SoftmaxWithFocalLossLayer(Layer):
     alpha : float
         The scale on the rare class. Refer `FocalLossParameter.alpha`_.
     gamma : float
-        The exponetial decay. Refer `FocalLossParameter.gamma`_.
+        The exponential decay. Refer `FocalLossParameter.gamma`_.
     eps : float
         The eps. Refer `FocalLossParameter.eps`_.
     neg_id : int
         The negative id. Refer `FocalLossParameter.neg_id`_.
+    normalization : NormalizationMode
+        The normalization. Refer `LossParameter.normalization`_.
+    normalize : boolean
+        Whether to normalize. Refer `LossParameter.normalize`_.
 
     """
     def __init__(self, LayerParameter):
@@ -144,7 +159,7 @@ class SoftmaxWithFocalLossLayer(Layer):
         norm_mode = {0: 'FULL', 1: 'VALID', 2: 'BATCH_SIZE', 3: 'NONE'}
         normalization = 'VALID'
         if param.HasField('normalize'):
-            if not param.normalize: normalization='BATCH_SIZE'
+            if not param.normalize: normalization = 'BATCH_SIZE'
         else: normalization = norm_mode[param.normalization]
         self._param = {'axis': softmax_param.axis,
                        'normalization': normalization,

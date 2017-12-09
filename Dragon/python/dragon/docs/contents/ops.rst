@@ -107,15 +107,15 @@ List               Brief
 
 Normalization
 -------------
-===============    ======================================================================
-List               Brief
-===============    ======================================================================
-`BatchNorm`_       Batch Normalization, introduced by `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
-`BatchRenorm`_     Batch Renormalization, introduced by `[Ioffe, 2017] <https://arxiv.org/abs/1702.03275>`_.
-`BN`_              Batch Normalization, with scale procedure after normalization.
-`InstanceNorm`_    Instance Normalization, introduced by `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_.
-`L2Norm`_          L2 Normalization, introduced by `[Liu et.al, 2015] <https://arxiv.org/abs/1506.04579>`_.
-===============    ======================================================================
+==================    ======================================================================
+List                  Brief
+==================    ======================================================================
+`BatchNorm`_          Batch Normalization, introduced by `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
+`BatchRenorm`_        Batch Renormalization, introduced by `[Ioffe, 2017] <https://arxiv.org/abs/1702.03275>`_.
+`FusedBatchNorm`_     Batch Normalization, with scale procedure after normalization.
+`InstanceNorm`_       Instance Normalization, introduced by `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_.
+`L2Norm`_             L2 Normalization, introduced by `[Liu et.al, 2015] <https://arxiv.org/abs/1506.04579>`_.
+==================    ======================================================================
 
 NDArray
 -------
@@ -244,7 +244,7 @@ List                 Brief
 
 .. _BatchNorm: operators/norm.html#dragon.operators.norm.BatchNorm
 .. _BatchRenorm: operators/norm.html#dragon.operators.norm.BatchRenorm
-.. _BN: operators/norm.html#dragon.operators.norm.BN
+.. _FusedBatchNorm: operators/norm.html#dragon.operators.norm.FusedBatchNorm
 .. _InstanceNorm: operators/norm.html#dragon.operators.norm.InstanceNorm
 .. _L2Norm: operators/norm.html#dragon.operators.norm.L2Norm
 

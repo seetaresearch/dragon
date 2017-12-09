@@ -26,26 +26,14 @@ class OperatorBase {
  public:
     OperatorBase(const OperatorDef& op_def, Workspace* ws);
 
-    inline Tensor& input(int idx) {
-        CHECK_LT(idx, (int)inputs_.size());
-        CHECK_GE(idx, -(int)inputs_.size());
-        if (idx >= 0) return *inputs_[idx];
-        else return *inputs_[idx + inputs_.size()];
-    }
-
-    inline Tensor* output(int idx) {
-        CHECK_LT(idx, (int)outputs_.size());
-        CHECK_GE(idx, -(int)outputs_.size());
-        if (idx >= 0) return outputs_[idx];
-        else return outputs_[idx + outputs_.size()];
-    }
+    Tensor& input(int idx);
+    Tensor* output(int idx);
 
     inline size_t InputSize() { return inputs_.size(); }
     inline size_t OutputSize() { return outputs_.size(); }
 
     inline void SwitchToPhase(const string& phase) { this->phase_ = phase; }
     virtual void Run() { NOT_IMPLEMENTED; }
-
 
     inline const string& name() const { return op_def_.name(); }
     inline const string& type() const { return op_def_.type(); }
@@ -171,7 +159,7 @@ DECLARE_REGISTRY(CUDNNOperatorRegistry, OperatorBase, const OperatorDef&, Worksp
     }
 
 #define INIT_MULTIPLIER(ptr_tensor, size) { \
-    ptr_tensor = ws()->CreateTensor("_t_multiplier"); \
+    ptr_tensor = ws()->CreateTensor("/share/multiplier"); \
     if (size > ptr_tensor->count()) { \
         ptr_tensor->Reshape(vector<TIndex>(1, size)); \
         math::Set<T, Context>(size, dragon_cast<T, float>(1.0f), \

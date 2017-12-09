@@ -38,19 +38,9 @@ void CropOp<Context>::Setup() {
     }
 
     // make ends
-    if (ends.size() > 0) {
-        //  static crop
-        CHECK_EQ(ends.size(), input(0).ndim())
-            << "\nThe cropping is performed on " << ends.size() << " dimensions, "
-            << "but the num of dimensions of input is " << input(0).ndim() << "."; \
-        //  fix end if necessary
-        for (int i = 0; i < ends.size(); i++) 
-            if (ends[i] == 0) ends[i] = input(0).dim(i);
-    } else {
+    if (shape.size() + shape_like.size() != 0) {
         CHECK(shape.size() * shape_like.size() == 0)
             << "\nCan not set shape and shape_like both.";
-        CHECK(shape.size() + shape_like.size() != 0)
-            << "\nMust set shape and shape_like either.";
         ends.resize(input(0).ndim(), 0);
         for (int i = 0; i < ends.size(); i++) {
             //  dynamic crop 1: keep unchanged
@@ -73,6 +63,14 @@ void CropOp<Context>::Setup() {
                 ends[i] = starts[i] + like->dim(i);
             }
         }
+    } else {
+        //  static crop
+        CHECK_EQ(ends.size(), input(0).ndim())
+            << "\nThe cropping is performed on " << ends.size() << " dimensions, "
+            << "but the num of dimensions of input is " << input(0).ndim() << ".";
+        //  fix end if necessary
+        for (int i = 0; i < ends.size(); i++)
+            if (ends[i] == 0) ends[i] = input(0).dim(i);
     }
 
     //  check starts and ends
@@ -157,19 +155,9 @@ void CropGradientOp<Context>::Setup() {
     }
 
     // make ends
-    if (ends.size() > 0) {
-        //  static crop
-        CHECK_EQ(ends.size(), input(0).ndim())
-            << "\nThe cropping is performed on " << ends.size() << " dimensions, "
-            << "but the num of dimensions of input is " << input(0).ndim() << "."; \
-        //  fix end if necessary
-        for (int i = 0; i < ends.size(); i++) 
-            if (ends[i] == 0) ends[i] = input(0).dim(i);
-    } else {
+    if (shape.size() + shape_like.size() != 0) {
         CHECK(shape.size() * shape_like.size() == 0)
             << "\nCan not set shape and shape_like both.";
-        CHECK(shape.size() + shape_like.size() != 0)
-            << "\nMust set shape and shape_like either.";
         ends.resize(input(0).ndim(), 0);
         for (int i = 0; i < ends.size(); i++) {
             //  dynamic crop 1: keep unchanged
@@ -192,6 +180,14 @@ void CropGradientOp<Context>::Setup() {
                 ends[i] = starts[i] + like->dim(i);
             }
         }
+    } else {
+        //  static crop
+        CHECK_EQ(ends.size(), input(0).ndim())
+            << "\nThe cropping is performed on " << ends.size() << " dimensions, "
+            << "but the num of dimensions of input is " << input(0).ndim() << "."; \
+        //  fix end if necessary
+        for (int i = 0; i < ends.size(); i++)
+            if (ends[i] == 0) ends[i] = input(0).dim(i);
     }
 
     //  check starts and ends

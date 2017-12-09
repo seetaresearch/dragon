@@ -87,7 +87,7 @@ GramMatrix = math.GramMatrix
 # normalization
 BatchNorm = norm.BatchNorm
 BatchRenorm = norm.BatchRenorm
-BN = norm.BN
+FusedBatchNorm = norm.FusedBatchNorm
 InstanceNorm = norm.InstanceNorm
 L2Norm = norm.L2Norm
 

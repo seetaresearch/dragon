@@ -177,7 +177,7 @@ void RSubGradientOp<Context>::ShareGradient() {
     for (int i = (int)OutputSize() - 1; i >= 0; i--) {
         if (output(i)->name() != "ignore") {
             Tensor* dX = ws()->GetBuffer("Grad");
-            output(i)->Replace(*dX);
+            ws()->CreateAvatar(output(i), dX);
             break;
         }
     }
