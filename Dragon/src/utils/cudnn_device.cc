@@ -65,7 +65,35 @@ void cudnnSetTensor4dDesc(cudnnTensorDescriptor_t* desc,
                                                                 dims[3],
                                                                 dims[1],
                                                               dims[2]));
-    } else LOG(FATAL) << "Unknown data format: " << data_format; 
+    } else LOG(FATAL) << "Unknown data format: " << data_format;
+}
+
+template <typename T>
+void cudnnSetTensor4dDescWithGroup(cudnnTensorDescriptor_t* desc,
+                                   const string& data_format,
+                                   const vector<TIndex>& dims,
+                                   const TIndex group) {
+    if (data_format == "NCHW") {
+        CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(*desc, CUDNNType<T>::type,
+                                                                   dims[0],
+                                                           dims[1] / group,
+                                                                   dims[2],
+                                                                   dims[3],
+                                               dims[1] * dims[2] * dims[3],
+                                                         dims[2] * dims[3],
+                                                                   dims[3],
+                                                                       1));
+    } else if (data_format == "NHWC") {
+        CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(*desc, CUDNNType<T>::type,
+                                                                   dims[0],
+                                                           dims[3] / group,
+                                                                   dims[1],
+                                                                   dims[2],
+                                               dims[1] * dims[2] * dims[3],
+                                                                         1,
+                                                         dims[2] * dims[3],
+                                                                 dims[3]));
+    } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
 template <typename T>
@@ -87,7 +115,7 @@ void cudnnSetTensor5dDesc(cudnnTensorDescriptor_t* desc,
                                                    5,
                                     fake_dims.data(),
                                fake_strides.data()));
-    } else LOG(FATAL) << "Unknown data format: " << data_format; 
+    } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
 template <typename T>
@@ -169,6 +197,7 @@ template void cudnnSetTensorDesc<float>(cudnnTensorDescriptor_t*, const vector<T
 template void cudnnSetTensor4dDesc<float>(cudnnTensorDescriptor_t*, const string&, const vector<TIndex>&);
 template void cudnnSetTensor5dDesc<float>(cudnnTensorDescriptor_t*, const string&, const vector<TIndex>&);
 template void cudnnSetTensor3dDesc<float>(cudnnTensorDescriptor_t*, const string&, const vector<TIndex>&);
+template void cudnnSetTensor4dDescWithGroup<float>(cudnnTensorDescriptor_t*, const string&, const vector<TIndex>&, const TIndex);
 template void cudnnSetTensorDesc<float>(cudnnTensorDescriptor_t*, const vector<TIndex>&, const vector<TIndex>&);
 
 
@@ -180,6 +209,7 @@ template void cudnnSetTensorDesc<double>(cudnnTensorDescriptor_t*, const vector<
 template void cudnnSetTensor4dDesc<double>(cudnnTensorDescriptor_t*, const string&, const vector<TIndex>&);
 template void cudnnSetTensor5dDesc<double>(cudnnTensorDescriptor_t*, const string&, const vector<TIndex>&);
 template void cudnnSetTensor3dDesc<double>(cudnnTensorDescriptor_t*, const string&, const vector<TIndex>&);
+template void cudnnSetTensor4dDescWithGroup<double>(cudnnTensorDescriptor_t*, const string&, const vector<TIndex>&, const TIndex);
 template void cudnnSetTensorDesc<double>(cudnnTensorDescriptor_t*, const vector<TIndex>&, const vector<TIndex>&);
 
 
@@ -192,6 +222,7 @@ template void cudnnSetTensorDesc<float16>(cudnnTensorDescriptor_t*, const vector
 template void cudnnSetTensor4dDesc<float16>(cudnnTensorDescriptor_t*, const string&, const vector<TIndex>&);
 template void cudnnSetTensor5dDesc<float16>(cudnnTensorDescriptor_t*, const string&, const vector<TIndex>&);
 template void cudnnSetTensor3dDesc<float16>(cudnnTensorDescriptor_t*, const string&, const vector<TIndex>&);
+template void cudnnSetTensor4dDescWithGroup<float16>(cudnnTensorDescriptor_t*, const string&, const vector<TIndex>&, const TIndex);
 template void cudnnSetTensorDesc<float16>(cudnnTensorDescriptor_t*, const vector<TIndex>&, const vector<TIndex>&);
 #endif
 

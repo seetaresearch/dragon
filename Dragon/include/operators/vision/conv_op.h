@@ -30,7 +30,7 @@ class Conv2dOp : public ConvOpBase<Context> {
 template <class Context>
 class Conv2dGradientOp : public Conv2dOp<Context> {
  public:
-    Conv2dGradientOp(const OperatorDef& def, Workspace* ws) 
+    Conv2dGradientOp(const OperatorDef& def, Workspace* ws)
         : Conv2dOp<Context>(def, ws) {}
 
     bool HasBias() override { return output(2)->name() != "ignore"; }
@@ -48,10 +48,15 @@ class CuDNNConv2dOp : public Conv2dOp<Context> {
  public:
     CuDNNConv2dOp(const OperatorDef& def, Workspace* ws)
         : Conv2dOp<Context>(def, ws) {
-        handle = new cudnnHandle_t[this->group];
-        stream = new cudaStream_t[this->group];
+#if CUDNN_VERSION_MIN(7, 0, 0)
+        cudnn_group = 1;
+#else
+        cudnn_group = this->group;
+#endif
+        handle = new cudnnHandle_t[cudnn_group];
+        stream = new cudaStream_t[cudnn_group];
         ctx().SwitchToDevice();
-        for (int g = 0; g < this->group; g++) {
+        for (int g = 0; g < cudnn_group; g++) {
             CUDA_CHECK(cudaStreamCreate(&stream[g]));
             CUDNN_CHECK(cudnnCreate(&handle[g]));
             CUDNN_CHECK(cudnnSetStream(handle[g], stream[g]));
@@ -78,17 +83,22 @@ class CuDNNConv2dOp : public Conv2dOp<Context> {
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;
     size_t workspace_fwd_data_size;
-    TIndex bias_offset;
+    TIndex bias_offset, cudnn_group;
 };
 
 template <class Context>
 class CuDNNConv2dGradientOp : public Conv2dGradientOp<Context> {
  public:
-    CuDNNConv2dGradientOp(const OperatorDef& def, Workspace* ws) 
+    CuDNNConv2dGradientOp(const OperatorDef& def, Workspace* ws)
         : Conv2dGradientOp<Context>(def, ws) {
-        handle = new cudnnHandle_t[this->group * 3];
-        stream = new cudaStream_t[this->group * 3];
-        for (int g = 0; g < this->group * 3; g++) {
+#if CUDNN_VERSION_MIN(7, 0, 0)
+        cudnn_group = 1;
+#else
+        cudnn_group = this->group;
+#endif
+        handle = new cudnnHandle_t[cudnn_group * 3];
+        stream = new cudaStream_t[cudnn_group * 3];
+        for (int g = 0; g < cudnn_group * 3; g++) {
             CUDA_CHECK(cudaStreamCreate(&stream[g]));
             CUDNN_CHECK(cudnnCreate(&handle[g]));
             CUDNN_CHECK(cudnnSetStream(handle[g], stream[g]));
@@ -116,7 +126,7 @@ class CuDNNConv2dGradientOp : public Conv2dGradientOp<Context> {
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;
     size_t workspace_bwd_filter_size, workspace_bwd_data_size;
-    int bias_offset;
+    TIndex bias_offset, cudnn_group;
 };
 
 #endif    // WITH_CUDNN

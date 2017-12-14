@@ -76,6 +76,9 @@ template <typename T>
 void cudnnSetTensor4dDesc(cudnnTensorDescriptor_t* desc, const string& data_format, const std::vector<int64_t>& dims);
 
 template <typename T>
+void cudnnSetTensor4dDescWithGroup(cudnnTensorDescriptor_t* desc, const string& data_format, const std::vector<int64_t>& dims, const int64_t group);
+
+template <typename T>
 void cudnnSetTensor5dDesc(cudnnTensorDescriptor_t* desc, const string& data_format, const std::vector<int64_t>& dims);
 
 template <typename T>

@@ -45,15 +45,16 @@ template <class Context> template <typename T>
 void LRNOp<Context>::PoolRunWithType() {
     pool_out = ws()->CreateTensor("/mnt/" + anchor() + "/pool_out");
     if (!pool_op) {
-        Argument ks, s, p, mode;
+        Argument ks, s, p, m, df;
         ks.set_name("kernel_size"); ks.add_ints(local_size);
         s.set_name("stride"); s.add_ints(1);
         p.set_name("pad"); p.add_ints((local_size - 1) / 2);
-        mode.set_name("mode"); mode.set_s("AVG");
-        OperatorDef pool_op_def = MakeOperatorDef("Pooling", "",
+        m.set_name("mode"); m.set_s("AVG");
+        df.set_name("data_format"); df.set_s(data_format);
+        OperatorDef pool_op_def = MakeOperatorDef("Pooling2d", "",
                                                   vector<string>({ sqr_out->name() }),
-                                                  vector<string>({ pool_out->name() }), 
-                                                  vector<Argument>({ ks, s, p, mode }));
+                                                  vector<string>({ pool_out->name() }),
+                                                  vector<Argument>({ ks, s, p, m, df }));
         if (this->op_def().has_device_option())
             pool_op_def.mutable_device_option()->CopyFrom(this->op_def().device_option());
         pool_op.reset(CreateOperator(pool_op_def, ws()));
@@ -99,12 +100,11 @@ void LRNOp<Context>::ProdRunWithType() {
 
 template <class Context>
 void LRNOp<Context>::RunOnDevice() {
-    if (mode == ACROSS_CHANNELS) {
+    if (mode == "ACROSS_CHANNELS") {
         if (input(0).template IsType<float>()) {
             AcrossRunWithType<float>();
         } else { LOG(FATAL) << "Unsupported input types."; }
-    } 
-    else {
+    } else if (mode == "WITHIN_CHANNEL") {
         if (input(0).template IsType<float>()) {
             SplitRunWithType<float>();
             SquareRunWithType<float>();
@@ -112,6 +112,8 @@ void LRNOp<Context>::RunOnDevice() {
             PowRunWithType<float>();
             ProdRunWithType<float>();
         } else { LOG(FATAL) << "Unsupported input types."; }
+    } else {
+        LOG(FATAL) << "Unsupported lrn mode: " << mode;
     }
 }
 
@@ -135,10 +137,10 @@ void LRNGradientOp<Context>::ProdRunWithType() {
         Argument operation;
         operation.set_name("operation"); operation.set_s("PROD");
         OperatorDef prod_op_def = MakeOperatorDef("EltwiseGradient", "",
-                                                  vector<string>({ prod_in->name(), 
-                                                                   pow_out->name(), 
+                                                  vector<string>({ prod_in->name(),
+                                                                   pow_out->name(),
                                                                    input(-1).name() }),
-                                                  vector<string>({ prod_in->name() + "_grad", 
+                                                  vector<string>({ prod_in->name() + "_grad",
                                                                    pow_out->name() + "_grad" }),
                                                   vector<Argument>({ operation }));
         if (this->op_def().has_device_option())
@@ -173,17 +175,18 @@ template <class Context> template <typename T>
 void LRNGradientOp<Context>::PoolRunWithType() {
     sqr_out = ws()->GetTensor("/mnt/" + anchor() + "/sqr_out");
     if (!pool_op) {
-        Argument ks, s, p, mode;
+        Argument ks, s, p, m, df;
         ks.set_name("kernel_size"); ks.add_ints(local_size);
         s.set_name("stride"); s.add_ints(1);
         p.set_name("pad"); p.add_ints((local_size - 1) / 2);
-        mode.set_name("mode"); mode.set_s("AVG");
-        OperatorDef pool_op_def = MakeOperatorDef("PoolingGradient", "",
+        m.set_name("mode"); m.set_s("AVG");
+        df.set_name("data_format"); df.set_s(data_format);
+        OperatorDef pool_op_def = MakeOperatorDef("Pooling2dGradient", "",
                                                   vector<string>({ sqr_out->name(),
                                                                    pool_out->name(),
                                                                    pool_out->name() + "_grad" }),
                                                   vector<string>({ sqr_out->name() + "_grad" }),
-                                                  vector<Argument>({ ks, s, p, mode }));
+                                                  vector<Argument>({ ks, s, p, m, df }));
         if (this->op_def().has_device_option())
             pool_op_def.mutable_device_option()->CopyFrom(this->op_def().device_option());
         pool_op.reset(CreateOperator(pool_op_def, ws()));
@@ -224,12 +227,11 @@ void LRNGradientOp<Context>::SplitRunWithType() {
 
 template <class Context>
 void LRNGradientOp<Context>::RunOnDevice() {
-    if (mode == ACROSS_CHANNELS) {
+    if (mode == "ACROSS_CHANNELS") {
         if (input(0).template IsType<float>()) {
             AcrossRunWithType<float>();
         } else { LOG(FATAL) << "Unsupported input types."; }
-    } 
-    else {
+    } else if (mode == "WITHIN_CHANNEL") {
         if (input(0).template IsType<float>()) {
             ProdRunWithType<float>();
             PowRunWithType<float>();
@@ -237,6 +239,8 @@ void LRNGradientOp<Context>::RunOnDevice() {
             SquareRunWithType<float>();
             SplitRunWithType<float>();
         } else { LOG(FATAL) << "Unsupported input types."; }
+    } else {
+        LOG(FATAL) << "Unsupported lrn mode: " << mode;
     }
 }
 

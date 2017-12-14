@@ -28,7 +28,7 @@ class CPUContext {
  public:
     CPUContext(): random_seed_(3) { generator(); }
     CPUContext(unsigned int random_seed): random_seed_(random_seed) { generator(); }
-    CPUContext(const DeviceOption& option): random_seed_(option.has_random_seed() ? 
+    CPUContext(const DeviceOption& option): random_seed_(option.has_random_seed() ?
                                                          option.random_seed() : 3) { generator(); }
     virtual ~CPUContext() {}
 
@@ -51,6 +51,9 @@ class CPUContext {
     inline static void Memcpy(size_t nbytes, void* dst, const void* src) { memcpy(dst, src, nbytes); }
     inline static void Delete(void* data) { free(data); }
 
+    template<class DstContext, class SrcContext>
+    inline static void MemcpyAsync(size_t nbytes, void* dst, const void* src) { NOT_IMPLEMENTED; }
+
     template<typename T, class DstContext, class SrcContext>
     inline static void Copy(int n, T* dst, const T* src) {
         if (dst == src) return;
@@ -62,7 +65,7 @@ class CPUContext {
 
     inline std::mt19937* generator() {
         auto& generator = cpu_object_.rand_generator;
-        if (!generator.get()) 
+        if (!generator.get())
             generator.reset(new std::mt19937(random_seed_));
         return generator.get();
     }

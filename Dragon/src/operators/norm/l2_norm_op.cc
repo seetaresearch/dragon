@@ -30,24 +30,25 @@ void L2NormOp<Context>::RunWithType() {
         if (across_inner) {
             auto* Ndata_ = norm->template mutable_data<float, CPUContext>();
             float sum_of_sqr = math::Dot<T, Context>(buffer->count(), Xdata, Xdata);
+            if (mode == "MEAN") sum_of_sqr = sum_of_sqr / dim;
             Ndata_[n] = pow(sum_of_sqr + eps, 0.5);
             math::Scale<T, Context>(buffer->count(), 1.0 / Ndata_[n], Xdata, Ydata);
         } else {
             math::Set<T, Context>(norm->count(), dragon_cast<T, float>(eps), Ndata);
             math::Square<T, Context>(buffer->count(), Xdata, Bdata);
             //  compute T1 = \sum_{i} x_{i,j}^{2}
-            math::Gemv<T, Context>(CblasTrans, dim, inner_dim, 
+            math::Gemv<T, Context>(CblasTrans, dim, inner_dim,
+                             mode == "MEAN" ? 1.0 / dim : 1.0,
+                                              Bdata, DMuldata,
                                                           1.0,
-                                              Bdata, DMuldata, 
-                                                          1.0, 
                                                        Ndata);
             //  compute T2 = \sqrt{T1}
             math::Sqrt<T, Context>(inner_dim, Ndata, Ndata);
             //  compute T3 = x / [(T2)]_{dim} 
             math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, dim, inner_dim, 1,
-                                                                             1.0, 
-                                                                 DMuldata, Ndata, 
-                                                                             0.0, 
+                                                                             1.0,
+                                                                 DMuldata, Ndata,
+                                                                             0.0,
                                                                           Bdata);
             math::Div<T, Context>(buffer->count(), Xdata, Bdata, Ydata);
             Ndata += inner_dim;

@@ -18,11 +18,12 @@ class LRNOp : public Operator<Context> {
  public:
     LRNOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          mode((LRNMode)OperatorBase::GetSingleArg<int>("mode", ACROSS_CHANNELS)),
           local_size(OperatorBase::GetSingleArg<int>("local_size", 5)),
           alpha(OperatorBase::GetSingleArg<float>("alpha", float(0.0001))),
           beta(OperatorBase::GetSingleArg<float>("beta", float(0.75))),
-          k(OperatorBase::GetSingleArg<float>("k", float(2.0))) {}
+          k(OperatorBase::GetSingleArg<float>("k", float(2.0))),
+          mode(OperatorBase::GetSingleArg<string>("mode", "ACROSS_CHANNELS")),
+          data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -34,9 +35,9 @@ class LRNOp : public Operator<Context> {
     template <typename T> void ProdRunWithType();
 
  protected:
-    LRNMode mode;
     int local_size;
     float alpha, beta, k;
+    string mode, data_format;
     unique_ptr<OperatorBase> sqr_op, pool_op, pow_op, prod_op;
     Tensor* sqr_in, *prod_in, *sqr_out, *pool_out, *pow_out;
     Tensor* scale;
@@ -47,11 +48,12 @@ class LRNGradientOp : public Operator<Context> {
  public:
     LRNGradientOp(const OperatorDef& op_def, Workspace* ws) 
         : Operator<Context>(op_def, ws),
-          mode((LRNMode)OperatorBase::GetSingleArg<int>("mode", ACROSS_CHANNELS)),
           local_size(OperatorBase::GetSingleArg<int>("local_size", 5)),
           alpha(OperatorBase::GetSingleArg<float>("alpha", float(0.0001))),
           beta(OperatorBase::GetSingleArg<float>("beta", float(0.75))),
-          k(OperatorBase::GetSingleArg<float>("k", float(2.0))) {}
+          k(OperatorBase::GetSingleArg<float>("k", float(2.0))),
+          mode(OperatorBase::GetSingleArg<string>("mode", "ACROSS_CHANNELS")),
+          data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -63,9 +65,9 @@ class LRNGradientOp : public Operator<Context> {
     template <typename T> void ProdRunWithType();
 
  protected:
-    LRNMode mode;
     int local_size;
     float alpha, beta, k;
+    string mode, data_format;
     unique_ptr<OperatorBase> sqr_op, pool_op, pow_op, prod_op;
     Tensor* sqr_in, *prod_in, *sqr_out, *pool_out, *pow_out;
     Tensor* scale;

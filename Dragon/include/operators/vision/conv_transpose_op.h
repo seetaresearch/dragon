@@ -52,8 +52,13 @@ class CuDNNConv2dTransposeOp : public Conv2dTransposeOp<Context> {
  public:
     CuDNNConv2dTransposeOp(const OperatorDef& def, Workspace* ws)
         : Conv2dTransposeOp<Context>(def, ws) {
-        handle = new cudnnHandle_t[this->group];
-        stream = new cudaStream_t[this->group];
+#if CUDNN_VERSION_MIN(7, 0, 0)
+        cudnn_group = 1;
+#else
+        cudnn_group = this->group;
+#endif
+        handle = new cudnnHandle_t[cudnn_group];
+        stream = new cudaStream_t[cudnn_group];
         for (int g = 0; g < this->group; g++) {
             CUDA_CHECK(cudaStreamCreate(&stream[g]));
             CUDNN_CHECK(cudnnCreate(&handle[g]));
@@ -80,7 +85,7 @@ class CuDNNConv2dTransposeOp : public Conv2dTransposeOp<Context> {
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;
     size_t workspace_fwd_data_size;
-    int bias_offset;
+    TIndex bias_offset, cudnn_group;
 };
 
 template <class Context>
@@ -88,9 +93,14 @@ class CuDNNConv2dTransposeGradientOp : public Conv2dTransposeGradientOp<Context>
 public:
     CuDNNConv2dTransposeGradientOp(const OperatorDef& def, Workspace* ws)
         : Conv2dTransposeGradientOp<Context>(def, ws) {
-        handle = new cudnnHandle_t[this->group * 3];
-        stream = new cudaStream_t[this->group * 3];
-        for (int g = 0; g < this->group * 3; g++) {
+#if CUDNN_VERSION_MIN(7, 0, 0)
+        cudnn_group = 1;
+#else
+        cudnn_group = this->group;
+#endif
+        handle = new cudnnHandle_t[cudnn_group * 3];
+        stream = new cudaStream_t[cudnn_group * 3];
+        for (int g = 0; g < cudnn_group * 3; g++) {
             CUDA_CHECK(cudaStreamCreate(&stream[g]));
             CUDNN_CHECK(cudnnCreate(&handle[g]));
             CUDNN_CHECK(cudnnSetStream(handle[g], stream[g]));
@@ -117,7 +127,7 @@ public:
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;
     size_t workspace_bwd_filter_size, workspace_bwd_data_size;
-    int bias_offset;
+    TIndex bias_offset, cudnn_group;
 };
 
 #endif    // WITH_CUDNN

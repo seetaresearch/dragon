@@ -17,12 +17,12 @@ class MixedMemory {
  public:
     enum State { UNINITIALIZED, STATE_AT_CPU, STATE_AT_CUDA, SWITCHED, SYNCED };
     MixedMemory()
-        : state_(UNINITIALIZED), 
-          cpu_ptr_(nullptr), cuda_ptr_(nullptr), 
+        : state_(UNINITIALIZED),
+          cpu_ptr_(nullptr), cuda_ptr_(nullptr),
           nbytes_(0) {}
-    MixedMemory(const TypeMeta& meta, const size_t nbytes) 
+    MixedMemory(const TypeMeta& meta, const size_t nbytes)
         : state_(UNINITIALIZED), meta_(meta),
-          cpu_ptr_(nullptr), cuda_ptr_(nullptr), 
+          cpu_ptr_(nullptr), cuda_ptr_(nullptr),
           nbytes_(nbytes) {}
     ~MixedMemory();
 

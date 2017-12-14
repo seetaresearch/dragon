@@ -4,7 +4,7 @@
 
 namespace dragon {
 
-OperatorBase::OperatorBase(const OperatorDef& op_def, Workspace* ws) 
+OperatorBase::OperatorBase(const OperatorDef& op_def, Workspace* ws)
     : op_def_(op_def), ws_(ws) {
     for (auto& arg : this->op_def_.arg()) {
         CHECK_GT(arg.name().size(), 0);
@@ -39,7 +39,7 @@ OperatorBase* TryCreateOperator(const string& key, const OperatorDef& op_def, Wo
         case CPU:
             return CPUOperatorRegistry()->Create(key, op_def, ws);
         case CUDA:
-            if (op_def.device_option().has_engine() && 
+            if (op_def.device_option().has_engine() &&
                 op_def.device_option().engine() == "CUDNN" &&
                 CUDNNOperatorRegistry()->Has(key))
                 return CUDNNOperatorRegistry()->Create(key, op_def, ws);
@@ -59,15 +59,15 @@ OperatorBase* CreateOperator(const OperatorDef& op_def, Workspace* ws) {
 
 Gradient MakeGradientForOp(const OperatorDef& def, const vector<string>& g_outputs) {
     unique_ptr<GradientMakerBase> maker(GradientRegistry()->Create(def.type(), def, g_outputs));
-    if (maker.get() == nullptr) 
+    if (maker.get() == nullptr)
         LOG(FATAL) << "Gradient maker for operator " << def.type() << "not implemented.";
     Gradient grad = maker->Make();
     // copy device option, engine, and arguments if needed
     if (maker->CopyDeviceOption() && def.has_device_option())
-        for (auto& grad_def : grad.ops) 
+        for (auto& grad_def : grad.ops)
             grad_def.mutable_device_option()->CopyFrom(def.device_option());
     // copy arguments if needed
-    if (maker->CopyArguments() && def.arg_size()) 
+    if (maker->CopyArguments() && def.arg_size())
         for (auto& grad_def : grad.ops) grad_def.mutable_arg()->MergeFrom(def.arg());
     return grad;
 }
@@ -95,7 +95,7 @@ void Operator<Context>::ElimateCorruption() {
     all_heads.clear();
     for (int i = 0; i < head->count(); i++) {
         bool safe = true;
-        for (int j = 0; j < InputSize(); j++) 
+        for (int j = 0; j < InputSize(); j++)
             if (head_data[i] == input(j).name()) safe = false;
         if (safe) safe_heads.push(i);
         all_heads.insert(head_data[i]);
@@ -149,7 +149,9 @@ void Operator<Context>::CleanResource() {
             Tensor* buffer = ws()->GetTensor(used);
             if (output(i)->memory() != buffer->memory()) buffer->Move(output(i)->memory());
         }
-    } 
+    }
+
+    //  post-process for sharing grads
     if (allow_share_grads_) {
         //  TODO(PhyscalX):  we preset input(-1)->output(0) to share
         Tensor* dY = &input(-1);

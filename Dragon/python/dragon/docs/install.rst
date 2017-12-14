@@ -19,10 +19,18 @@ Installation - Linux (Normal, CPU)
 
 **Step 1:** Install C++ Dependencies
 
+**$** Setup Python Development Environment
+
 .. code-block:: shell
 
     sudo apt-get install libpython-dev
+
+**Note:** You can also use `Anaconda`_, A powerful toolkit for Data Science.
+
+**$** Setup C++ Development Environment
+
     sudo apt-get install libprotobuf-dev
+    sudo apt-get install protobuf-compiler
     sudo apt-get install libopenblas-dev
 
 **Step 2:** Install Python Requirements
@@ -83,10 +91,18 @@ Installation - Linux (Normal, GPU)
 
 **Step 2:** Install C++ Dependencies
 
+**$** Setup Python Development Environment
+
 .. code-block:: shell
 
     sudo apt-get install libpython-dev
+
+**Note:** You can also use `Anaconda`_, A powerful toolkit for Data Science.
+
+**$** Setup C++ Development Environment
+
     sudo apt-get install libprotobuf-dev
+    sudo apt-get install protobuf-compiler
     sudo apt-get install libopenblas-dev
 
 **Step 3:** Install Python Requirements
@@ -149,10 +165,18 @@ Installation - Linux (Distributed, CPU)
 
 **Step 2:** Install C++ Dependencies
 
+**$** Setup Python Development Environment
+
 .. code-block:: shell
 
     sudo apt-get install libpython-dev
+
+**Note:** You can also use `Anaconda`_, A powerful toolkit for Data Science.
+
+**$** Setup C++ Development Environment
+
     sudo apt-get install libprotobuf-dev
+    sudo apt-get install protobuf-compiler
     sudo apt-get install libopenblas-dev
 
 **Step 3:** Install Python Requirements
@@ -229,10 +253,18 @@ Installation - Linux (Distributed, GPU)
 
 **Step 3:** Install C++ Dependencies
 
+**$** Setup Python Development Environment
+
 .. code-block:: shell
 
     sudo apt-get install libpython-dev
+
+**Note:** You can also use `Anaconda`_, A powerful toolkit for Data Science.
+
+**$** Setup C++ Development Environment
+
     sudo apt-get install libprotobuf-dev
+    sudo apt-get install protobuf-compiler
     sudo apt-get install libopenblas-dev
 
 **Step 4:** Install Python Requirements
@@ -564,6 +596,7 @@ Add ``REPO_ROOT/3rdparty/bin`` to system environment variables
     python setup.py install --user
 
 
+.. _Anaconda: https://www.anaconda.com/download
 .. _CUDA: https://developer.nvidia.com/cuda-toolkit
 .. _CUDNN: https://developer.nvidia.com/cudnn
 .. _NCCL: https://developer.nvidia.com/nccl

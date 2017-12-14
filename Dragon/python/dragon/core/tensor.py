@@ -156,29 +156,39 @@ class Tensor(object):
         """
         return self.Normal(mu=mean, sigma=std)
 
-    def Xavier(self):
+    def Xavier(self, scale=3.0):
         """
         Register as a variable with xavier initializer.
         """
-        return self._no_parameter_filler('xavier')
+        filler = pb.TensorFiller()
+        filler.tensor = self.name
+        filler.type = 'xavier'
+        filler.scale = scale
+        ws.CreateFiller(filler)
+        return self
 
-    def MSRA(self):
+    def MSRA(self, scale=2.0):
         """
         Register as a variable with msra initializer.
         """
-        return self._no_parameter_filler('msra')
+        filler = pb.TensorFiller()
+        filler.tensor = self.name
+        filler.type = 'msra'
+        filler.scale = scale
+        ws.CreateFiller(filler)
+        return self
 
-    def GlorotUniform(self):
+    def GlorotUniform(self, scale=3.0):
         """
         Register as a variable with glorot uniform initializer.
         """
-        return self.Xavier()
+        return self.Xavier(scale)
 
-    def GlorotNormal(self):
+    def GlorotNormal(self, scale=2.0):
         """
         Register as a variable with glorot normal initializer.
         """
-        return self.MSRA()
+        return self.MSRA(scale)
 
     ##############################################
     #                                            #

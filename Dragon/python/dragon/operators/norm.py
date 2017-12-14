@@ -189,7 +189,7 @@ def InstanceNorm(inputs, axis=-1, eps=1e-3, **kwargs):
     return output
 
 
-def L2Norm(inputs, axis=0, num_axes=-1, eps=1e-5, **kwargs):
+def L2Norm(inputs, axis=0, num_axes=-1, eps=1e-5, mode='SUM', **kwargs):
     """L2 Normalization, introduced by `[Liu et.al, 2015] <https://arxiv.org/abs/1506.04579>`_.
 
     Parameters
@@ -202,6 +202,8 @@ def L2Norm(inputs, axis=0, num_axes=-1, eps=1e-5, **kwargs):
         The number of axes of stats region. Default is ``-1`` (Till End).
     eps : float
         The eps.
+    mode : str
+        The mode on computing normalizer. ``SUM`` or ``MEAN``.
 
     Returns
     -------

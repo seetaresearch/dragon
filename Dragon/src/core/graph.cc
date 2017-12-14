@@ -18,7 +18,7 @@ GraphBase::GraphBase(const GraphDef& meta_graph, Workspace* ws)
         //  check inputs
         for (auto& in : op.input())
             CHECK(known_tensors.count(in) || ws_->HasTensor(in))
-                << "\nInput: " << in << " for op: " 
+                << "\nInput: " << in << " for op: "
                 << op.name() << " is unknown.";
         //  add outputs
         for (auto& out : op.output()) known_tensors.insert(out);
@@ -55,13 +55,13 @@ void Graph::ForwardShareDyeing(string u, string ancestor) {
         auto* schema = OpSchemaRegistry::Schema(op_type);
         if (schema->AllowInplace())
             ForwardShareDyeing(dag_[u].childs[0], ancestor);
-    }        
+    }
 }
 
 void Graph::ForwardPruneDyeing(string u, string leaf, vector<string> path) {
     if (visited_.count(u)) {
-        if (visited_[u]) 
-            for (auto& node : path) 
+        if (visited_[u])
+            for (auto& node : path)
                 visited_[node] = colored_[node] = true;
         return;
     }
@@ -71,7 +71,7 @@ void Graph::ForwardPruneDyeing(string u, string leaf, vector<string> path) {
         vector<string> new_path(path);
         new_path.push_back(v);
         if (v == leaf) {
-            for (auto& node : new_path) 
+            for (auto& node : new_path)
                 visited_[node] = colored_[node] = true;
             return;
         }
@@ -260,8 +260,8 @@ GraphDef Graph::MakeUpdate(const GraphDef& meta_graph) {
             collective_ops.push_back(op_def);
         } else if (this->args_["parallel_mode"].s() == "MIXED") {
             /*
-                See:  Accurate, Large Minibatch SGD: Training ImageNet in 1 Hour 
-                Links: http://arxiv.org/abs/1706.02677
+                See:  Accurate, Large Minibatch SGD: Training ImageNet in 1 Hour
+                Link: http://arxiv.org/abs/1706.02677
             */
             NOT_IMPLEMENTED;
         }
@@ -282,11 +282,11 @@ bool Graph::Create(const GraphDef& optimized_graph, Workspace* ws) {
     bool has_share_grads = optimized_graph.has_share_grads();
     for (const OperatorDef& plain_op_def : optimized_graph.op()) {
         OperatorDef op_def(plain_op_def);
-        LOG(DEBUG) << "Create Operator " << plain_op_def.name() 
+        LOG(DEBUG) << "Create Operator " << plain_op_def.name()
                    << ": " << plain_op_def.type();
 
         //  inherit device option if necessary
-        if (!op_def.has_device_option() && has_device_option) 
+        if (!op_def.has_device_option() && has_device_option)
             op_def.mutable_device_option()->CopyFrom(optimized_graph.device_option());
 
         //  inherit debug mode if necessary
@@ -316,7 +316,7 @@ void Graph::RecomputingAware(const GraphDef& optimized_graph, Workspace* ws) {
         bool mirror_stage = ops_[i]->GetSingleArg<bool>("mirror_stage", false);
         for (auto& u : optimized_graph.op(i).input()) {
             bool inplace_flag = false;
-            for (auto& v : optimized_graph.op(i).output()) 
+            for (auto& v : optimized_graph.op(i).output())
                 if (u == v) inplace_flag = true;
             mirror_stage &= (!inplace_flag);
             if (!inplace_flag) multi_use_count[u]++;
@@ -324,7 +324,7 @@ void Graph::RecomputingAware(const GraphDef& optimized_graph, Workspace* ws) {
         if (mirror_stage) {
             //  TODO(PhyscalX):  we assume input(0)->output(0) as a in-place currently
             OperatorDef* op = fake_graph.mutable_op(i);
-            if (rename_map.count(op->input(0))) 
+            if (rename_map.count(op->input(0)))
                 *op->mutable_input(0) = rename_map[op->input(0)];
             rename_map[op->output(0)] = op->input(0);
             *op->mutable_output(0) = op->input(0);
@@ -339,19 +339,19 @@ void Graph::RecomputingAware(const GraphDef& optimized_graph, Workspace* ws) {
         OperatorDef op = optimized_graph.op(i);
         for (int j = 0; j < op.output_size(); j++) {
             string v = op.output(j);
-            string fake_v = fake_op.output(j);  
+            string fake_v = fake_op.output(j);
             if (!fake_recompute_map.count(fake_v))
-                fake_recompute_map[fake_v] = vector<OperatorBase*>(); 
+                fake_recompute_map[fake_v] = vector<OperatorBase*>();
             if (v != fake_v) {
                 if (multi_use_count[fake_v] >= 2)
                     fake_recompute_map[fake_v] = recompute_map[fake_v];
-            }    
+            }
             fake_recompute_map[fake_v].push_back(ops_[i]);
             for (int k = 0; k < fake_recompute_map[fake_v].size(); k++) {
                 if (!hash_map.count(v)) hash_map[v] = Set<string>();
                 string op_name = fake_recompute_map[fake_v][k]->name();
                 if (!hash_map[v].count(op_name)) {
-                    if (!recompute_map.count(v)) 
+                    if (!recompute_map.count(v))
                         recompute_map[v] = vector<OperatorBase*>();
                     recompute_map[v].push_back(fake_recompute_map[fake_v][k]);
                     hash_map[v].insert(op_name);
@@ -359,7 +359,7 @@ void Graph::RecomputingAware(const GraphDef& optimized_graph, Workspace* ws) {
             }
         }
     }
-   
+
     //  prepare resources
     for (auto& ops : ops_) ops->set_recompute_map(recompute_map);
     Tensor* head = ws->CreateTensor("/opt/mirror_stage/head");
@@ -403,7 +403,7 @@ Graph::Graph(const GraphDef& meta_graph, Workspace* ws)
 bool Graph::Run(const string& include, const string& exclude) {
     LOG(DEBUG) << "Run Graph: " << name();
     for (auto op : ops_) {
-        if (!include.empty()) 
+        if (!include.empty())
             if (op->type().find(include) == string::npos) continue;
         if (!exclude.empty())
             if (op->type().find(exclude) != string::npos) continue;

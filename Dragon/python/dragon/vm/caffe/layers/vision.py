@@ -229,7 +229,9 @@ class LRNLayer(Layer):
         self._param = {'local_size': param.local_size,
                        'alpha': param.alpha,
                        'beta': param.beta,
-                       'mode': {0: 'ACROSS_CHANNELS', 1: 'WITHIN_CHANNEL'}[param.norm_region]}
+                       'mode': {0: 'ACROSS_CHANNELS', 1: 'WITHIN_CHANNEL'}[param.norm_region],
+                       'data_format': 'NCHW'}
+
     def Setup(self, bottom):
         super(LRNLayer, self).Setup(bottom)
         input = bottom[0] if isinstance(bottom, list) else bottom

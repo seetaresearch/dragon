@@ -61,6 +61,12 @@ def Conv2d(inputs, num_output, kernel_size,
     """
     CheckInputs(inputs, 2, 3)
     arguments = ParseArguments(locals())
+
+    if padding not in ('VALID', 'SAME'):
+        raise ValueError('Unsupported padding algorithm: {}'.format(padding))
+    if data_format not in ('NCHW', 'NHWC'):
+        raise ValueError('Unsupported data format: {}'.format(data_format))
+
     if not isinstance(arguments['kernel_size'], list):
         arguments['kernel_size'] = [arguments['kernel_size']]
     if not isinstance(arguments['stride'], list):
@@ -154,6 +160,11 @@ def Conv2dTranspose(inputs, num_output, kernel_size,
     CheckInputs(inputs, 2, 3)
     arguments = ParseArguments(locals())
 
+    if padding not in ('VALID', 'SAME'):
+        raise ValueError('Unsupported padding algorithm: {}'.format(padding))
+    if data_format not in ('NCHW', 'NHWC'):
+        raise ValueError('Unsupported data format: {}'.format(data_format))
+
     arguments['output_shape'] = None
     if output_shape is not None:
         if not isinstance(output_shape, list):
@@ -170,17 +181,43 @@ def Conv2dTranspose(inputs, num_output, kernel_size,
 
     if not isinstance(arguments['kernel_size'], list):
         arguments['kernel_size'] = [arguments['kernel_size']]
-
     if not isinstance(arguments['stride'], list):
         arguments['stride'] = [arguments['stride']]
-
     if not isinstance(arguments['pad'], list):
         arguments['pad'] = [arguments['pad']]
-
     if not isinstance(arguments['dilation'], list):
         arguments['dilation'] = [arguments['dilation']]
 
-    return Tensor.CreateOperator(nout=1, op_type='Conv2dTranspose', **arguments)
+    output =  Tensor.CreateOperator(nout=1, op_type='Conv2dTranspose', **arguments)
+
+    if inputs[0].shape is not None:
+        output.shape = inputs[0].shape[:]
+        channel_axis = 1 if data_format == 'NCHW' else -1
+        spatial_axis = 2 if data_format == 'NCHW' else 1
+        output.shape[channel_axis] = num_output
+        for i in xrange(2):
+            k = arguments['kernel_size'][i] if i < len(arguments['kernel_size']) \
+                else arguments['kernel_size'][-1]
+            s = arguments['stride'][i] if i < len(arguments['stride']) \
+                else arguments['stride'][-1]
+            p = arguments['pad'][i] if i < len(arguments['pad']) \
+                else arguments['pad'][-1]
+            d = arguments['dilation'][i] if i < len(arguments['dilation']) \
+                else arguments['dilation'][-1]
+            dk = d * (k - 1) + 1
+            dp = 2 * p
+            input_size = output.shape[i + spatial_axis]
+            if padding != 'SAME':
+                output.shape[i + spatial_axis] = s * (input_size - 1) + dk - dp
+            else:
+                if output_shape is None:
+                    raise ValueError('The output shape must be specified if using SAME padding algorithm.')
+                if 'dynamic_dsize' in arguments:
+                    output.shape = None
+                    return output
+                output.shape[i + spatial_axis] = output_shape[i + spatial_axis]
+
+    return output
 
 
 def Pool2d(inputs, kernel_size, stride, pad=0, padding='VALID',
@@ -222,6 +259,14 @@ def Pool2d(inputs, kernel_size, stride, pad=0, padding='VALID',
     """
     CheckInputs(inputs, 1)
     arguments = ParseArguments(locals())
+
+    if mode not in ('MAX', 'AVG'):
+        raise ValueError('Unsupported lrn mode: {}'.format(mode))
+    if padding not in ('VALID', 'SAME'):
+        raise ValueError('Unsupported padding algorithm: {}'.format(padding))
+    if data_format not in ('NCHW', 'NHWC'):
+        raise ValueError('Unsupported data format: {}'.format(data_format))
+
     if not isinstance(arguments['kernel_size'], list):
         arguments['kernel_size'] = [arguments['kernel_size']]
     if not isinstance(arguments['stride'], list):
@@ -311,7 +356,8 @@ def ROIAlign(inputs, pool_h=0, pool_w=0, spatial_scale=1.0, **kwargs):
     return Tensor.CreateOperator(nout=1, op_type='ROIAlign', **arguments)
 
 
-def LRN(inputs, local_size=5, alpha=0.0001, beta=0.75, k=2.0, mode='ACROSS_CHANNELS', **kwargs):
+def LRN(inputs, local_size=5, alpha=0.0001, beta=0.75, k=2.0,
+        mode='ACROSS_CHANNELS', data_format='NCHW', **kwargs):
     """Local Response Normalization, introduced by `[Krizhevsky et.al, 2012] <http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks>`_.
 
     Parameters
@@ -328,17 +374,22 @@ def LRN(inputs, local_size=5, alpha=0.0001, beta=0.75, k=2.0, mode='ACROSS_CHANN
         The k of LRN.
     mode : str
         The mode, ``ACROSS_CHANNELS`` or ``WITHIN_CHANNEL``.
+    data_format : str
+        The data format. ``NCHW`` or ``NHWC``.
 
     Returns
     -------
     Tensor
-        The normalized tensor.
+        The output tensor.
 
     """
     CheckInputs(inputs, 1)
     arguments = ParseArguments(locals())
-    SUPPORT_MODES = {'ACROSS_CHANNELS': 0, 'WITHIN_CHANNEL': 1}
-    arguments['mode'] = SUPPORT_MODES[mode]
+
+    if mode not in ('ACROSS_CHANNELS', 'WITHIN_CHANNEL'):
+        raise ValueError('Unsupported lrn mode: {}'.format(mode))
+    if data_format not in ('NCHW', 'NHWC'):
+        raise ValueError('Unsupported data format: {}'.format(data_format))
 
     output = Tensor.CreateOperator(nout=1, op_type='LRN', **arguments)
 
@@ -356,9 +407,9 @@ def NNResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
     Parameters
     ----------
     inputs : Tensor
-        The input tenosr.
+        The input tensor.
     dsize : tuple, list, Tensor or None
-        The output size.
+        The output size, formats as (h, w).
     fy : float
         The scale factor based on src height. Default is ``-1.0`` (Discarded).
     fx : float
@@ -374,6 +425,10 @@ def NNResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
     """
     CheckInputs(inputs, 1)
     arguments = ParseArguments(locals())
+
+    if data_format not in ('NCHW', 'NHWC'):
+        raise ValueError('Unsupported data format: {}'.format(data_format))
+
     if arguments['dsize'] is not None:
         if isinstance(arguments['dsize'][0], Tensor):
             arguments['dynamic_dsize'] = [arguments['dsize'][0].name,
@@ -388,6 +443,20 @@ def NNResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
 
     output =  Tensor.CreateOperator(nout=1, op_type='NNResize', **arguments)
 
+    if inputs.shape is not None:
+        if len(inputs.shape) != 4:
+            raise ValueError('The inputs should be a 4d Tensor.')
+        if 'dynamic_dsize' not in arguments:
+            output.shape = inputs.shape[:]
+            spatial_axis = 2 if data_format == 'NCHW' else 1
+            for i in xrange(2):
+                output_dim = output.shape[spatial_axis + i]
+                if 'static_size' in arguments:
+                    output_dim = dsize[i]
+                else:
+                    output_dim = int(float(output_dim) * ([fy, fx])[i])
+                output.shape[spatial_axis + i] = output_dim
+
     return output
 
 
@@ -399,9 +468,9 @@ def BilinearResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs
     Parameters
     ----------
     inputs : Tensor
-        The input tenosr.
+        The input tensor.
     dsize : tuple, list, Tensor or None
-        The dest output size.
+        The output size, formats as (h, w).
     fy : float
         The scale factor based on src height. Default is ``-1.0`` (Discarded).
     fx : float
@@ -417,6 +486,10 @@ def BilinearResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs
     """
     CheckInputs(inputs, 1)
     arguments = ParseArguments(locals())
+
+    if data_format not in ('NCHW', 'NHWC'):
+        raise ValueError('Unsupported data format: {}'.format(data_format))
+
     if arguments['dsize'] is not None:
         if isinstance(arguments['dsize'][0], Tensor):
             arguments['dynamic_dsize'] = [arguments['dsize'][0].name,
@@ -430,6 +503,20 @@ def BilinearResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs
         raise RuntimeError('The dsize or fy/fx should be specified either.')
 
     output =  Tensor.CreateOperator(nout=1, op_type='BilinearResize', **arguments)
+
+    if inputs.shape is not None:
+        if len(inputs.shape) != 4:
+            raise ValueError('The inputs should be a 4d Tensor.')
+        if 'dynamic_dsize' not in arguments:
+            output.shape = inputs.shape[:]
+            spatial_axis = 2 if data_format == 'NCHW' else 1
+            for i in xrange(2):
+                output_dim = output.shape[spatial_axis + i]
+                if 'static_size' in arguments:
+                    output_dim = dsize[i]
+                else:
+                    output_dim = int(float(output_dim) * ([fy, fx])[i])
+                output.shape[spatial_axis + i] = output_dim
 
     return output
 
@@ -452,6 +539,9 @@ def BiasAdd(inputs, data_format='NCHW', **kwargs):
     """
     CheckInputs(inputs, 2)
     arguments = ParseArguments(locals())
+
+    if data_format not in ('NCHW', 'NHWC'):
+        raise ValueError('Unsupported data format: {}'.format(data_format))
 
     output =  Tensor.CreateOperator(nout=1, op_type='BiasAdd', **arguments)
 

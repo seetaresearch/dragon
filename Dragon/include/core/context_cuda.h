@@ -60,7 +60,7 @@ class CUDAObject {
 
 class CUDAContext {
  public:
-    CUDAContext(const DeviceOption& option) 
+    CUDAContext(const DeviceOption& option)
         : gpu_id_(option.gpu_id()),
           random_seed_(option.has_random_seed() ? option.random_seed() : 3) {
         CPUContext context(option);
@@ -72,7 +72,7 @@ class CUDAContext {
 #endif
     }
 
-    CUDAContext(const int gpu_id = 0) 
+    CUDAContext(const int gpu_id = 0)
         : gpu_id_(gpu_id), random_seed_(3) {
         CPUContext context;
         cublas_handle();
@@ -90,7 +90,7 @@ class CUDAContext {
     void FinishDeviceCompution() {
         cudaStreamSynchronize(cudaStreamDefault);
         cudaError_t error = cudaGetLastError();
-        CHECK_EQ(error, cudaSuccess) 
+        CHECK_EQ(error, cudaSuccess)
             << "CUDA Error: " << cudaGetErrorString(error);
     }
 
@@ -108,11 +108,11 @@ class CUDAContext {
         CUDA_CHECK(cudaMemcpy(dst, src, nbytes, cudaMemcpyDefault));
     }
 
+    template<class DstContext, class SrcContext>
     inline static void MemcpyAsync(size_t nbytes, void* dst, const void* src) {
         cudaStream_t stream;
         CUDA_CHECK(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
         CUDA_CHECK(cudaMemcpyAsync(dst, src, nbytes, cudaMemcpyDefault, stream));
-        CUDA_CHECK(cudaStreamSynchronize(stream));
         CUDA_CHECK(cudaStreamDestroy(stream));
     }
 

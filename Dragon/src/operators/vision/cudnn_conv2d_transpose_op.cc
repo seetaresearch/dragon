@@ -15,51 +15,34 @@ void CuDNNConv2dTransposeOp<Context>::RunWithType() {
     CUDNN_CHECK(cudnnSetFilter4dDescriptor(filter_desc,
                                     CUDNNType<T>::type,
                                                 format,
-                        this->num_output / this->group,
+                        this->num_output / cudnn_group,
                           this->channels / this->group,
           this->kernel_size[0], this->kernel_size[1]));
 #else
     CUDNN_CHECK(cudnnSetFilter4dDescriptor_v4(filter_desc,
                                        CUDNNType<T>::type,
                                                    format,
-                           this->num_output / this->group,
+                           this->num_output / cudnn_group,
                              this->channels / this->group,
              this->kernel_size[0], this->kernel_size[1]));
 #endif
 
-    Tensor fake_tensor;
-    vector<TIndex> fake_dims;
-    if (this->data_format == "NCHW") {
-        //  determine the input shape
-        fake_tensor.ReshapeLike(input(0));
-        fake_dims = fake_tensor.dims();
-        fake_dims[1] /= this->group;
-        cudnnSetTensor4dDesc<T>(&input_desc, this->data_format, fake_dims);
-        //  determine the output shape
-        fake_tensor.ReshapeLike(*output(0));
-        fake_dims = fake_tensor.dims();
-        fake_dims[1] /= this->group;
-        cudnnSetTensor4dDesc<T>(&output_desc, this->data_format, fake_dims);
-        //  determine the bias shape if necessary
-        if (HasBias()) {
-            bias_offset = this->num_output / this->group;
+    //  determine the input & output shape
+    cudnnSetTensor4dDescWithGroup<T>(&input_desc, this->data_format, input(0).dims(), cudnn_group);
+    cudnnSetTensor4dDescWithGroup<T>(&output_desc, this->data_format, output(0)->dims(), cudnn_group);
+
+    //  determine the bias shape and misc
+    if (HasBias()) {
+        bias_offset = this->num_output / cudnn_group;
+        if (this->data_format == "NCHW") {
             cudnnSetTensor4dDesc<T>(&bias_desc, this->data_format, vector<TIndex>({ 1, bias_offset, 1, 1 }));
+            this->x_offset = input(0).count(1) / cudnn_group;
+            this->y_offset = output(0)->count(1) / cudnn_group;
         }
-    } else if (this->data_format == "NHWC") {
-        //  determine the input shape
-        fake_tensor.ReshapeLike(input(0));
-        fake_dims = fake_tensor.dims();
-        fake_dims[fake_dims.size() - 1] /= this->group;
-        cudnnSetTensor4dDesc<T>(&input_desc, this->data_format, fake_dims);
-        //  determine the output shape
-        fake_tensor.ReshapeLike(*output(0));
-        fake_dims = fake_tensor.dims();
-        fake_dims[fake_dims.size() - 1] /= this->group;
-        cudnnSetTensor4dDesc<T>(&output_desc, this->data_format, fake_dims);
-        //  determine the bias shape if necessary
-        if (HasBias()) {
-            bias_offset = this->num_output / this->group;
+        else if (this->data_format == "NHWC") {
             cudnnSetTensor4dDesc<T>(&bias_desc, this->data_format, vector<TIndex>({ 1, 1, 1, bias_offset }));
+            this->x_offset = input(0).dim(-1) / cudnn_group;
+            this->y_offset = output(0)->dim(-1) / cudnn_group;
         }
     }
 
@@ -82,7 +65,7 @@ void CuDNNConv2dTransposeOp<Context>::RunWithType() {
 
     Tensor* buffer = ws()->GetBuffer();
     if (workspace_fwd_data_size == 0) workspace_fwd_data_size += 1;
-    buffer->Reshape(vector<TIndex>(1, this->group * workspace_fwd_data_size));
+    buffer->Reshape(vector<TIndex>(1, cudnn_group * workspace_fwd_data_size));
 
     auto* Xdata = input(0).template data<T, Context>();
     auto* Ydata = output(0)->template mutable_data<T, Context>();
@@ -90,7 +73,7 @@ void CuDNNConv2dTransposeOp<Context>::RunWithType() {
     auto* Wdata = input(1).template data<T, Context>();
     if (HasBias()) TENSOR_FILL(input(2), this->bias_shape);
 
-    for (int g = 0; g < this->group; g++) {
+    for (int g = 0; g < cudnn_group; g++) {
         auto* workspace = buffer->template mutable_data<char, Context>();
         CUDNN_CHECK(cudnnConvolutionBackwardData(handle[g], 
                         CUDNNType<T>::one, filter_desc, Wdata + this->weight_offset * g,
@@ -118,8 +101,6 @@ void CuDNNConv2dTransposeOp<Context>::RunOnDevice() {
         if (this->dilation[i] != 1) return Conv2dTransposeOp<Context>::RunOnDevice();
 #endif
     Conv2dTransposeOp<Context>::Reshape();
-    this->x_offset /= this->group;
-    this->y_offset /= this->group;
 
     if (input(0).template IsType<float>()) {
 #if CUDNN_VERSION_MIN(6, 0, 0)
@@ -135,6 +116,9 @@ void CuDNNConv2dTransposeOp<Context>::RunOnDevice() {
                              this->stride[0], this->stride[1],
                                                          1, 1,
                                     CUDNN_CROSS_CORRELATION));
+#endif
+#if CUDNN_VERSION_MIN(7, 0, 0)
+        CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc, this->group));
 #endif
         RunWithType<float>();
     } else if (input(0).template IsType<float16>()) {
@@ -153,6 +137,9 @@ void CuDNNConv2dTransposeOp<Context>::RunOnDevice() {
                                                          1, 1,
                                     CUDNN_CROSS_CORRELATION));
 #endif
+#if CUDNN_VERSION_MIN(7, 0, 0)
+        CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc, this->group));
+#endif
         RunWithType<float16>();
 #endif  // WITH_CUDA_FP16
     } else { LOG(FATAL) << "Unsupported input types."; }
@@ -166,51 +153,34 @@ void CuDNNConv2dTransposeGradientOp<Context>::RunWithType() {
     CUDNN_CHECK(cudnnSetFilter4dDescriptor(filter_desc,
                                     CUDNNType<T>::type,
                                                 format,
-                        this->num_output / this->group,
+                        this->num_output / cudnn_group,
                           this->channels / this->group,
           this->kernel_size[0], this->kernel_size[1]));
 #else
     CUDNN_CHECK(cudnnSetFilter4dDescriptor_v4(filter_desc,
                                        CUDNNType<T>::type,
                                                    format,
-                           this->num_output / this->group,
+                           this->num_output / cudnn_group,
                              this->channels / this->group,
              this->kernel_size[0], this->kernel_size[1]));
 #endif
 
-    Tensor fake_tensor;
-    vector<TIndex> fake_dims;
-    if (this->data_format == "NCHW") {
-        //  determine the input shape
-        fake_tensor.ReshapeLike(input(-1));
-        fake_dims = fake_tensor.dims();
-        fake_dims[1] /= this->group;
-        cudnnSetTensor4dDesc<T>(&input_desc, this->data_format, fake_dims);
-        //  determine the output shape
-        fake_tensor.ReshapeLike(input(0));
-        fake_dims = fake_tensor.dims();
-        fake_dims[1] /= this->group;
-        cudnnSetTensor4dDesc<T>(&output_desc, this->data_format, fake_dims);
-        //  determine the bias shape if necessary
-        if (HasBias()) {
-            bias_offset = this->num_output / this->group;
+    //  determine the input & output shape
+    cudnnSetTensor4dDescWithGroup<T>(&input_desc, this->data_format, input(-1).dims(), cudnn_group);
+    cudnnSetTensor4dDescWithGroup<T>(&output_desc, this->data_format, input(0).dims(), cudnn_group);
+
+    //  determine the bias shape and misc
+    if (HasBias()) {
+        bias_offset = this->num_output / cudnn_group;
+        if (this->data_format == "NCHW") {
             cudnnSetTensor4dDesc<T>(&bias_desc, this->data_format, vector<TIndex>({ 1, bias_offset, 1, 1 }));
+            this->x_offset = input(0).count(1) / cudnn_group;
+            this->y_offset = input(-1).count(1) / cudnn_group;
         }
-    } else if (this->data_format == "NHWC") {
-        //  determine the input shape
-        fake_tensor.ReshapeLike(input(-1));
-        fake_dims = fake_tensor.dims();
-        fake_dims[fake_dims.size() - 1] /= this->group;
-        cudnnSetTensor4dDesc<T>(&input_desc, this->data_format, fake_dims);
-        //  determine the output shape
-        fake_tensor.ReshapeLike(input(0));
-        fake_dims = fake_tensor.dims();
-        fake_dims[fake_dims.size() - 1] /= this->group;
-        cudnnSetTensor4dDesc<T>(&output_desc, this->data_format, fake_dims);
-        //  determine the bias shape if necessary
-        if (HasBias()) {
-            bias_offset = this->num_output / this->group;
+        else if (this->data_format == "NHWC") {
             cudnnSetTensor4dDesc<T>(&bias_desc, this->data_format, vector<TIndex>({ 1, 1, 1, bias_offset }));
+            this->x_offset = input(0).dim(-1) / cudnn_group;
+            this->y_offset = input(-1).dim(-1) / cudnn_group;
         }
     }
 
@@ -252,14 +222,14 @@ void CuDNNConv2dTransposeGradientOp<Context>::RunWithType() {
     Tensor* buffer2 = ws()->GetBuffer();
     if (workspace_bwd_data_size == 0) workspace_bwd_data_size += 1;
     if (workspace_bwd_filter_size == 0) workspace_bwd_filter_size += 1;
-    buffer1->Reshape(vector<TIndex>(1, this->group * workspace_bwd_data_size));
-    buffer2->Reshape(vector<TIndex>(1, this->group * workspace_bwd_filter_size));
+    buffer1->Reshape(vector<TIndex>(1, cudnn_group * workspace_bwd_data_size));
+    buffer2->Reshape(vector<TIndex>(1, cudnn_group * workspace_bwd_filter_size));
 
     const T* dYdata = input(2).template data<T, Context>();
-    for (int g = 0; g < this->group; g++) {
+    for (int g = 0; g < cudnn_group; g++) {
         if (output(2)->name() != "ignore") {
             T* dBdata = output(2)->template mutable_data<T, Context>();
-            CUDNN_CHECK(cudnnConvolutionBackwardBias(handle[g], 
+            CUDNN_CHECK(cudnnConvolutionBackwardBias(handle[g],
                             CUDNNType<T>::one, input_desc, dYdata + this->y_offset * g,
                               CUDNNType<T>::one, bias_desc, dBdata + bias_offset * g));
         }
@@ -267,7 +237,7 @@ void CuDNNConv2dTransposeGradientOp<Context>::RunWithType() {
             auto* Xdata = input(0).template data<T, Context>();
             auto* dWdata = output(1)->template mutable_data<T, Context>();
             auto* workspace = buffer2->mutable_data<char, Context>();
-            CUDNN_CHECK(cudnnConvolutionBackwardFilter(handle[1 * this->group + g],
+            CUDNN_CHECK(cudnnConvolutionBackwardFilter(handle[1 * cudnn_group + g],
                             CUDNNType<T>::one, input_desc, dYdata + this->y_offset * g,
                                                output_desc, Xdata + this->x_offset * g,
                                                                              conv_desc,
@@ -279,7 +249,7 @@ void CuDNNConv2dTransposeGradientOp<Context>::RunWithType() {
             auto* Wdata = input(1).template data<T, Context>();
             auto* dXdata = output(0)->template mutable_data<T, Context>();
             auto* workspace = buffer1->mutable_data<char, Context>();
-            CUDNN_CHECK(cudnnConvolutionForward(handle[2 * this->group + g],
+            CUDNN_CHECK(cudnnConvolutionForward(handle[2 * cudnn_group + g],
                             CUDNNType<T>::one, input_desc, dYdata + this->y_offset * g,
                                           filter_desc, Wdata + this->weight_offset * g,
                                                                              conv_desc,
@@ -300,8 +270,6 @@ void CuDNNConv2dTransposeGradientOp<Context>::RunOnDevice() {
         if (this->dilation[i] != 1) return Conv2dTransposeGradientOp<Context>::RunOnDevice();
 #endif
     Conv2dTransposeGradientOp<Context>::GradientReshape();
-    this->x_offset /= this->group;
-    this->y_offset /= this->group;
 
     if (input(0).template IsType<float>()) {
 #if CUDNN_VERSION_MIN(6, 0, 0)
@@ -317,6 +285,9 @@ void CuDNNConv2dTransposeGradientOp<Context>::RunOnDevice() {
                              this->stride[0], this->stride[1],
                                                          1, 1,
                                     CUDNN_CROSS_CORRELATION));
+#endif
+#if CUDNN_VERSION_MIN(7, 0, 0)
+        CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc, this->group));
 #endif
         RunWithType<float>();
     } else if (input(0).template IsType<float16>()) {
@@ -334,6 +305,9 @@ void CuDNNConv2dTransposeGradientOp<Context>::RunOnDevice() {
                              this->stride[0], this->stride[1],
                                                          1, 1,
                                     CUDNN_CROSS_CORRELATION));
+#endif
+#if CUDNN_VERSION_MIN(7, 0, 0)
+        CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc, this->group));
 #endif
         RunWithType<float16>();
 #endif  // WITH_CUDA_FP16

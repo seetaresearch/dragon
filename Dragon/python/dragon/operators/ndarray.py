@@ -673,6 +673,7 @@ def Reshape(inputs, shape, **kwargs):
         output.shape = [1] * len(shape)
         for i, s in enumerate(shape):
             if s == -1: output.shape[i] = 1
+            elif s == 0: output.shape[i] = inputs.shape[i]
             else: output.shape[i] = s
 
     return output

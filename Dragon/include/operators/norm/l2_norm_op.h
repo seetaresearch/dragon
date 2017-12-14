@@ -18,7 +18,8 @@ class L2NormOp final : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", 0)),
           num_axes(OperatorBase::GetSingleArg<int>("num_axes", -1)),
-          eps(OperatorBase::GetSingleArg<float>("eps", float(1e-5))) {}
+          eps(OperatorBase::GetSingleArg<float>("eps", float(1e-5))),
+          mode(OperatorBase::GetSingleArg<string>("mode", "SUM")) {}
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -26,6 +27,7 @@ class L2NormOp final : public Operator<Context> {
  protected:
     float eps;
     TIndex axis, num_axes, end_axis;
+    string mode;
     bool across_inner;
     Tensor* norm, *buffer, *multiplier;
     TIndex outer_dim, dim, inner_dim, spatial_dim;

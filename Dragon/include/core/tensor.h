@@ -37,7 +37,7 @@ class Tensor {
                 capacity_ = 0;
             }
         } else {
-            if (ex_memory_ && TIndex(ex_memory_->nbytes()) < 
+            if (ex_memory_ && TIndex(ex_memory_->nbytes()) <
                               TIndex(new_size * meta_.itemsize())) {
                 delete ex_memory_;
                 ex_memory_ = nullptr;
@@ -72,7 +72,7 @@ class Tensor {
     inline TIndex count() const { return size_; }
     inline TIndex count(const TIndex start) const { return count(start, ndim()); }
 
-    inline TIndex offset(const TIndex n, const TIndex c = 0, 
+    inline TIndex offset(const TIndex n, const TIndex c = 0,
                          const TIndex h = 0, const TIndex w = 0) {
         CHECK_LE(n, dim(0));
         CHECK_LE(c, dim(1));
@@ -103,13 +103,13 @@ class Tensor {
     inline void Corrupt() { is_corrupted_ = true; }
 
     MixedMemory* memory() const { return own_mem_ ? memory_.get() : ex_memory_; }
-    MixedMemory::State memory_state() const { 
+    MixedMemory::State memory_state() const {
         MixedMemory* mem = memory();
         CHECK(mem) << "\nMemory access before allowcating.";
-        return memory()->state(); 
+        return memory()->state();
     }
 
-    void SwitchToDevice() { 
+    void SwitchToDevice() {
         MixedMemory* mem = own_mem_ ? memory_.get() : ex_memory_;
         if (mem) mem->SwitchToDevice();
     }
@@ -166,15 +166,15 @@ class Tensor {
 
     template <class Context>
     void* raw_mutable_data() {
-        CHECK_NE(meta_.id(), 0) 
+        CHECK_NE(meta_.id(), 0)
             << "\nTensor(" << name_ << "): unknown type, "
             << "or does not have a type.";
         return raw_mutable_data<Context>(meta_);
     }
 
     template <class Context>
-    const void* raw_data() const { 
-        return const_data_ptr<Context>(); 
+    const void* raw_data() const {
+        return const_data_ptr<Context>();
     }
 
     template <typename T, class Context>
@@ -186,8 +186,8 @@ class Tensor {
     }
 
     template <typename T, class Context>
-    const T* data() const { 
-        return static_cast<const T*>(raw_data<Context>()); 
+    const T* data() const {
+        return static_cast<const T*>(raw_data<Context>());
     }
 
     inline void Share(const Tensor& other) {
@@ -198,7 +198,7 @@ class Tensor {
     }
 
     inline void Move(MixedMemory* mem) {
-        if (mem != nullptr) ex_memory_ = mem; 
+        if (mem != nullptr) ex_memory_ = mem;
         else ex_memory_ = new MixedMemory(TypeMeta::Make<float>(), 4);
         own_mem_ = false;
     }
@@ -215,7 +215,7 @@ class Tensor {
     TIndex size_ = 0, capacity_ = 0;
     TypeMeta meta_;
     string name_;
-    shared_ptr<MixedMemory> memory_;
+    shared_ptr<MixedMemory> memory_, host_memory_;
     MixedMemory* ex_memory_ = nullptr;
     bool is_corrupted_ = false, own_mem_ = true;
 };
