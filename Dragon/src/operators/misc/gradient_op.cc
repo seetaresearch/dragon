@@ -35,9 +35,11 @@ template <class Context> template <typename T>
 void GradientGatherOp<Context>::RunWithType() {
     auto* dXdata = output(0)->template mutable_data<T, Context>();
     TIndex count = output(0)->count();
-    for (int i = 1; i < indices.size(); i++) {
+    for (int i = 0; i < indices.size(); i++) {
         CHECK(output(0)->dims() == input(indices[i]).dims());
-        math::Add<T, Context>(count, dXdata, input(indices[i]).template data<T, Context>(), dXdata);
+        auto* dYdata = input(indices[i]).template data<T, Context>();
+        if (i == 0) ctx().template Copy<T, Context, Context>(count, dXdata, dYdata);
+        else math::Add<T, Context>(count, dXdata, dYdata, dXdata);
         input(indices[i]).Reset();
     }
 }
@@ -45,7 +47,7 @@ void GradientGatherOp<Context>::RunWithType() {
 template <class Context>
 void GradientGatherOp<Context>::RunOnDevice() {
     if (indices.size() == 0) return;
-    ws()->CreateAvatar(output(0), &input(indices[0]));
+    output(0)->ReshapeLike(input(indices[0]));
 
     if (input(indices[0]).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";

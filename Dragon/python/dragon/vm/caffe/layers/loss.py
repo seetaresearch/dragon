@@ -68,6 +68,7 @@ class SigmoidCrossEntropyLossLayer(Layer):
         super(SigmoidCrossEntropyLossLayer, self).Setup(bottom)
         loss = ops.SigmoidCrossEntropy(bottom, **self._param)
         if self._loss_weight is not None: loss *= self._loss_weight
+        return loss
 
 
 class L2LossLayer(Layer):

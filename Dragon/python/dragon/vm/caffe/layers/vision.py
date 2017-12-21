@@ -255,7 +255,7 @@ class NNResizeLayer(Layer):
         super(NNResizeLayer, self).__init__(LayerParameter)
         param = LayerParameter.resize_param
         dsize = [int(dim) for dim in param.shape.dim] \
-            if param.HasField('shape') else []
+            if param.HasField('shape') else None
         self._param = {'dsize': dsize,
                        'fx': float(param.fx),
                        'fy': float(param.fy),
@@ -287,7 +287,7 @@ class BilinearResizeLayer(Layer):
         super(BilinearResizeLayer, self).__init__(LayerParameter)
         param = LayerParameter.resize_param
         dsize = [int(dim) for dim in param.shape.dim] \
-            if param.HasField('shape') else []
+            if param.HasField('shape') else None
         self._param = {'dsize': dsize,
                        'fx': float(param.fx),
                        'fy': float(param.fy),

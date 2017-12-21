@@ -4,6 +4,10 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import math
 from six.moves import range as xrange
 
@@ -98,7 +102,7 @@ def Conv2d(inputs, num_output, kernel_size,
                 input_size = output.shape[i + spatial_axis]
                 output_size = (input_size + s - 1) / float(s)
                 dp = int(max(0, (output_size - 1) * s + k - input_size))
-            output.shape[i + spatial_axis] = (output.shape[i + spatial_axis] + dp - dk) / s + 1
+            output.shape[i + spatial_axis] = int(output.shape[i + spatial_axis] + dp - dk / s) + 1
 
     return output
 
@@ -289,13 +293,13 @@ def Pool2d(inputs, kernel_size, stride, pad=0, padding='VALID',
             if not global_pooling:
                 if padding != 'SAME':
                     input_size = output.shape[i + spatial_axis]
-                    output_size = int(math.ceil(float(output.shape[i + spatial_axis] + 2 * p - k) / s) + 1)
+                    output_size = int(math.ceil((output.shape[i + spatial_axis] + 2 * p - k) / s) + 1)
                     if ((output_size - 1) * s >= input_size + p):
                         output_size = output_size - 1
                     output.shape[i + spatial_axis] = output_size
                 else:
                     output.shape[i + spatial_axis] = \
-                        int((output.shape[i + spatial_axis] + s - 1) / float(s))
+                        int((output.shape[i + spatial_axis] + s - 1) / s)
             else:
                 output.shape[i + spatial_axis] = 1
 
