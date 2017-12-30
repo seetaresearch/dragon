@@ -553,6 +553,32 @@ class TileLayer(Layer):
         return ops.Tile(input, **self._param)
 
 
+class ReductionLayer(Layer):
+    """The extended implementation of ``ReductionLayer``.
+
+    Parameters
+    ----------
+    operation : caffe_pb2.ReductionOp
+        The operation. Refer `ReductionParameter.operation`_.
+    axis : int
+        The axis to to reduce. Refer `ReductionParameter.axis`_.
+
+    """
+    def __init__(self, LayerParameter):
+        super(ReductionLayer, self).__init__(LayerParameter)
+        param = LayerParameter.reduction_param
+        if param.axis < 0:
+            if param.axis != -1:
+                raise ValueError('The negative axis can only be -1(reduce all).')
+        self._param = {'operation': {1: 'SUM', 4: 'MEAN'}[param.operation],
+                       'axis': param.axis}
+
+    def Setup(self, bottom):
+        super(ReductionLayer, self).Setup(bottom)
+        input = bottom[0] if isinstance(bottom, list) else bottom
+        return ops.Reduce(input, **self._param)
+
+
 class ExpandDimsLayer(Layer):
     """The implementation of ``ExpandDimsLayer``.
 

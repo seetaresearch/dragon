@@ -279,6 +279,7 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
                     external_input_exprs = OrderedDict(external_input_exprs, **new_tensor.expressions)
                 else:
                     external_input_exprs = dict(external_input_exprs, **new_tensor.expressions)
+                    external_input_exprs = OrderedDict(sorted(external_input_exprs.items(), lambda x, y: cmp(x[1], y[1])))
             elif isinstance(new_tensor, np.ndarray):
                 ws.FeedTensor(new_tensor, GetTensorName())
         external_input_ops = [v for k, v in external_input_exprs.items()]

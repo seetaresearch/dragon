@@ -46,7 +46,9 @@ class CropGradientOp final : public Operator<Context > {
           start_axis(OperatorBase::GetSingleArg<int>("start_axis", -1)),
           offsets(OperatorBase::GetRepeatedArg<int>("offsets")),
           shape(OperatorBase::GetRepeatedArg<int>("shape")),
-          shape_like(OperatorBase::GetSingleArg<string>("shape_like", "")) {}
+          shape_like(OperatorBase::GetSingleArg<string>("shape_like", "")) {
+        DISABLE_SHARE_GRADIENT;
+    }
 
     void Setup();
     void RunOnDevice() override;

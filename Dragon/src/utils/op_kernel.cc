@@ -2640,7 +2640,8 @@ template<> void ROIAlign<float, CPUContext>(const float spatial_scale,
                                             const int pool_h, const int pool_w,
                                             Tensor* x,
                                             Tensor* roi,
-                                            Tensor* mask,
+                                            Tensor* mask_h,
+                                            Tensor* mask_w,
                                             Tensor* y) {
     NOT_IMPLEMENTED;
 }
@@ -2649,7 +2650,8 @@ template<> void ROIAlignGrad<float, CPUContext>(const float spatial_scale,
                                                 const int pool_h, const int pool_w,
                                                 Tensor* dy,
                                                 Tensor* roi,
-                                                Tensor* mask,
+                                                Tensor* mask_h,
+                                                Tensor* mask_w,
                                                 Tensor* dx) {
     NOT_IMPLEMENTED;
 }

@@ -44,6 +44,7 @@ class TileGradientOp : public Operator<Context> {
                 process_axes.push_back({ multiples[i], i });
         std::sort(process_axes.begin(), process_axes.end());
         std::reverse(process_axes.begin(), process_axes.end());
+        DISABLE_SHARE_GRADIENT;
     }
 
     void RunOnDevice() override;

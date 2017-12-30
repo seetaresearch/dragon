@@ -215,8 +215,13 @@ class Net(object):
             if len(LayerParameter.loss_weight) == 0:
                 LayerParameter.loss_weight.extend([1.0])
             for idx, loss_weight in enumerate(LayerParameter.loss_weight):
-                  if loss_weight <= 0: continue
-                  self._costs.append(self.blobs[LayerParameter.top[idx]].data)
+                if loss_weight <= 0: continue
+                self._costs.append(self.blobs[LayerParameter.top[idx]].data)
+        else:
+            if len(LayerParameter.loss_weight) != 0:
+                for idx, loss_weight in enumerate(LayerParameter.loss_weight):
+                    if loss_weight <= 0: continue
+                    self._costs.append(self.blobs[LayerParameter.top[idx]].data)
 
         if self._phase != 'TRAIN': return
 

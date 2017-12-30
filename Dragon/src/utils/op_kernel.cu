@@ -3937,7 +3937,8 @@ __global__ void _ROIAlign(const int count,
                           const int pool_h, const int pool_w, 
                           const T* x,
                           const T* roi,
-                          T* mask,
+                          T* mask_h,
+                          T* mask_w,
                           T* y) {
     CUDA_KERNEL_LOOP(idx, count) {
         int pw = idx % pool_w;
@@ -3970,18 +3971,17 @@ __global__ void _ROIAlign(const int count,
         bool is_empty = (hend <= hstart) || (wend <= wstart);
 
         T maxval = is_empty ? 0 : -FLT_MAX;
-        int maxidx = -1;
-        int x_idx = 0;
+        T max_h_idx = -1;
+        T max_w_idx = -1;
         x += (roi_batch_ind * channels + c) * height * width;
         T h_stride = (hend - hstart) / 3.0;
         T w_stride = (wend - wstart) / 3.0;
         for (T h = hstart + h_stride; h <= hend - h_stride + 0.01; h += max(h_stride, 0.01)) {
             for (T w = wstart + w_stride; w <= wend - w_stride + 0.01; w += max(w_stride, 0.01)) {
-                x_idx++;
                 int hlow = min(max(static_cast<int>(floor(h)), 0), height - 1);
-                int hhigh = min(hlow + 1, height - 1);
+                int hhigh = min(max(static_cast<int>(ceil(h)), 0), height - 1);
                 int wleft = min(max(static_cast<int>(floor(w)), 0), width - 1);
-                int wright = min(wleft + 1, width - 1);
+                int wright = min(max(static_cast<int>(ceil(w)), 0), width - 1);
                 int topleft = hlow * width + wleft;
                 int topright = hlow * width + wright;
                 int bottomleft = hhigh * width + wleft;
@@ -3994,12 +3994,14 @@ __global__ void _ROIAlign(const int count,
 
                 if (value > maxval) {
                     maxval = value;
-                    maxidx = x_idx;
+                    max_h_idx = h;
+                    max_w_idx = w;
                 }
             }
         }
         y[idx] = maxval;
-        mask[idx] = maxidx;
+        mask_h[idx] = max_h_idx;
+        mask_w[idx] = max_w_idx;
     }
 }
                                                   
@@ -4007,12 +4009,14 @@ template<> void ROIAlign<float, CUDAContext>(const float spatial_scale,
                                              const int pool_h, const int pool_w,
                                              Tensor* x,
                                              Tensor* roi,
-                                             Tensor* mask,
+                                             Tensor* mask_h,
+                                             Tensor* mask_w,
                                              Tensor* y) {
     auto* Xdata = x->data<float, CUDAContext>();
     auto* Rdata = roi->data<float, CUDAContext>();
     auto* Ydata = y->mutable_data<float, CUDAContext>();
-    auto* Mdata = mask->mutable_data<float, CUDAContext>();
+    auto* MHdata = mask_h->mutable_data<float, CUDAContext>();
+    auto* MWdata = mask_w->mutable_data<float, CUDAContext>();
     TIndex channels = x->dim(1), count = y->count();
     TIndex height = x->dim(2), width = x->dim(3);
     _ROIAlign<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
@@ -4022,7 +4026,8 @@ template<> void ROIAlign<float, CUDAContext>(const float spatial_scale,
                                                          pool_h, pool_w,
                                                                   Xdata,
                                                                   Rdata,
-                                                                  Mdata,
+                                                                 MHdata,
+                                                                 MWdata,
                                                                  Ydata);
     CUDA_POST_KERNEL_CHECK;
 }
@@ -4036,7 +4041,8 @@ __global__ void _ROIAlignGrad(const int count,
                               const int pool_h, const int pool_w, 
                               const T* dy,
                               const T* roi,
-                              const T* mask,
+                              const T* mask_h,
+                              const T* mask_w,
                               T* dx) {
     CUDA_KERNEL_LOOP(idx, count) {
         int w = idx % width;
@@ -4063,53 +4069,28 @@ __global__ void _ROIAlignGrad(const int count,
 
             int offset = (roi_n * channels + c) * pool_h * pool_w;
             const T* offset_dy = dy + offset;
-            const T* offset_mask = mask + offset;
+            const T* offset_mask_h = mask_h + offset;
+            const T* offset_mask_w = mask_w + offset;
 
             T roi_width = max(roi_end_w - roi_start_w, static_cast<T>(1));
             T roi_height = max(roi_end_h - roi_start_h, static_cast<T>(1));
 
-            T bin_size_h = static_cast<T>(roi_height) / static_cast<T>(pool_h);
-            T bin_size_w = static_cast<T>(roi_width) / static_cast<T>(pool_w);
-
             for (int ph = 0; ph < pool_h; ++ph) {
                 for (int pw = 0; pw < pool_w; ++pw) {
-                    T hstart = static_cast<T>((ph)* bin_size_h);
-                    T wstart = static_cast<T>((pw)* bin_size_w);
-                    T hend = static_cast<T>((ph + 1) * bin_size_h);
-                    T wend = static_cast<T>((pw + 1) * bin_size_w);
-
-                    hstart = min(max(hstart + roi_start_h, static_cast<T>(0)), static_cast<T>(height));
-                    hend = min(max(hend + roi_start_h, static_cast<T>(0)), static_cast<T>(height));
-                    wstart = min(max(wstart + roi_start_w, static_cast<T>(0)), static_cast<T>(width));
-                    wend = min(max(wend + roi_start_w, static_cast<T>(0)), static_cast<T>(width));
-
-                    bool in_bin = (w > wstart - 1.0 && 
-                                   w < wend + 1.0 && 
-                                   h > hstart - 1.0 
-                                   && h < hend + 1.0);
-                    if (!in_bin) continue;
-
                     const int pool_idx = ph * pool_w + pw;
-                    int x_idx = 0;
-                    T h_stride = (hend - hstart) / 3.0;
-                    T w_stride = (wend - wstart) / 3.0;
-                    for (T rh = hstart + h_stride; rh <= hend - h_stride + 0.01; rh += max(h_stride, 0.01)) {
-                        for (T rw = wstart + w_stride; rw <= wend - w_stride + 0.01; rw += max(w_stride, 0.01)) {
-                            x_idx++;
-                            if (offset_mask[pool_idx] != x_idx) continue;
-                            int hlow = min(max(static_cast<int>(floor(rh)), 0), height - 1);
-                            int hhigh = min(hlow + 1, height - 1);
-                            int wleft = min(max(static_cast<int>(floor(rw)), 0), width - 1);
-                            int wright = min(wleft + 1, width - 1);
-                            if (h != hlow && h != hhigh && w != wleft && w != wright) continue;
-                            T alpha = (hlow == hhigh) ? static_cast<T>(0.5) : (rh - hlow) / (hhigh - hlow);
-                            T beta = (wleft == wright) ? static_cast<T>(0.5) : (rw - wleft) / (wright - wleft);
-                            if (h == hlow && w == wleft) gradient += offset_dy[pool_idx] * (1 - alpha) * (1 - beta);
-                            else if (h == hlow && w == wright) gradient += offset_dy[pool_idx] * (1 - alpha) * beta;
-                            else if (h == hhigh && w == wleft) gradient += offset_dy[pool_idx] * alpha * (1 - beta);
-                            else if (h == hhigh && w == wright) gradient += offset_dy[pool_idx] * alpha * beta;
-                        }
-                    }
+                    T a_h = offset_mask_h[pool_idx];
+                    T a_w = offset_mask_w[pool_idx];
+                    int hlow = min(max(static_cast<int>(floor(a_h)), 0), height - 1);
+                    int hhigh = min(max(static_cast<int>(ceil(a_h)), 0), height - 1);
+                    int wleft = min(max(static_cast<int>(floor(a_w)), 0), width - 1);
+                    int wright = min(max(static_cast<int>(ceil(a_w)), 0), width - 1);
+                    if (h != hlow && h != hhigh && w != wleft && w != wright) continue;
+                    T alpha = (hlow == hhigh) ? static_cast<T>(0.5) : (a_h - hlow) / (hhigh - hlow);
+                    T beta = (wleft == wright) ? static_cast<T>(0.5) : (a_w - wleft) / (wright - wleft);
+                    if (h == hlow && w == wleft) gradient += offset_dy[pool_idx] * (1 - alpha) * (1 - beta);
+                    else if (h == hlow && w == wright) gradient += offset_dy[pool_idx] * (1 - alpha) * beta;
+                    else if (h == hhigh && w == wleft) gradient += offset_dy[pool_idx] * alpha * (1 - beta);
+                    else if (h == hhigh && w == wright) gradient += offset_dy[pool_idx] * alpha * beta;
                 }
             }
         }
@@ -4121,11 +4102,13 @@ template<> void ROIAlignGrad<float, CUDAContext>(const float spatial_scale,
                                                  const int pool_h, const int pool_w,
                                                  Tensor* dy,
                                                  Tensor* roi,
-                                                 Tensor* mask,
+                                                 Tensor* mask_h,
+                                                 Tensor* mask_w,
                                                  Tensor* dx) {
     auto* dYdata = dy->data<float, CUDAContext>();
     auto* Rdata = roi->data<float, CUDAContext>();
-    auto* Mdata = mask->data<float, CUDAContext>();
+    auto* MHdata = mask_h->data<float, CUDAContext>();
+    auto* MWdata = mask_w->data<float, CUDAContext>();
     auto* dXdata = dx->mutable_data<float, CUDAContext>();
     TIndex channels = dx->dim(1), count = dx->count();
     TIndex height = dx->dim(2), width = dx->dim(3);
@@ -4137,7 +4120,8 @@ template<> void ROIAlignGrad<float, CUDAContext>(const float spatial_scale,
                                                              pool_h, pool_w,
                                                                      dYdata,
                                                                       Rdata,
-                                                                      Mdata,
+                                                                     MHdata,
+                                                                     MWdata,
                                                                     dXdata);
     CUDA_POST_KERNEL_CHECK;
 }

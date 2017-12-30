@@ -34,7 +34,9 @@ class RandomPickGradientOp final : public Operator<Context> {
 public:
     RandomPickGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-        axis(OperatorBase::GetSingleArg<int>("axis", 0)) {}
+        axis(OperatorBase::GetSingleArg<int>("axis", 0)) {
+        DISABLE_SHARE_GRADIENT;
+    }
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

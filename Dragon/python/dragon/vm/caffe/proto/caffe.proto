@@ -473,6 +473,8 @@ message LossParameter {
     BATCH_SIZE = 2;
     // Do not normalize the loss.
     NONE = 3;
+    // Do not reduce the loss.
+    UNIT = 4;
   }
   optional NormalizationMode normalization = 3 [default = VALID];
   // Deprecated.  Ignored if normalization is specified.  If normalization

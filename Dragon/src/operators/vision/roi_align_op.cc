@@ -11,17 +11,20 @@ void ROIAlignOp<Context>::RunWithType() {
                                 pool_h, pool_w,
                                      &input(0),
                                      &input(1),
-                                          mask,
+                                        mask_h,
+                                        mask_w,
                                     output(0));
 }
 
 template <class Context>
 void ROIAlignOp<Context>::RunOnDevice() {
-    mask = ws()->CreateTensor("/mnt/" + anchor() + "/roi_align_mask");
+    mask_h = ws()->CreateTensor("/mnt/" + anchor() + "/roi_align_mask_h");
+    mask_w = ws()->CreateTensor("/mnt/" + anchor() + "/roi_align_mask_w");
     vector<TIndex> dims({input(1).dim(0), input(0).dim(1), pool_h, pool_w});
 
     output(0)->Reshape(dims);
-    mask->Reshape(dims);
+    mask_h->Reshape(dims);
+    mask_w->Reshape(dims);
 
     if (input(0).template IsType<float>()) return RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
@@ -39,13 +42,15 @@ void ROIAlignGradientOp<Context>::RunWithType() {
                                     pool_h, pool_w,
                                         &input(-1),
                                          &input(1),
-                                              mask,
+                                            mask_h,
+                                            mask_w,
                                         output(0));
 }
 
 template <class Context>
 void ROIAlignGradientOp<Context>::RunOnDevice() {
-    mask = ws()->GetTensor("/mnt/" + anchor() + "/roi_align_mask");
+    mask_h = ws()->GetTensor("/mnt/" + anchor() + "/roi_align_mask_h");
+    mask_w = ws()->GetTensor("/mnt/" + anchor() + "/roi_align_mask_w");
 
     output(0)->ReshapeLike(input(0));
 

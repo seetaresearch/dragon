@@ -104,17 +104,6 @@ void ConcatGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << "Unsupported input types.";
 }
 
-template <class Context>
-void ConcatGradientOp<Context>::ShareGradient() {
-    for (int i = 0; i < OutputSize(); i++) {
-        if (output(i)->name() != "ignore") {
-            Tensor* dX = ws()->GetBuffer("Grad");
-            ws()->CreateAvatar(output(i), dX);
-            break;
-        }
-    }
-}
-
 DEPLOY_CPU(ConcatGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(ConcatGradient);

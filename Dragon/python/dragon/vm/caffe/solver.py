@@ -296,7 +296,10 @@ class Solver(object):
             for i in xrange(self._param.iter_size):
                 self.train(return_outputs=False)
                 if root_solver():
-                    for cost in self._net._costs: loss += ws.FetchTensor(cost)[0]
+                    for cost in self._net._costs:
+                        cost_value = ws.FetchTensor(cost)
+                        if cost_value.size == 1:
+                            loss += cost_value[0]
 
             if root_solver():
                 loss /= self._param.iter_size

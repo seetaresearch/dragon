@@ -63,6 +63,7 @@ class PadGradientOp final : public Operator<Context> {
         }
         std::sort(process_axes.begin(), process_axes.end());
         std::reverse(process_axes.begin(), process_axes.end());
+        DISABLE_SHARE_GRADIENT;
     }
 
     void RunOnDevice() override;

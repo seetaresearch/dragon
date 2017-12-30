@@ -27,7 +27,7 @@ class SoftmaxWithLossLayer(Layer):
         super(SoftmaxWithLossLayer, self).__init__(LayerParameter)
         param = LayerParameter.loss_param
         softmax_param = LayerParameter.softmax_param
-        norm_mode = {0: 'FULL', 1: 'VALID', 2: 'BATCH_SIZE', 3: 'NONE'}
+        norm_mode = {0: 'FULL', 1: 'VALID', 2: 'BATCH_SIZE', 3: 'NONE', 4: 'UNIT'}
         normalization = 'VALID'
         if param.HasField('normalize'):
             if not param.normalize: normalization = 'BATCH_SIZE'
@@ -57,7 +57,7 @@ class SigmoidCrossEntropyLossLayer(Layer):
     def __init__(self, LayerParameter):
         super(SigmoidCrossEntropyLossLayer, self).__init__(LayerParameter)
         param = LayerParameter.loss_param
-        norm_mode = {0: 'FULL', 1: 'BATCH_SIZE', 2: 'BATCH_SIZE', 3: 'NONE'}
+        norm_mode = {0: 'FULL', 1: 'BATCH_SIZE', 2: 'BATCH_SIZE', 3: 'NONE', 4: 'UNIT'}
         normalization = 'BATCH_SIZE'
         if param.HasField('normalize'):
             if param.normalize: normalization = 'FULL'
@@ -157,7 +157,7 @@ class SoftmaxWithFocalLossLayer(Layer):
         param = LayerParameter.loss_param
         softmax_param = LayerParameter.softmax_param
         focal_loss_param = LayerParameter.focal_loss_param
-        norm_mode = {0: 'FULL', 1: 'VALID', 2: 'BATCH_SIZE', 3: 'NONE'}
+        norm_mode = {0: 'FULL', 1: 'VALID', 2: 'BATCH_SIZE', 3: 'NONE', 4: 'UNIT'}
         normalization = 'VALID'
         if param.HasField('normalize'):
             if not param.normalize: normalization = 'BATCH_SIZE'

@@ -31,12 +31,13 @@ class ConcatOp : public Operator<Context> {
 template <class Context>
 class ConcatGradientOp : public Operator<Context> {
  public:
-    ConcatGradientOp(const OperatorDef& op_def, Workspace* ws) 
+    ConcatGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", 1)),
-          nin(OperatorBase::GetSingleArg<int>("num_input", 1)) {}
+          nin(OperatorBase::GetSingleArg<int>("num_input", 1)) {
+        DISABLE_SHARE_GRADIENT;
+    }
 
-    void ShareGradient() override;
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 

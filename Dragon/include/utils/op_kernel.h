@@ -813,7 +813,8 @@ void ROIAlign(const float spatial_scale,
               const int pool_w,
               Tensor* x,
               Tensor* roi,
-              Tensor* mask,
+              Tensor* mask_h,
+              Tensor* mask_w,
               Tensor* y);
 
 template <typename T, class Context>
@@ -822,7 +823,8 @@ void ROIAlignGrad(const float spatial_scale,
                   const int pool_w,
                   Tensor* dy,
                   Tensor* roi,
-                  Tensor* mask,
+                  Tensor* mask_h,
+                  Tensor* mask_w,
                   Tensor* dx);
 
 }    // namespace kernel

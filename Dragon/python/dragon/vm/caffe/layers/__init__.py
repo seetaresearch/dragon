@@ -21,6 +21,7 @@ from .neuron import ReLULayer, \
                     ELULayer, \
                     SELULayer, \
                     DropoutLayer, \
+                    SigmoidLayer, \
                     TanHLayer, \
                     PowerLayer
 
@@ -53,6 +54,7 @@ from .common import InnerProductLayer, \
                     NormalizeLayer, \
                     InstanceNormLayer, \
                     TileLayer, \
+                    ReductionLayer, \
                     ExpandDimsLayer, \
                     ProposalLayer, \
                     DenseConcatLayer

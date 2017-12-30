@@ -29,7 +29,7 @@ class ROIAlignOp : public Operator<Context> {
  protected:
     int pool_h, pool_w;
     float spatial_scale;
-    Tensor* mask;
+    Tensor* mask_h, *mask_w;
 };
 
 template <class Context>
@@ -50,7 +50,7 @@ class ROIAlignGradientOp : public Operator<Context> {
  protected:
     int pool_h, pool_w;
     float spatial_scale;
-    Tensor* mask;
+    Tensor* mask_h, *mask_w;
 };
 
 }    // namespace dragon
