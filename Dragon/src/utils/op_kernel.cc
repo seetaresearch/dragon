@@ -904,22 +904,23 @@ template<> void Argmin<float, CPUContext>(const int count,
 
 /******************** ndarray.at ********************/
 
-template <> void CanonicalAxis<float, CPUContext>(const int count, const int dim, float* y) {
+template <> void CanonicalAxis<int, CPUContext>(const int count, const int dim, int* y) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) if (y[i] < 0) y[i] += dim;
 }
 
-template <> void At<float, CPUContext>(const int count, 
-                                       const int outer_dim, 
-                                       const int inner_dim,
-                                       const int x_slice_dim, 
-                                       const int y_slice_dim, 
-                                       const float* indices,
-                                       const float* x, 
-                                       float* y, 
-                                       CPUContext* context) {
+template <typename T>
+void _At(const int count,
+         const int outer_dim,
+         const int inner_dim,
+         const int x_slice_dim,
+         const int y_slice_dim,
+         const int* indices,
+         const T* x,
+         T* y,
+         CPUContext* ctx) {
     TIndex x_offset, y_offset, x_idx_offset, y_idx_offset;
     for (int i = 0; i < y_slice_dim; ++i) {
         y_idx_offset = i;
@@ -927,22 +928,51 @@ template <> void At<float, CPUContext>(const int count,
         for (int n = 0; n < outer_dim; ++n) {
             x_offset = (n * x_slice_dim + x_idx_offset) * inner_dim;
             y_offset = (n * y_slice_dim + y_idx_offset) * inner_dim;
-            context->Copy<float, CPUContext, CPUContext>(inner_dim,
-                                                         y + y_offset,
-                                                         x + x_offset);
+            ctx->Copy<T, CPUContext, CPUContext>(inner_dim,
+                                                 y + y_offset,
+                                                 x + x_offset);
         }
     }
 }
 
-template <> void AtGrad<float, CPUContext>(const int count, 
-                                           const int outer_dim,
-                                           const int inner_dim,
-                                           const int x_slice_dim, 
-                                           const int y_slice_dim, 
-                                           const float* indices,
-                                           const float* dy, 
-                                           float* dx, 
-                                           CPUContext* context) {
+template <> void At<float, CPUContext>(const int count,
+                                       const int outer_dim,
+                                       const int inner_dim,
+                                       const int x_slice_dim,
+                                       const int y_slice_dim,
+                                       const int* indices,
+                                       const float* x,
+                                       float* y,
+                                       CPUContext* ctx) {
+    _At<float>(count, outer_dim, inner_dim,
+                  x_slice_dim, y_slice_dim,
+                       indices, x, y, ctx);
+    
+}
+
+template <> void At<int, CPUContext>(const int count,
+                                     const int outer_dim,
+                                     const int inner_dim,
+                                     const int x_slice_dim,
+                                     const int y_slice_dim,
+                                     const int* indices,
+                                     const int* x,
+                                     int* y,
+                                     CPUContext* ctx) {
+    _At<int>(count, outer_dim, inner_dim,
+                x_slice_dim, y_slice_dim,
+                     indices, x, y, ctx);
+}
+
+template <typename T>
+void _AtGrad(const int count,
+             const int outer_dim,
+             const int inner_dim,
+             const int x_slice_dim,
+             const int y_slice_dim,
+             const int* indices,
+             const T* dy,
+             T* dx) {
     TIndex x_offset, y_offset, x_idx_offset, y_idx_offset;
     for (int i = 0; i < y_slice_dim; ++i) {
         y_idx_offset = i;
@@ -950,12 +980,38 @@ template <> void AtGrad<float, CPUContext>(const int count,
         for (int n = 0; n < outer_dim; ++n) {
             x_offset = (n * x_slice_dim + x_idx_offset) * inner_dim;
             y_offset = (n * y_slice_dim + y_idx_offset) * inner_dim;
-            math::Add<float, CPUContext>(inner_dim,
-                                         dy + y_offset,
-                                         dx + x_offset,
-                                         dx + x_offset);
+            math::Add<T, CPUContext>(inner_dim,
+                                     dy + y_offset,
+                                     dx + x_offset,
+                                     dx + x_offset);
         }
     }
+}
+
+template <> void AtGrad<float, CPUContext>(const int count,
+                                           const int outer_dim,
+                                           const int inner_dim,
+                                           const int x_slice_dim,
+                                           const int y_slice_dim,
+                                           const int* indices,
+                                           const float* dy,
+                                           float* dx) {
+    _AtGrad<float>(count, outer_dim, inner_dim,
+                      x_slice_dim, y_slice_dim,
+                              indices, dy, dx);
+}
+
+template <> void AtGrad<int, CPUContext>(const int count,
+                                         const int outer_dim,
+                                         const int inner_dim,
+                                         const int x_slice_dim,
+                                         const int y_slice_dim,
+                                         const int* indices,
+                                         const int* dy,
+                                         int* dx) {
+    _AtGrad<int>(count, outer_dim, inner_dim,
+                    x_slice_dim, y_slice_dim,
+                            indices, dy, dx);
 }
 
 /******************** ndarray.concat ********************/

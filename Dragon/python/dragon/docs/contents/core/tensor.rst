@@ -13,12 +13,14 @@ List                              Brief
 ==============================    =============================================================================
 `Tensor.name`_                    Return or Set the name.
 `Tensor.shape`_                   Return or Set the shape.
+`Tensor.get_shape`_               Return the shape.
 `Tensor.dtype`_                   Return or Set the data type.
 `Tensor.set_value`_               Feed the values to C++ backend.
 `Tensor.get_value`_               Fetch the values from C++ backend.
 `Tensor.copy`_                    Return a Tensor with same content.
 `Tensor.reshape`_                 Reshape the dimensions of input.
 `Tensor.dimshuffle`_              Shuffle the dimensions.
+`Tensor.eval`_                    Run and return the computing results of this tensor.
 `Tensor.CreateOperator`_          Construct a new Tensor with specific operator descriptor.
 `Tensor.Fill`_                    Fill self with the specific type of filler.
 `Tensor.PrintExpressions`_        Return the stringified internal expressions.
@@ -102,12 +104,14 @@ API Reference
 
 .. _Tensor.name: #dragon.core.tensor.Tensor.name
 .. _Tensor.shape: #dragon.core.tensor.Tensor.shape
+.. _Tensor.get_shape: #dragon.core.tensor.Tensor.get_shape
 .. _Tensor.dtype: #dragon.core.tensor.Tensor.dtype
 .. _Tensor.set_value: #dragon.core.tensor.Tensor.set_value
 .. _Tensor.get_value: #dragon.core.tensor.Tensor.get_value
 .. _Tensor.copy: #dragon.core.tensor.Tensor.copy
 .. _Tensor.reshape: #dragon.core.tensor.Tensor.reshape
 .. _Tensor.dimshuffle: #dragon.core.tensor.Tensor.dimshuffle
+.. _Tensor.eval: #dragon.core.tensor.Tensor.eval
 .. _Tensor.CreateOperator: #dragon.core.tensor.Tensor.CreateOperator
 .. _Tensor.Fill: #dragon.core.tensor.Tensor.Fill
 .. _Tensor.PrintExpressions: #dragon.core.tensor.Tensor.PrintExpressions

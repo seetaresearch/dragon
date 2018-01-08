@@ -173,52 +173,6 @@ void CuDNNBatchNormGradientOp<Context>::Setup() {
 }
 
 template <class Context> template <typename T>
-void CuDNNBatchNormGradientOp<Context>::InferenceRunWithType() {
-    if (output(0)->name() != "ignore") {
-        INIT_MULTIPLIER(multiplier, NS);
-        INIT_MULTIPLIER(num_multiplier, N);
-        INIT_MULTIPLIER(spatial_multiplier, S);
-        stddev = ws()->GetBuffer();
-        stddev->ReshapeLike(input(0));
-
-        auto* dYdata = input(-1).template data<T, Context>();
-        auto* dXdata = output(0)->template mutable_data<T, Context>();
-        auto* Std_data = stddev->template mutable_data<T, Context>();
-        auto* Sdata = input(3).template data<T, Context>();
-        auto* hVar_data = input(2).template data<T, Context>();
-        auto* tVar_data = var->template mutable_data<T, Context>();
-        auto* NSMul_data = multiplier->template data<T, Context>();
-        auto* SMul_data = spatial_multiplier->template data<T, Context>();
-        auto* NMul_data = num_multiplier->template data<T, Context>();
-        auto* NC_data = num_by_chans.template mutable_data<T, Context>();
-
-        //  compute stddev
-        ctx().template Copy<T, Context, Context>(var->count(), tVar_data, hVar_data);
-        math::AddScalar<T, Context>(var->count(), this->eps, tVar_data);
-        math::Sqrt<T, Context>(var->count(), tVar_data, tVar_data);
-
-        //  divide scale by stddev
-        math::Div<T, Context>(var->count(), Sdata, tVar_data, tVar_data);
-
-        //  compute dE/dY \cot (scale / std(X))
-        if (data_format == "NCHW") {
-            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, N, C, 1,
-                                             1.0, NMul_data, tVar_data,
-                                                         0.0, NC_data);
-            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                                1.0, NC_data, SMul_data,
-                                                         0.0, Std_data);
-        } else if (data_format == "NHWC") {
-            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NS, C, 1,
-                                             1.0, NSMul_data, tVar_data,
-                                                         0.0, Std_data);
-        }
-        math::Mul<T, Context>(output(0)->count(), dYdata, Std_data, dXdata);
-        ws()->ReleaseBuffer(stddev);
-    }
-}
-
-template <class Context> template <typename T>
 void CuDNNBatchNormGradientOp<Context>::TrainingRunWithType() {
     //  determine the bn desc
     if (input(0).ndim() == 2) {
@@ -285,6 +239,52 @@ void CuDNNBatchNormGradientOp<Context>::TrainingRunWithType() {
                                                          this->eps,
                                                         tMean_data,
                                                        tVar_data));
+    }
+}
+
+template <class Context> template <typename T>
+void CuDNNBatchNormGradientOp<Context>::InferenceRunWithType() {
+    if (output(0)->name() != "ignore") {
+        INIT_MULTIPLIER(multiplier, NS);
+        INIT_MULTIPLIER(num_multiplier, N);
+        INIT_MULTIPLIER(spatial_multiplier, S);
+        stddev = ws()->GetBuffer();
+        stddev->ReshapeLike(input(0));
+
+        auto* dYdata = input(-1).template data<T, Context>();
+        auto* dXdata = output(0)->template mutable_data<T, Context>();
+        auto* Std_data = stddev->template mutable_data<T, Context>();
+        auto* Sdata = input(3).template data<T, Context>();
+        auto* hVar_data = input(2).template data<T, Context>();
+        auto* tVar_data = var->template mutable_data<T, Context>();
+        auto* NSMul_data = multiplier->template data<T, Context>();
+        auto* SMul_data = spatial_multiplier->template data<T, Context>();
+        auto* NMul_data = num_multiplier->template data<T, Context>();
+        auto* NC_data = num_by_chans.template mutable_data<T, Context>();
+
+        //  compute stddev
+        ctx().template Copy<T, Context, Context>(var->count(), tVar_data, hVar_data);
+        math::AddScalar<T, Context>(var->count(), this->eps, tVar_data);
+        math::Sqrt<T, Context>(var->count(), tVar_data, tVar_data);
+
+        //  divide scale by stddev
+        math::Div<T, Context>(var->count(), Sdata, tVar_data, tVar_data);
+
+        //  compute dE/dY \cot (scale / std(X))
+        if (data_format == "NCHW") {
+            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, N, C, 1,
+                                             1.0, NMul_data, tVar_data,
+                                                         0.0, NC_data);
+            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
+                                                1.0, NC_data, SMul_data,
+                                                         0.0, Std_data);
+        } else if (data_format == "NHWC") {
+            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NS, C, 1,
+                                             1.0, NSMul_data, tVar_data,
+                                                         0.0, Std_data);
+        }
+        math::Mul<T, Context>(output(0)->count(), dYdata, Std_data, dXdata);
+        ws()->ReleaseBuffer(stddev);
     }
 }
 

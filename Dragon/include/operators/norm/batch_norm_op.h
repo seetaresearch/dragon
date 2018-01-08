@@ -81,13 +81,17 @@ class FusedBatchNormOp : public Operator<Context> {
           eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {}
 
-    void Setup() { NOT_IMPLEMENTED; }
+    void Setup();
 
-    void RunOnDevice() override { NOT_IMPLEMENTED; }
-    template <typename T> void RunWithType() { NOT_IMPLEMENTED; }
+    void RunOnDevice() override;
+    template <typename T> void TrainingRunWithType();
+    template <typename T> void InferenceRunWithType();
 
  protected:
     float momentum, eps;
+    Tensor num_by_chans;
+    Tensor* multiplier, *num_multiplier, *spatial_multiplier;
+    Tensor* mean, *var, *stddev, *x_norm;
     TIndex axis, N, C, S, NC, NS;
     string data_format;
     int use_stats;
@@ -103,15 +107,19 @@ class FusedBatchNormGradientOp : public Operator<Context> {
           eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) { }
 
-    void Setup() { NOT_IMPLEMENTED; }
+    void Setup();
 
     void ShareGradient() override;
 
-    void RunOnDevice() override { NOT_IMPLEMENTED; }
-    template <typename T> void RunWithType() { NOT_IMPLEMENTED; }
+    void RunOnDevice() override;
+    template <typename T> void TrainingRunWithType();
+    template <typename T> void InferenceRunWithType();
 
  protected:
     float eps;
+    Tensor num_by_chans;
+    Tensor* multiplier, *num_multiplier, *spatial_multiplier;
+    Tensor* mean, *var, *stddev, *x_norm;
     TIndex axis, N, C, S, NC, NS;
     string data_format;
     int use_stats;

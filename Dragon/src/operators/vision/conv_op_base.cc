@@ -29,15 +29,14 @@ void ConvOpBase<Context>::ComputeOutputShape() {
                 const TIndex output_dim = stride[i] * (input_dim - 1) + dilated_kernel - 2 * pad[i];
                 output_shape.push_back(output_dim);
             } else {
-                TIndex output_dim = -1;
-                if (dynamic_dsize.size() > 0) {
-                    NOT_IMPLEMENTED;
-                } else if (static_dsize.size() > 0) {
-                    if ((int)static_dsize.size() != num_spatial_axes + 2)
-                        LOG(FATAL) << "The len of output shape should be " << num_spatial_axes + 2
-                                   << ", but got " << static_dsize.size();
-                    output_dim = static_dsize[spatial_axis + i];
-                } else LOG(FATAL) << "The output shape must be specified if using SAME padding algorithm.";
+                CHECK(output_dims_desc.size() > 0) 
+                    << "\nThe output shape must be specified if using SAME padding algorithm.";
+                CHECK_EQ((int)output_dims_desc.size(), num_spatial_axes + 2)
+                    << "\nThe len of output shape should be " << num_spatial_axes + 2
+                    << ", but got " << output_dims_desc.size() << ".";
+                Tensor* t = ws()->GetTensor(output_dims_desc[spatial_axis + i]);
+                CHECK(t->IsType<int>()) << "\nThe type of output shape should be int32.";
+                TIndex output_dim = t->template data<int, CPUContext>()[0];
                 TIndex padding_needed = stride[i] * (input_dim - 1) + dilated_kernel - output_dim;
                 CHECK_GE(padding_needed, 0)
                     << "\nThe output shape is incorrect."

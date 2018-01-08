@@ -136,8 +136,8 @@ template <> void RandomBernoulli<float, CPUContext>(const int n,
 
 /******************** Level-1 ********************/
 
-template <> void Add<float, CPUContext>(const int n, 
-                                        const float* a, 
+template <> void Add<float, CPUContext>(const int n,
+                                        const float* a,
                                         const float* b,
                                         float* y) {
 #ifdef WITH_SSE
@@ -148,6 +148,16 @@ template <> void Add<float, CPUContext>(const int n,
 #endif
     for (int i = 0; i < n; ++i) y[i] = a[i] + b[i];
 #endif  // WITH_SSE
+}
+
+template <> void Add<int, CPUContext>(const int n,
+                                      const int* a,
+                                      const int* b,
+                                      int* y) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
+#endif
+    for (int i = 0; i < n; ++i) y[i] = a[i] + b[i];
 }
 
 template <> void Sub<float, CPUContext>(const int n, 

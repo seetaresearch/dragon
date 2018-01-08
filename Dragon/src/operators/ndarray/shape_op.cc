@@ -8,7 +8,7 @@ void ShapeOp<Context>::RunOnDevice() {
     output(0)->Reshape(vector<TIndex>(1, input(0).ndim()));
 
     //  forward
-    auto* Ydata = output(0)->template mutable_data<float, CPUContext>();
+    auto* Ydata = output(0)->template mutable_data<int, CPUContext>();
     for (int i = 0; i < input(0).ndim(); i++) Ydata[i] = input(0).dim(i);
 }
 

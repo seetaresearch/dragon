@@ -16,19 +16,13 @@ class TileOp : public Operator<Context> {
  public:
     TileOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws), 
-          multiples(OperatorBase::GetRepeatedArg<int>("multiples")) {
-        for (int i = 0; i < multiples.size(); i++)
-            if (multiples[i] > 1) 
-                process_axes.push_back({ multiples[i], i });
-        std::sort(process_axes.begin(), process_axes.end());
-    }
+          multiples_desc(OperatorBase::GetRepeatedArg<string>("multiples")) {}
 
     void RunOnDevice() override;
     template<typename T> void TileRunWithType();
 
  protected:
-    vector<int> multiples;
-    vector< pair<int, int> > process_axes;
+    vector<string> multiples_desc;
     TIndex axis, multiple, outer_dim, ex_inner_dim;
     Tensor* dest, *source;
 };
@@ -38,12 +32,7 @@ class TileGradientOp : public Operator<Context> {
  public:
     TileGradientOp(const OperatorDef& op_def, Workspace* ws) 
         : Operator<Context>(op_def, ws),
-          multiples(OperatorBase::GetRepeatedArg<int>("multiples")) {
-        for (int i = 0; i < multiples.size(); i++)
-            if (multiples[i] > 1)
-                process_axes.push_back({ multiples[i], i });
-        std::sort(process_axes.begin(), process_axes.end());
-        std::reverse(process_axes.begin(), process_axes.end());
+        multiples_desc(OperatorBase::GetRepeatedArg<string>("multiples")) {
         DISABLE_SHARE_GRADIENT;
     }
 
@@ -51,8 +40,7 @@ class TileGradientOp : public Operator<Context> {
     template<typename T> void TileRunWithType();
 
  protected:
-    vector<int> multiples;
-    vector< pair<int, int> > process_axes;
+    vector<string> multiples_desc;
     TIndex axis, multiple, outer_dim, ex_inner_dim;
     Tensor* dest, *source;
 };

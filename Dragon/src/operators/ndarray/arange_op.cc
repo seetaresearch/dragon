@@ -6,43 +6,24 @@ namespace dragon {
 
 template <class Context>
 void ArangeOp<Context>::Reshape() {
-    if (!dynamic_start_.empty()) {
-        dynamic_start = ws()->GetTensor(dynamic_start_);
-        CHECK_EQ(dynamic_start->count(), 1)
-            << "The start should be a scalar";
-        if (dynamic_start->IsType<int>()) {
-            start = dynamic_start->template data<int, CPUContext>()[0];
-        } else if (dynamic_start->IsType<float>()) {
-            start = dynamic_start->template data<float, CPUContext>()[0];
-        } else {
-            LOG(FATAL) << "Unsupported types of start.";
-        }
-    }
-    if (!dynamic_stop_.empty()) {
-        dynamic_stop = ws()->GetTensor(dynamic_stop_);
-        CHECK_EQ(dynamic_stop->count(), 1)
-            << "The stop should be a scalar";
-        if (dynamic_stop->IsType<int>()) {
-            stop = dynamic_stop->template data<int, CPUContext>()[0];
-        } else if (dynamic_stop->IsType<float>()) {
-            stop = dynamic_stop->template data<float, CPUContext>()[0];
-        } else {
-            LOG(FATAL) << "Unsupported types of stop.";
-        }
-    }
-    if (!dynamic_step_.empty()) {
-        dynamic_step = ws()->GetTensor(dynamic_step_);
-        CHECK_EQ(dynamic_step->count(), 1)
-            << "The step should be a scalar";
-        if (dynamic_step->IsType<int>()) {
-            step = dynamic_step->template data<int, CPUContext>()[0];
-        } else if (dynamic_step->IsType<float>()) {
-            step = dynamic_step->template data<float, CPUContext>()[0];
-        } else {
-            LOG(FATAL) << "Unsupported types of step.";
-        }
-    }
-    if (stop == -1) { stop = start; start = 0; }
+    //  parse start & step & stop
+    Tensor* t = ws()->GetTensor(start_desc);
+    CHECK_EQ(t->count(), 1) << "\nThe start should be a scalar";
+    CHECK(t->IsType<int>()) << "\nThe type of start should be int32.";
+    start = t->template data<int, CPUContext>()[0];
+
+    t = ws()->GetTensor(step_desc);
+    CHECK_EQ(t->count(), 1) << "\nThe step should be a scalar";
+    CHECK(t->IsType<int>()) << "\nThe type of step should be int32.";
+    step = t->template data<int, CPUContext>()[0];
+
+    if (!stop_desc.empty()) {
+        t = ws()->GetTensor(stop_desc);
+        CHECK_EQ(t->count(), 1) << "\nThe stop should be a scalar";
+        CHECK(t->IsType<int>()) << "\nThe type of stop should be int32.";
+        stop = t->template data<int, CPUContext>()[0];
+    } else { stop = start; start = 0; }
+
     count = (stop - start - 1) / step + 1;
     output(0)->Reshape(vector<TIndex>(1, count));
 }

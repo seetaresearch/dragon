@@ -88,6 +88,7 @@ def Conv2d(inputs, num_output, kernel_size,
         spatial_axis = 2 if data_format == 'NCHW' else 1
         output.shape[channel_axis] = num_output
         for i in xrange(2):
+            input_size = output.shape[i + spatial_axis]
             k = arguments['kernel_size'][i] if i < len(arguments['kernel_size']) \
                                             else arguments['kernel_size'][-1]
             s = arguments['stride'][i]      if i < len(arguments['stride']) \
@@ -99,10 +100,9 @@ def Conv2d(inputs, num_output, kernel_size,
             dk = d * (k - 1) + 1
             dp = 2 * p
             if padding == 'SAME':
-                input_size = output.shape[i + spatial_axis]
-                output_size = (input_size + s - 1) / float(s)
-                dp = int(max(0, (output_size - 1) * s + k - input_size))
-            output.shape[i + spatial_axis] = int(output.shape[i + spatial_axis] + dp - dk / s) + 1
+                output.shape[i + spatial_axis] = int((input_size + s - 1) / s)
+            else:
+                output.shape[i + spatial_axis] = int((input_size + dp - dk) / s) + 1
 
     return output
 
@@ -173,15 +173,8 @@ def Conv2dTranspose(inputs, num_output, kernel_size,
     if output_shape is not None:
         if not isinstance(output_shape, list):
             raise TypeError('The output shape should be a list.')
-        if isinstance(output_shape[0], Tensor):
-            arguments['dynamic_dsize'] = []
-            arguments['extra_inputs'] = list(output_shape)
-            for dim in output_shape:
-                arguments['dynamic_dsize'].append(dim)
-        else:
-            arguments['static_dsize'] = []
-            for dim in output_shape:
-                arguments['static_dsize'].append(int(dim))
+        arguments['extra_inputs'] = [Tensor.Convert(dim, dtype='int32') for dim in output_shape]
+        arguments['output_shape'] = [dim.name for dim in arguments['extra_inputs']]
 
     if not isinstance(arguments['kernel_size'], list):
         arguments['kernel_size'] = [arguments['kernel_size']]
@@ -216,10 +209,11 @@ def Conv2dTranspose(inputs, num_output, kernel_size,
             else:
                 if output_shape is None:
                     raise ValueError('The output shape must be specified if using SAME padding algorithm.')
-                if 'dynamic_dsize' in arguments:
+                if isinstance(output_shape[i + spatial_axis], Tensor):
                     output.shape = None
                     return output
-                output.shape[i + spatial_axis] = output_shape[i + spatial_axis]
+                else:
+                    output.shape[i + spatial_axis] = output_shape[i + spatial_axis]
 
     return output
 
@@ -433,14 +427,11 @@ def NNResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: {}'.format(data_format))
 
-    if arguments['dsize'] is not None:
-        if isinstance(arguments['dsize'][0], Tensor):
-            arguments['dynamic_dsize'] = [arguments['dsize'][0].name,
-                                          arguments['dsize'][1].name]
-            arguments['extra_inputs'] = list(arguments['dsize'])
-        else:
-            arguments['static_size'] = arguments['dsize']
-        del arguments['dsize']
+    if dsize is not None:
+        if len(dsize) != 2:
+            raise ValueError('The dsize should be a list with 2 elements.')
+        arguments['extra_inputs'] = [Tensor.Convert(size, dtype='int32') for size in dsize]
+        arguments['dsize'] = [size.name for size in arguments['extra_inputs']]
 
     if dsize is None and (fy == -1.0 or fx == -1.0):
         raise RuntimeError('The dsize or fy/fx should be specified either.')
@@ -450,12 +441,18 @@ def NNResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
     if inputs.shape is not None:
         if len(inputs.shape) != 4:
             raise ValueError('The inputs should be a 4d Tensor.')
-        if 'dynamic_dsize' not in arguments:
+        possible_to_infer_shape = True
+        if dsize is not None:
+            for size in dsize:
+                if isinstance(size, Tensor):
+                    possible_to_infer_shape = False
+
+        if possible_to_infer_shape:
             output.shape = inputs.shape[:]
             spatial_axis = 2 if data_format == 'NCHW' else 1
             for i in xrange(2):
                 output_dim = output.shape[spatial_axis + i]
-                if 'static_size' in arguments:
+                if dsize is not None:
                     output_dim = dsize[i]
                 else:
                     output_dim = int(float(output_dim) * ([fy, fx])[i])
@@ -494,14 +491,11 @@ def BilinearResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: {}'.format(data_format))
 
-    if arguments['dsize'] is not None:
-        if isinstance(arguments['dsize'][0], Tensor):
-            arguments['dynamic_dsize'] = [arguments['dsize'][0].name,
-                                          arguments['dsize'][1].name]
-            arguments['extra_inputs'] = list(arguments['dsize'])
-        else:
-            arguments['static_size'] = arguments['dsize']
-        del arguments['dsize']
+    if dsize is not None:
+        if len(dsize) != 2:
+            raise ValueError('The dsize should be a list with 2 elements.')
+        arguments['extra_inputs'] = [Tensor.Convert(size, dtype='int32') for size in dsize]
+        arguments['dsize'] = [size.name for size in arguments['extra_inputs']]
 
     if dsize is None and (fy == -1.0 or fx == -1.0):
         raise RuntimeError('The dsize or fy/fx should be specified either.')
@@ -511,12 +505,18 @@ def BilinearResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs
     if inputs.shape is not None:
         if len(inputs.shape) != 4:
             raise ValueError('The inputs should be a 4d Tensor.')
-        if 'dynamic_dsize' not in arguments:
+        possible_to_infer_shape = True
+        if dsize is not None:
+            for size in dsize:
+                if isinstance(size, Tensor):
+                    possible_to_infer_shape = False
+
+        if possible_to_infer_shape:
             output.shape = inputs.shape[:]
             spatial_axis = 2 if data_format == 'NCHW' else 1
             for i in xrange(2):
                 output_dim = output.shape[spatial_axis + i]
-                if 'static_size' in arguments:
+                if dsize is not None:
                     output_dim = dsize[i]
                 else:
                     output_dim = int(float(output_dim) * ([fy, fx])[i])

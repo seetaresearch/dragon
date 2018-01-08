@@ -318,26 +318,25 @@ template <typename T, class Context>
 void CanonicalAxis(const int count, const int dim, T* y);
 
 template <typename T, class Context>
-void At(const int count, 
-        const int outer_dim, 
+void At(const int count,
+        const int outer_dim,
         const int inner_dim,
-        const int x_slice_dim, 
-        const int y_slice_dim, 
-        const T* indices, 
+        const int x_slice_dim,
+        const int y_slice_dim,
+        const int* indices,
         const T* x,
         T* y,
-        Context* context);
+        Context* ctx);
 
 template <typename T, class Context>
-void AtGrad(const int count, 
-            const int outer_dim, 
+void AtGrad(const int count,
+            const int outer_dim,
             const int inner_dim,
-            const int x_slice_dim, 
-            const int y_slice_dim, 
-            const T* indices,
-            const T* dy, 
-            T* dx, 
-            Context* context);
+            const int x_slice_dim,
+            const int y_slice_dim,
+            const int* indices,
+            const T* dy,
+            T* dx);
 
 /******************** ndarray.concat ********************/
 

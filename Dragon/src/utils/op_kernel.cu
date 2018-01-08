@@ -1574,19 +1574,19 @@ __global__ void _CanonicalAxis(const int count, const int dim, T* y) {
     }
 }
 
-template <> void CanonicalAxis<float, CUDAContext>(const int count, const int dim, float* y) {
-    _CanonicalAxis<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, dim, y);
+template <> void CanonicalAxis<int, CUDAContext>(const int count, const int dim, int* y) {
+    _CanonicalAxis<int> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, dim, y);
     CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
-__global__ void _At(const int count, 
-                    const int outer_dim, 
+__global__ void _At(const int count,
+                    const int outer_dim,
                     const int inner_dim,
-                    const int x_slice_dim, 
-                    const int y_slice_dim, 
-                    const T* indices, 
-                    const T* x, 
+                    const int x_slice_dim,
+                    const int y_slice_dim,
+                    const int* indices, 
+                    const T* x,
                     T* y) {
     CUDA_KERNEL_LOOP(idx, count) {
         const int outer_idx = idx / inner_dim / y_slice_dim;
@@ -1599,34 +1599,46 @@ __global__ void _At(const int count,
     }
 }
 
-template <> void At<float, CUDAContext>(const int count, 
-                                        const int outer_dim, 
+template <> void At<float, CUDAContext>(const int count,
+                                        const int outer_dim,
                                         const int inner_dim,
-                                        const int x_slice_dim, 
-                                        const int y_slice_dim, 
-                                        const float* indices,
-                                        const float* x, 
+                                        const int x_slice_dim,
+                                        const int y_slice_dim,
+                                        const int* indices,
+                                        const float* x,
                                         float* y, 
                                         CUDAContext* context) {
-    _At<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                        outer_dim, 
-                                                        inner_dim, 
-                                                      x_slice_dim, 
-                                                      y_slice_dim,
-                                                          indices, 
-                                                                x, 
-                                                               y);
+    _At<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                             outer_dim, inner_dim,
+                                         x_slice_dim, y_slice_dim,
+                                                   indices, x, y);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template <> void At<int, CUDAContext>(const int count,
+                                      const int outer_dim,
+                                      const int inner_dim,
+                                      const int x_slice_dim,
+                                      const int y_slice_dim,
+                                      const int* indices,
+                                      const int* x,
+                                      int* y, 
+                                      CUDAContext* context) {
+    _At<int> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                           outer_dim, inner_dim,
+                                       x_slice_dim, y_slice_dim,
+                                                 indices, x, y);
     CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
-__global__ void _AtGrad(const int count, 
-                        const int outer_dim, 
+__global__ void _AtGrad(const int count,
+                        const int outer_dim,
                         const int inner_dim,
-                        const int x_slice_dim, 
-                        const int y_slice_dim, 
-                        const T* indices, 
-                        const T* dy, 
+                        const int x_slice_dim,
+                        const int y_slice_dim,
+                        const int* indices,
+                        const T* dy,
                         T* dx) {
     CUDA_KERNEL_LOOP(idx, count) {
         const int outer_idx = idx / inner_dim / y_slice_dim;
@@ -1639,23 +1651,33 @@ __global__ void _AtGrad(const int count,
     }
 }
 
-template <> void AtGrad<float, CUDAContext>(const int count, 
-                                            const int outer_dim, 
+template <> void AtGrad<float, CUDAContext>(const int count,
+                                            const int outer_dim,
                                             const int inner_dim,
-                                            const int x_slice_dim, 
-                                            const int y_slice_dim, 
-                                            const float* indices,
-                                            const float* dy, 
-                                            float* dx, 
-                                            CUDAContext* context) {
-    _AtGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                            outer_dim, 
-                                                            inner_dim, 
-                                                          x_slice_dim, 
-                                                          y_slice_dim,
-                                                              indices, 
-                                                                   dy, 
-                                                                  dx);
+                                            const int x_slice_dim,
+                                            const int y_slice_dim,
+                                            const int* indices,
+                                            const float* dy,
+                                            float* dx) {
+    _AtGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                 outer_dim, inner_dim,
+                                             x_slice_dim, y_slice_dim,
+                                                     indices, dy, dx);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template <> void AtGrad<int, CUDAContext>(const int count,
+                                          const int outer_dim,
+                                          const int inner_dim,
+                                          const int x_slice_dim,
+                                          const int y_slice_dim,
+                                          const int* indices,
+                                          const int* dy,
+                                          int* dx) {
+    _AtGrad<int> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                               outer_dim, inner_dim,
+                                           x_slice_dim, y_slice_dim,
+                                                   indices, dy, dx);
     CUDA_POST_KERNEL_CHECK;
 }
 
@@ -3769,6 +3791,12 @@ __global__ void _ROIPooling(const int count,
         roi += n * 5;
         int im_idx = roi[0];
 
+        if (im_idx < 0) {
+            y[idx] = 0;
+            mask[idx] = 0;
+            continue;
+        }
+
         int x1 = round(roi[1] * spatial_scale);
         int y1 = round(roi[2] * spatial_scale);
         int x2 = round(roi[3] * spatial_scale);
@@ -3802,8 +3830,8 @@ __global__ void _ROIPooling(const int count,
                     max_val = x[x_idx];
                     max_idx = x_idx;
                 }
-            }    //end w
-        }    // end h
+            }
+        }
 
         y[idx] = max_val;
         mask[idx] = max_idx;
@@ -3857,7 +3885,6 @@ __global__ void _ROIPoolingGrad(const int count,
             const T* cur_roi = roi + n * 5;
             const int im_idx_spec = cur_roi[0];
 
-            //  ignore wrong im_batch_idx
             if (im_idx != im_idx_spec) continue;
 
             int x1 = round(cur_roi[1] * spatial_scale);
@@ -3895,9 +3922,9 @@ __global__ void _ROIPoolingGrad(const int count,
                     if (mask_off[pool_idx] == (h * width + w)) {
                         diff += dy_off[pool_idx];
                     }
-                }    //  end pw
-            }    //  end ph
-        }    //  end n
+                }
+            }
+        }
         dx[idx] = diff;
     }
 }
@@ -3948,6 +3975,13 @@ __global__ void _ROIAlign(const int count,
 
         roi += n * 5;
         int roi_batch_ind = roi[0];
+
+        if (roi_batch_ind < 0) {
+            y[idx] = 0;
+            mask_h[idx] = 0;
+            mask_w[idx] = 0;
+            continue;
+        }
 
         T roi_start_w = (roi[1]) * spatial_scale;
         T roi_start_h = (roi[2]) * spatial_scale;

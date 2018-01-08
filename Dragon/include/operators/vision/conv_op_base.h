@@ -22,8 +22,7 @@ class ConvOpBase : public Operator<Context> {
           padding(OperatorBase::GetSingleArg<string>("padding", "VALID")),
           num_output(OperatorBase::GetSingleArg<int>("num_output", 1)),
           group(OperatorBase::GetSingleArg<int>("group", 1)),
-          static_dsize(OperatorBase::GetRepeatedArg<int>("static_dsize")),
-          dynamic_dsize(OperatorBase::GetRepeatedArg<string>("dynamic_dsize")) {
+          output_dims_desc(OperatorBase::GetRepeatedArg<string>("output_shape")) {
         if (data_format == "NCHW") spatial_axis = 2;
         else if (data_format == "NHWC") spatial_axis = 1;
         else LOG(FATAL) << "Unknown data format: " << data_format;
@@ -42,8 +41,7 @@ class ConvOpBase : public Operator<Context> {
     TIndex conv_in_channels, conv_out_channels;
     TIndex conv_out_spatial_dim, kernel_dim;
     TIndex col_offset, output_offset, weight_offset, x_offset, y_offset;
-    vector<int> static_dsize;
-    vector<string> dynamic_dsize;
+    vector<string> output_dims_desc;
     bool is_1x1;
 
     void Setup();

@@ -16,8 +16,7 @@ class BilinearResizeOp : public Operator<Context> {
  public:
     BilinearResizeOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          static_dsize(OperatorBase::GetRepeatedArg<int>("static_dsize")),
-          dynamic_dsize(OperatorBase::GetRepeatedArg<string>("dynamic_dsize")),
+          dsize_desc(OperatorBase::GetRepeatedArg<string>("dsize")),
           fy(OperatorBase::GetSingleArg<float>("fy", -1.0)),
           fx(OperatorBase::GetSingleArg<float>("fx", -1.0)),
           data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {
@@ -29,8 +28,7 @@ class BilinearResizeOp : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    vector<int> static_dsize;
-    vector<string> dynamic_dsize;
+    vector<string> dsize_desc;
     float fy, fx;
     string data_format;
     TIndex n, c, h, w, out_h, out_w, spatial_axis;

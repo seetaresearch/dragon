@@ -17,16 +17,16 @@ class InitializeOp: public Operator<Context> {
  public:
     InitializeOp(const OperatorDef& op_def, Workspace* ws) 
         : Operator<Context>(op_def, ws),
-          static_shape(OperatorBase::GetRepeatedArg<int>("static_shape")), 
-          dynamic_shape(OperatorBase::GetSingleArg<string>("dynamic_shape", "")) {}
+          dims_desc(OperatorBase::GetRepeatedArg<string>("dims")), 
+          shape_desc(OperatorBase::GetSingleArg<string>("shape", "")) {}
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
+    vector<string> dims_desc;
+    string shape_desc;
     TensorFiller filler;
-    vector<int> static_shape;
-    string dynamic_shape;
 };
 
 template <class Context>

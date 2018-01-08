@@ -13,16 +13,22 @@ void InitializeOp<Context>::RunWithType() {
 template <class Context>
 void InitializeOp<Context>::RunOnDevice() {
     vector<TIndex> dims;
-    if (dynamic_shape.empty()) {
-        for (auto& dim : static_shape) dims.push_back(dim);
+    if (shape_desc.empty()) {
+        //  determine the shape from dimensions
+        for (auto& dim_desc : dims_desc) {
+            Tensor* dim = ws()->GetTensor(dim_desc);
+            CHECK_EQ(dim->count(), 1) << "\nThe dimension should be a scalar.";
+            CHECK(dim->IsType<int>()) << "\nThe type of dimension should be int32.";
+            dims.push_back(dim->template data<int, CPUContext>()[0]);
+        }
     } else {
-        auto* shape_data = ws()->GetTensor(dynamic_shape)
-                               ->template data<float, CPUContext>();
-        TIndex ndim = ws()->GetTensor(dynamic_shape)->count();
-        for (int i = 0; i < ndim; i++) dims.push_back(shape_data[i]);
+        //  determine the shape from given shape
+        Tensor* shape = ws()->GetTensor(shape_desc);
+        CHECK(shape->IsType<int>()) << "\nThe type of shape should be int32.";
+        auto* shape_data = shape->template data<int, CPUContext>();
+        for (int i = 0; i < shape->count(); i++) dims.push_back(shape_data[i]);
     }
     output(0)->Reshape(dims);
-
     RunWithType<float>();
 }
 

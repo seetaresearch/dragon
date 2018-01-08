@@ -16,24 +16,19 @@ class ArangeOp final : public Operator<Context> {
  public:
     ArangeOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          start(OperatorBase::GetSingleArg<int>("static_start", 0)),
-          stop(OperatorBase::GetSingleArg<int>("static_stop", -1)),
-          step(OperatorBase::GetSingleArg<int>("static_step", 1)),
-          dtype(OperatorBase::GetSingleArg<string>("dtype", "FLOAT32")) {
-        dynamic_start_ = OperatorBase::GetSingleArg<string>("dynamic_start", "");
-        dynamic_stop_ = OperatorBase::GetSingleArg<string>("dynamic_stop", "");
-        dynamic_step_ = OperatorBase::GetSingleArg<string>("dynamic_step", "");
-    }
+          start_desc(OperatorBase::GetSingleArg<string>("start", "")),
+          stop_desc(OperatorBase::GetSingleArg<string>("stop", "")),
+          step_desc(OperatorBase::GetSingleArg<string>("step", "")),
+          dtype(OperatorBase::GetSingleArg<string>("dtype", "FLOAT32")) {}
+
+    void Reshape();
 
     void RunOnDevice() override;
-    void Reshape();
     template <typename T> void RunWithType();
 
  protected:
+    string start_desc, stop_desc, step_desc, dtype;
     TIndex start, stop, step, count;
-    Tensor* dynamic_start, *dynamic_stop, *dynamic_step;
-    string dynamic_start_, dynamic_stop_, dynamic_step_;
-    string dtype;
 };
 
 }    // namespace dragon

@@ -410,7 +410,7 @@ class Tensor(object):
         """
         def wrapper_indices(indices):
             tensor = Tensor(GetTensorName())
-            ws.FeedTensor(tensor, np.array(indices, dtype=np.float32))
+            ws.FeedTensor(tensor, np.array(indices, dtype=np.int32))
             return tensor
 
         if not isinstance(item, tuple):
@@ -422,8 +422,7 @@ class Tensor(object):
                     output.shape[0] = 1
                 return output
             else:
-                # ND Crop
-                item = (item, )
+                raise TypeError('Unsupported type of indices: {}'.format(type(item)))
         starts = []
         ends = []
         output_dims = []
@@ -853,6 +852,21 @@ class Tensor(object):
         """
         raise NotImplementedError('Implemented in <vm.tensorflow.framework.tensor_shape>')
 
+    def eval(self, feed_dict=None):
+        """Run and return the computing results of this tensor.
+
+        Parameters
+        ----------
+        feed_dict : dict
+            The values to feed.
+
+        Returns
+        -------
+        numpy.ndarray
+            The values of this tensor in the backend.
+        """
+        raise NotImplementedError('Implemented in <vm.theano.compile.function>')
+
     ############################################
     #                                          #
     #                   MISC                   #
@@ -969,6 +983,39 @@ class Tensor(object):
         if nout > 1: return outputs
         elif nout == 1: return outputs[0]
         else: return None
+
+    @classmethod
+    def Convert(cls, value, dtype='float32'):
+        """Convert the given value to a tensor.
+
+        Parameters
+        ----------
+        value : numerical type
+            The value to convert.
+        dtype : str
+            The data type of the tensor.
+
+        Returns
+        -------
+        Tensor
+            The tensor converted with given value.
+
+        """
+        if isinstance(value, Tensor):
+            return value
+        else:
+            if isinstance(value, (list, tuple)):
+                np_value = np.array(value, dtype=dtype)
+            elif isinstance(value, np.ndarray):
+                np_value = value.astype(dtype=dtype)
+            else:
+                try:
+                    np_value = np.array(value, dtype=dtype)
+                except:
+                    raise TypeError('{} value can not be converted to tensor.'.format(type(value)))
+            tensor = Tensor(shape=list(np_value.shape), dtype=dtype)
+            tensor.set_value(np_value)
+            return tensor
 
     def Fill(self, type, **kwargs):
         """Fill self with the specific type of filler.

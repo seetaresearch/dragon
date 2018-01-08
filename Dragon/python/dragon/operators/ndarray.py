@@ -470,7 +470,7 @@ def Tile(inputs, multiples, **kwargs):
     ----------
     input : Tensor
         The input tensor.
-    multiples : list of int
+    multiples : list
         The multiple of each axis.
 
     Returns
@@ -481,16 +481,22 @@ def Tile(inputs, multiples, **kwargs):
     """
     CheckInputs(inputs, 1)
     arguments = ParseArguments(locals())
+    arguments['extra_inputs'] = [Tensor.Convert(multiple, dtype='int32') for multiple in multiples]
+    arguments['multiples'] = [multiple.name for multiple in arguments['extra_inputs']]
 
     output = Tensor.CreateOperator(nout=1, op_type='Tile', **arguments)
 
     if inputs.shape is not None:
         if len(inputs.shape) != len(multiples):
-            raise ValueError('input ndim is {}, but multiples provide {}'. \
-                             format(len(inputs.shape), len(multiples)))
+            raise ValueError('The num of dimensions of input is {}, but provided {}.'
+                             .format(len(inputs.shape), len(multiples)))
         output.shape = inputs.shape[:]
         for i, multiple in enumerate(multiples):
-            output.shape[i] *= multiple
+            if output.shape[i] is None or \
+                isinstance(output.shape[i], Tensor):
+                    output.shape[i] = None
+            else:
+                    output.shape[i] *= multiple
 
     return output
 
@@ -755,7 +761,7 @@ def Arange(start, stop=None, step=1, dtype='FLOAT32', **kwargs):
     step : int or Tensor
         The interval between two elements.
     dtype : str
-        The data type. ``FLOAT32`` or ``INT32``.
+        The data type. ``float32`` or ``int32``.
 
     Returns
     -------
@@ -764,30 +770,26 @@ def Arange(start, stop=None, step=1, dtype='FLOAT32', **kwargs):
 
     """
     arguments = ParseArguments(locals())
-    arguments['extra_inputs'] = []
-    if not isinstance(start, Tensor): arguments['static_start'] = int(start)
-    else:
-        arguments['dynamic_start'] = start.name
-        arguments['extra_inputs'].append(start)
+    arguments['extra_inputs'] = [Tensor.Convert(start, dtype='int32'),
+                                 Tensor.Convert(step, dtype='int32')]
+    arguments['start'] = arguments['extra_inputs'][0].name
+    arguments['step'] = arguments['extra_inputs'][1].name
     if stop is not None:
-        if not isinstance(stop, Tensor): arguments['static_stop'] = int(stop)
-        else:
-            arguments['dynamic_stop'] = stop.name
-            arguments['extra_inputs'].append(stop)
-        del arguments['stop']
-    if not isinstance(step, Tensor): arguments['static_step'] = int(step)
-    else:
-        arguments['dynamic_step'] = step.name
-        arguments['extra_inputs'].append(step)
-    del arguments['start']; del arguments['step']
+        arguments['extra_inputs'].append(Tensor.Convert(stop, dtype='int32'))
+        arguments['stop'] = arguments['extra_inputs'][-1].name
+    arguments['dtype'] = arguments['dtype'].upper()
 
     output = Tensor.CreateOperator([], nout=1, op_type='Arange', **arguments)
 
-    if 'static_start' in arguments and \
-       'static_step' in arguments:
-        if 'dynamic_stop' not in arguments:
-            if stop is None: stop = start; start = 0
-            count = (stop - start - 1) / step + 1
-            output.shape = [np.long(count)]
+    if not isinstance(start, Tensor) and \
+        not isinstance(step, Tensor):
+        if stop is not None:
+            if isinstance(stop, Tensor):
+                return output
+        else:
+            stop = start
+            start = 0
+        count = int((stop - start - 1) / step) + 1
+        output.shape = [count]
 
     return output

@@ -25,7 +25,16 @@ void TileOp<Context>::TileRunWithType() {
 
 template <class Context>
 void TileOp<Context>::RunOnDevice() {
-    CHECK_EQ(multiples.size(), input(0).ndim());
+    //  parse tasks from desc
+    CHECK_EQ(multiples_desc.size(), input(0).ndim())
+        << "\nThe num of dimensions of input is " << input(0).ndim()
+        << ", but provided " << multiples_desc.size() << " multiples.";
+    vector< pair<int, int> > process_axes;
+    for (int i = 0; i < multiples_desc.size(); i++) {
+        int mult = ws()->GetTensor(multiples_desc[i])->template data<int, CPUContext>()[0];
+        if (mult > 1) process_axes.push_back({ mult, i });
+    }
+    std::sort(process_axes.begin(), process_axes.end());
 
     //  do nothing 
     if (process_axes.size() == 0) {
@@ -81,7 +90,17 @@ void TileGradientOp<Context>::TileRunWithType() {
 
 template <class Context>
 void TileGradientOp<Context>::RunOnDevice() {
-    CHECK_EQ(multiples.size(), input(-1).ndim());
+    //  parse tasks from desc
+    CHECK_EQ(multiples_desc.size(), input(-1).ndim())
+        << "\nThe num of dimensions of input is " << input(-1).ndim()
+        << ", but provided " << multiples_desc.size() << " multiples.";
+    vector< pair<int, int> > process_axes;
+    for (int i = 0; i < multiples_desc.size(); i++) {
+        int mult = ws()->GetTensor(multiples_desc[i])->template data<int, CPUContext>()[0];
+        if (mult > 1) process_axes.push_back({ mult, i });
+    }
+    std::sort(process_axes.begin(), process_axes.end());
+    std::reverse(process_axes.begin(), process_axes.end());
 
     //  do nothing 
     if (process_axes.size() == 0) {

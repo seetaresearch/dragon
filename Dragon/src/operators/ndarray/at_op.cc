@@ -8,12 +8,11 @@ namespace dragon {
 template <class Context> template <typename T>
 void AtOp<Context>::RunWithType() {
     auto* Xdata = input(0).template data<T, Context>();
-    auto* indices = input(1).template mutable_data<T, Context>();
+    auto* indices = input(1).template mutable_data<int, Context>();
     auto* Ydata = output(0)->template mutable_data<T, Context>();
-    kernel::CanonicalAxis<T, Context>(input(1).count(), x_slice_dim, indices);
+    kernel::CanonicalAxis<int, Context>(input(1).count(), x_slice_dim, indices);
     kernel::At<T, Context>(output(0)->count(), outer_dim, inner_dim,
-                                                        x_slice_dim,
-                                                        y_slice_dim,
+                                           x_slice_dim, y_slice_dim,
                                                             indices,
                                                               Xdata,
                                                               Ydata,
@@ -30,7 +29,9 @@ void AtOp<Context>::RunOnDevice() {
     inner_dim = input(0).count(axis + 1);
     output(0)->Reshape(output_dims);
 
+    CHECK(input(1).template IsType<int>()) << "\nThe type of indices should be int32.";
     if (input(0).template IsType<float>()) RunWithType<float>();
+    else if (input(0).template IsType<int>()) RunWithType<int>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 
@@ -42,12 +43,15 @@ OPERATOR_SCHEMA(At).NumInputs(2).NumOutputs(1);
 
 template <class Context> template <typename T>
 void AtGradientOp<Context>::RunWithType() {
-    auto* indices = input(1).template data<T, Context>();
+    auto* indices = input(1).template data<int, Context>();
     auto* dYdata = input(-1).template data<T, Context>();
     auto* dXdata = output(0)->template mutable_data<T, Context>();
     if (!acc_grad) math::Set<T, Context>(output(0)->count(), 0, dXdata);
     kernel::AtGrad<T, Context>(input(-1).count(), outer_dim, inner_dim,
-        x_slice_dim, y_slice_dim, indices, dYdata, dXdata, &ctx());
+                                              x_slice_dim, y_slice_dim,
+                                                               indices,
+                                                                dYdata,
+                                                                dXdata);
 }
 
 template <class Context>
@@ -58,7 +62,9 @@ void AtGradientOp<Context>::RunOnDevice() {
     inner_dim = input(0).count(axis + 1);
     output(0)->ReshapeLike(input(0));
 
+    CHECK(input(1).template IsType<int>()) << "\nThe type of indices should be int32.";
     if (input(0).template IsType<float>()) RunWithType<float>();
+    else if (input(0).template IsType<int>()) RunWithType<int>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

@@ -34,23 +34,13 @@ void BilinearResizeOp<Context>::RunWithType() {
 template <class Context>
 void BilinearResizeOp<Context>::RunOnDevice() {
     dims = input(0).dims();
-    if (dynamic_dsize.size() > 0) {
-        CHECK_EQ(dynamic_dsize.size(), 2)
-            << "\nThe dsize should be a scalar with 2 elements.";
+    if (dsize_desc.size() > 0) {
+        CHECK_EQ(dsize_desc.size(), 2) << "\nThe dsize should be a scalar with 2 elements.";
         for (int i = 0; i < 2; i++) {
-            Tensor* t = ws()->GetTensor(dynamic_dsize[i]);
-            if (t->IsType<int>()) {
-                dims[spatial_axis + i] = t->template data<int, CPUContext>()[0];
-            } else if (t->IsType<float>()) {
-                dims[spatial_axis + i] = t->template data<float, CPUContext>()[0];
-            } else {
-                LOG(FATAL) << "Unsupported types of dsize.";
-            }
+            Tensor* dsize = ws()->GetTensor(dsize_desc[i]);
+            CHECK(dsize->IsType<int>()) << "\nThe type of dsize should be int32.";
+            dims[spatial_axis + i] = dsize->template data<int, CPUContext>()[0];
         }
-    } else if (static_dsize.size() > 0) {
-        CHECK_EQ(static_dsize.size(), 2)
-            << "\nThe dsize should be a scalar with 2 elements.";
-        for (int i = 0; i < 2; i++) dims[spatial_axis + i] = static_dsize[i];
     } else {
         CHECK(fy != -1.0 && fx != -1.0)
             << "\nThe fx and fy should be set.";

@@ -6,34 +6,48 @@
 
 from . import *
 
+
+def _wrap_input_shape(arguments, shape):
+    if isinstance(shape, Tensor):
+        arguments['extra_inputs'] = shape
+        arguments['shape'] = shape.name
+    elif isinstance(shape, (list, tuple)):
+        arguments['extra_inputs'] = [Tensor.Convert(dim, dtype='int32') for dim in shape]
+        arguments['dims'] = [dim.name for dim in arguments['extra_inputs']]
+        arguments['shape'] = None
+    else:
+        raise TypeError('Unsupported type of shape: {}'.format(type(shape)))
+    return arguments
+
+
+def _wrap_output_shape(output, shape):
+    if not isinstance(shape, Tensor):
+        if any(isinstance(dim, Tensor) for dim in shape): return output
+        output.shape = [dim for dim in shape]
+    return output
+
+
 def Fill(shape, value=0, **kwargs):
     """Return a Tensor with specific value filled.
 
     Parameters
     ----------
     shape : list, tuple or Tensor
-        The shape of the new tensor.
+        The output shape.
     value : basic numerical type
-        The value of the new tensor.
+        The value to fill.
 
     Returns
     -------
     Tensor
-        The value-filled Tensor.
+        The constant-filled tensor.
 
     """
     arguments = ParseArguments(locals())
     arguments['value'] = float(value)
-    if not isinstance(shape, Tensor):
-        arguments['static_shape'] = shape
-    else:
-        arguments['dynamic_shape'] = shape.name
-        arguments['extra_inputs'] = shape
-    del arguments['shape']
-
+    arguments = _wrap_input_shape(arguments, shape)
     output =  Tensor.CreateOperator([], nout=1, op_type='Fill', **arguments)
-    output.shape = arguments['static_shape'] if 'static_shape' in arguments else None
-    return output
+    return _wrap_output_shape(output, shape)
 
 
 def RandomUniform(shape, low=-1.0, high=1.0, **kwargs):
@@ -57,16 +71,9 @@ def RandomUniform(shape, low=-1.0, high=1.0, **kwargs):
     arguments = ParseArguments(locals())
     arguments['low'] = float(low)
     arguments['high'] = float(high)
-    if not isinstance(shape, Tensor):
-        arguments['static_shape'] = shape
-    else:
-        arguments['dynamic_shape'] = shape.name
-        arguments['extra_inputs'] = shape
-    del arguments['shape']
-
+    arguments = _wrap_input_shape(arguments, shape)
     output =  Tensor.CreateOperator([], nout=1, op_type='RandomUniform', **arguments)
-    output.shape = arguments['static_shape'] if 'static_shape' in arguments else None
-    return output
+    return _wrap_output_shape(output, shape)
 
 
 def RandomNormal(shape, mean=0.0, std=1.0, **kwargs):
@@ -90,16 +97,9 @@ def RandomNormal(shape, mean=0.0, std=1.0, **kwargs):
     arguments = ParseArguments(locals())
     arguments['mean'] = float(mean)
     arguments['std'] = float(std)
-    if not isinstance(shape, Tensor):
-        arguments['static_shape'] = shape
-    else:
-        arguments['dynamic_shape'] = shape.name
-        arguments['extra_inputs'] = shape
-    del arguments['shape']
-
+    arguments = _wrap_input_shape(arguments, shape)
     output = Tensor.CreateOperator([], nout=1, op_type='RandomNormal', **arguments)
-    output.shape = arguments['static_shape'] if 'static_shape' in arguments else None
-    return output
+    return _wrap_output_shape(output, shape)
 
 
 def TruncatedNormal(shape, mean=0.0, std=1.0, **kwargs):
@@ -127,16 +127,9 @@ def TruncatedNormal(shape, mean=0.0, std=1.0, **kwargs):
     arguments['std'] = float(std)
     arguments['low'] = float(mean - 2.0 * std)
     arguments['high'] = float(mean + 2.0 * std)
-    if not isinstance(shape, Tensor):
-        arguments['static_shape'] = shape
-    else:
-        arguments['dynamic_shape'] = shape.name
-        arguments['extra_inputs'] = shape
-    del arguments['shape']
-
+    arguments = _wrap_input_shape(arguments, shape)
     output =  Tensor.CreateOperator([], nout=1, op_type='TruncatedNormal', **arguments)
-    output.shape = arguments['static_shape'] if 'static_shape' in arguments else None
-    return output
+    return _wrap_output_shape(output, shape)
 
 
 def GlorotUniform(shape, scale=3.0, mode='FAN_IN', **kwargs):
@@ -162,16 +155,9 @@ def GlorotUniform(shape, scale=3.0, mode='FAN_IN', **kwargs):
     arguments = ParseArguments(locals())
     arguments['scale'] = float(scale)
     arguments['mode'] = mode.lower()
-    if not isinstance(shape, Tensor):
-        arguments['static_shape'] = shape
-    else:
-        arguments['dynamic_shape'] = shape.name
-        arguments['extra_inputs'] = shape
-    del arguments['shape']
-
+    arguments = _wrap_input_shape(arguments, shape)
     output = Tensor.CreateOperator([], nout=1, op_type='GlorotUniform', **arguments)
-    output.shape = arguments['static_shape'] if 'static_shape' in arguments else None
-    return output
+    return _wrap_output_shape(output, shape)
 
 
 def GlorotNormal(shape, scale=2.0, mode='FAN_IN', **kwargs):
@@ -197,13 +183,6 @@ def GlorotNormal(shape, scale=2.0, mode='FAN_IN', **kwargs):
     arguments = ParseArguments(locals())
     arguments['scale'] = float(scale)
     arguments['mode'] = mode.lower()
-    if not isinstance(shape, Tensor):
-        arguments['static_shape'] = shape
-    else:
-        arguments['dynamic_shape'] = shape.name
-        arguments['extra_inputs'] = shape
-    del arguments['shape']
-
+    arguments = _wrap_input_shape(arguments, shape)
     output = Tensor.CreateOperator([], nout=1, op_type='GlorotNormal', **arguments)
-    output.shape = arguments['static_shape'] if 'static_shape' in arguments else None
-    return output
+    return _wrap_output_shape(output, shape)
