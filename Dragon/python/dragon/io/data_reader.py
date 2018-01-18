@@ -53,14 +53,6 @@ class DataReader(Process):
         self.Q_out = None
         self.daemon = True
 
-        def cleanup():
-            from dragon.config import logger
-            logger.info('Terminating DataReader......')
-            self.terminate()
-            self.join()
-        import atexit
-        atexit.register(cleanup)
-
     def element(self):
         """Get the value of current record.
 

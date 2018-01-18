@@ -70,14 +70,6 @@ class DataTransformer(Process):
         self.Q_in = self.Q_out = None
         self.daemon = True
 
-        def cleanup():
-            from dragon.config import logger
-            logger.info('Terminating DataTransformer......')
-            self.terminate()
-            self.join()
-        import atexit
-        atexit.register(cleanup)
-
     def transform_image_labels(self, serialized):
         """Get image and labels from a serialized str.
 

@@ -155,6 +155,21 @@ class DataBatch(object):
 
         self.echo()
 
+        def cleanup():
+            def terminate(processes):
+                for process in processes:
+                    process.terminate()
+                    process.join()
+            from dragon.config import logger
+            logger.info('Terminating BlobFetcher ......')
+            terminate(self._fetchers)
+            logger.info('Terminating DataTransformer ......')
+            terminate(self._transformers)
+            logger.info('Terminating DataReader......')
+            terminate(self._readers)
+        import atexit
+        atexit.register(cleanup)
+
     def get(self):
         """Get a batch.
 

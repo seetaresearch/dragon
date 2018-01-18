@@ -137,6 +137,7 @@ List               Brief
 `Tile`_            Tile the input according to the given multiples.
 `Pad`_             Pad the input according to the given paddings.
 `Crop`_            Crop the input according to the given starts and ends.
+`OneHot`_          Generate the one-hot representation of inputs.
 `Flatten`_         Flatten the input along the given axes.
 `Reshape`_         Reshape the dimensions of input.
 `ExpandDims`_      ExpandDims interface of NDArray.
@@ -263,6 +264,7 @@ List                 Brief
 .. _Repeat: operators/ndarray.html#dragon.operators.ndarray.Repeat
 .. _Tile: operators/ndarray.html#dragon.operators.ndarray.Tile
 .. _Pad: operators/ndarray.html#dragon.operators.ndarray.Pad
+.. _OneHot: operators/ndarray.html#dragon.operators.ndarray.OneHot
 .. _Flatten: operators/ndarray.html#dragon.operators.ndarray.Flatten
 .. _Reshape: operators/ndarray.html#dragon.operators.ndarray.Reshape
 .. _ExpandDims: operators/ndarray.html#dragon.operators.ndarray.ExpandDims

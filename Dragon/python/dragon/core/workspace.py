@@ -268,7 +268,7 @@ def FeedTensor(tensor, ndarray, force_cpu=False, dtype=None):
                 raise TypeError('The preset data type is {}, but force to {}.'.
                                 format(preset_dtype, dtype))
         auto_dtype = preset_dtype
-    ndarray = np.array(ndarray, dtype=auto_dtype)
+    ndarray = np.array(ndarray, dtype=auto_dtype, copy=False)
     FeedTensorCC(name, ndarray, _stringify_proto(dev))
 
 

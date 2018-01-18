@@ -37,14 +37,6 @@ class BlobFetcher(Process):
         self.Q_in = self.Q_out = None
         self.daemon = True
 
-        def cleanup():
-            from dragon.config import logger
-            logger.info('Terminating BlobFetcher......')
-            self.terminate()
-            self.join()
-        import atexit
-        atexit.register(cleanup)
-
     def im_list_to_blob(self):
         """Get image and label blobs.
 
