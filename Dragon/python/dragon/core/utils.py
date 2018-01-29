@@ -4,11 +4,16 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-import sys
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-from google.protobuf.message import Message
-from dragon.protos import dragon_pb2 as pb
+import sys
 import numpy as np
+from google.protobuf.message import Message
+
+from dragon.protos import dragon_pb2 as pb
+
 
 if sys.version_info >= (3,0):
     def MakeArgument(key, value):

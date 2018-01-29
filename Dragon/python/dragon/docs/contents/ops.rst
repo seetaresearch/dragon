@@ -32,9 +32,9 @@ Vision
 ===================    ======================================================================
 List                   Brief
 ===================    ======================================================================
-`Conv2D`_              2D Convolution.
-`Deconv2D`_            2D Deconvolution.
-`Pool2D`_              2D Pooling, MAX or AVG.
+`Conv2d`_              2d Convolution.
+`Conv2dTranspose`_     2d Deconvolution.
+`Pool2d`_              2d Pooling, MAX or AVG.
 `ROIPooling`_          ROIPoolin(MAX), introduced by `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
 `ROIAlign`_            ROIAlign(MAX), introduced by `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
 `LRN`_                 Local Response Normalization, introduced by `[Krizhevsky et.al, 2012] <http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks>`_.
@@ -122,8 +122,8 @@ NDArray
 ===============    ======================================================================
 List               Brief
 ===============    ======================================================================
-`At`_              1D At interface of NDArray.
-`RandomPick`_      1D RandomPick interface of NDArray.
+`Gather`_          Gather the input according to the indices along the given axis.
+`RandomPick`_      Randomly pick the input along the given axis.
 `Reduce`_          The general reduce operator.
 `Sum`_             Compute the sum along the given axis.
 `Mean`_            Compute the mean along the given axis.
@@ -195,9 +195,9 @@ List                 Brief
 .. _GlorotUniform: operators/initializer.html#dragon.operators.initializer.GlorotUniform
 .. _GlorotNormal: operators/initializer.html#dragon.operators.initializer.GlorotNormal
 
-.. _Conv2D: operators/vision.html#dragon.operators.vision.Conv2D
-.. _Deconv2D: operators/vision.html#dragon.operators.vision.Deconv2D
-.. _Pool2D: operators/vision.html#dragon.operators.vision.Pool2D
+.. _Conv2d: operators/vision.html#dragon.operators.vision.Conv2d
+.. _Conv2dTranspose: operators/vision.html#dragon.operators.vision.Conv2dTranspose
+.. _Pool2d: operators/vision.html#dragon.operators.vision.Pool2d
 .. _ROIPooling: operators/vision.html#dragon.operators.vision.ROIPooling
 .. _ROIAlign: operators/vision.html#dragon.operators.vision.ROIAlign
 .. _LRN: operators/vision.html#dragon.operators.vision.LRN
@@ -249,7 +249,7 @@ List                 Brief
 .. _InstanceNorm: operators/norm.html#dragon.operators.norm.InstanceNorm
 .. _L2Norm: operators/norm.html#dragon.operators.norm.L2Norm
 
-.. _At: operators/ndarray.html#dragon.operators.ndarray.At
+.. _Gather: operators/ndarray.html#dragon.operators.ndarray.Gather
 .. _RandomPick: operators/ndarray.html#dragon.operators.ndarray.RandomPick
 .. _Crop: operators/ndarray.html#dragon.operators.ndarray.Crop
 .. _Reduce: operators/ndarray.html#dragon.operators.ndarray.Reduce

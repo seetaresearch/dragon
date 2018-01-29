@@ -4,11 +4,14 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import numpy as np
 from six.moves import range as xrange
 
-from dragon import MPIInitCC, MPIRankCC, MPISizeCC, \
-                   MPICreateGroupCC, MPIFinalizeCC
+from dragon.import_c_apis import *
 
 _is_init = False
 _snapshot_ranks = []

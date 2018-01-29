@@ -4,13 +4,18 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-import dragon.core.workspace as ws
-import dragon.protos.dragon_pb2 as pb
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import numpy as np
 from collections import OrderedDict
+from six.moves import range as xrange
+
+import dragon.core.workspace as ws
+import dragon.protos.dragon_pb2 as pb
 from dragon.core.utils import MakeOperatorDef
 from dragon.core.scope import GetOperatorName, GetTensorName
-from six.moves import range as xrange
 
 
 class Tensor(object):
@@ -416,7 +421,7 @@ class Tensor(object):
         if not isinstance(item, tuple):
             # 1D At
             if isinstance(item, int):
-                output = self.CreateOperator(inputs=[self, wrapper_indices([item])], nout=1, op_type='At')
+                output = self.CreateOperator(inputs=[self, wrapper_indices([item])], nout=1, op_type='Gather')
                 if self.shape is not None:
                     output.shape = self.shape[:]
                     output.shape[0] = 1

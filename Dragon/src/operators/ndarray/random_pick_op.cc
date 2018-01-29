@@ -14,13 +14,12 @@ void RandomPickOp<Context>::RunWithType() {
     auto* Xdata = input(0).template data<T, Context>();
     indices = pick_indices->template mutable_data<int, Context>();
     auto* Ydata = output(0)->template mutable_data<T, Context>();
-    kernel::At<T, Context>(output(0)->count(), outer_dim, inner_dim,
-                                                        x_slice_dim,
-                                                        y_slice_dim,
-                                                            indices,
-                                                              Xdata,
-                                                              Ydata,
-                                                            &ctx());
+    kernel::Gather<T, Context>(output(0)->count(), outer_dim, inner_dim,
+                                               x_slice_dim, y_slice_dim,
+                                                                indices,
+                                                                  Xdata,
+                                                                  Ydata,
+                                                                &ctx());
 }
 
 template <class Context>
@@ -57,12 +56,11 @@ void RandomPickGradientOp<Context>::RunWithType() {
     auto* dYdata = input(-1).template data<T, Context>();
     auto* dXdata = output(0)->template mutable_data<T, Context>();
     math::Set<T, Context>(output(0)->count(), 0, dXdata);
-    kernel::AtGrad<T, Context>(input(-1).count(), outer_dim, inner_dim,
-                                                           x_slice_dim,
-                                                           y_slice_dim,
-                                                               indices,
-                                                                dYdata,
-                                                               dXdata);
+    kernel::GatherGrad<T, Context>(input(-1).count(), outer_dim, inner_dim,
+                                                  x_slice_dim, y_slice_dim,
+                                                                   indices,
+                                                                    dYdata,
+                                                                   dXdata);
 }
 
 template <class Context>

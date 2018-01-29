@@ -4,16 +4,22 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-import logging
-import sys
+# core
+from dragon.core.tensor import Tensor
+import dragon.core.workspace as workspace
 
-try:
-    from dragon.libdragon import *
-except ImportError as e:
-    logging.critical(
-        'cannot load dragon. Error: {0}'.format(str(e)))
-    sys.exit(1)
+# ops
+from dragon.ops import *
 
+# updaters
+from dragon.updaters import *
+
+# theano utilities
+from dragon.vm.theano.compile.function import function as function
+from dragon.vm.theano.tensor import grad as grad
+
+# scope
 from dragon.core.scope import TensorScope as name_scope
 from dragon.core.scope import PhaseScope as phase_scope
 from dragon.core.scope import DeviceScope as device_scope
+

@@ -4,7 +4,12 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from . import *
+
 
 def Relu(inputs, **kwargs):
     """Rectified Linear Unit function, introduces by `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.

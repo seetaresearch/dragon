@@ -4,13 +4,19 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+from collections import defaultdict
+
+from dragon.import_c_apis import *
 import dragon.config as config
 import dragon.protos.dragon_pb2 as pb
-from collections import defaultdict
 from dragon.core.utils import MakeOperatorDef
-from dragon.__init__ import *
 
 from .scope import GetOperatorName
+
 
 class GraphGradientMaker(object):
     """

@@ -927,23 +927,62 @@ template<> void AbsGrad<float, CUDAContext>(const int count, const float* dy, fl
 template <typename T>
 __global__ void _SigmoidCrossEntropy(const int count,
                                      const T* x,
-                                     const T* targets,
-                                     T* loss) {
+                                     const T* target,
+                                     T* loss,
+                                     T* valid) {
     CUDA_KERNEL_LOOP(idx, count) {
-        loss[idx] = std::log(1 + std::exp(x[idx] - 2 * x[idx] * (x[idx] >= 0))) 
-                       + x[idx] * ((x[idx] >= 0) - targets[idx]);
+        if (target[idx] < 0) {
+            loss[idx] = 0.;
+            valid[idx] = 0.;
+        } else {
+            loss[idx] = std::log(1 + std::exp(x[idx] - 2 * x[idx] * (x[idx] >= 0)))
+                + x[idx] * ((x[idx] >= 0) - target[idx]);
+            valid[idx] = 1.;
+        }
     }
 }
 
 template <> void SigmoidCrossEntropy<float, CUDAContext>(const int count,
                                                          const float* x,
-                                                         const float* targets,
-                                                         float* loss) {
+                                                         const float* target,
+                                                         float* loss,
+                                                         float* valid) {
     _SigmoidCrossEntropy<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
                                                                                  x,
-                                                                           targets,
-                                                                              loss);
-     CUDA_POST_KERNEL_CHECK;
+                                                                            target,
+                                                                              loss,
+                                                                            valid);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template <typename T>
+__global__ void _SigmoidCrossEntropyGrad(const int count,
+                                         const T* x,
+                                         const T* target,
+                                         T* dx,
+                                         T* valid) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        if (target[idx] < 0) {
+            dx[idx] = 0.;
+            valid[idx] = 0.;
+        } else {
+            dx[idx] = 1. / (1. + expf(-x[idx])) - target[idx];
+            valid[idx] = 1.;
+        }
+    }
+}
+
+template <> void SigmoidCrossEntropyGrad<float, CUDAContext>(const int count,
+                                                             const float* x,
+                                                             const float* target,
+                                                             float* dx,
+                                                             float* valid) {
+    _SigmoidCrossEntropyGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                                     x,
+                                                                                target,
+                                                                                    dx,
+                                                                                valid);
+    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** loss.smooth_l1_loss ********************/
@@ -1565,7 +1604,7 @@ template<> void Argmin<float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
-/******************** ndarray.at ********************/
+/******************** ndarray.gather ********************/
 
 template <typename T>
 __global__ void _CanonicalAxis(const int count, const int dim, T* y) {
@@ -1580,14 +1619,14 @@ template <> void CanonicalAxis<int, CUDAContext>(const int count, const int dim,
 }
 
 template <typename T>
-__global__ void _At(const int count,
-                    const int outer_dim,
-                    const int inner_dim,
-                    const int x_slice_dim,
-                    const int y_slice_dim,
-                    const int* indices, 
-                    const T* x,
-                    T* y) {
+__global__ void _Gather(const int count,
+                        const int outer_dim,
+                        const int inner_dim,
+                        const int x_slice_dim,
+                        const int y_slice_dim,
+                        const int* indices, 
+                        const T* x,
+                        T* y) {
     CUDA_KERNEL_LOOP(idx, count) {
         const int outer_idx = idx / inner_dim / y_slice_dim;
         const int slice_idx = idx % inner_dim;
@@ -1599,47 +1638,47 @@ __global__ void _At(const int count,
     }
 }
 
-template <> void At<float, CUDAContext>(const int count,
-                                        const int outer_dim,
-                                        const int inner_dim,
-                                        const int x_slice_dim,
-                                        const int y_slice_dim,
-                                        const int* indices,
-                                        const float* x,
-                                        float* y, 
-                                        CUDAContext* context) {
-    _At<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                             outer_dim, inner_dim,
-                                         x_slice_dim, y_slice_dim,
-                                                   indices, x, y);
+template <> void Gather<float, CUDAContext>(const int count,
+                                            const int outer_dim,
+                                            const int inner_dim,
+                                            const int x_slice_dim,
+                                            const int y_slice_dim,
+                                            const int* indices,
+                                            const float* x,
+                                            float* y, 
+                                            CUDAContext* context) {
+    _Gather<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                 outer_dim, inner_dim,
+                                             x_slice_dim, y_slice_dim,
+                                                       indices, x, y);
     CUDA_POST_KERNEL_CHECK;
 }
 
-template <> void At<int, CUDAContext>(const int count,
-                                      const int outer_dim,
-                                      const int inner_dim,
-                                      const int x_slice_dim,
-                                      const int y_slice_dim,
-                                      const int* indices,
-                                      const int* x,
-                                      int* y, 
-                                      CUDAContext* context) {
-    _At<int> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                           outer_dim, inner_dim,
-                                       x_slice_dim, y_slice_dim,
-                                                 indices, x, y);
+template <> void Gather<int, CUDAContext>(const int count,
+                                          const int outer_dim,
+                                          const int inner_dim,
+                                          const int x_slice_dim,
+                                          const int y_slice_dim,
+                                          const int* indices,
+                                          const int* x,
+                                          int* y, 
+                                          CUDAContext* context) {
+    _Gather<int> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                               outer_dim, inner_dim,
+                                           x_slice_dim, y_slice_dim,
+                                                     indices, x, y);
     CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
-__global__ void _AtGrad(const int count,
-                        const int outer_dim,
-                        const int inner_dim,
-                        const int x_slice_dim,
-                        const int y_slice_dim,
-                        const int* indices,
-                        const T* dy,
-                        T* dx) {
+__global__ void _GatherGrad(const int count,
+                            const int outer_dim,
+                            const int inner_dim,
+                            const int x_slice_dim,
+                            const int y_slice_dim,
+                            const int* indices,
+                            const T* dy,
+                            T* dx) {
     CUDA_KERNEL_LOOP(idx, count) {
         const int outer_idx = idx / inner_dim / y_slice_dim;
         const int slice_idx = idx % inner_dim;
@@ -1651,33 +1690,33 @@ __global__ void _AtGrad(const int count,
     }
 }
 
-template <> void AtGrad<float, CUDAContext>(const int count,
-                                            const int outer_dim,
-                                            const int inner_dim,
-                                            const int x_slice_dim,
-                                            const int y_slice_dim,
-                                            const int* indices,
-                                            const float* dy,
-                                            float* dx) {
-    _AtGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                                 outer_dim, inner_dim,
-                                             x_slice_dim, y_slice_dim,
-                                                     indices, dy, dx);
+template <> void GatherGrad<float, CUDAContext>(const int count,
+                                                const int outer_dim,
+                                                const int inner_dim,
+                                                const int x_slice_dim,
+                                                const int y_slice_dim,
+                                                const int* indices,
+                                                const float* dy,
+                                                float* dx) {
+    _GatherGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                     outer_dim, inner_dim,
+                                                 x_slice_dim, y_slice_dim,
+                                                         indices, dy, dx);
     CUDA_POST_KERNEL_CHECK;
 }
 
-template <> void AtGrad<int, CUDAContext>(const int count,
-                                          const int outer_dim,
-                                          const int inner_dim,
-                                          const int x_slice_dim,
-                                          const int y_slice_dim,
-                                          const int* indices,
-                                          const int* dy,
-                                          int* dx) {
-    _AtGrad<int> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                               outer_dim, inner_dim,
-                                           x_slice_dim, y_slice_dim,
-                                                   indices, dy, dx);
+template <> void GatherGrad<int, CUDAContext>(const int count,
+                                              const int outer_dim,
+                                              const int inner_dim,
+                                              const int x_slice_dim,
+                                              const int y_slice_dim,
+                                              const int* indices,
+                                              const int* dy,
+                                              int* dx) {
+    _GatherGrad<int> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                   outer_dim, inner_dim,
+                                               x_slice_dim, y_slice_dim,
+                                                       indices, dy, dx);
     CUDA_POST_KERNEL_CHECK;
 }
 
@@ -3779,7 +3818,7 @@ __global__ void _ROIPooling(const int count,
                             const int height, const int width,
                             const int pool_h, const int pool_w, 
                             const T* x,
-                            const T* roi,
+                            const T* rois,
                             int* mask,
                             T* y) {
     CUDA_KERNEL_LOOP(idx, count) {
@@ -3788,43 +3827,41 @@ __global__ void _ROIPooling(const int count,
         int c = (idx / pool_w / pool_h) % channels;
         int n = idx / pool_w / pool_h / channels;
 
-        roi += n * 5;
-        int im_idx = roi[0];
+        const T* offset_rois = rois + n * 5;
+        int roi_batch_ind = offset_rois[0];
 
-        if (im_idx < 0) {
+        if (roi_batch_ind < 0) {
             y[idx] = 0;
             mask[idx] = 0;
             continue;
         }
 
-        int x1 = round(roi[1] * spatial_scale);
-        int y1 = round(roi[2] * spatial_scale);
-        int x2 = round(roi[3] * spatial_scale);
-        int y2 = round(roi[4] * spatial_scale);
+        int roi_start_w = round(offset_rois[1] * spatial_scale);
+        int roi_start_h = round(offset_rois[2] * spatial_scale);
+        int roi_end_w = round(offset_rois[3] * spatial_scale);
+        int roi_end_h = round(offset_rois[4] * spatial_scale);
 
-        int roi_height = max(y2 - y1 + 1, 1);
-        int roi_width = max(x2 - x1 + 1, 1);
+        int roi_width = max(roi_end_w - roi_start_w + 1, 1);
+        int roi_height = max(roi_end_h - roi_start_h + 1, 1);
+        const T bin_size_h = (T)roi_height / (T)pool_h;
+        const T bin_size_w = (T)roi_width / (T)pool_w;
 
-        const float bin_size_h = (float)roi_height / (float)pool_h;
-        const float bin_size_w = (float)roi_width / (float)pool_w;
+        int hstart = floor(bin_size_h * ph);
+        int wstart = floor(bin_size_w * pw);
+        int hend = ceil(bin_size_h * (ph + 1));
+        int wend = ceil(bin_size_w * (pw + 1));
 
-        int start_h = floor(bin_size_h * ph);
-        int start_w = floor(bin_size_w * pw);
-        int end_h = ceil(bin_size_h * (ph + 1));
-        int end_w = ceil(bin_size_w * (pw + 1));
+        hstart = min(max(hstart + roi_start_h, 0), height);
+        hend = min(max(hend + roi_start_h, 0), height);
+        wstart = min(max(wstart + roi_start_w, 0), width);
+        wend = min(max(wend + roi_start_w, 0), width);
 
-        start_h = min(max(start_h + y1, 0), height);
-        start_w = min(max(start_w + x1, 0), width);
-        end_h = min(max(end_h + y1, 0), height);
-        end_w = min(max(end_w + x1, 0), width);
-
-        bool is_empty = (end_h <= start_h) || (end_w <= start_w);
+        bool is_empty = (hend <= hstart) || (wend <= wstart);
         float max_val = is_empty ? 0 : -FLT_MAX;
         int max_idx = -1;
-        x += ((im_idx * channels + c) * height * width);
-
-        for (int h = start_h; h < end_h; ++h) {
-            for (int w = start_w; w < end_w; ++w) {
+        x += ((roi_batch_ind * channels + c) * height * width);
+        for (int h = hstart; h < hend; ++h) {
+            for (int w = wstart; w < wend; ++w) {
                 const int x_idx = h * width + w;
                 if (x[x_idx] > max_val) {
                     max_val = x[x_idx];
@@ -3832,7 +3869,6 @@ __global__ void _ROIPooling(const int count,
                 }
             }
         }
-
         y[idx] = max_val;
         mask[idx] = max_idx;
     }
@@ -3841,11 +3877,11 @@ __global__ void _ROIPooling(const int count,
 template<> void ROIPooling<float, CUDAContext>(const float spatial_scale, 
                                                const int pool_h, const int pool_w,
                                                Tensor* x,
-                                               Tensor* roi,
+                                               Tensor* rois,
                                                Tensor* mask,
                                                Tensor* y) {
     auto* Xdata = x->data<float, CUDAContext>();
-    auto* Rdata = roi->data<float, CUDAContext>();
+    auto* Rdata = rois->data<float, CUDAContext>();
     auto* Ydata = y->mutable_data<float, CUDAContext>();
     auto* Mdata = mask->mutable_data<int, CUDAContext>();
     TIndex channels = x->dim(1), count = y->count();
@@ -3870,81 +3906,84 @@ __global__ void _ROIPoolingGrad(const int count,
                                 const int height, const int width,
                                 const int pool_h, const int pool_w, 
                                 const T* dy,
-                                const T* roi,
+                                const T* rois,
                                 const int* mask,
                                 T* dx) {
     CUDA_KERNEL_LOOP(idx, count) {
         int w = idx % width;
         int h = (idx / width) % height;
         int c = (idx / width / height) % channels;
-        int im_idx = idx / width / height / channels;
+        int n = idx / width / height / channels;
 
-        T diff = 0;
+        T gradient = 0;
 
-        for (int n = 0; n < num_rois; ++n) {
-            const T* cur_roi = roi + n * 5;
-            const int im_idx_spec = cur_roi[0];
+        for (int roi_n = 0; roi_n < num_rois; ++roi_n) {
+            const T* offset_rois = rois + roi_n * 5;
+            int roi_batch_ind = offset_rois[0];
 
-            if (im_idx != im_idx_spec) continue;
+            if (n != roi_batch_ind) continue;
 
-            int x1 = round(cur_roi[1] * spatial_scale);
-            int y1 = round(cur_roi[2] * spatial_scale);
-            int x2 = round(cur_roi[3] * spatial_scale);
-            int y2 = round(cur_roi[4] * spatial_scale);
+            int roi_start_w = round(offset_rois[1] * spatial_scale);
+            int roi_start_h = round(offset_rois[2] * spatial_scale);
+            int roi_end_w = round(offset_rois[3] * spatial_scale);
+            int roi_end_h = round(offset_rois[4] * spatial_scale);
 
-            const bool is_in = (w >= x1 && w <= x2 && h >= y1 && h <= y2);
+            const bool in_roi = (w >= roi_start_w &&
+                                 w <= roi_end_w &&
+                                 h >= roi_start_h &&
+                                 h <= roi_end_h);
 
-            if (!is_in) continue;
-
-            int roi_height = max(y2 - y1 + 1, 1);
-            int roi_width = max(x2 - x1 + 1, 1);
-
-            const float bin_size_h = (float)roi_height / (float)pool_h;
-            const float bin_size_w = (float)roi_width / (float)pool_w;
-
-            int start_ph = floor((h - y1) / bin_size_h);
-            int start_pw = floor((w - x1) / bin_size_w);
-            int end_ph = ceil((h + 1 - y1) / bin_size_h);
-            int end_pw = ceil((w + 1 - x1) / bin_size_w);
-
-            start_ph = min(max(start_ph, 0), pool_h);
-            start_pw = min(max(start_pw, 0), pool_w);
-            end_ph = min(max(end_ph, 0), pool_h);
-            end_pw = min(max(end_pw, 0), pool_w);
+            if (!in_roi) continue;
 
             int y_offset = (n * channels + c) * pool_h * pool_w;
-            const T* dy_off = dy + y_offset;
-            const int* mask_off = mask + y_offset;
+            const T* offset_dy = dy + y_offset;
+            const int* offset_mask = mask + y_offset;
 
-            for (int ph = start_ph; ph < end_ph; ++ph) {
-                for (int pw = start_pw; pw < end_pw; ++pw) {
+            int roi_width = max(roi_end_w - roi_start_w + 1, 1);
+            int roi_height = max(roi_end_h - roi_start_h + 1, 1);
+
+            const T bin_size_h = (T)roi_height / (T)pool_h;
+            const T bin_size_w = (T)roi_width / (T)pool_w;
+
+            int phstart = floor(static_cast<T>(h - roi_start_h) / bin_size_h);
+            int phend = ceil(static_cast<T>(h - roi_start_h + 1) / bin_size_h);
+            int pwstart = floor(static_cast<T>(w - roi_start_w) / bin_size_w);
+            int pwend = ceil(static_cast<T>(w - roi_start_w + 1) / bin_size_w);
+
+            phstart = min(max(phstart, 0), pool_h);
+            phend = min(max(phend, 0), pool_h);
+            pwstart = min(max(pwstart, 0), pool_w);
+            pwend = min(max(pwend, 0), pool_w);
+
+            for (int ph = phstart; ph < phend; ++ph) {
+                for (int pw = pwstart; pw < pwend; ++pw) {
                     int pool_idx = ph * pool_w + pw;
-                    if (mask_off[pool_idx] == (h * width + w)) {
-                        diff += dy_off[pool_idx];
+                    if (offset_mask[pool_idx] == (h * width + w)) {
+                        gradient += offset_dy[pool_idx];
                     }
                 }
             }
         }
-        dx[idx] = diff;
+        dx[idx] = gradient;
     }
 }
 
 template<> void ROIPoolingGrad<float, CUDAContext>(const float spatial_scale, 
                                                    const int pool_h, const int pool_w,
                                                    Tensor* dy,
-                                                   Tensor* roi,
+                                                   Tensor* rois,
                                                    Tensor* mask,
                                                    Tensor* dx) {
     auto* dYdata = dy->data<float, CUDAContext>();
-    auto* Rdata = roi->data<float, CUDAContext>();
+    auto* Rdata = rois->data<float, CUDAContext>();
     auto* Mdata = mask->data<int, CUDAContext>();
     auto* dXdata = dx->mutable_data<float, CUDAContext>();
     TIndex channels = dx->dim(1), count = dx->count();
     TIndex height = dx->dim(2), width = dx->dim(3);
-    _ROIPoolingGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                  roi->dim(0), 
-                                                                spatial_scale, 
-                                                                     channels, 
+    _ROIPoolingGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                 rois->dim(0),
+                                                                spatial_scale,
+                                                                     channels,
                                                                 height, width,
                                                                pool_h, pool_w,
                                                                        dYdata,
@@ -3957,205 +3996,261 @@ template<> void ROIPoolingGrad<float, CUDAContext>(const float spatial_scale,
 /******************** vision.roi_align ********************/
 
 template <typename T>
-__global__ void _ROIAlign(const int count, 
-                          const float spatial_scale, 
-                          const int channels, 
+__device__ T _ROIAlignInterpolate(const T* Xdata,
+                                  const int height,
+                                  const int width,
+                                  T y,
+                                  T x) {
+    if (y < -1.0 || y > height || x < -1.0 || x > width) return 0;
+    if (y <= 0) y = 0;
+    if (x <= 0) x = 0;
+
+    int y_low = (int)y;
+    int x_low = (int)x;
+    int y_high;
+    int x_high;
+
+    if (y_low >= height - 1) {
+        y_high = y_low = height - 1;
+        y = (T)y_low;
+    } else {
+        y_high = y_low + 1;
+    }
+
+    if (x_low >= width - 1) {
+        x_high = x_low = width - 1;
+        x = (T)x_low;
+    } else {
+        x_high = x_low + 1;
+    }
+
+    T ly = y - y_low;
+    T lx = x - x_low;
+    T hy = 1. - ly, hx = 1. - lx;
+    T v1 = Xdata[y_low * width + x_low];
+    T v2 = Xdata[y_low * width + x_high];
+    T v3 = Xdata[y_high * width + x_low];
+    T v4 = Xdata[y_high * width + x_high];
+    T w1 = hy * hx, w2 = hy * lx, w3 = ly * hx, w4 = ly * lx;
+    T val = (w1 * v1 + w2 * v2 + w3 * v3 + w4 * v4);
+    return val;
+}
+
+template <typename T>
+__global__ void _ROIAlign(const int count,
+                          const float spatial_scale,
+                          const int channels,
                           const int height, const int width,
-                          const int pool_h, const int pool_w, 
-                          const T* x,
-                          const T* roi,
-                          T* mask_h,
-                          T* mask_w,
-                          T* y) {
+                          const int pool_h, const int pool_w,
+                          const int sampling_ratio,
+                          const T* Xdata,
+                          const T* rois,
+                          T* Ydata) {
     CUDA_KERNEL_LOOP(idx, count) {
         int pw = idx % pool_w;
         int ph = (idx / pool_w) % pool_h;
         int c = (idx / pool_w / pool_h) % channels;
         int n = idx / pool_w / pool_h / channels;
 
-        roi += n * 5;
-        int roi_batch_ind = roi[0];
+        const T* offset_rois = rois + n * 5;
+        int roi_batch_ind = offset_rois[0];
 
         if (roi_batch_ind < 0) {
-            y[idx] = 0;
-            mask_h[idx] = 0;
-            mask_w[idx] = 0;
+            Ydata[idx] = 0;
             continue;
         }
 
-        T roi_start_w = (roi[1]) * spatial_scale;
-        T roi_start_h = (roi[2]) * spatial_scale;
-        T roi_end_w = (roi[3]) * spatial_scale;
-        T roi_end_h = (roi[4]) * spatial_scale;
+        T roi_start_w = offset_rois[1] * spatial_scale;
+        T roi_start_h = offset_rois[2] * spatial_scale;
+        T roi_end_w = offset_rois[3] * spatial_scale;
+        T roi_end_h = offset_rois[4] * spatial_scale;
 
-        T roi_width = max(roi_end_w - roi_start_w, static_cast<T>(1));
-        T roi_height = max(roi_end_h - roi_start_h, static_cast<T>(1));
+        T roi_width = max(roi_end_w - roi_start_w, (T)1.);
+        T roi_height = max(roi_end_h - roi_start_h, (T)1.);
         T bin_size_h = static_cast<T>(roi_height) / static_cast<T>(pool_h);
         T bin_size_w = static_cast<T>(roi_width) / static_cast<T>(pool_w);
 
-        T hstart = static_cast<T>((ph)* bin_size_h);
-        T wstart = static_cast<T>((pw)* bin_size_w);
-        T hend = static_cast<T>((ph + 1) * bin_size_h);
-        T wend = static_cast<T>((pw + 1) * bin_size_w);
+        const T* offset_Xdata = Xdata + (roi_batch_ind * channels + c) * height * width;
 
-        hstart = min(max(hstart + roi_start_h, static_cast<T>(0)), static_cast<T>(height));
-        hend = min(max(hend + roi_start_h, static_cast<T>(0)), static_cast<T>(height));
-        wstart = min(max(wstart + roi_start_w, static_cast<T>(0)), static_cast<T>(width));
-        wend = min(max(wend + roi_start_w, static_cast<T>(0)), static_cast<T>(width));
-        bool is_empty = (hend <= hstart) || (wend <= wstart);
+        int roi_bin_grid_h = (sampling_ratio > 0) ? sampling_ratio : ceil(roi_height / pool_h);
+        int roi_bin_grid_w = (sampling_ratio > 0) ? sampling_ratio : ceil(roi_width / pool_w);
 
-        T maxval = is_empty ? 0 : -FLT_MAX;
-        T max_h_idx = -1;
-        T max_w_idx = -1;
-        x += (roi_batch_ind * channels + c) * height * width;
-        T h_stride = (hend - hstart) / 3.0;
-        T w_stride = (wend - wstart) / 3.0;
-        for (T h = hstart + h_stride; h <= hend - h_stride + 0.01; h += max(h_stride, 0.01)) {
-            for (T w = wstart + w_stride; w <= wend - w_stride + 0.01; w += max(w_stride, 0.01)) {
-                int hlow = min(max(static_cast<int>(floor(h)), 0), height - 1);
-                int hhigh = min(max(static_cast<int>(ceil(h)), 0), height - 1);
-                int wleft = min(max(static_cast<int>(floor(w)), 0), width - 1);
-                int wright = min(max(static_cast<int>(ceil(w)), 0), width - 1);
-                int topleft = hlow * width + wleft;
-                int topright = hlow * width + wright;
-                int bottomleft = hhigh * width + wleft;
-                int bottomright = hhigh * width + wright;
+        const T num_bin_grids = roi_bin_grid_h * roi_bin_grid_w;
 
-                T alpha = (hlow == hhigh) ? static_cast<T>(0.5) : (h - hlow) / (hhigh - hlow);
-                T beta = (wleft == wright) ? static_cast<T>(0.5) : (w - wleft) / (wright - wleft);
-                T value = (1 - alpha) * (1 - beta) * x[topleft] + alpha * (1 - beta) * x[bottomleft]
-                    + (1 - alpha) * beta * x[topright] + alpha * beta * x[bottomright];
-
-                if (value > maxval) {
-                    maxval = value;
-                    max_h_idx = h;
-                    max_w_idx = w;
-                }
+        T output_val = 0.;
+        for (int iy = 0; iy < roi_bin_grid_h; iy++) {
+            const T y = roi_start_h + ph * bin_size_h +
+                static_cast<T>(iy + .5f) * bin_size_h / static_cast<T>(roi_bin_grid_h);
+            for (int ix = 0; ix < roi_bin_grid_w; ix++) {
+                const T x = roi_start_w + pw * bin_size_w + 
+                    static_cast<T>(ix + .5f) * bin_size_w / static_cast<T>(roi_bin_grid_w);
+                T val = _ROIAlignInterpolate(offset_Xdata, height, width, y, x);
+                output_val += val;
             }
         }
-        y[idx] = maxval;
-        mask_h[idx] = max_h_idx;
-        mask_w[idx] = max_w_idx;
+        output_val /= num_bin_grids;
+        Ydata[idx] = output_val;
     }
 }
-                                                  
-template<> void ROIAlign<float, CUDAContext>(const float spatial_scale, 
+
+template<> void ROIAlign<float, CUDAContext>(const float spatial_scale,
                                              const int pool_h, const int pool_w,
+                                             const int sampling_ratio,
                                              Tensor* x,
-                                             Tensor* roi,
-                                             Tensor* mask_h,
-                                             Tensor* mask_w,
+                                             Tensor* rois,
                                              Tensor* y) {
     auto* Xdata = x->data<float, CUDAContext>();
-    auto* Rdata = roi->data<float, CUDAContext>();
+    auto* Rdata = rois->data<float, CUDAContext>();
     auto* Ydata = y->mutable_data<float, CUDAContext>();
-    auto* MHdata = mask_h->mutable_data<float, CUDAContext>();
-    auto* MWdata = mask_w->mutable_data<float, CUDAContext>();
     TIndex channels = x->dim(1), count = y->count();
     TIndex height = x->dim(2), width = x->dim(3);
-    _ROIAlign<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                          spatial_scale, 
-                                                               channels, 
+    _ROIAlign<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                          spatial_scale,
+                                                               channels,
                                                           height, width,
                                                          pool_h, pool_w,
+                                                         sampling_ratio,
                                                                   Xdata,
                                                                   Rdata,
-                                                                 MHdata,
-                                                                 MWdata,
                                                                  Ydata);
     CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
-__global__ void _ROIAlignGrad(const int count, 
-                              const int num_rois, 
-                              const T spatial_scale, 
-                              const int channels, 
+__device__ void _ROIAlignInterpolateGrad(const int height,
+                                         const int width,
+                                         T y, T x,
+                                         T & w1, T & w2, T & w3, T & w4,
+                                         int & x_low, int & x_high,
+                                         int & y_low, int & y_high) {
+    if (y < -1.0 || y > height || x < -1.0 || x > width) {
+        w1 = w2 = w3 = w4 = 0.;
+        x_low = x_high = y_low = y_high = -1;
+        return;
+    }
+
+    if (y <= 0) y = 0;
+    if (x <= 0) x = 0;
+
+    y_low = (int)y;
+    x_low = (int)x;
+
+    if (y_low >= height - 1) {
+        y_high = y_low = height - 1;
+        y = (T)y_low;
+    } else {
+        y_high = y_low + 1;
+    }
+
+    if (x_low >= width - 1) {
+        x_high = x_low = width - 1;
+        x = (T)x_low;
+    } else {
+        x_high = x_low + 1;
+    }
+
+    T ly = y - y_low;
+    T lx = x - x_low;
+    T hy = 1. - ly, hx = 1. - lx;
+    w1 = hy * hx, w2 = hy * lx, w3 = ly * hx, w4 = ly * lx;
+    return;
+}
+
+template <typename T>
+__global__ void _ROIAlignGrad(const int count,
+                              const int num_rois,
+                              const T spatial_scale,
+                              const int channels,
                               const int height, const int width,
-                              const int pool_h, const int pool_w, 
-                              const T* dy,
-                              const T* roi,
-                              const T* mask_h,
-                              const T* mask_w,
-                              T* dx) {
+                              const int pool_h, const int pool_w,
+                              const int sampling_ratio,
+                              const T* dYdata,
+                              const T* rois,
+                              T* dXdata) {
     CUDA_KERNEL_LOOP(idx, count) {
-        int w = idx % width;
-        int h = (idx / width) % height;
-        int c = (idx / width / height) % channels;
-        int n = idx / width / height / channels;
+        int pw = idx % pool_w;
+        int ph = (idx / pool_w) % pool_h;
+        int c = (idx / pool_w / pool_h) % channels;
+        int n = idx / pool_w / pool_h / channels;
 
-        T gradient = 0;
-        for (int roi_n = 0; roi_n < num_rois; ++roi_n) {
-            const T* offset_roi = roi + roi_n * 5;
-            int roi_batch_ind = offset_roi[0];
-            if (n != roi_batch_ind) continue;
+        const T* offset_rois = rois + n * 5;
+        int roi_batch_ind = offset_rois[0];
 
-            T roi_start_w = (offset_roi[1]) * spatial_scale;
-            T roi_start_h = (offset_roi[2]) * spatial_scale;
-            T roi_end_w = (offset_roi[3]) * spatial_scale;
-            T roi_end_h = (offset_roi[4]) * spatial_scale;
+        if (roi_batch_ind < 0) continue;
 
-            const bool in_roi = (w > roi_start_w - 1.0 && 
-                                 w < roi_end_w + 1.0 && 
-                                 h > roi_start_h - 1.0 
-                                 && h < roi_end_h + 1.0);
-            if (!in_roi) continue;
+        T roi_start_w = offset_rois[1] * spatial_scale;
+        T roi_start_h = offset_rois[2] * spatial_scale;
+        T roi_end_w = offset_rois[3] * spatial_scale;
+        T roi_end_h = offset_rois[4] * spatial_scale;
 
-            int offset = (roi_n * channels + c) * pool_h * pool_w;
-            const T* offset_dy = dy + offset;
-            const T* offset_mask_h = mask_h + offset;
-            const T* offset_mask_w = mask_w + offset;
+        T roi_width = max(roi_end_w - roi_start_w, (T)1.);
+        T roi_height = max(roi_end_h - roi_start_h, (T)1.);
+        T bin_size_h = static_cast<T>(roi_height) / static_cast<T>(pool_h);
+        T bin_size_w = static_cast<T>(roi_width) / static_cast<T>(pool_w);
 
-            T roi_width = max(roi_end_w - roi_start_w, static_cast<T>(1));
-            T roi_height = max(roi_end_h - roi_start_h, static_cast<T>(1));
+        T* offset_dXdata = dXdata + (roi_batch_ind * channels + c) * height * width;
 
-            for (int ph = 0; ph < pool_h; ++ph) {
-                for (int pw = 0; pw < pool_w; ++pw) {
-                    const int pool_idx = ph * pool_w + pw;
-                    T a_h = offset_mask_h[pool_idx];
-                    T a_w = offset_mask_w[pool_idx];
-                    int hlow = min(max(static_cast<int>(floor(a_h)), 0), height - 1);
-                    int hhigh = min(max(static_cast<int>(ceil(a_h)), 0), height - 1);
-                    int wleft = min(max(static_cast<int>(floor(a_w)), 0), width - 1);
-                    int wright = min(max(static_cast<int>(ceil(a_w)), 0), width - 1);
-                    if (h != hlow && h != hhigh && w != wleft && w != wright) continue;
-                    T alpha = (hlow == hhigh) ? static_cast<T>(0.5) : (a_h - hlow) / (hhigh - hlow);
-                    T beta = (wleft == wright) ? static_cast<T>(0.5) : (a_w - wleft) / (wright - wleft);
-                    if (h == hlow && w == wleft) gradient += offset_dy[pool_idx] * (1 - alpha) * (1 - beta);
-                    else if (h == hlow && w == wright) gradient += offset_dy[pool_idx] * (1 - alpha) * beta;
-                    else if (h == hhigh && w == wleft) gradient += offset_dy[pool_idx] * alpha * (1 - beta);
-                    else if (h == hhigh && w == wright) gradient += offset_dy[pool_idx] * alpha * beta;
+        int y_offset = (n * channels + c) * pool_h * pool_w;
+        const T* offset_dYdata = dYdata + y_offset;
+        const T dYdata_this_bin = offset_dYdata[ph * pool_w + pw];
+
+        int roi_bin_grid_h = (sampling_ratio > 0) ? sampling_ratio : ceil(roi_height / pool_h);
+        int roi_bin_grid_w = (sampling_ratio > 0) ? sampling_ratio : ceil(roi_width / pool_w);
+
+        const T num_bin_grids = roi_bin_grid_h * roi_bin_grid_w;
+
+        for (int iy = 0; iy < roi_bin_grid_h; iy++) {
+            const T y = roi_start_h + ph * bin_size_h + 
+                static_cast<T>(iy + .5f) * bin_size_h / static_cast<T>(roi_bin_grid_h);
+            for (int ix = 0; ix < roi_bin_grid_w; ix++) {
+                const T x = roi_start_w + pw * bin_size_w + 
+                    static_cast<T>(ix + .5f) * bin_size_w / static_cast<T>(roi_bin_grid_w);
+
+                T w1, w2, w3, w4;
+                int x_low, x_high, y_low, y_high;
+
+                _ROIAlignInterpolateGrad(height, width,
+                                                  y, x,
+                                        w1, w2, w3, w4,
+                         x_low, x_high, y_low, y_high);
+
+                T g1 = dYdata_this_bin * w1 / num_bin_grids;
+                T g2 = dYdata_this_bin * w2 / num_bin_grids;
+                T g3 = dYdata_this_bin * w3 / num_bin_grids;
+                T g4 = dYdata_this_bin * w4 / num_bin_grids;
+
+                if (x_low >= 0 && x_high >= 0 && y_low >= 0 && y_high >= 0) {
+                    atomicAdd(offset_dXdata + y_low * width + x_low, static_cast<T>(g1));
+                    atomicAdd(offset_dXdata + y_low * width + x_high, static_cast<T>(g2));
+                    atomicAdd(offset_dXdata + y_high * width + x_low, static_cast<T>(g3));
+                    atomicAdd(offset_dXdata + y_high * width + x_high, static_cast<T>(g4));
                 }
             }
         }
-        dx[idx] = gradient;
     }
 }
 
-template<> void ROIAlignGrad<float, CUDAContext>(const float spatial_scale, 
+template<> void ROIAlignGrad<float, CUDAContext>(const float spatial_scale,
                                                  const int pool_h, const int pool_w,
+                                                 const int sampling_ratio,
                                                  Tensor* dy,
-                                                 Tensor* roi,
-                                                 Tensor* mask_h,
-                                                 Tensor* mask_w,
+                                                 Tensor* rois,
                                                  Tensor* dx) {
     auto* dYdata = dy->data<float, CUDAContext>();
-    auto* Rdata = roi->data<float, CUDAContext>();
-    auto* MHdata = mask_h->data<float, CUDAContext>();
-    auto* MWdata = mask_w->data<float, CUDAContext>();
+    auto* Rdata = rois->data<float, CUDAContext>();
     auto* dXdata = dx->mutable_data<float, CUDAContext>();
-    TIndex channels = dx->dim(1), count = dx->count();
+    TIndex channels = dx->dim(1), count = dy->count();
     TIndex height = dx->dim(2), width = dx->dim(3);
+    math::Set<float, CUDAContext>(dx->count(), 0, dXdata);
     _ROIAlignGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                                                roi->dim(0),
+                                                               rois->dim(0),
                                                               spatial_scale,
                                                                    channels,
                                                               height, width,
                                                              pool_h, pool_w,
+                                                             sampling_ratio,
                                                                      dYdata,
                                                                       Rdata,
-                                                                     MHdata,
-                                                                     MWdata,
                                                                     dXdata);
     CUDA_POST_KERNEL_CHECK;
 }

@@ -16,14 +16,13 @@ class SigmoidCrossEntropyOp final : public Operator<Context> {
  public:
     SigmoidCrossEntropyOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          normalization(OperatorBase::GetSingleArg<string>("normalization", "FULL")) {}
+          normalization(OperatorBase::GetSingleArg<string>("normalization", "VALID")) {}
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    Tensor losses;
-    Tensor* prob;
+    Tensor valid, losses;
     string normalization;
 };
 
@@ -32,13 +31,13 @@ class SigmoidCrossEntropyGradientOp final : public Operator<Context> {
  public:
     SigmoidCrossEntropyGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          normalization(OperatorBase::GetSingleArg<string>("normalization", "FULL")) {}
+          normalization(OperatorBase::GetSingleArg<string>("normalization", "VALID")) {}
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    Tensor* prob;
+    Tensor valid;
     string normalization;
 };
 

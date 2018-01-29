@@ -4,17 +4,17 @@
 // Written by Ting Pan
 // --------------------------------------------------------
 
-#ifndef DRAGON_OPERATORS_NDARRAY_AT_OP_H_
-#define DRAGON_OPERATORS_NDARRAY_AT_OP_H_
+#ifndef DRAGON_OPERATORS_NDARRAY_GATHER_OP_H_
+#define DRAGON_OPERATORS_NDARRAY_GATHER_OP_H_
 
 #include "core/operator.h"
 
 namespace dragon {
 
 template <class Context>
-class AtOp final : public Operator<Context> {
+class GatherOp final : public Operator<Context> {
  public:
-    AtOp(const OperatorDef& op_def, Workspace* ws) 
+    GatherOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", 0)) {}
 
@@ -27,9 +27,9 @@ class AtOp final : public Operator<Context> {
 };
 
 template <class Context>
-class AtGradientOp final : public Operator<Context> {
+class GatherGradientOp final : public Operator<Context> {
  public:
-    AtGradientOp(const OperatorDef& op_def, Workspace* ws) 
+    GatherGradientOp(const OperatorDef& op_def, Workspace* ws) 
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", 0)),
           acc_grad(OperatorBase::GetSingleArg<bool>("acc_gradient", false)) {}
@@ -44,4 +44,4 @@ class AtGradientOp final : public Operator<Context> {
 
 }    // namespace dragon
 
-#endif    // DRAGON_OPERATORS_NDARRAY_AT_OP_H_
+#endif    // DRAGON_OPERATORS_NDARRAY_GATHER_OP_H_

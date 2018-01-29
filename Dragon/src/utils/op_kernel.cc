@@ -500,16 +500,42 @@ template<> void AbsGrad<float, CPUContext>(const int count, const float* dy, flo
 
 /******************** loss.sigmoid_cross_entropy ********************/
 
-template <> void SigmoidCrossEntropy<float, CPUContext>(const int count, 
-                                                        const float* x, 
-                                                        const float* target, 
-                                                        float* loss) {
+template <> void SigmoidCrossEntropy<float, CPUContext>(const int count,
+                                                        const float* x,
+                                                        const float* target,
+                                                        float* loss,
+                                                        float* valid) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
-        loss[i] = std::log(1 + std::exp(x[i] - 2 * x[i] * (x[i] >= 0)))
-                      + x[i] * ((x[i] >= 0) - target[i]);
+        if (target[i] < 0) {
+            loss[i] = 0.;
+            valid[i] = 0.;
+        } else {
+            loss[i] = std::log(1 + std::exp(x[i] - 2 * x[i] * (x[i] >= 0)))
+                + x[i] * ((x[i] >= 0) - target[i]);
+            valid[i] = 1.;
+        }
+    }
+}
+
+template <> void SigmoidCrossEntropyGrad<float, CPUContext>(const int count,
+                                                            const float* x,
+                                                            const float* target,
+                                                            float* dx,
+                                                            float* valid) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        if (target[i] < 0) {
+            dx[i] = 0.;
+            valid[i] = 0.;
+        } else {
+            dx[i] = 1. / (1. + expf(-x[i])) - target[i];
+            valid[i] = 1.;
+        }
     }
 }
 
@@ -902,7 +928,7 @@ template<> void Argmin<float, CPUContext>(const int count,
     }
 }
 
-/******************** ndarray.at ********************/
+/******************** ndarray.gather ********************/
 
 template <> void CanonicalAxis<int, CPUContext>(const int count, const int dim, int* y) {
 #ifdef WITH_OMP
@@ -912,15 +938,15 @@ template <> void CanonicalAxis<int, CPUContext>(const int count, const int dim, 
 }
 
 template <typename T>
-void _At(const int count,
-         const int outer_dim,
-         const int inner_dim,
-         const int x_slice_dim,
-         const int y_slice_dim,
-         const int* indices,
-         const T* x,
-         T* y,
-         CPUContext* ctx) {
+void _Gather(const int count,
+             const int outer_dim,
+             const int inner_dim,
+             const int x_slice_dim,
+             const int y_slice_dim,
+             const int* indices,
+             const T* x,
+             T* y,
+             CPUContext* ctx) {
     TIndex x_offset, y_offset, x_idx_offset, y_idx_offset;
     for (int i = 0; i < y_slice_dim; ++i) {
         y_idx_offset = i;
@@ -935,44 +961,44 @@ void _At(const int count,
     }
 }
 
-template <> void At<float, CPUContext>(const int count,
-                                       const int outer_dim,
-                                       const int inner_dim,
-                                       const int x_slice_dim,
-                                       const int y_slice_dim,
-                                       const int* indices,
-                                       const float* x,
-                                       float* y,
-                                       CPUContext* ctx) {
-    _At<float>(count, outer_dim, inner_dim,
-                  x_slice_dim, y_slice_dim,
-                       indices, x, y, ctx);
+template <> void Gather<float, CPUContext>(const int count,
+                                           const int outer_dim,
+                                           const int inner_dim,
+                                           const int x_slice_dim,
+                                           const int y_slice_dim,
+                                           const int* indices,
+                                           const float* x,
+                                           float* y,
+                                           CPUContext* ctx) {
+    _Gather<float>(count, outer_dim, inner_dim,
+                      x_slice_dim, y_slice_dim,
+                           indices, x, y, ctx);
     
 }
 
-template <> void At<int, CPUContext>(const int count,
-                                     const int outer_dim,
-                                     const int inner_dim,
-                                     const int x_slice_dim,
-                                     const int y_slice_dim,
-                                     const int* indices,
-                                     const int* x,
-                                     int* y,
-                                     CPUContext* ctx) {
-    _At<int>(count, outer_dim, inner_dim,
-                x_slice_dim, y_slice_dim,
-                     indices, x, y, ctx);
+template <> void Gather<int, CPUContext>(const int count,
+                                         const int outer_dim,
+                                         const int inner_dim,
+                                         const int x_slice_dim,
+                                         const int y_slice_dim,
+                                         const int* indices,
+                                         const int* x,
+                                         int* y,
+                                         CPUContext* ctx) {
+    _Gather<int>(count, outer_dim, inner_dim,
+                    x_slice_dim, y_slice_dim,
+                         indices, x, y, ctx);
 }
 
 template <typename T>
-void _AtGrad(const int count,
-             const int outer_dim,
-             const int inner_dim,
-             const int x_slice_dim,
-             const int y_slice_dim,
-             const int* indices,
-             const T* dy,
-             T* dx) {
+void _GatherGrad(const int count,
+                 const int outer_dim,
+                 const int inner_dim,
+                 const int x_slice_dim,
+                 const int y_slice_dim,
+                 const int* indices,
+                 const T* dy,
+                 T* dx) {
     TIndex x_offset, y_offset, x_idx_offset, y_idx_offset;
     for (int i = 0; i < y_slice_dim; ++i) {
         y_idx_offset = i;
@@ -988,30 +1014,30 @@ void _AtGrad(const int count,
     }
 }
 
-template <> void AtGrad<float, CPUContext>(const int count,
-                                           const int outer_dim,
-                                           const int inner_dim,
-                                           const int x_slice_dim,
-                                           const int y_slice_dim,
-                                           const int* indices,
-                                           const float* dy,
-                                           float* dx) {
-    _AtGrad<float>(count, outer_dim, inner_dim,
-                      x_slice_dim, y_slice_dim,
-                              indices, dy, dx);
+template <> void GatherGrad<float, CPUContext>(const int count,
+                                               const int outer_dim,
+                                               const int inner_dim,
+                                               const int x_slice_dim,
+                                               const int y_slice_dim,
+                                               const int* indices,
+                                               const float* dy,
+                                               float* dx) {
+    _GatherGrad<float>(count, outer_dim, inner_dim,
+                          x_slice_dim, y_slice_dim,
+                                  indices, dy, dx);
 }
 
-template <> void AtGrad<int, CPUContext>(const int count,
-                                         const int outer_dim,
-                                         const int inner_dim,
-                                         const int x_slice_dim,
-                                         const int y_slice_dim,
-                                         const int* indices,
-                                         const int* dy,
-                                         int* dx) {
-    _AtGrad<int>(count, outer_dim, inner_dim,
-                    x_slice_dim, y_slice_dim,
-                            indices, dy, dx);
+template <> void GatherGrad<int, CPUContext>(const int count,
+                                             const int outer_dim,
+                                             const int inner_dim,
+                                             const int x_slice_dim,
+                                             const int y_slice_dim,
+                                             const int* indices,
+                                             const int* dy,
+                                             int* dx) {
+    _GatherGrad<int>(count, outer_dim, inner_dim,
+                        x_slice_dim, y_slice_dim,
+                                indices, dy, dx);
 }
 
 /******************** ndarray.concat ********************/
@@ -2694,20 +2720,18 @@ template<> void ROIPoolingGrad<float, CPUContext>(const float spatial_scale,
 
 template<> void ROIAlign<float, CPUContext>(const float spatial_scale, 
                                             const int pool_h, const int pool_w,
+                                            const int sampling_ratio,
                                             Tensor* x,
-                                            Tensor* roi,
-                                            Tensor* mask_h,
-                                            Tensor* mask_w,
+                                            Tensor* rois,
                                             Tensor* y) {
     NOT_IMPLEMENTED;
 }
 
-template<> void ROIAlignGrad<float, CPUContext>(const float spatial_scale, 
+template<> void ROIAlignGrad<float, CPUContext>(const float spatial_scale,
                                                 const int pool_h, const int pool_w,
+                                                const int sampling_ratio,
                                                 Tensor* dy,
-                                                Tensor* roi,
-                                                Tensor* mask_h,
-                                                Tensor* mask_w,
+                                                Tensor* rois,
                                                 Tensor* dx) {
     NOT_IMPLEMENTED;
 }

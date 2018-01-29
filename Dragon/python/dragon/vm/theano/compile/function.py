@@ -4,10 +4,11 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-import copy
-from collections import OrderedDict
-import numpy as np
 import sys
+import copy
+import numpy as np
+from collections import OrderedDict
+from six.moves import xrange
 
 import dragon.core.mpi as mpi
 import dragon.core.workspace as ws

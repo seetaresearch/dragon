@@ -4,7 +4,12 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from . import *
+
 
 def BatchNorm(inputs, axis=-1, momentum=0.9, eps=1e-3,
               use_stats=-1, mode='DEFAULT', **kwargs):

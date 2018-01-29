@@ -9,22 +9,17 @@ template <class Context> template <typename T>
 void ROIAlignOp<Context>::RunWithType() {
     kernel::ROIAlign<T, Context>(spatial_scale,
                                 pool_h, pool_w,
+                                sampling_ratio,
                                      &input(0),
                                      &input(1),
-                                        mask_h,
-                                        mask_w,
                                     output(0));
 }
 
 template <class Context>
 void ROIAlignOp<Context>::RunOnDevice() {
-    mask_h = ws()->CreateTensor("/mnt/" + anchor() + "/roi_align_mask_h");
-    mask_w = ws()->CreateTensor("/mnt/" + anchor() + "/roi_align_mask_w");
-    vector<TIndex> dims({input(1).dim(0), input(0).dim(1), pool_h, pool_w});
-
-    output(0)->Reshape(dims);
-    mask_h->Reshape(dims);
-    mask_w->Reshape(dims);
+    output(0)->Reshape(vector<TIndex>({ input(1).dim(0),
+                                        input(0).dim(1),
+                                        pool_h, pool_w }));
 
     if (input(0).template IsType<float>()) return RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
@@ -40,18 +35,14 @@ template <class Context> template <typename T>
 void ROIAlignGradientOp<Context>::RunWithType() {
     kernel::ROIAlignGrad<T, Context>(spatial_scale,
                                     pool_h, pool_w,
+                                    sampling_ratio,
                                         &input(-1),
                                          &input(1),
-                                            mask_h,
-                                            mask_w,
                                         output(0));
 }
 
 template <class Context>
 void ROIAlignGradientOp<Context>::RunOnDevice() {
-    mask_h = ws()->GetTensor("/mnt/" + anchor() + "/roi_align_mask_h");
-    mask_w = ws()->GetTensor("/mnt/" + anchor() + "/roi_align_mask_w");
-
     output(0)->ReshapeLike(input(0));
 
     if (input(0).template IsType<float>()) return RunWithType<float>();

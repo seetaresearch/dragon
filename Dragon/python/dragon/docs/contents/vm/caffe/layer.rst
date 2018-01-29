@@ -68,6 +68,7 @@ List                        Brief
 `ReshapeLayer`_             The implementation of ``ReshapeLayer``.
 `PermuteLayer`_             The implementation of ``PermuteLayer``.
 `FlattenLayer`_             The implementation of ``FlattenLayer``.
+`GatherLayer`_              The extended implementation for ``GatherOp``.
 `SoftmaxLayer`_             The implementation of ``SoftmaxLayer``.
 `ArgMaxLayer`_              The implementation of ``ArgMaxLayer``.
 `BatchNormLayer`_           The implementation of ``BatchNormLayer``.
@@ -174,6 +175,7 @@ API Reference
 .. _ReshapeLayer: #dragon.vm.caffe.layers.common.ReshapeLayer
 .. _PermuteLayer: #dragon.vm.caffe.layers.common.PermuteLayer
 .. _FlattenLayer: #dragon.vm.caffe.layers.common.FlattenLayer
+.. _GatherLayer: #dragon.vm.caffe.layers.common.GatherLayer
 .. _SoftmaxLayer: #dragon.vm.caffe.layers.common.SoftmaxLayer
 .. _ArgMaxLayer: #dragon.vm.caffe.layers.common.ArgMaxLayer
 .. _BatchNormLayer: #dragon.vm.caffe.layers.common.BatchNormLayer

@@ -4,21 +4,24 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import numpy as np
 from six.moves import range as xrange
-from dragon.core.tensor import GetTensorName
-import dragon.core.workspace as ws
 
 from . import *
 
-def At(inputs, indices, axis=0, acc_gradient=False, **kwargs):
-    """1D At interface of NDArray.
+
+def Gather(inputs, indices, axis=0, acc_gradient=False, **kwargs):
+    """Gather the input according to the indices along the given axis.
 
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    indices : list or Tensor
+    indices : int, list or Tensor
         The indices to form output tensor.
     axis : int
         The start axis.
@@ -31,29 +34,28 @@ def At(inputs, indices, axis=0, acc_gradient=False, **kwargs):
         The output tensor.
 
     """
+    CheckInputs(inputs, 1)
     arguments = ParseArguments(locals())
+    arguments['inputs'] = [arguments['inputs'],
+                           Tensor.Convert(indices, dtype='int32')]
+    arguments['indices'] = None
 
-    if isinstance(inputs, list): CheckInputs(inputs, 2)
-    elif isinstance(inputs, Tensor):
-        if not isinstance(indices, list):
-            raise ValueError('The type of indices should be list.')
-        indices = np.array(indices, dtype=np.float32)
-        tensor = GetTensorName()
-        ws.FeedTensor(tensor, indices)
-        arguments['inputs'] = [arguments['inputs'], Tensor(tensor)]
+    output = Tensor.CreateOperator(op_type='Gather', nout=1, **arguments)
 
-    output = Tensor.CreateOperator(op_type='At', nout=1, **arguments)
-
-    if isinstance(inputs, Tensor):
-        if inputs.shape is not None:
-            output.shape = inputs.shape[:]
+    if inputs.shape is not None:
+        output.shape = inputs.shape[:]
+        if not isinstance(indices, Tensor):
+            if not isinstance(indices, (list, tuple)):
+                indices = [indices]
             output.shape[axis] = len(indices)
+        else:
+            output.shape[axis] = None
 
     return output
 
 
 def RandomPick(inputs, max_samples=1, axis=0, **kwargs):
-    """1D RandomPick interface of NDArray.
+    """Randomly pick the input along the given axis.
 
     Parameters
     ----------
@@ -540,8 +542,6 @@ def Pad(inputs, paddings, mode='CONSTANT', value=0, **kwargs):
     arguments['value'] = float(arguments['value'])
 
     output = Tensor.CreateOperator(nout=1, op_type='Pad', **arguments)
-
-
 
     return output
 

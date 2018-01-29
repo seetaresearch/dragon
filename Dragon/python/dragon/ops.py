@@ -4,6 +4,10 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from .operators import initializer as init
 from .operators import vision
 from .operators import loss
@@ -92,7 +96,7 @@ InstanceNorm = norm.InstanceNorm
 L2Norm = norm.L2Norm
 
 # ndarray
-At = ndarray.At
+Gather = ndarray.Gather
 RandomPick = ndarray.RandomPick
 Crop = ndarray.Crop
 Reduce = ndarray.Reduce

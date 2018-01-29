@@ -4,9 +4,14 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import numpy as np
 
 from . import *
+
 
 def SparseSoftmaxCrossEntropy(inputs, axis=1, normalization='VALID', ignore_labels=(), **kwargs):
     """SoftmaxCrossEntropy with sparse labels.
@@ -48,7 +53,7 @@ def SparseSoftmaxCrossEntropy(inputs, axis=1, normalization='VALID', ignore_labe
     return output
 
 
-def SigmoidCrossEntropy(inputs, normalization='FULL', **kwargs):
+def SigmoidCrossEntropy(inputs, normalization='VALID', **kwargs):
     """SigmoidCrossEntropy with binary labels.
 
     Parameters
@@ -56,7 +61,7 @@ def SigmoidCrossEntropy(inputs, normalization='FULL', **kwargs):
     inputs : list of Tensor
         The inputs, represent [input, labels].
     normalization : str
-        The normalization, ``UNIT``, ``FULL``, ``BATCH_SIZE`` or ``NONE``.
+        The normalization, ``UNIT``, ``FULL``, ``VALID``, ``BATCH_SIZE`` or ``NONE``.
 
     Returns
     -------

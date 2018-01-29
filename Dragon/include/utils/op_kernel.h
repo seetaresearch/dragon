@@ -198,7 +198,18 @@ void AbsGrad(const int count, const T* dy, T* dx);
 /******************** loss.sigmoid_cross_entropy ********************/
 
 template <typename T, class Context>
-void SigmoidCrossEntropy(const int count, const T* x, const T* target, T* loss);
+void SigmoidCrossEntropy(const int count,
+                         const T* x,
+                         const T* target,
+                         T* loss,
+                         T* valid);
+
+template <typename T, class Context>
+void SigmoidCrossEntropyGrad(const int count,
+                             const T* x,
+                             const T* target,
+                             T* dx,
+                             T* valid);
 
 /******************** loss.smooth_l1_loss ********************/
 
@@ -312,31 +323,31 @@ void Argmin(const int count,
             const T* x, 
             T* y);
 
-/******************** ndarray.at ********************/
+/******************** ndarray.gather ********************/
 
 template <typename T, class Context>
 void CanonicalAxis(const int count, const int dim, T* y);
 
 template <typename T, class Context>
-void At(const int count,
-        const int outer_dim,
-        const int inner_dim,
-        const int x_slice_dim,
-        const int y_slice_dim,
-        const int* indices,
-        const T* x,
-        T* y,
-        Context* ctx);
-
-template <typename T, class Context>
-void AtGrad(const int count,
+void Gather(const int count,
             const int outer_dim,
             const int inner_dim,
             const int x_slice_dim,
             const int y_slice_dim,
             const int* indices,
-            const T* dy,
-            T* dx);
+            const T* x,
+            T* y,
+            Context* ctx);
+
+template <typename T, class Context>
+void GatherGrad(const int count,
+                const int outer_dim,
+                const int inner_dim,
+                const int x_slice_dim,
+                const int y_slice_dim,
+                const int* indices,
+                const T* dy,
+                T* dx);
 
 /******************** ndarray.concat ********************/
 
@@ -791,7 +802,7 @@ void ROIPooling(const float spatial_scale,
                 const int pool_h,
                 const int pool_w,
                 Tensor* x,
-                Tensor* roi,
+                Tensor* rois,
                 Tensor* mask,
                 Tensor* y);
 
@@ -800,30 +811,28 @@ void ROIPoolingGrad(const float spatial_scale,
                     const int pool_h, 
                     const int pool_w,
                     Tensor* dy,
-                    Tensor* roi,
+                    Tensor* rois,
                     Tensor* mask,
                     Tensor* dx);
 
 /******************** vision.roi_align ********************/
 
 template <typename T, class Context>
-void ROIAlign(const float spatial_scale, 
-              const int pool_h, 
+void ROIAlign(const float spatial_scale,
+              const int pool_h,
               const int pool_w,
+              const int sampling_ratio,
               Tensor* x,
-              Tensor* roi,
-              Tensor* mask_h,
-              Tensor* mask_w,
+              Tensor* rois,
               Tensor* y);
 
 template <typename T, class Context>
 void ROIAlignGrad(const float spatial_scale, 
                   const int pool_h, 
                   const int pool_w,
+                  const int sampling_ratio,
                   Tensor* dy,
-                  Tensor* roi,
-                  Tensor* mask_h,
-                  Tensor* mask_w,
+                  Tensor* rois,
                   Tensor* dx);
 
 }    // namespace kernel

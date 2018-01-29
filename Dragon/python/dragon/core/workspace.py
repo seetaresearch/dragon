@@ -4,18 +4,24 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 try:
     import cPickle
 except:
     import pickle as cPickle
+import os
+import numpy as np
+from google.protobuf.message import Message
+from six.moves import range as xrange
+
+from dragon.import_c_apis import *
+
 import dragon.core.utils as utils
 import dragon.core.mpi as mpi
 import dragon.protos.dragon_pb2 as pb
-import numpy as np
-import os
-from dragon import *
-from google.protobuf.message import Message
-from six.moves import range as xrange
 
 CURRENT_GRAPH_IDX = 0
 
@@ -43,6 +49,7 @@ _DATA_TYPES = {
     'float32': np.float32,
     'float64': np.float64,
 }
+
 
 def _stringify_proto(obj):
     """

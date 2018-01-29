@@ -4,10 +4,14 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-import numpy as np
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from dragon.operators.misc import Run
 
 from . import *
+
 
 def LMDBData(**kwargs):
     """Prefetch Image data with `LMDB`_ database.

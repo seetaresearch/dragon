@@ -18,7 +18,8 @@ class ROIAlignOp : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           pool_h(OperatorBase::GetSingleArg<int>("pool_h", 0)),
           pool_w(OperatorBase::GetSingleArg<int>("pool_w", 0)),
-          spatial_scale(OperatorBase::GetSingleArg<float>("spatial_scale", 1.0)) {
+          spatial_scale(OperatorBase::GetSingleArg<float>("spatial_scale", 1.0)),
+          sampling_ratio(OperatorBase::GetSingleArg<int>("sampling_ratio", 2)) {
         CHECK_GT(pool_h, 0) << "\npool_h must > 0";
         CHECK_GT(pool_w, 0) << "\npool_w must > 0";
     }
@@ -27,9 +28,8 @@ class ROIAlignOp : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    int pool_h, pool_w;
+    int pool_h, pool_w, sampling_ratio;
     float spatial_scale;
-    Tensor* mask_h, *mask_w;
 };
 
 template <class Context>
@@ -39,7 +39,8 @@ class ROIAlignGradientOp : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           pool_h(OperatorBase::GetSingleArg<int>("pool_h", 0)),
           pool_w(OperatorBase::GetSingleArg<int>("pool_w", 0)),
-          spatial_scale(OperatorBase::GetSingleArg<float>("spatial_scale", 1.0)) {
+          spatial_scale(OperatorBase::GetSingleArg<float>("spatial_scale", 1.0)),
+          sampling_ratio(OperatorBase::GetSingleArg<int>("sampling_ratio", 2)) {
         CHECK_GT(pool_h, 0) << "\npool_h must > 0";
         CHECK_GT(pool_w, 0) << "\npool_w must > 0";
     }
@@ -48,9 +49,8 @@ class ROIAlignGradientOp : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    int pool_h, pool_w;
+    int pool_h, pool_w, sampling_ratio;
     float spatial_scale;
-    Tensor* mask_h, *mask_w;
 };
 
 }    // namespace dragon

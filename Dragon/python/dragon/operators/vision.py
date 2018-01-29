@@ -13,6 +13,7 @@ from six.moves import range as xrange
 
 from . import *
 
+
 def Conv2d(inputs, num_output, kernel_size,
            stride=1, pad=0, dilation=1, group=1,
            padding='VALID', data_format='NCHW', **kwargs):
@@ -327,7 +328,7 @@ def ROIPooling(inputs, pool_h, pool_w, spatial_scale, **kwargs):
     return Tensor.CreateOperator(nout=1, op_type='ROIPooling', **arguments)
 
 
-def ROIAlign(inputs, pool_h=0, pool_w=0, spatial_scale=1.0, **kwargs):
+def ROIAlign(inputs, pool_h=0, pool_w=0, spatial_scale=1.0, sampling_ratio=2, **kwargs):
     """Max ROIAlign, introduced by `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
 
     The first dimension of input must be ``1``.
@@ -342,6 +343,8 @@ def ROIAlign(inputs, pool_h=0, pool_w=0, spatial_scale=1.0, **kwargs):
         The width of pooled tensor.
     spatial_scale : float
         The ``inverse`` of total down-sampling multiples on input tensor.
+    sampling_ratio : int
+        The number of sampling grids for each RoI bin.
 
     Returns
     -------

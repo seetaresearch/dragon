@@ -4,7 +4,12 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from . import *
+
 
 def LSTMUnit(c_t_1, gate_input, cont_t=None, **kwargs):
     """Simple LSTMCell module.
@@ -31,13 +36,3 @@ def LSTMUnit(c_t_1, gate_input, cont_t=None, **kwargs):
         arguments['cont_t'] = cont_t.name
     return Tensor.CreateOperator(inputs=[c_t_1, gate_input], nout=2,
                                  op_type='LSTMUnit', **arguments)
-
-
-
-
-
-
-
-
-
-

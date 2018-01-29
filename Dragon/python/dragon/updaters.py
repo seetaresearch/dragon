@@ -4,10 +4,16 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-import numpy as np
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import pprint
+import numpy as np
+
 import dragon.core.workspace as ws
 from dragon.core.tensor import Tensor
+
 
 class BaseUpdater(object):
     """

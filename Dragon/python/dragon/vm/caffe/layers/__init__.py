@@ -50,6 +50,7 @@ from .common import InnerProductLayer, \
                     ArgMaxLayer, \
                     PermuteLayer, \
                     FlattenLayer, \
+                    GatherLayer, \
                     ConcatLayer, \
                     NormalizeLayer, \
                     InstanceNormLayer, \

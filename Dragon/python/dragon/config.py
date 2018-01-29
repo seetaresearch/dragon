@@ -4,12 +4,17 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
-from dragon.__init__ import *
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
+import sys
 import logging
 logger = logging.getLogger('dragon')
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler(sys.stdout))
+
+from dragon.import_c_apis import *
 
 option = {}
 

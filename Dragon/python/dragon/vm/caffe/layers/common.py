@@ -266,6 +266,25 @@ class FlattenLayer(Layer):
         return ops.Flatten(input, **self._param)
 
 
+class GatherLayer(Layer):
+    """The extended implementation of ``GatherOp``.
+
+    Parameters
+    ----------
+    axis : int
+        The axis for gathering. Refer `GatherParameter.axis`_.
+
+    """
+    def __init__(self, LayerParameter):
+        super(GatherLayer, self).__init__(LayerParameter)
+        param = LayerParameter.gather_param
+        self._param = {'axis': param.axis}
+
+    def Setup(self, bottom):
+        super(GatherLayer, self).Setup(bottom)
+        return ops.Gather(bottom[0], indices=bottom[1], **self._param)
+
+
 class SoftmaxLayer(Layer):
     """The implementation of ``SoftmaxLayer``.
 
