@@ -282,6 +282,8 @@ API Reference
 .. _NormalizeParameter.scale_filler: https://github.com/weiliu89/caffe/blob/f5eac041aafbc8b86954bd161710f65e70042ce6/src/caffe/proto/caffe.proto#L1332
 .. _NormalizeParameter.channel_shared: https://github.com/weiliu89/caffe/blob/f5eac041aafbc8b86954bd161710f65e70042ce6/src/caffe/proto/caffe.proto#L1334
 .. _NormalizeParameter.eps: https://github.com/weiliu89/caffe/blob/f5eac041aafbc8b86954bd161710f65e70042ce6/src/caffe/proto/caffe.proto#L1336
+.. _ReductionParameter.operation: https://github.com/BVLC/caffe/blob/effcdb0b62410b2a6a54f18f23cf90733a115673/src/caffe/proto/caffe.proto#L973
+.. _ReductionParameter.axis: https://github.com/BVLC/caffe/blob/effcdb0b62410b2a6a54f18f23cf90733a115673/src/caffe/proto/caffe.proto#L988
 .. _TileParameter.multiples: https://github.com/neopenx/Dragon/blob/6eeac5fec58ed3d0d79f0b4003471e4a641c72f4/Dragon/python/dragon/vm/caffe/proto/caffe.proto#L1173
 .. _ExpandDimsParameter.axis: https://github.com/neopenx/Dragon/blob/6eeac5fec58ed3d0d79f0b4003471e4a641c72f4/Dragon/python/dragon/vm/caffe/proto/caffe.proto#L1480
 .. _ProposalParameter.feat_stride: https://github.com/sanghoon/caffe/blob/6068dd04ea93cca9fcee036628fdb3ea95b4ebcd/src/caffe/proto/caffe.proto#L431

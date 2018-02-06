@@ -21,6 +21,7 @@ from .operators import mpi
 from .operators import ndarray
 from .operators import norm
 from .operators import recurrent
+from .operators import contrib
 
 # data
 LMDBData = data.LMDBData
@@ -128,7 +129,6 @@ Template = misc.Template
 Accuracy = misc.Accuracy
 StopGradient = misc.StopGradient
 MovingAverage = misc.MovingAverage
-Proposal = misc.Proposal
 
 # cast
 FloatToHalf = cast.FloatToHalf
@@ -136,3 +136,6 @@ FloatToHalf = cast.FloatToHalf
 # mpi
 MPIBroadcast = mpi.MPIBroadcast
 MPIGather = mpi.MPIGather
+
+# contrib
+Proposal = contrib.Proposal # R-CNN

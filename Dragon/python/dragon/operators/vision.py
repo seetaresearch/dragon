@@ -329,7 +329,7 @@ def ROIPooling(inputs, pool_h, pool_w, spatial_scale, **kwargs):
 
 
 def ROIAlign(inputs, pool_h=0, pool_w=0, spatial_scale=1.0, sampling_ratio=2, **kwargs):
-    """Max ROIAlign, introduced by `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
+    """AVG ROIAlign, introduced by `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
 
     The first dimension of input must be ``1``.
 

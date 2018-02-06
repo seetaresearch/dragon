@@ -272,9 +272,14 @@ def Reduce(inputs, axis=-1, operation='NONE', keep_dims=False, **kwargs):
     output = Tensor.CreateOperator(nout=1, op_type='Reduce', **arguments)
 
     if inputs.shape is not None:
-        if axis == -1: output.shape = [1]
+        output.shape = inputs.shape[:]
+        if axis == -1:
+            if keep_dims:
+                for i in xrange(len(output.shape)):
+                    output.shape[i] = 1
+            else: output.shape = [1]
         else:
-            output.shape = inputs.shape[:]
+
             if keep_dims: output.shape[axis] = 1
             else: del output.shape[axis]
 

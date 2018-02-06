@@ -35,8 +35,8 @@ List                   Brief
 `Conv2d`_              2d Convolution.
 `Conv2dTranspose`_     2d Deconvolution.
 `Pool2d`_              2d Pooling, MAX or AVG.
-`ROIPooling`_          ROIPoolin(MAX), introduced by `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
-`ROIAlign`_            ROIAlign(MAX), introduced by `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
+`ROIPooling`_          ROIPooling(MAX), introduced by `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
+`ROIAlign`_            ROIAlign(AVG), introduced by `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
 `LRN`_                 Local Response Normalization, introduced by `[Krizhevsky et.al, 2012] <http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks>`_.
 `NNResize`_            Resize the image with Nearest-Neighbor method.
 `BilinearResize`_      Resize the image with Bi-linear method.
@@ -167,6 +167,14 @@ List                 Brief
 `Proposal`_          Generate Regional Proposals, introduced by `[Ren et.al, 2015] <https://arxiv.org/abs/1506.01497>`_.
 =================    ======================================================================
 
+Contrib
+-------
+=================    ======================================================================
+List                 Brief
+=================    ======================================================================
+`Proposal`_          Generate Regional Proposals, introduced by `[Ren et.al, 2015] <https://arxiv.org/abs/1506.01497>`_.
+=================    ======================================================================
+
 Cast
 ----
 =================    ======================================================================
@@ -279,7 +287,8 @@ List                 Brief
 .. _Accuracy: operators/misc.html#dragon.operators.misc.Accuracy
 .. _StopGradient: operators/misc.html#dragon.operators.misc.StopGradient
 .. _MovingAverage: operators/misc.html#dragon.operators.misc.MovingAverage
-.. _Proposal: operators/misc.html#dragon.operators.misc.Proposal
+
+.. _Proposal: operators/contrib/rcnn.html#dragon.operators.contrib.rcnn.ops.Proposal
 
 .. _FloatToHalf: operators/cast.html#dragon.operators.misc.FloatToHalf
 

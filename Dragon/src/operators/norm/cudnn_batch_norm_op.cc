@@ -244,23 +244,46 @@ void CuDNNBatchNormGradientOp<Context>::TrainingRunWithType() {
 
 template <class Context> template <typename T>
 void CuDNNBatchNormGradientOp<Context>::InferenceRunWithType() {
+    INIT_MULTIPLIER(multiplier, NS);
+    INIT_MULTIPLIER(num_multiplier, N);
+    INIT_MULTIPLIER(spatial_multiplier, S);
+
+    auto* dYdata = input(-1).template data<T, Context>();
+    auto* Sdata = input(3).template data<T, Context>();
+    auto* hVar_data = input(2).template data<T, Context>();
+    auto* tVar_data = var->template mutable_data<T, Context>();
+    auto* NSMul_data = multiplier->template data<T, Context>();
+    auto* SMul_data = spatial_multiplier->template data<T, Context>();
+    auto* NMul_data = num_multiplier->template data<T, Context>();
+    auto* NC_data = num_by_chans.template mutable_data<T, Context>();
+
+    //  gradient w.r.t. scale
+    if (output(1)->name() != "ignore") 
+        LOG(FATAL) << "The gamma should be fixed if using global stats.";
+       
+    //  gradient w.r.t. bias
+    if (output(2)->name() != "ignore") {
+        auto* dBdata = output(2)->template mutable_data<T, Context>();
+        if (data_format == "NCHW") {
+            math::Gemv<T, Context>(CblasNoTrans, NC, S,
+                                1.0, dYdata, SMul_data,
+                                         0.0, NC_data);
+            math::Gemv<T, Context>(CblasTrans, N, C,
+                            1.0, NC_data, NMul_data,
+                                       1.0, dBdata);
+        } else if (data_format == "NHWC") {
+            math::Gemv<T, Context>(CblasTrans, NS, C,
+                             1.0, dYdata, NSMul_data,
+                                        1.0, dBdata);
+        }
+    }
+
+    //  gradient w.r.t. x
     if (output(0)->name() != "ignore") {
-        INIT_MULTIPLIER(multiplier, NS);
-        INIT_MULTIPLIER(num_multiplier, N);
-        INIT_MULTIPLIER(spatial_multiplier, S);
         stddev = ws()->GetBuffer();
         stddev->ReshapeLike(input(0));
-
-        auto* dYdata = input(-1).template data<T, Context>();
         auto* dXdata = output(0)->template mutable_data<T, Context>();
         auto* Std_data = stddev->template mutable_data<T, Context>();
-        auto* Sdata = input(3).template data<T, Context>();
-        auto* hVar_data = input(2).template data<T, Context>();
-        auto* tVar_data = var->template mutable_data<T, Context>();
-        auto* NSMul_data = multiplier->template data<T, Context>();
-        auto* SMul_data = spatial_multiplier->template data<T, Context>();
-        auto* NMul_data = num_multiplier->template data<T, Context>();
-        auto* NC_data = num_by_chans.template mutable_data<T, Context>();
 
         //  compute stddev
         ctx().template Copy<T, Context, Context>(var->count(), tVar_data, hVar_data);

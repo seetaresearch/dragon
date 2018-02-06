@@ -1474,14 +1474,17 @@ message ExpandDimsParameter {
 }
 
 message ProposalParameter {
-  optional uint32 feat_stride = 1 [default = 16];
-  optional uint32 base_size = 2 [default = 16];
-  optional uint32 min_size = 3 [default = 16];
-  repeated float ratio = 4;
-  repeated float scale = 5;
-  optional uint32 pre_nms_topn = 6 [default = 6000];
-  optional uint32 post_nms_topn = 7 [default = 300];
-  optional float nms_thresh = 8 [default = 0.7];
+  repeated int32 stride = 1;
+  repeated float ratio = 2;
+  repeated float scale = 3;
+  optional uint32 pre_nms_top_n = 4 [default = 6000];
+  optional uint32 post_nms_top_n = 5 [default = 300];
+  optional float nms_thresh = 6 [default = 0.7];
+  optional uint32 min_size = 7 [default = 16];
+  optional int32 min_level = 8 [default = 2];
+  optional int32 max_level = 9 [default = 5];
+  optional int32 canonical_scale = 10 [default = 224];
+  optional int32 canonical_level = 11 [default = 4];
 }
 
 message BatchRenormParameter {

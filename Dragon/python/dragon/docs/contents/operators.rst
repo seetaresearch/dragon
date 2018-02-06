@@ -64,6 +64,7 @@ Custom
    operators/custom/data_process
    operators/custom/vec_mult
 
+
 =========================================       =====================================================================
 List                                            Brief
 =========================================       =====================================================================
@@ -73,6 +74,19 @@ List                                            Brief
 =========================================       =====================================================================
 
 
+Contrib
+-------
+
+.. toctree::
+   :hidden:
+
+   operators/contrib/rcnn
+
+=========================================       =====================================================================
+List                                            Brief
+=========================================       =====================================================================
+`dragon.operators.contrib.rcnn`_                Contrib ops for R-CNN.
+=========================================       =====================================================================
 
 
 .. _dragon.operators.data: operators/data.html
@@ -92,3 +106,5 @@ List                                            Brief
 .. _dragon.operators.custom.minibatch: operators/custom/minibatch.html
 .. _dragon.operators.custom.data_process: operators/custom/data_process.html
 .. _dragon.operators.custom.vec_mult: operators/custom/vec_mult.html
+.. _dragon.operators.contrib.rcnn: operators/contrib/rcnn.html
+

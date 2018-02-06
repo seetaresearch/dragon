@@ -272,7 +272,7 @@ class GatherLayer(Layer):
     Parameters
     ----------
     axis : int
-        The axis for gathering. Refer `GatherParameter.axis`_.
+        The axis for gathering. Refer ``GatherParameter.axis``.
 
     """
     def __init__(self, LayerParameter):
@@ -623,35 +623,44 @@ class ProposalLayer(Layer):
 
     Parameters
     ----------
-    feat_stride : int
-        The stride of input. Refer `ProposalParameter.feat_stride`_.
-    base_size : int
-        The base size of anchors. Refer `ProposalParameter.base_size`_.
-    min_size : int
-        The min size of anchors. Refer `ProposalParameter.min_size`_.
-    ratio : list of float
-        The ratios of anchors. Refer `ProposalParameter.ratio`_.
+    stride : list of int
+        The stride of anchors. Refer ``ProposalParameter.stride``.
     scale : list of float
         The scales of anchors. Refer `ProposalParameter.scale`_.
-    pre_nms_topn : int
-         The num of anchors before nms. Refer `ProposalParameter.pre_nms_topn`_.
-    post_nms_topn : int
+    ratio : list of float
+        The ratios of anchors. Refer `ProposalParameter.ratio`_.
+    pre_nms_top_n : int
+        The num of anchors before nms. Refer `ProposalParameter.pre_nms_topn`_.
+    post_nms_top_n : int
         The num of anchors after nms. Refer `ProposalParameter.post_nms_topn`_.
     nms_thresh : float
         The threshold of nms. Refer `ProposalParameter.nms_thresh`_.
+    min_size : int
+        The min size of anchors. Refer `ProposalParameter.min_size`_.
+    min_level : int
+        Finest level of the FPN pyramid. Refer ``ProposalParameter.min_level``.
+    max_level : int
+        Coarsest level of the FPN pyramid. Refer ``ProposalParameter.max_level``.
+    canonical_scale : int
+        The baseline scale of mapping policy. Refer ``ProposalParameter.canonical_scale``.
+    canonical_level : int
+        Heuristic level of the canonical scale. Refer ``ProposalParameter.canonical_level``.
 
     """
     def __init__(self, LayerParameter):
         super(ProposalLayer, self).__init__(LayerParameter)
         param = LayerParameter.proposal_param
-        self._param = {'base_size': param.base_size,
-                       'min_size': param.min_size,
-                       'feat_stride': param.feat_stride,
-                       'pre_nms_topn': param.pre_nms_topn,
-                       'post_nms_topn': param.post_nms_topn,
-                       'nms_thresh': param.nms_thresh,
+        self._param = {'strides': param.stride,
                        'ratios': param.ratio,
-                       'scales': param.scale}
+                       'scales': param.scale,
+                       'pre_nms_top_n': param.pre_nms_top_n,
+                       'post_nms_top_n': param.post_nms_top_n,
+                       'nms_thresh': param.nms_thresh,
+                       'min_size': param.min_size,
+                       'min_level': param.min_level,
+                       'max_level': param.max_level,
+                       'canonical_scale': param.canonical_scale,
+                       'canonical_level': param.canonical_level}
 
     def Setup(self, bottom):
         super(ProposalLayer, self).Setup(bottom)
