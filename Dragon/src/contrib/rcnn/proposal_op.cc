@@ -104,7 +104,7 @@ void ProposalOp<Context>::RunWithType() {
     //  distribute rois into K bins
     if (OutputSize() > 1) {
         CHECK_EQ(max_level - min_level + 1, (int)OutputSize())
-            << "Excepted " << OutputSize() << " outputs for levels between "
+            << "\nExcepted " << OutputSize() << " outputs for levels between "
             << "[" << min_level << ", " << max_level << "].";
         vector< vector<TIndex> > roi_bins(OutputSize(), vector<TIndex>());
         vector<T*> outputs;
@@ -130,7 +130,7 @@ template <class Context>
 void ProposalOp<Context>::RunOnDevice() {
     num_images = input(0).dim(0);
     CHECK_EQ(input(-1).count(), num_images * 3)
-        << "Excepted " << num_images * 3 << " groups image info, "
+        << "\nExcepted " << num_images * 3 << " groups image info, "
         << "but got " << input(-1).count() / 3 << ".";
     roi_indices_.Reshape(vector<TIndex>(1, post_nms_top_n));
     output(0)->Reshape(vector<TIndex>({ num_images * post_nms_top_n, 5 }));

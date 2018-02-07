@@ -42,4 +42,4 @@ class ProposalOp final : public Operator<Context> {
 
 }    // namespace dragon
 
-#endif    // DRAGON_OPERATORS_CONTRIB_RCNN_PROPOSAL_OP_H_
+#endif    // DRAGON_CONTRIB_RCNN_PROPOSAL_OP_H_

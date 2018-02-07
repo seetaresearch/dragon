@@ -25,6 +25,7 @@ void L2NormOp<Context>::RunWithType() {
     auto* Ydata = output(0)->template mutable_data<T, Context>();
     auto* Bdata = buffer->template mutable_data<T, Context>();
     auto* Ndata = norm->template mutable_data<T, Context>();
+    math::Set<T, Context>(norm->count(), dragon_cast<T, float>(eps), Ndata);
 
     for (int n = 0; n < outer_dim; n++) {
         if (across_inner) {
@@ -34,7 +35,6 @@ void L2NormOp<Context>::RunWithType() {
             Ndata_[n] = pow(sum_of_sqr + eps, 0.5);
             math::Scale<T, Context>(buffer->count(), 1.0 / Ndata_[n], Xdata, Ydata);
         } else {
-            math::Set<T, Context>(norm->count(), dragon_cast<T, float>(eps), Ndata);
             math::Square<T, Context>(buffer->count(), Xdata, Bdata);
             //  compute T1 = \sum_{i} x_{i,j}^{2}
             math::Gemv<T, Context>(CblasTrans, dim, inner_dim,
