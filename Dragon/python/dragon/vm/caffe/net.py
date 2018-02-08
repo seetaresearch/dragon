@@ -550,7 +550,7 @@ class Net(object):
         The implementation of `Net_outputs(pycaffe.py, L81)`_.
 
         """
-        return self._net_outputs
+        return list(self._net_outputs)
 
 
     def replace(self, A, B):
@@ -571,8 +571,8 @@ class Net(object):
         --------
         >>> import dragon.ops as ops
         >>> data, label = ops.LMDBData()
-        >>> net.Replace(net.blobs['data'].data, data)
-        >>> net.Replace(net.blobs['label'].data, label)
+        >>> net.replace(net.blobs['data'].data, data)
+        >>> net.replace(net.blobs['label'].data, label)
 
         """
         self._swap_tensors[A] = B
