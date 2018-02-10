@@ -552,7 +552,6 @@ class Net(object):
         """
         return list(self._net_outputs)
 
-
     def replace(self, A, B):
         """Replace the A as B.
 

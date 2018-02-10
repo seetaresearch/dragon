@@ -116,6 +116,7 @@ void L2NormGradientOp<Context>::RunWithType() {
         if (across_inner) {
             Ndata = norm->template data<T, CPUContext>();
             T sum_of_x_mul_dy = math::Dot<T, Context>(buffer->count(), Xdata, dYdata);
+            if (mode == "MEAN") sum_of_x_mul_dy = sum_of_x_mul_dy / dim;
             math::Scale<T, Context>(buffer->count(), sum_of_x_mul_dy / Ndata[n] / Ndata[n], Xdata, dXdata);
             math::Sub<T, Context>(buffer->count(), dYdata, dXdata, dXdata);
             math::Scal<T, Context>(buffer->count(), T(1.0 / Ndata[n]), dXdata);
@@ -123,7 +124,7 @@ void L2NormGradientOp<Context>::RunWithType() {
             //  compute \sum_{i} x_{i, j}dy_{i, j}
             math::Mul<T, Context>(buffer->count(), Xdata, dYdata, Bdata);
             math::Gemv<T, Context>(CblasTrans, dim, inner_dim,
-                                                          1.0,
+                             mode == "MEAN" ? 1.0 / dim : 1.0,
                                               Bdata, DMuldata,
                                                           0.0,
                                                   BInnerdata);

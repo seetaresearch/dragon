@@ -36,7 +36,7 @@ find_packages('dragon')
 find_modules()
 
 setup(name = 'dragon',
-      version='0.2.1.6',
+      version='0.2.1.7',
       description = 'Dragon: A Computation Graph Virtual Machine Based Deep Learning Framework',
       url='https://github.com/neopenx/Dragon',
       author='Ting Pan',

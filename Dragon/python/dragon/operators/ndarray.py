@@ -279,7 +279,6 @@ def Reduce(inputs, axis=-1, operation='NONE', keep_dims=False, **kwargs):
                     output.shape[i] = 1
             else: output.shape = [1]
         else:
-
             if keep_dims: output.shape[axis] = 1
             else: del output.shape[axis]
 
@@ -445,7 +444,7 @@ def Repeat(inputs, axis=-1, repeats=1, **kwargs):
         The input tensor.
     axis : int
         The axis to repeat. Defaults is ``-1`` (Repeat as Scalar).
-    repeats : int
+    repeats : int or Tensor
         The magnitude of repeating.
 
     Returns
@@ -456,12 +455,17 @@ def Repeat(inputs, axis=-1, repeats=1, **kwargs):
     """
     CheckInputs(inputs, 1)
     arguments = ParseArguments(locals())
+    arguments['extra_inputs'] = [Tensor.Convert(repeats, dtype='int32')]
+    arguments['repeats'] = arguments['extra_inputs'][0].name
 
     output = Tensor.CreateOperator(nout=1, op_type='Repeat', **arguments)
 
-    if inputs.shape is not None:
+    if inputs.shape is not None and \
+            not isinstance(repeats, Tensor):
         if axis == -1:
-            total_count = np.prod(inputs.shape)
+            fake_shape = inputs.shape[:]
+            fake_shape = [1 if dim is None else dim for dim in fake_shape]
+            total_count = np.prod(fake_shape)
             output.shape = [total_count * repeats]
         else:
             output.shape = inputs.shape[:]

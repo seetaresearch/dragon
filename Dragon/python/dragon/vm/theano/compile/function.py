@@ -262,7 +262,6 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
             all_exprs = dict(all_exprs, **output.expressions)
         all_extra_targets = all_extra_targets.union(output.extra_targets)
         if len(output.grad_wrts) > 0: existing_grads = True
-    for extra_target in all_extra_targets: meta_graph.target.extend([extra_target])
 
     # we should sort out the topology of these operators before using
     all_exprs = sorted(all_exprs.items(), key=lambda d: d[0])
@@ -280,9 +279,10 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
                     external_input_exprs = OrderedDict(external_input_exprs, **new_tensor.expressions)
                 else:
                     external_input_exprs = dict(external_input_exprs, **new_tensor.expressions)
-                    external_input_exprs = OrderedDict(sorted(external_input_exprs.items(), lambda x, y: cmp(x[1], y[1])))
+                external_input_exprs = OrderedDict(sorted(external_input_exprs.items(), key=lambda A: A[0]))
             elif isinstance(new_tensor, np.ndarray):
                 ws.FeedTensor(new_tensor, GetTensorName())
+            all_extra_targets = all_extra_targets.union(new_tensor.extra_targets)
         external_input_ops = [v for k, v in external_input_exprs.items()]
         for op in forward_ops:
             op.input.extend([name_dict[input] if input in name_dict
@@ -298,8 +298,15 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
         forward_ops, grad_ops = GraphGradientMaker.Make(forward_ops, targets)
     else:
         grad_ops = []
+
+    # Write Ops
     meta_graph.op.extend(forward_ops + grad_ops)
 
+    # Write Extra Targets
+    for extra_target in all_extra_targets:
+        meta_graph.target.extend([extra_target])
+
+    # Write Misc
     if len(outputs) > 0:
         GraphDef_Device(meta_graph)
         GraphDef_Opt(meta_graph)

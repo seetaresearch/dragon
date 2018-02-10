@@ -17,28 +17,30 @@ class RepeatOp : public Operator<Context> {
     RepeatOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          repeats(OperatorBase::GetSingleArg<int>("repeats", 1)) {}
+          repeats_desc(OperatorBase::GetSingleArg<string>("repeats", "")) {}
 
     void RunOnDevice() override;
     template<typename T> void RunWithType();
 
  protected:
-    TIndex axis, repeats, outer_dim, dim, inner_dim;
+    TIndex axis, outer_dim, dim, inner_dim, reps;
+    string repeats_desc;
 };
 
 template <class Context>
 class RepeatGradientOp : public Operator<Context> {
-public:
+ public:
     RepeatGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          repeats(OperatorBase::GetSingleArg<int>("repeats", 1)) {}
+          repeats_desc(OperatorBase::GetSingleArg<string>("repeats", "")) {}
 
     void RunOnDevice() override;
     template<typename T> void RunWithType();
 
 protected:
-    TIndex axis, repeats, outer_dim, dim, inner_dim;
+    TIndex axis, outer_dim, dim, inner_dim, reps;
+    string repeats_desc;
 };
 
 }    // namespace dragon

@@ -8,11 +8,11 @@ template <class Context> template <typename T>
 void RepeatOp<Context>::RunWithType() {
     auto* Xdata = input(0).template data<T, Context>();
     auto* Ydata = output(0)->template mutable_data<T, Context>();
-    kernel::Repeat(output(0)->count(), 
+    kernel::Repeat(output(0)->count(),
                             outer_dim,
                                   dim,
                             inner_dim,
-                              repeats,
+                                 reps,
                                 Xdata,
                                 Ydata,
                               &ctx());
@@ -20,16 +20,20 @@ void RepeatOp<Context>::RunWithType() {
 
 template <class Context>
 void RepeatOp<Context>::RunOnDevice() {
+    //  parse repeats from desc
+    Tensor* repeats = ws()->GetTensor(repeats_desc);
+    CHECK(repeats->IsType<int>()) << "\nThe type of repeats should be int32.";
+    reps = repeats->template data<int, CPUContext>()[0];
     if (axis == -1) {
         outer_dim = inner_dim = 1;
         dim = input(0).count();
-        output(0)->Reshape(vector<TIndex>(1, dim * repeats));
+        output(0)->Reshape(vector<TIndex>(1, dim * reps));
     } else {
         outer_dim = input(0).count(0, axis);
         dim = input(0).dim(axis);
         inner_dim = input(0).count(axis + 1);
         vector<TIndex> dims = input(0).dims();
-        dims[axis] *= repeats;
+        dims[axis] *= reps;
         output(0)->Reshape(dims);
     }
 
@@ -51,7 +55,7 @@ void RepeatGradientOp<Context>::RunWithType() {
                                 outer_dim,
                                       dim,
                                 inner_dim,
-                                  repeats,
+                                     reps,
                                    dYdata,
                                    dXdata,
                                   &ctx());
@@ -59,6 +63,10 @@ void RepeatGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void RepeatGradientOp<Context>::RunOnDevice() {
+    //  parse repeats from desc
+    Tensor* repeats = ws()->GetTensor(repeats_desc);
+    CHECK(repeats->IsType<int>()) << "\nThe type of repeats should be int32.";
+    reps = repeats->template data<int, CPUContext>()[0];
     if (axis == -1) {
         outer_dim = inner_dim = 1;
         dim = input(0).count();
