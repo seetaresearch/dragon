@@ -37,6 +37,8 @@ List                              Brief
 `Snapshot`_                       Snapshot tensors into a binary file.
 `Restore`_                        Restore tensors from a binary file.
 `SwitchWorkspace`_                Switch to the specific Workspace.
+`ResetWorkspace`_                 Reset the specific workspace.
+`ClearWorkspace`_                 Clear the specific workspace.
 `LogMetaGraph`_                   Log the meta graph.
 `LogOptimizedGraph`_              Log the optimized graph.
 `ExportMetaGraph`_                Export the meta graph into a file under specific folder.
@@ -51,6 +53,8 @@ API Reference
     :show-inheritance:
 
 .. _SwitchWorkspace: #dragon.core.workspace.SwitchWorkspace
+.. _ResetWorkspace: #dragon.core.workspace.ResetWorkspace
+.. _ClearWorkspace: #dragon.core.workspace.ClearWorkspace
 .. _CreateGraph: #dragon.core.workspace.CreateGraph
 .. _HasTensor: #dragon.core.workspace.HasTensor
 .. _GetTensorName: #dragon.core.workspace.GetTensorName

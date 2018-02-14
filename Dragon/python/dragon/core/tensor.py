@@ -795,7 +795,7 @@ class Tensor(object):
 
         # transpose
         output = Tensor.CreateOperator(inputs=self, nout=1,
-                                    op_type='Transpose', perms=perms, **kwargs)
+                                       op_type='Transpose', perms=perms, **kwargs)
         if self.shape is not None:
             if len(self.shape) != len(perms):
                 raise ValueError('The ndim of inputs is {}, but perms provide {}'. \

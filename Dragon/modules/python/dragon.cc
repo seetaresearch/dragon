@@ -162,17 +162,32 @@ PyObject* WorkspacesCC(PyObject* self, PyObject* args) {
 
 PyObject* ResetWorkspaceCC(PyObject* self, PyObject* args) {
     char* cname;
-    if (!PyArg_ParseTuple(args, "|s", &cname)) {
-        PyErr_SetString(PyExc_ValueError, "You can only provide a optional name for the new workspace.");
+    if (!PyArg_ParseTuple(args, "s", &cname)) {
+        PyErr_SetString(PyExc_ValueError, "You should provide a name to locate the workspace.");
         return nullptr;
     }
     string target_workspace = g_current_workspace;
-    if (cname) target_workspace = string(cname);
+    if (!string(cname).empty()) target_workspace = string(cname);
     CHECK(g_workspaces.count(target_workspace))
         << "\nWorkspace(" << target_workspace << ") does not exist, can not be reset.";
     LOG(INFO) << "Reset the Workspace(" << target_workspace << ")";
     g_workspaces[target_workspace].reset(new Workspace(target_workspace));
     g_workspace = g_workspaces[target_workspace].get();
+    Py_RETURN_TRUE;
+}
+
+PyObject* ClearWorkspaceCC(PyObject* self, PyObject* args) {
+    char* cname;
+    if (!PyArg_ParseTuple(args, "s", &cname)) {
+        PyErr_SetString(PyExc_ValueError, "You should provide a name to locate the workspace.");
+        return nullptr;
+    }
+    string target_workspace = g_current_workspace;
+    if (!string(cname).empty()) target_workspace = string(cname);
+    CHECK(g_workspaces.count(target_workspace))
+        << "\nWorkspace(" << target_workspace << ") does not exist, can not be reset.";
+    LOG(INFO) << "Clear the Workspace(" << target_workspace << ")";
+    g_workspaces[target_workspace]->ClearWorkspace();
     Py_RETURN_TRUE;
 }
 
@@ -375,6 +390,7 @@ PyMethodDef* GetAllMethods() {
         PYFUNC(CurrentWorkspaceCC),
         PYFUNC(WorkspacesCC),
         PYFUNC(ResetWorkspaceCC),
+        PYFUNC(ClearWorkspaceCC),
         PYFUNC(TensorsCC),
         PYFUNC(HasTensorCC),
         PYFUNC(GetTensorNameCC),

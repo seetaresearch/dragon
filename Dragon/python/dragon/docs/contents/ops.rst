@@ -164,7 +164,6 @@ List                 Brief
 `Accuracy`_          Calculate the Top-K accuracy.
 `StopGradient`_      Return the identity of input with truncated gradient flow.
 `MovingAverage`_     Calculate the moving average.
-`Proposal`_          Generate Regional Proposals, introduced by `[Ren et.al, 2015] <https://arxiv.org/abs/1506.01497>`_.
 =================    ======================================================================
 
 Contrib

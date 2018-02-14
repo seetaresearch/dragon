@@ -48,6 +48,14 @@ class Workspace {
         return workspace_map_[ws->name()] = ws;
     }
 
+    inline void ClearWorkspace() {
+        //  clear the relationship of avatars
+        avatar_map_.clear();
+        //  clear the buffers
+        ResetBuffer("Common", WORKSPACE_COMMON_BUFFER_SIZE);
+        ResetBuffer("Grad", WORKSPACE_GRAD_BUFFER_SIZE);
+    }
+
     /******************** Tensor ********************/
 
     inline string GetTensorName(const string& name) {
@@ -159,8 +167,8 @@ class Workspace {
     /******************** Buffer ********************/
 
     void CreateBuffer(string category, int num) {
-        CHECK(!buffer_map_.count(category));
-        buffer_map_[category] = stack<string>();
+        if (!buffer_map_.count(category))
+            buffer_map_[category] = stack<string>();
         for (int i = 1; i <= num; i++) {
             string name = "/share/buffer/" + category + "_" + dragon_cast<string, int>(i);
             buffer_map_[category].push(name);
@@ -177,6 +185,15 @@ class Workspace {
         LOG(FATAL) << "Buffers of [" << category << "] "
                    << "are not enough, add more if necessary.";
         return nullptr;
+    }
+
+    void ResetBuffer(string category, int num) {
+        while (!buffer_map_[category].empty()) {
+            string name = buffer_map_[category].top();
+            buffer_map_[category].pop();
+            tensor_map_[name]->Reset();
+        }
+        CreateBuffer(category, num);
     }
 
     void ReleaseBuffer(Tensor* tensor, 

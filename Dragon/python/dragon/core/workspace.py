@@ -27,6 +27,8 @@ CURRENT_GRAPH_IDX = 0
 
 __all__ = [
     'SwitchWorkspace',
+    'ResetWorkspace',
+    'ClearWorkspace',
     'CreateGraph',
     'RunGraph',
     'HasTensor',
@@ -60,12 +62,12 @@ def _stringify_proto(obj):
     else: raise TypeError('object can not be serialized as a string')
 
 
-def SwitchWorkspace(workspace, create_if_missing=True):
+def SwitchWorkspace(workspace_name, create_if_missing=True):
     """Switch to the specific workspace.
 
     Parameters
     ----------
-    workspace : str
+    workspace_name : str
         The name of the specific workspace.
     create_if_missing : boolean
         Whether to create the specific workspace if it does not exist.
@@ -79,7 +81,57 @@ def SwitchWorkspace(workspace, create_if_missing=True):
     The wrapper of ``SwitchWorkspaceCC``.
 
     """
-    SwitchWorkspaceCC(workspace, create_if_missing)
+    if workspace_name == '':
+        raise ValueError('The workspace name should not be empty.')
+    SwitchWorkspaceCC(workspace_name, create_if_missing)
+
+
+def ResetWorkspace(workspace_name=''):
+    """Reset the specific workspace.
+
+    Remove all resources of given workspace.
+
+    If workspace name is empty, the current workspace will be modified.
+
+    Parameters
+    ----------
+    workspace_name : str
+        The name of the specific workspace.
+
+    Returns
+    -------
+    None
+
+    References
+    ----------
+    The wrapper of ``ResetWorkspaceCC``.
+
+    """
+    ResetWorkspaceCC(workspace_name)
+
+
+def ClearWorkspace(workspace_name=''):
+    """Clear the specific workspace.
+
+    You may need to clear the workspace when sharing grads.
+
+    If workspace name is empty, the current workspace will be modified.
+
+    Parameters
+    ----------
+    workspace_name : str
+        The name of the specific workspace.
+
+    Returns
+    -------
+    None
+
+    References
+    ----------
+    The wrapper of ``ClearWorkspaceCC``.
+
+    """
+    ClearWorkspaceCC(workspace_name)
 
 
 def CreateGraph(meta_graph):
@@ -498,7 +550,10 @@ def Restore(filepath, format='default'):
     from dragon.config import logger
     assert os.path.exists(filepath), 'model of path({}) does not exist.'.format(filepath)
     if format == 'default':
-        content = cPickle.load(open(filepath, 'rb'))
+        try:
+            content = cPickle.load(open(filepath, 'rb'))
+        except UnicodeDecodeError:
+            content = cPickle.load(open(filepath, 'rb'), encoding='iso-8859-1')
         logger.info('Restore From Model@: ' + filepath)
         logger.info('Model Format: cPickle')
         for key, ndarray in content.items():
