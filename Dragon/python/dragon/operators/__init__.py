@@ -37,3 +37,37 @@ def ParseArguments(locals):
     __all__ = locals
     kwargs = __all__['kwargs']; del __all__['kwargs']
     return dict(__all__, **kwargs)
+
+
+def AddArgumentWithDesc(arguments, property, name, as_target=True):
+    if isinstance(property, Tensor):
+        if as_target:
+            if not 'extra_inputs' in arguments:
+                arguments['extra_inputs'] = []
+            arguments['extra_inputs'].extend([property])
+        arguments[name] = None
+        arguments[name + '_desc'] = property.name
+    return arguments
+
+
+def AddArgumentsWithDesc(arguments, properties, name, type, as_target=True):
+    if not isinstance(properties, (list, tuple)): properties = [properties]
+    # check whether to use desc
+    tensor_in_properties = False
+    for property in properties:
+        if isinstance(property, Tensor):
+            tensor_in_properties = True
+    if tensor_in_properties:
+        properties_t = []
+        for property in properties:
+            if isinstance(property, Tensor):
+                if as_target:
+                    if not 'extra_inputs' in arguments:
+                        arguments['extra_inputs'] = []
+                    arguments['extra_inputs'].extend([property])
+                properties_t.append(property.name)
+            else:
+                properties_t.append(Tensor.Convert(property, dtype=type).name)
+        arguments[name] = None
+        arguments[name + '_desc'] = properties_t
+    return arguments

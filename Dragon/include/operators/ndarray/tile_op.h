@@ -15,14 +15,15 @@ template <class Context>
 class TileOp : public Operator<Context> {
  public:
     TileOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws), 
-          multiples_desc(OperatorBase::GetRepeatedArg<string>("multiples")) {}
+        : Operator<Context>(op_def, ws) {
+        GET_ARGUMENTS_WITH_DESC(int, multiples);
+    }
 
     void RunOnDevice() override;
     template<typename T> void TileRunWithType();
 
  protected:
-    vector<string> multiples_desc;
+    DECLARE_ARGUMENTS_WITH_DESC(int, multiples);
     TIndex axis, multiple, outer_dim, ex_inner_dim;
     Tensor* dest, *source;
 };
@@ -31,8 +32,8 @@ template <class Context>
 class TileGradientOp : public Operator<Context> {
  public:
     TileGradientOp(const OperatorDef& op_def, Workspace* ws) 
-        : Operator<Context>(op_def, ws),
-        multiples_desc(OperatorBase::GetRepeatedArg<string>("multiples")) {
+        : Operator<Context>(op_def, ws) {
+        GET_ARGUMENTS_WITH_DESC(int, multiples);
         DISABLE_SHARE_GRADIENT;
     }
 
@@ -40,10 +41,13 @@ class TileGradientOp : public Operator<Context> {
     template<typename T> void TileRunWithType();
 
  protected:
-    vector<string> multiples_desc;
+    DECLARE_ARGUMENTS_WITH_DESC(int, multiples);
     TIndex axis, multiple, outer_dim, ex_inner_dim;
     Tensor* dest, *source;
 };
+
+DEFINE_ARGUMENTS_WITH_DESC(int, TileOp, multiples);
+DEFINE_ARGUMENTS_WITH_DESC(int, TileGradientOp, multiples);
 
 }    // namespace dragon
 

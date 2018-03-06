@@ -139,7 +139,7 @@ def Conv2dTranspose(inputs, num_output, kernel_size,
         The dilation multiple(s) of deconvolution. Default is ``1``.
     group : int
         The group size of deconvolution. Default is ``1``.
-    output_shape : list of int or None
+    output_shape : list or None
         The deterministic output shape for **SAME** padding.
     padding : str
         The padding algorithm. ``VALID`` or ``SAME``.
@@ -170,12 +170,8 @@ def Conv2dTranspose(inputs, num_output, kernel_size,
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: {}'.format(data_format))
 
-    arguments['output_shape'] = None
     if output_shape is not None:
-        if not isinstance(output_shape, list):
-            raise TypeError('The output shape should be a list.')
-        arguments['extra_inputs'] = [Tensor.Convert(dim, dtype='int32') for dim in output_shape]
-        arguments['output_shape'] = [dim.name for dim in arguments['extra_inputs']]
+        AddArgumentsWithDesc(arguments, output_shape, 'output_shape', 'int32', as_target=True)
 
     if not isinstance(arguments['kernel_size'], list):
         arguments['kernel_size'] = [arguments['kernel_size']]
@@ -400,7 +396,8 @@ def LRN(inputs, local_size=5, alpha=0.0001, beta=0.75, k=2.0,
     return output
 
 
-def NNResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
+def NNResize(inputs, dsize, shape_like=None,
+             fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
     """Resize the image with Nearest-Neighbor method.
 
     Set ``dsize`` to None if you want to use ``fy`` and ``fx``.
@@ -411,6 +408,8 @@ def NNResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
         The input tensor.
     dsize : tuple, list, Tensor or None
         The output size, formats as (h, w).
+    shape_like : Tensor or None
+        The tensor for guiding the shape of resizing.
     fy : float
         The scale factor based on src height. Default is ``-1.0`` (Discarded).
     fx : float
@@ -433,11 +432,15 @@ def NNResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
     if dsize is not None:
         if len(dsize) != 2:
             raise ValueError('The dsize should be a list with 2 elements.')
-        arguments['extra_inputs'] = [Tensor.Convert(size, dtype='int32') for size in dsize]
-        arguments['dsize'] = [size.name for size in arguments['extra_inputs']]
+        AddArgumentsWithDesc(arguments, dsize, 'dsize', 'int32', as_target=True)
 
-    if dsize is None and (fy == -1.0 or fx == -1.0):
-        raise RuntimeError('The dsize or fy/fx should be specified either.')
+    if shape_like is not None:
+        if not isinstance(shape_like, Tensor):
+            raise TypeError('The shape_like should be a Tensor.')
+        arguments['shape_like'] = shape_like.name
+
+    if dsize is None and shape_like is None and (fy == -1.0 or fx == -1.0):
+        raise RuntimeError('The dsize, shape_like or fy/fx should be specified either.')
 
     output =  Tensor.CreateOperator(nout=1, op_type='NNResize', **arguments)
 
@@ -449,6 +452,8 @@ def NNResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
             for size in dsize:
                 if isinstance(size, Tensor):
                     possible_to_infer_shape = False
+        if shape_like is not None:
+            possible_to_infer_shape = False
 
         if possible_to_infer_shape:
             output.shape = inputs.shape[:]
@@ -464,7 +469,8 @@ def NNResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
     return output
 
 
-def BilinearResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
+def BilinearResize(inputs, dsize, shape_like=None,
+                   fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
     """Resize the image with Bi-linear method.
 
     Set ``dsize`` to None if you want to use ``fy`` and ``fx``.
@@ -475,6 +481,8 @@ def BilinearResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs
         The input tensor.
     dsize : tuple, list, Tensor or None
         The output size, formats as (h, w).
+    shape_like : Tensor or None
+        The tensor for guiding the shape of resizing.
     fy : float
         The scale factor based on src height. Default is ``-1.0`` (Discarded).
     fx : float
@@ -497,11 +505,15 @@ def BilinearResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs
     if dsize is not None:
         if len(dsize) != 2:
             raise ValueError('The dsize should be a list with 2 elements.')
-        arguments['extra_inputs'] = [Tensor.Convert(size, dtype='int32') for size in dsize]
-        arguments['dsize'] = [size.name for size in arguments['extra_inputs']]
+        AddArgumentsWithDesc(arguments, dsize, 'dsize', 'int32', as_target=True)
 
-    if dsize is None and (fy == -1.0 or fx == -1.0):
-        raise RuntimeError('The dsize or fy/fx should be specified either.')
+    if shape_like is not None:
+        if not isinstance(shape_like, Tensor):
+            raise TypeError('The shape_like should be a Tensor.')
+        arguments['shape_like'] = shape_like.name
+
+    if dsize is None and shape_like is None and (fy == -1.0 or fx == -1.0):
+        raise RuntimeError('The dsize, shape_like or fy/fx should be specified either.')
 
     output =  Tensor.CreateOperator(nout=1, op_type='BilinearResize', **arguments)
 
@@ -513,6 +525,8 @@ def BilinearResize(inputs, dsize, fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs
             for size in dsize:
                 if isinstance(size, Tensor):
                     possible_to_infer_shape = False
+        if shape_like is not None:
+            possible_to_infer_shape = False
 
         if possible_to_infer_shape:
             output.shape = inputs.shape[:]

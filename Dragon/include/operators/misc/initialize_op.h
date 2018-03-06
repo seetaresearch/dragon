@@ -17,14 +17,15 @@ class InitializeOp: public Operator<Context> {
  public:
     InitializeOp(const OperatorDef& op_def, Workspace* ws) 
         : Operator<Context>(op_def, ws),
-          dims_desc(OperatorBase::GetRepeatedArg<string>("dims")), 
-          shape_desc(OperatorBase::GetSingleArg<string>("shape", "")) {}
+          shape_desc(OperatorBase::GetSingleArg<string>("shape", "")) {
+        GET_ARGUMENTS_WITH_DESC(int, dims);
+    }
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    vector<string> dims_desc;
+    DECLARE_ARGUMENTS_WITH_DESC(int, dims);
     string shape_desc;
     TensorFiller filler;
 };
@@ -115,6 +116,8 @@ public:
         this->filler.set_scale(scale);
     }
 };
+
+DEFINE_ARGUMENTS_WITH_DESC(int, InitializeOp, dims);
 
 }    // namespace
 

@@ -12,7 +12,7 @@ void RepeatOp<Context>::RunWithType() {
                             outer_dim,
                                   dim,
                             inner_dim,
-                                 reps,
+                            repeats(),
                                 Xdata,
                                 Ydata,
                               &ctx());
@@ -20,20 +20,16 @@ void RepeatOp<Context>::RunWithType() {
 
 template <class Context>
 void RepeatOp<Context>::RunOnDevice() {
-    //  parse repeats from desc
-    Tensor* repeats = ws()->GetTensor(repeats_desc);
-    CHECK(repeats->IsType<int>()) << "\nThe type of repeats should be int32.";
-    reps = repeats->template data<int, CPUContext>()[0];
     if (axis == -1) {
         outer_dim = inner_dim = 1;
         dim = input(0).count();
-        output(0)->Reshape(vector<TIndex>(1, dim * reps));
+        output(0)->Reshape(vector<TIndex>(1, dim * repeats()));
     } else {
         outer_dim = input(0).count(0, axis);
         dim = input(0).dim(axis);
         inner_dim = input(0).count(axis + 1);
         vector<TIndex> dims = input(0).dims();
-        dims[axis] *= reps;
+        dims[axis] *= repeats();
         output(0)->Reshape(dims);
     }
 
@@ -55,7 +51,7 @@ void RepeatGradientOp<Context>::RunWithType() {
                                 outer_dim,
                                       dim,
                                 inner_dim,
-                                     reps,
+                                repeats(),
                                    dYdata,
                                    dXdata,
                                   &ctx());
@@ -63,10 +59,6 @@ void RepeatGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void RepeatGradientOp<Context>::RunOnDevice() {
-    //  parse repeats from desc
-    Tensor* repeats = ws()->GetTensor(repeats_desc);
-    CHECK(repeats->IsType<int>()) << "\nThe type of repeats should be int32.";
-    reps = repeats->template data<int, CPUContext>()[0];
     if (axis == -1) {
         outer_dim = inner_dim = 1;
         dim = input(0).count();

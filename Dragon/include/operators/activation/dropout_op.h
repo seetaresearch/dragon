@@ -17,32 +17,26 @@ class DropoutOp final : public Operator<Context> {
  public:
     DropoutOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          prob(OperatorBase::GetSingleArg<float>("prob", 0.5)) {
-        bool use_scale = OperatorBase::GetSingleArg<bool>("scale", true);
-        threshold = static_cast<unsigned int>(UINT_MAX * prob);
-        if (use_scale) scale = 1.0 / (1.0 - prob);
-        else scale = 1.0;
+          use_scale(OperatorBase::GetSingleArg<bool>("scale", true)) {
+        GET_ARGUMENT_WITH_DESC(float, prob, 0.5);
     }
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    float prob, scale;
-    unsigned int threshold;
+    DECLARE_ARGUMENT_WITH_DESC(float, prob);
+    bool use_scale;
     Tensor* mask;
 };
 
 template <class Context>
 class DropoutGradientOp final : public Operator<Context> {
  public:
-    DropoutGradientOp(const OperatorDef& op_def, Workspace* ws) 
+    DropoutGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          prob(OperatorBase::GetSingleArg<float>("prob", 0.5)) {
-        bool use_scale = OperatorBase::GetSingleArg<bool>("scale", true);
-        threshold = static_cast<unsigned int>(UINT_MAX * prob);
-        if (use_scale) scale = 1.0 / (1.0 - prob);
-        else scale = 1.0;
+          use_scale(OperatorBase::GetSingleArg<bool>("scale", true)) {
+        GET_ARGUMENT_WITH_DESC(float, prob, 0.5);
         DISABLE_SHARE_GRADIENT;
     }
 
@@ -50,10 +44,13 @@ class DropoutGradientOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-     float prob, scale;
-     unsigned int threshold;
+     DECLARE_ARGUMENT_WITH_DESC(float, prob);
+     bool use_scale;
      Tensor* mask;
 };
+
+DEFINE_ARGUMENT_WITH_DESC(float, DropoutOp, prob);
+DEFINE_ARGUMENT_WITH_DESC(float, DropoutGradientOp, prob);
 
 }    // namespace dragon
 

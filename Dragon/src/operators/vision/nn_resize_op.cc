@@ -34,13 +34,13 @@ void NNResizeOp<Context>::RunWithType() {
 template <class Context>
 void NNResizeOp<Context>::RunOnDevice() {
     vector<TIndex> dims = input(0).dims();
-    if (dsize_desc.size() > 0) {
-        CHECK_EQ(dsize_desc.size(), 2) << "\nThe dsize should be a scalar with 2 elements.";
-        for (int i = 0; i < 2; i++) {
-            Tensor* dsize = ws()->GetTensor(dsize_desc[i]);
-            CHECK(dsize->IsType<int>()) << "\nThe type of dsize should be int32.";
-            dims[spatial_axis + i] = dsize->template data<int, CPUContext>()[0];
-        }
+    if (dsize_desc.size() > 0 || dsize_value.size() > 0) {
+        for (int i = 0; i < 2; i++)
+            dims[spatial_axis + i] = dsize(i);
+    } else if (!shape_like_desc.empty()) {
+        Tensor* shape_like_tensor = ws()->GetTensor(shape_like_desc);
+        for (int i = 0; i < 2; i++)
+            dims[spatial_axis + i] = shape_like_tensor->dim(spatial_axis + i);
     } else {
         CHECK(fy != -1.0 && fx != -1.0)
             << "\nThe fx and fy should be set.";

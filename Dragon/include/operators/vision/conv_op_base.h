@@ -21,8 +21,9 @@ class ConvOpBase : public Operator<Context> {
           data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")),
           padding(OperatorBase::GetSingleArg<string>("padding", "VALID")),
           num_output(OperatorBase::GetSingleArg<int>("num_output", 1)),
-          group(OperatorBase::GetSingleArg<int>("group", 1)),
-          output_dims_desc(OperatorBase::GetRepeatedArg<string>("output_shape")) {
+          group(OperatorBase::GetSingleArg<int>("group", 1)) {
+        output_dims_value = OperatorBase::GetRepeatedArg<int>("output_shape");
+        output_dims_desc = OperatorBase::GetRepeatedArg<string>("output_shape_desc");
         if (data_format == "NCHW") spatial_axis = 2;
         else if (data_format == "NHWC") spatial_axis = 1;
         else LOG(FATAL) << "Unknown data format: " << data_format;
@@ -41,7 +42,7 @@ class ConvOpBase : public Operator<Context> {
     TIndex conv_in_channels, conv_out_channels;
     TIndex conv_out_spatial_dim, kernel_dim;
     TIndex col_offset, output_offset, weight_offset, x_offset, y_offset;
-    vector<string> output_dims_desc;
+    DECLARE_ARGUMENTS_WITH_DESC(int, output_dims);
     bool is_1x1;
 
     void Setup();
@@ -86,6 +87,8 @@ class ConvOpBase : public Operator<Context> {
         } else LOG(FATAL) << "ConvNd has not been implemented yet";
     }
 };
+
+DEFINE_ARGUMENTS_WITH_DESC(int, ConvOpBase, output_dims);
 
 }    // namespace dragon
 

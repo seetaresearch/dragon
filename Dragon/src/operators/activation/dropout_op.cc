@@ -9,18 +9,18 @@ void DropoutOp<Context>::RunWithType() {
     auto* Xdata = input(0).template data<T, Context>();
     auto* Ydata = output(0)->template mutable_data<T, Context>();
     uint32_t* Mdata = mask->template mutable_data<uint32_t, Context>();
-
+    float scale = use_scale ? 1.0 / (1.0 - prob()) : 1.0;
     if (this->phase() == "TRAIN") {
-        kernel::Dropout<T, Context>(output(0)->count(), 
-                                                  prob, 
-                                                 scale, 
-                                                 Xdata, 
+        kernel::Dropout<T, Context>(output(0)->count(),
+                                                prob(),
+                                                 scale,
+                                                 Xdata,
                                                  Mdata,
-                                                 Ydata, 
+                                                 Ydata,
                                                &ctx());
     } else if (this->phase() == "TEST") {
         ctx().template Copy<T, Context, Context>(output(0)->count(), Ydata, Xdata);
-        if (scale == 1.0) math::Scal<T, Context>(output(0)->count(), 1.0 - prob, Ydata);
+        if (scale == 1.0) math::Scal<T, Context>(output(0)->count(), 1.0 - prob(), Ydata);
     }
 }
 
@@ -46,10 +46,10 @@ void DropoutGradientOp<Context>::RunWithType() {
     auto* dYdata = input(-1).template data<T, Context>();
     auto* dXdata = output(0)->template mutable_data<T, Context>();
     auto* Mdata = mask->template data<uint32_t, Context>();
-
+    float scale = use_scale ? 1.0 / (1.0 - prob()) : 1.0;
     if (this->phase() == "TRAIN") {
         kernel::DropoutGrad<T, Context>(output(0)->count(),
-                                                      prob,
+                                                    prob(),
                                                      scale,
                                                     dYdata,
                                                      Mdata,

@@ -16,9 +16,9 @@ def _wrap_input_shape(arguments, shape):
         arguments['extra_inputs'] = shape
         arguments['shape'] = shape.name
     elif isinstance(shape, (list, tuple)):
-        arguments['extra_inputs'] = [Tensor.Convert(dim, dtype='int32') for dim in shape]
-        arguments['dims'] = [dim.name for dim in arguments['extra_inputs']]
+        arguments['dims'] = shape
         arguments['shape'] = None
+        AddArgumentsWithDesc(arguments, shape, 'dims', 'int32', as_target=True)
     else:
         raise TypeError('Unsupported type of shape: {}'.format(type(shape)))
     return arguments

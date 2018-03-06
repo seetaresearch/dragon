@@ -12,23 +12,19 @@ void InitializeOp<Context>::RunWithType() {
 
 template <class Context>
 void InitializeOp<Context>::RunOnDevice() {
-    vector<TIndex> dims;
+    vector<TIndex> output_shape;
     if (shape_desc.empty()) {
         //  determine the shape from dimensions
-        for (auto& dim_desc : dims_desc) {
-            Tensor* dim = ws()->GetTensor(dim_desc);
-            CHECK_EQ(dim->count(), 1) << "\nThe dimension should be a scalar.";
-            CHECK(dim->IsType<int>()) << "\nThe type of dimension should be int32.";
-            dims.push_back(dim->template data<int, CPUContext>()[0]);
-        }
+        int ndims = (int)std::max(dims_value.size(), dims_desc.size());
+        for (int i = 0; i < ndims; i++) output_shape.push_back(dims(i));
     } else {
         //  determine the shape from given shape
         Tensor* shape = ws()->GetTensor(shape_desc);
         CHECK(shape->IsType<int>()) << "\nThe type of shape should be int32.";
         auto* shape_data = shape->template data<int, CPUContext>();
-        for (int i = 0; i < shape->count(); i++) dims.push_back(shape_data[i]);
+        for (int i = 0; i < shape->count(); i++) output_shape.push_back(shape_data[i]);
     }
-    output(0)->Reshape(dims);
+    output(0)->Reshape(output_shape);
     RunWithType<float>();
 }
 

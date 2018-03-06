@@ -31,7 +31,7 @@ void SoftmaxCrossEntropyOp<Context>::RunWithType() {
     else if (normalization == "NONE") normalizer = 1;
     T loss = math::ASum<T, Context>(losses.count(), Ldata);
     output(0)->Reshape(vector<TIndex>(1, 1));
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
+    auto* Ydata = output(0)->template mutable_data<T, CPUContext>();
     Ydata[0] = loss / normalizer;
 }
 

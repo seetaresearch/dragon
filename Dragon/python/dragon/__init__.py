@@ -4,6 +4,10 @@
 # Written by Ting Pan
 # --------------------------------------------------------
 
+# config
+from dragon.config import *
+import dragon.config as config
+
 # core
 from dragon.core.tensor import Tensor
 import dragon.core.workspace as workspace

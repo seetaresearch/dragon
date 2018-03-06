@@ -201,7 +201,7 @@ def Dropout(inputs, prob=0.5, scale=True, **kwargs):
     ----------
     inputs : Tensor
         The input tensor.
-    prob : float
+    prob : float or Tensor
         The prob of dropping. Default is ``0.5``.
     scale : boolean
         Whether to scale the output during training.
@@ -214,6 +214,7 @@ def Dropout(inputs, prob=0.5, scale=True, **kwargs):
     """
     CheckInputs(inputs, 1)
     arguments = ParseArguments(locals())
+    arguments = AddArgumentWithDesc(arguments, prob, 'prob', as_target=False)
 
     output = Tensor.CreateOperator(nout=1, op_type='Dropout', **arguments)
 

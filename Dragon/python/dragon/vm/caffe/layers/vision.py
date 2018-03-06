@@ -264,9 +264,10 @@ class NNResizeLayer(Layer):
     def Setup(self, bottom):
         super(NNResizeLayer, self).Setup(bottom)
         input = bottom[0] if isinstance(bottom, list) else bottom
-        if isinstance(bottom, list) and len(bottom) > 1:
-            dshape = ops.Shape(bottom[1])
-            self._param['dsize'] = (dshape[2], dshape[3])
+        if self._param['dsize'] is None:
+            if len(bottom) != 2:
+                raise ValueError('The second bottom should be provided to determine the shape.')
+            self._param['shape_like'] = bottom[1]
         return ops.NNResize(input, **self._param)
 
 
@@ -296,7 +297,8 @@ class BilinearResizeLayer(Layer):
     def Setup(self, bottom):
         super(BilinearResizeLayer, self).Setup(bottom)
         input = bottom[0] if isinstance(bottom, list) else bottom
-        if isinstance(bottom, list) and len(bottom) > 1:
-            dshape = ops.Shape(bottom[1])
-            self._param['dsize'] = (dshape[2], dshape[3])
+        if self._param['dsize'] is None:
+            if len(bottom) != 2:
+                raise ValueError('The second bottom should be provided to determine the shape.')
+            self._param['shape_like'] = bottom[1]
         return ops.BilinearResize(input, **self._param)

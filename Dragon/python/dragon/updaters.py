@@ -20,7 +20,7 @@ class BaseUpdater(object):
     BaseUpdater is designed to preprocess the gradients.
     """
     def __init__(self, scale_gradient = 1.0, clip_gradient = -1.0,
-                 l2_decay = -1.0, slot=''):
+                 l2_decay = -1.0, slot='', verbose=True):
         """Construct a Updater to optimize the objectives.
 
         Parameters
@@ -42,6 +42,7 @@ class BaseUpdater(object):
         self._tuples = []
         self._type = None
         self._prefix = ''
+        self._verbose = verbose
 
     def append(self, pair, lr_mult=1.0, decay_mult=1.0):
         """Append an ``UpdatePair`` into the updater.
@@ -117,7 +118,7 @@ class SGDUpdater(BaseUpdater):
                                    'momentum': momentum},
                                    **self._hyper_params)
         self._type = 'SGDUpdate'
-        self.echo()
+        if self._verbose: self.echo()
 
 
 class NesterovUpdater(BaseUpdater):
@@ -140,7 +141,7 @@ class NesterovUpdater(BaseUpdater):
                                    'momentum': momentum},
                                   **self._hyper_params)
         self._type = 'NesterovUpdate'
-        self.echo()
+        if self._verbose: self.echo()
 
 
 class RMSPropUpdater(BaseUpdater):
@@ -166,7 +167,7 @@ class RMSPropUpdater(BaseUpdater):
                                    'eps': eps},
                                    **self._hyper_params)
         self._type = 'RMSPropUpdate'
-        self.echo()
+        if self._verbose: self.echo()
 
 
 class AdamUpdater(BaseUpdater):
@@ -195,4 +196,4 @@ class AdamUpdater(BaseUpdater):
                                    'eps': eps},
                                    **self._hyper_params)
         self._type = 'AdamUpdate'
-        self.echo()
+        if self._verbose: self.echo()

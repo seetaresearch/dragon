@@ -16,10 +16,11 @@ class NNResizeOp : public Operator<Context> {
  public:
     NNResizeOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          dsize_desc(OperatorBase::GetRepeatedArg<string>("dsize")),
           fy(OperatorBase::GetSingleArg<float>("fy", -1.0)),
           fx(OperatorBase::GetSingleArg<float>("fx", -1.0)),
+          shape_like_desc(OperatorBase::GetSingleArg<string>("shape_like", "")),
           data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {
+        GET_ARGUMENTS_WITH_DESC(int, dsize);
         if (data_format == "NCHW") spatial_axis = 2;
         else if (data_format == "NHWC") spatial_axis = 1;
         else LOG(FATAL) << "Unknown data format: " << data_format;
@@ -29,9 +30,9 @@ class NNResizeOp : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    vector<string> dsize_desc;
+    DECLARE_ARGUMENTS_WITH_DESC(int, dsize);
     float fy, fx;
-    string data_format;
+    string data_format, shape_like_desc;
     TIndex n, c, h, w, out_h, out_w, spatial_axis;
 };
 
@@ -49,6 +50,8 @@ class NNResizeGradientOp : public Operator<Context> {
     string data_format;
     TIndex n, c, h, w, out_h, out_w;
 };
+
+DEFINE_ARGUMENTS_WITH_DESC(int, NNResizeOp, dsize);
 
 }    // namespace dragon
 

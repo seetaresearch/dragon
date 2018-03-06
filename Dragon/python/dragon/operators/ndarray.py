@@ -455,8 +455,7 @@ def Repeat(inputs, axis=-1, repeats=1, **kwargs):
     """
     CheckInputs(inputs, 1)
     arguments = ParseArguments(locals())
-    arguments['extra_inputs'] = [Tensor.Convert(repeats, dtype='int32')]
-    arguments['repeats'] = arguments['extra_inputs'][0].name
+    arguments = AddArgumentWithDesc(arguments, repeats, 'repeats', as_target=True)
 
     output = Tensor.CreateOperator(nout=1, op_type='Repeat', **arguments)
 
@@ -492,8 +491,7 @@ def Tile(inputs, multiples, **kwargs):
     """
     CheckInputs(inputs, 1)
     arguments = ParseArguments(locals())
-    arguments['extra_inputs'] = [Tensor.Convert(multiple, dtype='int32') for multiple in multiples]
-    arguments['multiples'] = [multiple.name for multiple in arguments['extra_inputs']]
+    arguments = AddArgumentsWithDesc(arguments, multiples, 'multiples', 'int32', as_target=True)
 
     output = Tensor.CreateOperator(nout=1, op_type='Tile', **arguments)
 
@@ -779,14 +777,11 @@ def Arange(start, stop=None, step=1, dtype='FLOAT32', **kwargs):
 
     """
     arguments = ParseArguments(locals())
-    arguments['extra_inputs'] = [Tensor.Convert(start, dtype='int32'),
-                                 Tensor.Convert(step, dtype='int32')]
-    arguments['start'] = arguments['extra_inputs'][0].name
-    arguments['step'] = arguments['extra_inputs'][1].name
-    if stop is not None:
-        arguments['extra_inputs'].append(Tensor.Convert(stop, dtype='int32'))
-        arguments['stop'] = arguments['extra_inputs'][-1].name
     arguments['dtype'] = arguments['dtype'].upper()
+    arguments = AddArgumentWithDesc(arguments, start, 'start', as_target=True)
+    arguments = AddArgumentWithDesc(arguments, step, 'step', as_target=True)
+    if stop is not None:
+        arguments = AddArgumentWithDesc(arguments, stop, 'stop', as_target=True)
 
     output = Tensor.CreateOperator([], nout=1, op_type='Arange', **arguments)
 

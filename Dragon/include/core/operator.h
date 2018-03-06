@@ -68,13 +68,13 @@ class OperatorBase {
 template <class Context>
 class Operator : public OperatorBase {
  public:
-    Operator(const OperatorDef& op_def, Workspace* ws) 
+    Operator(const OperatorDef& op_def, Workspace* ws)
         : OperatorBase(op_def, ws), ctx_(op_def.device_option()) {
         allow_run_ = true;
         allow_run_ &= _MPICheck();
         allow_run_ &= (!(OutputSize() == 1 && output(0)->name() == "ignore"));
         allow_share_grads_ = (!op_def.debug_mode());
-        allow_share_grads_ &= op_def.share_grads(); 
+        allow_share_grads_ &= op_def.share_grads();
         allow_share_grads_ &= (type().find("Gradient") != string::npos);
     }
 
@@ -166,6 +166,53 @@ DECLARE_REGISTRY(CUDNNOperatorRegistry, OperatorBase, const OperatorDef&, Worksp
             ptr_tensor->template mutable_data<T, Context>()); \
     } \
   }
+
+#define DECLARE_ARGUMENT_WITH_DESC(type, argument) \
+    type argument##_value; \
+    string argument##_desc; \
+    type argument()
+
+#define DECLARE_ARGUMENTS_WITH_DESC(type, argument) \
+    vector<type> argument##_value; \
+    vector<string> argument##_desc; \
+    type argument(int idx)
+
+#define GET_ARGUMENT_WITH_DESC(type, argument, default_value) \
+    argument##_value = OperatorBase::GetSingleArg<type>(#argument, default_value); \
+    argument##_desc = OperatorBase::GetSingleArg<string>(string(#argument) + "_desc", "")
+
+#define GET_ARGUMENTS_WITH_DESC(type, argument) \
+    argument##_value = OperatorBase::GetRepeatedArg<type>(#argument); \
+    argument##_desc = OperatorBase::GetRepeatedArg<string>(string(#argument) + "_desc")
+
+#define DEFINE_ARGUMENT_WITH_DESC(type, classname, argument) \
+    template <class Context> \
+    type classname<Context>::argument() { \
+        if (argument##_desc.empty()) return argument##_value; \
+        Tensor* argument##_tensor = ws()->GetTensor(argument##_desc); \
+        CHECK(argument##_tensor->IsType<type>()) \
+            << "\nThe type of " << #argument << " should be " << #type << "."; \
+        CHECK_EQ(argument##_tensor->count(), 1) \
+            << "\nThe argument of " << #argument << " should be a scalar"; \
+        return argument##_tensor->template data<type, CPUContext>()[0]; \
+    }
+
+#define DEFINE_ARGUMENTS_WITH_DESC(type, classname, argument) \
+    template <class Context> \
+    type classname<Context>::argument(int idx) { \
+        if (argument##_desc.empty()) { \
+            CHECK_LT(idx, argument##_value.size()); \
+            return argument##_value[idx]; \
+        } \
+        CHECK_LT(idx, argument##_desc.size()); \
+        Tensor* argument##_tensor = ws()->GetTensor(argument##_desc[idx]); \
+        CHECK(argument##_tensor->IsType<type>()) \
+            << "\nThe type of " << #argument << " should be " << #type; \
+        CHECK_EQ(argument##_tensor->count(), 1) \
+            << "\nThe argument of " << #argument << " at pos(" \
+            << idx << ") should be a scalar."; \
+        return argument##_tensor->template data<type, CPUContext>()[0]; \
+    }
 
 #define DISABLE_SHARE_GRADIENT   \
     this->allow_share_grads_ = false
