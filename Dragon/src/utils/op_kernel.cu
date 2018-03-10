@@ -3935,7 +3935,7 @@ __global__ void _ROIPoolingGrad(const int count,
 
             if (!in_roi) continue;
 
-            int y_offset = (n * channels + c) * pool_h * pool_w;
+            int y_offset = (roi_n * channels + c) * pool_h * pool_w;
             const T* offset_dy = dy + y_offset;
             const int* offset_mask = mask + y_offset;
 

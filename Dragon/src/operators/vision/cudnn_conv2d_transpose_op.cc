@@ -31,36 +31,42 @@ void CuDNNConv2dTransposeOp<Context>::RunWithType() {
     cudnnSetTensor4dDescWithGroup<T>(&input_desc, this->data_format, input(0).dims(), cudnn_group);
     cudnnSetTensor4dDescWithGroup<T>(&output_desc, this->data_format, output(0)->dims(), cudnn_group);
 
-    //  determine the bias shape and misc
+    //  determine the bias shape
     if (HasBias()) {
         bias_offset = this->num_output / cudnn_group;
         if (this->data_format == "NCHW") {
             cudnnSetTensor4dDesc<T>(&bias_desc, this->data_format, vector<TIndex>({ 1, bias_offset, 1, 1 }));
+        } else if (this->data_format == "NHWC") {
+            cudnnSetTensor4dDesc<T>(&bias_desc, this->data_format, vector<TIndex>({ 1, 1, 1, bias_offset }));
+        }
+    }
+
+    //  determine the misc
+    if (HasBias()) {
+        if (this->data_format == "NCHW") {
             this->x_offset = input(0).count(1) / cudnn_group;
             this->y_offset = output(0)->count(1) / cudnn_group;
-        }
-        else if (this->data_format == "NHWC") {
-            cudnnSetTensor4dDesc<T>(&bias_desc, this->data_format, vector<TIndex>({ 1, 1, 1, bias_offset }));
+        } else if (this->data_format == "NHWC") {
             this->x_offset = input(0).dim(-1) / cudnn_group;
             this->y_offset = output(0)->dim(-1) / cudnn_group;
         }
     }
 
     CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm(handle[0],
-                                                       filter_desc, 
-                                                        input_desc, 
-                                                         conv_desc, 
+                                                       filter_desc,
+                                                        input_desc,
+                                                         conv_desc,
                                                        output_desc,
                 CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT,
-                                             WORKSPACE_LIMIT_BYTES, 
+                                             WORKSPACE_LIMIT_BYTES,
                                                        &fwd_algo));
 
     CUDNN_CHECK(cudnnGetConvolutionBackwardDataWorkspaceSize(handle[0],
-                                                           filter_desc, 
-                                                            input_desc, 
-                                                             conv_desc, 
+                                                           filter_desc,
+                                                            input_desc,
+                                                             conv_desc,
                                                            output_desc,
-                                                              fwd_algo, 
+                                                              fwd_algo,
                                             &workspace_fwd_data_size));
 
     Tensor* buffer = ws()->GetBuffer();
@@ -75,7 +81,7 @@ void CuDNNConv2dTransposeOp<Context>::RunWithType() {
 
     for (int g = 0; g < cudnn_group; g++) {
         auto* workspace = buffer->template mutable_data<char, Context>();
-        CUDNN_CHECK(cudnnConvolutionBackwardData(handle[g], 
+        CUDNN_CHECK(cudnnConvolutionBackwardData(handle[g],
                         CUDNNType<T>::one, filter_desc, Wdata + this->weight_offset * g,
                                                  input_desc, Xdata + this->x_offset * g,
                                                                               conv_desc,
@@ -169,16 +175,22 @@ void CuDNNConv2dTransposeGradientOp<Context>::RunWithType() {
     cudnnSetTensor4dDescWithGroup<T>(&input_desc, this->data_format, input(-1).dims(), cudnn_group);
     cudnnSetTensor4dDescWithGroup<T>(&output_desc, this->data_format, input(0).dims(), cudnn_group);
 
-    //  determine the bias shape and misc
+    //  determine the bias shape
     if (HasBias()) {
         bias_offset = this->num_output / cudnn_group;
         if (this->data_format == "NCHW") {
             cudnnSetTensor4dDesc<T>(&bias_desc, this->data_format, vector<TIndex>({ 1, bias_offset, 1, 1 }));
+        } else if (this->data_format == "NHWC") {
+            cudnnSetTensor4dDesc<T>(&bias_desc, this->data_format, vector<TIndex>({ 1, 1, 1, bias_offset }));
+        }
+    }
+
+    //  determine the misc
+    if (HasBias()) {
+        if (this->data_format == "NCHW") {
             this->x_offset = input(0).count(1) / cudnn_group;
             this->y_offset = input(-1).count(1) / cudnn_group;
-        }
-        else if (this->data_format == "NHWC") {
-            cudnnSetTensor4dDesc<T>(&bias_desc, this->data_format, vector<TIndex>({ 1, 1, 1, bias_offset }));
+        } else if (this->data_format == "NHWC") {
             this->x_offset = input(0).dim(-1) / cudnn_group;
             this->y_offset = input(-1).dim(-1) / cudnn_group;
         }
