@@ -23,5 +23,4 @@ Please cite Dragon in your publications if it helps your research:
       Journal = {arXiv preprint arXiv:1707.08265},
       Title = {Dragon: A Computation Graph Virtual Machine Based Deep Learning Framework},
       Year = {2017}
-
     }
