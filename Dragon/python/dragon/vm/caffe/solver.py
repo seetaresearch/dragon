@@ -399,6 +399,26 @@ class Solver(object):
     def iter(self, value):
         self._iter = value
 
+    @property
+    def lr(self):
+        """Return or Set the current learning rate. [**Extended**]
+
+        Parameters
+        ----------
+        iter : float
+            The value of learning rate to set.
+
+        Returns
+        -------
+        The current learning rate.
+
+        """
+        return self._optimizer.lr
+
+    @lr.setter
+    def lr(self, value):
+        self._optimizer.lr = value
+
 
 class SGDSolver(Solver):
     """The Momentum-SGD Solver, introduced by `[LeCun et.al, 1998]`_.

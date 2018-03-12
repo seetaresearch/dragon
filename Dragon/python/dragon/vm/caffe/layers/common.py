@@ -618,6 +618,20 @@ class ExpandDimsLayer(Layer):
         return ops.ExpandDims(input, **self._param)
 
 
+class StopGradientLayer(Layer):
+    """
+    The implementation of ``StopGradientLayer``.
+
+    """
+    def __init__(self, LayerParameter):
+        super(StopGradientLayer, self).__init__(LayerParameter)
+
+    def Setup(self, bottom):
+        super(StopGradientLayer, self).Setup(bottom)
+        input = bottom[0] if isinstance(bottom, list) else bottom
+        return ops.StopGradient(input, **self._param)
+
+
 class ProposalLayer(Layer):
     """The implementation of ``ProposalLayer``.
 

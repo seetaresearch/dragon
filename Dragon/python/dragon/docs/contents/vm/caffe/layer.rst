@@ -78,7 +78,8 @@ List                        Brief
 `BNLayer`_                  The implementation of ``BNLayer``.
 `NormalizeLayer`_           The implementation of ``NormalizeLayer``.
 `TileLayer`_                The extended implementation of ``TileLayer``.
-`ExpandDimsLayer`_          The implementation of ``ExpandDimsLayer``
+`ExpandDimsLayer`_          The implementation of ``ExpandDimsLayer``.
+`StopGradientLayer`_        The implementation of ``StopGradientLayer``.
 `ProposalLayer`_            The implementation of ``ProposalLayer``.
 ========================    =============================================================================
 
@@ -186,6 +187,7 @@ API Reference
 .. _NormalizeLayer: #dragon.vm.caffe.layers.common.NormalizeLayer
 .. _TileLayer: #dragon.vm.caffe.layers.common.TileLayer
 .. _ExpandDimsLayer: #dragon.vm.caffe.layers.common.ExpandDimsLayer
+.. _StopGradientLayer: #dragon.vm.caffe.layers.common.StopGradientLayer
 .. _ProposalLayer: #dragon.vm.caffe.layers.common.ProposalLayer
 
 .. _SoftmaxWithLossLayer: #dragon.vm.caffe.layers.loss.SoftmaxWithLossLayer

@@ -16,6 +16,7 @@ List                    Brief
 `Solver.net`_           Return the train net.
 `Solver.test_nets`_     Return the test nets.
 `Solver.iter`_          Return or Set the current iteration.
+`Solver.lr`_            Return or Set the current learning rate.
 ====================    =============================================================================
 
 API Reference
@@ -36,6 +37,7 @@ API Reference
 .. _Solver.net: #dragon.vm.caffe.solver.Solver.net
 .. _Solver.test_nets: #dragon.vm.caffe.solver.Solver.test_nets
 .. _Solver.iter: #dragon.vm.caffe.solver.Solver.iter
+.. _Solver.lr: #dragon.vm.caffe.solver.Solver.lr
 
 .. _[LeCun et.al, 1998]: http://yann.lecun.com/exdb/publis/#lecun-98b
 .. _[Sutskever et.al, 2012]: http://www.cs.utoronto.ca/~bonner/courses/2016s/csc321/lectures/lec6.pdf

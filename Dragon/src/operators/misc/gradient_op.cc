@@ -61,15 +61,13 @@ OPERATOR_SCHEMA(GradientGather).NumOutputs(1);
 NO_GRADIENT(GradientGather);
 
 template <class Context>
-void StopGradientOp<Context>::RunOnDevice() {
-    ws()->CreateAvatar(output(0), &input(0));
-}
+void StopGradientOp<Context>::RunOnDevice() {}
 
 DEPLOY_CPU(StopGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(StopGradient);
 #endif
-OPERATOR_SCHEMA(StopGradient).NumInputs(1).NumOutputs(1);
+OPERATOR_SCHEMA(StopGradient).NumInputs(1).NumOutputs(1).Inplace({ { 0, 0 } });;
 NO_GRADIENT(StopGradient);
 
 }    // namespace dragon

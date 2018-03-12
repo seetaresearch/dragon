@@ -57,5 +57,6 @@ from .common import InnerProductLayer, \
                     TileLayer, \
                     ReductionLayer, \
                     ExpandDimsLayer, \
+                    StopGradientLayer, \
                     ProposalLayer, \
                     DenseConcatLayer
