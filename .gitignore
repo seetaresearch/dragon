@@ -17,6 +17,7 @@
 
 # Compiled python
 *.pyc
+__pycache__
 
 # Compiled MATLAB
 *.mex*

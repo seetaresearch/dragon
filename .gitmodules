@@ -1,3 +1,6 @@
 [submodule "DragonBoard"]
 	path = DragonBoard
 	url = git://github.com/seetaresearch/DragonBoard.git
+[submodule "DragonLair"]
+	path = DragonLair
+	url = https://github.com/seetaresearch/DragonLair.git
