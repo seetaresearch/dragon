@@ -34,14 +34,15 @@ class InnerProductLayer(Layer):
         self._param = {'axis': param.axis,
                        'num_output': param.num_output,
                        'TransW': not param.transpose}
-        weight = Tensor(LayerParameter.name + '@param0')
-        weight_diff = Tensor(LayerParameter.name + '@param0_grad')
+        scope = LayerParameter.name
+        weight = Tensor(scope + '/param:0')
+        weight_diff = Tensor(scope + '/param:0_grad')
         self.Fill(weight, param, 'weight_filler')
         self._blobs.append({'data': weight, 'diff': weight_diff})
 
         if param.bias_term:
-            bias = Tensor(LayerParameter.name + '@param1')
-            bias_diff = Tensor(LayerParameter.name + '@param1_grad')
+            bias = Tensor(scope + '/param:1')
+            bias_diff = Tensor(scope + '/param:1_grad')
             self.Fill(bias, param, 'bias_filler')
             self._blobs.append({'data': bias, 'diff': bias_diff})
 
@@ -351,10 +352,11 @@ class BatchNormLayer(Layer):
                        'eps': param.eps,
                        'axis': 1,
                        'mode': 'CAFFE'}
+        scope = LayerParameter.name
         # mean, var, factor are set to 0 in order to do statistics
-        mean = Tensor(LayerParameter.name + '@param0').Constant(value=0.0)
-        var  = Tensor(LayerParameter.name + '@param1').Constant(value=0.0)
-        factor = Tensor(LayerParameter.name + '@param2').Constant(value=0.0)
+        mean = Tensor(scope + '/param:0').Constant(value=0.0)
+        var  = Tensor(scope + '/param:1').Constant(value=0.0)
+        factor = Tensor(scope + '/param:2').Constant(value=0.0)
         # in dragon, set diff as None will ignore computing grad automatically
         # but in bvlc-caffe1, you must set lr_mult = 0 manually
         self._blobs.append({'data': mean, 'diff': None})
@@ -397,9 +399,10 @@ class BatchRenormLayer(Layer):
                        't_delta': float(param.t_delta),
                        'axis': 1,
                        'mode': 'CAFFE'}
-        mean = Tensor(LayerParameter.name + '@param0').Constant(value=0.0)
-        var  = Tensor(LayerParameter.name + '@param1').Constant(value=0.0)
-        factor = Tensor(LayerParameter.name + '@param2').Constant(value=0.0)
+        scope = LayerParameter.name
+        mean = Tensor(scope + '/param:0').Constant(value=0.0)
+        var  = Tensor(scope + '/param:1').Constant(value=0.0)
+        factor = Tensor(scope + '/param:2').Constant(value=0.0)
         self._blobs.append({'data': mean, 'diff': None})
         self._blobs.append({'data': var, 'diff': None})
         self._blobs.append({'data': factor, 'diff': None})
@@ -446,15 +449,16 @@ class ScaleLayer(Layer):
         param = LayerParameter.scale_param
         self._param = {'axis': param.axis,
                        'num_axes': param.num_axes}
-        scale = Tensor(LayerParameter.name + '@param0')
-        scale_diff = Tensor(LayerParameter.name + '@param0_grad')
+        scope = LayerParameter.name
+        scale = Tensor(scope + '/param:0')
+        scale_diff = Tensor(scope + '/param:0_grad')
         if param.HasField('filler'):
             self.Fill(scale, param, 'filler')
         else: scale.Constant(value=1.0)
         self._blobs.append({'data': scale, 'diff': scale_diff})
         if param.bias_term:
-            bias = Tensor(LayerParameter.name + '@param1')
-            bias_diff = Tensor(LayerParameter.name + '@param1_grad')
+            bias = Tensor(scope + '/param:1')
+            bias_diff = Tensor(scope + '/param:1_grad')
             # auto fill 0 if not specficed bias_filler
             self.Fill(bias, param, 'bias_filler')
             self._blobs.append({'data': bias, 'diff': bias_diff})
@@ -490,12 +494,13 @@ class BNLayer(Layer):
                        'momentum': bn_param.moving_average_fraction,
                        'eps': bn_param.eps,
                        'axis': 1}
-        mean = Tensor(LayerParameter.name + '@param0').Constant(value=0.0)
-        var = Tensor(LayerParameter.name + '@param1').Constant(value=0.0)
-        scale = Tensor(LayerParameter.name + '@param2')
-        scale_diff = Tensor(LayerParameter.name + '@param2_grad')
-        bias = Tensor(LayerParameter.name + '@param3')
-        bias_diff = Tensor(LayerParameter.name + '@param3_grad')
+        scope = LayerParameter.name
+        mean = Tensor(scope + '/param:0').Constant(value=0.0)
+        var = Tensor(scope + '/param:1').Constant(value=0.0)
+        scale = Tensor(scope + '/param:2')
+        scale_diff = Tensor(scope + '/param:2_grad')
+        bias = Tensor(scope + '/param:3')
+        bias_diff = Tensor(scope + '/param:3_grad')
 
         if scale_param.HasField('filler'):
             self.Fill(scale, scale_param, 'filler')
@@ -536,7 +541,8 @@ class NormalizeLayer(Layer):
                               'eps': param.eps}
         self._scale_param = {'axis': 1,
                              'num_axes': 0 if param.channel_shared else 1}
-        scale = Tensor(LayerParameter.name + '@param0')
+        scope = LayerParameter.name
+        scale = Tensor(scope + '/param:0')
         if param.HasField('scale_filler'):
             self.Fill(scale, param, 'scale_filler')
         else: scale.Constant(value=1.0)

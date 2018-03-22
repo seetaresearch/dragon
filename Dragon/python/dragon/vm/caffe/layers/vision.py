@@ -54,16 +54,17 @@ class ConvolutionLayer(Layer):
         if param.HasField('pad_h'):
             assert param.HasField('pad_w')
             self._param['pad'] = [param.pad_h, param.pad_w]
-        weight = Tensor(LayerParameter.name + '@param0')
-        weight_diff = Tensor(LayerParameter.name + '@param0_grad')
+        scope = LayerParameter.name
+        weight = Tensor(scope + '/param:0')
+        weight_diff = Tensor(scope + '/param:0_grad')
         if len(LayerParameter.param) > 0:
             if LayerParameter.param[0].lr_mult <= 0: weight_diff = None
         self.Fill(weight, param, 'weight_filler')
         self._blobs.append({'data': weight, 'diff': weight_diff})
 
         if param.bias_term:
-            bias = Tensor(LayerParameter.name + '@param1')
-            bias_diff = Tensor(LayerParameter.name + '@param1_grad')
+            bias = Tensor(scope + '/param:1')
+            bias_diff = Tensor(scope + '/param:1_grad')
             self.Fill(bias, param, 'bias_filler')
             if len(LayerParameter.param) > 1:
                 if LayerParameter.param[1].lr_mult <= 0: bias_diff = None

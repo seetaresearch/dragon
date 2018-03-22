@@ -175,6 +175,7 @@ execute_process(COMMAND protoc -I=${PROTOS_DIR} --cpp_out=${PROTOS_DIR} ${PROTOS
 
 # ---[ Subdirectories
 add_subdirectory(modules/python)
+#add_subdirectory(modules/cc)    # Compile CC module if necessary
 
 # ---[ Utils
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/../lib)

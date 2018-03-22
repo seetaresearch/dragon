@@ -46,8 +46,9 @@ class PReLULayer(Layer):
         param = LayerParameter.prelu_param
         self._param = {'channel_shared': param.channel_shared,
                        'data_format': 'NCHW'}
-        slope = Tensor(LayerParameter.name + '@param0')
-        slope_diff = Tensor(LayerParameter.name + '@param0_grad')
+        scope = LayerParameter.name
+        slope = Tensor(scope + '/param:0')
+        slope_diff = Tensor(scope + '/param:0_grad')
         if param.HasField('filler'):
             self.Fill(slope, param, 'filler')
         else:

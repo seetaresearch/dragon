@@ -57,7 +57,7 @@ inline void LoadCaffeModel(string file, Workspace* ws) {
     for (int i = 0; i < net_param.layer_size(); i++) {
         const LayerParameter& layer = net_param.layer(i);
         const string& layer_name = layer.name();
-        string prefix = layer_name + "@param";
+        string prefix = layer_name + "/param:";
         for (int j = 0; j < layer.blobs_size(); j++) {
             string tensor_name = prefix + dragon_cast<string, int>(j);
             if (!ws->HasTensor(tensor_name))
@@ -97,7 +97,7 @@ inline void SavaCaffeModel(string file, const vector<Tensor*>& tensors) {
     int layer_idx = -1;
     for (int i = 0; i < tensors.size(); i++) {
         if (tensors[i]->count() <= 0) continue;
-        vector<string> splits = SplitString(tensors[i]->name(), "@");
+        vector<string> splits = SplitString(tensors[i]->name(), "/param:");
         if (layer_hash.count(splits[0]) == 0) {
             layer_hash[splits[0]] = ++layer_idx;
             LayerParameter* layer = net_param.add_layer();

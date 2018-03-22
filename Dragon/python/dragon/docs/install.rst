@@ -8,7 +8,7 @@ Get the Latest Version
 
 .. code-block:: shell
 
-   git clone https://github.com/neopenx/Dragon.git
+   git clone https://github.com/seetaresearch/Dragon.git
 
 We will call the directory that you cloned Dragon as ``REPO_ROOT``.
 

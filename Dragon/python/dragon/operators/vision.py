@@ -400,7 +400,7 @@ def NNResize(inputs, dsize, shape_like=None,
              fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
     """Resize the image with Nearest-Neighbor method.
 
-    Set ``dsize`` to None if you want to use ``fy`` and ``fx``.
+    Set ``dsize`` to None if you want to use ``shape_like`` or ``fy/fx``.
 
     Parameters
     ----------
@@ -473,7 +473,7 @@ def BilinearResize(inputs, dsize, shape_like=None,
                    fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
     """Resize the image with Bi-linear method.
 
-    Set ``dsize`` to None if you want to use ``fy`` and ``fx``.
+    Set ``dsize`` to None if you want to use ``shape_like`` or ``fy/fx``.
 
     Parameters
     ----------

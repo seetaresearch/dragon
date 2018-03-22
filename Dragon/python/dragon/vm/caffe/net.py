@@ -422,11 +422,13 @@ class Net(object):
         The implementation of `Net_Save(_caffe.cpp, L153)`_.
 
         """
-        tensors = []
+        keys = set(); tensors = []
         for layer in self._net.layer:
             if layer.name in self.params:
                 for param in self.params[layer.name]:
-                    tensors.append(param.data)
+                    if param.data.name not in keys:
+                        tensors.append(param.data)
+                        keys.add(param.data.name)
         ws.Snapshot(tensors, filename, suffix='', format='caffe')
 
     @property
