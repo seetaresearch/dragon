@@ -423,6 +423,7 @@ message LayerParameter {
   optional DenseConcatParameter dense_concat_param = 163;
   optional FocalLossParameter focal_loss_param = 164;
   optional GatherParameter gather_param = 165;
+  optional GroupNormParameter group_norm_param = 166;
 }
 
 // Message that stores parameters used to apply transformation
@@ -1511,4 +1512,18 @@ message FocalLossParameter {
 message GatherParameter {
   optional int32 axis = 1 [default = 0];
 }
+
+message GroupNormParameter {
+  // If false, accumulate global mean/variance values via a moving average. If
+  // true, use those accumulated values instead of computing mean/variance
+  // across the batch.
+  optional bool use_global_stats = 1;
+  // How much does the moving average decay each iteration?
+  optional float moving_average_fraction = 2 [default = 0.9];
+  // Small value to add to the variance estimate so that we don't divide by
+  // zero.
+  optional float eps = 3 [default = 1e-3];
+  optional uint32 group = 5 [default = 32]; // The group size
+}
+
 

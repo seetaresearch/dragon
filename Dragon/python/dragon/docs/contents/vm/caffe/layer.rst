@@ -73,9 +73,11 @@ List                        Brief
 `ArgMaxLayer`_              The implementation of ``ArgMaxLayer``.
 `BatchNormLayer`_           The implementation of ``BatchNormLayer``.
 `BatchRenormLayer`_         The implementation of ``BatchRenormLayer``.
+`GroupNormLayer`_           The implementation of ``GroupNormLayer``.
 `InstanceNormLayer`_        The implementation of ``InstanceNormLayer``.
 `ScaleLayer`_               The implementation of ``ScaleLayer``.
 `BNLayer`_                  The implementation of ``BNLayer``.
+`GNLayer`_                  The implementation of ``GNLayer``.
 `NormalizeLayer`_           The implementation of ``NormalizeLayer``.
 `TileLayer`_                The extended implementation of ``TileLayer``.
 `ExpandDimsLayer`_          The implementation of ``ExpandDimsLayer``.
@@ -181,9 +183,11 @@ API Reference
 .. _ArgMaxLayer: #dragon.vm.caffe.layers.common.ArgMaxLayer
 .. _BatchNormLayer: #dragon.vm.caffe.layers.common.BatchNormLayer
 .. _BatchRenormLayer: #dragon.vm.caffe.layers.common.BatchRenormLayer
+.. _GroupNormLayer: #dragon.vm.caffe.layers.common.GroupNormLayer
 .. _InstanceNormLayer: #dragon.vm.caffe.layers.common.InstanceNormLayer
 .. _ScaleLayer: #dragon.vm.caffe.layers.common.ScaleLayer
 .. _BNLayer: #dragon.vm.caffe.layers.common.BNLayer
+.. _GNLayer: #dragon.vm.caffe.layers.common.GNLayer
 .. _NormalizeLayer: #dragon.vm.caffe.layers.common.NormalizeLayer
 .. _TileLayer: #dragon.vm.caffe.layers.common.TileLayer
 .. _ExpandDimsLayer: #dragon.vm.caffe.layers.common.ExpandDimsLayer

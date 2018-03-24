@@ -113,6 +113,8 @@ List                  Brief
 `BatchNorm`_          Batch Normalization, introduced by `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 `BatchRenorm`_        Batch Renormalization, introduced by `[Ioffe, 2017] <https://arxiv.org/abs/1702.03275>`_.
 `FusedBatchNorm`_     Batch Normalization, with scale procedure after normalization.
+`GroupNorm`_          Group Normalization, introduced by `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
+`FusedGroupNorm`_     Group Normalization, with scale procedure after normalization.
 `InstanceNorm`_       Instance Normalization, introduced by `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_.
 `L2Norm`_             L2 Normalization, introduced by `[Liu et.al, 2015] <https://arxiv.org/abs/1506.04579>`_.
 ==================    ======================================================================
@@ -253,6 +255,8 @@ List                 Brief
 .. _BatchNorm: operators/norm.html#dragon.operators.norm.BatchNorm
 .. _BatchRenorm: operators/norm.html#dragon.operators.norm.BatchRenorm
 .. _FusedBatchNorm: operators/norm.html#dragon.operators.norm.FusedBatchNorm
+.. _GroupNorm: operators/norm.html#dragon.operators.norm.GroupNorm
+.. _FusedGroupNorm: operators/norm.html#dragon.operators.norm.FusedGroupNorm
 .. _InstanceNorm: operators/norm.html#dragon.operators.norm.InstanceNorm
 .. _L2Norm: operators/norm.html#dragon.operators.norm.L2Norm
 

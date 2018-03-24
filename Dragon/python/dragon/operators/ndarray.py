@@ -648,15 +648,21 @@ def Flatten(inputs, axis=0, num_axes=-1, keep_axes=None, **kwargs):
     return output
 
 
-def Reshape(inputs, shape, **kwargs):
+def Reshape(inputs, shape, shape_like=None, **kwargs):
     """Reshape the dimensions of input.
+
+    ``shape`` could be a list of numbers or Tensors.
+
+    Set ``shape`` to ``None``, if you want to use ``shape_like``.
 
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    shape : list or tuple
+    shape : list, tuple or None
         The new shape.
+    shape_like: Tensor or None
+        The tensor for indicating the output shape.
 
     Returns
     -------
@@ -677,17 +683,29 @@ def Reshape(inputs, shape, **kwargs):
     CheckInputs(inputs, 1)
     arguments = ParseArguments(locals())
 
-    if not isinstance(shape, tuple) and not isinstance(shape, list):
-        raise TypeError('The type of dims must be a tuple or list.')
+    if shape is not None:
+        AddArgumentsWithDesc(arguments, shape, 'shape', 'int32', as_target=True)
+    elif shape_like is not None:
+        if not isinstance(shape_like, Tensor):
+            raise TypeError('The shape_like should be a Tensor.')
+        arguments['shape_like'] = shape_like.name
 
     output = Tensor.CreateOperator(nout=1, op_type='Reshape', **arguments)
 
     if inputs.shape is not None:
-        output.shape = [1] * len(shape)
-        for i, s in enumerate(shape):
-            if s == -1: output.shape[i] = 1
-            elif s == 0: output.shape[i] = inputs.shape[i]
-            else: output.shape[i] = s
+        possible_to_infer_shape = True
+        if shape is not None:
+            for dim in shape:
+                if isinstance(dim, Tensor):
+                    possible_to_infer_shape = False
+        if shape_like is not None:
+            possible_to_infer_shape = False
+        if possible_to_infer_shape:
+            output.shape = [1] * len(shape)
+            for i, s in enumerate(shape):
+                if s == -1: output.shape[i] = 1
+                elif s == 0: output.shape[i] = inputs.shape[i]
+                else: output.shape[i] = s
 
     return output
 

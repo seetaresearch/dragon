@@ -16,15 +16,16 @@ class ReshapeOp final : public Operator<Context> {
  public:
     ReshapeOp(const OperatorDef& op_def, Workspace* ws) 
         : Operator<Context>(op_def, ws),
-          shape(OperatorBase::GetRepeatedArg<int>("shape")) {
-          new_shape.resize(shape.size());
+          shape_like_desc(OperatorBase::GetSingleArg<string>("shape_like", "")) {
+        GET_ARGUMENTS_WITH_DESC(int, shape);
     }
 
     void RunOnDevice() override;
 
  protected:
-    vector<int> shape;
-    vector<TIndex> new_shape;
+    DECLARE_ARGUMENTS_WITH_DESC(int, shape);
+    string shape_like_desc;
+    vector<TIndex> require_shape, new_shape;
 };
 
 template <class Context>
@@ -37,6 +38,8 @@ class ReshapeGradientOp final : public Operator<Context> {
 
     void RunOnDevice() override;
 };
+
+DEFINE_ARGUMENTS_WITH_DESC(int, ReshapeOp, shape);
 
 }    // namespace dragon
 

@@ -39,6 +39,8 @@ from .common import InnerProductLayer, \
                     BatchNormLayer, \
                     BatchRenormLayer,\
                     BNLayer, \
+                    GroupNormLayer, \
+                    GNLayer, \
                     ConcatLayer, \
                     CropLayer, \
                     PythonLayer, \
