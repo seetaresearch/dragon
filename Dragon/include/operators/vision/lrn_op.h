@@ -91,6 +91,12 @@ class CuDNNLRNOp : public LRNOp<Context> {
                                                      this->k));
     }
 
+    ~CuDNNLRNOp() {
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
+        CUDNN_CHECK(cudnnDestroyLRNDescriptor(norm_desc));
+    }
+
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
@@ -111,6 +117,12 @@ class CuDNNLRNGradientOp : public LRNGradientOp<Context > {
                                                      this->alpha, 
                                                      this->beta, 
                                                      this->k));
+    }
+
+    ~CuDNNLRNGradientOp() {
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
+        CUDNN_CHECK(cudnnDestroyLRNDescriptor(norm_desc));
     }
 
     void RunOnDevice() override;

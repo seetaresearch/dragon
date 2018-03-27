@@ -29,5 +29,5 @@ template<> void CPUContext::Memcpy<CUDAContext, CPUContext>(
     LOG(FATAL) << "CUDA was not compiled.";
 #endif
 }
-    
+
 }    // namespace dragon

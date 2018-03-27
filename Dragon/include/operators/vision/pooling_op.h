@@ -108,6 +108,12 @@ class CuDNNPooling2dOp final : public Pooling2dOp<Context> {
         } else LOG(FATAL) << "Unsupported pooling mode: " << this->mode;
     }
 
+    ~CuDNNPooling2dOp() {
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
+        CUDNN_CHECK(cudnnDestroyPoolingDescriptor(pool_desc));
+    }
+
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
@@ -149,6 +155,12 @@ class CuDNNPooling2dGradientOp final : public Pooling2dGradientOp<Context> {
                                   this->pad[0], this->pad[1],
                           this->stride[0], this->stride[1]));
 #endif
+    }
+
+    ~CuDNNPooling2dGradientOp() {
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
+        CUDNN_CHECK(cudnnDestroyPoolingDescriptor(pool_desc));
     }
 
     void RunOnDevice() override;

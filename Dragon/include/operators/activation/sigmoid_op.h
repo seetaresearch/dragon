@@ -45,6 +45,13 @@ public:
         CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc, 
             CUDNN_ACTIVATION_SIGMOID, CUDNN_PROPAGATE_NAN, 0));
     }
+
+    ~CuDNNSigmoidOp() {
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
+        CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc));
+    }
+
     void RunOnDevice() override;
     template <typename T> void RunWithType(); 
 
@@ -64,6 +71,13 @@ class CuDNNSigmoidGradientOp final : public SigmoidGradientOp<Context> {
         CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc,
             CUDNN_ACTIVATION_SIGMOID, CUDNN_PROPAGATE_NAN, 0));
     }
+
+    ~CuDNNSigmoidGradientOp() {
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
+        CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc));
+    }
+
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 

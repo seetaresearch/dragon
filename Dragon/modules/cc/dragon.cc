@@ -13,15 +13,17 @@
 
 namespace dragon {
 
-std::unordered_map<std::string, std::shared_ptr < Workspace > > g_workspaces;
+Map<string, unique_ptr < Workspace > > g_workspaces;
+Map<string, vector<string> > sub_workspaces;
 std::mutex g_mutex;
 
 Workspace* CreateWorkspace(const std::string& name){
     std::unique_lock<std::mutex> lock(g_mutex);
     LOG(INFO) << "Create the Workspace(" << name << ").";
     if (g_workspaces.count(name)) return g_workspaces[name].get();
-    std::shared_ptr<Workspace> new_workspace(new Workspace(name));
-    g_workspaces[name] = new_workspace;
+    unique_ptr<Workspace> new_workspace(new Workspace(name));
+    g_workspaces[name] = std::move(new_workspace);
+    sub_workspaces[name] = vector<string>();
     return new_workspace.get();
 }
 
@@ -31,6 +33,10 @@ Workspace* ResetWorkspace(const std::string& name) {
         << "\nWorkspace(" << name << ") does not exist, can not be reset.";
     LOG(INFO) << "Reset the Workspace(" << name << ").";
     g_workspaces[name].reset(new Workspace(name));
+    for (auto& sub_workspace : sub_workspaces[name]) {
+        if (g_workspaces.count(sub_workspace) > 0)
+            g_workspaces[name]->MoveWorkspace(g_workspaces[sub_workspace].get());
+    }
     return g_workspaces[name].get();
 }
 
@@ -43,13 +49,14 @@ void ReleaseWorkspace(const std::string& name) {
     g_workspaces.erase(name);
 }
 
-void MoveWorkspace(Workspace* main, Workspace* sub) {
+void MoveWorkspace(Workspace* target_ws, Workspace* source_ws) {
     std::unique_lock<std::mutex> lock(g_mutex);
-    CHECK(main) << "\nThe given main workspace is invalid."; 
-    CHECK(sub) << "\nThe given sub workspace is invalid.";
-    LOG(INFO) << "Move the Workspace(" << sub->name() << ") "
-              << "into the Workspace(" << main->name() << ").";
-    main->MoveWorkspace(sub);
+    CHECK(source_ws) << "\nThe given source workspace is invalid."; 
+    CHECK(target_ws) << "\nThe given target workspace is invalid.";
+    target_ws->MoveWorkspace(source_ws);
+    sub_workspaces[target_ws->name()].push_back(string(source_ws->name()));
+    LOG(INFO) << "Move the Workspace(" << source_ws->name() << ") "
+              << "into the Workspace(" << target_ws->name() << ").";
 }
 
 std::string CreateGraph(const std::string& graph_file, Workspace* ws) {

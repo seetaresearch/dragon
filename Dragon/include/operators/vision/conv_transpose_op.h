@@ -73,6 +73,19 @@ class CuDNNConv2dTransposeOp : public Conv2dTransposeOp<Context> {
         else if (this->data_format == "NHWC") format = CUDNN_TENSOR_NHWC;
         else LOG(FATAL) << "Unknown data format: " << this->data_format;
     }
+
+    ~CuDNNConv2dTransposeOp() {
+        CUDNN_CHECK(cudnnDestroyFilterDescriptor(filter_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
+        CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc));
+        if (HasBias()) CUDNN_CHECK(cudnnDestroyTensorDescriptor(bias_desc));
+        for (int g = 0; g < cudnn_group; g++) {
+            cudaStreamDestroy(stream[g]);
+            CUDNN_CHECK(cudnnDestroy(handle[g]));
+        }
+    }
+
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
@@ -114,6 +127,19 @@ public:
         else if (this->data_format == "NHWC") format = CUDNN_TENSOR_NHWC;
         else LOG(FATAL) << "Unknown data format: " << this->data_format;
     }
+
+    ~CuDNNConv2dTransposeGradientOp() {
+        CUDNN_CHECK(cudnnDestroyFilterDescriptor(filter_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
+        CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc));
+        if (HasBias()) CUDNN_CHECK(cudnnDestroyTensorDescriptor(bias_desc));
+        for (int g = 0; g < cudnn_group * 3; g++) {
+            cudaStreamDestroy(stream[g]);
+            CUDNN_CHECK(cudnnDestroy(handle[g]));
+        }
+    }
+
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 

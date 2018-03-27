@@ -27,6 +27,7 @@ CURRENT_GRAPH_IDX = 0
 
 __all__ = [
     'SwitchWorkspace',
+    'MoveWorkspace',
     'ResetWorkspace',
     'ClearWorkspace',
     'CreateGraph',
@@ -84,6 +85,30 @@ def SwitchWorkspace(workspace_name, create_if_missing=True):
     if workspace_name == '':
         raise ValueError('The workspace name should not be empty.')
     SwitchWorkspaceCC(workspace_name, create_if_missing)
+
+
+def MoveWorkspace(target_ws, source_ws):
+    """Move the source workspace into the target workspace.
+
+    Parameters
+    ----------
+    target_ws : str
+        The name of the target workspace.
+    source_ws : str
+        The name of the source workspace.
+
+    Returns
+    -------
+    None
+
+    References
+    ----------
+    The wrapper of ``MoveWorkspaceCC``.
+
+    """
+    if target_ws == '' or source_ws == '':
+        raise ValueError('The target or source name can not be empty.')
+    MoveWorkspaceCC(target_ws, source_ws)
 
 
 def ResetWorkspace(workspace_name=''):

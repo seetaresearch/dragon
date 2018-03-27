@@ -22,6 +22,7 @@ class GraphBase {
     };
 
     GraphBase(const GraphDef& meta_graph, Workspace* ws);
+    virtual ~GraphBase() {}
 
     virtual bool Create(const GraphDef& optimized_graph, Workspace* ws) = 0;
     virtual bool Run(const string& include, const string& exclude) = 0;
@@ -37,6 +38,7 @@ class GraphBase {
 class Graph final : public GraphBase {
  public:
     Graph(const GraphDef& meta_graph, Workspace* ws);
+    ~Graph() { for (auto* op : ops_) delete op; }
 
     bool Create(const GraphDef& optimized_graph, Workspace* ws) override;
     bool Run(const string& include, const string& exclude) override;

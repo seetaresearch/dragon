@@ -143,6 +143,12 @@ class CuDNNBatchNormOp final : public FusedBatchNormOp<Context> {
         this->eps = std::max(this->eps, float(CUDNN_BN_MIN_EPSILON));
     }
 
+    ~CuDNNBatchNormOp() {
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(bn_desc));
+    }
+
     void Setup();
 
     void RunOnDevice() override;
@@ -165,6 +171,12 @@ class CuDNNBatchNormGradientOp final : public FusedBatchNormGradientOp<Context> 
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&bn_desc));
         this->eps = std::max(this->eps, float(CUDNN_BN_MIN_EPSILON));
+    }
+
+    ~CuDNNBatchNormGradientOp() {
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(bn_desc));
     }
 
     void Setup();

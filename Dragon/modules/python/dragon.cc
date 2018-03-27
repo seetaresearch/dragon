@@ -8,6 +8,7 @@ DEFINE_TYPED_REGISTRY(TensorFetcherRegistry, TypeId, TensorFetcherBase);
 DEFINE_TYPED_REGISTRY(TensorFeederRegistry, TypeId, TensorFeederBase);
 
 Map<string, unique_ptr < Workspace > > g_workspaces;
+Map<string, vector<string> > sub_workspaces;
 Workspace* g_workspace;
 string g_current_workspace;
 
@@ -124,6 +125,7 @@ bool SwitchWorkspaceInternal(const string& name, const bool create_if_missing) {
         unique_ptr<Workspace> new_workspace(new Workspace(name));
         g_workspace = new_workspace.get();
         g_workspaces[name] = std::move(new_workspace);
+        sub_workspaces[name] = vector<string>();
         g_current_workspace = name;
         return true;
     } else {
@@ -145,6 +147,23 @@ PyObject* SwitchWorkspaceCC(PyObject* self, PyObject *args) {
                                             "\n And, it is not allowed to create. (Try alllow ?)");
         return nullptr;
     }
+    Py_RETURN_TRUE;
+}
+
+PyObject* MoveWorkspaceCC(PyObject* self, PyObject *args) {
+    char* target_ws, *src_ws;
+    if (!PyArg_ParseTuple(args, "ss", &target_ws, &src_ws)) {
+        PyErr_SetString(PyExc_ValueError, "You should provide target and src workspace respectively.");
+        return nullptr;
+    }
+    CHECK(g_workspaces.count(src_ws))
+        << "\nThe source Workspace(" << src_ws << ") does not exist.";
+    CHECK(g_workspaces.count(target_ws))
+        << "\nThe target Workspace(" << target_ws << ") does not exist.";
+    g_workspaces[target_ws]->MoveWorkspace(g_workspaces[src_ws].get());
+    sub_workspaces[target_ws].push_back(string(src_ws));
+    LOG(INFO) << "Move the Workspace(" << src_ws << ") into the "
+              << "Workspace(" << target_ws << ").";
     Py_RETURN_TRUE;
 }
 
@@ -173,6 +192,10 @@ PyObject* ResetWorkspaceCC(PyObject* self, PyObject* args) {
     LOG(INFO) << "Reset the Workspace(" << target_workspace << ")";
     g_workspaces[target_workspace].reset(new Workspace(target_workspace));
     g_workspace = g_workspaces[target_workspace].get();
+    for (auto& sub_workspace : sub_workspaces[target_workspace]) {
+        if (g_workspaces.count(sub_workspace) > 0)
+            g_workspace->MoveWorkspace(g_workspaces[sub_workspace].get());
+    }
     Py_RETURN_TRUE;
 }
 
@@ -387,6 +410,7 @@ PyMethodDef* GetAllMethods() {
         PYFUNC(NoGradientOperatorsCC),
         PYFUNC(CreateGradientDefsCC),
         PYFUNC(SwitchWorkspaceCC),
+        PYFUNC(MoveWorkspaceCC),
         PYFUNC(CurrentWorkspaceCC),
         PYFUNC(WorkspacesCC),
         PYFUNC(ResetWorkspaceCC),

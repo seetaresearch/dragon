@@ -56,6 +56,13 @@ public:
         CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc, 
             CUDNN_ACTIVATION_ELU, CUDNN_PROPAGATE_NAN, this->alpha));
     }
+
+    ~CuDNNEluOp() {
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
+        CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc));
+    }
+
     void RunOnDevice() override;
     template <typename T> void RunWithType(); 
 
@@ -75,6 +82,13 @@ class CuDNNEluGradientOp final : public EluGradientOp<Context> {
         CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc,
             CUDNN_ACTIVATION_ELU, CUDNN_PROPAGATE_NAN, this->alpha));
     }
+
+    ~CuDNNEluGradientOp() {
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
+        CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc));
+    }
+
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 

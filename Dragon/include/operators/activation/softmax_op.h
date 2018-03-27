@@ -58,6 +58,12 @@ class CuDNNSoftmaxOp final : public Operator<Context> {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
     }
+
+    ~CuDNNSoftmaxOp() {
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
+    }
+
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
@@ -76,6 +82,12 @@ class CuDNNSoftmaxGradientOp final : public Operator<Context> {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
     }
+
+    ~CuDNNSoftmaxGradientOp() {
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
+    }
+
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 

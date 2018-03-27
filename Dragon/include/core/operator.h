@@ -25,6 +25,7 @@ class Workspace;
 class OperatorBase {
  public:
     OperatorBase(const OperatorDef& op_def, Workspace* ws);
+    virtual ~OperatorBase() {}
 
     Tensor& input(int idx);
     Tensor* output(int idx);
@@ -141,7 +142,7 @@ DECLARE_REGISTRY(CUDNNOperatorRegistry, OperatorBase, const OperatorDef&, Worksp
 #define  TENSOR_FILL(tensor, shape) \
     if (tensor.count() == 0) { \
         CHECK(ws()->GetFiller(tensor.name())) \
-            << "Tensor(" << tensor.name() << ") is empty. \n" \
+            << "\nTensor(" << tensor.name() << ") is empty. \n" \
             << "may be specify a filler for it ?"; \
         tensor.Reshape(shape); \
         unique_ptr< Filler<T, Context> > filler(  \

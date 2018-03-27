@@ -32,7 +32,7 @@ class Workspace {
     ~Workspace();
 
     void Init() { 
-        CreateTensor("ignore"); 
+        CreateTensor("ignore");
         CreateBuffer("Common", WORKSPACE_COMMON_BUFFER_SIZE);
         CreateBuffer("Grad", WORKSPACE_GRAD_BUFFER_SIZE);
     }
@@ -54,6 +54,8 @@ class Workspace {
         //  clear the buffers
         ResetBuffer("Common", WORKSPACE_COMMON_BUFFER_SIZE);
         ResetBuffer("Grad", WORKSPACE_GRAD_BUFFER_SIZE);
+        //  clear tenosrs
+        for (auto& kv : tensor_map_) kv.second->Reset();
     }
 
     /******************** Tensor ********************/
@@ -80,7 +82,7 @@ class Workspace {
         string query = GetTensorName(name);
         if (!HasTensor(query))
             tensor_map_[query] = unique_ptr<Tensor>(new Tensor(query));
-        return tensor_map_[query].get();
+        return GetTensor(query);
     }
 
     Tensor* GetTensor(const string& name, bool use_remote=true) {
@@ -137,16 +139,35 @@ class Workspace {
 
     /******************** Filler ********************/
 
+    bool HasFiller(const string& name, bool use_remote=true) {
+        //  search local workspace
+        bool result = filler_map_.count(name) > 0;
+        if (!use_remote) return result;
+
+        //  search remote workspace
+        for (auto& it : workspace_map_)
+            result |= it.second->HasFiller(name);
+        return result;
+    }
+
     inline void CreateFiller(const TensorFiller filler) {
         CHECK_GT(filler.tensor().size(), 0) 
             << "Tensor without a valid name can not be filled.";
-        if (filler_map_.count(filler.tensor())) return;
+        if (HasFiller(filler.tensor())) return;
         filler_map_[filler.tensor()] = filler;
     }
 
     inline const TensorFiller* GetFiller(const string& name) {
-        if (filler_map_.count(name) > 0) return &filler_map_[name];
-        else return nullptr;
+        //  search local workspace
+        if (filler_map_.count(name) > 0) 
+            return &filler_map_[name];
+      
+        //  search remote workspace
+        for (auto& it : workspace_map_) {
+            if (it.second->HasFiller(name))
+                return it.second->GetFiller(name);
+        }
+        return nullptr;
     }
 
     /******************** Avatar ********************/
@@ -159,8 +180,8 @@ class Workspace {
     }
 
     inline Tensor* SearchAvatar(Tensor* orig) {
-        if (avatar_map_.count(orig->name()) > 0) 
-            return tensor_map_[avatar_map_[orig->name()]].get();
+        if (avatar_map_.count(orig->name()) > 0)
+            return GetTensor(avatar_map_[orig->name()]);
         return orig;
     }
 
