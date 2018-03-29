@@ -6,12 +6,12 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void DropoutOp<Context>::RunWithType() {
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
     uint32_t* Mdata = mask->template mutable_data<uint32_t, Context>();
     float scale = use_scale ? 1.0 / (1.0 - prob()) : 1.0;
     if (this->phase() == "TRAIN") {
-        kernel::Dropout<T, Context>(output(0)->count(),
+        kernel::Dropout<T, Context>(Output(0)->count(),
                                                 prob(),
                                                  scale,
                                                  Xdata,
@@ -19,18 +19,18 @@ void DropoutOp<Context>::RunWithType() {
                                                  Ydata,
                                                &ctx());
     } else if (this->phase() == "TEST") {
-        ctx().template Copy<T, Context, Context>(output(0)->count(), Ydata, Xdata);
-        if (scale == 1.0) math::Scal<T, Context>(output(0)->count(), 1.0 - prob(), Ydata);
+        ctx().template Copy<T, Context, Context>(Output(0)->count(), Ydata, Xdata);
+        if (scale == 1.0) math::Scal<T, Context>(Output(0)->count(), 1.0 - prob(), Ydata);
     }
 }
 
 template <class Context>
 void DropoutOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
     mask = ws()->CreateTensor("/mnt/" + anchor() + "/dropout_mask");
-    mask->ReshapeLike(input(0));
+    mask->ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 
@@ -43,12 +43,12 @@ OPERATOR_SCHEMA(Dropout).NumInputs(1).NumOutputs(1).Inplace({ { 0, 0 } });
 template <class Context> template <typename T>
 void DropoutGradientOp<Context>::RunWithType() {
     mask = ws()->GetTensor("/mnt/" + anchor() + "/dropout_mask");
-    auto* dYdata = input(-1).template data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
+    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* Mdata = mask->template data<uint32_t, Context>();
     float scale = use_scale ? 1.0 / (1.0 - prob()) : 1.0;
     if (this->phase() == "TRAIN") {
-        kernel::DropoutGrad<T, Context>(output(0)->count(),
+        kernel::DropoutGrad<T, Context>(Output(0)->count(),
                                                     prob(),
                                                      scale,
                                                     dYdata,
@@ -61,9 +61,9 @@ void DropoutGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void DropoutGradientOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

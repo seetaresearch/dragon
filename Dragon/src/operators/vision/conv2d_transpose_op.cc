@@ -10,19 +10,19 @@ void Conv2dTransposeOp<Context>::RunWithType() {
     this->col_buffer = ws()->GetBuffer();
     this->col_buffer->Reshape(this->col_shape);
 
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
-    TENSOR_FILL(input(1), this->weight_shape);
-    auto* Wdata = input(1).template data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    TENSOR_FILL(Input(1), this->weight_shape);
+    auto* Wdata = Input(1).template data<T, Context>();
     if (InputSize() > 2) {
-        TENSOR_FILL(input(2), this->bias_shape);
+        TENSOR_FILL(Input(2), this->bias_shape);
         INIT_MULTIPLIER(this->bias_multiplier, this->out_spatial_dim);
     }
 
-    for (int n = 0; n < input(0).dim(0); n++) {
+    for (int n = 0; n < Input(0).dim(0); n++) {
         Dx(Xdata + n * this->x_offset, Wdata, Ydata + n * this->y_offset);
         if (InputSize() > 2) {
-            auto* Bdata = input(2).template data<T, Context>();
+            auto* Bdata = Input(2).template data<T, Context>();
             Pb(Bdata, Ydata + n * this->y_offset);
         }
     }
@@ -36,9 +36,9 @@ void Conv2dTransposeOp<Context>::RunOnDevice() {
     Reshape();
     //  fix the output shape for im2col/col2im
     for (int i = 0; i < this->num_spatial_axes; i++) 
-        this->output_shape[i] = input(0).dim(this->spatial_axis + i);
+        this->output_shape[i] = Input(0).dim(this->spatial_axis + i);
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 
@@ -54,25 +54,25 @@ void Conv2dTransposeGradientOp<Context>::RunWithType() {
     this->col_buffer = ws()->GetBuffer();
     this->col_buffer->Reshape(this->col_shape);
 
-    auto* dYdata = input(-1).template data<T, Context>();
+    auto* dYdata = Input(-1).template data<T, Context>();
 
-    if (output(2)->name() != "ignore") {
+    if (Output(2)->name() != "ignore") {
         INIT_MULTIPLIER(this->bias_multiplier, this->out_spatial_dim);
-        auto* dBdata = output(2)->template mutable_data<T, Context>();
-        for (int n = 0; n < input(2).dim(0); n++)
+        auto* dBdata = Output(2)->template mutable_data<T, Context>();
+        for (int n = 0; n < Input(2).dim(0); n++)
             Db(dYdata + n * this->y_offset, dBdata);
     }
 
-    for (int n = 0; n < input(2).dim(0); n++) {
-        if (output(1)->name() != "ignore") {
-            auto* Xdata = input(0).template data<T, Context>();
-            auto* dWdata = output(1)->template mutable_data<T, Context>();
+    for (int n = 0; n < Input(2).dim(0); n++) {
+        if (Output(1)->name() != "ignore") {
+            auto* Xdata = Input(0).template data<T, Context>();
+            auto* dWdata = Output(1)->template mutable_data<T, Context>();
             Dw(Xdata + n * this->x_offset, dYdata + n * this->y_offset, dWdata);
         }
-        if (output(0)->name() != "ignore") {
-            auto* Wdata = input(1).template data<T, Context>();
-            auto* dXdata = output(0)->template mutable_data<T, Context>();
-            bool skip = output(1)->name() != "ignore";
+        if (Output(0)->name() != "ignore") {
+            auto* Wdata = Input(1).template data<T, Context>();
+            auto* dXdata = Output(0)->template mutable_data<T, Context>();
+            bool skip = Output(1)->name() != "ignore";
             Wx(dYdata + n * this->y_offset, Wdata, dXdata + n * this->x_offset, skip);
         }
     }
@@ -86,9 +86,9 @@ void Conv2dTransposeGradientOp<Context>::RunOnDevice() {
     GradientReshape();
     //  fix the output shape for im2col/col2im
     for (int i = 0; i < this->num_spatial_axes; i++)
-        this->output_shape[i] = input(0).dim(this->spatial_axis + i);
+        this->output_shape[i] = Input(0).dim(this->spatial_axis + i);
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

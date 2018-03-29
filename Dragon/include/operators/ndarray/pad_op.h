@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_NDARRAY_PAD_OP_H_
 #define DRAGON_OPERATORS_NDARRAY_PAD_OP_H_
@@ -30,6 +35,7 @@ class PadOp final : public Operator<Context> {
         }
         std::sort(process_axes.begin(), process_axes.end());
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void ConstRunWithType();
@@ -65,6 +71,7 @@ class PadGradientOp final : public Operator<Context> {
         std::reverse(process_axes.begin(), process_axes.end());
         DISABLE_SHARE_GRADIENT;
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void ConstRunWithType();

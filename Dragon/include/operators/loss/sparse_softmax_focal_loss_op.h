@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_LOSS_SPARSE_SOFTMAX_FOCAL_LOSS_OP_H_
 #define DRAGON_OPERATORS_LOSS_SPARSE_SOFTMAX_FOCAL_LOSS_OP_H_
@@ -14,8 +19,8 @@ namespace dragon {
 template <class Context>
 class SparseSoftmaxFocalLossOp final : public SparseSoftmaxCrossEntropyOp<Context> {
  public:
-     SparseSoftmaxFocalLossOp(const OperatorDef& op_def, Workspace* ws)
-         : SparseSoftmaxCrossEntropyOp<Context>(op_def, ws),
+    SparseSoftmaxFocalLossOp(const OperatorDef& op_def, Workspace* ws)
+        : SparseSoftmaxCrossEntropyOp<Context>(op_def, ws),
            axis(OperatorBase::GetSingleArg<int>("axis", 1)),
            normalization(OperatorBase::GetSingleArg<string>("normalization", "VALID")),
            alpha(OperatorBase::GetSingleArg<float>("alpha", 0.5)),
@@ -23,7 +28,8 @@ class SparseSoftmaxFocalLossOp final : public SparseSoftmaxCrossEntropyOp<Contex
            neg_id(OperatorBase::GetSingleArg<int>("neg_id", -1)) {
          pos_alpha = alpha * 2.0;
          neg_alpha = (1 - alpha) * 2.0;
-     }
+    }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -40,13 +46,14 @@ class SparseSoftmaxFocalLossOp final : public SparseSoftmaxCrossEntropyOp<Contex
 template <class Context>
 class SparseSoftmaxFocalLossGradientOp final : public SparseSoftmaxCrossEntropyGradientOp<Context> {
  public:
-     SparseSoftmaxFocalLossGradientOp(const OperatorDef& op_def, Workspace* ws)
+    SparseSoftmaxFocalLossGradientOp(const OperatorDef& op_def, Workspace* ws)
          : SparseSoftmaxCrossEntropyGradientOp<Context>(op_def, ws),
            axis(OperatorBase::GetSingleArg<int>("axis", 1)),
            normalization(OperatorBase::GetSingleArg<string>("normalization", "VALID")),
            gamma(OperatorBase::GetSingleArg<float>("gamma", 0.0)),
            eps(OperatorBase::GetSingleArg<float>("eps", float(1e-10))),
            neg_id(OperatorBase::GetSingleArg<int>("neg_id", -1)) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

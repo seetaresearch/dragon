@@ -322,13 +322,13 @@ void Graph::RecomputingAware(const GraphDef& optimized_graph, Workspace* ws) {
             if (!inplace_flag) multi_use_count[u]++;
         }
         if (mirror_stage) {
-            //  TODO(PhyscalX):  we assume input(0)->output(0) as a in-place currently
+            //  TODO(PhyscalX):  we assume Input(0)->Output(0) as a in-place currently
             OperatorDef* op = fake_graph.mutable_op(i);
             if (rename_map.count(op->input(0)))
                 *op->mutable_input(0) = rename_map[op->input(0)];
             rename_map[op->output(0)] = op->input(0);
             *op->mutable_output(0) = op->input(0);
-            ops_[i]->input(0).Corrupt();    //  mark as a flag
+            ops_[i]->Input(0).Corrupt();    //  mark as a flag
         }
     }
 

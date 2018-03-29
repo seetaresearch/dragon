@@ -1,10 +1,21 @@
-# --------------------------------------------------------
-# TensorFlow @ Dragon
-# Copyright 2016 The TensorFlow Authors
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# Codes based on:
+#
+#      <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/util/nest.py>
+#
+# ------------------------------------------------------------
 
 import collections as _collections
 import six as _six
+
 
 def is_sequence(seq):
     if isinstance(seq, dict):

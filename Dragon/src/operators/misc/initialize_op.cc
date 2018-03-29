@@ -7,7 +7,7 @@ template <class Context> template <typename T>
 void InitializeOp<Context>::RunWithType() {
     unique_ptr< Filler<T, Context> > f;
     f.reset(CreateFiller<T, Context>(filler));
-    f->Fill(output(0));
+    f->Fill(Output(0));
 }
 
 template <class Context>
@@ -24,7 +24,7 @@ void InitializeOp<Context>::RunOnDevice() {
         auto* shape_data = shape->template data<int, CPUContext>();
         for (int i = 0; i < shape->count(); i++) output_shape.push_back(shape_data[i]);
     }
-    output(0)->Reshape(output_shape);
+    Output(0)->Reshape(output_shape);
     RunWithType<float>();
 }
 
@@ -53,9 +53,10 @@ OPERATOR_SCHEMA(RandomNormal).NumInputs(0, 1).NumOutputs(1);
 NO_GRADIENT(RandomNormal);
 
 //  truncated normal
-DEPLOY_CPU(TruncatedNormal);
 #ifdef WITH_CUDA
 DEPLOY_CPU_CUDA(TruncatedNormal);
+#else
+DEPLOY_CPU(TruncatedNormal);
 #endif
 OPERATOR_SCHEMA(TruncatedNormal).NumInputs(0, 1).NumOutputs(1);
 NO_GRADIENT(TruncatedNormal);

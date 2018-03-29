@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// ------------------------------------------------------------
 
 #ifndef DRAGON_UTILS_PROTO_UTILS_H_
 #define DRAGON_UTILS_PROTO_UTILS_H_
@@ -19,12 +24,12 @@ namespace dragon {
 using google::protobuf::Message;
 
 template <class IterableInputs,class IterableOutputs,class IterableArgs>
-inline OperatorDef MakeOperatorDef(const string& type, 
+inline OperatorDef MakeOperatorDef(const string& type,
                                    const string& name,
-                                   const IterableInputs& inputs, 
-                                   const IterableOutputs& outputs, 
+                                   const IterableInputs& inputs,
+                                   const IterableOutputs& outputs,
                                    const IterableArgs& args,
-                                   const DeviceOption& device_option, 
+                                   const DeviceOption& device_option,
                                    const string& engine) {
     OperatorDef def;
     def.set_type(type);
@@ -37,18 +42,18 @@ inline OperatorDef MakeOperatorDef(const string& type,
 }
 
 template <class IterableInputs, class IterableOutputs, class IterableArgs>
-inline OperatorDef MakeOperatorDef(const string& type, 
+inline OperatorDef MakeOperatorDef(const string& type,
                                    const string& name,
-                                   const IterableInputs& inputs, 
-                                   const IterableOutputs& outputs, 
+                                   const IterableInputs& inputs,
+                                   const IterableOutputs& outputs,
                                    const IterableArgs& args) {
     return MakeOperatorDef(type, name, inputs, outputs, args, DeviceOption(), "");
 }
 
 template <class IterableInputs, class IterableOutputs>
-inline OperatorDef MakeOperatorDef(const string& type, 
+inline OperatorDef MakeOperatorDef(const string& type,
                                    const string& name,
-                                   const IterableInputs& inputs, 
+                                   const IterableInputs& inputs,
                                    const IterableOutputs& outputs) {
     return MakeOperatorDef(type, name, inputs, outputs, vector<Argument>(), DeviceOption(), "");
 }

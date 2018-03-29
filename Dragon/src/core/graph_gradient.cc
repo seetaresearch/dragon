@@ -17,7 +17,7 @@ CheckTuple GraphGradientMaker::CheckMissingGrad(OperatorDef* forward_op) {
         if (!inputs_to_grads_.count(output)) {
             string g_output = output + "_grad";
             if (terms_.count(g_output)) g_output = terms_[g_output];
-    
+
             //  check if having external grad first
             if (external_grads_.count(g_output))
                 inputs_to_grads_[output] = g_output;
@@ -96,7 +96,7 @@ GraphDef GraphGradientMaker::Make() {
             for (int i = 0; i < g_op.output_size(); i++) {
                 string* output = g_op.mutable_output(i);
                 int original_idx = -1;
-                for (int j = 0; j < grad.g_inputs.size(); j++) 
+                for (int j = 0; j < grad.g_inputs.size(); j++)
                     if (g_op.output(i) == grad.g_inputs[j]) original_idx = j;
                 if (original_idx == -1) continue;
                 string original_name = op->input(original_idx);
@@ -135,10 +135,10 @@ GraphDef GraphGradientMaker::Make() {
                     op_outputs.push_back(output);
                     arg_defaults.add_floats(grad.defaults[gen_grad.second]);
                 }
-                OperatorDef generate_op = MakeOperatorDef("GradientGenerate", 
+                OperatorDef generate_op = MakeOperatorDef("GradientGenerate",
                                                            GetOperatorName(),
-                                                                   op_inputs, 
-                                                                  op_outputs, 
+                                                                   op_inputs,
+                                                                  op_outputs,
                                           vector<Argument>(1, arg_defaults));
                 if (op->has_device_option())
                     generate_op.mutable_device_option()->CopyFrom(op->device_option());

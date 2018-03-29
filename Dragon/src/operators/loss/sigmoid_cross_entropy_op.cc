@@ -7,43 +7,43 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void SigmoidCrossEntropyOp<Context>::RunWithType() {
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Tdata = input(1).template data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Tdata = Input(1).template data<T, Context>();
     auto* Ldata = losses.template mutable_data<T, Context>();
     auto* Vdata = valid.template mutable_data<T, Context>();
 
-    kernel::SigmoidCrossEntropy<T, Context>(input(0).count(),
+    kernel::SigmoidCrossEntropy<T, Context>(Input(0).count(),
                                                        Xdata,
                                                        Tdata,
                                                        Ldata,
                                                        Vdata);
 
     if (normalization == "UNIT") {
-        output(0)->ReshapeLike(losses);
-        output(0)->Share(losses);
+        Output(0)->ReshapeLike(losses);
+        Output(0)->Share(losses);
         return;
     }
 
     T normalizer;
     if (normalization == "VALID")
         normalizer = math::ASum<T, Context>(valid.count(), Vdata);
-    else if (normalization == "BATCH_SIZE") normalizer = input(0).dim(0);
-    else if (normalization == "FULL") normalizer = input(0).count();
+    else if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
+    else if (normalization == "FULL") normalizer = Input(0).count();
     else if (normalization == "NONE") normalizer = 1;
     T loss = math::ASum<T, Context>(losses.count(), Ldata);
-    output(0)->Reshape(vector<TIndex>(1, 1));
-    auto* Ydata = output(0)->template mutable_data<T, CPUContext>();
+    Output(0)->Reshape(vector<TIndex>(1, 1));
+    auto* Ydata = Output(0)->template mutable_data<T, CPUContext>();
     Ydata[0] = loss / normalizer;
 }
 
 template <class Context>
 void SigmoidCrossEntropyOp<Context>::RunOnDevice() {
-    CHECK_EQ(input(0).count(), input(1).count())
+    CHECK_EQ(Input(0).count(), Input(1).count())
         << "\nNumber of predictions must match the number of labels.";
-    losses.ReshapeLike(input(0));
-    valid.ReshapeLike(input(0));
+    losses.ReshapeLike(Input(0));
+    valid.ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 
@@ -55,38 +55,38 @@ OPERATOR_SCHEMA(SigmoidCrossEntropy).NumInputs(2).NumOutputs(1);
 
 template <class Context> template <typename T>
 void SigmoidCrossEntropyGradientOp<Context>::RunWithType() {
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Tdata = input(1).template data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Tdata = Input(1).template data<T, Context>();
     auto* Vdata = valid.template mutable_data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
-    kernel::SigmoidCrossEntropyGrad<T, Context>(input(0).count(),
+    kernel::SigmoidCrossEntropyGrad<T, Context>(Input(0).count(),
                                                            Xdata,
                                                            Tdata,
                                                           dXdata,
                                                            Vdata);
 
     if (normalization == "UNIT") {
-        auto* dYdata = input(-1).template data<T, Context>();
-        math::Mul<T, Context>(output(0)->count(), dYdata, dXdata, dXdata);
+        auto* dYdata = Input(-1).template data<T, Context>();
+        math::Mul<T, Context>(Output(0)->count(), dYdata, dXdata, dXdata);
         return;
     }
 
     T normalizer;
     if (normalization == "VALID") normalizer = math::ASum<T, Context>(valid.count(), Vdata);
-    else if (normalization == "BATCH_SIZE") normalizer = input(0).dim(0);
-    else if (normalization == "FULL") normalizer = input(0).count();
+    else if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
+    else if (normalization == "FULL") normalizer = Input(0).count();
     else if (normalization == "NONE") normalizer = 1;
-    auto* dYdata = input(-1).template data<T, CPUContext>();
-    math::Scal<T, Context>(output(0)->count(), dYdata[0] / normalizer, dXdata);
+    auto* dYdata = Input(-1).template data<T, CPUContext>();
+    math::Scal<T, Context>(Output(0)->count(), dYdata[0] / normalizer, dXdata);
 }
 
 template <class Context>
 void SigmoidCrossEntropyGradientOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
-    valid.ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
+    valid.ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

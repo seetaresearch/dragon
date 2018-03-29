@@ -7,14 +7,14 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void ReduceOp<Context>::SumRunWithType() {
-    auto* Xdata = input(0).template data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
     if (axis == -1) {
-        INIT_MULTIPLIER(multiplier, input(0).count());
-        auto* Ydata = output(0)->template mutable_data<T, CPUContext>();
+        INIT_MULTIPLIER(multiplier, Input(0).count());
+        auto* Ydata = Output(0)->template mutable_data<T, CPUContext>();
         auto* Mdata = multiplier->template data<T, Context>();
-        Ydata[0] = math::Dot<T, Context>(input(0).count(), Mdata, Xdata);
+        Ydata[0] = math::Dot<T, Context>(Input(0).count(), Mdata, Xdata);
     } else {
-        auto* Ydata = output(0)->template mutable_data<T, Context>();
+        auto* Ydata = Output(0)->template mutable_data<T, Context>();
         kernel::Sum<T, Context>(count, axis_dim, inner_dim, Xdata, Ydata);
     }
 }
@@ -22,34 +22,34 @@ void ReduceOp<Context>::SumRunWithType() {
 template <class Context> template <typename T>
 void ReduceOp<Context>::MeanRunWithType() {
     SumRunWithType<T>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
-    T coeff = axis != -1 ? 1.0 / axis_dim : 1.0 / input(0).count();
-    math::Scal<T, Context>(output(0)->count(), coeff, Ydata);
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    T coeff = axis != -1 ? 1.0 / axis_dim : 1.0 / Input(0).count();
+    math::Scal<T, Context>(Output(0)->count(), coeff, Ydata);
 }
 
 template <class Context>
 void ReduceOp<Context>::RunOnDevice() {
     if (axis != -1) {
-        count = input(0).count() / input(0).dim(axis);
-        axis_dim = input(0).dim(axis);
+        count = Input(0).count() / Input(0).dim(axis);
+        axis_dim = Input(0).dim(axis);
     }
-    inner_dim = input(0).count(axis + 1);
-    vector<TIndex> dims = input(0).dims();
+    inner_dim = Input(0).count(axis + 1);
+    vector<TIndex> dims = Input(0).dims();
     if (!keep_dims) {
         if (axis != -1) dims.erase(dims.begin() + axis);
         else dims = vector<TIndex>(1, 1);
     } else {
         if (axis != -1) dims[axis] = 1;
-        else dims = vector<TIndex>(input(0).ndim(), 1);
+        else dims = vector<TIndex>(Input(0).ndim(), 1);
     }
-    output(0)->Reshape(dims);
+    Output(0)->Reshape(dims);
 
     if (operation == "SUM") {
-        if (input(0).template IsType<float>()) SumRunWithType<float>();
+        if (Input(0).template IsType<float>()) SumRunWithType<float>();
         else LOG(FATAL) << "Unsupported input types.";
     } 
     else if (operation == "MEAN") {
-        if (input(0).template IsType<float>()) MeanRunWithType<float>();
+        if (Input(0).template IsType<float>()) MeanRunWithType<float>();
         else LOG(FATAL) << "Unsupported input types.";
     } 
     else {
@@ -65,24 +65,24 @@ OPERATOR_SCHEMA(Reduce).NumInputs(1).NumOutputs(1);
 
 template <class Context> template <typename T>
 void ReduceGradientOp<Context>::SumRunWithType() {
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
     if (axis == -1) {
-        auto* dYdata = input(-1).template data<T, CPUContext>();
-        math::Set<T, Context>(output(0)->count(), dYdata[0], dXdata);
+        auto* dYdata = Input(-1).template data<T, CPUContext>();
+        math::Set<T, Context>(Output(0)->count(), dYdata[0], dXdata);
     } else {
-        auto* dYdata = input(-1).template data<T, Context>();
+        auto* dYdata = Input(-1).template data<T, Context>();
         kernel::SumGrad<T, Context>(count, axis_dim, inner_dim, 1.0, dYdata, dXdata);
     }
 }
 
 template <class Context> template <typename T>
 void ReduceGradientOp<Context>::MeanRunWithType() {
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
     if (axis == -1) {
-        auto* dYdata = input(-1).template data<T, CPUContext>();
-        math::Set<T, Context>(output(0)->count(), dYdata[0] / input(0).count(), dXdata);
+        auto* dYdata = Input(-1).template data<T, CPUContext>();
+        math::Set<T, Context>(Output(0)->count(), dYdata[0] / Input(0).count(), dXdata);
     } else {
-        auto* dYdata = input(-1).template data<T, Context>();
+        auto* dYdata = Input(-1).template data<T, Context>();
         kernel::SumGrad<T, Context>(count, axis_dim, inner_dim, 1.0 / axis_dim, dYdata, dXdata);
     }
 }
@@ -90,17 +90,17 @@ void ReduceGradientOp<Context>::MeanRunWithType() {
 template <class Context>
 void ReduceGradientOp<Context>::RunOnDevice() {
     if (axis != -1) {
-        count = input(0).count() / input(0).dim(axis);
-        axis_dim = input(0).dim(axis);
+        count = Input(0).count() / Input(0).dim(axis);
+        axis_dim = Input(0).dim(axis);
     }
-    inner_dim = input(0).count(axis + 1);
-    output(0)->ReshapeLike(input(0));
+    inner_dim = Input(0).count(axis + 1);
+    Output(0)->ReshapeLike(Input(0));
 
     if (operation == "SUM") {
-        if (input(0).template IsType<float>()) SumRunWithType<float>();
+        if (Input(0).template IsType<float>()) SumRunWithType<float>();
         else LOG(FATAL) << "Unsupported input types.";
     } else if (operation == "MEAN") {
-        if (input(0).template IsType<float>()) MeanRunWithType<float>();
+        if (Input(0).template IsType<float>()) MeanRunWithType<float>();
         else LOG(FATAL) << "Unsupported input types.";
     } else {
         LOG(FATAL) << "Unknown operation: [" << operation << "].";

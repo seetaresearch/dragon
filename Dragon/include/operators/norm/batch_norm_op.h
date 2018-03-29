@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_NORM_BATCH_NORM_OP_H_
 #define DRAGON_OPERATORS_NORM_BATCH_NORM_OP_H_
@@ -25,6 +30,7 @@ class BatchNormOp : public Operator<Context> {
             CHECK_EQ(axis, 1) 
                 << "\nThe axis can only be set to 1.";
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void Setup();
 
@@ -54,6 +60,7 @@ class BatchNormGradientOp final : public Operator<Context> {
             CHECK_EQ(axis, 1)
                 << "\nThe axis can only be set to 1.";
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void Setup();
 
@@ -80,6 +87,7 @@ class FusedBatchNormOp : public Operator<Context> {
           momentum(OperatorBase::GetSingleArg<float>("momentum", float(0.9))),
           eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void Setup();
 
@@ -106,6 +114,7 @@ class FusedBatchNormGradientOp : public Operator<Context> {
           axis(OperatorBase::GetSingleArg<int>("axis", -1)),
           eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void Setup();
 
@@ -142,6 +151,7 @@ class CuDNNBatchNormOp final : public FusedBatchNormOp<Context> {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&bn_desc));
         this->eps = std::max(this->eps, float(CUDNN_BN_MIN_EPSILON));
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     ~CuDNNBatchNormOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
@@ -172,6 +182,7 @@ class CuDNNBatchNormGradientOp final : public FusedBatchNormGradientOp<Context> 
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&bn_desc));
         this->eps = std::max(this->eps, float(CUDNN_BN_MIN_EPSILON));
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     ~CuDNNBatchNormGradientOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));

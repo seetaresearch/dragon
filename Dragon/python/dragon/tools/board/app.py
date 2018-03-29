@@ -1,10 +1,21 @@
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# ------------------------------------------------------------
+
 import os
 import time
 from multiprocessing import Process
 try:
     from flask import Flask, render_template, make_response, jsonify, request
 except ImportError as e: pass
-from six.moves import range as xrange
+
 
 class DragonBoard(Process):
     def __init__(self, log_dir='', port=5000, max_display=1000):
@@ -74,7 +85,7 @@ class DragonBoard(Process):
             if len(sclar) > self.config['max_display']:
                 sample_scalar = {}
                 stride = len(sclar) // self.config['max_display']
-                for i in xrange(0, cur_idx, stride):
+                for i in range(0, cur_idx, stride):
                     sample_scalar[inds[i]] = sclar[inds[i]]
                 return make_response(jsonify(sample_scalar))
             else: return make_response(jsonify(sclar))

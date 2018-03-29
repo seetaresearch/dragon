@@ -1,13 +1,17 @@
-# --------------------------------------------------------
-# Dragon
-# Copyright(c) 2017 SeetaTech
-# Written by Ting Pan
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# ------------------------------------------------------------
 
 import time
 import pprint
 from multiprocessing import Queue
-from six.moves import range as xrange
 
 import dragon.core.mpi as mpi
 
@@ -113,11 +117,11 @@ class DataBatch(object):
 
         # init readers
         self._readers = []
-        for i in xrange(self._num_readers):
+        for i in range(self._num_readers):
             self._readers.append(DataReader(**kwargs))
             self._readers[-1].Q_out = self.Q_level_1
 
-        for i in xrange(self._num_readers):
+        for i in range(self._num_readers):
             num_parts = self._num_readers
             part_idx = i
 
@@ -134,7 +138,7 @@ class DataBatch(object):
 
         # init transformers
         self._transformers = []
-        for i in xrange(self._num_transformers):
+        for i in range(self._num_transformers):
             transformer = DataTransformer(**kwargs)
             transformer._random_seed += (i + local_rank * self._num_transformers)
             transformer.Q_in = self.Q_level_1
@@ -145,7 +149,7 @@ class DataBatch(object):
 
         # init blob fetchers
         self._fetchers = []
-        for i in xrange(self._num_fetchers):
+        for i in range(self._num_fetchers):
             fetcher = BlobFetcher(**kwargs)
             fetcher.Q_in = self.Q_level_2
             fetcher.Q_out = self.Q_level_3

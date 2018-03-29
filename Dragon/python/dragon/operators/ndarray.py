@@ -1,15 +1,19 @@
-# --------------------------------------------------------
-# Dragon
-# Copyright(c) 2017 SeetaTech
-# Written by Ting Pan
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# ------------------------------------------------------------
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-from six.moves import range as xrange
 
 from . import *
 
@@ -172,7 +176,7 @@ def Slice(inputs, axis=1, num_output=1, **kwargs):
 
     if inputs.shape is not None:
         if inputs.shape[axis] is not None:
-            for i in xrange(len(outputs)):
+            for i in range(len(outputs)):
                 outputs[i].shape = inputs.shape[:]
                 outputs[i].shape[axis] /= num_output
 
@@ -240,7 +244,7 @@ def Concat(inputs, axis=1, **kwargs):
     if all(input.shape is not None for input in inputs):
         if all(input.shape[axis] is not None for input in inputs):
             output.shape = inputs[0].shape[:]
-            for i in xrange(1, int(len(inputs))):
+            for i in range(1, int(len(inputs))):
                 output.shape[axis] += inputs[i].shape[axis]
 
     return output
@@ -275,7 +279,7 @@ def Reduce(inputs, axis=-1, operation='NONE', keep_dims=False, **kwargs):
         output.shape = inputs.shape[:]
         if axis == -1:
             if keep_dims:
-                for i in xrange(len(output.shape)):
+                for i in range(len(output.shape)):
                     output.shape[i] = 1
             else: output.shape = [1]
         else:
@@ -633,7 +637,7 @@ def Flatten(inputs, axis=0, num_axes=-1, keep_axes=None, **kwargs):
                                  .format(len(inputs.shape), keep_axes))
             total_count = np.prod(fake_shape)
             output.shape = []
-            for i in xrange(keep_axes - 1):
+            for i in range(keep_axes - 1):
                 output.shape.append(inputs.shape[i])
                 total_count *= fake_shape[i]
             if total_count != 1:

@@ -1,16 +1,19 @@
-# --------------------------------------------------------
-# Dragon
-# Copyright(c) 2017 SeetaTech
-# Written by Ting Pan
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# ------------------------------------------------------------
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-from six.moves import range as xrange
-
 from dragon.import_c_apis import *
 
 _is_init = False
@@ -57,7 +60,7 @@ def Init():
     global _is_init
     global _snapshot_ranks
     _is_init = True
-    _snapshot_ranks = [i for i in xrange(Size())]
+    _snapshot_ranks = [i for i in range(Size())]
 
 
 def Is_Init():

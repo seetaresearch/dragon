@@ -1,4 +1,4 @@
-﻿# ---------------- Welcom To Use Dragon  ----------------
+# ---------------- Welcom To Use Dragon  ----------------
 
 PROJECT(dragon)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0.0)
@@ -158,7 +158,7 @@ if(WIN32)
 endif()
 if(UNIX)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -O2 -m64 -fpermissive -std=c++11")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w -fPIC -O2 -m64 -std=c++11")
     if (WITH_OMP)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")

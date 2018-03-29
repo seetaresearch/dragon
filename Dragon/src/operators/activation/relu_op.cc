@@ -6,16 +6,16 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void ReluOp<Context>::RunWithType() {
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
-    kernel::Relu<T, Context>(output(0)->count(), Xdata, slope, Ydata);
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    kernel::Relu<T, Context>(Output(0)->count(), Xdata, slope, Ydata);
 }
 
 template <class Context>
 void ReluOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 
@@ -27,17 +27,17 @@ OPERATOR_SCHEMA(Relu).NumInputs(1).NumOutputs(1).Inplace({ { 0, 0 } });
 
 template <class Context> template <typename T>
 void ReluGradientOp<Context>::RunWithType() {
-    auto* Ydata = input(0).template data<T, Context>();
-    auto* dYdata = input(1).template data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
-    kernel::ReluGrad<T, Context>(output(0)->count(), dYdata, Ydata, slope, dXdata);
+    auto* Ydata = Input(0).template data<T, Context>();
+    auto* dYdata = Input(1).template data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
+    kernel::ReluGrad<T, Context>(Output(0)->count(), dYdata, Ydata, slope, dXdata);
 }
 
 template <class Context>
 void ReluGradientOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

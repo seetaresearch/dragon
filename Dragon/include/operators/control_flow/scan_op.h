@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_CONTROL_FLOW_SCAN_OP_H_
 #define DRAGON_OPERATORS_CONTROL_FLOW_SCAN_OP_H_
@@ -26,6 +31,7 @@ class ScanOp final: public Operator<Context> {
           debug_mode(OperatorBase::GetSingleArg<bool>("debug_mode", false)) { 
         InitTemplate(); 
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     void InitTemplate();
@@ -56,14 +62,15 @@ class ScanGradientOp final: public Operator<Context> {
           forward_outputs(OperatorBase::GetRepeatedArg<string>("outputs_name")) {
         //  handle GO(x)
         for (int i = 0; i < forward_outputs.size(); i++)
-            terms[forward_outputs[i] + "_grad"] = input(i + (int)OutputSize()).name();
+            terms[forward_outputs[i] + "_grad"] = Input(i + (int)OutputSize()).name();
             
         //  handle GI(x)
         for (int i = 0; i < forward_inputs.size(); i++)
-            terms[forward_inputs[i] + "_grad"] = output(i)->name();
+            terms[forward_inputs[i] + "_grad"] = Output(i)->name();
 
         DISABLE_SHARE_GRADIENT;
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     void MakeGradientOps();

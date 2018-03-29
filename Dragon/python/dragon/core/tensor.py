@@ -1,8 +1,13 @@
-# --------------------------------------------------------
-# Dragon
-# Copyright(c) 2017 SeetaTech
-# Written by Ting Pan
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# ------------------------------------------------------------
 
 from __future__ import absolute_import
 from __future__ import division
@@ -10,7 +15,6 @@ from __future__ import print_function
 
 import numpy as np
 from collections import OrderedDict
-from six.moves import range as xrange
 
 import dragon.core.workspace as ws
 import dragon.protos.dragon_pb2 as pb
@@ -805,11 +809,11 @@ class Tensor(object):
                 output.shape[i] = self.shape[axis]
 
         # expand dims
-        for i in xrange(len(dimensions) - len(perms)):
+        for i in range(len(dimensions) - len(perms)):
             flag = False
             input_shape = output.shape
             axis = -1
-            for idx in xrange(len(dimensions)):
+            for idx in range(len(dimensions)):
                 if idx >= len(perms): continue
                 cur_dim = perms[idx]; exp_dim = dimensions[idx]
                 if cur_dim != exp_dim:
@@ -945,7 +949,7 @@ class Tensor(object):
         # 2. generate outputs
         outputs = []
         if existing_outputs is None:
-            for idx in xrange(nout): outputs.append(Tensor())
+            for idx in range(nout): outputs.append(Tensor())
         else:
             if not isinstance(existing_outputs, list): existing_outputs = [existing_outputs]
             outputs = existing_outputs

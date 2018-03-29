@@ -8,13 +8,13 @@ namespace dragon {
 template <class Context> template <typename T>
 void Pooling2dOp<Context>::MAXRunWithType() {
     mask = ws()->CreateTensor("/mnt/" + anchor() + "/max_pool_mask");
-    mask->ReshapeLike(*output(0));
+    mask->ReshapeLike(*Output(0));
 
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
     auto* Mdata = mask->template mutable_data<int, Context>();
 
-    kernel::MAXPooling2d<T, Context>(output(0)->count(),
+    kernel::MAXPooling2d<T, Context>(Output(0)->count(),
                                              n, c, h, w,
                                          pool_h, pool_w,
                          kernel_size[0], kernel_size[1],
@@ -28,10 +28,10 @@ void Pooling2dOp<Context>::MAXRunWithType() {
 
 template <class Context> template <typename T>
 void Pooling2dOp<Context>::AVGRunWithType() {
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
-    kernel::AVGPooling2d<T, Context>(output(0)->count(),
+    kernel::AVGPooling2d<T, Context>(Output(0)->count(),
                                              n, c, h, w,
                                          pool_h, pool_w,
                          kernel_size[0], kernel_size[1],
@@ -45,17 +45,17 @@ void Pooling2dOp<Context>::AVGRunWithType() {
 template <class Context>
 void Pooling2dOp<Context>::Reshape() {
     if (data_format == "NCHW") {
-        n = input(0).dim(0);
-        c = input(0).dim(1);
-        h = input(0).dim(2);
-        w = input(0).dim(3);
+        n = Input(0).dim(0);
+        c = Input(0).dim(1);
+        h = Input(0).dim(2);
+        w = Input(0).dim(3);
         if (global_pooling) {
             for (int i = 0; i < 2; i++)
-                kernel_size[i] = input(0).dim(i + 2);
+                kernel_size[i] = Input(0).dim(i + 2);
         }
         if (padding == "SAME") {
             for (int i = 0; i < 2; i++) {
-                TIndex input_size = input(0).dim(i + 2);
+                TIndex input_size = Input(0).dim(i + 2);
                 TIndex output_size = (input_size + stride[i] - 1) / (float)stride[i];
                 TIndex padding_needed = std::max(TIndex(0), (output_size - 1) * stride[i] + kernel_size[i] - input_size);
                 TIndex pad_l = padding_needed / 2;
@@ -64,17 +64,17 @@ void Pooling2dOp<Context>::Reshape() {
             }
         }
     } else if (data_format == "NHWC") {
-        n = input(0).dim(0);
-        h = input(0).dim(1);
-        w = input(0).dim(2);
-        c = input(0).dim(3);
+        n = Input(0).dim(0);
+        h = Input(0).dim(1);
+        w = Input(0).dim(2);
+        c = Input(0).dim(3);
         if (global_pooling) {
             for (int i = 0; i < 2; i++)
-                kernel_size[i] = input(0).dim(i + 1);
+                kernel_size[i] = Input(0).dim(i + 1);
         }
         if (padding == "SAME") {
             for (int i = 0; i < 2; i++) {
-                TIndex input_size = input(0).dim(i + 1);
+                TIndex input_size = Input(0).dim(i + 1);
                 TIndex output_size = (input_size + stride[i] - 1) / (float)stride[i];
                 TIndex padding_needed = std::max(TIndex(0), (output_size - 1) * stride[i] + kernel_size[i] - input_size);
                 TIndex pad_l = padding_needed / 2;
@@ -95,8 +95,8 @@ void Pooling2dOp<Context>::Reshape() {
         pool_h = (h + stride[0] - 1) / (float)stride[0];
         pool_w = (w + stride[1] - 1) / (float)stride[1];
     }
-    if (data_format == "NCHW") output(0)->Reshape(vector<TIndex>({ n, c, pool_h, pool_w }));
-    else if (data_format == "NHWC") output(0)->Reshape(vector<TIndex>({ n, pool_h, pool_w, c }));
+    if (data_format == "NCHW") Output(0)->Reshape(vector<TIndex>({ n, c, pool_h, pool_w }));
+    else if (data_format == "NHWC") Output(0)->Reshape(vector<TIndex>({ n, pool_h, pool_w, c }));
 }
 
 template <class Context>
@@ -104,10 +104,10 @@ void Pooling2dOp<Context>::RunOnDevice() {
     Reshape();
 
     if (mode == "MAX") {
-        if (input(0).template IsType<float>()) MAXRunWithType<float>();
+        if (Input(0).template IsType<float>()) MAXRunWithType<float>();
         else LOG(FATAL) << "Unsupported input types.";
     }  else if (mode == "AVG") {
-        if (input(0).template IsType<float>()) AVGRunWithType<float>();
+        if (Input(0).template IsType<float>()) AVGRunWithType<float>();
         else LOG(FATAL) << "Unsupported input types.";
     } else { 
         LOG(FATAL) << "Unsupported pooling mode: " << mode;
@@ -124,11 +124,11 @@ template <class Context> template <typename T>
 void Pooling2dGradientOp<Context>::MAXRunWithType() {
     mask = ws()->GetTensor("/mnt/" + anchor() + "/max_pool_mask");
 
-    auto* dYdata = input(-1).template data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
+    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* Mdata = mask->template data<int, Context>();
 
-    kernel::MAXPooling2dGrad<T, Context>(output(0)->count(),
+    kernel::MAXPooling2dGrad<T, Context>(Output(0)->count(),
                                                  n, c, h, w,
                                              pool_h, pool_w,
                              kernel_size[0], kernel_size[1],
@@ -142,10 +142,10 @@ void Pooling2dGradientOp<Context>::MAXRunWithType() {
 
 template <class Context> template <typename T>
 void Pooling2dGradientOp<Context>::AVGRunWithType() {
-    auto* dYdata = input(-1).template data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
+    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
-    kernel::AVGPooling2dGrad<T, Context>(output(0)->count(),
+    kernel::AVGPooling2dGrad<T, Context>(Output(0)->count(),
                                                  n, c, h, w,
                                              pool_h, pool_w,
                              kernel_size[0], kernel_size[1],
@@ -159,17 +159,17 @@ void Pooling2dGradientOp<Context>::AVGRunWithType() {
 template <class Context>
 void Pooling2dGradientOp<Context>::Reshape() {
    if (data_format == "NCHW") {
-        n = input(0).dim(0);
-        c = input(0).dim(1);
-        h = input(0).dim(2);
-        w = input(0).dim(3);
+        n = Input(0).dim(0);
+        c = Input(0).dim(1);
+        h = Input(0).dim(2);
+        w = Input(0).dim(3);
         if (global_pooling) {
             for (int i = 0; i < 2; i++)
-                kernel_size[i] = input(0).dim(i + 2);
+                kernel_size[i] = Input(0).dim(i + 2);
         }
         if (padding == "SAME") {
             for (int i = 0; i < 2; i++) {
-                TIndex input_size = input(0).dim(i + 2);
+                TIndex input_size = Input(0).dim(i + 2);
                 TIndex output_size = (input_size + stride[i] - 1) / (float)stride[i];
                 TIndex padding_needed = std::max(TIndex(0), (output_size - 1) * stride[i] + kernel_size[i] - input_size);
                 TIndex pad_l = padding_needed / 2;
@@ -178,17 +178,17 @@ void Pooling2dGradientOp<Context>::Reshape() {
             }
         }
     } else if (data_format == "NHWC") {
-        n = input(0).dim(0);
-        h = input(0).dim(1);
-        w = input(0).dim(2);
-        c = input(0).dim(3);
+        n = Input(0).dim(0);
+        h = Input(0).dim(1);
+        w = Input(0).dim(2);
+        c = Input(0).dim(3);
         if (global_pooling) {
             for (int i = 0; i < 2; i++)
-                kernel_size[i] = input(0).dim(i + 1);
+                kernel_size[i] = Input(0).dim(i + 1);
         }
         if (padding == "SAME") {
             for (int i = 0; i < 2; i++) {
-                TIndex input_size = input(0).dim(i + 1);
+                TIndex input_size = Input(0).dim(i + 1);
                 TIndex output_size = (input_size + stride[i] - 1) / (float)stride[i];
                 TIndex padding_needed = std::max(TIndex(0), (output_size - 1) * stride[i] + kernel_size[i] - input_size);
                 TIndex pad_l = padding_needed / 2;
@@ -209,7 +209,7 @@ void Pooling2dGradientOp<Context>::Reshape() {
         pool_h = (h + stride[0] - 1) / (float)stride[0];
         pool_w = (w + stride[1] - 1) / (float)stride[1];
     }
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 }
 
 template <class Context>
@@ -217,10 +217,10 @@ void Pooling2dGradientOp<Context>::RunOnDevice() {
     Reshape();
 
    if (mode == "MAX") {
-        if (input(0).template IsType<float>()) MAXRunWithType<float>();
+        if (Input(0).template IsType<float>()) MAXRunWithType<float>();
         else LOG(FATAL) << "Unsupported input types.";
     }  else if (mode == "AVG") {
-        if (input(0).template IsType<float>()) AVGRunWithType<float>();
+        if (Input(0).template IsType<float>()) AVGRunWithType<float>();
         else LOG(FATAL) << "Unsupported input types.";
     } else { 
         LOG(FATAL) << "Unsupported pooling mode: " << mode;

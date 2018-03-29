@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_NORM_GROUP_NORM_OP_H_
 #define DRAGON_OPERATORS_NORM_GROUP_NORM_OP_H_
@@ -26,6 +31,7 @@ class GroupNormOp : public Operator<Context> {
             CHECK_EQ(axis, 1) 
                 << "\nThe axis can only be set to 1.";
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void Setup();
 
@@ -56,6 +62,7 @@ class GroupNormGradientOp final : public Operator<Context> {
             CHECK_EQ(axis, 1)
                 << "\nThe axis can only be set to 1.";
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void Setup();
 
@@ -83,6 +90,7 @@ class FusedGroupNormOp : public Operator<Context> {
           momentum(OperatorBase::GetSingleArg<float>("momentum", float(0.9))),
           eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void Setup();
 
@@ -110,6 +118,7 @@ class FusedGroupNormGradientOp : public Operator<Context> {
           axis(OperatorBase::GetSingleArg<int>("axis", -1)),
           eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void Setup();
 

@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_VISION_LRN_OP_H_
 #define DRAGON_OPERATORS_VISION_LRN_OP_H_
@@ -24,6 +29,7 @@ class LRNOp : public Operator<Context> {
           k(OperatorBase::GetSingleArg<float>("k", float(2.0))),
           mode(OperatorBase::GetSingleArg<string>("mode", "ACROSS_CHANNELS")),
           data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -54,6 +60,7 @@ class LRNGradientOp : public Operator<Context> {
           k(OperatorBase::GetSingleArg<float>("k", float(2.0))),
           mode(OperatorBase::GetSingleArg<string>("mode", "ACROSS_CHANNELS")),
           data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -90,6 +97,7 @@ class CuDNNLRNOp : public LRNOp<Context> {
                                                      this->beta, 
                                                      this->k));
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     ~CuDNNLRNOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
@@ -118,6 +126,7 @@ class CuDNNLRNGradientOp : public LRNGradientOp<Context > {
                                                      this->beta, 
                                                      this->k));
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     ~CuDNNLRNGradientOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));

@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// ------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_ARITHMETIC_INNER_PRODUCT_OP_H_
 #define DRAGON_OPERATORS_ARITHMETIC_INNER_PRODUCT_OP_H_
@@ -19,6 +24,7 @@ class InnerProductOp: public Operator<Context> {
           axis(OperatorBase::GetSingleArg<int>("axis", 1)),
           num_output(OperatorBase::GetSingleArg<int>("num_output", 0)),
           transW(OperatorBase::GetSingleArg<bool>("TransW", true)) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice();
     template <typename T> void TransRunWithType();
@@ -38,6 +44,7 @@ class InnerProductGradientOp final : public Operator<Context> {
           axis(OperatorBase::GetSingleArg<int>("axis", 1)),
           num_output(OperatorBase::GetSingleArg<int>("num_output", 0)),
           transW(OperatorBase::GetSingleArg<bool>("TransW", true)) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

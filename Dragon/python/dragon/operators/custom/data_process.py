@@ -1,15 +1,22 @@
-# --------------------------------------------------------
-# Dragon
-# Copyright(c) 2017 SeetaTech
-# Written by Ting Pan
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# ------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function
+
 import numpy as np
-import dragon.core.workspace as ws
-import dragon.ops as ops
-import dragon.vm.theano as theano
+import dragon as dg
 from multiprocessing import Process, Queue
+
 
 class Fetcher(Process):
     def __init__(self, queue):
@@ -35,9 +42,9 @@ class DataProcessOp(object):
 
     Examples
     --------
-    >>> import dragon.vm.theano as theano
-    >>> y = Run([], module=__name__, op='DataProcessOp', nout=1)
-    >>> foo = theano.function(outputs=y)
+    >>> import dragon as dg
+    >>> y = dg.ops.Run([], module=__name__, op='DataProcessOp', nout=1)
+    >>> foo = dg.function(outputs=y)
     >>> foo()
     >>> print(y.get_value())
     >>> [[ 1.  1.  1.  1.  1.  1.  1.  1.  1.  1.]
@@ -82,14 +89,14 @@ class DataProcessOp(object):
         None
 
         """
-        ws.FeedTensor(outputs[0], self._queue.get())
+        dg.workspace.FeedTensor(outputs[0], self._queue.get())
 
 
 if __name__ == '__main__':
 
     # def
-    y = ops.Run([], module=__name__, op='DataProcessOp', nout=1)
-    foo = theano.function(outputs=y)
+    y = dg.ops.Run([], module=__name__, op='DataProcessOp', nout=1)
+    foo = dg.function(outputs=y)
 
     # run
     foo()

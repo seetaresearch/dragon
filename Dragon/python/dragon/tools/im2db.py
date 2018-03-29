@@ -1,22 +1,24 @@
-# --------------------------------------------------------
-# Dragon
-# Copyright(c) 2017 SeetaTech
-# Written by Ting Pan
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# ------------------------------------------------------------
 
 import os
 import sys
 import time
 import shutil
 import argparse
-
 import cv2
-try:
-    import numpy as np
-except: pass
 
 from dragon.tools.db import LMDB
 from dragon.vm.caffe.proto import caffe_pb2
+
 
 def resize_image(im, resize):
     """Resize the image by the shortest edge.

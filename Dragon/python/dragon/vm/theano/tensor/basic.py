@@ -1,12 +1,16 @@
-# --------------------------------------------------------
-# Theano @ Dragon
-# Copyright(c) 2017 SeetaTech
-# Written by Ting Pan
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# ------------------------------------------------------------
 
 import numpy as np
 
-import dragon.core.workspace as ws
 from dragon.core.tensor import Tensor
 import dragon.ops as ops
 
@@ -20,6 +24,7 @@ _DATA_TYPES = {
     'float32': np.float32,
     'float64': np.float64,
 }
+
 
 def scalar(name=None, dtype=None):
     """Return a scalar variable.

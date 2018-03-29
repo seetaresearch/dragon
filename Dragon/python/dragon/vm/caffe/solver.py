@@ -1,11 +1,15 @@
-# --------------------------------------------------------
-# Caffe @ Dragon
-# Copyright(c) 2017 SeetaTech
-# Written by Ting Pan
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# ------------------------------------------------------------
 
 import time
-from six.moves import range as xrange
 
 import dragon.core.workspace as ws
 import dragon.core.mpi as mpi
@@ -238,7 +242,7 @@ class Solver(object):
         test_iter = self._param.test_iter[test_idx]
         net = self._test_nets[test_idx]
 
-        for iter in xrange(test_iter):
+        for iter in range(test_iter):
             self.tests[test_idx](return_outputs=False)
             if not root_solver(): continue
             if iter == 0:
@@ -289,11 +293,11 @@ class Solver(object):
                  self._iter % self._param.test_interval == 0:
                 if (self._iter == 0 and
                         self._param.test_initialization) or self._iter != 0:
-                    for test_id in xrange(len(self.tests)): self.Test(test_id)
+                    for test_id in range(len(self.tests)): self.Test(test_id)
 
             # forward & backward & compute_loss
             loss = 0.0
-            for i in xrange(self._param.iter_size):
+            for i in range(self._param.iter_size):
                 self.train(return_outputs=False)
                 if root_solver():
                     for cost in self._net._costs:

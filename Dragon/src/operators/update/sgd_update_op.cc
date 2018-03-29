@@ -7,10 +7,10 @@ template <class Context>
 void SGDUpdateOp<Context>::ComputeRunWithFloat() {
     if (!history.get()) {
         history.reset(new Tensor());
-        history->ReshapeLike(input(0));
+        history->ReshapeLike(Input(0));
     }
-    lr = param("base_lr") * this->lr_mult;
-    auto* dXdata = input(0).template mutable_data<float, Context>();
+    lr = Param("base_lr") * this->lr_mult;
+    auto* dXdata = Input(0).template mutable_data<float, Context>();
     auto* Hdata = history->template mutable_data<float, Context>();
     math::Axpby<float, Context>(history->count(), lr, dXdata, momentum, Hdata);
     ctx().template Copy<float, Context, Context>(history->count(), dXdata, Hdata);

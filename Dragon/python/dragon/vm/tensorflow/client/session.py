@@ -1,8 +1,13 @@
-# --------------------------------------------------------
-# TensorFlow @ Dragon
-# Copyright(c) 2017 SeetaTech
-# Written by Ting Pan
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# ------------------------------------------------------------
 
 import warnings
 
@@ -30,6 +35,7 @@ class Transaction(object):
 
 _default_session = None
 
+
 class BaseSession(object):
     """
     Construct a BaseSession.
@@ -55,44 +61,7 @@ class BaseSession(object):
         self._session = None
 
     def list_devices(self):
-        """Lists available devices in this session.
-
-        ```python
-        devices = sess.list_devices()
-        for d in devices:
-          print(d.name)
-        ```
-
-        Each element in the list has the following properties:
-         - `name`: A string with the full name of the device. ex:
-              `/job:worker/replica:0/task:3/device:CPU:0`
-         - `device_type`: The type of the device (e.g. `CPU`, `GPU`, `TPU`.)
-         - `memory_limit`: The maximum amount of memory available on the device.
-              Note: depending on the device, it is possible the usable memory could
-              be substantially less.
-        Raises:
-          tf.errors.OpError: If it encounters an error (e.g. session is in an
-          invalid state, or network errors occur).
-
-        Returns:
-          A list of devices in the session.
-        """
-        # with errors.raise_exception_on_not_ok_status() as status:
-        #     if self._created_with_new_api:
-        #         raw_device_list = tf_session.TF_SessionListDevices(
-        #             self._session, status)
-        #     else:
-        #         raw_device_list = tf_session.TF_DeprecatedSessionListDevices(
-        #             self._session, status)
-        #     device_list = []
-        #     size = tf_session.TF_DeviceListCount(raw_device_list)
-        #     for i in range(size):
-        #         name = tf_session.TF_DeviceListName(raw_device_list, i, status)
-        #         device_type = tf_session.TF_DeviceListType(raw_device_list, i, status)
-        #         memory = tf_session.TF_DeviceListMemoryBytes(raw_device_list, i, status)
-        #         device_list.append(_DeviceAttributes(name, device_type, memory))
-        #     tf_session.TF_DeleteDeviceList(raw_device_list)
-        #     return device_list
+        pass
 
     def close(self):
         pass
@@ -161,7 +130,7 @@ class BaseSession(object):
                         raise RuntimeError('The Tensor({}) was limited to {} dimensions, \
                                             while feed a value with {} dimensions.'.
                                                 format(key.name, len(key.shape), len(value.shape)))
-                    for i in xrange(len(key.shape)):
+                    for i in range(len(key.shape)):
                         if key.shape[i] is None: continue
                         if key.shape[i] != value.shape[i]:
                             raise RuntimeError('The shape of Tensor({}) was limited as ('.format(key.name) +

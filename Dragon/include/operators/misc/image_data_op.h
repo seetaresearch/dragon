@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_MISC_IMAGE_DATA_OP_H_
 #define DRAGON_OPERATORS_MISC_IMAGE_DATA_OP_H_
@@ -35,6 +40,7 @@ class ImageDataOp final : public Operator<Context> {
                 std.mutable_data<float, CPUContext>()[i] = std_values[i];
         }
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename Tx, typename Ty> void RunWithType();

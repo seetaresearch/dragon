@@ -1,12 +1,16 @@
-# --------------------------------------------------------
-# Dragon
-# Copyright(c) 2017 SeetaTech
-# Written by Ting Pan
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# ------------------------------------------------------------
 
 import numpy as np
 from multiprocessing import Process
-from six.moves import range as xrange
 
 from .utils import GetProperty
 
@@ -50,7 +54,7 @@ class BlobFetcher(Process):
         im_blob = []
         label_blob = np.zeros((self._batch_size, len(datum[1])), dtype=np.float32) \
                         if len(datum) > 1 else None
-        for i in xrange(0, self._batch_size):
+        for i in range(0, self._batch_size):
             im_blob.append(datum[0])
             if label_blob is not None: label_blob[i, :] = datum[1]
             if i != self._batch_size - 1: datum = self.Q_in.get()

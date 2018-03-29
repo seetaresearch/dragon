@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// ------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_ACTIVATION_ELU_OP_H_
 #define DRAGON_OPERATORS_ACTIVATION_ELU_OP_H_
@@ -17,6 +22,7 @@ class EluOp : public Operator<Context> {
     EluOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           alpha(OperatorBase::GetSingleArg<float>("alpha", 1.0)) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -33,6 +39,7 @@ class EluGradientOp : public Operator<Context> {
           alpha(OperatorBase::GetSingleArg<float>("alpha", 1.0)) {
         DISABLE_SHARE_GRADIENT;
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -56,6 +63,7 @@ public:
         CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc, 
             CUDNN_ACTIVATION_ELU, CUDNN_PROPAGATE_NAN, this->alpha));
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     ~CuDNNEluOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
@@ -82,6 +90,7 @@ class CuDNNEluGradientOp final : public EluGradientOp<Context> {
         CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc,
             CUDNN_ACTIVATION_ELU, CUDNN_PROPAGATE_NAN, this->alpha));
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     ~CuDNNEluGradientOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));

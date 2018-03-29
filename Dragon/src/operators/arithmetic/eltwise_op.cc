@@ -6,53 +6,53 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void EltwiseOp<Context>::SumRunWithType() {
-    TIndex count = output(0)->count();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
+    TIndex count = Output(0)->count();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
     math::Set<T, Context>(count, dragon_cast<T, float>(0), Ydata);
     for (int i = 0; i < InputSize(); ++i) {
         math::Axpy<T, Context>(count,
-                               coeffs[i], 
-                               input(i).template data<T, Context>(), 
+                               coeffs[i],
+                               Input(i).template data<T, Context>(),
                                Ydata);
     }
 }
 
 template <class Context> template <typename T>
 void EltwiseOp<Context>::ProdRunWithType() {
-    TIndex count = output(0)->count();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
+    TIndex count = Output(0)->count();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
     math::Mul<T, Context>(count,
-                          input(0).template data<T, Context>(),
-                          input(1).template data<T, Context>(), 
+                          Input(0).template data<T, Context>(),
+                          Input(1).template data<T, Context>(),
                           Ydata);
     for (int i = 2; i < InputSize(); i++) {
-        math::Mul<T, Context>(count, 
-                              Ydata, 
-                              input(i).template data<T, Context>(), 
+        math::Mul<T, Context>(count,
+                              Ydata,
+                              Input(i).template data<T, Context>(),
                               Ydata);
     }
 }
 
 template <class Context>
 void EltwiseOp<Context>::RunOnDevice() {
-    for (int i = 1; i < InputSize(); i++) 
-        CHECK(input(i).dims() == input(0).dims());
-    output(0)->ReshapeLike(input(0));
+    for (int i = 1; i < InputSize(); i++)
+        CHECK(Input(i).dims() == Input(0).dims());
+    Output(0)->ReshapeLike(Input(0));
 
     if (operation == "SUM") {
-        if (input(0).template IsType<float>()) SumRunWithType<float>();
+        if (Input(0).template IsType<float>()) SumRunWithType<float>();
 #ifdef WITH_CUDA_FP16
-        else if (input(0).template IsType<float16>()) SumRunWithType<float16>();
+        else if (Input(0).template IsType<float16>()) SumRunWithType<float16>();
 #endif
         else LOG(FATAL) << "Unsupported input types.";
-    } 
+    }
     else if (operation == "PROD") {
-        if (input(0).template IsType<float>()) ProdRunWithType<float>();
+        if (Input(0).template IsType<float>()) ProdRunWithType<float>();
 #ifdef WITH_CUDA_FP16
-        else if (input(0).template IsType<float16>()) ProdRunWithType<float16>();
+        else if (Input(0).template IsType<float16>()) ProdRunWithType<float16>();
 #endif
         else LOG(FATAL) << "Unsupported input types.";
-    } 
+    }
     else {
         LOG(FATAL) << "Unknwon operation: " << operation;
     }
@@ -66,12 +66,12 @@ OPERATOR_SCHEMA(Eltwise).NumInputs(2, INT_MAX).NumOutputs(1);
 
 template <class Context> template <typename T>
 void EltwiseGradientOp<Context>::SumRunWithType() {
-    auto* dYdata = input(-1).template data<T, Context>();
-    TIndex count = input(-1).count();
+    auto* dYdata = Input(-1).template data<T, Context>();
+    TIndex count = Input(-1).count();
 
     for (int i = 0; i < OutputSize(); i++) {
-        if (output(i)->name() == "ignore") continue;
-        auto* dXdata = output(i)->template mutable_data<T, Context>();
+        if (Output(i)->name() == "ignore") continue;
+        auto* dXdata = Output(i)->template mutable_data<T, Context>();
         if (coeffs[i] == float(1)) {
             ctx().template Copy<T, Context, Context>(count, dXdata, dYdata);
         } else {
@@ -82,16 +82,16 @@ void EltwiseGradientOp<Context>::SumRunWithType() {
 
 template <class Context> template <typename T>
 void EltwiseGradientOp<Context>::ProdRunWithType() {
-    auto* dYdata = input(-1).template data<T, Context>();
-    TIndex count = input(-1).count();
+    auto* dYdata = Input(-1).template data<T, Context>();
+    TIndex count = Input(-1).count();
 
     for (int i = 0; i < OutputSize(); i++) {
-        if (output(i)->name() == "ignore") continue;
-        auto* dXdata = output(i)->template mutable_data<T, Context>();
+        if (Output(i)->name() == "ignore") continue;
+        auto* dXdata = Output(i)->template mutable_data<T, Context>();
         bool initialized = false;
         for (int j = 0; j < OutputSize(); j++) {
             if (i == j) continue;
-            auto* Xdata = input(j).template data<T, Context>();
+            auto* Xdata = Input(j).template data<T, Context>();
             if (!initialized) {
                 ctx().template Copy<T, Context, Context>(count, dXdata, Xdata);
                 initialized = true;
@@ -104,22 +104,22 @@ void EltwiseGradientOp<Context>::ProdRunWithType() {
 template <class Context>
 void EltwiseGradientOp<Context>::RunOnDevice() {
     for (int i = 0; i < OutputSize(); i++)
-        output(i)->ReshapeLike(input(i));
+        Output(i)->ReshapeLike(Input(i));
 
     if (operation == "SUM") {
-        if (input(0).template IsType<float>()) SumRunWithType<float>();
+        if (Input(0).template IsType<float>()) SumRunWithType<float>();
 #ifdef WITH_CUDA_FP16
-        else if (input(0).template IsType<float16>()) SumRunWithType<float16>();
+        else if (Input(0).template IsType<float16>()) SumRunWithType<float16>();
 #endif
         else LOG(FATAL) << "Unsupported input types.";
-    } 
+    }
     else if (operation == "PROD") {
-        if (input(0).template IsType<float>()) ProdRunWithType<float>();
+        if (Input(0).template IsType<float>()) ProdRunWithType<float>();
 #ifdef WITH_CUDA_FP16
-        else if (input(0).template IsType<float16>()) ProdRunWithType<float16>();
+        else if (Input(0).template IsType<float16>()) ProdRunWithType<float16>();
 #endif
         else LOG(FATAL) << "Unsupported input types.";
-    } 
+    }
     else {
         LOG(FATAL) << "Unknwon operation: " << operation;
     }
@@ -128,9 +128,9 @@ void EltwiseGradientOp<Context>::RunOnDevice() {
 template <class Context>
 void EltwiseGradientOp<Context>::ShareGradient() {
     for (int i = 0; i < OutputSize(); i++) {
-        if (output(i)->name() != "ignore") {
+        if (Output(i)->name() != "ignore") {
             Tensor* dX = ws()->GetBuffer("Grad");
-            ws()->CreateAvatar(output(i), dX);
+            ws()->CreateAvatar(Output(i), dX);
             break;
         }
     }

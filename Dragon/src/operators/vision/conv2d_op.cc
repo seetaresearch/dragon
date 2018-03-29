@@ -10,19 +10,19 @@ void Conv2dOp<Context>::RunWithType() {
     this->col_buffer = ws()->GetBuffer();
     this->col_buffer->Reshape(this->col_shape);
 
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
-    TENSOR_FILL(input(1), this->weight_shape);
-    auto* Wdata = input(1).template data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    TENSOR_FILL(Input(1), this->weight_shape);
+    auto* Wdata = Input(1).template data<T, Context>();
     if (HasBias()) {
-        TENSOR_FILL(input(2), this->bias_shape);
+        TENSOR_FILL(Input(2), this->bias_shape);
         INIT_MULTIPLIER(this->bias_multiplier, this->out_spatial_dim);
     }
 
-    for (int n = 0; n < input(0).dim(0); n++) {
+    for (int n = 0; n < Input(0).dim(0); n++) {
         Wx(Xdata + n * this->x_offset, Wdata, Ydata + n * this->y_offset);
         if (HasBias()) {
-            auto* Bdata = input(2).template data<T, Context>();
+            auto* Bdata = Input(2).template data<T, Context>();
             Pb(Bdata, Ydata + n * this->y_offset);
         }
     }
@@ -35,7 +35,7 @@ template <class Context>
 void Conv2dOp<Context>::RunOnDevice() {
     Reshape();
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 
@@ -51,24 +51,24 @@ void Conv2dGradientOp<Context>::RunWithType() {
     this->col_buffer = ws()->GetBuffer();
     this->col_buffer->Reshape(this->col_shape);
 
-    auto* dYdata = input(-1).template data<T, Context>();
+    auto* dYdata = Input(-1).template data<T, Context>();
 
     if (HasBias()) {
         INIT_MULTIPLIER(this->bias_multiplier, this->out_spatial_dim);
-        T* dBdata = output(2)->template mutable_data<T, Context>();
-        for (int n = 0; n < input(2).dim(0); n++)
+        T* dBdata = Output(2)->template mutable_data<T, Context>();
+        for (int n = 0; n < Input(2).dim(0); n++)
             Db(dYdata + n * this->y_offset, dBdata);
     }
 
-    for (int n = 0; n < input(2).dim(0); n++) {
-        if (output(1)->name() != "ignore") {
-            auto* Xdata = input(0).template data<T, Context>();
-            auto* dWdata = output(1)->template mutable_data<T, Context>();
+    for (int n = 0; n < Input(2).dim(0); n++) {
+        if (Output(1)->name() != "ignore") {
+            auto* Xdata = Input(0).template data<T, Context>();
+            auto* dWdata = Output(1)->template mutable_data<T, Context>();
             Dw(dYdata + n * this->y_offset, Xdata + n * this->x_offset, dWdata);
         }
-        if (output(0)->name() != "ignore") {
-            auto* Wdata = input(1).template data<T, Context>();
-            auto* dXdata = output(0)->template mutable_data<T, Context>();
+        if (Output(0)->name() != "ignore") {
+            auto* Wdata = Input(1).template data<T, Context>();
+            auto* dXdata = Output(0)->template mutable_data<T, Context>();
             Dx(dYdata + n * this->y_offset, Wdata, dXdata + n * this->x_offset);
         }
     }
@@ -81,7 +81,7 @@ template <class Context>
 void Conv2dGradientOp<Context>::RunOnDevice() {
     GradientReshape();
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types."; 
 }
 

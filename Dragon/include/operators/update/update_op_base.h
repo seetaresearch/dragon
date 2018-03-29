@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_UPDATE_UPDATE_OP_BASE_H_
 #define DRAGON_OPERATORS_UPDATE_UPDATE_OP_BASE_H_
@@ -19,8 +24,9 @@ class UpdateOpBase : public Operator<Context> {
           lr_mult(OperatorBase::GetSingleArg<float>("lr_mult", 1.0)),
           decay_mult(OperatorBase::GetSingleArg<float>("decay_mult", 1.0)),
           domain(OperatorBase::GetSingleArg<string>("domain", "_")) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
-    float param(const string& name) const;
+    float Param(const string& name) const;
 
     void RunOnDevice() override;
     template <typename T> void PreprocessRunWithType();
@@ -32,6 +38,9 @@ class UpdateOpBase : public Operator<Context> {
     float l2_decay, clip_thresh, scale_factor;
     string domain;
 };
+
+#define USE_UPDATER_FUNCTIONS(context) \
+    using UpdateOpBase<context>::Param
 
 }    // namespace dragon 
 

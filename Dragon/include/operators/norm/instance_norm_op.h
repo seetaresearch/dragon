@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_NORM_INSTANCE_NORM_OP_H_
 #define DRAGON_OPERATORS_NORM_INSTANCE_NORM_OP_H_
@@ -22,6 +27,7 @@ class InstanceNormOp : public Operator<Context> {
             CHECK_EQ(axis, 1)
                 << "\nThe axis can only be set to 1.";
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void Setup();
 
@@ -46,6 +52,7 @@ class InstanceNormGradientOp final : public Operator<Context> {
             CHECK_EQ(axis, 1)
                 << "\nThe axis can only be set to 1.";
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void Setup();
                           

@@ -10,19 +10,19 @@ void L2NormOp<Context>::RunWithType() {
 
     //  normalize by outer dim independently
     buffer = ws()->GetBuffer();
-    vector<TIndex> dims = input(0).dims();
+    vector<TIndex> dims = Input(0).dims();
     for (int i = 0; i < axis; i++) dims[i] = 1;
     buffer->Reshape(dims);
 
     //  normalize by inner_dim independently if not across it
     norm = ws()->CreateTensor("/mnt/" + anchor() + "/l2norm_normalizer");
-    dims = input(0).dims();
+    dims = Input(0).dims();
     for (int i = axis; i < end_axis; i++) dims[i] = 1;
     norm->Reshape(dims);
 
-    auto* Xdata = input(0).template data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
     auto* DMuldata = multiplier->data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
     auto* Bdata = buffer->template mutable_data<T, Context>();
     auto* Ndata = norm->template mutable_data<T, Context>();
     math::Set<T, Context>(norm->count(), dragon_cast<T, float>(eps), Ndata);
@@ -65,22 +65,22 @@ template <class Context>
 void L2NormOp<Context>::RunOnDevice() {
     if (num_axes >= 0) {
         if (num_axes == 0) num_axes += 1;
-    } else num_axes = (int)input(0).ndim() - axis;
+    } else num_axes = (int)Input(0).ndim() - axis;
     end_axis = axis + num_axes;
-    CHECK_LE(end_axis, int(input(0).ndim()));
+    CHECK_LE(end_axis, int(Input(0).ndim()));
 
     //  do statistics through [axis, end_axis)
-    outer_dim = input(0).count(0, axis);
-    dim = input(0).count(axis, axis + num_axes);
-    inner_dim = input(0).count(axis + num_axes);
+    outer_dim = Input(0).count(0, axis);
+    dim = Input(0).count(axis, axis + num_axes);
+    inner_dim = Input(0).count(axis + num_axes);
     if (inner_dim == 1) across_inner = true;
     else across_inner = false;
 
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-    else if (input(0).template IsType<float16>()) RunWithType<float16>();
+    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
     else LOG(FATAL) << "Unsupported input types.";
 }
@@ -98,17 +98,17 @@ void L2NormGradientOp<Context>::RunWithType() {
     //  normalize by inner_dim independently if not across it
     norm = ws()->GetTensor("/mnt/" + anchor() + "/l2norm_normalizer");
     buffer = ws()->GetBuffer();
-    vector<TIndex> dims = input(0).dims();
+    vector<TIndex> dims = Input(0).dims();
     for (int i = 0; i < axis; i++) dims[i] = 1;
     buffer->Reshape(dims);
     buffer_inner = ws()->GetBuffer();
     buffer_inner->Reshape(vector<TIndex>(1, inner_dim));
 
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* dYdata = input(-1).template data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* dYdata = Input(-1).template data<T, Context>();
     auto* DMuldata = multiplier->data<T, Context>();
     auto* Ndata = norm->template data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* Bdata = buffer->template mutable_data<T, Context>();
     auto* BInnerdata = buffer_inner->template mutable_data<T, Context>();
 
@@ -167,20 +167,20 @@ template <class Context>
 void L2NormGradientOp<Context>::RunOnDevice() {
     if (num_axes >= 0) {
         if (num_axes == 0) num_axes += 1;
-    } else { num_axes = (int)input(0).ndim() - axis; }
+    } else { num_axes = (int)Input(0).ndim() - axis; }
     end_axis = axis + num_axes;
-    CHECK_LE(end_axis, int(input(0).ndim()));
+    CHECK_LE(end_axis, int(Input(0).ndim()));
 
     //  do statistics through [axis, end_axis)
-    outer_dim = input(0).count(0, axis);
-    dim = input(0).count(axis, axis + num_axes);
-    inner_dim = input(0).count(axis + num_axes);
+    outer_dim = Input(0).count(0, axis);
+    dim = Input(0).count(axis, axis + num_axes);
+    inner_dim = Input(0).count(axis + num_axes);
     if (inner_dim == 1) across_inner = true;
     else across_inner = false;
 
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

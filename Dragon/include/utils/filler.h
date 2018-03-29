@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// ------------------------------------------------------------
 
 #ifndef DRAGON_UTILS_FILLER_H_
 #define DRAGON_UTILS_FILLER_H_
@@ -31,8 +36,8 @@ class ConstantFiller final : public Filler<T, Context> {
  public:
     ConstantFiller(const TensorFiller& filler): Filler<T, Context>(filler) {}
     void Fill(Tensor* tensor) override {
-        math::Set<T, Context>(tensor->count(), 
-                              dragon_cast<T, float>(filler().value()), 
+        math::Set<T, Context>(tensor->count(),
+                              dragon_cast<T, float>(this->filler().value()),
                               tensor->mutable_data<T, Context>());
     }
 };
@@ -42,9 +47,9 @@ class NormalFiller final : public Filler<T, Context> {
  public:
     NormalFiller(const TensorFiller& filler): Filler<T, Context>(filler) {}
     void Fill(Tensor* tensor) override {
-        math::RandomNormal<T, Context>(tensor->count(), 
-                                       filler().mean(),
-                                        filler().std(), 
+        math::RandomNormal<T, Context>(tensor->count(),
+                                 this->filler().mean(),
+                                  this->filler().std(),
                    tensor->mutable_data<T, Context>());
     }
 };
@@ -55,11 +60,11 @@ class TruncatedNormalFiller final : public Filler < T, Context > {
     TruncatedNormalFiller(const TensorFiller& filler): Filler<T, Context>(filler) {}
     void Fill(Tensor* tensor) override {
         //  implement it on gpu is difficult
-        math::RandomTruncatedNormal<T, CPUContext>(tensor->count(), 
-                                                   filler().mean(), 
-                                                    filler().std(), 
-                                                    filler().low(), 
-                                                   filler().high(),
+        math::RandomTruncatedNormal<T, CPUContext>(tensor->count(),
+                                             this->filler().mean(),
+                                              this->filler().std(),
+                                              this->filler().low(),
+                                             this->filler().high(),
                             tensor->mutable_data<T, CPUContext>());
     }
 };
@@ -69,9 +74,9 @@ class UniformFiller final : public Filler<T, Context> {
  public:
     UniformFiller(const TensorFiller& filler) : Filler<T, Context>(filler) {}
     void Fill(Tensor* tensor) override {
-        math::RandomUniform<T, Context>(tensor->count(), 
-                                         filler().low(), 
-                                        filler().high(),
+        math::RandomUniform<T, Context>(tensor->count(),
+                                   this->filler().low(),
+                                  this->filler().high(),
                     tensor->mutable_data<T, Context>());
     }
 };
@@ -80,6 +85,7 @@ template <typename T, class Context>
 class XavierFiller final : public Filler<T, Context> {
  public:
     XavierFiller(const TensorFiller& filler) : Filler<T, Context>(filler) {}
+    using Filler<T, Context>::filler;
     void Fill(Tensor* tensor) override {
         int fan_in = tensor->count() / tensor->dim(0);
         int fan_out = tensor->count() / tensor->dim(1);
@@ -91,8 +97,8 @@ class XavierFiller final : public Filler<T, Context> {
             n = fan_out;
         }
         float limit = std::sqrt(scale / n);
-        math::RandomUniform<T, Context>(tensor->count(), 
-                                                 -limit, 
+        math::RandomUniform<T, Context>(tensor->count(),
+                                                 -limit,
                                                   limit,
                     tensor->mutable_data<T, Context>());
     }
@@ -102,6 +108,7 @@ template <typename T, class Context>
 class MSRAFiller final : public Filler <T, Context> {
  public:
     MSRAFiller(const TensorFiller& filler) : Filler<T, Context>(filler) {}
+    using Filler<T, Context>::filler;
     void Fill(Tensor* tensor) override {
         int fan_in = tensor->count() / tensor->dim(0);
         int fan_out = tensor->count() / tensor->dim(1);
@@ -114,8 +121,8 @@ class MSRAFiller final : public Filler <T, Context> {
         }
         float std = std::sqrt(scale / n);
         math::RandomNormal<T, Context>(tensor->count(),
-                                              float(0), 
-                                                   std, 
+                                              float(0),
+                                                   std,
                    tensor->mutable_data<T, Context>());
     }
 };

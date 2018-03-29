@@ -5,20 +5,20 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void CompareOp<Context>::EqualRunWithType() {
-    auto* X1data = input(0).template data<T, Context>();
-    auto* X2data = input(1).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
-    kernel::Equal<T, Context>(output(0)->count(), X1data, X2data, Ydata);
+    auto* X1data = Input(0).template data<T, Context>();
+    auto* X2data = Input(1).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    kernel::Equal<T, Context>(Output(0)->count(), X1data, X2data, Ydata);
 }
 
 template <class Context>
 void CompareOp<Context>::RunOnDevice() {
-    CHECK_EQ(input(0).count(), input(1).count())
+    CHECK_EQ(Input(0).count(), Input(1).count())
         << "Both conditioned tensors should have same elements.";
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 
     if (operation == "EQUAL") {
-        if (input(0).template IsType<float>()) EqualRunWithType<float>();
+        if (Input(0).template IsType<float>()) EqualRunWithType<float>();
         else LOG(FATAL) << "Unsupported input types.";
     }
     else {

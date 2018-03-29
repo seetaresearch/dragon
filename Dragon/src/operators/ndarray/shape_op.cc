@@ -5,11 +5,11 @@ namespace dragon {
 template <class Context>
 void ShapeOp<Context>::RunOnDevice() {
     //  reshape
-    output(0)->Reshape(vector<TIndex>(1, input(0).ndim()));
+    Output(0)->Reshape(vector<TIndex>(1, Input(0).ndim()));
 
     //  forward
-    auto* Ydata = output(0)->template mutable_data<int, CPUContext>();
-    for (int i = 0; i < input(0).ndim(); i++) Ydata[i] = input(0).dim(i);
+    auto* Ydata = Output(0)->template mutable_data<int, CPUContext>();
+    for (int i = 0; i < Input(0).ndim(); i++) Ydata[i] = Input(0).dim(i);
 }
 
 DEPLOY_CPU(Shape);

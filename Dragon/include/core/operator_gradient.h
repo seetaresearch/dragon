@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// ------------------------------------------------------------
 
 #ifndef DRAGON_CORE_OPERATOR_GRADIENT_H_
 #define DRAGON_CORE_OPERATOR_GRADIENT_H_
@@ -18,7 +23,7 @@ struct Gradient {
     vector<OperatorDef> ops;
     vector<string> g_inputs;
     vector<float> defaults;
-    Gradient(const vector<OperatorDef>& ops, 
+    Gradient(const vector<OperatorDef>& ops,
              const vector<string>& g_inputs,
              const vector<float>& defaults)
         : ops(ops), g_inputs(g_inputs), defaults(defaults) {}
@@ -37,20 +42,20 @@ class GradientMakerBase {
 
     inline virtual Gradient Make() {
         vector<OperatorDef> new_defs = MakeDefs();
-        Argument anchor; 
+        Argument anchor;
         anchor.set_name("anchor"); anchor.set_s(def.name());
         for (int i = 0; i < new_defs.size(); i++)
             new_defs[i].add_arg()->CopyFrom(anchor);
         return Gradient(new_defs, g_inputs_, DefaultValues());
     };
 
-    virtual inline vector<OperatorDef> MakeDefs() { 
-        NOT_IMPLEMENTED; 
-        return vector<OperatorDef>(); 
+    virtual inline vector<OperatorDef> MakeDefs() {
+        NOT_IMPLEMENTED;
+        return vector<OperatorDef>();
     }
 
-    virtual inline vector<float> DefaultValues() { 
-        return vector<float>(g_outputs_.size(), 1.0); 
+    virtual inline vector<float> DefaultValues() {
+        return vector<float>(g_outputs_.size(), 1.0);
     }
 
     template <class... Args>
@@ -79,24 +84,24 @@ Gradient MakeGradientForOp(const OperatorDef& op_def, const vector<string>& g_ou
 
 # define GRADIENT_MAKER_CTOR(name) \
     name(const OperatorDef& def, const vector<string>& g_output) \
-        : GradientMakerBase(def, g_output) {} 
+        : GradientMakerBase(def, g_output) {}
 
 class NoGradient : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(NoGradient);
-    vector<OperatorDef> MakeDefs() override { 
-        return vector<OperatorDef>(); 
+    vector<OperatorDef> MakeDefs() override {
+        return vector<OperatorDef>();
     }
 };
 
-DECLARE_REGISTRY(GradientRegistry, 
-                 GradientMakerBase, 
-                 const OperatorDef&, 
+DECLARE_REGISTRY(GradientRegistry,
+                 GradientMakerBase,
+                 const OperatorDef&,
                  const vector<string>&);
 
-DECLARE_REGISTRY(NoGradientRegistry, 
-                 GradientMakerBase, 
-                 const OperatorDef&, 
+DECLARE_REGISTRY(NoGradientRegistry,
+                 GradientMakerBase,
+                 const OperatorDef&,
                  const vector<string>&);
 
 //  define in the operator.cc

@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_MISC_INITIALIZE_OP_H_
 #define DRAGON_OPERATORS_MISC_INITIALIZE_OP_H_
@@ -20,6 +25,7 @@ class InitializeOp: public Operator<Context> {
           shape_desc(OperatorBase::GetSingleArg<string>("shape", "")) {
         GET_ARGUMENTS_WITH_DESC(int, dims);
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -38,6 +44,7 @@ public:
         this->filler.set_type("constant");
         this->filler.set_value(OperatorBase::GetSingleArg<float>("value", 0.0));
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 };
 
 template <class Context>
@@ -49,6 +56,7 @@ public:
         this->filler.set_low(OperatorBase::GetSingleArg<float>("low", -1.0));
         this->filler.set_high(OperatorBase::GetSingleArg<float>("high", 1.0));
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 };
 
 template <class Context>
@@ -60,6 +68,7 @@ public:
         this->filler.set_mean(OperatorBase::GetSingleArg<float>("mean", 0.0));
         this->filler.set_std(OperatorBase::GetSingleArg<float>("std", 1.0));
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 };
 
 template <class Context>
@@ -75,6 +84,7 @@ public:
         this->filler.set_low(mu - 2 * sigma);
         this->filler.set_high(mu + 2 * sigma);
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 };
 
 template <class Context>
@@ -95,6 +105,7 @@ public:
         }
         this->filler.set_scale(scale);
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 };
 
 template <class Context>
@@ -115,6 +126,7 @@ public:
         }
         this->filler.set_scale(scale);
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 };
 
 DEFINE_ARGUMENTS_WITH_DESC(int, InitializeOp, dims);

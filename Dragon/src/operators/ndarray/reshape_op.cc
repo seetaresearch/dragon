@@ -24,7 +24,7 @@ void ReshapeOp<Context>::RunOnDevice() {
             require_shape[i] = shape_like_tensor->dim(i);
     } else { LOG(FATAL) << "Missing the require shape."; }
 
-    vector<TIndex> Xdims = input(0).dims();
+    vector<TIndex> Xdims = Input(0).dims();
     new_shape.resize(require_shape.size());
     int infer_dim = -1;
     TIndex total_count = 1;
@@ -53,20 +53,20 @@ void ReshapeOp<Context>::RunOnDevice() {
     if (infer_dim != -1) {
         for (int i = 0; i < new_shape.size(); i++) {
             if (new_shape[i] == -1) {
-                CHECK_EQ(input(0).count() % total_count, 0)
+                CHECK_EQ(Input(0).count() % total_count, 0)
                     << "\nCan not change the total size: "
-                    << input(0).dim_string() << " -> " << dim_string(new_shape);
-                new_shape[i] = input(0).count() / total_count;
+                    << Input(0).dim_string() << " -> " << dim_string(new_shape);
+                new_shape[i] = Input(0).count() / total_count;
                 total_count *= new_shape[i];
                 break;
             }
         }
     }
-    CHECK_EQ(total_count, input(0).count())
+    CHECK_EQ(total_count, Input(0).count())
         << "\nCan not change the total size."
-        << input(0).dim_string() << " -> " << dim_string(new_shape);
-    output(0)->Reshape(new_shape);
-    output(0)->Share(input(0));
+        << Input(0).dim_string() << " -> " << dim_string(new_shape);
+    Output(0)->Reshape(new_shape);
+    Output(0)->Share(Input(0));
 }
 
 DEPLOY_CPU(Reshape);
@@ -77,8 +77,8 @@ OPERATOR_SCHEMA(Reshape).NumInputs(1).NumOutputs(1);
 
 template <class Context>
 void ReshapeGradientOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
-    output(0)->Share(input(1));
+    Output(0)->ReshapeLike(Input(0));
+    Output(0)->Share(Input(1));
 }
 
 DEPLOY_CPU(ReshapeGradient);

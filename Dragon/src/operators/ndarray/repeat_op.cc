@@ -6,9 +6,9 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void RepeatOp<Context>::RunWithType() {
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
-    kernel::Repeat(output(0)->count(),
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    kernel::Repeat(Output(0)->count(),
                             outer_dim,
                                   dim,
                             inner_dim,
@@ -22,18 +22,18 @@ template <class Context>
 void RepeatOp<Context>::RunOnDevice() {
     if (axis == -1) {
         outer_dim = inner_dim = 1;
-        dim = input(0).count();
-        output(0)->Reshape(vector<TIndex>(1, dim * repeats()));
+        dim = Input(0).count();
+        Output(0)->Reshape(vector<TIndex>(1, dim * repeats()));
     } else {
-        outer_dim = input(0).count(0, axis);
-        dim = input(0).dim(axis);
-        inner_dim = input(0).count(axis + 1);
-        vector<TIndex> dims = input(0).dims();
+        outer_dim = Input(0).count(0, axis);
+        dim = Input(0).dim(axis);
+        inner_dim = Input(0).count(axis + 1);
+        vector<TIndex> dims = Input(0).dims();
         dims[axis] *= repeats();
-        output(0)->Reshape(dims);
+        Output(0)->Reshape(dims);
     }
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 
@@ -45,9 +45,9 @@ OPERATOR_SCHEMA(Repeat).NumInputs(1).NumOutputs(1);
 
 template <class Context> template <typename T>
 void RepeatGradientOp<Context>::RunWithType() {
-    auto* dYdata = input(-1).template data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
-    kernel::RepeatGrad(output(0)->count(),
+    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
+    kernel::RepeatGrad(Output(0)->count(),
                                 outer_dim,
                                       dim,
                                 inner_dim,
@@ -61,15 +61,15 @@ template <class Context>
 void RepeatGradientOp<Context>::RunOnDevice() {
     if (axis == -1) {
         outer_dim = inner_dim = 1;
-        dim = input(0).count();
+        dim = Input(0).count();
     } else {
-        outer_dim = input(0).count(0, axis);
-        dim = input(0).dim(axis);
-        inner_dim = input(0).count(axis + 1);
+        outer_dim = Input(0).count(0, axis);
+        dim = Input(0).dim(axis);
+        inner_dim = Input(0).count(axis + 1);
     }
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

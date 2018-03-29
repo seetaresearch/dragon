@@ -7,14 +7,14 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void SoftmaxOp<Context>::RunWithType() {
-    INIT_MULTIPLIER(sum_multiplier, input(0).dim(axis));
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
+    INIT_MULTIPLIER(sum_multiplier, Input(0).dim(axis));
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
     auto* Sdata = scale->template mutable_data<T, Context>();
     auto* SMul_data = sum_multiplier->template data<T, Context>();
 
-    ctx().template Copy<T, Context, Context>(input(0).count(), Ydata, Xdata);
-    kernel::Softmax<T, Context>(output(0)->count(), input(0).dim(axis),
+    ctx().template Copy<T, Context, Context>(Input(0).count(), Ydata, Xdata);
+    kernel::Softmax<T, Context>(Output(0)->count(), Input(0).dim(axis),
                                                   outer_dim, inner_dim,
                                                              SMul_data,
                                                                  Xdata,
@@ -25,14 +25,14 @@ void SoftmaxOp<Context>::RunWithType() {
 
 template <class Context>
 void SoftmaxOp<Context>::RunOnDevice() {
-    if (axis == -1) axis = (int)input(0).ndim() - 1;
+    if (axis == -1) axis = (int)Input(0).ndim() - 1;
     scale = ws()->CreateTensor("/share/softmax_scale");
-    scale->ReshapeLike(input(0));
-    outer_dim = input(0).count(0, axis);
-    inner_dim = input(0).count(axis + 1);
-    output(0)->ReshapeLike(input(0));
+    scale->ReshapeLike(Input(0));
+    outer_dim = Input(0).count(0, axis);
+    inner_dim = Input(0).count(axis + 1);
+    Output(0)->ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 
@@ -44,15 +44,15 @@ OPERATOR_SCHEMA(Softmax).NumInputs(1).NumOutputs(1).Inplace({ { 0, 0 } });
 
 template <class Context> template <typename T>
 void SoftmaxGradientOp<Context>::RunWithType() {
-    INIT_MULTIPLIER(this->sum_multiplier, input(0).dim(axis));
-    auto* dYdata = input(-1).template data<T, Context>();
-    auto* Ydata = input(0).template data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
+    INIT_MULTIPLIER(this->sum_multiplier, Input(0).dim(axis));
+    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* Ydata = Input(0).template data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* Sdata = scale->template mutable_data<T, Context>();
     auto* SMul_data = sum_multiplier->template data<T, Context>();
 
-    ctx().template Copy<T, Context, Context>(input(0).count(), dXdata, dYdata);
-    kernel::SoftmaxGrad<T, Context>(output(0)->count(), input(0).dim(axis),
+    ctx().template Copy<T, Context, Context>(Input(0).count(), dXdata, dYdata);
+    kernel::SoftmaxGrad<T, Context>(Output(0)->count(), Input(0).dim(axis),
                                                       outer_dim, inner_dim,
                                                                  SMul_data,
                                                                     dYdata,
@@ -63,14 +63,14 @@ void SoftmaxGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void SoftmaxGradientOp<Context>::RunOnDevice() {
-    if (axis == -1) axis = (int)input(0).ndim() - 1;
+    if (axis == -1) axis = (int)Input(0).ndim() - 1;
     scale = ws()->CreateTensor("/share/softmax_scale");
-    scale->ReshapeLike(input(0));
-    outer_dim = input(0).count(0, axis);
-    inner_dim = input(0).count(axis + 1);
-    output(0)->ReshapeLike(input(0));
+    scale->ReshapeLike(Input(0));
+    outer_dim = Input(0).count(0, axis);
+    inner_dim = Input(0).count(axis + 1);
+    Output(0)->ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

@@ -6,10 +6,10 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void SliceOp<Context>::RunWithType() {
-    auto* Xdata = input(0).template data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
     for (int i = 0; i < nout; i++) {
-        auto* Ydata = output(i)->template mutable_data<T, Context>();
-        TIndex count = output(i)->count();
+        auto* Ydata = Output(i)->template mutable_data<T, Context>();
+        TIndex count = Output(i)->count();
         kernel::Slice<T, Context>(count, outer_dim, inner_dim,
             x_slice_dim, y_slice_dim, slice_offset, Xdata, Ydata, &ctx());
         slice_offset += y_slice_dim;
@@ -18,22 +18,22 @@ void SliceOp<Context>::RunWithType() {
 
 template <class Context>
 void SliceOp<Context>::RunOnDevice() {
-    CHECK_EQ(input(0).dim(axis) % nout, 0)
-        << "\nSelected dim is " << input(0).dim(axis)
+    CHECK_EQ(Input(0).dim(axis) % nout, 0)
+        << "\nSelected dim is " << Input(0).dim(axis)
         << ", can't be sliced by nout of " << nout;
-    slice_dims = input(0).dims();
+    slice_dims = Input(0).dims();
     x_slice_dim = slice_dims[axis];
     slice_dims[axis] = y_slice_dim = x_slice_dim / nout;
-    outer_dim = input(0).count(0, axis);
-    inner_dim = input(0).count(axis + 1);
+    outer_dim = Input(0).count(0, axis);
+    inner_dim = Input(0).count(axis + 1);
     slice_offset = 0;
-    for (int i = 0; i < nout; i++) output(i)->Reshape(slice_dims);
+    for (int i = 0; i < nout; i++) Output(i)->Reshape(slice_dims);
     if (nout == 1) {
-        output(0)->Share(input(0));
+        Output(0)->Share(Input(0));
         return;
     }
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 
@@ -45,11 +45,11 @@ OPERATOR_SCHEMA(Slice).NumInputs(1).NumOutputs(1, INT_MAX);
 
 template <class Context> template <typename T>
 void SliceGradientOp<Context>::RunWithType() {
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
     for (int i = 0; i < nout; i++) {
-        if (input(i + 1).name() == "ignore") continue;
-        auto* dYdata = input(i + 1).template data<T, Context>();
-        TIndex count = input(i + 1).count();
+        if (Input(i + 1).name() == "ignore") continue;
+        auto* dYdata = Input(i + 1).template data<T, Context>();
+        TIndex count = Input(i + 1).count();
         kernel::SliceGrad<T, Context>(count, outer_dim, inner_dim,
             x_slice_dim, y_slice_dim, slice_offset, dYdata, dXdata, &ctx());
         slice_offset += y_slice_dim;
@@ -58,19 +58,19 @@ void SliceGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void SliceGradientOp<Context>::RunOnDevice() {
-    slice_dims = input(0).dims();
+    slice_dims = Input(0).dims();
     x_slice_dim = slice_dims[axis];
     slice_dims[axis] = y_slice_dim = x_slice_dim / nout;
-    outer_dim = input(0).count(0, axis);
-    inner_dim = input(0).count(axis + 1);
+    outer_dim = Input(0).count(0, axis);
+    inner_dim = Input(0).count(axis + 1);
     slice_offset = 0;
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
     if (nout == 1) {
-        output(0)->Share(input(-1));
+        Output(0)->Share(Input(-1));
         return;
     }
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

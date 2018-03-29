@@ -6,10 +6,10 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void CuDNNTanhOp<Context>::RunWithType() {
-    cudnnSetTensorDesc<T>(&input_desc, &input(0));
-    cudnnSetTensorDesc<T>(&output_desc, output(0));
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
+    cudnnSetTensorDesc<T>(&input_desc, &Input(0));
+    cudnnSetTensorDesc<T>(&output_desc, Output(0));
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
 #if CUDNN_VERSION_MIN(5, 0, 0)
     CUDNN_CHECK(cudnnActivationForward(cudnn_handle(), act_desc,
@@ -24,11 +24,11 @@ void CuDNNTanhOp<Context>::RunWithType() {
 
 template <class Context>
 void CuDNNTanhOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) return RunWithType<float>();
+    if (Input(0).template IsType<float>()) return RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-    else if (input(0).template IsType<float16>()) return RunWithType<float16>();
+    else if (Input(0).template IsType<float16>()) return RunWithType<float16>();
 #endif
     else LOG(FATAL) << "Unsupported input types.";
 }
@@ -37,11 +37,11 @@ DEPLOY_CUDNN(Tanh);
 
 template <class Context> template <typename T>
 void CuDNNTanhGradientOp<Context>::RunWithType() {
-    cudnnSetTensorDesc<T>(&input_desc, &input(-1));
-    cudnnSetTensorDesc<T>(&output_desc, output(0));
-    auto* dYdata = input(-1).template data<T, Context>();
-    auto* Ydata = input(0).template data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
+    cudnnSetTensorDesc<T>(&input_desc, &Input(-1));
+    cudnnSetTensorDesc<T>(&output_desc, Output(0));
+    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* Ydata = Input(0).template data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
 #if CUDNN_VERSION_MIN(5, 0, 0)
     CUDNN_CHECK(cudnnActivationBackward(cudnn_handle(), act_desc,
@@ -60,11 +60,11 @@ void CuDNNTanhGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void CuDNNTanhGradientOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) return RunWithType<float>();
+    if (Input(0).template IsType<float>()) return RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-    else if (input(0).template IsType<float16>()) return RunWithType<float16>();
+    else if (Input(0).template IsType<float16>()) return RunWithType<float16>();
 #endif
     else LOG(FATAL) << "Unsupported input types.";
 }

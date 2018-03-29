@@ -26,32 +26,32 @@ void TileOp<Context>::TileRunWithType() {
 template <class Context>
 void TileOp<Context>::RunOnDevice() {
     vector< pair<int, int> > process_axes;
-    for (int i = 0; i < input(0).ndim(); i++)
+    for (int i = 0; i < Input(0).ndim(); i++)
         if (multiples(i) > 1) process_axes.push_back({ multiples(i), i });
     std::sort(process_axes.begin(), process_axes.end());
 
     //  do nothing 
     if (process_axes.size() == 0) {
-        output(0)->ReshapeLike(input(0));
-        output(0)->Share(input(0));
+        Output(0)->ReshapeLike(Input(0));
+        Output(0)->Share(Input(0));
         return;
     }
 
     //  select source & dest
-    source = &input(0);
-    if (process_axes.size() % 2 == 1) dest = output(0);
+    source = &Input(0);
+    if (process_axes.size() % 2 == 1) dest = Output(0);
     else dest = ws()->GetBuffer();
 
     for (auto& task : process_axes) {
         axis = task.second; multiple = task.first;
-        if (input(0).template IsType<float>()) TileRunWithType<float>();
+        if (Input(0).template IsType<float>()) TileRunWithType<float>();
         else LOG(FATAL) << "Unsupported input types.";
         //  allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
-            if (dest == &input(0)) dest = ws()->GetBuffer();
+            if (dest == &Input(0)) dest = ws()->GetBuffer();
         } else {
-            if (dest == &input(0)) dest = output(0);
+            if (dest == &Input(0)) dest = Output(0);
         }
     }
     ws()->ReleaseBuffer(dest);
@@ -85,33 +85,33 @@ void TileGradientOp<Context>::TileRunWithType() {
 template <class Context>
 void TileGradientOp<Context>::RunOnDevice() {
     vector< pair<int, int> > process_axes;
-    for (int i = 0; i < input(0).ndim(); i++)
+    for (int i = 0; i < Input(0).ndim(); i++)
         if (multiples(i) > 1) process_axes.push_back({ multiples(i), i });
     std::sort(process_axes.begin(), process_axes.end());
     std::reverse(process_axes.begin(), process_axes.end());
 
     //  do nothing 
     if (process_axes.size() == 0) {
-        output(0)->ReshapeLike(input(-1));
-        output(0)->Share(input(-1));
+        Output(0)->ReshapeLike(Input(-1));
+        Output(0)->Share(Input(-1));
         return;
     }
 
     //  select source & buffer
-    source = &input(-1);
-    if (process_axes.size() % 2 == 1) dest = output(0);
+    source = &Input(-1);
+    if (process_axes.size() % 2 == 1) dest = Output(0);
     else dest = ws()->GetBuffer();
 
     for (auto& task : process_axes) {
         axis = task.second; multiple = task.first;
-        if (input(0).template IsType<float>()) TileRunWithType<float>();
+        if (Input(0).template IsType<float>()) TileRunWithType<float>();
         else LOG(FATAL) << "Unsupported input types.";
         //  allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
-            if (dest == &input(-1)) dest = ws()->GetBuffer();
+            if (dest == &Input(-1)) dest = ws()->GetBuffer();
         } else {
-            if (dest == &input(-1)) dest = output(0);
+            if (dest == &Input(-1)) dest = Output(0);
         }
     }
     ws()->ReleaseBuffer(dest);

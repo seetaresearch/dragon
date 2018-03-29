@@ -10,13 +10,13 @@ namespace dragon {
 template <class Context> template <typename T>
 void SparseSoftmaxFocalLossOp<Context>::RunWithType() {
     auto* prob_data = this->prob->template data<T, Context>();
-    auto* label_data = input(1).template data<T, Context>();
+    auto* label_data = Input(1).template data<T, Context>();
     auto* loss_data = this->losses.template mutable_data<T, Context>();
     auto* valid_data = this->valid.template mutable_data<T, Context>();
     auto* scale_data = scale->template mutable_data<T, Context>();
 
-    kernel::SparseSoftmaxFocalLoss<T, Context>(input(0).count(), 
-                                             input(0).dim(axis),
+    kernel::SparseSoftmaxFocalLoss<T, Context>(Input(0).count(), 
+                                             Input(0).dim(axis),
                                                       outer_dim, 
                                                       inner_dim,
                                                       pos_alpha,
@@ -31,28 +31,28 @@ void SparseSoftmaxFocalLossOp<Context>::RunWithType() {
                                                  &this->ignore);
 
     if (normalization == "UNIT") {
-        output(0)->ReshapeLike(this->losses);
-        output(0)->Share(this->losses);
+        Output(0)->ReshapeLike(this->losses);
+        Output(0)->Share(this->losses);
         return;
     }
 
     T normalizer;
     if (normalization == "VALID")
         normalizer = math::ASum<T, Context>(this->valid.count(), valid_data);
-    else if (normalization == "BATCH_SIZE") normalizer = input(0).dim(0);
+    else if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
     else if (normalization == "FULL") normalizer = outer_dim * inner_dim;
     else if (normalization == "NONE") normalizer = 1;
     T loss = math::ASum<T, Context>(this->losses.count(), loss_data);
-    output(0)->Reshape(vector<TIndex>(1, 1));
-    auto* Ydata = output(0)->template mutable_data<T, CPUContext>();
+    Output(0)->Reshape(vector<TIndex>(1, 1));
+    auto* Ydata = Output(0)->template mutable_data<T, CPUContext>();
     Ydata[0] = loss / normalizer;
 }
 
 template <class Context>
 void SparseSoftmaxFocalLossOp<Context>::RunOnDevice() {
-    outer_dim = input(0).count(0, axis);
-    inner_dim = input(0).count(axis + 1);
-    CHECK_EQ(outer_dim * inner_dim, input(1).count())
+    outer_dim = Input(0).count(0, axis);
+    inner_dim = Input(0).count(axis + 1);
+    CHECK_EQ(outer_dim * inner_dim, Input(1).count())
         << "\nNumber of predictions must match the number of labels.";
     this->valid.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
     this->losses.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
@@ -61,7 +61,7 @@ void SparseSoftmaxFocalLossOp<Context>::RunOnDevice() {
     scale = ws()->CreateTensor("/mnt/" + anchor() + "/focal_scale");
     scale->ReshapeLike(*this->prob);
     
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 
@@ -73,14 +73,14 @@ OPERATOR_SCHEMA(SparseSoftmaxFocalLoss).NumInputs(2).NumOutputs(1);
 
 template <class Context> template <typename T>
 void SparseSoftmaxFocalLossGradientOp<Context>::RunWithType() {
-    auto* label_data = input(1).template data<T, Context>();
+    auto* label_data = Input(1).template data<T, Context>();
     auto* prob_data = this->prob->template mutable_data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* valid_data = this->valid.template mutable_data<T, Context>();
     auto* scale_data = scale->template mutable_data<T, Context>();
 
-    kernel::SparseSoftmaxFocalLossGrad<T, Context>(output(0)->count(), 
-                                                 output(0)->dim(axis),
+    kernel::SparseSoftmaxFocalLossGrad<T, Context>(Output(0)->count(), 
+                                                 Output(0)->dim(axis),
                                                             outer_dim, 
                                                             inner_dim, 
                                                                 gamma,
@@ -94,24 +94,24 @@ void SparseSoftmaxFocalLossGradientOp<Context>::RunWithType() {
                                                               dXdata);
 
     if (normalization == "UNIT") {
-        auto* dYdata = input(-1).template data<T, Context>();
-        kernel::SumGrad<T, Context>(input(0).count() / input(0).dim(axis),
-                                                       input(0).dim(axis), 
+        auto* dYdata = Input(-1).template data<T, Context>();
+        kernel::SumGrad<T, Context>(Input(0).count() / Input(0).dim(axis),
+                                                       Input(0).dim(axis), 
                                                                 inner_dim, 
                                                                       1.0, 
                                                                    dYdata, 
                                                                prob_data);
-        math::Mul<T, Context>(output(0)->count(), prob_data, dXdata, dXdata);
+        math::Mul<T, Context>(Output(0)->count(), prob_data, dXdata, dXdata);
         return;
     }
 
     T normalizer;
     if (normalization == "VALID") normalizer = math::ASum<T, Context>(this->valid.count(), valid_data);
-    else if (normalization == "BATCH_SIZE") normalizer = input(0).dim(0);
+    else if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
     else if (normalization == "FULL") normalizer = outer_dim * inner_dim;
     else if (normalization == "NONE") normalizer = 1;
-    auto* dYdata = input(-1).template data<T, CPUContext>();
-    math::Scal<T, Context>(output(0)->count(), dYdata[0] / normalizer, dXdata);
+    auto* dYdata = Input(-1).template data<T, CPUContext>();
+    math::Scal<T, Context>(Output(0)->count(), dYdata[0] / normalizer, dXdata);
 }
 
 template <class Context>
@@ -120,10 +120,10 @@ void SparseSoftmaxFocalLossGradientOp<Context>::RunOnDevice() {
     scale = ws()->GetTensor("/mnt/" + anchor() + "/focal_scale");
     outer_dim = this->prob->count(0, axis);
     inner_dim = this->prob->count(axis + 1);
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
     this->valid.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

@@ -7,12 +7,12 @@ template <class Context> template <typename T>
 void ArgminOp<Context>::RunWithType() {
     if (top_k != 1) {
         //  it's difficult to implement device code when top_k > 1
-        auto* Xdata = input(0).template data<T, CPUContext>();
-        auto* Ydata = output(0)->template mutable_data<T, CPUContext>();
+        auto* Xdata = Input(0).template data<T, CPUContext>();
+        auto* Ydata = Output(0)->template mutable_data<T, CPUContext>();
         kernel::Argmin<T, CPUContext>(count, axis_dim, inner_dim, top_k, Xdata, Ydata);
     } else {
-        auto* Xdata = input(0).template data<T, Context>();
-        auto* Ydata = output(0)->template mutable_data<T, Context>();
+        auto* Xdata = Input(0).template data<T, Context>();
+        auto* Ydata = Output(0)->template mutable_data<T, Context>();
         kernel::Argmin<T, Context>(count, axis_dim, inner_dim, top_k, Xdata, Ydata);
     }
 }
@@ -20,14 +20,14 @@ void ArgminOp<Context>::RunWithType() {
 template <class Context>
 void ArgminOp<Context>::RunOnDevice() {
     if (axis != -1) {
-        axis_dim = input(0).dim(axis);
-        inner_dim = input(0).count(axis) / axis_dim;
+        axis_dim = Input(0).dim(axis);
+        inner_dim = Input(0).count(axis) / axis_dim;
     } else {
-        axis_dim = input(0).count();
+        axis_dim = Input(0).count();
         inner_dim = 1;
     }
-    count = input(0).count() / axis_dim;
-    vector<TIndex> dims = input(0).dims();
+    count = Input(0).count() / axis_dim;
+    vector<TIndex> dims = Input(0).dims();
     if (!keep_dims) {
         if (axis != -1) {
             if (top_k == 1) dims.erase(dims.begin() + axis);
@@ -36,12 +36,12 @@ void ArgminOp<Context>::RunOnDevice() {
             dims = vector<TIndex>(1, top_k);
         }
     } else {
-        if (axis == -1) dims = vector<TIndex>(input(0).ndim(), 1);
+        if (axis == -1) dims = vector<TIndex>(Input(0).ndim(), 1);
         dims[axis] = top_k;
     }
-    output(0)->Reshape(dims);
+    Output(0)->Reshape(dims);
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

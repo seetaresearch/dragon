@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_NDARRAY_FLATTEN_OP_H_
 #define DRAGON_OPERATORS_NDARRAY_FLATTEN_OP_H_
@@ -19,6 +24,7 @@ class FlattenOp final : public Operator<Context> {
           axis(OperatorBase::GetSingleArg<int>("axis", 0)),
           num_axes(OperatorBase::GetSingleArg<int>("num_axes", -1)),
           keep_axes(OperatorBase::GetSingleArg<int>("keep_axes", INT_MAX)) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     void SqueezeRun();
@@ -35,6 +41,7 @@ class FlattenGradientOp final : public Operator<Context> {
          : Operator<Context>(op_def, ws) {
         DISABLE_SHARE_GRADIENT;
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
 };

@@ -7,10 +7,10 @@ namespace dragon {
 template <class Context> template <typename T>
 void GradientGenerateOp<Context>::RunWithType() {
     for (int i = 0; i < OutputSize(); i++) {
-        if (output(i)->name() == "ignore") continue;
-        output(i)->ReshapeLike(input(i));
-        auto* dXdata = output(0)->template mutable_data<T, Context>();
-        math::Set<T, Context>(output(0)->count(),
+        if (Output(i)->name() == "ignore") continue;
+        Output(i)->ReshapeLike(Input(i));
+        auto* dXdata = Output(0)->template mutable_data<T, Context>();
+        math::Set<T, Context>(Output(0)->count(),
                               dragon_cast<T, float>(defaults[i]),
                               dXdata);
     }
@@ -18,9 +18,9 @@ void GradientGenerateOp<Context>::RunWithType() {
 
 template <class Context>
 void GradientGenerateOp<Context>::RunOnDevice() {
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-    else if (input(0).template IsType<float16>()) RunWithType<float16>();
+    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
     else LOG(FATAL) << "Unsupported input types.";
 }
@@ -33,23 +33,23 @@ OPERATOR_SCHEMA(GradientGenerate);
 
 template <class Context> template <typename T>
 void GradientGatherOp<Context>::RunWithType() {
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
-    TIndex count = output(0)->count();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
+    TIndex count = Output(0)->count();
     for (int i = 0; i < indices.size(); i++) {
-        CHECK(output(0)->dims() == input(indices[i]).dims());
-        auto* dYdata = input(indices[i]).template data<T, Context>();
+        CHECK(Output(0)->dims() == Input(indices[i]).dims());
+        auto* dYdata = Input(indices[i]).template data<T, Context>();
         if (i == 0) ctx().template Copy<T, Context, Context>(count, dXdata, dYdata);
         else math::Add<T, Context>(count, dXdata, dYdata, dXdata);
-        input(indices[i]).Reset();
+        Input(indices[i]).Reset();
     }
 }
 
 template <class Context>
 void GradientGatherOp<Context>::RunOnDevice() {
     if (indices.size() == 0) return;
-    output(0)->ReshapeLike(input(indices[0]));
+    Output(0)->ReshapeLike(Input(indices[0]));
 
-    if (input(indices[0]).template IsType<float>()) RunWithType<float>();
+    if (Input(indices[0]).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

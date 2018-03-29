@@ -7,12 +7,12 @@ namespace dragon {
 template <class Context> template <typename T>
 void CuDNNSoftmaxOp<Context>::RunWithType() {
     Tensor fake_tensor;
-    fake_tensor.Reshape(vector<TIndex>({ outer_dim, input(0).dim(axis), inner_dim }));
+    fake_tensor.Reshape(vector<TIndex>({ outer_dim, Input(0).dim(axis), inner_dim }));
     cudnnSetTensorDesc<T>(&input_desc, &fake_tensor);
     cudnnSetTensorDesc<T>(&output_desc, &fake_tensor);
 
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
     CUDNN_CHECK(cudnnSoftmaxForward(cudnn_handle(), CUDNN_SOFTMAX_ACCURATE,
                                                 CUDNN_SOFTMAX_MODE_CHANNEL,
                                       CUDNNType<T>::one, input_desc, Xdata,
@@ -21,14 +21,14 @@ void CuDNNSoftmaxOp<Context>::RunWithType() {
 
 template <class Context>
 void CuDNNSoftmaxOp<Context>::RunOnDevice() {
-    if (axis == -1) axis = (int)input(0).ndim() - 1;
-    outer_dim = input(0).count(0, axis);
-    inner_dim = input(0).count(axis + 1);
-    output(0)->ReshapeLike(input(0));
+    if (axis == -1) axis = (int)Input(0).ndim() - 1;
+    outer_dim = Input(0).count(0, axis);
+    inner_dim = Input(0).count(axis + 1);
+    Output(0)->ReshapeLike(Input(0));
     
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-    else if (input(0).template IsType<float16>()) RunWithType<float16>();
+    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
     else LOG(FATAL) << "Unsupported input types.";
 }
@@ -38,13 +38,13 @@ DEPLOY_CUDNN(Softmax);
 template <class Context> template <typename T>
 void CuDNNSoftmaxGradientOp<Context>::RunWithType() {
     Tensor fake_tensor;
-    fake_tensor.Reshape(vector<TIndex>({ outer_dim, input(0).dim(axis), inner_dim }));
+    fake_tensor.Reshape(vector<TIndex>({ outer_dim, Input(0).dim(axis), inner_dim }));
     cudnnSetTensorDesc<T>(&input_desc, &fake_tensor);
     cudnnSetTensorDesc<T>(&output_desc, &fake_tensor);
 
-    auto* dYdata = input(-1).template data<T, Context>();
-    auto* Ydata = input(0).template data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
+    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* Ydata = Input(0).template data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
     CUDNN_CHECK(cudnnSoftmaxBackward(cudnn_handle(), CUDNN_SOFTMAX_ACCURATE,
                                                  CUDNN_SOFTMAX_MODE_CHANNEL,
                                        CUDNNType<T>::one, input_desc, Ydata,
@@ -54,15 +54,15 @@ void CuDNNSoftmaxGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void CuDNNSoftmaxGradientOp<Context>::RunOnDevice() {
-    if (axis == -1) axis = (int)input(0).ndim() - 1;
-    outer_dim = input(0).count(0, axis);
-    inner_dim = input(0).count(axis + 1);
-    output(0)->ReshapeLike(input(0));
+    if (axis == -1) axis = (int)Input(0).ndim() - 1;
+    outer_dim = Input(0).count(0, axis);
+    inner_dim = Input(0).count(axis + 1);
+    Output(0)->ReshapeLike(Input(0));
     
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-    else if (input(0).template IsType<float16>()) RunWithType<float16>();
+    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
     else LOG(FATAL) << "Unsupported input types.";
 }

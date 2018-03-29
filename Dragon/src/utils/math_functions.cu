@@ -670,13 +670,14 @@ template <> void Gemm<float, CUDAContext>(const CBLAS_TRANSPOSE transA,
     int ldb = (transB == CblasNoTrans) ? N : K;
     cublasOperation_t cuTransA = (transA == CblasNoTrans) ? CUBLAS_OP_N : CUBLAS_OP_T;
     cublasOperation_t cuTransB = (transB == CblasNoTrans) ? CUBLAS_OP_N : CUBLAS_OP_T;
+    const float _alpha_ = alpha, _beta_ = beta;
     CUBLAS_CHECK(cublasSgemm_v2(cublas_handle(), 
                                 cuTransB, cuTransA,
-                                N, M, K, 
-                                &alpha, 
-                                B, ldb, 
-                                A, lda, 
-                                &beta, 
+                                N, M, K,
+                                &_alpha_,
+                                B, ldb,
+                                A, lda,
+                                &_beta_,
                                 C, N));
 }
 
@@ -697,22 +698,25 @@ template <> void Gemm<float16, CUDAContext>(const CBLAS_TRANSPOSE transA,
     cublasOperation_t cuTransA = (transA == CblasNoTrans) ? CUBLAS_OP_N : CUBLAS_OP_T;
     cublasOperation_t cuTransB = (transB == CblasNoTrans) ? CUBLAS_OP_N : CUBLAS_OP_T;
     if (math_type == TensorProto_DataType_FLOAT) {
+        const float _alpha_ = alpha, _beta_ = beta;
         CUBLAS_CHECK(cublasSgemmEx(cublas_handle(), 
                                    cuTransB, cuTransA,
                                    N, M, K, 
-                                   &alpha, 
+                                   &_alpha_, 
                                    B, CUDA_R_16F, ldb, 
                                    A, CUDA_R_16F, lda,
-                                   &beta, 
+                                   &_beta_, 
                                    C, CUDA_R_16F, N));
     } else if (math_type == TensorProto_DataType_FLOAT16) {
+        const half _alpha_ = dragon_cast<half, float>(alpha);
+        const half _beta_ = dragon_cast<half, float>(beta);
         CUBLAS_CHECK(cublasHgemm(cublas_handle(), 
                                  cuTransB, cuTransA,
                                  N, M, K, 
-                                 &dragon_cast<half, float>(alpha),
+                                 &_alpha_,
                                  reinterpret_cast<const half*>(B), ldb,
                                  reinterpret_cast<const half*>(A), lda,
-                                 &dragon_cast<half, float>(beta),
+                                 &_beta_,
                                  reinterpret_cast<half*>(C), N));
     } else {
         LOG(FATAL) << "Unsupported math type";
@@ -729,13 +733,14 @@ template <> void Gemv<float, CUDAContext>(const CBLAS_TRANSPOSE transA,
                                           float* y, 
                                           TensorProto_DataType math_type) { 
     cublasOperation_t cuTransA = (transA == CblasNoTrans) ? CUBLAS_OP_T : CUBLAS_OP_N;
+    const float _alpha_ = alpha, _beta_ = beta;
     CUBLAS_CHECK(cublasSgemv_v2(cublas_handle(), 
                                 cuTransA, 
                                 N, M, 
-                                &alpha, 
+                                &_alpha_, 
                                 A, N, 
                                 x, 1, 
-                                &beta, 
+                                &_beta_, 
                                 y, 1));
 }
 
@@ -754,23 +759,26 @@ template <> void Gemv<float16, CUDAContext>(const CBLAS_TRANSPOSE transA,
     int k = (cuTransA == CUBLAS_OP_N) ? M : N;
     int LDA = (cuTransA == CUBLAS_OP_N) ? m : k;
     int LDC = m;
+    const float _alpha_ = alpha, _beta_ = beta;
     if (math_type == TensorProto_DataType_FLOAT) {
         CUBLAS_CHECK(cublasSgemmEx(cublas_handle(), 
                                    cuTransA, CUBLAS_OP_N,
-                                    m, 1, k, 
-                                    &alpha, 
-                                    A, CUDA_R_16F, LDA, 
-                                    x, CUDA_R_16F, k, 
-                                    &beta,
-                                    y, CUDA_R_16F, LDC));
+                                   m, 1, k, 
+                                   &_alpha_, 
+                                   A, CUDA_R_16F, LDA, 
+                                   x, CUDA_R_16F, k, 
+                                   &_beta_,
+                                   y, CUDA_R_16F, LDC));
     } else if (math_type == TensorProto_DataType_FLOAT16) {
+        const half _alpha_ = dragon_cast<half, float>(alpha);
+        const half _beta_ = dragon_cast<half, float>(beta);
         CUBLAS_CHECK(cublasHgemm(cublas_handle(), 
                                  cuTransA, CUBLAS_OP_N,
                                  m, 1, k, 
-                                 &dragon_cast<half, float>(alpha),
+                                 &_alpha_,
                                  reinterpret_cast<const half*>(A), LDA, 
                                  reinterpret_cast<const half*>(x), k, 
-                                 &dragon_cast<half, float>(beta),
+                                 &_beta_,
                                  reinterpret_cast<half*>(y), LDC));
     } else {
             LOG(FATAL) << "Unsupported math type";

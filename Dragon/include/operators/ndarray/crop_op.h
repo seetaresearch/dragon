@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_NDARRAY_CROP_OP_H_
 #define DRAGON_OPERATORS_NDARRAY_CROP_OP_H_
@@ -22,6 +27,7 @@ class CropOp: public Operator<Context> {
           offsets(OperatorBase::GetRepeatedArg<int>("offsets")),
           shape(OperatorBase::GetRepeatedArg<int>("shape")),
           shape_like(OperatorBase::GetSingleArg<string>("shape_like", "")) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void Setup();
     void RunOnDevice() override;
@@ -49,6 +55,7 @@ class CropGradientOp final : public Operator<Context > {
           shape_like(OperatorBase::GetSingleArg<string>("shape_like", "")) {
         DISABLE_SHARE_GRADIENT;
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void Setup();
     void RunOnDevice() override;

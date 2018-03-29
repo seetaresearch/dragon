@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_VISION_CONV_TRANSPOSE_OP_H_
 #define DRAGON_OPERATORS_VISION_CONV_TRANSPOSE_OP_H_
@@ -19,9 +24,11 @@ class Conv2dTransposeOp: public ConvOpBase<Context>  {
         this->num_spatial_axes = 2;
         Setup(); 
     }
+    USE_OPERATOR_FUNCTIONS(Context);
+    USE_CONVOLUTION_FUNCTIONS(Context);
 
     bool ReverseDimensions() override { return true; }
-    virtual bool HasBias() { return InputSize() > 2; }
+    bool HasBias() override { return InputSize() > 2; }
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -36,8 +43,10 @@ class Conv2dTransposeGradientOp : public Conv2dTransposeOp<Context> {
  public:
     Conv2dTransposeGradientOp(const OperatorDef& def, Workspace* ws)
         : Conv2dTransposeOp<Context>(def, ws) {}
+    USE_OPERATOR_FUNCTIONS(Context);
+    USE_CONVOLUTION_FUNCTIONS(Context);
 
-    bool HasBias() override { return output(2)->name() != "ignore"; }
+    bool HasBias() override { return Output(2)->name() != "ignore"; }
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -73,6 +82,8 @@ class CuDNNConv2dTransposeOp : public Conv2dTransposeOp<Context> {
         else if (this->data_format == "NHWC") format = CUDNN_TENSOR_NHWC;
         else LOG(FATAL) << "Unknown data format: " << this->data_format;
     }
+    USE_OPERATOR_FUNCTIONS(Context);
+    USE_CONVOLUTION_FUNCTIONS(Context);
 
     ~CuDNNConv2dTransposeOp() {
         CUDNN_CHECK(cudnnDestroyFilterDescriptor(filter_desc));
@@ -127,6 +138,8 @@ public:
         else if (this->data_format == "NHWC") format = CUDNN_TENSOR_NHWC;
         else LOG(FATAL) << "Unknown data format: " << this->data_format;
     }
+    USE_OPERATOR_FUNCTIONS(Context);
+    USE_CONVOLUTION_FUNCTIONS(Context);
 
     ~CuDNNConv2dTransposeGradientOp() {
         CUDNN_CHECK(cudnnDestroyFilterDescriptor(filter_desc));

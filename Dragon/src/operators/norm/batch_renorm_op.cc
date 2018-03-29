@@ -10,21 +10,21 @@ void BatchRenormOp<Context>::TrainingRunWithType() {
     INIT_MULTIPLIER(multiplier, NS);
     INIT_MULTIPLIER(num_multiplier, N);
     INIT_MULTIPLIER(spatial_multiplier, S);
-    TENSOR_FILL(input(1), vector<TIndex>(1, C));  //  history_mean
-    TENSOR_FILL(input(2), vector<TIndex>(1, C));  //  history_var
+    TENSOR_FILL(Input(1), vector<TIndex>(1, C));  //  history_mean
+    TENSOR_FILL(Input(2), vector<TIndex>(1, C));  //  history_var
 
-    auto* hMean_data = input(1).template mutable_data<T, Context>();
-    auto* hVar_data = input(2).template mutable_data<T, Context>();
+    auto* hMean_data = Input(1).template mutable_data<T, Context>();
+    auto* hVar_data = Input(2).template mutable_data<T, Context>();
     auto* tMean_data = mean.template mutable_data<T, Context>();
     auto* tVar_data = var->template mutable_data<T, Context>();
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
     auto* NSMul_data = multiplier->template data<T, Context>();
     auto* SMul_data = spatial_multiplier->template data<T, Context>();
     auto* NMul_data = num_multiplier->template data<T, Context>();
     auto* NC_data = num_by_chans.template mutable_data<T, Context>();
     auto* Std_data = stddev->template mutable_data<T, Context>();
-    ctx().template Copy<T, Context, Context>(input(0).count(), Ydata, Xdata);
+    ctx().template Copy<T, Context, Context>(Input(0).count(), Ydata, Xdata);
 
     auto* tDdata = d.template mutable_data<T, Context>();
     auto* tRdata = r->template mutable_data<T, Context>();
@@ -35,8 +35,8 @@ void BatchRenormOp<Context>::TrainingRunWithType() {
     if (mode == "CAFFE") {
         CHECK_EQ(InputSize(), 4)
             << "\nThe number of inputs should be 4 if use CAFFE mode.";
-        TENSOR_FILL(input(3), vector<TIndex>(1, 1));
-        auto* hFact_data = input(3).template mutable_data<T, CPUContext>();
+        TENSOR_FILL(Input(3), vector<TIndex>(1, 1));
+        auto* hFact_data = Input(3).template mutable_data<T, CPUContext>();
         const float factor = dragon_cast<float, T>(hFact_data[0]);
         const float scale = factor == 0 ? 0 : 1.0 / factor;
         math::Scale<T, Context>(mean.count(), scale, hMean_data, thMean_data);
@@ -76,7 +76,7 @@ void BatchRenormOp<Context>::TrainingRunWithType() {
 
     //  compute variance
     //  note that we use VAR(X) = E((X - EX) ^ 2)
-    math::Square<T, Context>(output(0)->count(), Ydata, Std_data);
+    math::Square<T, Context>(Output(0)->count(), Ydata, Std_data);
     if (data_format == "NCHW") {
         math::Gemv<T, Context>(CblasNoTrans, NC, S,
                    1.0 / NS, Std_data, SMul_data,
@@ -95,12 +95,12 @@ void BatchRenormOp<Context>::TrainingRunWithType() {
         if (mode == "CAFFE") {
             CHECK_EQ(InputSize(), 4)
                 << "\nThe number of inputs should be 4 if use CAFFE mode.";
-            TENSOR_FILL(input(3), vector<TIndex>(1, 1));
-            auto* hFact_data = input(3).template mutable_data<T, CPUContext>();
+            TENSOR_FILL(Input(3), vector<TIndex>(1, 1));
+            auto* hFact_data = Input(3).template mutable_data<T, CPUContext>();
             float factor = dragon_cast<float, T>(hFact_data[0]);
             factor *= momentum; factor += 1;
             hFact_data[0] = dragon_cast<T, float>(factor);
-            int m = input(0).count() / C;
+            int m = Input(0).count() / C;
             float coeff = m > 1 ? float(m) / (m - 1) : 1;
             //  History(X) = Cur(X) + momentum * History(X)
             math::Axpby<T, Context>(mean.count(), 1.0, tMean_data, momentum, hMean_data);
@@ -129,7 +129,7 @@ void BatchRenormOp<Context>::TrainingRunWithType() {
                                          1.0, NSMul_data, tVar_data,
                                                      0.0, Std_data);
     }
-    math::Div<T, Context>(output(0)->count(), Ydata, Std_data, Ydata);
+    math::Div<T, Context>(Output(0)->count(), Ydata, Std_data, Ydata);
 
     //  compute renorm
     if (!is_recomputing) {
@@ -155,7 +155,7 @@ void BatchRenormOp<Context>::TrainingRunWithType() {
     //  apply renorm
     //  store x_norm for backward
     auto* XNorm_data = x_norm->template mutable_data<T, Context>();
-    ctx().template Copy<T, Context, Context>(output(0)->count(), XNorm_data, Ydata);
+    ctx().template Copy<T, Context, Context>(Output(0)->count(), XNorm_data, Ydata);
 
     //  correction: mul by r
     if (data_format == "NCHW") {
@@ -170,7 +170,7 @@ void BatchRenormOp<Context>::TrainingRunWithType() {
                                             1.0, NSMul_data, tRdata,
                                                      0.0, Std_data);
     }
-    math::Mul<T, Context>(output(0)->count(), Ydata, Std_data, Ydata);
+    math::Mul<T, Context>(Output(0)->count(), Ydata, Std_data, Ydata);
 
     //  correction: add by d
     if (data_format == "NCHW") {
@@ -193,28 +193,28 @@ void BatchRenormOp<Context>::InferenceRunWithType() {
     INIT_MULTIPLIER(multiplier, NS);
     INIT_MULTIPLIER(num_multiplier, N);
     INIT_MULTIPLIER(spatial_multiplier, S);
-    TENSOR_FILL(input(1), vector<TIndex>(1, C));  //  history_mean
-    TENSOR_FILL(input(2), vector<TIndex>(1, C));  //  history_var
+    TENSOR_FILL(Input(1), vector<TIndex>(1, C));  //  history_mean
+    TENSOR_FILL(Input(2), vector<TIndex>(1, C));  //  history_var
 
-    auto* hMean_data = input(1).template mutable_data<T, Context>();
-    auto* hVar_data = input(2).template mutable_data<T, Context>();
+    auto* hMean_data = Input(1).template mutable_data<T, Context>();
+    auto* hVar_data = Input(2).template mutable_data<T, Context>();
     auto* tMean_data = mean.template mutable_data<T, Context>();
     auto* tVar_data = var->template mutable_data<T, Context>();
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
     auto* NSMul_data = multiplier->template data<T, Context>();
     auto* SMul_data = spatial_multiplier->template data<T, Context>();
     auto* NMul_data = num_multiplier->template data<T, Context>();
     auto* NC_data = num_by_chans.template mutable_data<T, Context>();
     auto* Std_data = stddev->template mutable_data<T, Context>();
-    ctx().template Copy<T, Context, Context>(input(0).count(), Ydata, Xdata);
+    ctx().template Copy<T, Context, Context>(Input(0).count(), Ydata, Xdata);
 
     //  scale the mean and variance if necessary
     if (mode == "CAFFE") {
         CHECK_EQ(InputSize(), 4)
             << "\nThe number of inputs should be 4 if use CAFFE mode.";
-        TENSOR_FILL(input(3), vector<TIndex>(1, 1));
-        auto* hFact_data = input(3).template mutable_data<T, CPUContext>();
+        TENSOR_FILL(Input(3), vector<TIndex>(1, 1));
+        auto* hFact_data = Input(3).template mutable_data<T, CPUContext>();
         const float factor = dragon_cast<float, T>(hFact_data[0]);
         const float scale = factor == 0 ? 0 : 1.0 / factor;
         math::Scale<T, Context>(mean.count(), scale, hMean_data, tMean_data);
@@ -255,7 +255,7 @@ void BatchRenormOp<Context>::InferenceRunWithType() {
                                          1.0, NSMul_data, tVar_data,
                                                      0.0, Std_data);
     }
-    math::Div<T, Context>(output(0)->count(), Ydata, Std_data, Ydata);
+    math::Div<T, Context>(Output(0)->count(), Ydata, Std_data, Ydata);
     ws()->ReleaseBuffer(stddev);
 }
 
@@ -270,12 +270,12 @@ void BatchRenormOp<Context>::Setup() {
     //  determine the data format
     TIndex channel_axis = axis;
     data_format = "NCHW";
-    if (channel_axis == -1) channel_axis += (int)input(0).ndim();
-    if (channel_axis + 1 == (int)input(0).ndim()) data_format = "NHWC";
-    N = input(0).dim(0);
-    C = input(0).dim(channel_axis);
+    if (channel_axis == -1) channel_axis += (int)Input(0).ndim();
+    if (channel_axis + 1 == (int)Input(0).ndim()) data_format = "NHWC";
+    N = Input(0).dim(0);
+    C = Input(0).dim(channel_axis);
     NC = N * C;
-    S = input(0).count() / NC;
+    S = Input(0).count() / NC;
     NS = N * S;
 
     //  make resource
@@ -283,7 +283,7 @@ void BatchRenormOp<Context>::Setup() {
     r = ws()->CreateTensor("/mnt/" + anchor() + "/bn_r");
     x_norm = ws()->CreateTensor("/mnt/" + anchor() + "/bn_x_norm");
     stddev = ws()->GetBuffer();
-    stddev->ReshapeLike(input(0));
+    stddev->ReshapeLike(Input(0));
 
     //  reshape
     mean.Reshape(vector<TIndex>(1, C));
@@ -293,15 +293,15 @@ void BatchRenormOp<Context>::Setup() {
     t_h_mean.Reshape(vector<TIndex>(1, C)); 
     t_h_var.Reshape(vector<TIndex>(1, C));
     num_by_chans.Reshape(vector<TIndex>(1, NC));
-    x_norm->ReshapeLike(input(0));
-    output(0)->ReshapeLike(input(0));
+    x_norm->ReshapeLike(Input(0));
+    Output(0)->ReshapeLike(Input(0));
 }
 
 template <class Context>
 void BatchRenormOp<Context>::RunOnDevice() {
     Setup();
 
-    if (input(0).template IsType<float>()) {
+    if (Input(0).template IsType<float>()) {
         if (use_global_stats) InferenceRunWithType<float>();
         else TrainingRunWithType<float>();
     }
@@ -320,8 +320,8 @@ void BatchRenormGradientOp<Context>::TrainingRunWithType() {
     INIT_MULTIPLIER(num_multiplier, N);
     INIT_MULTIPLIER(spatial_multiplier, S);
 
-    auto* dYdata = input(-1).template data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
+    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* Std_data = stddev->template mutable_data<T, Context>();
     auto* tMean_data = mean.template mutable_data<T, Context>();
     auto* tVar_data = var->template mutable_data<T, Context>();
@@ -346,10 +346,10 @@ void BatchRenormGradientOp<Context>::TrainingRunWithType() {
                                             1.0, NSMul_data, tRdata,
                                                      0.0, Std_data);
     }
-    math::Mul<T, Context>(output(0)->count(), dYdata, Std_data, Std_data);
+    math::Mul<T, Context>(Output(0)->count(), dYdata, Std_data, Std_data);
 
     //  sum(dE/dY \cdot Y)
-    math::Mul<T, Context>(output(0)->count(), XNorm_data, Std_data, dXdata);
+    math::Mul<T, Context>(Output(0)->count(), XNorm_data, Std_data, dXdata);
     if (data_format == "NCHW") {
          math::Gemv<T, Context>(CblasNoTrans, NC, S,
                              1.0, dXdata, SMul_data,
@@ -373,7 +373,7 @@ void BatchRenormGradientOp<Context>::TrainingRunWithType() {
     }
 
     //  sum(dE/dY \cdot Y) \cdot Y  
-    math::Mul<T, Context>(output(0)->count(), XNorm_data, dXdata, dXdata);
+    math::Mul<T, Context>(Output(0)->count(), XNorm_data, dXdata, dXdata);
 
     //  sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y
     if (data_format == "NCHW") {
@@ -400,7 +400,7 @@ void BatchRenormGradientOp<Context>::TrainingRunWithType() {
 
     //  dE/dY - mean(dE/dY)- mean(dE/dY \cdot Y) \cdot Y
     //  = dE/dY - mean(sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y)
-    math::Axpby<T, Context>(output(0)->count(), 1.0, Std_data, -1.0 / NS, dXdata);
+    math::Axpby<T, Context>(Output(0)->count(), 1.0, Std_data, -1.0 / NS, dXdata);
 
     //  divide var
     if (data_format == "NCHW") {
@@ -416,7 +416,7 @@ void BatchRenormGradientOp<Context>::TrainingRunWithType() {
                                                      0.0, Std_data);
     }
 
-    math::Div<T, Context>(output(0)->count(), dXdata, Std_data, dXdata);
+    math::Div<T, Context>(Output(0)->count(), dXdata, Std_data, dXdata);
     ws()->ReleaseBuffer(stddev);
     x_norm->Reset();
 }
@@ -427,8 +427,8 @@ void BatchRenormGradientOp<Context>::InferenceRunWithType() {
     INIT_MULTIPLIER(num_multiplier, N);
     INIT_MULTIPLIER(spatial_multiplier, S);
 
-    auto* dYdata = input(-1).template data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
+    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* Std_data = stddev->template mutable_data<T, Context>();
     auto* tVar_data = var->template mutable_data<T, Context>();
     auto* NSMul_data = multiplier->template data<T, Context>();
@@ -449,7 +449,7 @@ void BatchRenormGradientOp<Context>::InferenceRunWithType() {
                                                      0.0, Std_data);
     }
 
-    math::Div<T, Context>(output(0)->count(), dYdata, Std_data, dXdata);
+    math::Div<T, Context>(Output(0)->count(), dYdata, Std_data, dXdata);
     ws()->ReleaseBuffer(stddev);
 }
 
@@ -462,12 +462,12 @@ void BatchRenormGradientOp<Context>::Setup() {
     //  determine the data format
     TIndex channel_axis = axis;
     data_format = "NCHW";
-    if (channel_axis == -1) channel_axis += (int)input(0).ndim();
-    if (channel_axis + 1 == (int)input(0).ndim()) data_format = "NHWC";
-    N = input(0).dim(0);
-    C = input(0).dim(channel_axis);
+    if (channel_axis == -1) channel_axis += (int)Input(0).ndim();
+    if (channel_axis + 1 == (int)Input(0).ndim()) data_format = "NHWC";
+    N = Input(0).dim(0);
+    C = Input(0).dim(channel_axis);
     NC = N * C;
-    S = input(0).count() / NC;
+    S = Input(0).count() / NC;
     NS = N * S;
 
     //  make resource
@@ -475,19 +475,19 @@ void BatchRenormGradientOp<Context>::Setup() {
     r = ws()->GetTensor("/mnt/" + anchor() + "/bn_r");
     x_norm = ws()->GetTensor("/mnt/" + anchor() + "/bn_x_norm");
     stddev = ws()->GetBuffer();
-    stddev->ReshapeLike(input(0));
+    stddev->ReshapeLike(Input(0));
 
     //  reshape
     mean.ReshapeLike(*var);
     num_by_chans.Reshape(vector<TIndex>(1, NC));
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 }
 
 template <class Context>
 void BatchRenormGradientOp<Context>::RunOnDevice() {
     Setup();
 
-    if (input(0).template IsType<float>()) {
+    if (Input(0).template IsType<float>()) {
         if (use_global_stats) InferenceRunWithType<float>();
         else TrainingRunWithType<float>();
     }

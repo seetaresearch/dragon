@@ -8,23 +8,23 @@ namespace dragon {
 template <class Context> template <typename T>
 void NNResizeOp<Context>::RunWithType() {
     if (data_format == "NCHW") {
-        n = input(0).dim(0);
-        c = input(0).dim(1);
-        h = input(0).dim(2);
-        w = input(0).dim(3);
-        out_h = output(0)->dim(2);
-        out_w = output(0)->dim(3);
+        n = Input(0).dim(0);
+        c = Input(0).dim(1);
+        h = Input(0).dim(2);
+        w = Input(0).dim(3);
+        out_h = Output(0)->dim(2);
+        out_w = Output(0)->dim(3);
     } else if (data_format == "NHWC") {
-        n = input(0).dim(0);
-        h = input(0).dim(1);
-        w = input(0).dim(2);
-        c = input(0).dim(3);
-        out_h = output(0)->dim(1);
-        out_w = output(0)->dim(2);
+        n = Input(0).dim(0);
+        h = Input(0).dim(1);
+        w = Input(0).dim(2);
+        c = Input(0).dim(3);
+        out_h = Output(0)->dim(1);
+        out_w = Output(0)->dim(2);
     }
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
-    kernel::NNResize<T, Context>(output(0)->count(), n, c, h, w,
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    kernel::NNResize<T, Context>(Output(0)->count(), n, c, h, w,
                                                    out_h, out_w,
                                                     data_format,
                                                           Xdata,
@@ -33,7 +33,7 @@ void NNResizeOp<Context>::RunWithType() {
 
 template <class Context>
 void NNResizeOp<Context>::RunOnDevice() {
-    vector<TIndex> dims = input(0).dims();
+    vector<TIndex> dims = Input(0).dims();
     if (dsize_desc.size() > 0 || dsize_value.size() > 0) {
         for (int i = 0; i < 2; i++)
             dims[spatial_axis + i] = dsize(i);
@@ -47,9 +47,9 @@ void NNResizeOp<Context>::RunOnDevice() {
         dims[spatial_axis] = int(dims[spatial_axis] * fy);
         dims[spatial_axis + 1] = int(dims[spatial_axis + 1] * fx);
     }
-    output(0)->Reshape(dims);
+    Output(0)->Reshape(dims);
 
-    if (input(0).template IsType<float>()) return RunWithType<float>();
+    if (Input(0).template IsType<float>()) return RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 
@@ -62,23 +62,23 @@ OPERATOR_SCHEMA(NNResize).NumInputs(1).NumOutputs(1);
 template <class Context> template <typename T>
 void NNResizeGradientOp<Context>::RunWithType() {
     if (data_format == "NCHW") {
-        n = input(0).dim(0);
-        c = input(0).dim(1);
-        h = input(0).dim(2);
-        w = input(0).dim(3);
-        out_h = input(-1).dim(2);
-        out_w = input(-1).dim(3);
+        n = Input(0).dim(0);
+        c = Input(0).dim(1);
+        h = Input(0).dim(2);
+        w = Input(0).dim(3);
+        out_h = Input(-1).dim(2);
+        out_w = Input(-1).dim(3);
     } else if (data_format == "NHWC") {
-        n = input(0).dim(0);
-        h = input(0).dim(1);
-        w = input(0).dim(2);
-        c = input(0).dim(3);
-        out_h = input(-1).dim(1);
-        out_w = input(-1).dim(2);
+        n = Input(0).dim(0);
+        h = Input(0).dim(1);
+        w = Input(0).dim(2);
+        c = Input(0).dim(3);
+        out_h = Input(-1).dim(1);
+        out_w = Input(-1).dim(2);
     }
-    auto* dYdata = input(-1).template data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
-    kernel::NNResizeGrad<T, Context>(input(-1).count(), n, c, h, w,
+    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
+    kernel::NNResizeGrad<T, Context>(Input(-1).count(), n, c, h, w,
                                                       out_h, out_w,
                                                        data_format,
                                                             dYdata,
@@ -87,9 +87,9 @@ void NNResizeGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void NNResizeGradientOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
     
-    if (input(0).template IsType<float>()) return RunWithType<float>();
+    if (Input(0).template IsType<float>()) return RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

@@ -30,8 +30,8 @@ void ScanOp<Context>::InitTemplate() {
         OperatorDef* op = template_def.add_op();
         op->CopyFrom(slice_def);
         op->set_name(name() + "(BodyOp." + str(i) + ")");
-        op->add_input(input(i).name());
-        terms[input(i).name()] = input(i).name() + "@1";
+        op->add_input(Input(i).name());
+        terms[Input(i).name()] = Input(i).name() + "@1";
     }
     for (int i = 0; i < nrepeats; i++) {
         OperatorDef* op = template_def.add_op();
@@ -61,8 +61,8 @@ void ScanOp<Context>::UpdateTerms(int cur_step) {
     string prev, now;
     //  update sequences term
     for (int i = 0; i < nseqs; i++) {
-        prev = input(i).name() + "@" + str(cur_step - 1);
-        now = input(i).name() + "@" + str(cur_step);
+        prev = Input(i).name() + "@" + str(cur_step - 1);
+        now = Input(i).name() + "@" + str(cur_step);
         terms[prev] = now;
     }
     if (cur_step < 3) return;
@@ -70,8 +70,8 @@ void ScanOp<Context>::UpdateTerms(int cur_step) {
     //  only support the latest one-step (as Theano's done)
     for (int i = 0; i < nout; i++) {
         if (default_outputs[i].empty()) continue;
-        prev = output(i)->name() + "@" + str(cur_step - 2);
-        now = output(i)->name() + "@" + str(cur_step - 1);
+        prev = Output(i)->name() + "@" + str(cur_step - 2);
+        now = Output(i)->name() + "@" + str(cur_step - 1);
         terms[prev] = now;
     }
 }
@@ -81,18 +81,18 @@ void ScanOp<Context>::UnrollTemplate() {
     if (step_type == "Dynamic") {
         CHECK(!step_tensor.empty()) << "Dynamic nsteps must provide a step tensor.";
         nsteps = ws()->GetTensor(step_tensor)->template data<float, CPUContext>()[0];
-    } else if (step_type == "Default") nsteps = input(0).dim(axis);
+    } else if (step_type == "Default") nsteps = Input(0).dim(axis);
     CHECK_GE(nsteps, 1);
-    for (int i = 0; i < nseqs; i++) CHECK_EQ(input(i).dim(axis), nsteps);
+    for (int i = 0; i < nseqs; i++) CHECK_EQ(Input(i).dim(axis), nsteps);
     if (graphs.count(nsteps)) return;
 
     new_def.CopyFrom(template_def);
     new_def.set_name(name() + "(ScanLen." + str(nsteps) + ")");
-    Argument phase; phase.set_name("phase"); 
+    Argument phase; phase.set_name("phase");
     phase.set_s(this->phase()); new_def.add_arg()->CopyFrom(phase);
     for (int idx = 0; idx < nseqs; idx++) {
         OperatorDef *op = new_def.mutable_op(idx);
-        int nslices = input(idx).dim(axis);
+        int nslices = Input(idx).dim(axis);
         //  alter the num of slices for all sequences
         op->mutable_arg(1)->set_i(nslices);
         //  add slices as outputs
@@ -126,7 +126,7 @@ void ScanOp<Context>::UnrollTemplate() {
         //  solve the last step only
         new_def.add_target(func_def.target(i) + "@" + str(nsteps));
         //  concat all steps if necessary
-        if (output(i)->name() == "ignore") continue;
+        if (Output(i)->name() == "ignore") continue;
         OperatorDef* op = new_def.add_op();
         op->set_name(name() + "(BodyOp." + str(nseqs + nrepeats + i) + ")");
         op->set_type("Concat");
@@ -136,10 +136,10 @@ void ScanOp<Context>::UnrollTemplate() {
         op->add_arg()->CopyFrom(arg_axis);
         op->add_arg()->CopyFrom(arg_nin);
         for (int t = 1; t <= nsteps; t++)
-            op->add_input(output(i)->name() + "@" + str(t));
-        op->add_output(output(i)->name());
+            op->add_input(Output(i)->name() + "@" + str(t));
+        op->add_output(Output(i)->name());
         //  solve all the all steps
-        new_def.add_target(output(i)->name());
+        new_def.add_target(Output(i)->name());
     }
     //  upload
     Tensor* string_tensor = ws()->CreateTensor("/mnt/" + anchor() + "/raw_ops");
@@ -166,9 +166,9 @@ OPERATOR_SCHEMA(Scan).NumInputs(1, INT_MAX).NumOutputs(1, INT_MAX);
 
 template <class Context>
 void ScanGradientOp<Context>::MakeGradientOps() {
-    if (step_type == "Dynamic") 
+    if (step_type == "Dynamic")
         nsteps = ws()->GetTensor(step_tensor)->template data<float, CPUContext>()[0];
-    else if (step_type == "Default") nsteps = input(0).dim(axis);
+    else if (step_type == "Default") nsteps = Input(0).dim(axis);
     if (graphs.count(nsteps)) return;
 
     Tensor* ops = ws()->GetTensor("/mnt/" + anchor() + "/raw_ops");
@@ -180,19 +180,19 @@ void ScanGradientOp<Context>::MakeGradientOps() {
     maker.SetOperatorPrefix(name() + "(BodyOp.");
     maker.SetOperatorSuffix(")");
     for (int i = 0; i < forward_outputs.size(); i++) {
-        if (input(i + (int)OutputSize()).name() != "ignore")
-            maker.AddExternalGrad(input(i + (int)OutputSize()).name());
+        if (Input(i + (int)OutputSize()).name() != "ignore")
+            maker.AddExternalGrad(Input(i + (int)OutputSize()).name());
     }
     new_def = maker.Make();
     new_def.set_name(name() + "(ScanLen." + str(nsteps) + ")");
     for (auto& target : targets) {
         for (int i = 0; i < OutputSize(); i++) {
-            if (output(i)->name() == "ignore") continue;
-            if (input(i).name() == "ignore") continue;
+            if (Output(i)->name() == "ignore") continue;
+            if (Input(i).name() == "ignore") continue;
             GradientTarget* g_target = new_def.add_g_target();
             g_target->set_cost(target);
-            g_target->set_wrt(input(i).name());
-            g_target->set_external(output(i)->name());
+            g_target->set_wrt(Input(i).name());
+            g_target->set_external(Output(i)->name());
         }
     }
 }

@@ -197,7 +197,7 @@ void ConvOpBase<Context>::Setup() {
 
 template <class Context>
 void ConvOpBase<Context>::Reshape() {
-    channels = data_format == "NCHW" ? input(0).dim(1) : input(0).dim(-1);
+    channels = data_format == "NCHW" ? Input(0).dim(1) : Input(0).dim(-1);
     if (ReverseDimensions()) {
         conv_out_channels = channels;
         conv_in_channels = num_output;
@@ -221,50 +221,50 @@ void ConvOpBase<Context>::Reshape() {
     bias_shape.assign(1, num_output);
 
     //  determine the bottom and top shape
-    bottom_shape = input(0).dims();
+    bottom_shape = Input(0).dims();
     ComputeOutputShape();
     if (data_format == "NCHW") {
-        top_shape.assign({ input(0).dim(0), num_output });
+        top_shape.assign({ Input(0).dim(0), num_output });
         for (int i = 0; i < num_spatial_axes; i++)
             top_shape.push_back(output_shape[i]);
     } else if (data_format == "NHWC") {
-        top_shape.assign({ input(0).dim(0) });
+        top_shape.assign({ Input(0).dim(0) });
         for (int i = 0; i < num_spatial_axes; i++)
             top_shape.push_back(output_shape[i]);
         top_shape.push_back(num_output);
     }
-    output(0)->Reshape(top_shape);
+    Output(0)->Reshape(top_shape);
 
     //  determine the input shape for im2col/col2im
     input_shape.clear();
     for (int i = 0; i < num_spatial_axes; i++) {
         if (ReverseDimensions()) {
-            input_shape.push_back(output(0)->dim(spatial_axis + i));
+            input_shape.push_back(Output(0)->dim(spatial_axis + i));
         } else {
-            input_shape.push_back(input(0).dim(spatial_axis + i));
+            input_shape.push_back(Input(0).dim(spatial_axis + i));
         }
     }
 
     //  determine the out spatial dim
     if (data_format == "NCHW") {
         if (ReverseDimensions()) {
-            conv_out_spatial_dim = input(0).count(spatial_axis);
+            conv_out_spatial_dim = Input(0).count(spatial_axis);
         } else {
-            conv_out_spatial_dim = output(0)->count(spatial_axis);
+            conv_out_spatial_dim = Output(0)->count(spatial_axis);
         }
-        out_spatial_dim = output(0)->count(spatial_axis);
+        out_spatial_dim = Output(0)->count(spatial_axis);
     } else if (data_format == "NHWC") {
         if (ReverseDimensions()) {
-            conv_out_spatial_dim = input(0).count(spatial_axis, (int)input(0).ndim() - 1);
+            conv_out_spatial_dim = Input(0).count(spatial_axis, (int)Input(0).ndim() - 1);
         } else {
-            conv_out_spatial_dim = output(0)->count(spatial_axis, (int)output(0)->ndim() - 1);
+            conv_out_spatial_dim = Output(0)->count(spatial_axis, (int)Output(0)->ndim() - 1);
         }
-        out_spatial_dim = output(0)->count(spatial_axis, (int)output(0)->ndim() - 1);
+        out_spatial_dim = Output(0)->count(spatial_axis, (int)Output(0)->ndim() - 1);
     }
 
     //  determine the misc
-    x_offset = input(0).count(1);
-    y_offset = output(0)->count(1);
+    x_offset = Input(0).count(1);
+    y_offset = Output(0)->count(1);
     kernel_dim = conv_in_channels / group * kernel_size[0] * kernel_size[1];
     weight_offset = conv_out_channels * kernel_dim / group;
     col_offset = kernel_dim * conv_out_spatial_dim;
@@ -289,7 +289,7 @@ void ConvOpBase<Context>::Reshape() {
 
 template <class Context>
 void ConvOpBase<Context>::GradientReshape() {
-    channels = data_format == "NCHW" ? input(0).dim(1) : input(0).dim(-1);
+    channels = data_format == "NCHW" ? Input(0).dim(1) : Input(0).dim(-1);
     if (ReverseDimensions()) {
         conv_out_channels = channels;
         conv_in_channels = num_output;
@@ -298,42 +298,42 @@ void ConvOpBase<Context>::GradientReshape() {
         conv_in_channels = channels;
     }
     //  determine the bottom and top shape
-    bottom_shape = input(0).dims();
+    bottom_shape = Input(0).dims();
     ComputeOutputShape();
-    output(0)->Reshape(bottom_shape);
-    output(1)->ReshapeLike(input(1));
-    output(2)->Reshape(vector<TIndex>(1, num_output));
+    Output(0)->Reshape(bottom_shape);
+    Output(1)->ReshapeLike(Input(1));
+    Output(2)->Reshape(vector<TIndex>(1, num_output));
 
     //  determine the input shape for im2col/col2im
     input_shape.clear();
     for (int i = 0; i < num_spatial_axes; i++) {
         if (ReverseDimensions()) {
-            input_shape.push_back(input(-1).dim(spatial_axis + i));
+            input_shape.push_back(Input(-1).dim(spatial_axis + i));
         } else {
-            input_shape.push_back(input(0).dim(spatial_axis + i));
+            input_shape.push_back(Input(0).dim(spatial_axis + i));
         }
     }
 
     //  determine the out spatial dim
     if (data_format == "NCHW") {
         if (ReverseDimensions()) {
-            conv_out_spatial_dim = input(0).count(spatial_axis);
+            conv_out_spatial_dim = Input(0).count(spatial_axis);
         } else {
-            conv_out_spatial_dim = input(-1).count(spatial_axis);
+            conv_out_spatial_dim = Input(-1).count(spatial_axis);
         }
-        out_spatial_dim = input(-1).count(spatial_axis);
+        out_spatial_dim = Input(-1).count(spatial_axis);
     } else if (data_format == "NHWC") {
         if (ReverseDimensions()) {
-            conv_out_spatial_dim = input(0).count(spatial_axis, (int)input(0).ndim() - 1);
+            conv_out_spatial_dim = Input(0).count(spatial_axis, (int)Input(0).ndim() - 1);
         } else {
-            conv_out_spatial_dim = input(-1).count(spatial_axis, (int)input(-1).ndim() - 1);
+            conv_out_spatial_dim = Input(-1).count(spatial_axis, (int)Input(-1).ndim() - 1);
         }
-        out_spatial_dim = input(-1).count(spatial_axis, (int)input(-1).ndim() - 1);
+        out_spatial_dim = Input(-1).count(spatial_axis, (int)Input(-1).ndim() - 1);
     }
 
     //  determine the misc
-    x_offset = input(0).count(1);
-    y_offset = input(-1).count(1);
+    x_offset = Input(0).count(1);
+    y_offset = Input(-1).count(1);
     kernel_dim = conv_in_channels / group * kernel_size[0] * kernel_size[1];
     weight_offset = conv_out_channels * kernel_dim / group;
     col_offset = kernel_dim * conv_out_spatial_dim;

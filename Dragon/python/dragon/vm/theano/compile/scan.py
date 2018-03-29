@@ -1,13 +1,19 @@
-# --------------------------------------------------------
-# Theano @ Dragon
-# Copyright(c) 2017 SeetaTech
-# Written by Ting Pan
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# ------------------------------------------------------------
 
 import inspect
 import copy
 from dragon.core.tensor import Tensor
 import dragon.protos.dragon_pb2 as pb
+
 
 def scan(fn, sequences, outputs_info, n_steps=None, axis=0):
     """Run a dynamic loop of the given one step function.

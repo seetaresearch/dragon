@@ -1,17 +1,24 @@
-# --------------------------------------------------------
-# Dragon
-# Copyright(c) 2017 SeetaTech
-# Written by Ting Pan
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# ------------------------------------------------------------
 
-import lmdb
 import os
 import sys
+import lmdb
+
 
 def wrapper_str(raw_str):
     if sys.version_info >= (3, 0):
         return raw_str.encode()
     return raw_str
+
 
 class LMDB(object):
     """A wrapper of ``LMDB`` package.

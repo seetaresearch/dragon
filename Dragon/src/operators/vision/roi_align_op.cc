@@ -10,18 +10,18 @@ void ROIAlignOp<Context>::RunWithType() {
     kernel::ROIAlign<T, Context>(spatial_scale,
                                 pool_h, pool_w,
                                 sampling_ratio,
-                                     &input(0),
-                                     &input(1),
-                                    output(0));
+                                     &Input(0),
+                                     &Input(1),
+                                    Output(0));
 }
 
 template <class Context>
 void ROIAlignOp<Context>::RunOnDevice() {
-    output(0)->Reshape(vector<TIndex>({ input(1).dim(0),
-                                        input(0).dim(1),
+    Output(0)->Reshape(vector<TIndex>({ Input(1).dim(0),
+                                        Input(0).dim(1),
                                         pool_h, pool_w }));
 
-    if (input(0).template IsType<float>()) return RunWithType<float>();
+    if (Input(0).template IsType<float>()) return RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 
@@ -36,16 +36,16 @@ void ROIAlignGradientOp<Context>::RunWithType() {
     kernel::ROIAlignGrad<T, Context>(spatial_scale,
                                     pool_h, pool_w,
                                     sampling_ratio,
-                                        &input(-1),
-                                         &input(1),
-                                        output(0));
+                                        &Input(-1),
+                                         &Input(1),
+                                        Output(0));
 }
 
 template <class Context>
 void ROIAlignGradientOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) return RunWithType<float>();
+    if (Input(0).template IsType<float>()) return RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

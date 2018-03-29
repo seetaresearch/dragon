@@ -6,8 +6,8 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void CuDNNPooling2dOp<Context>::RunWithType() {
-    cudnnSetTensor4dDesc<T>(&input_desc, this->data_format, &input(0));
-    cudnnSetTensor4dDesc<T>(&output_desc, this->data_format, output(0));
+    cudnnSetTensor4dDesc<T>(&input_desc, this->data_format, &Input(0));
+    cudnnSetTensor4dDesc<T>(&output_desc, this->data_format, Output(0));
 #if CUDNN_VERSION_MIN(5, 0, 0)
     CUDNN_CHECK(cudnnSetPooling2dDescriptor(pool_desc,
                                             pool_mode,
@@ -23,8 +23,8 @@ void CuDNNPooling2dOp<Context>::RunWithType() {
                               this->pad[0], this->pad[1],
                       this->stride[0], this->stride[1]));
 #endif
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
     CUDNN_CHECK(cudnnPoolingForward(cudnn_handle(),
                                          pool_desc,
@@ -36,9 +36,9 @@ template <class Context>
 void CuDNNPooling2dOp<Context>::RunOnDevice() {
     Pooling2dOp<Context>::Reshape();
 
-    if (input(0).template IsType<float>()) return RunWithType<float>();
+    if (Input(0).template IsType<float>()) return RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-    else if (input(0).template IsType<float16>()) return RunWithType<float16>();
+    else if (Input(0).template IsType<float16>()) return RunWithType<float16>();
 #endif
     else LOG(FATAL) << "Unsupported input types.";
 }
@@ -47,8 +47,8 @@ DEPLOY_CUDNN(Pooling2d);
 
 template <class Context> template <typename T>
 void CuDNNPooling2dGradientOp<Context>::RunWithType() {
-    cudnnSetTensor4dDesc<T>(&input_desc, this->data_format, &input(-1));
-    cudnnSetTensor4dDesc<T>(&output_desc, this->data_format, output(0));
+    cudnnSetTensor4dDesc<T>(&input_desc, this->data_format, &Input(-1));
+    cudnnSetTensor4dDesc<T>(&output_desc, this->data_format, Output(0));
 #if CUDNN_VERSION_MIN(5, 0, 0)
     CUDNN_CHECK(cudnnSetPooling2dDescriptor(pool_desc,
                                             pool_mode,
@@ -64,10 +64,10 @@ void CuDNNPooling2dGradientOp<Context>::RunWithType() {
                               this->pad[0], this->pad[1],
                       this->stride[0], this->stride[1]));
 #endif
-    auto* dYdata = input(-1).template data<T, Context>();
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = input(1).template data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
+    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Input(1).template data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
     CUDNN_CHECK(cudnnPoolingBackward(cudnn_handle(), 
                                           pool_desc,
@@ -81,9 +81,9 @@ template <class Context>
 void CuDNNPooling2dGradientOp<Context>::RunOnDevice() {
     Pooling2dGradientOp<Context>::Reshape();
 
-    if (input(0).template IsType<float>()) return RunWithType<float>();
+    if (Input(0).template IsType<float>()) return RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-    else if (input(0).template IsType<float16>()) return RunWithType<float16>();
+    else if (Input(0).template IsType<float16>()) return RunWithType<float16>();
 #endif
     else LOG(FATAL) << "Unsupported input types.";
 }

@@ -1,4 +1,18 @@
-# Code referenced from https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/04-utils/tensorboard/logger.py
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+
+# Code referenced from:
+#
+#      https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/04-utils/tensorboard/logger.py
+#
+# ------------------------------------------------------------
+
 
 from __future__ import absolute_import
 from __future__ import division
@@ -16,7 +30,7 @@ try:
     import tensorflow as tf
 except ImportError as e:
     logging.warning(
-        'cannot import tensorflow. Error: {0}'.format(str(e)))
+        'Cannot import tensorflow. Error: {0}'.format(str(e)))
 
 
 class TensorBoard(object):

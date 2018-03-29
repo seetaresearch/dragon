@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_LOSS_SIGMOID_CROSS_ENTROPY_OP_H_
 #define DRAGON_OPERATORS_LOSS_SIGMOID_CROSS_ENTROPY_OP_H_
@@ -17,6 +22,7 @@ class SigmoidCrossEntropyOp final : public Operator<Context> {
     SigmoidCrossEntropyOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           normalization(OperatorBase::GetSingleArg<string>("normalization", "VALID")) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -32,6 +38,7 @@ class SigmoidCrossEntropyGradientOp final : public Operator<Context> {
     SigmoidCrossEntropyGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           normalization(OperatorBase::GetSingleArg<string>("normalization", "VALID")) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

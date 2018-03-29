@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// ------------------------------------------------------------
 
 #ifndef DRAGON_CORE_OPERATOR_H_
 #define DRAGON_CORE_OPERATOR_H_
@@ -27,8 +32,8 @@ class OperatorBase {
     OperatorBase(const OperatorDef& op_def, Workspace* ws);
     virtual ~OperatorBase() {}
 
-    Tensor& input(int idx);
-    Tensor* output(int idx);
+    Tensor& Input(int idx);
+    Tensor* Output(int idx);
 
     inline size_t InputSize() { return inputs_.size(); }
     inline size_t OutputSize() { return outputs_.size(); }
@@ -55,7 +60,7 @@ class OperatorBase {
     void set_recompute_map(RecomputeMap recompute_map) { recompute_map_ = recompute_map; }
 
     inline const OperatorDef& op_def() const { return op_def_; }
-    inline const string debug_string() const { return op_def_.DebugString(); }
+    inline const string DebugString() const { return op_def_.DebugString(); }
 
  protected:
     string phase_;
@@ -73,7 +78,7 @@ class Operator : public OperatorBase {
         : OperatorBase(op_def, ws), ctx_(op_def.device_option()) {
         allow_run_ = true;
         allow_run_ &= _MPICheck();
-        allow_run_ &= (!(OutputSize() == 1 && output(0)->name() == "ignore"));
+        allow_run_ &= (!(OutputSize() == 1 && Output(0)->name() == "ignore"));
         allow_share_grads_ = (!op_def.debug_mode());
         allow_share_grads_ &= op_def.share_grads();
         allow_share_grads_ &= (type().find("Gradient") != string::npos);
@@ -97,9 +102,9 @@ class Operator : public OperatorBase {
 
     void MemorySwitch() {
         for (int i = 0; i < InputSize(); i++)
-            if (input(i).name() != "ignore") input(i).SwitchToDevice();
+            if (Input(i).name() != "ignore") Input(i).SwitchToDevice();
         for (int i = 0; i < OutputSize(); i++)
-            if (output(i)->name() != "ignore") output(i)->SwitchToDevice();
+            if (Output(i)->name() != "ignore") Output(i)->SwitchToDevice();
     }
 
     virtual void RunOnDevice() = 0;
@@ -134,6 +139,23 @@ OperatorBase* CreateOperator(const OperatorDef& op_def, Workspace* ws);
     name(const OperatorDef& op_def, Workspace* ws) \
         : Operator<Context>(op_def, ws) {} \
     virtual ~name() {}
+
+#define USE_OPERATOR_BASE_FUNCTIONS \
+    using OperatorBase::Input; \
+    using OperatorBase::Output; \
+    using OperatorBase::ws; \
+    using OperatorBase::name; \
+    using OperatorBase::type; \
+    using OperatorBase::phase; \
+    using OperatorBase::op_def; \
+    using OperatorBase::InputSize; \
+    using OperatorBase::OutputSize; \
+    using OperatorBase::DebugString \
+
+#define USE_OPERATOR_FUNCTIONS(context) \
+    USE_OPERATOR_BASE_FUNCTIONS; \
+    using Operator<context>::ctx; \
+    using Operator<context>::anchor
 
 DECLARE_REGISTRY(CPUOperatorRegistry, OperatorBase,const OperatorDef&, Workspace*);
 DECLARE_REGISTRY(CUDAOperatorRegistry, OperatorBase, const OperatorDef&, Workspace*);
@@ -242,6 +264,7 @@ DECLARE_REGISTRY(CUDNNOperatorRegistry, OperatorBase, const OperatorDef&, Worksp
     INSTANTIATE_OPERATOR(name, CUDAContext); \
 
 #define DEPLOY_CPU_CUDA(name) \
+    REGISTER_CPU_OPERATOR(name, name##Op<CPUContext>); \
     REGISTER_CUDA_OPERATOR(name, name##Op<CPUContext>); \
     INSTANTIATE_OPERATOR(name, CPUContext); \
 

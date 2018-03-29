@@ -10,12 +10,12 @@ void RMSPropUpdateOp<Context>::ComputeRunWithFloat() {
         string slot = OperatorBase::GetSingleArg<string>("slot", "");
         if (slot.empty()) history.reset(new Tensor());
         else history.reset(ws()->CreateTensor("/mnt/" + name() + "/history"));
-        history->ReshapeLike(input(0));
+        history->ReshapeLike(Input(0));
     }
-    lr = param("base_lr") * this->lr_mult;
-    auto* dXdata = input(0).template mutable_data<float, Context>();
+    lr = Param("base_lr") * this->lr_mult;
+    auto* dXdata = Input(0).template mutable_data<float, Context>();
     auto* Hdata = history->template mutable_data<float, Context>();
-    kernel::RMSPropUpdate<float, Context>(input(0).count(), 
+    kernel::RMSPropUpdate<float, Context>(Input(0).count(), 
                                                     dXdata, 
                                                      Hdata, 
                                                      &temp, 

@@ -9,21 +9,21 @@ template <class Context> template <typename T>
 void ROIPoolingOp<Context>::RunWithType() {
     kernel::ROIPooling<T, Context>(spatial_scale, 
                                   pool_h, pool_w,
-                                       &input(0),
-                                       &input(1),
+                                       &Input(0),
+                                       &Input(1),
                                             mask,
-                                      output(0));
+                                      Output(0));
 }
 
 template <class Context>
 void ROIPoolingOp<Context>::RunOnDevice() {
     mask = ws()->CreateTensor("/mnt/" + anchor() + "/roi_pool_mask");
 
-    vector<TIndex> dims({input(1).dim(0), input(0).dim(1), pool_h, pool_w});
-    output(0)->Reshape(dims);
+    vector<TIndex> dims({Input(1).dim(0), Input(0).dim(1), pool_h, pool_w});
+    Output(0)->Reshape(dims);
     mask->Reshape(dims);
 
-    if (input(0).template IsType<float>()) return RunWithType<float>();
+    if (Input(0).template IsType<float>()) return RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 
@@ -37,19 +37,19 @@ template <class Context> template <typename T>
 void ROIPoolingGradientOp<Context>::RunWithType() {
     kernel::ROIPoolingGrad<T, Context>(spatial_scale,
                                       pool_h, pool_w,
-                                          &input(-1),
-                                           &input(1),
+                                          &Input(-1),
+                                           &Input(1),
                                                 mask,
-                                          output(0));
+                                          Output(0));
 }
 
 template <class Context>
 void ROIPoolingGradientOp<Context>::RunOnDevice() {
     mask = ws()->GetTensor("/mnt/" + anchor() + "/roi_pool_mask");
 
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) return RunWithType<float>();
+    if (Input(0).template IsType<float>()) return RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

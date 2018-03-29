@@ -1,10 +1,20 @@
-# --------------------------------------------------------
-# Caffe @ Dragon
-# Copyright(c) 2017 SeetaTech
-# Written by Ting Pan
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# Codes based on:
+#
+#      <https://github.com/rbgirshick/py-faster-rcnn/blob/master/lib/utils/timer.py>
+#
+# ------------------------------------------------------------
 
 import time
+
 
 class Timer(object):
     """A simple timer."""
@@ -16,8 +26,6 @@ class Timer(object):
         self.average_time = 0.
 
     def tic(self):
-        # using time.time instead of time.clock because time time.clock
-        # does not normalize for multithreading
         self.start_time = time.time()
 
     def toc(self, average=True):

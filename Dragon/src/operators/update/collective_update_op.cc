@@ -40,7 +40,7 @@ template <class Context>
 void CollectiveUpdateOp<Context>::MPIAllReduceWithFloat() {
     buffer = ws()->GetBuffer();
     for (int j = 0; j < InputSize(); j++) {
-        TIndex count = input(j).count();
+        TIndex count = Input(j).count();
         MPI_Request recv_req;
         TIndex segment_size = count / comm_size;
         TIndex residual = count % comm_size;
@@ -53,10 +53,10 @@ void CollectiveUpdateOp<Context>::MPIAllReduceWithFloat() {
         buffer->Reshape(vector<TIndex>(1, segment_sizes[0]));
 #ifdef WITH_MPI_CUDA
         auto* Bdata = buffer->mutable_data<float, Context>();
-        auto* dXdata = input(j).template mutable_data<float, Context>();
+        auto* dXdata = Input(j).template mutable_data<float, Context>();
 #else
         auto* Bdata = buffer->mutable_data<float, CPUContext>();
-        auto* dXdata = input(j).template mutable_data<float, CPUContext>();
+        auto* dXdata = Input(j).template mutable_data<float, CPUContext>();
 #endif // WITH_MPI_CUDA
         int recv_from = (comm_rank - 1 + comm_size) % comm_size;
         int send_to = (comm_rank + 1) % comm_size;
@@ -125,8 +125,8 @@ template <class Context>
 void CollectiveUpdateOp<Context>::NCCLAllReduceWithFloat() {
 #ifdef WITH_MPI_NCCL
     for (int i = 0; i < InputSize(); i++) {
-        TIndex count = input(i).count();
-        auto* dXdata = input(i).template mutable_data<float, Context>();
+        TIndex count = Input(i).count();
+        auto* dXdata = Input(i).template mutable_data<float, Context>();
         NCCL_CHECK(ncclAllReduce((const void*)dXdata,
                                        (void*)dXdata,
                                                count,
@@ -137,8 +137,8 @@ void CollectiveUpdateOp<Context>::NCCLAllReduceWithFloat() {
     }
     CUDA_CHECK(cudaStreamSynchronize(stream));
     for (int i = 0; i < InputSize(); i++) {
-        TIndex count = input(i).count();
-        auto* dXdata = input(i).template mutable_data<float, Context>();
+        TIndex count = Input(i).count();
+        auto* dXdata = Input(i).template mutable_data<float, Context>();
         math::Scal<float, Context>(count, float(1.0 / comm_size), dXdata);
     }
 #endif
@@ -147,11 +147,11 @@ void CollectiveUpdateOp<Context>::NCCLAllReduceWithFloat() {
 template <class Context>
 void CollectiveUpdateOp<Context>::MPIBcastWithFloat() {
     for (int i = 0; i < InputSize(); i++) {
-        TIndex count = input(i).count();
+        TIndex count = Input(i).count();
 #ifdef WITH_MPI_CUDA
-        auto* dXdata = input(i).template mutable_data<float, Context>();
+        auto* dXdata = Input(i).template mutable_data<float, Context>();
 #else
-        auto* dXdata = input(i).template mutable_data<float, CPUContext>();
+        auto* dXdata = Input(i).template mutable_data<float, CPUContext>();
 #endif
         MPI_Bcast(dXdata, count, MPI_FLOAT, comm_root, comm);
     }
@@ -161,8 +161,8 @@ template <class Context>
 void CollectiveUpdateOp<Context>::NCCLBcastWithFloat() {
 #ifdef WITH_MPI_NCCL
     for (int i = 0; i < InputSize(); i++) {
-        TIndex count = input(i).count();
-        auto* dXdata = input(i).template mutable_data<float, Context>();
+        TIndex count = Input(i).count();
+        auto* dXdata = Input(i).template mutable_data<float, Context>();
         NCCL_CHECK(ncclBcast((void*)dXdata,
                                      count,
                                  ncclFloat,
@@ -175,7 +175,7 @@ void CollectiveUpdateOp<Context>::NCCLBcastWithFloat() {
 
 template <class Context>
 void CollectiveUpdateOp<Context>::RunOnDevice() {
-    if (input(0).template IsType<float>()) {
+    if (Input(0).template IsType<float>()) {
         if (mode == "MPI_ALLREDUCE") {
             MPIAllReduceWithFloat();
         } else if (mode == "NCCL_ALLREDUCE") {

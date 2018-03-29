@@ -6,15 +6,15 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void PowOp<Context>::RunWithType() {
-    TIndex count = input(0).count();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
+    TIndex count = Input(0).count();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
     if (power_scale == float(0)) {
         float value = (power == float(0)) ? float(1) : pow(shift, power);
         math::Set<T, Context>(count, dragon_cast<T, float>(value), Ydata);
         return;
     }
-    auto* Xdata = input(0).template data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
     ctx().template Copy<T, Context, Context>(count, Ydata, Xdata);
     if (scale != float(1)) math::Scal<T, Context>(count, scale, Ydata);
     if (shift != float(0)) math::AddScalar<T, Context>(count, shift, Ydata);
@@ -23,11 +23,11 @@ void PowOp<Context>::RunWithType() {
 
 template <class Context>
 void PowOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
     
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-    else if (input(0).template IsType<float16>()) RunWithType<float16>();
+    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
     else LOG(FATAL) << "Unsupported input types.";
 }
@@ -40,25 +40,25 @@ OPERATOR_SCHEMA(Pow).NumInputs(1).NumOutputs(1);
 
 template <class Context> template <typename T>
 void PowGradientOp<Context>::RunWithType() {
-    TIndex count = input(0).count();
-    auto* dYdata = input(-1).template data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
+    TIndex count = Input(0).count();
+    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
     if (power_scale == float(0) || power == float(1)) {
         const T value = dragon_cast<T, float>(power_scale);
         math::Set<T, Context>(count, value, dXdata);
     } else {
-        auto* Xdata = input(0).template data<T, Context>();
+        auto* Xdata = Input(0).template data<T, Context>();
         if (power == float(2)) {
             math::Axpby<T, Context>(count, power_scale * scale, Xdata, 0, dXdata);
             if (shift != float(0)) 
                 math::AddScalar<T, Context>(count, power_scale * shift, dXdata);
         } else if (shift == float(0)) {
-            auto* Ydata = input(1).template data<T, Context>();
+            auto* Ydata = Input(1).template data<T, Context>();
             math::Div<T, Context>(count, Ydata, Xdata, dXdata);
             math::Scal<T, Context>(count, power, dXdata);
         } else {
-            auto* Ydata = input(1).template data<T, Context>();
+            auto* Ydata = Input(1).template data<T, Context>();
             ctx().template Copy<T, Context, Context>(count, dXdata, Xdata);
             if (scale != float(1))
                 math::Scal<T, Context>(count, scale, dXdata);
@@ -75,11 +75,11 @@ void PowGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void PowGradientOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-    else if (input(0).template IsType<float16>()) RunWithType<float16>();
+    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
     else LOG(FATAL) << "Unsupported input types.";
 }

@@ -1,15 +1,19 @@
-# --------------------------------------------------------
-# Dragon
-# Copyright(c) 2017 SeetaTech
-# Written by Ting Pan
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# ------------------------------------------------------------
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 import math
-from six.moves import range as xrange
 
 from . import *
 
@@ -88,7 +92,7 @@ def Conv2d(inputs, num_output, kernel_size,
         channel_axis = 1 if data_format == 'NCHW' else -1
         spatial_axis = 2 if data_format == 'NCHW' else 1
         output.shape[channel_axis] = num_output
-        for i in xrange(2):
+        for i in range(2):
             input_size = output.shape[i + spatial_axis]
             k = arguments['kernel_size'][i] if i < len(arguments['kernel_size']) \
                                             else arguments['kernel_size'][-1]
@@ -189,7 +193,7 @@ def Conv2dTranspose(inputs, num_output, kernel_size,
         channel_axis = 1 if data_format == 'NCHW' else -1
         spatial_axis = 2 if data_format == 'NCHW' else 1
         output.shape[channel_axis] = num_output
-        for i in xrange(2):
+        for i in range(2):
             k = arguments['kernel_size'][i] if i < len(arguments['kernel_size']) \
                 else arguments['kernel_size'][-1]
             s = arguments['stride'][i] if i < len(arguments['stride']) \
@@ -274,7 +278,7 @@ def Pool2d(inputs, kernel_size, stride, pad=0, padding='VALID',
     if inputs.shape is not None:
         output.shape = inputs.shape[:]
         spatial_axis = 2 if data_format == 'NCHW' else 1
-        for i in xrange(2):
+        for i in range(2):
             k = arguments['kernel_size'][i] if i < len(arguments['kernel_size']) \
                                             else arguments['kernel_size'][-1]
             s = arguments['stride'][i]      if i < len(arguments['stride']) \
@@ -458,7 +462,7 @@ def NNResize(inputs, dsize, shape_like=None,
         if possible_to_infer_shape:
             output.shape = inputs.shape[:]
             spatial_axis = 2 if data_format == 'NCHW' else 1
-            for i in xrange(2):
+            for i in range(2):
                 output_dim = output.shape[spatial_axis + i]
                 if dsize is not None:
                     output_dim = dsize[i]
@@ -531,7 +535,7 @@ def BilinearResize(inputs, dsize, shape_like=None,
         if possible_to_infer_shape:
             output.shape = inputs.shape[:]
             spatial_axis = 2 if data_format == 'NCHW' else 1
-            for i in xrange(2):
+            for i in range(2):
                 output_dim = output.shape[spatial_axis + i]
                 if dsize is not None:
                     output_dim = dsize[i]
@@ -620,7 +624,7 @@ def DenseConcat(inputs, growth_rate=0, axis=1, **kwargs):
     if all(input.shape is not None for input in inputs):
         if all(input.shape[axis] is not None for input in inputs):
             output.shape = inputs[0].shape[:]
-            for i in xrange(1, len(inputs)):
+            for i in range(1, len(inputs)):
                 output.shape[axis] += inputs[i].shape[axis]
 
     return output

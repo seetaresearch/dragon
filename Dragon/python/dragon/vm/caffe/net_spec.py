@@ -1,3 +1,18 @@
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# Codes based on:
+#
+#      <https://github.com/BVLC/caffe/blob/master/python/caffe/net_spec.py>
+#
+# ------------------------------------------------------------
+
 from collections import OrderedDict, Counter
 from .proto import caffe_pb2
 import six

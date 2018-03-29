@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_VISION_ROI_POOLING_OP_H_
 #define DRAGON_OPERATORS_VISION_ROI_POOLING_OP_H_
@@ -22,6 +27,7 @@ class ROIPoolingOp : public Operator<Context> {
         CHECK_GT(pool_h, 0) << "\npool_h must > 0";
         CHECK_GT(pool_w, 0) << "\npool_w must > 0";
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -40,6 +46,7 @@ class ROIPoolingGradientOp final : public Operator<Context> {
         pool_h(OperatorBase::GetSingleArg<int>("pool_h", 0)),
         pool_w(OperatorBase::GetSingleArg<int>("pool_w", 0)),
         spatial_scale(OperatorBase::GetSingleArg<float>("spatial_scale", 1.0)) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

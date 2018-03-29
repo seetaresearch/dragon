@@ -6,16 +6,16 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void SquareOp<Context>::RunWithType() {
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
-    math::Pow<T, Context>(output(0)->count(), 2.0, Xdata, Ydata);
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    math::Pow<T, Context>(Output(0)->count(), 2.0, Xdata, Ydata);
 }
 
 template <class Context>
 void SquareOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 
@@ -27,18 +27,18 @@ OPERATOR_SCHEMA(Square).NumInputs(1).NumOutputs(1);
 
 template <class Context> template <typename T>
 void SquareGradientOp<Context>::RunWithType() {
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* dYdata = input(-1).template data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
-    math::Mul<T, Context>(output(0)->count(), dYdata, Xdata, dXdata);
-    math::Scal<T, Context>(output(0)->count(), 2.0, dXdata);
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
+    math::Mul<T, Context>(Output(0)->count(), dYdata, Xdata, dXdata);
+    math::Scal<T, Context>(Output(0)->count(), 2.0, dXdata);
 }
 
 template <class Context>
 void SquareGradientOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

@@ -37,6 +37,7 @@ List                              Brief
 `Snapshot`_                       Snapshot tensors into a binary file.
 `Restore`_                        Restore tensors from a binary file.
 `SwitchWorkspace`_                Switch to the specific Workspace.
+`MoveWorkspace`_                  Move the source workspace into the target workspace.
 `ResetWorkspace`_                 Reset the specific workspace.
 `ClearWorkspace`_                 Clear the specific workspace.
 `LogMetaGraph`_                   Log the meta graph.
@@ -53,6 +54,7 @@ API Reference
     :show-inheritance:
 
 .. _SwitchWorkspace: #dragon.core.workspace.SwitchWorkspace
+.. _MoveWorkspace: #dragon.core.workspace.MoveWorkspace
 .. _ResetWorkspace: #dragon.core.workspace.ResetWorkspace
 .. _ClearWorkspace: #dragon.core.workspace.ClearWorkspace
 .. _CreateGraph: #dragon.core.workspace.CreateGraph

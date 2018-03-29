@@ -7,10 +7,10 @@ namespace dragon {
 template <class Context> template <typename T>
 void CuDNNLRNOp<Context>::RunWithType() {
     if (this->data_format == "NCHW") {
-        cudnnSetTensorDesc<T>(&input_desc, &input(0));
-        cudnnSetTensorDesc<T>(&output_desc, output(0));
-        auto* Xdata = input(0).template data<T, Context>();
-        auto* Ydata = output(0)->template mutable_data<T, Context>();
+        cudnnSetTensorDesc<T>(&input_desc, &Input(0));
+        cudnnSetTensorDesc<T>(&output_desc, Output(0));
+        auto* Xdata = Input(0).template data<T, Context>();
+        auto* Ydata = Output(0)->template mutable_data<T, Context>();
         CUDNN_CHECK(cudnnLRNCrossChannelForward(cudnn_handle(),
                                                      norm_desc,
                                   CUDNN_LRN_CROSS_CHANNEL_DIM1,
@@ -21,12 +21,12 @@ void CuDNNLRNOp<Context>::RunWithType() {
 
 template <class Context>
 void CuDNNLRNOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 
     if (this->mode == "ACROSS_CHANNELS") {
-        if (input(0).template IsType<float>()) RunWithType<float>();
+        if (Input(0).template IsType<float>()) RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-        else if (input(0).template IsType<float16>()) RunWithType<float16>();
+        else if (Input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
         else LOG(FATAL) << "Unsupported input types.";
     } else if (this->mode == "WITHIN_CHANNEL") {
@@ -41,13 +41,13 @@ DEPLOY_CUDNN(LRN);
 template <class Context> template <typename T>
 void CuDNNLRNGradientOp<Context>::RunWithType() {
     if (this->data_format == "NCHW") {
-        cudnnSetTensorDesc<T>(&input_desc, &input(-1));
-        cudnnSetTensorDesc<T>(&output_desc, output(0));
+        cudnnSetTensorDesc<T>(&input_desc, &Input(-1));
+        cudnnSetTensorDesc<T>(&output_desc, Output(0));
 
-        auto* dYdata = input(-1).template data<T, Context>();
-        auto* Xdata = input(0).template data<T, Context>();
-        auto* Ydata = input(1).template data<T, Context>();
-        auto* dXdata = output(0)->template mutable_data<T, Context>();
+        auto* dYdata = Input(-1).template data<T, Context>();
+        auto* Xdata = Input(0).template data<T, Context>();
+        auto* Ydata = Input(1).template data<T, Context>();
+        auto* dXdata = Output(0)->template mutable_data<T, Context>();
         CUDNN_CHECK(cudnnLRNCrossChannelBackward(cudnn_handle(),
                                                       norm_desc,
                                    CUDNN_LRN_CROSS_CHANNEL_DIM1,
@@ -60,12 +60,12 @@ void CuDNNLRNGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void CuDNNLRNGradientOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 
     if (this->mode == "ACROSS_CHANNELS") {
-        if (input(0).template IsType<float>()) RunWithType<float>();
+        if (Input(0).template IsType<float>()) RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-        else if (input(0).template IsType<float16>()) RunWithType<float16>();
+        else if (Input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
         else LOG(FATAL) << "Unsupported input types."; 
     } else if (this->mode == "WITHIN_CHANNEL") {

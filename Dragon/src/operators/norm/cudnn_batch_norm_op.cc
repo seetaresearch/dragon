@@ -11,14 +11,14 @@ namespace dragon {
 template <class Context> template <typename T>
 void CuDNNBatchNormOp<Context>::RunWithType() {
     //  determine the bn desc
-    if (input(0).ndim() == 2) {
+    if (Input(0).ndim() == 2) {
         bn_mode = CUDNN_BATCHNORM_PER_ACTIVATION;
         Tensor x_reshape;
         x_reshape.Reshape(vector<TIndex>({ N, C, 1, 1 }));
         cudnnSetTensorDesc<T>(&input_desc, &x_reshape);
         cudnnSetTensorDesc<T>(&output_desc, &x_reshape);
     } else {
-        CHECK_GE((int)input(0).ndim(), 3)
+        CHECK_GE((int)Input(0).ndim(), 3)
             << "The number of dimensions should be at least 3.";
         bn_mode = CUDNN_BATCHNORM_SPATIAL;
 #if CUDNN_VERSION_MIN(7, 0, 0)
@@ -26,20 +26,20 @@ void CuDNNBatchNormOp<Context>::RunWithType() {
             bn_mode = CUDNN_BATCHNORM_SPATIAL_PERSISTENT;
 #endif
         if (data_format == "NCHW") {
-            cudnnSetTensorDesc<T>(&input_desc, &input(0));
-            cudnnSetTensorDesc<T>(&output_desc, output(0));
+            cudnnSetTensorDesc<T>(&input_desc, &Input(0));
+            cudnnSetTensorDesc<T>(&output_desc, Output(0));
         }
         else if (data_format == "NHWC") {
-            switch (input(0).ndim()) {
+            switch (Input(0).ndim()) {
             case 3:
-                cudnnSetTensor3dDesc<T>(&input_desc, data_format, &input(0));
-                cudnnSetTensor3dDesc<T>(&output_desc, data_format, output(0));
+                cudnnSetTensor3dDesc<T>(&input_desc, data_format, &Input(0));
+                cudnnSetTensor3dDesc<T>(&output_desc, data_format, Output(0));
             case 4:
-                cudnnSetTensor4dDesc<T>(&input_desc, data_format, &input(0));
-                cudnnSetTensor4dDesc<T>(&output_desc, data_format, output(0));
+                cudnnSetTensor4dDesc<T>(&input_desc, data_format, &Input(0));
+                cudnnSetTensor4dDesc<T>(&output_desc, data_format, Output(0));
             case 5:
-                cudnnSetTensor5dDesc<T>(&input_desc, data_format, &input(0));
-                cudnnSetTensor5dDesc<T>(&output_desc, data_format, output(0));
+                cudnnSetTensor5dDesc<T>(&input_desc, data_format, &Input(0));
+                cudnnSetTensor5dDesc<T>(&output_desc, data_format, Output(0));
             default:
                 LOG(FATAL) << "Only support the 3d/4d/5d input at NHWC mode.";
             }
@@ -48,18 +48,18 @@ void CuDNNBatchNormOp<Context>::RunWithType() {
     //  derive the bn desc
     CUDNN_CHECK(cudnnDeriveBNTensorDescriptor(bn_desc, input_desc, bn_mode));
 
-    TENSOR_FILL(input(1), vector<TIndex>(1, C));  //  history_mean
-    TENSOR_FILL(input(2), vector<TIndex>(1, C));  //  history_var
-    TENSOR_FILL(input(3), vector<TIndex>(1, C));  //  scale
-    TENSOR_FILL(input(4), vector<TIndex>(1, C));  //  bias
+    TENSOR_FILL(Input(1), vector<TIndex>(1, C));  //  history_mean
+    TENSOR_FILL(Input(2), vector<TIndex>(1, C));  //  history_var
+    TENSOR_FILL(Input(3), vector<TIndex>(1, C));  //  scale
+    TENSOR_FILL(Input(4), vector<TIndex>(1, C));  //  bias
 
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
-    auto* hMean_data = input(1).template mutable_data<T, Context>();
-    auto* hVar_data = input(2).template mutable_data<T, Context>();
-    auto* Sdata = input(3).template data<T, Context>();
-    auto* Bdata = input(4).template data<T, Context>();
+    auto* hMean_data = Input(1).template mutable_data<T, Context>();
+    auto* hVar_data = Input(2).template mutable_data<T, Context>();
+    auto* Sdata = Input(3).template data<T, Context>();
+    auto* Bdata = Input(4).template data<T, Context>();
 
     if (this->use_global_stats) {
         CUDNN_CHECK(cudnnBatchNormalizationForwardInference(cudnn_handle(),
@@ -110,10 +110,10 @@ void CuDNNBatchNormOp<Context>::Setup() {
     //  determine the data format
     TIndex channel_axis = this->axis;
     data_format = "NCHW";
-    if (channel_axis == -1) channel_axis += (int)input(0).ndim();
-    if (channel_axis + 1 == (int)input(0).ndim()) data_format = "NHWC";
-    N = input(0).dim(0);
-    C = input(0).dim(channel_axis);
+    if (channel_axis == -1) channel_axis += (int)Input(0).ndim();
+    if (channel_axis + 1 == (int)Input(0).ndim()) data_format = "NHWC";
+    N = Input(0).dim(0);
+    C = Input(0).dim(channel_axis);
 
     //  make resource
     mean = ws()->CreateTensor("/mnt/" + anchor() + "/bn_mean");
@@ -122,16 +122,16 @@ void CuDNNBatchNormOp<Context>::Setup() {
     //  reshape
     mean->Reshape(vector<TIndex>(1, C));
     var->Reshape(vector<TIndex>(1, C));
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 }
 
 template <class Context>
 void CuDNNBatchNormOp<Context>::RunOnDevice() {
     Setup();
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-    else if (input(0).template IsType<float16>()) RunWithType<float16>();
+    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
 #endif
     else LOG(FATAL) << "Unsupported input types.";
 }
@@ -151,12 +151,12 @@ void CuDNNBatchNormGradientOp<Context>::Setup() {
     //  determine the data format
     TIndex channel_axis = this->axis;
     data_format = "NCHW";
-    if (channel_axis == -1) channel_axis += (int)input(0).ndim();
-    if (channel_axis + 1 == (int)input(0).ndim()) data_format = "NHWC";
-    N = input(0).dim(0);
-    C = input(0).dim(channel_axis);
+    if (channel_axis == -1) channel_axis += (int)Input(0).ndim();
+    if (channel_axis + 1 == (int)Input(0).ndim()) data_format = "NHWC";
+    N = Input(0).dim(0);
+    C = Input(0).dim(channel_axis);
     NC = N * C;
-    S = input(0).count() / NC;
+    S = Input(0).count() / NC;
     NS = N * S;
 
     //  make resource
@@ -167,22 +167,22 @@ void CuDNNBatchNormGradientOp<Context>::Setup() {
     mean->Reshape(vector<TIndex>(1, C));
     var->Reshape(vector<TIndex>(1, C));
     num_by_chans.Reshape(vector<TIndex>(1, NC));
-    output(0)->ReshapeLike(input(0));  // dX
-    output(1)->ReshapeLike(input(3));  // dScale
-    output(2)->ReshapeLike(input(3));  // dBias
+    Output(0)->ReshapeLike(Input(0));  // dX
+    Output(1)->ReshapeLike(Input(3));  // dScale
+    Output(2)->ReshapeLike(Input(3));  // dBias
 }
 
 template <class Context> template <typename T>
 void CuDNNBatchNormGradientOp<Context>::TrainingRunWithType() {
     //  determine the bn desc
-    if (input(0).ndim() == 2) {
+    if (Input(0).ndim() == 2) {
         bn_mode = CUDNN_BATCHNORM_PER_ACTIVATION;
         Tensor x_reshape;
         x_reshape.Reshape(vector<TIndex>({ N, C, 1, 1 }));
         cudnnSetTensorDesc<T>(&input_desc, &x_reshape);
         cudnnSetTensorDesc<T>(&output_desc, &x_reshape);
     } else {
-        CHECK_GE((int)input(0).ndim(), 3)
+        CHECK_GE((int)Input(0).ndim(), 3)
             << "The number of dimensions should be at least 3.";
         bn_mode = CUDNN_BATCHNORM_SPATIAL;
 #if CUDNN_VERSION_MIN(7, 0, 0)
@@ -190,19 +190,19 @@ void CuDNNBatchNormGradientOp<Context>::TrainingRunWithType() {
             bn_mode = CUDNN_BATCHNORM_SPATIAL_PERSISTENT;
 #endif
         if (data_format == "NCHW") {
-            cudnnSetTensorDesc<T>(&input_desc, &input(-1));
-            cudnnSetTensorDesc<T>(&output_desc, output(0));
+            cudnnSetTensorDesc<T>(&input_desc, &Input(-1));
+            cudnnSetTensorDesc<T>(&output_desc, Output(0));
         } else if (data_format == "NHWC") {
-            switch (input(0).ndim()) {
+            switch (Input(0).ndim()) {
                 case 3:
-                    cudnnSetTensor3dDesc<T>(&input_desc, data_format, &input(-1));
-                    cudnnSetTensor3dDesc<T>(&output_desc, data_format, output(0));
+                    cudnnSetTensor3dDesc<T>(&input_desc, data_format, &Input(-1));
+                    cudnnSetTensor3dDesc<T>(&output_desc, data_format, Output(0));
                 case 4:
-                    cudnnSetTensor4dDesc<T>(&input_desc, data_format, &input(-1));
-                    cudnnSetTensor4dDesc<T>(&output_desc, data_format, output(0));
+                    cudnnSetTensor4dDesc<T>(&input_desc, data_format, &Input(-1));
+                    cudnnSetTensor4dDesc<T>(&output_desc, data_format, Output(0));
                 case 5:
-                    cudnnSetTensor5dDesc<T>(&input_desc, data_format, &input(-1));
-                    cudnnSetTensor5dDesc<T>(&output_desc, data_format, output(0));
+                    cudnnSetTensor5dDesc<T>(&input_desc, data_format, &Input(-1));
+                    cudnnSetTensor5dDesc<T>(&output_desc, data_format, Output(0));
                 default:
                     LOG(FATAL) << "Only support the 3d/4d/5d input at NHWC mode.";
             }
@@ -211,15 +211,15 @@ void CuDNNBatchNormGradientOp<Context>::TrainingRunWithType() {
     //  derive the bn desc
     CUDNN_CHECK(cudnnDeriveBNTensorDescriptor(bn_desc, input_desc, bn_mode));
 
-    if (output(0)->name() != "ignore" ||
-        output(1)->name() != "ignore" ||
-        output(2)->name() != "ignore") {
-        auto* dYdata = input(-1).template data<T, Context>();
-        auto* dXdata = output(0)->template mutable_data<T, Context>();
-        auto* Xdata = input(0).template data<T, Context>();
-        auto* Sdata = input(3).template data<T, Context>();
-        auto* dSdata = output(1)->template mutable_data<T, Context>();
-        auto* dBdata = output(2)->template mutable_data<T, Context>();
+    if (Output(0)->name() != "ignore" ||
+        Output(1)->name() != "ignore" ||
+        Output(2)->name() != "ignore") {
+        auto* dYdata = Input(-1).template data<T, Context>();
+        auto* dXdata = Output(0)->template mutable_data<T, Context>();
+        auto* Xdata = Input(0).template data<T, Context>();
+        auto* Sdata = Input(3).template data<T, Context>();
+        auto* dSdata = Output(1)->template mutable_data<T, Context>();
+        auto* dBdata = Output(2)->template mutable_data<T, Context>();
         auto* tMean_data = mean->template data<T, Context>();
         auto* tVar_data = var->template data<T, Context>();
 
@@ -248,9 +248,9 @@ void CuDNNBatchNormGradientOp<Context>::InferenceRunWithType() {
     INIT_MULTIPLIER(num_multiplier, N);
     INIT_MULTIPLIER(spatial_multiplier, S);
 
-    auto* dYdata = input(-1).template data<T, Context>();
-    auto* Sdata = input(3).template data<T, Context>();
-    auto* hVar_data = input(2).template data<T, Context>();
+    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* Sdata = Input(3).template data<T, Context>();
+    auto* hVar_data = Input(2).template data<T, Context>();
     auto* tVar_data = var->template mutable_data<T, Context>();
     auto* NSMul_data = multiplier->template data<T, Context>();
     auto* SMul_data = spatial_multiplier->template data<T, Context>();
@@ -258,12 +258,12 @@ void CuDNNBatchNormGradientOp<Context>::InferenceRunWithType() {
     auto* NC_data = num_by_chans.template mutable_data<T, Context>();
 
     //  gradient w.r.t. scale
-    if (output(1)->name() != "ignore") 
+    if (Output(1)->name() != "ignore") 
         LOG(FATAL) << "The gamma should be fixed if using global stats.";
        
     //  gradient w.r.t. bias
-    if (output(2)->name() != "ignore") {
-        auto* dBdata = output(2)->template mutable_data<T, Context>();
+    if (Output(2)->name() != "ignore") {
+        auto* dBdata = Output(2)->template mutable_data<T, Context>();
         if (data_format == "NCHW") {
             math::Gemv<T, Context>(CblasNoTrans, NC, S,
                                 1.0, dYdata, SMul_data,
@@ -279,10 +279,10 @@ void CuDNNBatchNormGradientOp<Context>::InferenceRunWithType() {
     }
 
     //  gradient w.r.t. x
-    if (output(0)->name() != "ignore") {
+    if (Output(0)->name() != "ignore") {
         stddev = ws()->GetBuffer();
-        stddev->ReshapeLike(input(0));
-        auto* dXdata = output(0)->template mutable_data<T, Context>();
+        stddev->ReshapeLike(Input(0));
+        auto* dXdata = Output(0)->template mutable_data<T, Context>();
         auto* Std_data = stddev->template mutable_data<T, Context>();
 
         //  compute stddev
@@ -306,7 +306,7 @@ void CuDNNBatchNormGradientOp<Context>::InferenceRunWithType() {
                                              1.0, NSMul_data, tVar_data,
                                                          0.0, Std_data);
         }
-        math::Mul<T, Context>(output(0)->count(), dYdata, Std_data, dXdata);
+        math::Mul<T, Context>(Output(0)->count(), dYdata, Std_data, dXdata);
         ws()->ReleaseBuffer(stddev);
     }
 }
@@ -315,12 +315,12 @@ template <class Context>
 void CuDNNBatchNormGradientOp<Context>::RunOnDevice() {
     Setup();
 
-    if (input(0).template IsType<float>()) {
+    if (Input(0).template IsType<float>()) {
         if (this->use_global_stats) InferenceRunWithType<float>();
         else TrainingRunWithType<float>();
     }
 #ifdef WITH_CUDA_FP16
-    else if (input(0).template IsType<float16>()) {
+    else if (Input(0).template IsType<float16>()) {
         if (this->use_global_stats) InferenceRunWithType<float16>();
         else TrainingRunWithType<float16>();
     }

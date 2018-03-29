@@ -1,14 +1,18 @@
-# --------------------------------------------------------
-# Theano @ Dragon
-# Copyright(c) 2017 SeetaTech
-# Written by Ting Pan
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# ------------------------------------------------------------
 
 import sys
 import copy
 import numpy as np
 from collections import OrderedDict
-from six.moves import xrange
 
 import dragon.core.mpi as mpi
 import dragon.core.workspace as ws
@@ -119,7 +123,7 @@ def GraphDef_Update(meta_graph, updater):
             meta_graph.arg.add().CopyFrom(MakeArgument(k, v))
 
     for tuple in updater._tuples:
-        tensors = tuple[0];
+        tensors = tuple[0]
         arguments = tuple[1]
         kwargs = dict(arguments, **extra_arguments)
         u_target = pb.UpdateTarget()
@@ -344,7 +348,7 @@ def eval(self, feed_dict=None):
                     raise RuntimeError('The Tensor({}) was limited to {} dimensions, \
                                                     while feed a value with {} dimensions.'.
                                        format(key.name, len(key.shape), len(value.shape)))
-                for i in xrange(len(key.shape)):
+                for i in range(len(key.shape)):
                     if key.shape[i] is None: continue
                     if key.shape[i] != value.shape[i]:
                         raise RuntimeError('The shape of Tensor({}) was limited as ('.format(key.name) +

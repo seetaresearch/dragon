@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// ------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_ACTIVATION_SOFTMAX_OP_H_
 #define DRAGON_OPERATORS_ACTIVATION_SOFTMAX_OP_H_
@@ -17,6 +22,7 @@ class SoftmaxOp final : public Operator<Context> {
     SoftmaxOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", 1)) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType(); 
@@ -35,6 +41,7 @@ class SoftmaxGradientOp final : public Operator<Context> {
           axis(OperatorBase::GetSingleArg<int>("axis", 1)) {
         DISABLE_SHARE_GRADIENT;
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -58,6 +65,7 @@ class CuDNNSoftmaxOp final : public Operator<Context> {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     ~CuDNNSoftmaxOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
@@ -82,6 +90,7 @@ class CuDNNSoftmaxGradientOp final : public Operator<Context> {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     ~CuDNNSoftmaxGradientOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));

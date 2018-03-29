@@ -1,14 +1,17 @@
-# --------------------------------------------------------
-# Dragon
-# Copyright(c) 2017 SeetaTech
-# Written by Ting Pan
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# ------------------------------------------------------------
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
-from six.moves import range as xrange
 
 import dragon.core.mpi as mpi
 
@@ -43,7 +46,7 @@ def MPIBroadcast(inputs, root, mpi_ranks=None, **kwargs):
     arguments = ParseArguments(locals())
     if mpi_ranks is None:
         num_nodes = mpi.Size()
-        mpi_ranks = [i for i in xrange(0, num_nodes)]
+        mpi_ranks = [i for i in range(0, num_nodes)]
     if not isinstance(mpi_ranks, list): mpi_rank = [mpi_ranks]
 
     comm, group = mpi.CreateGroup(root, incl=mpi_ranks)
@@ -86,7 +89,7 @@ def MPIGather(inputs, root, mpi_ranks=None, **kwargs):
 
     if mpi_ranks is None:
         num_nodes = mpi.Size()
-        mpi_ranks = [i for i in xrange(0, num_nodes)]
+        mpi_ranks = [i for i in range(0, num_nodes)]
     if not isinstance(mpi_ranks, list): mpi_ranks = [mpi_ranks]
 
     comm, group = mpi.CreateGroup(root, incl=mpi_ranks)

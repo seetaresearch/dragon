@@ -11,11 +11,11 @@ void InstanceNormOp<Context>::RunWithType() {
 
     auto* tMean_data = mean.template mutable_data<T, Context>();
     auto* tVar_data = var->template mutable_data<T, Context>();
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
     auto* SMul_data = spatial_multiplier->template data<T, Context>();
     auto* Std_data = stddev->template mutable_data<T, Context>();
-    ctx().template Copy<T, Context, Context>(output(0)->count(), Ydata, Xdata);
+    ctx().template Copy<T, Context, Context>(Output(0)->count(), Ydata, Xdata);
 
     //  compute mean
     if (data_format == "NCHW") {
@@ -53,7 +53,7 @@ void InstanceNormOp<Context>::RunWithType() {
   
     //  compute variance
     //  note that we use VAR(X) = E((X - EX) ^ 2)
-    math::Square<T, Context>(output(0)->count(), Ydata, Std_data);
+    math::Square<T, Context>(Output(0)->count(), Ydata, Std_data);
     if (data_format == "NCHW") {
         math::Gemv<T, Context>(CblasNoTrans, NC, S,
                       1.0 / S, Std_data, SMul_data,
@@ -90,7 +90,7 @@ void InstanceNormOp<Context>::RunWithType() {
             tv += C;
         }
     }
-    math::Div<T, Context>(output(0)->count(), Ydata, Std_data, Ydata);
+    math::Div<T, Context>(Output(0)->count(), Ydata, Std_data, Ydata);
     ws()->ReleaseBuffer(stddev);
 }
 
@@ -99,32 +99,32 @@ void InstanceNormOp<Context>::Setup() {
     //  determine the data format
     TIndex channel_axis = axis;
     data_format = "NCHW";
-    if (channel_axis == -1) channel_axis += (int)input(0).ndim();
-    if (channel_axis + 1 == (int)input(0).ndim()) data_format = "NHWC";
-    if (input(0).ndim() == 2) LOG(WARNING) << "The 2d input will output all zeros.";
+    if (channel_axis == -1) channel_axis += (int)Input(0).ndim();
+    if (channel_axis + 1 == (int)Input(0).ndim()) data_format = "NHWC";
+    if (Input(0).ndim() == 2) LOG(WARNING) << "The 2d input will output all zeros.";
 
-    N = input(0).dim(0);
-    C = input(0).dim(channel_axis);
+    N = Input(0).dim(0);
+    C = Input(0).dim(channel_axis);
     NC = N * C;
-    S = input(0).count() / NC;
+    S = Input(0).count() / NC;
     CS = C * S;
 
     //  make resource
     var = ws()->CreateTensor("/mnt/" + anchor() + "/ins_norm_var");
     stddev = ws()->GetBuffer();
-    stddev->ReshapeLike(input(0));
+    stddev->ReshapeLike(Input(0));
 
     //  reshape
     mean.Reshape(vector<TIndex>(1, NC));
     var->Reshape(vector<TIndex>(1, NC));
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 }
 
 template <class Context>
 void InstanceNormOp<Context>::RunOnDevice() {
     Setup();
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 
@@ -138,8 +138,8 @@ template <class Context> template <typename T>
 void InstanceNormGradientOp<Context>::RunWithType() {
     INIT_MULTIPLIER(spatial_multiplier, S);
 
-    auto* dYdata = input(-1).template data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
+    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* Std_data = stddev->template mutable_data<T, Context>();
     auto* tVar_data = var->template mutable_data<T, Context>();
     auto* SMul_data = spatial_multiplier->template data<T, Context>();
@@ -160,8 +160,8 @@ void InstanceNormGradientOp<Context>::RunWithType() {
         }
     }
 
-    auto* Ydata = input(-2).template data<T, Context>();
-    math::Mul<T, Context>(output(0)->count(), Ydata, dYdata, dXdata);
+    auto* Ydata = Input(-2).template data<T, Context>();
+    math::Mul<T, Context>(Output(0)->count(), Ydata, dYdata, dXdata);
 
     //  sum(dE/dY \cdot Y)
     if (data_format == "NCHW") {
@@ -189,7 +189,7 @@ void InstanceNormGradientOp<Context>::RunWithType() {
     }
 
     //  sum(dE/dY \cdot Y) \cdot Y
-    math::Mul<T, Context>(output(0)->count(), Ydata, dXdata, dXdata);
+    math::Mul<T, Context>(Output(0)->count(), Ydata, dXdata, dXdata);
 
     //  sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y
     if (data_format == "NCHW") {
@@ -220,10 +220,10 @@ void InstanceNormGradientOp<Context>::RunWithType() {
    
     //  dE/dY - mean(dE/dY)- mean(dE/dY \cdot Y) \cdot Y
     //  = dE/dY - mean(sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y)
-    math::Axpby<T, Context>(output(0)->count(), 1.0, dYdata, -1.0 / S, dXdata);
+    math::Axpby<T, Context>(Output(0)->count(), 1.0, dYdata, -1.0 / S, dXdata);
 
     //  divide by stddev
-    math::Div<T, Context>(output(0)->count(), dXdata, Std_data, dXdata);
+    math::Div<T, Context>(Output(0)->count(), dXdata, Std_data, dXdata);
     ws()->ReleaseBuffer(stddev);
 }
 
@@ -232,23 +232,23 @@ void InstanceNormGradientOp<Context>::Setup() {
     //  determine the data format
     TIndex channel_axis = axis;
     data_format = "NCHW";
-    if (channel_axis == -1) channel_axis += (int)input(0).ndim();
-    if (channel_axis + 1 == (int)input(0).ndim()) data_format = "NHWC";
-    if (input(0).ndim() == 2) LOG(WARNING) << "The 2d input will output all zeros.";
+    if (channel_axis == -1) channel_axis += (int)Input(0).ndim();
+    if (channel_axis + 1 == (int)Input(0).ndim()) data_format = "NHWC";
+    if (Input(0).ndim() == 2) LOG(WARNING) << "The 2d input will output all zeros.";
 
-    N = input(0).dim(0);
-    C = input(0).dim(channel_axis);
+    N = Input(0).dim(0);
+    C = Input(0).dim(channel_axis);
     NC = N * C;
-    S = input(0).count() / NC;
+    S = Input(0).count() / NC;
     CS = C * S;
 
     //  make resource
     var = ws()->GetTensor("/mnt/" + anchor() + "/ins_norm_var");
     stddev = ws()->GetBuffer();
-    stddev->ReshapeLike(input(0));
+    stddev->ReshapeLike(Input(0));
 
     //  reshape
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 }
 
 
@@ -256,7 +256,7 @@ template <class Context>
 void InstanceNormGradientOp<Context>::RunOnDevice() {
     Setup();
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

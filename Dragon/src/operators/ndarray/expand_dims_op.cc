@@ -4,11 +4,11 @@ namespace dragon {
 
 template <class Context>
 void ExpandDimsOp<Context>::RunOnDevice() {
-    vector<TIndex> dims = input(0).dims();
+    vector<TIndex> dims = Input(0).dims();
     if (axis == -1 || axis >= (int)dims.size()) dims.push_back(1);
     else dims.insert(dims.begin() + axis, 1);
-    output(0)->Reshape(dims);
-    output(0)->Share(input(0));
+    Output(0)->Reshape(dims);
+    Output(0)->Share(Input(0));
 }
 
 DEPLOY_CPU(ExpandDims);
@@ -19,8 +19,8 @@ OPERATOR_SCHEMA(ExpandDims).NumInputs(1).NumOutputs(1);
 
 template <class Context>
 void ExpandDimsGradientOp<Context>::RunOnDevice() {
-    output(0)->ReshapeLike(input(0));
-    output(0)->Share(input(-1));
+    Output(0)->ReshapeLike(Input(0));
+    Output(0)->Share(Input(-1));
 }
 
 DEPLOY_CPU(ExpandDimsGradient);

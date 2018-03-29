@@ -16,12 +16,12 @@ void LRNOp<Context>::AcrossRunWithType() {
 template <class Context> template <typename T>
 void LRNOp<Context>::SplitRunWithType() {
     sqr_in = ws()->CreateTensor("/mnt/" + anchor() + "/sqr_in");
-    sqr_in->ReshapeLike(input(0));
-    sqr_in->Share(input(0));
+    sqr_in->ReshapeLike(Input(0));
+    sqr_in->Share(Input(0));
 
     prod_in = ws()->CreateTensor("/mnt/" + anchor() + "/prod_in");
-    prod_in->ReshapeLike(input(0));
-    prod_in->Share(input(0));
+    prod_in->ReshapeLike(Input(0));
+    prod_in->Share(Input(0));
 }
 
 template <class Context> template <typename T>
@@ -89,7 +89,7 @@ void LRNOp<Context>::ProdRunWithType() {
         OperatorDef prod_op_def = MakeOperatorDef("Eltwise", "",
                                                   vector<string>({ prod_in->name(), 
                                                                    pow_out->name() }),
-                                                  vector<string>({ output(0)->name() }),
+                                                  vector<string>({ Output(0)->name() }),
                                                   vector<Argument>({ operation }));
         if (this->op_def().has_device_option())
             prod_op_def.mutable_device_option()->CopyFrom(this->op_def().device_option());
@@ -101,11 +101,11 @@ void LRNOp<Context>::ProdRunWithType() {
 template <class Context>
 void LRNOp<Context>::RunOnDevice() {
     if (mode == "ACROSS_CHANNELS") {
-        if (input(0).template IsType<float>()) {
+        if (Input(0).template IsType<float>()) {
             AcrossRunWithType<float>();
         } else { LOG(FATAL) << "Unsupported input types."; }
     } else if (mode == "WITHIN_CHANNEL") {
-        if (input(0).template IsType<float>()) {
+        if (Input(0).template IsType<float>()) {
             SplitRunWithType<float>();
             SquareRunWithType<float>();
             PoolRunWithType<float>();
@@ -139,7 +139,7 @@ void LRNGradientOp<Context>::ProdRunWithType() {
         OperatorDef prod_op_def = MakeOperatorDef("EltwiseGradient", "",
                                                   vector<string>({ prod_in->name(),
                                                                    pow_out->name(),
-                                                                   input(-1).name() }),
+                                                                   Input(-1).name() }),
                                                   vector<string>({ prod_in->name() + "_grad",
                                                                    pow_out->name() + "_grad" }),
                                                   vector<Argument>({ operation }));
@@ -217,22 +217,22 @@ template <class Context> template <typename T>
 void LRNGradientOp<Context>::SplitRunWithType() {
     Tensor* g_sqr_in = ws()->GetTensor(sqr_in->name() + "_grad");
     Tensor* g_prod_in = ws()->GetTensor(prod_in->name() + "_grad");
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 
     auto* data0 = g_sqr_in->template data<T, Context>();
     auto* data1 = g_prod_in->template data<T, Context>();
-    auto* dXdata = output(0)->template mutable_data<T, Context>();
-    math::Add<T, Context>(output(0)->count(), data0, data1, dXdata);
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
+    math::Add<T, Context>(Output(0)->count(), data0, data1, dXdata);
 }
 
 template <class Context>
 void LRNGradientOp<Context>::RunOnDevice() {
     if (mode == "ACROSS_CHANNELS") {
-        if (input(0).template IsType<float>()) {
+        if (Input(0).template IsType<float>()) {
             AcrossRunWithType<float>();
         } else { LOG(FATAL) << "Unsupported input types."; }
     } else if (mode == "WITHIN_CHANNEL") {
-        if (input(0).template IsType<float>()) {
+        if (Input(0).template IsType<float>()) {
             ProdRunWithType<float>();
             PowRunWithType<float>();
             PoolRunWithType<float>();

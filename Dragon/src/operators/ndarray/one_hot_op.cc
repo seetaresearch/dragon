@@ -6,22 +6,22 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void OneHotOp<Context>::RunWithType() {
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
-    math::Set<T, Context>(output(0)->count(), 
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    math::Set<T, Context>(Output(0)->count(), 
                           dragon_cast<T, float>(float(off_value)), 
                           Ydata);
 
-    kernel::OneHot<T, Context>(input(0).count(), depth, on_value, Xdata, Ydata);
+    kernel::OneHot<T, Context>(Input(0).count(), depth, on_value, Xdata, Ydata);
 }
 
 template <class Context>
 void OneHotOp<Context>::RunOnDevice() {
-    vector<TIndex> dims = input(0).dims();
+    vector<TIndex> dims = Input(0).dims();
     dims.push_back(depth);
-    output(0)->Reshape(dims);
+    Output(0)->Reshape(dims);
    
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_MISC_GRADIENT_GENERATE_OP_H_
 #define DRAGON_OPERATORS_MISC_GRADIENT_GENERATE_OP_H_
@@ -21,6 +26,7 @@ class GradientGenerateOp final: public Operator<Context> {
         CHECK_EQ(defaults.size(), OutputSize());
         DISABLE_SHARE_GRADIENT;
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -35,9 +41,10 @@ class GradientGatherOp final : public Operator<Context> {
     GradientGatherOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws) {
         for (int i = 0; i < InputSize(); i++)
-            if (input(i).name() != "ignore") indices.push_back(i);
+            if (Input(i).name() != "ignore") indices.push_back(i);
         DISABLE_SHARE_GRADIENT;
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -53,6 +60,7 @@ class StopGradientOp final : public Operator<Context> {
          : Operator<Context>(op_def, ws) {
          DISABLE_SHARE_GRADIENT;
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
 };

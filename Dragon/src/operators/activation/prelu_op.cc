@@ -9,15 +9,15 @@ namespace dragon {
 template <class Context> template <typename T>
 void PReluOp<Context>::RunWithType() {
     if (channel_shared) {
-        TENSOR_FILL(input(1), vector<TIndex>(1, 1));
+        TENSOR_FILL(Input(1), vector<TIndex>(1, 1));
     } else {
-        TENSOR_FILL(input(1), vector<TIndex>(1, input(0).dim(1)));
+        TENSOR_FILL(Input(1), vector<TIndex>(1, Input(0).dim(1)));
     }
 
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* Wdata = input(1).template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
-    kernel::PRelu<T, Context>(output(0)->count(),
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Wdata = Input(1).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    kernel::PRelu<T, Context>(Output(0)->count(),
                                         channels,
                                              dim,
                                   channel_shared,
@@ -30,15 +30,15 @@ void PReluOp<Context>::RunWithType() {
 template <class Context>
 void PReluOp<Context>::RunOnDevice() {
     if (data_format == "NCHW") {
-        channels = input(0).dim(1);
-        dim = input(0).count(2);
+        channels = Input(0).dim(1);
+        dim = Input(0).count(2);
     } else {
-        channels = input(0).dim(-1);
-        dim = input(0).count(1) / channels;
+        channels = Input(0).dim(-1);
+        dim = Input(0).count(1) / channels;
     }
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 
@@ -50,17 +50,17 @@ OPERATOR_SCHEMA(PRelu).NumInputs(2).NumOutputs(1);
 
 template <class Context> template <typename T>
 void PReluGradientOp<Context>::RunWithType() {
-    auto* Xdata = input(0).template data<T, Context>();
-    auto* dYdata = input(-1).template data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* dYdata = Input(-1).template data<T, Context>();
 
-    if (output(1)->name() != "ignore") {
+    if (Output(1)->name() != "ignore") {
         INIT_MULTIPLIER(multiplier, channels * dim);
         bcast_dw = ws()->GetBuffer();
         bcast_dw->Reshape(vector<TIndex>(1, channels * dim));
-        auto* dWdata = output(1)->template mutable_data<T, Context>();
+        auto* dWdata = Output(1)->template mutable_data<T, Context>();
         auto* dWBdata = bcast_dw->template mutable_data<T, Context>();
-        kernel::PReluWGrad<T, Context>(input(0).dim(0),
-                                     input(0).count(1),
+        kernel::PReluWGrad<T, Context>(Input(0).dim(0),
+                                     Input(0).count(1),
                                               channels,
                                                    dim,
                                         channel_shared,
@@ -73,10 +73,10 @@ void PReluGradientOp<Context>::RunWithType() {
         ws()->ReleaseBuffer(bcast_dw);
     }
 
-    if (output(0)->name() != "ignore") {
-        auto* Wdata = input(1).template data<T, Context>();
-        auto* dXdata = output(0)->template mutable_data<T, Context>();
-        kernel::PReluGrad<T, Context>(output(0)->count(),
+    if (Output(0)->name() != "ignore") {
+        auto* Wdata = Input(1).template data<T, Context>();
+        auto* dXdata = Output(0)->template mutable_data<T, Context>();
+        kernel::PReluGrad<T, Context>(Output(0)->count(),
                                                 channels,
                                                      dim,
                                           channel_shared,
@@ -91,17 +91,17 @@ void PReluGradientOp<Context>::RunWithType() {
 template <class Context>
 void PReluGradientOp<Context>::RunOnDevice() {
     if (data_format == "NCHW") {
-        channels = input(0).dim(1);
-        dim = input(0).count(2);
+        channels = Input(0).dim(1);
+        dim = Input(0).count(2);
     } else {
-        channels = input(0).dim(-1);
-        dim = input(0).count(1) / channels;
+        channels = Input(0).dim(-1);
+        dim = Input(0).count(1) / channels;
     }
 
-    output(0)->ReshapeLike(input(0));
-    output(1)->ReshapeLike(input(1));
+    Output(0)->ReshapeLike(Input(0));
+    Output(1)->ReshapeLike(Input(1));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

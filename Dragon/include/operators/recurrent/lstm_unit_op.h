@@ -1,8 +1,13 @@
-// -// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_RECURRENT_LSTM_UNIT_OP_H_
 #define DRAGON_OPERATORS_RECURRENT_LSTM_UNIT_OP_H_
@@ -17,6 +22,7 @@ class LSTMUnitOp : public Operator<Context> {
     LSTMUnitOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           has_cont(OperatorBase::GetSingleArg<string>("cont_t", "")) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -30,10 +36,11 @@ class LSTMUnitOp : public Operator<Context> {
 template <class Context>
 class LSTMUnitGradientOp : public Operator<Context> {
  public:
-     LSTMUnitGradientOp(const OperatorDef& op_def, Workspace* ws)
+    LSTMUnitGradientOp(const OperatorDef& op_def, Workspace* ws)
          : Operator<Context>(op_def, ws) {
          this->allow_share_grads_ = false;
-     }
+    }
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

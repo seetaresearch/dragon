@@ -8,19 +8,19 @@ namespace dragon {
 
 template <class Context>
 void FloatToHalfOp<Context>::RunOnDevice() {
-    CHECK(input(0).template IsType<float>())
+    CHECK(Input(0).template IsType<float>())
         << "The type of input should be float32.";
-    output(0)->ReshapeLike(input(0));
+    Output(0)->ReshapeLike(Input(0));
     
     //  cast
-    auto* Xdata = input(0).template data<float, Context>();
-    auto* Ydata = output(0)->template mutable_data<float16, Context>();
-    kernel::Float2Half<float, Context>(output(0)->count(), Xdata, Ydata);
+    auto* Xdata = Input(0).template data<float, Context>();
+    auto* Ydata = Output(0)->template mutable_data<float16, Context>();
+    kernel::Float2Half<float, Context>(Output(0)->count(), Xdata, Ydata);
 
     //  release & share
-    input(0).Reset();
-    input(0).ReshapeLike(*output(0));
-    input(0).Share(*output(0));
+    Input(0).Reset();
+    Input(0).ReshapeLike(*Output(0));
+    Input(0).Share(*Output(0));
 }
 
 #ifdef WITH_CUDA

@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_VISION_BILINEAR_RESIZE_OP_H_
 #define DRAGON_OPERATORS_VISION_BILINEAR_RESIZE_OP_H_
@@ -25,6 +30,8 @@ class BilinearResizeOp : public Operator<Context> {
         else if (data_format == "NHWC") spatial_axis = 1;
         else LOG(FATAL) << "Unknown data format: " << data_format;
     }
+    USE_OPERATOR_FUNCTIONS(Context);
+
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
@@ -41,6 +48,7 @@ class BilinearResizeGradientOp : public Operator<Context> {
     BilinearResizeGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

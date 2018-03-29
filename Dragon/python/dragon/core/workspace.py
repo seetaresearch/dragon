@@ -1,8 +1,13 @@
-# --------------------------------------------------------
-# Dragon
-# Copyright(c) 2017 SeetaTech
-# Written by Ting Pan
-# --------------------------------------------------------
+# ------------------------------------------------------------
+# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+#
+# Licensed under the BSD 2-Clause License.
+# You should have received a copy of the BSD 2-Clause License
+# along with the software. If not, See,
+#
+#      <https://opensource.org/licenses/BSD-2-Clause>
+#
+# ------------------------------------------------------------
 
 from __future__ import absolute_import
 from __future__ import division
@@ -15,7 +20,6 @@ except:
 import os
 import numpy as np
 from google.protobuf.message import Message
-from six.moves import range as xrange
 
 from dragon.import_c_apis import *
 
@@ -394,7 +398,7 @@ def RunGraph(graph_name, inputs=(), outputs=[], stage=None, return_outputs=True)
         if len(inputs[0]) != len(inputs[1]):
             raise RuntimeError('function defined {} args, but only given {}'
                         .format(len(inputs[0]), len(inputs[1])))
-        for idx in xrange(len(inputs[0])):
+        for idx in range(len(inputs[0])):
             FeedTensor(inputs[0][idx], inputs[1][idx])
     if stage is None: RunGraphCC(str(graph_name), '', '')
     else:
@@ -405,7 +409,7 @@ def RunGraph(graph_name, inputs=(), outputs=[], stage=None, return_outputs=True)
     if return_outputs:
         if len(outputs) == 0 : return None
         elif len(outputs) == 1:  return outputs[0].get_value()
-        else: return [outputs[i].get_value() for i in xrange(len(outputs))]
+        else: return [outputs[i].get_value() for i in range(len(outputs))]
 
 
 def LogMetaGraph(meta_graph):

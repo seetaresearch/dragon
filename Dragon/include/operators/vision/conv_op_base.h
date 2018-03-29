@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_VISION_CONV_OP_BASE_H_
 #define DRAGON_OPERATORS_VISION_CONV_OP_BASE_H_
@@ -29,6 +34,7 @@ class ConvOpBase : public Operator<Context> {
         else LOG(FATAL) << "Unknown data format: " << data_format;
         num_spatial_axes = -1;  // unknown
     }
+    USE_OPERATOR_FUNCTIONS(Context);
 
  protected:
     vector<TIndex> kernel_size, stride, pad, dilation;
@@ -50,6 +56,7 @@ class ConvOpBase : public Operator<Context> {
     void GradientReshape();
     virtual void ComputeOutputShape();
     virtual bool ReverseDimensions() = 0;
+    virtual bool HasBias() = 0;
 
     template <typename T> void Wx(const T* x, const T* weights, T* y, bool skip_im2col = false);
     template <typename T> void Pb(const T* bias, T* y);
@@ -59,7 +66,7 @@ class ConvOpBase : public Operator<Context> {
 
  private:
     template <typename T> void Im2Col(const T* im, T* col) {
-        if (input(0).ndim() == 4) {
+        if (Input(0).ndim() == 4) {
              kernel::Im2Col2d<T, Context>(conv_in_channels,
                             input_shape[0], input_shape[1],
                           output_shape[0], output_shape[1],
@@ -73,7 +80,7 @@ class ConvOpBase : public Operator<Context> {
         } else LOG(FATAL) << "ConvNd has not been implemented yet";
     }
     template <typename T> void Col2Im(const T* col, T* im) {
-        if (input(0).ndim() == 4) {
+        if (Input(0).ndim() == 4) {
              kernel::Col2Im2d<T, Context>(conv_in_channels,
                             input_shape[0], input_shape[1],
                           output_shape[0], output_shape[1],
@@ -89,6 +96,19 @@ class ConvOpBase : public Operator<Context> {
 };
 
 DEFINE_ARGUMENTS_WITH_DESC(int, ConvOpBase, output_dims);
+
+#define USE_CONVOLUTION_FUNCTIONS(context) \
+    using ConvOpBase<context>::Setup; \
+    using ConvOpBase<context>::Reshape; \
+    using ConvOpBase<context>::GradientReshape; \
+    using ConvOpBase<context>::ComputeOutputShape; \
+    using ConvOpBase<Context>::ReverseDimensions; \
+    using ConvOpBase<Context>::HasBias; \
+    using ConvOpBase<context>::Wx; \
+    using ConvOpBase<context>::Pb; \
+    using ConvOpBase<context>::Dx; \
+    using ConvOpBase<context>::Dw; \
+    using ConvOpBase<context>::Db
 
 }    // namespace dragon
 

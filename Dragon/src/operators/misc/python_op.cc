@@ -1,5 +1,12 @@
 #include "operators/misc/python_op.h"
 
+#ifdef WITH_PYTHON3
+#define PyBytes_FromStringAndSize PyUnicode_FromStringAndSize
+#endif
+
+#define String(str) \
+    PyBytes_FromStringAndSize(str, string(str).size())
+
 namespace dragon {
 
 template <class Context>
@@ -25,10 +32,10 @@ RunOp<Context>::RunOp(const OperatorDef& op_def, Workspace* ws)
     //  build inputs and outputs for Python
     inputs = PyList_New(InputSize());
     for (int i = 0; i < InputSize(); i++)
-        PyList_SetItem(inputs, i, String(input(i).name().c_str()));
+        PyList_SetItem(inputs, i, String(Input(i).name().c_str()));
     outputs = PyList_New(OutputSize());
     for (int i = 0; i < OutputSize(); i++)
-        PyList_SetItem(outputs, i, String(output(i)->name().c_str()));
+        PyList_SetItem(outputs, i, String(Output(i)->name().c_str()));
     if (!this->allow_run()) return;
 
     //  setup
@@ -44,8 +51,8 @@ void RunOp<Context>::RunOnDevice() {
     //  reshape
     if (PyObject_HasAttr(self, String("reshape")))
         PyObject_CallMethod(self, "reshape", "OO", inputs, outputs);
-    
-    //  run 
+
+    //  run
     if (PyObject_HasAttr(self, String("forward"))) {
         PyObject_CallMethod(self, "forward", "OO", inputs, outputs);
     } else if (PyObject_HasAttr(self, String("run"))) {
@@ -67,10 +74,10 @@ void TemplateGradientOp<Context>::RunOnDevice() {
     PyObject_SetAttr(this->self, String("phase"), String(this->phase().c_str()));
 
     //  reshape
-    if (PyObject_HasAttr(this->self, String("reshape"))) 
+    if (PyObject_HasAttr(this->self, String("reshape")))
         PyObject_CallMethod(this->self, "reshape", "OO", this->inputs, this->outputs);
-        
-    //  run 
+
+    //  run
     if (PyObject_HasAttr(this->self, String("backward"))) {
         PyObject_CallMethod(this->self, "forward", "OO", this->inputs, this->outputs);
     } else if (PyObject_HasAttr(this->self, String("grad"))) {

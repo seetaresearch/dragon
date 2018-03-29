@@ -7,12 +7,12 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void BiasAddOp<Context>::RunWithType() {
-    TENSOR_FILL(input(1), vector<TIndex>(1, dim));
+    TENSOR_FILL(Input(1), vector<TIndex>(1, dim));
     INIT_MULTIPLIER(bias_multiplier, inner_dim);
-    auto* Bdata = input(1).template data<T, Context>();
+    auto* Bdata = Input(1).template data<T, Context>();
     auto* BMul_data = bias_multiplier->template data<T, Context>();
-    auto* Ydata = output(0)->template mutable_data<T, Context>();
-    kernel::BiasAdd<T, Context>(output(0)->count(), outer_dim, dim, inner_dim,
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    kernel::BiasAdd<T, Context>(Output(0)->count(), outer_dim, dim, inner_dim,
                                                                   data_format,
                                                                         Bdata,
                                                                     BMul_data,
@@ -22,17 +22,17 @@ void BiasAddOp<Context>::RunWithType() {
 template <class Context>
 void BiasAddOp<Context>::RunOnDevice() {
     if (data_format == "NCHW") {
-        outer_dim = input(0).dim(0);
-        dim = input(0).dim(1);
-        inner_dim = input(0).count(2);
+        outer_dim = Input(0).dim(0);
+        dim = Input(0).dim(1);
+        inner_dim = Input(0).count(2);
     } else if (data_format == "NHWC") {
-        outer_dim = input(0).dim(0);
-        dim = input(0).dim(-1);
-        inner_dim = input(0).count(1) / dim;
+        outer_dim = Input(0).dim(0);
+        dim = Input(0).dim(-1);
+        inner_dim = Input(0).count(1) / dim;
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-    ws()->CreateAvatar(output(0), &input(0));
+    ws()->CreateAvatar(Output(0), &Input(0));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 
@@ -44,11 +44,11 @@ OPERATOR_SCHEMA(BiasAdd).NumInputs(2).NumOutputs(1);
 
 template <class Context> template <typename T>
 void BiasAddGradientOp<Context>::RunWithType() {
-    if (output(1)->name() != "ignore") {
+    if (Output(1)->name() != "ignore") {
         INIT_MULTIPLIER(bias_multiplier, inner_dim);
         auto* BMul_data = this->bias_multiplier->template data<T, Context>();
-        auto* dYdata = input(-1).template data<T, Context>();
-        auto* dBias = output(1)->template mutable_data<T, Context>();
+        auto* dYdata = Input(-1).template data<T, Context>();
+        auto* dBias = Output(1)->template mutable_data<T, Context>();
         const int y_offset = dim * inner_dim;
         for (int n = 0; n < outer_dim; n++) {
             if (data_format == "NCHW") {
@@ -68,25 +68,25 @@ void BiasAddGradientOp<Context>::RunWithType() {
         }
     }
 
-    if (output(0)->name() != "ignore") {
-        ws()->CreateAvatar(output(0), &input(-1));
+    if (Output(0)->name() != "ignore") {
+        ws()->CreateAvatar(Output(0), &Input(-1));
     }
 }
 
 template <class Context>
 void BiasAddGradientOp<Context>::RunOnDevice() {
     if (data_format == "NCHW") {
-        outer_dim = input(0).dim(0);
-        dim = input(0).dim(1);
-        inner_dim = input(0).count(2);
+        outer_dim = Input(0).dim(0);
+        dim = Input(0).dim(1);
+        inner_dim = Input(0).count(2);
     } else if (data_format == "NHWC") {
-        outer_dim = input(0).dim(0);
-        dim = input(0).dim(-1);
-        inner_dim = input(0).count(1) / dim;
+        outer_dim = Input(0).dim(0);
+        dim = Input(0).dim(-1);
+        inner_dim = Input(0).count(1) / dim;
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-    output(1)->ReshapeLike(input(1));
+    Output(1)->ReshapeLike(Input(1));
 
-    if (input(0).template IsType<float>()) RunWithType<float>();
+    if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
 }
 

@@ -1,8 +1,13 @@
-// --------------------------------------------------------
-// Dragon
-// Copyright(c) 2017 SeetaTech
-// Written by Ting Pan
-// --------------------------------------------------------
+// ------------------------------------------------------------
+// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+//
+// Licensed under the BSD 2-Clause License.
+// You should have received a copy of the BSD 2-Clause License
+// along with the software. If not, See,
+//
+//      <https://opensource.org/licenses/BSD-2-Clause>
+//
+// -------------------------------------------------------------
 
 #ifndef DRAGON_OPERATORS_NDARRAY_GATHER_OP_H_
 #define DRAGON_OPERATORS_NDARRAY_GATHER_OP_H_
@@ -17,6 +22,7 @@ class GatherOp final : public Operator<Context> {
     GatherOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", 0)) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -33,6 +39,7 @@ class GatherGradientOp final : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", 0)),
           acc_grad(OperatorBase::GetSingleArg<bool>("acc_gradient", false)) {}
+    USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
