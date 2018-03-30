@@ -31,7 +31,7 @@ class SparseSoftmaxCrossEntropyOp : public Operator<Context> {
         }
         OperatorDef softmax_def = MakeOperatorDef("Softmax", "",
             vector<string>({ Input(0).name() }),
-            vector<string>({ "/mnt/" + anchor() + "/softmax_prob" }));
+            vector<string>({ "/mnt/" + Anchor() + "/softmax/prob" }));
         softmax_def.add_arg()->CopyFrom(this->arg("axis"));
         if (op_def.has_device_option())
             softmax_def.mutable_device_option()->CopyFrom(op_def.device_option());

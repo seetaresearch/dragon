@@ -10,6 +10,12 @@ float UpdateOpBase<Context>::Param(const string& name) const {
                ->template mutable_data<float, CPUContext>()[0];
 }
 
+template <class Context>
+string UpdateOpBase<Context>::Slot() {
+    const string slot = OperatorBase::GetSingleArg<string>("slot", "");
+    return slot.empty() ? name() : slot;
+}
+
 template <class Context> template <typename T>
 void UpdateOpBase<Context>::PreprocessRunWithType() {
     //  scale

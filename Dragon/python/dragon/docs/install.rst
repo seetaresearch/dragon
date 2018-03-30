@@ -29,6 +29,8 @@ Installation - Linux (Normal, CPU)
 
 **$** Setup C++ Development Environment
 
+.. code-block:: shell
+
     sudo apt-get install libprotobuf-dev
     sudo apt-get install protobuf-compiler
     sudo apt-get install libopenblas-dev
@@ -42,9 +44,9 @@ Installation - Linux (Normal, CPU)
 
 **Step 3:** Configure ``DRAGON_ROOT/CMakeLists.txt``
 
-**$** Select optional libraries [``PYTHON3`` / ``BLAS`` / ``SSE``]
+**$** Select optional libraries [``PYTHON`` / ``BLAS`` / ``SSE``]
 
-**$** Set ``PYTHON_INCLUDE_DIR`` / ``ANACONDA_ROOT_DIR`` and ``NUMPY_ROOT_DIR``
+**$** (Optional) Set ``PYTHON_EXECUTABLE`` if you want to use specific Python (e.g. Anaconda)
 
 **Step 4:** Compile Dragon
 
@@ -101,6 +103,8 @@ Installation - Linux (Normal, GPU)
 
 **$** Setup C++ Development Environment
 
+.. code-block:: shell
+
     sudo apt-get install libprotobuf-dev
     sudo apt-get install protobuf-compiler
     sudo apt-get install libopenblas-dev
@@ -114,13 +118,13 @@ Installation - Linux (Normal, GPU)
 
 **Step 4:** Configure ``DRAGON_ROOT/CMakeLists.txt``
 
-**$** Select optional libraries [``PYTHON3`` / ``CUDA`` / ``CUDNN`` / ``BLAS`` / ``SSE``]
+**$** Select optional libraries [``PYTHON`` / ``CUDA`` / ``CUDNN`` / ``BLAS`` / ``SSE``]
 
-**$** Set ``PYTHON_INCLUDE_DIR`` / ``ANACONDA_ROOT_DIR`` and ``NUMPY_ROOT_DIR``
+**$** (Optional) Set ``PYTHON_EXECUTABLE`` if you want to use specific Python (e.g. Anaconda)
 
-**$** Set CUDA compiling architectures if necessary
+**$** (Optional) Set ``CUDA_ARCH`` for different architectures, see `ComputeCapability`_
 
-**$** GCC version(4.8+, 5.0-) should add ``-std=c++11`` to ``CUDA_NVCC_FLAGS``, if ``nullptr`` is not found
+**$** GCC version(4.8+, 5.0-) should add ``-std=c++11`` to ``CUDA_NVCC_FLAGS``, if ``nullptr`` is not found.
 
 **Step 5:** Compile Dragon
 
@@ -159,7 +163,7 @@ Installation - Linux (Normal, GPU)
 Installation - Linux (Distributed, CPU)
 ---------------------------------------
 
-**Step 1:** Download ``3rdparty.zip`` and unzip it under ``REPO_ROOT``
+**Step 1:** Download ``3rdparty.zip`` and unzip it under the ``REPO_ROOT``
 
 `3rdparty_linux_x64.zip <http://dragon.seetatech.com/download/3rdparty_linux_x64_dist_cpu.zip>`_ (OpenMPI)
 
@@ -175,6 +179,8 @@ Installation - Linux (Distributed, CPU)
 
 **$** Setup C++ Development Environment
 
+.. code-block:: shell
+
     sudo apt-get install libprotobuf-dev
     sudo apt-get install protobuf-compiler
     sudo apt-get install libopenblas-dev
@@ -188,11 +194,11 @@ Installation - Linux (Distributed, CPU)
 
 **Step 4:** Configure ``DRAGON_ROOT/CMakeLists.txt``
 
-**$** Select optional libraries [``PYTHON3`` / ``BLAS`` / ``SSE`` / ``MPI``]
+**$** Select optional libraries [``PYTHON`` / ``BLAS`` / ``SSE`` / ``MPI``]
 
-**$** Set ``3RDPARTY_DIR`` (Recommend to Keep Default)
+**$** (Optional) Set ``3RDPARTY_DIR`` (Recommend to Keep Default)
 
-**$** Set ``PYTHON_INCLUDE_DIR`` / ``ANACONDA_ROOT_DIR`` and ``NUMPY_ROOT_DIR``
+**$** (Optional) Set ``PYTHON_EXECUTABLE`` if you want to use specific Python (e.g. Anaconda)
 
 **Step 5:** Setup MPI
 
@@ -247,7 +253,7 @@ Installation - Linux (Distributed, GPU)
 
 **$** (Optional) Download and install `NCCL`_
 
-**Step 2:**  Download ``3rdparty.zip`` and unzip it under ``REPO_ROOT``
+**Step 2:**  Download ``3rdparty.zip`` and unzip it under the ``REPO_ROOT``
 
 `3rdparty_linux_x64.zip <http://dragon.seetatech.com/download/3rdparty_linux_x64_dist_gpu.zip>`_ (OpenMPI)
 
@@ -263,6 +269,8 @@ Installation - Linux (Distributed, GPU)
 
 **$** Setup C++ Development Environment
 
+.. code-block:: shell
+
     sudo apt-get install libprotobuf-dev
     sudo apt-get install protobuf-compiler
     sudo apt-get install libopenblas-dev
@@ -276,15 +284,15 @@ Installation - Linux (Distributed, GPU)
 
 **Step 5:** Configure ``DRAGON_ROOT/CMakeLists.txt``
 
-**$** Select optional libraries [``PYTHON3`` / ``CUDA`` / ``CUDNN`` / ``BLAS`` / ``SSE`` / ``MPI``]
+**$** Select optional libraries [``PYTHON`` / ``CUDA`` / ``CUDNN`` / ``BLAS`` / ``SSE`` / ``MPI``]
 
-**$** Set ``3RDPARTY_DIR`` (Recommend to Keep Default)
+**$** (Optional) Set ``3RDPARTY_DIR`` (Recommend to Keep Default)
 
-**$** Set ``PYTHON_INCLUDE_DIR`` / ``ANACONDA_ROOT_DIR`` and ``NUMPY_ROOT_DIR``
+**$** (Optional) Set ``PYTHON_EXECUTABLE`` if you want to use specific Python (e.g. Anaconda)
 
-**$** Set CUDA compiling architectures if necessary
+**$** (Optional) Set ``CUDA_ARCH`` for different architectures, see `ComputeCapability`_
 
-**$** GCC version(4.8+, 5.0-) should add ``-std=c++11`` to ``CUDA_NVCC_FLAGS``, if ``nullptr`` is not found
+**$** GCC version(4.8+, 5.0-) should add ``-std=c++11`` to ``CUDA_NVCC_FLAGS``, if ``nullptr`` is not found.
 
 **$** OpenMPI can take ``NCCL`` and our ``CUDA-AWARE`` communications at the same time.
 
@@ -332,13 +340,11 @@ Installation - Linux (Distributed, GPU)
 Installation - Windows (Normal, CPU)
 ------------------------------------
 
-**Step 1:**  Download ``3rdparty.zip`` and unzip it under ``REPO_ROOT``
+**Step 1:**  Download ``3rdparty.zip`` and unzip it under the ``REPO_ROOT``
 
 `3rdparty_vc12_x64.zip <http://dragon.seetatech.com/download/3rdparty_vc12_x64_cpu.zip>`_ (OpenBLAS / Google Protobuf 2.6 For VS2013)
 
 `3rdparty_vc14_x64.zip <http://dragon.seetatech.com/download/3rdparty_vc14_x64_cpu.zip>`_ (OpenBLAS / Google Protobuf 2.6 For VS2015)
-
-**$** You must copy ``python27/35/36.lib`` to ``REPO_ROOT/3rdparty/lib``, it depends on the version of Python
 
 **Step 2:** Install Python Requirements
 
@@ -349,11 +355,11 @@ Installation - Windows (Normal, CPU)
 
 **Step 3:** Configure ``DRAGON_ROOT/CMakeLists.txt``
 
-**$** Select optional libraries [``PYTHON3`` / ``BLAS`` / ``SSE``]
+**$** Select optional libraries [``PYTHON`` / ``BLAS`` / ``SSE``]
 
-**$** Set ``3RDPARTY_DIR`` (Recommend to Keep Default)
+**$** (Optional) Set ``3RDPARTY_DIR`` (Recommend to Keep Default)
 
-**$** Set ``PYTHON_INCLUDE_DIR`` / ``ANACONDA_ROOT_DIR`` and ``NUMPY_ROOT_DIR``
+**$** (Optional) Set ``PYTHON_EXECUTABLE`` if you want to use specific Python (e.g. Anaconda)
 
 **Step 4:** Set Environment Variables
 
@@ -367,9 +373,9 @@ Add ``REPO_ROOT/3rdparty/bin`` to system environment variables
 
 **$** Install `CMake-GUI <https://cmake.org>`_
 
-**$** Make ``build`` directory under ``DRAGON_ROOT``
+**$** Make ``build`` directory under the ``DRAGON_ROOT``
 
-**$** Configure and generate MSVC project in ``DRAGON_ROOT/build``
+**$** Configure and generate MSVC project in the ``DRAGON_ROOT/build``
 
 **$** Open ``DRAGON_ROOT/build/Dragon.sln``
 
@@ -400,15 +406,13 @@ Installation - Windows (Normal, GPU)
 
 **$** (Optional) Download and install `CUDNN`_
 
-**Step 2:** Download ``3rdparty.zip`` and unzip it under ``REPO_ROOT``
+**Step 2:** Download ``3rdparty.zip`` and unzip it under the ``REPO_ROOT``
 
 `3rdparty_vc12_x64.zip <http://dragon.seetatech.com/download/3rdparty_vc12_x64_gpu.zip>`_ (OpenBLAS / Google Protobuf 2.6 For VS2013)
 
 `3rdparty_vc14_x64.zip <http://dragon.seetatech.com/download/3rdparty_vc14_x64_gpu.zip>`_ (OpenBLAS / Google Protobuf 2.6 For VS2015)
 
-**$** You must copy ``python27/35/36.lib`` to ``REPO_ROOT/3rdparty/lib``, it depends on the version of Python
-
-**$** Recommend you to install ``cuDNN`` into ``REPO_ROOT/3rdparty``
+**$** Recommend to install ``cuDNN`` into the ``REPO_ROOT/3rdparty``
 
 **Step 3:** Install Python Requirements
 
@@ -419,13 +423,13 @@ Installation - Windows (Normal, GPU)
 
 **Step 4:** Configure ``DRAGON_ROOT/CMakeLists.txt``
 
-**$** Select optional libraries [``PYTHON3`` / ``CUDA`` / ``CUDNN`` / ``BLAS`` / ``SSE``]
+**$** Select optional libraries [``PYTHON`` / ``CUDA`` / ``CUDNN`` / ``BLAS`` / ``SSE``]
 
-**$** Set ``3RDPARTY_DIR`` (Recommend to Keep Default)
+**$** (Optional) Set ``3RDPARTY_DIR`` (Recommend to Keep Default)
 
-**$** Set ``PYTHON_INCLUDE_DIR`` / ``ANACONDA_ROOT_DIR`` and ``NUMPY_ROOT_DIR``
+**$** (Optional) Set ``PYTHON_EXECUTABLE`` if you want to use specific Python (e.g. Anaconda)
 
-**$** Set CUDA compiling architectures if necessary
+**$** (Optional) Set ``CUDA_ARCH`` for different architectures, see `ComputeCapability`_
 
 **Step 5:** Set Environment Variables
 
@@ -439,9 +443,9 @@ Add ``REPO_ROOT/3rdparty/bin`` to system environment variables
 
 **$** Install `CMake-GUI <https://cmake.org>`_
 
-**$** Make ``build`` directory under ``DRAGON_ROOT``
+**$** Make ``build`` directory under the ``DRAGON_ROOT``
 
-**$** Configure and generate MSVC project in ``DRAGON_ROOT/build``
+**$** Configure and generate MSVC project in the ``DRAGON_ROOT/build``
 
 **$** Open ``DRAGON_ROOT/build/Dragon.sln``
 
@@ -466,13 +470,11 @@ Add ``REPO_ROOT/3rdparty/bin`` to system environment variables
 Installation - Windows (Distributed, CPU)
 -----------------------------------------
 
-**Step 1:**  Download ``3rdparty.zip`` and unzip it under ``REPO_ROOT``
+**Step 1:**  Download ``3rdparty.zip`` and unzip it under the ``REPO_ROOT``
 
 `3rdparty_vc12_x64.zip <http://dragon.seetatech.com/download/3rdparty_vc12_x64_dist_cpu.zip>`_ (OpenBLAS / Google Protobuf 2.6 For VS2013 / Microsoft MPI)
 
 `3rdparty_vc14_x64.zip <http://dragon.seetatech.com/download/3rdparty_vc14_x64_dist_cpu.zip>`_ (OpenBLAS / Google Protobuf 2.6 For VS2015 / Microsoft MPI)
-
-**$** You must copy ``python27/35/36.lib`` to ``REPO_ROOT/3rdparty/lib``, it depends on the version of Python
 
 **Step 2:** Install Python Requirements
 
@@ -483,11 +485,11 @@ Installation - Windows (Distributed, CPU)
 
 **Step 3:** Configure ``DRAGON_ROOT/CMakeLists.txt``
 
-**$** Select optional libraries [``PYTHON3`` / ``BLAS`` / ``SSE`` / ``MPI``]
+**$** Select optional libraries [``PYTHON`` / ``BLAS`` / ``SSE`` / ``MPI``]
 
-**$** Set ``3RDPARTY_DIR`` (Recommend to Keep Default)
+**$** (Optional) Set ``3RDPARTY_DIR`` (Recommend to Keep Default)
 
-**$** Set ``PYTHON_INCLUDE_DIR`` / ``ANACONDA_ROOT_DIR`` and ``NUMPY_ROOT_DIR``
+**$** (Optional) Set ``PYTHON_EXECUTABLE`` if you want to use specific Python (e.g. Anaconda)
 
 **Step 4:** Set Environment Variables
 
@@ -501,9 +503,9 @@ Add ``DRAGON_ROOT/3rdparty/bin`` to system environment variables
 
 **$** Install `CMake-GUI <https://cmake.org>`_
 
-**$** Make ``build`` directory under ``DRAGON_ROOT``
+**$** Make ``build`` directory under the ``DRAGON_ROOT``
 
-**$** Configure and generate MSVC project in ``DRAGON_ROOT/build``
+**$** Configure and generate MSVC project in the ``DRAGON_ROOT/build``
 
 **$** Open ``DRAGON_ROOT/build/Dragon.sln``
 
@@ -534,15 +536,13 @@ Installation - Windows (Distributed, GPU)
 
 **$** (Optional) Download and install `CUDNN`_
 
-**Step 2:** Download ``3rdparty.zip`` and unzip it under ``REPO_ROOT``
+**Step 2:** Download ``3rdparty.zip`` and unzip it under the ``REPO_ROOT``
 
 `3rdparty_vc12_x64.zip <http://dragon.seetatech.com/download/3rdparty_vc12_x64_dist_gpu.zip>`_ (OpenBLAS / Google Protobuf 2.6 For VS2013 / Microsoft MPI)
 
 `3rdparty_vc14_x64.zip <http://dragon.seetatech.com/download/3rdparty_vc14_x64_dist_gpu.zip>`_ (OpenBLAS / Google Protobuf 2.6 For VS2015 / Microsoft MPI)
 
-**$** You must copy ``python27/35/36.lib`` to ``REPO_ROOT/3rdparty/lib``, it depends on the version of Python
-
-**$** Recommend you to install ``cuDNN`` into ``REPO_ROOT/3rdparty``
+**$** Recommend to install ``cuDNN`` into the ``REPO_ROOT/3rdparty``
 
 **Step 3:** Install Python Requirements
 
@@ -553,13 +553,13 @@ Installation - Windows (Distributed, GPU)
 
 **Step 4:** Configure ``DRAGON_ROOT/CMakeLists.txt``
 
-**$** Select optional libraries [``PYTHON3`` / ``CUDA`` / ``CUDNN`` / ``BLAS`` / ``SSE`` / ``MPI``]
+**$** Select optional libraries [``PYTHON`` / ``CUDA`` / ``CUDNN`` / ``BLAS`` / ``SSE`` / ``MPI``]
 
-**$** Set ``3RDPARTY_DIR`` (Recommend to Keep Default)
+**$** (Optional) Set ``3RDPARTY_DIR`` (Recommend to Keep Default)
 
-**$** Set ``PYTHON_INCLUDE_DIR`` / ``ANACONDA_ROOT_DIR`` and ``NUMPY_ROOT_DIR``
+**$** (Optional) Set ``PYTHON_EXECUTABLE`` if you want to use specific Python (e.g. Anaconda)
 
-**$** Set CUDA compiling architectures if necessary
+**$** (Optional) Set ``CUDA_ARCH`` for different architectures, see `ComputeCapability`_
 
 **Step 5:** Set Environment Variables
 
@@ -573,9 +573,9 @@ Add ``REPO_ROOT/3rdparty/bin`` to system environment variables
 
 **$** Install `CMake-GUI <https://cmake.org>`_
 
-**$** Make ``build`` directory under ``DRAGON_ROOT``
+**$** Make ``build`` directory under the ``DRAGON_ROOT``
 
-**$** Configure and generate MSVC project in ``DRAGON_ROOT/build``
+**$** Configure and generate MSVC project in the ``DRAGON_ROOT/build``
 
 **$** Open ``DRAGON_ROOT/build/Dragon.sln``
 
@@ -600,4 +600,5 @@ Add ``REPO_ROOT/3rdparty/bin`` to system environment variables
 .. _CUDA: https://developer.nvidia.com/cuda-toolkit
 .. _CUDNN: https://developer.nvidia.com/cudnn
 .. _NCCL: https://developer.nvidia.com/nccl
+.. _ComputeCapability: https://developer.nvidia.com/cuda-gpus
 .. _Dragon: https://github.com/neopenx/Dragon

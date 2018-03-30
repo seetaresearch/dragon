@@ -110,7 +110,7 @@ void InstanceNormOp<Context>::Setup() {
     CS = C * S;
 
     //  make resource
-    var = ws()->CreateTensor("/mnt/" + anchor() + "/ins_norm_var");
+    var = ws()->CreateTensor("/mnt/" + Anchor() + "/ins_norm/var");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 
@@ -243,7 +243,7 @@ void InstanceNormGradientOp<Context>::Setup() {
     CS = C * S;
 
     //  make resource
-    var = ws()->GetTensor("/mnt/" + anchor() + "/ins_norm_var");
+    var = ws()->GetTensor("/mnt/" + Anchor() + "/ins_norm/var");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 

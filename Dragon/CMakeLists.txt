@@ -1,38 +1,42 @@
 # ---------------- Welcom To Use Dragon  ----------------
 
-PROJECT(dragon)
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0.0)
+project(dragon)
+cmake_minimum_required(VERSION 3.0.0)
 
 # ---------------- Welcom To Use Dragon   ----------------
 
 # ---------------- User Config ----------------
 
-# set optional libraries
-option(WITH_PYTHON3                "Set ON to use PYTHON3 otherwise PYTHON2"  OFF)
+# Set optional libraries
+option(WITH_PYTHON                 "Set ON to use PYTHON"  ON)
 option(WITH_CUDA                   "Set ON to use CUDA"  ON)
-option(WITH_CUDNN                  "Set ON to use CUDNN" OFF)
-option(WITH_BLAS                   "Set ON to use BLAS"  OFF)
-option(WITH_OMP                    "Set ON to use OpenMP"  ON)
+option(WITH_CUDNN                  "Set ON to use CUDNN" ON)
+option(WITH_BLAS                   "Set ON to use BLAS"  ON)
+option(WITH_OMP                    "Set ON to use OpenMP"  OFF)
 option(WITH_SSE                    "Set ON to use SSE 4.1"  ON)
 option(WITH_MPI                    "Set ON to use MPI"  OFF)
 option(WITH_MPI_CUDA               "Set ON to use MPI-CUDA"  OFF)
 option(WITH_MPI_NCCL               "Set ON to use MPI-NCCL"  OFF)
 option(WITH_CUDA_FP16              "Set ON to use FP16"  ON)
 
-# set your 3rdparty
+# Set your 3rdparty
 set(3RDPARTY_DIR  ${PROJECT_SOURCE_DIR}/../3rdparty)
 
-# set your python environment
-set(PYTHON_INCLUDE_DIR /usr/include/python2.7)  # preferred
-#set(PYTHON_INCLUDE_DIR /usr/include/python3.x)  # optional, set specific version
-#set(ANACONDA_ROOT_DIR /xxx/anaconda)  # optional, preset for 2.7, 3.5, and 3.6
-set(NUMPY_ROOT_DIR /xxx/numpy)  # required
+# set your python "interpreter" if necessary
+# if not, a default interpreter will be used
+# here, provide several examples:
+# set(PYTHON_EXECUTABLE /usr/bin/python) # Linux, OS
+# set(PYTHON_EXECUTABLE /X/anaconda/bin/python) # Linux, Anaconda
+# set(PYTHON_EXECUTABLE X:/Anaconda/python) # Win, Anaconda
 
-# set CUDA compiling architecture
+# Set CUDA compiling architecture
 set(CUDA_ARCH     -gencode arch=compute_30,code=sm_30
                   -gencode arch=compute_35,code=sm_35
                   -gencode arch=compute_50,code=sm_50
                   -gencode arch=compute_60,code=sm_60)
+
+# Set CUDNN Libs if necessary (Linux Only)
+set(CUDNN_LIBRARIES /usr/local/cuda/lib64)
 
 # ---------------- User Config ----------------
 
@@ -61,8 +65,12 @@ set(CUDA_ARCH     -gencode arch=compute_30,code=sm_30
 
 
 # ---[ Dependencies
+if (WITH_PYTHON)
+    include(${PROJECT_SOURCE_DIR}/../CMake/FindPythonLibs.cmake)
+    include(${PROJECT_SOURCE_DIR}/../CMake/FindNumPy.cmake)
+endif()
 if (WITH_CUDA) 
-    FIND_PACKAGE(CUDA REQUIRED)
+    find_package(CUDA REQUIRED)
 endif()
 
 set(CMAKE_CXX_STANDARD 11)
@@ -74,35 +82,42 @@ set(CMAKE_BUILD_TYPE Release CACHE STRING "set build type to release")
 set(CMAKE_CONFIGURATION_TYPES  Release CACHE STRING "set build type to release" FORCE)
 
 # ---[ Includes
-set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
-include_directories(${INCLUDE_DIR})
 include_directories(${3RDPARTY_DIR}/include)
-include_directories(${3RDPARTY_DIR}/include/mpi)
-include_directories(${CUDA_INCLUDE_DIRS})
+include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/src)
-include_directories(${PYTHON_INCLUDE_DIR})
-include_directories(${ANACONDA_ROOT_DIR}/include)
-include_directories(${ANACONDA_ROOT_DIR}/include/python2.7)
-include_directories(${ANACONDA_ROOT_DIR}/include/python3.5)
-include_directories(${ANACONDA_ROOT_DIR}/include/python3.6)
-include_directories(${NUMPY_ROOT_DIR}/core/include)
-include_directories(${NUMPY_ROOT_DIR}/include)
-include_directories(${NUMPY_ROOT_DIR})
+if (WITH_PYTHON)
+    include_directories(${PYTHON_INCLUDE_DIRS})
+    include_directories(${NUMPY_INCLUDE_DIR})
+endif()
+if (WITH_CUDA)
+    include_directories(${CUDA_INCLUDE_DIRS})
+endif()
+if (WITH_MPI)
+    include_directories(${3RDPARTY_DIR}/include/mpi)
+endif()
 
 # ---[ libs
 set(3RDPARTY_LIBS ${3RDPARTY_DIR}/lib)
-set(UINX_CUDNN_LIBS /usr/local/cuda/lib64)
 link_directories(${3RDPARTY_LIBS})
-link_directories(${UINX_CUDNN_LIBS})
+link_directories(${CUDNN_LIBRARIES})
+link_directories(${PYTHON_LIBRARIES})
 
 # ---[ Install
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR} CACHE STRING "set install prefix" FORCE)
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH} ${3RDPARTY_LIBS})
 
 # ---[ defines
-if (WITH_PYTHON3) 
-    ADD_DEFINITIONS(-DWITH_PYTHON3)
-    message(STATUS "Use PYTHON3 [Optional]")
+if (WITH_PYTHON)
+    ADD_DEFINITIONS(-DWITH_PYTHON)
+    if (${PYTHON_VERSION_MAJOR} STREQUAL "2")
+        message(STATUS "Use Python2 [Optional]")
+    elseif (${PYTHON_VERSION_MAJOR} STREQUAL "3")
+        message(STATUS "Use Python3 [Optional]")
+        ADD_DEFINITIONS(-DWITH_PYTHON3)
+    else()
+        message("Invalid version of Python(Detected ${PYTHON_VERSION_STRING})")
+        message(FATAL_ERROR "Do you set PYTHON_EXECUTABLE correctly?")
+    endif()
 endif()
 if (WITH_CUDA) 
     ADD_DEFINITIONS(-DWITH_CUDA)
@@ -133,6 +148,7 @@ if (WITH_SSE)
 endif()
 if (WITH_MPI)
     ADD_DEFINITIONS(-DWITH_MPI)
+    #set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH} ${3RDPARTY_LIBS}/../openmpi/install/lib)
     message(STATUS "Use MPI [Optional]")
 endif()
 if (WITH_MPI_CUDA)

@@ -39,7 +39,7 @@ void SmoothL1LossOp<Context>::RunOnDevice() {
     if (InputSize() > 3) CHECK(Input(0).dims() == Input(3).dims());
     Output(0)->Reshape(vector<TIndex>(1, 1));
 
-    diff = ws()->CreateTensor("/mnt/" + anchor() + "/smoothl1_loss_diff");
+    diff = ws()->CreateTensor("/mnt/" + Anchor() + "/smoothl1_loss/diff");
     error = ws()->CreateTensor("/share/smoothl1_loss_error");
     diff->ReshapeLike(Input(0));
     error->ReshapeLike(Input(0));
@@ -86,7 +86,7 @@ void SmoothL1LossGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void SmoothL1LossGradientOp<Context>::RunOnDevice() {
-    diff = ws()->GetTensor("/mnt/" + anchor() + "/smoothl1_loss_diff");
+    diff = ws()->GetTensor("/mnt/" + Anchor() + "/smoothl1_loss/diff");
 
     if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";

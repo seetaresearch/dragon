@@ -1,5 +1,7 @@
 #include "operators/misc/python_op.h"
 
+#ifdef WITH_PYTHON
+
 #ifdef WITH_PYTHON3
 #define PyBytes_FromStringAndSize PyUnicode_FromStringAndSize
 #endif
@@ -36,7 +38,7 @@ RunOp<Context>::RunOp(const OperatorDef& op_def, Workspace* ws)
     outputs = PyList_New(OutputSize());
     for (int i = 0; i < OutputSize(); i++)
         PyList_SetItem(outputs, i, String(Output(i)->name().c_str()));
-    if (!this->allow_run()) return;
+    if (!AllowRun()) return;
 
     //  setup
     if (PyObject_HasAttr(self, String("setup")))
@@ -111,3 +113,5 @@ class GetTemplateGradient final : public GradientMakerBase {
 REGISTER_GRADIENT(Template, GetTemplateGradient);
 
 }    // namespace dragon
+
+#endif    // WITH_PYTHON

@@ -33,8 +33,7 @@ class AdamUpdateOp final : public UpdateOpBase<Context> {
  protected:
     float lr, beta1, beta2, eps, coeff;
     int t;
-    unique_ptr<Tensor> m, v;
-    Tensor temp;
+    Tensor* m, *v, *tmp;
 };
 
 }    // namespace dragon

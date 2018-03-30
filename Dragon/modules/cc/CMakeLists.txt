@@ -2,8 +2,6 @@ message(STATUS "Found CC Module: ${CMAKE_CURRENT_LIST_DIR}")
 
 FILE(GLOB_RECURSE MODULE_FILES *.h *.hpp *.c *.cpp *.cu *.cc)
 FILE(GLOB_RECURSE SRC_FILES ../../src/*.c ../../src/*.cpp ../../src/*.cu ../../src/*.cc)
-FILE(GLOB_RECURSE REMOVE_FILES ../../src/python*)
-LIST(REMOVE_ITEM SRC_FILES ${REMOVE_FILES})
 
 # ---[ complier
 if (WITH_CUDA) 

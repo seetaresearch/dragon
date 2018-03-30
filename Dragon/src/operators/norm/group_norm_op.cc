@@ -185,7 +185,7 @@ void GroupNormOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    var = ws()->CreateTensor("/mnt/" + anchor() + "/gn_var");
+    var = ws()->CreateTensor("/mnt/" + Anchor() + "/gn/var");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 
@@ -337,7 +337,7 @@ void GroupNormGradientOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    var = ws()->GetTensor("/mnt/" + anchor() + "/gn_var");
+    var = ws()->GetTensor("/mnt/" + Anchor() + "/gn/var");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 

@@ -1,5 +1,9 @@
 message(STATUS "Found Python Module: ${CMAKE_CURRENT_LIST_DIR}")
 
+if (NOT WITH_PYTHON)
+    message(FATAL_ERROR "Set WITH_PYTHON as ON for this module.")
+endif()
+
 FILE(GLOB_RECURSE MODULE_FILES *.h *.hpp *.c *.cpp *.cu *.cc)
 FILE(GLOB_RECURSE SRC_FILES ../../src/*.c ../../src/*.cpp ../../src/*.cu ../../src/*.cc)
 

@@ -12,6 +12,8 @@
 #ifndef DRAGON_OPERATORS_MISC_PYTHON_OP_H_
 #define DRAGON_OPERATORS_MISC_PYTHON_OP_H_
 
+#ifdef WITH_PYTHON
+
 #include <Python.h>
 
 #include "core/operator.h"
@@ -52,5 +54,7 @@ public:
 };
 
 }    // namespace dragon
+
+#endif    // WITH_PYTHON
 
 #endif    // DRAGON_OPERATORS_MISC_PYTHON_OP_H_

@@ -15,7 +15,7 @@ void L2NormOp<Context>::RunWithType() {
     buffer->Reshape(dims);
 
     //  normalize by inner_dim independently if not across it
-    norm = ws()->CreateTensor("/mnt/" + anchor() + "/l2norm_normalizer");
+    norm = ws()->CreateTensor("/mnt/" + Anchor() + "/l2norm/normalizer");
     dims = Input(0).dims();
     for (int i = axis; i < end_axis; i++) dims[i] = 1;
     norm->Reshape(dims);
@@ -96,7 +96,7 @@ void L2NormGradientOp<Context>::RunWithType() {
     INIT_MULTIPLIER(multiplier, dim);
 
     //  normalize by inner_dim independently if not across it
-    norm = ws()->GetTensor("/mnt/" + anchor() + "/l2norm_normalizer");
+    norm = ws()->GetTensor("/mnt/" + Anchor() + "/l2norm/normalizer");
     buffer = ws()->GetBuffer();
     vector<TIndex> dims = Input(0).dims();
     for (int i = 0; i < axis; i++) dims[i] = 1;

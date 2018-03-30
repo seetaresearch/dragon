@@ -27,6 +27,7 @@ class UpdateOpBase : public Operator<Context> {
     USE_OPERATOR_FUNCTIONS(Context);
 
     float Param(const string& name) const;
+    string Slot();
 
     void RunOnDevice() override;
     template <typename T> void PreprocessRunWithType();
@@ -40,7 +41,8 @@ class UpdateOpBase : public Operator<Context> {
 };
 
 #define USE_UPDATER_FUNCTIONS(context) \
-    using UpdateOpBase<context>::Param
+    using UpdateOpBase<context>::Param; \
+    using UpdateOpBase<context>::Slot
 
 }    // namespace dragon 
 

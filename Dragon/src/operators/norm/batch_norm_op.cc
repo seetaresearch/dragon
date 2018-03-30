@@ -204,7 +204,7 @@ void BatchNormOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    var = ws()->CreateTensor("/mnt/" + anchor() + "/bn_var");
+    var = ws()->CreateTensor("/mnt/" + Anchor() + "/bn/var");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 
@@ -377,7 +377,7 @@ void BatchNormGradientOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    var = ws()->GetTensor("/mnt/" + anchor() + "/bn_var");
+    var = ws()->GetTensor("/mnt/" + Anchor() + "/bn/var");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 

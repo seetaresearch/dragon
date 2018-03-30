@@ -7,7 +7,7 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void Pooling2dOp<Context>::MAXRunWithType() {
-    mask = ws()->CreateTensor("/mnt/" + anchor() + "/max_pool_mask");
+    mask = ws()->CreateTensor("/mnt/" + Anchor() + "/max_pool/mask");
     mask->ReshapeLike(*Output(0));
 
     auto* Xdata = Input(0).template data<T, Context>();
@@ -122,7 +122,7 @@ OPERATOR_SCHEMA(Pooling2d).NumInputs(1).NumOutputs(1);
 
 template <class Context> template <typename T>
 void Pooling2dGradientOp<Context>::MAXRunWithType() {
-    mask = ws()->GetTensor("/mnt/" + anchor() + "/max_pool_mask");
+    mask = ws()->GetTensor("/mnt/" + Anchor() + "/max_pool/mask");
 
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();

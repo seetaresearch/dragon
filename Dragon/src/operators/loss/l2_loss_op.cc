@@ -29,7 +29,7 @@ template <class Context>
 void L2LossOp<Context>::RunOnDevice() {
     CHECK_EQ(Input(0).count(), Input(1).count());
     Output(0)->Reshape(vector<TIndex>(1, 1));
-    diff = ws()->CreateTensor("/mnt/" + anchor() + "/l2_loss_diff");
+    diff = ws()->CreateTensor("/mnt/" + Anchor() + "/l2_loss/diff");
     diff->ReshapeLike(Input(0));
 
     if (Input(0).template IsType<float>()) RunWithType<float>();
@@ -64,7 +64,7 @@ void L2LossGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void L2LossGradientOp<Context>::RunOnDevice() {
-    diff = ws()->GetTensor("/mnt/" + anchor() + "/l2_loss_diff");
+    diff = ws()->GetTensor("/mnt/" + Anchor() + "/l2_loss/diff");
 
     if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";

@@ -27,7 +27,7 @@ void DropoutOp<Context>::RunWithType() {
 template <class Context>
 void DropoutOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
-    mask = ws()->CreateTensor("/mnt/" + anchor() + "/dropout_mask");
+    mask = ws()->CreateTensor("/mnt/" + Anchor() + "/dropout/mask");
     mask->ReshapeLike(Input(0));
 
     if (Input(0).template IsType<float>()) RunWithType<float>();
@@ -42,7 +42,7 @@ OPERATOR_SCHEMA(Dropout).NumInputs(1).NumOutputs(1).Inplace({ { 0, 0 } });
 
 template <class Context> template <typename T>
 void DropoutGradientOp<Context>::RunWithType() {
-    mask = ws()->GetTensor("/mnt/" + anchor() + "/dropout_mask");
+    mask = ws()->GetTensor("/mnt/" + Anchor() + "/dropout/mask");
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* Mdata = mask->template data<uint32_t, Context>();

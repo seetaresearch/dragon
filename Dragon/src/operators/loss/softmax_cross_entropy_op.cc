@@ -43,7 +43,7 @@ void SoftmaxCrossEntropyOp<Context>::RunOnDevice() {
         << "\nNumber of predictions must match the number of labels.";
     losses.ReshapeLike(Input(0));
     softmax_op->Run();
-    prob = ws()->GetTensor("/mnt/" + anchor() + "/softmax_prob");
+    prob = ws()->GetTensor("/mnt/" + Anchor() + "/softmax/prob");
 
     if (Input(0).template IsType<float>()) RunWithType<float>();
     else LOG(FATAL) << "Unsupported input types.";
@@ -85,7 +85,7 @@ void SoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void SoftmaxCrossEntropyGradientOp<Context>::RunOnDevice() {
-    prob = ws()->GetTensor("/mnt/" + anchor() + "/softmax_prob");
+    prob = ws()->GetTensor("/mnt/" + Anchor() + "/softmax/prob");
     outer_dim = prob->count(0, axis);
     inner_dim = prob->count(axis + 1);
     Output(0)->ReshapeLike(Input(0));

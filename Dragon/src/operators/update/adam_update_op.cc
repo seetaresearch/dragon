@@ -1,24 +1,24 @@
 #include "operators/update/adam_update_op.h"
+#include "core/workspace.h"
 #include "utils/op_kernel.h"
 
 namespace dragon {
 
 template <class Context>
 void AdamUpdateOp<Context>::ComputeRunWithFloat() {
-    if (!m.get()) {
-        m.reset(new Tensor()); m->ReshapeLike(Input(0));
-        v.reset(new Tensor()); v->ReshapeLike(Input(0));
-    }
+    m = ws()->CreateTensor("/mnt/" + Slot() + "/adam/m");
+    v = ws()->CreateTensor("/mnt/" + Slot() + "/adam/v");
+    tmp = ws()->CreateTensor("/mnt/" + Slot() + "/adam/tmp");
+    m->ReshapeLike(Input(0));
+    v->ReshapeLike(Input(0));
     t++;
     coeff = sqrt(1. - pow(beta2, t)) / (1. - pow(beta1, t));
     lr = Param("base_lr") * coeff * this->lr_mult;
-    kernel::AdamUpdate<float, Context>(&Input(0), 
-                                         m.get(), 
-                                         v.get(), 
-                                           &temp,
-                                           beta1, 
-                                           beta2, 
-                                             eps, 
+    kernel::AdamUpdate<float, Context>(&Input(0),
+                                       m, v, tmp,
+                                           beta1,
+                                           beta2,
+                                             eps,
                                              lr);
 }
 

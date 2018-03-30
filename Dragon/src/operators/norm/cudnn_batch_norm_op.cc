@@ -116,8 +116,8 @@ void CuDNNBatchNormOp<Context>::Setup() {
     C = Input(0).dim(channel_axis);
 
     //  make resource
-    mean = ws()->CreateTensor("/mnt/" + anchor() + "/bn_mean");
-    var = ws()->CreateTensor("/mnt/" + anchor() + "/bn_var");
+    mean = ws()->CreateTensor("/mnt/" + Anchor() + "/bn/mean");
+    var = ws()->CreateTensor("/mnt/" + Anchor() + "/bn/var");
 
     //  reshape
     mean->Reshape(vector<TIndex>(1, C));
@@ -160,8 +160,8 @@ void CuDNNBatchNormGradientOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    mean = ws()->GetTensor("/mnt/" + anchor() + "/bn_mean");
-    var = ws()->GetTensor("/mnt/" + anchor() + "/bn_var");
+    mean = ws()->GetTensor("/mnt/" + Anchor() + "/bn/mean");
+    var = ws()->GetTensor("/mnt/" + Anchor() + "/bn/var");
 
     //  reshape
     mean->Reshape(vector<TIndex>(1, C));

@@ -33,7 +33,7 @@ class BaseUpdater(object):
         scale_gradient : float
             The scale factor of gradients.
         clip_gradient : float
-            The clip factor of gradients.
+            The clip factor of gradients. \
         l2_decay : float
             The l2 decay factor. Default is ``-1.0`` (Disabled).
         slot : str

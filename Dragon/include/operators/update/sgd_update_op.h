@@ -29,7 +29,7 @@ class SGDUpdateOp final : public UpdateOpBase<Context> {
 
  protected:    
     float lr, momentum;
-    unique_ptr<Tensor> history;
+    Tensor* h;
 
 };
 

@@ -17,7 +17,7 @@ void ROIPoolingOp<Context>::RunWithType() {
 
 template <class Context>
 void ROIPoolingOp<Context>::RunOnDevice() {
-    mask = ws()->CreateTensor("/mnt/" + anchor() + "/roi_pool_mask");
+    mask = ws()->CreateTensor("/mnt/" + Anchor() + "/roi_pool/mask");
 
     vector<TIndex> dims({Input(1).dim(0), Input(0).dim(1), pool_h, pool_w});
     Output(0)->Reshape(dims);
@@ -45,7 +45,7 @@ void ROIPoolingGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void ROIPoolingGradientOp<Context>::RunOnDevice() {
-    mask = ws()->GetTensor("/mnt/" + anchor() + "/roi_pool_mask");
+    mask = ws()->GetTensor("/mnt/" + Anchor() + "/roi_pool/mask");
 
     Output(0)->ReshapeLike(Input(0));
 

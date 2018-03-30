@@ -61,7 +61,12 @@ OPERATOR_SCHEMA(GradientGather).NumOutputs(1);
 NO_GRADIENT(GradientGather);
 
 template <class Context>
-void StopGradientOp<Context>::RunOnDevice() {}
+void StopGradientOp<Context>::RunOnDevice() {
+    if (Output(0)->name() != Input(0).name()) {
+        Output(0)->ReshapeLike(Input(0));
+        Output(0)->Share(Input(0));
+    }
+}
 
 DEPLOY_CPU(StopGradient);
 #ifdef WITH_CUDA

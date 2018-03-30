@@ -110,8 +110,8 @@ class Operator : public OperatorBase {
     virtual void RunOnDevice() = 0;
 
     inline Context& ctx() { return ctx_; }
-    inline string anchor() { return GetSingleArg("anchor", name()); }
-    inline bool allow_run() { return allow_run_; }
+    inline string Anchor() { return GetSingleArg("anchor", name()); }
+    inline bool AllowRun() { return allow_run_; }
 
  protected:
     Context ctx_;
@@ -155,7 +155,8 @@ OperatorBase* CreateOperator(const OperatorDef& op_def, Workspace* ws);
 #define USE_OPERATOR_FUNCTIONS(context) \
     USE_OPERATOR_BASE_FUNCTIONS; \
     using Operator<context>::ctx; \
-    using Operator<context>::anchor
+    using Operator<context>::Anchor; \
+    using Operator<context>::AllowRun
 
 DECLARE_REGISTRY(CPUOperatorRegistry, OperatorBase,const OperatorDef&, Workspace*);
 DECLARE_REGISTRY(CUDAOperatorRegistry, OperatorBase, const OperatorDef&, Workspace*);

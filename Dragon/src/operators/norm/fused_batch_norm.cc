@@ -246,9 +246,9 @@ void FusedBatchNormOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    mean = ws()->CreateTensor("/mnt/" + anchor() + "/bn_mean");
-    var = ws()->CreateTensor("/mnt/" + anchor() + "/bn_var");
-    x_norm = ws()->CreateTensor("/mnt/" + anchor() + "/bn_x_norm");
+    mean = ws()->CreateTensor("/mnt/" + Anchor() + "/bn/mean");
+    var = ws()->CreateTensor("/mnt/" + Anchor() + "/bn/var");
+    x_norm = ws()->CreateTensor("/mnt/" + Anchor() + "/bn/x_norm");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 
@@ -506,9 +506,9 @@ void FusedBatchNormGradientOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    mean = ws()->GetTensor("/mnt/" + anchor() + "/bn_mean");
-    var = ws()->GetTensor("/mnt/" + anchor() + "/bn_var");
-    x_norm = ws()->GetTensor("/mnt/" + anchor() + "/bn_x_norm");
+    mean = ws()->GetTensor("/mnt/" + Anchor() + "/bn/mean");
+    var = ws()->GetTensor("/mnt/" + Anchor() + "/bn/var");
+    x_norm = ws()->GetTensor("/mnt/" + Anchor() + "/bn/x_norm");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 

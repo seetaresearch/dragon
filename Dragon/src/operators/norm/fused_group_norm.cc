@@ -227,9 +227,9 @@ void FusedGroupNormOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    mean = ws()->CreateTensor("/mnt/" + anchor() + "/gn_mean");
-    var = ws()->CreateTensor("/mnt/" + anchor() + "/gn_var");
-    x_norm = ws()->CreateTensor("/mnt/" + anchor() + "/gn_x_norm");
+    mean = ws()->CreateTensor("/mnt/" + Anchor() + "/gn/mean");
+    var = ws()->CreateTensor("/mnt/" + Anchor() + "/gn/var");
+    x_norm = ws()->CreateTensor("/mnt/" + Anchor() + "/gn/x_norm");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 
@@ -467,9 +467,9 @@ void FusedGroupNormGradientOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    mean = ws()->GetTensor("/mnt/" + anchor() + "/gn_mean");
-    var = ws()->GetTensor("/mnt/" + anchor() + "/gn_var");
-    x_norm = ws()->GetTensor("/mnt/" + anchor() + "/gn_x_norm");
+    mean = ws()->GetTensor("/mnt/" + Anchor() + "/gn/mean");
+    var = ws()->GetTensor("/mnt/" + Anchor() + "/gn/var");
+    x_norm = ws()->GetTensor("/mnt/" + Anchor() + "/gn/x_norm");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 

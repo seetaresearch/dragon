@@ -29,8 +29,7 @@ class NesterovUpdateOp final : public UpdateOpBase<Context> {
 
  protected:
     float lr, momentum;
-    unique_ptr<Tensor> history;
-    Tensor temp;
+    Tensor* h, *tmp;
 };
 
 }    // namespace dragon

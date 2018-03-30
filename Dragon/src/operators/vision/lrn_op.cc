@@ -15,18 +15,18 @@ void LRNOp<Context>::AcrossRunWithType() {
 
 template <class Context> template <typename T>
 void LRNOp<Context>::SplitRunWithType() {
-    sqr_in = ws()->CreateTensor("/mnt/" + anchor() + "/sqr_in");
+    sqr_in = ws()->CreateTensor("/mnt/" + Anchor() + "/sqr/in");
     sqr_in->ReshapeLike(Input(0));
     sqr_in->Share(Input(0));
 
-    prod_in = ws()->CreateTensor("/mnt/" + anchor() + "/prod_in");
+    prod_in = ws()->CreateTensor("/mnt/" + Anchor() + "/prod/in");
     prod_in->ReshapeLike(Input(0));
     prod_in->Share(Input(0));
 }
 
 template <class Context> template <typename T>
 void LRNOp<Context>::SquareRunWithType() {
-    sqr_out = ws()->CreateTensor("/mnt/" + anchor() + "/sqr_out");
+    sqr_out = ws()->CreateTensor("/mnt/" + Anchor() + "/sqr/out");
     if (!sqr_op) {
         Argument power;
         power.set_name("power"); power.set_f(2.0);
@@ -43,7 +43,7 @@ void LRNOp<Context>::SquareRunWithType() {
 
 template <class Context> template <typename T>
 void LRNOp<Context>::PoolRunWithType() {
-    pool_out = ws()->CreateTensor("/mnt/" + anchor() + "/pool_out");
+    pool_out = ws()->CreateTensor("/mnt/" + Anchor() + "/pool/out");
     if (!pool_op) {
         Argument ks, s, p, m, df;
         ks.set_name("kernel_size"); ks.add_ints(local_size);
@@ -64,7 +64,7 @@ void LRNOp<Context>::PoolRunWithType() {
 
 template <class Context> template <typename T>
 void LRNOp<Context>::PowRunWithType() {
-    pow_out = ws()->CreateTensor("/mnt/" + anchor() + "/pow_out");
+    pow_out = ws()->CreateTensor("/mnt/" + Anchor() + "/pow/out");
     if (!pow_op) {
         Argument scale, shift, power;
         scale.set_name("scale"); scale.set_f(alpha);
@@ -131,8 +131,8 @@ void LRNGradientOp<Context>::AcrossRunWithType() {
 
 template <class Context> template <typename T>
 void LRNGradientOp<Context>::ProdRunWithType() {
-    prod_in = ws()->GetTensor("/mnt/" + anchor() + "/prod_in");
-    pow_out = ws()->GetTensor("/mnt/" + anchor() + "/pow_out");
+    prod_in = ws()->GetTensor("/mnt/" + Anchor() + "/prod/in");
+    pow_out = ws()->GetTensor("/mnt/" + Anchor() + "/pow/out");
     if (!prod_op) {
         Argument operation;
         operation.set_name("operation"); operation.set_s("PROD");
@@ -152,7 +152,7 @@ void LRNGradientOp<Context>::ProdRunWithType() {
 
 template <class Context> template <typename T>
 void LRNGradientOp<Context>::PowRunWithType() {
-    pool_out = ws()->GetTensor("/mnt/" + anchor() + "/pool_out");
+    pool_out = ws()->GetTensor("/mnt/" + Anchor() + "/pool/out");
     if (!pow_op) {
         Argument scale, shift, power;
         scale.set_name("scale"); scale.set_f(alpha);
@@ -173,7 +173,7 @@ void LRNGradientOp<Context>::PowRunWithType() {
 
 template <class Context> template <typename T>
 void LRNGradientOp<Context>::PoolRunWithType() {
-    sqr_out = ws()->GetTensor("/mnt/" + anchor() + "/sqr_out");
+    sqr_out = ws()->GetTensor("/mnt/" + Anchor() + "/sqr/out");
     if (!pool_op) {
         Argument ks, s, p, m, df;
         ks.set_name("kernel_size"); ks.add_ints(local_size);
@@ -196,7 +196,7 @@ void LRNGradientOp<Context>::PoolRunWithType() {
 
 template <class Context> template <typename T>
 void LRNGradientOp<Context>::SquareRunWithType() {
-    sqr_in = ws()->GetTensor("/mnt/" + anchor() + "/sqr_in");
+    sqr_in = ws()->GetTensor("/mnt/" + Anchor() + "/sqr/in");
     if (!sqr_op) {
         Argument power;
         power.set_name("power"); power.set_f(2.0);

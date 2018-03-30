@@ -279,9 +279,9 @@ void BatchRenormOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    var = ws()->CreateTensor("/mnt/" + anchor() + "/bn_var");
-    r = ws()->CreateTensor("/mnt/" + anchor() + "/bn_r");
-    x_norm = ws()->CreateTensor("/mnt/" + anchor() + "/bn_x_norm");
+    var = ws()->CreateTensor("/mnt/" + Anchor() + "/bn/var");
+    r = ws()->CreateTensor("/mnt/" + Anchor() + "/bn/r");
+    x_norm = ws()->CreateTensor("/mnt/" + Anchor() + "/bn/x_norm");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 
@@ -471,9 +471,9 @@ void BatchRenormGradientOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    var = ws()->GetTensor("/mnt/" + anchor() + "/bn_var");
-    r = ws()->GetTensor("/mnt/" + anchor() + "/bn_r");
-    x_norm = ws()->GetTensor("/mnt/" + anchor() + "/bn_x_norm");
+    var = ws()->GetTensor("/mnt/" + Anchor() + "/bn/var");
+    r = ws()->GetTensor("/mnt/" + Anchor() + "/bn/r");
+    x_norm = ws()->GetTensor("/mnt/" + Anchor() + "/bn/x_norm");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 
