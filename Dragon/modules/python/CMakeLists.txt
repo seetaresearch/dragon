@@ -21,6 +21,7 @@ FILE(GLOB targets ${3RDPARTY_LIBS}/*.so ${3RDPARTY_LIBS}/*.lib)
 foreach(target ${targets})
     TARGET_LINK_LIBRARIES(${PROJECT_NAME}_python  ${target})
 endforeach()
+TARGET_LINK_LIBRARIES(${PROJECT_NAME}_python ${PYTHON_LIBRARIES})
 
 # ---[ link optional libs
 if (UNIX AND WITH_CUDNN)

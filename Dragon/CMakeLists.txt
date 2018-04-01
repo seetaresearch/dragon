@@ -12,7 +12,7 @@ option(WITH_PYTHON                 "Set ON to use PYTHON"  ON)
 option(WITH_CUDA                   "Set ON to use CUDA"  ON)
 option(WITH_CUDNN                  "Set ON to use CUDNN" ON)
 option(WITH_BLAS                   "Set ON to use BLAS"  ON)
-option(WITH_OMP                    "Set ON to use OpenMP"  OFF)
+option(WITH_OMP                    "Set ON to use OpenMP"  ON)
 option(WITH_SSE                    "Set ON to use SSE 4.1"  ON)
 option(WITH_MPI                    "Set ON to use MPI"  OFF)
 option(WITH_MPI_CUDA               "Set ON to use MPI-CUDA"  OFF)
@@ -33,10 +33,11 @@ set(3RDPARTY_DIR  ${PROJECT_SOURCE_DIR}/../3rdparty)
 set(CUDA_ARCH     -gencode arch=compute_30,code=sm_30
                   -gencode arch=compute_35,code=sm_35
                   -gencode arch=compute_50,code=sm_50
-                  -gencode arch=compute_60,code=sm_60)
+                  -gencode arch=compute_60,code=sm_60
+                  -gencode arch=compute_70,code=sm_70)
 
-# Set CUDNN Libs if necessary (Linux Only)
-set(CUDNN_LIBRARIES /usr/local/cuda/lib64)
+# Set CUDNN Library Dir if necessary (Linux Only)
+set(CUDNN_LIBRARY_DIR /usr/local/cuda/lib64)
 
 # ---------------- User Config ----------------
 
@@ -99,8 +100,9 @@ endif()
 # ---[ libs
 set(3RDPARTY_LIBS ${3RDPARTY_DIR}/lib)
 link_directories(${3RDPARTY_LIBS})
-link_directories(${CUDNN_LIBRARIES})
-link_directories(${PYTHON_LIBRARIES})
+if (WITH_CUDNN)
+    link_directories(${CUDNN_LIBRARY_DIR})
+endif()
 
 # ---[ Install
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR} CACHE STRING "set install prefix" FORCE)
@@ -148,7 +150,6 @@ if (WITH_SSE)
 endif()
 if (WITH_MPI)
     ADD_DEFINITIONS(-DWITH_MPI)
-    #set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH} ${3RDPARTY_LIBS}/../openmpi/install/lib)
     message(STATUS "Use MPI [Optional]")
 endif()
 if (WITH_MPI_CUDA)
@@ -167,14 +168,14 @@ endif()
 # ---[ Flags
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")
 if(WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /O2")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /O2 /Oi /GL /Ot /Gy")
     if (WITH_OMP)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp")
     endif()
 endif()
 if(UNIX)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w -fPIC -O2 -m64 -std=c++11")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s -fPIC")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s -w -fPIC -O3 -m64 -std=c++11")
     if (WITH_OMP)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
