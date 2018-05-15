@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -34,9 +34,7 @@ template <class Context>
 class MPIBroadcastGradientOp final : public ModelMPIBase<Context> {
 public:
     MPIBroadcastGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : ModelMPIBase<Context>(op_def, ws) {
-        DISABLE_SHARE_GRADIENT;
-    }
+        : ModelMPIBase<Context>(op_def, ws) {}
     USE_OPERATOR_FUNCTIONS(Context);
     USE_MPIMODEL_FUNCTIONS(Context);
 

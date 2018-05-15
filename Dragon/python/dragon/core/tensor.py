@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -14,7 +14,6 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-from collections import OrderedDict
 
 import dragon.core.workspace as ws
 import dragon.protos.dragon_pb2 as pb
@@ -30,7 +29,7 @@ class Tensor(object):
     It does not have any storage, i.e., just provided to be a navigation
     to the real tensor in the C++ backend.
     """
-    def __init__(self, name=None, shape=None, dtype=None):
+    def __init__(self, name=None, shape=None, dtype=None, _name=None):
         """Construct a Tensor instance.
 
         Parameters
@@ -41,14 +40,16 @@ class Tensor(object):
             The shape of Tensor.
         dtype : None or str
             The type of Tensor.
+        _name : None or str
+            The name that ignores name scope.
 
         Returns
         -------
         Tensor
             An unregistered Tensor.
         """
-
-        self.name = name
+        if _name is not None: self._name = _name
+        else: self.name = name
         self.shape = shape
         self.dtype = dtype
 
@@ -69,13 +70,15 @@ class Tensor(object):
         """
         Register as an empty variable.
         """
-        return self._no_parameter_filler('variable')
+        ws.CreateTensor(self.name)
+        return self
 
     def Placeholder(self):
         """
         Register as a placeholder.
         """
-        return self._no_parameter_filler('placeholder')
+        ws.CreateTensor(self.name)
+        return self
 
     def Constant(self, value=0):
         """Register as a variable with constant initializer.
@@ -375,11 +378,7 @@ class Tensor(object):
         """
         if not isinstance(tensor, Tensor):
             raise TypeError('Only Tensor can be cloned.')
-        self._name = tensor.name
-        self.expressions = tensor.expressions
-        self._grad_wrts = tensor.grad_wrts
-        self.extra_targets = tensor.extra_targets
-        self.shape = tensor.shape
+        self.__dict__ = tensor.__dict__
 
     #################################################
     #                                               #
@@ -387,21 +386,23 @@ class Tensor(object):
     #                                               #
     #################################################
 
-    def __str__(self):
-        """Return the information(name/shape).
+    def __repr__(self):
+        """Return a format str representing the tensor.
 
         Returns
         -------
         str
-            The info, format as ``Tensor | name: def(real), shape: (,)``.
+            The format str.
 
         """
         def_name = self.name
         real_name = ws.GetTensorName(def_name)
-        shape = ', '.join(str(dim) for dim in self.shape) if self.shape is not None else None
-        if shape is not None:
-            return 'Tensor | name: {}({}), shape: {} '.format(def_name, real_name, '[' + shape + ']')
-        else: return 'Tensor | name: {}({})'.format(def_name, real_name)
+        shape = ', '.join(str(dim) for dim in self.shape) if self.shape else None
+        if shape:
+            return '[dragon.Tensor({} -> {}) of shape {}]'\
+                .format(def_name, real_name, '(' + shape + ')')
+        else:
+            return '[dragon.Tensor({} -> {})]'.format(def_name, real_name)
 
     def __getitem__(self, item):
         """Return a Tensor with specific indices.
@@ -417,47 +418,49 @@ class Tensor(object):
             The output tensor.
 
         """
-        def wrapper_indices(indices):
-            tensor = Tensor(GetTensorName())
-            ws.FeedTensor(tensor, np.array(indices, dtype=np.int32))
-            return tensor
-
-        if not isinstance(item, tuple):
-            # 1D At
-            if isinstance(item, int):
-                output = self.CreateOperator(inputs=[self, wrapper_indices([item])], nout=1, op_type='Gather')
-                if self.shape is not None:
-                    output.shape = self.shape[:]
-                    output.shape[0] = 1
-                return output
-            else:
-                raise TypeError('Unsupported type of indices: {}'.format(type(item)))
-        starts = []
-        ends = []
-        output_dims = []
-        for it in item:
+        if not isinstance(item, (slice, tuple)):
+            if not isinstance(item, int):
+                raise ValueError('The index should be a integer.')
+            item = (item,)
+        if not isinstance(item, tuple): item = tuple([item])
+        starts = []; ends = []; output_dims = []
+        for ix, it in enumerate(item):
             if isinstance(it, slice):
                 # handle start
                 if it.start is None: starts.append(0)
                 else: starts.append(it.start)
                 # handle stop
-                if it.stop is None: ends.append(0)
-                else: ends.append(it.stop)
+                if it.stop is None:
+                    ends.append(0)
+                    output_dims.append(None)
+                else:
+                    ends.append(it.stop)
+                    output_dims.append(ends[-1] - starts[-1])
+                    if starts[-1] == ends[-1]:
+                        raise ValueError('The cropping starts and ends of axis {} '
+                                         'can not be equal, got {}:{}.'
+                                         .format(ix, starts[-1], ends[-1]))
                 # handle step
                 if it.step is not None:
                     raise NotImplementedError('Cropping with step has not been implemented yet. ')
-                output_dims.append(min(ends[-1] - starts[-1], 1))
             elif isinstance(it, int):
                 starts.append(it)
-                ends.append(it + 1)
-                output_dims.append(1)
+                ends.append(-1)
+                output_dims.append(-1)
             else:
                 raise TypeError('Unsupported type of indices: {}'.format(type(type(it))))
 
         output = self.CreateOperator(inputs=self, nout=1, op_type='Crop', starts=starts, ends=ends)
 
         if self.shape is not None:
-            output.shape = output_dims[:]
+            output_shape = self.shape[:]
+            squeeze_shape = []
+            for ix in range(len(output_dims)):
+                output_shape[ix] = output_dims[ix]
+            for dim in output_shape:
+                if dim != -1: squeeze_shape.append(dim)
+            if len(squeeze_shape) == 0: output.shape = None
+            else: output.shape = squeeze_shape[:]
 
         return output
 
@@ -688,7 +691,7 @@ class Tensor(object):
         None
 
         """
-        return self.PrintExpressions()
+        return self.debug_expressions()
 
     ###############################################
     #                                             #
@@ -930,7 +933,7 @@ class Tensor(object):
              [ 5.  5.  5.]]
 
         """
-        expressions = OrderedDict()  # keep order for displaying
+        expressions = dict()
 
         # 1. collect inputs
         if not isinstance(inputs, list): inputs = [inputs]
@@ -1041,7 +1044,7 @@ class Tensor(object):
 
         """
         filler = pb.TensorFiller()
-        filler.tensor = self._name
+        filler.tensor = self.name
         filler.type = type.lower()
 
         if filler.type == 'constant':
@@ -1068,21 +1071,22 @@ class Tensor(object):
         ws.CreateFiller(filler)
         return self
 
-    def PrintExpressions(self):
-        """Return the stringified internal expressions.
+    def debug_expressions(self):
+        """Return the internal expressions for displaying.
 
         Returns
         -------
         str
-            The stringified internal expressions.
+            The internal expressions.
 
         """
         external_inputs = set()
         outputs = set()
+        ordered_exprs = sorted(self.expressions.items(), key=lambda d: d[0])
         buffer0 = '-------------------Expressions-------------------\n'
         buffer1 = ''; buffer2 = 'Inputs: ['
 
-        for k,v in self.expressions.items():
+        for k, v in ordered_exprs:
             buffer1 = buffer1 + '>>>  ' + str(k).zfill(3) + '. ('
             for input in v.input:
                 if input not in outputs:

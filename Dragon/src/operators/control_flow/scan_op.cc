@@ -24,7 +24,6 @@ void ScanOp<Context>::InitTemplate() {
     slice_def.add_arg()->CopyFrom(arg_axis);
     slice_def.add_arg()->CopyFrom(arg_nout);
     template_def.mutable_device_option()->CopyFrom(op_def().device_option());
-    template_def.set_debug_mode(debug_mode);
     //  init for the first step
     for (int i = 0; i < nseqs; i++) {
         OperatorDef* op = template_def.add_op();
@@ -80,7 +79,7 @@ template <class Context>
 void ScanOp<Context>::UnrollTemplate() {
     if (step_type == "Dynamic") {
         CHECK(!step_tensor.empty()) << "Dynamic nsteps must provide a step tensor.";
-        nsteps = ws()->GetTensor(step_tensor)->template data<float, CPUContext>()[0];
+        nsteps = ws()->GetTensor(step_tensor)->template data<int, CPUContext>()[0];
     } else if (step_type == "Default") nsteps = Input(0).dim(axis);
     CHECK_GE(nsteps, 1);
     for (int i = 0; i < nseqs; i++) CHECK_EQ(Input(i).dim(axis), nsteps);
@@ -142,7 +141,7 @@ void ScanOp<Context>::UnrollTemplate() {
         new_def.add_target(Output(i)->name());
     }
     //  upload
-    Tensor* string_tensor = ws()->CreateTensor("/mnt/" + Anchor() + "/raw_ops");
+    Tensor* string_tensor = ws()->CreateTensor("/mnt/" + anchor() + "/raw_ops");
     string_tensor->Reshape(vector<TIndex>(1, 1));
     string* data = string_tensor->mutable_data <string, CPUContext>();
     data[0] = new_def.SerializeAsString();
@@ -165,17 +164,19 @@ DEPLOY_CUDA(Scan);
 OPERATOR_SCHEMA(Scan).NumInputs(1, INT_MAX).NumOutputs(1, INT_MAX);
 
 template <class Context>
-void ScanGradientOp<Context>::MakeGradientOps() {
+void ScanGradientOp<Context>::MakeOps(const GraphDef& forward_def, 
+                                      GraphDef& new_def) {
     if (step_type == "Dynamic")
-        nsteps = ws()->GetTensor(step_tensor)->template data<float, CPUContext>()[0];
+        nsteps = ws()->GetTensor(step_tensor)->template data<int, CPUContext>()[0];
     else if (step_type == "Default") nsteps = Input(0).dim(axis);
     if (graphs.count(nsteps)) return;
 
-    Tensor* ops = ws()->GetTensor("/mnt/" + Anchor() + "/raw_ops");
-    forward_def.ParseFromString(ops->data<string, CPUContext>()[0]);
+    //  determine the targets
     vector<string> targets;
-    for (auto& target : forward_def.target()) targets.push_back(target);
-    GraphGradientMaker maker(forward_def, targets);
+    for (auto& t : forward_def.target()) targets.emplace_back(t);
+
+    //  init maker
+    GraphGradientMaker maker;
     maker.SetTerms(terms);
     maker.SetOperatorPrefix(name() + "(BodyOp.");
     maker.SetOperatorSuffix(")");
@@ -183,7 +184,11 @@ void ScanGradientOp<Context>::MakeGradientOps() {
         if (Input(i + (int)OutputSize()).name() != "ignore")
             maker.AddExternalGrad(Input(i + (int)OutputSize()).name());
     }
-    new_def = maker.Make();
+
+    //  make
+    maker.Make(forward_def, targets, new_def);
+
+    //  post-process
     new_def.set_name(name() + "(ScanLen." + str(nsteps) + ")");
     for (auto& target : targets) {
         for (int i = 0; i < OutputSize(); i++) {
@@ -199,10 +204,15 @@ void ScanGradientOp<Context>::MakeGradientOps() {
 
 template <class Context>
 void ScanGradientOp<Context>::RunOnDevice() {
-    MakeGradientOps();
-    if (!graphs.count(nsteps)) {
+    Tensor* ops = ws()->GetTensor("/mnt/" + anchor() + "/raw_ops");
+    GraphDef forward_def, new_def;
+    forward_def.ParseFromString(ops->data<string, CPUContext>()[0]);
+    new_def.CopyFrom(forward_def);
+    MakeOps(forward_def, new_def);
+    
+    //  persist for different scan steps
+    if (!graphs.count(nsteps)) 
         graphs[nsteps].reset(new Graph(new_def, ws()));
-    }
     cur_graph = graphs[nsteps].get();
     cur_graph->Run("Gradient", "");
 }

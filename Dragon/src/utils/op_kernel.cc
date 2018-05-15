@@ -204,6 +204,13 @@ template<> void Relu<float, CPUContext>(const int count,
     }
 }
 
+template<> void Relu<float16, CPUContext>(const int count,
+                                          const float16* x,
+                                          const float slope,
+                                          float16* y) {
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
+}
+
 template<> void ReluGrad<float, CPUContext>(const int count, 
                                             const float* dy, 
                                             const float* y, 
@@ -541,9 +548,9 @@ template <> void SigmoidCrossEntropyGrad<float, CPUContext>(const int count,
 
 /******************** loss.smooth_l1_loss ********************/
 
-template<> void SmoothL1<float, CPUContext>(const int count, 
-                                            const float sigma2, 
-                                            const float* x, 
+template<> void SmoothL1<float, CPUContext>(const int count,
+                                            const float beta,
+                                            const float* x,
                                             float* y) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
@@ -551,14 +558,14 @@ template<> void SmoothL1<float, CPUContext>(const int count,
     for (int i = 0; i < count; ++i) {
         const float val = x[i];
         const float abs_val = abs(val);
-        if (abs_val < 1.0 / sigma2) y[i] = 0.5 * val * val * sigma2;
-        else y[i] = abs_val - 0.5 / sigma2;
+        if (abs_val < beta) y[i] = 0.5 * val * val / beta;
+        else y[i] = abs_val - 0.5 * beta;
     }
 }
 
-template<> void SmoothL1Grad<float, CPUContext>(const int count, 
-                                                const float sigma2, 
-                                                const float* dy, 
+template<> void SmoothL1Grad<float, CPUContext>(const int count,
+                                                const float beta,
+                                                const float* dy,
                                                 float* dx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
@@ -566,7 +573,7 @@ template<> void SmoothL1Grad<float, CPUContext>(const int count,
     for (int i = 0; i < count; ++i) {
         const float val = dy[i];
         const float abs_val = abs(val);
-        if (abs_val < 1.0 / sigma2) dx[i] = val * sigma2;
+        if (abs_val < beta) dx[i] = val / beta;
         //  val > 0: 1 | val == 0: 0 | val < 0: -1
         else dx[i] = (val > float(0)) - (val < float(0));
     }
@@ -588,15 +595,16 @@ template <> void SoftmaxCrossEntropy<float, CPUContext>(const int count,
 
 /******************** loss.sparse_softmax_cross_entropy ********************/
 
-template <> void SparseSoftmaxCrossEntropy<float, CPUContext>(const int count, 
-                                                              const int classes, 
-                                                              const int outer_dim, 
-                                                              const int inner_dim,
-                                                              const float* prob, 
-                                                              const float* labels, 
-                                                              float* loss, 
-                                                              float* valid, 
-                                                              Tensor* ignore) {
+template <typename Tx, typename Ty>
+void _SparseSoftmaxCrossEntropy(const int count,
+                                const int classes,
+                                const int outer_dim,
+                                const int inner_dim,
+                                const Tx* prob,
+                                const Ty* labels,
+                                Tx* loss,
+                                Tx* valid,
+                                Tensor* ignore) {
     const int* ignores = ignore->count() > 0 ? 
                          ignore->data<int, CPUContext>() : nullptr;
     const int dim = count / outer_dim;
@@ -612,7 +620,7 @@ template <> void SparseSoftmaxCrossEntropy<float, CPUContext>(const int count,
                 }
             }
             if (k == ignore->count()) {
-                float labeled_prob = prob[i * dim + label * inner_dim + j];
+                Tx labeled_prob = prob[i * dim + label * inner_dim + j];
                 loss[idx] = -std::log(std::max(labeled_prob, FLT_MIN));
                 valid[idx] = 1;
             }
@@ -620,15 +628,44 @@ template <> void SparseSoftmaxCrossEntropy<float, CPUContext>(const int count,
     }
 }
 
-template<> void SparseSoftmaxCrossEntropyGrad<float, CPUContext>(const int count,
-                                                                 const int classes,
-                                                                 const int outer_dim,
-                                                                 const int inner_dim,
-                                                                 const float* prob,
-                                                                 const float* labels,
-                                                                 float* valid,
-                                                                 Tensor* ignore,
-                                                                 float* dx) {
+template <> void SparseSoftmaxCrossEntropy<float, float, CPUContext>(const int count,
+                                                                     const int classes,
+                                                                     const int outer_dim,
+                                                                     const int inner_dim,
+                                                                     const float* prob,
+                                                                     const float* labels,
+                                                                     float* loss,
+                                                                     float* valid,
+                                                                     Tensor* ignore) {
+    _SparseSoftmaxCrossEntropy<float, float>(count, classes,
+                                       outer_dim, inner_dim,
+                         prob, labels, loss, valid, ignore);
+}
+
+template <> void SparseSoftmaxCrossEntropy<float, int64_t, CPUContext>(const int count,
+                                                                       const int classes,
+                                                                       const int outer_dim,
+                                                                       const int inner_dim,
+                                                                       const float* prob,
+                                                                       const int64_t* labels,
+                                                                       float* loss,
+                                                                       float* valid,
+                                                                       Tensor* ignore) {
+    _SparseSoftmaxCrossEntropy<float, int64_t>(count, classes,
+                                         outer_dim, inner_dim,
+                           prob, labels, loss, valid, ignore);
+}
+
+template <typename Tx, typename Ty>
+void _SparseSoftmaxCrossEntropyGrad(const int count,
+                                    const int classes,
+                                    const int outer_dim,
+                                    const int inner_dim,
+                                    const Tx* prob,
+                                    const Ty* labels,
+                                    Tx* valid,
+                                    Tensor* ignore,
+                                    Tx* dx) {
     int dim = count / outer_dim;
     const int* ignores = ignore->count() > 0 ?
                          ignore->data <int, CPUContext>() : nullptr;
@@ -648,6 +685,34 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, CPUContext>(const int count
             }
         }
     }
+}
+
+template<> void SparseSoftmaxCrossEntropyGrad<float, float, CPUContext>(const int count,
+                                                                        const int classes,
+                                                                        const int outer_dim,
+                                                                        const int inner_dim,
+                                                                        const float* prob,
+                                                                        const float* labels,
+                                                                        float* valid,
+                                                                        Tensor* ignore,
+                                                                        float* dx) {
+    _SparseSoftmaxCrossEntropyGrad<float, float>(count, classes,
+                                           outer_dim, inner_dim,
+                               prob, labels, valid, ignore, dx);
+}
+
+template<> void SparseSoftmaxCrossEntropyGrad<float, int64_t, CPUContext>(const int count,
+                                                                          const int classes,
+                                                                          const int outer_dim,
+                                                                          const int inner_dim,
+                                                                          const float* prob,
+                                                                          const int64_t* labels,
+                                                                          float* valid,
+                                                                          Tensor* ignore,
+                                                                          float* dx) {
+    _SparseSoftmaxCrossEntropyGrad<float, int64_t>(count, classes,
+                                             outer_dim, inner_dim,
+                                 prob, labels, valid, ignore, dx);
 }
 
 /******************** loss.sparse_softmax_focal_loss ********************/
@@ -1120,6 +1185,39 @@ template <> void ConcatGrad<float16, CPUContext>(const int count,
 
 /******************** ndarray.crop ********************/
 
+template <typename T>
+void _Crop1D(const int count,
+             const int dim,
+             const int ex_dim,
+             const int inner_dim,
+             const int start,
+             const T* x,
+             T* y,
+             CPUContext* context) {
+    const int count_v2 = count / inner_dim;
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
+#endif
+    for (int idx = 0; idx < count_v2; ++idx) {
+        const int ex_d = idx % ex_dim;
+        const int o = idx / ex_dim;
+        const T* x_ptr = x + (o * dim + ex_d + start) * inner_dim;
+        T* y_ptr = y + (o * ex_dim + ex_d) * inner_dim;
+        context->Copy<T, CPUContext, CPUContext>(inner_dim, y_ptr, x_ptr);
+    }
+}
+
+template<> void Crop1D<int, CPUContext>(const int count,
+                                          const int dim,
+                                          const int ex_dim,
+                                          const int inner_dim,
+                                          const int start,
+                                          const int* x,
+                                          int* y, 
+                                          CPUContext* context) {
+    _Crop1D<int>(count, dim, ex_dim, inner_dim, start, x, y, context);
+}
+
 template<> void Crop1D<float, CPUContext>(const int count,
                                           const int dim,
                                           const int ex_dim,
@@ -1128,17 +1226,46 @@ template<> void Crop1D<float, CPUContext>(const int count,
                                           const float* x,
                                           float* y, 
                                           CPUContext* context) {
+    _Crop1D<float>(count, dim, ex_dim, inner_dim, start, x, y, context);
+}
+
+template <typename T>
+void _Crop1DGrad(const int count,
+                const int dim,
+                const int ex_dim,
+                const int inner_dim,
+                const int start,
+                const int end,
+                const T* dy,
+                T* dx, 
+                CPUContext* context) {
     const int count_v2 = count / inner_dim;
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
 #endif
     for (int idx = 0; idx < count_v2; ++idx) {
-        const int ex_d = idx % ex_dim;
-        const int o = idx / ex_dim;
-        const float* x_ptr = x + (o * dim + ex_d + start) * inner_dim;
-        float* y_ptr = y + (o * ex_dim + ex_d) * inner_dim;
-        context->Copy<float, CPUContext, CPUContext>(inner_dim, y_ptr, x_ptr);
+        const int d = idx % dim;
+        const int o = idx / dim;
+        T* dx_ptr = dx + (o * dim + d) * inner_dim;
+        if (d < start || d >= end) {
+            for (int i = 0; i < inner_dim; ++i) dx_ptr[i] = 0;
+        } else {
+            const T* dy_ptr = dy + (o * ex_dim + d - start) * inner_dim;
+            context->Copy<T, CPUContext, CPUContext>(inner_dim, dx_ptr, dy_ptr);
+        }
     }
+}
+
+template<> void Crop1DGrad<int, CPUContext>(const int count,
+                                              const int dim,
+                                              const int ex_dim,
+                                              const int inner_dim,
+                                              const int start,
+                                              const int end,
+                                              const int* dy,
+                                              int* dx, 
+                                              CPUContext* context) {
+    _Crop1DGrad<int>(count, dim, ex_dim, inner_dim, start, end, dy, dx, context);
 }
 
 template<> void Crop1DGrad<float, CPUContext>(const int count,
@@ -1150,21 +1277,7 @@ template<> void Crop1DGrad<float, CPUContext>(const int count,
                                               const float* dy,
                                               float* dx, 
                                               CPUContext* context) {
-    const int count_v2 = count / inner_dim;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
-#endif
-    for (int idx = 0; idx < count_v2; ++idx) {
-        const int d = idx % dim;
-        const int o = idx / dim;
-        float* dx_ptr = dx + (o * dim + d) * inner_dim;
-        if (d < start || d >= end) {
-            for (int i = 0; i < inner_dim; ++i) dx_ptr[i] = 0;
-        } else {
-            const float* dy_ptr = dy + (o * ex_dim + d - start) * inner_dim;
-            context->Copy<float, CPUContext, CPUContext>(inner_dim, dx_ptr, dy_ptr);
-        }
-    }
+    _Crop1DGrad<float>(count, dim, ex_dim, inner_dim, start, end, dy, dx, context);
 }
 
 /******************** ndarray.pad ********************/
@@ -1638,63 +1751,104 @@ template <> void LSTMUnitGrad<float, CPUContext>(const int count,
 
 /******************** update.adam_update ********************/
 
-template <> void AdamUpdate<float, CPUContext>(Tensor* x, 
-                                               Tensor* m, 
-                                               Tensor* v, 
-                                               Tensor* t,
-                                               const float beta1, 
-                                               const float beta2, 
-                                               const float eps, 
-                                               const float lr) {
-    TIndex count = x->count();
-    t->Reshape(vector<TIndex>(1, count));
-    auto* Xdata = x->mutable_data<float, CPUContext>();
-    auto* Mdata = m->mutable_data<float, CPUContext>();
-    auto* Vdata = v->mutable_data<float, CPUContext>();
-    auto* Tdata = t->mutable_data<float, CPUContext>();
-    math::Axpby<float, CPUContext>(count, 1.0 - beta1, Xdata, beta1, Mdata);
-    math::Mul<float, CPUContext>(count, Xdata, Xdata, Tdata);
-    math::Axpby<float, CPUContext>(count, 1.0 - beta2, Tdata, beta2, Vdata);
-    math::Sqrt<float, CPUContext>(count, Vdata, Tdata);
-    math::AddScalar<float, CPUContext>(count, eps, Tdata);
-    math::Div<float, CPUContext>(count, Mdata, Tdata, Tdata);
-    math::Scale<float, CPUContext>(count, lr, Tdata, Xdata);
+template <typename T>
+void _AdamUpdate(const int count,
+                 const T lr,
+                 const T beta1,
+                 const T beta2,
+                 const T eps,
+                 T* g, T* m, T* v) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        T gi = g[i];
+        T mi = m[i] = m[i] * beta1 + gi * (1 - beta1);
+        T vi = v[i] = v[i] * beta2 + gi * gi * (1 - beta2);
+        g[i] = lr * mi / (std::sqrt(vi) + eps);
+    }
+}
+
+template <> void AdamUpdate<float, CPUContext>(const int count,
+                                               const float lr,
+                                               const float beta1,
+                                               const float beta2,
+                                               const float eps,
+                                               float* g, float* m, float* v) {
+    _AdamUpdate<float>(count, lr, beta1, beta2, eps, g, m, v);
 }
 
 /******************** update.nesterov_update ********************/
 
-template <> void NesterovUpdate<float,  CPUContext>(const int count,
-                                                    float* x,
-                                                    float* h,
-                                                    Tensor* t,
-                                                    const float momentum,
-                                                    const float lr,
-                                                    CPUContext* ctx) {
-    t->Reshape(vector<TIndex>(1, count));
-    float* Tdata = t->mutable_data<float, CPUContext>();
-    ctx->Copy<float, CPUContext, CPUContext>(count, Tdata, h);
-    math::Axpby<float, CPUContext>(count, lr, x, momentum, h);
-    math::Axpby<float, CPUContext>(count, 1.0 + momentum, h, -momentum, Tdata);
-    ctx->Copy<float, CPUContext, CPUContext>(count, x, Tdata);
+template <typename T>
+void _NesterovUpdate(const int count,
+                     const T lr,
+                     const T momentum,
+                     T* g, T* h) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        T hi = h[i];
+        T hi_new = h[i] = momentum * hi + lr * g[i];
+        g[i] = (1 + momentum) * hi_new - momentum * hi;
+    }
+}
+
+template <> void NesterovUpdate<float, CPUContext>(const int count,
+                                                   const float lr,
+                                                   const float momentum,
+                                                   float* g, float* h) {
+    _NesterovUpdate<float>(count, lr, momentum, g, h);
 }
 
 /******************** update.rmsprop_update ********************/
 
-template <> void RMSPropUpdate<float, CPUContext>(const int count, 
-                                                  float* x, 
-                                                  float* h,
-                                                  Tensor* t,
-                                                  const float decay, 
-                                                  const float eps, 
-                                                  const float lr) {
-    t->Reshape(vector<TIndex>(1, count));
-    float* Tdata = t->mutable_data<float, CPUContext>();
-    math::Square<float, CPUContext>(count, x, Tdata);
-    math::Axpby<float, CPUContext>(count, 1.0 - decay, Tdata, decay, h);
-    math::Sqrt<float, CPUContext>(count, h, Tdata);
-    math::AddScalar<float, CPUContext>(count, eps, Tdata);
-    math::Div<float, CPUContext>(count, x, Tdata, Tdata);
-    math::Axpby<float, CPUContext>(count, lr, Tdata, 0.0, x);
+template <typename T>
+void _RMSPropUpdate(const int count,
+                    const T lr,
+                    const T decay,
+                    const T eps,
+                    T* g, T* h) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        T gi = g[i];
+        T hi = h[i] = decay * h[i] + (1 - decay) * gi * gi;
+        g[i] = lr * g[i] / (std::sqrt(hi) + eps);
+    }
+}
+
+template <> void RMSPropUpdate<float, CPUContext>(const int count,
+                                                  const float lr,
+                                                  const float decay,
+                                                  const float eps,
+                                                  float* g, float* h) {
+    _RMSPropUpdate<float>(count, lr, decay, eps, g, h);
+}
+
+/******************** update.sgd_update ********************/
+
+template <typename T>
+void _SGDUpdate(const int count,
+                const T lr,
+                const T momentum,
+                T* g, T* h) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        T hi = h[i];
+        g[i] = h[i] = momentum * hi + lr * g[i];
+    }
+}
+
+template <> void SGDUpdate<float, CPUContext>(const int count,
+                                              const float lr,
+                                              const float momentum,
+                                              float* g, float* h) {
+    _SGDUpdate<float>(count, lr, momentum, g, h);
 }
 
 /******************** vision.bilinear_resize ********************/

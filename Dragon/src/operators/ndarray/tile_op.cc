@@ -33,7 +33,7 @@ void TileOp<Context>::RunOnDevice() {
     //  do nothing 
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(0));
-        Output(0)->Share(Input(0));
+        Output(0)->template Copy<Context, Context>(Input(0));
         return;
     }
 
@@ -44,8 +44,8 @@ void TileOp<Context>::RunOnDevice() {
 
     for (auto& task : process_axes) {
         axis = task.second; multiple = task.first;
-        if (Input(0).template IsType<float>()) TileRunWithType<float>();
-        else LOG(FATAL) << "Unsupported input types.";
+        if (XIsType(Input(0), float)) TileRunWithType<float>();
+        else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
         //  allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
@@ -93,7 +93,7 @@ void TileGradientOp<Context>::RunOnDevice() {
     //  do nothing 
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(-1));
-        Output(0)->Share(Input(-1));
+        Output(0)->template Copy<Context, Context>(Input(-1));
         return;
     }
 
@@ -104,8 +104,8 @@ void TileGradientOp<Context>::RunOnDevice() {
 
     for (auto& task : process_axes) {
         axis = task.second; multiple = task.first;
-        if (Input(0).template IsType<float>()) TileRunWithType<float>();
-        else LOG(FATAL) << "Unsupported input types.";
+        if (XIsType(Input(0), float)) TileRunWithType<float>();
+        else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
         //  allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {

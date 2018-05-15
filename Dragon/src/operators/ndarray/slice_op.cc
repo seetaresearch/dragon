@@ -28,13 +28,9 @@ void SliceOp<Context>::RunOnDevice() {
     inner_dim = Input(0).count(axis + 1);
     slice_offset = 0;
     for (int i = 0; i < nout; i++) Output(i)->Reshape(slice_dims);
-    if (nout == 1) {
-        Output(0)->Share(Input(0));
-        return;
-    }
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(Slice);
@@ -65,13 +61,9 @@ void SliceGradientOp<Context>::RunOnDevice() {
     inner_dim = Input(0).count(axis + 1);
     slice_offset = 0;
     Output(0)->ReshapeLike(Input(0));
-    if (nout == 1) {
-        Output(0)->Share(Input(-1));
-        return;
-    }
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(SliceGradient);

@@ -32,15 +32,15 @@ void RandomPickOp<Context>::RunOnDevice() {
     inner_dim = Input(0).count(axis + 1);
     Output(0)->Reshape(output_dims);
 
-    pick_indices = ws()->CreateTensor("/mnt/" + Anchor() + "/pick/indices");
+    pick_indices = ws()->CreateTensor("/mnt/" + anchor() + "/pick/indices");
     pick_indices->Reshape(vector<TIndex>(1, max_samples));
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 
     if (Output(1)->name() != "ignore") {
         Output(1)->ReshapeLike(*pick_indices);
-        Output(1)->Share(*pick_indices);
+        Output(1)->template Copy<Context, Context>(*pick_indices);
     }
 }
 
@@ -65,7 +65,7 @@ void RandomPickGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void RandomPickGradientOp<Context>::RunOnDevice() {
-    pick_indices = ws()->GetTensor("/mnt/" + Anchor() + "/pick/indices");
+    pick_indices = ws()->GetTensor("/mnt/" + anchor() + "/pick/indices");
 
     x_slice_dim = Input(0).dim(axis);
     y_slice_dim = pick_indices->count();
@@ -73,8 +73,8 @@ void RandomPickGradientOp<Context>::RunOnDevice() {
     inner_dim = Input(0).count(axis + 1);
     Output(0)->ReshapeLike(Input(0));
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(RandomPickGradient);

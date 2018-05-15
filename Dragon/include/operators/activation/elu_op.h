@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -36,9 +36,7 @@ class EluGradientOp : public Operator<Context> {
  public:
     EluGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          alpha(OperatorBase::GetSingleArg<float>("alpha", 1.0)) {
-        DISABLE_SHARE_GRADIENT;
-    }
+          alpha(OperatorBase::GetSingleArg<float>("alpha", 1.0)) {}
     USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;

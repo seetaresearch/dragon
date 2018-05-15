@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -37,10 +37,7 @@ class ReshapeOp final : public Operator<Context> {
 template <class Context>
 class ReshapeGradientOp final : public Operator<Context> {
  public:
-    ReshapeGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws) {
-        DISABLE_SHARE_GRADIENT;
-    }
+    USE_SIMPLE_CTOR_DTOR(ReshapeGradientOp);
     USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;

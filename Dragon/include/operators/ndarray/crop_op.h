@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -21,39 +21,12 @@ class CropOp: public Operator<Context> {
  public:
     CropOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          starts(OperatorBase::GetRepeatedArg<int>("starts")),
-          ends(OperatorBase::GetRepeatedArg<int>("ends")),
-          start_axis(OperatorBase::GetSingleArg<int>("start_axis", -1)),
-          offsets(OperatorBase::GetRepeatedArg<int>("offsets")),
-          shape(OperatorBase::GetRepeatedArg<int>("shape")),
-          shape_like(OperatorBase::GetSingleArg<string>("shape_like", "")) {}
-    USE_OPERATOR_FUNCTIONS(Context);
-
-    void Setup();
-    void RunOnDevice() override;
-    template <typename T> void RunWithType();
-
- protected:
-    TIndex start_axis;
-    string shape_like;
-    vector<int> starts, ends, offsets, shape;
-    vector< pair<int, int> > process_axes;
-    TIndex axis, inner_dim, dim;
-    Tensor* dest, *source;
-};
-
-template <class Context>
-class CropGradientOp final : public Operator<Context > {
- public:
-    CropGradientOp(const OperatorDef& op_def, Workspace* ws) 
-        : Operator<Context>(op_def, ws),
-          starts(OperatorBase::GetRepeatedArg<int>("starts")),
-          ends(OperatorBase::GetRepeatedArg<int>("ends")),
           start_axis(OperatorBase::GetSingleArg<int>("start_axis", -1)),
           offsets(OperatorBase::GetRepeatedArg<int>("offsets")),
           shape(OperatorBase::GetRepeatedArg<int>("shape")),
           shape_like(OperatorBase::GetSingleArg<string>("shape_like", "")) {
-        DISABLE_SHARE_GRADIENT;
+        GET_ARGUMENTS_WITH_DESC(int, starts);
+        GET_ARGUMENTS_WITH_DESC(int, ends);
     }
     USE_OPERATOR_FUNCTIONS(Context);
 
@@ -64,7 +37,29 @@ class CropGradientOp final : public Operator<Context > {
  protected:
     TIndex start_axis;
     string shape_like;
-    vector<int> starts, ends, offsets, shape;
+    vector<int> st, ed, offsets, shape, keep_dims;
+    DECLARE_ARGUMENTS_WITH_DESC(int, starts);
+    DECLARE_ARGUMENTS_WITH_DESC(int, ends);
+    vector< pair<int, int> > process_axes;
+    TIndex axis, inner_dim, dim;
+    Tensor* dest, *source;
+};
+
+DEFINE_ARGUMENTS_WITH_DESC(int, CropOp, starts);
+DEFINE_ARGUMENTS_WITH_DESC(int, CropOp, ends);
+
+template <class Context>
+class CropGradientOp final : public Operator<Context > {
+ public:
+    USE_SIMPLE_CTOR_DTOR(CropGradientOp);
+    USE_OPERATOR_FUNCTIONS(Context);
+
+    void Setup();
+    void RunOnDevice() override;
+    template <typename T> void RunWithType();
+
+ protected:
+    vector<int> st, ed, offsets, keep_dims;
     vector< pair<int, int> > process_axes;
     TIndex axis, inner_dim, dim;
     Tensor* dest, *source;

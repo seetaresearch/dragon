@@ -7,16 +7,20 @@ template <class Context> template <typename T>
 void MovingAverageOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Axpby<T, Context>(Output(0)->count(), 1.0 - decay, Xdata, decay, Ydata);
+    math::Axpby<T, Context>(Input(0).count(), 1.f - decay, Xdata, decay, Ydata);
 }
 
 template <class Context>
 void MovingAverageOp<Context>::RunOnDevice() {
-    CHECK(Input(0).count() == Output(0)->count());
+    CHECK(Input(0).dims() == Output(0)->dims())
+        << "\nVariable(" << Output(0)->name() << ") and "
+        << "new Value(" << Input(0).name() << ") "
+        << "should have same dims.\nGot "
+        << Output(0)->dim_string() << " and " << Input(0).dim_string();
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(MovingAverage);

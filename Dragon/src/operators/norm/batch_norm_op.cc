@@ -204,7 +204,7 @@ void BatchNormOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    var = ws()->CreateTensor("/mnt/" + Anchor() + "/bn/var");
+    var = ws()->CreateTensor("/mnt/" + anchor() + "/bn/var");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 
@@ -219,17 +219,13 @@ template <class Context>
 void BatchNormOp<Context>::RunOnDevice() {
     Setup();
 
-    if (Input(0).template IsType<float>()) {
+    if (XIsType(Input(0), float)) {
         if (use_global_stats) InferenceRunWithType<float>();
         else TrainingRunWithType<float>();
-    }
-#ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) {
+    } else if (XIsType(Input(0), float16)) {
         if (use_global_stats) InferenceRunWithType<float16>();
         else TrainingRunWithType<float16>();
-    }
-#endif
-    else LOG(FATAL) << "Unsupported input types.";
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(BatchNorm);
@@ -377,7 +373,7 @@ void BatchNormGradientOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    var = ws()->GetTensor("/mnt/" + Anchor() + "/bn/var");
+    var = ws()->GetTensor("/mnt/" + anchor() + "/bn/var");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 
@@ -390,17 +386,13 @@ template <class Context>
 void BatchNormGradientOp<Context>::RunOnDevice() {
     Setup();
 
-    if (Input(0).template IsType<float>()) {
+    if (XIsType(Input(0), float)) {
         if (use_global_stats) InferenceRunWithType<float>();
         else TrainingRunWithType<float>();
-    }
-#ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) {
+    } else if (XIsType(Input(0), float16)) {
         if (use_global_stats) InferenceRunWithType<float16>();
         else TrainingRunWithType<float16>();
-    }
-#endif
-    else LOG(FATAL) << "Unsupported input types.";
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(BatchNormGradient);

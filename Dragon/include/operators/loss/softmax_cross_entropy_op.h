@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -23,16 +23,10 @@ class SoftmaxCrossEntropyOp final : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", 1)),
           normalization(OperatorBase::GetSingleArg<string>("normalization", "FULL")) {
-        OperatorDef softmax_def = MakeOperatorDef("Softmax", "",
-            vector<string>({ Input(0).name() }),
-            vector<string>({ "/mnt/" + Anchor() + "/softmax/prob" }));
-        softmax_def.add_arg()->CopyFrom(this->arg("axis"));
-        if (op_def.has_device_option())
-            softmax_def.mutable_device_option()->CopyFrom(op_def.device_option());
-        softmax_op.reset(CreateOperator(softmax_def, ws));
     }
     USE_OPERATOR_FUNCTIONS(Context);
 
+    void SoftmaxRun();
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 

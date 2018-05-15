@@ -36,11 +36,14 @@ template <class Context>
 void CuDNNPooling2dOp<Context>::RunOnDevice() {
     Pooling2dOp<Context>::Reshape();
 
-    if (Input(0).template IsType<float>()) return RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) return RunWithType<float16>();
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+#else
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 #endif
-    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CUDNN(Pooling2d);
@@ -81,11 +84,14 @@ template <class Context>
 void CuDNNPooling2dGradientOp<Context>::RunOnDevice() {
     Pooling2dGradientOp<Context>::Reshape();
 
-    if (Input(0).template IsType<float>()) return RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) return RunWithType<float16>();
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+#else
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 #endif
-    else LOG(FATAL) << "Unsupported input types.";
 }
 
 DEPLOY_CUDNN(Pooling2dGradient);

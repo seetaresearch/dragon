@@ -38,8 +38,8 @@ void Conv2dTransposeOp<Context>::RunOnDevice() {
     for (int i = 0; i < this->num_spatial_axes; i++) 
         this->output_shape[i] = Input(0).dim(this->spatial_axis + i);
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(Conv2dTranspose);
@@ -88,8 +88,8 @@ void Conv2dTransposeGradientOp<Context>::RunOnDevice() {
     for (int i = 0; i < this->num_spatial_axes; i++)
         this->output_shape[i] = Input(0).dim(this->spatial_axis + i);
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(Conv2dTransposeGradient);

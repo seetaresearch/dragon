@@ -110,7 +110,7 @@ void InstanceNormOp<Context>::Setup() {
     CS = C * S;
 
     //  make resource
-    var = ws()->CreateTensor("/mnt/" + Anchor() + "/ins_norm/var");
+    var = ws()->CreateTensor("/mnt/" + anchor() + "/ins_norm/var");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 
@@ -124,8 +124,9 @@ template <class Context>
 void InstanceNormOp<Context>::RunOnDevice() {
     Setup();
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(InstanceNorm);
@@ -243,7 +244,7 @@ void InstanceNormGradientOp<Context>::Setup() {
     CS = C * S;
 
     //  make resource
-    var = ws()->GetTensor("/mnt/" + Anchor() + "/ins_norm/var");
+    var = ws()->GetTensor("/mnt/" + anchor() + "/ins_norm/var");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 
@@ -256,8 +257,9 @@ template <class Context>
 void InstanceNormGradientOp<Context>::RunOnDevice() {
     Setup();
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(InstanceNormGradient);

@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -31,6 +31,19 @@ def ShareGrads(enabled=True):
     option['share_grads'] = enabled
 
 
+def IsGradsShared():
+    """Is grads are shared?
+
+    Returns
+    -------
+    boolean
+        ``True`` if sharing grads else ``False``.
+
+    """
+    from dragon.config import option
+    return option['share_grads']
+
+
 def Drop(op_func, *args, **kwargs):
     """Drop(Share) the inputs for outputs.
 
@@ -54,7 +67,7 @@ def Drop(op_func, *args, **kwargs):
     >>> import dragon.ops as ops
     >>> import dragon.memonger as opt
     >>> data = Tensor().Variable()
-    >>> conv_1 = ops.Conv2D(data, num_output=8)
+    >>> conv_1 = ops.Conv2d(data, num_output=8)
     >>> conv_1_bn = opt.Drop(ops.BatchNorm, [conv_1, Tensor().Variable(), Tensor.Variable()])
     >>> conv_1_relu = opt.Drop(ops.Relu, conv_1_bn)
 

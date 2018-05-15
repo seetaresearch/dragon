@@ -35,8 +35,8 @@ template <class Context>
 void Conv2dOp<Context>::RunOnDevice() {
     Reshape();
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(Conv2d);
@@ -81,8 +81,8 @@ template <class Context>
 void Conv2dGradientOp<Context>::RunOnDevice() {
     GradientReshape();
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types."; 
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(Conv2dGradient);

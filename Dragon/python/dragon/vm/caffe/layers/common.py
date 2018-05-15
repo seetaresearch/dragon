@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -425,10 +425,6 @@ class GroupNormLayer(Layer):
     ----------
     group : int
         Refer ``GroupNormParameter.group``.
-    use_global_stats : boolean
-        Refer ``GroupNormParameter.use_global_stats``.
-    moving_average_fraction : float
-        Refer ``GroupNormParameter.moving_average_fraction``.
     eps : float
         Refer ``GroupNormParameter.eps``.
 
@@ -437,26 +433,12 @@ class GroupNormLayer(Layer):
         super(GroupNormLayer, self).__init__(LayerParameter)
         param = LayerParameter.group_norm_param
         self._param = {'group': int(param.group),
-                       'use_stats': int(param.use_global_stats)
-                            if param.HasField('use_global_stats') else -1,
-                       'momentum': param.moving_average_fraction,
                        'eps': param.eps,
-                       'axis': 1,
-                       'mode': 'CAFFE'}
-        scope = LayerParameter.name
-        # mean, var, factor are set to 0 in order to do statistics
-        mean = Tensor(scope + '/param:0').Constant(value=0.0)
-        var  = Tensor(scope + '/param:1').Constant(value=0.0)
-        factor = Tensor(scope + '/param:2').Constant(value=0.0)
-        # in dragon, set diff as None will ignore computing grad automatically
-        # but in bvlc-caffe1, you must set lr_mult = 0 manually
-        self._blobs.append({'data': mean, 'diff': None})
-        self._blobs.append({'data': var, 'diff': None})
-        self._blobs.append({'data': factor, 'diff': None})
+                       'axis': 1}
 
     def Setup(self, bottom):
         super(GroupNormLayer, self).Setup(bottom)
-        return ops.GroupNorm(bottom + [blob['data'] for blob in self._blobs], **self._param)
+        return ops.GroupNorm(bottom[0], **self._param)
 
 
 class InstanceNormLayer(Layer):
@@ -572,10 +554,6 @@ class GNLayer(Layer):
     ----------
     group : int
         Refer ``GroupNormParameter.group``.
-    use_global_stats : boolean
-        Refer ``GroupNormParameter.use_global_stats``.
-    moving_average_fraction : float
-        Refer ``GroupNormParameter.moving_average_fraction``.
     eps : float
         Refer ``GroupNormParameter.eps``.
     filler : FillerParameter
@@ -589,28 +567,20 @@ class GNLayer(Layer):
         gn_param = LayerParameter.group_norm_param
         scale_param = LayerParameter.scale_param
         self._param = {'group': int(gn_param.group),
-                       'use_stats': int(gn_param.use_global_stats)
-                                        if gn_param.HasField('use_global_stats') else -1,
-                       'momentum': gn_param.moving_average_fraction,
                        'eps': gn_param.eps,
                        'axis': 1}
         scope = LayerParameter.name
-        mean = Tensor(scope + '/param:0').Constant(value=0.0)
-        var = Tensor(scope + '/param:1').Constant(value=0.0)
-        scale = Tensor(scope + '/param:2')
-        scale_diff = Tensor(scope + '/param:2_grad')
-        bias = Tensor(scope + '/param:3')
-        bias_diff = Tensor(scope + '/param:3_grad')
+        scale = Tensor(scope + '/param:0')
+        scale_diff = Tensor(scope + '/param:0_grad')
+        bias = Tensor(scope + '/param:1')
+        bias_diff = Tensor(scope + '/param:1_grad')
 
         if scale_param.HasField('filler'):
             self.Fill(scale, scale_param, 'filler')
         else: scale.Constant(value=1.0)
         self.Fill(bias, scale_param, 'bias_filler')
-        self.norm_blobs = [{'data': mean, 'diff': None},
-                           {'data': var, 'diff': None}]
         self.scale_blobs = [{'data': scale, 'diff': scale_diff},
                             {'data': bias, 'diff': bias_diff}]
-        self._blobs.extend(self.norm_blobs)
         self._blobs.extend(self.scale_blobs)
 
     def Setup(self, bottom):

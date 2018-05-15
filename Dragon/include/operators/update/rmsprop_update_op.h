@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -20,9 +20,7 @@ template <class Context>
 class RMSPropUpdateOp final : public UpdateOpBase<Context> {
  public:
     RMSPropUpdateOp(const OperatorDef& op_def, Workspace* ws) 
-        : UpdateOpBase<Context>(op_def, ws),
-          eps(Param("eps")),
-          decay(Param("decay")) {}
+        : UpdateOpBase<Context>(op_def, ws) {}
     USE_OPERATOR_FUNCTIONS(Context);
     USE_UPDATER_FUNCTIONS(Context);
 
@@ -30,7 +28,6 @@ class RMSPropUpdateOp final : public UpdateOpBase<Context> {
 
  protected:
     float lr, decay, eps;
-    Tensor* h, *tmp;
 };
 
 }    // namespace dragon

@@ -6,20 +6,15 @@ namespace dragon {
 
 template <class Context>
 void RMSPropUpdateOp<Context>::ComputeRunWithFloat() {
-    h = ws()->CreateTensor("/mnt/" + Slot() + "/rmsprop/h");
-    tmp = ws()->CreateTensor("/mnt/" + Slot() + "/rmsprop/tmp");
+    Tensor* h = ws()->CreateTensor("/mnt/" + Slot() + "/rmsprop/h");
     h->ReshapeLike(Input(0));
 
     lr = Param("base_lr") * this->lr_mult;
+    decay = Param("decay"), eps = Param("eps");
     auto* dXdata = Input(0).template mutable_data<float, Context>();
     auto* Hdata = h->template mutable_data<float, Context>();
     kernel::RMSPropUpdate<float, Context>(Input(0).count(),
-                                                    dXdata,
-                                                     Hdata,
-                                                       tmp,
-                                                     decay,
-                                                       eps,
-                                                       lr);
+                            lr, decay, eps, dXdata, Hdata);
 }
 
 DEPLOY_CPU(RMSPropUpdate);

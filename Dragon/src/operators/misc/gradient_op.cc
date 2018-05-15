@@ -18,11 +18,10 @@ void GradientGenerateOp<Context>::RunWithType() {
 
 template <class Context>
 void GradientGenerateOp<Context>::RunOnDevice() {
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-#ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
-#endif
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else if (XIsType(Input(0), int)) RunWithType<int>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16", "int32" });
 }
 
 DEPLOY_CPU(GradientGenerate);
@@ -49,8 +48,9 @@ void GradientGatherOp<Context>::RunOnDevice() {
     if (indices.size() == 0) return;
     Output(0)->ReshapeLike(Input(indices[0]));
 
-    if (Input(indices[0]).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(indices[0]), float)) RunWithType<float>();
+    else if (XIsType(Input(indices[0]), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(indices[0]), { "float32", "float16" });
 }
 
 DEPLOY_CPU(GradientGather);
@@ -64,7 +64,7 @@ template <class Context>
 void StopGradientOp<Context>::RunOnDevice() {
     if (Output(0)->name() != Input(0).name()) {
         Output(0)->ReshapeLike(Input(0));
-        Output(0)->Share(Input(0));
+        Output(0)->template Copy<Context, Context>(Input(0));
     }
 }
 

@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -95,6 +95,7 @@ class CuDNNConv2dOp : public Conv2dOp<Context> {
     }
 
     void RunOnDevice() override;
+    template <typename T> void ResetDesc();
     template <typename T> void RunWithType();
 
  protected:
@@ -107,6 +108,7 @@ class CuDNNConv2dOp : public Conv2dOp<Context> {
     cudnnFilterDescriptor_t filter_desc;
     size_t workspace_fwd_data_size;
     TIndex bias_offset, cudnn_group;
+    vector<TIndex> input_dims;
 };
 
 template <class Context>
@@ -151,6 +153,7 @@ class CuDNNConv2dGradientOp : public Conv2dGradientOp<Context> {
     }
 
     void RunOnDevice() override;
+    template <typename T> void ResetDesc();
     template <typename T> void RunWithType();
 
  protected:
@@ -164,6 +167,7 @@ class CuDNNConv2dGradientOp : public Conv2dGradientOp<Context> {
     cudnnFilterDescriptor_t filter_desc;
     size_t workspace_bwd_filter_size, workspace_bwd_data_size;
     TIndex bias_offset, cudnn_group;
+    vector<TIndex> input_dims;
 };
 
 #endif    // WITH_CUDNN

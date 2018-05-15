@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -67,16 +67,13 @@ class ScanGradientOp final: public Operator<Context> {
         //  handle GI(x)
         for (int i = 0; i < forward_inputs.size(); i++)
             terms[forward_inputs[i] + "_grad"] = Output(i)->name();
-
-        DISABLE_SHARE_GRADIENT;
     }
     USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
-    void MakeGradientOps();
+    void MakeOps(const GraphDef& forward_def, GraphDef& new_def);
 
  protected:
-    GraphDef forward_def, new_def;
     Map<string, string> terms;
     Map<int, unique_ptr<Graph>> graphs;
     vector<string> forward_inputs, forward_outputs;

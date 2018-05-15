@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -37,13 +37,13 @@ def Conv2d(inputs, num_output, kernel_size,
         The inputs, represent [input, weights, bias].
     num_output : int
         The output channels of convolution.
-    kernel_size : int or list
+    kernel_size : int, tuple or list
         The kernel size(s) of convolution.
-    stride : int or list
+    stride : int, tuple or list
         The stride(s) of convolution. Default is ``1``.
-    pad : int or list
+    pad : int, tuple or list
         The zero padding size(s) of convolution. Default is ``0``.
-    dilation : int or list
+    dilation : int, tuple or list
         The dilation multiple(s) of convolution. Default is ``1``.
     group : int
         The group size of convolution. Default is ``1``.
@@ -76,13 +76,13 @@ def Conv2d(inputs, num_output, kernel_size,
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: {}'.format(data_format))
 
-    if not isinstance(arguments['kernel_size'], list):
+    if not isinstance(arguments['kernel_size'], (list, tuple)):
         arguments['kernel_size'] = [arguments['kernel_size']]
-    if not isinstance(arguments['stride'], list):
+    if not isinstance(arguments['stride'], (list, tuple)):
         arguments['stride'] = [arguments['stride']]
-    if not isinstance(arguments['pad'], list):
+    if not isinstance(arguments['pad'], (list, tuple)):
         arguments['pad'] = [arguments['pad']]
-    if not isinstance(arguments['dilation'], list):
+    if not isinstance(arguments['dilation'], (list, tuple)):
         arguments['dilation'] = [arguments['dilation']]
 
     output = Tensor.CreateOperator(nout=1, op_type='Conv2d', **arguments)
@@ -133,13 +133,13 @@ def Conv2dTranspose(inputs, num_output, kernel_size,
         The inputs of deconvolution, represent [input, weights, bias].
     num_output : int
         The output channels of deconvolution.
-    kernel_size : int or list
+    kernel_size : int, tuple or list
         The kernel size(s) of deconvolution.
-    stride : int or list
+    stride : int, tuple or list
         The stride(s) of deconvolution. Default is ``1``.
-    pad : int or list
+    pad : int, tuple or list
         The zero padding size(s) of deconvolution. Default is ``0``.
-    dilation : int or list
+    dilation : int, tuple or list
         The dilation multiple(s) of deconvolution. Default is ``1``.
     group : int
         The group size of deconvolution. Default is ``1``.
@@ -177,13 +177,13 @@ def Conv2dTranspose(inputs, num_output, kernel_size,
     if output_shape is not None:
         AddArgumentsWithDesc(arguments, output_shape, 'output_shape', 'int32', as_target=True)
 
-    if not isinstance(arguments['kernel_size'], list):
+    if not isinstance(arguments['kernel_size'], (list, tuple)):
         arguments['kernel_size'] = [arguments['kernel_size']]
-    if not isinstance(arguments['stride'], list):
+    if not isinstance(arguments['stride'], (list, tuple)):
         arguments['stride'] = [arguments['stride']]
-    if not isinstance(arguments['pad'], list):
+    if not isinstance(arguments['pad'], (list, tuple)):
         arguments['pad'] = [arguments['pad']]
-    if not isinstance(arguments['dilation'], list):
+    if not isinstance(arguments['dilation'], (list, tuple)):
         arguments['dilation'] = [arguments['dilation']]
 
     output =  Tensor.CreateOperator(nout=1, op_type='Conv2dTranspose', **arguments)
@@ -219,7 +219,7 @@ def Conv2dTranspose(inputs, num_output, kernel_size,
     return output
 
 
-def Pool2d(inputs, kernel_size, stride, pad=0, padding='VALID',
+def Pool2d(inputs, kernel_size, stride, pad=0, padding='VALID', ceil=True,
            mode='MAX', data_format='NCHW', global_pooling=False, **kwargs):
     """2D Pooling, MAX or AVG.
 
@@ -235,14 +235,16 @@ def Pool2d(inputs, kernel_size, stride, pad=0, padding='VALID',
     ----------
     inputs : Tensor
         The input tensor.
-    kernel_size : int or list
+    kernel_size : int, tuple or list
         The kernel size(s) of pooling.
-    stride : int or list
+    stride : int, tuple or list
         The stride(s) of of pooling,
-    pad : int or list
+    pad :  int, tuple or list
         The zero padding size(s) of pooling. Default is ``0``.
     padding : str
         The padding algorithm. ``VALID`` or ``SAME``.
+    ceil : boolean
+        Whether to ceil the boundary.
     mode : str
         The mode, ``MAX`` or ``AVG``.
     data_format : str
@@ -266,11 +268,11 @@ def Pool2d(inputs, kernel_size, stride, pad=0, padding='VALID',
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: {}'.format(data_format))
 
-    if not isinstance(arguments['kernel_size'], list):
+    if not isinstance(arguments['kernel_size'], (list, tuple)):
         arguments['kernel_size'] = [arguments['kernel_size']]
-    if not isinstance(arguments['stride'], list):
+    if not isinstance(arguments['stride'], (list, tuple)):
         arguments['stride'] = [arguments['stride']]
-    if not isinstance(arguments['pad'], list):
+    if not isinstance(arguments['pad'], (list, tuple)):
         arguments['pad'] = [arguments['pad']]
 
     output = Tensor.CreateOperator(nout=1, op_type='Pooling2d', **arguments)

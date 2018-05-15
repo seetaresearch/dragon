@@ -246,9 +246,9 @@ void FusedBatchNormOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    mean = ws()->CreateTensor("/mnt/" + Anchor() + "/bn/mean");
-    var = ws()->CreateTensor("/mnt/" + Anchor() + "/bn/var");
-    x_norm = ws()->CreateTensor("/mnt/" + Anchor() + "/bn/x_norm");
+    mean = ws()->CreateTensor("/mnt/" + anchor() + "/bn/mean");
+    var = ws()->CreateTensor("/mnt/" + anchor() + "/bn/var");
+    x_norm = ws()->CreateTensor("/mnt/" + anchor() + "/bn/x_norm");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 
@@ -264,17 +264,13 @@ template <class Context>
 void FusedBatchNormOp<Context>::RunOnDevice() {
     Setup();
 
-    if (Input(0).template IsType<float>()) {
+    if (XIsType(Input(0), float)) {
         if (use_global_stats) InferenceRunWithType<float>();
         else TrainingRunWithType<float>();
-    }
-#ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) {
+    } else if (XIsType(Input(0), float16)) {
         if (use_global_stats) InferenceRunWithType<float16>();
         else TrainingRunWithType<float16>();
-    }
-#endif
-    else LOG(FATAL) << "Unsupported input types.";
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 
@@ -506,9 +502,9 @@ void FusedBatchNormGradientOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    mean = ws()->GetTensor("/mnt/" + Anchor() + "/bn/mean");
-    var = ws()->GetTensor("/mnt/" + Anchor() + "/bn/var");
-    x_norm = ws()->GetTensor("/mnt/" + Anchor() + "/bn/x_norm");
+    mean = ws()->GetTensor("/mnt/" + anchor() + "/bn/mean");
+    var = ws()->GetTensor("/mnt/" + anchor() + "/bn/var");
+    x_norm = ws()->GetTensor("/mnt/" + anchor() + "/bn/x_norm");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 
@@ -523,34 +519,13 @@ template <class Context>
 void FusedBatchNormGradientOp<Context>::RunOnDevice() {
     Setup();
 
-    if (Input(0).template IsType<float>()) {
+    if (XIsType(Input(0), float)) {
         if (use_global_stats) InferenceRunWithType<float>();
         else TrainingRunWithType<float>();
-    }
-#ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) {
+    } else if (XIsType(Input(0), float16)) {
         if (use_global_stats) InferenceRunWithType<float16>();
         else TrainingRunWithType<float16>();
-    }
-#endif
-    else LOG(FATAL) << "Unsupported input types.";
-}
-
-template <class Context>
-void FusedBatchNormGradientOp<Context>::ShareGradient() {
-    if (use_global_stats) {
-        if (Output(0)->name() != "ignore") {
-            Tensor* dX = ws()->GetBuffer("Grad");
-            ws()->CreateAvatar(Output(0), dX);
-        }
-    } else {
-        if (Output(0)->name() != "ignore" ||
-            Output(1)->name() != "ignore" ||
-            Output(2)->name() != "ignore") {
-            Tensor* dX = ws()->GetBuffer("Grad");
-            ws()->CreateAvatar(Output(0), dX);
-        }
-    }
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(FusedBatchNormGradient);

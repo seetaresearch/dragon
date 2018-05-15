@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -9,6 +9,10 @@
 #
 # ------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import numpy as np
 import numpy.random as npr
 from multiprocessing import Process
@@ -16,29 +20,28 @@ from multiprocessing import Process
 import dragon.config as config
 import dragon.vm.caffe.proto.caffe_pb2 as pb
 
-from .utils import GetProperty
-
 try:
     import cv2
+except ImportError as e:
+    print('Failed to import cv2. Error: {0}'.format(str(e)))
+try:
     import PIL.Image
     import PIL.ImageEnhance
-except ImportError as e: pass
+except ImportError as e:
+    print('Failed to import PIL. Error: {0}'.format(str(e)))
+
 
 class DataTransformer(Process):
-    """
-    DataTransformer is deployed to queue transformed images from `DataReader`_.
+    """DataTransformer is deployed to queue transformed images from `DataReader`_.
 
     Nearly all common image augmentation methods are supported.
+
     """
     def __init__(self, **kwargs):
         """Construct a ``DataTransformer``.
 
         Parameters
         ----------
-        mean_values : list
-            The mean value of each image channel.
-        scale : float
-            The scale performed after mean subtraction. Default is ``1.0``.
         padding : int
             The padding size. Default is ``0`` (Disabled).
         fill_value : int
@@ -60,23 +63,21 @@ class DataTransformer(Process):
 
         """
         super(DataTransformer, self).__init__()
-        self._mean_values = GetProperty(kwargs, 'mean_values', [])
-        self._scale = GetProperty(kwargs, 'scale', 1.0)
-        self._padding = GetProperty(kwargs, 'padding', 0)
-        self._fill_value = GetProperty(kwargs, 'fill_value', 127)
-        self._crop_size = GetProperty(kwargs, 'crop_size', 0)
-        self._mirror = GetProperty(kwargs, 'mirror', False)
-        self._color_aug = GetProperty(kwargs, 'color_augmentation', False)
-        self._min_random_scale = GetProperty(kwargs, 'min_random_scale', 1.0)
-        self._max_random_scale = GetProperty(kwargs, 'max_random_scale', 1.0)
-        self._force_color = GetProperty(kwargs, 'force_color', False)
-        self._phase = GetProperty(kwargs, 'phase', 'TRAIN')
+        self._padding = kwargs.get('padding', 0)
+        self._fill_value = kwargs.get('fill_value', 127)
+        self._crop_size = kwargs.get('crop_size', 0)
+        self._mirror = kwargs.get('mirror', False)
+        self._color_aug = kwargs.get('color_augmentation', False)
+        self._min_random_scale = kwargs.get('min_random_scale', 1.0)
+        self._max_random_scale = kwargs.get('max_random_scale', 1.0)
+        self._force_color = kwargs.get('force_color', False)
+        self._phase = kwargs.get('phase', 'TRAIN')
         self._random_seed = config.GetRandomSeed()
         self.Q_in = self.Q_out = None
         self.daemon = True
 
-    def transform_image_labels(self, serialized):
-        """Get image and labels from a serialized str.
+    def get(self, serialized):
+        """Return image and labels from a serialized str.
 
         Parameters
         ----------
@@ -102,21 +103,19 @@ class DataTransformer(Process):
         random_scale = npr.uniform() * (self._max_random_scale - self._min_random_scale) \
                             + self._min_random_scale
         if random_scale != 1.0:
-           new_shape = (int(im.shape[1] * random_scale), int(im.shape[0] * random_scale))
-           im = PIL.Image.fromarray(im)
-           im = im.resize(new_shape, PIL.Image.BILINEAR)
-           im = np.array(im)
+            im = cv2.resize(im, None, interpolation=cv2.INTER_LINEAR,
+                    fx=random_scale, fy=random_scale)
 
         # random crop
-        h_off = w_off = 0
         if self._crop_size > 0:
-            if self._phase == 'TRAIN':
+            if self._phase== 'TRAIN':
                 h_off = npr.randint(im.shape[0] - self._crop_size + 1)
                 w_off = npr.randint(im.shape[1] - self._crop_size + 1)
             else:
-                h_off = (im.shape[0] - self._crop_size) / 2
-                w_off = (im.shape[1] - self._crop_size) / 2
-            im = im[h_off : h_off + self._crop_size, w_off : w_off + self._crop_size, :]
+                h_off = int((im.shape[0] - self._crop_size) / 2)
+                w_off = int((im.shape[1] - self._crop_size) / 2)
+            im = im[h_off : h_off + self._crop_size,
+                    w_off : w_off + self._crop_size, :]
 
         # random mirror
         if self._mirror:
@@ -126,7 +125,8 @@ class DataTransformer(Process):
         # gray transformation
         if self._force_color:
             if im.shape[2] == 1:
-                im = np.concatenate([im, im, im], axis=2) # duplicate to 3 channels
+                # duplicate to 3 channels
+                im = np.concatenate([im, im, im], axis=2)
 
         # color augmentation
         if self._color_aug:
@@ -152,16 +152,6 @@ class DataTransformer(Process):
                     self._padding : self._padding + im.shape[1], :] = im
             im = pad_img
 
-        im = im.astype(np.float32, copy=False)
-
-        # mean subtraction
-        if len(self._mean_values) > 0:
-            im = im - self._mean_values
-
-        # numerical scale
-        if self._scale != 1.0:
-             im = im * self._scale
-
         return im, [datum.label]
 
     def run(self):
@@ -175,4 +165,4 @@ class DataTransformer(Process):
         npr.seed(self._random_seed)
         while True:
             serialized = self.Q_in.get()
-            self.Q_out.put(self.transform_image_labels(serialized))
+            self.Q_out.put(self.get(serialized))

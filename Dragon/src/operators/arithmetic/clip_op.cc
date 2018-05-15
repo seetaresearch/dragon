@@ -16,10 +16,11 @@ void ClipOp<Context>::RunWithType() {
 template <class Context>
 void ClipOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
-    mask = ws()->CreateTensor("/mnt/" + Anchor() + "/clip/mask");
+    mask = ws()->CreateTensor("/mnt/" + anchor() + "/clip/mask");
     mask->ReshapeLike(Input(0));
-    if (Input(0).template IsType<float>()) return RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(Clip);
@@ -38,9 +39,10 @@ void ClipGradientOp<Context>::RunWithType() {
 template <class Context>
 void ClipGradientOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
-    mask = ws()->GetTensor("/mnt/" + Anchor() + "/clip/mask");
-    if (Input(0).template IsType<float>()) return RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    mask = ws()->GetTensor("/mnt/" + anchor() + "/clip/mask");
+
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(ClipGradient);

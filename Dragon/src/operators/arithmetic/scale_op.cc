@@ -41,11 +41,9 @@ template <class Context>
 void ScaleOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-#ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
-#endif
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(Scale);
@@ -123,7 +121,9 @@ void ScaleGradientOp<Context>::ScaleRunWithType() {
 template <class Context> template <typename T>
 void ScaleGradientOp<Context>::RunWithType() {
     Output(0)->ReshapeLike(Input(0));
-    kernel::ScaleGrad<float, Context>(start_axis, &Input(-1), &Input(1), Output(0));
+
+    kernel::ScaleGrad<T, Context>(start_axis,
+           &Input(-1), &Input(1), Output(0));
 }
 
 template <class Context>
@@ -142,12 +142,12 @@ void ScaleGradientOp<Context>::RunOnDevice() {
     sum_dim = std::max(outer_dim, inner_dim);
     dim = scale_dim * inner_dim;
 
-    if (Input(0).template IsType<float>()) {
+    if (XIsType(Input(0), float)) {
         if (Output(2)->name() != "ignore") BiasRunWithType<float>();
         if (Output(1)->name() != "ignore") ScaleRunWithType<float>();
         if (Output(0)->name() != "ignore") RunWithType<float>();  
     } else {
-        LOG(FATAL) << "Unsupported input types.";
+        LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
     }
 }
 

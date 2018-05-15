@@ -47,36 +47,31 @@ template <class Context>
 void AddOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
 
-    if (Input(0).dims() == Input(1).dims()) {
-        if (Input(0).template IsType<float>()) EltwiseRunWithType<float>();
-        else LOG(FATAL) << "Unsupported input types.";
-    } 
-    else if (Input(0).dim(0) == Input(1).dim(0) && Input(1).count(1) == 1) {
-        if (Input(0).template IsType<float>()) BroadcastRunWithType<float>(2);
-#ifdef WITH_CUDA_FP16
-        else if (Input(0).template IsType<float16>()) BroadcastRunWithType<float16>(2);
-#endif
-        else LOG(FATAL) << "Unsupported input types.";
-    }
-    else if (Input(0).dim(-1) == Input(1).dim(-1) && 
-             Input(1).count(0, Input(1).axis(-1)) == 1) {
-        if (Input(0).template IsType<float>()) BroadcastRunWithType<float>(1);
-#ifdef WITH_CUDA_FP16
-        else if (Input(0).template IsType<float16>()) BroadcastRunWithType<float16>(1);
-#endif
-        else LOG(FATAL) << "Unsupported input types.";
-    } 
-    else if (Input(1).ndim() == 1 && Input(1).dim(0) == 1) {
-        if (Input(0).template IsType<float>()) BroadcastRunWithType<float>(0);
-#ifdef WITH_CUDA_FP16
-        else if (Input(0).template IsType<float16>()) BroadcastRunWithType<float16>(0);
-#endif
-        else LOG(FATAL) << "Unsupported input types.";
-    }
-    else {
-        LOG(FATAL) << "Could not be broadcast together with shapes "
-                   << Input(0).dim_string() << "  " << Input(1).dim_string();
-    }
+    if (XIsType(Input(0), float)) {
+        if (Input(0).dims() == Input(1).dims()) 
+            EltwiseRunWithType<float>();
+        else if (Input(0).dim(0) == Input(1).dim(0) && Input(1).count(1) == 1) 
+            BroadcastRunWithType<float>(2);
+        else if (Input(0).dim(-1) == Input(1).dim(-1) && 
+                 Input(1).count(0, Input(1).axis(-1)) == 1)  
+            BroadcastRunWithType<float>(1);
+        else if (Input(1).ndim() == 1 && Input(1).dim(0) == 1)
+            BroadcastRunWithType<float>(0);
+        else LOG(FATAL) << "Could not be broadcast together with shapes "
+                        << Input(0).dim_string() << "  " << Input(1).dim_string(); 
+    } else if (XIsType(Input(0), float16)) {
+        if (Input(0).dims() == Input(1).dims())
+            EltwiseRunWithType<float16>();
+        else if (Input(0).dim(0) == Input(1).dim(0) && Input(1).count(1) == 1)
+            BroadcastRunWithType<float16>(2);
+        else if (Input(0).dim(-1) == Input(1).dim(-1) &&
+            Input(1).count(0, Input(1).axis(-1)) == 1)
+            BroadcastRunWithType<float16>(1);
+        else if (Input(1).ndim() == 1 && Input(1).dim(0) == 1)
+            BroadcastRunWithType<float16>(0);
+        else LOG(FATAL) << "Could not be broadcast together with shapes "
+                        << Input(0).dim_string() << "  " << Input(1).dim_string();
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(Add);
@@ -139,54 +134,38 @@ void AddGradientOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(-1));
     Output(1)->ReshapeLike(Input(0));
 
-    if (Input(-1).dims() == Input(0).dims()) {
-        if (Input(0).template IsType<float>()) EltwiseRunWithType<float>();
-        else LOG(FATAL) << "Unsupported input types.";
-    } 
-    else if (Input(-1).dim(0) == Input(0).dim(0) && Input(0).count(1) == 1) {
-        if (Input(0).template IsType<float>()) BroadcastRunWithType<float>(2);
-#ifdef WITH_CUDA_FP16
-        else if (Input(0).template IsType<float16>()) BroadcastRunWithType<float16>(2);
-#endif
-        else LOG(FATAL) << "Unsupported input types.";
-    }
-    else if (Input(-1).dim(-1) == Input(0).dim(-1) && 
-             Input(0).count(0, Input(0).axis(-1)) == 1) {
-        if (Input(0).template IsType<float>()) BroadcastRunWithType<float>(1);
-#ifdef WITH_CUDA_FP16
-        else if (Input(0).template IsType<float16>()) BroadcastRunWithType<float16>(1);
-#endif
-        else LOG(FATAL) << "Unsupported input types.";
-    } 
-    else if (Input(0).ndim() == 1 && Input(0).dim(0) == 1) {
-        if (Input(0).template IsType<float>()) BroadcastRunWithType<float>(0);
-#ifdef WITH_CUDA_FP16
-        else if (Input(0).template IsType<float16>()) BroadcastRunWithType<float16>(0);
-#endif
-        else LOG(FATAL) << "Unsupported input types.";
-    }
-    else {
-        LOG(FATAL) << "Could not be broadcast together with shapes "
-                   << Input(-1).dim_string() << "  " << Input(0).dim_string();
-    }
-}
-
-template <class Context>
-void AddGradientOp<Context>::ShareGradient() {
-    for (int i = 0; i < OutputSize(); i++) {
-        if (Output(i)->name() != "ignore") {
-            Tensor* dX = ws()->GetBuffer("Grad");
-            ws()->CreateAvatar(Output(i), dX);
-            break;
-        }
-    }
+    if (XIsType(Input(0), float)) {
+        if (Input(-1).dims() == Input(0).dims()) 
+            EltwiseRunWithType<float>();
+        else if (Input(-1).dim(0) == Input(0).dim(0) && Input(0).count(1) == 1)
+            BroadcastRunWithType<float>(2);
+        else if (Input(-1).dim(-1) == Input(0).dim(-1) &&
+                 Input(0).count(0, Input(0).axis(-1)) == 1)
+            BroadcastRunWithType<float>(1);
+        else if (Input(0).ndim() == 1 && Input(0).dim(0) == 1)
+            BroadcastRunWithType<float>(0);
+        else LOG(FATAL) << "Could not be broadcast together with shapes "
+                        << Input(-1).dim_string() << "  " << Input(0).dim_string();
+    } else if (XIsType(Input(0), float16)) {
+        if (Input(-1).dims() == Input(0).dims()) 
+            EltwiseRunWithType<float16>();
+        else if (Input(-1).dim(0) == Input(0).dim(0) && Input(0).count(1) == 1)
+            BroadcastRunWithType<float16>(2);
+        else if (Input(-1).dim(-1) == Input(0).dim(-1) &&
+                 Input(0).count(0, Input(0).axis(-1)) == 1)
+            BroadcastRunWithType<float16>(1);
+        else if (Input(0).ndim() == 1 && Input(0).dim(0) == 1)
+            BroadcastRunWithType<float16>(0);
+        else LOG(FATAL) << "Could not be broadcast together with shapes "
+                        << Input(-1).dim_string() << "  " << Input(0).dim_string();
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(AddGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(AddGradient);
 #endif
-OPERATOR_SCHEMA(AddGradient).NumInputs(2).NumOutputs(2);
+OPERATOR_SCHEMA(AddGradient).NumInputs(2).NumOutputs(2).Inplace({ { 1, 0 } });
 
 class GetAddGradient : public GradientMakerBase {
  public:

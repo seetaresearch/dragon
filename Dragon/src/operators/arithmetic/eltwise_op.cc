@@ -40,18 +40,14 @@ void EltwiseOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
 
     if (operation == "SUM") {
-        if (Input(0).template IsType<float>()) SumRunWithType<float>();
-#ifdef WITH_CUDA_FP16
-        else if (Input(0).template IsType<float16>()) SumRunWithType<float16>();
-#endif
-        else LOG(FATAL) << "Unsupported input types.";
+        if (XIsType(Input(0), float)) SumRunWithType<float>();
+        else if (XIsType(Input(0), float16)) SumRunWithType<float16>();
+        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
     }
     else if (operation == "PROD") {
-        if (Input(0).template IsType<float>()) ProdRunWithType<float>();
-#ifdef WITH_CUDA_FP16
-        else if (Input(0).template IsType<float16>()) ProdRunWithType<float16>();
-#endif
-        else LOG(FATAL) << "Unsupported input types.";
+        if (XIsType(Input(0), float)) ProdRunWithType<float>();
+        else if (XIsType(Input(0), float16)) ProdRunWithType<float16>();
+        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
     }
     else {
         LOG(FATAL) << "Unknwon operation: " << operation;
@@ -107,32 +103,17 @@ void EltwiseGradientOp<Context>::RunOnDevice() {
         Output(i)->ReshapeLike(Input(i));
 
     if (operation == "SUM") {
-        if (Input(0).template IsType<float>()) SumRunWithType<float>();
-#ifdef WITH_CUDA_FP16
-        else if (Input(0).template IsType<float16>()) SumRunWithType<float16>();
-#endif
-        else LOG(FATAL) << "Unsupported input types.";
+        if (XIsType(Input(0), float)) SumRunWithType<float>();
+        else if (XIsType(Input(0), float16)) SumRunWithType<float16>();
+        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
     }
     else if (operation == "PROD") {
-        if (Input(0).template IsType<float>()) ProdRunWithType<float>();
-#ifdef WITH_CUDA_FP16
-        else if (Input(0).template IsType<float16>()) ProdRunWithType<float16>();
-#endif
-        else LOG(FATAL) << "Unsupported input types.";
+        if (XIsType(Input(0), float)) ProdRunWithType<float>();
+        else if (XIsType(Input(0), float16)) ProdRunWithType<float16>();
+        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
     }
     else {
         LOG(FATAL) << "Unknwon operation: " << operation;
-    }
-}
-
-template <class Context>
-void EltwiseGradientOp<Context>::ShareGradient() {
-    for (int i = 0; i < OutputSize(); i++) {
-        if (Output(i)->name() != "ignore") {
-            Tensor* dX = ws()->GetBuffer("Grad");
-            ws()->CreateAvatar(Output(i), dX);
-            break;
-        }
     }
 }
 

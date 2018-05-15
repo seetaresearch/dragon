@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -20,5 +20,5 @@ try:
     from dragon.libdragon import *
 except ImportError as e:
     logging.critical(
-        'cannot load dragon. Error: {0}'.format(str(e)))
+        'Cannot import dragon. Error: {0}'.format(str(e)))
     sys.exit(1)

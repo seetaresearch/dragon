@@ -7,7 +7,7 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void Pooling2dOp<Context>::MAXRunWithType() {
-    mask = ws()->CreateTensor("/mnt/" + Anchor() + "/max_pool/mask");
+    mask = ws()->CreateTensor("/mnt/" + anchor() + "/max_pool/mask");
     mask->ReshapeLike(*Output(0));
 
     auto* Xdata = Input(0).template data<T, Context>();
@@ -86,8 +86,13 @@ void Pooling2dOp<Context>::Reshape() {
 
     if (padding != "SAME") {
         //  case 1: infer output shape with symmetry pad size
-        pool_h = ceil((h + 2 * pad[0] - kernel_size[0]) / (float)stride[0]) + 1;
-        pool_w = ceil((w + 2 * pad[1] - kernel_size[1]) / (float)stride[1]) + 1;
+        if (ceil_mode) {
+            pool_h = ceil((h + 2 * pad[0] - kernel_size[0]) / (float)stride[0]) + 1;
+            pool_w = ceil((w + 2 * pad[1] - kernel_size[1]) / (float)stride[1]) + 1;
+        } else {
+            pool_h = floor((h + 2 * pad[0] - kernel_size[0]) / (float)stride[0]) + 1;
+            pool_w = floor((w + 2 * pad[1] - kernel_size[1]) / (float)stride[1]) + 1;
+        }
         if ((pool_h - 1) * stride[0] >= (h + pad[0])) pool_h--;
         if ((pool_w - 1) * stride[1] >= (w + pad[1])) pool_w--;
     } else {
@@ -103,15 +108,11 @@ template <class Context>
 void Pooling2dOp<Context>::RunOnDevice() {
     Reshape();
 
-    if (mode == "MAX") {
-        if (Input(0).template IsType<float>()) MAXRunWithType<float>();
-        else LOG(FATAL) << "Unsupported input types.";
-    }  else if (mode == "AVG") {
-        if (Input(0).template IsType<float>()) AVGRunWithType<float>();
-        else LOG(FATAL) << "Unsupported input types.";
-    } else { 
-        LOG(FATAL) << "Unsupported pooling mode: " << mode;
-    }
+    if (XIsType(Input(0), float)) {
+        if (mode == "MAX") MAXRunWithType<float>();
+        else if (mode == "AVG") AVGRunWithType<float>();
+        else LOG(FATAL) << "Unsupported pooling mode: " << mode;
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(Pooling2d);
@@ -122,7 +123,7 @@ OPERATOR_SCHEMA(Pooling2d).NumInputs(1).NumOutputs(1);
 
 template <class Context> template <typename T>
 void Pooling2dGradientOp<Context>::MAXRunWithType() {
-    mask = ws()->GetTensor("/mnt/" + Anchor() + "/max_pool/mask");
+    mask = ws()->GetTensor("/mnt/" + anchor() + "/max_pool/mask");
 
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
@@ -200,8 +201,13 @@ void Pooling2dGradientOp<Context>::Reshape() {
 
     if (padding != "SAME") {
         //  case 1: infer output shape with symmetry pad size
-        pool_h = ceil((h + 2 * pad[0] - kernel_size[0]) / (float)stride[0]) + 1;
-        pool_w = ceil((w + 2 * pad[1] - kernel_size[1]) / (float)stride[1]) + 1;
+        if (ceil_mode) {
+            pool_h = ceil((h + 2 * pad[0] - kernel_size[0]) / (float)stride[0]) + 1;
+            pool_w = ceil((w + 2 * pad[1] - kernel_size[1]) / (float)stride[1]) + 1;
+        } else {
+            pool_h = floor((h + 2 * pad[0] - kernel_size[0]) / (float)stride[0]) + 1;
+            pool_w = floor((w + 2 * pad[1] - kernel_size[1]) / (float)stride[1]) + 1;
+        }
         if ((pool_h - 1) * stride[0] >= (h + pad[0])) pool_h--;
         if ((pool_w - 1) * stride[1] >= (w + pad[1])) pool_w--;
     } else {
@@ -216,15 +222,11 @@ template <class Context>
 void Pooling2dGradientOp<Context>::RunOnDevice() {
     Reshape();
 
-   if (mode == "MAX") {
-        if (Input(0).template IsType<float>()) MAXRunWithType<float>();
-        else LOG(FATAL) << "Unsupported input types.";
-    }  else if (mode == "AVG") {
-        if (Input(0).template IsType<float>()) AVGRunWithType<float>();
-        else LOG(FATAL) << "Unsupported input types.";
-    } else { 
-        LOG(FATAL) << "Unsupported pooling mode: " << mode;
-    }
+    if (XIsType(Input(0), float)) {
+        if (mode == "MAX") MAXRunWithType<float>();
+        else if (mode == "AVG") AVGRunWithType<float>();
+        else LOG(FATAL) << "Unsupported pooling mode: " << mode;
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(Pooling2dGradient);

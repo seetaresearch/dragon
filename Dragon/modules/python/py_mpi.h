@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -12,18 +12,10 @@
 #ifndef DRAGON_PYTHON_PY_MPI_H_
 #define DRAGON_PYTHON_PY_MPI_H_
 
-#include <Python.h>
-#include "core/common.h"
+#include "dragon.h"
 
 #ifdef WITH_MPI 
 #include <mpi/mpi.h>
-
-#ifdef WITH_PYTHON3
-#define PyInt_FromLong PyLong_FromLong
-#define _PyInt_AsInt _PyLong_AsInt 
-#endif
-
-using namespace dragon;
 
 inline PyObject* MPIInitCC(PyObject* self, PyObject* args) {
     int thread_type;
@@ -54,7 +46,7 @@ inline PyObject* MPICreateGroupCC(PyObject* self, PyObject* args) {
     PyObject *incl, *excl, *ret;
     int local_root, world_size;
     if (!PyArg_ParseTuple(args, "iOO", &local_root, &incl, &excl)) {
-        PyErr_SetString(PyExc_ValueError, "MPICreateGroup accpets incorrect args.");
+        PyErr_SetString(PyExc_ValueError, "Excepted the local root, include and exclued list.");
         return nullptr;
     }
     MPI_Group world_group, local_group;

@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -40,9 +40,7 @@ class RandomPickGradientOp final : public Operator<Context> {
 public:
     RandomPickGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-        axis(OperatorBase::GetSingleArg<int>("axis", 0)) {
-        DISABLE_SHARE_GRADIENT;
-    }
+        axis(OperatorBase::GetSingleArg<int>("axis", 0)) {}
     USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;

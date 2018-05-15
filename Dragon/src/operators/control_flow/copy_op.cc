@@ -12,13 +12,15 @@ void CopyOp<Context>::RunWithType() {
 template <class Context>
 void CopyOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
-    else if (Input(0).template IsType<double>()) RunWithType<double>();
-    else if (Input(0).template IsType<int>()) RunWithType<int>();
-    else if (Input(0).template IsType<int64_t>()) RunWithType<int64_t>();
-    else if (Input(0).template IsType<uint8_t>()) RunWithType<uint8_t>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else if (XIsType(Input(0), double)) RunWithType<double>();
+    else if (XIsType(Input(0), int)) RunWithType<int>();
+    else if (XIsType(Input(0), int64_t)) RunWithType<int64_t>();
+    else if (XIsType(Input(0), uint8_t)) RunWithType<uint8_t>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { 
+        "float32", "float16", "float64", "int32", "int64", "uint8",
+    });
 }
 
 DEPLOY_CPU(Copy);

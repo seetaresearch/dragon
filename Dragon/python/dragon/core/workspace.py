@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -36,11 +36,19 @@ __all__ = [
     'ClearWorkspace',
     'CreateGraph',
     'RunGraph',
+    'RunGradientFlow',
+    'RunOperator',
+    'RunOperators',
+    'CreatePersistentOp',
+    'RunPersistentOp',
     'HasTensor',
+    'CreateTensor',
+    'CreateFiller',
+    'GetTensorName',
+    'RenameTensor',
     'FeedTensor',
     'FetchTensor',
-    'GetTensorName',
-    'CreateFiller',
+    'ResetTensor',
     'Snapshot',
     'Restore',
     'LogMetaGraph',
@@ -59,12 +67,20 @@ _DATA_TYPES = {
 
 
 def _stringify_proto(obj):
+    """Try to stringify a proto-buffer structure.
+
     """
-    Stringify a protobuf structure.
-    """
-    if obj is str: return obj
+    if isinstance(obj, str): return obj
     elif isinstance(obj, Message): return obj.SerializeToString()
-    else: raise TypeError('object can not be serialized as a string')
+    else: raise TypeError('Object can not be serialized as a string.')
+
+
+def _stringify_tensor(obj):
+    """Try to stringify a tensor.
+
+    """
+    if hasattr(obj, 'name'): return str(obj.name)
+    else: return str(obj)
 
 
 def SwitchWorkspace(workspace_name, create_if_missing=True):
@@ -186,12 +202,98 @@ def CreateGraph(meta_graph):
     LogOptimizedGraph(meta_graph)
 
 
+def RunOperator(op_def):
+    """Create and Run the operator in the VM backend.
+
+    Parameters
+    ----------
+    op_def : dragon_pb2.OperatorDef
+        The definition of operator.
+
+    Returns
+    -------
+    None
+
+    References
+    ----------
+    The wrapper of ``RunOperatorCC``.
+
+    """
+    RunOperatorCC(_stringify_proto(op_def))
+
+
+def RunOperators(ops_def):
+    """Create and Run the operators in the VM backend.
+
+    Parameters
+    ----------
+    ops_def : list of dragon_pb2.OperatorDef
+        The definition of operators.
+
+    Returns
+    -------
+    None
+
+    References
+    ----------
+    The wrapper of ``RunOperatorsCC``.
+
+    """
+    RunOperatorsCC([_stringify_proto(op_def) for op_def in ops_def])
+
+
+def CreatePersistentOp(op_def):
+    """Create the persistent operator in the VM backend.
+
+    Parameters
+    ----------
+    op_def : dragon_pb2.OperatorDef
+        The definition of operator.
+
+    Returns
+    -------
+    None
+
+    References
+    ----------
+    The wrapper of ``CreatePersistentOpCC``.
+
+    """
+    CreatePersistentOpCC(_stringify_proto(op_def))
+
+
+def RunPersistentOp(key, anchor, inputs, outputs):
+    """Run the persistent operator in the VM backend.
+
+    Parameters
+    ----------
+    key : str
+        The persistent key.
+    anchor : str
+        The anchor to compute internal resources of op.
+    inputs : list of str
+        The inputs.
+    outputs : list of str
+        The outputs.
+
+    Returns
+    -------
+    None
+
+    References
+    ----------
+    The wrapper of ``RunPersistentOpCC``.
+
+    """
+    RunPersistentOpCC(key, anchor, inputs, outputs)
+
+
 def HasTensor(tensor):
     """Query whether tensor has registered in current workspace.
 
     Parameters
     ----------
-    tensor : Tensor
+    tensor : Tensor or str
         The tensor to query.
 
     Returns
@@ -204,36 +306,27 @@ def HasTensor(tensor):
     The wrapper of ``HasTensorCC``.
 
     """
-    tensor = tensor.name if hasattr(tensor, 'name') else str(tensor)
-    assert isinstance(tensor, str)
-    return HasTensorCC(tensor)
+    return HasTensorCC(_stringify_tensor(tensor))
 
 
-def GetTensorName(tensor):
-    """Query the name represented in current workspace.
+def CreateTensor(tensor):
+    """Create the tensor in the backend.
 
     Parameters
     ----------
-    tensor : Tensor
-        The tensor to query.
+    tensor : Tensor or str
+        The tensor to create.
 
     Returns
     -------
-    str
-        The real(inplace-optimized) name in the backend.
-
-    Notes
-    -----
-    The query result may be different from the one used in the frontend.
+    None
 
     References
     ----------
-    The wrapper of ``GetTensorNameCC``.
+    The wrapper of ``CreateTensorCC``.
 
     """
-    tensor = tensor.name if hasattr(tensor, 'name') else str(tensor)
-    assert isinstance(tensor, str)
-    return GetTensorNameCC(tensor)
+    return CreateTensorCC(_stringify_tensor(tensor))
 
 
 def CreateFiller(filler_def):
@@ -263,12 +356,59 @@ def CreateFiller(filler_def):
     CreateFillerCC(filler_def)
 
 
+def GetTensorName(tensor):
+    """Query the name represented in current workspace.
+
+    Parameters
+    ----------
+    tensor : Tensor or str
+        The tensor to query.
+
+    Returns
+    -------
+    str
+        The real(inplace-optimized) name in the backend.
+
+    Notes
+    -----
+    The query result may be different from the one used in the frontend.
+
+    References
+    ----------
+    The wrapper of ``GetTensorNameCC``.
+
+    """
+    return GetTensorNameCC(_stringify_tensor(tensor))
+
+
+def RenameTensor(tensor, target_name):
+    """Rename a tensor in current workspace.
+
+    Parameters
+    ----------
+    tensor : Tensor or str
+        The tensor to rename.
+    target_name : str
+        The target name.
+
+    Returns
+    -------
+    None
+
+    References
+    ----------
+    The wrapper of ``RenameTensorCC``.
+
+    """
+    return RenameTensorCC(_stringify_tensor(tensor), target_name)
+
+
 def FetchTensor(tensor):
     """Fetch the values of given tensor.
 
     Parameters
     ----------
-    tensor : Tensor
+    tensor : Tensor or str
         The tensor to fetch.
 
     Returns
@@ -281,9 +421,7 @@ def FetchTensor(tensor):
     The wrapper of ``FetchTensorCC``.
 
     """
-    tensor = str(tensor.name) if hasattr(tensor, 'name') else str(tensor)
-    assert isinstance(tensor, str)
-    return FetchTensorCC(tensor)
+    return FetchTensorCC(_stringify_tensor(tensor))
 
 
 def FeedTensor(tensor, ndarray, force_cpu=False, dtype=None):
@@ -361,11 +499,34 @@ def FeedTensor(tensor, ndarray, force_cpu=False, dtype=None):
 
 
 stages = {
+    'default': {'include': '', 'exclude':''},
     'forward': {'include': '', 'exclude': 'Gradient'},
     'backward': {'include': 'Gradient', 'exclude': 'Generate'},
     'backward_v2': {'include': 'Gradient', 'exclude': ''},
     'external_grads': {'include': '', 'exclude': 'Generate'}
 }
+
+
+def ResetTensor(tensor):
+    """Reset the memory of given tensor.
+
+    Note that the tensor will not be ``DELETE`` for the workspace.
+
+    Parameters
+    ----------
+    tensor : Tensor or str
+        The tensor to fetch.
+
+    Returns
+    -------
+    None
+
+    References
+    ----------
+    The wrapper of ``ResetTensorCC``.
+
+    """
+    return ResetTensorCC(_stringify_tensor(tensor))
 
 
 def RunGraph(graph_name, inputs=(), outputs=[], stage=None, return_outputs=True):
@@ -386,7 +547,7 @@ def RunGraph(graph_name, inputs=(), outputs=[], stage=None, return_outputs=True)
 
     Returns
     -------
-    None, numpy.ndarry or list of numpy.ndarray
+    None, numpy.ndarray or list of numpy.ndarray
         The outputs, format as numpy.ndarray.
 
     See Also
@@ -394,22 +555,60 @@ def RunGraph(graph_name, inputs=(), outputs=[], stage=None, return_outputs=True)
     `theano.function(*args, **kwargs)`_ - How to make a graph. [**Theano Style**]
 
     """
-    if len(inputs[0]) > 0:
+    if len(inputs) > 0 and len(inputs[0]) > 0:
         if len(inputs[0]) != len(inputs[1]):
-            raise RuntimeError('function defined {} args, but only given {}'
-                        .format(len(inputs[0]), len(inputs[1])))
+            raise RuntimeError('Defined {} args, but {} are given.'
+                               .format(len(inputs[0]), len(inputs[1])))
         for idx in range(len(inputs[0])):
             FeedTensor(inputs[0][idx], inputs[1][idx])
-    if stage is None: RunGraphCC(str(graph_name), '', '')
-    else:
-        state = stages[stage]
-        RunGraphCC(str(graph_name), str(state['include']), str(state['exclude']))
-
+    if stage is None: stage = 'default'
+    rules = stages[stage]
+    RunGraphCC(str(graph_name), str(rules['include']), str(rules['exclude']))
     # force to return may lead crash if encountering un-computed outputs
     if return_outputs:
         if len(outputs) == 0 : return None
         elif len(outputs) == 1:  return outputs[0].get_value()
         else: return [outputs[i].get_value() for i in range(len(outputs))]
+
+
+def RunGradientFlow(input_flow, targets, input_grads=None, ignored_grads=None):
+    """Compute the gradients of given input flows.
+
+    Parameters
+    ----------
+    input_flow : list of OperatorDef or GraphDef
+        The referring flows to generate gradient flows.
+    targets : list or str
+        The solving targets, generate grads automatically.
+    input_grads : None or list of str
+        The input grads.
+    ignored_grads : None or list of str
+        The grads that are explicitly ignored.
+
+    Returns
+    -------
+    None
+
+    """
+    if isinstance(input_flow, list):
+        graph_wrapper = pb.GraphDef()
+        graph_wrapper.op.extend(input_flow)
+        input_flow = graph_wrapper
+    if not isinstance(input_flow, pb.GraphDef):
+        raise TypeError('Excepted the type of input flow is either'
+            'a list of OperatorDef or a GraphDef, got {}.'.format(type(input_flow)))
+    from dragon.config import option, logger
+    log_flow = True if option['log_optimized_graph'] or option['log_meta_graph'] else False
+    RunGradientFlowCC(_stringify_proto(input_flow), targets,
+                      input_grads if input_grads else [],
+                      ignored_grads if ignored_grads else [],
+                      option['share_grads'], log_flow)
+    if log_flow:
+        g_flow = pb.GraphDef()
+        g_flow.ParseFromString(FetchTensor('/export/dynamic_graph/gradient_flow'))
+        logger.info('>>>>>>>>>>>>>>>>>> Gradient Flow <<<<<<<<<<<<<<<<<<\n')
+        logger.info(g_flow)
+        logger.info('>>>>>>>>>>>>>>>>>> Gradient Flow <<<<<<<<<<<<<<<<<<\n')
 
 
 def LogMetaGraph(meta_graph):
@@ -426,8 +625,7 @@ def LogMetaGraph(meta_graph):
 
     """
     from dragon.config import option, logger
-    if option['log_meta_graph']:
-        logger.info(meta_graph)
+    if option['log_meta_graph']: logger.info(meta_graph)
 
 
 def GetOptimizedGraph(meta_graph):

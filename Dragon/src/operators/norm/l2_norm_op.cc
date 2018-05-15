@@ -15,7 +15,7 @@ void L2NormOp<Context>::RunWithType() {
     buffer->Reshape(dims);
 
     //  normalize by inner_dim independently if not across it
-    norm = ws()->CreateTensor("/mnt/" + Anchor() + "/l2norm/normalizer");
+    norm = ws()->CreateTensor("/mnt/" + anchor() + "/l2norm/normalizer");
     dims = Input(0).dims();
     for (int i = axis; i < end_axis; i++) dims[i] = 1;
     norm->Reshape(dims);
@@ -78,11 +78,9 @@ void L2NormOp<Context>::RunOnDevice() {
 
     Output(0)->ReshapeLike(Input(0));
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-#ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
-#endif
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(L2Norm);
@@ -96,7 +94,7 @@ void L2NormGradientOp<Context>::RunWithType() {
     INIT_MULTIPLIER(multiplier, dim);
 
     //  normalize by inner_dim independently if not across it
-    norm = ws()->GetTensor("/mnt/" + Anchor() + "/l2norm/normalizer");
+    norm = ws()->GetTensor("/mnt/" + anchor() + "/l2norm/normalizer");
     buffer = ws()->GetBuffer();
     vector<TIndex> dims = Input(0).dims();
     for (int i = 0; i < axis; i++) dims[i] = 1;
@@ -180,8 +178,8 @@ void L2NormGradientOp<Context>::RunOnDevice() {
 
     Output(0)->ReshapeLike(Input(0));
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(L2NormGradient);

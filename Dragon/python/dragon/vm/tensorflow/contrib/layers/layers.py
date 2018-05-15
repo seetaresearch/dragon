@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -7,7 +7,7 @@
 #
 #      <https://opensource.org/licenses/BSD-2-Clause>
 #
-# Codes based on:
+# Codes are based on:
 #
 #      <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/contrib/layers/python/layers/layer.py>
 #

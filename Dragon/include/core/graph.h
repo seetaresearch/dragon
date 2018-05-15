@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -51,6 +51,8 @@ class Graph final : public GraphBase {
     GraphDef Prune(const GraphDef& meta_graph);
     GraphDef MakeUpdate(const GraphDef& meta_graph);
     GraphDef Share(const GraphDef& optimized_graph);
+    void ShareGrads(GraphDef& optimized_graph);
+
     void RecomputingAware(const GraphDef& optimized_graph, Workspace* ws);
 
     inline Workspace* ws() const { return ws_; }

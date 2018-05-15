@@ -279,9 +279,9 @@ void BatchRenormOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    var = ws()->CreateTensor("/mnt/" + Anchor() + "/bn/var");
-    r = ws()->CreateTensor("/mnt/" + Anchor() + "/bn/r");
-    x_norm = ws()->CreateTensor("/mnt/" + Anchor() + "/bn/x_norm");
+    var = ws()->CreateTensor("/mnt/" + anchor() + "/bn/var");
+    r = ws()->CreateTensor("/mnt/" + anchor() + "/bn/r");
+    x_norm = ws()->CreateTensor("/mnt/" + anchor() + "/bn/x_norm");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 
@@ -301,11 +301,10 @@ template <class Context>
 void BatchRenormOp<Context>::RunOnDevice() {
     Setup();
 
-    if (Input(0).template IsType<float>()) {
+    if (XIsType(Input(0), float)) {
         if (use_global_stats) InferenceRunWithType<float>();
         else TrainingRunWithType<float>();
-    }
-    else LOG(FATAL) << "Unsupported input types.";
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(BatchRenorm);
@@ -471,9 +470,9 @@ void BatchRenormGradientOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    var = ws()->GetTensor("/mnt/" + Anchor() + "/bn/var");
-    r = ws()->GetTensor("/mnt/" + Anchor() + "/bn/r");
-    x_norm = ws()->GetTensor("/mnt/" + Anchor() + "/bn/x_norm");
+    var = ws()->GetTensor("/mnt/" + anchor() + "/bn/var");
+    r = ws()->GetTensor("/mnt/" + anchor() + "/bn/r");
+    x_norm = ws()->GetTensor("/mnt/" + anchor() + "/bn/x_norm");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 
@@ -487,11 +486,10 @@ template <class Context>
 void BatchRenormGradientOp<Context>::RunOnDevice() {
     Setup();
 
-    if (Input(0).template IsType<float>()) {
+    if (XIsType(Input(0), float)) {
         if (use_global_stats) InferenceRunWithType<float>();
         else TrainingRunWithType<float>();
-    }
-    else LOG(FATAL) << "Unsupported input types.";
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(BatchRenormGradient);

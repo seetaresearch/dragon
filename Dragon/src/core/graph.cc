@@ -1,5 +1,6 @@
 #include "core/operator_schema.h"
 #include "core/graph.h"
+#include "core/graph_gradient.h"
 #include "core/workspace.h"
 
 namespace dragon {
@@ -119,8 +120,6 @@ GraphDef Graph::Prune(const GraphDef& meta_graph) {
         targets_.insert(meta_graph.g_target(i).wrt() + "_grad");
         string u = meta_graph.g_target(i).cost() + "_grad";
         string v = meta_graph.g_target(i).wrt() + "_grad";
-        if (!meta_graph.g_target(i).external().empty())
-            v = meta_graph.g_target(i).external();
         if (ws()->HasTensor(u)) u = ws()->GetTensor(u)->name();
         if (ws()->HasTensor(v)) v = ws()->GetTensor(v)->name();
         visited_.clear();
@@ -205,6 +204,19 @@ GraphDef Graph::Share(const GraphDef& optimized_graph) {
     return shared_graph;
 }
 
+void Graph::ShareGrads(GraphDef& optimized_graph) {
+    GraphDef forward_ops, backward_ops;
+    vector<string> targets;
+    Map<string, int> ref_count;
+    for (auto& op : optimized_graph.op()) {
+        if (op.type().find("Gradient") != string::npos) continue;
+        forward_ops.add_op()->CopyFrom(op);
+    }
+    for (auto& t : optimized_graph.target()) targets.emplace_back(t);
+    GraphGradientMaker maker;
+    maker.Share("/share/buffer/grads", optimized_graph);
+}
+
 GraphDef Graph::MakeUpdate(const GraphDef& meta_graph) {
     OperatorDef collective_op;
     collective_op.set_type("CollectiveUpdate");
@@ -278,25 +290,21 @@ GraphDef Graph::MakeUpdate(const GraphDef& meta_graph) {
 
 bool Graph::Create(const GraphDef& optimized_graph, Workspace* ws) {
     bool has_device_option = optimized_graph.has_device_option();
-    bool has_debug_mode = optimized_graph.has_debug_mode();
-    bool has_share_grads = optimized_graph.has_share_grads();
-    for (const OperatorDef& plain_op_def : optimized_graph.op()) {
-        OperatorDef op_def(plain_op_def);
-        LOG(DEBUG) << "Create Operator " << plain_op_def.name()
-                   << ": " << plain_op_def.type();
-
+    for (int i = 0; i < optimized_graph.op_size(); i++) {
+        OperatorDef op_def(optimized_graph.op(i));
+        LOG(DEBUG) << "Create Operator " << op_def.name()
+                   << ": " << op_def.type();
         //  inherit device option if necessary
         if (!op_def.has_device_option() && has_device_option)
             op_def.mutable_device_option()->CopyFrom(optimized_graph.device_option());
-
-        //  inherit debug mode if necessary
-        if (!op_def.has_debug_mode() && has_debug_mode)
-            op_def.set_debug_mode(optimized_graph.debug_mode());
-
-        //  inherit share_grads if necessary
-        if (!op_def.has_share_grads() && has_share_grads)
-            op_def.set_share_grads(optimized_graph.share_grads());
-
+        //  for the static graph, do recomputing-aware
+        Argument arg; arg.set_name("recomputing_aware");
+        arg.set_b(true); op_def.add_arg()->CopyFrom(arg);
+        //  for the first & last op, synchronize the device
+        if (i == 0 || i == optimized_graph.op_size() - 1) {
+            arg.set_name("do_synchronize");
+            arg.set_b(true); op_def.add_arg()->CopyFrom(arg);
+        }
         OperatorBase* op = CreateOperator(op_def, ws);
         ops_.push_back(op);
     }
@@ -360,18 +368,8 @@ void Graph::RecomputingAware(const GraphDef& optimized_graph, Workspace* ws) {
         }
     }
 
-    //  prepare resources
+    //  apply map
     for (auto& ops : ops_) ops->set_recompute_map(recompute_map);
-    Tensor* head = ws->CreateTensor("/opt/mirror_stage/head");
-    head->Reshape(vector<TIndex>(1, WORKSPACE_MAX_CORRUPTED_SIZE));
-    Tensor* recompute_flag = ws->CreateTensor("/opt/mirror_stage/recompute_flag");
-    recompute_flag->Reshape(vector<TIndex>(1, 1));
-    recompute_flag->mutable_data<bool, CPUContext>()[0] = false;
-    for (int i = 0; i < WORKSPACE_MAX_CORRUPTED_SIZE; i++) {
-        string name = "/opt/mirror_stage/buffer_" + dragon_cast<string, int>(i);
-        Tensor* buffer = ws->CreateTensor(name);
-        head->mutable_data<string, CPUContext>()[i] = "";
-    }
 }
 
 Graph::Graph(const GraphDef& meta_graph, Workspace* ws)
@@ -383,8 +381,13 @@ Graph::Graph(const GraphDef& meta_graph, Workspace* ws)
         //  we handle them independently
         optimized_graph = MakeUpdate(meta_graph);
     } else {
-        optimized_graph = Prune(meta_graph);
-        optimized_graph = Share(optimized_graph);
+        int OX = 3;  // defaults: O3
+        if (this->args_.count("optimization_level"))
+            OX = this->args_["optimization_level"].i();
+        optimized_graph = meta_graph;
+        if (OX >= 1) optimized_graph = Prune(meta_graph);
+        if (OX >= 2) optimized_graph = Share(optimized_graph);
+        if (OX >= 3) ShareGrads(optimized_graph);
     }
 
     //  store the final graph as a tensor for visualization

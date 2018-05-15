@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -36,7 +36,6 @@ class DivGradientOp final : public Operator<Context> {
     USE_SIMPLE_CTOR_DTOR(DivGradientOp);
     USE_OPERATOR_FUNCTIONS(Context);
 
-    void ShareGradient() override;
     void RunOnDevice() override;
     template <typename T> void EltwiseRunWithType();
     template <typename T> void BroadcastRunWithType(int type);
@@ -65,7 +64,6 @@ class RDivGradientOp final : public Operator<Context> {
     USE_SIMPLE_CTOR_DTOR(RDivGradientOp);
     USE_OPERATOR_FUNCTIONS(Context);
 
-    void ShareGradient() override;
     void RunOnDevice() override;
     template <typename T> void EltwiseRunWithType();
     template <typename T> void BroadcastRunWithType(int type);

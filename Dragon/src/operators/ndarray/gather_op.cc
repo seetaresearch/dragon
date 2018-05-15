@@ -30,9 +30,9 @@ void GatherOp<Context>::RunOnDevice() {
     Output(0)->Reshape(output_dims);
 
     CHECK(Input(1).template IsType<int>()) << "\nThe type of indices should be int32.";
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else if (Input(0).template IsType<int>()) RunWithType<int>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), int)) RunWithType<int>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "int32" });
 }
 
 DEPLOY_CPU(Gather);
@@ -63,9 +63,9 @@ void GatherGradientOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
 
     CHECK(Input(1).template IsType<int>()) << "\nThe type of indices should be int32.";
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else if (Input(0).template IsType<int>()) RunWithType<int>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), int)) RunWithType<int>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "int32" });
 }
 
 DEPLOY_CPU(GatherGradient);

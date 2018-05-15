@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -14,8 +14,8 @@ from dragon.io.data_batch import DataBatch
 
 
 class MiniBatchOp(object):
-    """
-    How to form a minibatch based on `dragon.io`_ package.
+    """How to form a minibatch based on `dragon.io`_ package.
+
     """
     def setup(self, inputs, outputs):
         """Setup for params or options.

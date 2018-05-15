@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -24,7 +24,6 @@ class GradientGenerateOp final: public Operator<Context> {
           defaults(OperatorBase::GetRepeatedArg<float>("defaults")) {
         CHECK_EQ(InputSize(), OutputSize());
         CHECK_EQ(defaults.size(), OutputSize());
-        DISABLE_SHARE_GRADIENT;
     }
     USE_OPERATOR_FUNCTIONS(Context);
 
@@ -42,7 +41,6 @@ class GradientGatherOp final : public Operator<Context> {
         : Operator<Context>(op_def, ws) {
         for (int i = 0; i < InputSize(); i++)
             if (Input(i).name() != "ignore") indices.push_back(i);
-        DISABLE_SHARE_GRADIENT;
     }
     USE_OPERATOR_FUNCTIONS(Context);
 
@@ -56,10 +54,7 @@ class GradientGatherOp final : public Operator<Context> {
 template <class Context>
 class StopGradientOp final : public Operator<Context> {
  public:
-    StopGradientOp(const OperatorDef& op_def, Workspace* ws)
-         : Operator<Context>(op_def, ws) {
-         DISABLE_SHARE_GRADIENT;
-    }
+    USE_SIMPLE_CTOR_DTOR(StopGradientOp);
     USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;

@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -13,10 +13,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from dragon.import_c_apis import *
+
 _TENSOR_SCOPE = ''
 _PHASE_SCOPE = ''
 _DEVICE_SCOPE = ''
 _ENGINE_SCOPE = ''
+_WORKSPACE_SCOPE = ''
 
 SEPARATOR = '/'
 
@@ -194,3 +197,29 @@ class DeviceScope(object):
         global _DEVICE_SCOPE, _ENGINE_SCOPE
         _DEVICE_SCOPE = ''
         _ENGINE_SCOPE = ''
+
+# class WorkspaceScope(object):
+#     """WorkspaceScope is a auxiliary to assign the specific workspace.
+#
+#     Examples
+#     --------
+#     >>> import dragon
+#     >>> with dragon.ws_scope(ws_name='session'): pass
+#
+#     """
+#     def __init__(self, ws_name):
+#         assert isinstance(ws_name, type('str')), \
+#             "WorkspaceScope takes in a string as its argument."
+#         self.ws = ws_name
+#         self.prev = 'default'
+#
+#     def __enter__(self):
+#
+#         SwitchWorkspaceCC(self.ws)
+#         global _PHASE_SCOPE
+#         _PHASE_SCOPE = self.phase
+#
+#     def __exit__(self, type, value, traceback):
+#         global _PHASE_SCOPE
+#         assert _PHASE_SCOPE == self.phase
+#         _PHASE_SCOPE = ''

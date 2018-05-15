@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -128,15 +128,17 @@ def SoftmaxCrossEntropy(inputs, axis=1, normalization='FULL', **kwargs):
     return output
 
 
-def SmoothL1Loss(inputs, sigma=1.0, normalization='BATCH_SIZE', **kwargs):
+def SmoothL1Loss(inputs, beta=1.0, normalization='BATCH_SIZE', **kwargs):
     """SmoothL1Loss, introduced by `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
+
+    Note that the ``beta`` is represented as ``1. / sigma / sigma`` following the original paper.
 
     Parameters
     ----------
     inputs : list of Tensor
         The inputs, represent [input, targets, inside_w, outside_w].
-    sigma : float
-        The sigma of L1 bound.
+    beta : float
+        The transition point from L1 to L2 loss
     normalization : str
         The normalization, ``FULL``, ``BATCH_SIZE``, or ``NONE``.
 

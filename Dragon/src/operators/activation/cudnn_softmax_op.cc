@@ -25,12 +25,12 @@ void CuDNNSoftmaxOp<Context>::RunOnDevice() {
     outer_dim = Input(0).count(0, axis);
     inner_dim = Input(0).count(axis + 1);
     Output(0)->ReshapeLike(Input(0));
-    
-    if (Input(0).template IsType<float>()) RunWithType<float>();
+
+    if (XIsType(Input(0), float)) RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
 #endif
-    else LOG(FATAL) << "Unsupported input types.";
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CUDNN(Softmax);
@@ -58,13 +58,12 @@ void CuDNNSoftmaxGradientOp<Context>::RunOnDevice() {
     outer_dim = Input(0).count(0, axis);
     inner_dim = Input(0).count(axis + 1);
     Output(0)->ReshapeLike(Input(0));
-    
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
+    if (XIsType(Input(0), float)) RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
 #endif
-    else LOG(FATAL) << "Unsupported input types.";
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CUDNN(SoftmaxGradient);

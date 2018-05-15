@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -9,12 +9,8 @@
 //
 // ------------------------------------------------------------
 
-#ifndef DRAGON_MODULES_PYTHON_DRAGON_H_
-#define DRAGON_MODULES_PYTHON_DRAGON_H_
-
-#include <sstream>
-#include <Python.h>
-#include <numpy/arrayobject.h>
+#ifndef DRAGON_PYTHON_DRAGON_H_
+#define DRAGON_PYTHON_DRAGON_H_
 
 #include "core/common.h"
 #include "core/registry.h"
@@ -23,48 +19,8 @@
 #include "core/operator.h"
 #include "core/operator_gradient.h"
 #include "core/workspace.h"
-
-#ifdef WITH_PYTHON3
-#define PyString_AsString PyUnicode_AsUTF8
-#endif
-
-using namespace dragon;
-
-inline std::string PyBytesToStdString(PyObject* pystring) {
-    return std::string(PyBytes_AsString(pystring), PyBytes_Size(pystring));
-}
-
-inline PyObject* StdStringToPyBytes(const std::string& str) {
-    return PyBytes_FromStringAndSize(str.c_str(), str.size());
-}
-
-inline PyObject* StdStringToPyUnicode(const std::string& str) {
-#ifdef WITH_PYTHON3
-    return PyUnicode_FromStringAndSize(str.c_str(), str.size());
-#else
-    return PyBytes_FromStringAndSize(str.c_str(), str.size());
-#endif
-}
-
-template <typename T>
-inline void MakeStringInternal(std::stringstream& ss, const T& t) { ss << t; }
-
-template <typename T,typename ... Args>
-inline void MakeStringInternal(std::stringstream& ss, const T& t, const Args& ... args) {
-    MakeStringInternal(ss, t);
-    MakeStringInternal(ss, args...);
-}
-
-template <typename ... Args>
-std::string MakeString(const Args&... args) {
-    std::stringstream ss;
-    MakeStringInternal(ss, args...);
-    return std::string(ss.str());
-}
-
-inline void PrErr_SetString(PyObject* type, const std::string& str) { 
-    PyErr_SetString(type, str.c_str()); 
-}
+#include "py_macros.h"
+#include "py_types.h"
 
 class TensorFetcherBase {
  public:
@@ -92,32 +48,29 @@ DECLARE_TYPED_REGISTRY(TensorFeederRegistry, TypeId, TensorFeederBase);
 #define REGISTER_TENSOR_FEEDER(type, ...) \
     REGISTER_TYPED_CLASS(TensorFeederRegistry, type, __VA_ARGS__)
 
-int DragonToNumpyType(const TypeMeta& meta);
-const TypeMeta& NumpyTypeToDragon(int numpy_type);
-
 class NumpyFetcher : public TensorFetcherBase {
  public:
     PyObject* Fetch(const Tensor& tensor) override {
         CHECK_GT(tensor.count(), 0);
         vector<npy_intp> npy_dims;
         for (const auto dim : tensor.dims()) npy_dims.push_back(dim);
-        int numpy_type = DragonToNumpyType(tensor.meta());
-        if (numpy_type == -1) {
+        int npy_type = TypeMetaToNPY(tensor.meta());
+        if (npy_type == -1) {
             string s = "The data type of Tensor(" + tensor.name() + ") is unknown. Have you solved it ?";
             PyErr_SetString(PyExc_RuntimeError, s.c_str());
             return nullptr;
         }
         //  create a empty array with r shape
-        PyObject* array = PyArray_SimpleNew(tensor.ndim(), npy_dims.data(), numpy_type);
+        PyObject* array = PyArray_SimpleNew(tensor.ndim(), npy_dims.data(), npy_type);
         //  copy the tensor data to the numpy array
         if (tensor.memory_state() == MixedMemory::STATE_AT_CUDA) {
             CUDAContext::Memcpy<CPUContext, CUDAContext>(tensor.nbytes(),
-                                                         PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)), 
-                                                                               tensor.raw_data<CUDAContext>());
+                   PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)),
+                                         tensor.raw_data<CUDAContext>());
         } else {
             CPUContext::Memcpy<CPUContext, CPUContext>(tensor.nbytes(),
-                                                       PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)), 
-                                                                              tensor.raw_data<CPUContext>());
+                 PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)),
+                                        tensor.raw_data<CPUContext>());
         }
         return array;
     }
@@ -127,7 +80,7 @@ class StringFetcher : public TensorFetcherBase {
  public:
     PyObject* Fetch(const Tensor& tensor) override {
         CHECK_GT(tensor.count(), 0);
-        return StdStringToPyBytes(*tensor.data<string, CPUContext>());
+        return String_AsPyBytes(*tensor.data<string, CPUContext>());
     }
 };
 
@@ -137,7 +90,7 @@ class NumpyFeeder : public TensorFeederBase {
                    PyArrayObject* original_array, 
                    Tensor* tensor) override {
         PyArrayObject* array = PyArray_GETCONTIGUOUS(original_array);
-        const TypeMeta& meta = NumpyTypeToDragon(PyArray_TYPE(array));
+        const TypeMeta& meta = TypeNPYToMeta(PyArray_TYPE(array));
         if (meta.id() == 0) {
             PyErr_SetString(PyExc_TypeError, "Unsupported data type.");
             return nullptr;
@@ -155,20 +108,22 @@ class NumpyFeeder : public TensorFeederBase {
 #ifdef WITH_CUDA
             CUDAContext context(option);
             context.SwitchToDevice();
-            context.Memcpy<CUDAContext, CPUContext>(tensor->nbytes(), 
-                                                    tensor->raw_mutable_data<CUDAContext>(), 
-                                                    static_cast<void*>(PyArray_DATA(array)));
+            context.Memcpy<CUDAContext, CPUContext>(tensor->nbytes(),
+                             tensor->raw_mutable_data<CUDAContext>(),
+                            static_cast<void*>(PyArray_DATA(array)));
 #else   
             LOG(FATAL) << "CUDA was not compiled.";
 #endif
         } else{
-            CPUContext::Memcpy<CPUContext, CPUContext>(tensor->nbytes(), 
-                                                       tensor->raw_mutable_data<CPUContext>(),
-                                                       static_cast<void*>(PyArray_DATA(array)));
+            CPUContext::Memcpy<CPUContext, CPUContext>(tensor->nbytes(),
+                                 tensor->raw_mutable_data<CPUContext>(),
+                               static_cast<void*>(PyArray_DATA(array)));
         }
         Py_XDECREF(array);
         Py_RETURN_TRUE;
     }
 };
 
-#endif    // DRAGON_MODULES_PYTHON_DRAGON_H_
+Workspace* ws();
+
+#endif    // DRAGON_PYTHON_DRAGON_H_

@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -18,7 +18,7 @@
 #include <iostream>
 #include <cstdlib>
 
-#include "cast.h"
+#include "utils/cast.h"
 
 namespace dragon {
 

@@ -71,7 +71,6 @@ std::string CreateGraph(const std::string& graph_file, Workspace* ws) {
     if (!success) LOG(FATAL) << "Invalid graph file for Dragon.";
     //  overwritten device options
     dragon::GraphBase* graph = ws->CreateGraph(meta_graph);
-
     if (!graph) LOG(FATAL) << "Can not create the graph.";
     return meta_graph.name();
 }
@@ -232,7 +231,7 @@ void LoadCaffemodel(const std::string& model_file, Workspace* ws){
     }
 }
 
-void RunGraph(const std::string& graph_name, Workspace* ws){
+void RunGraph(const std::string& graph_name, Workspace* ws) {
     ws->RunGraph(graph_name, "", "");
 }
 

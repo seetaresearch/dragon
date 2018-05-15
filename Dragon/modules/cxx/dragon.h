@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -9,8 +9,8 @@
 //
 // ------------------------------------------------------------
 
-#ifndef DRAGON_MODULES_CC_DRAGON_H_
-#define DRAGON_MODULES_CC_DRAGON_H_
+#ifndef DRAGON_CXX_DRAGON_H_
+#define DRAGON_CXX_DRAGON_H_
 
 #include <string>
 #include <cstdint>
@@ -104,4 +104,4 @@ EXPORT void SetLogLevel(const std::string& level);
 
 }    // namespace dragon
 
-#endif    // DRAGON_MODULES_CC_DRAGON_H_
+#endif    // DRAGON_CXX_DRAGON_H_

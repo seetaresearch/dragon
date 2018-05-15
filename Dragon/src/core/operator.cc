@@ -5,11 +5,12 @@
 namespace dragon {
 
 OperatorBase::OperatorBase(const OperatorDef& op_def, Workspace* ws)
-    : op_def_(op_def), ws_(ws) {
+    : op_def_(op_def), ws_(ws), anchor_(op_def.name()) {
     for (auto& arg : this->op_def_.arg()) {
         CHECK_GT(arg.name().size(), 0);
         CHECK_EQ(args_.count(arg.name()), 0);
         args_[arg.name()] = &arg;
+        if (arg.name() == "anchor") anchor_ = arg.s();
     }
     for (const std::string& input : this->op_def_.input()) {
         auto* tensor = ws->GetTensor(input);
@@ -23,15 +24,26 @@ OperatorBase::OperatorBase(const OperatorDef& op_def, Workspace* ws)
 inline Tensor& OperatorBase::Input(int idx) {
     CHECK_LT(idx, (int)inputs_.size());
     CHECK_GE(idx, -(int)inputs_.size());
-    if (idx >= 0) return *(ws()->SearchAvatar(inputs_[idx]));
-    else return *(ws()->SearchAvatar(inputs_[idx + inputs_.size()]));
+    if (idx >= 0) return *inputs_[idx];
+    else return *inputs_[idx + inputs_.size()];
 }
 
 inline Tensor* OperatorBase::Output(int idx) {
     CHECK_LT(idx, (int)outputs_.size());
     CHECK_GE(idx, -(int)outputs_.size());
-    if (idx >= 0) return ws()->SearchAvatar(outputs_[idx]);
-    else return ws()->SearchAvatar(outputs_[idx + outputs_.size()]);
+    if (idx >= 0) return outputs_[idx];
+    else return outputs_[idx + outputs_.size()];
+}
+
+string OperatorBase::DTypeHelper(const Tensor& tensor,
+                                 const Set<string>& dtypes) const {
+     std::stringstream ss;
+     ss << "Unsupported DType of Input(" << tensor.name() << "): "
+        << TypeMetaToString(tensor.meta()) << "\n";
+     ss << "<" << type() << "Op>" << " supports the following dtypes: {\n";
+     for (auto& dtype : dtypes) ss << "    * " << dtype << ",\n";
+     ss << "}";
+     return ss.str();
 }
 
 OperatorBase* TryCreateOperator(const string& key, const OperatorDef& op_def, Workspace* ws) {
@@ -50,6 +62,30 @@ OperatorBase* TryCreateOperator(const string& key, const OperatorDef& op_def, Wo
     }
 }
 
+void OperatorBase::MutableOp(const vector<string>& inputs,
+                             const vector<string>& outputs,
+                             const string& anchor) {
+    inputs_.resize(inputs.size());
+    outputs_.resize(outputs.size());
+    for (int i = 0; i < inputs_.size(); i++)
+        inputs_[i] = ws()->GetTensor(inputs[i]);
+    for (int i = 0; i < outputs_.size(); i++)
+        outputs_[i] = ws()->CreateTensor(outputs[i]);
+    anchor_ = anchor;
+}
+
+void OperatorBase::MutableOp(const OperatorDef& new_def) {
+    inputs_.resize(new_def.input_size());
+    outputs_.resize(new_def.output_size());
+    for (int i = 0; i < inputs_.size(); i++) 
+        inputs_[i] = ws()->GetTensor(new_def.input(i));
+    for (int i = 0; i < outputs_.size(); i++) 
+        outputs_[i] = ws()->CreateTensor(new_def.output(i));
+    anchor_ = new_def.name();
+    for (auto& arg : new_def.arg())
+        if (arg.name() == "anchor") anchor_ = arg.s();
+}
+
 OperatorBase* CreateOperator(const OperatorDef& op_def, Workspace* ws) {
     auto* schema = OpSchemaRegistry::Schema(op_def.type());
     CHECK(schema->Verify(op_def)) << "\nOperator failed to pass the schema checking.";
@@ -62,13 +98,22 @@ Gradient MakeGradientForOp(const OperatorDef& def, const vector<string>& g_outpu
     if (maker.get() == nullptr)
         LOG(FATAL) << "Gradient maker for operator " << def.type() << "not implemented.";
     Gradient grad = maker->Make();
-    // copy device option, engine, and arguments if needed
+    OperatorDef reference_def(def);
+    //  custom arguments
+    for (int i = 0; i < reference_def.arg_size(); i++) {
+        if (reference_def.arg(i).name() == "persistent_key") {
+            string s = reference_def.arg(i).s();
+            if (!s.empty()) *reference_def.mutable_arg(i)->mutable_s() = s + "/grad";
+        }
+    }
+    //  copy device option, engine, and arguments
     if (maker->CopyDeviceOption() && def.has_device_option())
         for (auto& grad_def : grad.ops)
             grad_def.mutable_device_option()->CopyFrom(def.device_option());
-    // copy arguments if needed
+    //  copy arguments
     if (maker->CopyArguments() && def.arg_size())
-        for (auto& grad_def : grad.ops) grad_def.mutable_arg()->MergeFrom(def.arg());
+        for (auto& grad_def : grad.ops) 
+            grad_def.mutable_arg()->MergeFrom(reference_def.arg());
     return grad;
 }
 
@@ -122,18 +167,8 @@ void Operator<Context>::ElimateCorruption() {
 }
 
 template <class Context>
-void Operator<Context>::ShareGradient() {
-    //  TODO(PhyscalX):  we preset Input(-1)->Output(0) to share
-    if (Output(0)->name() != "ignore") {
-        Tensor* dX = ws()->GetBuffer("Grad");
-        ws()->CreateAvatar(Output(0), dX);
-    }
-}
-
-template <class Context>
 void Operator<Context>::MakeResource() {
     ElimateCorruption();
-    if (allow_share_grads_) ShareGradient();
 }
 
 template <class Context>
@@ -149,13 +184,6 @@ void Operator<Context>::CleanResource() {
             Tensor* buffer = ws()->GetTensor(used);
             if (Output(i)->memory() != buffer->memory()) buffer->Move(Output(i)->memory());
         }
-    }
-
-    //  post-process for sharing grads
-    if (allow_share_grads_) {
-        //  TODO(PhyscalX):  we preset Input(-1)->Output(0) to share
-        Tensor* dY = &Input(-1);
-        ws()->ReleaseBuffer(dY, "Grad");
     }
 }
 
@@ -196,8 +224,6 @@ INSTANTIATE_GET_REPEATED_ARGUMENT(string, strings)
 
 template void Operator<CPUContext>::ElimateCorruption();
 template void Operator<CUDAContext>::ElimateCorruption();
-template void Operator<CPUContext>::ShareGradient();
-template void Operator<CUDAContext>::ShareGradient();
 template void Operator<CPUContext>::MakeResource();
 template void Operator<CUDAContext>::MakeResource();
 template void Operator<CPUContext>::CleanResource();

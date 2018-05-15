@@ -160,8 +160,15 @@ template <> void Add<int, CPUContext>(const int n,
     for (int i = 0; i < n; ++i) y[i] = a[i] + b[i];
 }
 
-template <> void Sub<float, CPUContext>(const int n, 
-                                        const float* a, 
+template <> void Add<float16, CPUContext>(const int n,
+                                          const float16* a,
+                                          const float16* b,
+                                          float16* y) {
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
+}
+
+template <> void Sub<float, CPUContext>(const int n,
+                                        const float* a,
                                         const float* b,
                                         float* y) {
 #ifdef WITH_SSE
@@ -174,8 +181,15 @@ template <> void Sub<float, CPUContext>(const int n,
 #endif  // WITH_SSE
 }
 
-template <> void Mul<float, CPUContext>(const int n, 
-                                        const float* a, 
+template <> void Sub<float16, CPUContext>(const int n,
+                                          const float16* a,
+                                          const float16* b,
+                                          float16* y) {
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
+}
+
+template <> void Mul<float, CPUContext>(const int n,
+                                        const float* a,
                                         const float* b,
                                         float* y) {
 #ifdef WITH_SSE
@@ -188,15 +202,15 @@ template <> void Mul<float, CPUContext>(const int n,
 #endif  // WITH_SSE
 }
 
-template <> void Mul<float16, CPUContext>(const int n, 
-                                          const float16* a, 
+template <> void Mul<float16, CPUContext>(const int n,
+                                          const float16* a,
                                           const float16* b,
                                           float16* y) {
     LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
-template <> void Div<float, CPUContext>(const int n, 
-                                        const float* a, 
+template <> void Div<float, CPUContext>(const int n,
+                                        const float* a,
                                         const float* b,
                                         float* y) {
 #ifdef WITH_SSE
@@ -209,15 +223,15 @@ template <> void Div<float, CPUContext>(const int n,
 #endif  // WITH_SSE
 }
 
-template <> void Div<float16, CPUContext>(const int n, 
-                                        const float16* a, 
+template <> void Div<float16, CPUContext>(const int n,
+                                        const float16* a,
                                         const float16* b,
                                         float16* y) {
     LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
-template <> void Clip<float, CPUContext>(const int n, 
-                                         const float low, 
+template <> void Clip<float, CPUContext>(const int n,
+                                         const float low,
                                          const float high,
                                          float* x) {
 #ifdef WITH_OMP

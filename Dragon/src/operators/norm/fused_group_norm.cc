@@ -6,20 +6,16 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void FusedGroupNormOp<Context>::TrainingRunWithType() {
+void FusedGroupNormOp<Context>::RunWithType() {
     INIT_MULTIPLIER(multiplier, NS);
     INIT_MULTIPLIER(num_multiplier, N);
     INIT_MULTIPLIER(spatial_multiplier, S);
     INIT_MULTIPLIER(cgs_multiplier, CGS);
-    TENSOR_FILL(Input(1), vector<TIndex>(1, NG));  //  history_mean
-    TENSOR_FILL(Input(2), vector<TIndex>(1, NG));  //  history_var
-    TENSOR_FILL(Input(3), vector<TIndex>(1, C));  //  scale
-    TENSOR_FILL(Input(4), vector<TIndex>(1, C));  //  bias
+    TENSOR_FILL(Input(1), vector<TIndex>(1, C));  //  scale
+    TENSOR_FILL(Input(2), vector<TIndex>(1, C));  //  bias
 
-    auto* hMean_data = Input(1).template mutable_data<T, Context>();
-    auto* hVar_data = Input(2).template mutable_data<T, Context>();
-    auto* Sdata = Input(3).template data<T, Context>();
-    auto* Bdata = Input(4).template data<T, Context>();
+    auto* Sdata = Input(1).template data<T, Context>();
+    auto* Bdata = Input(2).template data<T, Context>();
     auto* tMean_data = mean->template mutable_data<T, Context>();
     auto* tVar_data = var->template mutable_data<T, Context>();
     auto* Xdata = Input(0).template data<T, Context>();
@@ -59,13 +55,6 @@ void FusedGroupNormOp<Context>::TrainingRunWithType() {
                                      0.0, tVar_data);
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
-    }
-
-    //  compute moving average
-    if (!is_recomputing) {
-        //  History(X) = (1 - momentum) * Cur(X) + momentum * History(X)
-        math::Axpby<T, Context>(mean->count(), 1.0 - momentum, tMean_data, momentum, hMean_data);
-        math::Axpby<T, Context>(var->count(), 1.0 - momentum, tVar_data, momentum, hVar_data);
     }
 
     //  compute stddev
@@ -117,97 +106,8 @@ void FusedGroupNormOp<Context>::TrainingRunWithType() {
     ws()->ReleaseBuffer(stddev);
 }
 
-template <class Context> template <typename T>
-void FusedGroupNormOp<Context>::InferenceRunWithType() {
-    INIT_MULTIPLIER(multiplier, NS);
-    INIT_MULTIPLIER(num_multiplier, N);
-    INIT_MULTIPLIER(spatial_multiplier, S);
-    INIT_MULTIPLIER(cgs_multiplier, CGS);
-    TENSOR_FILL(Input(1), vector<TIndex>(1, NG));  //  history_mean
-    TENSOR_FILL(Input(2), vector<TIndex>(1, NG));  //  history_var
-    TENSOR_FILL(Input(3), vector<TIndex>(1, C));  //  scale
-    TENSOR_FILL(Input(4), vector<TIndex>(1, C));  //  bias
-
-    auto* hMean_data = Input(1).template mutable_data<T, Context>();
-    auto* hVar_data = Input(2).template mutable_data<T, Context>();
-    auto* Sdata = Input(3).template data<T, Context>();
-    auto* Bdata = Input(4).template data<T, Context>();
-    auto* tMean_data = mean->template mutable_data<T, Context>();
-    auto* tVar_data = var->template mutable_data<T, Context>();
-    auto* Xdata = Input(0).template data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    auto* NMul_data = num_multiplier->template data<T, Context>();
-    auto* SMul_data = spatial_multiplier->template data<T, Context>();
-    auto* NSMul_data = multiplier->template data<T, Context>();
-    auto* CGSMul_data = cgs_multiplier->template data<T, Context>();
-    auto* NC_data = num_by_chans.template mutable_data<T, Context>();
-    auto* Std_data = stddev->template mutable_data<T, Context>();
-    ctx().template Copy<T, Context, Context>(Input(0).count(), Ydata, Xdata);
-    ctx().template Copy<T, Context, Context>(mean->count(), tMean_data, hMean_data);
-    ctx().template Copy<T, Context, Context>(var->count(), tVar_data, hVar_data);
-
-    //  subtract mean
-    if (data_format == "NCHW") {
-        math::Gemv<T, Context>(CblasNoTrans, NG, CGS,
-                       1.0 / CGS, Xdata, CGSMul_data,
-                                      0, tMean_data);
-    } else if (data_format == "NHWC") {
-         NOT_IMPLEMENTED;
-    }
-
-    //  compute stddev
-    math::AddScalar<T, Context>(var->count(), eps, tVar_data);
-    math::Sqrt<T, Context>(var->count(), tVar_data, tVar_data);
-
-    //  divide by stddev
-    if (data_format == "NCHW") {
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NG, CGS, 1,
-                                          1.0, tVar_data, CGSMul_data,
-                                                       0.0, Std_data);
-    } else if (data_format == "NHWC") {
-        NOT_IMPLEMENTED;
-    }
-    math::Div<T, Context>(Output(0)->count(), Ydata, Std_data, Ydata);
-
-    // scale
-    if (data_format == "NCHW") {
-         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, N, C, 1,
-                                              1.0, NMul_data, Sdata,
-                                                      0.0, NC_data);
-         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                             1.0, NC_data, SMul_data,
-                                                      0.0, Std_data);
-    } else if (data_format == "NHWC") {
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NS, C, 1,
-                                             1.0, NSMul_data, Sdata,
-                                                     0.0, Std_data);
-    }
-    math::Mul<T, Context>(Output(0)->count(), Ydata, Std_data, Ydata);
-
-    // shift
-    if (data_format == "NCHW") {
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, N, C, 1,
-                                             1.0, NMul_data, Bdata,
-                                                     0.0, NC_data);
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                            1.0, NC_data, SMul_data,
-                                                        1.0, Ydata);
-    } else if (data_format == "NHWC") {
-         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NS, C, 1,
-                                             1.0, NSMul_data,  Bdata,
-                                                         1.0, Ydata);
-    }
-    ws()->ReleaseBuffer(stddev);
-}
-
 template <class Context>
 void FusedGroupNormOp<Context>::Setup() {
-    //  determine the mode
-    if (use_stats == -1) use_global_stats = phase() == "TEST" ? true : false;
-    else use_global_stats = use_stats == 1 ? true : false;
-    is_recomputing = ws()->GetTensor("/opt/mirror_stage/recompute_flag")
-                         ->template data<bool, CPUContext>()[0];
-
     //  determine the data format
     TIndex channel_axis = axis;
     data_format = "NCHW";
@@ -227,9 +127,9 @@ void FusedGroupNormOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    mean = ws()->CreateTensor("/mnt/" + Anchor() + "/gn/mean");
-    var = ws()->CreateTensor("/mnt/" + Anchor() + "/gn/var");
-    x_norm = ws()->CreateTensor("/mnt/" + Anchor() + "/gn/x_norm");
+    mean = ws()->CreateTensor("/mnt/" + anchor() + "/gn/mean");
+    var = ws()->CreateTensor("/mnt/" + anchor() + "/gn/var");
+    x_norm = ws()->CreateTensor("/mnt/" + anchor() + "/gn/x_norm");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 
@@ -245,17 +145,9 @@ template <class Context>
 void FusedGroupNormOp<Context>::RunOnDevice() {
     Setup();
 
-    if (Input(0).template IsType<float>()) {
-        if (use_global_stats) InferenceRunWithType<float>();
-        else TrainingRunWithType<float>();
-    }
-#ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) {
-        if (use_global_stats) InferenceRunWithType<float16>();
-        else TrainingRunWithType<float16>();
-    }
-#endif
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 
@@ -263,10 +155,10 @@ DEPLOY_CPU(FusedGroupNorm);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(FusedGroupNorm);
 #endif
-OPERATOR_SCHEMA(FusedGroupNorm).NumInputs(5).NumOutputs(1);
+OPERATOR_SCHEMA(FusedGroupNorm).NumInputs(3).NumOutputs(1);
 
 template <class Context> template <typename T>
-void FusedGroupNormGradientOp<Context>::TrainingRunWithType() {
+void FusedGroupNormGradientOp<Context>::RunWithType() {
     INIT_MULTIPLIER(multiplier, NS);
     INIT_MULTIPLIER(num_multiplier, N);
     INIT_MULTIPLIER(spatial_multiplier, S);
@@ -274,7 +166,7 @@ void FusedGroupNormGradientOp<Context>::TrainingRunWithType() {
 
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    auto* Sdata = Input(3).template data<T, Context>();
+    auto* Sdata = Input(1).template data<T, Context>();
     auto* Std_data = stddev->template mutable_data<T, Context>();
     auto* tMean_data = mean->template mutable_data<T, Context>();
     auto* tVar_data = var->template mutable_data<T, Context>();
@@ -384,70 +276,8 @@ void FusedGroupNormGradientOp<Context>::TrainingRunWithType() {
     ws()->ReleaseBuffer(stddev);
 }
 
-template <class Context> template <typename T>
-void FusedGroupNormGradientOp<Context>::InferenceRunWithType() {
-    INIT_MULTIPLIER(multiplier, NS);
-    INIT_MULTIPLIER(num_multiplier, N);
-    INIT_MULTIPLIER(spatial_multiplier, S);
-    INIT_MULTIPLIER(cgs_multiplier, CGS);
-
-    auto* dYdata = Input(-1).template data<T, Context>();
-    auto* Sdata = Input(3).template data<T, Context>();
-    auto* tVar_data = var->template mutable_data<T, Context>();
-    auto* NMul_data = num_multiplier->template data<T, Context>();
-    auto* SMul_data = spatial_multiplier->template data<T, Context>();
-    auto* NSMul_data = multiplier->template data<T, Context>();
-    auto* CGSMul_data = cgs_multiplier->template data<T, Context>();
-    auto* NC_data = num_by_chans.template mutable_data<T, Context>();
-
-    //  gradient w.r.t. scale
-    if (Output(1)->name() != "ignore") 
-        LOG(FATAL) << "The gamma should be fixed if using global stats.";
-       
-    //  gradient w.r.t. bias
-    if (Output(2)->name() != "ignore") {
-        auto* dBdata = Output(2)->template mutable_data<T, Context>();
-        if (data_format == "NCHW") {
-            math::Gemv<T, Context>(CblasNoTrans, NC, S,
-                                1.0, dYdata, SMul_data,
-                                         0.0, NC_data);
-            math::Gemv<T, Context>(CblasTrans, N, C,
-                            1.0, NC_data, NMul_data,
-                                       1.0, dBdata);
-        } else if (data_format == "NHWC") {
-            math::Gemv<T, Context>(CblasTrans, NS, C,
-                             1.0, dYdata, NSMul_data,
-                                        1.0, dBdata);
-            }
-    }
-
-    //  gradient w.r.t. x
-    if (Output(0)->name() != "ignore") {
-        auto* dXdata = Output(0)->template mutable_data<T, Context>();
-        auto* Std_data = stddev->template mutable_data<T, Context>();
-
-        //  divide scale by stddev
-        math::Div<T, Context>(var->count(), Sdata, tVar_data, tVar_data);
-
-        //  compute dE/dY \cot (scale / std(X))
-        if (data_format == "NCHW") {
-            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NG, CGS, 1,
-                                              1.0, tVar_data, CGSMul_data,
-                                                           0.0, Std_data);
-        } else if (data_format == "NHWC") {
-            NOT_IMPLEMENTED;
-        }
-        math::Mul<T, Context>(Output(0)->count(), dYdata, Std_data, dXdata);
-    }
-    ws()->ReleaseBuffer(stddev);
-}
-
 template <class Context>
 void FusedGroupNormGradientOp<Context>::Setup() {
-    //  determine the mode
-    if (use_stats == -1) use_global_stats = phase() == "TEST" ? true : false;
-    else use_global_stats = use_stats == 1 ? true : false;
-
     //  determine the data format
     TIndex channel_axis = axis;
     data_format = "NCHW";
@@ -467,66 +297,41 @@ void FusedGroupNormGradientOp<Context>::Setup() {
     NS = N * S;
 
     //  make resource
-    mean = ws()->GetTensor("/mnt/" + Anchor() + "/gn/mean");
-    var = ws()->GetTensor("/mnt/" + Anchor() + "/gn/var");
-    x_norm = ws()->GetTensor("/mnt/" + Anchor() + "/gn/x_norm");
+    mean = ws()->GetTensor("/mnt/" + anchor() + "/gn/mean");
+    var = ws()->GetTensor("/mnt/" + anchor() + "/gn/var");
+    x_norm = ws()->GetTensor("/mnt/" + anchor() + "/gn/x_norm");
     stddev = ws()->GetBuffer();
     stddev->ReshapeLike(Input(0));
 
     //  reshape
     num_by_chans.Reshape(vector<TIndex>(1, NC));
     Output(0)->ReshapeLike(Input(0));  // dX
-    Output(1)->ReshapeLike(Input(3));  // dScale
-    Output(2)->ReshapeLike(Input(3));  // dBias
+    Output(1)->ReshapeLike(Input(1));  // dScale
+    Output(2)->ReshapeLike(Input(1));  // dBias
 }
 
 template <class Context>
 void FusedGroupNormGradientOp<Context>::RunOnDevice() {
     Setup();
 
-    if (Input(0).template IsType<float>()) {
-        if (use_global_stats) InferenceRunWithType<float>();
-        else TrainingRunWithType<float>();
-    }
-#ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) {
-        if (use_global_stats) InferenceRunWithType<float16>();
-        else TrainingRunWithType<float16>();
-    }
-#endif
-    else LOG(FATAL) << "Unsupported input types.";
-}
-
-template <class Context>
-void FusedGroupNormGradientOp<Context>::ShareGradient() {
-    if (use_global_stats) {
-        if (Output(0)->name() != "ignore") {
-            Tensor* dX = ws()->GetBuffer("Grad");
-            ws()->CreateAvatar(Output(0), dX);
-        }
-    } else {
-        if (Output(0)->name() != "ignore" ||
-            Output(1)->name() != "ignore" ||
-            Output(2)->name() != "ignore") {
-            Tensor* dX = ws()->GetBuffer("Grad");
-            ws()->CreateAvatar(Output(0), dX);
-        }
-    }
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(FusedGroupNormGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(FusedGroupNormGradient);
 #endif
-OPERATOR_SCHEMA(FusedGroupNormGradient).NumInputs(5).NumOutputs(3);
+OPERATOR_SCHEMA(FusedGroupNormGradient).NumInputs(3).NumOutputs(3);
 
 class GetFusedGroupNormGradient final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetFusedGroupNormGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), I(1), I(2), I(3), GO(0)},
-            vector<string> {GI(0), GI(3), GI(4)});
+            vector<string> {I(0), I(1), GO(0)},
+            vector<string> {GI(0), GI(1), GI(2)});
     }
 };
 REGISTER_GRADIENT(FusedGroupNorm, GetFusedGroupNormGradient);

@@ -21,9 +21,6 @@ List                              Brief
 `Tensor.reshape`_                 Reshape the dimensions of input.
 `Tensor.dimshuffle`_              Shuffle the dimensions.
 `Tensor.eval`_                    Run and return the computing results of this tensor.
-`Tensor.CreateOperator`_          Construct a new Tensor with specific operator descriptor.
-`Tensor.Fill`_                    Fill self with the specific type of filler.
-`Tensor.PrintExpressions`_        Return the stringified internal expressions.
 ==============================    =============================================================================
 
 Register
@@ -62,7 +59,7 @@ List                              Brief
 `Tensor.__neg__`_                 x.__neg__()  <=> -x
 `Tensor.__str__`_                 Return the information(name/shape).
 `Tensor.__getitem__`_             Return a Tensor with specific indices.
-`Tensor.__call__`_                Print the expressions.
+`Tensor.__call__`_                Return the expressions for displaying.
 ==============================    =============================================================================
 
 
@@ -112,9 +109,6 @@ API Reference
 .. _Tensor.reshape: #dragon.core.tensor.Tensor.reshape
 .. _Tensor.dimshuffle: #dragon.core.tensor.Tensor.dimshuffle
 .. _Tensor.eval: #dragon.core.tensor.Tensor.eval
-.. _Tensor.CreateOperator: #dragon.core.tensor.Tensor.CreateOperator
-.. _Tensor.Fill: #dragon.core.tensor.Tensor.Fill
-.. _Tensor.PrintExpressions: #dragon.core.tensor.Tensor.PrintExpressions
 
 .. _workspace.FeedTensor(*args, **kwargs): workspace.html#dragon.core.workspace.FeedTensor
 .. _workspace.FetchTensor(*args, **kwargs): workspace.html#dragon.core.workspace.FetchTensor

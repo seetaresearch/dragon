@@ -17,14 +17,14 @@ void ROIPoolingOp<Context>::RunWithType() {
 
 template <class Context>
 void ROIPoolingOp<Context>::RunOnDevice() {
-    mask = ws()->CreateTensor("/mnt/" + Anchor() + "/roi_pool/mask");
+    mask = ws()->CreateTensor("/mnt/" + anchor() + "/roi_pool/mask");
 
     vector<TIndex> dims({Input(1).dim(0), Input(0).dim(1), pool_h, pool_w});
     Output(0)->Reshape(dims);
     mask->Reshape(dims);
 
-    if (Input(0).template IsType<float>()) return RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(ROIPooling);
@@ -45,12 +45,12 @@ void ROIPoolingGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void ROIPoolingGradientOp<Context>::RunOnDevice() {
-    mask = ws()->GetTensor("/mnt/" + Anchor() + "/roi_pool/mask");
+    mask = ws()->GetTensor("/mnt/" + anchor() + "/roi_pool/mask");
 
     Output(0)->ReshapeLike(Input(0));
 
-    if (Input(0).template IsType<float>()) return RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(ROIPoolingGradient);

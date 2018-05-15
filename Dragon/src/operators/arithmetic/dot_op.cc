@@ -39,8 +39,8 @@ void DotOp<Context>::RunOnDevice() {
             << Input(0).dim_string() << " can not Dot with Tensor"
             << "(" << Input(1).name() << "): " << Input(1).dim_string();
         Output(0)->Reshape(vector<TIndex>(1, 1));
-        if (Input(0).template IsType<float>()) DotRunWithType<float>();
-        else LOG(FATAL) << "Unsupported input types.";
+        if (XIsType(Input(0), float)) DotRunWithType<float>();
+        else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
     } 
     else if (Input(0).ndim() >= 2 && Input(1).ndim() == 2) {
         TIndex m = Input(0).count() / Input(0).dim(-1), k = Input(0).dim(-1);
@@ -54,11 +54,9 @@ void DotOp<Context>::RunOnDevice() {
         vector<TIndex> dims = Input(0).dims();
         dims[dims.size() - 1] = N1;
         Output(0)->Reshape(dims);
-        if (Input(0).template IsType<float>()) GemmRunWithType<float>();
-#ifdef WITH_CUDA_FP16
-        else if (Input(0).template IsType<float16>()) GemmRunWithType<float16>();
-#endif
-        else LOG(FATAL) << "Unsupported input types.";
+        if (XIsType(Input(0), float)) GemmRunWithType<float>();
+        else if (XIsType(Input(0), float16)) GemmRunWithType<float16>();
+        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
     } 
     else if (Input(0).ndim() >= 2 && Input(1).ndim() == 1) {
         TIndex m = Input(0).count() / Input(0).dim(-1), k = Input(0).dim(-1);
@@ -71,11 +69,9 @@ void DotOp<Context>::RunOnDevice() {
         vector<TIndex> dims = Input(0).dims();
         dims.pop_back();
         Output(0)->Reshape(dims);
-        if (Input(0).template IsType<float>()) GemvRunWithType<float>();
-#ifdef WITH_CUDA_FP16
-        else if (Input(0).template IsType<float16>()) GemvRunWithType<float16>();
-#endif
-        else LOG(FATAL) << "Unsupported input types.";
+        if (XIsType(Input(0), float)) GemvRunWithType<float>();
+        else if (XIsType(Input(0), float16)) GemvRunWithType<float16>();
+        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
     } 
     else {
         LOG(FATAL) << "\nTensor(" << Input(0).name() << "): "
@@ -139,8 +135,8 @@ void DotGradientOp<Context>::RunOnDevice() {
             << "\nTensor(" << Input(0).name() << "): "
             << Input(0).dim_string() << " can not Dot with Tensor"
             << "(" << Input(1).name() << "): " << Input(1).dim_string();
-        if (Input(0).template IsType<float>()) DotRunWithType<float>();
-        else LOG(FATAL) << "Unsupported input types.";
+        if (XIsType(Input(0), float)) DotRunWithType<float>();
+        else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
     } 
     else if (Input(0).ndim() >= 2 && Input(1).ndim() == 2) {
         TIndex m = Input(0).count() / Input(0).dim(-1), k = Input(0).dim(-1);
@@ -151,11 +147,9 @@ void DotGradientOp<Context>::RunOnDevice() {
         CHECK_EQ(K1, K2) << "\nTensor(" << Input(0).name() << "): "
             << Input(0).dim_string() << " can not Dot with Tensor"
             << "(" << Input(1).name() << "): " << Input(1).dim_string();
-        if (Input(0).template IsType<float>()) GemmRunWithType<float>();
-#ifdef WITH_CUDA_FP16
-        else if (Input(0).template IsType<float16>()) GemmRunWithType<float16>();
-#endif
-        else LOG(FATAL) << "Unsupported input types.";
+        if (XIsType(Input(0), float)) GemmRunWithType<float>();
+        else if (XIsType(Input(0), float16)) GemmRunWithType<float16>();
+        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
     } 
     else if (Input(0).ndim() >= 2 && Input(1).ndim() == 1) {
         TIndex m = Input(0).count() / Input(0).dim(-1), k = Input(0).dim(-1);
@@ -165,27 +159,14 @@ void DotGradientOp<Context>::RunOnDevice() {
         CHECK_EQ(N1, N2) << "\nTensor(" << Input(0).name() << "): "
             << Input(0).dim_string() << " can not Dot with Tensor"
             << "(" << Input(1).name() << "): " << Input(1).dim_string();
-        if (Input(0).template IsType<float>()) GemvRunWithType<float>();
-#ifdef WITH_CUDA_FP16
-        else if (Input(0).template IsType<float16>()) GemvRunWithType<float16>();
-#endif
-        else LOG(FATAL) << "Unsupported input types.";
+        if (XIsType(Input(0), float)) GemvRunWithType<float>();
+        else if (XIsType(Input(0), float16)) GemvRunWithType<float16>();
+        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
     } 
     else {
         LOG(FATAL) << "\nTensor(" << Input(0).name() << "): "
             << Input(0).dim_string() << " can not Dot with Tensor"
             << "(" << Input(1).name() << "): " << Input(1).dim_string();
-    }
-}
-
-template <class Context>
-void DotGradientOp<Context>::ShareGradient() {
-    for (int i = 0; i < OutputSize(); i++) {
-        if (Output(i)->name() != "ignore") {
-            Tensor* dX = ws()->GetBuffer("Grad");
-            ws()->CreateAvatar(Output(i), dX);
-            break;
-        }
     }
 }
 

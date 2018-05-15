@@ -7,6 +7,19 @@
 
 namespace dragon {
 
+template <class Context>
+void SoftmaxCrossEntropyOp<Context>::SoftmaxRun() {
+    OperatorDef softmax_def = MakeOperatorDef("Softmax", "",
+        vector<string>({ Input(0).name() }),
+        vector<string>({ "/mnt/" + anchor() + "/softmax/prob" }));
+    softmax_def.add_arg()->CopyFrom(this->arg("axis"));
+    if (op_def().has_device_option())
+        softmax_def.mutable_device_option()->CopyFrom(op_def().device_option());
+    if (!softmax_op) softmax_op.reset(CreateOperator(softmax_def, ws()));
+    else softmax_op->MutableOp(softmax_def);
+    softmax_op->Run();
+}
+
 template <class Context> template <typename T>
 void SoftmaxCrossEntropyOp<Context>::RunWithType() {
     auto* Pdata = prob->template data<T, Context>();
@@ -31,8 +44,8 @@ void SoftmaxCrossEntropyOp<Context>::RunWithType() {
     else if (normalization == "NONE") normalizer = 1;
     T loss = math::ASum<T, Context>(losses.count(), Ldata);
     Output(0)->Reshape(vector<TIndex>(1, 1));
-    auto* Ydata = Output(0)->template mutable_data<T, CPUContext>();
-    Ydata[0] = loss / normalizer;
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    math::Set<T, Context>(1, loss / normalizer, Ydata);
 }
 
 template <class Context>
@@ -42,11 +55,12 @@ void SoftmaxCrossEntropyOp<Context>::RunOnDevice() {
     CHECK_EQ(Input(0).count(), Input(1).count())
         << "\nNumber of predictions must match the number of labels.";
     losses.ReshapeLike(Input(0));
-    softmax_op->Run();
-    prob = ws()->GetTensor("/mnt/" + Anchor() + "/softmax/prob");
+    ws()->CreateTensor("/mnt/" + anchor() + "/softmax/prob");
+    SoftmaxRun();
+    prob = ws()->GetTensor("/mnt/" + anchor() + "/softmax/prob");
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(SoftmaxCrossEntropy);
@@ -79,19 +93,20 @@ void SoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
     if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
     else if (normalization == "FULL") normalizer = outer_dim * inner_dim;
     else if (normalization == "NONE") normalizer = 1;
-    auto* dYdata = Input(-1).template data<T, CPUContext>();
-    math::Scal<T, Context>(Output(0)->count(), dYdata[0] / normalizer, dXdata);
+    auto* dYdata = Input(-1).template data<T, Context>();
+    T dYdata_host; Context::template Copy<T, CPUContext, Context>(1, &dYdata_host, dYdata);
+    math::Scal<T, Context>(Output(0)->count(), dYdata_host / normalizer, dXdata);
 }
 
 template <class Context>
 void SoftmaxCrossEntropyGradientOp<Context>::RunOnDevice() {
-    prob = ws()->GetTensor("/mnt/" + Anchor() + "/softmax/prob");
+    prob = ws()->GetTensor("/mnt/" + anchor() + "/softmax/prob");
     outer_dim = prob->count(0, axis);
     inner_dim = prob->count(axis + 1);
     Output(0)->ReshapeLike(Input(0));
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(SoftmaxCrossEntropyGradient);
@@ -100,7 +115,7 @@ DEPLOY_CUDA(SoftmaxCrossEntropyGradient);
 #endif
 OPERATOR_SCHEMA(SoftmaxCrossEntropyGradient).NumInputs(3).NumOutputs(1);
 
-class GetSoftmaxCrossEntropyGradient final : public GradientMakerBase { 
+class GetSoftmaxCrossEntropyGradient final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetSoftmaxCrossEntropyGradient);
     vector<OperatorDef> MakeDefs() override {

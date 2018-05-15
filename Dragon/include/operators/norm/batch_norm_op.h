@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -117,8 +117,6 @@ class FusedBatchNormGradientOp : public Operator<Context> {
     USE_OPERATOR_FUNCTIONS(Context);
 
     void Setup();
-
-    void ShareGradient() override;
 
     void RunOnDevice() override;
     template <typename T> void TrainingRunWithType();

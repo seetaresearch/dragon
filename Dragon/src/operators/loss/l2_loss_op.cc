@@ -9,31 +9,31 @@ void L2LossOp<Context>::RunWithType() {
     auto* X0data = Input(0).template data<T, Context>();
     auto* X1data = Input(1).template data<T, Context>();
     auto* diff_data = diff->template mutable_data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, CPUContext>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
     math::Sub<T, Context>(diff->count(), X0data, X1data, diff_data);
     if (InputSize() > 2) {
         CHECK_EQ(Input(0).count(), Input(2).count());
         auto* Wdata = Input(2).template data<T, Context>();
         math::Mul<T, Context>(diff->count(), Wdata, diff_data, diff_data);
     }
-    Ydata[0] = T(0.5) * math::Dot<T, Context>(diff->count(), diff_data, diff_data);
 
     T normalizer;
     if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
     else if (normalization == "FULL") normalizer = Input(0).count();
     else if (normalization == "NONE") normalizer = 1;
-    Ydata[0] = Ydata[0] / normalizer;
+    T loss = T(0.5) * math::Dot<T, Context>(diff->count(), diff_data, diff_data);
+    math::Set<T, Context>(1, loss / normalizer, Ydata);
 }
 
 template <class Context>
 void L2LossOp<Context>::RunOnDevice() {
     CHECK_EQ(Input(0).count(), Input(1).count());
     Output(0)->Reshape(vector<TIndex>(1, 1));
-    diff = ws()->CreateTensor("/mnt/" + Anchor() + "/l2_loss/diff");
+    diff = ws()->CreateTensor("/mnt/" + anchor() + "/l2_loss/diff");
     diff->ReshapeLike(Input(0));
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(L2Loss);
@@ -45,9 +45,10 @@ OPERATOR_SCHEMA(L2Loss).NumInputs(2, 3).NumOutputs(1);
 template <class Context> template <typename T>
 void L2LossGradientOp<Context>::RunWithType() {
     auto* diff_data = diff->template mutable_data<T, Context>();
-    auto* dYdata = Input(-1).template data<T, CPUContext>();
+    auto* dYdata = Input(-1).template data<T, Context>();
+    T dYdata_host; Context::template Copy<T, CPUContext, Context>(1, &dYdata_host, dYdata);
 
-    T alpha = dYdata[0], normalizer;
+    T alpha = dYdata_host, normalizer;
     if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
     else if (normalization == "FULL") normalizer = Input(0).count();
     else if (normalization == "NONE") normalizer = 1;
@@ -64,21 +65,10 @@ void L2LossGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void L2LossGradientOp<Context>::RunOnDevice() {
-    diff = ws()->GetTensor("/mnt/" + Anchor() + "/l2_loss/diff");
+    diff = ws()->GetTensor("/mnt/" + anchor() + "/l2_loss/diff");
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
-}
-
-template <class Context>
-void L2LossGradientOp<Context>::ShareGradient() {
-    for (int i = 0; i < OutputSize(); i++) {
-        if (Output(i)->name() != "ignore") {
-            Tensor* dX = ws()->GetBuffer("Grad");
-            ws()->CreateAvatar(Output(i), dX);
-            break;
-        }
-    }
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(L2LossGradient);

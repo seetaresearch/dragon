@@ -30,13 +30,15 @@ set(3RDPARTY_DIR  ${PROJECT_SOURCE_DIR}/../3rdparty)
 # set(PYTHON_EXECUTABLE X:/Anaconda/python) # Win, Anaconda
 
 # Set CUDA compiling architecture
-set(CUDA_ARCH     -gencode arch=compute_30,code=sm_30
-                  -gencode arch=compute_35,code=sm_35
-                  -gencode arch=compute_50,code=sm_50
-                  -gencode arch=compute_60,code=sm_60
-                  -gencode arch=compute_70,code=sm_70)
+# Remove "compute_70/sm_70" if using CUDA 8.0
+set(CUDA_ARCH    -gencode arch=compute_30,code=sm_30
+                 -gencode arch=compute_35,code=sm_35
+                 -gencode arch=compute_50,code=sm_50
+                 -gencode arch=compute_60,code=sm_60
+                 -gencode arch=compute_70,code=sm_70)
 
 # Set CUDNN Library Dir if necessary (Linux Only)
+# For Win, Recommend to use ``3RDPARTY_DIR/lib``
 set(CUDNN_LIBRARY_DIR /usr/local/cuda/lib64)
 
 # ---------------- User Config ----------------
@@ -97,7 +99,7 @@ if (WITH_MPI)
     include_directories(${3RDPARTY_DIR}/include/mpi)
 endif()
 
-# ---[ libs
+# ---[ Lib Directories
 set(3RDPARTY_LIBS ${3RDPARTY_DIR}/lib)
 link_directories(${3RDPARTY_LIBS})
 if (WITH_CUDNN)
@@ -108,7 +110,7 @@ endif()
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR} CACHE STRING "set install prefix" FORCE)
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH} ${3RDPARTY_LIBS})
 
-# ---[ defines
+# ---[ Defines
 if (WITH_PYTHON)
     ADD_DEFINITIONS(-DWITH_PYTHON)
     if (${PYTHON_VERSION_MAJOR} STREQUAL "2")
@@ -184,7 +186,7 @@ endif()
 
 # ---[ Warnings
 
-# ---[ execute
+# ---[ Commands
 set (PROTOS_DIR ${PROJECT_SOURCE_DIR}/src/protos)
 message(STATUS "Generate Protobuf Files")
 execute_process(COMMAND protoc -I=${PROTOS_DIR} --cpp_out=${PROTOS_DIR} ${PROTOS_DIR}/caffemodel.proto)
@@ -192,7 +194,7 @@ execute_process(COMMAND protoc -I=${PROTOS_DIR} --cpp_out=${PROTOS_DIR} ${PROTOS
 
 # ---[ Subdirectories
 add_subdirectory(modules/python)
-#add_subdirectory(modules/cc)    # Compile CC module if necessary
+#add_subdirectory(modules/cxx)    # Compile CXX module if necessary
 
 # ---[ Utils
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/../lib)

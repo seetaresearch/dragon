@@ -11,7 +11,9 @@ Besides, we demonstrate that a cross-frameworks frontend(**Deep Learning Virtual
 
 ## News
 
-Dragon 0.2.1 Released -  The preliminary documentation, and massive known bugs are fixed.
+Dragon 0.2.2 Released -  Cleaner, Faster, Stronger and now we have DYNAMIC GRAPH >>> (VM.PyTorch :-) <<<
+
+<div align=center><img width="373" height="214" src="http://dragon.seetatech.com/static/images/dragon-0.2.2.png"/></div>
 
 ## License and Citation
 Dragon is released under the [BSD 2-Clause license](https://github.com/neopenx/Dragon/blob/master/LICENSE).

@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -9,10 +9,8 @@
 #
 # ------------------------------------------------------------
 
-import sys
 import copy
 import numpy as np
-from collections import OrderedDict
 
 import dragon.core.mpi as mpi
 import dragon.core.workspace as ws
@@ -102,14 +100,14 @@ def GraphDef_Update(meta_graph, updater):
     """
     if updater is None: return
 
-    updater._prefix = meta_graph.name + '_'
+    # use graph name if missing slot
+    if updater._slot is None:
+        updater._slot= meta_graph.name
     extra_arguments = updater._extra_kwargs
-    extra_arguments['domain'] = updater._prefix
+    extra_arguments['slot'] = updater._slot
     parallel_arguments = {}
 
-    # wrap hyper-parameters as Tensor for CC
-    for k, v in updater._hyper_params.items():
-        ws.FeedTensor(updater._prefix + k, np.array([v], dtype=np.float32))
+    updater.register_in_workspace()
 
     # check data parallel if necessary
     if mpi.Is_Init():
@@ -122,15 +120,13 @@ def GraphDef_Update(meta_graph, updater):
         for k, v in parallel_arguments.items():
             meta_graph.arg.add().CopyFrom(MakeArgument(k, v))
 
-    for tuple in updater._tuples:
-        tensors = tuple[0]
-        arguments = tuple[1]
+    for e in updater._param_group:
+        pair, arguments = e
         kwargs = dict(arguments, **extra_arguments)
         u_target = pb.UpdateTarget()
-        u_target.type = updater._type
+        u_target.type = updater.type()
         _, u_target.name = GetOperatorName()
-        for tensor in tensors:
-            u_target.tensor.append(tensor)
+        for t in pair: u_target.tensor.append(t)
         for k, v in kwargs.items():
             u_target.arg.add().CopyFrom(MakeArgument(k, v))
         meta_graph.u_target.extend([u_target])
@@ -155,9 +151,11 @@ def GraphDef_Opt(meta_graph):
     `memonger.share_grads(*args, **kwargs)`_ - How the enable gradients sharing.
 
     """
+
     from dragon.config import option
-    meta_graph.debug_mode = option['debug_mode']
-    meta_graph.share_grads = option['share_grads']
+    OX = 3 if option['share_grads'] else 2
+    if option['debug_mode']: OX = 1
+    meta_graph.arg.add().CopyFrom(MakeArgument('optimization_level', OX))
 
 
 def GraphDef_Device(meta_graph):
@@ -186,7 +184,7 @@ def GraphDef_Device(meta_graph):
         supports = {'CPU': 0, 'CUDA': 1}
         device_option = pb.DeviceOption()
         device_option.device_type = supports[option['device']]
-        device_option.gpu_id = option['gpu_id']
+        device_option.device_id = option['gpu_id']
         device_option.random_seed = option['random_seed']
         if option['use_cudnn']: device_option.engine = 'CUDNN'
         meta_graph.device_option.CopyFrom(device_option)
@@ -247,7 +245,7 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
     if len(outputs) > 0 and updater is not None:
         raise RuntimeError('You can specific either outputs or updater, not both.')
 
-    all_exprs = {};
+    all_exprs = dict()
     all_extra_targets = set()
     if not isinstance(outputs, list): outputs = [outputs]
 
@@ -260,10 +258,7 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
     existing_grads = False
     for output in outputs:
         meta_graph.target.extend([output.name])
-        if sys.version_info >= (3, 0):
-            all_exprs = OrderedDict(all_exprs, **output.expressions)
-        else:
-            all_exprs = dict(all_exprs, **output.expressions)
+        all_exprs.update(output.expressions)
         all_extra_targets = all_extra_targets.union(output.extra_targets)
         if len(output.grad_wrts) > 0: existing_grads = True
 
@@ -275,31 +270,30 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
     if givens is not None:
         name_dict = {}
         external_input_exprs = {}
-
-        for old_tenosr, new_tensor in givens.items():
+        # extract new ops
+        for old_tensor, new_tensor in givens.items():
             if isinstance(new_tensor, Tensor):
-                name_dict[old_tenosr.name] = new_tensor._name
-                if sys.version_info >= (3, 0):
-                    external_input_exprs = OrderedDict(external_input_exprs, **new_tensor.expressions)
-                else:
-                    external_input_exprs = dict(external_input_exprs, **new_tensor.expressions)
-                external_input_exprs = OrderedDict(sorted(external_input_exprs.items(), key=lambda A: A[0]))
+                name_dict[old_tensor.name] = new_tensor.name
+                external_input_exprs.update(new_tensor.expressions)
             elif isinstance(new_tensor, np.ndarray):
                 ws.FeedTensor(new_tensor, GetTensorName())
             all_extra_targets = all_extra_targets.union(new_tensor.extra_targets)
-        external_input_ops = [v for k, v in external_input_exprs.items()]
+        external_input_exprs = sorted(external_input_exprs.items(), key=lambda d: d[0])
+        external_input_ops = [v for k, v in external_input_exprs]
+        # update original ops
         for op in forward_ops:
             op.input.extend([name_dict[input] if input in name_dict
                              else input for input in op.input])
             del op.input[:int(len(op.input) / 2)]
-
+        # concat them together
         forward_ops = external_input_ops + forward_ops
 
     # handle grads
     if existing_grads:
         targets = [output.name for output in outputs]
         targets.extend(all_extra_targets)
-        forward_ops, grad_ops = GraphGradientMaker.Make(forward_ops, targets)
+        forward_ops, grad_ops, _ = \
+            GraphGradientMaker.Make(forward_ops, targets)
     else:
         grad_ops = []
 

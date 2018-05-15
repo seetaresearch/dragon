@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -20,20 +20,14 @@ template <class Context>
 class AdamUpdateOp final : public UpdateOpBase<Context> {
  public:
     AdamUpdateOp(const OperatorDef& op_def, Workspace* ws) 
-        : UpdateOpBase<Context>(op_def, ws), 
-          t(0), 
-          eps(Param("eps")),
-          beta1(Param("beta1")), 
-          beta2(Param("beta2")) {}
+        : UpdateOpBase<Context>(op_def, ws), t(0) {}
     USE_OPERATOR_FUNCTIONS(Context);
     USE_UPDATER_FUNCTIONS(Context);
 
     void ComputeRunWithFloat() override;
 
  protected:
-    float lr, beta1, beta2, eps, coeff;
-    int t;
-    Tensor* m, *v, *tmp;
+    int t; float lr, beta1, beta2, eps;
 };
 
 }    // namespace dragon

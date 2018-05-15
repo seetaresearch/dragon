@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -38,9 +38,7 @@ class BiasAddGradientOp final : public Operator<Context> {
  public:
     BiasAddGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {
-        DISABLE_SHARE_GRADIENT;
-    }
+          data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
     USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;

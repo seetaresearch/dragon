@@ -30,17 +30,16 @@ void BiasAddOp<Context>::RunOnDevice() {
         dim = Input(0).dim(-1);
         inner_dim = Input(0).count(1) / dim;
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-    ws()->CreateAvatar(Output(0), &Input(0));
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(BiasAdd);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(BiasAdd);
 #endif
-OPERATOR_SCHEMA(BiasAdd).NumInputs(2).NumOutputs(1);
+OPERATOR_SCHEMA(BiasAdd).NumInputs(2).NumOutputs(1).Inplace({ { 0, 0 } });
 
 template <class Context> template <typename T>
 void BiasAddGradientOp<Context>::RunWithType() {
@@ -67,10 +66,6 @@ void BiasAddGradientOp<Context>::RunWithType() {
             dYdata += y_offset;
         }
     }
-
-    if (Output(0)->name() != "ignore") {
-        ws()->CreateAvatar(Output(0), &Input(-1));
-    }
 }
 
 template <class Context>
@@ -86,8 +81,8 @@ void BiasAddGradientOp<Context>::RunOnDevice() {
     } else LOG(FATAL) << "Unknown data format: " << data_format;
     Output(1)->ReshapeLike(Input(1));
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(BiasAddGradient);

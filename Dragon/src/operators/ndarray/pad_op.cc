@@ -57,7 +57,7 @@ void PadOp<Context>::RunOnDevice() {
     //  do nothing
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(0));
-        Output(0)->Share(Input(0));
+        Output(0)->template Copy<Context, Context>(Input(0));
         return;
     }
 
@@ -74,8 +74,8 @@ void PadOp<Context>::RunOnDevice() {
         dims[axis] += (pad_l[axis] + pad_r[axis]);
         dest->Reshape(dims);
         if (mode == "CONSTANT") {
-            if (Input(0).template IsType<float>()) ConstRunWithType<float>();
-            else LOG(FATAL) << "Unsupported input types.";
+            if (XIsType(Input(0), float)) ConstRunWithType<float>();
+            else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
         } else if (mode == "REFLECT") {
             CHECK_LE(pad_l[axis], dim + 1)
                 << "\nThe dimension of axis " << axis << " is " << dim << ","
@@ -83,11 +83,11 @@ void PadOp<Context>::RunOnDevice() {
             CHECK_LE(pad_r[axis], dim - 1)
                 << "\nThe dimension of axis " << axis << " is " << dim << ","
                 << "\nwhile the excepted bounds of pad_r for reflecting are (0, " << dim - 1 << "].";
-            if (Input(0).template IsType<float>()) ReflectRunWithType<float>();
-            else LOG(FATAL) << "Unsupported input types.";
+            if (XIsType(Input(0), float)) ReflectRunWithType<float>();
+            else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
         } else if (mode == "EDGE")  {
-            if (Input(0).template IsType<float>()) EdgeRunWithType<float>();
-            else LOG(FATAL) << "Unsupported input types.";
+            if (XIsType(Input(0), float)) EdgeRunWithType<float>();
+            else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
         } else {
             LOG(FATAL) << "Unsupported padding mode: " << mode << " .";
         }
@@ -160,7 +160,7 @@ void PadGradientOp<Context>::RunOnDevice() {
     //  do nothing 
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(-1));
-        Output(0)->Share(Input(-1));
+        Output(0)->template Copy<Context, Context>(Input(-1));
         return;
     }
 
@@ -177,8 +177,8 @@ void PadGradientOp<Context>::RunOnDevice() {
         dims[axis] -= (pad_l[axis] + pad_r[axis]);
         dest->Reshape(dims);
         if (mode == "CONSTANT") {
-            if (Input(0).template IsType<float>()) ConstRunWithType<float>();
-            else LOG(FATAL) << "Unsupported input types.";
+            if (XIsType(Input(0), float)) ConstRunWithType<float>();
+            else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
         } else if (mode == "REFLECT") {
             CHECK_LE(pad_l[axis], dim + 1)
                 << "\nThe dimension of axis " << axis << " is " << dim << ","
@@ -186,11 +186,11 @@ void PadGradientOp<Context>::RunOnDevice() {
             CHECK_LE(pad_r[axis], dim - 1)
                 << "\nThe dimension of axis " << axis << " is " << dim << ","
                 << "\nwhile the excepted bounds of pad_r for reflecting are (0, " << dim - 1 << "].";
-            if (Input(0).template IsType<float>()) ReflectRunWithType<float>();
-            else LOG(FATAL) << "Unsupported input types.";
+            if (XIsType(Input(0), float)) ReflectRunWithType<float>();
+            else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
         } else if (mode == "EDGE")  {
-            if (Input(0).template IsType<float>()) EdgeRunWithType<float>();
-            else LOG(FATAL) << "Unsupported input types.";
+            if (XIsType(Input(0), float)) EdgeRunWithType<float>();
+            else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
         } else {
             LOG(FATAL) << "Unsupported padding mode: " << mode << " .";
         }

@@ -37,7 +37,7 @@ enum DeviceType { CPU = 0; CUDA = 1; OPENCL = 2; }
 
 message DeviceOption {
     optional DeviceType device_type = 1 [default = CPU];
-    optional int32 gpu_id = 2 [default = 0];
+    optional int32 device_id = 2 [default = 0];
     optional uint32 random_seed = 3 [default = 3];
     optional string engine = 4;
 }
@@ -49,8 +49,6 @@ message OperatorDef {
     optional string type = 4;
     repeated Argument arg= 5;
     optional DeviceOption device_option = 6;
-    optional bool debug_mode = 7 [default = false];
-    optional bool share_grads = 8 [default = false];
 }
 
 message GradientTarget {
@@ -88,6 +86,4 @@ message GraphDef {
     repeated string target = 7;
     repeated GradientTarget g_target = 8;
     repeated UpdateTarget u_target = 9;
-    optional bool debug_mode = 10 [default = false];
-    optional bool share_grads = 11 [default = false];
 }

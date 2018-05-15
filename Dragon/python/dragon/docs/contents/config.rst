@@ -8,22 +8,23 @@
 Quick Shortcut
 --------------
 
-====================    =============================================================================
-List                    Brief
-====================    =============================================================================
-`EnableCPU`_            Enable CPU mode globally.
-`EnableCUDA`_           Enable CUDA mode globally.
-`SetRandomSeed`_        Set the global random seed.
-`GetRandomSeed`_        Get the global random seed.
-`SetGPU`_               Set the global id GPU.
-`GetGPU`_               Get the global id of GPU.
-`SetDebugMode`_         Enable Debug mode globally.
-`LogMetaGraph`_         Enable to log meta graph globally.
-`LogOptimizedGraph`_    Enable to log optimized graph globally.
-`ExportMetaGraph`_      Enable to export all runnable meta graphs into text files.
-`SetLoggingLevel`_      Set the minimum level of Logging.
-`SetLoggingFile`_       Redirect the logging into the specific file.
-====================    =============================================================================
+==========================   =============================================================================
+List                         Brief
+==========================   =============================================================================
+`EnableCPU`_                 Enable CPU mode globally.
+`IsCUDADriverSufficient`_    Is CUDADriver sufficient?
+`EnableCUDA`_                Enable CUDA mode globally.
+`SetRandomSeed`_             Set the global random seed.
+`GetRandomSeed`_             Get the global random seed.
+`SetGPU`_                    Set the global id GPU.
+`GetGPU`_                    Get the global id of GPU.
+`SetDebugMode`_              Enable Debug mode globally.
+`LogMetaGraph`_              Enable to log meta graph globally.
+`LogOptimizedGraph`_         Enable to log optimized graph globally.
+`ExportMetaGraph`_           Enable to export all runnable meta graphs into text files.
+`SetLoggingLevel`_           Set the minimum level of Logging.
+`SetLoggingFile`_            Redirect the logging into the specific file.
+==========================   =============================================================================
 
 API Reference
 -------------
@@ -32,6 +33,7 @@ API Reference
     :members:
 
 .. _EnableCPU: #dragon.config.EnableCPU
+.. _IsCUDADriverSufficient: #dragon.config.IsCUDADriverSufficient
 .. _EnableCUDA: #dragon.config.EnableCUDA
 .. _SetRandomSeed: #dragon.config.SetRandomSeed
 .. _GetRandomSeed: #dragon.config.GetRandomSeed

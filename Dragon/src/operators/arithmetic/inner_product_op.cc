@@ -56,16 +56,16 @@ void InnerProductOp<Context>::NoTransRunWithType() {
 
 template <class Context>
 void InnerProductOp<Context>::RunOnDevice() {
-    M = Input(0).count(0, axis), K = Input(0).count(axis);
+    TIndex _axis_ = axis < 0 ? axis + Input(0).ndim() : axis;
+    M = Input(0).count(0, _axis_), K = Input(0).count(_axis_); 
 
-    if (transW) {
-        if (Input(0).template IsType<float>()) TransRunWithType<float>();
-        else LOG(FATAL) << "Unsupported input types.";
-    } 
-    else {
-        if (Input(0).template IsType<float>()) NoTransRunWithType<float>();
-        else LOG(FATAL) << "Unsupported input types.";
-    }
+    if (XIsType(Input(0), float)) {
+        if (transW) TransRunWithType<float>();
+        else NoTransRunWithType<float>();
+    } else if (XIsType(Input(0), float16)) {
+        if (transW) TransRunWithType<float16>();
+        else NoTransRunWithType<float16>();
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(InnerProduct);
@@ -114,10 +114,12 @@ void InnerProductGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void InnerProductGradientOp<Context>::RunOnDevice() { 
-    M = Input(0).count(0, axis), K = Input(0).count(axis);
+    TIndex _axis_ = axis < 0 ? axis + Input(0).ndim() : axis;
+    M = Input(0).count(0, _axis_), K = Input(0).count(_axis_);
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(InnerProductGradient);

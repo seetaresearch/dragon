@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -40,7 +40,6 @@ class L2LossGradientOp final : public Operator<Context> {
           normalization(OperatorBase::GetSingleArg<string>("normalization", "BATCH_SIZE")) {}
     USE_OPERATOR_FUNCTIONS(Context);
 
-    void ShareGradient() override;
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 

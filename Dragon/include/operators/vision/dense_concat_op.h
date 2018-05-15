@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -38,7 +38,6 @@ class DenseConcatGradientOp : public ConcatGradientOp<Context> {
  protected:
     TIndex growth_rate;
 };
-
 
 }    // namespace dragon
 

@@ -24,11 +24,9 @@ void GramMatrixOp<Context>::RunOnDevice() {
     x_offset = dim * inner_dim, y_offset = dim * dim;
     Output(0)->Reshape(vector<TIndex>({ outer_dim, dim, dim }));
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-#ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
-#endif
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(GramMatrix);
@@ -58,11 +56,9 @@ void GramMatrixGradientOp<Context>::RunOnDevice() {
     x_offset = dim * inner_dim, y_offset = dim * dim;
     Output(0)->ReshapeLike(Input(0));
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-#ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
-#endif
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(GramMatrixGradient);

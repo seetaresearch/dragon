@@ -20,20 +20,20 @@ void SigmoidCrossEntropyOp<Context>::RunWithType() {
 
     if (normalization == "UNIT") {
         Output(0)->ReshapeLike(losses);
-        Output(0)->Share(losses);
+        Output(0)->template Copy<Context, Context>(losses);
         return;
     }
 
     T normalizer;
     if (normalization == "VALID")
-        normalizer = math::ASum<T, Context>(valid.count(), Vdata);
+        normalizer = std::max(math::ASum<T, Context>(valid.count(), Vdata), 1.f);
     else if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
     else if (normalization == "FULL") normalizer = Input(0).count();
     else if (normalization == "NONE") normalizer = 1;
     T loss = math::ASum<T, Context>(losses.count(), Ldata);
     Output(0)->Reshape(vector<TIndex>(1, 1));
-    auto* Ydata = Output(0)->template mutable_data<T, CPUContext>();
-    Ydata[0] = loss / normalizer;
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    math::Set<T, Context>(1, loss / normalizer, Ydata);
 }
 
 template <class Context>
@@ -43,8 +43,8 @@ void SigmoidCrossEntropyOp<Context>::RunOnDevice() {
     losses.ReshapeLike(Input(0));
     valid.ReshapeLike(Input(0));
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(SigmoidCrossEntropy);
@@ -73,12 +73,14 @@ void SigmoidCrossEntropyGradientOp<Context>::RunWithType() {
     }
 
     T normalizer;
-    if (normalization == "VALID") normalizer = math::ASum<T, Context>(valid.count(), Vdata);
+    if (normalization == "VALID")
+        normalizer = std::max(math::ASum<T, Context>(valid.count(), Vdata), 1.f);
     else if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
     else if (normalization == "FULL") normalizer = Input(0).count();
     else if (normalization == "NONE") normalizer = 1;
-    auto* dYdata = Input(-1).template data<T, CPUContext>();
-    math::Scal<T, Context>(Output(0)->count(), dYdata[0] / normalizer, dXdata);
+    auto* dYdata = Input(-1).template data<T, Context>();
+    T dYdata_host; Context::template Copy<T, CPUContext, Context>(1, &dYdata_host, dYdata);
+    math::Scal<T, Context>(Output(0)->count(), dYdata_host / normalizer, dXdata);
 }
 
 template <class Context>
@@ -86,8 +88,8 @@ void SigmoidCrossEntropyGradientOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
     valid.ReshapeLike(Input(0));
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(SigmoidCrossEntropyGradient);

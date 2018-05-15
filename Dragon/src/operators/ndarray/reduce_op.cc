@@ -37,24 +37,18 @@ void ReduceOp<Context>::RunOnDevice() {
     vector<TIndex> dims = Input(0).dims();
     if (!keep_dims) {
         if (axis != -1) dims.erase(dims.begin() + axis);
-        else dims = vector<TIndex>(1, 1);
+        else dims = vector<TIndex>();
     } else {
         if (axis != -1) dims[axis] = 1;
         else dims = vector<TIndex>(Input(0).ndim(), 1);
     }
     Output(0)->Reshape(dims);
 
-    if (operation == "SUM") {
-        if (Input(0).template IsType<float>()) SumRunWithType<float>();
-        else LOG(FATAL) << "Unsupported input types.";
-    } 
-    else if (operation == "MEAN") {
-        if (Input(0).template IsType<float>()) MeanRunWithType<float>();
-        else LOG(FATAL) << "Unsupported input types.";
-    } 
-    else {
-        LOG(FATAL) << "Unknown operation: [" << operation << "].";
-    }
+    if (XIsType(Input(0), float)) {
+        if (operation == "SUM") SumRunWithType<float>();
+        else if (operation == "MEAN") MeanRunWithType<float>();
+        else LOG(FATAL) << "Unknown operation: [" << operation << "].";
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(Reduce);
@@ -96,15 +90,11 @@ void ReduceGradientOp<Context>::RunOnDevice() {
     inner_dim = Input(0).count(axis + 1);
     Output(0)->ReshapeLike(Input(0));
 
-    if (operation == "SUM") {
-        if (Input(0).template IsType<float>()) SumRunWithType<float>();
-        else LOG(FATAL) << "Unsupported input types.";
-    } else if (operation == "MEAN") {
-        if (Input(0).template IsType<float>()) MeanRunWithType<float>();
-        else LOG(FATAL) << "Unsupported input types.";
-    } else {
-        LOG(FATAL) << "Unknown operation: [" << operation << "].";
-    }
+    if (XIsType(Input(0), float)) {
+        if (operation == "SUM") SumRunWithType<float>();
+        else if (operation == "MEAN") MeanRunWithType<float>();
+        else LOG(FATAL) << "Unknown operation: [" << operation << "].";
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(ReduceGradient);

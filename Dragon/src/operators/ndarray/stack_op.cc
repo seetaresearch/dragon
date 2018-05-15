@@ -41,16 +41,10 @@ void StackOp<Context>::RunOnDevice() {
     inner_dim = Input(0).count(axis);
     concat_offset = 0;
     Output(0)->Reshape(concat_dims);
-    if (nin == 1) {
-        Output(0)->Share(Input(0));
-        return;
-    }
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-#ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
-#endif
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(Stack);
@@ -91,27 +85,10 @@ void StackGradientOp<Context>::RunOnDevice() {
     inner_dim = Input(0).count(axis);
     concat_offset = 0;
     for (int i = 0; i < nin; i++) Output(i)->ReshapeLike(Input(i));
-    if (nin == 1) {
-        Output(0)->Share(Input(-1));
-        return;
-    }
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-#ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
-#endif
-    else LOG(FATAL) << "Unsupported input types.";
-}
-
-template <class Context>
-void StackGradientOp<Context>::ShareGradient() {
-    for (int i = 0; i < OutputSize(); i++) {
-        if (Output(i)->name() != "ignore") {
-            Tensor* dX = ws()->GetBuffer("Grad");
-            ws()->CreateAvatar(Output(i), dX);
-            break;
-        }
-    }
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(StackGradient);

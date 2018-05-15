@@ -1,5 +1,6 @@
 #include "core/mixedmem.h"
 #include "utils/cuda_device.h"
+#include "utils/string.h"
 
 namespace dragon {
 
@@ -76,6 +77,29 @@ void* MixedMemory::mutable_cuda_data() {
     return cuda_ptr_;
 }
 
+void MixedMemory::set_cpu_data(void* cpu_ptr, size_t nbytes) {
+    bool use_cudahost_mem = false;
+#ifdef WITH_CUDA_HOST_MEM
+    use_cudahost_mem = true;
+#endif
+    if (own_cpu_ptr_ && cpu_ptr_ && !use_cudahost_mem) {
+        if (meta_.dtor()) meta_.dtor()(cpu_ptr_, nbytes_ / meta_.itemsize());
+        CPUContext::Delete(cpu_ptr_);
+    }
+#ifdef WITH_CUDA
+    if (own_cpu_ptr_ && cpu_ptr_ && use_cudahost_mem) cudaFreeHost(cpu_ptr_);
+    if (cuda_ptr_ && nbytes > nbytes_) {
+        //  maintain the cuda ptr as regular mems 
+        CUDAContext::Delete(cuda_ptr_); 
+        cuda_ptr_ = nullptr;
+    }
+#endif
+    cpu_ptr_ = cpu_ptr;
+    nbytes_ = nbytes;
+    state_ = STATE_AT_CPU;
+    own_cpu_ptr_ = false;
+}
+
 #ifdef WITH_CUDA
 void MixedMemory::async_cuda_data(const cudaStream_t& stream) {
     CHECK(state_ == STATE_AT_CPU) << state_;
@@ -91,13 +115,12 @@ MixedMemory::~MixedMemory() {
 #ifdef WITH_CUDA_HOST_MEM
     use_cudahost_mem = true;
 #endif
-    if (cpu_ptr_ && !use_cudahost_mem) {
-        if (meta_.dtor())
-            meta_.dtor()(cpu_ptr_, nbytes_ / meta_.itemsize());
+    if (own_cpu_ptr_ && cpu_ptr_ && !use_cudahost_mem) {
+        if (meta_.dtor()) meta_.dtor()(cpu_ptr_, nbytes_ / meta_.itemsize());
         CPUContext::Delete(cpu_ptr_);
     }
 #ifdef WITH_CUDA
-    if (cpu_ptr_ && use_cudahost_mem) cudaFreeHost(cpu_ptr_);
+    if (own_cpu_ptr_ && cpu_ptr_ && use_cudahost_mem) cudaFreeHost(cpu_ptr_);
     if (cuda_ptr_) CUDAContext::Delete(cuda_ptr_);
 #endif
 }
@@ -110,6 +133,39 @@ void MixedMemory::SwitchToDevice() {
         if (ptr_device != cur_device) state_ = SWITCHED;
 #endif
     }
+}
+
+void MixedMemory::SwitchToCUDADevice(int device_id) {
+#ifdef WITH_CUDA
+    DeviceGuard gurad(device_id);
+    if (cuda_ptr_) {
+        int ptr_device = POINTER_DEVICE(cuda_ptr_);
+        if (ptr_device != device_id) state_ = SWITCHED;
+    }
+    ToCUDA();
+#else
+    CUDA_NOT_COMPILED;
+#endif
+}
+
+const Map<string, string> MixedMemory::info() const {
+    static map<State, string> STATE_TO_STRING {
+        { UNINITIALIZED, "UNINITIALIZED" },
+        { STATE_AT_CPU, "CPU" },
+        { STATE_AT_CUDA, "CUDA" },
+        { SYNCED, "DEVICE" },
+        { SWITCHED, "DEVICE" },
+    };
+    Map<string, string> s2s;
+    string _state_ = STATE_TO_STRING[state_];
+    if (_state_ == "DEVICE") {
+        if (cuda_ptr_) _state_ = "CUDA";
+        else LOG(FATAL) << "Device activated, but got invalid mem pointer.";
+    }
+    s2s["mem_at"] = _state_;
+    if (cpu_ptr_) s2s["CPU"] = "0";
+    if (cuda_ptr_) s2s["CUDA"] = dragon_cast<string, int>(POINTER_DEVICE(cuda_ptr_));
+    return s2s;
 }
 
 }    // namespace dragon

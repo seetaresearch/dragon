@@ -18,7 +18,7 @@ template <class Context>
 void ArangeOp<Context>::RunOnDevice() {
     if (dtype == "FLOAT32") RunWithType<float>(); 
     else if (dtype == "INT32") RunWithType<int>();
-    else LOG(FATAL) << "Unsupported data types";
+    else LOG(FATAL) << "Unsupported DType: " << dtype;
 }
 
 DEPLOY_CPU(Arange);

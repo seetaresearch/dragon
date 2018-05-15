@@ -7,20 +7,14 @@ namespace dragon {
 
 template <class Context>
 void NesterovUpdateOp<Context>::ComputeRunWithFloat() {
-    h = ws()->CreateTensor("/mnt/" + Slot() + "/nesterov/h");
-    tmp = ws()->CreateTensor("/mnt/" + Slot() + "/nesterov/tmp");
+    Tensor* h = ws()->CreateTensor("/mnt/" + Slot() + "/nesterov/h");
     h->ReshapeLike(Input(0));
 
-    lr = Param("base_lr") * this->lr_mult;
+    lr = Param("base_lr") * this->lr_mult, momentum = Param("momentum");
     auto* dXdata = Input(0).template mutable_data<float, Context>();
     auto* Hdata = h->template mutable_data<float, Context>();
     kernel::NesterovUpdate<float, Context>(Input(0).count(),
-                                                     dXdata,
-                                                      Hdata,
-                                                        tmp,
-                                                   momentum,
-                                                         lr,
-                                                    &ctx());
+                               lr, momentum, dXdata, Hdata);
 }
 
 DEPLOY_CPU(NesterovUpdate);

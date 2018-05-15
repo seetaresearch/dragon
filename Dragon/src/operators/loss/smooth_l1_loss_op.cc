@@ -11,25 +11,25 @@ void SmoothL1LossOp<Context>::RunWithType() {
     auto* X1data = Input(1).template data<T, Context>();
     auto* diff_data = diff->template mutable_data<T, Context>();
     auto* error_data = error->template mutable_data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, CPUContext>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
     math::Sub<T, Context>(diff->count(), X0data, X1data, diff_data);
     if (InputSize() > 2) {
         auto* inside_w_data = Input(2).template data<T, Context>();
         math::Mul<T, Context>(diff->count(), inside_w_data, diff_data, diff_data);
     }
-    kernel::SmoothL1<T, Context>(diff->count(), sigma2, diff_data, error_data);
+    kernel::SmoothL1<T, Context>(diff->count(), beta, diff_data, error_data);
     if (InputSize() > 3) {
         auto* outside_w_data = Input(3).template data<T, Context>();
         math::Mul<T, Context>(diff->count(), outside_w_data, error_data, error_data);
     }
-    Ydata[0] = math::ASum<T, Context>(error->count(), error_data);
 
     T normalizer;
     if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
     else if (normalization == "FULL") normalizer = Input(0).count();
     else if (normalization == "NONE") normalizer = 1;
-    Ydata[0] = Ydata[0] / normalizer;
+    T loss = math::ASum<T, Context>(error->count(), error_data);
+    math::Set<T, Context>(1, loss / normalizer, Ydata);
 }
 
 template <class Context>
@@ -39,13 +39,13 @@ void SmoothL1LossOp<Context>::RunOnDevice() {
     if (InputSize() > 3) CHECK(Input(0).dims() == Input(3).dims());
     Output(0)->Reshape(vector<TIndex>(1, 1));
 
-    diff = ws()->CreateTensor("/mnt/" + Anchor() + "/smoothl1_loss/diff");
+    diff = ws()->CreateTensor("/mnt/" + anchor() + "/smoothl1_loss/diff");
     error = ws()->CreateTensor("/share/smoothl1_loss_error");
     diff->ReshapeLike(Input(0));
     error->ReshapeLike(Input(0));
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(SmoothL1Loss);
@@ -57,10 +57,11 @@ OPERATOR_SCHEMA(SmoothL1Loss).NumInputs(2, 4).NumOutputs(1);
 template <class Context> template <typename T>
 void SmoothL1LossGradientOp<Context>::RunWithType() {
     auto* diff_data = diff->template mutable_data<T, Context>();
-    auto* dYdata = Input(-1).template data<T, CPUContext>();
-    kernel::SmoothL1Grad<T, Context>(diff->count(), sigma2, diff_data, diff_data);
+    auto* dYdata = Input(-1).template data<T, Context>();
+    T dYdata_host; Context::template Copy<T, CPUContext, Context>(1, &dYdata_host, dYdata);
+    kernel::SmoothL1Grad<T, Context>(diff->count(), beta, diff_data, diff_data);
 
-    T alpha = dYdata[0], normalizer;
+    T alpha = dYdata_host, normalizer;
     if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
     else if (normalization == "FULL") normalizer = Input(0).count();
     else if (normalization == "NONE") normalizer = 1;
@@ -86,10 +87,10 @@ void SmoothL1LossGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void SmoothL1LossGradientOp<Context>::RunOnDevice() {
-    diff = ws()->GetTensor("/mnt/" + Anchor() + "/smoothl1_loss/diff");
+    diff = ws()->GetTensor("/mnt/" + anchor() + "/smoothl1_loss/diff");
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(SmoothL1LossGradient);

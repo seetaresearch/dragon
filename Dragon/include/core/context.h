@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -15,8 +15,7 @@
 #include <random>
 #include <ctime>
 
-#include "common.h"
-#include "utils/logging.h"
+#include "core/common.h"
 
 #ifdef WITH_CUDA
 #include "utils/cuda_device.h"
@@ -38,7 +37,7 @@ class CPUContext {
     virtual ~CPUContext() {}
 
     inline void SwitchToDevice() {}
-    inline void FinishDeviceCompution() { return; }
+    inline void static FinishDeviceCompution() { return; }
 
     inline static void* New(size_t nbytes) {
         void* data;

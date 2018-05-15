@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -17,7 +17,6 @@
 
 #include "protos/dragon.pb.h"
 #include "core/common.h"
-#include "utils/logging.h"
 
 namespace dragon {
 

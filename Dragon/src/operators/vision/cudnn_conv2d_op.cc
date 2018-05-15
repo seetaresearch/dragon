@@ -10,7 +10,7 @@ namespace dragon {
 #define WORKSPACE_LIMIT_BYTES 64 * 1024 * 1024 // 64MB
 
 template <class Context> template <typename T>
-void CuDNNConv2dOp<Context>::RunWithType() {
+void CuDNNConv2dOp<Context>::ResetDesc() {
 #if CUDNN_VERSION_MIN(5, 0, 0)
     CUDNN_CHECK(cudnnSetFilter4dDescriptor(filter_desc,
                                     CUDNNType<T>::type,
@@ -28,6 +28,7 @@ void CuDNNConv2dOp<Context>::RunWithType() {
 #endif
 
     //  determine the input & output shape
+    input_dims = Input(0).dims();
     cudnnSetTensor4dDescWithGroup<T>(&input_desc, this->data_format, Input(0).dims(), cudnn_group);
     cudnnSetTensor4dDescWithGroup<T>(&output_desc, this->data_format, Output(0)->dims(), cudnn_group);
 
@@ -41,7 +42,7 @@ void CuDNNConv2dOp<Context>::RunWithType() {
         }
     }
 
-    // determine the misc
+    //  determine the misc
     if (this->data_format == "NCHW") {
         this->x_offset = Input(0).count(1) / cudnn_group;
         this->y_offset = Output(0)->count(1) / cudnn_group;
@@ -66,9 +67,14 @@ void CuDNNConv2dOp<Context>::RunWithType() {
                                                       output_desc,
                                                          fwd_algo,
                                        &workspace_fwd_data_size));
-
-    Tensor* buffer = ws()->GetBuffer();
     if (workspace_fwd_data_size == 0) workspace_fwd_data_size += 1;
+}
+
+
+template <class Context> template <typename T>
+void CuDNNConv2dOp<Context>::RunWithType() {
+    if (Input(0).dims() != input_dims) ResetDesc<T>();
+    Tensor* buffer = ws()->GetBuffer();
     buffer->Reshape(vector<TIndex>(1, cudnn_group * workspace_fwd_data_size));
 
     auto* Xdata = Input(0).template data<T, Context>();
@@ -105,7 +111,7 @@ void CuDNNConv2dOp<Context>::RunOnDevice() {
 #endif
     Conv2dOp<Context>::Reshape();
 
-    if (Input(0).template IsType<float>()) {
+    if (XIsType(Input(0), float)) {
 #if CUDNN_VERSION_MIN(6, 0, 0)
         CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
                                    this->pad[0], this->pad[1],
@@ -124,7 +130,7 @@ void CuDNNConv2dOp<Context>::RunOnDevice() {
         CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc, this->group));
 #endif
         RunWithType<float>();
-    } else if (Input(0).template IsType<float16>()) {
+    } else if (XIsType(Input(0), float16)) {
 #ifdef WITH_CUDA_FP16
 #if CUDNN_VERSION_MIN(6, 0, 0)
         CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
@@ -145,13 +151,13 @@ void CuDNNConv2dOp<Context>::RunOnDevice() {
 #endif
         RunWithType<float16>();
 #endif  // WITH_CUDA_FP16
-    } else { LOG(FATAL) << "Unsupported input types."; }
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CUDNN(Conv2d);
 
 template <class Context> template <typename T>
-void CuDNNConv2dGradientOp<Context>::RunWithType() {
+void CuDNNConv2dGradientOp<Context>::ResetDesc() {
 #if CUDNN_VERSION_MIN(5, 0, 0)
     CUDNN_CHECK(cudnnSetFilter4dDescriptor(filter_desc,
                                     CUDNNType<T>::type,
@@ -169,6 +175,7 @@ void CuDNNConv2dGradientOp<Context>::RunWithType() {
 #endif
 
     //  determine the input & output shape
+    input_dims = Input(0).dims();
     cudnnSetTensor4dDescWithGroup<T>(&input_desc, this->data_format, Input(-1).dims(), cudnn_group);
     cudnnSetTensor4dDescWithGroup<T>(&output_desc, this->data_format, Input(0).dims(), cudnn_group);
 
@@ -224,11 +231,15 @@ void CuDNNConv2dGradientOp<Context>::RunWithType() {
                                                            output_desc,
                                                          bwd_data_algo,
                                             &workspace_bwd_data_size));
-
-    Tensor* buffer1 = ws()->GetBuffer();
-    Tensor* buffer2 = ws()->GetBuffer();
     if (workspace_bwd_data_size == 0) workspace_bwd_data_size += 1;
     if (workspace_bwd_filter_size == 0) workspace_bwd_filter_size += 1;
+}
+
+template <class Context> template <typename T>
+void CuDNNConv2dGradientOp<Context>::RunWithType() {
+    if (Input(0).dims() != input_dims) ResetDesc<T>();
+    Tensor* buffer1 = ws()->GetBuffer();
+    Tensor* buffer2 = ws()->GetBuffer();
     buffer1->Reshape(vector<TIndex>(1, cudnn_group * workspace_bwd_data_size));
     buffer2->Reshape(vector<TIndex>(1, cudnn_group * workspace_bwd_filter_size));
 
@@ -278,7 +289,7 @@ void CuDNNConv2dGradientOp<Context>::RunOnDevice() {
 #endif
     Conv2dGradientOp<Context>::GradientReshape();
 
-    if (Input(0).template IsType<float>()) {
+    if (XIsType(Input(0), float)) {
 #if CUDNN_VERSION_MIN(6, 0, 0)
         CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
                                    this->pad[0], this->pad[1],
@@ -297,7 +308,7 @@ void CuDNNConv2dGradientOp<Context>::RunOnDevice() {
         CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc, this->group));
 #endif
         RunWithType<float>();
-    } else if (Input(0).template IsType<float16>()) {
+    } else if (XIsType(Input(0), float16)) {
 #ifdef WITH_CUDA_FP16
 #if CUDNN_VERSION_MIN(6, 0, 0)
         CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
@@ -317,7 +328,7 @@ void CuDNNConv2dGradientOp<Context>::RunOnDevice() {
 #endif
         RunWithType<float16>();
 #endif  // WITH_CUDA_FP16
-    } else { LOG(FATAL) << "Unsupported input types."; }
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CUDNN(Conv2dGradient);

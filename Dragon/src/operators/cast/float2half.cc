@@ -16,17 +16,12 @@ void FloatToHalfOp<Context>::RunOnDevice() {
     auto* Xdata = Input(0).template data<float, Context>();
     auto* Ydata = Output(0)->template mutable_data<float16, Context>();
     kernel::Float2Half<float, Context>(Output(0)->count(), Xdata, Ydata);
-
-    //  release & share
-    Input(0).Reset();
-    Input(0).ReshapeLike(*Output(0));
-    Input(0).Share(*Output(0));
 }
 
 #ifdef WITH_CUDA
 DEPLOY_CUDA(FloatToHalf);
 #endif
-OPERATOR_SCHEMA(FloatToHalf).NumInputs(1).NumOutputs(1);
+OPERATOR_SCHEMA(FloatToHalf).NumInputs(1).NumOutputs(1).Inplace({ { 0, 0 } });
 
 NO_GRADIENT(FloatToHalf);
 

@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -16,6 +16,8 @@ import dragon.config as config
 # core
 from dragon.core.tensor import Tensor
 import dragon.core.workspace as workspace
+import dragon.core.tensor_utils as tensor_utils
+import dragon.core.mpi as mpi
 
 # ops
 from dragon.ops import *
@@ -23,7 +25,7 @@ from dragon.ops import *
 # updaters
 from dragon.updaters import *
 
-# theano utilities
+# theano utils
 from dragon.vm.theano.compile.function import function as function
 from dragon.vm.theano.tensor import grad as grad
 

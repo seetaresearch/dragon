@@ -6,14 +6,13 @@ namespace dragon {
 
 template <class Context>
 float UpdateOpBase<Context>::Param(const string& name) const {
-    return ws()->GetTensor(domain + name)
-               ->template mutable_data<float, CPUContext>()[0];
+    return ws()->GetTensor(slot + "/" + name)
+        ->template mutable_data<float, CPUContext>()[0];
 }
 
 template <class Context>
 string UpdateOpBase<Context>::Slot() {
-    const string slot = OperatorBase::GetSingleArg<string>("slot", "");
-    return slot.empty() ? name() : slot;
+    return slot + "/" + Output(0)->name();
 }
 
 template <class Context> template <typename T>
@@ -49,22 +48,21 @@ void UpdateOpBase<Context>::UpdateRunWithType() {
     auto* dXdata = Input(0).template mutable_data<T, Context>();
     auto* Xdata = Output(0)->template mutable_data<T, Context>();
     math::Axpy<T, Context>(Output(0)->count(), -1.0, dXdata, Xdata);
-    math::Set<T, Context>(Input(0).count(), 0, dXdata);
+    if (zero_grad) math::Set<T, Context>(Input(0).count(), 0, dXdata);
 }
-
 
 template <class Context>
 void UpdateOpBase<Context>::RunOnDevice() {
-    CHECK(Input(0).dims() == Output(0)->dims())
-        << "\nTensor and its gradient must have same dims if update.";
+    //  skip empty param or grad
     if (Input(0).count() == 0 || Output(0)->count() == 0) return;
-    if (Input(0).template IsType<float>()) {
+    CHECK(Input(0).dims() == Output(0)->dims())
+        << "\nTensor and its gradients should have same dims.\nGot "
+        << Output(0)->dim_string() << " and " << Input(0).dim_string();
+    if (XIsType(Input(0), float)) {
         PreprocessRunWithType<float>();
         ComputeRunWithFloat();
         UpdateRunWithType<float>();
-    } else {
-        LOG(FATAL) << "Unsupported input types.";
-    }
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 } 
 
 template class UpdateOpBase<CPUContext>;

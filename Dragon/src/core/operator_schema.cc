@@ -4,15 +4,14 @@ namespace dragon {
 
 bool OpSchema::Verify(const OperatorDef& def) const {
     if (ignore_verify_) return true;
+    string indicator = "[" + def.name() + ", " + def.type() + "]\n";
     if (def.input_size() < min_input_ || def.input_size() > max_input_) {
-        LOG(FATAL) << "[" << def.name() << "] input size: "
-                          << def.input_size()
-                          << " is not in range [min=" << min_input_
-                          << ", max=" << max_input_ << "]";
+        LOG(FATAL) << indicator << "Input size: " << def.input_size()
+                   << " is not in range [min=" << min_input_
+                   << ", max=" << max_input_ << "]";
     }
     if (def.output_size() < min_output_ || def.output_size() > max_output_) {
-        LOG(FATAL) << "[" << def.name() << "] output size : "
-                   << def.output_size()
+        LOG(FATAL) << indicator << "Output size: " << def.output_size()
                    << " is not in range [min=" << min_output_
                    << ", max=" << max_output_ << "]";
     }
@@ -21,9 +20,8 @@ bool OpSchema::Verify(const OperatorDef& def) const {
         for (int out = 0; out < def.output_size(); out++) {
             if (def.output(out) == "ignore") continue;
             if (def.input(in) == def.output(out) && (!CheckInplace(in, out)))
-                LOG(FATAL) << "[" << def.name() << "] Input("
-                           << in << ") and Output(" << out
-                           << ") can not be set to inplace.";
+                LOG(FATAL) << indicator << "Input("  << in << ") and "
+                           << "Output(" << out << ") can not be set to inplace.";
         }
     }
     return true;

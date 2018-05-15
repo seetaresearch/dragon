@@ -24,11 +24,14 @@ void CuDNNLRNOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
 
     if (this->mode == "ACROSS_CHANNELS") {
-        if (Input(0).template IsType<float>()) RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-        else if (Input(0).template IsType<float16>()) RunWithType<float16>();
+        if (XIsType(Input(0), float)) RunWithType<float>();
+        else if (XIsType(Input(0), float16)) RunWithType<float16>();
+        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+#else
+        if (XIsType(Input(0), float)) RunWithType<float>();
+        else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 #endif
-        else LOG(FATAL) << "Unsupported input types.";
     } else if (this->mode == "WITHIN_CHANNEL") {
         LRNOp<Context>::RunOnDevice(); 
     } else {
@@ -63,11 +66,14 @@ void CuDNNLRNGradientOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
 
     if (this->mode == "ACROSS_CHANNELS") {
-        if (Input(0).template IsType<float>()) RunWithType<float>();
 #ifdef WITH_CUDA_FP16
-        else if (Input(0).template IsType<float16>()) RunWithType<float16>();
+        if (XIsType(Input(0), float)) RunWithType<float>();
+        else if (XIsType(Input(0), float16)) RunWithType<float16>();
+        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+#else
+        if (XIsType(Input(0), float)) RunWithType<float>();
+        else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 #endif
-        else LOG(FATAL) << "Unsupported input types."; 
     } else if (this->mode == "WITHIN_CHANNEL") {
         LRNGradientOp<Context>::RunOnDevice(); 
     } else {

@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -41,9 +41,7 @@ class SliceGradientOp final : public Operator<Context> {
     SliceGradientOp(const OperatorDef& op_def, Workspace* ws):
         Operator<Context>(op_def, ws),
         axis(OperatorBase::GetSingleArg<int>("axis", 1)),
-        nout(OperatorBase::GetSingleArg<int>("num_output", 1)) {
-        DISABLE_SHARE_GRADIENT;
-    }
+        nout(OperatorBase::GetSingleArg<int>("num_output", 1)) {}
     USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;

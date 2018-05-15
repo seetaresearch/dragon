@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -127,7 +127,8 @@ class SmoothL1LossLayer(Layer):
         if param.HasField('normalize'):
             if param.normalize: normalization = 'FULL'
         else: normalization = norm_mode[param.normalization]
-        self._param = {'sigma': float(smooth_l1_param.sigma),
+        sigma2 = smooth_l1_param.sigma * smooth_l1_param.sigma
+        self._param = {'beta': float(1. / sigma2),
                        'normalization': normalization}
 
     def Setup(self, bottom):

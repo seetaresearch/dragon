@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -20,8 +20,7 @@ template <class Context>
 class NesterovUpdateOp final : public UpdateOpBase<Context> {
  public:
     NesterovUpdateOp(const OperatorDef& op_def, Workspace* ws)
-        : UpdateOpBase<Context>(op_def, ws), 
-          momentum(Param("momentum")) {}
+        : UpdateOpBase<Context>(op_def, ws) {}
     USE_OPERATOR_FUNCTIONS(Context);
     USE_UPDATER_FUNCTIONS(Context);
 
@@ -29,7 +28,6 @@ class NesterovUpdateOp final : public UpdateOpBase<Context> {
 
  protected:
     float lr, momentum;
-    Tensor* h, *tmp;
 };
 
 }    // namespace dragon

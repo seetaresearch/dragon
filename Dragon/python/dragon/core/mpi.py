@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -39,6 +39,7 @@ __all__ = [
 def _check_init():
     global _is_init
     if _is_init is False: Init()
+
 
 def Init():
     """Init the MPI env.

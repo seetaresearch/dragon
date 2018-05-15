@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -15,7 +15,6 @@
 #include <functional>
 
 #include "core/common.h"
-#include "utils/logging.h"
 
 namespace dragon {
 
@@ -24,11 +23,11 @@ class Registry {
 public:
     typedef std::function<ObjType*(Args ...)> Creator;
     void Register(const SrcType& key, Creator creator) {
-        CHECK(!registry_.count(key)) << "Key(" << key  << ") has already registered.";
+        CHECK(!registry_.count(key)) << "\nKey(" << key  << ") has already registered.";
         registry_[key] = creator;
     }
     ObjType* Create(const SrcType& key, Args ... args) {
-        CHECK(registry_.count(key)) << "Key(" << key << ") has not registered yet.";
+        CHECK(registry_.count(key)) << "\nKey(" << key << ") has not registered yet.";
         return registry_[key](args...);
     }
     bool Has(const SrcType& key) { return (registry_.count(key)) != 0; }

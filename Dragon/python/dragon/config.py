@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -65,6 +65,22 @@ def EnableCPU():
     """
     global option
     option['device'] = 'CPU'
+
+
+def IsCUDADriverSufficient():
+    """Is CUDADriver sufficient?
+
+    Returns
+    -------
+    boolean
+        ``True`` if your device(s) support CUDA otherwise ``False``.
+
+    References
+    ----------
+    The wrapper of ``IsCUDADriverSufficientCC``.
+
+    """
+    return IsCUDADriverSufficientCC()
 
 
 def EnableCUDA(gpu_id=0, use_cudnn=True):
@@ -138,7 +154,7 @@ def SetGPU(id):
     option['gpu_id'] = id
 
 
-def GetGPU(id):
+def GetGPU():
     """Get the global id of GPU.
 
     Returns

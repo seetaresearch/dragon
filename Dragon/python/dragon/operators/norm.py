@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -170,30 +170,19 @@ def FusedBatchNorm(inputs, axis=-1, momentum=0.9, eps=1e-3, use_stats=-1, **kwar
     return output
 
 
-def GroupNorm(inputs, group=32, axis=-1, momentum=0.9, eps=1e-3,
-              use_stats=-1, mode='DEFAULT', **kwargs):
+def GroupNorm(inputs, group=32, axis=-1, eps=1e-3, **kwargs):
     """Group Normalization, introduced by `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
-
-    It follows the implementation of `Caffe`_, that scale procedure is moved to `ops.Scale(*args, **kwargs)`_.
-
-    The number of inputs vary from ``3`` to ``4`` (``DEFAULT`` or ``CAFFE`` mode).
 
     Parameters
     ----------
-    inputs : list of Tensor
-        The inputs, represent [input, mean, var] or [input, mean, var, factor].
+    inputs : Tensor
+        The input tensor.
     group : int
         The group size.
     axis : int
         The channel axis.
-    momentum : float
-        The momentum of moving average.
     eps : float
         The eps.
-    use_stats : int
-        Whether to use global stats. Default is ``-1`` (Auto).
-    mode : str
-        The moving average mode. ``DEFAULT`` or ``CAFFE``.
 
     Returns
     -------
@@ -202,47 +191,31 @@ def GroupNorm(inputs, group=32, axis=-1, momentum=0.9, eps=1e-3,
 
         |groupnorm_function|
 
-        The ``DEFAULT`` moving average of mean/var, calculated as:
-
-        |default_moving_average_function|
-
-        The ``CAFFE`` moving average of mean/var, calculated as:
-
-        |caffe_moving_average_function|
-
     """
-    CheckInputs(inputs, 3, 4)
+    CheckInputs(inputs, 1)
     arguments = ParseArguments(locals())
-
-    if len(inputs) > 3:
-        if mode != 'CAFFE':
-            raise ValueError('Only the CAFFE mode will take 4 inputs.')
 
     output = Tensor.CreateOperator(nout=1, op_type='GroupNorm', **arguments)
 
-    if inputs[0].shape is not None:
-        output.shape = inputs[0].shape[:]
+    if inputs.shape is not None:
+        output.shape = inputs.shape[:]
 
     return output
 
 
-def FusedGroupNorm(inputs, group=32, axis=-1, momentum=0.9, eps=1e-3, use_stats=-1, **kwargs):
+def FusedGroupNorm(inputs, group=32, axis=-1, eps=1e-3, **kwargs):
     """Group Normalization, with scale procedure after normalization.
 
     Parameters
     ----------
     inputs : list of Tensor
-        The inputs, represent [input, mean, var, scale, bias].
+        The inputs, represent [input, scale, bias].
     group : int
         The group size.
     axis : int
         The channel axis.
-    momentum : float
-        The momentum of moving average.
     eps : float
         The eps.
-    use_stats : int
-        Whether to use global stats. Default is ``-1`` (Auto).
 
     Returns
     -------
@@ -251,12 +224,8 @@ def FusedGroupNorm(inputs, group=32, axis=-1, momentum=0.9, eps=1e-3, use_stats=
 
         |groupnorm_scale_function|
 
-        The moving average of mean/var, calculated as:
-
-        |default_moving_average_function|
-
     """
-    CheckInputs(inputs, 5)
+    CheckInputs(inputs, 3)
     arguments = ParseArguments(locals())
 
     output = Tensor.CreateOperator(nout=1, op_type='FusedGroupNorm', **arguments)

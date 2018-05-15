@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -9,6 +9,10 @@
 #
 # ------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import math
 import numpy.random as npr
 from multiprocessing import Process
@@ -16,13 +20,12 @@ from multiprocessing import Process
 import dragon.config as config
 from dragon.tools.db import LMDB
 
-from .utils import GetProperty
 
 class DataReader(Process):
-    """
-    DataReader is deployed to queue encoded str from `LMDB`_.
+    """DataReader is deployed to queue encoded str from `LMDB`_.
 
     It is supported to adaptively partition and shuffle records over all distributed nodes.
+
     """
     def __init__(self, **kwargs):
         """Construct a ``DataReader``.
@@ -42,11 +45,11 @@ class DataReader(Process):
 
         """
         super(DataReader, self).__init__()
-        self._source = GetProperty(kwargs, 'source', '')
-        self._use_shuffle = GetProperty(kwargs, 'shuffle', False)
-        self._use_step = GetProperty(kwargs, 'node_step', False)
-        self._num_chunks = GetProperty(kwargs, 'num_chunks', 2048)
-        self._chunk_size = GetProperty(kwargs, 'chunk_size', -1)
+        self._source = kwargs.get('source', '')
+        self._use_shuffle = kwargs.get('shuffle', False)
+        self._use_step = kwargs.get('node_step', False)
+        self._num_chunks = kwargs.get('num_chunks', 2048)
+        self._chunk_size = kwargs.get('chunk_size', -1)
 
         self._num_parts = 1
         self._part_idx = 0

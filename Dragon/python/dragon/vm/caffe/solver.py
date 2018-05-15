@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -54,7 +54,7 @@ class Solver(object):
         self._test_nets = []
         self._layer_blobs = []
         self._iter = self._current_step = 0
-        self._optimizer = None
+        self.optimizer = None
         self.scalar_writer = sw.ScalarSummary() if root_solver() else None
 
         self.InitTrainNet()
@@ -158,10 +158,10 @@ class Solver(object):
         for idx, blob in enumerate(self._layer_blobs):
             if self._net._lr_mults[idx] > 0:
                 if blob.diff is None: continue
-                self._optimizer.append((blob.data, blob.diff),
+                self.optimizer.append((blob.data, blob.diff),
                                        self._net._lr_mults[idx],
                                        self._net._decay_mults[idx])
-        self.update = theano.function(updater=self._optimizer)
+        self.update = theano.function(updater=self.optimizer)
 
     def GetLearningRate(self):
         """Get learning rate based on the preset policy.
@@ -183,7 +183,7 @@ class Solver(object):
             if self._current_step != new_step:
                 new_lr = self._param.base_lr * pow(self._param.gamma, new_step)
                 self._current_step = new_step
-                self._optimizer.lr = new_lr
+                self.optimizer.base_lr = new_lr
 
         if policy == 'multistep':
             if self._current_step < len(self._param.stepvalue) \
@@ -193,30 +193,30 @@ class Solver(object):
                     .format(self._iter, self._current_step))
                 new_lr = self._param.base_lr * \
                          pow(self._param.gamma, self._current_step)
-                self._optimizer.lr = new_lr
+                self.optimizer.base_lr = new_lr
 
         if policy == 'multifixed':
             stage_lrs = self._param.stage_lr
             stage_iters = self._param.stage_iter
             if self._iter < stage_iters[self._current_step]:
-                self._optimizer.lr = stage_lrs[self._current_step]
+                self.optimizer.base_lr = stage_lrs[self._current_step]
             else:
                 if self._current_step + 1 < len(stage_iters):
                     self._current_step = self._current_step + 1
                     logger.info('MultiFixed Status: Iteration {},  stage = {}' \
                         .format(self._iter, self._current_step))
-                    self._optimizer.lr = stage_lrs[self._current_step]
+                    self.optimizer.base_lr = stage_lrs[self._current_step]
 
         if policy == 'inv':
             power = self._param.power
             gamma = self._param.gamma
-            self._optimizer.lr = self._param.base_lr * \
+            self.optimizer.base_lr = self._param.base_lr * \
                                pow(1.0 + gamma * self._iter, -power)
 
         if policy == 'poly':
             power = self._param.power
             max_iter = self._param.max_iter
-            self._optimizer.lr = self._param.base_lr * \
+            self.optimizer.base_lr = self._param.base_lr * \
                         pow(1.0 - float(self.iter) / max_iter, power)
 
     def Test(self, test_idx):
@@ -309,7 +309,7 @@ class Solver(object):
                 loss /= self._param.iter_size
                 if len(loss_vec) < self._param.average_loss:
                     loss_vec.append(loss)
-                    smoothed_loss = (smoothed_loss * (len(loss_vec) - 1) + loss) / len(loss_vec);
+                    smoothed_loss = (smoothed_loss * (len(loss_vec) - 1) + loss) / len(loss_vec)
                 else:
                     idx = (self._iter - start_iter) % self._param.average_loss
                     smoothed_loss += ((loss - loss_vec[idx]) / self._param.average_loss)
@@ -322,7 +322,7 @@ class Solver(object):
             # display
             if root_solver() and self._param.display:
                 if self._iter % self._param.display == 0:
-                    base_lr = self._optimizer.lr
+                    base_lr = self.optimizer.base_lr
                     logger.info('Iteration %d, lr = %s, loss = %f, time = %.2fs' % \
                           (self._iter, str(base_lr), smoothed_loss, time.time() - tic))
                     tic = time.time()
@@ -336,6 +336,60 @@ class Solver(object):
             # snapshot
             if self._param.snapshot:
                 if self._iter % self._param.snapshot == 0: self.snapshot()
+
+    def one_step(self):
+        """One step run the train net.
+
+        Returns
+        -------
+        dict
+            The stats.
+
+        """
+        if self._param.test_interval and \
+                self._iter % self._param.test_interval == 0:
+            if (self._iter == 0 and
+                    self._param.test_initialization) or self._iter != 0:
+                for test_id in range(len(self.tests)): self.Test(test_id)
+
+        # forward & backward & compute_loss
+        run_time = 0.; stats = {'loss': {'total': 0.}, 'iter': self.iter}
+        for i in range(self._param.iter_size):
+            tic = time.time()
+            self.train(return_outputs=False)
+            run_time += (time.time() - tic)
+            # total loss
+            for cost in self._net._costs:
+                cost_value = ws.FetchTensor(cost)
+                if cost_value.size == 1:
+                    stats['loss']['total'] += cost_value[0]
+
+            # partial loss
+            for idx, net_output in enumerate(self._net.outputs):
+                vals = ws.FetchTensor(self._net.blobs[net_output].data)
+                if vals.size != 1: continue
+                if net_output not in stats['loss']: stats['loss'][net_output] = 0.
+                stats['loss'][net_output] += vals[0]
+
+        # apply update
+        self.GetLearningRate()
+        tic = time.time()
+        self.update()
+        run_time += (time.time() - tic)
+        self._iter = self._iter + 1
+
+        # snapshot?
+        if self._param.snapshot:
+            if self._iter % self._param.snapshot == 0: self.snapshot()
+
+        # average loss by the iter size
+        for k in stats['loss'].keys():
+            stats['loss'][k] /= self._param.iter_size
+
+        # misc stats
+        stats['lr'] = self.optimizer.base_lr
+        stats['time'] = run_time
+        return stats
 
     def snapshot(self):
         """Snapshot the parameters of train net. [**PyCaffe Style**]
@@ -404,7 +458,7 @@ class Solver(object):
         self._iter = value
 
     @property
-    def lr(self):
+    def base_lr(self):
         """Return or Set the current learning rate. [**Extended**]
 
         Parameters
@@ -417,11 +471,11 @@ class Solver(object):
         The current learning rate.
 
         """
-        return self._optimizer.lr
+        return self.optimizer.base_lr
 
-    @lr.setter
-    def lr(self, value):
-        self._optimizer.lr = value
+    @base_lr.setter
+    def base_lr(self, value):
+        self.optimizer.base_lr = value
 
 
 class SGDSolver(Solver):
@@ -437,7 +491,7 @@ class SGDSolver(Solver):
     """
     def __init__(self, prototxt):
         super(SGDSolver, self).__init__(prototxt=prototxt)
-        self._optimizer = updaters.SGDUpdater(**self._update_param)
+        self.optimizer = updaters.SGDUpdater(**self._update_param)
         self.BuildOptimizer()
 
     def ParseUpdateParam(self):
@@ -459,7 +513,7 @@ class NesterovSolver(Solver):
     """
     def __init__(self, prototxt):
         super(NesterovSolver, self).__init__(prototxt=prototxt)
-        self._optimizer = updaters.NesterovUpdater(**self._update_param)
+        self.optimizer = updaters.NesterovUpdater(**self._update_param)
         self.BuildOptimizer()
 
     def ParseUpdateParam(self):
@@ -483,7 +537,7 @@ class RMSPropSolver(Solver):
     """
     def __init__(self, prototxt):
         super(RMSPropSolver, self).__init__(prototxt=prototxt)
-        self._optimizer = updaters.RMSPropUpdater(**self._update_param)
+        self.optimizer = updaters.RMSPropUpdater(**self._update_param)
         self.BuildOptimizer()
 
     def ParseUpdateParam(self):
@@ -510,7 +564,7 @@ class AdamSolver(Solver):
     """
     def __init__(self, prototxt):
         super(AdamSolver, self).__init__(prototxt=prototxt)
-        self._optimizer = updaters.AdamUpdater(**self._update_param)
+        self.optimizer = updaters.AdamUpdater(**self._update_param)
         self.BuildOptimizer()
 
     def ParseUpdateParam(self):

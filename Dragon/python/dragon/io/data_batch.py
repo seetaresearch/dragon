@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -8,6 +8,10 @@
 #      <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import time
 import pprint
@@ -19,15 +23,13 @@ from .data_reader import DataReader
 from .data_transformer import DataTransformer
 from .blob_fetcher import BlobFetcher
 
-from .utils import GetProperty
 
 class DataBatch(object):
-    """
-    DataBatch aims to prefetch data by ``Triple-Buffering``.
+    """DataBatch aims to prefetch data by ``Triple-Buffering``.
 
     It takes full advantages of the Process/Thread of Python,
-
     which provides remarkable I/O speed up for scalable distributed training.
+
     """
     def __init__(self, **kwargs):
         """Construct a ``DataBatch``.
@@ -87,26 +89,26 @@ class DataBatch(object):
         kwargs['group_size'] = group_size
 
         # configuration
-        self._prefetch = GetProperty(kwargs, 'prefetch', 5)
-        self._num_readers = GetProperty(kwargs, 'num_readers', 1)
-        self._num_transformers = GetProperty(kwargs, 'num_transformers', -1)
-        self._max_transformers = GetProperty(kwargs, 'max_transformers', 3)
-        self._num_fetchers = GetProperty(kwargs, 'num_fetchers', 1)
+        self._prefetch = kwargs.get('prefetch', 5)
+        self._num_readers = kwargs.get('num_readers', 1)
+        self._num_transformers = kwargs.get('num_transformers', -1)
+        self._max_transformers = kwargs.get('max_transformers', 3)
+        self._num_fetchers = kwargs.get('num_fetchers', 1)
 
         # io-aware policy
         if self._num_transformers == -1:
             self._num_transformers = 1
             # add 1 transformer for color augmentation
-            if GetProperty(kwargs, 'color_augmentation', False):
+            if kwargs.get('color_augmentation', False):
                 self._num_transformers += 1
             # add 1 transformer for random scale
-            if GetProperty(kwargs, 'max_random_scale', 1.0) - \
-                    GetProperty(kwargs, 'min_random_scale', 1.0) != 0:
+            if kwargs.get('max_random_scale', 1.0) - \
+                    kwargs.get('min_random_scale', 1.0) != 0:
                 self._num_transformers += 1
         self._num_transformers = min(self._num_transformers, self._max_transformers)
 
-        self._batch_size = GetProperty(kwargs, 'batch_size', 100)
-        self._partition = GetProperty(kwargs, 'partition', False)
+        self._batch_size = kwargs.get('batch_size', 100)
+        self._partition = kwargs.get('partition', False)
         if self._partition:
             self._batch_size = int(self._batch_size / kwargs['group_size'])
 
@@ -157,20 +159,20 @@ class DataBatch(object):
             self._fetchers.append(fetcher)
             time.sleep(0.1)
 
-        self.echo()
-
+        # prevent to echo multiple nodes
+        if local_rank == 0: self.echo()
         def cleanup():
             def terminate(processes):
                 for process in processes:
                     process.terminate()
                     process.join()
             from dragon.config import logger
-            logger.info('Terminating BlobFetcher ......')
             terminate(self._fetchers)
-            logger.info('Terminating DataTransformer ......')
+            if local_rank == 0: logger.info('Terminating BlobFetcher ......')
             terminate(self._transformers)
-            logger.info('Terminating DataReader......')
+            if local_rank == 0: logger.info('Terminating DataTransformer ......')
             terminate(self._readers)
+            if local_rank == 0: logger.info('Terminating DataReader......')
         import atexit
         atexit.register(cleanup)
 
@@ -186,15 +188,19 @@ class DataBatch(object):
         return self.Q_level_3.get()
 
     def echo(self):
+        """Print I/O Information.
+
+        Returns
+        -------
+        None
+
         """
-        Print I/O Information.
-        """
-        from dragon.config import logger
-        logger.info('---------------------------------------------------------')
-        logger.info('BatchReader, Using config:')
-        params = {'prefetching': self._prefetch,
-                  'num_readers': self._num_readers,
-                  'num_transformers': self._num_transformers,
-                  'num_fetchers': self._num_fetchers}
+        print('---------------------------------------------------------')
+        print('BatchFetcher({} Threads), Using config:'.format(
+            self._num_readers + self._num_transformers + self._num_fetchers))
+        params = {'queue_size': self._prefetch,
+                  'n_readers': self._num_readers,
+                  'n_transformers': self._num_transformers,
+                  'n_fetchers': self._num_fetchers}
         pprint.pprint(params)
-        logger.info('---------------------------------------------------------')
+        print('---------------------------------------------------------')

@@ -7,6 +7,7 @@
 #include "utils/cuda_device.h"
 #include "utils/op_kernel.h"
 #include "utils/math_functions.h"
+#include "utils/cast.h"
 
 namespace dragon {
 
@@ -358,27 +359,46 @@ template<> void Relu<float, CUDAContext>(const int count,
 
 #ifdef WITH_CUDA_FP16
 template <typename T>
-__global__ void _ReluHalf(const int count, const half* x, const float slope, half* y) {
-    const half kSlope = __float2half(slope);
-    const half kZero = __float2half(0.0);
+__global__ void _ReluHalf(const int count, const half* x, const half slope, half* y) {
+    const half kZero = __float2half(0.f);
     CUDA_KERNEL_LOOP(idx, count) {
 #if __CUDA_ARCH__ >= 530
-        y[idx] = __hgt(x[idx], kZero) ? x[idx] : __hmul(x[idx], kSlope);
+        y[idx] = __hgt(x[idx], kZero) ? x[idx] : __hmul(x[idx], slope);
 #endif
     }
 }
+
+template <typename T>
+__global__ void _ReluHalf2(const int count, const half2* x, const half2 slope, half2* y) {
+    const half2 kZero = __float2half2_rn(0.f);
+    CUDA_KERNEL_LOOP(idx, count) {
+#if __CUDA_ARCH__ >= 530
+        y[idx] = __hbgt2(x[idx], kZero) ? x[idx] : __hmul2(x[idx], slope);
+#endif
+    }
+}
+#endif
 
 template<> void Relu<float16, CUDAContext>(const int count,
                                            const float16* x,
                                            const float slope,
                                            float16* y) {
-    _ReluHalf<half> << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                       reinterpret_cast<const half*>(x),
-                                                                  slope,
-                                            reinterpret_cast<half*>(y));
+#ifdef WITH_CUDA_FP16
+    if (count % 2 == 0) 
+        _ReluHalf2<half2> << < GET_BLOCKS(count), CUDA_NUM_THREADS >> > (count / 2,
+                                                 reinterpret_cast<const half2*>(x),
+                                                  dragon_cast<half2, float>(slope),
+                                                      reinterpret_cast<half2*>(y));
+    else
+        _ReluHalf<half> << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                           reinterpret_cast<const half*>(x),
+                                            dragon_cast<half, float>(slope),
+                                                reinterpret_cast<half*>(y));
     CUDA_POST_KERNEL_CHECK;
-}
+#else
+    CUDA_FP16_NOT_COMPILED;
 #endif
+}
 
 template <typename T>
 __global__ void _ReluGrad(const int count,
@@ -988,39 +1008,39 @@ template <> void SigmoidCrossEntropyGrad<float, CUDAContext>(const int count,
 /******************** loss.smooth_l1_loss ********************/
 
 template <typename T>
-__global__ void _SmoothL1(const int count, const float sigma2, const T* x, T* y) {
+__global__ void _SmoothL1(const int count, const float beta, const T* x, T* y) {
     CUDA_KERNEL_LOOP(idx, count) {
         const T val = x[idx];
         const T abs_val = abs(val);
-        if (abs_val < 1.0 / sigma2) y[idx] = 0.5 * val * val * sigma2;
-        else y[idx] = abs_val - 0.5 / sigma2;
+        if (abs_val < beta) y[idx] = 0.5 * val * val / beta;
+        else y[idx] = abs_val - 0.5 * beta;
     }
 }
 
-template<> void SmoothL1<float, CUDAContext>(const int count, 
-                                             const float sigma2, 
-                                             const float* x, 
+template<> void SmoothL1<float, CUDAContext>(const int count,
+                                             const float beta,
+                                             const float* x,
                                              float* y) {
-    _SmoothL1<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, sigma2, x, y);
+    _SmoothL1<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, beta, x, y);
     CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
-__global__ void _SmoothL1Grad(const int count, const float sigma2, const T* dy, T* dx) {
+__global__ void _SmoothL1Grad(const int count, const float beta, const T* dy, T* dx) {
     CUDA_KERNEL_LOOP(idx, count) {
         const T val = dy[idx];
         const T abs_val = abs(val);
-        if (abs_val < 1.0 / sigma2) dx[idx] = val * sigma2;
+        if (abs_val < beta) dx[idx] = val / beta;
         //  val > 0: 1 | val == 0: 0 | val < 0: -1
         else dx[idx] = (val > T(0)) - (val < T(0));
     }
 }
 
 template<> void SmoothL1Grad<float, CUDAContext>(const int count,
-                                                 const float sigma2,
+                                                 const float beta,
                                                  const float* dy,
                                                  float* dx) {
-    _SmoothL1Grad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, sigma2, dy, dx);
+    _SmoothL1Grad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, beta, dy, dx);
     CUDA_POST_KERNEL_CHECK;
 }
 
@@ -1049,16 +1069,16 @@ template <> void SoftmaxCrossEntropy<float, CUDAContext>(const int count,
 
 /******************** loss.sparse_softmax_cross_entropy ********************/
 
-template <typename T>
+template <typename Tx, typename Ty>
 __global__ void _SparseSoftmaxCrossEntropy(const int count,
-                                           const T* prob,
-                                           const T* labels,
-                                           T* loss,
+                                           const Tx* prob,
+                                           const Ty* labels,
+                                           Tx* loss,
                                            const int classes,
                                            const int inner_dim,
                                            const int* ignores,
                                            const int ignore_num,
-                                           T* valid) {
+                                           Tx* valid) {
     CUDA_KERNEL_LOOP(idx, count) {
         const int o_idx = idx / inner_dim;
         const int i_idx = idx % inner_dim;
@@ -1078,40 +1098,64 @@ __global__ void _SparseSoftmaxCrossEntropy(const int count,
     }
 }
 
-template <> void SparseSoftmaxCrossEntropy<float, CUDAContext>(const int count,
-                                                               const int classes,
-                                                               const int outer_dim,
-                                                               const int inner_dim,
-                                                               const float* prob,
-                                                               const float* labels,
-                                                               float* loss,
-                                                               float* valid,
-                                                               Tensor* ignore) {
+template <> void SparseSoftmaxCrossEntropy<float, float, CUDAContext>(const int count,
+                                                                      const int classes,
+                                                                      const int outer_dim,
+                                                                      const int inner_dim,
+                                                                      const float* prob,
+                                                                      const float* labels,
+                                                                      float* loss,
+                                                                      float* valid,
+                                                                      Tensor* ignore) {
     const int* ignores = ignore->count() > 0 ?
                          ignore->data<int, CUDAContext>() : nullptr;
     const int num_preds = outer_dim * inner_dim;
-    _SparseSoftmaxCrossEntropy<float> << <GET_BLOCKS(num_preds), CUDA_NUM_THREADS >> >(num_preds,
-                                                                                            prob,
-                                                                                          labels,
-                                                                                            loss,
-                                                                                         classes,
-                                                                                       inner_dim,
-                                                                                         ignores,
-                                                                                 ignore->count(),
-                                                                                           valid);
+    _SparseSoftmaxCrossEntropy<float, float> << <GET_BLOCKS(num_preds), CUDA_NUM_THREADS >> >(num_preds,
+                                                                                                   prob,
+                                                                                                 labels,
+                                                                                                   loss,
+                                                                                                classes,
+                                                                                              inner_dim,
+                                                                                                ignores,
+                                                                                        ignore->count(),
+                                                                                                 valid);
     CUDA_POST_KERNEL_CHECK;
 }
 
-template <typename T>
+template <> void SparseSoftmaxCrossEntropy<float, int64_t, CUDAContext>(const int count,
+                                                                        const int classes,
+                                                                        const int outer_dim,
+                                                                        const int inner_dim,
+                                                                        const float* prob,
+                                                                        const int64_t* labels,
+                                                                        float* loss,
+                                                                        float* valid,
+                                                                        Tensor* ignore) {
+    const int* ignores = ignore->count() > 0 ?
+                         ignore->data<int, CUDAContext>() : nullptr;
+    const int num_preds = outer_dim * inner_dim;
+    _SparseSoftmaxCrossEntropy<float, int64_t> << <GET_BLOCKS(num_preds), CUDA_NUM_THREADS >> >(num_preds,
+                                                                                                     prob,
+                                                                                                   labels,
+                                                                                                     loss,
+                                                                                                  classes,
+                                                                                                inner_dim,
+                                                                                                  ignores,
+                                                                                          ignore->count(),
+                                                                                                   valid);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template <typename Tx, typename Ty>
 __global__ void _SparseSoftmaxCrossEntropyGrad(const int count,
-                                               const T* prob, 
-                                               const T* labels, 
-                                               T* dx, 
-                                               const int classes, 
-                                               const int inner_dim, 
-                                               const int* ignores, 
-                                               const int ignore_num, 
-                                               T* valid) {
+                                               const Tx* prob,
+                                               const Ty* labels,
+                                               Tx* dx, 
+                                               const int classes,
+                                               const int inner_dim,
+                                               const int* ignores,
+                                               const int ignore_num,
+                                               Tx* valid) {
     CUDA_KERNEL_LOOP(idx, count) {
         const int o_idx = idx / inner_dim;
         const int i_idx = idx % inner_dim;
@@ -1130,28 +1174,53 @@ __global__ void _SparseSoftmaxCrossEntropyGrad(const int count,
     }
 }
 
-template<> void SparseSoftmaxCrossEntropyGrad<float, CUDAContext>(const int count,
-                                                                  const int classes, 
-                                                                  const int outer_dim, 
-                                                                  const int inner_dim, 
-                                                                  const float* prob,
-                                                                  const float* labels,
-                                                                  float* valid, 
-                                                                  Tensor* ignore, 
-                                                                  float* dXdata) {
+template<> void SparseSoftmaxCrossEntropyGrad<float, float, CUDAContext>(const int count,
+                                                                         const int classes,
+                                                                         const int outer_dim,
+                                                                         const int inner_dim,
+                                                                         const float* prob,
+                                                                         const float* labels,
+                                                                         float* valid,
+                                                                         Tensor* ignore,
+                                                                         float* dXdata) {
     const int* ignores = ignore->count() > 0 ? 
                          ignore->data <int, CUDAContext >() : 
                          nullptr;
     const int num_preds = outer_dim * inner_dim;
-    _SparseSoftmaxCrossEntropyGrad<float> << <GET_BLOCKS(num_preds), CUDA_NUM_THREADS >> >(num_preds,
-                                                                                                prob, 
-                                                                                              labels, 
-                                                                                              dXdata,
-                                                                                             classes, 
-                                                                                           inner_dim, 
-                                                                                             ignores, 
-                                                                                     ignore->count(), 
-                                                                                              valid);
+    _SparseSoftmaxCrossEntropyGrad<float, float> << <GET_BLOCKS(num_preds), CUDA_NUM_THREADS >> >(num_preds,
+                                                                                                       prob,
+                                                                                                     labels,
+                                                                                                     dXdata,
+                                                                                                    classes,
+                                                                                                  inner_dim,
+                                                                                                    ignores,
+                                                                                            ignore->count(),
+                                                                                                     valid);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template<> void SparseSoftmaxCrossEntropyGrad<float, int64_t, CUDAContext>(const int count,
+                                                                           const int classes,
+                                                                           const int outer_dim,
+                                                                           const int inner_dim,
+                                                                           const float* prob,
+                                                                           const int64_t* labels,
+                                                                           float* valid,
+                                                                           Tensor* ignore,
+                                                                           float* dXdata) {
+    const int* ignores = ignore->count() > 0 ? 
+                         ignore->data <int, CUDAContext >() : 
+                         nullptr;
+    const int num_preds = outer_dim * inner_dim;
+    _SparseSoftmaxCrossEntropyGrad<float, int64_t> << <GET_BLOCKS(num_preds), CUDA_NUM_THREADS >> >(num_preds,
+                                                                                                         prob,
+                                                                                                       labels,
+                                                                                                       dXdata,
+                                                                                                      classes,
+                                                                                                    inner_dim,
+                                                                                                      ignores,
+                                                                                              ignore->count(),
+                                                                                                       valid);
     CUDA_POST_KERNEL_CHECK;
 }
 
@@ -1862,6 +1931,25 @@ __global__ void _Crop1D(const int count,
     }
 }
 
+template<> void Crop1D<int, CUDAContext>(const int count,
+                                         const int dim,
+                                         const int ex_dim,
+                                         const int inner_dim,
+                                         const int start,
+                                         const int* x,
+                                         int* y,
+                                         CUDAContext* context) {
+    _Crop1D<int> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                dim,
+                                                             ex_dim,
+                                                          inner_dim,
+                                                              start,
+                                                                  x,
+                                                                 y);
+       
+    CUDA_POST_KERNEL_CHECK;
+}
+
 template<> void Crop1D<float, CUDAContext>(const int count,
                                            const int dim,
                                            const int ex_dim,
@@ -1875,7 +1963,7 @@ template<> void Crop1D<float, CUDAContext>(const int count,
                                                                ex_dim,
                                                             inner_dim,
                                                                 start,
-                                                                    x, 
+                                                                    x,
                                                                    y);
        
     CUDA_POST_KERNEL_CHECK;
@@ -1897,6 +1985,26 @@ __global__ void _Crop1DGrad(const int count,
         if (d >= start && d < end) 
             dx[idx] = dy[(o * ex_dim + d - start) * inner_dim + i];
     }
+}
+
+template<> void Crop1DGrad<int, CUDAContext>(const int count,
+                                             const int dim,
+                                             const int ex_dim,
+                                             const int inner_dim,
+                                             const int start,
+                                             const int end,
+                                             const int* dy,
+                                             int* dx,
+                                             CUDAContext* context) {
+    _Crop1DGrad<int> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                    dim,
+                                                                 ex_dim,
+                                                              inner_dim,
+                                                                  start,
+                                                                    end,
+                                                                     dy,
+                                                                    dx);
+    CUDA_POST_KERNEL_CHECK;
 }
 
 template<> void Crop1DGrad<float, CUDAContext>(const int count,
@@ -2699,15 +2807,13 @@ template <> void LSTMUnitGrad<float, CUDAContext>(const int count,
 /******************** update.adam_update ********************/
 
 template <typename T>
-__global__ void _AdamUpdate(const int n, 
-                            T* g, 
-                            T* m, 
-                            T* v,
-                            const T beta1, 
-                            const T beta2, 
-                            const T eps, 
-                            const T lr) {
-    CUDA_KERNEL_LOOP(i, n) {
+__global__ void _AdamUpdate(const int count,
+                            const T lr,
+                            const T beta1,
+                            const T beta2,
+                            const T eps,
+                            T* g, T* m, T* v) {
+    CUDA_KERNEL_LOOP(i, count) {
         T gi = g[i];
         T mi = m[i] = m[i] * beta1 + gi * (1 - beta1);
         T vi = v[i] = v[i] * beta2 + gi * gi * (1 - beta2);
@@ -2715,68 +2821,49 @@ __global__ void _AdamUpdate(const int n,
     }
 }
 
-template <> void AdamUpdate<float, CUDAContext>(Tensor* x, 
-                                                Tensor* m, 
-                                                Tensor* v, 
-                                                Tensor* t,
-                                                const float beta1, 
-                                                const float beta2, 
-                                                const float eps, 
-                                                const float lr) {
-    TIndex count = x->count();
-    auto* Xdata = x->mutable_data<float, CUDAContext>();
-    auto* Mdata = m->mutable_data<float, CUDAContext>();
-    auto* Vdata = v->mutable_data<float, CUDAContext>();
-    _AdamUpdate<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                    Xdata, 
-                                                                    Mdata, 
-                                                                    Vdata, 
-                                                                    beta1, 
-                                                                    beta2, 
-                                                                      eps, 
-                                                                      lr);
+template <> void AdamUpdate<float, CUDAContext>(const int count,
+                                                const float lr,
+                                                const float beta1,
+                                                const float beta2,
+                                                const float eps,
+                                                float* g, float* m, float* v) {
+    _AdamUpdate<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> > (count,
+                                           lr, beta1, beta2, eps, g, m, v);
     CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** update.nesterov_update ********************/
 
 template <typename T>
-__global__ void _NesterovUpdate(const int n, 
-                               T* g, 
-                               T* h,
-                               const T momentum,
-                               const T lr) {
-    CUDA_KERNEL_LOOP(i, n) {
+__global__ void _NesterovUpdate(const int count,
+                                const T lr,
+                                const T momentum,
+                                T* g, T* h) {
+    CUDA_KERNEL_LOOP(i, count) {
         T hi = h[i];
         T hi_new = h[i] = momentum * hi + lr * g[i];
         g[i] = (1 + momentum) * hi_new - momentum * hi;
     }
 }
+
 template <> void NesterovUpdate<float, CUDAContext>(const int count,
-                                                    float* x,
-                                                    float* h,
-                                                    Tensor* t,
-                                                    const float momentum,
                                                     const float lr,
-                                                    CUDAContext* ctx) {
-    _NesterovUpdate<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                                                            x, 
-                                                                            h, 
-                                                                     momentum,
-                                                                          lr);
+                                                    const float momentum,
+                                                    float* g, float* h) {
+    _NesterovUpdate<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> > (count,
+                                                           lr, momentum, g, h);
     CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** update.rmsprop_update ********************/
 
 template <typename T>
-__global__ void _RMSPropUpdate(const int n, 
-                               T* g, 
-                               T* h,
-                               const T decay, 
-                               const T eps, 
-                               const T lr) {
-    CUDA_KERNEL_LOOP(i, n) {
+__global__ void _RMSPropUpdate(const int count,
+                               const T lr,
+                               const T decay,
+                               const T eps,
+                               T* g, T* h) {
+    CUDA_KERNEL_LOOP(i, count) {
         T gi = g[i];
         T hi = h[i] = decay * h[i] + (1 - decay) * gi * gi;
         g[i] = lr * g[i] / (sqrt(hi) + eps);
@@ -2784,18 +2871,34 @@ __global__ void _RMSPropUpdate(const int n,
 }
 
 template <> void RMSPropUpdate<float, CUDAContext>(const int count,
-                                                   float* x, 
-                                                   float* h,
-                                                   Tensor* t,
-                                                   const float decay, 
-                                                   const float eps, 
-                                                   const float lr) {
-    _RMSPropUpdate<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                           x, 
-                                                                           h, 
-                                                                       decay, 
-                                                                         eps, 
-                                                                         lr);
+                                                   const float lr,
+                                                   const float decay,
+                                                   const float eps,
+                                                   float* g, float* h) {
+    _RMSPropUpdate<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                       lr, decay, eps, g, h);
+    CUDA_POST_KERNEL_CHECK;
+}
+
+/******************** update.sgd_update ********************/
+
+template <typename T>
+__global__ void _SGDUpdate(const int count,
+                           const T lr,
+                           const T momentum,
+                           T* g, T* h) {
+    CUDA_KERNEL_LOOP(i, count) {
+        T hi = h[i];
+        g[i] = h[i] = momentum * hi + lr * g[i];
+    }
+}
+
+template <> void SGDUpdate<float, CUDAContext>(const int count,
+                                               const float lr,
+                                               const float momentum,
+                                               float* g, float* h) {
+    _SGDUpdate<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                     lr, momentum, g, h);
     CUDA_POST_KERNEL_CHECK;
 }
 

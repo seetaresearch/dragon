@@ -58,8 +58,8 @@ void AccuracyOp<Context>::RunOnDevice() {
     Output(0)->Reshape(vector<TIndex>(1, 1));
     if (OutputSize() > 1) Output(1)->Reshape(vector<TIndex>(1, num_classes)); 
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(Accuracy);

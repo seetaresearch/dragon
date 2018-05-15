@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -36,9 +36,7 @@ class ReluGradientOp : public Operator<Context> {
  public:
     ReluGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          slope(OperatorBase::GetSingleArg<float>("slope", 0.0)) {
-        DISABLE_SHARE_GRADIENT;
-    }
+          slope(OperatorBase::GetSingleArg<float>("slope", 0.0)) {}
     USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;

@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -101,9 +101,9 @@ def Crop(inputs, starts, ends, start_axis=None,
     ----------
     inputs : Tensor
         The input tensor.
-    starts : int, list of int or None
+    starts : int/Tensor, list of int/Tensor, or None
         The starts.
-    ends : int, list of int or None
+    starts : int/Tensor, list of int/Tensor, or None
         The ends.
     start_axis : int or None
         The axis to start. Default is ``None`` (Disabled).
@@ -131,11 +131,9 @@ def Crop(inputs, starts, ends, start_axis=None,
     CheckInputs(inputs, 1)
     arguments = ParseArguments(locals())
     if starts is not None:
-        if not isinstance(starts, (list, tuple)):
-            arguments['starts'] = [starts]
+        AddArgumentsWithDesc(arguments, starts, 'starts', 'int32', as_target=True)
     if ends is not None:
-        if not isinstance(ends, (list, tuple)):
-            arguments['ends'] = [ends]
+        AddArgumentsWithDesc(arguments, ends, 'ends', 'int32', as_target=True)
     if offsets is not None:
         if not isinstance(offsets, (list, tuple)):
             arguments['offsets'] = [offsets]
@@ -665,7 +663,7 @@ def Reshape(inputs, shape, shape_like=None, **kwargs):
         The input tensor.
     shape : list, tuple or None
         The new shape.
-    shape_like: Tensor or None
+    shape_like: Tensor, str or None
         The tensor for indicating the output shape.
 
     Returns
@@ -690,9 +688,10 @@ def Reshape(inputs, shape, shape_like=None, **kwargs):
     if shape is not None:
         AddArgumentsWithDesc(arguments, shape, 'shape', 'int32', as_target=True)
     elif shape_like is not None:
-        if not isinstance(shape_like, Tensor):
-            raise TypeError('The shape_like should be a Tensor.')
-        arguments['shape_like'] = shape_like.name
+        if not isinstance(shape_like, (Tensor, str)):
+            raise TypeError('The shape_like should be a Tensor or a name.')
+        arguments['shape_like'] = shape_like \
+            if isinstance(shape_like, str) else shape_like.name
 
     output = Tensor.CreateOperator(nout=1, op_type='Reshape', **arguments)
 

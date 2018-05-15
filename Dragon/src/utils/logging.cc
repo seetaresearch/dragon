@@ -62,12 +62,9 @@ void MessageLogger::StripBasename(const std::string &full_path, std::string* fil
     size_t pos = std::string::npos;
     if (pos1 != std::string::npos) pos = pos1;
     if (pos2 != std::string::npos) pos = pos2;
-
     if (pos != std::string::npos) {
         *filename = full_path.substr(pos + 1, std::string::npos);
-    } else  {
-        *filename = full_path;
-    }
+    } else  { *filename = full_path; }
 }
 
 }    // namespace dragon

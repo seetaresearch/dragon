@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -38,12 +38,18 @@ class OperatorBase {
     inline size_t InputSize() { return inputs_.size(); }
     inline size_t OutputSize() { return outputs_.size(); }
 
+    void MutableOp(const OperatorDef& op_def);
+    void MutableOp(const vector<string>& inputs,
+                   const vector<string>& outputs,
+                   const string& anchor);
+
     inline void SwitchToPhase(const string& phase) { this->phase_ = phase; }
     virtual void Run() { NOT_IMPLEMENTED; }
 
     inline const string& name() const { return op_def_.name(); }
     inline const string& type() const { return op_def_.type(); }
     inline const string& phase() const { return phase_; }
+    inline const string& anchor() { return anchor_; }
     inline Workspace* ws() const { return ws_; }
 
     template <typename T>
@@ -60,10 +66,11 @@ class OperatorBase {
     void set_recompute_map(RecomputeMap recompute_map) { recompute_map_ = recompute_map; }
 
     inline const OperatorDef& op_def() const { return op_def_; }
-    inline const string DebugString() const { return op_def_.DebugString(); }
+    inline string DebugString() const { return op_def_.DebugString(); }
+    string DTypeHelper(const Tensor& tensor, const Set<string>& dtypes) const;
 
  protected:
-    string phase_;
+    string phase_, anchor_;
     Map<std::string, const Argument*> args_;
     Map<string, vector<OperatorBase*> > recompute_map_;
     vector<Tensor*> inputs_, outputs_;
@@ -75,47 +82,41 @@ template <class Context>
 class Operator : public OperatorBase {
  public:
     Operator(const OperatorDef& op_def, Workspace* ws)
-        : OperatorBase(op_def, ws), ctx_(op_def.device_option()) {
+        : OperatorBase(op_def, ws), ctx_(op_def.device_option()),
+          do_synchronize_(Operator::GetSingleArg<bool>("do_synchronize", false)),
+          recomputing_aware_(Operator::GetSingleArg<bool>("recomputing_aware", false)) {
         allow_run_ = true;
         allow_run_ &= _MPICheck();
         allow_run_ &= (!(OutputSize() == 1 && Output(0)->name() == "ignore"));
-        allow_share_grads_ = (!op_def.debug_mode());
-        allow_share_grads_ &= op_def.share_grads();
-        allow_share_grads_ &= (type().find("Gradient") != string::npos);
     }
 
     virtual void Run() final {
         if (!allow_run_)  return;
-        MakeResource();
+        if (recomputing_aware_) MakeResource();
         ctx_.SwitchToDevice();
         MemorySwitch();
         RunOnDevice();
-        ctx_.FinishDeviceCompution();
-        CleanResource();
+        if (do_synchronize_) ctx_.FinishDeviceCompution();
+        if (recomputing_aware_) CleanResource();
     }
 
     virtual void ElimateCorruption();
-    virtual void ShareGradient();
-
     virtual void MakeResource();
     virtual void CleanResource();
 
     void MemorySwitch() {
-        for (int i = 0; i < InputSize(); i++)
-            if (Input(i).name() != "ignore") Input(i).SwitchToDevice();
-        for (int i = 0; i < OutputSize(); i++)
-            if (Output(i)->name() != "ignore") Output(i)->SwitchToDevice();
+        for (auto* I : inputs_) if(I->name() != "ignore") I->SwitchToDevice();
+        for (auto* O : outputs_) if(O->name() != "ignore") O->SwitchToDevice();
     }
 
     virtual void RunOnDevice() = 0;
 
     inline Context& ctx() { return ctx_; }
-    inline string Anchor() { return GetSingleArg("anchor", name()); }
     inline bool AllowRun() { return allow_run_; }
 
  protected:
     Context ctx_;
-    bool allow_run_, allow_share_grads_;
+    bool allow_run_, recomputing_aware_, do_synchronize_;
 
  private:
     bool _MPICheck() {
@@ -147,15 +148,16 @@ OperatorBase* CreateOperator(const OperatorDef& op_def, Workspace* ws);
     using OperatorBase::name; \
     using OperatorBase::type; \
     using OperatorBase::phase; \
+    using OperatorBase::anchor; \
     using OperatorBase::op_def; \
     using OperatorBase::InputSize; \
     using OperatorBase::OutputSize; \
-    using OperatorBase::DebugString \
+    using OperatorBase::DebugString; \
+    using OperatorBase::DTypeHelper \
 
 #define USE_OPERATOR_FUNCTIONS(context) \
     USE_OPERATOR_BASE_FUNCTIONS; \
     using Operator<context>::ctx; \
-    using Operator<context>::Anchor; \
     using Operator<context>::AllowRun
 
 DECLARE_REGISTRY(CPUOperatorRegistry, OperatorBase,const OperatorDef&, Workspace*);
@@ -238,8 +240,11 @@ DECLARE_REGISTRY(CUDNNOperatorRegistry, OperatorBase, const OperatorDef&, Worksp
         return argument##_tensor->template data<type, CPUContext>()[0]; \
     }
 
-#define DISABLE_SHARE_GRADIENT   \
-    this->allow_share_grads_ = false
+#define GET_ARGUMENTS_SIZE(argument) \
+    std::max(argument##_value.size(), argument##_desc.size())
+
+#define XIsType(x, dtype) \
+    x.template IsType<dtype>()
 
 #define INSTANTIATE_OPERATOR(name, context) \
   template class name##Op<context>;
@@ -272,6 +277,7 @@ DECLARE_REGISTRY(CUDNNOperatorRegistry, OperatorBase, const OperatorDef&, Worksp
 #define DEPLOY_CUDNN(name) \
     REGISTER_CUDNN_OPERATOR(name, CuDNN##name##Op<CUDAContext>); \
     INSTANTIATE_CUDNN_OPERATOR(name);
+
 }    // namespace dragon
 
 #endif    // DRAGON_CORE_OPERATOR_H_

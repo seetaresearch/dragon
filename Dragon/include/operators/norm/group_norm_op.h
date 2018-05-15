@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -23,10 +23,7 @@ class GroupNormOp : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           group(OperatorBase::GetSingleArg<int>("group", 32)),
           axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          momentum(OperatorBase::GetSingleArg<float>("momentum", float(0.9))),
-          eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
-          use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)),
-          mode(OperatorBase::GetSingleArg<string>("mode", "DEFAULT")) {
+          eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))) {
         if (axis != -1) 
             CHECK_EQ(axis, 1) 
                 << "\nThe axis can only be set to 1.";
@@ -36,18 +33,15 @@ class GroupNormOp : public Operator<Context> {
     void Setup();
 
     void RunOnDevice() override;
-    template <typename T> void TrainingRunWithType();
-    template <typename T> void InferenceRunWithType();
+    template <typename T> void RunWithType();
 
  protected:
-    float momentum, eps;
+    float eps;
     Tensor mean, num_by_chans;
     Tensor* multiplier, *num_multiplier, *spatial_multiplier, *cgs_multiplier;
     Tensor* stddev, *var;
     TIndex group, axis, N, C, S, NG, NC, NS, CGS;
-    string data_format, mode;
-    int use_stats;
-    bool use_global_stats, is_recomputing;
+    string data_format;
 };
 
 template <class Context>
@@ -56,8 +50,7 @@ class GroupNormGradientOp final : public Operator<Context> {
     GroupNormGradientOp(const OperatorDef& op_def, Workspace *ws)
         : Operator<Context>(op_def, ws),
           group(OperatorBase::GetSingleArg<int>("group", 32)),
-          axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {
+          axis(OperatorBase::GetSingleArg<int>("axis", -1)) {
         if (axis != -1)
             CHECK_EQ(axis, 1)
                 << "\nThe axis can only be set to 1.";
@@ -67,8 +60,7 @@ class GroupNormGradientOp final : public Operator<Context> {
     void Setup();
 
     void RunOnDevice() override;
-    template <typename T> void TrainingRunWithType();
-    template <typename T> void InferenceRunWithType();
+    template <typename T> void RunWithType();
 
  protected:
     Tensor num_by_chans;
@@ -76,8 +68,6 @@ class GroupNormGradientOp final : public Operator<Context> {
     Tensor* stddev, *var;
     TIndex group, axis, N, C, S, NG, NC, NS, CGS;
     string data_format;
-    int use_stats;
-    bool use_global_stats;
 };
 
 template <class Context>
@@ -87,26 +77,21 @@ class FusedGroupNormOp : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           group(OperatorBase::GetSingleArg<int>("group", 32)),
           axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          momentum(OperatorBase::GetSingleArg<float>("momentum", float(0.9))),
-          eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
-          use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {}
+          eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))) {}
     USE_OPERATOR_FUNCTIONS(Context);
 
     void Setup();
 
     void RunOnDevice() override;
-    template <typename T> void TrainingRunWithType();
-    template <typename T> void InferenceRunWithType();
+    template <typename T> void RunWithType();
 
  protected:
-    float momentum, eps;
+    float eps;
     Tensor num_by_chans;
     Tensor* multiplier, *num_multiplier, *spatial_multiplier, *cgs_multiplier;
     Tensor* mean, *var, *stddev, *x_norm;
     TIndex group, axis, N, C, S, NG, NC, NS, CGS;
     string data_format;
-    int use_stats;
-    bool use_global_stats, is_recomputing;
 };
 
 template <class Context>
@@ -116,17 +101,13 @@ class FusedGroupNormGradientOp : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           group(OperatorBase::GetSingleArg<int>("group", 32)),
           axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
-          use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {}
+          eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))) {}
     USE_OPERATOR_FUNCTIONS(Context);
 
     void Setup();
 
-    void ShareGradient() override;
-
     void RunOnDevice() override;
-    template <typename T> void TrainingRunWithType();
-    template <typename T> void InferenceRunWithType();
+    template <typename T> void RunWithType();
 
  protected:
     float eps;
@@ -135,8 +116,6 @@ class FusedGroupNormGradientOp : public Operator<Context> {
     Tensor* mean, *var, *stddev, *x_norm;
     TIndex group, axis, N, C, S, NG, NC, NS, CGS;
     string data_format;
-    int use_stats;
-    bool use_global_stats;
 };
 
 }    // namespace dragon 

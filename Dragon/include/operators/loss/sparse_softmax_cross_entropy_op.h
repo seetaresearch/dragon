@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -29,18 +29,12 @@ class SparseSoftmaxCrossEntropyOp : public Operator<Context> {
             int* ignore_data = ignore.mutable_data<int, CPUContext>();
             for (int i = 0; i < args.size(); i++) ignore_data[i] = args[i];
         }
-        OperatorDef softmax_def = MakeOperatorDef("Softmax", "",
-            vector<string>({ Input(0).name() }),
-            vector<string>({ "/mnt/" + Anchor() + "/softmax/prob" }));
-        softmax_def.add_arg()->CopyFrom(this->arg("axis"));
-        if (op_def.has_device_option())
-            softmax_def.mutable_device_option()->CopyFrom(op_def.device_option());
-        softmax_op.reset(CreateOperator(softmax_def, ws));
     }
     USE_OPERATOR_FUNCTIONS(Context);
 
+    void SoftmaxRun();
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename Tx, typename Ty> void RunWithType();
 
  protected:
     TIndex axis, outer_dim, inner_dim;
@@ -67,7 +61,7 @@ class SparseSoftmaxCrossEntropyGradientOp : public Operator<Context> {
     USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename Tx, typename Ty> void RunWithType();
 
  protected:
     TIndex axis, outer_dim, inner_dim;

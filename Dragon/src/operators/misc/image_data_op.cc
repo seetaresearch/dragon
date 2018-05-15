@@ -30,20 +30,15 @@ void ImageDataOp<Context>::RunOnDevice() {
         Output(0)->ReshapeLike(Input(0));
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 
-    if (Input(0).template IsType<float>()) {
+    if (XIsType(Input(0), float)) {
         if (dtype == "FLOAT32") RunWithType<float, float>();
-#ifdef WITH_CUDA_FP16
         else if (dtype == "FLOAT16") RunWithType<float, float16>();
-#endif
         else LOG(FATAL) << "Unsupported output type: " << dtype;
-    } else if (Input(0).template IsType<uint8_t>()) {
+    } else if (XIsType(Input(0), uint8_t)) {
         if (dtype == "FLOAT32") RunWithType<uint8_t, float>();
-#ifdef WITH_CUDA_FP16
         else if (dtype == "FLOAT16") RunWithType<uint8_t, float16>();
-#endif
         else LOG(FATAL) << "Unsupported output type: " << dtype;
-    } 
-    else { LOG(FATAL) << "Unsupported input types."; }
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "uint8" });
 }
 
 DEPLOY_CPU(ImageData);

@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -12,16 +12,14 @@
 #ifndef DRAGON_CORE_CONTEXT_CUDA_H_
 #define DRAGON_CORE_CONTEXT_CUDA_H_
 
-#include "common.h"
-#include "context.h"
+#include "core/common.h"
+#include "core/context.h"
 #include "utils/cuda_device.h"
 #include "utils/cudnn_device.h"
 
 namespace dragon {
 
 #ifdef WITH_CUDA
-
-#define MAX_GPUS 8
 
 /**************************************************************************
  *  cuXXX libraries wrapper "Context" as "Handle".
@@ -66,7 +64,7 @@ class CUDAObject {
 class CUDAContext {
  public:
     CUDAContext(const DeviceOption& option)
-        : gpu_id_(option.gpu_id()),
+        : gpu_id_(option.device_id()),
           random_seed_(option.has_random_seed() ? option.random_seed() : 3) {
         CPUContext context(option);
         CHECK_EQ(option.device_type(), CUDA);
@@ -92,11 +90,10 @@ class CUDAContext {
         cuda_object_.cur_gpu = gpu_id_;
     }
 
-    void FinishDeviceCompution() {
+    inline static void FinishDeviceCompution() {
         cudaStreamSynchronize(cudaStreamDefault);
         cudaError_t error = cudaGetLastError();
-        CHECK_EQ(error, cudaSuccess)
-            << "CUDA Error: " << cudaGetErrorString(error);
+        CHECK_EQ(error, cudaSuccess) << "CUDA Error: " << cudaGetErrorString(error);
     }
 
     inline static void* New(size_t nbytes) {

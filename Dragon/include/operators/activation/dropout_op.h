@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -43,7 +43,6 @@ class DropoutGradientOp final : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           use_scale(OperatorBase::GetSingleArg<bool>("scale", true)) {
         GET_ARGUMENT_WITH_DESC(float, prob, 0.5);
-        DISABLE_SHARE_GRADIENT;
     }
     USE_OPERATOR_FUNCTIONS(Context);
 

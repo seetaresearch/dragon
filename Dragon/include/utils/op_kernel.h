@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -219,10 +219,10 @@ void SigmoidCrossEntropyGrad(const int count,
 /******************** loss.smooth_l1_loss ********************/
 
 template <typename T, class Context>
-void SmoothL1(const int count, const float sigma2, const T* x,  T* y);
+void SmoothL1(const int count, const float beta, const T* x,  T* y);
 
 template <typename T, class Context>
-void SmoothL1Grad(const int count, const float sigma2, const T* dy, T* dx);
+void SmoothL1Grad(const int count, const float beta, const T* dy, T* dx);
 
 /******************** loss.softmax_cross_entropy ********************/
 
@@ -231,27 +231,27 @@ void SoftmaxCrossEntropy(const int count, const T* prob, const T* target, T* los
 
 /******************** loss.sparse_softmax_cross_entropy ********************/
 
-template <typename T, class Context>
+template <typename Tx, typename Ty, class Context>
 void SparseSoftmaxCrossEntropy(const int count, 
                                const int classes, 
                                const int outer_dim, 
                                const int inner_dim, 
-                               const T* prob, 
-                               const T* labels, 
-                               T* loss, 
-                               T* valid,
+                               const Tx* prob, 
+                               const Ty* labels, 
+                               Tx* loss, 
+                               Tx* valid,
                                Tensor* ignore);
 
-template <typename T, class Context>
+template <typename Tx, typename Ty, class Context>
 void SparseSoftmaxCrossEntropyGrad(const int count,
                                    const int classes, 
                                    const int outer_dim, 
                                    const int inner_dim, 
-                                   const T* prob, 
-                                   const T* labels,
-                                   T* valid, 
+                                   const Tx* prob, 
+                                   const Ty* labels,
+                                   Tx* valid, 
                                    Tensor* ignore, 
-                                   T* dx);
+                                   Tx* dx);
 
 /******************** loss.sparse_softmax_focal_loss ********************/
 
@@ -603,36 +603,38 @@ void LSTMUnitGrad(const int count,
 /******************** update.adam_update ********************/
 
 template <typename T, class Context>
-void AdamUpdate(Tensor* x, 
-                Tensor* m, 
-                Tensor* v, 
-                Tensor* t,
-                const float beta1, 
-                const float beta2, 
-                const float eps, 
-                const float lr);
+void AdamUpdate(const int count,
+                const float lr,
+                const float beta1,
+                const float beta2,
+                const float eps,
+                T* g, T* m, T* v);
 
 /******************** update.nesterov_update ********************/
 
 template <typename T, class Context>
 void NesterovUpdate(const int count,
-                    T* x,
-                    T* h,
-                    Tensor* t,
-                    const float momentum,
                     const float lr,
-                    Context* ctx);
+                    const float momentum,
+                    T* g,
+                    T* h);
 
 /******************** update.rmsprop_update ********************/
 
 template <typename T, class Context>
 void RMSPropUpdate(const int count,
-                   T* x,
-                   T* h,
-                   Tensor* t,
+                   const float lr,
                    const float decay,
                    const float eps,
-                   const float lr);
+                   T* g, T* h);
+
+/******************** update.sgd_update ********************/
+
+template <typename T, class Context>
+void SGDUpdate(const int count,
+               const float lr,
+               const float momentum,
+               T* g, T* h);
 
 /******************** vision.bilinear_resize ********************/
 

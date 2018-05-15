@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -11,6 +11,8 @@
 
 import inspect
 import copy
+import sys
+from collections import OrderedDict
 from dragon.core.tensor import Tensor
 import dragon.protos.dragon_pb2 as pb
 
@@ -79,7 +81,11 @@ def scan(fn, sequences, outputs_info, n_steps=None, axis=0):
     graph_def = pb.GraphDef(); all_exprs = {}
     for output in outputs:
         graph_def.target.extend([output._name])
-        all_exprs = dict(all_exprs, **output.expressions)
+        if sys.version_info >= (3, 0):
+            all_exprs = OrderedDict(all_exprs, **output.expressions)
+        else:
+            all_exprs = dict(all_exprs, **output.expressions)
+
     all_exprs = sorted(all_exprs.items(), key=lambda d:d[0])
     forward_ops = copy.deepcopy([v for k,v in all_exprs])
     graph_def.op.extend(forward_ops)

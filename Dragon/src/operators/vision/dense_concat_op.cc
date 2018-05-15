@@ -57,11 +57,9 @@ void DenseConcatGradientOp<Context>::ElimateCorruption() {
         Tensor* buffer = ws()->GetTensor("/opt/mirror_stage/buffer_" + dragon_cast<string, int>(idx));
         Input(0).Move(buffer->memory());
         head_data[idx] = Input(0).name();
-        if (Input(-2).template IsType<float>()) RestoreX1<float>();
-#ifdef WITH_CUDA_FP16
-        else if (Input(-2).template IsType<float16>()) RestoreX1<float16>();
-#endif
-        else LOG(FATAL) << "Unsupported input types.";
+        if (XIsType(Input(-2), float)) RestoreX1<float>();
+        else if (XIsType(Input(-2), float16)) RestoreX1<float16>();
+        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
         //  post-process
         if (Input(0).memory() != buffer->memory()) buffer->Move(Input(0).memory());
     }

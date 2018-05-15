@@ -124,6 +124,7 @@ void CollectiveUpdateOp<Context>::MPIAllReduceWithFloat() {
 template <class Context>
 void CollectiveUpdateOp<Context>::NCCLAllReduceWithFloat() {
 #ifdef WITH_MPI_NCCL
+    ctx().FinishDeviceCompution();
     for (int i = 0; i < InputSize(); i++) {
         TIndex count = Input(i).count();
         auto* dXdata = Input(i).template mutable_data<float, Context>();
@@ -160,6 +161,7 @@ void CollectiveUpdateOp<Context>::MPIBcastWithFloat() {
 template <class Context>
 void CollectiveUpdateOp<Context>::NCCLBcastWithFloat() {
 #ifdef WITH_MPI_NCCL
+    ctx().FinishDeviceCompution();
     for (int i = 0; i < InputSize(); i++) {
         TIndex count = Input(i).count();
         auto* dXdata = Input(i).template mutable_data<float, Context>();
@@ -175,7 +177,7 @@ void CollectiveUpdateOp<Context>::NCCLBcastWithFloat() {
 
 template <class Context>
 void CollectiveUpdateOp<Context>::RunOnDevice() {
-    if (Input(0).template IsType<float>()) {
+    if(XIsType(Input(0), float)) {
         if (mode == "MPI_ALLREDUCE") {
             MPIAllReduceWithFloat();
         } else if (mode == "NCCL_ALLREDUCE") {
@@ -184,13 +186,9 @@ void CollectiveUpdateOp<Context>::RunOnDevice() {
             MPIBcastWithFloat();
         } else if (mode == "NCCL_BCAST") {
             NCCLBcastWithFloat();
-        } else {
-            LOG(FATAL) << "Unsupported collective types.";
-        }
-    }
-    else { LOG(FATAL) << "Unsupported input types."; }
-} 
-
+        } else LOG(FATAL) << "Unsupported collective mode: " << mode;
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+}
 
 DEPLOY_CPU(CollectiveUpdate);
 #ifdef WITH_CUDA

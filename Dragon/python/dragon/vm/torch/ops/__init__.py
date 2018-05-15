@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -9,6 +9,15 @@
 #
 # ------------------------------------------------------------
 
-def GetProperty(kwargs, name, default):
-    return kwargs[name] \
-        if name in kwargs else default
+from .creation import (
+    zeros, zeros_like, ones, ones_like,
+    rand, randn
+)
+
+from .arithmetic import (
+    add, sub, mul, div,
+)
+
+from .ndarray import (
+    sum, mean, argmin, argmax,
+)

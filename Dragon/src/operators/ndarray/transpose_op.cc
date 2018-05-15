@@ -27,9 +27,9 @@ void TransposeOp<Context>::RunOnDevice() {
         << "\nbut Tensor(" << Input(0).name() << ")'s dims are "
         << Input(0).dim_string();
     vector<TIndex> output_dims;
-    order = ws()->CreateTensor("/mnt/" + Anchor() + "/transpose/order");
-    old_steps = ws()->CreateTensor("/mnt/" + Anchor() + "/transpose/old_steps");
-    new_steps = ws()->CreateTensor("/mnt/" + Anchor() + "/transpose/new_steps");
+    order = ws()->CreateTensor("/mnt/" + anchor() + "/transpose/order");
+    old_steps = ws()->CreateTensor("/mnt/" + anchor() + "/transpose/old_steps");
+    new_steps = ws()->CreateTensor("/mnt/" + anchor() + "/transpose/new_steps");
     order->Reshape(vector<TIndex>(1, perms.size()));
     old_steps->Reshape(vector<TIndex>(1, perms.size()));
     new_steps->Reshape(vector<TIndex>(1, perms.size()));
@@ -48,11 +48,9 @@ void TransposeOp<Context>::RunOnDevice() {
         else NSdata[i] = Output(0)->count(i + 1);
     }
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-#ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
-#endif
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(Transpose);
@@ -76,15 +74,13 @@ void TransposeGradientOp<Context>::RunWithType() {
 template <class Context>
 void TransposeGradientOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
-    order = ws()->GetTensor("/mnt/" + Anchor() + "/transpose/order");
-    old_steps = ws()->GetTensor("/mnt/" + Anchor() + "/transpose/old_steps");
-    new_steps = ws()->GetTensor("/mnt/" + Anchor() + "/transpose/new_steps");
+    order = ws()->GetTensor("/mnt/" + anchor() + "/transpose/order");
+    old_steps = ws()->GetTensor("/mnt/" + anchor() + "/transpose/old_steps");
+    new_steps = ws()->GetTensor("/mnt/" + anchor() + "/transpose/new_steps");
 
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-#ifdef WITH_CUDA_FP16
-    else if (Input(0).template IsType<float16>()) RunWithType<float16>();
-#endif
-    else LOG(FATAL) << "Unsupported input types.";
+    if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
     
 DEPLOY_CPU(TransposeGradient);

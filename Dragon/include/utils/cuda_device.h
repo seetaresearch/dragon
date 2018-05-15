@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -28,7 +28,8 @@
 namespace dragon {
 
 static const int CUDA_NUM_THREADS = 1024;
-#define MAX_GPUS 8
+//  We do have a server with 10 GPUs :-)
+#define MAX_GPUS 10
 
 #define CUDA_VERSION_MIN(major, minor, patch) \
     (CUDA_VERSION >= (major * 1000 + minor * 100 + patch))
@@ -109,7 +110,8 @@ class DeviceGuard {
     int previous_;
 };
 
-}    // namespace dragon
+#define CUDA_FP16_NOT_COMPILED \
+    LOG(FATAL) << "CUDA-FP16 was not compiled."
 
 #else
 
@@ -117,5 +119,7 @@ class DeviceGuard {
     LOG(FATAL) << "CUDA was not compiled."
 
 #endif // WITH_CUDA
+
+}    // namespace dragon
 
 #endif    // DRAGON_UTILS_CUDA_DEVICE_H_

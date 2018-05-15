@@ -1,5 +1,5 @@
 # ------------------------------------------------------------
-# Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+# Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 #
 # Licensed under the BSD 2-Clause License.
 # You should have received a copy of the BSD 2-Clause License
@@ -239,7 +239,7 @@ def InnerProduct(inputs, num_output, axis=1, TransW=True, **kwargs):
     num_output : int
         The output dim.
     axis : int
-        The start axis to calculate.
+        The start axis to calculate, can be negative.
     TransW : boolean
         Whether to transpose the weights.
 

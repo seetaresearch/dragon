@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Copyright (c) 2017-preseent, SeetaTech, Co.,Ltd.
+// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
 //
 // Licensed under the BSD 2-Clause License.
 // You should have received a copy of the BSD 2-Clause License
@@ -15,7 +15,6 @@
 #include <vector>
 
 #include "core/common.h"
-#include "core/typeid.h"
 #include "core/mixedmem.h"
 
 namespace dragon {
@@ -68,6 +67,7 @@ class Tensor {
     inline const vector<TIndex>& dims() const { return dims_; }
 
     inline TSize nbytes() const { return size_ * meta_.itemsize(); }
+    inline TSize capacity() const { return capacity_; }
 
     inline TIndex count(const TIndex start, const TIndex end) const {
         TIndex ret = 1;
@@ -97,17 +97,21 @@ class Tensor {
     }
 
     inline string dim_string() const {
+        if (ndim() == 0) return "(0,)";
         std::stringstream ss;
         ss << "(";
         for (int i = 0; i < ndim() - 1; i++) ss << dim(i) << ",";
-        ss << dim(ndim() - 1) << ")";
+        if (ndim() == 1) ss << dim(0) << ",)";
+        else ss << dim(ndim() - 1) << ")";
         return ss.str();
     }
 
     inline bool is_corrupted() const { return is_corrupted_; }
     inline void Corrupt() { is_corrupted_ = true; }
 
+    inline bool has_memory() const { return memory_ || ex_memory_ != nullptr; }
     MixedMemory* memory() const { return own_mem_ ? memory_.get() : ex_memory_; }
+    void set_memory(MixedMemory* mem) { memory_.reset(mem); capacity_ = mem->nbytes(); }
     MixedMemory::State memory_state() const {
         MixedMemory* mem = memory();
         CHECK(mem) << "\nMemory access before allowcating.";
@@ -142,13 +146,13 @@ class Tensor {
     template <class Context>
     const void* const_data_ptr() const {
         MixedMemory* mem = memory();
-        CHECK(mem) << "memory access before allowcating.";
+        CHECK(mem) << "\nMemory access before allowcating.";
         if (TypeMeta::Id<Context>() == TypeMeta::Id<CPUContext>()) {
              return mem->cpu_data();
         } else if (TypeMeta::Id<Context>() == TypeMeta::Id<CUDAContext>()) {
              return mem->cuda_data();
         } else {
-             LOG(FATAL) << "unknown memory type access. only CPU or CUDA are supported.";
+             LOG(FATAL) << "Unknown memory type. Only CPU or CUDA are supported.";
              return nullptr;
         }
     }
@@ -192,14 +196,25 @@ class Tensor {
 
     template <typename T, class Context>
     const T* data() const {
+        CHECK(meta_ == TypeMeta::Make<T>())
+            << "\nThe DType of Tensor(" << name() << ") is "
+            << TypeMetaToString(meta_) << ", while required "
+            << TypeMetaToString(TypeMeta::Make<T>());
         return static_cast<const T*>(raw_data<Context>());
     }
 
-    inline void Share(const Tensor& other) {
+    template <class DstCTX, class SrcCTX>
+    inline void Copy(const Tensor& other) {
         CHECK_EQ(size_, other.size_);
-        memory_ = other.memory_;
         meta_ = other.meta_;
-        capacity_ = other.capacity_;
+        auto* src = other.template raw_data<SrcCTX>();
+        auto* dst = raw_mutable_data<DstCTX>();
+        if (dst == src) return;
+        if (TypeMeta::Id<DstCTX>() == TypeMeta::Id<CPUContext>()) {
+            CPUContext::Memcpy<DstCTX, SrcCTX>(nbytes(), dst, src);
+        } else if (TypeMeta::Id<DstCTX>() == TypeMeta::Id<CUDAContext>()) {
+            CUDAContext::Memcpy<DstCTX, SrcCTX>(nbytes(), dst, src);
+        }
     }
 
     inline void Move(MixedMemory* mem) {
@@ -213,14 +228,18 @@ class Tensor {
         meta_ = TypeMeta();
         dims_.clear();
         memory_.reset();
+        if (DECREFPyArray) DECREFPyArray();
     }
+
+    std::function<void()> DECREFPyArray;
+    ~Tensor() { /* DO NOT CALL DECREFARRAY */ }
 
  private:
     vector<TIndex> dims_;
     TIndex size_ = 0, capacity_ = 0;
     TypeMeta meta_;
     string name_;
-    shared_ptr<MixedMemory> memory_, host_memory_;
+    shared_ptr<MixedMemory> memory_;
     MixedMemory* ex_memory_ = nullptr;
     bool is_corrupted_ = false, own_mem_ = true;
 };
