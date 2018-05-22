@@ -13,6 +13,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import sys
 import numpy as np
 import numpy.random as npr
 from multiprocessing import Process
@@ -28,7 +29,7 @@ try:
     import PIL.Image
     import PIL.ImageEnhance
 except ImportError as e:
-    print('Failed to import PIL. Error: {0}'.format(str(e)))
+    print("Failed to import PIL. \nIt's OK if disabling color augmentation.".format(str(e)))
 
 
 class DataTransformer(Process):
@@ -103,12 +104,20 @@ class DataTransformer(Process):
         random_scale = npr.uniform() * (self._max_random_scale - self._min_random_scale) \
                             + self._min_random_scale
         if random_scale != 1.0:
-            im = cv2.resize(im, None, interpolation=cv2.INTER_LINEAR,
-                    fx=random_scale, fy=random_scale)
+            if sys.version_info >= (3, 0):
+                im = cv2.resize(im, None, interpolation=cv2.INTER_LINEAR,
+                        fx=random_scale, fy=random_scale)
+            else:
+                # Fuck Fuck Fuck opencv-python2, it always has a BUG
+                # that leads to duplicate cuDA handles created at gpu:0
+                new_shape = (int(im.shape[1] * random_scale), int(im.shape[0] * random_scale))
+                im = PIL.Image.fromarray(im)
+                im = im.resize(new_shape, PIL.Image.BILINEAR)
+                im = np.array(im)
 
         # random crop
         if self._crop_size > 0:
-            if self._phase== 'TRAIN':
+            if self._phase == 'TRAIN':
                 h_off = npr.randint(im.shape[0] - self._crop_size + 1)
                 w_off = npr.randint(im.shape[1] - self._crop_size + 1)
             else:
@@ -152,7 +161,12 @@ class DataTransformer(Process):
                     self._padding : self._padding + im.shape[1], :] = im
             im = pad_img
 
-        return im, [datum.label]
+        # labels
+        labels = []
+        if len(datum.labels) > 0: labels.extend(datum.labels)
+        else: labels.append(datum.label)
+
+        return im, labels
 
     def run(self):
         """Start the process.

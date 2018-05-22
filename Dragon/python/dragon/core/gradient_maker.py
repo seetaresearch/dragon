@@ -181,7 +181,7 @@ class GraphGradientMaker(object):
 
             # Append ops
             if not is_skip:
-                # + Gen Op
+                # --> GenOp
                 if len(gen_grads) > 0:
                     op_inputs = []; op_outputs = []; values = []
                     for item in gen_grads:
@@ -193,7 +193,7 @@ class GraphGradientMaker(object):
                     if forward_op.HasField('device_option'):
                         gen_op.device_option.CopyFrom(forward_op.device_option)
                     backward_ops.append(gen_op)
-                # + Grad Op
+                # --> GradOp
                 for g_op in g_ops:
                     g_op.name = _op_name(None if auto_names else 'runtime')
                     backward_ops.append(g_op)
@@ -204,8 +204,10 @@ class GraphGradientMaker(object):
                     original_idx = -1
                     for g_input_idx, g_input in enumerate(g_inputs):
                         if g_output == g_input: original_idx = g_input_idx
-                    # Ignore un-used GI(?)
+                    # Ignore un-used && in-placed GI(?)
                     if original_idx == -1: continue
+                    if g_output in g_op.input: continue
+                    # Found a split branch
                     original_name = forward_op.input[original_idx]
                     if inputs_count[original_name] > 1:
                         # Split

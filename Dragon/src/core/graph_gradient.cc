@@ -102,8 +102,13 @@ void GraphGradientMaker::Make(const GraphDef& forward_def,
                 int original_idx = -1;
                 for (int j = 0; j < grad.g_inputs.size(); j++)
                     if (g_op.output(i) == grad.g_inputs[j]) original_idx = j;
-                //  ignore unused GI(?)
+                //  ignore un-used && in-placed GI(?)
                 if (original_idx == -1) continue;
+                bool output_in_inputs = false;
+                for (auto& input : g_op.input())
+                    if (g_op.output(i) == input) output_in_inputs = true;
+                if (output_in_inputs) continue;
+                //  found a split branch
                 string original_name = op.input(original_idx);
                 if (inputs_count[original_name] > 1) {
                     //  split

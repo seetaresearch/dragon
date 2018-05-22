@@ -9,6 +9,37 @@ Our goal is to reduce the unnecessary structures or interfaces. Therefore, in ad
 
 Besides, we demonstrate that a cross-frameworks frontend(**Deep Learning VirtualBox**) is feasible, and further more, will get benefit from all participating crucial interfaces especially when one is not reasonable.
 
+## WHY NOT Original DL Frameworks?
+
+I was always confused in my childhood of studying DeepLearning:
+ 
+```python
+import theano
+import caffe
+import tensorflow
+import torch
+```
+Too stupied, ISN'T?
+
+One day, I saw a JOKE:
+
+```python
+# FXCK TF
+# KEEP CALM AND USE PYTORCH
+import tensorflow as torch
+```
+
+So, I made it:
+
+```python
+import dragon.vm.theano as theano
+import dragon.vm.caffe as caffe
+import dragon.vm.tensorflow as tensorflow
+import dragon.vm.torch as torch
+```
+
+WOW, I could use ALL above DL Frameworks all together!
+
 ## News
 
 Dragon 0.2.2 Released -  Cleaner, Faster, Stronger and now we have DYNAMIC GRAPH >>> (VM.PyTorch :-) <<<

@@ -38,6 +38,7 @@ message Datum {
   repeated float float_data = 6;
   // If true data contains an encoded image that need to be decoded
   optional bool encoded = 7 [default = false];
+  repeated int32 labels = 8;
 }
 
 message FillerParameter {
@@ -1459,8 +1460,8 @@ message NormalizeParameter {
 }
 
 message ParallelParameter {
-    optional bool shuffle = 1 [default = false];
-    optional bool node_step = 2 [default = false];
+    optional bool multiple_nodes = 1 [default = false];
+    optional bool shuffle = 2 [default = false];
     optional bool partition = 3 [default = false];
 }
 

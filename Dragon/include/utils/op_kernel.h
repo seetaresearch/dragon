@@ -286,6 +286,11 @@ void SparseSoftmaxFocalLossGrad(const int count,
                                 Tensor* ignore, 
                                 T* dx);
 
+/******************** misc.dtype ********************/
+
+template <typename Ta, typename Tb, class Context>
+void TypeA2B(const int count, const Ta* a, Tb* b);
+
 /******************** misc.image_data ********************/
 
 template <typename Tx, typename Ty, class Context>
@@ -308,25 +313,25 @@ void Arange(const int count,
             const int step,
             T* y);
 
-/******************** ndarray.argmax ********************/
+/******************** ndarray.argreduce ********************/
 
 template <typename T, class Context>
-void Argmax(const int count, 
+void Argmax(const int count,
             const int axis_dim,
-            const int inner_dim, 
-            const int top_k, 
-            const T* x, 
-            T* y);
-
-/******************** ndarray.argmin ********************/
+            const int inner_dim,
+            const int top_k,
+            const T* x,
+            int64_t* indices,
+            T* values);
 
 template <typename T, class Context>
-void Argmin(const int count, 
+void Argmin(const int count,
             const int axis_dim,
-            const int inner_dim, 
-            const int top_k, 
-            const T* x, 
-            T* y);
+            const int inner_dim,
+            const int top_k,
+            const T* x,
+            int64_t* indices,
+            T* values);
 
 /******************** ndarray.gather ********************/
 

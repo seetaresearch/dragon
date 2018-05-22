@@ -24,7 +24,7 @@ import numpy as np
 import dragon as dg
 
 from dragon.vm.torch.tensor import Tensor
-from dragon.vm.torch.ops.update import _allreduce_op, _update
+from dragon.vm.torch.ops.update import _allreduce, _update
 
 
 _OPTIMIZER_GROUP_UID = 0
@@ -95,14 +95,15 @@ class Optimizer(object):
         for p in group['params']:
             g_name = p.name + '_grad'
             if not dg.workspace.HasTensor(g_name): continue
-            g = Tensor(dg_tensor=g_name); g._own_storage = False
+            g = Tensor(dg_tensor=g_name)
+            g._own_storage = False; g._ctx = p._ctx
             params.append(p); grads.append(g)
 
         # Feed optimizer parameters to workspace
         self.feed_parameters(group)
 
         # Run a all-reduce op to accumulate grads if necessary
-        _allreduce_op(params, grads)
+        _allreduce(grads)
 
         # Run regular update ops
         for p, g in zip(params, grads):

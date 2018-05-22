@@ -14,8 +14,9 @@ from dragon.vm.torch.ops.factory import get_module
 from dragon.vm.torch.ops.modules.control_flow import Copy
 
 
-def _copy(input, out=None):
-    ctx = MakeContext(inputs=[input])
-    key = 'torch/ops/copy/{}:{}'.format(ctx[0].lower(), ctx[1], )
+def _copy(dst, src):
+    if id(dst) == id(src): return dst
+    ctx = MakeContext(inputs=[dst])
+    key = 'torch/ops/copy/{}:{}'.format(ctx[0].lower(), ctx[1])
     module = get_module(Copy, key, ctx)
-    return module.forward(input, out)
+    return module.forward(dst, src)

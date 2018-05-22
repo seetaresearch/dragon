@@ -9,21 +9,29 @@
 //
 // ------------------------------------------------------------
 
-#ifndef DRAGON_OPERATORS_CAST_FLOAT2HALF_OP_H_
-#define DRAGON_OPERATORS_CAST_FLOAT2HALF_OP_H_
+#ifndef DRAGON_OPERATORS_MISC_ASTYPE_OP_H_
+#define DRAGON_OPERATORS_MISC_ASTYPE_OP_H_
 
 #include "core/operator.h"
 
 namespace dragon {
 
 template <class Context>
-class FloatToHalfOp final : public Operator<Context> {
+class AsTypeOp final : public Operator<Context> {
  public:
-     USE_SIMPLE_CTOR_DTOR(FloatToHalfOp);
+    AsTypeOp(const OperatorDef& op_def, Workspace* ws)
+        : Operator<Context>(op_def, ws),
+        dtype(OperatorBase::GetSingleArg<string>("dtype", "float32")),
+        inplace(OperatorBase::GetSingleArg<bool>("inplace", false)) {}
      USE_OPERATOR_FUNCTIONS(Context);
+
      void RunOnDevice() override;
+
+ protected:
+     string dtype;
+     bool inplace;
 };
 
 }    // namespace dragon
 
-#endif    // DRAGON_OPERATORS_CAST_FLOAT2HALF_OP_H_
+#endif    // DRAGON_OPERATORS_MISC_ASTYPE_OP_H_

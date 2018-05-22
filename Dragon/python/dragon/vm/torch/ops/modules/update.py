@@ -13,6 +13,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import dragon.core.mpi as mpi
 from dragon.vm.torch.ops.modules.base import BaseModule
 
 
@@ -42,4 +43,40 @@ class Update(BaseModule):
         }
 
     def forward(self, param, grad):
+        self.unify_devices([param, grad])
         return self.run([grad], [param], auto_grad=False)
+
+
+class Collective(BaseModule):
+    def __init__(self, key, ctx, **kwargs):
+        super(Collective, self).__init__(key, ctx, **kwargs)
+        self.mode = kwargs.get('mode', None)
+        if self.mode is None:
+            raise ValueError('Got invalid collective mode: {}'.format(self.mode))
+        self.register_arguments()
+        self.register_op()
+
+    def register_arguments(self):
+        """No arguments for update ops."""
+        pass
+
+    def register_op(self):
+        idx, group = mpi.AllowParallel()
+        if idx == -1:
+            raise RuntimeError('The mpi node({}) dost not in '
+                'parallel groups. \nSet it using mpi.Parallel([..]).'.format(mpi.Rank()))
+        mpi_comm, mpi_group = mpi.CreateGroup(root=group[0], incl=group)
+        self.op_meta = {
+            'op_type': 'CollectiveUpdate',
+            'n_inputs': 1, 'n_outputs': 1, # Ignore
+            'arguments': {
+                'mode': self.mode,
+                'comm': mpi_comm,
+                'group': mpi_group,
+                'root': group[0], # Assume the 1st node of group as root
+            }
+        }
+
+    def forward(self, grads):
+        self.unify_devices(grads)
+        return self.run(grads, grads, auto_grad=False)

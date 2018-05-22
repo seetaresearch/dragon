@@ -33,7 +33,6 @@ class DropoutOp final : public Operator<Context> {
  protected:
     DECLARE_ARGUMENT_WITH_DESC(float, prob);
     bool use_scale;
-    Tensor* mask;
 };
 
 template <class Context>

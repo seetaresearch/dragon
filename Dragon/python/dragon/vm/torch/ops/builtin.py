@@ -16,10 +16,14 @@ from __future__ import print_function
 
 from dragon.vm.torch.tensor import Tensor
 from dragon.vm.torch.execute_engine import RunOperator
+from dragon.vm.torch.ops.factory import get_module
+from dragon.vm.torch.autograd.grad_mode import no_grad
 from dragon.vm.torch.ops.primitive import MakeContext
-from dragon.vm.torch.ops.arithmetic import _fundamental
+from dragon.vm.torch.ops.arithmetic import _fundamental, _rfundamental
 from dragon.vm.torch.ops.control_flow import _copy
-from dragon.vm.torch.ops.ndarray import reshape, _fill, _reduce, _crop
+from dragon.vm.torch.ops.ndarray import \
+    (reshape, _fill, _reduce, _arg_reduce,  _crop)
+from dragon.vm.torch.ops.modules.dtype import AsType
 
 
 ##############################################
@@ -43,7 +47,7 @@ def copy_(self, src):
         The ``self`` tensor.
 
     """
-    return _copy(src, out=self)
+    return _copy(self, src)
 
 
 Tensor.copy_ = copy_
@@ -69,7 +73,7 @@ def fill_(self, value):
         The self.
 
     """
-    return _fill(self, self.shape, value, self)
+    return _fill(self, self.shape, value)
 
 
 def uniform_(self, low=0, high=1):
@@ -164,6 +168,10 @@ def add_(self, value):
     return _fundamental(self, value, out=self, op='Add')
 
 
+def radd(self, value):
+    return _rfundamental(self, value, op='RAdd')
+
+
 def sub(self, value):
     """Subtract the ``self`` and ``value`` into the output tensor.
 
@@ -196,6 +204,10 @@ def sub_(self, value):
 
     """
     return _fundamental(self, value, out=self, op='Sub')
+
+
+def rsub(self, value):
+    return _rfundamental(self, value, op='RSub')
 
 
 def mul(self, value):
@@ -232,6 +244,10 @@ def mul_(self, value):
     return _fundamental(self, value, out=self, op='Mul')
 
 
+def rmul(self, value):
+    return _rfundamental(self, value, op='RMul')
+
+
 def div(self, value):
     """Divide the ``self`` and ``value`` into the output tensor.
 
@@ -266,14 +282,23 @@ def div_(self, value):
     return _fundamental(self, value, out=self, op='Div')
 
 
+def rdiv(self, value):
+    return _rfundamental(self, value, op='RDiv')
+
+
 Tensor.add = add
 Tensor.add_ = add_
+Tensor.__radd__ = radd
 Tensor.sub = sub
 Tensor.sub_ = sub_
+Tensor.__rsub__ = rsub
 Tensor.mul = mul
 Tensor.mul_ = mul_
+Tensor.__rmul__ = rmul
 Tensor.div = div
 Tensor.div_ = div_
+Tensor.__rdiv__ = rdiv
+Tensor.__rtruediv__ = rdiv
 
 
 ##############################################
@@ -302,15 +327,145 @@ def crop(self, starts, ends):
 
 
 def mean(self, dim=None, keepdim=False):
-    return _reduce(self, 'Reduce', 'MEAN', dim, keepdim)
+    return _reduce(self, 'MEAN', dim, keepdim)
 
 
 def sum(self, dim=None, keepdim=False):
-    return _reduce(self, 'Reduce', 'SUM', dim, keepdim)
+    return _reduce(self, 'SUM', dim, keepdim)
+
+
+def max(self, dim=None, keepdim=False):
+    return _arg_reduce(self, 'MAX', dim, keepdim)
+
+
+def min(self, dim=None, keepdim=False):
+    return _arg_reduce(self, 'MIN', dim, keepdim)
 
 
 Tensor.view = view
 Tensor.view_as = view_as
 Tensor.mean = mean
 Tensor.sum = sum
+Tensor.max = max
+Tensor.min = min
 Tensor._crop = crop
+
+
+##############################################
+#                                            #
+#                    TYPE                    #
+#                                            #
+##############################################
+
+
+def _type_to(input, dtype='float32'):
+    if dtype == input._dtype: return input
+    ctx = MakeContext(inputs=[input])
+    key = 'torch/ops/astype/{}:{}/dtype:{}'.format(
+        ctx[0].lower(), ctx[1], dtype)
+    module = get_module(AsType, key, ctx, dtype=dtype)
+    with no_grad():
+        return module.forward(input)
+
+
+def _type(self, dtype=None):
+    """Return the data type of this tensor.
+
+    If ``dtype`` is not ``None``, cast ``self`` to the new tensor.
+
+    Parameters
+    ----------
+    dtype : str
+        The specified type.
+
+    Returns
+    -------
+    str or vm.torch.Tensor
+        The data type or the new tensor.
+
+    """
+    if dtype is None:
+        return 'torch.' + self._type2str()
+    else:
+        return _type_to(self, dtype=dtype)
+
+
+def _half(self):
+    """Return a ``float16`` tensor with elements of ``self``.
+
+    Returns
+    -------
+    vm.torch.Tensor
+        The half tensor.
+
+    """
+    return _type_to(self, dtype='float16')
+
+
+def _float(self):
+    """Return a ``float32`` tensor with elements of ``self``.
+
+    Returns
+    -------
+    vm.torch.Tensor
+        The float tensor.
+
+    """
+    return _type_to(self, dtype='float32')
+
+
+def _double(self):
+    """Return a ``float64`` tensor with elements of ``self``.
+
+    Returns
+    -------
+    vm.torch.Tensor
+        The double tensor.
+
+    """
+    return _type_to(self, dtype='float64')
+
+
+def _int(self):
+    """Return a ``int32`` tensor with elements of ``self``.
+
+    Returns
+    -------
+    vm.torch.Tensor
+        The int tensor.
+
+    """
+    return _type_to(self, dtype='int32')
+
+
+def _long(self):
+    """Return a ``int64`` tensor with elements of ``self``.
+
+    Returns
+    -------
+    vm.torch.Tensor
+        The long tensor.
+
+    """
+    return _type_to(self, dtype='int64')
+
+
+def _byte(self):
+    """Return a ``uint8`` tensor with elements of ``self``.
+
+    Returns
+    -------
+    vm.torch.Tensor
+        The byte tensor.
+
+    """
+    return _type_to(self, dtype='uint8')
+
+
+Tensor.type = _type
+Tensor.half = _half
+Tensor.float = _float
+Tensor.double = _double
+Tensor.int = _int
+Tensor.long = _long
+Tensor.byte = _byte

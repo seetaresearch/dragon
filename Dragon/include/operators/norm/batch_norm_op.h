@@ -12,6 +12,8 @@
 #ifndef DRAGON_OPERATORS_NORM_BATCH_NORM_OP_H_
 #define DRAGON_OPERATORS_NORM_BATCH_NORM_OP_H_
 
+#include <cfloat>
+
 #include "core/operator.h"
 
 namespace dragon {
@@ -22,8 +24,8 @@ class BatchNormOp : public Operator<Context> {
     BatchNormOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          momentum(OperatorBase::GetSingleArg<float>("momentum", float(0.9))),
-          eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
+          momentum(OperatorBase::GetSingleArg<float>("momentum", 0.9f)),
+          eps(OperatorBase::GetSingleArg<float>("eps", 1e-3f)),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)),
           mode(OperatorBase::GetSingleArg<string>("mode", "DEFAULT")) {
         if (axis != -1) 
@@ -84,8 +86,8 @@ class FusedBatchNormOp : public Operator<Context> {
     FusedBatchNormOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          momentum(OperatorBase::GetSingleArg<float>("momentum", float(0.9))),
-          eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
+          momentum(OperatorBase::GetSingleArg<float>("momentum", 0.9f)),
+          eps(OperatorBase::GetSingleArg<float>("eps", 1e-3f)),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {}
     USE_OPERATOR_FUNCTIONS(Context);
 
@@ -112,7 +114,7 @@ class FusedBatchNormGradientOp : public Operator<Context> {
     FusedBatchNormGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
+          eps(OperatorBase::GetSingleArg<float>("eps", 1e-3f)),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {}
     USE_OPERATOR_FUNCTIONS(Context);
 
@@ -143,11 +145,16 @@ template <class Context>
 class CuDNNBatchNormOp final : public FusedBatchNormOp<Context> {
  public:
     CuDNNBatchNormOp(const OperatorDef& op_def, Workspace* ws)
-        : FusedBatchNormOp<Context>(op_def, ws) {
+        : FusedBatchNormOp<Context>(op_def, ws),
+        eps64(OperatorBase::GetSingleArg<float>("eps", 1e-3f)) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&bn_desc));
-        this->eps = std::max(this->eps, float(CUDNN_BN_MIN_EPSILON));
+        if (eps64 <= CUDNN_BN_MIN_EPSILON - FLT_EPSILON)
+            LOG(FATAL) << "Provided epsilon is smaller than "
+                << "CUDNN_BN_MIN_EPSILON. Setting it to "
+                << "CUDNN_BN_MIN_EPSILON instead.";
+        eps64 = std::max(eps64, CUDNN_BN_MIN_EPSILON);
     }
     USE_OPERATOR_FUNCTIONS(Context);
 
@@ -163,6 +170,7 @@ class CuDNNBatchNormOp final : public FusedBatchNormOp<Context> {
     template <typename T> void RunWithType();
 
  protected:
+    double eps64;
     cudnnTensorDescriptor_t input_desc, output_desc, bn_desc;
     cudnnBatchNormMode_t bn_mode;
     TIndex N, C;
@@ -174,11 +182,16 @@ template <class Context>
 class CuDNNBatchNormGradientOp final : public FusedBatchNormGradientOp<Context> {
  public:
     CuDNNBatchNormGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : FusedBatchNormGradientOp<Context>(op_def, ws) {
+        : FusedBatchNormGradientOp<Context>(op_def, ws),
+        eps64(OperatorBase::GetSingleArg<float>("eps", 1e-3f)) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&bn_desc));
-        this->eps = std::max(this->eps, float(CUDNN_BN_MIN_EPSILON));
+        if (eps64 <= CUDNN_BN_MIN_EPSILON - FLT_EPSILON)
+            LOG(FATAL) << "Provided epsilon is smaller than "
+            << "CUDNN_BN_MIN_EPSILON. Setting it to "
+            << "CUDNN_BN_MIN_EPSILON instead.";
+        eps64 = std::max(eps64, CUDNN_BN_MIN_EPSILON);
     }
     USE_OPERATOR_FUNCTIONS(Context);
 
@@ -195,6 +208,7 @@ class CuDNNBatchNormGradientOp final : public FusedBatchNormGradientOp<Context> 
     template <typename T> void InferenceRunWithType();
 
  protected:
+    double eps64;
     cudnnTensorDescriptor_t input_desc, output_desc, bn_desc;
     cudnnBatchNormMode_t bn_mode;
     TIndex N, C, S, NC, NS;

@@ -38,10 +38,10 @@ class DataBatch(object):
         ----------
         source : str
             The path of database.
+        multiple_nodes: boolean
+            Whether to split data for multiple parallel nodes.
         shuffle : boolean
             Whether to shuffle the data.
-        node_step: boolean
-            Whether to split data for multiple parallel nodes.
         num_chunks : int
             The number of chunks to split. Default is ``2048``.
         chunk_size : int
@@ -103,8 +103,12 @@ class DataBatch(object):
                 self._num_transformers += 1
             # add 1 transformer for random scale
             if kwargs.get('max_random_scale', 1.0) - \
-                    kwargs.get('min_random_scale', 1.0) != 0:
-                self._num_transformers += 1
+                kwargs.get('min_random_scale', 1.0) != 0:
+                    self._num_transformers += 1
+            # add 1 transformer for random crop
+            if kwargs.get('crop_size', 0) > 0 and \
+                kwargs.get('phase', 'TEST') == 'TRAIN':
+                    self._num_transformers += 1
         self._num_transformers = min(self._num_transformers, self._max_transformers)
 
         self._batch_size = kwargs.get('batch_size', 100)
@@ -127,8 +131,8 @@ class DataBatch(object):
             num_parts = self._num_readers
             part_idx = i
 
-            if self._readers[i]._use_shuffle \
-                    or self._readers[i]._use_step:
+            if self._readers[i]._multiple_nodes or \
+                self._readers[i]._use_shuffle:
                 num_parts *= group_size
                 part_idx += local_rank * self._num_readers
 

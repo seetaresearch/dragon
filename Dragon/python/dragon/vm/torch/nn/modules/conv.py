@@ -102,7 +102,7 @@ class Conv2d(_ConvNd):
             False, _pair(0), groups, bias)
 
     def forward(self, input):
-        inputs = [input, self.weight] + [self.bias] if self.bias else []
+        inputs = [input, self.weight] + ([self.bias] if self.bias else [])
         self.unify_devices(inputs)
         outputs = [self.register_output(input.dtype)]
         return self.run(inputs, outputs)

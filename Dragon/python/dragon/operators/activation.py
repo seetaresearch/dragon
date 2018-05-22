@@ -200,7 +200,9 @@ def Tanh(inputs, **kwargs):
 
 
 def Dropout(inputs, prob=0.5, scale=True, **kwargs):
-    """Randomly set a unit into zero, introduced by `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
+    """Randomly set a unit into zero.
+
+    Introduced by `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 
     Parameters
     ----------

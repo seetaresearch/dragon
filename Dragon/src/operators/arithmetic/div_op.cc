@@ -167,26 +167,26 @@ void DivGradientOp<Context>::RunOnDevice() {
     Output(1)->ReshapeLike(Input(1));
 
     if (XIsType(Input(0), float)) {
-        if (Input(-1).dims() == Input(0).dims()) 
+        if (Input(0).dims() == Input(1).dims())
             EltwiseRunWithType<float>();
-        else if (Input(-1).dim(0) == Input(0).dim(0) && Input(0).count(1) == 1)
+        else if (Input(0).dim(0) == Input(1).dim(0) && Input(1).count(1) == 1)
             BroadcastRunWithType<float>(2);
-        else if (Input(-1).dim(-1) == Input(0).dim(-1) &&
-                 Input(0).count(0, Input(0).axis(-1)) == 1)
+        else if (Input(0).dim(-1) == Input(1).dim(-1) &&
+            Input(1).count(0, Input(1).axis(-1)) == 1)
             BroadcastRunWithType<float>(1);
-        else if (Input(0).ndim() == 1 && Input(0).dim(0) == 1)
+        else if (Input(1).ndim() == 1 && Input(1).dim(0) == 1)
             BroadcastRunWithType<float>(0);
         else LOG(FATAL) << "Could not be broadcast together with shapes "
                         << Input(-1).dim_string() << "  " << Input(0).dim_string();
     } else if (XIsType(Input(0), float16)) {
-        if (Input(-1).dims() == Input(0).dims()) 
+        if (Input(0).dims() == Input(1).dims())
             EltwiseRunWithType<float16>();
-        else if (Input(-1).dim(0) == Input(0).dim(0) && Input(0).count(1) == 1)
+        else if (Input(0).dim(0) == Input(1).dim(0) && Input(1).count(1) == 1)
             BroadcastRunWithType<float16>(2);
-        else if (Input(-1).dim(-1) == Input(0).dim(-1) &&
-                 Input(0).count(0, Input(0).axis(-1)) == 1)
+        else if (Input(0).dim(-1) == Input(1).dim(-1) &&
+            Input(1).count(0, Input(1).axis(-1)) == 1)
             BroadcastRunWithType<float16>(1);
-        else if (Input(0).ndim() == 1 && Input(0).dim(0) == 1)
+        else if (Input(1).ndim() == 1 && Input(1).dim(0) == 1)
             BroadcastRunWithType<float16>(0);
         else LOG(FATAL) << "Could not be broadcast together with shapes "
                         << Input(-1).dim_string() << "  " << Input(0).dim_string();

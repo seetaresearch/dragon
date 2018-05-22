@@ -33,7 +33,7 @@ DEPLOY_CPU(Fill);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Fill);
 #endif
-OPERATOR_SCHEMA(Fill).NumInputs(0, 1).NumOutputs(1);
+OPERATOR_SCHEMA(Fill).NumInputs(0).NumOutputs(1);
 NO_GRADIENT(Fill);
 
 //  uniform
@@ -41,7 +41,7 @@ DEPLOY_CPU(RandomUniform);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(RandomUniform);
 #endif
-OPERATOR_SCHEMA(RandomUniform).NumInputs(0, 1).NumOutputs(1);
+OPERATOR_SCHEMA(RandomUniform).NumInputs(0).NumOutputs(1);
 NO_GRADIENT(RandomUniform);
 
 //  normal
@@ -49,7 +49,7 @@ DEPLOY_CPU(RandomNormal);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(RandomNormal);
 #endif
-OPERATOR_SCHEMA(RandomNormal).NumInputs(0, 1).NumOutputs(1);
+OPERATOR_SCHEMA(RandomNormal).NumInputs(0).NumOutputs(1);
 NO_GRADIENT(RandomNormal);
 
 //  truncated normal
@@ -58,7 +58,7 @@ DEPLOY_CPU_CUDA(TruncatedNormal);
 #else
 DEPLOY_CPU(TruncatedNormal);
 #endif
-OPERATOR_SCHEMA(TruncatedNormal).NumInputs(0, 1).NumOutputs(1);
+OPERATOR_SCHEMA(TruncatedNormal).NumInputs(0).NumOutputs(1);
 NO_GRADIENT(TruncatedNormal);
 
 //  glorot uniform
@@ -74,7 +74,7 @@ DEPLOY_CPU(GlorotNormal);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(GlorotNormal);
 #endif
-OPERATOR_SCHEMA(GlorotNormal).NumInputs(0, 1).NumOutputs(1);
+OPERATOR_SCHEMA(GlorotNormal).NumInputs(0).NumOutputs(1);
 NO_GRADIENT(GlorotNormal);
 
 }    // namespace dragon

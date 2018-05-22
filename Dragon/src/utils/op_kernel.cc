@@ -12,7 +12,7 @@ bool judge(int a, int b)  { return unsigned(a) < unsigned(b); }
 namespace dragon {
 
 namespace kernel {
-  
+
 template<> void Empty<float, CPUContext>() {}
 
 /******************** activation.dropout ********************/
@@ -809,6 +809,54 @@ template<> void SparseSoftmaxFocalLossGrad<float, CPUContext>(const int count,
     }
 }
 
+/******************** misc.dtype ********************/
+
+template <typename Ta, typename Tb>
+void _TypeA2B(const int count, const Ta* a, Tb* b) {
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) b[i] = a[i];
+}
+
+#define DEFINE_TYPE_A2B(type_a, type_b) \
+    template <> void TypeA2B<type_a, type_b, CPUContext>(const int count, \
+                                                         const type_a* a, \
+                                                         type_b* b) { \
+        _TypeA2B<type_a, type_b>(count, a, b); \
+    }
+
+#define DEFINE_TYPE_DISABLE_FP16(type) \
+    template <> void TypeA2B<float16, type, CPUContext>(const int count, \
+                                                        const float16* a, \
+                                                        type* b) { \
+        LOG(FATAL) << "float16 is unsupported for CPUContext."; \
+    } \
+    template <> void TypeA2B<type, float16, CPUContext>(const int count, \
+                                                        const type* a, \
+                                                        float16* b) { \
+        LOG(FATAL) << "float16 is unsupported for CPUContext."; \
+    }
+
+#define DEFINE_TYPE_A2ALL(type_a) \
+    DEFINE_TYPE_A2B(type_a, float); \
+    DEFINE_TYPE_A2B(type_a, double); \
+    DEFINE_TYPE_A2B(type_a, int); \
+    DEFINE_TYPE_A2B(type_a, int64_t); \
+    DEFINE_TYPE_A2B(type_a, uint8_t);
+
+template <> void TypeA2B<float16, float16, CPUContext>(const int count,
+                                                       const float16* a,
+                                                       float16* b) {
+    LOG(FATAL) << "float16 is unsupported for CPUContext."; 
+}
+
+DEFINE_TYPE_A2ALL(float); DEFINE_TYPE_DISABLE_FP16(float);
+DEFINE_TYPE_A2ALL(double); DEFINE_TYPE_DISABLE_FP16(double);
+DEFINE_TYPE_A2ALL(int); DEFINE_TYPE_DISABLE_FP16(int);
+DEFINE_TYPE_A2ALL(int64_t); DEFINE_TYPE_DISABLE_FP16(int64_t);
+DEFINE_TYPE_A2ALL(uint8_t); DEFINE_TYPE_DISABLE_FP16(uint8_t);
+
 /******************** misc.image_data ********************/
 
 template <typename Tx, typename Ty>
@@ -944,39 +992,42 @@ template<> void Arange<int, CPUContext>(const int count,
     for (int i = 0; i < count; ++i) y[i] = start + i * step;
 }
 
-/******************** ndarray.argmax ********************/
+/******************** ndarray.argreduce ********************/
 
-template<> void Argmax<float, CPUContext>(const int count, 
+template<> void Argmax<float, CPUContext>(const int count,
                                           const int axis_dim,
-                                          const int inner_dim, 
-                                          const int top_k, 
+                                          const int inner_dim,
+                                          const int top_k,
                                           const float* x,
-                                          float* y) {
+                                          int64_t* indices,
+                                          float* values) {
     vector<pair<float, int> > vec(axis_dim);
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         for (int j = 0; j < axis_dim; ++j) 
-            vec[j] = std::make_pair(x[(i / inner_dim * axis_dim + j) * 
+            vec[j] = std::make_pair(x[(i / inner_dim * axis_dim + j) *
                                     inner_dim + i % inner_dim], j);
         std::partial_sort(vec.begin(), 
                           vec.begin() + top_k, 
                           vec.end(), 
                           std::greater< pair<float, int> >());
-        for (int j = 0; j < top_k; ++j) 
-            y[(i / inner_dim * top_k + j) * inner_dim + i % inner_dim] = vec[j].second;
+        for (int j = 0; j < top_k; ++j) {
+            TIndex y_idx = (i / inner_dim * top_k + j) * inner_dim + i % inner_dim;
+            indices[y_idx] = vec[j].second;
+            if (values != nullptr) values[y_idx] = vec[j].first;
+        }
     }
 }
 
-/******************** ndarray.argmin ********************/
-
-template<> void Argmin<float, CPUContext>(const int count, 
+template<> void Argmin<float, CPUContext>(const int count,
                                           const int axis_dim,
-                                          const int inner_dim, 
-                                          const int top_k, 
+                                          const int inner_dim,
+                                          const int top_k,
                                           const float* x,
-                                          float* y) {
+                                          int64_t* indices,
+                                          float* values) {
     vector<pair<float, int> > vec(axis_dim);
 #ifdef WITH_OMP
 #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
@@ -988,8 +1039,11 @@ template<> void Argmin<float, CPUContext>(const int count,
         std::partial_sort(vec.begin(), 
                           vec.begin() + top_k, 
                           vec.end());
-        for (int j = 0; j < top_k; ++j) 
-            y[(i / inner_dim * top_k + j) * inner_dim + i % inner_dim] = vec[j].second;
+        for (int j = 0; j < top_k; ++j) {
+            TIndex y_idx = (i / inner_dim * top_k + j) * inner_dim + i % inner_dim;
+            indices[y_idx] = vec[j].second;
+            if (values != nullptr) values[y_idx] = vec[j].first;
+        }
     }
 }
 

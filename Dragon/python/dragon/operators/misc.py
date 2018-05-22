@@ -16,6 +16,49 @@ from __future__ import print_function
 from . import *
 
 
+def AsType(inputs, dtype='float32', inplace=False, **kwargs):
+    """Cast the data type of inputs to a specific one.
+
+    If ``inplace`` is ``True``, cast ``self`` instead of returning a new one.
+
+    Parameters
+    ----------
+    inputs : Tensor
+        The input tensor.
+    dtype : str
+        The specific data type.
+    inplace : boolean
+        Whether to modify the inputs.
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
+    Examples
+    --------
+    >>> x = Tensor('x', dtype='float32').Variable()
+    >>> y = AsType(x, 'int32')
+    >>> z = x.astype('int64')
+    >>> xx = x.astype('float64', inplace=True)
+    >>> print(x.name, xx.name)
+
+    """
+    CheckInputs(inputs, 1)
+    arguments = ParseArguments(locals())
+
+    if inplace:
+        arguments['inputs'] = []
+        arguments['existing_outputs'] = [inputs]
+
+    output = Tensor.CreateOperator(nout=1, op_type='AsType', **arguments)
+
+    if inputs.shape is not None:
+        output.shape = inputs.shape[:]
+
+    return output
+
+
 def Run(inputs, module, op, param_str='', nout=1, **kwargs):
     """Run a custom operator. (Without GradientFlow)
 

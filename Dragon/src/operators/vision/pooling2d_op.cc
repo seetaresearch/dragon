@@ -139,6 +139,7 @@ void Pooling2dGradientOp<Context>::MAXRunWithType() {
                                                      dYdata,
                                                       Mdata,
                                                     dXdata);
+    mask->Reset();
 }
 
 template <class Context> template <typename T>

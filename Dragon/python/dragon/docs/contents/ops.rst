@@ -129,7 +129,9 @@ List               Brief
 `Reduce`_          The general reduce operator.
 `Sum`_             Compute the sum along the given axis.
 `Mean`_            Compute the mean along the given axis.
+`Max`_             Compute the values of maximum elements along the given axis.
 `Argmax`_          Compute the indices of maximum elements along the given axis.
+`Min`_             Compute the values of minimum elements along the given axis.
 `Argmin`_          Compute the indices of minimum elements along the given axis.
 `Slice`_           Slice interface of NDArray.
 `Stack`_           Stack the inputs along the given axis.
@@ -161,6 +163,7 @@ Misc
 =================    ======================================================================
 List                 Brief
 =================    ======================================================================
+`AsType`_            Cast the data type of inputs to a specific one.
 `Run`_               Run a custom operator. (Without GradientFlow)
 `Template`_          Run a custom operator. (With GradientFlow)
 `Accuracy`_          Calculate the Top-K accuracy.
@@ -174,14 +177,6 @@ Contrib
 List                 Brief
 =================    ======================================================================
 `Proposal`_          Generate Regional Proposals, introduced by `[Ren et.al, 2015] <https://arxiv.org/abs/1506.01497>`_.
-=================    ======================================================================
-
-Cast
-----
-=================    ======================================================================
-List                 Brief
-=================    ======================================================================
-`FloatToHalf`_       Cast the type of tensor from ``float32`` to ``float16``.
 =================    ======================================================================
 
 MPI
@@ -266,7 +261,9 @@ List                 Brief
 .. _Reduce: operators/ndarray.html#dragon.operators.ndarray.Reduce
 .. _Sum: operators/ndarray.html#dragon.operators.ndarray.Sum
 .. _Mean: operators/ndarray.html#dragon.operators.ndarray.Mean
+.. _Max: operators/ndarray.html#dragon.operators.ndarray.Max
 .. _Argmax: operators/ndarray.html#dragon.operators.ndarray.Argmax
+.. _Min: operators/ndarray.html#dragon.operators.ndarray.Min
 .. _Argmin: operators/ndarray.html#dragon.operators.ndarray.Argmin
 .. _Slice: operators/ndarray.html#dragon.operators.ndarray.Slice
 .. _Stack: operators/ndarray.html#dragon.operators.ndarray.Stack
@@ -285,6 +282,7 @@ List                 Brief
 .. _Copy: operators/control_flow.html#dragon.operators.control_flow.Copy
 .. _Equal: operators/control_flow.html#dragon.operators.control_flow.Equal
 
+.. _AsType: operators/misc.html#dragon.operators.misc.AsType
 .. _Run: operators/misc.html#dragon.operators.misc.Run
 .. _Template: operators/misc.html#dragon.operators.misc.Template
 .. _Accuracy: operators/misc.html#dragon.operators.misc.Accuracy
@@ -292,8 +290,6 @@ List                 Brief
 .. _MovingAverage: operators/misc.html#dragon.operators.misc.MovingAverage
 
 .. _Proposal: operators/contrib/rcnn.html#dragon.operators.contrib.rcnn.ops.Proposal
-
-.. _FloatToHalf: operators/cast.html#dragon.operators.misc.FloatToHalf
 
 .. _MPIBroadcast: operators/mpi.html#dragon.operators.mpi.MPIBroadcast
 .. _MPIGather: operators/mpi.html#dragon.operators.mpi.MPIGather

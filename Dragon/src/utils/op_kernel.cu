@@ -838,13 +838,15 @@ __global__ void _ScaleWithBiasHalf(const int n,
 #endif
     }
 }
+#endif
 
-template<> void Scale<float16, CUDAContext>(const int axis, 
-                                            Tensor* x, 
+template<> void Scale<float16, CUDAContext>(const int axis,
+                                            Tensor* x,
                                             Tensor* gamma,
-                                            Tensor* beta, 
-                                            Tensor* BMul, 
+                                            Tensor* beta,
+                                            Tensor* BMul,
                                             Tensor* y) {
+#ifdef WITH_CUDA_FP16
     const int count = x->count();
     const int inner_dim = x->count(axis + gamma->ndim());
     const int scale_dim = gamma->count();
@@ -868,8 +870,10 @@ template<> void Scale<float16, CUDAContext>(const int axis,
                                                                               scale_dim,
                                                                               inner_dim,
                                                          reinterpret_cast<half*>(Ydata));
-}
+#else
+    CUDA_FP16_NOT_COMPILED;
 #endif
+}
 
 template <> void ScaleGrad<float, CUDAContext>(const int axis, 
                                                Tensor* dy, 
@@ -1383,6 +1387,102 @@ template<> void SparseSoftmaxFocalLossGrad<float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
+/******************** misc.dtype ********************/
+
+template <typename Ta, typename Tb>
+__global__ void _TypeA2B(const int count, const Ta* a, Tb* b) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        b[idx] = a[idx];
+    }
+}
+
+#ifdef WITH_CUDA_FP16
+__global__ void _TypeHalf2Float(const int count, const half* a, float* b) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        b[idx] = __half2float(a[idx]);
+    }
+}
+__global__ void _TypeFloat2Half(const int count, const float* a, half* b) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        b[idx] = __float2half(a[idx]);
+    }
+}
+#endif
+
+#define DEFINE_TYPE_A2B(type_a, type_b) \
+    template <> void TypeA2B<type_a, type_b, CUDAContext>(const int count, \
+                                                          const type_a* a, \
+                                                          type_b* b) { \
+        _TypeA2B<type_a, type_b> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, a, b); \
+    }
+
+#define DEFINE_TYPE_DISABLE_FP16(type) \
+    template <> void TypeA2B<float16, type, CUDAContext>(const int count, \
+                                                         const float16* a, \
+                                                         type* b) { \
+        LOG(FATAL) << "CUDAContext has not implemented: float16 -> " \
+                   << TypeMetaToString(TypeMeta::Make<type>()); \
+    } \
+    template <> void TypeA2B<type, float16, CUDAContext>(const int count, \
+                                                         const type* a, \
+                                                         float16* b) { \
+        LOG(FATAL) << "CUDAContext has not implemented: " \
+                   << TypeMetaToString(TypeMeta::Make<type>()) << " -> float16"; \
+    }
+
+#define DEFINE_TYPE_ENABLE_FP16_FP32 \
+    template <> void TypeA2B<float16, float, CUDAContext>(const int count, \
+                                                          const float16* a, \
+                                                          float* b) { \
+        _TypeHalf2Float << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, \
+                                      reinterpret_cast<const half*>(a), b); \
+    } \
+    template <> void TypeA2B<float, float16, CUDAContext>(const int count, \
+                                                          const float* a, \
+                                                          float16* b) { \
+        _TypeFloat2Half << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, \
+                                            a, reinterpret_cast<half*>(b)); \
+    }
+
+#define DEFINE_TYPE_A2ALL(type_a) \
+    DEFINE_TYPE_A2B(type_a, float); \
+    DEFINE_TYPE_A2B(type_a, double); \
+    DEFINE_TYPE_A2B(type_a, int); \
+    DEFINE_TYPE_A2B(type_a, int64_t); \
+    DEFINE_TYPE_A2B(type_a, uint8_t);
+
+DEFINE_TYPE_A2ALL(float);
+DEFINE_TYPE_A2ALL(double);
+DEFINE_TYPE_A2ALL(int);
+DEFINE_TYPE_A2ALL(int64_t);
+DEFINE_TYPE_A2ALL(uint8_t);
+
+#ifdef WITH_CUDA_FP16
+template <> void TypeA2B<float16, float16, CUDAContext>(const int count,
+                                                        const float16* a,
+                                                        float16* b) {
+    _TypeA2B<half, half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                           reinterpret_cast<const half*>(a),
+                                                reinterpret_cast<half*>(b));
+}
+DEFINE_TYPE_ENABLE_FP16_FP32;
+DEFINE_TYPE_DISABLE_FP16(double);
+DEFINE_TYPE_DISABLE_FP16(int);
+DEFINE_TYPE_DISABLE_FP16(int64_t);
+DEFINE_TYPE_DISABLE_FP16(uint8_t);
+#else
+template <> void TypeA2B<float16, float16, CUDAContext>(const int count,
+                                                        const float16* a,
+                                                        float16* b) {
+    LOG(FATAL) << "CUDAContext has not implemented: float16 -> float16";
+}
+DEFINE_TYPE_DISABLE_FP16(float);
+DEFINE_TYPE_DISABLE_FP16(double);
+DEFINE_TYPE_DISABLE_FP16(int);
+DEFINE_TYPE_DISABLE_FP16(int64_t);
+DEFINE_TYPE_DISABLE_FP16(uint8_t);
+#endif
+
 /******************** misc.image_data ********************/
 
 template <typename Tx, typename Ty>
@@ -1513,7 +1613,6 @@ template <> void ImageData<uint8_t, float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
-#ifdef WITH_CUDA_FP16
 template <> void ImageData<float, float16, CUDAContext>(const int count,
                                                         const int N, const int C,
                                                         const int H, const int W,
@@ -1522,6 +1621,7 @@ template <> void ImageData<float, float16, CUDAContext>(const int count,
                                                         const string& data_format,
                                                         const float* x,
                                                         float16* y) {
+#ifdef WITH_CUDA_FP16
     if (data_format == "NCHW") {
         _ImageDataHalf_NCHW<float, half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
                                                                                  N, C, H, W,
@@ -1539,6 +1639,9 @@ template <> void ImageData<float, float16, CUDAContext>(const int count,
 
     } else LOG(FATAL) << "Unknown data format: " << data_format;
     CUDA_POST_KERNEL_CHECK;
+#else
+    CUDA_FP16_NOT_COMPILED;
+#endif
 }
 
 template <> void ImageData<uint8_t, float16, CUDAContext>(const int count,
@@ -1549,6 +1652,7 @@ template <> void ImageData<uint8_t, float16, CUDAContext>(const int count,
                                                           const string& data_format,
                                                           const uint8_t* x,
                                                           float16* y) {
+#ifdef WITH_CUDA_FP16
     if (data_format == "NCHW") {
         _ImageDataHalf_NCHW<uint8_t, half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
                                                                                    N, C, H, W,
@@ -1566,8 +1670,10 @@ template <> void ImageData<uint8_t, float16, CUDAContext>(const int count,
 
     } else LOG(FATAL) << "Unknown data format: " << data_format;
     CUDA_POST_KERNEL_CHECK;
-}
+#else
+    CUDA_FP16_NOT_COMPILED;
 #endif
+}
 
 /******************** ndarray.argmax ********************/
 
@@ -1597,52 +1703,82 @@ template<> void Arange<int, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
-/******************** ndarray.argmax ********************/
+/******************** ndarray.argreduce ********************/
 
 template <typename T>
-__global__ void _Argmax(const int count, 
-                        const int axis_dim, 
-                        const int inner_dim, 
-                        const T* x, 
-                        T* y) {
+__global__ void _Argmax(const int count,
+                        const int axis_dim,
+                        const int inner_dim,
+                        const T* x,
+                        int64_t* indices) {
     CUDA_KERNEL_LOOP(idx, count) {
         T max_val = -FLT_MAX;
         int max_idx = -1;
         for (int j = 0; j < axis_dim; ++j) {
-            const T val = x[(idx / inner_dim * axis_dim + j) 
+            const T val = x[(idx / inner_dim * axis_dim + j)
                                 * inner_dim + idx % inner_dim];
             if (val > max_val) {
                 max_val = val;
                 max_idx = j;
             }
         }
-        y[idx] = max_idx;
+        indices[idx] = max_idx;
     }
 }
 
-template<> void Argmax<float, CUDAContext>(const int count, 
-                                           const int axis_dim, 
-                                           const int inner_dim, 
-                                           const int top_k, 
-                                           const float* x, 
-                                           float* y) {
+template <typename T>
+__global__ void _Argmax_v2(const int count,
+                           const int axis_dim,
+                           const int inner_dim,
+                           const T* x,
+                           int64_t* indices,
+                           T* values) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        T max_val = -FLT_MAX;
+        int max_idx = -1;
+        for (int j = 0; j < axis_dim; ++j) {
+            const T val = x[(idx / inner_dim * axis_dim + j)
+                                * inner_dim + idx % inner_dim];
+            if (val > max_val) {
+                max_val = val;
+                max_idx = j;
+            }
+        }
+        indices[idx] = max_idx;
+        values[idx] = max_val;
+    }
+}
+
+template<> void Argmax<float, CUDAContext>(const int count,
+                                           const int axis_dim,
+                                           const int inner_dim,
+                                           const int top_k,
+                                           const float* x,
+                                           int64_t* indices,
+                                           float* values) {
     CHECK_EQ(top_k, 1) << "top_k > 1 is not supported with CUDA";
-    _Argmax<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                             axis_dim, 
-                                                            inner_dim, 
-                                                                    x, 
-                                                                   y);
+    if (values == nullptr) {
+        _Argmax<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                 axis_dim,
+                                                                inner_dim,
+                                                                        x,
+                                                                 indices);
+    } else {
+        _Argmax_v2<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                    axis_dim,
+                                                                   inner_dim,
+                                                                           x,
+                                                            indices, values);
+    }
     CUDA_POST_KERNEL_CHECK;
 }
 
-/******************** ndarray.argmin ********************/
-
 template <typename T>
-__global__ void _Argmin(const int count, 
-                        const int axis_dim, 
-                        const int inner_dim, 
+__global__ void _Argmin(const int count,
+                        const int axis_dim,
+                        const int inner_dim,
                         const T* x, 
-                        T* y) {
+                        int64_t* indices) {
     CUDA_KERNEL_LOOP(idx, count) {
         T min_val = FLT_MAX;
         int min_idx = -1;
@@ -1654,22 +1790,54 @@ __global__ void _Argmin(const int count,
                 min_idx = j;
             }
         }
-        y[idx] = min_idx;
+        indices[idx] = min_idx;
     }
 }
 
-template<> void Argmin<float, CUDAContext>(const int count, 
-                                           const int axis_dim, 
-                                           const int inner_dim, 
-                                           const int top_k, 
-                                           const float* x, 
-                                           float* y) {
+template <typename T>
+__global__ void _Argmin_v2(const int count,
+                           const int axis_dim,
+                           const int inner_dim,
+                           const T* x,
+                           int64_t* indices,
+                           T* values) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        T min_val = FLT_MAX;
+        int min_idx = -1;
+        for (int j = 0; j < axis_dim; ++j) {
+            const T val = x[(idx / inner_dim * axis_dim + j) 
+                                * inner_dim + idx % inner_dim];
+            if (val < min_val) {
+                min_val = val;
+                min_idx = j;
+            }
+        }
+        indices[idx] = min_idx;
+        values[idx] = min_val;
+    }
+}
+
+template<> void Argmin<float, CUDAContext>(const int count,
+                                           const int axis_dim,
+                                           const int inner_dim,
+                                           const int top_k,
+                                           const float* x,
+                                           int64_t* indices,
+                                           float* values) {
     CHECK_EQ(top_k, 1) << "top_k > 1 is not supported with CUDA";
-    _Argmin<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                             axis_dim, 
-                                                            inner_dim, 
-                                                                    x, 
-                                                                   y);
+    if (values == nullptr) {
+        _Argmin<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                 axis_dim,
+                                                                inner_dim,
+                                                                        x,
+                                                                 indices);
+    } else {
+        _Argmin_v2<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                    axis_dim,
+                                                                   inner_dim,
+                                                                           x,
+                                                            indices, values);
+    }
     CUDA_POST_KERNEL_CHECK;
 }
 
@@ -1830,35 +1998,37 @@ template <> void Concat<float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
-#ifdef WITH_CUDA_FP16
-template <> void Concat<float16, CUDAContext>(const int count, 
-                                              const int outer_dim, 
+template <> void Concat<float16, CUDAContext>(const int count,
+                                              const int outer_dim,
                                               const int inner_dim,
-                                              const int x_concat_dim, 
-                                              const int y_concat_dim, 
+                                              const int x_concat_dim,
+                                              const int y_concat_dim,
                                               const int concat_offset,
-                                              const float16* x, 
-                                              float16* y, 
+                                              const float16* x,
+                                              float16* y,
                                               CUDAContext* context) {
-    _Concat<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                           outer_dim, 
-                                                           inner_dim, 
-                                                        x_concat_dim, 
+#ifdef WITH_CUDA_FP16
+    _Concat<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                           outer_dim,
+                                                           inner_dim,
+                                                        x_concat_dim,
                                                         y_concat_dim,
-                                                       concat_offset, 
+                                                       concat_offset,
                                     reinterpret_cast<const half*>(x),
                                          reinterpret_cast<half*>(y));
     CUDA_POST_KERNEL_CHECK;
-}
+#else
+    CUDA_FP16_NOT_COMPILED;
 #endif
+}
 
 template <typename T>
-__global__ void _ConcatGrad(const int count, 
-                            const int outer_dim, 
+__global__ void _ConcatGrad(const int count,
+                            const int outer_dim,
                             const int inner_dim,
-                            const int x_concat_dim, 
-                            const int y_concat_dim, 
-                            const int concat_offset, 
+                            const int x_concat_dim,
+                            const int y_concat_dim,
+                            const int concat_offset,
                             const T* dy, 
                             T* dx) {
     CUDA_KERNEL_LOOP(idx, count) {
@@ -1871,47 +2041,49 @@ __global__ void _ConcatGrad(const int count,
     }
 }
 
-template <> void ConcatGrad<float, CUDAContext>(const int count, 
-                                                const int outer_dim, 
+template <> void ConcatGrad<float, CUDAContext>(const int count,
+                                                const int outer_dim,
                                                 const int inner_dim,
-                                                const int x_concat_dim, 
-                                                const int y_concat_dim, 
+                                                const int x_concat_dim,
+                                                const int y_concat_dim,
                                                 const int concat_offset,
-                                                const float* dy, 
-                                                float* dx, 
+                                                const float* dy,
+                                                float* dx,
                                                 CUDAContext* context) {
-    _ConcatGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                outer_dim, 
-                                                                inner_dim, 
-                                                             x_concat_dim, 
+    _ConcatGrad<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                outer_dim,
+                                                                inner_dim,
+                                                             x_concat_dim,
                                                              y_concat_dim,
-                                                            concat_offset, 
-                                                                       dy, 
+                                                            concat_offset,
+                                                                       dy,
                                                                       dx);
     CUDA_POST_KERNEL_CHECK;
 }
 
-#ifdef WITH_CUDA_FP16
-template <> void ConcatGrad<float16, CUDAContext>(const int count, 
-                                                  const int outer_dim, 
+template <> void ConcatGrad<float16, CUDAContext>(const int count,
+                                                  const int outer_dim,
                                                   const int inner_dim,
-                                                  const int x_concat_dim, 
-                                                  const int y_concat_dim, 
+                                                  const int x_concat_dim,
+                                                  const int y_concat_dim,
                                                   const int concat_offset,
-                                                  const float16* dy, 
-                                                  float16* dx, 
+                                                  const float16* dy,
+                                                  float16* dx,
                                                   CUDAContext* context) {
-    _ConcatGrad<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                               outer_dim, 
-                                                               inner_dim, 
-                                                            x_concat_dim, 
+#ifdef WITH_CUDA_FP16
+    _ConcatGrad<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                               outer_dim,
+                                                               inner_dim,
+                                                            x_concat_dim,
                                                             y_concat_dim,
-                                                           concat_offset, 
+                                                           concat_offset,
                                        reinterpret_cast<const half*>(dy),
                                             reinterpret_cast<half*>(dx));
     CUDA_POST_KERNEL_CHECK;
-}
+#else
+    CUDA_FP16_NOT_COMPILED;
 #endif
+}
 
 /******************** ndarray.crop ********************/
 
@@ -2574,24 +2746,27 @@ template <> void Transpose<float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
-#ifdef WITH_CUDA_FP16
-template <> void Transpose<float16, CUDAContext>(const int count, 
-                                                 const int ndim, 
-                                                 const int* order, 
+template <> void Transpose<float16, CUDAContext>(const int count,
+                                                 const int ndim,
+                                                 const int* order,
                                                  const int* old_steps,
-                                                 const int* new_steps, 
-                                                 const float16* x, 
+                                                 const int* new_steps,
+                                                 const float16* x,
                                                  float16* y) {
-    _Transpose<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                   ndim, 
-                                                                  order, 
-                                                              old_steps, 
-                                                              new_steps, 
+#ifdef WITH_CUDA_FP16
+    _Transpose<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                   ndim,
+                                                                  order,
+                                                              old_steps,
+                                                              new_steps,
                                        reinterpret_cast<const half*>(x),
                                             reinterpret_cast<half*>(y));
     CUDA_POST_KERNEL_CHECK;
-}
+#else
+    CUDA_FP16_NOT_COMPILED;
 #endif
+}
+
 
 template <typename T>
 __global__ void _TransposeGrad(const int count, 
@@ -2629,7 +2804,6 @@ template <> void TransposeGrad<float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
-#ifdef WITH_CUDA_FP16
 template <> void TransposeGrad<float16, CUDAContext>(const int count, 
                                                      const int ndim,
                                                      const int* order, 
@@ -2637,6 +2811,7 @@ template <> void TransposeGrad<float16, CUDAContext>(const int count,
                                                      const int* new_steps, 
                                                      const float16* dy, 
                                                      float16* dx) {
+#ifdef WITH_CUDA_FP16
     _TransposeGrad<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
                                                                        ndim, 
                                                                       order, 
@@ -2645,8 +2820,10 @@ template <> void TransposeGrad<float16, CUDAContext>(const int count,
                                           reinterpret_cast<const half*>(dy),
                                                reinterpret_cast<half*>(dx));
     CUDA_POST_KERNEL_CHECK;
-}
+#else
+    CUDA_FP16_NOT_COMPILED;
 #endif
+}
 
 /******************** recurrent.lstm_uint ********************/
 

@@ -19,5 +19,5 @@ from .arithmetic import (
 )
 
 from .ndarray import (
-    sum, mean, argmin, argmax,
+    sum, mean, argmin, argmax, max, topk, cat
 )

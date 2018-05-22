@@ -23,7 +23,7 @@ class L2NormOp final : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", 0)),
           num_axes(OperatorBase::GetSingleArg<int>("num_axes", -1)),
-          eps(OperatorBase::GetSingleArg<float>("eps", float(1e-5))),
+          eps(OperatorBase::GetSingleArg<float>("eps", 1e-5f)),
           mode(OperatorBase::GetSingleArg<string>("mode", "SUM")) {}
     USE_OPERATOR_FUNCTIONS(Context);
 

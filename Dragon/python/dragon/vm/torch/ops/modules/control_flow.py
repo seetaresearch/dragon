@@ -33,7 +33,6 @@ class Copy(BaseModule):
             'arguments': {}
         }
 
-    def forward(self, x, y):
-        inputs = [x]; self.unify_devices(inputs)
-        outputs = [y] if y else [self.register_output(x.dtype)]
-        return self.run(inputs, outputs)
+    def forward(self, dst, src):
+        outputs = [dst]; self.unify_devices(outputs)
+        return self.run([src], outputs)

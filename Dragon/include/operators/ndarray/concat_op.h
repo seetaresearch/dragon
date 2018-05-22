@@ -20,16 +20,15 @@ template <class Context>
 class ConcatOp : public Operator<Context> {
  public:
     ConcatOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 1)),
-          nin(OperatorBase::GetSingleArg<int>("num_input", 1)) {}
+        : Operator<Context>(op_def, ws), 
+        axis(OperatorBase::GetSingleArg<int>("axis", 1)) {}
     USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    TIndex axis, nin, outer_dim, inner_dim, x_concat_dim, y_concat_dim;
+    TIndex axis, outer_dim, inner_dim, x_concat_dim, y_concat_dim;
     TIndex x_offset, y_offset, concat_offset;
     vector<TIndex> concat_dims;
 };
@@ -39,15 +38,14 @@ class ConcatGradientOp : public Operator<Context> {
  public:
     ConcatGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 1)),
-          nin(OperatorBase::GetSingleArg<int>("num_input", 1)) {}
+        axis(OperatorBase::GetSingleArg<int>("axis", 1)) {}
     USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    TIndex axis, nin, outer_dim, inner_dim, x_concat_dim, y_concat_dim;
+    TIndex axis, outer_dim, inner_dim, x_concat_dim, y_concat_dim;
     TIndex x_offset, y_offset, concat_offset;
     vector<TIndex> concat_dims;
 };

@@ -46,6 +46,16 @@ string OperatorBase::DTypeHelper(const Tensor& tensor,
      return ss.str();
 }
 
+string OperatorBase::DTypeHelper(const string& dtype,
+                                 const Set<string>& dtypes) const {
+     std::stringstream ss;
+     ss << "Unsupported DType: " << dtype << "\n";
+     ss << "<" << type() << "Op>" << " supports the following dtypes: {\n";
+     for (auto& dtype : dtypes) ss << "    * " << dtype << ",\n";
+     ss << "}";
+     return ss.str();
+}
+
 OperatorBase* TryCreateOperator(const string& key, const OperatorDef& op_def, Workspace* ws) {
     switch (op_def.device_option().device_type()) {
         case CPU:

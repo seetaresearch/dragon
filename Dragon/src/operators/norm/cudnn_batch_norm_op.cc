@@ -73,7 +73,7 @@ void CuDNNBatchNormOp<Context>::RunWithType() {
                                                                      Bdata,
                                                                 hMean_data,
                                                                  hVar_data,
-                                                               this->eps));
+                                                                   eps64));
 
     } else {
         auto* tMean_data = mean->template mutable_data<T, Context>();
@@ -90,7 +90,7 @@ void CuDNNBatchNormOp<Context>::RunWithType() {
                         this->is_recomputing ? 0.0 : 1.0 - this->momentum,
                                                                hMean_data,
                                                                 hVar_data,
-                                                                this->eps,
+                                                                    eps64,
                                                                tMean_data,
                                                               tVar_data));
     }
@@ -239,7 +239,7 @@ void CuDNNBatchNormGradientOp<Context>::TrainingRunWithType() {
                                                              Sdata,
                                                             dSdata,
                                                             dBdata,
-                                                         this->eps,
+                                                             eps64,
                                                         tMean_data,
                                                        tVar_data));
     }

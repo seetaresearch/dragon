@@ -179,7 +179,7 @@ template <> float Dot(const int n, const float* a, const float* b) {
     return ret;
 }
 
-}    // namespace ssd
+}    // namespace sse
 
 }    // namespace dragon
 

@@ -15,26 +15,20 @@ from __future__ import print_function
 
 import dragon.core.mpi as mpi
 
-from dragon.vm.torch.execute_engine import RunOperator
 from dragon.vm.torch.ops.primitive import MakeContext
 from dragon.vm.torch.ops.factory import get_module
-from dragon.vm.torch.ops.modules.update import Update
+from dragon.vm.torch.ops.modules.update import Update, Collective
 
 
-def _allreduce_op(params, grads):
+def _allreduce(grads):
     if not mpi.Is_Init(): return
-    idx, group = mpi.AllowParallel()
-    arguments = {}
-    if idx != -1:
-        arguments['mode'] = mpi.GetParallelMode() + '_ALLREDUCE'
-        arguments['comm'], arguments['group'] \
-                = mpi.CreateGroup(root=group[0], incl=group)
-        arguments['root'] = group[0]
-    inputs = grads if isinstance(grads, list) else [grads]
-    outputs = params if isinstance(params, list) else [params]
-    ctx = MakeContext(inputs, outputs)
-    return RunOperator(inputs, outputs, op_type='CollectiveUpdate',
-                              ctx=ctx, auto_grad=False, **arguments)
+    if not isinstance(grads, (list, tuple)): grads = [grads]
+    ctx = MakeContext(inputs=grads)
+    mode = mpi.GetParallelMode() + '_ALLREDUCE'
+    key = 'torch/ops/collective/{}:{}/{}'.format(
+        ctx[0].lower(), ctx[1], mode.lower())
+    module = get_module(Collective, key, ctx, mode=mode)
+    return module.forward(grads)
 
 
 def _update(param, grad, op_type, slot,

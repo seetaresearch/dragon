@@ -49,7 +49,7 @@ class Linear(Module):
             self.bias.data.uniform_(-stdv, stdv)
 
     def forward(self, input):
-        inputs = [input, self.weight] + [self.bias] if self.bias else []
+        inputs = [input, self.weight] + ([self.bias] if self.bias else [])
         self.unify_devices(inputs)
         outputs = [self.register_output(input.dtype)]
         return self.run(inputs, outputs)

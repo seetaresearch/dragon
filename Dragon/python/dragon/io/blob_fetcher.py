@@ -62,7 +62,7 @@ class BlobFetcher(Process):
         # fill blobs
         im, labels = self.Q_in.get()
         im_blob = np.zeros(shape=([self._batch_size] + list(im.shape)), dtype=np.uint8)
-        label_blob = np.zeros((self._batch_size, len(labels)), dtype=np.float32)
+        label_blob = np.zeros((self._batch_size, len(labels)),  dtype=np.int64)
         for ix in range(0, self._batch_size):
             im_blob[ix, :, :, :], label_blob[ix, :] = im, labels
             if ix != self._batch_size - 1: im, labels = self.Q_in.get()

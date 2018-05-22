@@ -235,7 +235,6 @@ def Concat(inputs, axis=1, **kwargs):
     """
     CheckInputs(inputs, 1, INT_MAX)
     arguments = ParseArguments(locals())
-    arguments['num_input'] = len(inputs)
 
     output = Tensor.CreateOperator(nout=1, op_type='Concat', **arguments)
 
@@ -337,6 +336,26 @@ def Mean(inputs, axis=-1, keep_dims=False, **kwargs):
     return Reduce(inputs, axis, 'MEAN', keep_dims, **kwargs)
 
 
+def _ArgReduce(inputs, axis=-1, operation='NONE', top_k=1, keep_dims=False, **kwargs):
+    CheckInputs(inputs, 1)
+    arguments = ParseArguments(locals())
+
+    n_out = 1
+    if 'ARG' not in operation:
+        n_out = 2; arguments['operation'] = 'ARG' + operation
+
+    outputs = Tensor.CreateOperator(nout=n_out, op_type='ArgReduce', **arguments)
+    if 'ARG' not in operation: output = outputs[1]
+    else: output = outputs
+
+    if inputs.shape is not None:
+        output.shape = inputs.shape[:]
+        if top_k > 1: output.shape[axis] = top_k
+        else: del output.shape[axis]
+
+    return output
+
+
 def Argmax(inputs, axis=-1, top_k=1, keep_dims=False, **kwargs):
     """Compute the indices of maximum elements along the given axis.
 
@@ -357,17 +376,30 @@ def Argmax(inputs, axis=-1, top_k=1, keep_dims=False, **kwargs):
         The indices.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
+    return _ArgReduce(inputs, axis, 'ARGMAX', top_k, keep_dims, **kwargs)
 
-    output = Tensor.CreateOperator(nout=1, op_type='Argmax', **arguments)
 
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-        if top_k > 1: output.shape[axis] = top_k
-        else: del output.shape[axis]
+def Max(inputs, axis=-1, top_k=1, keep_dims=False, **kwargs):
+    """Compute the values of maximum elements along the given axis.
 
-    return output
+    Parameters
+    ----------
+    inputs : Tensor
+        The input tensor.
+    axis : int
+        The axis to compute. Default is ``-1`` (Along all axes).
+    top_k : int
+        The top k results to keep.
+    keep_dims : boolean
+        Whether to keep dims after computing.
+
+    Returns
+    -------
+    Tensor
+        The values.
+
+    """
+    return _ArgReduce(inputs, axis, 'MAX', top_k, keep_dims, **kwargs)
 
 
 def Argmin(inputs, axis=-1, top_k=1, keep_dims=False, **kwargs):
@@ -390,17 +422,30 @@ def Argmin(inputs, axis=-1, top_k=1, keep_dims=False, **kwargs):
         The indices.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
+    return _ArgReduce(inputs, axis, 'ARGMIN', top_k, keep_dims, **kwargs)
 
-    output = Tensor.CreateOperator(nout=1, op_type='Argmin', **arguments)
 
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-        if top_k > 1: output.shape[axis] = top_k
-        else: del output.shape[axis]
+def Min(inputs, axis=-1, top_k=1, keep_dims=False, **kwargs):
+    """Compute the values of minimum elements along the given axis.
 
-    return output
+    Parameters
+    ----------
+    inputs : Tensor
+        The input tensor.
+    axis : int
+        The axis to compute. Default is ``-1`` (Along all axes).
+    top_k : int
+        The top k results to keep.
+    keep_dims : boolean
+        Whether to keep dims after computing.
+
+    Returns
+    -------
+    Tensor
+        The values.
+
+    """
+    return _ArgReduce(inputs, axis, 'MIN', top_k, keep_dims, **kwargs)
 
 
 def Transpose(inputs, perms=None, **kwargs):

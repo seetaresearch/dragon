@@ -22,13 +22,13 @@ class BatchRenormOp : public Operator<Context> {
     BatchRenormOp(const OperatorDef& op_def, Workspace* ws) 
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          momentum(OperatorBase::GetSingleArg<float>("momentum", float(0.9))),
-          eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))),
-          r_max(OperatorBase::GetSingleArg<float>("r_max", float(3.0))),
-          d_max(OperatorBase::GetSingleArg<float>("d_max", float(5.0))),
-          t_delta(OperatorBase::GetSingleArg<float>("t_delta", float(1.0))),
+          momentum(OperatorBase::GetSingleArg<float>("momentum", 0.9f)),
+          eps(OperatorBase::GetSingleArg<float>("eps", 1e-3f)),
+          r_max(OperatorBase::GetSingleArg<float>("r_max", 3.f)),
+          d_max(OperatorBase::GetSingleArg<float>("d_max", 5.f)),
+          t_delta(OperatorBase::GetSingleArg<float>("t_delta", 1.f)),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)),
-          t_r_max(float(1.0)), t_d_max(float(0.0)), t_val(float(0.0)),
+          t_r_max(1.f), t_d_max(0.f), t_val(0.f),
           mode(OperatorBase::GetSingleArg<string>("mode", "DEFAULT")) {
         if (axis != -1)
             CHECK_EQ(axis, 1)

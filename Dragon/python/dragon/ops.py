@@ -21,7 +21,6 @@ from .operators import activation as act
 from .operators import arithmetic as math
 from .operators import control_flow
 from .operators import misc as misc
-from .operators import cast
 from .operators import mpi
 from .operators import ndarray
 from .operators import norm
@@ -110,7 +109,9 @@ Crop = ndarray.Crop
 Reduce = ndarray.Reduce
 Sum = ndarray.Sum
 Mean = ndarray.Mean
+Max = ndarray.Max
 Argmax = ndarray.Argmax
+Min = ndarray.Min
 Argmin = ndarray.Argmin
 Slice = ndarray.Slice
 Stack = ndarray.Stack
@@ -131,14 +132,12 @@ Copy = control_flow.Copy
 Equal = control_flow.Equal
 
 # misc
+AsType = misc.AsType
 Run = misc.Run
 Template = misc.Template
 Accuracy = misc.Accuracy
 StopGradient = misc.StopGradient
 MovingAverage = misc.MovingAverage
-
-# cast
-FloatToHalf = cast.FloatToHalf
 
 # mpi
 MPIBroadcast = mpi.MPIBroadcast

@@ -31,20 +31,19 @@ class Fill(BaseModule):
     def register_op(self):
         self.op_meta = {
             'op_type': 'Fill',
-            'n_inputs': 1, 'n_outputs': 1,
+            'n_inputs': 0, 'n_outputs': 1,
             'arguments': {
                 'value': float(self.value),
                 'dims_desc': [d for d in self.shape] if len(self.shape) > 0 else None,
             }
         }
 
-    def forward(self, x, shape, y=None):
-        inputs = [x]; self.unify_devices(inputs)
-        outputs = [y if y else self.register_output(x.dtype)]
+    def forward(self, x, shape):
+        outputs = [x]; self.unify_devices(outputs)
         if shape is not None:
             for ix, d in enumerate(shape):
                 self.set_argument_i(self.shape[ix], d)
-        return self.run(inputs, outputs)
+        return self.run([], outputs)
 
 
 class Reshape(BaseModule):

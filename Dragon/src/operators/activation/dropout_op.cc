@@ -8,27 +8,25 @@ template <class Context> template <typename T>
 void DropoutOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    uint32_t* Mdata = mask->template mutable_data<uint32_t, Context>();
     float scale = use_scale ? 1.0 / (1.0 - prob()) : 1.0;
-    if (this->phase() == "TRAIN") {
-        kernel::Dropout<T, Context>(Output(0)->count(),
-                                                prob(),
-                                                 scale,
-                                                 Xdata,
-                                                 Mdata,
-                                                 Ydata,
-                                               &ctx());
-    } else if (this->phase() == "TEST") {
+    //  run with inference mode
+    if (this->phase() == "TEST") {
         ctx().template Copy<T, Context, Context>(Output(0)->count(), Ydata, Xdata);
         if (scale == 1.0) math::Scal<T, Context>(Output(0)->count(), 1.0 - prob(), Ydata);
-    }
+    } 
+    //  run with training mode
+    Tensor* mask = ws()->CreateTensor("/mnt/" + anchor() + "/dropout/mask");
+    mask->ReshapeLike(Input(0));
+    uint32_t* Mdata = mask->template mutable_data<uint32_t, Context>();
+    kernel::Dropout<T, Context>(Output(0)->count(),
+                                     prob(), scale,
+                               Xdata, Mdata, Ydata,
+                                           &ctx());
 }
 
 template <class Context>
 void DropoutOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
-    mask = ws()->CreateTensor("/mnt/" + anchor() + "/dropout/mask");
-    mask->ReshapeLike(Input(0));
 
     if (XIsType(Input(0), float)) RunWithType<float>();
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
@@ -47,15 +45,12 @@ void DropoutGradientOp<Context>::RunWithType() {
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* Mdata = mask->template data<uint32_t, Context>();
     float scale = use_scale ? 1.0 / (1.0 - prob()) : 1.0;
-    if (this->phase() == "TRAIN") {
-        kernel::DropoutGrad<T, Context>(Output(0)->count(),
-                                                    prob(),
-                                                     scale,
-                                                    dYdata,
-                                                     Mdata,
-                                                   dXdata);
-
-    } else if (this->phase() == "TEST") { NOT_IMPLEMENTED; }
+    //  run with inference mode
+    if (this->phase() == "TEST") { NOT_IMPLEMENTED; }
+    //  run with training mode
+    kernel::DropoutGrad<T, Context>(Output(0)->count(),
+                                         prob(), scale,
+                                dYdata, Mdata, dXdata);
     mask->Reset();
 }
 

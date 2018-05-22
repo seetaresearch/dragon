@@ -206,9 +206,8 @@ class Tensor {
     template <class DstCTX, class SrcCTX>
     inline void Copy(const Tensor& other) {
         CHECK_EQ(size_, other.size_);
-        meta_ = other.meta_;
         auto* src = other.template raw_data<SrcCTX>();
-        auto* dst = raw_mutable_data<DstCTX>();
+        auto* dst = raw_mutable_data<DstCTX>(other.meta_);
         if (dst == src) return;
         if (TypeMeta::Id<DstCTX>() == TypeMeta::Id<CPUContext>()) {
             CPUContext::Memcpy<DstCTX, SrcCTX>(nbytes(), dst, src);

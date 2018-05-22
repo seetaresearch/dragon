@@ -79,22 +79,28 @@ def save(obj, f, pickle_module=pickle, pickle_protocol=DEFAULT_PROTOCOL):
         lambda f: _save(obj, f, pickle_module, pickle_protocol))
 
 
-def _load(f, map_location=None, pickle_module=pickle):
+def _load(f, map_location=None, pickle_module=pickle, file=None):
     try:
-        return pickle.load(f)
+        return pickle_module.load(f)
     except UnicodeDecodeError:
-        return pickle.load(f, encoding='iso-8859-1')
+        if file:
+            # ReOpen the file, because the MARK is corrupted
+            f = open(file, 'rb')
+            return pickle_module.load(f, encoding='iso-8859-1')
+        else: return pickle_module.load(f, encoding='iso-8859-1')
 
 
 def load(f, map_location=None, pickle_module=pickle):
     new_fd = False
+    file = None
     if isinstance(f, str) or \
             (sys.version_info[0] == 2 and isinstance(f, unicode)) or \
             (sys.version_info[0] == 3 and isinstance(f, pathlib.Path)):
         new_fd = True
+        file = f
         f = open(f, 'rb')
     try:
-        return _load(f, map_location, pickle_module)
+        return _load(f, map_location, pickle_module, file)
     finally:
         if new_fd:
             f.close()

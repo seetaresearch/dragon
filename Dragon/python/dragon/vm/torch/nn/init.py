@@ -19,6 +19,7 @@ from __future__ import print_function
 
 import math
 import warnings
+from dragon.vm.torch.autograd.grad_mode import no_grad
 
 
 def calculate_gain(nonlinearity, param=None):
@@ -43,15 +44,18 @@ def calculate_gain(nonlinearity, param=None):
 
 
 def uniform_(tensor, a=0, b=1):
-    return tensor.uniform_(a, b)
+    with no_grad():
+        return tensor.uniform_(a, b)
 
 
 def normal_(tensor, mean=0, std=1):
-    return tensor.normal_(mean, std)
+    with no_grad():
+        return tensor.normal_(mean, std)
 
 
 def constant_(tensor, val):
-    return tensor.fill_(val)
+    with no_grad():
+        return tensor.fill_(val)
 
 
 def dirac_(tensor):
@@ -61,16 +65,16 @@ def dirac_(tensor):
 
     sizes = tensor.size()
     min_dim = min(sizes[0], sizes[1])
-    tensor.zero_()
-
-    for d in range(min_dim):
-        if dimensions == 3:  # Temporal convolution
-            tensor[d, d, tensor.size(2) // 2] = 1
-        elif dimensions == 4:  # Spatial convolution
-            tensor[d, d, tensor.size(2) // 2, tensor.size(3) // 2] = 1
-        else:  # Volumetric convolution
-            tensor[d, d, tensor.size(2) // 2, tensor.size(3) // 2, tensor.size(4) // 2] = 1
-    return tensor
+    with no_grad():
+        tensor.zero_()
+        for d in range(min_dim):
+            if dimensions == 3:  # Temporal convolution
+                tensor[d, d, tensor.size(2) // 2] = 1
+            elif dimensions == 4:  # Spatial convolution
+                tensor[d, d, tensor.size(2) // 2, tensor.size(3) // 2] = 1
+            else:  # Volumetric convolution
+                tensor[d, d, tensor.size(2) // 2, tensor.size(3) // 2, tensor.size(4) // 2] = 1
+        return tensor
 
 
 def _calculate_fan_in_and_fan_out(tensor):
@@ -86,7 +90,9 @@ def _calculate_fan_in_and_fan_out(tensor):
         num_output_fmaps = tensor.size(0)
         receptive_field_size = 1
         if tensor.dim() > 2:
-            receptive_field_size = tensor[0][0].numel()
+            # Fix the bug from original fb.torch
+            # tensor[0][0].numel() -> tensor.data[0, 0].numel()
+            receptive_field_size = tensor.data[0, 0].numel()
         fan_in = num_input_fmaps * receptive_field_size
         fan_out = num_output_fmaps * receptive_field_size
 
@@ -97,13 +103,15 @@ def xavier_uniform_(tensor, gain=1):
     fan_in, fan_out = _calculate_fan_in_and_fan_out(tensor)
     std = gain * math.sqrt(2.0 / (fan_in + fan_out))
     a = math.sqrt(3.0) * std  # Calculate uniform bounds from standard deviation
-    return tensor.uniform_(-a, a)
+    with no_grad():
+        return tensor.uniform_(-a, a)
 
 
 def xavier_normal_(tensor, gain=1):
     fan_in, fan_out = _calculate_fan_in_and_fan_out(tensor)
     std = gain * math.sqrt(2.0 / (fan_in + fan_out))
-    return tensor.normal_(0, std)
+    with no_grad():
+        return tensor.normal_(0, std)
 
 
 def _calculate_correct_fan(tensor, mode):
@@ -121,14 +129,16 @@ def kaiming_uniform_(tensor, a=0, mode='fan_in', nonlinearity='leaky_relu'):
     gain = calculate_gain(nonlinearity, a)
     std = gain / math.sqrt(fan)
     bound = math.sqrt(3.0) * std  # Calculate uniform bounds from standard deviation
-    return tensor.uniform_(-bound, bound)
+    with no_grad():
+        return tensor.uniform_(-bound, bound)
 
 
 def kaiming_normal_(tensor, a=0, mode='fan_in', nonlinearity='leaky_relu'):
     fan = _calculate_correct_fan(tensor, mode)
     gain = calculate_gain(nonlinearity, a)
     std = gain / math.sqrt(fan)
-    return tensor.normal_(0, std)
+    with no_grad():
+        return tensor.normal_(0, std)
 
 
 # for backward compatibility

@@ -68,6 +68,7 @@ class OperatorBase {
     inline const OperatorDef& op_def() const { return op_def_; }
     inline string DebugString() const { return op_def_.DebugString(); }
     string DTypeHelper(const Tensor& tensor, const Set<string>& dtypes) const;
+    string DTypeHelper(const string& dtype, const Set<string>& dtypes) const;
 
  protected:
     string phase_, anchor_;

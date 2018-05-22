@@ -33,3 +33,26 @@ class ReLU(Module):
         inputs = [x]; self.unify_devices(inputs)
         outputs = [x if self._inplace else self.register_output(x.dtype)]
         return self.run(inputs, outputs)
+
+
+class Softmax(Module):
+    def __init__(self, dim=None):
+        super(Softmax, self).__init__()
+        self.dim = dim
+        if dim is None:
+            raise ValueError('Excepted a valid dim, got None.')
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'Softmax',
+            'n_inputs': 1, 'n_outputs': 1,
+            'arguments': {
+                'axis': self.dim,
+            }
+        }
+
+    def forward(self, x):
+        inputs = [x]; self.unify_devices(inputs)
+        outputs = [self.register_output(x.dtype)]
+        return self.run(inputs, outputs)

@@ -22,7 +22,7 @@ class InstanceNormOp : public Operator<Context> {
     InstanceNormOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          eps(OperatorBase::GetSingleArg<float>("eps", float(1e-3))) {
+          eps(OperatorBase::GetSingleArg<float>("eps", 1e-3f)) {
         if (axis != -1)
             CHECK_EQ(axis, 1)
                 << "\nThe axis can only be set to 1.";

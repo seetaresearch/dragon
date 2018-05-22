@@ -36,6 +36,8 @@ from dragon.config import option
 from .autograd.expression import Expression
 from .autograd.grad_mode import is_grad_enabled
 from .constants import CTX_TO_DEVICE_OPTION
+from .tensor import RuntimeTensor
+from .tensor_pool import TPool
 
 
 def RunOperator(inputs, outputs, meta, auto_grad=True, **kwargs):
@@ -44,36 +46,41 @@ def RunOperator(inputs, outputs, meta, auto_grad=True, **kwargs):
     if len(outputs) == 0:
         raise ValueError('The num of outputs should be at least 1.')
 
+    # + I/O Check
+    requires_grad = False
+    inputs_name = []; outputs_name = []
+    for input in inputs:
+        inputs_name.append(input.name)
+        if input.requires_grad: requires_grad = True
+    requires_grad = requires_grad and is_grad_enabled()
 
-    inputs_name = [input.name for input in inputs]
-    outputs_name = [output.name for output in outputs]
+    for ix, output in enumerate(outputs):
+        if isinstance(output, tuple):
+            name = TPool.get('join' if requires_grad else 'detach')
+            outputs[ix] = RuntimeTensor(name, dtype=output[0], ctx=output[1])
+        outputs_name.append(outputs[ix].name)
 
+    # + Engine Check
     engine_type = meta[0]; persistent_key = None
-
     if engine_type == 'ONCE':
-        # OpType + CTX -> Op
+        # ++ OpType + CTX -> Op
         op_type, ctx = meta[1:]
         if ctx is None: raise ValueError('Excepted a context, got None.')
         op = pb.MakeOperatorDef(op_type, inputs_name, outputs_name, name='runtime',
-                device_option=CTX_TO_DEVICE_OPTION[ctx], **kwargs)
+                                device_option=CTX_TO_DEVICE_OPTION[ctx], **kwargs)
     elif engine_type == 'PERSISTENT':
-        # Key + Inputs + Outputs -> Op
+        # ++ Key + Inputs + Outputs -> Op
         persistent_key, meta_op = meta[1:]
         op = pb.MutableOperatorDef(meta_op, inputs_name, outputs_name)
     else:
         raise ValueError('Unknown executing engine: {}.'.format(engine_type))
 
-    # ~ Auto-Grad ~
-    requires_grad = False
-    for input in inputs:
-        if input.requires_grad:
-            requires_grad = True
-
+    # + Auto-Grad
     if len(inputs) > 0 and auto_grad:
         input_expressions = []
-        if requires_grad and is_grad_enabled():
+        if requires_grad:
             ignored_grads = set()
-            # + Trace outputs
+            # ++ Trace outputs
             for input in inputs:
                 input_expressions.append(input._expr)
                 if input._ignored_grads:
@@ -88,11 +95,11 @@ def RunOperator(inputs, outputs, meta, auto_grad=True, **kwargs):
                 if len(ignored_grads) > 0:
                     outputs[ix]._ignored_grads = ignored_grads
         else:
-            # + Reset status
+            # ++ Reset status
             for ix in range(len(outputs)):
                 outputs[ix]._requires_grad = False
 
-    # Run
+    # + Run
     if option['log_optimized_graph'] or option['log_meta_graph']:
         from dragon.config import logger
         logger.info('>>>>>>>>>>>>>>>>>> Forward Flow <<<<<<<<<<<<<<<<<<\n')
@@ -104,7 +111,7 @@ def RunOperator(inputs, outputs, meta, auto_grad=True, **kwargs):
         dg.workspace.RunPersistentOp(persistent_key,
             op.name, inputs_name, outputs_name)
 
-    # Returns
+    # + Returns
     if len(outputs) > 1: return outputs
     elif len(outputs) == 1: return outputs[0]
     else: return None

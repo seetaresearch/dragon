@@ -7,7 +7,7 @@ namespace dragon {
 template <class Context> template <typename T>
 void ConcatOp<Context>::RunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    for (int i = 0; i < nin; i++) {
+    for (int i = 0; i < InputSize(); i++) {
         auto* Xdata = Input(i).template data<T, Context>();
         TIndex count = Input(i).count();
         x_concat_dim = Input(i).dim(axis);
@@ -27,7 +27,7 @@ void ConcatOp<Context>::RunWithType() {
 template <class Context>
 void ConcatOp<Context>::RunOnDevice() {
     concat_dims = Input(0).dims();
-    for (int i = 1; i < nin; i++) {
+    for (int i = 1; i < InputSize(); i++) {
         CHECK_EQ(concat_dims.size(), Input(i).ndim())
             << "\nAll inputs should have the same ndim.";
         for (int j = 0; j < concat_dims.size(); j++) {
@@ -55,10 +55,10 @@ DEPLOY_CUDA(Concat);
 #endif
 OPERATOR_SCHEMA(Concat).NumInputs(1, INT_MAX).NumOutputs(1);
 
-template <class Context> template <typename T>
+template <class Context> template    <typename T>
 void ConcatGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
-    for (int i = 0; i < nin; i++) {
+    for (int i = 0; i < OutputSize(); i++) {
         x_concat_dim = Input(i).dim(axis);
         if (Output(i)->name() != "ignore") {
             auto* dXdata = Output(i)->template mutable_data<T, Context>();
@@ -85,7 +85,8 @@ void ConcatGradientOp<Context>::RunOnDevice() {
     outer_dim = Input(0).count(0, axis);
     inner_dim = Input(0).count(axis + 1);
     concat_offset = 0;
-    for (int i = 0; i < nin; i++) Output(i)->ReshapeLike(Input(i));
+    for (int i = 0; i < OutputSize(); i++) 
+        Output(i)->ReshapeLike(Input(i));
 
     if (XIsType(Input(0), float)) RunWithType<float>();
     else if (XIsType(Input(0), float16)) RunWithType<float16>();

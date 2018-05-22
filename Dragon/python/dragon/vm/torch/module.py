@@ -30,14 +30,14 @@ from dragon.config import logger
 from dragon.vm.torch.environ import \
     add_submodule, get_module_name
 
-from dragon.vm.torch.tensor import Tensor, RuntimeTensor, Parameter
+from dragon.vm.torch.tensor import Tensor, Parameter
 from dragon.vm.torch.tensor_pool import TPool
 from dragon.vm.torch.execute_engine import RunOperator
 
 
 class Module(object):
     def __init__(self):
-        self._modules = {}
+        self._modules = OrderedDict()
         self._parameters = OrderedDict()
         self._buffers = OrderedDict()
         self._persistent_key = self._op = None
@@ -96,22 +96,24 @@ class Module(object):
             else:
                 object.__setattr__(self, key, value)
 
-    def state_dict(self, destination=None, prefix='', keep_vars=False):
+    def state_dict(self, destination=None, prefix='', to_numpy=False):
         if destination is None:
             destination = OrderedDict()
         for name, param in self._parameters.items():
             if param is not None:
-                destination[prefix + name] = param if keep_vars else param.data
+                destination[prefix + name] = \
+                    param.cpu().numpy().copy() if to_numpy else param
         for name, buf in self._buffers.items():
             if buf is not None:
-                destination[prefix + name] = buf
+                destination[prefix + name] = \
+                    buf.cpu().numpy().copy() if to_numpy else buf
         for name, module in self._modules.items():
             if module is not None:
-                module.state_dict(destination, prefix + name + '.', keep_vars=keep_vars)
+                module.state_dict(destination, prefix + name + '.', to_numpy=to_numpy)
         return destination
 
     def load_state_dict(self, state_dict, strict=True):
-        logger.info('Load state dict from the stream.')
+        logger.info('Load the state dict from numpy arrays.')
         def submodule_key_mismatch(full_name, is_missing):
             module = self
             names = full_name.split(".")
@@ -198,6 +200,14 @@ class Module(object):
         else:
             self._parameters[name] = param
 
+    def add_module(self, name, module, name_v2=None):
+        if not isinstance(module, Module) and module is not None:
+            raise TypeError("{} is not a Module subclass".format(type(module)))
+        if hasattr(self, name) and name not in self._modules:
+            raise KeyError("attribute '{}' already exists".format(name))
+        self._modules[name] = module
+        add_submodule(module, name_v2 if name_v2 else name)
+
     def __call__(self, *args, **kwargs):
         with dg.name_scope(get_module_name(self)):
             return self.forward(*args)
@@ -237,6 +247,23 @@ class Module(object):
             if module is not None and module not in memo:
                 memo.add(module)
                 yield name, module
+
+    def modules(self):
+        for name, module in self.named_modules():
+            yield module
+
+    def named_modules(self, memo=None, prefix=''):
+        if memo is None:
+            memo = set()
+        if self not in memo:
+            memo.add(self)
+            yield prefix, self
+            for name, module in self._modules.items():
+                if module is None:
+                    continue
+                submodule_prefix = prefix + ('.' if prefix else '') + name
+                for m in module.named_modules(memo, submodule_prefix):
+                    yield m
 
     def named_parameters(self, memo=None, prefix=''):
         """Returns an iterator over module parameters.
@@ -315,7 +342,7 @@ class Module(object):
         raise NotImplementedError()
 
     def register_output(self, dtype='float32'):
-        return RuntimeTensor(dtype=dtype, ctx=self._ctx)
+        return (dtype, self._ctx)
 
     def unify_devices(self, inputs):
         for ix, t in enumerate(inputs):

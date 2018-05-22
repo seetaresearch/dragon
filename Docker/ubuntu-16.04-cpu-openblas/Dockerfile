@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     ssh \
     vim \
+    libnuma-dev \
     libprotobuf-dev \
     protobuf-compiler \
     libopenblas-dev \ 
@@ -17,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-tk \ 
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --no-cache-dir --upgrade pip setuptools wheel && \
+RUN pip3 install --no-cache-dir --upgrade setuptools wheel && \
     pip3 install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple \
     numpy \
     protobuf \ 

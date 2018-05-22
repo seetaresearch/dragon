@@ -13,6 +13,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import numpy as np
+import dragon as dg
 from dragon.vm.torch.tensor import *
 
 
@@ -25,10 +27,10 @@ def CheckDataType(inputs, dtypes=None):
             input._dtype not in dtypes:
                 raise TypeError('Type of input({}) is {}, '
                                 'not in the support set: ({}).'
-                                .format(ix, input._dtype, ', '.join(dtypes)))
+                    .format(ix, input._dtype, ', '.join(dtypes)))
         if input._dtype != request_type:
             raise TypeError('Excepted the type of input({}) is {}, got {}.'
-                            .format(ix, request_type, input._dtype))
+                    .format(ix, request_type, input._dtype))
 
 
 def UnifyDevices(tensors, key='Inputs'):
@@ -36,12 +38,12 @@ def UnifyDevices(tensors, key='Inputs'):
     devices = [0]
     if len(set(device_types)) != 1:
         raise ValueError('{} from different device type: [{}].'
-                         .format(key, ', '.join(device_types)))
+            .format(key, ', '.join(device_types)))
     if device_types[0] == 'CUDA':
         devices = [t._ctx[1] for t in tensors]
         if len(set(devices)) != 1:
             raise ValueError('{} from different cuda device: [{}].'
-                             .format(key, ', '.join([str(d) for d in devices])))
+            .format(key, ', '.join([str(d) for d in devices])))
     return device_types[0], devices[0]
 
 
@@ -58,3 +60,23 @@ def MakeContext(inputs=(), outputs=(), meta=None):
     # Case #4: [...], [...] -> Refer Outputs
     # Case #5: meta -> CPU, CUDA:?
     return type, device_id
+
+
+def WrapScalar(scalar, dtype, ctx):
+    # We use (DType + Value) to hash different scalars
+    # Setting a Tensor with same DType and shape will not deconstruct it
+    value = np.array([scalar], dtype=dtype)
+    if 'float' in dtype: scalar = float(scalar)
+    if 'int' in dtype: scalar = int(scalar)
+    t = dg.Tensor('/share/scalar/{}/{}'.format(
+        dtype, str(scalar))).Variable()
+    t.set_value(value)
+    t = Tensor(dg_tensor=t.name, dtype=dtype, ctx=ctx, own_storage=False)
+    t.requires_grad = False
+    return t
+
+
+def CanonicalAxis(input, dim):
+    ndim = input.ndimension()
+    while dim < 0: dim += ndim
+    return dim

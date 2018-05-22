@@ -76,7 +76,7 @@ def from_dragon(tensor, own_storage=False):
 
     """
     info = dg_tensor_utils.GetTensorInfo(tensor)
-    if not info['init']: return None
+    if not info or not info['init']: return None
     module = importlib.import_module('dragon.vm.torch.tensor')
     th_tensor = getattr(module, type_np2torch(info['dtype']))()
     th_tensor._ctx = (info['mem_at'], info['device_id'])

@@ -340,6 +340,34 @@ class Tensor(object):
     def dtype(self, value):
         self._dtype = value
 
+    def astype(self, dtype, inplace=False):
+        """Cast the data type of inputs to a specific one.
+
+        Parameters
+        ----------
+        dtype : str
+            The specific dtype.
+        inplace : boolean
+            Whether to modify the inputs.
+
+        Returns
+        -------
+        Tensor
+            The output tensor.
+
+        """
+        if inplace:
+            output = Tensor.CreateOperator(inputs=[], existing_outputs=[self],
+                op_type='AsType', dtype=dtype)
+        else:
+            output = Tensor.CreateOperator(inputs=self, nout=1,
+                op_type='AsType', dtype=dtype)
+
+        if self.shape is not None:
+            output.shape = self.shape[:]
+
+        return output
+
     @property
     def extra_targets(self):
         """Return or Set the extra solving targets.
@@ -646,6 +674,8 @@ class Tensor(object):
             output.shape = self.shape[:]
         return output
 
+    __truediv__ = __div__
+
     def __rdiv__(self, other):
         """Calculate y / x.
 
@@ -671,6 +701,8 @@ class Tensor(object):
         if self.shape is not None:
             output.shape = self.shape[:]
         return output
+
+    __rtruediv__ = __rdiv__
 
     def __neg__(self):
         """Calculate -x.
