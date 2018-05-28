@@ -1,4 +1,4 @@
-#include "operators/arithmetic/scale_op.h"
+#include "operators/arithmetic/affine_op.h"
 #include "core/workspace.h"
 #include "utils/filler.h"
 #include "utils/op_kernel.h"
@@ -6,7 +6,7 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void ScaleOp<Context>::RunWithType() {
+void AffineOp<Context>::RunWithType() {
     start_axis = axis;
     if (start_axis < 0) start_axis += (int)Input(0).ndim();
     if (num_axes == -1) num_axes = (int)Input(0).ndim() - start_axis;
@@ -18,27 +18,29 @@ void ScaleOp<Context>::RunWithType() {
     const vector<TIndex>::const_iterator& dim_start = Input(0).dims().begin() + start_axis;
     const vector<TIndex>::const_iterator& dim_end = dim_start + num_axes;
     vector<TIndex> param_dims(dim_start, dim_end);
-
-    TENSOR_FILL(Input(1), param_dims);
+    TENSOR_FILL(Input(1), param_dims);;
+    outer_dim = Input(0).count(0, start_axis);
+    inner_dim = Input(0).count(start_axis + num_axes);
+    scale_dim = Input(1).count();
     if (InputSize() > 2) {
         TENSOR_FILL(Input(2), param_dims);
-        inner_dim = Input(0).count(start_axis + num_axes);
         INIT_MULTIPLIER(bias_multiplier, inner_dim);
     }
 
-    if (InputSize() > 2) {
-        kernel::Scale<T, Context>(start_axis, &Input(0), &Input(1),
-                                        &Input(2), bias_multiplier,
-                                                        Output(0));
-    } else {
-        kernel::Scale<T, Context>(start_axis, &Input(0), &Input(1),
-                                                  nullptr, nullptr,
-                                                        Output(0));
-    }
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Adata = Input(1).template data<T, Context>();
+    auto* Bdata = InputSize() > 2 ? Input(2).template data<T, Context>() : nullptr;
+    auto* BMdata = InputSize() > 2 ? bias_multiplier->template data<T, Context>() : nullptr;
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+
+    kernel::Affine<T, Context>(Output(0)->count(),
+                  outer_dim, scale_dim, inner_dim,
+                      Xdata, Adata, Bdata, BMdata,
+                                           Ydata);
 }
 
 template <class Context>
-void ScaleOp<Context>::RunOnDevice() {
+void AffineOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
 
     if (XIsType(Input(0), float)) RunWithType<float>();
@@ -46,14 +48,14 @@ void ScaleOp<Context>::RunOnDevice() {
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
-DEPLOY_CPU(Scale);
+DEPLOY_CPU(Affine);
 #ifdef WITH_CUDA
-DEPLOY_CUDA(Scale);
+DEPLOY_CUDA(Affine);
 #endif
-OPERATOR_SCHEMA(Scale).NumInputs(2, 3).NumOutputs(1);
+OPERATOR_SCHEMA(Affine).NumInputs(2, 3).NumOutputs(1);
 
 template <class Context> template <typename T>
-void ScaleGradientOp<Context>::BiasRunWithType() {
+void AffineGradientOp<Context>::BiasRunWithType() {
     Output(2)->ReshapeLike(Input(1));
     INIT_MULTIPLIER(bias_multiplier, inner_dim);
     auto* BMul_data = this->bias_multiplier->template data<T, Context>();
@@ -71,7 +73,7 @@ void ScaleGradientOp<Context>::BiasRunWithType() {
 }
 
 template <class Context> template <typename T>
-void ScaleGradientOp<Context>::ScaleRunWithType() {
+void AffineGradientOp<Context>::ScaleRunWithType() {
     Output(0)->ReshapeLike(Input(0));
     Output(1)->ReshapeLike(Input(1));
     INIT_MULTIPLIER(sum_multiplier, sum_dim);
@@ -119,15 +121,20 @@ void ScaleGradientOp<Context>::ScaleRunWithType() {
 }
 
 template <class Context> template <typename T>
-void ScaleGradientOp<Context>::RunWithType() {
+void AffineGradientOp<Context>::RunWithType() {
     Output(0)->ReshapeLike(Input(0));
 
-    kernel::ScaleGrad<T, Context>(start_axis,
-           &Input(-1), &Input(1), Output(0));
+    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* Adata = Input(1).template data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
+
+    kernel::AffineGrad<T, Context>(Output(0)->count(),
+                      outer_dim, scale_dim, inner_dim,
+                               dYdata, Adata, dXdata);
 }
 
 template <class Context>
-void ScaleGradientOp<Context>::RunOnDevice() {
+void AffineGradientOp<Context>::RunOnDevice() {
     start_axis = axis;
     if (start_axis < 0) start_axis += (int)Input(0).ndim();
     if (num_axes == -1) num_axes = (int)Input(0).ndim() - start_axis;
@@ -151,21 +158,21 @@ void ScaleGradientOp<Context>::RunOnDevice() {
     }
 }
 
-DEPLOY_CPU(ScaleGradient);
+DEPLOY_CPU(AffineGradient);
 #ifdef WITH_CUDA
-DEPLOY_CUDA(ScaleGradient);
+DEPLOY_CUDA(AffineGradient);
 #endif
-OPERATOR_SCHEMA(ScaleGradient).NumInputs(3).NumOutputs(3);
+OPERATOR_SCHEMA(AffineGradient).NumInputs(3).NumOutputs(3);
 
-class GetScaleGradient final : public GradientMakerBase {
+class GetAffineGradient final : public GradientMakerBase {
  public:
-    GRADIENT_MAKER_CTOR(GetScaleGradient);
+    GRADIENT_MAKER_CTOR(GetAffineGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
             vector<string> {I(0), I(1), GO(0)},
             vector<string> {GI(0), GI(1), GI(2)});
     }
 };
-REGISTER_GRADIENT(Scale, GetScaleGradient);
+REGISTER_GRADIENT(Affine, GetAffineGradient);
 
 }    // namespace dragon

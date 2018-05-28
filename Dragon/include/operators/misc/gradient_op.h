@@ -9,8 +9,8 @@
 //
 // -------------------------------------------------------------
 
-#ifndef DRAGON_OPERATORS_MISC_GRADIENT_GENERATE_OP_H_
-#define DRAGON_OPERATORS_MISC_GRADIENT_GENERATE_OP_H_
+#ifndef DRAGON_OPERATORS_MISC_GRADIENT_OP_H_
+#define DRAGON_OPERATORS_MISC_GRADIENT_OP_H_
 
 #include "core/operator.h"
 
@@ -62,4 +62,4 @@ class StopGradientOp final : public Operator<Context> {
 
 }    // namespace dragon
 
-#endif    // DRAGON_OPERATORS_MISC_GRADIENT_GENERATE_OP_H_
+#endif    // DRAGON_OPERATORS_MISC_GRADIENT_OP_H_

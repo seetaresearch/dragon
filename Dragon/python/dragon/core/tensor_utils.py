@@ -80,7 +80,8 @@ def FromShape(shape, dtype='float32', ctx=None, name=None):
     The wrapper of ``TensorFromShapeCC``.
 
     """
-    tensor = Tensor(name)
+    if name is None: tensor = Tensor(name=name)
+    else: tensor = Tensor(_name=name)
     if not isinstance(shape, (tuple, list)):
         raise TypeError('The shape should be a tuple or list.')
     if ctx is None: ctx = MakeDeviceOption(0, 0) # CPUContext
@@ -134,7 +135,8 @@ def FromPyArray(array, name=None):
     The wrapper of ``TensorFromPyArrayCC``.
 
     """
-    tensor = Tensor(name)
+    if name is None: tensor = Tensor(name=name)
+    else: tensor = Tensor(_name=name)
     if not isinstance(array, np.ndarray):
         raise TypeError('The given nd-array should be numpy.ndarray.')
     TensorFromPyArrayCC(_stringify_tensor(tensor), array)
@@ -258,15 +260,18 @@ def GetTensorInfo(tensor, stream=1):
 
     The string info contains following fields:
 
-    stream #1: ``dtype``, ``from_numpy``, ``init``
-               ``mem``, ``mem_at``, ``device_id``
+    stream #1: ``dtype``, ``from_numpy``, ``init``, ``mem``, ``mem_at``, ``device_id``
+
     stream #2: ``shape``
+
     stream #3: #1 + #2
 
     Parameters
     ----------
     tensor : Tensor or str
         The input tensor.
+    stream : int
+        The stream id.
 
     Returns
     -------

@@ -101,7 +101,7 @@ List               Brief
 `Matmul`_          Matrix Multiplication.
 `InnerProduct`_    InnerProduct Function.
 `Eltwise`_         Eltwise Sum/Product Function.
-`Scale`_           Scale Function.
+`Affine`_          Calculate ``y = Ax + b`` along the given range of axes.
 `GramMatrix`_      Calculate the gram matrix, introduced by `[Gatys et.al, 2016] <https://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Gatys_Image_Style_Transfer_CVPR_2016_paper.pdf>`_.
 ===============    ======================================================================
 
@@ -244,7 +244,7 @@ List                 Brief
 .. _Dot: operators/arithmetic.html#dragon.operators.arithmetic.Dot
 .. _InnerProduct: operators/arithmetic.html#dragon.operators.arithmetic.InnerProduct
 .. _Eltwise: operators/arithmetic.html#dragon.operators.arithmetic.Eltwise
-.. _Scale: operators/arithmetic.html#dragon.operators.arithmetic.Scale
+.. _Affine: operators/arithmetic.html#dragon.operators.arithmetic.Affine
 .. _GramMatrix: operators/arithmetic.html#dragon.operators.arithmetic.GramMatrix
 
 .. _BatchNorm: operators/norm.html#dragon.operators.norm.BatchNorm

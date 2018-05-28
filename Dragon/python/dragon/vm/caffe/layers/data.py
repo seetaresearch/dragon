@@ -71,7 +71,7 @@ class DataLayer(Layer):
                        'min_random_scale': transform_param.min_random_scale,
                        'max_random_scale': transform_param.max_random_scale,
                        'shuffle': parallel_param.shuffle,
-                       'node_step': parallel_param.node_step,
+                       'multiple_nodes': parallel_param.multiple_nodes,
                        'partition': parallel_param.partition}
 
     def Setup(self, bottom):

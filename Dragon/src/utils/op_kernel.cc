@@ -6,6 +6,7 @@
 #include "utils/omp_alternative.h"
 #include "utils/sse_alternative.h"
 #include "utils/math_functions.h"
+#include "utils/cast.h"
 
 bool judge(int a, int b)  { return unsigned(a) < unsigned(b); }
 
@@ -359,6 +360,70 @@ template<> void TanhGrad<float, CPUContext>(const int count,
     }
 }
 
+/******************** arithmetic.affine ********************/
+
+template<> void Affine<float, CPUContext>(const int count,
+                                          const int outer_dim,
+                                          const int scale_dim,
+                                          const int inner_dim,
+                                          const float* x,
+                                          const float* alpha,
+                                          const float* beta,
+                                          const float* beta_multiplier,
+                                          float* y) {
+    //  Ax
+    auto* Xdata = x; auto* Ydata = y;
+    for (int n = 0; n < outer_dim; ++n) {
+        for (int d = 0; d < scale_dim; ++d) {
+            math::Scale<float, CPUContext>(inner_dim, alpha[d], Xdata, Ydata);
+            Xdata += inner_dim; 
+            Ydata += inner_dim;
+        }
+    }
+    //  Pb
+    if (beta != nullptr && beta_multiplier != nullptr) {
+        int dim = scale_dim * inner_dim;
+        Ydata = y;
+        for (int n = 0; n < outer_dim; ++n) {
+            math::Gemm<float, CPUContext>(CblasNoTrans, CblasNoTrans,
+                                             scale_dim, inner_dim, 1,
+                                                                 1.0,
+                                               beta, beta_multiplier,
+                                                                 1.0,
+                                                              Ydata);
+             Ydata += dim;
+        }
+    }
+}
+
+template<> void Affine<float16, CPUContext>(const int count,
+                                            const int outer_dim,
+                                            const int scale_dim,
+                                            const int inner_dim,
+                                            const float16* x,
+                                            const float16* alpha,
+                                            const float16* beta,
+                                            const float16* beta_multiplier,
+                                            float16* y) {
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
+}
+
+template <> void AffineGrad<float, CPUContext>(const int count,
+                                               const int outer_dim,
+                                               const int scale_dim,
+                                               const int inner_dim,
+                                               const float* dy,
+                                               const float* alpha,
+                                               float* dx) {
+    auto* dYdata = dy; auto* dXdata = dx;
+    for (int n = 0; n < outer_dim; ++n) {
+        for (int d = 0; d < scale_dim; ++d) {
+            math::Scale<float, CPUContext>(inner_dim, alpha[d], dYdata, dXdata);
+            dYdata += inner_dim; dXdata += inner_dim;
+        }
+    }
+}
+
 /******************** arithmetic.bias_add ********************/
 
 template<> void BiasAdd<float, CPUContext>(const int count,
@@ -405,77 +470,6 @@ template <> void Clip<float, CPUContext>(const int count,
         mask[i] = 1.0;
         if (x[i] < low || x[i] > high) mask[i] = 0.0;
         y[i] = std::max(low, std::min(x[i], high));
-    }
-}
-
-/******************** arithmetic.scale ********************/
-
-template<> void Scale<float, CPUContext>(const int axis, 
-                                         Tensor* x, 
-                                         Tensor* gamma, 
-                                         Tensor* beta, 
-                                         Tensor* BMul, 
-                                         Tensor* y) {
-    int outer_dim = x->count(0, axis);
-    int inner_dim = x->count(axis + gamma->ndim());
-    int scale_dim = gamma->count();
-    auto* Xdata = x->data<float, CPUContext>();
-    auto* Ydata = y->mutable_data<float, CPUContext>();
-    auto* Sdata = gamma->data<float, CPUContext>();
-    auto* Bdata = beta != nullptr ? 
-                          beta->data<float, CPUContext>() : 
-                          nullptr;
-    auto* BMul_data = BMul != nullptr ?
-                      BMul->data<float, CPUContext>() : 
-                      nullptr;
-    for (int n = 0; n < outer_dim; ++n) {
-        for (int d = 0; d < scale_dim; ++d) {
-            const float factor = Sdata[d];
-            math::Scale<float, CPUContext>(inner_dim, factor, Xdata, Ydata);
-            Xdata += inner_dim; 
-            Ydata += inner_dim;
-        }
-    }
-    if (Bdata != nullptr) {
-        int dim = scale_dim * inner_dim;
-        Ydata = y->mutable_data<float, CPUContext>();
-        for (int n = 0; n < outer_dim; ++n) {
-            math::Gemm<float, CPUContext>(CblasNoTrans, CblasNoTrans,
-                                             scale_dim, inner_dim, 1,
-                                                                 1.0,
-                                                    Bdata, BMul_data,
-                                                                 1.0,
-                                                               Ydata);
-             Ydata += dim;
-        }
-    }
-}
-
-template<> void Scale<float16, CPUContext>(const int axis, 
-                                           Tensor* x, 
-                                           Tensor* gamma, 
-                                           Tensor* beta, 
-                                           Tensor* BMul, 
-                                           Tensor* y) {
-    LOG(FATAL) << "float16 is unsupported for CPUContext.";
-}
-
-template <> void ScaleGrad<float, CPUContext>(const int axis, 
-                                              Tensor* dy, 
-                                              Tensor* gamma, 
-                                              Tensor* dx) {
-    int outer_dim = dx->count(0, axis);
-    int inner_dim = dx->count(axis + gamma->ndim());
-    int scale_dim = gamma->count();
-    auto* dYdata = dy->data<float, CPUContext>();
-    auto* dXdata = dx->mutable_data<float, CPUContext>();
-    auto* Sdata = gamma->data<float, CPUContext>();
-    for (int n = 0; n < outer_dim; ++n) {
-        for (int d = 0; d < scale_dim; ++d) {
-            const float factor = Sdata[d];
-            math::Scale<float, CPUContext>(inner_dim, factor, dYdata, dXdata);
-            dYdata += inner_dim; dXdata += inner_dim;
-        }
     }
 }
 
@@ -809,7 +803,7 @@ template<> void SparseSoftmaxFocalLossGrad<float, CPUContext>(const int count,
     }
 }
 
-/******************** misc.dtype ********************/
+/******************** misc.astype ********************/
 
 template <typename Ta, typename Tb>
 void _TypeA2B(const int count, const Ta* a, Tb* b) {
@@ -819,11 +813,26 @@ void _TypeA2B(const int count, const Ta* a, Tb* b) {
     for (int i = 0; i < count; ++i) b[i] = a[i];
 }
 
+template <typename Ta, typename Tb>
+void _TypeA2B_v2(const int count, const Ta* a, Tb* b) {
+#ifdef WITH_OMP
+#pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) b[i] = dragon_cast<Tb, Ta>(a[i]);
+}
+
 #define DEFINE_TYPE_A2B(type_a, type_b) \
     template <> void TypeA2B<type_a, type_b, CPUContext>(const int count, \
                                                          const type_a* a, \
                                                          type_b* b) { \
         _TypeA2B<type_a, type_b>(count, a, b); \
+    }
+
+#define DEFINE_TYPE_A2B_V2(type_a, type_b) \
+    template <> void TypeA2B<type_a, type_b, CPUContext>(const int count, \
+                                                         const type_a* a, \
+                                                         type_b* b) { \
+        _TypeA2B_v2<type_a, type_b>(count, a, b); \
     }
 
 #define DEFINE_TYPE_DISABLE_FP16(type) \
@@ -845,13 +854,10 @@ void _TypeA2B(const int count, const Ta* a, Tb* b) {
     DEFINE_TYPE_A2B(type_a, int64_t); \
     DEFINE_TYPE_A2B(type_a, uint8_t);
 
-template <> void TypeA2B<float16, float16, CPUContext>(const int count,
-                                                       const float16* a,
-                                                       float16* b) {
-    LOG(FATAL) << "float16 is unsupported for CPUContext."; 
-}
-
-DEFINE_TYPE_A2ALL(float); DEFINE_TYPE_DISABLE_FP16(float);
+DEFINE_TYPE_A2B_V2(float16, float);
+DEFINE_TYPE_A2B_V2(float, float16);
+DEFINE_TYPE_A2B_V2(float16, float16);
+DEFINE_TYPE_A2ALL(float);
 DEFINE_TYPE_A2ALL(double); DEFINE_TYPE_DISABLE_FP16(double);
 DEFINE_TYPE_A2ALL(int); DEFINE_TYPE_DISABLE_FP16(int);
 DEFINE_TYPE_A2ALL(int64_t); DEFINE_TYPE_DISABLE_FP16(int64_t);

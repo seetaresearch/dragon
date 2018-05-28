@@ -60,11 +60,13 @@ template <class Context>
 class CuDNNConv2dTransposeOp : public Conv2dTransposeOp<Context> {
  public:
     CuDNNConv2dTransposeOp(const OperatorDef& def, Workspace* ws)
-        : Conv2dTransposeOp<Context>(def, ws) {
+        : Conv2dTransposeOp<Context>(def, ws), enable_tensor_core(true) {
 #if CUDNN_VERSION_MIN(7, 0, 0)
         cudnn_group = 1;
+        enable_tensor_core &= TENSOR_CORE_AVAILABLE();
 #else
         cudnn_group = this->group;
+        enable_tensor_core = false;
 #endif
         handle = new cudnnHandle_t[cudnn_group];
         stream = new cudaStream_t[cudnn_group];
@@ -112,17 +114,20 @@ class CuDNNConv2dTransposeOp : public Conv2dTransposeOp<Context> {
     size_t workspace_fwd_data_size;
     TIndex bias_offset, cudnn_group;
     vector<TIndex> input_dims;
+    bool enable_tensor_core;
 };
 
 template <class Context>
 class CuDNNConv2dTransposeGradientOp : public Conv2dTransposeGradientOp<Context> {
 public:
     CuDNNConv2dTransposeGradientOp(const OperatorDef& def, Workspace* ws)
-        : Conv2dTransposeGradientOp<Context>(def, ws) {
+        : Conv2dTransposeGradientOp<Context>(def, ws), enable_tensor_core(true) {
 #if CUDNN_VERSION_MIN(7, 0, 0)
         cudnn_group = 1;
+        enable_tensor_core &= TENSOR_CORE_AVAILABLE();
 #else
         cudnn_group = this->group;
+        enable_tensor_core = false;
 #endif
         handle = new cudnnHandle_t[cudnn_group * 3];
         stream = new cudaStream_t[cudnn_group * 3];
@@ -171,6 +176,7 @@ public:
     size_t workspace_bwd_filter_size, workspace_bwd_data_size;
     TIndex bias_offset, cudnn_group;
     vector<TIndex> input_dims;
+    bool enable_tensor_core;
 };
 
 #endif    // WITH_CUDNN

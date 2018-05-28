@@ -130,6 +130,8 @@ void CuDNNConv2dTransposeOp<Context>::RunOnDevice() {
 #endif
 #if CUDNN_VERSION_MIN(7, 0, 0)
         CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc, this->group));
+        if (enable_tensor_core)
+            CUDNN_CHECK(cudnnSetConvolutionMathType(conv_desc, CUDNN_TENSOR_OP_MATH));
 #endif
         RunWithType<float>();
     } else if (XIsType(Input(0), float16)) {
@@ -150,6 +152,8 @@ void CuDNNConv2dTransposeOp<Context>::RunOnDevice() {
 #endif
 #if CUDNN_VERSION_MIN(7, 0, 0)
         CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc, this->group));
+        if (enable_tensor_core)
+            CUDNN_CHECK(cudnnSetConvolutionMathType(conv_desc, CUDNN_TENSOR_OP_MATH));
 #endif
         RunWithType<float16>();
 #endif  // WITH_CUDA_FP16
@@ -310,6 +314,8 @@ void CuDNNConv2dTransposeGradientOp<Context>::RunOnDevice() {
 #endif
 #if CUDNN_VERSION_MIN(7, 0, 0)
         CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc, this->group));
+        if (enable_tensor_core)
+            CUDNN_CHECK(cudnnSetConvolutionMathType(conv_desc, CUDNN_TENSOR_OP_MATH));
 #endif
         RunWithType<float>();
     } else if (XIsType(Input(0), float16)) {
@@ -330,6 +336,8 @@ void CuDNNConv2dTransposeGradientOp<Context>::RunOnDevice() {
 #endif
 #if CUDNN_VERSION_MIN(7, 0, 0)
         CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc, this->group));
+        if (enable_tensor_core)
+            CUDNN_CHECK(cudnnSetConvolutionMathType(conv_desc, CUDNN_TENSOR_OP_MATH));
 #endif
         RunWithType<float16>();
 #endif  // WITH_CUDA_FP16

@@ -128,8 +128,8 @@ MixedMemory::~MixedMemory() {
 void MixedMemory::SwitchToDevice() {
     if (cuda_ptr_) {
 #ifdef WITH_CUDA
-        int ptr_device = POINTER_DEVICE(cuda_ptr_);
-        int cur_device = CURRENT_DEVICE();
+        int ptr_device = CUDA_POINTER_DEVICE(cuda_ptr_);
+        int cur_device = CUDA_CURRENT_DEVICE();
         if (ptr_device != cur_device) state_ = SWITCHED;
 #endif
     }
@@ -139,7 +139,7 @@ void MixedMemory::SwitchToCUDADevice(int device_id) {
 #ifdef WITH_CUDA
     DeviceGuard gurad(device_id);
     if (cuda_ptr_) {
-        int ptr_device = POINTER_DEVICE(cuda_ptr_);
+        int ptr_device = CUDA_POINTER_DEVICE(cuda_ptr_);
         if (ptr_device != device_id) state_ = SWITCHED;
     }
     ToCUDA();
@@ -164,7 +164,7 @@ const Map<string, string> MixedMemory::info() const {
     }
     s2s["mem_at"] = _state_;
     if (cpu_ptr_) s2s["CPU"] = "0";
-    if (cuda_ptr_) s2s["CUDA"] = dragon_cast<string, int>(POINTER_DEVICE(cuda_ptr_));
+    if (cuda_ptr_) s2s["CUDA"] = dragon_cast<string, int>(CUDA_POINTER_DEVICE(cuda_ptr_));
     return s2s;
 }
 

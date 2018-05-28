@@ -39,11 +39,9 @@ class DataBatch(object):
         source : str
             The path of database.
         multiple_nodes: boolean
-            Whether to split data for multiple parallel nodes.
+            Whether to split data for multiple parallel nodes. Default is ``False``.
         shuffle : boolean
-            Whether to shuffle the data.
-        instance_chunk : boolean
-            Whether to limit each chunk with at most 1 instance.
+            Whether to shuffle the data. Default is ``False``.
         num_chunks : int
             The number of chunks to split. Default is ``2048``.
         chunk_size : int

@@ -144,6 +144,17 @@ class Tensor(object):
                                "Use .cpu() to move the tensor to host memory first.")
         return tensor_utils.ToPyArray(self._dg_tensor)
 
+    def numpy_ex(self):
+        """Create a numpy const nd-array sharing this tensor.
+
+        Returns
+        -------
+        numpy.ndarray
+            The numpy nd-array.
+
+        """
+        return tensor_utils.ToPyArrayEx(self._dg_tensor)
+
     def dragon(self):
         """Create a dragon tensor sharing this tensor.
 
@@ -533,7 +544,7 @@ class Tensor(object):
 
         Parameters
         ----------
-        args : tuple
+        args : tuple or int
             The new size.
 
         Returns
@@ -605,6 +616,21 @@ class Tensor(object):
 
         """
         self.fill_(0.)
+
+    def one_(self):
+        """Fills self tensor with ones.
+
+        Parameters
+        ----------
+        value : numerical type
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The self.
+
+        """
+        self.fill_(1.)
 
     def uniform_(self, low=0, high=1):
         """Fill self tensor with the specified uniform distribution.

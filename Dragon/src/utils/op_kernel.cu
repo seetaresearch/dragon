@@ -14,16 +14,11 @@ namespace dragon {
 namespace kernel {
 
 template <typename T>
-__global__ void _Empty() { }
+__global__ void _Empty() {}
 
 template<> void Empty<float, CUDAContext>() {
     _Empty<float> << <1, 1 >> >();
     CUDA_POST_KERNEL_CHECK;
-}
-
-template<> void Empty<float16, CUDAContext>() {
-    _Empty<float16> << <1, 1 >> >();
-     CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** activation.dropout ********************/
@@ -357,49 +352,6 @@ template<> void Relu<float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
-#ifdef WITH_CUDA_FP16
-template <typename T>
-__global__ void _ReluHalf(const int count, const half* x, const half slope, half* y) {
-    const half kZero = __float2half(0.f);
-    CUDA_KERNEL_LOOP(idx, count) {
-#if __CUDA_ARCH__ >= 530
-        y[idx] = __hgt(x[idx], kZero) ? x[idx] : __hmul(x[idx], slope);
-#endif
-    }
-}
-
-template <typename T>
-__global__ void _ReluHalf2(const int count, const half2* x, const half2 slope, half2* y) {
-    const half2 kZero = __float2half2_rn(0.f);
-    CUDA_KERNEL_LOOP(idx, count) {
-#if __CUDA_ARCH__ >= 530
-        y[idx] = __hbgt2(x[idx], kZero) ? x[idx] : __hmul2(x[idx], slope);
-#endif
-    }
-}
-#endif
-
-template<> void Relu<float16, CUDAContext>(const int count,
-                                           const float16* x,
-                                           const float slope,
-                                           float16* y) {
-#ifdef WITH_CUDA_FP16
-    if (count % 2 == 0) 
-        _ReluHalf2<half2> << < GET_BLOCKS(count), CUDA_NUM_THREADS >> > (count / 2,
-                                                 reinterpret_cast<const half2*>(x),
-                                                  dragon_cast<half2, float>(slope),
-                                                      reinterpret_cast<half2*>(y));
-    else
-        _ReluHalf<half> << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                           reinterpret_cast<const half*>(x),
-                                            dragon_cast<half, float>(slope),
-                                                reinterpret_cast<half*>(y));
-    CUDA_POST_KERNEL_CHECK;
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
-}
-
 template <typename T>
 __global__ void _ReluGrad(const int count,
                           const T* dy,
@@ -668,6 +620,69 @@ template<> void TanhGrad<float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
+/******************** arithmetic.scale ********************/
+
+template <typename T>
+__global__ void _AffineWithOBias(const int count,
+                                   const int scale_dim,
+                                   const int inner_dim,
+                                   const T* x,
+                                   const T* alpha,
+                                   T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int scale_idx = (idx / inner_dim) % scale_dim;
+         y[idx] = alpha[scale_idx] * x[idx];
+    }
+}
+
+template <typename T>
+__global__ void _AffineWithBias(const int count,
+                                const int scale_dim,
+                                const int inner_dim,
+                                const T* x,
+                                const T* alpha,
+                                const T* beta,
+                                T* y) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int scale_idx = (idx / inner_dim) % scale_dim;
+        y[idx] = alpha[scale_idx] * x[idx] + beta[scale_idx];
+    }
+}
+
+template<> void Affine<float, CUDAContext>(const int count,
+                                           const int outer_dim,
+                                           const int scale_dim,
+                                           const int inner_dim,
+                                           const float* x,
+                                           const float* alpha,
+                                           const float* beta,
+                                           const float* beta_multiplier,
+                                           float* y) {
+    if (beta != nullptr) {
+        _AffineWithBias<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                             scale_dim, inner_dim,
+                                                               x, alpha, beta, y);
+    } else {
+        _AffineWithOBias<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                              scale_dim, inner_dim,
+                                                                      x, alpha, y);
+    }
+    CUDA_POST_KERNEL_CHECK;
+}
+
+template <> void AffineGrad<float, CUDAContext>(const int count,
+                                                const int outer_dim,
+                                                const int scale_dim,
+                                                const int inner_dim,
+                                                const float* dy,
+                                                const float* alpha,
+                                                float* dx) {
+    _AffineWithOBias<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                          scale_dim, inner_dim,
+                                                                dy, alpha, dx);
+    CUDA_POST_KERNEL_CHECK;
+}
+
 /******************** arithmetic.bias_add ********************/
 
 template <typename T>
@@ -746,172 +761,6 @@ template <> void Clip<float, CUDAContext>(const int count,
                                                                mask,
                                                                   y);
 }
-
-/******************** arithmetic.scale ********************/
-
-template <typename T>
-__global__ void _ScaleWithoutBias(const int n,
-                                  const T* x,
-                                  const T* scale,
-                                  const int scale_dim,
-                                  const int inner_dim,
-                                  T* y) {
-    CUDA_KERNEL_LOOP(idx, n) {
-        const int scale_idx = (idx / inner_dim) % scale_dim;
-         y[idx] = x[idx] * scale[scale_idx];
-    }
-}
-
-template <typename T>
-__global__ void _ScaleWithBias(const int n,
-                               const T* x,
-                               const T* scale,
-                               const T* bias,
-                               const int scale_dim,
-                               const int inner_dim,
-                               T* y) {
-    CUDA_KERNEL_LOOP(idx, n) {
-        const int scale_idx = (idx / inner_dim) % scale_dim;
-        y[idx] = x[idx] * scale[scale_idx] + bias[scale_idx];
-    }
-}
-
-template<> void Scale<float, CUDAContext>(const int axis,
-                                          Tensor* x,
-                                          Tensor* gamma,
-                                          Tensor* beta,
-                                          Tensor* BMul,
-                                          Tensor* y) {
-    const int count = x->count();
-    const int inner_dim = x->count(axis + gamma->ndim());
-    const int scale_dim = gamma->count();
-    auto* Xdata = x->data<float, CUDAContext>();
-    auto* Ydata = y->mutable_data<float, CUDAContext>();
-    auto* Sdata = gamma->data<float, CUDAContext>();
-    auto* Bdata = beta != nullptr ? 
-                          beta->data<float, CUDAContext>() :
-                          nullptr;
-    if (Bdata != nullptr)
-        _ScaleWithBias<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                                                           Xdata,
-                                                                           Sdata,
-                                                                           Bdata,
-                                                                       scale_dim,
-                                                                       inner_dim,
-                                                                           Ydata);
-    else _ScaleWithoutBias<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                                                               Xdata,
-                                                                               Sdata,
-                                                                           scale_dim,
-                                                                           inner_dim,
-                                                                               Ydata);
-}
-
-#ifdef WITH_CUDA_FP16
-template <typename T>
-__global__ void _ScaleWithoutBiasHalf(const int n, 
-                                      const half* x, 
-                                      const half* scale,
-                                      const int scale_dim, 
-                                      const int inner_dim, 
-                                      half* y) {
-    CUDA_KERNEL_LOOP(idx, n) {
-#if __CUDA_ARCH__ >= 530
-        const int scale_idx = (idx / inner_dim) % scale_dim;
-        y[idx] = __hmul(x[idx], scale[scale_idx]);
-#endif
-    }
-}
-
-template <typename T>
-__global__ void _ScaleWithBiasHalf(const int n, 
-                                   const half* x, 
-                                   const half* scale, 
-                                   const half* bias, 
-                                   const int scale_dim, 
-                                   const int inner_dim, 
-                                   half* y) {
-    CUDA_KERNEL_LOOP(idx, n) {
-#if __CUDA_ARCH__ >= 530
-        const int scale_idx = (idx / inner_dim) % scale_dim;
-        y[idx] = __hadd(__hmul(x[idx], scale[scale_idx]), bias[scale_idx]);
-#endif
-    }
-}
-#endif
-
-template<> void Scale<float16, CUDAContext>(const int axis,
-                                            Tensor* x,
-                                            Tensor* gamma,
-                                            Tensor* beta,
-                                            Tensor* BMul,
-                                            Tensor* y) {
-#ifdef WITH_CUDA_FP16
-    const int count = x->count();
-    const int inner_dim = x->count(axis + gamma->ndim());
-    const int scale_dim = gamma->count();
-    auto* Xdata = x->data<float16, CUDAContext>();
-    auto* Ydata = y->mutable_data<float16, CUDAContext>();
-    auto* Sdata = gamma->data<float16, CUDAContext>();
-    auto* Bdata = beta != nullptr ? 
-                          beta->data<float16, CUDAContext>() :
-                          nullptr;
-    if (Bdata != nullptr)
-        _ScaleWithBiasHalf<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                               reinterpret_cast<const half*>(Xdata),
-                                               reinterpret_cast<const half*>(Sdata),
-                                               reinterpret_cast<const half*>(Bdata),
-                                                                          scale_dim,
-                                                                          inner_dim,
-                                                     reinterpret_cast<half*>(Ydata));
-    else _ScaleWithoutBiasHalf<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                                   reinterpret_cast<const half*>(Xdata),
-                                                   reinterpret_cast<const half*>(Sdata),
-                                                                              scale_dim,
-                                                                              inner_dim,
-                                                         reinterpret_cast<half*>(Ydata));
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
-}
-
-template <> void ScaleGrad<float, CUDAContext>(const int axis, 
-                                               Tensor* dy, 
-                                               Tensor* gamma, 
-                                               Tensor* dx) {
-    const int count = dx->count();
-    const int inner_dim = dx->count(axis + gamma->ndim());
-    const int scale_dim = gamma->count();
-    auto* dYdata = dy->data<float, CUDAContext>();
-    auto* dXdata = dx->mutable_data<float, CUDAContext>();
-    auto* Sdata = gamma->data<float, CUDAContext>();
-    _ScaleWithoutBias<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                                                         dYdata,
-                                                                          Sdata,
-                                                                      scale_dim,
-                                                                      inner_dim,
-                                                                         dXdata);
-}
-
-/******************** cast.float2half ********************/
-
-#ifdef WITH_CUDA_FP16
-template <typename T>
-__global__ void _FloatToHalfKernel(const int count, const float* x, half* y) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        y[idx] = __float2half(x[idx]);
-    }
-}
-
-template <> void Float2Half<float, CUDAContext>(const int count, 
-                                                const float* x, 
-                                                float16* y) {
-    _FloatToHalfKernel<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                                                               x,
-                                                      reinterpret_cast<half*>(y));
-     CUDA_POST_KERNEL_CHECK;
-}
-#endif
 
 /******************** control_flow.compare ********************/
 
@@ -1387,7 +1236,7 @@ template<> void SparseSoftmaxFocalLossGrad<float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
-/******************** misc.dtype ********************/
+/******************** misc.astype ********************/
 
 template <typename Ta, typename Tb>
 __global__ void _TypeA2B(const int count, const Ta* a, Tb* b) {
@@ -1396,52 +1245,11 @@ __global__ void _TypeA2B(const int count, const Ta* a, Tb* b) {
     }
 }
 
-#ifdef WITH_CUDA_FP16
-__global__ void _TypeHalf2Float(const int count, const half* a, float* b) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        b[idx] = __half2float(a[idx]);
-    }
-}
-__global__ void _TypeFloat2Half(const int count, const float* a, half* b) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        b[idx] = __float2half(a[idx]);
-    }
-}
-#endif
-
 #define DEFINE_TYPE_A2B(type_a, type_b) \
     template <> void TypeA2B<type_a, type_b, CUDAContext>(const int count, \
                                                           const type_a* a, \
                                                           type_b* b) { \
         _TypeA2B<type_a, type_b> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, a, b); \
-    }
-
-#define DEFINE_TYPE_DISABLE_FP16(type) \
-    template <> void TypeA2B<float16, type, CUDAContext>(const int count, \
-                                                         const float16* a, \
-                                                         type* b) { \
-        LOG(FATAL) << "CUDAContext has not implemented: float16 -> " \
-                   << TypeMetaToString(TypeMeta::Make<type>()); \
-    } \
-    template <> void TypeA2B<type, float16, CUDAContext>(const int count, \
-                                                         const type* a, \
-                                                         float16* b) { \
-        LOG(FATAL) << "CUDAContext has not implemented: " \
-                   << TypeMetaToString(TypeMeta::Make<type>()) << " -> float16"; \
-    }
-
-#define DEFINE_TYPE_ENABLE_FP16_FP32 \
-    template <> void TypeA2B<float16, float, CUDAContext>(const int count, \
-                                                          const float16* a, \
-                                                          float* b) { \
-        _TypeHalf2Float << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, \
-                                      reinterpret_cast<const half*>(a), b); \
-    } \
-    template <> void TypeA2B<float, float16, CUDAContext>(const int count, \
-                                                          const float* a, \
-                                                          float16* b) { \
-        _TypeFloat2Half << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, \
-                                            a, reinterpret_cast<half*>(b)); \
     }
 
 #define DEFINE_TYPE_A2ALL(type_a) \
@@ -1456,32 +1264,6 @@ DEFINE_TYPE_A2ALL(double);
 DEFINE_TYPE_A2ALL(int);
 DEFINE_TYPE_A2ALL(int64_t);
 DEFINE_TYPE_A2ALL(uint8_t);
-
-#ifdef WITH_CUDA_FP16
-template <> void TypeA2B<float16, float16, CUDAContext>(const int count,
-                                                        const float16* a,
-                                                        float16* b) {
-    _TypeA2B<half, half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                           reinterpret_cast<const half*>(a),
-                                                reinterpret_cast<half*>(b));
-}
-DEFINE_TYPE_ENABLE_FP16_FP32;
-DEFINE_TYPE_DISABLE_FP16(double);
-DEFINE_TYPE_DISABLE_FP16(int);
-DEFINE_TYPE_DISABLE_FP16(int64_t);
-DEFINE_TYPE_DISABLE_FP16(uint8_t);
-#else
-template <> void TypeA2B<float16, float16, CUDAContext>(const int count,
-                                                        const float16* a,
-                                                        float16* b) {
-    LOG(FATAL) << "CUDAContext has not implemented: float16 -> float16";
-}
-DEFINE_TYPE_DISABLE_FP16(float);
-DEFINE_TYPE_DISABLE_FP16(double);
-DEFINE_TYPE_DISABLE_FP16(int);
-DEFINE_TYPE_DISABLE_FP16(int64_t);
-DEFINE_TYPE_DISABLE_FP16(uint8_t);
-#endif
 
 /******************** misc.image_data ********************/
 
@@ -1519,43 +1301,6 @@ __global__ void _ImageData_NHWC(const int count,
         if (mean_values != nullptr) raw_value -= mean_values[c];
         if (std_values != nullptr) raw_value /= std_values[c];
         y[idx] = raw_value;
-    }
-}
-
-template <typename Tx, typename Ty>
-__global__ void _ImageDataHalf_NCHW(const int count,
-                                    const int N, const int C,
-                                    const int H, const int W,
-                                    const float* mean_values,
-                                    const float* std_values,
-                                    const Tx* x, 
-                                    Ty* y) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        const int w = idx % W;
-        const int h = (idx / W) % H;
-        const int c = (idx / W / H) % C;
-        const int n = idx / W / H / C;
-        float raw_value = x[((n * H + h) * W + w) * C + c];
-        if (mean_values != nullptr) raw_value -= mean_values[c];
-        if (std_values != nullptr) raw_value /= std_values[c];
-        y[idx] = __float2half(raw_value);
-    }
-}
-
-template <typename Tx, typename Ty>
-__global__ void _ImageDataHalf_NHWC(const int count,
-                                    const int N, const int C,
-                                    const int H, const int W,
-                                    const float* mean_values,
-                                    const float* std_values,
-                                    const Tx* x, 
-                                    Ty* y) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        const int c = idx % C;
-        float raw_value = x[idx];
-        if (mean_values != nullptr) raw_value -= mean_values[c];
-        if (std_values != nullptr) raw_value /= std_values[c];
-        y[idx] = __float2half(raw_value);
     }
 }
 
@@ -1613,67 +1358,7 @@ template <> void ImageData<uint8_t, float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
-template <> void ImageData<float, float16, CUDAContext>(const int count,
-                                                        const int N, const int C,
-                                                        const int H, const int W,
-                                                        const float* mean_values,
-                                                        const float* std_values,
-                                                        const string& data_format,
-                                                        const float* x,
-                                                        float16* y) {
-#ifdef WITH_CUDA_FP16
-    if (data_format == "NCHW") {
-        _ImageDataHalf_NCHW<float, half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                                                                 N, C, H, W,
-                                                                                mean_values,
-                                                                                 std_values,
-                                                                                          x,
-                                                                reinterpret_cast<half*>(y));
-    } else if (data_format == "NHWC") {
-        _ImageDataHalf_NHWC<float, half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                                                                 N, C, H, W,
-                                                                                mean_values,
-                                                                                 std_values,
-                                                                                          x,
-                                                                reinterpret_cast<half*>(y));
 
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
-    CUDA_POST_KERNEL_CHECK;
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
-}
-
-template <> void ImageData<uint8_t, float16, CUDAContext>(const int count,
-                                                          const int N, const int C,
-                                                          const int H, const int W,
-                                                          const float* mean_values,
-                                                          const float* std_values,
-                                                          const string& data_format,
-                                                          const uint8_t* x,
-                                                          float16* y) {
-#ifdef WITH_CUDA_FP16
-    if (data_format == "NCHW") {
-        _ImageDataHalf_NCHW<uint8_t, half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                                                                   N, C, H, W,
-                                                                                  mean_values,
-                                                                                   std_values,
-                                                                                            x,
-                                                                  reinterpret_cast<half*>(y));
-    } else if (data_format == "NHWC") {
-        _ImageDataHalf_NHWC<uint8_t, half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                                                                   N, C, H, W,
-                                                                                  mean_values,
-                                                                                   std_values,
-                                                                                            x,
-                                                                  reinterpret_cast<half*>(y));
-
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
-    CUDA_POST_KERNEL_CHECK;
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
-}
 
 /******************** ndarray.argmax ********************/
 
@@ -1960,19 +1645,19 @@ template <> void GatherGrad<int, CUDAContext>(const int count,
 /******************** ndarray.concat ********************/
 
 template <typename T>
-__global__ void _Concat(const int count, 
-                        const int outer_dim, 
+__global__ void _Concat(const int count,
+                        const int outer_dim,
                         const int inner_dim,
-                        const int x_concat_dim, 
-                        const int y_concat_dim, 
-                        const int concat_offset, 
+                        const int x_concat_dim,
+                        const int y_concat_dim,
+                        const int concat_offset,
                         const T* x, 
                         T* y) {
     CUDA_KERNEL_LOOP(idx, count) {
         const int tmp = x_concat_dim * inner_dim;
         const int outer_idx = idx / tmp;
         const int concat_idx = idx % tmp;
-        const int y_idx = (outer_idx * y_concat_dim + concat_offset) 
+        const int y_idx = (outer_idx * y_concat_dim + concat_offset)
                                      * inner_dim + concat_idx;
         y[y_idx] = x[idx];
     }
@@ -1996,30 +1681,6 @@ template <> void Concat<float, CUDAContext>(const int count,
                                                                     x, 
                                                                    y);
     CUDA_POST_KERNEL_CHECK;
-}
-
-template <> void Concat<float16, CUDAContext>(const int count,
-                                              const int outer_dim,
-                                              const int inner_dim,
-                                              const int x_concat_dim,
-                                              const int y_concat_dim,
-                                              const int concat_offset,
-                                              const float16* x,
-                                              float16* y,
-                                              CUDAContext* context) {
-#ifdef WITH_CUDA_FP16
-    _Concat<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                                           outer_dim,
-                                                           inner_dim,
-                                                        x_concat_dim,
-                                                        y_concat_dim,
-                                                       concat_offset,
-                                    reinterpret_cast<const half*>(x),
-                                         reinterpret_cast<half*>(y));
-    CUDA_POST_KERNEL_CHECK;
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 template <typename T>
@@ -2061,29 +1722,7 @@ template <> void ConcatGrad<float, CUDAContext>(const int count,
     CUDA_POST_KERNEL_CHECK;
 }
 
-template <> void ConcatGrad<float16, CUDAContext>(const int count,
-                                                  const int outer_dim,
-                                                  const int inner_dim,
-                                                  const int x_concat_dim,
-                                                  const int y_concat_dim,
-                                                  const int concat_offset,
-                                                  const float16* dy,
-                                                  float16* dx,
-                                                  CUDAContext* context) {
-#ifdef WITH_CUDA_FP16
-    _ConcatGrad<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                                               outer_dim,
-                                                               inner_dim,
-                                                            x_concat_dim,
-                                                            y_concat_dim,
-                                                           concat_offset,
-                                       reinterpret_cast<const half*>(dy),
-                                            reinterpret_cast<half*>(dx));
-    CUDA_POST_KERNEL_CHECK;
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
-}
+
 
 /******************** ndarray.crop ********************/
 
@@ -2711,12 +2350,12 @@ template <> void TileGrad<float, CUDAContext>(const int count,
 /******************** ndarray.transpose ********************/
 
 template <typename T>
-__global__ void _Transpose(const int count, 
-                           const int ndim, 
-                           const int* order, 
-                           const int* old_steps, 
-                           const int* new_steps, 
-                           const T* x, 
+__global__ void _Transpose(const int count,
+                           const int ndim,
+                           const int* order,
+                           const int* old_steps,
+                           const int* new_steps,
+                           const T* x,
                            T* y) {
     CUDA_KERNEL_LOOP(idx, count) {
        int x_idx = 0, y_idx = idx;
@@ -2729,44 +2368,22 @@ __global__ void _Transpose(const int count,
    }
 }
 
-template <> void Transpose<float, CUDAContext>(const int count, 
-                                               const int ndim, 
-                                               const int* order, 
+template <> void Transpose<float, CUDAContext>(const int count,
+                                               const int ndim,
+                                               const int* order,
                                                const int* old_steps,
-                                               const int* new_steps, 
-                                               const float* x, 
+                                               const int* new_steps,
+                                               const float* x,
                                                float* y) {
-    _Transpose<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                    ndim, 
-                                                                   order, 
-                                                               old_steps, 
-                                                               new_steps, 
-                                                                       x, 
+    _Transpose<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                                    ndim,
+                                                                   order,
+                                                               old_steps,
+                                                               new_steps,
+                                                                       x,
                                                                       y);
     CUDA_POST_KERNEL_CHECK;
 }
-
-template <> void Transpose<float16, CUDAContext>(const int count,
-                                                 const int ndim,
-                                                 const int* order,
-                                                 const int* old_steps,
-                                                 const int* new_steps,
-                                                 const float16* x,
-                                                 float16* y) {
-#ifdef WITH_CUDA_FP16
-    _Transpose<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
-                                                                   ndim,
-                                                                  order,
-                                                              old_steps,
-                                                              new_steps,
-                                       reinterpret_cast<const half*>(x),
-                                            reinterpret_cast<half*>(y));
-    CUDA_POST_KERNEL_CHECK;
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
-}
-
 
 template <typename T>
 __global__ void _TransposeGrad(const int count, 
@@ -2802,27 +2419,6 @@ template <> void TransposeGrad<float, CUDAContext>(const int count,
                                                                           dy, 
                                                                          dx);
     CUDA_POST_KERNEL_CHECK;
-}
-
-template <> void TransposeGrad<float16, CUDAContext>(const int count, 
-                                                     const int ndim,
-                                                     const int* order, 
-                                                     const int* old_steps,
-                                                     const int* new_steps, 
-                                                     const float16* dy, 
-                                                     float16* dx) {
-#ifdef WITH_CUDA_FP16
-    _TransposeGrad<half> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, 
-                                                                       ndim, 
-                                                                      order, 
-                                                                  old_steps, 
-                                                                  new_steps, 
-                                          reinterpret_cast<const half*>(dy),
-                                               reinterpret_cast<half*>(dx));
-    CUDA_POST_KERNEL_CHECK;
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 /******************** recurrent.lstm_uint ********************/

@@ -150,6 +150,28 @@ void Tanh(const int count, const T* x, T* y);
 template <typename T, class Context>
 void TanhGrad(const int count, const T* dy, const T* y, T* dx);
 
+/******************** arithmetic.affine ********************/
+
+template <typename T, class Context>
+void Affine(const int count,
+            const int outer_dim,
+            const int scale_dim,
+            const int inner_dim,
+            const T* x,
+            const T* alpha,
+            const T* beta,
+            const T* beta_multiplier,
+            T* y);
+
+template <typename T, class Context>
+void AffineGrad(const int count,
+                const int outer_dim,
+                const int scale_dim,
+                const int inner_dim,
+                const T* dy,
+                const T* alpha,
+                T* dx);
+
 /******************** arithmetic.bias_add ********************/
 
 template <typename T, class Context>
@@ -171,24 +193,6 @@ void Clip(const int count,
           const T* x, 
           T* mask, 
           T* y);
-
-/******************** arithmetic.scale ********************/
-
-template <typename T, class Context>
-void Scale(const int axis, 
-           Tensor* x, 
-           Tensor* gamma, 
-           Tensor* beta, 
-           Tensor* BMul, 
-           Tensor* y);
-
-template <typename T, class Context>
-void ScaleGrad(const int axis, Tensor* dy, Tensor* gamma, Tensor* dx);
-
-/******************** cast.float2half ********************/
-
-template <typename T, class Context>
-void Float2Half(const int count, const float* x, float16* y);
 
 /******************** control_flow.compare ********************/
 
@@ -286,7 +290,7 @@ void SparseSoftmaxFocalLossGrad(const int count,
                                 Tensor* ignore, 
                                 T* dx);
 
-/******************** misc.dtype ********************/
+/******************** misc.astype ********************/
 
 template <typename Ta, typename Tb, class Context>
 void TypeA2B(const int count, const Ta* a, Tb* b);

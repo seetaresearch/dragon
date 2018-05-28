@@ -34,7 +34,7 @@ class _DataLoaderIter(object):
 
 class DataLoader(object):
     def __init__(self, dataset, batch_size=1, shuffle=False,
-                 partition=False, multiple_nodes=False, instance_chunk=False):
+                 partition=False, multiple_nodes=False, num_chunks=2048, chunk_size=-1):
         """A MPI-Aware DataLoader. Forked from ``dragon.io``.
 
         Parameters
@@ -43,16 +43,16 @@ class DataLoader(object):
             The dataset.
         batch_size : int
             The batch size. Divided by n mpi-nodes if ``partition`` is True.
-        instance_chunk : boolean
-            Whether to limit each chunk with at most 1 instance.
         shuffle : boolean
             Whether to shuffle the data.
         partition : boolean
             Whether to partition batch. Default is ``False``.
         multiple_nodes: boolean
             Whether to split data for multiple parallel nodes.
-        instance_chunk : boolean
-            Whether to limit each chunk with at most 1 instance.
+        num_chunks : int
+            The number of chunks to split. Default is ``2048``.
+        chunk_size : int
+            The size(MB) of each chunk. Default is -1 (Refer ``num_chunks``).
 
         """
         self.dataset = dataset
@@ -65,7 +65,8 @@ class DataLoader(object):
             'source': dataset.database,
             'multiple_nodes': multiple_nodes,
             'shuffle': shuffle,
-            'instance_chunk': instance_chunk,
+            'num_chunks': num_chunks,
+            'chunk_size': chunk_size,
             'batch_size': batch_size,
             'partition': partition,
             'transform': dataset.transform,

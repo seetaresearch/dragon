@@ -110,7 +110,7 @@ class Optimizer(object):
             _update(p, g, op_type=self._update_type,
                 slot=group['slot'],
                 lr_mult=group.get('lr_mult', 1.0),
-                decay_mult=group.get('lr_mult', 1.0))
+                decay_mult=group.get('decay_mult', 1.0))
 
     def zero_grad(self):
         """Set all gradients to zeros.

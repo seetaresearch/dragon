@@ -90,7 +90,7 @@ Square = math.Square
 Sqrt = math.Sqrt
 InnerProduct = math.InnerProduct
 Eltwise = math.Eltwise
-Scale = math.Scale
+Affine = math.Affine
 GramMatrix = math.GramMatrix
 
 # normalization

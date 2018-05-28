@@ -33,7 +33,7 @@ class AccuracyOp final: public Operator<Context> {
     USE_OPERATOR_FUNCTIONS(Context);
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename Tx, typename Ty> void RunWithType();
 
  protected:
     TIndex top_k, axis, outer_dim, inner_dim, num_classes;

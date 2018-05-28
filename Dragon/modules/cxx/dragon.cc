@@ -88,7 +88,7 @@ std::string CreateGraph(const std::string& graph_file, const Device& device, Wor
     //  overwritten device options
     DeviceOption* device_option = meta_graph.mutable_device_option();
     device_option->set_device_type((DeviceType)device.device_type());
-    device_option->set_gpu_id(device.device_id());
+    device_option->set_device_id(device.device_id());
     device_option->set_engine("CUDNN");
     dragon::GraphBase* graph = ws->CreateGraph(meta_graph);
     if (!graph) LOG(FATAL) << "Can not create the graph.";

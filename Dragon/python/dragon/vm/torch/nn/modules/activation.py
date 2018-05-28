@@ -35,6 +35,25 @@ class ReLU(Module):
         return self.run(inputs, outputs)
 
 
+class Sigmoid(Module):
+    def __init__(self, inplace=False):
+        super(Sigmoid, self).__init__()
+        self._inplace = inplace
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'Sigmoid',
+            'n_inputs': 1, 'n_outputs': 1,
+            'arguments': {}
+        }
+
+    def forward(self, x):
+        inputs = [x]; self.unify_devices(inputs)
+        outputs = [x if self._inplace else self.register_output(x.dtype)]
+        return self.run(inputs, outputs)
+
+
 class Softmax(Module):
     def __init__(self, dim=None):
         super(Softmax, self).__init__()

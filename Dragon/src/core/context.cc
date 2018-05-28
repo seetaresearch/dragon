@@ -12,7 +12,7 @@ CUDAObject CUDAContext::cuda_object_;
 template<> void CPUContext::Memcpy<CPUContext, CUDAContext>(
     size_t nbytes, void* dst, const void* src) {
 #ifdef WITH_CUDA
-    CUDAContext ctx(POINTER_DEVICE(src));
+    CUDAContext ctx(CUDA_POINTER_DEVICE(src));
     ctx.Memcpy<CPUContext, CUDAContext>(nbytes, dst, src);
 #else
     LOG(FATAL) << "CUDA was not compiled.";
@@ -23,7 +23,7 @@ template<> void CPUContext::Memcpy<CPUContext, CUDAContext>(
 template<> void CPUContext::Memcpy<CUDAContext, CPUContext>(
     size_t nbytes, void* dst, const void* src) {
 #ifdef WITH_CUDA
-        CUDAContext ctx(POINTER_DEVICE(dst));
+        CUDAContext ctx(CUDA_POINTER_DEVICE(dst));
         ctx.Memcpy<CUDAContext, CPUContext>(nbytes, dst, src);
 #else
     LOG(FATAL) << "CUDA was not compiled.";

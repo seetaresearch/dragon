@@ -9,17 +9,17 @@
 //
 // ------------------------------------------------------------
 
-#ifndef DRAGON_OPERATORS_ARITHMETIC_SCALE_OP_H_
-#define DRAGON_OPERATORS_ARITHMETIC_SCALE_OP_H_
+#ifndef DRAGON_OPERATORS_ARITHMETIC_AFFINE_OP_H_
+#define DRAGON_OPERATORS_ARITHMETIC_AFFINE_OP_H_
 
 #include "core/operator.h"
 
 namespace dragon {
 
 template <class Context>
-class ScaleOp : public Operator<Context> {
+class AffineOp : public Operator<Context> {
  public:
-    ScaleOp(const OperatorDef& op_def, Workspace* ws)
+    AffineOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", 1)),
           num_axes(OperatorBase::GetSingleArg<int>("num_axes", 1)) {}
@@ -30,14 +30,14 @@ class ScaleOp : public Operator<Context> {
 
  protected:
     TIndex axis, start_axis, num_axes;
-    TIndex inner_dim;
+    TIndex outer_dim, scale_dim, inner_dim;
     Tensor* bias_multiplier;
 };
 
 template <class Context>
-class ScaleGradientOp final : public Operator<Context> {
+class AffineGradientOp final : public Operator<Context> {
  public:
-    ScaleGradientOp(const OperatorDef& op_def, Workspace* ws)
+    AffineGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
         axis(OperatorBase::GetSingleArg<int>("axis", 1)),
         num_axes(OperatorBase::GetSingleArg<int>("num_axes", -1)) {}
@@ -57,4 +57,4 @@ class ScaleGradientOp final : public Operator<Context> {
 
 }    // namespace dragon
 
-#endif    // DRAGON_OPERATORS_ARITHMETIC_SCALE_OP_H_
+#endif    // DRAGON_OPERATORS_ARITHMETIC_AFFINE_OP_H_

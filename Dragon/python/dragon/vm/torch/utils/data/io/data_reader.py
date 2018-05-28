@@ -36,11 +36,9 @@ class DataReader(Process):
         source : str
             The path of database.
         multiple_nodes: boolean
-            Whether to split data for multiple parallel nodes.
+            Whether to split data for multiple parallel nodes. Default is ``False``.
         shuffle : boolean
-            Whether to shuffle the data.
-        instance_chunk : boolean
-            Whether to limit each chunk with at most 1 instance.
+            Whether to shuffle the data. Default is ``False``.
         num_chunks : int
             The number of chunks to split. Default is ``2048``.
         chunk_size : int
@@ -51,7 +49,6 @@ class DataReader(Process):
         self._source = kwargs.get('source', '')
         self._multiple_nodes = kwargs.get('multiple_nodes', False)
         self._use_shuffle = kwargs.get('shuffle', False)
-        self._use_instance_chunk = kwargs.get('instance_chunk', False)
         self._num_chunks = kwargs.get('num_chunks', 2048)
         self._chunk_size = kwargs.get('chunk_size', -1)
 
@@ -172,19 +169,27 @@ class DataReader(Process):
         self._db_zfill = int(self._db.get('zfill'))
         self._epoch_size = int(self._db_size / self._num_parts + 1)
 
-        if self._use_instance_chunk:
-            self._chunk_size = 1
-            self._num_shuffle_parts = int(self._db_size / self._chunk_size / self._num_parts) + 1
+        if self._use_shuffle:
+            if self._chunk_size == 1:
+                # each chunk has at most 1 record [For Fully Shuffle]
+                self._num_shuffle_parts = int(self._db_size / self._chunk_size / self._num_parts) + 1
+            else:
+                if self._use_shuffle and self._chunk_size == -1:
+                    # search a optimal chunk size by chunks [For Chunk Shuffle]
+                    max_chunk_size = self._db._total_size / ((self._num_chunks * (1 << 20)))
+                    min_chunk_size = 1
+                    while min_chunk_size * 2 < max_chunk_size: min_chunk_size *= 2
+                    self._chunk_size = min_chunk_size
+                    self._num_shuffle_parts = int(math.ceil(self._db._total_size * 1.1 /
+                                                 (self._num_parts * self._chunk_size << 20)))
+                    self._chunk_size = int(self._db_size / self._num_shuffle_parts / self._num_parts + 1)
         else:
-            # search a optimal chunk size by chunks
-            if self._chunk_size == -1:
-                max_chunk_size = self._db._total_size / ((self._num_chunks * (1 << 20)))
-                min_chunk_size = 1
-                while min_chunk_size * 2 < max_chunk_size: min_chunk_size *= 2
-                self._chunk_size = min_chunk_size
-            self._num_shuffle_parts = int(math.ceil(self._db._total_size * 1.1 /
-                                            (self._num_parts * self._chunk_size << 20)))
-            self._chunk_size = int(self._db_size / self._num_shuffle_parts / self._num_parts + 1)
+            # each chunk has at most K records [For Multiple Nodes]
+            # note that if ``shuffle`` and ``multiple_nodes`` are all ``False``,
+            # ``chunk_size`` and ``num_shuffle_parts`` are meaningless
+            self._chunk_size = int(self._db_size / self._num_parts) + 1
+            self._num_shuffle_parts = 1
+
         self._perm = np.arange(self._num_shuffle_parts)
 
         # init env

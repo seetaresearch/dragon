@@ -14,7 +14,6 @@ Common
    operators/ndarray
    operators/control_flow
    operators/misc
-   operators/cast
    operators/mpi
 
 ===================================         =====================================================================
@@ -26,7 +25,6 @@ List                                        Brief
 `dragon.operators.ndarray`_                 The ndarray operators.
 `dragon.operators.control_flow`_            The control flow operators.
 `dragon.operators.misc`_                    The misc operators.
-`dragon.operators.cast`_                    The cast operators.
 `dragon.operators.mpi`_                     The MPI operators.
 ===================================         =====================================================================
 
@@ -95,7 +93,6 @@ List                                            Brief
 .. _dragon.operators.ndarray: operators/ndarray.html
 .. _dragon.operators.control_flow: operators/control_flow.html
 .. _dragon.operators.misc: operators/misc.html
-.. _dragon.operators.cast: operators/cast.html
 .. _dragon.operators.mpi: operators/mpi.html
 .. _dragon.operators.activation: operators/activation.html
 .. _dragon.operators.vision: operators/vision.html

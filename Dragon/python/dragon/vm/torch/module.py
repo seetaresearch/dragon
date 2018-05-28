@@ -112,6 +112,9 @@ class Module(object):
                 module.state_dict(destination, prefix + name + '.', to_numpy=to_numpy)
         return destination
 
+    def _load_state_dict_key_mismatch(self, full_name, name, is_missing):
+        pass
+
     def load_state_dict(self, state_dict, strict=True):
         logger.info('Load the state dict from numpy arrays.')
         def submodule_key_mismatch(full_name, is_missing):
@@ -159,7 +162,7 @@ class Module(object):
                     ', '.join('"{}"'.format(k) for k in unexpected))
             if len(missing) > 0:
                 error_msg += 'Missing key(s) in state_dict: {}. '.format(
-                    ', '.join('"{}"'.format(k) for k in unexpected))
+                    ', '.join('"{}"'.format(k) for k in missing))
             if len(error_msg) > 0:
                 raise KeyError(error_msg)
 
@@ -210,9 +213,9 @@ class Module(object):
 
     def __call__(self, *args, **kwargs):
         with dg.name_scope(get_module_name(self)):
-            return self.forward(*args)
+            return self.forward(*args, **kwargs)
 
-    def forward(self, *inputs):
+    def forward(self, *inputs, **kwargs):
         raise NotImplementedError('The base module can not be called.')
 
     def name_scope(self, remove_separator=True):

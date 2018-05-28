@@ -39,9 +39,9 @@ class DataBatch(object):
         source : str
             The path of database.
         multiple_nodes: boolean
-            Whether to split data for multiple parallel nodes.
+            Whether to split data for multiple parallel nodes. Default is ``False``.
         shuffle : boolean
-            Whether to shuffle the data.
+            Whether to shuffle the data. Default is ``False``.
         num_chunks : int
             The number of chunks to split. Default is ``2048``.
         chunk_size : int
@@ -132,7 +132,7 @@ class DataBatch(object):
             part_idx = i
 
             if self._readers[i]._multiple_nodes or \
-                self._readers[i]._use_shuffle:
+                    self._readers[i]._use_shuffle:
                 num_parts *= group_size
                 part_idx += local_rank * self._num_readers
 

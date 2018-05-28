@@ -77,7 +77,7 @@ inline int GET_BLOCKS(const int N) {
 #define __hdiv hdiv
 #endif
 
-inline int NUM_DEVICES() {
+inline int CUDA_NUM_DEVICES() {
     static int count = -1;
     if (count < 0) {
         auto err = cudaGetDeviceCount(&count);
@@ -86,21 +86,47 @@ inline int NUM_DEVICES() {
     return count;
 }
 
-inline int CURRENT_DEVICE() {
+inline int CUDA_CURRENT_DEVICE() {
     int gpu_id;
     cudaGetDevice(&gpu_id);
     return gpu_id;
 }
 
-inline int POINTER_DEVICE(const void* ptr) {
+inline int CUDA_POINTER_DEVICE(const void* ptr) {
     cudaPointerAttributes attr;
     CUDA_CHECK(cudaPointerGetAttributes(&attr, ptr));
     return attr.device;
 }
 
+struct CUDADeviceProps {
+    CUDADeviceProps() : props(CUDA_NUM_DEVICES()) {
+        for (int i = 0; i < CUDA_NUM_DEVICES(); ++i)
+            CUDA_CHECK(cudaGetDeviceProperties(&props[i], i));
+}
+    vector<cudaDeviceProp> props;
+};
+
+inline const cudaDeviceProp& GetDeviceProperty(const int device_id) {
+    static CUDADeviceProps props;
+    CHECK_LT(device_id, (int)props.props.size())
+        << "Invalid device id: " << device_id
+        << "\nDetected " << props.props.size() << " eligible cuda devices.";
+    return props.props[device_id];
+}
+
+inline bool TENSOR_CORE_AVAILABLE() {
+#if CUDA_VERSION < 9000
+    return false;
+#else
+    int device = CUDA_CURRENT_DEVICE();
+    auto& prop = GetDeviceProperty(device);
+    return prop.major >= 7;
+#endif
+}
+
 class DeviceGuard {
  public:
-    DeviceGuard(int newDevice) : previous_(CURRENT_DEVICE()) {
+    DeviceGuard(int newDevice) : previous_(CUDA_CURRENT_DEVICE()) {
         if (previous_ != newDevice) 
             CUDA_CHECK(cudaSetDevice(newDevice));
     }

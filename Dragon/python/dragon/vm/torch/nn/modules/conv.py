@@ -52,7 +52,8 @@ class _ConvNd(Module):
 
     def register_op(self):
         self.op_meta = {
-            'op_type': 'Conv2d',
+            'op_type': 'Conv{}d{}'.format(len(self.kernel_size),
+                       'Transpose' if self.transposed else ''),
             'n_inputs': 3 if self.bias else 2, 'n_outputs': 1,
             'arguments': {
                 'num_output': self.weight.shape[0],
@@ -100,6 +101,24 @@ class Conv2d(_ConvNd):
         super(Conv2d, self).__init__(
             in_channels, out_channels, kernel_size, stride, padding, dilation,
             False, _pair(0), groups, bias)
+
+    def forward(self, input):
+        inputs = [input, self.weight] + ([self.bias] if self.bias else [])
+        self.unify_devices(inputs)
+        outputs = [self.register_output(input.dtype)]
+        return self.run(inputs, outputs)
+
+
+class ConvTranspose2d(_ConvNd):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1,
+                 padding=0, output_padding=0, groups=1, bias=True, dilation=1):
+        kernel_size = _pair(kernel_size)
+        stride = _pair(stride)
+        padding = _pair(padding)
+        dilation = _pair(dilation)
+        super(ConvTranspose2d, self).__init__(
+            in_channels, out_channels, kernel_size, stride, padding, dilation,
+            True, _pair(0), groups, bias)
 
     def forward(self, input):
         inputs = [input, self.weight] + ([self.bias] if self.bias else [])

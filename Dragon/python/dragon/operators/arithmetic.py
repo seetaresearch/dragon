@@ -428,8 +428,8 @@ def Sqrt(inputs, **kwargs):
     return output
 
 
-def Scale(inputs, axis=1, num_axes=1, **kwargs):
-    """Scale Function.
+def Affine(inputs, axis=1, num_axes=1, **kwargs):
+    """Calculate ``y = Ax + b`` along the given range of axes.
 
     The number of inputs vary from ``2`` to ``3`` (Without or With ``bias``).
 
@@ -457,7 +457,7 @@ def Scale(inputs, axis=1, num_axes=1, **kwargs):
     CheckInputs(inputs, 2, 3)
     arguments = ParseArguments(locals())
 
-    output = Tensor.CreateOperator(nout=1, op_type='Scale', **arguments)
+    output = Tensor.CreateOperator(nout=1, op_type='Affine', **arguments)
 
     if inputs[0].shape is not None:
         output.shape = inputs[0].shape[:]

@@ -20,8 +20,8 @@ from dragon.vm.torch.module import RunOperator
 
 
 class _BatchNorm(Module):
-    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True,
-                 track_running_stats=True):
+    def __init__(self, num_features, eps=1e-5, momentum=0.1,
+                 affine=True, track_running_stats=True):
         super(_BatchNorm, self).__init__()
         self.num_features = num_features
         self.eps = eps
@@ -103,6 +103,10 @@ class _BatchNorm(Module):
         self.unify_devices(inputs)
         outputs = [self.register_output(input.dtype)]
         phase = 'TRAIN' if input.requires_grad else 'TEST'
+        # Normalize the input by using batch stats ALWAYS
+        # Note that the update of moving average is meaningless(
+        # Because we can not remove it. Why? Ask nvidia and cuDNN -:)
+        if not self.track_running_stats: phase = 'TRAIN'
         meta = ['PERSISTENT',] + self.make_meta_from_phase(phase)
         return RunOperator(inputs, outputs, meta)
 

@@ -494,7 +494,7 @@ class ScaleLayer(Layer):
 
     def Setup(self, bottom):
         super(ScaleLayer, self).Setup(bottom)
-        return ops.Scale(bottom + [blob['data'] for blob in self._blobs], **self._param)
+        return ops.Affine(bottom + [blob['data'] for blob in self._blobs], **self._param)
 
 
 class BNLayer(Layer):
@@ -606,11 +606,13 @@ class NormalizeLayer(Layer):
     def __init__(self, LayerParameter):
         super(NormalizeLayer, self).__init__(LayerParameter)
         param = LayerParameter.normalize_param
-        self._l2norm_param = {'axis': 1,
-                              'num_axes': -1 if param.across_spatial else 1,
-                              'eps': param.eps}
-        self._scale_param = {'axis': 1,
-                             'num_axes': 0 if param.channel_shared else 1}
+        self._l2norm_param = {
+            'axis': 1,
+            'num_axes': -1 if param.across_spatial else 1,
+            'eps': param.eps}
+        self._scale_param = {
+            'axis': 1,
+            'num_axes': 0 if param.channel_shared else 1}
         scope = LayerParameter.name
         scale = Tensor(scope + '/param:0')
         if param.HasField('scale_filler'):
@@ -622,8 +624,8 @@ class NormalizeLayer(Layer):
     def Setup(self, bottom):
         super(NormalizeLayer, self).Setup(bottom)
         norm_out = [ops.L2Norm(bottom[0], **self._l2norm_param)]
-        scale_out = ops.Scale(norm_out + [blob['data'] for blob in self.scale_blobs],
-                              **self._scale_param)
+        scale_out = ops.Affine(norm_out + [blob['data'] for blob in self.scale_blobs],
+                               **self._scale_param)
         return scale_out
 
 

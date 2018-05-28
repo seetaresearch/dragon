@@ -21,3 +21,7 @@ from .arithmetic import (
 from .ndarray import (
     sum, mean, argmin, argmax, max, topk, cat
 )
+
+from .vision import (
+    nn_resize, bilinear_resize, roi_pool, roi_align
+)
