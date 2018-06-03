@@ -12,8 +12,6 @@
 #ifndef DRAGON_CORE_TENSOR_H_
 #define DRAONG_CORE_TENSOR_H_
 
-#include <vector>
-
 #include "core/common.h"
 #include "core/mixedmem.h"
 

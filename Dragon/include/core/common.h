@@ -24,6 +24,7 @@
 #include <unordered_set>
 #include <algorithm>
 #include <mutex>
+#include <functional>
 
 #include "core/types.h"
 #include "protos/dragon.pb.h"

@@ -22,11 +22,11 @@ option(WITH_CUDA_FP16              "Set ON to use FP16"  ON)
 # Set your 3rdparty
 set(3RDPARTY_DIR  ${PROJECT_SOURCE_DIR}/../3rdparty)
 
-# set your python "interpreter" if necessary
+# Set your python "interpreter" if necessary
 # if not, a default interpreter will be used
 # here, provide several examples:
-# set(PYTHON_EXECUTABLE /usr/bin/python) # Linux, OS
-# set(PYTHON_EXECUTABLE /X/anaconda/bin/python) # Linux, Anaconda
+# set(PYTHON_EXECUTABLE /usr/bin/python) # Linux & OSX, Builtin Python
+# set(PYTHON_EXECUTABLE /X/anaconda/bin/python) # Linux & OSX, Anaconda
 # set(PYTHON_EXECUTABLE X:/Anaconda/python) # Win, Anaconda
 
 # Set CUDA compiling architecture
@@ -37,9 +37,10 @@ set(CUDA_ARCH    -gencode arch=compute_30,code=sm_30
                  -gencode arch=compute_60,code=sm_60
                  -gencode arch=compute_70,code=sm_70)
 
-# Set CUDNN Library Dir if necessary (Linux Only)
+# Set CUDNN Library Dir if necessary (Linux/OSX Only)
 # For Win, Recommend to use ``3RDPARTY_DIR/lib``
-set(CUDNN_LIBRARY_DIR /usr/local/cuda/lib64)
+set(CUDNN_LIBRARY_DIR /usr/local/cuda/lib64) # Linux
+# set(CUDNN_LIBRARY_DIR /usr/local/cuda/lib) # OSX
 
 # ---------------- User Config ----------------
 
@@ -178,7 +179,7 @@ endif()
 if(UNIX)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s -fPIC")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s -w -fPIC -O3 -m64 -std=c++11")
-    if (WITH_OMP)
+    if (WITH_OMP AND (NOT APPLE))
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
     endif()

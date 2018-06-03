@@ -164,7 +164,9 @@ const Map<string, string> MixedMemory::info() const {
     }
     s2s["mem_at"] = _state_;
     if (cpu_ptr_) s2s["CPU"] = "0";
+#ifdef WITH_CUDA
     if (cuda_ptr_) s2s["CUDA"] = dragon_cast<string, int>(CUDA_POINTER_DEVICE(cuda_ptr_));
+#endif
     return s2s;
 }
 

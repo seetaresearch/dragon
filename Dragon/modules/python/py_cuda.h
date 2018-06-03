@@ -14,17 +14,15 @@
 
 #include "dragon.h"
 
-#ifdef WITH_CUDA
-
 inline PyObject* IsCUDADriverSufficientCC(PyObject* self, PyObject* args) {
+#ifdef WITH_CUDA
     int count;
     cudaError_t err = cudaGetDeviceCount(&count);
     if (err == cudaErrorInsufficientDriver) return PyBool_FromLong(0);
     return PyBool_FromLong(1);
-}
-
 #else
     CUDA_NOT_COMPILED;
 #endif
+}
 
 #endif    // DRAGON_PYTHON_PY_MPI_H_

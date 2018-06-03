@@ -13,19 +13,21 @@
 #define DRAGON_UTILS_CUDA_DEVICE_H_
 
 #ifdef WITH_CUDA
-
 #include <cuda_runtime.h>
 #include <cublas.h>
 #include <curand.h>
 #include <cuda.h>
+#endif
 
 #ifdef WITH_MPI_NCCL
 #include <nccl.h>
-#endif  // WITH_MPI_NCCL
+#endif
 
 #include "core/common.h"
 
 namespace dragon {
+
+#ifdef WITH_CUDA
 
 static const int CUDA_NUM_THREADS = 1024;
 //  We do have a server with 10 GPUs :-)
