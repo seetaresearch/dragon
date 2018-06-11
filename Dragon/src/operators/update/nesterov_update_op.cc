@@ -17,6 +17,18 @@ void NesterovUpdateOp<Context>::ComputeRunWithFloat() {
                                lr, momentum, dXdata, Hdata);
 }
 
+template <class Context>
+void NesterovUpdateOp<Context>::ComputeRunWithFloat16() {
+    Tensor* h = ws()->CreateTensor("/mnt/" + Slot() + "/nesterov/h");
+    h->ReshapeLike(Input(0));
+
+    lr = Param("base_lr") * this->lr_mult, momentum = Param("momentum");
+    auto* dXdata = Input(0).template mutable_data<float16, Context>();
+    auto* Hdata = h->template mutable_data<float16, Context>();
+    kernel::NesterovUpdate<float16, Context>(Input(0).count(),
+                                 lr, momentum, dXdata, Hdata);
+}
+
 DEPLOY_CPU(NesterovUpdate);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(NesterovUpdate);

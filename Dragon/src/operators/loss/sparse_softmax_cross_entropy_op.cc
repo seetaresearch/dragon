@@ -20,6 +20,24 @@ void SparseSoftmaxCrossEntropyOp<Context>::SoftmaxRun() {
     softmax_op->Run();
 }
 
+template <class Context>
+void SparseSoftmaxCrossEntropyOp<Context>::SoftmaxRunFP16() {
+    Tensor* XF32 = ws()->CreateTensor("/mnt/" + anchor() + "/softmax/xf32");
+    XF32->ReshapeLike(Input(0));
+    auto* XdataF16 = Input(0).template data<float16, Context>();
+    auto* XdataF32 = XF32->template mutable_data<float, Context>();
+    kernel::TypeA2B<float16, float, Context>(Input(0).count(), XdataF16, XdataF32);
+    OperatorDef softmax_def = MakeOperatorDef("Softmax", "",
+        vector<string>({ XF32->name() }),
+        vector<string>({ "/mnt/" + anchor() + "/softmax/prob" }));
+    softmax_def.add_arg()->CopyFrom(this->arg("axis"));
+    if (op_def().has_device_option())
+        softmax_def.mutable_device_option()->CopyFrom(op_def().device_option());
+    if (!softmax_op) softmax_op.reset(CreateOperator(softmax_def, ws()));
+    else softmax_op->MutableOp(softmax_def);
+    softmax_op->Run();
+}
+
 template <class Context> template <typename Tx, typename Ty>
 void SparseSoftmaxCrossEntropyOp<Context>::RunWithType() {
     auto* prob_data = prob->template data<Tx, Context>();
@@ -59,11 +77,11 @@ void SparseSoftmaxCrossEntropyOp<Context>::RunOnDevice() {
         << "\nNumber of predictions must match the number of labels.";
     valid.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
     losses.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
-    ws()->CreateTensor("/mnt/" + anchor() + "/softmax/prob");
-    SoftmaxRun();
-    prob = ws()->GetTensor("/mnt/" + anchor() + "/softmax/prob");
+    prob = ws()->CreateTensor("/mnt/" + anchor() + "/softmax/prob");
 
-    if (XIsType(Input(0), float)) {
+    if (XIsType(Input(0), float) || XIsType(Input(0), float16)) {
+        if (XIsType(Input(0), float16)) SoftmaxRunFP16();
+        else SoftmaxRun();
         if (XIsType(Input(1), float)) RunWithType<float, float>();
         else if (XIsType(Input(1), int64_t)) RunWithType<float, int64_t>();
         else LOG(FATAL) << DTypeHelper(Input(1), { "float32", "int64" });
@@ -118,11 +136,17 @@ void SparseSoftmaxCrossEntropyGradientOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
     valid.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
 
-    if (XIsType(Input(0), float)) {
+    if (XIsType(Input(0), float) || XIsType(Input(0), float16)) {
         if (XIsType(Input(1), float)) RunWithType<float, float>();
         else if (XIsType(Input(1), int64_t)) RunWithType<float, int64_t>();
         else LOG(FATAL) << DTypeHelper(Input(1), { "float32", "int64" });
-    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+        if (XIsType(Input(0), float16)) {
+            auto* dXdataF32 = Output(0)->template data<float, Context>();
+            auto* dXdataF16 = prob->template mutable_data<float16, Context>();
+            kernel::TypeA2B<float, float16, Context>(Output(0)->count(), dXdataF32, dXdataF16);
+            Output(0)->template Copy<Context, Context>(*prob);
+        }
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(SparseSoftmaxCrossEntropyGradient);

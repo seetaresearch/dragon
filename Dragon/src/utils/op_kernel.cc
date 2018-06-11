@@ -1838,6 +1838,15 @@ template <> void AdamUpdate<float, CPUContext>(const int count,
     _AdamUpdate<float>(count, lr, beta1, beta2, eps, g, m, v);
 }
 
+template <> void AdamUpdate<float16, CPUContext>(const int count,
+                                                 const float lr,
+                                                 const float beta1,
+                                                 const float beta2,
+                                                 const float eps,
+                                                 float16* g, float16* m, float16* v) {
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
+}
+
 /******************** update.nesterov_update ********************/
 
 template <typename T>
@@ -1860,6 +1869,13 @@ template <> void NesterovUpdate<float, CPUContext>(const int count,
                                                    const float momentum,
                                                    float* g, float* h) {
     _NesterovUpdate<float>(count, lr, momentum, g, h);
+}
+
+template <> void NesterovUpdate<float16, CPUContext>(const int count,
+                                                     const float lr,
+                                                     const float momentum,
+                                                     float16* g, float16* h) {
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
 /******************** update.rmsprop_update ********************/
@@ -1888,6 +1904,14 @@ template <> void RMSPropUpdate<float, CPUContext>(const int count,
     _RMSPropUpdate<float>(count, lr, decay, eps, g, h);
 }
 
+template <> void RMSPropUpdate<float16, CPUContext>(const int count,
+                                                    const float lr,
+                                                    const float decay,
+                                                    const float eps,
+                                                    float16* g, float16* h) {
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
+}
+
 /******************** update.sgd_update ********************/
 
 template <typename T>
@@ -1909,6 +1933,13 @@ template <> void SGDUpdate<float, CPUContext>(const int count,
                                               const float momentum,
                                               float* g, float* h) {
     _SGDUpdate<float>(count, lr, momentum, g, h);
+}
+
+template <> void SGDUpdate<float16, CPUContext>(const int count,
+                                       const float lr,
+                                       const float momentum,
+                                       float16* g, float16* h) {
+    LOG(FATAL) << "float16 is unsupported for CPUContext.";
 }
 
 /******************** vision.bilinear_resize ********************/

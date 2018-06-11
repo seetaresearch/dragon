@@ -22,6 +22,7 @@ namespace dragon {
             auto* Ydata = buffer->template mutable_data<type_b, Context>(); \
             kernel::TypeA2B<type_a, type_b, Context>(Output(0)->count(), Xdata, Ydata); \
             Output(0)->template Copy<Context, Context>(*buffer); \
+            ws()->ReleaseBuffer(buffer); \
         } \
         return; \
     }

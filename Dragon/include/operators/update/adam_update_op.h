@@ -25,6 +25,7 @@ class AdamUpdateOp final : public UpdateOpBase<Context> {
     USE_UPDATER_FUNCTIONS(Context);
 
     void ComputeRunWithFloat() override;
+    void ComputeRunWithFloat16() override;
 
  protected:
     int t; float lr, beta1, beta2, eps;

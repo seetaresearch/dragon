@@ -22,6 +22,24 @@ void AdamUpdateOp<Context>::ComputeRunWithFloat() {
            lr, beta1, beta2, eps, dXdata, Mdata, Vdata);
 }
 
+template <class Context>
+void AdamUpdateOp<Context>::ComputeRunWithFloat16() {
+    Tensor* m = ws()->CreateTensor("/mnt/" + Slot() + "/adam/m");
+    Tensor* v = ws()->CreateTensor("/mnt/" + Slot() + "/adam/v");
+    m->ReshapeLike(Input(0));
+    v->ReshapeLike(Input(0));
+
+    t++;
+    beta1 = Param("beta1"), beta2 = Param("beta2"), eps = Param("eps");
+    float coeff = sqrt(1. - pow(beta2, t)) / (1. - pow(beta1, t));
+    lr = Param("base_lr") * coeff * this->lr_mult;
+    auto* dXdata = Input(0).template mutable_data<float16, Context>();
+    auto* Mdata = m->mutable_data<float16, Context>();
+    auto* Vdata = v->mutable_data<float16, Context>();
+    kernel::AdamUpdate<float16, Context>(Input(0).count(),
+             lr, beta1, beta2, eps, dXdata, Mdata, Vdata);
+}
+
 DEPLOY_CPU(AdamUpdate);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(AdamUpdate);

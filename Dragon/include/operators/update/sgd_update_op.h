@@ -26,6 +26,7 @@ class SGDUpdateOp final : public UpdateOpBase<Context> {
     USE_UPDATER_FUNCTIONS(Context);
 
     void ComputeRunWithFloat() override;
+    void ComputeRunWithFloat16() override;
 
  protected:
     float old_lr, lr, momentum, correction;

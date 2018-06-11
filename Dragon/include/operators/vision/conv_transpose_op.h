@@ -106,6 +106,7 @@ class CuDNNConv2dTransposeOp : public Conv2dTransposeOp<Context> {
  protected:
     cudnnHandle_t* handle;
     cudaStream_t*  stream;
+    cudnnDataType_t compute_type;
     cudnnTensorFormat_t format;
     cudnnConvolutionBwdDataAlgo_t fwd_algo;
     cudnnTensorDescriptor_t input_desc, output_desc, bias_desc;
@@ -167,6 +168,7 @@ public:
  protected:
     cudnnHandle_t* handle;
     cudaStream_t*  stream;
+    cudnnDataType_t compute_type;
     cudnnTensorFormat_t format;
     cudnnConvolutionBwdFilterAlgo_t bwd_filter_algo;
     cudnnConvolutionFwdAlgo_t bwd_data_algo;

@@ -482,6 +482,193 @@ template <> void TransposeGrad<float16, CUDAContext>(const int count,
 #endif
 }
 
+/******************** update.adam_update ********************/
+
+#ifdef WITH_CUDA_FP16
+__global__ void _AdamUpdateHalf(const int count,
+                                const half lr,
+                                const half beta1,
+                                const half beta2,
+                                const half eps,
+                                half* g, half* m, half* v) {
+    CUDA_KERNEL_LOOP(i, count) {
+#if __CUDA_ARCH__ >= 530
+        half gi = g[i];
+        half kOne = __float2half(1.f);
+        half mi = m[i] = __hadd(__hmul(m[i], beta1), __hmul(gi, __hsub(kOne, beta1)));
+        half vi = v[i] = __hadd(__hmul(v[i], beta2), __hmul(gi, __hmul(gi, __hsub(kOne, beta2))));
+        g[i] = __hdiv(__hmul(lr, mi), __hadd(hsqrt(vi), eps));
+#endif
+    }
+}
+#endif
+
+template <> void AdamUpdate<float16, CUDAContext>(const int count,
+                                                  const float lr,
+                                                  const float beta1,
+                                                  const float beta2,
+                                                  const float eps,
+                                                  float16* g, float16* m, float16* v) {
+#ifdef WITH_CUDA_FP16
+    _AdamUpdateHalf << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                          dragon_cast<half, float>(lr),
+                                       dragon_cast<half, float>(beta1),
+                                       dragon_cast<half, float>(beta2),
+                                         dragon_cast<half, float>(eps),
+                                            reinterpret_cast<half*>(g),
+                                            reinterpret_cast<half*>(m),
+                                           reinterpret_cast<half*>(v));
+    CUDA_POST_KERNEL_CHECK;
+#else
+    CUDA_FP16_NOT_COMPILED;
+#endif
+}
+
+/******************** update.nesterov_update ********************/
+
+#ifdef WITH_CUDA_FP16
+__global__ void _NesterovUpdateHalf(const int count,
+                                    const half lr,
+                                    const half momentum,
+                                    half* g, half* h) {
+    CUDA_KERNEL_LOOP(i, count) {
+#if __CUDA_ARCH__ >= 530
+        half hi = h[i];
+        half hi_new = h[i] = __hadd(__hmul(momentum, hi), __hmul(lr, g[i]));
+        half kOne = __float2half(1.f);
+        g[i] = __hsub(__hmul(__hadd(kOne, momentum), hi_new), __hmul(momentum, hi));
+#endif
+    }
+}
+
+__global__ void _NesterovUpdateHalf2(const int count,
+                                     const half2 lr,
+                                     const half2 momentum,
+                                     half2* g, half2* h) {
+    CUDA_KERNEL_LOOP(i, count) {
+#if __CUDA_ARCH__ >= 530
+        half2 hi = h[i];
+        half2 hi_new = h[i] = __hadd2(__hmul2(momentum, hi), __hmul2(lr, g[i]));
+        half2 kOne = __float2half2_rn(1.f);
+        g[i] = __hsub2(__hmul2(__hadd2(kOne, momentum), hi_new), __hmul2(momentum, hi));
+#endif
+    }
+}
+#endif
+
+template <> void NesterovUpdate<float16, CUDAContext>(const int count,
+                                                      const float lr,
+                                                      const float momentum,
+                                                      float16* g, float16* h) {
+#ifdef WITH_CUDA_FP16
+    if (count % 2 == 0) {
+        _NesterovUpdateHalf2 << <GET_BLOCKS(count / 2), CUDA_NUM_THREADS >> >(count / 2,
+                                                          dragon_cast<half2, float>(lr),
+                                                    dragon_cast<half2, float>(momentum),
+                                                            reinterpret_cast<half2*>(g),
+                                                           reinterpret_cast<half2*>(h));
+    } else {
+        _NesterovUpdateHalf << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                                  dragon_cast<half, float>(lr),
+                                            dragon_cast<half, float>(momentum),
+                                                    reinterpret_cast<half*>(g),
+                                                   reinterpret_cast<half*>(h));
+    }
+    CUDA_POST_KERNEL_CHECK;
+#else
+    CUDA_FP16_NOT_COMPILED;
+#endif
+}
+
+/******************** update.rmsprop_update ********************/
+
+#ifdef WITH_CUDA_FP16
+__global__ void _RMSPropUpdateHalf(const int count,
+                                   const half lr,
+                                   const half decay,
+                                   const half eps,
+                                   half* g, half* h) {
+    CUDA_KERNEL_LOOP(i, count) {
+#if __CUDA_ARCH__ >= 530
+        half gi = g[i];
+        half kOne = __float2half(1.f);
+        half hi = h[i] = __hadd(__hmul(decay, h[i]), __hmul(__hmul(__hsub(kOne, decay), gi), gi));
+        g[i] = __hdiv(__hmul(lr, g[i]), __hadd(hsqrt(hi), eps));
+#endif
+    }
+}
+#endif
+
+template <> void RMSPropUpdate<float16, CUDAContext>(const int count,
+                                                     const float lr,
+                                                     const float decay,
+                                                     const float eps,
+                                                     float16* g, float16* h) {
+#ifdef WITH_CUDA_FP16
+    _RMSPropUpdateHalf << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                             dragon_cast<half, float>(lr),
+                                          dragon_cast<half, float>(decay),
+                                            dragon_cast<half, float>(eps),
+                                               reinterpret_cast<half*>(g),
+                                              reinterpret_cast<half*>(h));
+    CUDA_POST_KERNEL_CHECK;
+#else
+    CUDA_FP16_NOT_COMPILED;
+#endif
+}
+
+/******************** update.sgd_update ********************/
+
+#ifdef WITH_CUDA_FP16
+__global__ void _SGDUpdateHalf(const int count,
+                               const half lr,
+                               const half momentum,
+                               half* g, half* h) {
+    CUDA_KERNEL_LOOP(i, count) {
+#if __CUDA_ARCH__ >= 530
+        half hi = h[i];
+        g[i] = h[i] = __hadd(__hmul(momentum, hi), __hmul(lr, g[i]));
+#endif
+    }
+}
+
+__global__ void _SGDUpdateHalf2(const int count,
+                                const half2 lr,
+                                const half2 momentum,
+                                half2* g, half2* h) {
+    CUDA_KERNEL_LOOP(i, count) {
+#if __CUDA_ARCH__ >= 530
+        half2 hi = h[i];
+        g[i] = h[i] = __hadd2(__hmul2(momentum, hi), __hmul2(lr, g[i]));
+#endif
+    }
+}
+#endif
+
+template <> void SGDUpdate<float16, CUDAContext>(const int count,
+                                                 const float lr,
+                                                 const float momentum,
+                                                 float16* g, float16* h) {
+#ifdef WITH_CUDA_FP16
+    if (count % 2 == 0) {
+        _SGDUpdateHalf2 << <GET_BLOCKS(count / 2), CUDA_NUM_THREADS >> >(count / 2,
+                                                     dragon_cast<half2, float>(lr),
+                                               dragon_cast<half2, float>(momentum),
+                                                       reinterpret_cast<half2*>(g),
+                                                      reinterpret_cast<half2*>(h));
+    } else {
+        _SGDUpdateHalf << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+                                             dragon_cast<half, float>(lr),
+                                       dragon_cast<half, float>(momentum),
+                                               reinterpret_cast<half*>(g),
+                                              reinterpret_cast<half*>(h));
+    }
+    CUDA_POST_KERNEL_CHECK;
+#else
+    CUDA_FP16_NOT_COMPILED;
+#endif
+}
+
 }    // namespace kernel
 
 }    // namespace dragon

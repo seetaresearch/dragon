@@ -34,3 +34,7 @@ from dragon.core.scope import TensorScope as name_scope
 from dragon.core.scope import PhaseScope as phase_scope
 from dragon.core.scope import DeviceScope as device_scope
 
+# version
+from dragon.version import version
+__version__ = version
+

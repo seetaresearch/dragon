@@ -49,6 +49,8 @@ using Map = std::unordered_map<Key, Value>;
 template <typename Value>
 using Set = std::unordered_set<Value> ;
 
+#define DRAGON_VERSION 2204
+
 #define CONCATENATE_IMPL(s1, s2) s1##s2
 #define CONCATENATE(s1, s2) CONCATENATE_IMPL(s1,s2)
 #define ANONYMOUS_VARIABLE(str) CONCATENATE(str, __LINE__)

@@ -2667,9 +2667,9 @@ __global__ void _SGDUpdate(const int count,
 }
 
 template <> void SGDUpdate<float, CUDAContext>(const int count,
-                                               const float lr,
-                                               const float momentum,
-                                               float* g, float* h) {
+                                      const float lr,
+                                      const float momentum,
+                                      float* g, float* h) {
     _SGDUpdate<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
                                                      lr, momentum, g, h);
     CUDA_POST_KERNEL_CHECK;

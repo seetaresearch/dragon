@@ -20,9 +20,7 @@ __global__ void _SetHalf(const int n, const T alpha, T* x) {
     }
 }
 
-template <> void Set<float16, CUDAContext>(const int n,
-                                           const float16 alpha,
-                                           float16* x) {
+template <> void Set<float16, CUDAContext>(const int n, const float16 alpha, float16* x) {
 #ifdef WITH_CUDA_FP16
     if (n % 2 == 0) 
         _SetHalf<half2> << <GET_BLOCKS(n / 2), CUDA_NUM_THREADS >> >(n / 2,
@@ -36,18 +34,29 @@ template <> void Set<float16, CUDAContext>(const int n,
 #endif
 }
 
-template <> void RandomUniform<float16, CUDAContext>(const int n,
-                                                     const float low,
-                                                     const float high,
-                                                     float16* x) {
-    NOT_IMPLEMENTED;
+#ifdef WITH_CUDA_FP16
+__global__ void _TypeFloat2Half(const int n, const float* a, half* b) {
+    CUDA_KERNEL_LOOP(idx, n) {
+        b[idx] = __float2half(a[idx]);
+    }
 }
+#endif
 
 template <> void RandomNormal<float16, CUDAContext>(const int n,
-                                                    const float mu, 
-                                                    const float sigma, 
+                                                    const float mu,
+                                                    const float sigma,
                                                     float16* x) {
-    NOT_IMPLEMENTED;
+#ifdef WITH_CUDA_FP16
+    float* xf32 = (float*)CUDAContext::New(n * sizeof(float));
+    CURAND_CHECK(curandGenerateNormal(curand_generator(), xf32, n, mu, sigma));
+    _TypeFloat2Half << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n,
+                                                          xf32,
+                                   reinterpret_cast<half*>(x));
+    CUDA_POST_KERNEL_CHECK;
+    CUDAContext::Delete(xf32);
+#else
+    CUDA_FP16_NOT_COMPILED;
+#endif
 }
 
 /******************** Level-1 ********************/
@@ -380,12 +389,11 @@ template <> void Scale<float16, CUDAContext>(const int n,
 template <> float Dot<float16, CUDAContext>(int n, const float16* a, const float16* b) {
 #ifdef WITH_CUDA_FP16
     float16 result;
-    CUBLAS_CHECK(cublasDotEx(cublas_handle(),
-                             n,
-                             &a, CUDA_R_16F, 1,
-                             &b, CUDA_R_16F, 1,
-                             &result, CUDA_R_16F,
-                             CUDA_R_32F));
+    CUBLAS_CHECK(cublasDotEx(cublas_handle(), n,
+                               a, CUDA_R_16F, 1,
+                               b, CUDA_R_16F, 1,
+                            &result, CUDA_R_16F,
+                                   CUDA_R_32F));
     return dragon_cast<float, float16>(result);
 #else
     CUDA_FP16_NOT_COMPILED;
@@ -489,6 +497,26 @@ template <> void Axpby<float16, CUDAContext>(const int n,
                                              float16* y) {
     Scal<float16, CUDAContext>(n, beta, y);
     Axpy<float16, CUDAContext>(n, alpha, x, y);
+}
+
+template <> void RandomUniform<float16, CUDAContext>(const int n,
+                                                     const float low,
+                                                     const float high,
+                                                     float16* x) {
+#ifdef WITH_CUDA_FP16
+    float* xf32 = (float*)CUDAContext::New(n * sizeof(float));
+    CURAND_CHECK(curandGenerateUniform(curand_generator(), xf32, n));
+    _TypeFloat2Half << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n,
+                                                          xf32,
+                                   reinterpret_cast<half*>(x));
+    CUDA_POST_KERNEL_CHECK;
+    float range = high - low;
+    if (range != float(1)) Scal<float16, CUDAContext>(n, range, x);
+    if (low != float(0)) AddScalar<float16, CUDAContext>(n, low, x);
+    CUDAContext::Delete(xf32);
+#else
+    CUDA_FP16_NOT_COMPILED;
+#endif
 }
 
 /******************** Level-3 ********************/

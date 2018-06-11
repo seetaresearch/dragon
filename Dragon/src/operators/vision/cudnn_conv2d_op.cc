@@ -135,12 +135,14 @@ void CuDNNConv2dOp<Context>::RunOnDevice() {
     } else if (XIsType(Input(0), float16)) {
 #ifdef WITH_CUDA_FP16
 #if CUDNN_VERSION_MIN(6, 0, 0)
+        compute_type = CUDA_TRUE_FP16_AVAILABLE() ?
+            CUDNN_DATA_HALF : CUDNN_DATA_FLOAT;
         CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
                                    this->pad[0], this->pad[1],
                              this->stride[0], this->stride[1],
                          this->dilation[0], this->dilation[1],
                                       CUDNN_CROSS_CORRELATION,
-                                           CUDNN_DATA_FLOAT));
+                                               compute_type));
 #else
         CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
                                    this->pad[0], this->pad[1],
@@ -317,12 +319,17 @@ void CuDNNConv2dGradientOp<Context>::RunOnDevice() {
     } else if (XIsType(Input(0), float16)) {
 #ifdef WITH_CUDA_FP16
 #if CUDNN_VERSION_MIN(6, 0, 0)
+        //  may encounter CUDNN_STATUS_BAD_PARAM if using CUDNN_DATA_HALF
+        //  keep it before cuDNN fix this bug
+        //  compute_type = CUDA_TRUE_FP16_AVAILABLE() ?
+        //      CUDNN_DATA_HALF : CUDNN_DATA_FLOAT;
+        compute_type = CUDNN_DATA_FLOAT;
         CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
                                    this->pad[0], this->pad[1],
                              this->stride[0], this->stride[1],
                          this->dilation[0], this->dilation[1],
                                       CUDNN_CROSS_CORRELATION,
-                                           CUDNN_DATA_FLOAT));
+                                               compute_type));
 #else
         CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
                                    this->pad[0], this->pad[1],

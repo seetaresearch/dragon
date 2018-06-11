@@ -103,6 +103,7 @@ class CuDNNConv2dOp : public Conv2dOp<Context> {
  protected:
     cudnnHandle_t* handle;
     cudaStream_t*  stream;
+    cudnnDataType_t compute_type;
     cudnnTensorFormat_t format;
     cudnnConvolutionFwdAlgo_t fwd_algo;
     cudnnTensorDescriptor_t input_desc, output_desc, bias_desc;
@@ -164,6 +165,7 @@ class CuDNNConv2dGradientOp : public Conv2dGradientOp<Context> {
  protected:
     cudnnHandle_t* handle;
     cudaStream_t*  stream;
+    cudnnDataType_t compute_type;
     cudnnTensorFormat_t format;
     cudnnConvolutionBwdFilterAlgo_t bwd_filter_algo;
     cudnnConvolutionBwdDataAlgo_t bwd_data_algo;

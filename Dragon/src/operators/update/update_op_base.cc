@@ -1,6 +1,7 @@
 #include "operators/update/update_op_base.h"
 #include "core/workspace.h"
 #include "utils/math_functions.h"
+#include "utils/cast.h"
 
 namespace dragon {
 
@@ -27,10 +28,10 @@ void UpdateOpBase<Context>::PreprocessRunWithType() {
     clip_thresh = Param("clip_gradient");
     if (clip_thresh > 0) {
         auto* dXdata = Input(0).template mutable_data<T, Context>();
-        T sumsq_grad = math::Dot<T, Context>(Input(0).count(), dXdata, dXdata);
-        const T l2norm = sqrt(sumsq_grad);
+        float sumsq_grad = math::Dot<T, Context>(Input(0).count(), dXdata, dXdata);
+        const float l2norm = sqrt(sumsq_grad);
         if (l2norm > clip_thresh) {
-            T factor = clip_thresh / l2norm;
+            float factor = clip_thresh / l2norm;
             math::Scal<T, Context>(Input(0).count(), factor, dXdata);
         }
     }
@@ -48,7 +49,8 @@ void UpdateOpBase<Context>::UpdateRunWithType() {
     auto* dXdata = Input(0).template mutable_data<T, Context>();
     auto* Xdata = Output(0)->template mutable_data<T, Context>();
     math::Axpy<T, Context>(Output(0)->count(), -1.0, dXdata, Xdata);
-    if (zero_grad) math::Set<T, Context>(Input(0).count(), 0, dXdata);
+    T zeroT = dragon_cast<T, float>(0.f);
+    if (zero_grad) math::Set<T, Context>(Input(0).count(), zeroT, dXdata);
 }
 
 template <class Context>
@@ -62,7 +64,11 @@ void UpdateOpBase<Context>::RunOnDevice() {
         PreprocessRunWithType<float>();
         ComputeRunWithFloat();
         UpdateRunWithType<float>();
-    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    } else if (XIsType(Input(0), float16)) {
+        PreprocessRunWithType<float16>();
+        ComputeRunWithFloat16();
+        UpdateRunWithType<float16>();
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 } 
 
 template class UpdateOpBase<CPUContext>;

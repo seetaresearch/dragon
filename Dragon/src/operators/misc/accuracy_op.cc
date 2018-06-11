@@ -1,6 +1,9 @@
 #include <algorithm>
 #include "operators/misc/accuracy_op.h"
+#include "core/workspace.h"
+#include "utils/op_kernel.h"
 #include "utils/math_functions.h"
+
 
 namespace dragon {
 
@@ -13,7 +16,17 @@ void AccuracyOp<Context>::RunWithType() {
     Map<int, TIndex> num_per_class;
 
     TIndex acc = 0, count = 0;
-    auto* Xdata = Input(0).template data<Tx, CPUContext>();
+
+    const Tx* Xdata;
+    if (XIsType(Input(0), float16)) {
+        Tensor* XF32 = ws()->CreateTensor("/mnt/" + anchor() + "/accuracy/xf32");
+        XF32->ReshapeLike(Input(0));
+        auto* XdataF16 = Input(0).template data<float16, CPUContext>();
+        auto* XdataF32 = XF32->template mutable_data<float, CPUContext>();
+        kernel::TypeA2B<float16, float, CPUContext>(Input(0).count(), XdataF16, XdataF32);
+        Xdata = XdataF32;
+    } else Xdata = Input(0).template data<Tx, CPUContext>();
+
     auto* labels = Input(1).template data<Ty, CPUContext>();
     auto* ignores = ignore_labels.count() > 0 ?
                         ignore_labels.data<int, CPUContext>() : nullptr;
@@ -60,11 +73,11 @@ void AccuracyOp<Context>::RunOnDevice() {
     Output(0)->Reshape(vector<TIndex>(1, 1));
     if (OutputSize() > 1) Output(1)->Reshape(vector<TIndex>(1, num_classes)); 
 
-    if (XIsType(Input(0), float)) {
+    if (XIsType(Input(0), float) || XIsType(Input(0), float16)) {
         if (XIsType(Input(1), float)) RunWithType<float, float>();
         else if(XIsType(Input(1), int64_t)) RunWithType<float, int64_t>();
         else LOG(FATAL) << DTypeHelper(Input(1), { "float32", "int64" });
-    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(Accuracy);

@@ -116,6 +116,12 @@ inline const cudaDeviceProp& GetDeviceProperty(const int device_id) {
     return props.props[device_id];
 }
 
+inline bool CUDA_TRUE_FP16_AVAILABLE() {
+    int device = CUDA_CURRENT_DEVICE();
+    auto& prop = GetDeviceProperty(device);
+    return prop.major >= 6;
+}
+
 inline bool TENSOR_CORE_AVAILABLE() {
 #if CUDA_VERSION < 9000
     return false;
