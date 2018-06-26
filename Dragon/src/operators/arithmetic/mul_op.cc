@@ -27,19 +27,21 @@ void MulOp<Context>::BroadcastRunWithType(int type) {
             outer_dim = Input(0).count(0, Input(0).axis(-1));
             inner_dim = Input(0).dim(-1);
         }
-        INIT_MULTIPLIER(bcast_multiplier, outer_dim);
-        auto* BMul_data = bcast_multiplier->template data<T, Context>();
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, outer_dim, inner_dim, 1,
-            1.0, bcast_multiplier->template data<T, Context>(), X2data, 0.0, Ydata);
+        DECLARE_MULTIPLIER(multiplier, outer_dim);
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                outer_dim, inner_dim, 1,
+                    1.0, multiplier, X2data, 0.0, Ydata);
         math::Mul<T, Context>(Input(0).count(), X1data, Ydata, Ydata);
     } 
     else if (type == 2) {
         outer_dim = Input(0).dim(0);
         inner_dim = Input(0).count(1);
-        INIT_MULTIPLIER(bcast_multiplier, inner_dim);
-        auto* BMul_data = bcast_multiplier->template data<T, Context>();
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, outer_dim, inner_dim, 1,
-            1.0, X2data, bcast_multiplier->template data<T, Context>(), 0.0, Ydata);
+        DECLARE_MULTIPLIER(multiplier, inner_dim);
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                outer_dim, inner_dim, 1,
+                    1.0, X2data, multiplier, 0.0, Ydata);
         math::Mul<T, Context>(Input(0).count(), X1data, Ydata, Ydata);
     }
 }
@@ -116,19 +118,21 @@ void MulGradientOp<Context>::BroadcastRunWithType(int type) {
         auto* dX1data = Output(0)->template mutable_data<T, Context>();
         auto* dX2data = Output(1)->template mutable_data<T, Context>();
         if (type == 0 || type == 1) {
-            INIT_MULTIPLIER(bcast_multiplier, outer_dim);
-            auto* BMul_data = bcast_multiplier->template data<T, Context>();
+            DECLARE_MULTIPLIER(multiplier,  outer_dim);
             math::Mul<T, Context>(Input(-1).count(), dYdata, X1data, dX1data);
-            math::Gemv<T, Context>(CblasTrans, outer_dim, inner_dim, 1.0,
-                                   dX1data, BMul_data, 0.0, dX2data);
+            math::Gemv<T, Context>(
+                CblasTrans,
+                    outer_dim, inner_dim,
+                        1.0, dX1data, multiplier, 0.0, dX2data);
         } else if (type == 2) {
             outer_dim = Input(0).dim(0);
             inner_dim = Input(0).count(1);
-            INIT_MULTIPLIER(bcast_multiplier, inner_dim);
-            auto* BMul_data = bcast_multiplier->template data<T, Context>();
+            DECLARE_MULTIPLIER(multiplier, inner_dim);
             math::Mul<T, Context>(Input(-1).count(), dYdata, X1data, dX1data);
-            math::Gemv<T, Context>(CblasNoTrans, outer_dim, inner_dim, 1.0,
-                                   dX1data, BMul_data, 0.0, dX2data);
+            math::Gemv<T, Context>(
+                CblasNoTrans,
+                    outer_dim, inner_dim,
+                        1.0, X1data, multiplier, 0.0, dX2data);
         }
     }
 
@@ -136,13 +140,17 @@ void MulGradientOp<Context>::BroadcastRunWithType(int type) {
         auto* X2data = Input(1).template data<T, Context>();
         auto* dX1data = Output(0)->template mutable_data<T, Context>();
         if (type == 0 || type == 1) {
-            INIT_MULTIPLIER(bcast_multiplier, outer_dim);
-            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, outer_dim, inner_dim, 1,
-                1.0, bcast_multiplier->template data<T, Context>(), X2data, 0.0, dX1data);
+            DECLARE_MULTIPLIER(multiplier, outer_dim);
+            math::Gemm<T, Context>(
+                CblasNoTrans, CblasNoTrans,
+                    outer_dim, inner_dim, 1,
+                        1.0, multiplier, X2data, 0.0, dX1data);
         } else if (type == 2) {
-            INIT_MULTIPLIER(bcast_multiplier, inner_dim);
-            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, outer_dim, inner_dim, 1,
-                1.0, X2data, bcast_multiplier->template data<T, Context>(), 0.0, dX1data);
+            DECLARE_MULTIPLIER(multiplier, inner_dim);
+            math::Gemm<T, Context>(
+                CblasNoTrans, CblasNoTrans,
+                    outer_dim, inner_dim, 1,
+                        1.0, X2data, multiplier, 0.0, dX1data);
         }
         math::Mul<T, Context>(Output(0)->count(), dYdata, dX1data, dX1data);
     }

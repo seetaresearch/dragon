@@ -24,7 +24,7 @@ class RepeatOp : public Operator<Context> {
           axis(OperatorBase::GetSingleArg<int>("axis", -1)) {
         GET_ARGUMENT_WITH_DESC(int, repeats, 1);
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template<typename T> void RunWithType();
@@ -42,7 +42,7 @@ class RepeatGradientOp : public Operator<Context> {
           axis(OperatorBase::GetSingleArg<int>("axis", -1)) {
         GET_ARGUMENT_WITH_DESC(int, repeats, 1);
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template<typename T> void RunWithType();

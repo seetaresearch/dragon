@@ -21,7 +21,7 @@ class RMSPropUpdateOp final : public UpdateOpBase<Context> {
  public:
     RMSPropUpdateOp(const OperatorDef& op_def, Workspace* ws) 
         : UpdateOpBase<Context>(op_def, ws) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
     USE_UPDATER_FUNCTIONS(Context);
 
     void ComputeRunWithFloat() override;

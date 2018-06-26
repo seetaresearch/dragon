@@ -28,7 +28,7 @@ class CropOp: public Operator<Context> {
         GET_ARGUMENTS_WITH_DESC(int, starts);
         GET_ARGUMENTS_WITH_DESC(int, ends);
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void Setup();
     void RunOnDevice() override;
@@ -37,32 +37,33 @@ class CropOp: public Operator<Context> {
  protected:
     TIndex start_axis;
     string shape_like;
-    vector<int> st, ed, offsets, shape, keep_dims;
+    vector<int> offsets, shape;
+    vector<TIndex> st, ed, keep_dims;
     DECLARE_ARGUMENTS_WITH_DESC(int, starts);
     DECLARE_ARGUMENTS_WITH_DESC(int, ends);
     vector< pair<int, int> > process_axes;
     TIndex axis, inner_dim, dim;
-    Tensor* dest, *source;
+    Tensor* dest, *source, navigator;
 };
 
 DEFINE_ARGUMENTS_WITH_DESC(int, CropOp, starts);
 DEFINE_ARGUMENTS_WITH_DESC(int, CropOp, ends);
 
 template <class Context>
-class CropGradientOp final : public Operator<Context > {
+class CropGradientOp final : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(CropGradientOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void Setup();
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    vector<int> st, ed, offsets, keep_dims;
+    vector<TIndex> st, ed, offsets, keep_dims;
     vector< pair<int, int> > process_axes;
     TIndex axis, inner_dim, dim;
-    Tensor* dest, *source;
+    Tensor* dest, *source, navigator;
 };
 
 }    // namespace dragon

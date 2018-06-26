@@ -48,7 +48,7 @@ RunOp<Context>::RunOp(const OperatorDef& op_def, Workspace* ws)
 template <class Context>
 void RunOp<Context>::RunOnDevice() {
     //  init phase
-    PyObject_SetAttr(self, String("phase"), String(this->phase().c_str()));
+    PyObject_SetAttr(self, String("phase"), String(phase().c_str()));
 
     //  reshape
     if (PyObject_HasAttr(self, String("reshape")))
@@ -73,7 +73,7 @@ NO_GRADIENT(Run);
 template <class Context>
 void TemplateGradientOp<Context>::RunOnDevice() {
     //  init phase
-    PyObject_SetAttr(this->self, String("phase"), String(this->phase().c_str()));
+    PyObject_SetAttr(this->self, String("phase"), String(phase().c_str()));
 
     //  reshape
     if (PyObject_HasAttr(this->self, String("reshape")))

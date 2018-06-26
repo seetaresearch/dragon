@@ -35,13 +35,13 @@ List                   Brief
 `Conv2d`_              2d Convolution.
 `Conv2dTranspose`_     2d Deconvolution.
 `Pool2d`_              2d Pooling, MAX or AVG.
-`ROIPooling`_          ROIPooling(MAX), introduced by `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
-`ROIAlign`_            ROIAlign(AVG), introduced by `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
-`LRN`_                 Local Response Normalization, introduced by `[Krizhevsky et.al, 2012] <http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks>`_.
+`ROIPooling`_          ROIPooling(MAX). `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
+`ROIAlign`_            ROIAlign(AVG). `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
+`LRN`_                 Local Response Normalization. `[Krizhevsky et.al, 2012] <http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks>`_.
 `NNResize`_            Resize the image with Nearest-Neighbor method.
 `BilinearResize`_      Resize the image with Bi-linear method.
 `BiasAdd`_             Add the bias across channels to a ``NCHW`` or ``NHWC`` input.
-`DenseConcat`_         Memory-efficient concatenation for DenseNet `[Huang et.al, 2017] <http://arxiv.org/abs/1608.06993>`_.
+`DenseConcat`_         Memory-efficient concatenation for DenseNet. `[Huang et.al, 2017] <http://arxiv.org/abs/1608.06993>`_.
 ===================    ======================================================================
 
 Recurrent
@@ -49,7 +49,10 @@ Recurrent
 ===============    ======================================================================
 List               Brief
 ===============    ======================================================================
-`LSTMUnit`_        Simple LSTMCell module.
+`RNN`_             Multi-layer Elman-RNN with `TanH` or `ReLU` non-linearity. `[Elman, 1990] <https://doi.org/10.1016>`_.
+`LSTM`_            Multi-layer Long Short-Term Memory(LSTM) RNN. `[Hochreiter & Schmidhuber, 1997] <https://doi.org/10.1162>`_.
+`GRU`_             Multi-layer Gated Recurrent Unit (GRU) RNN. `[Cho et.al, 2014] <https://arxiv.org/abs/1406.1078>`_.
+`LSTMCell`_        Single-layer Long Short-Term Memory(LSTM) Cell. `[Hochreiter & Schmidhuber, 1997] <https://doi.org/10.1162>`_.
 ===============    ======================================================================
 
 Activation
@@ -59,13 +62,13 @@ List               Brief
 ===============    ======================================================================
 `Sigmoid`_         Sigmoid function.
 `Tanh`_            Tanh function.
-`Relu`_            Rectified Linear Unit function, introduces by `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.
+`Relu`_            Rectified Linear Unit function. `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.
 `LRelu`_           Leaky Rectified Linear Unit function.
-`PRelu`_           Parametric Rectified Linear Unit function, introduces by `[He et.al, 2015] <https://arxiv.org/abs/1502.01852>`_.
-`Elu`_             Exponential Linear Unit function, introduces by `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
-`SElu`_            Scaled Exponential Linear Unit function, introduces by `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
+`PRelu`_           Parametric Rectified Linear Unit function. `[He et.al, 2015] <https://arxiv.org/abs/1502.01852>`_.
+`Elu`_             Exponential Linear Unit function. `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
+`SElu`_            Scaled Exponential Linear Unit function. `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 `Softmax`_         Softmax function.
-`Dropout`_         Randomly set a unit into zero, introduced by `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
+`Dropout`_         Randomly set a unit into zero. `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 ===============    ======================================================================
 
 Loss
@@ -76,10 +79,10 @@ List                               Brief
 `SparseSoftmaxCrossEntropy`_       SoftmaxCrossEntropy with sparse labels.
 `SigmoidCrossEntropy`_             SigmoidCrossEntropy.
 `SoftmaxCrossEntropy`_             SoftmaxCrossEntropy with dense(one-hot) labels.
-`SmoothL1Loss`_                    SmoothL1Loss, introduced by `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
+`SmoothL1Loss`_                    SmoothL1Loss. `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
 `L1Loss`_                          L1Loss.
 `L2Loss`_                          L2Loss(EuclideanLoss).
-`SparseSoftmaxFocalLoss`_          SoftmaxFocalLoss with sparse labels, introduced by `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`_.
+`SparseSoftmaxFocalLoss`_          SoftmaxFocalLoss with sparse labels. `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`_.
 =============================      ======================================================================
 
 Arithmetic
@@ -102,7 +105,7 @@ List               Brief
 `InnerProduct`_    InnerProduct Function.
 `Eltwise`_         Eltwise Sum/Product Function.
 `Affine`_          Calculate ``y = Ax + b`` along the given range of axes.
-`GramMatrix`_      Calculate the gram matrix, introduced by `[Gatys et.al, 2016] <https://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Gatys_Image_Style_Transfer_CVPR_2016_paper.pdf>`_.
+`GramMatrix`_      Calculate the gram matrix. `[Gatys et.al, 2016] <https://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Gatys_Image_Style_Transfer_CVPR_2016_paper.pdf>`_.
 ===============    ======================================================================
 
 Normalization
@@ -110,13 +113,13 @@ Normalization
 ==================    ======================================================================
 List                  Brief
 ==================    ======================================================================
-`BatchNorm`_          Batch Normalization, introduced by `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
-`BatchRenorm`_        Batch Renormalization, introduced by `[Ioffe, 2017] <https://arxiv.org/abs/1702.03275>`_.
+`BatchNorm`_          Batch Normalization. `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
+`BatchRenorm`_        Batch Renormalization. `[Ioffe, 2017] <https://arxiv.org/abs/1702.03275>`_.
 `FusedBatchNorm`_     Batch Normalization, with scale procedure after normalization.
-`GroupNorm`_          Group Normalization, introduced by `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
+`GroupNorm`_          Group Normalization. `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
 `FusedGroupNorm`_     Group Normalization, with scale procedure after normalization.
-`InstanceNorm`_       Instance Normalization, introduced by `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_.
-`L2Norm`_             L2 Normalization, introduced by `[Liu et.al, 2015] <https://arxiv.org/abs/1506.04579>`_.
+`InstanceNorm`_       Instance Normalization. `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_.
+`L2Norm`_             L2 Normalization. `[Liu et.al, 2015] <https://arxiv.org/abs/1506.04579>`_.
 ==================    ======================================================================
 
 NDArray
@@ -176,7 +179,7 @@ Contrib
 =================    ======================================================================
 List                 Brief
 =================    ======================================================================
-`Proposal`_          Generate Regional Proposals, introduced by `[Ren et.al, 2015] <https://arxiv.org/abs/1506.01497>`_.
+`Proposal`_          Generate Regional Proposals. `[Ren et.al, 2015] <https://arxiv.org/abs/1506.01497>`_.
 =================    ======================================================================
 
 MPI
@@ -210,7 +213,10 @@ List                 Brief
 .. _BiasAdd: operators/vision.html#dragon.operators.vision.BiasAdd
 .. _DenseConcat: operators/vision.html#dragon.operators.vision.DenseConcat
 
-.. _LSTMUnit: operators/recurrent.html#dragon.operators.recurrent.LSTMUnit
+.. _RNN: operators/recurrent.html#dragon.operators.recurrent.RNN
+.. _LSTM: operators/recurrent.html#dragon.operators.recurrent.LSTM
+.. _GRU: operators/recurrent.html#dragon.operators.recurrent.GRU
+.. _LSTMCell: operators/recurrent.html#dragon.operators.recurrent.LSTMCell
 
 .. _Sigmoid: operators/activation.html#dragon.operators.activation.Sigmoid
 .. _Tanh: operators/activation.html#dragon.operators.activation.Tanh

@@ -45,11 +45,9 @@ void SparseSoftmaxCrossEntropyOp<Context>::RunWithType() {
     auto* loss_data = losses.template mutable_data<Tx, Context>();
     auto* valid_data = valid.template mutable_data<Tx, Context>();
 
-    kernel::SparseSoftmaxCrossEntropy<Tx, Ty, Context>(Input(0).count(),
-                                                     Input(0).dim(axis),
-                                                   outer_dim, inner_dim,
-                           prob_data, label_data, loss_data, valid_data,
-                                                               &ignore);
+    kernel::SparseSoftmaxCrossEntropy<Tx, Ty, Context>(
+        Input(0).count(), Input(0).dim(axis), outer_dim, inner_dim,
+            prob_data, label_data, loss_data, valid_data, &ignore);
 
     if (normalization == "UNIT") {
         Output(0)->ReshapeLike(losses);
@@ -102,12 +100,9 @@ void SparseSoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
     auto* valid_data = valid.template mutable_data<Tx, Context>();
     ctx().template Copy<Tx, Context, Context>(prob->count(), dXdata, prob_data);
 
-    kernel::SparseSoftmaxCrossEntropyGrad<Tx, Ty, Context>(Output(0)->count(),
-                                                         Output(0)->dim(axis),
-                                                         outer_dim, inner_dim,
-                                            prob_data, label_data, valid_data,
-                                                                      &ignore,
-                                                                      dXdata);
+    kernel::SparseSoftmaxCrossEntropyGrad<Tx, Ty, Context>(
+        Output(0)->count(), Output(0)->dim(axis), outer_dim, inner_dim,
+            prob_data, label_data, valid_data, &ignore, dXdata);
 
     if (normalization == "UNIT") {
         auto* dYdata = Input(-1).template data<Tx, Context>();

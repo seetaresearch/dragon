@@ -12,13 +12,15 @@ void CuDNNReluOp<Context>::RunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
 #if CUDNN_VERSION_MIN(5, 0, 0)
-    CUDNN_CHECK(cudnnActivationForward(cudnn_handle(), act_desc,
-                           CUDNNType<T>::one, input_desc, Xdata,
-                       CUDNNType<T>::zero, output_desc, Ydata));
+    CUDNN_CHECK(cudnnActivationForward(
+        cudnn_handle(), act_desc,
+            CUDNNType<T>::one, input_desc, Xdata,
+                CUDNNType<T>::zero, output_desc, Ydata));
 #else
-    CUDNN_CHECK(cudnnActivationForward_v4(cudnn_handle(), act_desc,
-                          CUDNNType<Dtype>::one, input_desc, Xdata,
-                      CUDNNType<Dtype>::zero, output_desc, Ydata));
+    CUDNN_CHECK(cudnnActivationForward_v4(
+        cudnn_handle(), act_desc,
+            CUDNNType<Dtype>::one, input_desc, Xdata,
+                CUDNNType<Dtype>::zero, output_desc, Ydata));
 #endif
 }
 
@@ -46,17 +48,17 @@ void CuDNNReluGradientOp<Context>::RunWithType() {
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
 #if CUDNN_VERSION_MIN(5, 0, 0)
-    CUDNN_CHECK(cudnnActivationBackward(cudnn_handle(), act_desc,
-                            CUDNNType<T>::one, input_desc, Ydata,
-                                              input_desc, dYdata,
-                                              output_desc, Ydata,
-                       CUDNNType<T>::zero, output_desc, dXdata));
+    CUDNN_CHECK(cudnnActivationBackward(
+        cudnn_handle(), act_desc,
+            CUDNNType<T>::one, input_desc, Ydata,
+                input_desc, dYdata, output_desc, Ydata,
+                    CUDNNType<T>::zero, output_desc, dXdata));
 #else
-    CUDNN_CHECK(cudnnActivationBackward_v4(cudnn_handle(), act_desc,
-                               CUDNNType<T>::one, input_desc, Ydata,
-                                                 input_desc, dYdata,
-                                                 output_desc, Ydata,
-                          CUDNNType<T>::zero, output_desc, dXdata));
+    CUDNN_CHECK(cudnnActivationBackward_v4(
+        cudnn_handle(), act_desc,
+            CUDNNType<T>::one, input_desc, Ydata,
+                input_desc, dYdata, output_desc, Ydata,
+                    CUDNNType<T>::zero, output_desc, dXdata));
 #endif
 }
 

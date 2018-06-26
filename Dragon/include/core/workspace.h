@@ -18,26 +18,27 @@
 
 namespace dragon {
 
-#define WORKSPACE_COMMON_BUFFER_SIZE 2
 #define WORKSPACE_MAX_CORRUPTED_SIZE 2
 
 class Workspace {
  public:
     typedef Map<string, Workspace*> WorkspaceMap;
     typedef Map<string, unique_ptr<Tensor> > TensorMap;
-    typedef Map<string, stack<string> > BufferMap;
-    typedef Map<string, unique_ptr<mutex> > LockMap;
     typedef Map<string, unique_ptr<OperatorBase> > OperatorMap;
     typedef Map<string, unique_ptr<GraphBase> > GraphMap;
     typedef Map<string, TensorFiller> FillerMap;
     typedef Map<string, string> RenameMap;
 
-    Workspace(const string& name) : name_(name) { Init(); }
+    Workspace(const string& name) : name_(name) { InitWorkspace(); }
+
     ~Workspace();
 
-    void Init() {
+    inline const string& name() { return name_; }
+
+    /******************** Workspace ********************/
+
+    inline void InitWorkspace() {
         CreateTensor("ignore");
-        CreateBuffer("Common", WORKSPACE_COMMON_BUFFER_SIZE);
         Tensor* head = CreateTensor("/opt/mirror_stage/head");
         head->Reshape(vector<TIndex>(1, WORKSPACE_MAX_CORRUPTED_SIZE));
         Tensor* recompute_flag = CreateTensor("/opt/mirror_stage/recompute_flag");
@@ -50,10 +51,6 @@ class Workspace {
         }
     }
 
-    inline const string& name() { return name_; }
-
-    /******************** Workspace ********************/
-
     inline Workspace* MoveWorkspace(Workspace* ws) {
         CHECK(ws) << "The given Workspace is invalid.";
         if (workspace_map_.count(ws->name()))
@@ -62,11 +59,9 @@ class Workspace {
     }
 
     inline void ClearWorkspace() {
-        //  clear tensors & buffers
+        //  clear tensors & buffers & re-initialization 
         for (auto& kv : tensor_map_) kv.second->Reset();
-        ResetBuffers("Common");
-        //  Re-Initialization
-        Init();
+        InitWorkspace();
     }
 
     /******************** Tensor ********************/
@@ -110,20 +105,6 @@ class Workspace {
         CHECK(tensor) << "\nTensor(" << name << ") does not exist "
                       << "in current workspace or sub-workspace.";
         return tensor;
-    }
-
-    inline void LockTensor(const string& name) {
-        string query = GetTensorName(name);
-        if (!lock_map_.count(query))
-            lock_map_[query] = unique_ptr<mutex>(new mutex);
-        lock_map_[query]->lock();
-    }
-
-    inline void UnlockTensor(const string& name) {
-        string query = GetTensorName(name);
-        if (!lock_map_.count(query))
-            lock_map_[query] = unique_ptr<mutex>(new mutex);
-        lock_map_[query]->unlock();
     }
 
     inline void ResetTensor(const string& name) {
@@ -179,49 +160,32 @@ class Workspace {
         return nullptr;
     }
 
-    /******************** Buffer ********************/
+    /******************** Cache ********************/
 
-    inline void CreateBuffer(string category, int num) {
-        if (!buffer_map_.count(category))
-            buffer_map_[category] = stack<string>();
-        for (int i = 1; i <= num; i++) {
-            string name = "/share/buffer/" + category + "_" + dragon_cast<string, int>(i);
-            buffer_map_[category].push(name);
-            CreateTensor(name);
-        }
+    template <class Context>
+    inline vector<void*> caches(const vector<size_t>& segments) {
+        TIndex total_size = 0;
+        for (auto& segment : segments) total_size += (TIndex)segment;
+        Tensor* cacheT = CreateTensor("/share/cache");
+        cacheT->Reshape(vector<TIndex>(1, total_size));
+        vector<void*> caches(segments.size());
+        caches[0] = cacheT->template mutable_data<uint8_t, Context>();
+        for (int i = 1; i < segments.size(); i++)
+            caches[i] = (uint8_t*)caches[i - 1] + segments[i - 1];
+        return caches;
     }
 
-    inline Tensor* GetBuffer(string category = "Common") {
-        if (!buffer_map_[category].empty()) {
-            string name = buffer_map_[category].top();
-            buffer_map_[category].pop();
-            return tensor_map_[name].get();
-        }
-        LOG(FATAL) << "Buffers of [" << category << "] "
-                   << "are not enough, add more if necessary.";
-        return nullptr;
-    }
-
-    inline void ReleaseBuffer(Tensor* tensor,
-                       string category = "Common",
-                       bool enforce = false) {
-        static Map<string, int> limits = {
-                { "Common", WORKSPACE_COMMON_BUFFER_SIZE }};
-        if (buffer_map_[category].size() >= limits[category] || enforce) {
-            ResetTensor(tensor->name());
-            if (buffer_map_[category].empty())
-                buffer_map_[category].push(tensor->name());
-        } else {
-            buffer_map_[category].push(tensor->name());
-        }
-    }
-
-    inline void ResetBuffers(string category) {
-        while (!buffer_map_[category].empty()) {
-            string name = buffer_map_[category].top();
-            buffer_map_[category].pop();
-            tensor_map_[name]->Reset();
-        }
+    template <typename T, class Context>
+    inline vector<T*> caches(const vector<TIndex>& segments) {
+        TIndex total_count = 0;
+        for (auto& segment : segments) total_count += segment;
+        Tensor* cacheT = CreateTensor("/share/cache");
+        cacheT->Reshape(vector<TIndex>(1, total_count));
+        vector<T*> caches(segments.size());
+        caches[0] = cacheT->template mutable_data<T, Context>();
+        for (int i = 1; i < segments.size(); i++)
+            caches[i] = caches[i - 1] + segments[i - 1];
+        return caches;
     }
 
     /******************** Operator ********************/
@@ -297,8 +261,6 @@ class Workspace {
     string name_;
     WorkspaceMap workspace_map_;
     TensorMap tensor_map_;
-    BufferMap buffer_map_;
-    LockMap lock_map_;
     OperatorMap op_map_;
     GraphMap graph_map_;
     FillerMap filler_map_;

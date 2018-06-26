@@ -18,7 +18,7 @@ from . import *
 
 def BatchNorm(inputs, axis=-1, momentum=0.9, eps=1e-3,
               use_stats=-1, mode='DEFAULT', **kwargs):
-    """Batch Normalization, introduced by `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
+    """Batch Normalization. `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
     It follows the implementation of `Caffe`_, that scale procedure is moved to `ops.Scale(*args, **kwargs)`_.
 
@@ -73,7 +73,7 @@ def BatchNorm(inputs, axis=-1, momentum=0.9, eps=1e-3,
 def BatchRenorm(inputs, axis=-1, momentum=0.9, eps=1e-3,
                 r_max=3.0, d_max=5.0, t_delta=0.001,
                 use_stats=-1, mode='DEFAULT', **kwargs):
-    """Batch Renormalization, introduced by `[Ioffe, 2017] <https://arxiv.org/abs/1702.03275>`_.
+    """Batch Renormalization. `[Ioffe, 2017] <https://arxiv.org/abs/1702.03275>`_.
 
     It follows the implementation of `Caffe`_, that scale procedure is moved to `ops.Scale(*args, **kwargs)`_.
 
@@ -171,7 +171,7 @@ def FusedBatchNorm(inputs, axis=-1, momentum=0.9, eps=1e-3, use_stats=-1, **kwar
 
 
 def GroupNorm(inputs, group=32, axis=-1, eps=1e-3, **kwargs):
-    """Group Normalization, introduced by `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
+    """Group Normalization. `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
 
     Parameters
     ----------
@@ -237,7 +237,7 @@ def FusedGroupNorm(inputs, group=32, axis=-1, eps=1e-3, **kwargs):
 
 
 def InstanceNorm(inputs, axis=-1, eps=1e-3, **kwargs):
-    """Instance Normalization, introduced by `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_
+    """Instance Normalization. `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_
 
     Parameters
     ----------
@@ -266,7 +266,7 @@ def InstanceNorm(inputs, axis=-1, eps=1e-3, **kwargs):
 
 
 def L2Norm(inputs, axis=0, num_axes=-1, eps=1e-5, mode='SUM', **kwargs):
-    """L2 Normalization, introduced by `[Liu et.al, 2015] <https://arxiv.org/abs/1506.04579>`_.
+    """L2 Normalization. `[Liu et.al, 2015] <https://arxiv.org/abs/1506.04579>`_.
 
     Parameters
     ----------

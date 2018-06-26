@@ -12,15 +12,17 @@ void TileOp<Context>::TileRunWithType() {
     dims[axis] *= multiple;
     dest->Reshape(dims);
 
-    auto* Xdata = source->template data<T, Context>();
-    auto* Ydata = dest->template mutable_data<T, Context>();
+    const T* Xdata; T* Ydata;
+    if (source == &navigator) {
+        Xdata = ws()->template caches<T, Context>({ source->count() })[0];
+    } else { Xdata = source->template data<T, Context>(); }
+    if (dest == &navigator) {
+        Ydata = ws()->template caches<T, Context>({ dest->count() })[0];
+    } else { Ydata = dest->template mutable_data<T, Context>(); }
+
     kernel::Tile<T, Context>(dest->count(),
-                                 outer_dim,
-                              ex_inner_dim,
-                                  multiple,
-                                     Xdata,
-                                     Ydata,
-                                   &ctx());
+        outer_dim, ex_inner_dim,
+            multiple, Xdata, Ydata);
 }
 
 template <class Context>
@@ -40,7 +42,7 @@ void TileOp<Context>::RunOnDevice() {
     //  select source & dest
     source = &Input(0);
     if (process_axes.size() % 2 == 1) dest = Output(0);
-    else dest = ws()->GetBuffer();
+    else dest = &navigator;
 
     for (auto& task : process_axes) {
         axis = task.second; multiple = task.first;
@@ -49,12 +51,11 @@ void TileOp<Context>::RunOnDevice() {
         //  allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
-            if (dest == &Input(0)) dest = ws()->GetBuffer();
+            if (dest == &Input(0)) dest = &navigator;
         } else {
             if (dest == &Input(0)) dest = Output(0);
         }
     }
-    ws()->ReleaseBuffer(dest);
 }
 
 DEPLOY_CPU(Tile);
@@ -71,15 +72,17 @@ void TileGradientOp<Context>::TileRunWithType() {
     outer_dim = dest->count(0, axis);
     ex_inner_dim = dest->count(axis);
 
-    auto* dYdata = source->template data<T, Context>();
-    auto* dXdata = dest->template mutable_data<T, Context>();
+    const T* dYdata; T* dXdata;
+    if (source == &navigator) {
+        dYdata = ws()->template caches<T, Context>({ source->count() })[0];
+    } else { dYdata = source->template data<T, Context>(); }
+    if (dest == &navigator) {
+        dXdata = ws()->template caches<T, Context>({ dest->count() })[0];
+    } else { dXdata = dest->template mutable_data<T, Context>(); }
+
     kernel::TileGrad<T, Context>(dest->count(),
-                                     outer_dim,
-                                  ex_inner_dim,
-                                      multiple,
-                                        dYdata,
-                                        dXdata,
-                                       &ctx());
+        outer_dim, ex_inner_dim,
+            multiple, dYdata, dXdata);
 }
 
 template <class Context>
@@ -100,7 +103,7 @@ void TileGradientOp<Context>::RunOnDevice() {
     //  select source & buffer
     source = &Input(-1);
     if (process_axes.size() % 2 == 1) dest = Output(0);
-    else dest = ws()->GetBuffer();
+    else dest = &navigator;
 
     for (auto& task : process_axes) {
         axis = task.second; multiple = task.first;
@@ -109,12 +112,11 @@ void TileGradientOp<Context>::RunOnDevice() {
         //  allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
-            if (dest == &Input(-1)) dest = ws()->GetBuffer();
+            if (dest == &Input(-1)) dest = &navigator;
         } else {
             if (dest == &Input(-1)) dest = Output(0);
         }
     }
-    ws()->ReleaseBuffer(dest);
 }
 
 DEPLOY_CPU(TileGradient);

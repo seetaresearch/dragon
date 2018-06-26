@@ -6,7 +6,9 @@ template <class Context> template <typename T>
 void CopyOp<Context>::RunWithType() { 
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    ctx().template Copy<T, Context, Context>(Output(0)->count(), Ydata, Xdata);
+
+    ctx().template Copy<T, Context, Context>(
+        Output(0)->count(), Ydata, Xdata);
 }
 
 template <class Context>

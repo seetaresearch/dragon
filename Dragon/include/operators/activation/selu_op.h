@@ -20,7 +20,7 @@ template <class Context>
 class SEluOp : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(SEluOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -30,7 +30,7 @@ template <class Context>
 class SEluGradientOp : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(SEluGradientOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

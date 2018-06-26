@@ -13,8 +13,9 @@ void RMSPropUpdateOp<Context>::ComputeRunWithFloat() {
     decay = Param("decay"), eps = Param("eps");
     auto* dXdata = Input(0).template mutable_data<float, Context>();
     auto* Hdata = h->template mutable_data<float, Context>();
-    kernel::RMSPropUpdate<float, Context>(Input(0).count(),
-                            lr, decay, eps, dXdata, Hdata);
+
+    kernel::RMSPropUpdate<float, Context>(
+        Input(0).count(), lr, decay, eps, dXdata, Hdata);
 }
 
 template <class Context>
@@ -26,8 +27,9 @@ void RMSPropUpdateOp<Context>::ComputeRunWithFloat16() {
     decay = Param("decay"), eps = Param("eps");
     auto* dXdata = Input(0).template mutable_data<float16, Context>();
     auto* Hdata = h->template mutable_data<float16, Context>();
-    kernel::RMSPropUpdate<float16, Context>(Input(0).count(),
-                              lr, decay, eps, dXdata, Hdata);
+
+    kernel::RMSPropUpdate<float16, Context>(
+        Input(0).count(), lr, decay, eps, dXdata, Hdata);
 }
 
 DEPLOY_CPU(RMSPropUpdate);
@@ -37,5 +39,5 @@ DEPLOY_CUDA(RMSPropUpdate);
 OPERATOR_SCHEMA(RMSPropUpdate).NumInputs(1).NumOutputs(1);
 
 NO_GRADIENT(RMSPropUpdate);
-    
+
 }    // namespace dragon

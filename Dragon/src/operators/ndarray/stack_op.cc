@@ -11,15 +11,10 @@ void StackOp<Context>::RunWithType() {
         auto* Xdata = Input(i).template data<T, Context>();
         TIndex count = Input(i).count();
         x_concat_dim = 1;
-        kernel::Concat<T, Context>(count,
-                               outer_dim,
-                               inner_dim,
-                            x_concat_dim,
-                            y_concat_dim,
-                           concat_offset,
-                                   Xdata,
-                                   Ydata,
-                                 &ctx());
+        kernel::Concat<T, Context>(
+            count, outer_dim, inner_dim,
+                x_concat_dim, y_concat_dim,
+                    concat_offset, Xdata, Ydata);
         concat_offset += x_concat_dim;
     }
 }
@@ -61,15 +56,10 @@ void StackGradientOp<Context>::RunWithType() {
         if (Output(i)->name() != "ignore") {
             auto* dXdata = Output(i)->template mutable_data<T, Context>();
             TIndex count = Output(i)->count();
-            kernel::ConcatGrad<T, Context>(count,
-                                       outer_dim,
-                                       inner_dim,
-                                    x_concat_dim,
-                                    y_concat_dim,
-                                   concat_offset,
-                                          dYdata,
-                                          dXdata,
-                                         &ctx());
+            kernel::ConcatGrad<T, Context>(
+                count, outer_dim, inner_dim,
+                    x_concat_dim, y_concat_dim,
+                        concat_offset, dYdata, dXdata);
         }
         concat_offset += x_concat_dim;
     }

@@ -1,4 +1,4 @@
-#include "operators/arithmetic/bias_add_op.h"
+#include "operators/vision/bias_add_op.h"
 #include "core/workspace.h"
 #include "utils/filler.h"
 #include "utils/op_kernel.h"
@@ -8,15 +8,14 @@ namespace dragon {
 template <class Context> template <typename T>
 void BiasAddOp<Context>::RunWithType() {
     TENSOR_FILL(Input(1), vector<TIndex>(1, dim));
-    INIT_MULTIPLIER(bias_multiplier, inner_dim);
+    DECLARE_MULTIPLIER(multiplier, inner_dim);
+
     auto* Bdata = Input(1).template data<T, Context>();
-    auto* BMul_data = bias_multiplier->template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    kernel::BiasAdd<T, Context>(Output(0)->count(), outer_dim, dim, inner_dim,
-                                                                  data_format,
-                                                                        Bdata,
-                                                                    BMul_data,
-                                                                        Ydata);
+
+    kernel::BiasAdd<T, Context>(
+        Output(0)->count(), outer_dim, dim, inner_dim,
+            data_format, Bdata, multiplier, Ydata);
 }
 
 template <class Context>
@@ -44,24 +43,19 @@ OPERATOR_SCHEMA(BiasAdd).NumInputs(2).NumOutputs(1).Inplace({ { 0, 0 } });
 template <class Context> template <typename T>
 void BiasAddGradientOp<Context>::RunWithType() {
     if (Output(1)->name() != "ignore") {
-        INIT_MULTIPLIER(bias_multiplier, inner_dim);
-        auto* BMul_data = this->bias_multiplier->template data<T, Context>();
+        DECLARE_MULTIPLIER(multiplier, inner_dim);
         auto* dYdata = Input(-1).template data<T, Context>();
         auto* dBias = Output(1)->template mutable_data<T, Context>();
         const int y_offset = dim * inner_dim;
         for (int n = 0; n < outer_dim; n++) {
             if (data_format == "NCHW") {
-                math::Gemv<T, Context>(CblasNoTrans, dim, inner_dim,
-                                                                1.0,
-                                                  dYdata, BMul_data,
-                                                                1.0,
-                                                             dBias);
+                math::Gemv<T, Context>(
+                    CblasNoTrans, dim, inner_dim,
+                        1.0, dYdata, multiplier, 1.0, dBias);
             } else if (data_format == "NHWC") {
-                math::Gemv<T, Context>(CblasTrans, inner_dim, dim,
-                                                              1.0,
-                                                dYdata, BMul_data,
-                                                              1.0,
-                                                           dBias);
+                math::Gemv<T, Context>(
+                    CblasTrans, inner_dim, dim,
+                        1.0, dYdata, multiplier, 1.0, dBias);
             }
             dYdata += y_offset;
         }

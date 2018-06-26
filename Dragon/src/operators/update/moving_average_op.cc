@@ -7,7 +7,8 @@ template <class Context> template <typename T>
 void MovingAverageOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Axpby<T, Context>(Input(0).count(), 1.f - decay, Xdata, decay, Ydata);
+    math::Axpby<T, Context>(Input(0).count(),
+        1.f - decay, Xdata, decay, Ydata);
 }
 
 template <class Context>

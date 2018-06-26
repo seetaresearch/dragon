@@ -12,11 +12,8 @@ void SigmoidCrossEntropyOp<Context>::RunWithType() {
     auto* Ldata = losses.template mutable_data<T, Context>();
     auto* Vdata = valid.template mutable_data<T, Context>();
 
-    kernel::SigmoidCrossEntropy<T, Context>(Input(0).count(),
-                                                       Xdata,
-                                                       Tdata,
-                                                       Ldata,
-                                                       Vdata);
+    kernel::SigmoidCrossEntropy<T, Context>(
+        Input(0).count(), Xdata, Tdata, Ldata, Vdata);
 
     if (normalization == "UNIT") {
         Output(0)->ReshapeLike(losses);
@@ -26,7 +23,8 @@ void SigmoidCrossEntropyOp<Context>::RunWithType() {
 
     T normalizer;
     if (normalization == "VALID")
-        normalizer = std::max(math::ASum<T, Context>(valid.count(), Vdata), 1.f);
+        normalizer = std::max(
+            math::ASum<T, Context>(valid.count(), Vdata), 1.f);
     else if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
     else if (normalization == "FULL") normalizer = Input(0).count();
     else if (normalization == "NONE") normalizer = 1;
@@ -60,27 +58,27 @@ void SigmoidCrossEntropyGradientOp<Context>::RunWithType() {
     auto* Vdata = valid.template mutable_data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
-    kernel::SigmoidCrossEntropyGrad<T, Context>(Input(0).count(),
-                                                           Xdata,
-                                                           Tdata,
-                                                          dXdata,
-                                                           Vdata);
+    kernel::SigmoidCrossEntropyGrad<T, Context>(
+        Input(0).count(), Xdata, Tdata, dXdata, Vdata);
 
     if (normalization == "UNIT") {
         auto* dYdata = Input(-1).template data<T, Context>();
-        math::Mul<T, Context>(Output(0)->count(), dYdata, dXdata, dXdata);
-        return;
+        math::Mul<T, Context>(Output(0)->count(),
+            dYdata, dXdata, dXdata); return;
     }
 
     T normalizer;
     if (normalization == "VALID")
-        normalizer = std::max(math::ASum<T, Context>(valid.count(), Vdata), 1.f);
+        normalizer = std::max(
+            math::ASum<T, Context>(valid.count(), Vdata), 1.f);
     else if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
     else if (normalization == "FULL") normalizer = Input(0).count();
     else if (normalization == "NONE") normalizer = 1;
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; Context::template Copy<T, CPUContext, Context>(1, &dYdata_host, dYdata);
-    math::Scal<T, Context>(Output(0)->count(), dYdata_host / normalizer, dXdata);
+    T dYdata_host; Context::template Copy<T, CPUContext, Context>(
+        1, &dYdata_host, dYdata);
+    math::Scal<T, Context>(Output(0)->count(),
+        dYdata_host / normalizer, dXdata);
 }
 
 template <class Context>

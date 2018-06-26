@@ -23,7 +23,7 @@ class MPIBroadcastOp final : public ModelMPIBase<Context> {
  public:
     MPIBroadcastOp(const OperatorDef& op_def, Workspace* ws)
         : ModelMPIBase<Context>(op_def, ws) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
     USE_MPIMODEL_FUNCTIONS(Context);
 
     void RunOnDevice() override;
@@ -35,7 +35,7 @@ class MPIBroadcastGradientOp final : public ModelMPIBase<Context> {
 public:
     MPIBroadcastGradientOp(const OperatorDef& op_def, Workspace* ws)
         : ModelMPIBase<Context>(op_def, ws) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
     USE_MPIMODEL_FUNCTIONS(Context);
 
     void RunOnDevice() override;
@@ -47,6 +47,3 @@ public:
 #endif // WITH_MPI
 
 #endif    //DRAGON_OPERATORS_MPI_MPI_BROADCAST_OP_H_
-
-
-

@@ -9,45 +9,36 @@
 //
 // -------------------------------------------------------------
 
-#ifndef DRAGON_OPERATORS_RECURRENT_LSTM_UNIT_OP_H_
-#define DRAGON_OPERATORS_RECURRENT_LSTM_UNIT_OP_H_
+#ifndef DRAGON_OPERATORS_RECURRENT_LSTM_CELL_OP_H_
+#define DRAGON_OPERATORS_RECURRENT_LSTM_CELL_OP_H_
 
 #include "core/operator.h"
 
 namespace dragon {
 
 template <class Context>
-class LSTMUnitOp : public Operator<Context> {
+class LSTMCellOp : public Operator<Context> {
  public:
-    LSTMUnitOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          has_cont(OperatorBase::GetSingleArg<string>("cont_t", "")) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    LSTMCellOp(const OperatorDef& op_def, Workspace* ws)
+        : Operator<Context>(op_def, ws) {}
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
+    template <typename T> void ResetDesc();
     template <typename T> void RunWithType();
-
- protected:
-    TIndex num, channels;
-    string has_cont;
-    Tensor* cont_t;
 };
 
 template <class Context>
-class LSTMUnitGradientOp : public Operator<Context> {
+class LSTMCellGradientOp : public Operator<Context> {
  public:
-    LSTMUnitGradientOp(const OperatorDef& op_def, Workspace* ws)
+    LSTMCellGradientOp(const OperatorDef& op_def, Workspace* ws)
          : Operator<Context>(op_def, ws) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
-
- protected:
-    TIndex num, channels;
-    Tensor* zeros;
 };
 
 }    // namespace dragon
 
-#endif    // DRAGON_OPERATORS_RECURRENT_LSTM_UNIT_OP_H_
+#endif    // DRAGON_OPERATORS_RECURRENT_LSTM_CELL_OP_H_

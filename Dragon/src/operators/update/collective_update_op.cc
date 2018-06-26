@@ -38,7 +38,6 @@ void CollectiveUpdateOp<Context>::InitNCCL() {
 
 template <class Context>
 void CollectiveUpdateOp<Context>::MPIAllReduceWithFloat() {
-    buffer = ws()->GetBuffer();
     for (int j = 0; j < InputSize(); j++) {
         TIndex count = Input(j).count();
         MPI_Request recv_req;
@@ -50,12 +49,11 @@ void CollectiveUpdateOp<Context>::MPIAllReduceWithFloat() {
         segment_ends[0] = segment_sizes[0];
         for (int i = 1; i < segment_ends.size(); i++) 
             segment_ends[i] = segment_sizes[i] + segment_ends[i - 1];
-        buffer->Reshape(vector<TIndex>(1, segment_sizes[0]));
 #ifdef WITH_MPI_CUDA
-        auto* Bdata = buffer->mutable_data<float, Context>();
+        auto* WSdata = ws()->template caches<float, Context>({ segment_sizes[0] })[0];
         auto* dXdata = Input(j).template mutable_data<float, Context>();
 #else
-        auto* Bdata = buffer->mutable_data<float, CPUContext>();
+        auto* WSdata = ws()->template caches<float, CPUContext>({ segment_sizes[0] })[0];
         auto* dXdata = Input(j).template mutable_data<float, CPUContext>();
 #endif // WITH_MPI_CUDA
         int recv_from = (comm_rank - 1 + comm_size) % comm_size;
@@ -65,12 +63,12 @@ void CollectiveUpdateOp<Context>::MPIAllReduceWithFloat() {
         for (int i = 0; i < comm_size - 1; i++) {
             int recv_chunk = (comm_rank - i - 1 + comm_size) % comm_size;
             int send_chunk = (comm_rank - i + comm_size) % comm_size;
-            auto* segment_send = &(dXdata[segment_ends[send_chunk] - 
+            auto* segment_send = &(dXdata[segment_ends[send_chunk] -
                                         segment_sizes[send_chunk]]);
-            MPI_Irecv(Bdata, segment_sizes[recv_chunk], 
-                                             MPI_FLOAT, 
-                                          recv_from, 0, 
-                                      comm, &recv_req);
+            MPI_Irecv(WSdata, segment_sizes[recv_chunk],
+                                              MPI_FLOAT,
+                                           recv_from, 0,
+                                       comm, &recv_req);
             MPI_Send(segment_send, segment_sizes[send_chunk],
                                                   MPI_FLOAT, 
                                                  send_to, 0, 
@@ -80,15 +78,11 @@ void CollectiveUpdateOp<Context>::MPIAllReduceWithFloat() {
             MPI_Wait(&recv_req, MPI_STATUS_IGNORE);
 #ifdef WITH_MPI_CUDA
             math::Axpy<float, Context>(segment_sizes[recv_chunk],
-                                                             1.0, 
-                                                           Bdata, 
-                                                 segment_update);
+                                    1.0, WSdata, segment_update);
             cudaStreamSynchronize(cudaStreamDefault);
 #else 
-            math::Axpy<float, CPUContext>(segment_sizes[recv_chunk], 
-                                                                1.0, 
-                                                              Bdata, 
-                                                    segment_update);
+            math::Axpy<float, CPUContext>(segment_sizes[recv_chunk],
+                                       1.0, WSdata, segment_update);
 #endif // WITH_MPI_CUDA
         }
 
@@ -118,7 +112,6 @@ void CollectiveUpdateOp<Context>::MPIAllReduceWithFloat() {
 #endif  // WITH_MPI_CUDA
         }
     }
-    ws()->ReleaseBuffer(buffer);
 }
 
 template <class Context>

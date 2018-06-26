@@ -7,16 +7,17 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void MPIGatherOp<Context>::RunWithType() {
-    if (this->comm_rank == this->comm_root) {
-        Output(this->comm_rank)->template Copy<Context, Context>(Input(0));
-        for (int i = 0; i < this->comm_size; i++) {
-            if (i == this->comm_root) continue;
+    if (comm_rank == comm_root) {
+        Output(comm_rank)->template Copy<Context, Context>(Input(0));
+        for (int i = 0; i < comm_size; i++) {
+            if (i == comm_root) continue;
 #ifdef WITH_MPI_CUDA
             auto* Ydata = Output(i)->template mutable_data<T, Context>();
 #else
             auto* Ydata = Output(i)->template mutable_data<T, CPUContext>();
 #endif
-            MPI_Recv(Ydata, Output(i)->count(), mpi_dtype(), i, 0, this->comm, MPI_STATUS_IGNORE);
+            MPI_Recv(Ydata, Output(i)->count(), mpi_dtype(),
+                i, 0, this->comm, MPI_STATUS_IGNORE);
         }
     }
     else {
@@ -25,41 +26,45 @@ void MPIGatherOp<Context>::RunWithType() {
 #else
         auto* Xdata = Input(0).template data<T, CPUContext>();
 #endif
-        MPI_Send(Xdata, Input(0).count(), mpi_dtype(), this->comm_root, 0, this->comm);
+        MPI_Send(Xdata, Input(0).count(), mpi_dtype(),
+            comm_root, 0, comm);
     }
 }
 
 template <class Context>
 void MPIGatherOp<Context>::RunOnDevice() {
-    CHECK_EQ(this->comm_size, OutputSize());
+    CHECK_EQ(comm_size, OutputSize());
     //  reshape from root
-    if (this->comm_rank == this->comm_root)
-        Output(0)->ReshapeLike(Input(0));
+    if (comm_rank == comm_root) Output(0)->ReshapeLike(Input(0));
 
     //  reshape from others
-    size_t* all_ndim = new size_t[this->comm_size];
+    size_t* all_ndim = new size_t[comm_size];
     size_t ndim[1];
-    if (this->comm_rank != this->comm_root) {
+    if (comm_rank != comm_root) {
         ndim[0] = Input(0).ndim();
-        MPI_Send(ndim, 1, MPI_UNSIGNED_LONG_LONG, this->comm_root, 0, this->comm);
+        MPI_Send(ndim, 1, MPI_UNSIGNED_LONG_LONG, comm_root, 0, comm);
     } else {
-        for (int i = 1; i < this->comm_size; i++)
-            MPI_Recv(all_ndim + i, 1, MPI_UNSIGNED_LONG_LONG, i, 0, this->comm, MPI_STATUS_IGNORE);
+        for (int i = 1; i < comm_size; i++)
+            MPI_Recv(all_ndim + i, 1, MPI_UNSIGNED_LONG_LONG,
+               i, 0, comm, MPI_STATUS_IGNORE);
     }
-    if (this->comm_rank != this->comm_root) {
-        MPI_Send(Input(0).dims().data(), (int)ndim[0], MPI_LONG_LONG, this->comm_root, 0, this->comm);
+    if (comm_rank != comm_root) {
+        MPI_Send(Input(0).dims().data(), (int)ndim[0],
+            MPI_LONG_LONG, comm_root, 0, comm);
     } else {
-        for (int i = 1; i < this->comm_size; i++) {
+        for (int i = 1; i < comm_size; i++) {
             TIndex* dims = new TIndex[all_ndim[i]];
-            MPI_Recv(dims, (int)all_ndim[i], MPI_LONG_LONG, i, 0, this->comm, MPI_STATUS_IGNORE);
+            MPI_Recv(dims, (int)all_ndim[i], MPI_LONG_LONG, 
+                i, 0, comm, MPI_STATUS_IGNORE);
             vector<TIndex> dims_;
-            for (int j = 0; j < (int)all_ndim[i]; j++)  dims_.push_back(dims[j]);
+            for (int j = 0; j < (int)all_ndim[i]; j++)
+                dims_.push_back(dims[j]);
             Output(i)->Reshape(dims_);
         }
     }
 
-    if (this->dtype == "FLOAT32") RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input type: " << this->dtype;
+    if (dtype == "FLOAT32") RunWithType<float>();
+    else LOG(FATAL) << "Unsupported input type: " << dtype;
 }
 
 DEPLOY_CPU(MPIGather);
@@ -70,16 +75,16 @@ OPERATOR_SCHEMA(MPIGather).NumInputs(1).NumOutputs(1, INT_MAX);
 
 template <class Context> template <typename T>
 void MPIGatherGradientOp<Context>::RunWithType() {
-    if (this->comm_rank == this->comm_root) {
+    if (comm_rank == comm_root) {
         Output(0)->template Copy<Context, Context>(Input(this->comm_rank + 1));
-        for (int i = 0; i < this->comm_size; i++) {
-            if (i == this->comm_root) continue;
+        for (int i = 0; i < comm_size; i++) {
+            if (i == comm_root) continue;
 #ifdef WITH_MPI_CUDA
-            auto* dYdata = Input(this->comm_rank + 1).template data<T, Context>();
+            auto* dYdata = Input(comm_rank + 1).template data<T, Context>();
 #else
-            auto* dYdata = Input(this->comm_rank + 1).template data<T, CPUContext>();
+            auto* dYdata = Input(comm_rank + 1).template data<T, CPUContext>();
 #endif
-            MPI_Send(dYdata, Input(this->comm_rank + 1).count(), mpi_dtype(), i, 0, this->comm);
+            MPI_Send(dYdata, Input(comm_rank + 1).count(), mpi_dtype(), i, 0, comm);
         }
     }
     else{
@@ -88,7 +93,8 @@ void MPIGatherGradientOp<Context>::RunWithType() {
 #else
         auto* dXdata = Output(0)->template mutable_data<T, CPUContext>();
 #endif
-        MPI_Recv(dXdata, Output(0)->count(), mpi_dtype(), this->comm_root, 0, this->comm, MPI_STATUS_IGNORE);
+        MPI_Recv(dXdata, Output(0)->count(), mpi_dtype(),
+            comm_root, 0, comm, MPI_STATUS_IGNORE);
     }
 }
 

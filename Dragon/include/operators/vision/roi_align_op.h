@@ -28,7 +28,7 @@ class ROIAlignOp : public Operator<Context> {
         CHECK_GT(pool_h, 0) << "\npool_h must > 0";
         CHECK_GT(pool_w, 0) << "\npool_w must > 0";
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -50,7 +50,7 @@ class ROIAlignGradientOp : public Operator<Context> {
         CHECK_GT(pool_h, 0) << "\npool_h must > 0";
         CHECK_GT(pool_w, 0) << "\npool_w must > 0";
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

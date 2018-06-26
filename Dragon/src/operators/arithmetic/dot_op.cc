@@ -17,9 +17,11 @@ void DotOp<Context>::GemmRunWithType() {
     auto* X1data = Input(0).template data<T, Context>();
     auto* X2data = Input(1).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Gemm<T, Context>(transA ? CblasTrans : CblasNoTrans,
-                           transB ? CblasTrans : CblasNoTrans,
-                           M, N1, K1, 1.0, X1data, X2data, 0.0, Ydata);
+    math::Gemm<T, Context>(
+        TransA ? CblasTrans : CblasNoTrans,
+            TransB ? CblasTrans : CblasNoTrans,
+                M, N1, K1,
+                    1.0, X1data, X2data, 0.0, Ydata);
 }
 
 template <class Context> template <typename T>
@@ -27,8 +29,10 @@ void DotOp<Context>::GemvRunWithType() {
     auto* X1data = Input(0).template data<T, Context>();
     auto* X2data = Input(1).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Gemv<T, Context>(transA ? CblasTrans : CblasNoTrans,
-                           M, N1, 1.0, X1data, X2data, 0.0, Ydata);
+    math::Gemv<T, Context>(
+        TransA ? CblasTrans : CblasNoTrans,
+            M, N1,
+                1.0, X1data, X2data, 0.0, Ydata);
 }
 
 template <class Context>
@@ -44,10 +48,10 @@ void DotOp<Context>::RunOnDevice() {
     } 
     else if (Input(0).ndim() >= 2 && Input(1).ndim() == 2) {
         TIndex m = Input(0).count() / Input(0).dim(-1), k = Input(0).dim(-1);
-        M =  transA ? k : m;
-        K1 = transA ? m : k;
-        K2 = transB ? Input(1).dim(1) : Input(1).dim(0);
-        N1 =  transB ? Input(1).dim(0) : Input(1).dim(1);
+        M =  TransA ? k : m;
+        K1 = TransA ? m : k;
+        K2 = TransB ? Input(1).dim(1) : Input(1).dim(0);
+        N1 =  TransB ? Input(1).dim(0) : Input(1).dim(1);
         CHECK_EQ(K1, K2) << "\nTensor(" << Input(0).name() << "): "
             << Input(0).dim_string() << " can not Dot with Tensor"
             << "(" << Input(1).name() << "): " << Input(1).dim_string();
@@ -60,8 +64,8 @@ void DotOp<Context>::RunOnDevice() {
     } 
     else if (Input(0).ndim() >= 2 && Input(1).ndim() == 1) {
         TIndex m = Input(0).count() / Input(0).dim(-1), k = Input(0).dim(-1);
-        M = transA ? k : m;
-        N1 = transA ? m : k;
+        M = TransA ? k : m;
+        N1 = TransA ? m : k;
         N2 = Input(1).dim(0);
         CHECK_EQ(N1, N2) << "\nTensor(" << Input(0).name() << "): "
             << Input(0).dim_string() << " can not Dot with Tensor"
@@ -106,10 +110,16 @@ void DotGradientOp<Context>::GemmRunWithType() {
     auto* dYdata = Input(2).template data<T, Context>();
     auto* dX1data = Output(0)->template mutable_data<T, Context>();
     auto* dX2data = Output(1)->template mutable_data<T, Context>();
-    math::Gemm<T, Context>(CblasNoTrans, transB ? CblasNoTrans : CblasTrans,
-                           M, K1, N1, 1.0, dYdata, X2data, 0.0, dX1data);
-    math::Gemm<T, Context>(transA ? CblasNoTrans : CblasTrans, CblasNoTrans,
-                           K1, N1, M, 1.0, X1data, dYdata, 0.0, dX2data);
+    math::Gemm<T, Context>(
+        CblasNoTrans,
+            TransB ? CblasNoTrans : CblasTrans,
+                M, K1, N1,
+                    1.0, dYdata, X2data, 0.0, dX1data);
+    math::Gemm<T, Context>(
+        TransA ? CblasNoTrans : CblasTrans,
+            CblasNoTrans,
+                K1, N1, M,
+                    1.0, X1data, dYdata, 0.0, dX2data);
 }
 
 template <class Context> template <typename T>
@@ -119,10 +129,14 @@ void DotGradientOp<Context>::GemvRunWithType() {
     auto* dYdata = Input(2).template data<T, Context>();
     auto* dX1data = Output(0)->template mutable_data<T, Context>();
     auto* dX2data = Output(1)->template mutable_data<T, Context>();
-    math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans,
-                           M, N1, 1, 1.0, dYdata, X2data, 0.0, dX1data);
-    math::Gemv<T, Context>(transA ? CblasNoTrans : CblasTrans,
-                           M, N1, 1.0, X1data, dYdata, 0.0, dX2data);
+    math::Gemm<T, Context>(
+        CblasNoTrans, CblasNoTrans,
+            M, N1, 1,
+                1.0, dYdata, X2data, 0.0, dX1data);
+    math::Gemv<T, Context>(
+        TransA ? CblasNoTrans : CblasTrans,
+            M, N1,
+                1.0, X1data, dYdata, 0.0, dX2data);
 }
 
 template <class Context>
@@ -140,10 +154,10 @@ void DotGradientOp<Context>::RunOnDevice() {
     } 
     else if (Input(0).ndim() >= 2 && Input(1).ndim() == 2) {
         TIndex m = Input(0).count() / Input(0).dim(-1), k = Input(0).dim(-1);
-        M =  transA ? k : m;
-        K1 = transA ? m : k;
-        K2 = transB ? Input(1).dim(1) : Input(1).dim(0);
-        N1 =  transB ? Input(1).dim(0) : Input(1).dim(1);
+        M =  TransA ? k : m;
+        K1 = TransA ? m : k;
+        K2 = TransB ? Input(1).dim(1) : Input(1).dim(0);
+        N1 =  TransB ? Input(1).dim(0) : Input(1).dim(1);
         CHECK_EQ(K1, K2) << "\nTensor(" << Input(0).name() << "): "
             << Input(0).dim_string() << " can not Dot with Tensor"
             << "(" << Input(1).name() << "): " << Input(1).dim_string();
@@ -153,8 +167,8 @@ void DotGradientOp<Context>::RunOnDevice() {
     } 
     else if (Input(0).ndim() >= 2 && Input(1).ndim() == 1) {
         TIndex m = Input(0).count() / Input(0).dim(-1), k = Input(0).dim(-1);
-        M = transA ? k : m;
-        N1 = transA ? m : k;
+        M = TransA ? k : m;
+        N1 = TransA ? m : k;
         N2 = Input(1).dim(0);
         CHECK_EQ(N1, N2) << "\nTensor(" << Input(0).name() << "): "
             << Input(0).dim_string() << " can not Dot with Tensor"

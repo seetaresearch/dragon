@@ -20,6 +20,7 @@ class AsType(BaseModule):
     def __init__(self, key, ctx, **kwargs):
         super(AsType, self).__init__(key, ctx, **kwargs)
         self.dtype = kwargs.get('dtype', 'float32')
+        self.inplace = kwargs.get('inplace', False)
         self.register_arguments()
         self.register_op()
 
@@ -33,15 +34,21 @@ class AsType(BaseModule):
             'n_inputs': 1, 'n_outputs': 1,
             'arguments': {
                 'dtype': self.dtype,
+                'inplace': self.inplace,
             }
         }
 
     def forward(self, x):
         if x.requires_grad and not x._static_shape:
             raise RuntimeError("Can't change the dtype of a non-leaf tensor if requiring grad.")
-        inputs = [x]; self.unify_devices(inputs)
-        outputs = [self.register_output(self.dtype)]
-        y = self.run(inputs, outputs)
-        y.requires_grad = x.requires_grad
-        y._static_shape = x._static_shape
+        if not self.inplace:
+            inputs = [x]; self.unify_devices(inputs)
+            outputs = [self.register_output(self.dtype)]
+            y = self.run(inputs, outputs)
+            y.requires_grad = x.requires_grad
+            y._static_shape = x._static_shape
+        else:
+            self.unify_devices([x])
+            y = self.run([], [x])
+            y._dtype = self.dtype
         return y

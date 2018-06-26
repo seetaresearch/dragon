@@ -304,7 +304,7 @@ def Pool2d(inputs, kernel_size, stride, pad=0, padding='VALID', ceil=True,
 
 
 def ROIPooling(inputs, pool_h, pool_w, spatial_scale, **kwargs):
-    """Max ROIPooling, introduced by `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
+    """Max ROIPooling. `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
 
     The first dimension of input must be ``1``.
 
@@ -331,7 +331,7 @@ def ROIPooling(inputs, pool_h, pool_w, spatial_scale, **kwargs):
 
 
 def ROIAlign(inputs, pool_h=0, pool_w=0, spatial_scale=1.0, sampling_ratio=2, **kwargs):
-    """AVG ROIAlign, introduced by `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
+    """AVG ROIAlign. `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
 
     The first dimension of input must be ``1``.
 
@@ -361,7 +361,7 @@ def ROIAlign(inputs, pool_h=0, pool_w=0, spatial_scale=1.0, sampling_ratio=2, **
 
 def LRN(inputs, local_size=5, alpha=0.0001, beta=0.75, k=2.0,
         mode='ACROSS_CHANNELS', data_format='NCHW', **kwargs):
-    """Local Response Normalization, introduced by `[Krizhevsky et.al, 2012] <http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks>`_.
+    """Local Response Normalization. `[Krizhevsky et.al, 2012] <http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks>`_.
 
     Parameters
     ----------

@@ -40,7 +40,7 @@ class ImageDataOp final : public Operator<Context> {
                 std.mutable_data<float, CPUContext>()[i] = std_values[i];
         }
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename Tx, typename Ty> void RunWithType();

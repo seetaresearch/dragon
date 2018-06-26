@@ -21,7 +21,7 @@ class DenseConcatOp final : public ConcatOp<Context> {
  public:
     DenseConcatOp(const OperatorDef& op_def, Workspace* ws)
         : ConcatOp<Context>(op_def, ws) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 };
 
 template <class Context>
@@ -30,7 +30,7 @@ class DenseConcatGradientOp : public ConcatGradientOp<Context> {
     DenseConcatGradientOp(const OperatorDef& op_def, Workspace* ws)
         : ConcatGradientOp<Context>(op_def, ws),
           growth_rate(OperatorBase::GetSingleArg<int>("growth_rate", 0)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void ElimateCorruption() override;
     template <typename T> void RestoreX1();

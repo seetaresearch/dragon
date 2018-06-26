@@ -53,7 +53,10 @@ BiasAdd = vision.BiasAdd
 DenseConcat = vision.DenseConcat
 
 # recurrent
-LSTMUnit = recurrent.LSTMUnit
+LSTMCell = recurrent.LSTMCell
+RNN = recurrent.RNN
+LSTM = recurrent.LSTM
+GRU = recurrent.GRU
 
 # activation
 Sigmoid = act.Sigmoid

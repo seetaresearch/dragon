@@ -15,20 +15,11 @@ void SparseSoftmaxFocalLossOp<Context>::RunWithType() {
     auto* valid_data = this->valid.template mutable_data<T, Context>();
     auto* scale_data = scale->template mutable_data<T, Context>();
 
-    kernel::SparseSoftmaxFocalLoss<T, Context>(Input(0).count(),
-                                             Input(0).dim(axis),
-                                                      outer_dim,
-                                                      inner_dim,
-                                                      pos_alpha,
-                                                      neg_alpha,
-                                                          gamma,
-                                                         neg_id,
-                                                      prob_data,
-                                                     label_data,
-                                                     scale_data,
-                                                      loss_data,
-                                                     valid_data,
-                                                 &this->ignore);
+    kernel::SparseSoftmaxFocalLoss<T, Context>(
+        Input(0).count(), Input(0).dim(axis), outer_dim, inner_dim,
+            pos_alpha, neg_alpha, gamma, neg_id,
+                prob_data, label_data, scale_data,
+                    loss_data, valid_data, &this->ignore);
 
     if (normalization == "UNIT") {
         Output(0)->ReshapeLike(this->losses);
@@ -80,30 +71,19 @@ void SparseSoftmaxFocalLossGradientOp<Context>::RunWithType() {
     auto* valid_data = this->valid.template mutable_data<T, Context>();
     auto* scale_data = scale->template mutable_data<T, Context>();
 
-    kernel::SparseSoftmaxFocalLossGrad<T, Context>(Output(0)->count(),
-                                                 Output(0)->dim(axis),
-                                                            outer_dim,
-                                                            inner_dim,
-                                                                gamma,
-                                                               neg_id,
-                                                                  eps,
-                                                           scale_data,
-                                                            prob_data,
-                                                           label_data,
-                                                           valid_data,
-                                                        &this->ignore,
-                                                              dXdata);
+    kernel::SparseSoftmaxFocalLossGrad<T, Context>(
+        Output(0)->count(), Output(0)->dim(axis), outer_dim, inner_dim,
+            gamma, neg_id, eps, scale_data, prob_data, label_data,
+                valid_data, &this->ignore, dXdata);
 
     if (normalization == "UNIT") {
         auto* dYdata = Input(-1).template data<T, Context>();
-        kernel::SumGrad<T, Context>(Input(0).count() / Input(0).dim(axis),
-                                                       Input(0).dim(axis),
-                                                                inner_dim,
-                                                                      1.0,
-                                                                   dYdata,
-                                                               prob_data);
-        math::Mul<T, Context>(Output(0)->count(), prob_data, dXdata, dXdata);
-        return;
+        kernel::SumGrad<T, Context>(
+            Input(0).count() / Input(0).dim(axis),
+                Input(0).dim(axis), inner_dim,
+                    1.0, dYdata, prob_data);
+        math::Mul<T, Context>(Output(0)->count(),
+            prob_data, dXdata, dXdata); return;
     }
 
     T normalizer;

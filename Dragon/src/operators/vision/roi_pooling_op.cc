@@ -7,21 +7,25 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void ROIPoolingOp<Context>::RunWithType() {
-    kernel::ROIPooling<T, Context>(spatial_scale, 
-                                  pool_h, pool_w,
-                                       &Input(0),
-                                       &Input(1),
-                                            mask,
-                                      Output(0));
+    Tensor* mask = ws()->CreateTensor(
+        "/mnt/" + anchor() + "/roi_pool/mask");
+    mask->ReshapeLike(*Output(0));
+
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Rdata = Input(1).template data<T, Context>();
+    auto* Mdata = mask->template mutable_data<int, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+
+    kernel::ROIPooling<T, Context>(
+        Output(0)->count(), Input(0).dim(0), Input(0).dim(1),
+            Input(0).dim(2), Input(0).dim(3), pool_h, pool_w,
+                Input(1).dim(0), spatial_scale, Xdata, Rdata, Mdata, Ydata);
 }
 
 template <class Context>
 void ROIPoolingOp<Context>::RunOnDevice() {
-    mask = ws()->CreateTensor("/mnt/" + anchor() + "/roi_pool/mask");
-
-    vector<TIndex> dims({Input(1).dim(0), Input(0).dim(1), pool_h, pool_w});
-    Output(0)->Reshape(dims);
-    mask->Reshape(dims);
+    Output(0)->Reshape(vector<TIndex>(
+        { Input(1).dim(0), Input(0).dim(1), pool_h, pool_w }));
 
     if (XIsType(Input(0), float)) RunWithType<float>();
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
@@ -35,18 +39,22 @@ OPERATOR_SCHEMA(ROIPooling).NumInputs(2).NumOutputs(1);
 
 template <class Context> template <typename T>
 void ROIPoolingGradientOp<Context>::RunWithType() {
-    kernel::ROIPoolingGrad<T, Context>(spatial_scale,
-                                      pool_h, pool_w,
-                                          &Input(-1),
-                                           &Input(1),
-                                                mask,
-                                          Output(0));
+    Tensor* mask = ws()->GetTensor(
+        "/mnt/" + anchor() + "/roi_pool/mask");
+
+    auto* dYdata = Input(-1).template data<T, CUDAContext>();
+    auto* Rdata = Input(1).template data<T, CUDAContext>();
+    auto* Mdata = mask->template data<int, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
+
+    kernel::ROIPoolingGrad<T, Context>(
+        Output(0)->count(), Output(0)->dim(0), Output(0)->dim(1),
+            Output(0)->dim(2), Output(0)->dim(3), pool_h, pool_w,
+                Input(1).dim(0), spatial_scale, dYdata, Rdata, Mdata, dXdata);
 }
 
 template <class Context>
 void ROIPoolingGradientOp<Context>::RunOnDevice() {
-    mask = ws()->GetTensor("/mnt/" + anchor() + "/roi_pool/mask");
-
     Output(0)->ReshapeLike(Input(0));
 
     if (XIsType(Input(0), float)) RunWithType<float>();

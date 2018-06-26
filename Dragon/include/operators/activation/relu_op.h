@@ -22,7 +22,7 @@ class ReluOp : public Operator<Context> {
     ReluOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           slope(OperatorBase::GetSingleArg<float>("slope", 0.0)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -37,7 +37,7 @@ class ReluGradientOp : public Operator<Context> {
     ReluGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           slope(OperatorBase::GetSingleArg<float>("slope", 0.0)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -59,7 +59,7 @@ public:
         CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc, 
             CUDNN_ACTIVATION_RELU, CUDNN_PROPAGATE_NAN, 0));
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNReluOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
@@ -86,7 +86,7 @@ class CuDNNReluGradientOp final : public ReluGradientOp<Context> {
         CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc,
             CUDNN_ACTIVATION_RELU, CUDNN_PROPAGATE_NAN, 0));
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNReluGradientOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));

@@ -23,17 +23,15 @@ class InnerProductOp: public Operator<Context> {
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", 1)),
           num_output(OperatorBase::GetSingleArg<int>("num_output", 0)),
-          transW(OperatorBase::GetSingleArg<bool>("TransW", true)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+          TransW(OperatorBase::GetSingleArg<bool>("TransW", true)) {}
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice();
     template <typename T> void TransRunWithType();
     template <typename T> void NoTransRunWithType();
 
  protected:
-    TIndex axis, num_output, M, K;
-    bool transW;
-    Tensor* bias_multiplier;
+    TIndex axis, num_output, TransW, M, K;
 };
 
 template <class Context>
@@ -43,16 +41,14 @@ class InnerProductGradientOp final : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", 1)),
           num_output(OperatorBase::GetSingleArg<int>("num_output", 0)),
-          transW(OperatorBase::GetSingleArg<bool>("TransW", true)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+          TransW(OperatorBase::GetSingleArg<bool>("TransW", true)) {}
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    TIndex axis, num_output, M, K;
-    bool transW;
-    Tensor* bias_multiplier;
+    TIndex axis, num_output, TransW, M, K;
 };
 
 }    // namespace dragon

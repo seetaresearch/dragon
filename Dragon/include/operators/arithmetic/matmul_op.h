@@ -19,37 +19,35 @@ namespace dragon {
 template <class Context>
 class MatmulOp final : public Operator<Context> {
  public:
-    MatmulOp(const OperatorDef& op_def, Workspace* ws) 
+    MatmulOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          transA(OperatorBase::GetSingleArg<bool>("TransA", false)),
-          transB(OperatorBase::GetSingleArg<bool>("TransB", false)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+          TransA(OperatorBase::GetSingleArg<bool>("TransA", false)),
+          TransB(OperatorBase::GetSingleArg<bool>("TransB", false)) {}
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    bool transA, transB;
+    TIndex TransA, TransB, M, K1, K2, N;
     TIndex n, x1_offset, x2_offset, y_offset;
-    TIndex M, K1, K2, N;
 };
 
 template <class Context>
 class MatmulGradientOp final : public Operator<Context> {
  public:
-    MatmulGradientOp(const OperatorDef& op_def, Workspace* ws) 
+    MatmulGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-        transA(OperatorBase::GetSingleArg<bool>("TransA", false)),
-        transB(OperatorBase::GetSingleArg<bool>("TransB", false)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+        TransA(OperatorBase::GetSingleArg<bool>("TransA", false)),
+        TransB(OperatorBase::GetSingleArg<bool>("TransB", false)) {}
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    bool transA, transB;
+    TIndex TransA, TransB, M, K1, K2, N;
     TIndex n, x1_offset, x2_offset, y_offset;
-    TIndex M, K1, K2, N;
 };
     
 }    // namespace dragon

@@ -24,7 +24,7 @@ class OneHotOp final : public Operator < Context > {
           depth(OperatorBase::GetSingleArg<int>("depth", -1)),
           on_value(OperatorBase::GetSingleArg<int>("on_value", 1)),
           off_value(OperatorBase::GetSingleArg<int>("off_value", 0)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

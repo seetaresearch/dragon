@@ -32,7 +32,7 @@ class ProposalOp final : public Operator<Context> {
           max_level(OperatorBase::GetSingleArg<int>("max_level", 5)),
           canonical_level(OperatorBase::GetSingleArg<int>("canonical_level", 4)),
           canonical_scale(OperatorBase::GetSingleArg<int>("canonical_scale", 224)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

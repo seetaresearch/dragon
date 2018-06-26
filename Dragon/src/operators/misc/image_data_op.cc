@@ -6,15 +6,15 @@ namespace dragon {
 template <class Context> template <typename Tx, typename Ty>
 void ImageDataOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<Tx, Context>();
-    auto* Mdata = mean.count() > 0 ? mean.template data<float, Context>() : nullptr;
-    auto* Sdata = std.count() > 0 ? std.template data<float, Context>() : nullptr;
+    auto* Mdata = mean.count() > 0 ?
+        mean.template data<float, Context>() : nullptr;
+    auto* Sdata = std.count() > 0 ?
+        std.template data<float, Context>() : nullptr;
     auto* Ydata = Output(0)->template mutable_data<Ty, Context>();
-    kernel::ImageData<Tx, Ty, Context>(Output(0)->count(),
-                                               n, c, h, w,
-                                             Mdata, Sdata,
-                                              data_format,
-                                                    Xdata,
-                                                    Ydata);
+
+    kernel::ImageData<Tx, Ty, Context>(
+        Output(0)->count(), n, c, h, w, Mdata, Sdata,
+            data_format, Xdata, Ydata);
 }
 
 template <class Context>

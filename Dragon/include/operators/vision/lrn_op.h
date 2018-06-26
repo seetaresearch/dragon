@@ -29,7 +29,7 @@ class LRNOp : public Operator<Context> {
           k(OperatorBase::GetSingleArg<float>("k", float(2.0))),
           mode(OperatorBase::GetSingleArg<string>("mode", "ACROSS_CHANNELS")),
           data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -60,7 +60,7 @@ class LRNGradientOp : public Operator<Context> {
           k(OperatorBase::GetSingleArg<float>("k", float(2.0))),
           mode(OperatorBase::GetSingleArg<string>("mode", "ACROSS_CHANNELS")),
           data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -97,7 +97,7 @@ class CuDNNLRNOp : public LRNOp<Context> {
                                                      this->beta, 
                                                      this->k));
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNLRNOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
@@ -126,7 +126,7 @@ class CuDNNLRNGradientOp : public LRNGradientOp<Context > {
                                                      this->beta, 
                                                      this->k));
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNLRNGradientOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));

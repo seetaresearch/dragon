@@ -26,7 +26,7 @@ class ArangeOp final : public Operator<Context> {
         GET_ARGUMENT_WITH_DESC(int, stop, 0);
         GET_ARGUMENT_WITH_DESC(int, step, 1);
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

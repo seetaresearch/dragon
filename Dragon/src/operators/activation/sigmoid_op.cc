@@ -30,7 +30,8 @@ void SigmoidGradientOp<Context>::RunWithType() {
     auto* Ydata = Input(0).template data<T, Context>();
     auto* dYdata = Input(1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    kernel::SigmoidGrad<T, Context>(Output(0)->count(), dYdata, Ydata, dXdata);
+    kernel::SigmoidGrad<T, Context>(
+        Output(0)->count(), dYdata, Ydata, dXdata);
 }
 
 template <class Context>

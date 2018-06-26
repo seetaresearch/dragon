@@ -25,7 +25,7 @@ class ArgReduceOp final : public Operator<Context> {
           operation(OperatorBase::GetSingleArg<string>("operation", "NONE")),
           keep_dims(OperatorBase::GetSingleArg<bool>("keep_dims", false)),
           top_k(OperatorBase::GetSingleArg<int>("top_k", 1)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

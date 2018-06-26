@@ -21,7 +21,7 @@ inline PyObject* IsCUDADriverSufficientCC(PyObject* self, PyObject* args) {
     if (err == cudaErrorInsufficientDriver) return PyBool_FromLong(0);
     return PyBool_FromLong(1);
 #else
-    CUDA_NOT_COMPILED;
+    return PyBool_FromLong(0);
 #endif
 }
 

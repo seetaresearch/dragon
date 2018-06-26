@@ -9,10 +9,9 @@ template <class Context> template <typename T>
 void ReduceOp<Context>::SumRunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     if (axis == -1) {
-        INIT_MULTIPLIER(multiplier, Input(0).count());
+        DECLARE_MULTIPLIER(multiplier, Input(0).count());
         auto* Ydata = Output(0)->template mutable_data<T, CPUContext>();
-        auto* Mdata = multiplier->template data<T, Context>();
-        Ydata[0] = math::Dot<T, Context>(Input(0).count(), Mdata, Xdata);
+        Ydata[0] = math::Dot<T, Context>(Input(0).count(), multiplier, Xdata);
     } else {
         auto* Ydata = Output(0)->template mutable_data<T, Context>();
         kernel::Sum<T, Context>(count, axis_dim, inner_dim, Xdata, Ydata);
@@ -65,7 +64,8 @@ void ReduceGradientOp<Context>::SumRunWithType() {
         math::Set<T, Context>(Output(0)->count(), dYdata[0], dXdata);
     } else {
         auto* dYdata = Input(-1).template data<T, Context>();
-        kernel::SumGrad<T, Context>(count, axis_dim, inner_dim, 1.0, dYdata, dXdata);
+        kernel::SumGrad<T, Context>(count,
+            axis_dim, inner_dim, 1.0, dYdata, dXdata);
     }
 }
 
@@ -74,10 +74,12 @@ void ReduceGradientOp<Context>::MeanRunWithType() {
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     if (axis == -1) {
         auto* dYdata = Input(-1).template data<T, CPUContext>();
-        math::Set<T, Context>(Output(0)->count(), dYdata[0] / Input(0).count(), dXdata);
+        math::Set<T, Context>(Output(0)->count(),
+            dYdata[0] / Input(0).count(), dXdata);
     } else {
         auto* dYdata = Input(-1).template data<T, Context>();
-        kernel::SumGrad<T, Context>(count, axis_dim, inner_dim, 1.0 / axis_dim, dYdata, dXdata);
+        kernel::SumGrad<T, Context>(count,
+            axis_dim, inner_dim, 1.0 / axis_dim, dYdata, dXdata);
     }
 }
 

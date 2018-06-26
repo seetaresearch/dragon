@@ -11,8 +11,7 @@ void GradientGenerateOp<Context>::RunWithType() {
         Output(i)->ReshapeLike(Input(i));
         auto* dXdata = Output(0)->template mutable_data<T, Context>();
         math::Set<T, Context>(Output(0)->count(),
-                              dragon_cast<T, float>(defaults[i]),
-                              dXdata);
+            dragon_cast<T, float>(defaults[i]), dXdata);
     }
 }
 
@@ -37,8 +36,13 @@ void GradientGatherOp<Context>::RunWithType() {
     for (int i = 0; i < indices.size(); i++) {
         CHECK(Output(0)->dims() == Input(indices[i]).dims());
         auto* dYdata = Input(indices[i]).template data<T, Context>();
-        if (i == 0) ctx().template Copy<T, Context, Context>(count, dXdata, dYdata);
-        else math::Add<T, Context>(count, dXdata, dYdata, dXdata);
+        if (i == 0) {
+            ctx().template Copy<T, Context, Context>(
+                count, dXdata, dYdata);
+        } else {
+            math::Add<T, Context>(
+                count, dXdata, dYdata, dXdata);
+        }
         Input(indices[i]).Reset();
     }
 }

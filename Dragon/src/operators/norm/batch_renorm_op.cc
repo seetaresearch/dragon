@@ -7,29 +7,25 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void BatchRenormOp<Context>::TrainingRunWithType() {
-    INIT_MULTIPLIER(multiplier, NS);
-    INIT_MULTIPLIER(num_multiplier, N);
-    INIT_MULTIPLIER(spatial_multiplier, S);
     TENSOR_FILL(Input(1), vector<TIndex>(1, C));  //  history_mean
     TENSOR_FILL(Input(2), vector<TIndex>(1, C));  //  history_var
 
-    auto* hMean_data = Input(1).template mutable_data<T, Context>();
-    auto* hVar_data = Input(2).template mutable_data<T, Context>();
-    auto* tMean_data = mean.template mutable_data<T, Context>();
-    auto* tVar_data = var->template mutable_data<T, Context>();
+    DECLARE_MULTIPLIER(MXmult, NS);
+
+    auto* Hmean = Input(1).template mutable_data<T, Context>();
+    auto* Hvar = Input(2).template mutable_data<T, Context>();
+    auto* Tmean = mean.template mutable_data<T, Context>();
+    auto* Tvar = var->template mutable_data<T, Context>();
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    auto* NSMul_data = multiplier->template data<T, Context>();
-    auto* SMul_data = spatial_multiplier->template data<T, Context>();
-    auto* NMul_data = num_multiplier->template data<T, Context>();
-    auto* NC_data = num_by_chans.template mutable_data<T, Context>();
-    auto* Std_data = stddev->template mutable_data<T, Context>();
+    auto* NCdata = nc.template mutable_data<T, Context>();
+    auto* WSdata = ws()->template caches<T, Context>({ Input(0).count() })[0];
     ctx().template Copy<T, Context, Context>(Input(0).count(), Ydata, Xdata);
 
-    auto* tDdata = d.template mutable_data<T, Context>();
-    auto* tRdata = r->template mutable_data<T, Context>();
-    auto* thMean_data = t_h_mean.template mutable_data<T, Context>();
-    auto* thVar_data = t_h_var.template mutable_data<T, Context>();
+    auto* Td = d.template mutable_data<T, Context>();
+    auto* Tr = r->template mutable_data<T, Context>();
+    auto* THmean = t_h_mean.template mutable_data<T, Context>();
+    auto* THvar = t_h_var.template mutable_data<T, Context>();
 
     //  scale the mean and variance if necessary
     if (mode == "CAFFE") {
@@ -39,55 +35,55 @@ void BatchRenormOp<Context>::TrainingRunWithType() {
         auto* hFact_data = Input(3).template mutable_data<T, CPUContext>();
         const float factor = dragon_cast<float, T>(hFact_data[0]);
         const float scale = factor == 0 ? 0 : 1.0 / factor;
-        math::Scale<T, Context>(mean.count(), scale, hMean_data, thMean_data);
-        math::Scale<T, Context>(mean.count(), scale, hVar_data, thVar_data);
+        math::Scale<T, Context>(mean.count(), scale, Hmean, THmean);
+        math::Scale<T, Context>(mean.count(), scale, Hvar, THvar);
     } else {
-       ctx().template Copy<T, Context, Context>(mean.count(), thMean_data, hMean_data);
-       ctx().template Copy<T, Context, Context>(var->count(), thVar_data, hVar_data);
+       ctx().template Copy<T, Context, Context>(mean.count(), THmean, Hmean);
+       ctx().template Copy<T, Context, Context>(var->count(), THvar, Hvar);
     }
 
     //  compute mean
     if (data_format == "NCHW") {
         math::Gemv<T, Context>(CblasNoTrans, NC, S,
-                        1.0 / NS, Xdata, SMul_data,
-                                       0, NC_data);
+                           1.0 / NS, Xdata, MXmult,
+                                        0, NCdata);
         math::Gemv<T, Context>(CblasTrans, N, C,
-                        1.0, NC_data, NMul_data,
-                                 0, tMean_data);
+                            1.0, NCdata, MXmult,
+                                      0, Tmean);
     } else if (data_format == "NHWC") {
         math::Gemv<T, Context>(CblasTrans, NS, C,
-                     1.0 / NS, Xdata, NSMul_data,
-                                  0, tMean_data);
+                         1.0 / NS, Xdata, MXmult,
+                                       0, Tmean);
     }
 
     //  subtract mean
     if (data_format == "NCHW") {
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, N, C, 1,
-                                        1.0, NMul_data, tMean_data,
-                                                     0.0, NC_data);
+                                                1.0, MXmult, Tmean,
+                                                      0.0, NCdata);
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                           -1.0, NC_data, SMul_data,
+                                               -1.0, NCdata, MXmult,
                                                         1.0, Ydata);
     } else if (data_format == "NHWC") {
          math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NS, C, 1,
-                                        -1.0, NSMul_data, tMean_data,
+                                                 -1.0, MXmult, Tmean,
                                                          1.0, Ydata);
     }
 
     //  compute variance
     //  note that we use VAR(X) = E((X - EX) ^ 2)
-    math::Square<T, Context>(Output(0)->count(), Ydata, Std_data);
+    math::Square<T, Context>(Output(0)->count(), Ydata, WSdata);
     if (data_format == "NCHW") {
         math::Gemv<T, Context>(CblasNoTrans, NC, S,
-                   1.0 / NS, Std_data, SMul_data,
-                                     0.0, NC_data);
+                          1.0 / NS, WSdata, MXmult,
+                                      0.0, NCdata);
         math::Gemv<T, Context>(CblasTrans, N, C,
-                        1.0, NC_data, NMul_data,
-                                0.0, tVar_data);
+                            1.0, NCdata, MXmult,
+                                     0.0, Tvar);
     } else if (data_format == "NHWC") {
         math::Gemv<T, Context>(CblasTrans, NS, C,
-                  1.0 / NS, Std_data, NSMul_data,
-                                 0.0, tVar_data);
+                        1.0 / NS, WSdata, MXmult,
+                                      0.0, Tvar);
     }
 
     //  compute moving average
@@ -103,48 +99,48 @@ void BatchRenormOp<Context>::TrainingRunWithType() {
             int m = Input(0).count() / C;
             float coeff = m > 1 ? float(m) / (m - 1) : 1;
             //  History(X) = Cur(X) + momentum * History(X)
-            math::Axpby<T, Context>(mean.count(), 1.0, tMean_data, momentum, hMean_data);
-            math::Axpby<T, Context>(var->count(), coeff, tVar_data, momentum, hVar_data);
+            math::Axpby<T, Context>(mean.count(), 1.0, Tmean, momentum, Hmean);
+            math::Axpby<T, Context>(var->count(), coeff, Tvar, momentum, Hvar);
         } else {
             //  History(X) = (1 - momentum) * Cur(X) + momentum * History(X)
-            math::Axpby<T, Context>(mean.count(), 1.0 - momentum, tMean_data, momentum, hMean_data);
-            math::Axpby<T, Context>(var->count(), 1.0 - momentum, tVar_data, momentum, hVar_data);
+            math::Axpby<T, Context>(mean.count(), 1.0 - momentum, Tmean, momentum, Hmean);
+            math::Axpby<T, Context>(var->count(), 1.0 - momentum, Tvar, momentum, Hvar);
         }
     }
 
     //  compute stddev
-    math::AddScalar<T, Context>(var->count(), eps, tVar_data);
-    math::Sqrt<T, Context>(var->count(), tVar_data, tVar_data);
+    math::AddScalar<T, Context>(var->count(), eps, Tvar);
+    math::Sqrt<T, Context>(var->count(), Tvar, Tvar);
 
      //  divide by stddev
     if (data_format == "NCHW") {
           math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, N, C, 1,
-                                           1.0, NMul_data, tVar_data,
-                                                       0.0, NC_data);
+                                                   1.0, MXmult, Tvar,
+                                                        0.0, NCdata);
           math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                              1.0, NC_data, SMul_data,
-                                                       0.0, Std_data);
+                                                  1.0, NCdata, MXmult,
+                                                         0.0, WSdata);
     } else if (data_format == "NHWC") {
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NS, C, 1,
-                                         1.0, NSMul_data, tVar_data,
-                                                     0.0, Std_data);
+                                                  1.0, MXmult, Tvar,
+                                                       0.0, WSdata);
     }
-    math::Div<T, Context>(Output(0)->count(), Ydata, Std_data, Ydata);
+    math::Div<T, Context>(Output(0)->count(), Ydata, WSdata, Ydata);
 
     //  compute renorm
     if (!is_recomputing) {
         //  compute history stddev
-        math::AddScalar<T, Context>(var->count(), eps, thVar_data);
-        math::Sqrt<T, Context>(var->count(), thVar_data, thVar_data);
+        math::AddScalar<T, Context>(var->count(), eps, THvar);
+        math::Sqrt<T, Context>(var->count(), THvar, THvar);
 
         //  compute r
-        math::Div<T, Context>(var->count(), tVar_data, thVar_data, tRdata);
-        math::Clip<T, Context>(var->count(), 1.0 / t_r_max, t_r_max, tRdata);
+        math::Div<T, Context>(var->count(), Tvar, THvar, Tr);
+        math::Clip<T, Context>(var->count(), 1.0 / t_r_max, t_r_max, Tr);
 
         //  compute d
-        math::Sub<T, Context>(mean.count(), tMean_data, thMean_data, tDdata);
-        math::Div<T, Context>(mean.count(), tDdata, thVar_data, tDdata);
-        math::Clip<T, Context>(mean.count(), -t_d_max, t_d_max, tDdata);
+        math::Sub<T, Context>(mean.count(), Tmean, THmean, Td);
+        math::Div<T, Context>(mean.count(), Td, THvar, Td);
+        math::Clip<T, Context>(mean.count(), -t_d_max, t_d_max, Td);
 
         //  update the bound of r & d
         t_r_max = r_max / (1.0 + (r_max - 1.0) * exp(-t_val));
@@ -160,53 +156,48 @@ void BatchRenormOp<Context>::TrainingRunWithType() {
     //  correction: mul by r
     if (data_format == "NCHW") {
           math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, N, C, 1,
-                                              1.0, NMul_data, tRdata,
-                                                       0.0, NC_data);
+                                                     1.0, MXmult, Tr,
+                                                        0.0, NCdata);
           math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                              1.0, NC_data, SMul_data,
-                                                       0.0, Std_data);
+                                                  1.0, NCdata, MXmult,
+                                                         0.0, WSdata);
     } else if (data_format == "NHWC") {
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NS, C, 1,
-                                            1.0, NSMul_data, tRdata,
-                                                     0.0, Std_data);
+                                                    1.0, MXmult, Tr,
+                                                       0.0, WSdata);
     }
-    math::Mul<T, Context>(Output(0)->count(), Ydata, Std_data, Ydata);
+    math::Mul<T, Context>(Output(0)->count(), Ydata, WSdata, Ydata);
 
     //  correction: add by d
     if (data_format == "NCHW") {
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, N, C, 1,
-                                            1.0, NMul_data, tDdata,
-                                                     0.0, NC_data);
+                                                   1.0, MXmult, Td,
+                                                      0.0, NCdata);
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                            1.0, NC_data, SMul_data,
+                                                1.0, NCdata, MXmult,
                                                         1.0, Ydata);
     } else if (data_format == "NHWC") {
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NS, C, 1,
-                                            1.0, NSMul_data, tDdata,
+                                                    1.0, MXmult, Td,
                                                         1.0, Ydata);
     }
-    ws()->ReleaseBuffer(stddev);
 }
 
 template <class Context> template <typename T>
 void BatchRenormOp<Context>::InferenceRunWithType() {
-    INIT_MULTIPLIER(multiplier, NS);
-    INIT_MULTIPLIER(num_multiplier, N);
-    INIT_MULTIPLIER(spatial_multiplier, S);
     TENSOR_FILL(Input(1), vector<TIndex>(1, C));  //  history_mean
     TENSOR_FILL(Input(2), vector<TIndex>(1, C));  //  history_var
 
-    auto* hMean_data = Input(1).template mutable_data<T, Context>();
-    auto* hVar_data = Input(2).template mutable_data<T, Context>();
-    auto* tMean_data = mean.template mutable_data<T, Context>();
-    auto* tVar_data = var->template mutable_data<T, Context>();
+    DECLARE_MULTIPLIER(MXmult, NS);
+
+    auto* Hmean = Input(1).template mutable_data<T, Context>();
+    auto* Hvar = Input(2).template mutable_data<T, Context>();
+    auto* Tmean = mean.template mutable_data<T, Context>();
+    auto* Tvar = var->template mutable_data<T, Context>();
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    auto* NSMul_data = multiplier->template data<T, Context>();
-    auto* SMul_data = spatial_multiplier->template data<T, Context>();
-    auto* NMul_data = num_multiplier->template data<T, Context>();
-    auto* NC_data = num_by_chans.template mutable_data<T, Context>();
-    auto* Std_data = stddev->template mutable_data<T, Context>();
+    auto* NCdata = nc.template mutable_data<T, Context>();
+    auto* WSdata = ws()->template caches<T, Context>({ Input(0).count() })[0];
     ctx().template Copy<T, Context, Context>(Input(0).count(), Ydata, Xdata);
 
     //  scale the mean and variance if necessary
@@ -217,46 +208,45 @@ void BatchRenormOp<Context>::InferenceRunWithType() {
         auto* hFact_data = Input(3).template mutable_data<T, CPUContext>();
         const float factor = dragon_cast<float, T>(hFact_data[0]);
         const float scale = factor == 0 ? 0 : 1.0 / factor;
-        math::Scale<T, Context>(mean.count(), scale, hMean_data, tMean_data);
-        math::Scale<T, Context>(var->count(), scale, hVar_data, tVar_data);
+        math::Scale<T, Context>(mean.count(), scale, Hmean, Tmean);
+        math::Scale<T, Context>(var->count(), scale, Hvar, Tvar);
     } else {
-       ctx().template Copy<T, Context, Context>(mean.count(), tMean_data, hMean_data);
-       ctx().template Copy<T, Context, Context>(var->count(), tVar_data, hVar_data);
+       ctx().template Copy<T, Context, Context>(mean.count(), Tmean, Hmean);
+       ctx().template Copy<T, Context, Context>(var->count(), Tvar, Hvar);
     }
 
     //  subtract mean
     if (data_format == "NCHW") {
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, N, C, 1,
-                                        1.0, NMul_data, tMean_data,
-                                                     0.0, NC_data);
+                                                1.0, MXmult, Tmean,
+                                                      0.0, NCdata);
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                           -1.0, NC_data, SMul_data,
+                                               -1.0, NCdata, MXmult,
                                                         1.0, Ydata);
     } else if (data_format == "NHWC") {
          math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NS, C, 1,
-                                        -1.0, NSMul_data, tMean_data,
+                                                 -1.0, MXmult, Tmean,
                                                          1.0, Ydata);
     }
 
     //  compute stddev
-    math::AddScalar<T, Context>(var->count(), eps, tVar_data);
-    math::Sqrt<T, Context>(var->count(), tVar_data, tVar_data);
+    math::AddScalar<T, Context>(var->count(), eps, Tvar);
+    math::Sqrt<T, Context>(var->count(), Tvar, Tvar);
 
     //  divide by stddev
     if (data_format == "NCHW") {
           math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, N, C, 1,
-                                           1.0, NMul_data, tVar_data,
-                                                       0.0, NC_data);
+                                                   1.0, MXmult, Tvar,
+                                                        0.0, NCdata);
           math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                              1.0, NC_data, SMul_data,
-                                                       0.0, Std_data);
+                                                  1.0, NCdata, MXmult,
+                                                         0.0, WSdata);
     } else if (data_format == "NHWC") {
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NS, C, 1,
-                                         1.0, NSMul_data, tVar_data,
-                                                     0.0, Std_data);
+                                                  1.0, MXmult, Tvar,
+                                                       0.0, WSdata);
     }
-    math::Div<T, Context>(Output(0)->count(), Ydata, Std_data, Ydata);
-    ws()->ReleaseBuffer(stddev);
+    math::Div<T, Context>(Output(0)->count(), Ydata, WSdata, Ydata);
 }
 
 template <class Context>
@@ -282,8 +272,6 @@ void BatchRenormOp<Context>::Setup() {
     var = ws()->CreateTensor("/mnt/" + anchor() + "/bn/var");
     r = ws()->CreateTensor("/mnt/" + anchor() + "/bn/r");
     x_norm = ws()->CreateTensor("/mnt/" + anchor() + "/bn/x_norm");
-    stddev = ws()->GetBuffer();
-    stddev->ReshapeLike(Input(0));
 
     //  reshape
     mean.Reshape(vector<TIndex>(1, C));
@@ -292,7 +280,7 @@ void BatchRenormOp<Context>::Setup() {
     r->Reshape(vector<TIndex>(1, C));
     t_h_mean.Reshape(vector<TIndex>(1, C)); 
     t_h_var.Reshape(vector<TIndex>(1, C));
-    num_by_chans.Reshape(vector<TIndex>(1, NC));
+    nc.Reshape(vector<TIndex>(1, NC));
     x_norm->ReshapeLike(Input(0));
     Output(0)->ReshapeLike(Input(0));
 }
@@ -315,59 +303,53 @@ OPERATOR_SCHEMA(BatchRenorm).NumInputs(3, 4).NumOutputs(1);
 
 template <class Context> template <typename T>
 void BatchRenormGradientOp<Context>::TrainingRunWithType() {
-    INIT_MULTIPLIER(multiplier, NS);
-    INIT_MULTIPLIER(num_multiplier, N);
-    INIT_MULTIPLIER(spatial_multiplier, S);
+    DECLARE_MULTIPLIER(MXmult, NS);
 
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    auto* Std_data = stddev->template mutable_data<T, Context>();
-    auto* tMean_data = mean.template mutable_data<T, Context>();
-    auto* tVar_data = var->template mutable_data<T, Context>();
-    auto* NSMul_data = multiplier->template data<T, Context>();
-    auto* SMul_data = spatial_multiplier->template data<T, Context>();
-    auto* NMul_data = num_multiplier->template data<T, Context>();
-    auto* NC_data = num_by_chans.template mutable_data<T, Context>();
-
-    auto* tRdata = r->template data<T, Context>();
+    auto* Tmean = mean.template mutable_data<T, Context>();
+    auto* Tvar = var->template mutable_data<T, Context>();
+    auto* NCdata = nc.template mutable_data<T, Context>();
+    auto* Tr = r->template data<T, Context>();
     auto* XNorm_data = x_norm->template data<T, Context>();
+    auto* WSdata = ws()->template caches<T, Context>({ x_norm->count() })[0];
 
     //  buffer <- dE/dY \cdot r
     if (data_format == "NCHW") {
          math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, N, C, 1,
-                                             1.0, NMul_data, tRdata,
-                                                      0.0, NC_data);
+                                                    1.0, MXmult, Tr,
+                                                       0.0, NCdata);
          math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                             1.0, NC_data, SMul_data,
-                                                      0.0, Std_data);
+                                                 1.0, NCdata, MXmult,
+                                                        0.0, WSdata);
     } else if (data_format == "NWHC") {
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NS, C, 1,
-                                            1.0, NSMul_data, tRdata,
-                                                     0.0, Std_data);
+                                                    1.0, MXmult, Tr,
+                                                       0.0, WSdata);
     }
-    math::Mul<T, Context>(Output(0)->count(), dYdata, Std_data, Std_data);
+    math::Mul<T, Context>(Output(0)->count(), dYdata, WSdata, WSdata);
 
     //  sum(dE/dY \cdot Y)
-    math::Mul<T, Context>(Output(0)->count(), XNorm_data, Std_data, dXdata);
+    math::Mul<T, Context>(Output(0)->count(), XNorm_data, WSdata, dXdata);
     if (data_format == "NCHW") {
          math::Gemv<T, Context>(CblasNoTrans, NC, S,
-                             1.0, dXdata, SMul_data,
-                                    0.0, NC_data);
+                                1.0, dXdata, MXmult,
+                                       0.0, NCdata);
          math::Gemv<T, Context>(CblasTrans, N, C,
-                         1.0, NC_data, NMul_data,
-                                0.0, tMean_data);
+                             1.0, NCdata, MXmult,
+                                     0.0, Tmean);
          math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, N, C, 1,
-                                         1.0, NMul_data, tMean_data,
-                                                      0.0, NC_data);
+                                                 1.0, MXmult, Tmean,
+                                                       0.0, NCdata);
          math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                             1.0, NC_data, SMul_data,
+                                                 1.0, NCdata, MXmult,
                                                         0.0, dXdata);
     } else if (data_format == "NHWC") {
         math::Gemv<T, Context>(CblasTrans, NS, C,
-                         1.0, dXdata, NSMul_data,
-                                 0.0, tMean_data);
+                             1.0, dXdata, MXmult,
+                                     0.0, Tmean);
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NS, C, 1,
-                                        1.0, NSMul_data, tMean_data,
+                                                 1.0, MXmult, Tmean,
                                                        0.0, dXdata);
     }
 
@@ -377,79 +359,72 @@ void BatchRenormGradientOp<Context>::TrainingRunWithType() {
     //  sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y
     if (data_format == "NCHW") {
         math::Gemv<T, Context>(CblasNoTrans, NC, S,
-                          1.0, Std_data, SMul_data,
-                                     0.0, NC_data);
+                               1.0, WSdata, MXmult,
+                                      0.0, NCdata);
         math::Gemv<T, Context>(CblasTrans, N, C,
-                        1.0, NC_data, NMul_data,
-                                0.0, tMean_data);
+                            1.0, NCdata, MXmult,
+                                    0.0, Tmean);
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, N, C, 1,
-                                        1.0, NMul_data, tMean_data,
-                                                     0.0, NC_data);
+                                                1.0, MXmult, Tmean,
+                                                      0.0, NCdata);
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                            1.0, NC_data, SMul_data,
+                                                1.0, NCdata, MXmult,
                                                        1.0, dXdata);
     } else if (data_format == "NHWC") {
         math::Gemv<T, Context>(CblasTrans, NS, C,
-                       1.0, Std_data, NSMul_data,
-                                0.0, tMean_data);
+                             1.0, WSdata, MXmult,
+                                     0.0, Tmean);
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NS, C, 1,
-                                        1.0, NSMul_data, tMean_data,
+                                                 1.0, MXmult, Tmean,
                                                        1.0, dXdata);
     }
 
     //  dE/dY - mean(dE/dY)- mean(dE/dY \cdot Y) \cdot Y
     //  = dE/dY - mean(sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y)
-    math::Axpby<T, Context>(Output(0)->count(), 1.0, Std_data, -1.0 / NS, dXdata);
+    math::Axpby<T, Context>(Output(0)->count(), 1.0, WSdata, -1.0 / NS, dXdata);
 
     //  divide var
     if (data_format == "NCHW") {
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, N, C, 1,
-                                         1.0, NMul_data, tVar_data,
-                                                     0.0, NC_data);
+                                                 1.0, MXmult, Tvar,
+                                                      0.0, NCdata);
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                          1.0, NC_data, SMul_data,
-                                                     0.0, Std_data);
+                                                1.0, NCdata, MXmult,
+                                                       0.0, WSdata);
     } else if (data_format == "NHWC") {
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NS, C, 1,
-                                         1.0, NSMul_data, tVar_data,
-                                                     0.0, Std_data);
+                                                  1.0, MXmult, Tvar,
+                                                       0.0, WSdata);
     }
 
-    math::Div<T, Context>(Output(0)->count(), dXdata, Std_data, dXdata);
-    ws()->ReleaseBuffer(stddev);
+    math::Div<T, Context>(Output(0)->count(), dXdata, WSdata, dXdata);
     x_norm->Reset();
 }
 
 template <class Context> template <typename T>
 void BatchRenormGradientOp<Context>::InferenceRunWithType() {
-    INIT_MULTIPLIER(multiplier, NS);
-    INIT_MULTIPLIER(num_multiplier, N);
-    INIT_MULTIPLIER(spatial_multiplier, S);
+    DECLARE_MULTIPLIER(MXmult, NS);
 
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    auto* Std_data = stddev->template mutable_data<T, Context>();
-    auto* tVar_data = var->template mutable_data<T, Context>();
-    auto* NSMul_data = multiplier->template data<T, Context>();
-    auto* SMul_data = spatial_multiplier->template data<T, Context>();
-    auto* NMul_data = num_multiplier->template data<T, Context>();
-    auto* NC_data = num_by_chans.template mutable_data<T, Context>();
+    auto* Tvar = var->template mutable_data<T, Context>();
+    auto* NCdata = nc.template mutable_data<T, Context>();
+    auto* WSdata = ws()->template caches<T, Context>({ Output(0)->count() })[0];
 
     if (data_format == "NCHW") {
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, N, C, 1,
-                                         1.0, NMul_data, tVar_data,
-                                                     0.0, NC_data);
+                                                 1.0, MXmult, Tvar,
+                                                      0.0, NCdata);
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                            1.0, NC_data, SMul_data,
-                                                     0.0, Std_data);
+                                                1.0, NCdata, MXmult,
+                                                       0.0, WSdata);
     } else if (data_format == "NHWC") {
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NS, C, 1,
-                                         1.0, NSMul_data, tVar_data,
-                                                     0.0, Std_data);
+                                                  1.0, MXmult, Tvar,
+                                                       0.0, WSdata);
     }
 
-    math::Div<T, Context>(Output(0)->count(), dYdata, Std_data, dXdata);
-    ws()->ReleaseBuffer(stddev);
+    math::Div<T, Context>(Output(0)->count(), dYdata, WSdata, dXdata);
 }
 
 template <class Context>
@@ -473,12 +448,10 @@ void BatchRenormGradientOp<Context>::Setup() {
     var = ws()->GetTensor("/mnt/" + anchor() + "/bn/var");
     r = ws()->GetTensor("/mnt/" + anchor() + "/bn/r");
     x_norm = ws()->GetTensor("/mnt/" + anchor() + "/bn/x_norm");
-    stddev = ws()->GetBuffer();
-    stddev->ReshapeLike(Input(0));
 
     //  reshape
     mean.ReshapeLike(*var);
-    num_by_chans.Reshape(vector<TIndex>(1, NC));
+    nc.Reshape(vector<TIndex>(1, NC));
     Output(0)->ReshapeLike(Input(0));
 }
 

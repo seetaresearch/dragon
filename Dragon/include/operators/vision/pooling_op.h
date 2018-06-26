@@ -41,7 +41,7 @@ class Pooling2dOp: public Operator <Context> {
              }
         }
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void Reshape();
     void RunOnDevice() override;
@@ -81,7 +81,7 @@ class Pooling2dGradientOp: public Operator<Context> {
             }
         }
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void Reshape();
     void RunOnDevice() override;
@@ -116,7 +116,7 @@ class CuDNNPooling2dOp final : public Pooling2dOp<Context> {
             pool_mode = CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
         } else LOG(FATAL) << "Unsupported pooling mode: " << this->mode;
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNPooling2dOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
@@ -151,7 +151,7 @@ class CuDNNPooling2dGradientOp final : public Pooling2dGradientOp<Context> {
             pool_mode = CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
         } else LOG(FATAL) << "Unsupported pooling mode: " << this->mode;
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNPooling2dGradientOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));

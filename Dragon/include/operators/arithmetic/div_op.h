@@ -20,56 +20,44 @@ template <class Context>
 class DivOp final : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(DivOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void EltwiseRunWithType();
     template <typename T> void BroadcastRunWithType(int type);
-
- protected:
-    Tensor* bcast_multiplier;
 };
 
 template <class Context>
 class DivGradientOp final : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(DivGradientOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void EltwiseRunWithType();
     template <typename T> void BroadcastRunWithType(int type);
-
- protected:
-    Tensor* bcast_multiplier;
 };
 
 template <class Context>
 class RDivOp final : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(RDivOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void EltwiseRunWithType();
     template <typename T> void BroadcastRunWithType(int type);
-
- protected:
-    Tensor* bcast_multiplier;
 };
 
 template <class Context>
 class RDivGradientOp final : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(RDivGradientOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void EltwiseRunWithType();
     template <typename T> void BroadcastRunWithType(int type);
-
- protected:
-    Tensor* bcast_multiplier;
 };
 
 }    // namepsace dragon

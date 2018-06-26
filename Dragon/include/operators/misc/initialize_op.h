@@ -25,7 +25,7 @@ class InitializeOp: public Operator<Context> {
           shape_desc(OperatorBase::GetSingleArg<string>("shape", "")) {
         GET_ARGUMENTS_WITH_DESC(int, dims);
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -44,7 +44,7 @@ public:
         this->filler.set_type("constant");
         this->filler.set_value(OperatorBase::GetSingleArg<float>("value", 0.0));
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 };
 
 template <class Context>
@@ -56,7 +56,7 @@ public:
         this->filler.set_low(OperatorBase::GetSingleArg<float>("low", -1.0));
         this->filler.set_high(OperatorBase::GetSingleArg<float>("high", 1.0));
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 };
 
 template <class Context>
@@ -68,7 +68,7 @@ public:
         this->filler.set_mean(OperatorBase::GetSingleArg<float>("mean", 0.0));
         this->filler.set_std(OperatorBase::GetSingleArg<float>("std", 1.0));
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 };
 
 template <class Context>
@@ -84,7 +84,7 @@ public:
         this->filler.set_low(mu - 2 * sigma);
         this->filler.set_high(mu + 2 * sigma);
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 };
 
 template <class Context>
@@ -105,7 +105,7 @@ public:
         }
         this->filler.set_scale(scale);
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 };
 
 template <class Context>
@@ -126,7 +126,7 @@ public:
         }
         this->filler.set_scale(scale);
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 };
 
 DEFINE_ARGUMENTS_WITH_DESC(int, InitializeOp, dims);

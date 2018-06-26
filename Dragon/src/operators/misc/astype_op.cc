@@ -16,13 +16,12 @@ namespace dragon {
             auto* Ydata = Output(0)->template mutable_data<type_b, Context>(); \
             kernel::TypeA2B<type_a, type_b, Context>(Input(0).count(), Xdata, Ydata); \
         } else { \
-            Tensor* buffer = ws()->GetBuffer(); \
-            buffer->ReshapeLike(*Output(0)); \
+            TIndex count = Output(0)->count(); \
             auto* Xdata = Output(0)->template data<type_a, Context>(); \
-            auto* Ydata = buffer->template mutable_data<type_b, Context>(); \
-            kernel::TypeA2B<type_a, type_b, Context>(Output(0)->count(), Xdata, Ydata); \
-            Output(0)->template Copy<Context, Context>(*buffer); \
-            ws()->ReleaseBuffer(buffer); \
+            auto* Cdata = ws()->template caches<type_b, Context>({ count })[0]; \
+            kernel::TypeA2B<type_a, type_b, Context>(count, Xdata, Cdata); \
+            auto* Ydata = Output(0)->template mutable_data<type_b, Context>(); \
+            ctx().template Copy<type_b, Context, Context>(count, Ydata, Cdata); \
         } \
         return; \
     }

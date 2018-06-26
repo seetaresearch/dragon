@@ -25,17 +25,17 @@ class L2NormOp final : public Operator<Context> {
           num_axes(OperatorBase::GetSingleArg<int>("num_axes", -1)),
           eps(OperatorBase::GetSingleArg<float>("eps", 1e-5f)),
           mode(OperatorBase::GetSingleArg<string>("mode", "SUM")) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    float eps;
     TIndex axis, num_axes, end_axis;
+    float eps;
     string mode;
     bool across_inner;
-    Tensor* norm, *buffer, *multiplier;
+    Tensor* norm, buffer;
     TIndex outer_dim, dim, inner_dim, spatial_dim;
 };
 
@@ -47,7 +47,7 @@ class L2NormGradientOp final : public Operator<Context> {
           axis(OperatorBase::GetSingleArg<int>("axis", 0)),
           num_axes(OperatorBase::GetSingleArg<int>("num_axes", -1)),
           mode(OperatorBase::GetSingleArg<string>("mode", "SUM")) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -56,7 +56,7 @@ class L2NormGradientOp final : public Operator<Context> {
     TIndex axis, num_axes, end_axis;
     string mode;
     bool across_inner;
-    Tensor* norm, *multiplier, *buffer, *buffer_inner;
+    Tensor* norm, buffer, buffer_inner;
     TIndex outer_dim, dim, inner_dim;
 };
 

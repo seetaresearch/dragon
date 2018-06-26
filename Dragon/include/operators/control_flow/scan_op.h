@@ -31,7 +31,7 @@ class ScanOp final: public Operator<Context> {
           debug_mode(OperatorBase::GetSingleArg<bool>("debug_mode", false)) { 
         InitTemplate(); 
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     void InitTemplate();
@@ -68,7 +68,7 @@ class ScanGradientOp final: public Operator<Context> {
         for (int i = 0; i < forward_inputs.size(); i++)
             terms[forward_inputs[i] + "_grad"] = Output(i)->name();
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     void MakeOps(const GraphDef& forward_def, GraphDef& new_def);

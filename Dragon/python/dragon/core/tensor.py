@@ -47,6 +47,7 @@ class Tensor(object):
         -------
         Tensor
             An unregistered Tensor.
+
         """
         if _name is not None: self._name = _name
         else: self.name = name
@@ -1001,7 +1002,7 @@ class Tensor(object):
             supports = {'/cpu': 0, '/gpu': 1}
             device_option = pb.DeviceOption()
             device_option.device_type = supports[_DEVICE_SCOPE.split(':')[0]]
-            device_option.gpu_id = int(_DEVICE_SCOPE.split(':')[1])
+            device_option.device_id = int(_DEVICE_SCOPE.split(':')[1])
             device_option.engine = _ENGINE_SCOPE
         op_def = MakeOperatorDef(op_type, inputs_name, outputs_name, op_name,
                                  device_option=device_option, **kwargs)

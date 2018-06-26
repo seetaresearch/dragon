@@ -9,8 +9,10 @@ void GramMatrixOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
     for (int i = 0; i < outer_dim; i++) {
-        math::Gemm<T, Context>(CblasNoTrans, CblasTrans,
-            dim, dim, inner_dim, 1.0, Xdata, Xdata, 0.0, Ydata);
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasTrans,
+                dim, dim, inner_dim,
+                    1.0, Xdata, Xdata, 0.0, Ydata);
         Xdata += x_offset;
         Ydata += y_offset;
     }
@@ -41,8 +43,10 @@ void GramMatrixGradientOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     for (int i = 0; i < outer_dim; i++) {
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans,
-            dim, inner_dim, dim, 2.0, dYdata, Xdata, 0.0, dXdata);
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                dim, inner_dim, dim,
+                    2.0, dYdata, Xdata, 0.0, dXdata);
         dYdata += y_offset;
         dXdata += x_offset;
     }

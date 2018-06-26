@@ -25,7 +25,7 @@ class TransposeOp final: public Operator<Context> {
         if (perms.size() > 0) reverse_dims = false;
         else reverse_dims = true;
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -42,7 +42,7 @@ class TransposeGradientOp final : public Operator<Context> {
  public:
     TransposeGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

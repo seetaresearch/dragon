@@ -15,8 +15,9 @@ void SGDUpdateOp<Context>::ComputeRunWithFloat() {
     if (old_lr > 0) { correction = lr / old_lr; } old_lr = lr;
     auto* dXdata = Input(0).template mutable_data<float, Context>();
     auto* Hdata = h->template mutable_data<float, Context>();
+
     kernel::SGDUpdate<float, Context>(Input(0).count(),
-             lr, momentum * correction, dXdata, Hdata);
+        lr, momentum * correction, dXdata, Hdata);
 }
 
 template <class Context>
@@ -28,8 +29,9 @@ void SGDUpdateOp<Context>::ComputeRunWithFloat16() {
     if (old_lr > 0) { correction = lr / old_lr; } old_lr = lr;
     auto* dXdata = Input(0).template mutable_data<float16, Context>();
     auto* Hdata = h->template mutable_data<float16, Context>();
+
     kernel::SGDUpdate<float16, Context>(Input(0).count(),
-               lr, momentum * correction, dXdata, Hdata);
+        lr, momentum * correction, dXdata, Hdata);
 }
 
 DEPLOY_CPU(SGDUpdate);

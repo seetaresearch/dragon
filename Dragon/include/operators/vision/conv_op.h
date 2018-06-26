@@ -24,7 +24,7 @@ class Conv2dOp : public ConvOpBase<Context> {
         this->num_spatial_axes = 2;
         Setup();
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
     USE_CONVOLUTION_FUNCTIONS(Context);
 
     bool ReverseDimensions() override { return false; }
@@ -39,7 +39,7 @@ class Conv2dGradientOp : public Conv2dOp<Context> {
  public:
     Conv2dGradientOp(const OperatorDef& def, Workspace* ws)
         : Conv2dOp<Context>(def, ws) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
     USE_CONVOLUTION_FUNCTIONS(Context);
 
     bool HasBias() override { return Output(2)->name() != "ignore"; }
@@ -61,7 +61,7 @@ class CuDNNConv2dOp : public Conv2dOp<Context> {
         cudnn_group = 1;
         enable_tensor_core &= TENSOR_CORE_AVAILABLE();
 #else
-        cudnn_group = this->group;
+        cudnn_group = group;
         enable_tensor_core = false;
 #endif
         handle = new cudnnHandle_t[cudnn_group];
@@ -77,11 +77,11 @@ class CuDNNConv2dOp : public Conv2dOp<Context> {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
         if (HasBias()) CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
-        if (this->data_format == "NCHW") format = CUDNN_TENSOR_NCHW;
-        else if (this->data_format == "NHWC") format = CUDNN_TENSOR_NHWC;
-        else LOG(FATAL) << "Unknown data format: " << this->data_format;
+        if (data_format == "NCHW") format = CUDNN_TENSOR_NCHW;
+        else if (data_format == "NHWC") format = CUDNN_TENSOR_NHWC;
+        else LOG(FATAL) << "Unknown data format: " << data_format;
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
     USE_CONVOLUTION_FUNCTIONS(Context);
 
     ~CuDNNConv2dOp() {
@@ -109,7 +109,7 @@ class CuDNNConv2dOp : public Conv2dOp<Context> {
     cudnnTensorDescriptor_t input_desc, output_desc, bias_desc;
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;
-    size_t workspace_fwd_data_size;
+    size_t fwd_data_size;
     TIndex bias_offset, cudnn_group;
     vector<TIndex> input_dims;
     bool enable_tensor_core;
@@ -124,7 +124,7 @@ class CuDNNConv2dGradientOp : public Conv2dGradientOp<Context> {
         cudnn_group = 1;
         enable_tensor_core &= TENSOR_CORE_AVAILABLE();
 #else
-        cudnn_group = this->group;
+        cudnn_group = group;
         enable_tensor_core = false;
 #endif
         handle = new cudnnHandle_t[cudnn_group * 3];
@@ -139,11 +139,11 @@ class CuDNNConv2dGradientOp : public Conv2dGradientOp<Context> {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
         if (HasBias()) CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
-        if (this->data_format == "NCHW") format = CUDNN_TENSOR_NCHW;
-        else if (this->data_format == "NHWC") format = CUDNN_TENSOR_NHWC;
-        else LOG(FATAL) << "Unknown data format: " << this->data_format;
+        if (data_format == "NCHW") format = CUDNN_TENSOR_NCHW;
+        else if (data_format == "NHWC") format = CUDNN_TENSOR_NHWC;
+        else LOG(FATAL) << "Unknown data format: " << data_format;
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
     USE_CONVOLUTION_FUNCTIONS(Context);
 
     ~CuDNNConv2dGradientOp() {
@@ -172,7 +172,7 @@ class CuDNNConv2dGradientOp : public Conv2dGradientOp<Context> {
     cudnnTensorDescriptor_t input_desc, output_desc, bias_desc;
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;
-    size_t workspace_bwd_filter_size, workspace_bwd_data_size;
+    size_t bwd_filter_size, bwd_data_size;
     TIndex bias_offset, cudnn_group;
     vector<TIndex> input_dims;
     bool enable_tensor_core;

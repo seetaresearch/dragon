@@ -23,13 +23,13 @@ class AsTypeOp final : public Operator<Context> {
         : Operator<Context>(op_def, ws),
         dtype(OperatorBase::GetSingleArg<string>("dtype", "float32")),
         inplace(OperatorBase::GetSingleArg<bool>("inplace", false)) {}
-     USE_OPERATOR_FUNCTIONS(Context);
+     USE_OPERATOR_FUNCTIONS;
 
      void RunOnDevice() override;
 
  protected:
-     string dtype;
-     bool inplace;
+    string dtype;
+    bool inplace;
 };
 
 }    // namespace dragon

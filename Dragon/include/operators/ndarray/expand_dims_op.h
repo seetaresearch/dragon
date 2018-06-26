@@ -22,7 +22,7 @@ class ExpandDimsOp final : public Operator<Context> {
     ExpandDimsOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", -1)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
 
@@ -34,7 +34,7 @@ template <class Context>
 class ExpandDimsGradientOp final : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(ExpandDimsGradientOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
 };

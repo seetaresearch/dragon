@@ -6,29 +6,20 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void Conv2dOp<Context>::RunWithType() {
-    //  get buffer
-    this->col_buffer = ws()->GetBuffer();
-    this->col_buffer->Reshape(this->col_shape);
+    TENSOR_FILL(Input(1), weight_shape);
+    if (HasBias()) { TENSOR_FILL(Input(2), bias_shape); }
 
     auto* Xdata = Input(0).template data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    TENSOR_FILL(Input(1), this->weight_shape);
     auto* Wdata = Input(1).template data<T, Context>();
-    if (HasBias()) {
-        TENSOR_FILL(Input(2), this->bias_shape);
-        INIT_MULTIPLIER(this->bias_multiplier, this->out_spatial_dim);
-    }
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
     for (int n = 0; n < Input(0).dim(0); n++) {
-        Wx(Xdata + n * this->x_offset, Wdata, Ydata + n * this->y_offset);
+        Wx(Xdata + n * x_offset, Wdata, Ydata + n * y_offset);
         if (HasBias()) {
             auto* Bdata = Input(2).template data<T, Context>();
-            Pb(Bdata, Ydata + n * this->y_offset);
+            Pb(Bdata, Ydata + n * y_offset);
         }
     }
-
-    //  release buffer
-    ws()->ReleaseBuffer(this->col_buffer);
 }
 
 template <class Context>
@@ -47,34 +38,26 @@ OPERATOR_SCHEMA(Conv2d).NumInputs(2, 3).NumOutputs(1);
 
 template <class Context> template <typename T>
 void Conv2dGradientOp<Context>::RunWithType() {
-    //  get buffer
-    this->col_buffer = ws()->GetBuffer();
-    this->col_buffer->Reshape(this->col_shape);
-
     auto* dYdata = Input(-1).template data<T, Context>();
 
     if (HasBias()) {
-        INIT_MULTIPLIER(this->bias_multiplier, this->out_spatial_dim);
         T* dBdata = Output(2)->template mutable_data<T, Context>();
         for (int n = 0; n < Input(2).dim(0); n++)
-            Db(dYdata + n * this->y_offset, dBdata);
+            Db(dYdata + n * y_offset, dBdata);
     }
 
     for (int n = 0; n < Input(2).dim(0); n++) {
         if (Output(1)->name() != "ignore") {
             auto* Xdata = Input(0).template data<T, Context>();
             auto* dWdata = Output(1)->template mutable_data<T, Context>();
-            Dw(dYdata + n * this->y_offset, Xdata + n * this->x_offset, dWdata);
+            Dw(dYdata + n * y_offset, Xdata + n * x_offset, dWdata);
         }
         if (Output(0)->name() != "ignore") {
             auto* Wdata = Input(1).template data<T, Context>();
             auto* dXdata = Output(0)->template mutable_data<T, Context>();
-            Dx(dYdata + n * this->y_offset, Wdata, dXdata + n * this->x_offset);
+            Dx(dYdata + n * y_offset, Wdata, dXdata + n * x_offset);
         }
     }
-
-    //  release buffer
-    ws()->ReleaseBuffer(this->col_buffer);
 }
 
 template <class Context>

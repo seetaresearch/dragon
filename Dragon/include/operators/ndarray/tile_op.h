@@ -23,7 +23,7 @@ class TileOp : public Operator<Context> {
         : Operator<Context>(op_def, ws) {
         GET_ARGUMENTS_WITH_DESC(int, multiples);
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template<typename T> void TileRunWithType();
@@ -31,7 +31,7 @@ class TileOp : public Operator<Context> {
  protected:
     DECLARE_ARGUMENTS_WITH_DESC(int, multiples);
     TIndex axis, multiple, outer_dim, ex_inner_dim;
-    Tensor* dest, *source;
+    Tensor* dest, *source, navigator;
 };
 
 template <class Context>
@@ -41,7 +41,7 @@ class TileGradientOp : public Operator<Context> {
         : Operator<Context>(op_def, ws) {
         GET_ARGUMENTS_WITH_DESC(int, multiples);
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template<typename T> void TileRunWithType();
@@ -49,7 +49,7 @@ class TileGradientOp : public Operator<Context> {
  protected:
     DECLARE_ARGUMENTS_WITH_DESC(int, multiples);
     TIndex axis, multiple, outer_dim, ex_inner_dim;
-    Tensor* dest, *source;
+    Tensor* dest, *source, navigator;
 };
 
 DEFINE_ARGUMENTS_WITH_DESC(int, TileOp, multiples);

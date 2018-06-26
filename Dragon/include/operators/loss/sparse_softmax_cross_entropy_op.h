@@ -30,7 +30,7 @@ class SparseSoftmaxCrossEntropyOp : public Operator<Context> {
             for (int i = 0; i < args.size(); i++) ignore_data[i] = args[i];
         }
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void SoftmaxRun();
     void SoftmaxRunFP16();
@@ -60,7 +60,7 @@ class SparseSoftmaxCrossEntropyGradientOp : public Operator<Context> {
             for (int i = 0; i < args.size(); i++) ignore_data[i] = args[i];
         }
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename Tx, typename Ty> void RunWithType();

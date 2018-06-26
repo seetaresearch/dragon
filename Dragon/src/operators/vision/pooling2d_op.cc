@@ -15,15 +15,9 @@ void Pooling2dOp<Context>::MAXRunWithType() {
     auto* Mdata = mask->template mutable_data<int, Context>();
 
     kernel::MAXPooling2d<T, Context>(Output(0)->count(),
-                                             n, c, h, w,
-                                         pool_h, pool_w,
-                         kernel_size[0], kernel_size[1],
-                                   stride[0], stride[1],
-                                         pad[0], pad[1],
-                                            data_format,
-                                                  Xdata,
-                                                  Mdata,
-                                                 Ydata);
+        n, c, h, w, pool_h, pool_w, kernel_size[0], kernel_size[1],
+            stride[0], stride[1], pad[0], pad[1],
+                data_format, Xdata, Mdata, Ydata);
 }
 
 template <class Context> template <typename T>
@@ -32,14 +26,9 @@ void Pooling2dOp<Context>::AVGRunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
     kernel::AVGPooling2d<T, Context>(Output(0)->count(),
-                                             n, c, h, w,
-                                         pool_h, pool_w,
-                         kernel_size[0], kernel_size[1],
-                                   stride[0], stride[1],
-                                         pad[0], pad[1],
-                                            data_format,
-                                                  Xdata,
-                                                 Ydata);
+        n, c, h, w, pool_h, pool_w, kernel_size[0], kernel_size[1],
+            stride[0], stride[1], pad[0], pad[1],
+                data_format, Xdata, Ydata);
 }
 
 template <class Context>
@@ -55,9 +44,10 @@ void Pooling2dOp<Context>::Reshape() {
         }
         if (padding == "SAME") {
             for (int i = 0; i < 2; i++) {
-                TIndex input_size = Input(0).dim(i + 2);
-                TIndex output_size = (input_size + stride[i] - 1) / (float)stride[i];
-                TIndex padding_needed = std::max(TIndex(0), (output_size - 1) * stride[i] + kernel_size[i] - input_size);
+                TIndex idm = Input(0).dim(i + 2);
+                TIndex odm = (idm + stride[i] - 1) / (float)stride[i];
+                TIndex padding_needed = std::max(
+                    TIndex(0), (odm - 1) * stride[i] + kernel_size[i] - idm);
                 TIndex pad_l = padding_needed / 2;
                 TIndex pad_r = padding_needed - pad_l;
                 pad[i] = pad_l;
@@ -74,9 +64,10 @@ void Pooling2dOp<Context>::Reshape() {
         }
         if (padding == "SAME") {
             for (int i = 0; i < 2; i++) {
-                TIndex input_size = Input(0).dim(i + 1);
-                TIndex output_size = (input_size + stride[i] - 1) / (float)stride[i];
-                TIndex padding_needed = std::max(TIndex(0), (output_size - 1) * stride[i] + kernel_size[i] - input_size);
+                TIndex idm = Input(0).dim(i + 1);
+                TIndex odm = (idm + stride[i] - 1) / (float)stride[i];
+                TIndex padding_needed = std::max(
+                    TIndex(0), (odm - 1) * stride[i] + kernel_size[i] - idm);
                 TIndex pad_l = padding_needed / 2;
                 TIndex pad_r = padding_needed - pad_l;
                 pad[i] = pad_l;
@@ -100,8 +91,12 @@ void Pooling2dOp<Context>::Reshape() {
         pool_h = (h + stride[0] - 1) / (float)stride[0];
         pool_w = (w + stride[1] - 1) / (float)stride[1];
     }
-    if (data_format == "NCHW") Output(0)->Reshape(vector<TIndex>({ n, c, pool_h, pool_w }));
-    else if (data_format == "NHWC") Output(0)->Reshape(vector<TIndex>({ n, pool_h, pool_w, c }));
+
+    if (data_format == "NCHW") {
+        Output(0)->Reshape(vector<TIndex>({ n, c, pool_h, pool_w }));
+    } else if (data_format == "NHWC") {
+        Output(0)->Reshape(vector<TIndex>({ n, pool_h, pool_w, c }));
+    }
 }
 
 template <class Context>
@@ -130,15 +125,10 @@ void Pooling2dGradientOp<Context>::MAXRunWithType() {
     auto* Mdata = mask->template data<int, Context>();
 
     kernel::MAXPooling2dGrad<T, Context>(Output(0)->count(),
-                                                 n, c, h, w,
-                                             pool_h, pool_w,
-                             kernel_size[0], kernel_size[1],
-                                       stride[0], stride[1],
-                                             pad[0], pad[1],
-                                                data_format,
-                                                     dYdata,
-                                                      Mdata,
-                                                    dXdata);
+        n, c, h, w, pool_h, pool_w, kernel_size[0], kernel_size[1],
+            stride[0], stride[1], pad[0], pad[1],
+                data_format, dYdata, Mdata, dXdata);
+
     mask->Reset();
 }
 
@@ -148,14 +138,9 @@ void Pooling2dGradientOp<Context>::AVGRunWithType() {
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
     kernel::AVGPooling2dGrad<T, Context>(Output(0)->count(),
-                                                 n, c, h, w,
-                                             pool_h, pool_w,
-                             kernel_size[0], kernel_size[1],
-                                       stride[0], stride[1],
-                                             pad[0], pad[1],
-                                                data_format,
-                                                     dYdata,
-                                                    dXdata);
+        n, c, h, w, pool_h, pool_w, kernel_size[0], kernel_size[1],
+            stride[0], stride[1], pad[0], pad[1],
+                data_format, dYdata, dXdata);
 }
 
 template <class Context>
@@ -171,9 +156,10 @@ void Pooling2dGradientOp<Context>::Reshape() {
         }
         if (padding == "SAME") {
             for (int i = 0; i < 2; i++) {
-                TIndex input_size = Input(0).dim(i + 2);
-                TIndex output_size = (input_size + stride[i] - 1) / (float)stride[i];
-                TIndex padding_needed = std::max(TIndex(0), (output_size - 1) * stride[i] + kernel_size[i] - input_size);
+                TIndex idm = Input(0).dim(i + 2);
+                TIndex odm = (idm + stride[i] - 1) / (float)stride[i];
+                TIndex padding_needed = std::max(
+                    TIndex(0), (odm - 1) * stride[i] + kernel_size[i] - idm);
                 TIndex pad_l = padding_needed / 2;
                 TIndex pad_r = padding_needed - pad_l;
                 pad[i] = pad_l;

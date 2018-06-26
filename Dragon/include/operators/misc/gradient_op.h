@@ -25,7 +25,7 @@ class GradientGenerateOp final: public Operator<Context> {
         CHECK_EQ(InputSize(), OutputSize());
         CHECK_EQ(defaults.size(), OutputSize());
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -42,7 +42,7 @@ class GradientGatherOp final : public Operator<Context> {
         for (int i = 0; i < InputSize(); i++)
             if (Input(i).name() != "ignore") indices.push_back(i);
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -55,7 +55,7 @@ template <class Context>
 class StopGradientOp final : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(StopGradientOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
 };

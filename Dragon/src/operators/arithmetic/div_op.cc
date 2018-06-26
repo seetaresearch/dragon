@@ -27,19 +27,21 @@ void DivOp<Context>::BroadcastRunWithType(int type) {
             outer_dim = Input(0).count(0, Input(0).axis(-1));
             inner_dim = Input(0).dim(-1);
         }
-        INIT_MULTIPLIER(bcast_multiplier, outer_dim);
-        auto* BMul_data = bcast_multiplier->template data<T, Context>();
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, outer_dim, inner_dim, 1,
-            1.0, bcast_multiplier->template data<T, Context>(), X2data, 0.0, Ydata);
+        DECLARE_MULTIPLIER(multiplier, outer_dim);
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                outer_dim, inner_dim, 1,
+                    1.0, multiplier, X2data, 0.0, Ydata);
         math::Div<T, Context>(Input(0).count(), X1data, Ydata, Ydata);
     } 
     else if (type == 2) {
         outer_dim = Input(0).dim(0);
         inner_dim = Input(0).count(1);
-        INIT_MULTIPLIER(bcast_multiplier, inner_dim);
-        auto* BMul_data = bcast_multiplier->template data<T, Context>();
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, outer_dim, inner_dim, 1,
-            1.0, X2data, bcast_multiplier->template data<T, Context>(), 0.0, Ydata);
+        DECLARE_MULTIPLIER(multiplier, inner_dim);
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                outer_dim, inner_dim, 1,
+                    1.0, X2data, multiplier, 0.0, Ydata);
         math::Div<T, Context>(Input(0).count(), X1data, Ydata, Ydata);
     }
 }
@@ -117,45 +119,48 @@ void DivGradientOp<Context>::BroadcastRunWithType(int type) {
     }
 
     if (Output(1)->name() != "ignore") {
-        Tensor* buffer = ws()->GetBuffer();
-        buffer->ReshapeLike(Input(1));
         auto* X1data = Input(0).template data<T, Context>();
         auto* X2data = Input(1).template data<T, Context>();
         auto* dX1data = Output(0)->template mutable_data<T, Context>();
         auto* dX2data = Output(1)->template mutable_data<T, Context>();
-        auto* Bdata = buffer->template mutable_data<T, Context>();
+        auto* Bdata = ws()->template caches<T, Context>({ Input(1).count() })[0];
         math::Mul<T, Context>(Input(-1).count(), dYdata, X1data, dX1data); // dY * X_{1}
         if (type == 0 || type == 1) {
-            INIT_MULTIPLIER(bcast_multiplier, outer_dim);
-            auto* BMul_data = bcast_multiplier->template data<T, Context>();
+            DECLARE_MULTIPLIER(multiplier, outer_dim);
             math::Square<T, Context>(Input(1).count(), X2data, dX2data); // X_{2}^{2}
             math::Inv<T, Context>(Input(1).count(), -1.0, dX2data, dX2data); // -1 / X_{2}^{2}
-            math::Gemv<T, Context>(CblasTrans, outer_dim, inner_dim, 1.0,
-                                   dX1data, BMul_data, 0.0, Bdata);
+            math::Gemv<T, Context>(
+                CblasTrans,
+                    outer_dim, inner_dim, 1.0,
+                        dX1data, multiplier, 0.0, Bdata);
         }
         else if (type == 2) {
-            INIT_MULTIPLIER(bcast_multiplier, inner_dim);
-            auto* BMul_data = bcast_multiplier->template data<T, Context>();
+            DECLARE_MULTIPLIER(multiplier, inner_dim);
             math::Square<T, Context>(Input(1).count(), X2data, dX2data); // X_{2}^{2}
             math::Inv<T, Context>(Input(1).count(), -1.0, dX2data, dX2data); // -1 / X_{2}^{2}
-            math::Gemv<T, Context>(CblasNoTrans, outer_dim, inner_dim, 1.0,
-                                   dX1data, BMul_data, 0.0, Bdata);
+            math::Gemv<T, Context>(
+                CblasNoTrans,
+                    outer_dim, inner_dim, 1.0,
+                        dX1data, multiplier, 0.0, Bdata);
         }
         math::Mul<T, Context>(Input(1).count(), Bdata, dX2data, dX2data);
-        ws()->ReleaseBuffer(buffer);
     }
 
     if (Output(0)->name() != "ignore") {
         auto* X2data = Input(1).template data<T, Context>();
         auto* dX1data = Output(0)->template mutable_data<T, Context>();
         if (type == 0 || type == 1) {
-            INIT_MULTIPLIER(bcast_multiplier, outer_dim);
-            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, outer_dim, inner_dim, 1,
-                1.0, bcast_multiplier->template data<T, Context>(), X2data, 0.0, dX1data);
+            DECLARE_MULTIPLIER(multiplier, outer_dim);
+            math::Gemm<T, Context>(
+                CblasNoTrans, CblasNoTrans,
+                    outer_dim, inner_dim, 1,
+                        1.0, multiplier, X2data, 0.0, dX1data);
         } else if (type == 2) {
-            INIT_MULTIPLIER(bcast_multiplier, inner_dim);
-            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, outer_dim, inner_dim, 1,
-                1.0, X2data, bcast_multiplier->template data<T, Context>(), 0.0, dX1data);
+            DECLARE_MULTIPLIER(multiplier, inner_dim);
+            math::Gemm<T, Context>(
+                CblasNoTrans, CblasNoTrans,
+                    outer_dim, inner_dim, 1,
+                        1.0, X2data, multiplier, 0.0, dX1data);
         }
         math::Div<T, Context>(Output(0)->count(), dYdata, dX1data, dX1data);
     }

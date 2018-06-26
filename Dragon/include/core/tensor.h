@@ -23,14 +23,15 @@ typedef size_t TSize;
 class Tensor {
  public:
     Tensor() {}
+    Tensor(const vector<TIndex>& dims) { Reshape(dims); }
     Tensor(const string& name) : name_(name) {}
 
     void Reshape(const vector<TIndex>& dims) {
         dims_ = dims;
         TIndex new_size = 1;
         for (auto d : dims_) {
-            CHECK_GT(d, 0);
-            new_size *= d;
+            CHECK_GE(d, 0);
+            if (d > 0) new_size *= d;
         }
         if (own_mem_) {
             if (size_ != new_size &&

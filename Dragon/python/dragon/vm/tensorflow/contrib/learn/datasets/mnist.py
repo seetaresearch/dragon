@@ -22,7 +22,7 @@ from __future__ import print_function
 import gzip
 
 import numpy
-from six.moves import xrange  # pylint: disable=redefined-builtin
+from six.moves import xrange
 
 from dragon.vm.tensorflow.contrib.learn.datasets import base
 from dragon.vm.tensorflow.framework import dtypes

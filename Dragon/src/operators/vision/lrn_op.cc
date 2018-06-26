@@ -31,11 +31,12 @@ void LRNOp<Context>::SquareRunWithType() {
         Argument power;
         power.set_name("power"); power.set_f(2.0);
         OperatorDef sqr_op_def = MakeOperatorDef("Pow", "",
-                                                 vector<string>({ sqr_in->name() }),
-                                                 vector<string>({ sqr_out->name() }),
-                                                 vector<Argument>({ power }));
-        if (this->op_def().has_device_option())
-            sqr_op_def.mutable_device_option()->CopyFrom(this->op_def().device_option());
+            vector<string>({ sqr_in->name() }),
+                vector<string>({ sqr_out->name() }),
+                    vector<Argument>({ power }));
+        if (op_def().has_device_option())
+            sqr_op_def.mutable_device_option()
+                ->CopyFrom(op_def().device_option());
         sqr_op.reset(CreateOperator(sqr_op_def, ws()));
     }
     sqr_op->Run();
@@ -52,11 +53,12 @@ void LRNOp<Context>::PoolRunWithType() {
         m.set_name("mode"); m.set_s("AVG");
         df.set_name("data_format"); df.set_s(data_format);
         OperatorDef pool_op_def = MakeOperatorDef("Pooling2d", "",
-                                                  vector<string>({ sqr_out->name() }),
-                                                  vector<string>({ pool_out->name() }),
-                                                  vector<Argument>({ ks, s, p, m, df }));
-        if (this->op_def().has_device_option())
-            pool_op_def.mutable_device_option()->CopyFrom(this->op_def().device_option());
+            vector<string>({ sqr_out->name() }),
+                vector<string>({ pool_out->name() }),
+                    vector<Argument>({ ks, s, p, m, df }));
+        if (op_def().has_device_option())
+            pool_op_def.mutable_device_option()
+                ->CopyFrom(op_def().device_option());
         pool_op.reset(CreateOperator(pool_op_def, ws()));
     }
     pool_op->Run();
@@ -71,11 +73,12 @@ void LRNOp<Context>::PowRunWithType() {
         shift.set_name("shift"); shift.set_f(1.0);
         power.set_name("power"); power.set_f(-beta);
         OperatorDef pow_op_def = MakeOperatorDef("Pow", "",
-                                                 vector<string>({ pool_out->name() }),
-                                                 vector<string>({ pow_out->name() }), 
-                                                 vector<Argument>({ scale, shift, power }));
-        if (this->op_def().has_device_option())
-            pow_op_def.mutable_device_option()->CopyFrom(this->op_def().device_option());
+            vector<string>({ pool_out->name() }),
+                vector<string>({ pow_out->name() }),
+                    vector<Argument>({ scale, shift, power }));
+        if (op_def().has_device_option())
+            pow_op_def.mutable_device_option()
+                ->CopyFrom(op_def().device_option());
         pow_op.reset(CreateOperator(pow_op_def, ws()));
     }
     pow_op->Run();
@@ -87,12 +90,12 @@ void LRNOp<Context>::ProdRunWithType() {
         Argument operation;
         operation.set_name("operation"); operation.set_s("PROD");
         OperatorDef prod_op_def = MakeOperatorDef("Eltwise", "",
-                                                  vector<string>({ prod_in->name(), 
-                                                                   pow_out->name() }),
-                                                  vector<string>({ Output(0)->name() }),
-                                                  vector<Argument>({ operation }));
-        if (this->op_def().has_device_option())
-            prod_op_def.mutable_device_option()->CopyFrom(this->op_def().device_option());
+            vector<string>({ prod_in->name(), pow_out->name() }),
+                vector<string>({ Output(0)->name() }),
+                    vector<Argument>({ operation }));
+        if (op_def().has_device_option())
+            prod_op_def.mutable_device_option()
+                ->CopyFrom(op_def().device_option());
         prod_op.reset(CreateOperator(prod_op_def, ws()));
     }
     prod_op->Run();
@@ -137,14 +140,15 @@ void LRNGradientOp<Context>::ProdRunWithType() {
         Argument operation;
         operation.set_name("operation"); operation.set_s("PROD");
         OperatorDef prod_op_def = MakeOperatorDef("EltwiseGradient", "",
-                                                  vector<string>({ prod_in->name(),
-                                                                   pow_out->name(),
-                                                                   Input(-1).name() }),
-                                                  vector<string>({ prod_in->name() + "_grad",
-                                                                   pow_out->name() + "_grad" }),
-                                                  vector<Argument>({ operation }));
-        if (this->op_def().has_device_option())
-            prod_op_def.mutable_device_option()->CopyFrom(this->op_def().device_option());
+            vector<string>({ prod_in->name(),
+                                 pow_out->name(),
+                                     Input(-1).name() }),
+                vector<string>({ prod_in->name() + "_grad",
+                                     pow_out->name() + "_grad" }),
+                    vector<Argument>({ operation }));
+        if (op_def().has_device_option())
+            prod_op_def.mutable_device_option()
+                ->CopyFrom(op_def().device_option());
         prod_op.reset(CreateOperator(prod_op_def, ws()));
     }
     prod_op->Run();
@@ -159,13 +163,14 @@ void LRNGradientOp<Context>::PowRunWithType() {
         shift.set_name("shift"); shift.set_f(1.0);
         power.set_name("power"); power.set_f(-beta);
         OperatorDef pow_op_def = MakeOperatorDef("PowGradient", "",
-                                                 vector<string>({ pool_out->name(), 
-                                                                  pow_out->name(), 
-                                                                  pow_out->name() + "_grad" }),
-                                                 vector<string>({ pool_out->name() + "_grad" }),
-                                                 vector<Argument>({ scale, shift, power }));
-        if (this->op_def().has_device_option())
-            pow_op_def.mutable_device_option()->CopyFrom(this->op_def().device_option());
+            vector<string>({ pool_out->name(),
+                                pow_out->name(),
+                                    pow_out->name() + "_grad" }),
+                vector<string>({ pool_out->name() + "_grad" }),
+                    vector<Argument>({ scale, shift, power }));
+        if (op_def().has_device_option())
+            pow_op_def.mutable_device_option()
+                ->CopyFrom(op_def().device_option());
         pow_op.reset(CreateOperator(pow_op_def, ws()));
     }
     pow_op->Run();
@@ -182,13 +187,14 @@ void LRNGradientOp<Context>::PoolRunWithType() {
         m.set_name("mode"); m.set_s("AVG");
         df.set_name("data_format"); df.set_s(data_format);
         OperatorDef pool_op_def = MakeOperatorDef("Pooling2dGradient", "",
-                                                  vector<string>({ sqr_out->name(),
-                                                                   pool_out->name(),
-                                                                   pool_out->name() + "_grad" }),
-                                                  vector<string>({ sqr_out->name() + "_grad" }),
-                                                  vector<Argument>({ ks, s, p, m, df }));
-        if (this->op_def().has_device_option())
-            pool_op_def.mutable_device_option()->CopyFrom(this->op_def().device_option());
+            vector<string>({ sqr_out->name(),
+                                 pool_out->name(),
+                                     pool_out->name() + "_grad" }),
+                vector<string>({ sqr_out->name() + "_grad" }),
+                    vector<Argument>({ ks, s, p, m, df }));
+        if (op_def().has_device_option())
+            pool_op_def.mutable_device_option()
+                ->CopyFrom(op_def().device_option());
         pool_op.reset(CreateOperator(pool_op_def, ws()));
     }
     pool_op->Run();
@@ -201,13 +207,14 @@ void LRNGradientOp<Context>::SquareRunWithType() {
         Argument power;
         power.set_name("power"); power.set_f(2.0);
         OperatorDef sqr_op_def = MakeOperatorDef("PowGradient", "",
-                                                 vector<string>({ sqr_in->name(), 
-                                                                  sqr_out->name(), 
-                                                                  sqr_out->name() + "_grad" }),
-                                                 vector<string>({ sqr_in->name() + "_grad" }),
-                                                 vector<Argument>({ power }));
-        if (this->op_def().has_device_option())
-            sqr_op_def.mutable_device_option()->CopyFrom(this->op_def().device_option());
+            vector<string>({ sqr_in->name(),
+                                 sqr_out->name(),
+                                     sqr_out->name() + "_grad" }),
+                vector<string>({ sqr_in->name() + "_grad" }),
+                    vector<Argument>({ power }));
+        if (op_def().has_device_option())
+            sqr_op_def.mutable_device_option()
+                ->CopyFrom(op_def().device_option());
         sqr_op.reset(CreateOperator(sqr_op_def, ws()));
     }
     sqr_op->Run();

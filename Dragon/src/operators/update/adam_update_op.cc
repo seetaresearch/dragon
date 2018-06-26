@@ -18,8 +18,10 @@ void AdamUpdateOp<Context>::ComputeRunWithFloat() {
     auto* dXdata = Input(0).template mutable_data<float, Context>();
     auto* Mdata = m->mutable_data<float, Context>();
     auto* Vdata = v->mutable_data<float, Context>();
-    kernel::AdamUpdate<float, Context>(Input(0).count(),
-           lr, beta1, beta2, eps, dXdata, Mdata, Vdata);
+
+    kernel::AdamUpdate<float, Context>(
+        Input(0).count(), lr, beta1, beta2, eps,
+            dXdata, Mdata, Vdata);
 }
 
 template <class Context>
@@ -36,8 +38,10 @@ void AdamUpdateOp<Context>::ComputeRunWithFloat16() {
     auto* dXdata = Input(0).template mutable_data<float16, Context>();
     auto* Mdata = m->mutable_data<float16, Context>();
     auto* Vdata = v->mutable_data<float16, Context>();
-    kernel::AdamUpdate<float16, Context>(Input(0).count(),
-             lr, beta1, beta2, eps, dXdata, Mdata, Vdata);
+
+    kernel::AdamUpdate<float16, Context>(
+        Input(0).count(), lr, beta1, beta2, eps,
+            dXdata, Mdata, Vdata);
 }
 
 DEPLOY_CPU(AdamUpdate);

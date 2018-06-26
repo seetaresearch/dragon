@@ -24,27 +24,23 @@ class ClipOp final : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           low(OperatorBase::GetSingleArg<float>("low", -FLT_MAX)),
           high(OperatorBase::GetSingleArg<float>("high", FLT_MAX)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
     
  protected:
     float low, high;
-    Tensor* mask;
 };
 
 template <class Context>
 class ClipGradientOp final : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(ClipGradientOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
-
- protected:
-    Tensor* mask;
 };
 
 }    // namespace dragon

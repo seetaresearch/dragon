@@ -21,7 +21,7 @@ class AdamUpdateOp final : public UpdateOpBase<Context> {
  public:
     AdamUpdateOp(const OperatorDef& op_def, Workspace* ws) 
         : UpdateOpBase<Context>(op_def, ws), t(0) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
     USE_UPDATER_FUNCTIONS(Context);
 
     void ComputeRunWithFloat() override;

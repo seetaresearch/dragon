@@ -29,7 +29,7 @@ class EltwiseOp final : public Operator<Context> {
                 << "but provided " << coeffs.size() << " coeffs.";
         } else coeffs.resize(InputSize(), float(1));
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void SumRunWithType();
@@ -53,7 +53,7 @@ class EltwiseGradientOp final : public Operator<Context> {
                 << "but provided " << coeffs.size() << " coeffs.";
         } else coeffs.resize(InputSize(), float(1));
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void SumRunWithType();

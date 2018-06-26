@@ -9,8 +9,8 @@
 //
 // ------------------------------------------------------------
 
-#ifndef DRAGON_OPERATORS_ARITHMETIC_BIAS_ADD_OP_H_
-#define DRAGON_OPERATORS_ARITHMETIC_BIAS_ADD_OP_H_
+#ifndef DRAGON_OPERATORS_VISION_BIAS_ADD_OP_H_
+#define DRAGON_OPERATORS_VISION_BIAS_ADD_OP_H_
 
 #include "core/operator.h"
 
@@ -22,7 +22,7 @@ class BiasAddOp : public Operator<Context> {
     BiasAddOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -30,7 +30,6 @@ class BiasAddOp : public Operator<Context> {
  protected:
     TIndex outer_dim, dim, inner_dim;
     string data_format;
-    Tensor* bias_multiplier;
 };
 
 template <class Context>
@@ -39,7 +38,7 @@ class BiasAddGradientOp final : public Operator<Context> {
     BiasAddGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -47,9 +46,8 @@ class BiasAddGradientOp final : public Operator<Context> {
  protected:
     int outer_dim, dim, inner_dim;
     string data_format;
-    Tensor* bias_multiplier;
 };
 
 }    // namespace dragon
 
-#endif    // DRAGON_OPERATORS_ARITHMETIC_BIAS_ADD_OP_H_
+#endif    // DRAGON_OPERATORS_VISION_BIAS_ADD_OP_H_

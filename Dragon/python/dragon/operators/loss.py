@@ -129,7 +129,7 @@ def SoftmaxCrossEntropy(inputs, axis=1, normalization='FULL', **kwargs):
 
 
 def SmoothL1Loss(inputs, beta=1.0, normalization='BATCH_SIZE', **kwargs):
-    """SmoothL1Loss, introduced by `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
+    """SmoothL1Loss. `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
 
     Note that the ``beta`` is represented as ``1. / sigma / sigma`` following the original paper.
 
@@ -218,7 +218,7 @@ def L2Loss(inputs, normalization='BATCH_SIZE', **kwargs):
 
 def SparseSoftmaxFocalLoss(inputs, axis=1, normalization='VALID', ignore_labels=(),
                            alpha=0.5, gamma=0.0, eps=1e-10, neg_id=-1, **kwargs):
-    """SoftmaxFocalLoss with sparse labels, introduced by `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`_.
+    """SoftmaxFocalLoss with sparse labels. `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`_.
 
     Parameters
     ----------

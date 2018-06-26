@@ -20,7 +20,7 @@ template <class Context>
 class CopyOp final : public Operator<Context> {
  public:
      USE_SIMPLE_CTOR_DTOR(CopyOp);
-     USE_OPERATOR_FUNCTIONS(Context);
+     USE_OPERATOR_FUNCTIONS;
 
      void RunOnDevice() override;
      template <typename T> void RunWithType();

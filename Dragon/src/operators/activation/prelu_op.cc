@@ -8,23 +8,17 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void PReluOp<Context>::RunWithType() {
-    if (channel_shared) {
-        TENSOR_FILL(Input(1), vector<TIndex>(1, 1));
-    } else {
-        TENSOR_FILL(Input(1), vector<TIndex>(1, Input(0).dim(1)));
-    }
+    if (channel_shared) { TENSOR_FILL(Input(1), vector<TIndex>(1, 1)); }
+    else { TENSOR_FILL(Input(1), vector<TIndex>(1, Input(0).dim(1))); }
 
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Wdata = Input(1).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    kernel::PRelu<T, Context>(Output(0)->count(),
-                                        channels,
-                                             dim,
-                                  channel_shared,
-                                     data_format,
-                                           Xdata,
-                                           Wdata,
-                                          Ydata);
+
+    kernel::PRelu<T, Context>(
+        Output(0)->count(), channels, dim,
+            channel_shared ? true : false, data_format,
+                Xdata, Wdata, Ydata);
 }
 
 template <class Context>
@@ -54,37 +48,22 @@ void PReluGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
 
     if (Output(1)->name() != "ignore") {
-        INIT_MULTIPLIER(multiplier, channels * dim);
-        bcast_dw = ws()->GetBuffer();
-        bcast_dw->Reshape(vector<TIndex>(1, channels * dim));
+        DECLARE_MULTIPLIER(multiplier, channels * dim);
         auto* dWdata = Output(1)->template mutable_data<T, Context>();
-        auto* dWBdata = bcast_dw->template mutable_data<T, Context>();
-        kernel::PReluWGrad<T, Context>(Input(0).dim(0),
-                                     Input(0).count(1),
-                                              channels,
-                                                   dim,
-                                        channel_shared,
-                                           data_format,
-                                                dYdata,
-                                                 Xdata,
-               multiplier->template data<T, Context>(),
-                                               dWBdata,
-                                               dWdata);
-        ws()->ReleaseBuffer(bcast_dw);
+        auto* dWBdata = ws()->template caches<T, Context>({ channels * dim })[0];
+        kernel::PReluWGrad<T, Context>(
+            Input(0).dim(0), Input(0).count(1), channels, dim,
+                channel_shared ? true : false, data_format,
+                    dYdata, Xdata, multiplier, dWBdata, dWdata);
     }
 
     if (Output(0)->name() != "ignore") {
         auto* Wdata = Input(1).template data<T, Context>();
         auto* dXdata = Output(0)->template mutable_data<T, Context>();
-        kernel::PReluGrad<T, Context>(Output(0)->count(),
-                                                channels,
-                                                     dim,
-                                          channel_shared,
-                                             data_format,
-                                                  dYdata,
-                                                   Xdata,
-                                                   Wdata,
-                                                 dXdata);
+        kernel::PReluGrad<T, Context>(
+            Output(0)->count(), channels, dim,
+                channel_shared ? true : false, data_format,
+                    dYdata, Xdata, Wdata, dXdata);
     }
 }
 

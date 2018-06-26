@@ -23,7 +23,7 @@ class MPIGatherOp final : public ModelMPIBase<Context> {
  public:
     MPIGatherOp(const OperatorDef& op_def, Workspace *ws)
         : ModelMPIBase<Context>(op_def, ws) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
     USE_MPIMODEL_FUNCTIONS(Context);
 
     void RunOnDevice() override;
@@ -35,7 +35,7 @@ class MPIGatherGradientOp final : public ModelMPIBase<Context> {
  public:
     MPIGatherGradientOp(const OperatorDef& op_def, Workspace *ws) 
         : ModelMPIBase<Context>(op_def, ws) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
     USE_MPIMODEL_FUNCTIONS(Context);
 
     void RunOnDevice() override;

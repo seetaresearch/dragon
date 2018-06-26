@@ -20,56 +20,44 @@ template <class Context>
 class AddOp final : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(AddOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void EltwiseRunWithType();
     template <typename T> void BroadcastRunWithType(int type);
-    
- protected:
-    Tensor* bcast_multiplier;
 };
 
 template <class Context>
 class AddGradientOp final : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(AddGradientOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void EltwiseRunWithType();
     template <typename T> void BroadcastRunWithType(int type);
-
- protected:
-    Tensor* bcast_multiplier;
 };
 
 template <class Context>
 class RAddOp final : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(RAddOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void EltwiseRunWithType();
     template <typename T> void BroadcastRunWithType(int type);
-    
- protected:
-    Tensor* bcast_multiplier;
 };
 
 template <class Context>
 class RAddGradientOp final : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(RAddGradientOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void EltwiseRunWithType();
     template <typename T> void BroadcastRunWithType(int type);
-
- protected:
-    Tensor* bcast_multiplier;
 };
 
 }    // namespace dragon

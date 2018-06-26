@@ -24,7 +24,7 @@ class SoftmaxCrossEntropyOp final : public Operator<Context> {
           axis(OperatorBase::GetSingleArg<int>("axis", 1)),
           normalization(OperatorBase::GetSingleArg<string>("normalization", "FULL")) {
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void SoftmaxRun();
     void RunOnDevice() override;
@@ -45,7 +45,7 @@ class SoftmaxCrossEntropyGradientOp final : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", 1)),
           normalization(OperatorBase::GetSingleArg<string>("normalization", "FULL")) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

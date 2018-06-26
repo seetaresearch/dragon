@@ -11,9 +11,10 @@ void TransposeOp<Context>::RunWithType() {
     auto* NSdata = new_steps->template data<int, Context>();
     auto* ORdata = order->template data <int, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    kernel::Transpose<T, Context>(Output(0)->count(), int(perms.size()),
-                                  ORdata, OSdata, NSdata, 
-                                  Xdata, Ydata);
+
+    kernel::Transpose<T, Context>(
+        Output(0)->count(), int(perms.size()),
+            ORdata, OSdata, NSdata, Xdata, Ydata);
 }
 
 template <class Context>
@@ -66,9 +67,10 @@ void TransposeGradientOp<Context>::RunWithType() {
     auto* NSdata = new_steps->template data<int, Context>();
     auto* ORdata = order->template data <int, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    kernel::TransposeGrad<T, Context>(Input(-1).count(), order->count(),
-                                      ORdata, OSdata, NSdata,
-                                      dYdata, dXdata);
+
+    kernel::TransposeGrad<T, Context>(
+        Input(-1).count(), order->count(),
+            ORdata, OSdata, NSdata, dYdata, dXdata);
 }
 
 template <class Context>

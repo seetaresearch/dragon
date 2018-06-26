@@ -22,7 +22,7 @@ class ConcatOp : public Operator<Context> {
     ConcatOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws), 
         axis(OperatorBase::GetSingleArg<int>("axis", 1)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -39,7 +39,7 @@ class ConcatGradientOp : public Operator<Context> {
     ConcatGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
         axis(OperatorBase::GetSingleArg<int>("axis", 1)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

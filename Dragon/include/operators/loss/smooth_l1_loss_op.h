@@ -23,7 +23,7 @@ class SmoothL1LossOp final : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           beta(OperatorBase::GetSingleArg<float>("beta", 1.0)),
           normalization(OperatorBase::GetSingleArg<string>("normalization", "BATCH_SIZE")) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -41,7 +41,7 @@ class SmoothL1LossGradientOp final : public Operator<Context> {
         : Operator<Context>(op_def, ws),
         beta(OperatorBase::GetSingleArg<float>("beta", 1.0)),
         normalization(OperatorBase::GetSingleArg<string>("normalization", "BATCH_SIZE")) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

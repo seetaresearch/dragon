@@ -35,11 +35,13 @@ inline std::vector<std::string> SplitString(const std::string& str,
     return ret;
 }
 
-template<> inline std::string dragon_cast<std::string, int>(int val) {
-    std::stringstream ss;
-    ss << val;
-    return ss.str();
-}
+#define DEFINE_NUMBER2STRING(T) \
+    template<> inline std::string dragon_cast<std::string, T>(T val) { \
+       std::stringstream ss; ss << val; return ss.str(); \
+    }
+
+DEFINE_NUMBER2STRING(int);
+DEFINE_NUMBER2STRING(unsigned long long);
 
 template<> inline int dragon_cast<int, std::string>(std::string val) { 
     return atoi(val.c_str()); 

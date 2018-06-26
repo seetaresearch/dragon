@@ -20,8 +20,7 @@ void CompareOp<Context>::RunOnDevice() {
     if (operation == "EQUAL") {
         if (XIsType(Input(0), float)) EqualRunWithType<float>();
         else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
-    }
-    else {
+    } else {
         LOG(FATAL) << "Unsupport operation: [" << operation << "].";
     }
 }

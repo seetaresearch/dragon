@@ -134,7 +134,8 @@ class CUDAContext {
             DeviceGuard gurad(gpu_id_);
             CUBLAS_CHECK(cublasCreate_v2(&handle));
 #if CUDA_VERSION >= 9000
-            if (TENSOR_CORE_AVAILABLE()) cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH);
+            if (TENSOR_CORE_AVAILABLE())
+                cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH);
 #endif
             return handle;
         }
@@ -164,6 +165,8 @@ class CUDAContext {
         }
     }
 #endif
+
+    static std::mutex& mutex() { static std::mutex m; return m; }
 
     static CUDAObject cuda_object_;
 

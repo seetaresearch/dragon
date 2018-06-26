@@ -10,10 +10,8 @@ void EltwiseOp<Context>::SumRunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
     math::Set<T, Context>(count, dragon_cast<T, float>(0), Ydata);
     for (int i = 0; i < InputSize(); ++i) {
-        math::Axpy<T, Context>(count,
-                               coeffs[i],
-                               Input(i).template data<T, Context>(),
-                               Ydata);
+        math::Axpy<T, Context>(count, coeffs[i],
+            Input(i).template data<T, Context>(), Ydata);
     }
 }
 
@@ -22,14 +20,14 @@ void EltwiseOp<Context>::ProdRunWithType() {
     TIndex count = Output(0)->count();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
     math::Mul<T, Context>(count,
-                          Input(0).template data<T, Context>(),
-                          Input(1).template data<T, Context>(),
-                          Ydata);
+        Input(0).template data<T, Context>(),
+            Input(1).template data<T, Context>(),
+                Ydata);
     for (int i = 2; i < InputSize(); i++) {
         math::Mul<T, Context>(count,
-                              Ydata,
-                              Input(i).template data<T, Context>(),
-                              Ydata);
+            Ydata,
+                Input(i).template data<T, Context>(), 
+                    Ydata);
     }
 }
 
@@ -69,9 +67,11 @@ void EltwiseGradientOp<Context>::SumRunWithType() {
         if (Output(i)->name() == "ignore") continue;
         auto* dXdata = Output(i)->template mutable_data<T, Context>();
         if (coeffs[i] == float(1)) {
-            ctx().template Copy<T, Context, Context>(count, dXdata, dYdata);
+            ctx().template Copy<T, Context, Context>(
+                count, dXdata, dYdata);
         } else {
-            math::Scale<T, Context>(count, coeffs[i], dYdata, dXdata);
+            math::Scale<T, Context>(
+                count, coeffs[i], dYdata, dXdata);
         }
     }
 }

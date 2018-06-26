@@ -28,7 +28,7 @@ class GroupNormOp : public Operator<Context> {
             CHECK_EQ(axis, 1) 
                 << "\nThe axis can only be set to 1.";
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void Setup();
 
@@ -37,10 +37,8 @@ class GroupNormOp : public Operator<Context> {
 
  protected:
     float eps;
-    Tensor mean, num_by_chans;
-    Tensor* multiplier, *num_multiplier, *spatial_multiplier, *cgs_multiplier;
-    Tensor* stddev, *var;
     TIndex group, axis, N, C, S, NG, NC, NS, CGS;
+    Tensor nc, mean, *var;
     string data_format;
 };
 
@@ -55,7 +53,7 @@ class GroupNormGradientOp final : public Operator<Context> {
             CHECK_EQ(axis, 1)
                 << "\nThe axis can only be set to 1.";
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void Setup();
 
@@ -63,10 +61,8 @@ class GroupNormGradientOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    Tensor num_by_chans;
-    Tensor* multiplier, *num_multiplier, *spatial_multiplier, *cgs_multiplier;
-    Tensor* stddev, *var;
     TIndex group, axis, N, C, S, NG, NC, NS, CGS;
+    Tensor nc, *var;
     string data_format;
 };
 
@@ -78,7 +74,7 @@ class FusedGroupNormOp : public Operator<Context> {
           group(OperatorBase::GetSingleArg<int>("group", 32)),
           axis(OperatorBase::GetSingleArg<int>("axis", -1)),
           eps(OperatorBase::GetSingleArg<float>("eps", 1e-3f)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void Setup();
 
@@ -86,11 +82,9 @@ class FusedGroupNormOp : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    float eps;
-    Tensor num_by_chans;
-    Tensor* multiplier, *num_multiplier, *spatial_multiplier, *cgs_multiplier;
-    Tensor* mean, *var, *stddev, *x_norm;
     TIndex group, axis, N, C, S, NG, NC, NS, CGS;
+    float eps;
+    Tensor nc, *mean, *var, *x_norm;
     string data_format;
 };
 
@@ -101,7 +95,7 @@ class FusedGroupNormGradientOp : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           group(OperatorBase::GetSingleArg<int>("group", 32)),
           axis(OperatorBase::GetSingleArg<int>("axis", -1)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void Setup();
 
@@ -109,10 +103,8 @@ class FusedGroupNormGradientOp : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    Tensor num_by_chans;
-    Tensor* multiplier, *num_multiplier, *spatial_multiplier, *cgs_multiplier;
-    Tensor* mean, *var, *stddev, *x_norm;
     TIndex group, axis, N, C, S, NG, NC, NS, CGS;
+    Tensor nc, *mean, *var, *x_norm;
     string data_format;
 };
 

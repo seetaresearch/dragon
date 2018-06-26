@@ -879,6 +879,17 @@ class Tensor(object):
         """
         raise NotImplementedError('Refer torch.ops.builtin.half')
 
+    def half_(self):
+        """Inplace of ``Tensor.half()``.
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The half tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.builtin.half_')
+
     def float(self):
         """Return a ``float32`` tensor with elements of ``self``.
 
@@ -890,8 +901,8 @@ class Tensor(object):
         """
         raise NotImplementedError('Refer torch.ops.builtin.float')
 
-    def double(self):
-        """Return a ``float64`` tensor with elements of ``self``.
+    def float_(self):
+        """Inplace of ``Tensor.float()``.
 
         Returns
         -------
@@ -899,7 +910,29 @@ class Tensor(object):
             The float tensor.
 
         """
+        raise NotImplementedError('Refer torch.ops.builtin.float_')
+
+    def double(self):
+        """Return a ``float64`` tensor with elements of ``self``.
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The double tensor.
+
+        """
         raise NotImplementedError('Refer torch.ops.builtin.double')
+
+    def double_(self):
+        """Inplace of ``Tensor.double()``.
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The double tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.builtin.double_')
 
     def int(self):
         """Return a ``int32`` tensor with elements of ``self``.
@@ -912,6 +945,17 @@ class Tensor(object):
         """
         raise NotImplementedError('Refer torch.ops.builtin.int')
 
+    def int_(self):
+        """Inplace of ``Tensor.int()``.
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The int tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.builtin.int_')
+
     def long(self):
         """Return a ``int64`` tensor with elements of ``self``.
 
@@ -923,6 +967,17 @@ class Tensor(object):
         """
         raise NotImplementedError('Refer torch.ops.builtin.long')
 
+    def long_(self):
+        """Inplace of ``Tensor.long()``.
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The long tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.builtin.long_')
+
     def byte(self):
         """Return a ``uint8`` tensor with elements of ``self``.
 
@@ -933,6 +988,17 @@ class Tensor(object):
 
         """
         raise NotImplementedError('Refer torch.ops.builtin.byte')
+
+    def byte_(self):
+        """Inplace of ``Tensor.byte()``.
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The byte tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.builtin.byte_')
 
     ##############################################
     #                                            #

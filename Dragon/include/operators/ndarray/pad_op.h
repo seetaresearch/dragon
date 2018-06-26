@@ -35,7 +35,7 @@ class PadOp final : public Operator<Context> {
         }
         std::sort(process_axes.begin(), process_axes.end());
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void ConstRunWithType();
@@ -48,7 +48,7 @@ class PadOp final : public Operator<Context> {
     float value;
     vector< pair<int, int> > process_axes;
     TIndex axis, inner_dim, dim;
-    Tensor* dest, *source;
+    Tensor* dest, *source, navigator;
 };
 
 template <class Context>
@@ -70,7 +70,7 @@ class PadGradientOp final : public Operator<Context> {
         std::sort(process_axes.begin(), process_axes.end());
         std::reverse(process_axes.begin(), process_axes.end());
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void ConstRunWithType();
@@ -82,7 +82,7 @@ class PadGradientOp final : public Operator<Context> {
     string mode;
     vector< pair<int, int> > process_axes;
     TIndex axis, inner_dim, dim;
-    Tensor* dest, *source;
+    Tensor* dest, *source, navigator;
 };
 
 }    // namespace dragon

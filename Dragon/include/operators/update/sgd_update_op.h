@@ -22,7 +22,7 @@ class SGDUpdateOp final : public UpdateOpBase<Context> {
     SGDUpdateOp(const OperatorDef& op_def, Workspace* ws) 
         : UpdateOpBase<Context>(op_def, ws),
         old_lr(-1.f), correction(1.f) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
     USE_UPDATER_FUNCTIONS(Context);
 
     void ComputeRunWithFloat() override;

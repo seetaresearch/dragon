@@ -11,11 +11,13 @@ void CuDNNLRNOp<Context>::RunWithType() {
         cudnnSetTensorDesc<T>(&output_desc, Output(0));
         auto* Xdata = Input(0).template data<T, Context>();
         auto* Ydata = Output(0)->template mutable_data<T, Context>();
-        CUDNN_CHECK(cudnnLRNCrossChannelForward(cudnn_handle(),
-                                                     norm_desc,
-                                  CUDNN_LRN_CROSS_CHANNEL_DIM1,
-                          CUDNNType<T>::one, input_desc, Xdata,
-                      CUDNNType<T>::zero, output_desc, Ydata));
+
+        CUDNN_CHECK(cudnnLRNCrossChannelForward(
+            cudnn_handle(), norm_desc,
+                CUDNN_LRN_CROSS_CHANNEL_DIM1,
+                    CUDNNType<T>::one, input_desc, Xdata,
+                        CUDNNType<T>::zero, output_desc, Ydata));
+
     } else LOG(FATAL) << "Unknown data format: " << this->data_format;
 }
 
@@ -51,13 +53,14 @@ void CuDNNLRNGradientOp<Context>::RunWithType() {
         auto* Xdata = Input(0).template data<T, Context>();
         auto* Ydata = Input(1).template data<T, Context>();
         auto* dXdata = Output(0)->template mutable_data<T, Context>();
-        CUDNN_CHECK(cudnnLRNCrossChannelBackward(cudnn_handle(),
-                                                      norm_desc,
-                                   CUDNN_LRN_CROSS_CHANNEL_DIM1,
-                           CUDNNType<T>::one, input_desc, Ydata,
-                                             input_desc, dYdata,
-                                             output_desc, Xdata,
-                      CUDNNType<T>::zero, output_desc, dXdata));
+
+        CUDNN_CHECK(cudnnLRNCrossChannelBackward(
+            cudnn_handle(), norm_desc,
+                CUDNN_LRN_CROSS_CHANNEL_DIM1,
+                    CUDNNType<T>::one, input_desc, Ydata,
+                        input_desc, dYdata, output_desc, Xdata,
+                            CUDNNType<T>::zero, output_desc, dXdata));
+
     } else LOG(FATAL) << "Unknown data format: " << this->data_format;
 }
 

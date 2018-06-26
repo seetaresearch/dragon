@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libnuma-dev \
     libprotobuf-dev \
     protobuf-compiler \
-    libopenblas-dev \ 
+    libopenblas-dev \
     python3-pip \
     python3-dev \
     python3-pyqt4 \
@@ -21,13 +21,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip3 install --no-cache-dir --upgrade setuptools wheel && \
     pip3 install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple \
     numpy \
-    protobuf \ 
-    lmdb \ 
+    protobuf \
+    lmdb \
     opencv-python \
     six \ 
     Pillow
     matplotlib \
-    pyyaml
+    pyyaml \
+    cython
 
 RUN wget http://dragon.seetatech.com/download/docker/ubuntu-16.04-cpu-openblas/3rdparty.zip && \
     unzip 3rdparty.zip && rm 3rdparty.zip && cd 3rdparty && bash ./setup_mpi.sh && rm -f *.gz && \

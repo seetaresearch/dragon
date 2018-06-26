@@ -22,7 +22,7 @@ class CompareOp final : public Operator<Context> {
     CompareOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           operation(OperatorBase::GetSingleArg<string>("operation", "NONE")) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void EqualRunWithType();

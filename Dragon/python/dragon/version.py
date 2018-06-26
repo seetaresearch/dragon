@@ -14,7 +14,7 @@ from __future__ import division
 from __future__ import print_function
 
 version = '0.2.2'
-full_version = '0.2.2.4'
+full_version = '0.2.2.5'
 release = False
 
 if not release:

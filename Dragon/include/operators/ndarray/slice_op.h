@@ -23,7 +23,7 @@ class SliceOp : public Operator<Context> {
         Operator<Context>(op_def, ws),
         axis(OperatorBase::GetSingleArg<int>("axis", 1)),
         nout(OperatorBase::GetSingleArg<int>("num_output", 1)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -42,7 +42,7 @@ class SliceGradientOp final : public Operator<Context> {
         Operator<Context>(op_def, ws),
         axis(OperatorBase::GetSingleArg<int>("axis", 1)),
         nout(OperatorBase::GetSingleArg<int>("num_output", 1)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

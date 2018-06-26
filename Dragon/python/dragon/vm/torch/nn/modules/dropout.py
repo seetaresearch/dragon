@@ -29,6 +29,7 @@ class Dropout(Module):
             'n_inputs': 1, 'n_outputs': 1,
             'arguments': {
                 'prob': self.p,
+                'phase': 'TRAIN',
             }
         }
 

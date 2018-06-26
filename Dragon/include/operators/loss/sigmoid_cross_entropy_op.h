@@ -22,7 +22,7 @@ class SigmoidCrossEntropyOp final : public Operator<Context> {
     SigmoidCrossEntropyOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           normalization(OperatorBase::GetSingleArg<string>("normalization", "VALID")) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -38,7 +38,7 @@ class SigmoidCrossEntropyGradientOp final : public Operator<Context> {
     SigmoidCrossEntropyGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           normalization(OperatorBase::GetSingleArg<string>("normalization", "VALID")) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

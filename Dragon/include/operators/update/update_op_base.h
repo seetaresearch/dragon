@@ -27,7 +27,7 @@ class UpdateOpBase : public Operator<Context> {
         zero_grad(OperatorBase::GetSingleArg<bool>("zero_grad", true)) {
         CHECK(!slot.empty()) << "\nRequired a non-empty slot";
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     float Param(const string& name) const;
     string Slot();

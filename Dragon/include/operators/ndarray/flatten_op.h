@@ -24,7 +24,7 @@ class FlattenOp final : public Operator<Context> {
           axis(OperatorBase::GetSingleArg<int>("axis", 0)),
           num_axes(OperatorBase::GetSingleArg<int>("num_axes", -1)),
           keep_axes(OperatorBase::GetSingleArg<int>("keep_axes", INT_MAX)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     void SqueezeRun();
@@ -38,7 +38,7 @@ template <class Context>
 class FlattenGradientOp final : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(FlattenGradientOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
 };

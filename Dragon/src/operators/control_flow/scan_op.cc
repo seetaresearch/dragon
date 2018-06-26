@@ -78,11 +78,14 @@ void ScanOp<Context>::UpdateTerms(int cur_step) {
 template <class Context>
 void ScanOp<Context>::UnrollTemplate() {
     if (step_type == "Dynamic") {
-        CHECK(!step_tensor.empty()) << "Dynamic nsteps must provide a step tensor.";
-        nsteps = ws()->GetTensor(step_tensor)->template data<int, CPUContext>()[0];
+        CHECK(!step_tensor.empty())
+            << "Dynamic nsteps must provide a step tensor.";
+        nsteps = ws()->GetTensor(step_tensor)
+                     ->template data<int, CPUContext>()[0];
     } else if (step_type == "Default") nsteps = Input(0).dim(axis);
     CHECK_GE(nsteps, 1);
-    for (int i = 0; i < nseqs; i++) CHECK_EQ(Input(i).dim(axis), nsteps);
+    for (int i = 0; i < nseqs; i++)
+        CHECK_EQ(Input(i).dim(axis), nsteps);
     if (graphs.count(nsteps)) return;
 
     new_def.CopyFrom(template_def);
@@ -167,13 +170,15 @@ template <class Context>
 void ScanGradientOp<Context>::MakeOps(const GraphDef& forward_def, 
                                       GraphDef& new_def) {
     if (step_type == "Dynamic")
-        nsteps = ws()->GetTensor(step_tensor)->template data<int, CPUContext>()[0];
+        nsteps = ws()->GetTensor(step_tensor)
+                     ->template data<int, CPUContext>()[0];
     else if (step_type == "Default") nsteps = Input(0).dim(axis);
     if (graphs.count(nsteps)) return;
 
     //  determine the targets
     vector<string> targets;
-    for (auto& t : forward_def.target()) targets.emplace_back(t);
+    for (auto& t : forward_def.target())
+        targets.emplace_back(t);
 
     //  init maker
     GraphGradientMaker maker;

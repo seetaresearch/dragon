@@ -15,17 +15,23 @@ void InnerProductOp<Context>::TransRunWithType() {
         << "Input dims are (" << M << ", " << K << ").\n"
         << "Weights dims are " << Input(1).dim_string();
     Output(0)->Reshape(vector<TIndex>({ M, num_output }));
-    if (InputSize() > 2) INIT_MULTIPLIER(bias_multiplier, M);
 
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Wdata = Input(1).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Gemm<T, Context>(CblasNoTrans, CblasTrans, M, num_output, K,
-                           1.0, Xdata, Wdata, 0.0, Ydata);
+
+    math::Gemm<T, Context>(
+        CblasNoTrans, CblasTrans,
+            M, num_output, K,
+                1.0, Xdata, Wdata, 0.0, Ydata);
+
     if (InputSize() > 2) {
+        DECLARE_MULTIPLIER(multiplier, M);
         auto* Bdata = Input(2).template data<T, Context>();
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, M, num_output, 1,
-            1.0, bias_multiplier->data<T, Context>(), Bdata, 1.0, Ydata);
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                M, num_output, 1,
+                    1.0, multiplier, Bdata, 1.0, Ydata);
     }
 }
 
@@ -40,30 +46,36 @@ void InnerProductOp<Context>::NoTransRunWithType() {
         << "Input dims are (" << M << ", " << K << ").\n"
         << "Weights dims are " << Input(1).dim_string();
     Output(0)->Reshape(vector<TIndex>({ M, num_output }));
-    if (InputSize() > 2) INIT_MULTIPLIER(bias_multiplier, M);
 
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Wdata = Input(1).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, M, num_output, K,
-                           1.0, Xdata, Wdata, 0.0, Ydata);
+
+    math::Gemm<T, Context>(
+        CblasNoTrans, CblasNoTrans,
+            M, num_output, K,
+                1.0, Xdata, Wdata, 0.0, Ydata);
+
     if (InputSize() > 2) {
+        DECLARE_MULTIPLIER(multiplier, M);
         auto* Bdata = Input(2).template data<T, Context>();
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, M, num_output, 1,
-                1.0, bias_multiplier->data<T, Context>(), Bdata, 1.0, Ydata);
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                M, num_output, 1,
+                    1.0, multiplier, Bdata, 1.0, Ydata);
     }
 }
 
 template <class Context>
 void InnerProductOp<Context>::RunOnDevice() {
     TIndex _axis_ = axis < 0 ? axis + Input(0).ndim() : axis;
-    M = Input(0).count(0, _axis_), K = Input(0).count(_axis_); 
+    M = Input(0).count(0, _axis_), K = Input(0).count(_axis_);
 
     if (XIsType(Input(0), float)) {
-        if (transW) TransRunWithType<float>();
+        if (TransW) TransRunWithType<float>();
         else NoTransRunWithType<float>();
     } else if (XIsType(Input(0), float16)) {
-        if (transW) TransRunWithType<float16>();
+        if (TransW) TransRunWithType<float16>();
         else NoTransRunWithType<float16>();
     } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
@@ -83,37 +95,48 @@ void InnerProductGradientOp<Context>::RunWithType() {
     if (Output(1)->name() != "ignore") {
         Output(1)->ReshapeLike(Input(1));
         auto* dWdata = Output(1)->template mutable_data<T, Context>();
-        if (transW) {
-            math::Gemm<T, Context>(CblasTrans, CblasNoTrans, num_output, K, M,
-                                   1.0, dYdata, Xdata, 1.0, dWdata);
+        if (TransW) {
+            math::Gemm<T, Context>(
+                CblasTrans, CblasNoTrans,
+                    num_output, K, M,
+                        1.0, dYdata, Xdata, 1.0, dWdata);
         } else {
-            math::Gemm<T, Context>(CblasTrans, CblasNoTrans, K, num_output, M,
-                                   1.0, Xdata, dYdata, 1.0, dWdata);
+            math::Gemm<T, Context>(
+                CblasTrans, CblasNoTrans,
+                    K, num_output, M,
+                        1.0, Xdata, dYdata, 1.0, dWdata);
         }
     }
+
     if (Output(2)->name() != "ignore") {
-        INIT_MULTIPLIER(bias_multiplier, M);
+        DECLARE_MULTIPLIER(multiplier, M);
         Output(2)->Reshape(vector<TIndex>(1, num_output));
         auto* dBdata = Output(2)->template mutable_data<T, Context>();
-        auto* BMul_data = this->bias_multiplier->template data<T, Context>();
-        math::Gemv<T, Context>(CblasTrans, M, num_output,
-                               1.0, dYdata, BMul_data, 1.0, dBdata);
+        math::Gemv<T, Context>(
+            CblasTrans,
+                M, num_output,
+                    1.0, dYdata, multiplier, 1.0, dBdata);
     }
+
     if (Output(0)->name() != "ignore") {
         Output(0)->ReshapeLike(Input(0));
         auto* dXdata = Output(0)->template mutable_data<T, Context>();
-        if (transW) {
-            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, M, K, num_output,
-                                   1.0, dYdata, Wdata, 0.0, dXdata);
+        if (TransW) {
+            math::Gemm<T, Context>(
+                CblasNoTrans, CblasNoTrans,
+                    M, K, num_output,
+                        1.0, dYdata, Wdata, 0.0, dXdata);
         } else {
-            math::Gemm<T, Context>(CblasNoTrans, CblasTrans, M, K, num_output,
-                                   1.0, dYdata, Wdata, 0.0, dXdata);
+            math::Gemm<T, Context>(
+                CblasNoTrans, CblasTrans,
+                    M, K, num_output,
+                        1.0, dYdata, Wdata, 0.0, dXdata);
         }
     }
 }
 
 template <class Context>
-void InnerProductGradientOp<Context>::RunOnDevice() { 
+void InnerProductGradientOp<Context>::RunOnDevice() {
     TIndex _axis_ = axis < 0 ? axis + Input(0).ndim() : axis;
     M = Input(0).count(0, _axis_), K = Input(0).count(_axis_);
 

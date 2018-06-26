@@ -7,16 +7,17 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void CropOp<Context>::RunWithType() {
-    auto* Xdata = source->template data<T, Context>();
-    auto* Ydata = dest->template mutable_data<T, Context>();
+    const T* Xdata; T* Ydata;
+    if (source == &navigator) {
+        Xdata = ws()->template caches<T, Context>({ source->count() })[0];
+    } else { Xdata = source->template data<T, Context>(); }
+    if (dest == &navigator) {
+        Ydata = ws()->template caches<T, Context>({ dest->count() })[0];
+    } else { Ydata = dest->template mutable_data<T, Context>(); }
+
     kernel::Crop1D<T, Context>(dest->count(),
-                                         dim,
-                         ed[axis] - st[axis],
-                                   inner_dim,
-                                    st[axis],
-                                       Xdata,
-                                       Ydata,
-                                     &ctx());
+        dim, ed[axis] - st[axis], inner_dim,
+            st[axis], Xdata, Ydata);
 }
 
 template <class Context>
@@ -33,9 +34,13 @@ void CropOp<Context>::Setup() {
     } else {
         //  dynamic crop
         for (int i = 0; i < st.size(); i++) {
-            if (i < start_axis || offsets.size() == 0) st[i] = 0;
-            else if (i - start_axis < (int)offsets.size()) st[i] = offsets[i - start_axis];
-            else st[i] = offsets[offsets.size() - 1];
+            if (i < start_axis || offsets.size() == 0) {
+                st[i] = 0;
+            } else if (i - start_axis < (int)offsets.size()) {
+                st[i] = offsets[i - start_axis];
+            } else {
+                st[i] = offsets[offsets.size() - 1];
+            }
         }
     }
 
@@ -109,7 +114,8 @@ void CropOp<Context>::Setup() {
         if (reducing_size > 0)
             process_axes.push_back({ reducing_size, i });
     }
-    std::sort(process_axes.begin(), process_axes.end(), std::greater< pair<int, int> >());
+    std::sort(process_axes.begin(), process_axes.end(),
+        std::greater< pair<int, int> >());
 }
 
 template <class Context>
@@ -131,7 +137,7 @@ void CropOp<Context>::RunOnDevice() {
      //  select source & dest
     source = &Input(0);
     if (process_axes.size() % 2 == 1) dest = Output(0);
-    else dest = ws()->GetBuffer();
+    else dest = &navigator;
 
     for (auto& task : process_axes) {
         axis = task.second;
@@ -146,12 +152,11 @@ void CropOp<Context>::RunOnDevice() {
         //  allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
-            if (dest == &Input(0)) dest = ws()->GetBuffer();
+            if (dest == &Input(0)) dest = &navigator;
         } else {
             if (dest == &Input(0)) dest = Output(0);
         }
     }
-    ws()->ReleaseBuffer(dest);
 
     //  squeeze dimensions
     vector<TIndex> squeeze_shape;
@@ -185,26 +190,26 @@ void CropGradientOp<Context>::Setup() {
     for (int i = 0; i < st.size(); i++) {
         int cropping_size = ed[i] - st[i];
         int reducing_size = (int)Input(0).dim(i) - cropping_size;
-        if (reducing_size > 0)
-            process_axes.push_back({ reducing_size, i });
+        if (reducing_size > 0) process_axes.push_back({ reducing_size, i });
     }
-    std::sort(process_axes.begin(), process_axes.end(), std::greater< pair<int, int> >());
+    std::sort(process_axes.begin(), process_axes.end(),
+        std::greater< pair<int, int> >());
     std::reverse(process_axes.begin(), process_axes.end());
 }
 
 template <class Context> template <typename T>
 void CropGradientOp<Context>::RunWithType() {
-    auto* dYdata = source->template data<T, Context>();
-    auto* dXdata = dest->template mutable_data<T, Context>();
+    const T* dYdata; T* dXdata;
+    if (source == &navigator) {
+        dYdata = ws()->template caches<T, Context>({ source->count() })[0];
+    } else { dYdata = source->template data<T, Context>(); }
+    if (dest == &navigator) {
+        dXdata = ws()->template caches<T, Context>({ dest->count() })[0];
+    } else { dXdata = dest->template mutable_data<T, Context>(); }
+    
     kernel::Crop1DGrad<T, Context>(dest->count(),
-                              Input(0).dim(axis),
-                                             dim,
-                                       inner_dim,
-                                        st[axis],
-                                        ed[axis],
-                                          dYdata,
-                                          dXdata,
-                                         &ctx());
+        Input(0).dim(axis), dim, inner_dim,
+            st[axis], ed[axis], dYdata, dXdata);
 }
 
 template <class Context>
@@ -231,7 +236,7 @@ void CropGradientOp<Context>::RunOnDevice() {
     //  select source & buffer
     source = &Input(-1);
     if (process_axes.size() % 2 == 1) dest = Output(0);
-    else dest = ws()->GetBuffer();
+    else dest = &navigator;
 
     for (auto& task : process_axes) {
         axis = task.second;
@@ -246,12 +251,11 @@ void CropGradientOp<Context>::RunOnDevice() {
         //  allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
-            if (dest == &Input(-1)) dest = ws()->GetBuffer();
+            if (dest == &Input(-1)) dest = &navigator;
         } else {
             if (dest == &Input(-1)) dest = Output(0);
         }
     }
-    ws()->ReleaseBuffer(dest);
 }
 
 DEPLOY_CPU(CropGradient);

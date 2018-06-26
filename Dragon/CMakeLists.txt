@@ -171,7 +171,7 @@ endif()
 # ---[ Flags
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")
 if(WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /O2 /Oi /GL /Ot /Gy")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /O2")
     if (WITH_OMP)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp")
     endif()

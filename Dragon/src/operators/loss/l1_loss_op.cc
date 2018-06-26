@@ -48,7 +48,8 @@ template <class Context> template <typename T>
 void L1LossGradientOp<Context>::RunWithType() {
     auto* diff_data = diff->template mutable_data<T, Context>();
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; Context::template Copy<T, CPUContext, Context>(1, &dYdata_host, dYdata);
+    T dYdata_host; Context::template Copy<T, CPUContext, Context>(
+        1, &dYdata_host, dYdata);
     kernel::AbsGrad<T, Context>(diff->count(), diff_data, diff_data);
 
     T alpha = dYdata_host, normalizer;
@@ -62,7 +63,8 @@ void L1LossGradientOp<Context>::RunWithType() {
         auto* dXdata = Output(i)->template mutable_data<T, Context>();
         const T sign = (i == 0) ? 1 : -1;
         alpha *= sign;
-        math::Axpby<T, Context>(Output(i)->count(), alpha, diff_data, 0, dXdata);
+        math::Axpby<T, Context>(Output(i)->count(),
+            alpha, diff_data, 0, dXdata);
     }
 }
 

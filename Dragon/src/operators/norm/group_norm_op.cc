@@ -7,28 +7,21 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void GroupNormOp<Context>::RunWithType() {
-    INIT_MULTIPLIER(multiplier, NS);
-    INIT_MULTIPLIER(num_multiplier, N);
-    INIT_MULTIPLIER(spatial_multiplier, S);
-    INIT_MULTIPLIER(cgs_multiplier, CGS);
+    DECLARE_MULTIPLIER(MXmult, std::max(NS, CGS));
 
-    auto* tMean_data = mean.template mutable_data<T, Context>();
-    auto* tVar_data = var->template mutable_data<T, Context>();
+    auto* Tmean = mean.template mutable_data<T, Context>();
+    auto* Tvar = var->template mutable_data<T, Context>();
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    auto* NMul_data = num_multiplier->template data<T, Context>();
-    auto* SMul_data = spatial_multiplier->template data<T, Context>();
-    auto* NSMul_data = multiplier->template data<T, Context>();
-    auto* CGSMul_data = cgs_multiplier->template data<T, Context>();
-    auto* NC_data = num_by_chans.template mutable_data<T, Context>();
-    auto* Std_data = stddev->template mutable_data<T, Context>();
+    auto* NCdata = nc.template mutable_data<T, Context>();
+    auto* WSdata = ws()->template caches<T, Context>({ Input(0).count() })[0];
     ctx().template Copy<T, Context, Context>(Output(0)->count(), Ydata, Xdata);
 
     //  compute mean
     if (data_format == "NCHW") {
         math::Gemv<T, Context>(CblasNoTrans, NG, CGS,
-                       1.0 / CGS, Xdata, CGSMul_data,
-                                      0, tMean_data);
+                            1.0 / CGS, Xdata, MXmult,
+                                           0, Tmean);
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
     }
@@ -36,7 +29,7 @@ void GroupNormOp<Context>::RunWithType() {
     //  subtract mean
     if (data_format == "NCHW") {
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NG, CGS, 1,
-                                        -1.0, tMean_data, CGSMul_data,
+                                                  -1.0, Tmean, MXmult,
                                                           1.0, Ydata);
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
@@ -44,29 +37,28 @@ void GroupNormOp<Context>::RunWithType() {
 
     //  compute variance
     //  note that we use VAR(X) = E((X - EX) ^ 2)
-    math::Square<T, Context>(Output(0)->count(), Ydata, Std_data);
+    math::Square<T, Context>(Output(0)->count(), Ydata, WSdata);
     if (data_format == "NCHW") {
         math::Gemv<T, Context>(CblasNoTrans, NG, CGS,
-                    1.0 / CGS, Std_data, CGSMul_data,
-                                     0.0, tVar_data);
+                           1.0 / CGS, WSdata, MXmult,
+                                          0.0, Tvar);
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
     }
 
     //  compute stddev
-    math::AddScalar<T, Context>(var->count(), eps, tVar_data);
-    math::Sqrt<T, Context>(var->count(), tVar_data, tVar_data);
+    math::AddScalar<T, Context>(var->count(), eps, Tvar);
+    math::Sqrt<T, Context>(var->count(), Tvar, Tvar);
 
     //  divide by stddev
     if (data_format == "NCHW") {
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NG, CGS, 1,
-                                          1.0, tVar_data, CGSMul_data,
-                                                       0.0, Std_data);
+                                                    1.0, Tvar, MXmult,
+                                                         0.0, WSdata);
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
     }
-    math::Div<T, Context>(Output(0)->count(), Ydata, Std_data, Ydata);
-    ws()->ReleaseBuffer(stddev);
+    math::Div<T, Context>(Output(0)->count(), Ydata, WSdata, Ydata);
 }
 
 template <class Context>
@@ -81,7 +73,7 @@ void GroupNormOp<Context>::Setup() {
     C = Input(0).dim(channel_axis);
     CHECK_EQ(C % group, 0) << "\nThe " << C << " channels "
         << "can not be split into " << group << " groups.";
-    if (group == C && Input(0).ndim() == 2)    //  InstanceNorm
+    if (group == C && Input(0).ndim() == 2)  //  InstanceNorm
         LOG(WARNING) << "The 2d input will output all zeros.";
     NC = N * C;
     NG = N * group;
@@ -91,13 +83,11 @@ void GroupNormOp<Context>::Setup() {
 
     //  make resource
     var = ws()->CreateTensor("/mnt/" + anchor() + "/gn/var");
-    stddev = ws()->GetBuffer();
-    stddev->ReshapeLike(Input(0));
 
     //  reshape
     mean.Reshape(vector<TIndex>(1, NG));
     var->Reshape(vector<TIndex>(1, NG));
-    num_by_chans.Reshape(vector<TIndex>(1, NC));
+    nc.Reshape(vector<TIndex>(1, NC));
     Output(0)->ReshapeLike(Input(0));
 }
 
@@ -118,25 +108,18 @@ OPERATOR_SCHEMA(GroupNorm).NumInputs(1).NumOutputs(1);
 
 template <class Context> template <typename T>
 void GroupNormGradientOp<Context>::RunWithType() {
-    INIT_MULTIPLIER(multiplier, NS);
-    INIT_MULTIPLIER(num_multiplier, N);
-    INIT_MULTIPLIER(spatial_multiplier, S);
-    INIT_MULTIPLIER(cgs_multiplier, CGS);
+    DECLARE_MULTIPLIER(MXmult, std::max(NS, CGS));
 
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    auto* Std_data = stddev->template mutable_data<T, Context>();
-    auto* tVar_data = var->template mutable_data<T, Context>();
-    auto* NMul_data = num_multiplier->template data<T, Context>();
-    auto* SMul_data = spatial_multiplier->template data<T, Context>();
-    auto* NSMul_data = multiplier->template data<T, Context>();
-    auto* CGSMul_data = cgs_multiplier->template data<T, Context>();
-    auto* NC_data = num_by_chans.template mutable_data<T, Context>();
+    auto* Tvar = var->template mutable_data<T, Context>();
+    auto* NCdata = nc.template mutable_data<T, Context>();
+    auto* WSdata = ws()->template caches<T, Context>({ Output(0)->count() })[0];
 
     if (data_format == "NCHW") {
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NG, CGS, 1,
-                                          1.0, tVar_data, CGSMul_data,
-                                                       0.0, Std_data);
+                                                    1.0, Tvar, MXmult,
+                                                         0.0, WSdata);
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
     }
@@ -147,10 +130,10 @@ void GroupNormGradientOp<Context>::RunWithType() {
      //  sum(dE/dY \cdot Y)
     if (data_format == "NCHW") {
         math::Gemv<T, Context>(CblasNoTrans, NG, CGS,
-                            1.0, dXdata, CGSMul_data,
-                                     0.0, tVar_data);
+                                 1.0, dXdata, MXmult,
+                                          0.0, Tvar);
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NG, CGS, 1,
-                                          1.0, tVar_data, CGSMul_data,
+                                                    1.0, Tvar, MXmult,
                                                          0.0, dXdata);
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
@@ -162,10 +145,10 @@ void GroupNormGradientOp<Context>::RunWithType() {
     //  sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y
     if (data_format == "NCHW") {
         math::Gemv<T, Context>(CblasNoTrans, NG, CGS,
-                            1.0, dYdata, CGSMul_data,
-                                     0.0, tVar_data);
+                                 1.0, dYdata, MXmult,
+                                          0.0, Tvar);
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NG, CGS, 1,
-                                          1.0, tVar_data, CGSMul_data,
+                                                    1.0, Tvar, MXmult,
                                                          1.0, dXdata);
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
@@ -176,8 +159,7 @@ void GroupNormGradientOp<Context>::RunWithType() {
     math::Axpby<T, Context>(Output(0)->count(), 1.0, dYdata, -1.0 / CGS, dXdata);
 
     //  divide by stddev
-    math::Div<T, Context>(Output(0)->count(), dXdata, Std_data, dXdata);
-    ws()->ReleaseBuffer(stddev);
+    math::Div<T, Context>(Output(0)->count(), dXdata, WSdata, dXdata);
 }
 
 template <class Context>
@@ -192,7 +174,7 @@ void GroupNormGradientOp<Context>::Setup() {
     C = Input(0).dim(channel_axis);
     CHECK_EQ(C % group, 0) << "\nThe " << C << " channels "
         << "can not be split into " << group << " groups.";
-    if (group == C && Input(0).ndim() == 2)    //  InstanceNorm
+    if (group == C && Input(0).ndim() == 2)  //  InstanceNorm
         LOG(WARNING) << "The 2d input will output all zeros.";
     NC = N * C;
     NG = N * group;
@@ -202,11 +184,9 @@ void GroupNormGradientOp<Context>::Setup() {
 
     //  make resource
     var = ws()->GetTensor("/mnt/" + anchor() + "/gn/var");
-    stddev = ws()->GetBuffer();
-    stddev->ReshapeLike(Input(0));
 
     //  reshape
-    num_by_chans.Reshape(vector<TIndex>(1, NC));
+    nc.Reshape(vector<TIndex>(1, NC));
     Output(0)->ReshapeLike(Input(0));
 }
 

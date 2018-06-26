@@ -18,7 +18,8 @@ void SubOp<Context>::BroadcastRunWithType(int type) {
     auto* X1data = Input(0).template data<T, Context>();
     auto* X2data = Input(1).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    ctx().template Copy<T, Context, Context>(Input(0).count(), Ydata, X1data);
+    ctx().template Copy<T, Context, Context>(
+        Input(0).count(), Ydata, X1data);
 
     if (type == 0 || type == 1) {
         if (type == 0) {
@@ -28,18 +29,20 @@ void SubOp<Context>::BroadcastRunWithType(int type) {
             outer_dim = Input(0).count(0, Input(0).axis(-1));
             inner_dim = Input(0).dim(-1);
         }
-        INIT_MULTIPLIER(bcast_multiplier, outer_dim);
-        auto* BMul_data = bcast_multiplier->template data<T, Context>();
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, outer_dim, inner_dim, 1,
-            -1.0, bcast_multiplier->template data<T, Context>(), X2data, 1.0, Ydata);
+        DECLARE_MULTIPLIER(multiplier, outer_dim);
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                outer_dim, inner_dim, 1,
+                    -1.0, multiplier, X2data, 1.0, Ydata);
     } 
     else if (type == 2) {
         outer_dim = Input(0).dim(0);
         inner_dim = Input(0).count(1);
-        INIT_MULTIPLIER(bcast_multiplier, inner_dim);
-        auto* BMul_data = bcast_multiplier->template data<T, Context>();
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, outer_dim, inner_dim, 1,
-            -1.0, X2data, bcast_multiplier->template data<T, Context>(), 1.0, Ydata);
+        DECLARE_MULTIPLIER(multiplier, inner_dim);
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                outer_dim, inner_dim, 1,
+                    -1.0, X2data, multiplier, 1.0, Ydata);
     }
 }
 
@@ -89,7 +92,8 @@ void SubGradientOp<Context>::EltwiseRunWithType() {
     }
     if (Output(0)->name() != "ignore") {
         auto* dX1data = Output(0)->template mutable_data<T, Context>();
-        ctx().template Copy<T, Context, Context>(Output(0)->count(), dX1data, dYdata);
+        ctx().template Copy<T, Context, Context>(
+            Output(0)->count(), dX1data, dYdata);
     }
 }
 
@@ -108,24 +112,27 @@ void SubGradientOp<Context>::BroadcastRunWithType(int type) {
                 outer_dim = Input(-1).count(0, Input(-1).axis(-1));
                 inner_dim = Input(-1).dim(-1);
             }
-            INIT_MULTIPLIER(bcast_multiplier, outer_dim);
-            auto* BMul_data = bcast_multiplier->template data<T, Context>();
-            math::Gemv<T, Context>(CblasTrans, outer_dim, inner_dim,
-                                   -1.0, dYdata, BMul_data, 0.0, dX2data);
+            DECLARE_MULTIPLIER(multiplier, outer_dim);
+            math::Gemv<T, Context>(
+                CblasTrans,
+                    outer_dim, inner_dim,
+                        -1.0, dYdata, multiplier, 0.0, dX2data);
         }
         else if (type == 2) {
             outer_dim = Input(-1).dim(0);
             inner_dim = Input(-1).count(1);
-            INIT_MULTIPLIER(bcast_multiplier, inner_dim);
-            auto* BMul_data = bcast_multiplier->template data<T, Context>();
-            math::Gemv<T, Context>(CblasNoTrans, outer_dim, inner_dim,
-                                   -1.0, dYdata, BMul_data, 0.0, dX2data);
+            DECLARE_MULTIPLIER(multiplier, inner_dim);
+            math::Gemv<T, Context>(
+                CblasNoTrans,
+                    outer_dim, inner_dim,
+                        -1.0, dYdata, multiplier, 0.0, dX2data);
         }
     }
 
     if (Output(0)->name() != "ignore") {
         auto* dX1data = Output(0)->template mutable_data<T, Context>();
-        ctx().template Copy<T, Context, Context>(Output(0)->count(), dX1data, dYdata);
+        ctx().template Copy<T, Context, Context>(
+            Output(0)->count(), dX1data, dYdata);
     }
 }
 
@@ -147,7 +154,7 @@ void SubGradientOp<Context>::RunOnDevice() {
         else LOG(FATAL) << "Could not be broadcast together with shapes "
                         << Input(-1).dim_string() << "  " << Input(0).dim_string();
     } else if (XIsType(Input(0), float16)) {
-        if (Input(-1).dims() == Input(0).dims()) 
+        if (Input(-1).dims() == Input(0).dims())
             EltwiseRunWithType<float16>();
         else if (Input(-1).dim(0) == Input(0).dim(0) && Input(0).count(1) == 1)
             BroadcastRunWithType<float16>(2);

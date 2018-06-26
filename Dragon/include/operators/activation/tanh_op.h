@@ -20,7 +20,7 @@ template <class Context>
 class TanhOp : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(TanhOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -30,7 +30,7 @@ template <class Context>
 class TanhGradientOp : public Operator<Context> {
  public:
      USE_SIMPLE_CTOR_DTOR(TanhGradientOp);
-     USE_OPERATOR_FUNCTIONS(Context);
+     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -49,7 +49,7 @@ public:
         CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc, 
             CUDNN_ACTIVATION_TANH, CUDNN_PROPAGATE_NAN, 0));
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNTanhOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
@@ -76,7 +76,7 @@ class CuDNNTanhGradientOp final : public TanhGradientOp<Context> {
         CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc,
             CUDNN_ACTIVATION_TANH, CUDNN_PROPAGATE_NAN, 0));
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNTanhGradientOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));

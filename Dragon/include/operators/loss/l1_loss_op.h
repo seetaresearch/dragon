@@ -22,7 +22,7 @@ class L1LossOp : public Operator<Context> {
     L1LossOp(const OperatorDef& op_def, Workspace* ws) 
         : Operator<Context>(op_def, ws),
           normalization(OperatorBase::GetSingleArg<string>("normalization", "BATCH_SIZE")) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -38,7 +38,7 @@ class L1LossGradientOp final : public Operator<Context> {
     L1LossGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           normalization(OperatorBase::GetSingleArg<string>("normalization", "BATCH_SIZE")) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

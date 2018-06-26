@@ -22,7 +22,7 @@ class MovingAverageOp final : public Operator<Context> {
     MovingAverageOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws), 
           decay(OperatorBase::GetSingleArg<float>("decay", 1.0)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

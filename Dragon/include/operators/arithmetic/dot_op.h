@@ -19,11 +19,11 @@ namespace dragon {
 template <class Context>
 class DotOp final : public Operator<Context> {
  public:
-    DotOp(const OperatorDef& op_def, Workspace* ws) 
+    DotOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-          transA(OperatorBase::GetSingleArg<bool>("TransA", false)),
-          transB(OperatorBase::GetSingleArg<bool>("TransB", false)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+          TransA(OperatorBase::GetSingleArg<bool>("TransA", false)),
+          TransB(OperatorBase::GetSingleArg<bool>("TransB", false)) {}
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void DotRunWithType();
@@ -31,18 +31,17 @@ class DotOp final : public Operator<Context> {
     template <typename T> void GemvRunWithType();
 
  protected:
-    bool transA, transB;
-    TIndex M, K1, K2, N1, N2;
+    TIndex TransA, TransB, M, K1, K2, N1, N2;
 };
 
 template <class Context>
 class DotGradientOp final : public Operator<Context> {
  public:
-    DotGradientOp(const OperatorDef& op_def, Workspace* ws) 
+    DotGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
-        transA(OperatorBase::GetSingleArg<bool>("TransA", false)),
-        transB(OperatorBase::GetSingleArg<bool>("TransB", false)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+        TransA(OperatorBase::GetSingleArg<bool>("TransA", false)),
+        TransB(OperatorBase::GetSingleArg<bool>("TransB", false)) {}
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void DotRunWithType();
@@ -50,8 +49,7 @@ class DotGradientOp final : public Operator<Context> {
     template <typename T> void GemvRunWithType();
 
  protected:
-    bool transA, transB;
-    TIndex M, K1, K2, N1, N2;
+    TIndex TransA, TransB, M, K1, K2, N1, N2;
 };
     
 }    // namespace dragon

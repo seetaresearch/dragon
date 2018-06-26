@@ -24,7 +24,7 @@ Workspace* CreateWorkspace(const std::string& name){
     unique_ptr<Workspace> new_workspace(new Workspace(name));
     g_workspaces[name] = std::move(new_workspace);
     sub_workspaces[name] = vector<string>();
-    return new_workspace.get();
+    return g_workspaces[name].get();
 }
 
 Workspace* ResetWorkspace(const std::string& name) {

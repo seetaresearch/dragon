@@ -17,7 +17,7 @@ from . import *
 
 
 def Relu(inputs, **kwargs):
-    """Rectified Linear Unit function, introduces by `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.
+    """Rectified Linear Unit function. `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.
 
     Parameters
     ----------
@@ -69,7 +69,7 @@ def LRelu(inputs, slope=0.2, **kwargs):
 
 
 def PRelu(inputs, channel_shared=False, data_format='NCHW', **kwargs):
-    """Parametric Rectified Linear Unit function, introduces by `[He et.al, 2015] <https://arxiv.org/abs/1502.01852>`_.
+    """Parametric Rectified Linear Unit function. `[He et.al, 2015] <https://arxiv.org/abs/1502.01852>`_.
 
     Parameters
     ----------
@@ -98,7 +98,7 @@ def PRelu(inputs, channel_shared=False, data_format='NCHW', **kwargs):
 
 
 def Elu(inputs, alpha=1.0, **kwargs):
-    """Exponential Linear Unit function, introduces by `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
+    """Exponential Linear Unit function. `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
 
     Parameters
     ----------
@@ -125,7 +125,7 @@ def Elu(inputs, alpha=1.0, **kwargs):
 
 
 def SElu(inputs, **kwargs):
-    """Scaled Exponential Linear Unit function, introduces by `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
+    """Scaled Exponential Linear Unit function. `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 
     Parameters
     ----------
@@ -200,9 +200,7 @@ def Tanh(inputs, **kwargs):
 
 
 def Dropout(inputs, prob=0.5, scale=True, **kwargs):
-    """Randomly set a unit into zero.
-
-    Introduced by `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
+    """Randomly set a unit into zero. `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 
     Parameters
     ----------

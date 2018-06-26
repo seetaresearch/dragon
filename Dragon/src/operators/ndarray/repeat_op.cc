@@ -8,14 +8,9 @@ template <class Context> template <typename T>
 void RepeatOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    kernel::Repeat(Output(0)->count(),
-                            outer_dim,
-                                  dim,
-                            inner_dim,
-                            repeats(),
-                                Xdata,
-                                Ydata,
-                              &ctx());
+    kernel::Repeat<T, Context>(
+        Output(0)->count(), outer_dim, dim,
+            inner_dim, repeats(), Xdata, Ydata);
 }
 
 template <class Context>
@@ -47,14 +42,9 @@ template <class Context> template <typename T>
 void RepeatGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    kernel::RepeatGrad(Output(0)->count(),
-                                outer_dim,
-                                      dim,
-                                inner_dim,
-                                repeats(),
-                                   dYdata,
-                                   dXdata,
-                                  &ctx());
+    kernel::RepeatGrad<T, Context>(
+        Output(0)->count(), outer_dim, dim,
+            inner_dim, repeats(), dYdata, dXdata);
 }
 
 template <class Context>

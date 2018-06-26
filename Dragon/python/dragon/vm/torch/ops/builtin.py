@@ -358,12 +358,12 @@ Tensor._crop = crop
 ##############################################
 
 
-def _type_to(input, dtype='float32'):
+def _type_to(input, dtype='float32', inplace=False):
     if dtype == input._dtype: return input
     ctx = MakeContext(inputs=[input])
-    key = 'torch/ops/astype/{}:{}/dtype:{}'.format(
-        ctx[0].lower(), ctx[1], dtype)
-    module = get_module(AsType, key, ctx, dtype=dtype)
+    key = 'torch/ops/astype/{}:{}/dtype:{}/inplace:{}'.format(
+        ctx[0].lower(), ctx[1], dtype, 'true' if inplace else 'false')
+    module = get_module(AsType, key, ctx, dtype=dtype, inplace=inplace)
     with no_grad():
         return module.forward(input)
 
@@ -390,82 +390,16 @@ def _type(self, dtype=None):
         return _type_to(self, dtype=dtype)
 
 
-def _half(self):
-    """Return a ``float16`` tensor with elements of ``self``.
-
-    Returns
-    -------
-    vm.torch.Tensor
-        The half tensor.
-
-    """
-    return _type_to(self, dtype='float16')
-
-
-def _float(self):
-    """Return a ``float32`` tensor with elements of ``self``.
-
-    Returns
-    -------
-    vm.torch.Tensor
-        The float tensor.
-
-    """
-    return _type_to(self, dtype='float32')
-
-
-def _double(self):
-    """Return a ``float64`` tensor with elements of ``self``.
-
-    Returns
-    -------
-    vm.torch.Tensor
-        The double tensor.
-
-    """
-    return _type_to(self, dtype='float64')
-
-
-def _int(self):
-    """Return a ``int32`` tensor with elements of ``self``.
-
-    Returns
-    -------
-    vm.torch.Tensor
-        The int tensor.
-
-    """
-    return _type_to(self, dtype='int32')
-
-
-def _long(self):
-    """Return a ``int64`` tensor with elements of ``self``.
-
-    Returns
-    -------
-    vm.torch.Tensor
-        The long tensor.
-
-    """
-    return _type_to(self, dtype='int64')
-
-
-def _byte(self):
-    """Return a ``uint8`` tensor with elements of ``self``.
-
-    Returns
-    -------
-    vm.torch.Tensor
-        The byte tensor.
-
-    """
-    return _type_to(self, dtype='uint8')
-
-
 Tensor.type = _type
-Tensor.half = _half
-Tensor.float = _float
-Tensor.double = _double
-Tensor.int = _int
-Tensor.long = _long
-Tensor.byte = _byte
+Tensor.half = lambda self: _type_to(self, dtype='float16', inplace=False)
+Tensor.half_ = lambda self: _type_to(self, dtype='float16', inplace=True)
+Tensor.float = lambda self: _type_to(self, dtype='float32', inplace=False)
+Tensor.float_ = lambda self: _type_to(self, dtype='float32', inplace=True)
+Tensor.double = lambda self: _type_to(self, dtype='float64', inplace=False)
+Tensor.double_ = lambda self: _type_to(self, dtype='float64', inplace=True)
+Tensor.byte = lambda self: _type_to(self, dtype='uint8', inplace=False)
+Tensor.byte_ = lambda self: _type_to(self, dtype='uint8', inplace=True)
+Tensor.int = lambda self: _type_to(self, dtype='int32', inplace=False)
+Tensor.int_ = lambda self: _type_to(self, dtype='int32', inplace=True)
+Tensor.long = lambda self: _type_to(self, dtype='int64', inplace=False)
+Tensor.long_ = lambda self: _type_to(self, dtype='int64', inplace=True)

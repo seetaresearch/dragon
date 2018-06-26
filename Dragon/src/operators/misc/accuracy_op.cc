@@ -23,13 +23,14 @@ void AccuracyOp<Context>::RunWithType() {
         XF32->ReshapeLike(Input(0));
         auto* XdataF16 = Input(0).template data<float16, CPUContext>();
         auto* XdataF32 = XF32->template mutable_data<float, CPUContext>();
-        kernel::TypeA2B<float16, float, CPUContext>(Input(0).count(), XdataF16, XdataF32);
+        kernel::TypeA2B<float16, float, CPUContext>(
+            Input(0).count(), XdataF16, XdataF32);
         Xdata = XdataF32;
     } else Xdata = Input(0).template data<Tx, CPUContext>();
 
     auto* labels = Input(1).template data<Ty, CPUContext>();
     auto* ignores = ignore_labels.count() > 0 ?
-                        ignore_labels.data<int, CPUContext>() : nullptr;
+        ignore_labels.data<int, CPUContext>() : nullptr;
     const TIndex dim = Input(0).count() / outer_dim;
     for (int i = 0; i < outer_dim; i++) {
         for (int j = 0; j < inner_dim; j++) {
@@ -39,8 +40,12 @@ void AccuracyOp<Context>::RunWithType() {
             if (OutputSize() > 1) num_per_class[label]++;
             vector<pair<Tx, int> > vec;
             for (int k = 0; k < num_classes; k++)
-                vec.push_back(std::make_pair(Xdata[i * dim + k * inner_dim + j], k));
-            std::partial_sort(vec.begin(), vec.begin() + top_k, vec.end(), std::greater<pair<Tx, int> >());
+                vec.push_back(
+                    std::make_pair(Xdata[i * dim + k * inner_dim + j], k)
+                );
+            std::partial_sort(
+                vec.begin(), vec.begin() + top_k, vec.end(),
+                    std::greater<pair<Tx, int> >());
             for (int k = 0; k < top_k; k++) {
                 if (vec[k].second == label) {
                     if (OutputSize() > 1)

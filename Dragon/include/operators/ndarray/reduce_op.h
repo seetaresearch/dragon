@@ -24,35 +24,33 @@ class ReduceOp final : public Operator<Context> {
           axis(OperatorBase::GetSingleArg<int>("axis", -1)),
           operation(OperatorBase::GetSingleArg<string>("operation", "NONE")),
           keep_dims(OperatorBase::GetSingleArg<bool>("keep_dims", false)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void SumRunWithType();
     template <typename T> void MeanRunWithType();
 
  protected:
-    bool keep_dims;
+    TIndex axis, keep_dims, axis_dim, count, inner_dim;
     string operation;
-    TIndex axis, axis_dim, count, inner_dim;
-    Tensor* multiplier;
 };
 
 template <class Context>
 class ReduceGradientOp final : public Operator<Context> {
  public:
-    ReduceGradientOp(const OperatorDef& op_def, Workspace* ws) 
+    ReduceGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
         axis(OperatorBase::GetSingleArg<int>("axis", -1)),
         operation(OperatorBase::GetSingleArg<string>("operation", "NONE")) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void SumRunWithType();
     template <typename T> void MeanRunWithType();
 
  protected:
-    string operation;
     TIndex axis, axis_dim, count, inner_dim;
+    string operation;
 };
 
 }    // namespace dragon

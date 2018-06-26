@@ -26,7 +26,7 @@ class PowOp: public Operator<Context> {
           power(OperatorBase::GetSingleArg<float>("power", 1.0)) {
           power_scale = power * scale;
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -45,7 +45,7 @@ class PowGradientOp final : public Operator<Context> {
         power(OperatorBase::GetSingleArg<float>("power", 1.0)) {
         power_scale = power * scale;
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

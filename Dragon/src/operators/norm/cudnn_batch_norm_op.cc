@@ -56,8 +56,8 @@ void CuDNNBatchNormOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
-    auto* hMean_data = Input(1).template mutable_data<T, Context>();
-    auto* hVar_data = Input(2).template mutable_data<T, Context>();
+    auto* Hmean = Input(1).template mutable_data<T, Context>();
+    auto* Hvar = Input(2).template mutable_data<T, Context>();
     auto* Sdata = Input(3).template data<T, Context>();
     auto* Bdata = Input(4).template data<T, Context>();
 
@@ -71,13 +71,13 @@ void CuDNNBatchNormOp<Context>::RunWithType() {
                                                                    bn_desc,
                                                                      Sdata,
                                                                      Bdata,
-                                                                hMean_data,
-                                                                 hVar_data,
+                                                                     Hmean,
+                                                                      Hvar,
                                                                    eps64));
 
     } else {
-        auto* tMean_data = mean->template mutable_data<T, Context>();
-        auto* tVar_data = var->template mutable_data<T, Context>();
+        auto* Tmean = mean->template mutable_data<T, Context>();
+        auto* Tvar = var->template mutable_data<T, Context>();
         CUDNN_CHECK(cudnnBatchNormalizationForwardTraining(cudnn_handle(),
                                                                   bn_mode,
                                                         CUDNNType<T>::one,
@@ -88,11 +88,11 @@ void CuDNNBatchNormOp<Context>::RunWithType() {
                                                                     Sdata,
                                                                     Bdata,
                         this->is_recomputing ? 0.0 : 1.0 - this->momentum,
-                                                               hMean_data,
-                                                                hVar_data,
+                                                                    Hmean,
+                                                                     Hvar,
                                                                     eps64,
-                                                               tMean_data,
-                                                              tVar_data));
+                                                                    Tmean,
+                                                                   Tvar));
     }
 }
 
@@ -169,7 +169,7 @@ void CuDNNBatchNormGradientOp<Context>::Setup() {
     //  reshape
     mean->Reshape(vector<TIndex>(1, C));
     var->Reshape(vector<TIndex>(1, C));
-    num_by_chans.Reshape(vector<TIndex>(1, NC));
+    nc.Reshape(vector<TIndex>(1, NC));
     Output(0)->ReshapeLike(Input(0));  // dX
     Output(1)->ReshapeLike(Input(3));  // dScale
     Output(2)->ReshapeLike(Input(3));  // dBias
@@ -223,8 +223,8 @@ void CuDNNBatchNormGradientOp<Context>::TrainingRunWithType() {
         auto* Sdata = Input(3).template data<T, Context>();
         auto* dSdata = Output(1)->template mutable_data<T, Context>();
         auto* dBdata = Output(2)->template mutable_data<T, Context>();
-        auto* tMean_data = mean->template data<T, Context>();
-        auto* tVar_data = var->template data<T, Context>();
+        auto* Tmean = mean->template data<T, Context>();
+        auto* Tvar = var->template data<T, Context>();
 
         CUDNN_CHECK(cudnnBatchNormalizationBackward(cudnn_handle(),
                                                            bn_mode,
@@ -240,25 +240,20 @@ void CuDNNBatchNormGradientOp<Context>::TrainingRunWithType() {
                                                             dSdata,
                                                             dBdata,
                                                              eps64,
-                                                        tMean_data,
-                                                       tVar_data));
+                                                             Tmean,
+                                                            Tvar));
     }
 }
 
 template <class Context> template <typename T>
 void CuDNNBatchNormGradientOp<Context>::InferenceRunWithType() {
-    INIT_MULTIPLIER(multiplier, NS);
-    INIT_MULTIPLIER(num_multiplier, N);
-    INIT_MULTIPLIER(spatial_multiplier, S);
+    DECLARE_MULTIPLIER(MXmult, NS);
 
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* Sdata = Input(3).template data<T, Context>();
-    auto* hVar_data = Input(2).template data<T, Context>();
-    auto* tVar_data = var->template mutable_data<T, Context>();
-    auto* NSMul_data = multiplier->template data<T, Context>();
-    auto* SMul_data = spatial_multiplier->template data<T, Context>();
-    auto* NMul_data = num_multiplier->template data<T, Context>();
-    auto* NC_data = num_by_chans.template mutable_data<T, Context>();
+    auto* Hvar = Input(2).template data<T, Context>();
+    auto* Tvar = var->template mutable_data<T, Context>();
+    auto* NCdata = nc.template mutable_data<T, Context>();
 
     //  gradient w.r.t. scale
     if (Output(1)->name() != "ignore") 
@@ -269,48 +264,45 @@ void CuDNNBatchNormGradientOp<Context>::InferenceRunWithType() {
         auto* dBdata = Output(2)->template mutable_data<T, Context>();
         if (data_format == "NCHW") {
             math::Gemv<T, Context>(CblasNoTrans, NC, S,
-                                1.0, dYdata, SMul_data,
-                                         0.0, NC_data);
+                                   1.0, dYdata, MXmult,
+                                          0.0, NCdata);
             math::Gemv<T, Context>(CblasTrans, N, C,
-                            1.0, NC_data, NMul_data,
+                                1.0, NCdata, MXmult,
                                        1.0, dBdata);
         } else if (data_format == "NHWC") {
             math::Gemv<T, Context>(CblasTrans, NS, C,
-                             1.0, dYdata, NSMul_data,
+                                 1.0, dYdata, MXmult,
                                         1.0, dBdata);
         }
     }
 
     //  gradient w.r.t. x
     if (Output(0)->name() != "ignore") {
-        stddev = ws()->GetBuffer();
-        stddev->ReshapeLike(Input(0));
         auto* dXdata = Output(0)->template mutable_data<T, Context>();
-        auto* Std_data = stddev->template mutable_data<T, Context>();
+        auto* WSdata = ws()->template caches<T, Context>({ Input(0).count() })[0];
 
         //  compute stddev
-        ctx().template Copy<T, Context, Context>(var->count(), tVar_data, hVar_data);
-        math::AddScalar<T, Context>(var->count(), this->eps, tVar_data);
-        math::Sqrt<T, Context>(var->count(), tVar_data, tVar_data);
+        ctx().template Copy<T, Context, Context>(var->count(), Tvar, Hvar);
+        math::AddScalar<T, Context>(var->count(), this->eps, Tvar);
+        math::Sqrt<T, Context>(var->count(), Tvar, Tvar);
 
         //  divide scale by stddev
-        math::Div<T, Context>(var->count(), Sdata, tVar_data, tVar_data);
+        math::Div<T, Context>(var->count(), Sdata, Tvar, Tvar);
 
         //  compute dE/dY \cot (scale / std(X))
         if (data_format == "NCHW") {
             math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, N, C, 1,
-                                             1.0, NMul_data, tVar_data,
-                                                         0.0, NC_data);
+                                                     1.0, MXmult, Tvar,
+                                                          0.0, NCdata);
             math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                                1.0, NC_data, SMul_data,
-                                                         0.0, Std_data);
+                                                    1.0, NCdata, MXmult,
+                                                           0.0, WSdata);
         } else if (data_format == "NHWC") {
             math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NS, C, 1,
-                                             1.0, NSMul_data, tVar_data,
-                                                         0.0, Std_data);
+                                                      1.0, MXmult, Tvar,
+                                                           0.0, WSdata);
         }
-        math::Mul<T, Context>(Output(0)->count(), dYdata, Std_data, dXdata);
-        ws()->ReleaseBuffer(stddev);
+        math::Mul<T, Context>(Output(0)->count(), dYdata, WSdata, dXdata);
     }
 }
 

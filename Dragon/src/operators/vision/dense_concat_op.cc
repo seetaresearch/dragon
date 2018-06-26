@@ -23,15 +23,11 @@ void DenseConcatGradientOp<Context>::RestoreX1() {
     TIndex count = Input(0).count();
     auto* Ydata = Input(-2).template data<T, Context>();
     auto* Xdata = Input(0).template mutable_data<T, Context>();
-    kernel::ConcatGrad<T, Context>(count,
-                         this->outer_dim, 
-                         this->inner_dim,
-                      this->x_concat_dim, 
-                      this->y_concat_dim,
-                                       0,
-                                   Ydata, 
-                                   Xdata,
-                                 &ctx());
+
+    kernel::ConcatGrad<T, Context>(
+        count, this->outer_dim, this->inner_dim,
+            this->x_concat_dim, this->y_concat_dim,
+                0, Ydata, Xdata);
 }
 
 template <class Context>

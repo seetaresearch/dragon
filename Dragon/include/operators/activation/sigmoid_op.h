@@ -20,7 +20,7 @@ template <class Context>
 class SigmoidOp : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(SigmoidOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -30,7 +30,7 @@ template <class Context>
 class SigmoidGradientOp : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(SigmoidGradientOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -49,7 +49,7 @@ public:
         CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc, 
             CUDNN_ACTIVATION_SIGMOID, CUDNN_PROPAGATE_NAN, 0));
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNSigmoidOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
@@ -76,7 +76,7 @@ class CuDNNSigmoidGradientOp final : public SigmoidGradientOp<Context> {
         CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc,
             CUDNN_ACTIVATION_SIGMOID, CUDNN_PROPAGATE_NAN, 0));
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNSigmoidGradientOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));

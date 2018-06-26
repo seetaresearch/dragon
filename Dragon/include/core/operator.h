@@ -154,18 +154,19 @@ OperatorBase* CreateOperator(const OperatorDef& op_def, Workspace* ws);
     using OperatorBase::InputSize; \
     using OperatorBase::OutputSize; \
     using OperatorBase::DebugString; \
-    using OperatorBase::DTypeHelper \
+    using OperatorBase::DTypeHelper; \
+    using OperatorBase::SwitchToPhase
 
-#define USE_OPERATOR_FUNCTIONS(context) \
+#define USE_OPERATOR_FUNCTIONS \
     USE_OPERATOR_BASE_FUNCTIONS; \
-    using Operator<context>::ctx; \
-    using Operator<context>::AllowRun
+    using Operator<Context>::ctx; \
+    using Operator<Context>::AllowRun
 
 DECLARE_REGISTRY(CPUOperatorRegistry, OperatorBase,const OperatorDef&, Workspace*);
 DECLARE_REGISTRY(CUDAOperatorRegistry, OperatorBase, const OperatorDef&, Workspace*);
 DECLARE_REGISTRY(CUDNNOperatorRegistry, OperatorBase, const OperatorDef&, Workspace*);
 
-#define  TENSOR_FILL(tensor, shape) \
+#define TENSOR_FILL(tensor, shape) \
     if (tensor.count() == 0) { \
         CHECK(ws()->GetFiller(tensor.name())) \
             << "\nTensor(" << tensor.name() << ") is empty. \n" \
@@ -189,10 +190,18 @@ DECLARE_REGISTRY(CUDNNOperatorRegistry, OperatorBase, const OperatorDef&, Worksp
     ptr_tensor = ws()->CreateTensor("/share/multiplier"); \
     if (size > ptr_tensor->count()) { \
         ptr_tensor->Reshape(vector<TIndex>(1, size)); \
-        math::Set<T, Context>(size, dragon_cast<T, float>(1.0f), \
+        math::Set<T, Context>(size, dragon_cast<T, float>(1.f), \
             ptr_tensor->template mutable_data<T, Context>()); \
     } \
   }
+
+#define DECLARE_MULTIPLIER(name, size) \
+    const T* name; \
+    { \
+        Tensor* _auto_multiplier_; \
+        INIT_MULTIPLIER(_auto_multiplier_, size); \
+        name = _auto_multiplier_->template data<T, Context>(); \
+    }
 
 #define DECLARE_ARGUMENT_WITH_DESC(type, argument) \
     type argument##_value; \

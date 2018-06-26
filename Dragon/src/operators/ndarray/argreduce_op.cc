@@ -13,11 +13,13 @@ void ArgReduceOp<Context>::RunWithType() {
         auto* Vdata = OutputSize() == 2 ?
             Output(1)->template mutable_data<T, CPUContext>() : nullptr;
         if (operation == "ARGMAX") {
-            kernel::Argmax<T, CPUContext>(count, axis_dim, inner_dim, top_k,
-                                                       Xdata, Idata, Vdata);
+            kernel::Argmax<T, CPUContext>(
+                count, axis_dim, inner_dim,
+                    top_k, Xdata, Idata, Vdata);
         } else if (operation == "ARGMIN") {
-            kernel::Argmin<T, CPUContext>(count, axis_dim, inner_dim, top_k,
-                                                       Xdata, Idata, Vdata);
+            kernel::Argmin<T, CPUContext>(
+                count, axis_dim, inner_dim, 
+                    top_k, Xdata, Idata, Vdata);
         } else LOG(FATAL) << "Unknown operation: [" << operation << "].";
     } else {
         auto* Xdata = Input(0).template data<T, Context>();
@@ -25,11 +27,13 @@ void ArgReduceOp<Context>::RunWithType() {
         auto* Vdata = OutputSize() == 2 ?
             Output(1)->template mutable_data<T, Context>() : nullptr;
         if (operation == "ARGMAX") {
-            kernel::Argmax<T, Context>(count, axis_dim, inner_dim, top_k,
-                                                    Xdata, Idata, Vdata);
+            kernel::Argmax<T, Context>(
+                count, axis_dim, inner_dim,
+                    top_k, Xdata, Idata, Vdata);
         } else if (operation == "ARGMIN") {
-            kernel::Argmin<T, Context>(count, axis_dim, inner_dim, top_k,
-                                                    Xdata, Idata, Vdata);
+            kernel::Argmin<T, Context>(
+                count, axis_dim, inner_dim, 
+                    top_k, Xdata, Idata, Vdata);
         } else LOG(FATAL) << "Unknown operation: [" << operation << "].";
     }
 }

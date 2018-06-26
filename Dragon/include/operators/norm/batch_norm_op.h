@@ -32,7 +32,7 @@ class BatchNormOp : public Operator<Context> {
             CHECK_EQ(axis, 1) 
                 << "\nThe axis can only be set to 1.";
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void Setup();
 
@@ -42,12 +42,9 @@ class BatchNormOp : public Operator<Context> {
 
  protected:
     float momentum, eps;
-    Tensor mean, num_by_chans;
-    Tensor* multiplier, *num_multiplier, *spatial_multiplier;
-    Tensor* stddev, *var;
-    TIndex axis, N, C, S, NC, NS;
+    Tensor nc, mean, *var;
+    TIndex axis, use_stats, N, C, S, NC, NS;
     string data_format, mode;
-    int use_stats;
     bool use_global_stats, is_recomputing;
 };
 
@@ -62,7 +59,7 @@ class BatchNormGradientOp final : public Operator<Context> {
             CHECK_EQ(axis, 1)
                 << "\nThe axis can only be set to 1.";
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void Setup();
 
@@ -71,12 +68,9 @@ class BatchNormGradientOp final : public Operator<Context> {
     template <typename T> void InferenceRunWithType();
 
  protected:
-    Tensor num_by_chans;
-    Tensor* multiplier, *num_multiplier, *spatial_multiplier;
-    Tensor* stddev, *var;
-    TIndex axis, N, C, S, NC, NS;
+    TIndex axis, use_stats, N, C, S, NC, NS;
+    Tensor nc, *var;
     string data_format;
-    int use_stats;
     bool use_global_stats;
 };
 
@@ -89,7 +83,7 @@ class FusedBatchNormOp : public Operator<Context> {
           momentum(OperatorBase::GetSingleArg<float>("momentum", 0.9f)),
           eps(OperatorBase::GetSingleArg<float>("eps", 1e-3f)),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void Setup();
 
@@ -98,13 +92,10 @@ class FusedBatchNormOp : public Operator<Context> {
     template <typename T> void InferenceRunWithType();
 
  protected:
+    TIndex axis, use_stats, N, C, S, NC, NS;
     float momentum, eps;
-    Tensor num_by_chans;
-    Tensor* multiplier, *num_multiplier, *spatial_multiplier;
-    Tensor* mean, *var, *stddev, *x_norm;
-    TIndex axis, N, C, S, NC, NS;
+    Tensor nc, *mean, *var, *x_norm;
     string data_format;
-    int use_stats;
     bool use_global_stats, is_recomputing;
 };
 
@@ -116,7 +107,7 @@ class FusedBatchNormGradientOp : public Operator<Context> {
           axis(OperatorBase::GetSingleArg<int>("axis", -1)),
           eps(OperatorBase::GetSingleArg<float>("eps", 1e-3f)),
           use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void Setup();
 
@@ -125,13 +116,10 @@ class FusedBatchNormGradientOp : public Operator<Context> {
     template <typename T> void InferenceRunWithType();
 
  protected:
+    TIndex axis, use_stats, N, C, S, NC, NS;
     float eps;
-    Tensor num_by_chans;
-    Tensor* multiplier, *num_multiplier, *spatial_multiplier;
-    Tensor* mean, *var, *stddev, *x_norm;
-    TIndex axis, N, C, S, NC, NS;
+    Tensor nc, *mean, *var, *x_norm;
     string data_format;
-    int use_stats;
     bool use_global_stats;
 };
 
@@ -156,7 +144,7 @@ class CuDNNBatchNormOp final : public FusedBatchNormOp<Context> {
                 << "CUDNN_BN_MIN_EPSILON instead.";
         eps64 = std::max(eps64, CUDNN_BN_MIN_EPSILON);
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNBatchNormOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
@@ -170,12 +158,12 @@ class CuDNNBatchNormOp final : public FusedBatchNormOp<Context> {
     template <typename T> void RunWithType();
 
  protected:
+    TIndex N, C;
     double eps64;
+    Tensor* mean, *var;
     cudnnTensorDescriptor_t input_desc, output_desc, bn_desc;
     cudnnBatchNormMode_t bn_mode;
-    TIndex N, C;
     string data_format;
-    Tensor* mean, *var;
 };
 
 template <class Context>
@@ -193,7 +181,7 @@ class CuDNNBatchNormGradientOp final : public FusedBatchNormGradientOp<Context> 
             << "CUDNN_BN_MIN_EPSILON instead.";
         eps64 = std::max(eps64, CUDNN_BN_MIN_EPSILON);
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNBatchNormGradientOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
@@ -208,20 +196,18 @@ class CuDNNBatchNormGradientOp final : public FusedBatchNormGradientOp<Context> 
     template <typename T> void InferenceRunWithType();
 
  protected:
+    TIndex N, C, S, NC, NS;
     double eps64;
+    Tensor nc, *mean, *var;
     cudnnTensorDescriptor_t input_desc, output_desc, bn_desc;
     cudnnBatchNormMode_t bn_mode;
-    TIndex N, C, S, NC, NS;
     string data_format;
-    Tensor num_by_chans;
-    Tensor* multiplier, *num_multiplier, *spatial_multiplier;
-    Tensor* mean, *var, *stddev;
 };
 
 #endif
 
 #endif  // WITH_CUDNN
 
-}    // namespace dragon 
+}    // namespace dragon
 
 #endif    // DRAGON_OPERATORS_NORM_BATCH_NORM_OP_H_

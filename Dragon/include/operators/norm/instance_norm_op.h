@@ -23,11 +23,10 @@ class InstanceNormOp : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", -1)),
           eps(OperatorBase::GetSingleArg<float>("eps", 1e-3f)) {
-        if (axis != -1)
-            CHECK_EQ(axis, 1)
-                << "\nThe axis can only be set to 1.";
+        if (axis != -1) 
+            CHECK_EQ(axis, 1) << "\nThe axis can only be set to 1.";
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void Setup();
 
@@ -35,10 +34,9 @@ class InstanceNormOp : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    float eps;
-    Tensor mean;
-    Tensor* spatial_multiplier, *stddev, *var;
     TIndex axis, N, C, S, NC, CS;
+    float eps;
+    Tensor mean, *var;
     string data_format;
 };
 
@@ -49,10 +47,9 @@ class InstanceNormGradientOp final : public Operator<Context> {
         : Operator<Context>(op_def, ws),
           axis(OperatorBase::GetSingleArg<int>("axis", -1)) {
         if (axis != -1)
-            CHECK_EQ(axis, 1)
-                << "\nThe axis can only be set to 1.";
+            CHECK_EQ(axis, 1) << "\nThe axis can only be set to 1.";
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void Setup();
                           
@@ -60,9 +57,9 @@ class InstanceNormGradientOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-     Tensor* spatial_multiplier, *stddev, *var;
-     TIndex axis, N, C, S, NC, CS;
-     string data_format;
+    TIndex axis, N, C, S, NC, CS;
+    Tensor *var;
+    string data_format;
 };
     
 }    // namespace dragon

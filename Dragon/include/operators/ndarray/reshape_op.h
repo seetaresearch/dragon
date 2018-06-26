@@ -24,7 +24,7 @@ class ReshapeOp final : public Operator<Context> {
           shape_like_desc(OperatorBase::GetSingleArg<string>("shape_like", "")) {
         GET_ARGUMENTS_WITH_DESC(int, shape);
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
 
@@ -38,7 +38,7 @@ template <class Context>
 class ReshapeGradientOp final : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(ReshapeGradientOp);
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
 };

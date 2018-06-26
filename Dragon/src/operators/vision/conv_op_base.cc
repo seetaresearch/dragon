@@ -9,69 +9,80 @@ void ConvOpBase<Context>::ComputeOutputShape() {
     output_shape.clear();
     for (int i = 0; i < num_spatial_axes; i++) {
         if (!ReverseDimensions()) {
-            const TIndex input_dim = bottom_shape[spatial_axis + i];
-            const TIndex dilated_kernel = dilation[i] * (kernel_size[i] - 1) + 1;
+            const TIndex idm = bottom_shape[spatial_axis + i];
+            const TIndex dk = dilation[i] * (kernel_size[i] - 1) + 1;
             if (padding != "SAME") {
-                const TIndex output_dim = (input_dim + 2 * pad[i] - dilated_kernel) / stride[i] + 1;
-                output_shape.push_back(output_dim);
+                const TIndex odm = (idm + 2 * pad[i] - dk) / stride[i] + 1;
+                output_shape.push_back(odm);
             } else {
-                TIndex output_dim = (input_dim + stride[i] - 1) / (float)stride[i];
-                TIndex padding_needed = std::max(TIndex(0), (output_dim - 1) * stride[i] + dilated_kernel - input_dim);
+                TIndex odm = (idm + stride[i] - 1) / (float)stride[i];
+                TIndex padding_needed = std::max(
+                    TIndex(0), (odm - 1) * stride[i] + dk - idm);
                 TIndex pad_l = padding_needed / 2;
                 TIndex pad_r = padding_needed - pad_l;
                 pad[i] = pad_l;
-                output_shape.push_back(output_dim);
+                output_shape.push_back(odm);
             }
         } else {
-            const TIndex input_dim = bottom_shape[spatial_axis + i];
-            const TIndex dilated_kernel = dilation[i] * (kernel_size[i] - 1) + 1;
+            const TIndex idm = bottom_shape[spatial_axis + i];
+            const TIndex dk = dilation[i] * (kernel_size[i] - 1) + 1;
             if (padding != "SAME") {
-                const TIndex output_dim = stride[i] * (input_dim - 1) + dilated_kernel - 2 * pad[i];
-                output_shape.push_back(output_dim);
+                const TIndex odm = stride[i] * (idm - 1) + dk - 2 * pad[i];
+                output_shape.push_back(odm);
             } else {
-                CHECK(output_dims_desc.size() > 0 || output_dims_value.size() > 0) 
-                    << "\nThe output shape must be specified if using SAME padding algorithm.";
-                int given_ndim = (int)std::max(output_dims_desc.size(), output_dims_value.size());
+                CHECK(output_dims_desc.size() > 0 ||
+                         output_dims_value.size() > 0)
+                    << "\nThe output shape must be specified "
+                    << "if using SAME padding algorithm.";
+                int given_ndim = (int)std::max(
+                    output_dims_desc.size(), output_dims_value.size());
                 CHECK_EQ(given_ndim, num_spatial_axes + 2)
-                    << "\nThe len of output shape should be " << num_spatial_axes + 2
-                    << ", but got " << output_dims_desc.size() << "."; 
-                TIndex output_dim = output_dims(spatial_axis + i);
-                TIndex padding_needed = stride[i] * (input_dim - 1) + dilated_kernel - output_dim;
+                    << "\nThe len of output shape should be " 
+                    << num_spatial_axes + 2
+                    << ", but got " << output_dims_desc.size() << ".";
+                TIndex odm = output_dims(spatial_axis + i);
+                TIndex padding_needed = stride[i] * (idm - 1) + dk - odm;
                 CHECK_GE(padding_needed, 0)
                     << "\nThe output shape is incorrect."
-                    << "\nWith the given stride and kernel, dimension of axis " << spatial_axis + i
-                    << " can be at most " << stride[i] * (input_dim - 1) + dilated_kernel << ".";
+                    << "\nWith the given stride and kernel, "
+                    << "dimension of axis " << spatial_axis + i
+                    << " can be at most " << stride[i] * (idm - 1) + dk << ".";
                 TIndex pad_l = padding_needed / 2;
                 TIndex pad_r = padding_needed - pad_l;
                 pad[i] = pad_l;
-                output_shape.push_back(output_dim);
+                output_shape.push_back(odm);
             }
         }
     }
 }
 
 template <class Context> template <typename T>
-void ConvOpBase<Context>::Wx(const T* x, const T* weights, T* y, bool skip_im2col) {
-    const T* col_buff_ = x;
+void ConvOpBase<Context>::Wx(
+    const T*                x,
+    const T*                weights,
+    T*                      y,
+    bool                    skip_im2col) {
+    auto* col_buffer = x;
     if (!is_1x1) {
-        if (!skip_im2col) Im2Col(x, col_buffer->template mutable_data<T, Context>());
-        col_buff_ = col_buffer->data<T, Context>();
+        auto* workspace = ws()->template caches<T, Context>({ col_dim })[0];
+        if (!skip_im2col) Im2Col(x, workspace);
+        col_buffer = workspace;
     }
     for (int g = 0; g < group; g++) {
-        if (data_format == "NCHW") { 
+        if (data_format == "NCHW") {
             math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans,
                                     conv_out_channels / group,
                                          conv_out_spatial_dim,
                                                    kernel_dim,
                              1.0, weights + weight_offset * g,
-                                   col_buff_ + col_offset * g,
+                                  col_buffer + col_offset * g,
                                   0.0, y + output_offset * g);
         } else if (data_format == "NHWC") {
             math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans,
                                          conv_out_spatial_dim,
                                     conv_out_channels / group,
                                                    kernel_dim,
-                              1.0, col_buff_ + col_offset * g,
+                             1.0, col_buffer + col_offset * g,
                                   weights + weight_offset * g,
                                   0.0, y + output_offset * g);
         }
@@ -80,20 +91,21 @@ void ConvOpBase<Context>::Wx(const T* x, const T* weights, T* y, bool skip_im2co
 
 template <class Context> template <typename T>
 void ConvOpBase<Context>::Pb(const T* bias, T* y) {
+    DECLARE_MULTIPLIER(multiplier, out_spatial_dim);
     if (data_format == "NCHW") {
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans,
                                                num_output,
                                           out_spatial_dim,
                                                         1,
                                                 1.0, bias,
-             bias_multiplier->template data<T, Context>(),
+                                               multiplier,
                                                   1.0, y);
     } else if (data_format == "NHWC") {
         math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans,
                                           out_spatial_dim,
                                                num_output,
                                                         1,
-        1.0, bias_multiplier->template data<T, Context>(),
+                                          1.0, multiplier,
                                                      bias,
                                                   1.0, y);
     }
@@ -101,8 +113,8 @@ void ConvOpBase<Context>::Pb(const T* bias, T* y) {
 
 template <class Context> template <typename T>
 void ConvOpBase<Context>::Dx(const T* dy, const T* weights, T* dx) {
-    T* col_buff_ = col_buffer->template mutable_data<T, Context>();
-    if (is_1x1) col_buff_ = dx;
+    auto* col_buffer = is_1x1 ? dx :
+        ws()->template caches<T, Context>({ col_dim })[0];
     for (int g = 0; g < group; g++) {
         if (data_format == "NCHW") {
             math::Gemm<T, Context>(CblasTrans, CblasNoTrans,
@@ -111,7 +123,7 @@ void ConvOpBase<Context>::Dx(const T* dy, const T* weights, T* dx) {
                                   conv_out_channels / group,
                            1.0, weights + weight_offset * g,
                                      dy + output_offset * g,
-                           0.0, col_buff_ + col_offset * g);
+                          0.0, col_buffer + col_offset * g);
         } else if (data_format == "NHWC") {
              math::Gemm<T, Context>(CblasNoTrans, CblasTrans,
                                         conv_out_spatial_dim,
@@ -119,18 +131,19 @@ void ConvOpBase<Context>::Dx(const T* dy, const T* weights, T* dx) {
                                    conv_out_channels / group,
                                  1.0, dy + output_offset * g,
                                  weights + weight_offset * g,
-                            0.0, col_buff_ + col_offset * g);
+                           0.0, col_buffer + col_offset * g);
         }
     }
-    if (!is_1x1) Col2Im(col_buff_, dx);
+    if (!is_1x1) Col2Im(col_buffer, dx);
 }
 
 template <class Context> template <typename T>
 void ConvOpBase<Context>::Dw(const T* dy, const T* x, T *dw) {
-    const T *col_buff_ = x;
+    auto* col_buffer = x;
     if (!is_1x1) {
-        Im2Col(x, col_buffer->template mutable_data<T, Context>());
-        col_buff_ = col_buffer->template data<T, Context>();
+        auto* workspace = ws()->template caches<T, Context>({ col_dim })[0];
+        Im2Col(x, workspace);
+        col_buffer = workspace;
     }
     for (int g = 0; g < group; g++) {
         if (data_format == "NCHW") { 
@@ -139,14 +152,14 @@ void ConvOpBase<Context>::Dw(const T* dy, const T* x, T *dw) {
                                                  kernel_dim,
                                        conv_out_spatial_dim,
                                 1.0, dy + output_offset * g,
-                                 col_buff_ + col_offset * g,
+                                col_buffer + col_offset * g,
                                1.0, dw + weight_offset * g);
         } else if (data_format == "NHWC") {
             math::Gemm<T, Context>(CblasTrans, CblasNoTrans,
                                                  kernel_dim,
                                   conv_out_channels / group,
                                        conv_out_spatial_dim,
-                            1.0, col_buff_ + col_offset * g,
+                           1.0, col_buffer + col_offset * g,
                                      dy + output_offset * g,
                                1.0, dw + weight_offset * g);
         }
@@ -155,16 +168,15 @@ void ConvOpBase<Context>::Dw(const T* dy, const T* x, T *dw) {
 
 template <class Context> template <typename T>
 void ConvOpBase<Context>::Db(const T* dy, T* db) {
+    DECLARE_MULTIPLIER(multiplier, out_spatial_dim);
     if (data_format == "NCHW") {
-        math::Gemv<T, Context>(CblasNoTrans, num_output, out_spatial_dim,
-                                                                 1.0, dy,
-                            bias_multiplier->template data<T, Context>(),
-                                                                1.0, db);
+        math::Gemv<T, Context>(
+            CblasNoTrans, num_output, out_spatial_dim,
+                1.0, dy, multiplier, 1.0, db);
     } else if (data_format == "NHWC") {
-        math::Gemv<T, Context>(CblasTrans, out_spatial_dim, num_output,
-                                                               1.0, dy,
-                          bias_multiplier->template data<T, Context>(),
-                                                              1.0, db);
+        math::Gemv<T, Context>(
+            CblasTrans, out_spatial_dim, num_output,
+                1.0, dy, multiplier, 1.0, db);
     }
 }
 
@@ -197,7 +209,8 @@ void ConvOpBase<Context>::Setup() {
 
 template <class Context>
 void ConvOpBase<Context>::Reshape() {
-    channels = data_format == "NCHW" ? Input(0).dim(1) : Input(0).dim(-1);
+    channels = data_format == "NCHW" ?
+        Input(0).dim(1) : Input(0).dim(-1);
     if (ReverseDimensions()) {
         conv_out_channels = channels;
         conv_in_channels = num_output;
@@ -255,11 +268,14 @@ void ConvOpBase<Context>::Reshape() {
         out_spatial_dim = Output(0)->count(spatial_axis);
     } else if (data_format == "NHWC") {
         if (ReverseDimensions()) {
-            conv_out_spatial_dim = Input(0).count(spatial_axis, (int)Input(0).ndim() - 1);
+            conv_out_spatial_dim = Input(0).count(
+                spatial_axis, (int)Input(0).ndim() - 1);
         } else {
-            conv_out_spatial_dim = Output(0)->count(spatial_axis, (int)Output(0)->ndim() - 1);
+            conv_out_spatial_dim = Output(0)->count(
+                spatial_axis, (int)Output(0)->ndim() - 1);
         }
-        out_spatial_dim = Output(0)->count(spatial_axis, (int)Output(0)->ndim() - 1);
+        out_spatial_dim = Output(0)->count(
+            spatial_axis, (int)Output(0)->ndim() - 1);
     }
 
     //  determine the misc
@@ -270,26 +286,19 @@ void ConvOpBase<Context>::Reshape() {
     col_offset = kernel_dim * conv_out_spatial_dim;
     output_offset = conv_out_channels * conv_out_spatial_dim / group;
 
-    //  determine the col shape
-    col_shape.clear();
-    if (data_format == "NCHW") {
-        col_shape.push_back(kernel_dim * group);
-        for (int i = 0; i < num_spatial_axes; i++) {
-            if (ReverseDimensions()) col_shape.push_back(bottom_shape[spatial_axis + i]);
-            else col_shape.push_back(output_shape[i]);
-        }
-    } else if (data_format == "NHWC") {
-        for (int i = 0; i < num_spatial_axes; i++) {
-            if (ReverseDimensions()) col_shape.push_back(bottom_shape[spatial_axis + i]);
-            else col_shape.push_back(output_shape[i]);
-        }
-        col_shape.push_back(kernel_dim * group);
+    //  determine the workspace size for col buffer
+    col_dim = kernel_dim * group;
+    for (int i = 0; i < num_spatial_axes; i++) {
+        if (ReverseDimensions()) 
+            col_dim *= bottom_shape[spatial_axis + i];
+        else col_dim *= output_shape[i];
     }
 }
 
 template <class Context>
 void ConvOpBase<Context>::GradientReshape() {
-    channels = data_format == "NCHW" ? Input(0).dim(1) : Input(0).dim(-1);
+    channels = data_format == "NCHW" ?
+        Input(0).dim(1) : Input(0).dim(-1);
     if (ReverseDimensions()) {
         conv_out_channels = channels;
         conv_in_channels = num_output;
@@ -324,11 +333,14 @@ void ConvOpBase<Context>::GradientReshape() {
         out_spatial_dim = Input(-1).count(spatial_axis);
     } else if (data_format == "NHWC") {
         if (ReverseDimensions()) {
-            conv_out_spatial_dim = Input(0).count(spatial_axis, (int)Input(0).ndim() - 1);
+            conv_out_spatial_dim = Input(0).count(
+                spatial_axis, (int)Input(0).ndim() - 1);
         } else {
-            conv_out_spatial_dim = Input(-1).count(spatial_axis, (int)Input(-1).ndim() - 1);
+            conv_out_spatial_dim = Input(-1).count(
+                spatial_axis, (int)Input(-1).ndim() - 1);
         }
-        out_spatial_dim = Input(-1).count(spatial_axis, (int)Input(-1).ndim() - 1);
+        out_spatial_dim = Input(-1).count(
+            spatial_axis, (int)Input(-1).ndim() - 1);
     }
 
     //  determine the misc
@@ -339,20 +351,12 @@ void ConvOpBase<Context>::GradientReshape() {
     col_offset = kernel_dim * conv_out_spatial_dim;
     output_offset = conv_out_channels * conv_out_spatial_dim / group;
 
-    //  determine the col shape
-    col_shape.clear();
-    if (data_format == "NCHW") {
-        col_shape.push_back(kernel_dim * group);
-        for (int i = 0; i < num_spatial_axes; i++) {
-            if (ReverseDimensions()) col_shape.push_back(bottom_shape[spatial_axis + i]);
-            else col_shape.push_back(output_shape[i]);
-        }
-    } else if (data_format == "NHWC") {
-        for (int i = 0; i < num_spatial_axes; i++) {
-            if (ReverseDimensions()) col_shape.push_back(bottom_shape[spatial_axis + i]);
-            else col_shape.push_back(output_shape[i]);
-        }
-        col_shape.push_back(kernel_dim * group);
+    //  determine the workspace size for col buffer
+    col_dim = kernel_dim * group;
+    for (int i = 0; i < num_spatial_axes; i++) {
+        if (ReverseDimensions())
+            col_dim *= bottom_shape[spatial_axis + i];
+        else col_dim *= output_shape[i];
     }
 }
 

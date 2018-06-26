@@ -27,7 +27,7 @@ class ROIPoolingOp : public Operator<Context> {
         CHECK_GT(pool_h, 0) << "\npool_h must > 0";
         CHECK_GT(pool_w, 0) << "\npool_w must > 0";
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -35,7 +35,6 @@ class ROIPoolingOp : public Operator<Context> {
  protected:
     int pool_h, pool_w;
     float spatial_scale;
-    Tensor* mask;
 };
 
 template <class Context>
@@ -46,7 +45,7 @@ class ROIPoolingGradientOp final : public Operator<Context> {
         pool_h(OperatorBase::GetSingleArg<int>("pool_h", 0)),
         pool_w(OperatorBase::GetSingleArg<int>("pool_w", 0)),
         spatial_scale(OperatorBase::GetSingleArg<float>("spatial_scale", 1.0)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -54,7 +53,6 @@ class ROIPoolingGradientOp final : public Operator<Context> {
  protected:
     int pool_h, pool_w;
     float spatial_scale;
-    Tensor* mask;
 };
 
 }    // namespace dragon

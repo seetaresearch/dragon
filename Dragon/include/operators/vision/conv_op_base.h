@@ -34,19 +34,18 @@ class ConvOpBase : public Operator<Context> {
         else LOG(FATAL) << "Unknown data format: " << data_format;
         num_spatial_axes = -1;  // unknown
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
- protected:
+ public:
     vector<TIndex> kernel_size, stride, pad, dilation;
     string data_format, padding;
-    vector<TIndex> input_shape, output_shape, bottom_shape, top_shape, col_shape;
+    vector<TIndex> input_shape, output_shape, bottom_shape, top_shape;
     vector<TIndex> weight_shape, bias_shape;
-    Tensor* col_buffer, *bias_multiplier;
     TIndex num_output, group;
     TIndex spatial_axis, num_spatial_axes;
     TIndex channels, out_spatial_dim;
     TIndex conv_in_channels, conv_out_channels;
-    TIndex conv_out_spatial_dim, kernel_dim;
+    TIndex conv_out_spatial_dim, kernel_dim, col_dim;
     TIndex col_offset, output_offset, weight_offset, x_offset, y_offset;
     DECLARE_ARGUMENTS_WITH_DESC(int, output_dims);
     bool is_1x1;
@@ -58,10 +57,15 @@ class ConvOpBase : public Operator<Context> {
     virtual bool ReverseDimensions() = 0;
     virtual bool HasBias() = 0;
 
-    template <typename T> void Wx(const T* x, const T* weights, T* y, bool skip_im2col = false);
+    template <typename T> void Wx(const T* x,
+        const T* weights, T* y, bool skip_im2col = false);
+
     template <typename T> void Pb(const T* bias, T* y);
+
     template <typename T> void Dx(const T* dy, const T* weights, T* dx);
-    template <typename T> void Dw(const T* dy, const T* x, T *dw);
+
+    template <typename T> void Dw(const T* dy, const T* x, T* dw);
+
     template <typename T> void Db(const T* dy, T* db);
 
  private:
@@ -108,7 +112,20 @@ DEFINE_ARGUMENTS_WITH_DESC(int, ConvOpBase, output_dims);
     using ConvOpBase<context>::Pb; \
     using ConvOpBase<context>::Dx; \
     using ConvOpBase<context>::Dw; \
-    using ConvOpBase<context>::Db
+    using ConvOpBase<context>::Db; \
+    using ConvOpBase<context>::kernel_size; \
+    using ConvOpBase<context>::stride; \
+    using ConvOpBase<context>::pad; \
+    using ConvOpBase<context>::dilation; \
+    using ConvOpBase<context>::group; \
+    using ConvOpBase<context>::channels; \
+    using ConvOpBase<context>::num_output; \
+    using ConvOpBase<context>::data_format; \
+    using ConvOpBase<context>::x_offset; \
+    using ConvOpBase<context>::y_offset; \
+    using ConvOpBase<context>::weight_offset; \
+    using ConvOpBase<context>::weight_shape; \
+    using ConvOpBase<context>::bias_shape
 
 }    // namespace dragon
 

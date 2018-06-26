@@ -48,7 +48,7 @@ class ModelMPIBase : public Operator<Context> {
         return MPI_DATATYPE_NULL;
     }
 
- protected:
+ public:
     MPI_Comm comm;
     MPI_Group group;
     int comm_size, comm_rank, comm_root;
@@ -57,7 +57,12 @@ class ModelMPIBase : public Operator<Context> {
 };
 
 #define USE_MPIMODEL_FUNCTIONS(context) \
-    using ModelMPIBase<context>::mpi_dtype
+    using ModelMPIBase<context>::comm; \
+    using ModelMPIBase<context>::mpi_dtype; \
+    using ModelMPIBase<context>::comm_size; \
+    using ModelMPIBase<context>::comm_rank; \
+    using ModelMPIBase<context>::comm_root; \
+    using ModelMPIBase<context>::dtype
 
 }    // namespace dragon
 

@@ -12,9 +12,11 @@ void MatmulOp<Context>::RunWithType() {
     auto* X2data = Input(1).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
     for (int i = 0; i < n; i++) {
-        math::Gemm<T, Context>(transA ? CblasTrans : CblasNoTrans,
-                               transB ? CblasTrans : CblasNoTrans,
-                               M, N, K1, 1.0, X1data, X2data, 0.0, Ydata);
+        math::Gemm<T, Context>(
+            TransA ? CblasTrans : CblasNoTrans,
+                TransB ? CblasTrans : CblasNoTrans,
+                    M, N, K1,
+                        1.0, X1data, X2data, 0.0, Ydata);
         X1data += x1_offset;
         X2data += x2_offset;
         Ydata += y_offset;
@@ -32,10 +34,10 @@ void MatmulOp<Context>::RunOnDevice() {
         << "Tensor(" << Input(1).name() + ") must be a matrix"
         << "(or rank > 2, representing batches of matrices).";
     TIndex m = Input(0).dim(-2), k = Input(0).dim(-1);
-    M = transA ? k : m;
-    K1 = transA ? m : k;
-    K2 = transB ? Input(1).dim(-1) : Input(1).dim(-2);
-    N = transB ? Input(1).dim(-2) : Input(1).dim(-1);
+    M = TransA ? k : m;
+    K1 = TransA ? m : k;
+    K2 = TransB ? Input(1).dim(-1) : Input(1).dim(-2);
+    N = TransB ? Input(1).dim(-2) : Input(1).dim(-1);
     CHECK_EQ(K1, K2) << "\nTensor(" << Input(0).name() << "): "
                      << Input(0).dim_string() << " can not mul with Tensor"
                      << "(" << Input(1).name() << "): " << Input(1).dim_string();
@@ -69,10 +71,16 @@ void MatmulGradientOp<Context>::RunWithType() {
     auto* dX1data = Output(0)->template mutable_data<T, Context>();
     auto* dX2data = Output(1)->template mutable_data<T, Context>();
     for (int i = 0; i < n; i++) {
-        math::Gemm<T, Context>(CblasNoTrans, transB ? CblasNoTrans : CblasTrans,
-                               M, K1, N, 1.0, dYdata, X2data, 0.0, dX1data);
-        math::Gemm<T, Context>(transA ? CblasNoTrans : CblasTrans, CblasNoTrans,
-                               K1, N, M, 1.0, X1data, dYdata, 0.0, dX2data);
+        math::Gemm<T, Context>(
+            CblasNoTrans,
+                TransB ? CblasNoTrans : CblasTrans,
+                    M, K1, N,
+                        1.0, dYdata, X2data, 0.0, dX1data);
+        math::Gemm<T, Context>(
+            TransA ? CblasNoTrans : CblasTrans,
+                CblasNoTrans,
+                    K1, N, M,
+                        1.0, X1data, dYdata, 0.0, dX2data);
         X1data += x1_offset;
         X2data += x2_offset;
         dX1data += x1_offset;
@@ -92,10 +100,10 @@ void MatmulGradientOp<Context>::RunOnDevice() {
         << "Tensor(" << Input(1).name() + ") must be a matrix"
         << "(or rank > 2, representing batches of matrices).";
     TIndex m = Input(0).dim(-2), k = Input(0).dim(-1);
-    M = transA ? k : m;
-    K1 = transA ? m : k;
-    K2 = transB ? Input(1).dim(-1) : Input(1).dim(-2);
-    N = transB ? Input(1).dim(-2) : Input(1).dim(-1);
+    M = TransA ? k : m;
+    K1 = TransA ? m : k;
+    K2 = TransB ? Input(1).dim(-1) : Input(1).dim(-2);
+    N = TransB ? Input(1).dim(-2) : Input(1).dim(-1);
     CHECK_EQ(K1, K2) << "\nTensor(" << Input(0).name() << "): "
         << Input(0).dim_string() << " can not mul with Tensor"
         << "(" << Input(1).name() << "): " << Input(1).dim_string();

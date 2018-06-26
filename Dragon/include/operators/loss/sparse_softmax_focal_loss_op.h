@@ -29,13 +29,13 @@ class SparseSoftmaxFocalLossOp final : public SparseSoftmaxCrossEntropyOp<Contex
          pos_alpha = alpha * 2.0;
          neg_alpha = (1 - alpha) * 2.0;
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    float alpha, gamma; 
+    float alpha, gamma;
     int neg_id;
     float pos_alpha, neg_alpha;
     TIndex axis, outer_dim, inner_dim;
@@ -53,7 +53,7 @@ class SparseSoftmaxFocalLossGradientOp final : public SparseSoftmaxCrossEntropyG
            gamma(OperatorBase::GetSingleArg<float>("gamma", 0.0)),
            eps(OperatorBase::GetSingleArg<float>("eps", float(1e-10))),
            neg_id(OperatorBase::GetSingleArg<int>("neg_id", -1)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

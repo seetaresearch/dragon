@@ -24,7 +24,7 @@ class Conv2dTransposeOp: public ConvOpBase<Context>  {
         this->num_spatial_axes = 2;
         Setup(); 
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
     USE_CONVOLUTION_FUNCTIONS(Context);
 
     bool ReverseDimensions() override { return true; }
@@ -43,7 +43,7 @@ class Conv2dTransposeGradientOp : public Conv2dTransposeOp<Context> {
  public:
     Conv2dTransposeGradientOp(const OperatorDef& def, Workspace* ws)
         : Conv2dTransposeOp<Context>(def, ws) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
     USE_CONVOLUTION_FUNCTIONS(Context);
 
     bool HasBias() override { return Output(2)->name() != "ignore"; }
@@ -65,12 +65,12 @@ class CuDNNConv2dTransposeOp : public Conv2dTransposeOp<Context> {
         cudnn_group = 1;
         enable_tensor_core &= TENSOR_CORE_AVAILABLE();
 #else
-        cudnn_group = this->group;
+        cudnn_group = group;
         enable_tensor_core = false;
 #endif
         handle = new cudnnHandle_t[cudnn_group];
         stream = new cudaStream_t[cudnn_group];
-        for (int g = 0; g < this->group; g++) {
+        for (int g = 0; g < cudnn_group; g++) {
             CUDA_CHECK(cudaStreamCreate(&stream[g]));
             CUDNN_CHECK(cudnnCreate(&handle[g]));
             CUDNN_CHECK(cudnnSetStream(handle[g], stream[g]));
@@ -80,11 +80,11 @@ class CuDNNConv2dTransposeOp : public Conv2dTransposeOp<Context> {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
         if (HasBias()) CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
-        if (this->data_format == "NCHW") format = CUDNN_TENSOR_NCHW;
-        else if (this->data_format == "NHWC") format = CUDNN_TENSOR_NHWC;
-        else LOG(FATAL) << "Unknown data format: " << this->data_format;
+        if (data_format == "NCHW") format = CUDNN_TENSOR_NCHW;
+        else if (data_format == "NHWC") format = CUDNN_TENSOR_NHWC;
+        else LOG(FATAL) << "Unknown data format: " << data_format;
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
     USE_CONVOLUTION_FUNCTIONS(Context);
 
     ~CuDNNConv2dTransposeOp() {
@@ -112,7 +112,7 @@ class CuDNNConv2dTransposeOp : public Conv2dTransposeOp<Context> {
     cudnnTensorDescriptor_t input_desc, output_desc, bias_desc;
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;
-    size_t workspace_fwd_data_size;
+    size_t fwd_data_size;
     TIndex bias_offset, cudnn_group;
     vector<TIndex> input_dims;
     bool enable_tensor_core;
@@ -127,7 +127,7 @@ public:
         cudnn_group = 1;
         enable_tensor_core &= TENSOR_CORE_AVAILABLE();
 #else
-        cudnn_group = this->group;
+        cudnn_group = group;
         enable_tensor_core = false;
 #endif
         handle = new cudnnHandle_t[cudnn_group * 3];
@@ -142,11 +142,11 @@ public:
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
         if (HasBias()) CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
-        if (this->data_format == "NCHW") format = CUDNN_TENSOR_NCHW;
-        else if (this->data_format == "NHWC") format = CUDNN_TENSOR_NHWC;
-        else LOG(FATAL) << "Unknown data format: " << this->data_format;
+        if (data_format == "NCHW") format = CUDNN_TENSOR_NCHW;
+        else if (data_format == "NHWC") format = CUDNN_TENSOR_NHWC;
+        else LOG(FATAL) << "Unknown data format: " << data_format;
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
     USE_CONVOLUTION_FUNCTIONS(Context);
 
     ~CuDNNConv2dTransposeGradientOp() {
@@ -175,7 +175,7 @@ public:
     cudnnTensorDescriptor_t input_desc, output_desc, bias_desc;
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;
-    size_t workspace_bwd_filter_size, workspace_bwd_data_size;
+    size_t bwd_filter_size, bwd_data_size;
     TIndex bias_offset, cudnn_group;
     vector<TIndex> input_dims;
     bool enable_tensor_core;

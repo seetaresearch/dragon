@@ -34,7 +34,7 @@ class BatchRenormOp : public Operator<Context> {
             CHECK_EQ(axis, 1)
                 << "\nThe axis can only be set to 1.";
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void Setup();
 
@@ -43,14 +43,12 @@ class BatchRenormOp : public Operator<Context> {
     template <typename T> void InferenceRunWithType();
 
  protected:
+    TIndex axis, use_stats, N, C, S, NC, NS;
     float momentum, eps, r_max, d_max, t_delta;
     float t_r_max, t_d_max, t_val;
-    Tensor mean, d, t_h_mean, t_h_var, num_by_chans;
-    Tensor* multiplier, *num_multiplier, *spatial_multiplier;
-    Tensor* stddev, *r, *var, *x_norm;
-    TIndex axis, N, C, S, NC, NS;
+    Tensor nc, mean, d, t_h_mean, t_h_var;
+    Tensor* r, *var, *x_norm;
     string data_format, mode;
-    int use_stats;
     bool use_global_stats, is_recomputing;
 };
 
@@ -65,7 +63,7 @@ class BatchRenormGradientOp final : public Operator<Context> {
             CHECK_EQ(axis, 1)
                 << "\nThe axis can only be set to 1.";
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void Setup();
 
@@ -76,12 +74,9 @@ class BatchRenormGradientOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    Tensor mean, num_by_chans;
-    Tensor* multiplier, *num_multiplier, *spatial_multiplier;
-    Tensor* stddev, *r, *var, *x_norm;
-    TIndex axis, N, C, S, NC, NS;
+    TIndex axis, use_stats, N, C, S, NC, NS;
+    Tensor nc, mean, *r, *var, *x_norm;
     string data_format;
-    int use_stats;
     bool use_global_stats;
 };
 

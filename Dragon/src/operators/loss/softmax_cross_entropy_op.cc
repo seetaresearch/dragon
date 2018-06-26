@@ -25,17 +25,15 @@ void SoftmaxCrossEntropyOp<Context>::RunWithType() {
     auto* Pdata = prob->template data<T, Context>();
     auto* Tdata = Input(1).template data<T, Context>();
     auto* Ldata = losses.template mutable_data<T, Context>();
-    kernel::SoftmaxCrossEntropy<T, Context>(Input(0).count(), Pdata, Tdata, Ldata);
+    kernel::SoftmaxCrossEntropy<T, Context>(
+        Input(0).count(), Pdata, Tdata, Ldata);
 
     if (normalization == "UNIT") {
         Output(0)->Reshape(vector<TIndex>(1, outer_dim * inner_dim));
         auto* Ydata = Output(0)->template mutable_data<T, Context>();
         kernel::Sum<T, Context>(outer_dim * inner_dim,
-                                   Input(0).dim(axis),
-                                            inner_dim,
-                                                Ldata,
-                                               Ydata);
-        return;
+            Input(0).dim(axis), inner_dim,
+                Ldata, Ydata); return;
     }
 
     T normalizer;
@@ -80,13 +78,9 @@ void SoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
     if (normalization == "UNIT") {
         auto* dYdata = Input(-1).template data<T, Context>();
         kernel::SumGrad<T, Context>(outer_dim * inner_dim,
-                                       Input(0).dim(axis),
-                                                inner_dim,
-                                                      1.0,
-                                                   dYdata,
-                                                   Pdata);
-        math::Mul<T, Context>(Output(0)->count(), Pdata, dXdata, dXdata);
-        return;
+            Input(0).dim(axis), inner_dim, 1.0, dYdata, Pdata);
+        math::Mul<T, Context>(Output(0)->count(),
+            Pdata, dXdata, dXdata); return;
     }
 
     T normalizer;
@@ -94,8 +88,10 @@ void SoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
     else if (normalization == "FULL") normalizer = outer_dim * inner_dim;
     else if (normalization == "NONE") normalizer = 1;
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; Context::template Copy<T, CPUContext, Context>(1, &dYdata_host, dYdata);
-    math::Scal<T, Context>(Output(0)->count(), dYdata_host / normalizer, dXdata);
+    T dYdata_host; Context::template Copy<T, CPUContext, Context>(
+        1, &dYdata_host, dYdata);
+    math::Scal<T, Context>(Output(0)->count(),
+        dYdata_host / normalizer, dXdata);
 }
 
 template <class Context>

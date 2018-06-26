@@ -155,13 +155,11 @@ void cudnnSetTensorDesc(cudnnTensorDescriptor_t* desc,
 
 template <typename T>
 void cudnnSetTensorDesc(cudnnTensorDescriptor_t* desc, Tensor* tensor) {
-    //  cuDNN requires ndim from 3 to 8
-    //  we fake a reshaped dims to pass check
+    //  cudnn requires ndimensions from 3 to 8
+    //  exapnd or squeeze dimensions to pass check
     vector<TIndex> fake_dims(tensor->dims());
-    if (fake_dims.size() < 3 || fake_dims.size() > 8) {
-        fake_dims.assign({ 1, 1 });
-        fake_dims.push_back(tensor->count());
-    }
+    if (fake_dims.size() < 3) fake_dims.resize(3, 1);
+    else if (fake_dims.size() > 8) fake_dims = { tensor->count(), 1, 1 };
     cudnnSetTensorDesc<T>(desc, fake_dims);
 }
 

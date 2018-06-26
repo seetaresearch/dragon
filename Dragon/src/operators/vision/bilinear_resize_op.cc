@@ -24,11 +24,9 @@ void BilinearResizeOp<Context>::RunWithType() {
     }
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    kernel::BilinearResize<T, Context>(Output(0)->count(), n, c, h, w,
-                                                         out_h, out_w,
-                                                          data_format,
-                                                                Xdata,
-                                                                Ydata);
+
+    kernel::BilinearResize<T, Context>(Output(0)->count(),
+        n, c, h, w, out_h, out_w, data_format, Xdata, Ydata);
 }
 
 template <class Context>
@@ -78,11 +76,9 @@ void BilinearResizeGradientOp<Context>::RunWithType() {
     }
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    kernel::BilinearResizeGrad<T, Context>(Input(-1).count(), n, c, h, w,
-                                                            out_h, out_w,
-                                                             data_format,
-                                                                  dYdata,
-                                                                  dXdata);
+
+    kernel::BilinearResizeGrad<T, Context>(Input(-1).count(),
+        n, c, h, w, out_h, out_w, data_format, dYdata, dXdata);
 }
 
 template <class Context>

@@ -27,7 +27,7 @@ class CollectiveUpdateOp : public Operator<Context> {
          InitMPI();
          if (mode.find("NCCL") != string::npos) InitNCCL();
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void InitMPI();
     void InitNCCL();
@@ -41,7 +41,6 @@ class CollectiveUpdateOp : public Operator<Context> {
  protected:
     int comm_size, comm_rank, comm_root;
     int world_size, world_rank;
-    Tensor* buffer;
     string  mode;
 
     MPI_Comm comm;

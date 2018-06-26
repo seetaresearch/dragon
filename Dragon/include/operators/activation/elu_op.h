@@ -22,7 +22,7 @@ class EluOp : public Operator<Context> {
     EluOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           alpha(OperatorBase::GetSingleArg<float>("alpha", 1.0)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -37,7 +37,7 @@ class EluGradientOp : public Operator<Context> {
     EluGradientOp(const OperatorDef& op_def, Workspace* ws)
         : Operator<Context>(op_def, ws),
           alpha(OperatorBase::GetSingleArg<float>("alpha", 1.0)) {}
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -61,7 +61,7 @@ public:
         CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc, 
             CUDNN_ACTIVATION_ELU, CUDNN_PROPAGATE_NAN, this->alpha));
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNEluOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
@@ -88,7 +88,7 @@ class CuDNNEluGradientOp final : public EluGradientOp<Context> {
         CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc,
             CUDNN_ACTIVATION_ELU, CUDNN_PROPAGATE_NAN, this->alpha));
     }
-    USE_OPERATOR_FUNCTIONS(Context);
+    USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNEluGradientOp() {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));

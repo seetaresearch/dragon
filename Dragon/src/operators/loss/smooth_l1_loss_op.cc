@@ -16,12 +16,15 @@ void SmoothL1LossOp<Context>::RunWithType() {
     math::Sub<T, Context>(diff->count(), X0data, X1data, diff_data);
     if (InputSize() > 2) {
         auto* inside_w_data = Input(2).template data<T, Context>();
-        math::Mul<T, Context>(diff->count(), inside_w_data, diff_data, diff_data);
+        math::Mul<T, Context>(diff->count(),
+            inside_w_data, diff_data, diff_data);
     }
-    kernel::SmoothL1<T, Context>(diff->count(), beta, diff_data, error_data);
+    kernel::SmoothL1<T, Context>(
+        diff->count(), beta, diff_data, error_data);
     if (InputSize() > 3) {
         auto* outside_w_data = Input(3).template data<T, Context>();
-        math::Mul<T, Context>(diff->count(), outside_w_data, error_data, error_data);
+        math::Mul<T, Context>(diff->count(),
+            outside_w_data, error_data, error_data);
     }
 
     T normalizer;
@@ -58,8 +61,10 @@ template <class Context> template <typename T>
 void SmoothL1LossGradientOp<Context>::RunWithType() {
     auto* diff_data = diff->template mutable_data<T, Context>();
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; Context::template Copy<T, CPUContext, Context>(1, &dYdata_host, dYdata);
-    kernel::SmoothL1Grad<T, Context>(diff->count(), beta, diff_data, diff_data);
+    T dYdata_host; Context::template Copy<T, CPUContext, Context>(
+        1, &dYdata_host, dYdata);
+    kernel::SmoothL1Grad<T, Context>(
+        diff->count(), beta, diff_data, diff_data);
 
     T alpha = dYdata_host, normalizer;
     if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
@@ -73,14 +78,17 @@ void SmoothL1LossGradientOp<Context>::RunWithType() {
         auto* dXdata = Output(i)->template mutable_data<T, Context>();
         const T sign = (i == 0) ? 1 : -1;
         alpha *= sign;
-        math::Axpby<T, Context>(Output(i)->count(), alpha, diff_data, 0, dXdata);
+        math::Axpby<T, Context>(Output(i)->count(),
+            alpha, diff_data, 0, dXdata);
         if (InputSize() > 3) {
             auto* inside_w_data = Input(2).template data<T, Context>();
-            math::Mul<T, Context>(Output(i)->count(), inside_w_data, dXdata, dXdata);
+            math::Mul<T, Context>(Output(i)->count(),
+                inside_w_data, dXdata, dXdata);
         }
         if (InputSize() > 4) {
             auto* outside_w_data = Input(3).template data<T, Context>();
-            math::Mul<T, Context>(Output(i)->count(), outside_w_data, dXdata, dXdata);
+            math::Mul<T, Context>(Output(i)->count(),
+                outside_w_data, dXdata, dXdata);
         }
     }
 }

@@ -18,7 +18,8 @@ void RSubOp<Context>::BroadcastRunWithType(int type) {
     auto* X1data = Input(0).template data<T, Context>();
     auto* X2data = Input(1).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    ctx().template Copy<T, Context, Context>(Input(1).count(), Ydata, X2data);
+    ctx().template Copy<T, Context, Context>(
+        Input(1).count(), Ydata, X2data);
 
     if (type == 0 || type == 1) {
         if (type == 0) {
@@ -28,18 +29,20 @@ void RSubOp<Context>::BroadcastRunWithType(int type) {
             outer_dim = Input(1).count(0, Input(1).axis(-1));
             inner_dim = Input(1).dim(-1);
         }
-        INIT_MULTIPLIER(bcast_multiplier, outer_dim);
-        auto* BMul_data = bcast_multiplier->template data<T, Context>();
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, outer_dim, inner_dim, 1,
-            1.0, bcast_multiplier->template data<T, Context>(), X1data, -1.0, Ydata);
+        DECLARE_MULTIPLIER(multiplier, outer_dim);
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                outer_dim, inner_dim, 1,
+                    1.0, multiplier, X1data, -1.0, Ydata);
     } 
     else if (type == 2) {
         outer_dim = Input(1).dim(0);
         inner_dim = Input(1).count(1);
-        INIT_MULTIPLIER(bcast_multiplier, inner_dim);
-        auto* BMul_data = bcast_multiplier->template data<T, Context>();
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, outer_dim, inner_dim, 1,
-            1.0, X1data, bcast_multiplier->template data<T, Context>(), -1.0, Ydata);
+        DECLARE_MULTIPLIER(multiplier, inner_dim);
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                outer_dim, inner_dim, 1,
+                    1.0, X1data, multiplier, -1.0, Ydata);
     }
 }
 
@@ -89,7 +92,8 @@ void RSubGradientOp<Context>::EltwiseRunWithType() {
     }
     if (Output(0)->name() != "ignore") {
         auto* dX1data = Output(0)->template mutable_data<T, Context>();
-        ctx().template Copy<T, Context, Context>(Output(0)->count(), dX1data, dYdata);
+        ctx().template Copy<T, Context, Context>(
+            Output(0)->count(), dX1data, dYdata);
     }
 }
 
@@ -108,25 +112,28 @@ void RSubGradientOp<Context>::BroadcastRunWithType(int type) {
                 outer_dim = Input(-1).count(0, Input(-1).axis(-1));
                 inner_dim = Input(-1).dim(-1);
             }
-            INIT_MULTIPLIER(bcast_multiplier, outer_dim);
-            auto* BMul_data = bcast_multiplier->template data<T, Context>();
-            math::Gemv<T, Context>(CblasTrans, outer_dim, inner_dim,
-                                   1.0, dYdata, BMul_data, 0.0, dX1data);
+            DECLARE_MULTIPLIER(multiplier, outer_dim);
+            math::Gemv<T, Context>(
+                CblasTrans,
+                    outer_dim, inner_dim,
+                        1.0, dYdata, multiplier, 0.0, dX1data);
         }
         else if (type == 2) {
             outer_dim = Input(-1).dim(0);
             inner_dim = Input(-1).count(1);
-            INIT_MULTIPLIER(bcast_multiplier, inner_dim);
-            auto* BMul_data = bcast_multiplier->template data<T, Context>();
-            math::Gemv<T, Context>(CblasNoTrans, outer_dim, inner_dim,
-                                   1.0, dYdata, BMul_data, 0.0, dX1data);
+            DECLARE_MULTIPLIER(multiplier, inner_dim);
+            math::Gemv<T, Context>(
+                CblasNoTrans,
+                    outer_dim, inner_dim,
+                        1.0, dYdata, multiplier, 0.0, dX1data);
         }
     }
 
     if (Output(1)->name() != "ignore") {
         auto* dX2data = Output(1)->template mutable_data<T, Context>();
-        ctx().template Copy<T, Context, Context>(Output(1)->count(), dX2data, dYdata);
-        math::MulScalar<T, Context>(Output(1)->count(), -1.0f, dX2data);
+        ctx().template Copy<T, Context, Context>(
+            Output(1)->count(), dX2data, dYdata);
+        math::MulScalar<T, Context>(Output(1)->count(), -1.f, dX2data);
     }
 }
 

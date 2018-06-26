@@ -84,6 +84,9 @@ static inline std::mt19937* rand_generator() {
     return CPUContext::cpu_object_.rand_generator.get();
 }
 
+#define CPU_FP16_NOT_SUPPORTED \
+    LOG(FATAL) << "FP16 is unsupported for CPUContext.";
+
 }    // namepsace dragon
 
 #endif    // DRAGON_CORE_CONTEXT_H_
