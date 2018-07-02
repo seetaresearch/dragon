@@ -12,6 +12,7 @@
 #ifndef DRAGON_CORE_COMMON_H_
 #define DRAGON_CORE_COMMON_H_
 
+#include <ctime>
 #include <climits>
 #include <memory>
 #include <string>
@@ -48,7 +49,26 @@ using Map = std::unordered_map<Key, Value>;
 template <typename Value>
 using Set = std::unordered_set<Value> ;
 
-#define DRAGON_VERSION 2205
+/*
+ * Define the Kernel version.
+ *
+ * | Major(2) | Minor(2) | Patch(06) |
+ */
+#define DRAGON_VERSION 2206
+
+/*
+ * Define the default random seed.
+ */
+#define DEFAULT_RNG_SEED 3
+
+/*
+ * Define the common marcos.
+ */
+#ifdef _MSC_VER
+#if _MSC_VER < 1900
+#define thread_local __declspec(thread)
+#endif
+#endif
 
 #define CONCATENATE_IMPL(s1, s2) s1##s2
 #define CONCATENATE(s1, s2) CONCATENATE_IMPL(s1,s2)

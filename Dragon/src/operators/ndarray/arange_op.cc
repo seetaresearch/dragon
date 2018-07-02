@@ -9,7 +9,7 @@ void ArangeOp<Context>::RunWithType() {
     TIndex start_ = start(), step_ = step(), stop_ = stop(), count;
     if (stop_ == 0) { stop_ = start_; start_ = 0; }
     count = (stop_ - start_ - 1) / step_ + 1;
-    Output(0)->Reshape(vector<TIndex>(1, count));
+    Output(0)->Reshape({ count });
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
     kernel::Arange<T, Context>(count, start_, step_, Ydata);
 }

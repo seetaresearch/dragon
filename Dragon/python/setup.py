@@ -42,7 +42,7 @@ find_modules()
 
 
 setup(name = 'dragon',
-      version='0.2.2.5',
+      version='0.2.2.6',
       description = 'Dragon: A Computation Graph Virtual Machine Based Deep Learning Framework',
       url='https://github.com/seetaresearch/Dragon',
       author='Ting Pan',

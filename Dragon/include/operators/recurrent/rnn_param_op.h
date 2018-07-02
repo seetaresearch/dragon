@@ -17,18 +17,18 @@
 namespace dragon {
 
 template <class Context>
-class RNNParamSetOp : public Operator<Context> {
+class RNNParamSetOp final : public Operator<Context> {
  public:
-    RNNParamSetOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-        param_type(OperatorBase::GetSingleArg<string>("param_type", "matrix")),
-        rnn_mode(OperatorBase::GetSingleArg<string>("rnn_mode", "rnn_tanh")),
-        num_layers(OperatorBase::GetSingleArg<int>("num_layers", 1)),
-        num_directions(OperatorBase::GetSingleArg<int>("num_directions", 1)),
-        input_size(OperatorBase::GetSingleArg<int>("input_size", 0)),
-        hidden_size(OperatorBase::GetSingleArg<int>("hidden_size", 0)),
-        layer_id(OperatorBase::GetSingleArg<int>("layer_id", 0)),
-        param_id(OperatorBase::GetSingleArg<int>("param_id", 0)) {
+    RNNParamSetOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          param_type(OperatorBase::Arg<string>("param_type", "matrix")),
+          rnn_mode(OperatorBase::Arg<string>("rnn_mode", "rnn_tanh")),
+          num_layers(OperatorBase::Arg<int>("num_layers", 1)),
+          num_directions(OperatorBase::Arg<int>("num_directions", 1)),
+          input_size(OperatorBase::Arg<int>("input_size", 0)),
+          hidden_size(OperatorBase::Arg<int>("hidden_size", 0)),
+          layer_id(OperatorBase::Arg<int>("layer_id", 0)),
+          param_id(OperatorBase::Arg<int>("param_id", 0)) {
         if (rnn_mode == "rnn_tanh") { num_params = 2; spliter = 1; }
         else if (rnn_mode == "rnn_relu") { num_params = 2; spliter = 1; }
         else if (rnn_mode == "lstm") { num_params = 8; spliter = 4; }

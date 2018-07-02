@@ -17,18 +17,18 @@
 namespace dragon {
 
 template <class Context>
-class Pooling2dOp: public Operator <Context> {
+class Pooling2dOp : public Operator<Context> {
  public:
-    Pooling2dOp(const OperatorDef& op_def, Workspace* ws)
-         : Operator<Context>(op_def, ws),
-        mode(OperatorBase::GetSingleArg<string>("mode", "MAX")),
-        data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")),
-        padding(OperatorBase::GetSingleArg<string>("padding", "VALID")),
-        global_pooling(OperatorBase::GetSingleArg<bool>("global_pooling", false)),
-        ceil_mode(OperatorBase::GetSingleArg<bool>("ceil", true)) {
-        vector<int> ks = OperatorBase::GetRepeatedArg<int>("kernel_size");
-        vector<int> s = OperatorBase::GetRepeatedArg<int>("stride");
-        vector<int> p = OperatorBase::GetRepeatedArg<int>("pad");
+    Pooling2dOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          mode(OperatorBase::Arg<string>("mode", "MAX")),
+          data_format(OperatorBase::Arg<string>("data_format", "NCHW")),
+          padding(OperatorBase::Arg<string>("padding", "VALID")),
+          global_pooling(OperatorBase::Arg<bool>("global_pooling", false)),
+          ceil_mode(OperatorBase::Arg<bool>("ceil", true)) {
+        vector<int> ks = OperatorBase::Args<int>("kernel_size");
+        vector<int> s = OperatorBase::Args<int>("stride");
+        vector<int> p = OperatorBase::Args<int>("pad");
         for (int i = 0; i < 2; i++) {
             if (global_pooling) {
                 kernel_size.push_back(-1);
@@ -57,18 +57,18 @@ class Pooling2dOp: public Operator <Context> {
 };
 
 template <class Context>
-class Pooling2dGradientOp: public Operator<Context> {
+class Pooling2dGradientOp : public Operator<Context> {
  public:
-    Pooling2dGradientOp(const OperatorDef& op_def, Workspace* ws)
-         : Operator<Context>(op_def, ws),
-        mode(OperatorBase::GetSingleArg<string>("mode", "MAX")),
-        data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")),
-        padding(OperatorBase::GetSingleArg<string>("padding", "VALID")),
-        global_pooling(OperatorBase::GetSingleArg<bool>("global_pooling", false)),
-        ceil_mode(OperatorBase::GetSingleArg<bool>("ceil", true)) {
-        vector<int> ks = OperatorBase::GetRepeatedArg<int>("kernel_size");
-        vector<int> s = OperatorBase::GetRepeatedArg<int>("stride");
-        vector<int> p = OperatorBase::GetRepeatedArg<int>("pad");
+    Pooling2dGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          mode(OperatorBase::Arg<string>("mode", "MAX")),
+          data_format(OperatorBase::Arg<string>("data_format", "NCHW")),
+          padding(OperatorBase::Arg<string>("padding", "VALID")),
+          global_pooling(OperatorBase::Arg<bool>("global_pooling", false)),
+          ceil_mode(OperatorBase::Arg<bool>("ceil", true)) {
+        vector<int> ks = OperatorBase::Args<int>("kernel_size");
+        vector<int> s = OperatorBase::Args<int>("stride");
+        vector<int> p = OperatorBase::Args<int>("pad");
         for (int i = 0; i < 2; i++) {
             if (global_pooling) {
                 kernel_size.push_back(-1);
@@ -101,8 +101,8 @@ class Pooling2dGradientOp: public Operator<Context> {
 template <class Context>
 class CuDNNPooling2dOp final : public Pooling2dOp<Context> {
  public:
-    CuDNNPooling2dOp(const OperatorDef& op_def, Workspace* ws)
-        : Pooling2dOp<Context>(op_def, ws) {
+    CuDNNPooling2dOp(const OperatorDef& def, Workspace* ws)
+        : Pooling2dOp<Context>(def, ws) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreatePoolingDescriptor(&pool_desc));
@@ -136,8 +136,8 @@ class CuDNNPooling2dOp final : public Pooling2dOp<Context> {
 template <class Context>
 class CuDNNPooling2dGradientOp final : public Pooling2dGradientOp<Context> {
  public:
-    CuDNNPooling2dGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Pooling2dGradientOp<Context>(op_def, ws) {
+    CuDNNPooling2dGradientOp(const OperatorDef& def, Workspace* ws)
+        : Pooling2dGradientOp<Context>(def, ws) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreatePoolingDescriptor(&pool_desc));

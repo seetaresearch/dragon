@@ -19,12 +19,12 @@ namespace dragon {
 template <class Context>
 class L2NormOp final : public Operator<Context> {
  public:
-    L2NormOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 0)),
-          num_axes(OperatorBase::GetSingleArg<int>("num_axes", -1)),
-          eps(OperatorBase::GetSingleArg<float>("eps", 1e-5f)),
-          mode(OperatorBase::GetSingleArg<string>("mode", "SUM")) {}
+    L2NormOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 0)),
+          num_axes(OperatorBase::Arg<int>("num_axes", -1)),
+          eps(OperatorBase::Arg<float>("eps", 1e-5f)),
+          mode(OperatorBase::Arg<string>("mode", "SUM")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -42,11 +42,11 @@ class L2NormOp final : public Operator<Context> {
 template <class Context>
 class L2NormGradientOp final : public Operator<Context> {
  public:
-    L2NormGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 0)),
-          num_axes(OperatorBase::GetSingleArg<int>("num_axes", -1)),
-          mode(OperatorBase::GetSingleArg<string>("mode", "SUM")) {}
+    L2NormGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 0)),
+          num_axes(OperatorBase::Arg<int>("num_axes", -1)),
+          mode(OperatorBase::Arg<string>("mode", "SUM")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

@@ -21,8 +21,9 @@ namespace dragon {
 template <typename T, class Context>
 class Filler {
  public:
-    Filler(const TensorFiller& filler): filler_(filler) {}
-    virtual void Fill(Tensor* tensor) = 0;
+    Filler(const TensorFiller& filler) : filler_(filler) {}
+
+    virtual void Fill(Tensor* tensor, Context* ctx) = 0;
 
     inline TensorFiller& filler() { return filler_; }
 
@@ -30,101 +31,125 @@ class Filler {
     TensorFiller filler_;
 };
 
-
 template <typename T, class Context>
 class ConstantFiller final : public Filler<T, Context> {
  public:
-    ConstantFiller(const TensorFiller& filler): Filler<T, Context>(filler) {}
-    void Fill(Tensor* tensor) override {
+    ConstantFiller(const TensorFiller& filler)
+        : Filler<T, Context>(filler) {}
+
+    void Fill(Tensor* tensor, Context* ctx) override {
         math::Set<T, Context>(tensor->count(),
-                              dragon_cast<T, float>(this->filler().value()),
-                              tensor->mutable_data<T, Context>());
+            dragon_cast<T, float>(filler().value()),
+                tensor->mutable_data<T, Context>());
     }
+
+ protected:
+    using Filler<T, Context>::filler;
 };
 
 template <typename T, class Context>
 class NormalFiller final : public Filler<T, Context> {
  public:
-    NormalFiller(const TensorFiller& filler): Filler<T, Context>(filler) {}
-    void Fill(Tensor* tensor) override {
+    NormalFiller(const TensorFiller& filler)
+        : Filler<T, Context>(filler) {}
+
+    void Fill(Tensor* tensor, Context* ctx) override {
         math::RandomNormal<T, Context>(tensor->count(),
-                                 this->filler().mean(),
-                                  this->filler().std(),
-                   tensor->mutable_data<T, Context>());
+            filler().mean(), filler().std(),
+                tensor->mutable_data<T, Context>(), ctx);
     }
+
+ protected:
+    using Filler<T, Context>::filler;
 };
 
 template <typename T, class Context>
-class TruncatedNormalFiller final : public Filler < T, Context > {
+class TruncatedNormalFiller final : public Filler<T, Context> {
  public:
-    TruncatedNormalFiller(const TensorFiller& filler): Filler<T, Context>(filler) {}
-    void Fill(Tensor* tensor) override {
+    TruncatedNormalFiller(const TensorFiller& filler)
+        : Filler<T, Context>(filler) {}
+
+    void Fill(Tensor* tensor, Context* ctx) override {
         //  implement it on gpu is difficult
+        static CPUContext cpu_ctx;
         math::RandomTruncatedNormal<T, CPUContext>(tensor->count(),
-                                             this->filler().mean(),
-                                              this->filler().std(),
-                                              this->filler().low(),
-                                             this->filler().high(),
-                            tensor->mutable_data<T, CPUContext>());
+            filler().mean(), filler().std(),
+                filler().low(), filler().high(),
+                    tensor->mutable_data<T, CPUContext>(), &cpu_ctx);
     }
+
+ protected:
+    using Filler<T, Context>::filler;
 };
 
 template <typename T, class Context>
 class UniformFiller final : public Filler<T, Context> {
  public:
-    UniformFiller(const TensorFiller& filler) : Filler<T, Context>(filler) {}
-    void Fill(Tensor* tensor) override {
+    UniformFiller(const TensorFiller& filler) 
+        : Filler<T, Context>(filler) {}
+
+    void Fill(Tensor* tensor, Context* ctx) override {
         math::RandomUniform<T, Context>(tensor->count(),
-                                   this->filler().low(),
-                                  this->filler().high(),
-                    tensor->mutable_data<T, Context>());
+            filler().low(), filler().high(),
+                tensor->mutable_data<T, Context>(), ctx);
     }
+
+ protected:
+    using Filler<T, Context>::filler;
 };
 
 template <typename T, class Context>
 class XavierFiller final : public Filler<T, Context> {
  public:
-    XavierFiller(const TensorFiller& filler) : Filler<T, Context>(filler) {}
-    using Filler<T, Context>::filler;
-    void Fill(Tensor* tensor) override {
+    XavierFiller(const TensorFiller& filler)
+        : Filler<T, Context>(filler) {}
+
+    void Fill(Tensor* tensor, Context* ctx) override {
         int fan_in = tensor->count() / tensor->dim(0);
         int fan_out = tensor->count() / tensor->dim(1);
         float n = fan_in, scale = 3.0;
         if (filler().has_scale()) scale = filler().scale();
-        if (filler().variance_norm() == TensorFiller_VarianceNorm_FAN_AVG) {
+        if (filler().variance_norm() ==
+            TensorFiller_VarianceNorm_FAN_AVG) {
             n = (fan_in + fan_out) / float(2);
-        } else if (filler().variance_norm() == TensorFiller_VarianceNorm_FAN_OUT) {
+        } else if (filler().variance_norm() ==
+            TensorFiller_VarianceNorm_FAN_OUT) {
             n = fan_out;
         }
         float limit = std::sqrt(scale / n);
         math::RandomUniform<T, Context>(tensor->count(),
-                                                 -limit,
-                                                  limit,
-                    tensor->mutable_data<T, Context>());
+            -limit, limit, tensor->mutable_data<T, Context>(), ctx);
     }
+
+ protected:
+    using Filler<T, Context>::filler;
 };
 
 template <typename T, class Context>
 class MSRAFiller final : public Filler <T, Context> {
  public:
-    MSRAFiller(const TensorFiller& filler) : Filler<T, Context>(filler) {}
-    using Filler<T, Context>::filler;
-    void Fill(Tensor* tensor) override {
+    MSRAFiller(const TensorFiller& filler)
+        : Filler<T, Context>(filler) {}
+
+    void Fill(Tensor* tensor, Context* ctx) override {
         int fan_in = tensor->count() / tensor->dim(0);
         int fan_out = tensor->count() / tensor->dim(1);
         float n = fan_in, scale = 2.0;
         if (filler().has_scale()) scale = filler().scale();
-        if (filler().variance_norm() == TensorFiller_VarianceNorm_FAN_AVG) {
+        if (filler().variance_norm() ==
+            TensorFiller_VarianceNorm_FAN_AVG) {
             n = (fan_in + fan_out) / float(2);
-        } else if (filler().variance_norm() == TensorFiller_VarianceNorm_FAN_OUT) {
+        } else if (filler().variance_norm() == 
+            TensorFiller_VarianceNorm_FAN_OUT) {
             n = fan_out;
         }
         float std = std::sqrt(scale / n);
         math::RandomNormal<T, Context>(tensor->count(),
-                                              float(0),
-                                                   std,
-                   tensor->mutable_data<T, Context>());
+            0.f, std, tensor->mutable_data<T, Context>(), ctx);
     }
+
+ protected:
+    using Filler<T, Context>::filler;
 };
 
 

@@ -17,7 +17,7 @@
 namespace dragon {
 
 template <class Context>
-class SEluOp : public Operator<Context> {
+class SEluOp final : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(SEluOp);
     USE_OPERATOR_FUNCTIONS;
@@ -27,7 +27,7 @@ class SEluOp : public Operator<Context> {
 };
 
 template <class Context>
-class SEluGradientOp : public Operator<Context> {
+class SEluGradientOp final : public Operator<Context> {
  public:
     USE_SIMPLE_CTOR_DTOR(SEluGradientOp);
     USE_OPERATOR_FUNCTIONS;

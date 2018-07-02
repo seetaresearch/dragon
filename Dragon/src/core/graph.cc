@@ -28,8 +28,10 @@ GraphBase::GraphBase(const GraphDef& meta_graph, Workspace* ws)
     //  check for all objective targets
     Set<string> objective_targets;
     for (auto& target : meta_graph.target()) {
-        CHECK(known_tensors.count(target) || ws_->HasTensor(target))
-            << "\nTarget: " << target << " does not exist in computional graph.";
+        CHECK(known_tensors.count(target) ||
+              ws_->HasTensor(target))
+            << "\nTarget: " << target
+            << " does not exist in computional graph.";
         objective_targets.insert(target);
     }
 
@@ -38,9 +40,11 @@ GraphBase::GraphBase(const GraphDef& meta_graph, Workspace* ws)
         string cost = g_target.cost();
         string wrt = g_target.wrt();
         CHECK(known_tensors.count(cost) || ws_->HasTensor(cost))
-            << "\nTarget: " << cost << "_grad does not exist in computional graph.";
+            << "\nTarget: " << cost
+            << "_grad does not exist in computional graph.";
         CHECK(known_tensors.count(wrt) || ws_->HasTensor(wrt))
-            << "\nTarget: " << wrt << "_grad does not exist in computional graph.";
+            << "\nTarget: " << wrt 
+            << "_grad does not exist in computional graph.";
         CHECK_GT(objective_targets.count(cost), 0)
             << "\nTo solve d(" << cost << ")/d(" << wrt << "), "
             << "must set " << cost
@@ -127,7 +131,8 @@ GraphDef Graph::Prune(const GraphDef& meta_graph) {
     }
 
     //  select all colored operators
-    set<int> selected_op_indices;    //  note that we use set to keep topo-order
+    //  note that we use set to keep topo-order
+    set<int> selected_op_indices;
     for (auto it : colored_) {
         if (dag_[it.first].op_idx == -1) continue;
         selected_op_indices.insert(dag_[it.first].op_idx);
@@ -144,7 +149,8 @@ GraphDef Graph::Prune(const GraphDef& meta_graph) {
     Set<string> outputs;
     //  check if having feeded tensors
     for (auto& tensor : ws()->GetTensors()) outputs.insert(tensor);
-    map<int, OperatorDef> ops_final;  //  note that we use map to keep topo-order
+    //  note that we use map to keep topo-order
+    map<int, OperatorDef> ops_final;
 
     for (auto it : selected_op_indices) {
         OperatorDef op_def;
@@ -190,13 +196,15 @@ GraphDef Graph::Share(const GraphDef& optimized_graph) {
         const OperatorDef& op = optimized_graph.op(i);
         for (int j = 0; j < op.input_size(); j++) {
             if (renamed_.count(op.input(j))) {
-                *shared_graph.mutable_op(i)->mutable_input(j) = renamed_[op.input(j)];
+                *shared_graph.mutable_op(i)->
+                    mutable_input(j) = renamed_[op.input(j)];
                 ws()->CreateRename(op.input(j), renamed_[op.input(j)]);
             }
         }
         for (int j = 0; j < op.output_size(); j++) {
             if (renamed_.count(op.output(j))) {
-                *shared_graph.mutable_op(i)->mutable_output(j) = renamed_[op.output(j)];
+                *shared_graph.mutable_op(i)->
+                    mutable_output(j) = renamed_[op.output(j)];
                 ws()->CreateRename(op.output(j), renamed_[op.output(j)]);
             }
         }
@@ -258,7 +266,8 @@ GraphDef Graph::MakeUpdate(const GraphDef& meta_graph) {
             op_def.CopyFrom(collective_op);
             Argument collective_mode;
             collective_mode.set_name("mode");
-            collective_mode.set_s(this->args_["parallel_mode"].s() + "_ALLREDUCE");
+            collective_mode.set_s(
+                this->args_["parallel_mode"].s() + "_ALLREDUCE");
             op_def.add_arg()->CopyFrom(collective_mode);
             if (this->args_.count("comm") &&
                 this->args_.count("group") &&
@@ -296,15 +305,11 @@ bool Graph::Create(const GraphDef& optimized_graph, Workspace* ws) {
                    << ": " << op_def.type();
         //  inherit device option if necessary
         if (!op_def.has_device_option() && has_device_option)
-            op_def.mutable_device_option()->CopyFrom(optimized_graph.device_option());
+            op_def.mutable_device_option()->CopyFrom(
+                optimized_graph.device_option());
         //  for the static graph, do recomputing-aware
         Argument arg; arg.set_name("recomputing_aware");
         arg.set_b(true); op_def.add_arg()->CopyFrom(arg);
-        //  for the first & last op, synchronize the device
-        if (i == 0 || i == optimized_graph.op_size() - 1) {
-            arg.set_name("do_synchronize");
-            arg.set_b(true); op_def.add_arg()->CopyFrom(arg);
-        }
         OperatorBase* op = CreateOperator(op_def, ws);
         ops_.push_back(op);
     }
@@ -321,7 +326,7 @@ void Graph::RecomputingAware(const GraphDef& optimized_graph, Workspace* ws) {
     //  check mirror stage
     for (int i = 0; i < ops_.size(); i++) {
         if (ops_[i]->type().find("Gradient") != string::npos) continue;
-        bool mirror_stage = ops_[i]->GetSingleArg<bool>("mirror_stage", false);
+        bool mirror_stage = ops_[i]->OperatorBase::Arg<bool>("mirror_stage", false);
         for (auto& u : optimized_graph.op(i).input()) {
             bool inplace_flag = false;
             for (auto& v : optimized_graph.op(i).output())
@@ -392,7 +397,7 @@ Graph::Graph(const GraphDef& meta_graph, Workspace* ws)
 
     //  store the final graph as a tensor for visualization
     Tensor* string_tensor = ws_->CreateTensor("GraphDef_" + optimized_graph.name());
-    string_tensor->Reshape(vector<TIndex>(1, 1));
+    string_tensor->Reshape({ 1 });
     string* data = string_tensor->mutable_data<string, CPUContext>();
     data[0] = optimized_graph.SerializeAsString();
 

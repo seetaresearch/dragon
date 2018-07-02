@@ -38,7 +38,7 @@ void ROIAlignGradientOp<Context>::RunWithType() {
     auto* Rdata = Input(1).template data<T, CUDAContext>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
-    math::Set<T, CUDAContext>(Output(0)->count(), 0, dXdata);
+    math::Set<T, Context>(Output(0)->count(), 0, dXdata);
 
     kernel::ROIAlignGrad<T, Context>(
         Input(-1).count(), Output(0)->dim(0), Output(0)->dim(1),

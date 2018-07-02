@@ -9,7 +9,8 @@ void DotOp<Context>::DotRunWithType() {
     auto* X1data = Input(0).template data<T, Context>();
     auto* X2data = Input(1).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, CPUContext>();
-    Ydata[0] = math::Dot<T, Context>(Input(0).count(), X1data, X2data);
+    Ydata[0] = math::Dot<T, Context>(
+        Input(0).count(), X1data, X2data, &ctx());
 }
 
 template <class Context> template <typename T>
@@ -21,7 +22,8 @@ void DotOp<Context>::GemmRunWithType() {
         TransA ? CblasTrans : CblasNoTrans,
             TransB ? CblasTrans : CblasNoTrans,
                 M, N1, K1,
-                    1.0, X1data, X2data, 0.0, Ydata);
+                    1.0, X1data, X2data,
+                        0.0, Ydata, &ctx());
 }
 
 template <class Context> template <typename T>
@@ -30,9 +32,9 @@ void DotOp<Context>::GemvRunWithType() {
     auto* X2data = Input(1).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
     math::Gemv<T, Context>(
-        TransA ? CblasTrans : CblasNoTrans,
-            M, N1,
-                1.0, X1data, X2data, 0.0, Ydata);
+        TransA ? CblasTrans : CblasNoTrans, M, N1,
+            1.0, X1data, X2data,
+                0.0, Ydata, &ctx());
 }
 
 template <class Context>
@@ -40,9 +42,9 @@ void DotOp<Context>::RunOnDevice() {
     if (Input(0).ndim() == 1 && Input(1).ndim() == 1) {
         CHECK_EQ(Input(0).dim(0), Input(1).dim(0))
             << "\nTensor(" << Input(0).name() << "): "
-            << Input(0).dim_string() << " can not Dot with Tensor"
-            << "(" << Input(1).name() << "): " << Input(1).dim_string();
-        Output(0)->Reshape(vector<TIndex>(1, 1));
+            << Input(0).DimString() << " can not Dot with Tensor"
+            << "(" << Input(1).name() << "): " << Input(1).DimString();
+        Output(0)->Reshape({ 1 });
         if (XIsType(Input(0), float)) DotRunWithType<float>();
         else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
     } 
@@ -53,8 +55,8 @@ void DotOp<Context>::RunOnDevice() {
         K2 = TransB ? Input(1).dim(1) : Input(1).dim(0);
         N1 =  TransB ? Input(1).dim(0) : Input(1).dim(1);
         CHECK_EQ(K1, K2) << "\nTensor(" << Input(0).name() << "): "
-            << Input(0).dim_string() << " can not Dot with Tensor"
-            << "(" << Input(1).name() << "): " << Input(1).dim_string();
+            << Input(0).DimString() << " can not Dot with Tensor"
+            << "(" << Input(1).name() << "): " << Input(1).DimString();
         vector<TIndex> dims = Input(0).dims();
         dims[dims.size() - 1] = N1;
         Output(0)->Reshape(dims);
@@ -68,8 +70,8 @@ void DotOp<Context>::RunOnDevice() {
         N1 = TransA ? m : k;
         N2 = Input(1).dim(0);
         CHECK_EQ(N1, N2) << "\nTensor(" << Input(0).name() << "): "
-            << Input(0).dim_string() << " can not Dot with Tensor"
-            << "(" << Input(1).name() << "): " << Input(1).dim_string();
+            << Input(0).DimString() << " can not Dot with Tensor"
+            << "(" << Input(1).name() << "): " << Input(1).DimString();
         vector<TIndex> dims = Input(0).dims();
         dims.pop_back();
         Output(0)->Reshape(dims);
@@ -79,8 +81,8 @@ void DotOp<Context>::RunOnDevice() {
     } 
     else {
         LOG(FATAL) << "\nTensor(" << Input(0).name() << "): "
-            << Input(0).dim_string() << " can not Dot with Tensor"
-            << "(" << Input(1).name() << "): " << Input(1).dim_string();
+            << Input(0).DimString() << " can not Dot with Tensor"
+            << "(" << Input(1).name() << "): " << Input(1).DimString();
     }
 }
 
@@ -97,8 +99,10 @@ void DotGradientOp<Context>::DotRunWithType() {
     auto* dYdata = Input(2).template data<T, CPUContext>();
     auto* dX1data = Output(0)->template mutable_data<T, Context>();
     auto* dX2data = Output(1)->template mutable_data<T, Context>();
-    this->ctx().template Copy<T, Context, Context>(Output(0)->count(), dX1data, X2data);
-    this->ctx().template Copy<T, Context, Context>(Output(1)->count(), dX2data, X1data);
+    this->ctx().template Copy<T, Context, Context>(
+        Output(0)->count(), dX1data, X2data);
+    this->ctx().template Copy<T, Context, Context>(
+        Output(1)->count(), dX2data, X1data);
     math::MulScalar<T, Context>(Output(0)->count(), dYdata[0], dX1data);
     math::MulScalar<T, Context>(Output(1)->count(), dYdata[0], dX2data);
 }
@@ -114,12 +118,14 @@ void DotGradientOp<Context>::GemmRunWithType() {
         CblasNoTrans,
             TransB ? CblasNoTrans : CblasTrans,
                 M, K1, N1,
-                    1.0, dYdata, X2data, 0.0, dX1data);
+                    1.0, dYdata, X2data,
+                        0.0, dX1data, &ctx());
     math::Gemm<T, Context>(
         TransA ? CblasNoTrans : CblasTrans,
             CblasNoTrans,
                 K1, N1, M,
-                    1.0, X1data, dYdata, 0.0, dX2data);
+                    1.0, X1data, dYdata,
+                        0.0, dX2data, &ctx());
 }
 
 template <class Context> template <typename T>
@@ -132,11 +138,12 @@ void DotGradientOp<Context>::GemvRunWithType() {
     math::Gemm<T, Context>(
         CblasNoTrans, CblasNoTrans,
             M, N1, 1,
-                1.0, dYdata, X2data, 0.0, dX1data);
+                1.0, dYdata, X2data,
+                    0.0, dX1data, &ctx());
     math::Gemv<T, Context>(
-        TransA ? CblasNoTrans : CblasTrans,
-            M, N1,
-                1.0, X1data, dYdata, 0.0, dX2data);
+        TransA ? CblasNoTrans : CblasTrans, M, N1,
+            1.0, X1data, dYdata,
+                0.0, dX2data, &ctx());
 }
 
 template <class Context>
@@ -147,8 +154,8 @@ void DotGradientOp<Context>::RunOnDevice() {
     if (Input(0).ndim() == 1 && Input(1).ndim() == 1) {
         CHECK_EQ(Input(0).dim(0), Input(1).dim(0))
             << "\nTensor(" << Input(0).name() << "): "
-            << Input(0).dim_string() << " can not Dot with Tensor"
-            << "(" << Input(1).name() << "): " << Input(1).dim_string();
+            << Input(0).DimString() << " can not Dot with Tensor"
+            << "(" << Input(1).name() << "): " << Input(1).DimString();
         if (XIsType(Input(0), float)) DotRunWithType<float>();
         else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
     } 
@@ -159,8 +166,8 @@ void DotGradientOp<Context>::RunOnDevice() {
         K2 = TransB ? Input(1).dim(1) : Input(1).dim(0);
         N1 =  TransB ? Input(1).dim(0) : Input(1).dim(1);
         CHECK_EQ(K1, K2) << "\nTensor(" << Input(0).name() << "): "
-            << Input(0).dim_string() << " can not Dot with Tensor"
-            << "(" << Input(1).name() << "): " << Input(1).dim_string();
+            << Input(0).DimString() << " can not Dot with Tensor"
+            << "(" << Input(1).name() << "): " << Input(1).DimString();
         if (XIsType(Input(0), float)) GemmRunWithType<float>();
         else if (XIsType(Input(0), float16)) GemmRunWithType<float16>();
         else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
@@ -171,16 +178,16 @@ void DotGradientOp<Context>::RunOnDevice() {
         N1 = TransA ? m : k;
         N2 = Input(1).dim(0);
         CHECK_EQ(N1, N2) << "\nTensor(" << Input(0).name() << "): "
-            << Input(0).dim_string() << " can not Dot with Tensor"
-            << "(" << Input(1).name() << "): " << Input(1).dim_string();
+            << Input(0).DimString() << " can not Dot with Tensor"
+            << "(" << Input(1).name() << "): " << Input(1).DimString();
         if (XIsType(Input(0), float)) GemvRunWithType<float>();
         else if (XIsType(Input(0), float16)) GemvRunWithType<float16>();
         else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
     } 
     else {
         LOG(FATAL) << "\nTensor(" << Input(0).name() << "): "
-            << Input(0).dim_string() << " can not Dot with Tensor"
-            << "(" << Input(1).name() << "): " << Input(1).dim_string();
+            << Input(0).DimString() << " can not Dot with Tensor"
+            << "(" << Input(1).name() << "): " << Input(1).DimString();
     }
 }
 

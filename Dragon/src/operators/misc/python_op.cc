@@ -12,11 +12,11 @@
 namespace dragon {
 
 template <class Context>
-RunOp<Context>::RunOp(const OperatorDef& op_def, Workspace* ws)
-    : Operator<Context>(op_def, ws),
-      module(OperatorBase::GetSingleArg<string>("module", "")),
-      op(OperatorBase::GetSingleArg<string>("op", "")),
-      param_str((OperatorBase::GetSingleArg<string>("param_str", ""))) {
+RunOp<Context>::RunOp(const OperatorDef& def, Workspace* ws)
+    : Operator<Context>(def, ws),
+      module(OperatorBase::Arg<string>("module", "")),
+      op(OperatorBase::Arg<string>("op", "")),
+      param_str((OperatorBase::Arg<string>("param_str", ""))) {
     //  init interpreter & load module
     Py_Initialize();
     PyObject* py_module = PyImport_ImportModule(module.c_str());

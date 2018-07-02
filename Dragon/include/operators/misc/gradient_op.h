@@ -19,9 +19,9 @@ namespace dragon {
 template <class Context>
 class GradientGenerateOp final: public Operator<Context> {
  public:
-    GradientGenerateOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          defaults(OperatorBase::GetRepeatedArg<float>("defaults")) {
+    GradientGenerateOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          defaults(OperatorBase::Args<float>("defaults")) {
         CHECK_EQ(InputSize(), OutputSize());
         CHECK_EQ(defaults.size(), OutputSize());
     }
@@ -37,8 +37,8 @@ class GradientGenerateOp final: public Operator<Context> {
 template <class Context>
 class GradientGatherOp final : public Operator<Context> {
  public:
-    GradientGatherOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws) {
+    GradientGatherOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws) {
         for (int i = 0; i < InputSize(); i++)
             if (Input(i).name() != "ignore") indices.push_back(i);
     }

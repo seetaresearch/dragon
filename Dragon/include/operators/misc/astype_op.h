@@ -19,10 +19,10 @@ namespace dragon {
 template <class Context>
 class AsTypeOp final : public Operator<Context> {
  public:
-    AsTypeOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-        dtype(OperatorBase::GetSingleArg<string>("dtype", "float32")),
-        inplace(OperatorBase::GetSingleArg<bool>("inplace", false)) {}
+    AsTypeOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          dtype(OperatorBase::Arg<string>("dtype", "float32")),
+          inplace(OperatorBase::Arg<bool>("inplace", false)) {}
      USE_OPERATOR_FUNCTIONS;
 
      void RunOnDevice() override;

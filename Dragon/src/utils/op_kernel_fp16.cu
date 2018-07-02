@@ -13,14 +13,6 @@ namespace dragon {
 
 namespace kernel {
 
-template <typename T>
-__global__ void _EmptyHalf() {}
-
-template<> void Empty<float16, CUDAContext>() {
-    _EmptyHalf<float16> << <1, 1 >> >();
-    CUDA_POST_KERNEL_CHECK;
-}
-
 /******************** activation.relu ********************/
 
 #ifdef WITH_CUDA_FP16
@@ -63,18 +55,17 @@ template<> void Relu<float16, CUDAContext>(
 #ifdef WITH_CUDA_FP16
     if (count % 2 == 0) {
         _ReluHalf2<half2>
-            << < GET_BLOCKS(count), CUDA_NUM_THREADS >> > (count / 2,
+            << < CUDA_BLOCKS(count), CUDA_THREADS >> > (count / 2,
                 dragon_cast<half2, float>(slope),
                     reinterpret_cast<const half2*>(x),
                         reinterpret_cast<half2*>(y));
     } else {
         _ReluHalf<half>
-            << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+            << < CUDA_BLOCKS(count), CUDA_THREADS >> >(count,
                 dragon_cast<half, float>(slope),
                     reinterpret_cast<const half*>(x),
                         reinterpret_cast<half*>(y));
     }
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -129,11 +120,12 @@ template<> void Affine<float16, CUDAContext>(
     const float16*          alpha,
     const float16*          beta,
     const float16*          beta_multiplier,
-    float16*                y) {
+    float16*                y,
+    CUDAContext*            ctx) {
 #ifdef WITH_CUDA_FP16
     if (beta != nullptr) {
         _AffineWithBiasHalf<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, scale_dim, inner_dim,
                     reinterpret_cast<const half*>(x),
                         reinterpret_cast<const half*>(alpha),
@@ -141,13 +133,12 @@ template<> void Affine<float16, CUDAContext>(
                                 reinterpret_cast<half*>(y));
     } else {
         _AffineWithOBiasHalf<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, scale_dim, inner_dim,
                     reinterpret_cast<const half*>(x),
                         reinterpret_cast<const half*>(alpha),
                             reinterpret_cast<half*>(y));
     }
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -205,18 +196,16 @@ __global__ void _TypeHalf2Half(
         const float16*      a, \
         float*              b) { \
         _TypeHalf2Float \
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >( \
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >( \
                 count, reinterpret_cast<const half*>(a), b); \
-        CUDA_POST_KERNEL_CHECK; \
     } \
     template <> void TypeA2B<float, float16, CUDAContext>( \
         const int           count, \
         const float*        a, \
         float16*            b) { \
         _TypeFloat2Half \
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >( \
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >( \
                 count, a, reinterpret_cast<half*>(b)); \
-        CUDA_POST_KERNEL_CHECK; \
     }
 
 #ifdef WITH_CUDA_FP16
@@ -225,10 +214,9 @@ template <> void TypeA2B<float16, float16, CUDAContext>(
     const float16*          a,
     float16*                b) {
     _TypeHalf2Half
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count,
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(count,
             reinterpret_cast<const half*>(a),
                 reinterpret_cast<half*>(b));
-    CUDA_POST_KERNEL_CHECK;
 }
 DEFINE_TYPE_ENABLE_FP16_FP32;
 DEFINE_TYPE_DISABLE_FP16(double);
@@ -310,16 +298,15 @@ template <> void ImageData<float, float16, CUDAContext>(
 #ifdef WITH_CUDA_FP16
     if (data_format == "NCHW") {
         _ImageDataHalf_NCHW<float, half>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, mean_values, std_values,
                     x, reinterpret_cast<half*>(y));
     } else if (data_format == "NHWC") {
         _ImageDataHalf_NHWC<float, half> 
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, mean_values, std_values,
                     x, reinterpret_cast<half*>(y));
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -339,16 +326,15 @@ template <> void ImageData<uint8_t, float16, CUDAContext>(
 #ifdef WITH_CUDA_FP16
     if (data_format == "NCHW") {
         _ImageDataHalf_NCHW<uint8_t, half>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, mean_values, std_values,
                     x, reinterpret_cast<half*>(y));
     } else if (data_format == "NHWC") {
         _ImageDataHalf_NHWC<uint8_t, half>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, mean_values, std_values,
                     x, reinterpret_cast<half*>(y));
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -387,12 +373,11 @@ template <> void Concat<float16, CUDAContext>(
     float16*                y) {
 #ifdef WITH_CUDA_FP16
     _ConcatHalf<half>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, outer_dim, inner_dim,
                 x_concat_dim, y_concat_dim, concat_offset,
                     reinterpret_cast<const half*>(x),
                         reinterpret_cast<half*>(y));
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -429,12 +414,11 @@ template <> void ConcatGrad<float16, CUDAContext>(
     float16*                dx) {
 #ifdef WITH_CUDA_FP16
     _ConcatGradHalf<half>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, outer_dim, inner_dim,
                 x_concat_dim, y_concat_dim, concat_offset,
                     reinterpret_cast<const half*>(dy),
                         reinterpret_cast<half*>(dx));
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -472,11 +456,10 @@ template <> void Transpose<float16, CUDAContext>(
     float16*                y) {
 #ifdef WITH_CUDA_FP16
     _TransposeHalf<half>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, ndim, order, old_steps, new_steps,
                 reinterpret_cast<const half*>(x),
                     reinterpret_cast<half*>(y));
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -512,11 +495,10 @@ template <> void TransposeGrad<float16, CUDAContext>(
     float16*                dx) {
 #ifdef WITH_CUDA_FP16
     _TransposeGradHalf<half>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, ndim, order, old_steps, new_steps,
                 reinterpret_cast<const half*>(dy),
                     reinterpret_cast<half*>(dx));
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -566,7 +548,7 @@ template <> void AdamUpdate<float16, CUDAContext>(
     float16*                v) {
 #ifdef WITH_CUDA_FP16
     _AdamUpdateHalf
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, dragon_cast<half, float>(lr),
                 dragon_cast<half, float>(beta1),
                     dragon_cast<half, float>(beta2),
@@ -574,7 +556,6 @@ template <> void AdamUpdate<float16, CUDAContext>(
                             reinterpret_cast<half*>(g),
                                 reinterpret_cast<half*>(m),
                                     reinterpret_cast<half*>(v));
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -637,20 +618,19 @@ template <> void NesterovUpdate<float16, CUDAContext>(
 #ifdef WITH_CUDA_FP16
     if (count % 2 == 0) {
         _NesterovUpdateHalf2
-            << <GET_BLOCKS(count / 2), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count / 2), CUDA_THREADS >> >(
                 count / 2, dragon_cast<half2, float>(lr),
                     dragon_cast<half2, float>(momentum),
                         reinterpret_cast<half2*>(g),
                             reinterpret_cast<half2*>(h));
     } else {
         _NesterovUpdateHalf
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, dragon_cast<half, float>(lr),
                     dragon_cast<half, float>(momentum),
                         reinterpret_cast<half*>(g),
                             reinterpret_cast<half*>(h));
     }
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -692,13 +672,12 @@ template <> void RMSPropUpdate<float16, CUDAContext>(
     float16*                h) {
 #ifdef WITH_CUDA_FP16
     _RMSPropUpdateHalf
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, dragon_cast<half, float>(lr),
                 dragon_cast<half, float>(decay),
                     dragon_cast<half, float>(eps),
                         reinterpret_cast<half*>(g),
                             reinterpret_cast<half*>(h));
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -751,20 +730,19 @@ template <> void SGDUpdate<float16, CUDAContext>(
 #ifdef WITH_CUDA_FP16
     if (count % 2 == 0) {
         _SGDUpdateHalf2
-            << <GET_BLOCKS(count / 2), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count / 2), CUDA_THREADS >> >(
                 count / 2, dragon_cast<half2, float>(lr),
                     dragon_cast<half2, float>(momentum),
                         reinterpret_cast<half2*>(g),
                             reinterpret_cast<half2*>(h));
     } else {
         _SGDUpdateHalf
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, dragon_cast<half, float>(lr),
                     dragon_cast<half, float>(momentum),
                         reinterpret_cast<half*>(g),
                             reinterpret_cast<half*>(h));
     }
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif

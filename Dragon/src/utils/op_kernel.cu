@@ -13,14 +13,6 @@ namespace dragon {
 
 namespace kernel {
 
-template <typename T>
-__global__ void _Empty() {}
-
-template<> void Empty<float, CUDAContext>() {
-    _Empty<float> << <1, 1 >> >();
-    CUDA_POST_KERNEL_CHECK;
-}
-
 /******************** activation.dropout ********************/
 
 template<typename T>
@@ -42,14 +34,15 @@ template<> void Dropout<float, CUDAContext>(
     float                   scale,
     const float*            x,
     uint32_t*               mask,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     uint32_t thresh = static_cast<uint32_t>(UINT_MAX * prob);
     math::RandomUniform<uint32_t, CUDAContext>(
-        count, float(0), float(UINT_MAX), mask);
+        count, float(0), float(UINT_MAX), mask, ctx);
     _Dropout<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
-            count, thresh, scale, x, mask, y);
-    CUDA_POST_KERNEL_CHECK;
+        << <CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                count, thresh, scale, x, mask, y);
 }
 
 template <typename T>
@@ -71,12 +64,13 @@ template<> void DropoutGrad<float, CUDAContext>(
     float                   scale,
     const float*            dy, 
     const uint32_t*         mask,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     uint32_t thresh = static_cast<uint32_t>(UINT_MAX * prob);
     _DropoutGrad<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
-            count, thresh, scale, dy, mask, dx);
-    CUDA_POST_KERNEL_CHECK;
+        << <CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                count, thresh, scale, dy, mask, dx);
 }
 
 /******************** activation.prelu ********************/
@@ -135,20 +129,19 @@ template<> void PRelu<float, CUDAContext>(const int count,
     float*                  y) {
     if (channel_shared) {
         _PRelu<float> 
-            << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, channels, dim, x, w, y);
     } else {
         if (data_format == "NCHW") {
             _PReluNCHW<float>
-                << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+                << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
                     count, channels, dim, x, w, y);
         } else if (data_format == "NHWC") {
             _PReluNHWC<float>
-                << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+                << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
                     count, channels, dim, x, w, y);
         } else LOG(FATAL) << "Unknown data format: " << data_format;
     }
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -211,20 +204,19 @@ template<> void PReluGrad<float, CUDAContext>(
     float*                  dx) {
     if (channel_shared) {
         _PReluGrad<float>
-            << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, channels, dim, dy, x, w, dx);
     } else {
         if (data_format == "NCHW") {
             _PReluGradNCHW<float>
-                << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+                << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
                     count, channels, dim, dy, x, w, dx);
         } else if (data_format == "NHWC") {
             _PReluGradNHWC<float>
-                << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+                << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
                     count, channels, dim, dy, x, w, dx);
         } else LOG(FATAL) << "Unknown data format: " << data_format;
     }
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -239,7 +231,8 @@ __global__ void _PReluWGradBcast(
         bcast_dw[idx] = dy[idx] * x[idx] * (x[idx] <= 0);
         for (int n = 1; n < rows; n++) {
             const int cur_idx = idx + n * row_offset;
-            bcast_dw[idx] += dy[cur_idx] * x[cur_idx] * (x[cur_idx] <= 0);
+            bcast_dw[idx] +=
+                dy[cur_idx] * x[cur_idx] * (x[cur_idx] <= 0);
         }
     }
 }
@@ -255,25 +248,26 @@ template<> void PReluWGrad<float, CUDAContext>(
     const float*            x,
     const float*            multiplier,
     float*                  bcast_dw,
-    float*                  dw) {
+    float*                  dw,
+    CUDAContext*            ctx) {
     const int cdim = channels * dim;
     _PReluWGradBcast<float> 
-        << < GET_BLOCKS(cdim), CUDA_NUM_THREADS >> >(
-            cdim, rows, row_offset, dy, x, bcast_dw);
-    CUDA_POST_KERNEL_CHECK;
+        << < CUDA_BLOCKS(cdim), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 cdim, rows, row_offset, dy, x, bcast_dw);
     if (channel_shared) {
         float w_sum = math::Dot<float, CUDAContext>(
-            channels * dim, bcast_dw, multiplier);
+            channels * dim, bcast_dw, multiplier, ctx);
         math::AddScalar<float, CUDAContext>(1, w_sum, dw);
     } else {
         if (data_format == "NCHW") {
             math::Gemv<float, CUDAContext>(
                 CblasNoTrans, channels, dim,
-                1.0, bcast_dw, multiplier, 1.0, dw);
+                1.0, bcast_dw, multiplier, 1.0, dw, ctx);
         } else if (data_format == "NHWC") {
             math::Gemv<float, CUDAContext>(
                 CblasTrans, dim, channels,
-                1.0, bcast_dw, multiplier, 1.0, dw);
+                1.0, bcast_dw, multiplier, 1.0, dw, ctx);
         } else LOG(FATAL) << "Unknown data format: " << data_format;
     }
 }
@@ -298,9 +292,8 @@ template<> void Elu<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _Elu<float>
-        << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, x, alpha, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -324,9 +317,8 @@ template<> void EluGrad<float, CUDAContext>(
     const float*            y,
     float*                  dx) {
     _EluGrad<float>
-        << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, alpha, dy, y, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** activation.relu ********************/
@@ -348,9 +340,8 @@ template<> void Relu<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _Relu<float>
-        << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, slope, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -374,9 +365,8 @@ template<> void ReluGrad<float, CUDAContext>(
     const float*            y,
     float*                  dx) {
     _ReluGrad<float> 
-        << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, slope, dy, y, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** activation.selu ********************/
@@ -397,9 +387,8 @@ template<> void SElu<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _SElu<float>
-        << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -420,9 +409,8 @@ template<> void SEluGrad<float, CUDAContext>(
     const float*            y,
     float*                  dx) {
     _SEluGrad<float>
-        << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, dy, y, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** activation.sigmoid ********************/
@@ -447,9 +435,8 @@ template<> void Sigmoid<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _Sigmoid<float>
-        << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -469,9 +456,8 @@ template<> void SigmoidGrad<float, CUDAContext>(
     const float*            y,
     float*                  dx) {
     _SigmoidGrad<float>
-        << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, dy, y, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** activation.softmax ********************/
@@ -557,24 +543,28 @@ template<> void Softmax<float, CUDAContext>(
     const float*            sum_multiplier,
     const float*            x,
     float*                  scale,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     const int num_preds = inner_dim * outer_dim;
     _SoftmaxMaxClass<float>
-        << <GET_BLOCKS(num_preds), CUDA_NUM_THREADS >> >(
-            outer_dim, classes, inner_dim, x, scale);
+        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                outer_dim, classes, inner_dim, x, scale);
     _SoftmaxSubtract<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
-            count, classes, inner_dim, scale, y);
+        << <CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                count, classes, inner_dim, scale, y);
     _SoftmaxExp<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
-            count, y);
-    _SoftmaxSumClass<float> 
-        << <GET_BLOCKS(num_preds), CUDA_NUM_THREADS >> >(
-            outer_dim, classes, inner_dim, y, scale);
-    _SoftmaxDiv<float> 
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
-            count, classes, inner_dim, scale, y);
-    CUDA_POST_KERNEL_CHECK;
+        << <CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(count, y);
+    _SoftmaxSumClass<float>
+        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                outer_dim, classes, inner_dim, y, scale);
+    _SoftmaxDiv<float>
+        << <CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                count, classes, inner_dim, scale, y);
 }
 
 template <typename T>
@@ -607,16 +597,18 @@ template<> void SoftmaxGrad<float, CUDAContext>(
     const float*            dy,
     const float*            y,
     float*                  scale,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     const int num_preds = inner_dim * outer_dim;
     _SoftmaxDot<float> 
-        << <GET_BLOCKS(num_preds), CUDA_NUM_THREADS >> >(
-            outer_dim, classes, inner_dim, dy, y, scale);
+        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                outer_dim, classes, inner_dim, dy, y, scale);
     _SoftmaxSubtract<float> 
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
-            count, classes,inner_dim, scale, dx);
+        << <CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                count, classes,inner_dim, scale, dx);
     math::Mul<float, CUDAContext>(count, dx, y, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** activation.tanh ********************/
@@ -636,9 +628,8 @@ template<> void Tanh<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _Tanh<float>
-        << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -658,9 +649,8 @@ template<> void TanhGrad<float, CUDAContext>(
     const float*            y,
     float*                  dx) {
     _TanhGrad<float>
-        << < GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, dy, y, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** arithmetic.scale ********************/
@@ -703,17 +693,21 @@ template<> void Affine<float, CUDAContext>(
     const float*            alpha,
     const float*            beta,
     const float*            beta_multiplier,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     if (beta != nullptr) {
         _AffineWithBias<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
-                count, scale_dim, inner_dim, x, alpha, beta, y);
+            << <CUDA_BLOCKS(count), CUDA_THREADS,
+                0, ctx->cuda_stream() >> >(
+                    count, scale_dim, inner_dim,
+                        x, alpha, beta, y);
     } else {
         _AffineWithOBias<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
-                count, scale_dim, inner_dim, x, alpha, y);
+            << <CUDA_BLOCKS(count), CUDA_THREADS,
+                0, ctx->cuda_stream() >> >(
+                    count, scale_dim, inner_dim,
+                        x, alpha, y);
     }
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <> void AffineGrad<float, CUDAContext>(
@@ -723,11 +717,13 @@ template <> void AffineGrad<float, CUDAContext>(
     const int               inner_dim,
     const float*            dy,
     const float*            alpha,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _AffineWithOBias<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
-            count, scale_dim, inner_dim, dy, alpha, dx);
-    CUDA_POST_KERNEL_CHECK;
+        << <CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                count, scale_dim, inner_dim,
+                    dy, alpha, dx);
 }
 
 /******************** arithmetic.clip ********************/
@@ -755,7 +751,7 @@ template <> void Clip<float, CUDAContext>(
     const float*            x,
     float*                  mask,
     float*                  y) {
-    _Clip<float> << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+    _Clip<float> << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
         count, low, high, x, mask, y);
 }
 
@@ -778,8 +774,7 @@ template <> void Equal<float, CUDAContext>(
     const float*            b,
     float*                  y) {
     _Equal<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, a, b, y);
-     CUDA_POST_KERNEL_CHECK;
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(count, a, b, y);
 }
 
 /******************** loss.l1_loss ********************/
@@ -801,8 +796,7 @@ template<> void AbsGrad<float, CUDAContext>(
     const float*            dy,
     float*                  dx) {
     _AbsGrad<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(count, dy, dx);
-    CUDA_POST_KERNEL_CHECK;
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(count, dy, dx);
 }
 
 /******************** loss.sigmoid_cross_entropy ********************/
@@ -833,9 +827,8 @@ template <> void SigmoidCrossEntropy<float, CUDAContext>(
     float*                  loss,
     float*                  valid) {
     _SigmoidCrossEntropy<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, x, target, loss, valid);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -862,9 +855,8 @@ template <> void SigmoidCrossEntropyGrad<float, CUDAContext>(
     float*                  dx,
     float*                  valid) {
     _SigmoidCrossEntropyGrad<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, x, target, dx, valid);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** loss.smooth_l1_loss ********************/
@@ -889,9 +881,8 @@ template<> void SmoothL1<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _SmoothL1<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, beta, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -915,9 +906,8 @@ template<> void SmoothL1Grad<float, CUDAContext>(
     const float*            dy,
     float*                  dx) {
     _SmoothL1Grad<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, beta, dy, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** loss.softmax_cross_entropy ********************/
@@ -939,9 +929,8 @@ template <> void SoftmaxCrossEntropy<float, CUDAContext>(
     const float*            target,
     float*                  loss) {
     _SoftmaxCrossEntropy<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, prob, target, loss);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** loss.sparse_softmax_cross_entropy ********************/
@@ -987,15 +976,17 @@ template <> void SparseSoftmaxCrossEntropy<float, float, CUDAContext>(
     const float*            labels,
     float*                  loss,
     float*                  valid,
-    Tensor*                 ignore) {
+    Tensor*                 ignore,
+    CUDAContext*            ctx) {
     const int* ignores = ignore->count() > 0 ?
         ignore->data<int, CUDAContext>() : nullptr;
     const int num_preds = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropy<float, float>
-        << <GET_BLOCKS(num_preds), CUDA_NUM_THREADS >> >(
-            num_preds, prob, labels, loss, classes, inner_dim,
-                ignores, ignore->count(), valid);
-    CUDA_POST_KERNEL_CHECK;
+        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                num_preds, prob, labels, loss,
+                    classes, inner_dim,
+                        ignores, ignore->count(), valid);
 }
 
 template <> void SparseSoftmaxCrossEntropy<float, int64_t, CUDAContext>(
@@ -1007,15 +998,17 @@ template <> void SparseSoftmaxCrossEntropy<float, int64_t, CUDAContext>(
     const int64_t*          labels,
     float*                  loss,
     float*                  valid,
-    Tensor*                 ignore) {
+    Tensor*                 ignore,
+    CUDAContext*            ctx) {
     const int* ignores = ignore->count() > 0 ?
         ignore->data<int, CUDAContext>() : nullptr;
     const int num_preds = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropy<float, int64_t>
-        << <GET_BLOCKS(num_preds), CUDA_NUM_THREADS >> >(
-            num_preds, prob, labels, loss, classes,  inner_dim,
-                ignores, ignore->count(), valid);
-    CUDA_POST_KERNEL_CHECK;
+        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                num_preds, prob, labels, loss,
+                    classes, inner_dim,
+                        ignores, ignore->count(), valid);
 }
 
 template <typename Tx, typename Ty>
@@ -1056,15 +1049,17 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, float, CUDAContext>(
     const float*            labels,
     float*                  valid,
     Tensor*                 ignore,
-    float*                  dXdata) {
+    float*                  dXdata,
+    CUDAContext*             ctx) {
     const int* ignores = ignore->count() > 0 ?
         ignore->data <int, CUDAContext >() : nullptr;
     const int num_preds = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropyGrad<float, float>
-        << <GET_BLOCKS(num_preds), CUDA_NUM_THREADS >> >(
-            num_preds, prob, labels, dXdata, classes, inner_dim, 
-                ignores, ignore->count(), valid);
-    CUDA_POST_KERNEL_CHECK;
+        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                num_preds, prob, labels, dXdata,
+                    classes, inner_dim,
+                        ignores, ignore->count(), valid);
 }
 
 template<> void SparseSoftmaxCrossEntropyGrad<float, int64_t, CUDAContext>(
@@ -1076,15 +1071,17 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, int64_t, CUDAContext>(
     const int64_t*          labels,
     float*                  valid,
     Tensor*                 ignore,
-    float*                  dXdata) {
+    float*                  dXdata,
+    CUDAContext*            ctx) {
     const int* ignores = ignore->count() > 0 ?
         ignore->data <int, CUDAContext >() : nullptr;
     const int num_preds = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropyGrad<float, int64_t>
-        << <GET_BLOCKS(num_preds), CUDA_NUM_THREADS >> >(
-            num_preds, prob, labels, dXdata, classes, inner_dim,
-                ignores, ignore->count(), valid);
-    CUDA_POST_KERNEL_CHECK;
+        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                num_preds, prob, labels, dXdata,
+                    classes, inner_dim,
+                        ignores, ignore->count(), valid);
 }
 
 /******************** loss.sparse_softmax_focal_loss ********************/
@@ -1155,14 +1152,13 @@ template <> void SparseSoftmaxFocalLoss<float, CUDAContext>(
         ignore->data<int, CUDAContext>() : nullptr;
     const int num_preds = outer_dim * inner_dim;
     _SparseSoftmaxFocalScale<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, gamma, prob, scale);
     _SparseSoftmaxFocalLoss<float>
-        << <GET_BLOCKS(num_preds), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(num_preds), CUDA_THREADS >> >(
             num_preds, pos_alpha, neg_alpha, neg_id, scale,
                 prob, labels, loss, classes, inner_dim,
                     ignores, ignore->count(), valid);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -1227,11 +1223,10 @@ template<> void SparseSoftmaxFocalLossGrad<float, CUDAContext>(
         ignore->data <int, CUDAContext >() : nullptr;
     const int num_preds = outer_dim * inner_dim;
     _SparseSoftmaxFocalLossGrad<float>
-        << <GET_BLOCKS(num_preds), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(num_preds), CUDA_THREADS >> >(
             num_preds, gamma, neg_id, eps, scale,
                 prob, labels, dXdata, classes, inner_dim,
                     ignores, ignore->count(), valid);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** misc.astype ********************/
@@ -1252,7 +1247,7 @@ __global__ void _TypeA2B(
         const               type_a* a, \
         type_b*             b) { \
         _TypeA2B<type_a, type_b> \
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >( \
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >( \
                 count, a, b); \
     }
 
@@ -1327,14 +1322,13 @@ template <> void ImageData<float, float, CUDAContext>(
     float*                  y) {
     if (data_format == "NCHW") {
         _ImageData_NCHW<float, float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, mean_values, std_values, x, y);
     } else if (data_format == "NHWC") {
         _ImageData_NHWC<float, float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, mean_values, std_values, x, y);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <> void ImageData<uint8_t, float, CUDAContext>(
@@ -1350,14 +1344,13 @@ template <> void ImageData<uint8_t, float, CUDAContext>(
     float*                  y) {
     if (data_format == "NCHW") {
         _ImageData_NCHW<uint8_t, float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, mean_values, std_values, x, y);
     } else if (data_format == "NHWC") {
         _ImageData_NHWC<uint8_t, float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, mean_values, std_values, x, y);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** ndarray.argmax ********************/
@@ -1379,9 +1372,8 @@ template<> void Arange<float, CUDAContext>(
     const int               step,
     float*                  y) {
     _Arange<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, start, step, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template<> void Arange<int, CUDAContext>(
@@ -1390,9 +1382,8 @@ template<> void Arange<int, CUDAContext>(
     const int               step,
     int*                    y) {
     _Arange<int>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, start, step, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** ndarray.argreduce ********************/
@@ -1454,14 +1445,13 @@ template<> void Argmax<float, CUDAContext>(
     CHECK_EQ(top_k, 1) << "top_k > 1 is not supported with CUDA";
     if (values == nullptr) {
         _Argmax<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, axis_dim, inner_dim, x, indices);
     } else {
         _Argmax_v2<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, axis_dim, inner_dim, x, indices, values);
     }
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -1521,14 +1511,13 @@ template<> void Argmin<float, CUDAContext>(
     CHECK_EQ(top_k, 1) << "top_k > 1 is not supported with CUDA";
     if (values == nullptr) {
         _Argmin<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, axis_dim, inner_dim, x, indices);
     } else {
         _Argmin_v2<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, axis_dim, inner_dim, x, indices, values);
     }
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** ndarray.gather ********************/
@@ -1548,9 +1537,8 @@ template <> void CanonicalAxis<int, CUDAContext>(
     const int               dim,
     int*                    y) {
     _CanonicalAxis<int> 
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, dim, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -1584,11 +1572,10 @@ template <> void Gather<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _Gather<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, outer_dim, inner_dim,
                 x_slice_dim, y_slice_dim,
                     indices, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <> void Gather<int, CUDAContext>(
@@ -1601,11 +1588,10 @@ template <> void Gather<int, CUDAContext>(
     const int*              x,
     int*                    y) {
     _Gather<int>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, outer_dim, inner_dim,
                 x_slice_dim, y_slice_dim,
                     indices, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -1639,11 +1625,10 @@ template <> void GatherGrad<float, CUDAContext>(
     const float*            dy,
     float*                  dx) {
     _GatherGrad<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, outer_dim, inner_dim,
                 x_slice_dim, y_slice_dim,
                     indices, dy, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <> void GatherGrad<int, CUDAContext>(
@@ -1656,11 +1641,10 @@ template <> void GatherGrad<int, CUDAContext>(
     const int*              dy,
     int*                    dx) {
     _GatherGrad<int>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, outer_dim, inner_dim,
                 x_slice_dim, y_slice_dim,
                     indices, dy, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** ndarray.concat ********************/
@@ -1695,11 +1679,10 @@ template <> void Concat<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _Concat<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, outer_dim, inner_dim,
                 x_concat_dim, y_concat_dim,
                     concat_offset, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -1732,11 +1715,10 @@ template <> void ConcatGrad<float, CUDAContext>(
     const float*            dy,
     float*                  dx) {
     _ConcatGrad<float> 
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, outer_dim, inner_dim,
                 x_concat_dim, y_concat_dim,
                     concat_offset, dy, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** ndarray.crop ********************/
@@ -1767,9 +1749,8 @@ template<> void Crop1D<int, CUDAContext>(
     const int*              x,
     int*                    y) {
     _Crop1D<int>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, dim, ex_dim, inner_dim, start, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template<> void Crop1D<float, CUDAContext>(
@@ -1781,9 +1762,8 @@ template<> void Crop1D<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _Crop1D<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, dim, ex_dim, inner_dim, start, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template<typename T>
@@ -1815,9 +1795,8 @@ template<> void Crop1DGrad<int, CUDAContext>(
     const int*              dy,
     int*                    dx) {
     _Crop1DGrad<int>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, dim, ex_dim, inner_dim, start, end, dy, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template<> void Crop1DGrad<float, CUDAContext>(
@@ -1830,9 +1809,8 @@ template<> void Crop1DGrad<float, CUDAContext>(
     const float*            dy,
     float*                  dx) {
     _Crop1DGrad<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, dim, ex_dim, inner_dim, start, end, dy, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** ndarray.pad ********************/
@@ -1867,9 +1845,8 @@ template <> void ConstPad1D<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _ConstPad1D<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, dim, ex_dim, inner_dim, pad_l, value, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -1901,9 +1878,8 @@ template <> void ReflectPad1D<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _ReflectPad1D<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, dim, ex_dim, inner_dim, pad_l, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -1933,9 +1909,8 @@ template <> void EdgePad1D<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _EdgePad1D<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, dim, ex_dim, inner_dim, pad_l, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -1964,9 +1939,8 @@ template <> void ConstPad1DGrad<float, CUDAContext>(
     const float*            dy,
     float*                  dx) {
     _ConstPad1DGrad<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, dim, ex_dim, inner_dim, pad_l, dy, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -1998,9 +1972,8 @@ template <> void ReflectPad1DGrad<float, CUDAContext>(
     const float*            dy,
     float*                  dx) {
     _ReflectPad1DGrad<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, dim, ex_dim, inner_dim, pad_l, dy, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -2030,9 +2003,8 @@ template <> void EdgePad1DGrad<float, CUDAContext>(
     const float*            dy,
     float*                  dx) {
     _EdgePad1DGrad<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, dim, ex_dim, inner_dim, pad_l, dy, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** ndarray.one_hot ********************/
@@ -2057,9 +2029,8 @@ template <> void OneHot<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _OneHot<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, depth, on_value, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** ndarray.reduce ********************/
@@ -2087,9 +2058,8 @@ template<> void Sum<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _Sum<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, axis_dim, inner_dim, x, y);
-     CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -2116,9 +2086,8 @@ template<> void SumGrad<float, CUDAContext>(
     const float*            dy,
     float*                  dx) {
     _SumGrad<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, axis_dim, inner_dim, coeff, dy, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** ndarray.repeat ********************/
@@ -2149,9 +2118,8 @@ template <> void Repeat<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _Repeat<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, inner_dim, repeats, dim, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -2182,11 +2150,12 @@ template <> void RepeatGrad<float, CUDAContext>(
     const int               inner_dim,
     const int               repeats,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _RepeatGrad<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
-            count, inner_dim, repeats, dim, dy, dx);
-    CUDA_POST_KERNEL_CHECK;
+        << <CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                count, inner_dim, repeats, dim, dy, dx);
 }
 
 /******************** ndarray.slice ********************/
@@ -2221,11 +2190,10 @@ template <> void Slice<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _Slice<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, outer_dim, inner_dim,
                 x_slice_dim, y_slice_dim,
                     slice_offset, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -2258,11 +2226,10 @@ template <> void SliceGrad<float, CUDAContext>(
     const float*            dy,
     float*                  dx) {
     _SliceGrad<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, outer_dim, inner_dim,
                 x_slice_dim, y_slice_dim,
                     slice_offset, dy,  dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** ndarray.tile ********************/
@@ -2290,9 +2257,8 @@ template <> void Tile<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _Tile<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, ex_inner_dim, multiple, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -2318,11 +2284,12 @@ template <> void TileGrad<float, CUDAContext>(
     const int               ex_inner_dim,
     const int               multiple,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _TileGrad<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
-            count, ex_inner_dim, multiple, dy, dx);
-    CUDA_POST_KERNEL_CHECK;
+        << <CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                count, ex_inner_dim, multiple, dy, dx);
 }
 
 /******************** ndarray.transpose ********************/
@@ -2356,9 +2323,8 @@ template <> void Transpose<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _Transpose<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, ndim, order, old_steps, new_steps, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -2390,9 +2356,8 @@ template <> void TransposeGrad<float, CUDAContext>(
     const float*            dy,
     float*                  dx) {
     _TransposeGrad<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, ndim, order, old_steps, new_steps, dy, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** recurrent.lstm_cell ********************/
@@ -2446,12 +2411,11 @@ template <> void LSTMCell<float, CUDAContext>(
                   c_offset = 3 * C,
                       x_offset = 4 * C;
     _LSTMCellAct<float>
-        << <GET_BLOCKS(count * 4), CUDA_NUM_THREADS >> > (
+        << <CUDA_BLOCKS(count * 4), CUDA_THREADS >> > (
             count * 4, c_offset, x_offset, xact);
     _LSTMCellGate<float> 
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, C, o_offset, c_offset, x_offset, cx, xact, c, h);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -2518,13 +2482,12 @@ template <> void LSTMCellGrad<float, CUDAContext>(
                   c_offset = 3 * C,
                       x_offset = 4 * C;
     _LSTMCellGateGrad<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, C, o_offset, c_offset, x_offset,
                 cx, xact, c, dc, dh, dcx, dx);
     _LSTMCellActGrad<float> 
-        << <GET_BLOCKS(count * 4), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count * 4), CUDA_THREADS >> >(
             count * 4, c_offset, x_offset, xact, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** update.adam_update ********************/
@@ -2557,9 +2520,8 @@ template <> void AdamUpdate<float, CUDAContext>(
     float*                  m,
     float*                  v) {
     _AdamUpdate<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> > (
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> > (
             count, lr, beta1, beta2, eps, g, m, v);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** update.nesterov_update ********************/
@@ -2585,9 +2547,8 @@ template <> void NesterovUpdate<float, CUDAContext>(
     float*                  g,
     float*                  h) {
     _NesterovUpdate<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> > (
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> > (
             count, lr, momentum, g, h);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** update.rmsprop_update ********************/
@@ -2615,9 +2576,8 @@ template <> void RMSPropUpdate<float, CUDAContext>(
     float*                  g,
     float*                  h) {
     _RMSPropUpdate<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, lr, decay, eps, g, h);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** update.sgd_update ********************/
@@ -2642,9 +2602,8 @@ template <> void SGDUpdate<float, CUDAContext>(
     float*                  g,
     float*                  h) {
     _SGDUpdate<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, lr, momentum, g, h);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** vision.bias_add ********************/
@@ -2682,15 +2641,18 @@ template<> void BiasAdd<float, CUDAContext>(
     const string&           data_format,
     const float*            bias,
     const float*            bias_multiplier,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     if (data_format == "NCHW") {
         _BiasAdd_NCHW<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
-                count, dim, inner_dim, bias, y);
+            << <CUDA_BLOCKS(count), CUDA_THREADS,
+                0, ctx->cuda_stream() >> >(
+                    count, dim, inner_dim, bias, y);
     } else if (data_format == "NHWC") {
         _BiasAdd_NHWC<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
-                count, dim,  inner_dim, bias, y);
+            << <CUDA_BLOCKS(count), CUDA_THREADS,
+                0, ctx->cuda_stream() >> >(
+                    count, dim,  inner_dim, bias, y);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
@@ -2797,16 +2759,15 @@ template <> void BilinearResize<float, CUDAContext>(
     const float scale_w = (float)W / out_w;
      if (data_format == "NCHW") {
          _BilinearResize_NCHW<float>
-             << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+             << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                  count, N, C, H, W, out_h, out_w,
                      scale_h, scale_w, x, y);
     } else if(data_format == "NHWC") {
          _BilinearResize_NHWC<float>
-             << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+             << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                  count, N, C, H, W, out_h, out_w,
                      scale_h, scale_w, x, y);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -2907,16 +2868,15 @@ template <> void BilinearResizeGrad<float, CUDAContext>(
     math::Set<float, CUDAContext>(N * C * H * W, 0, dx);
      if (data_format == "NCHW") {
          _BilinearResizeGrad_NCHW<float>
-             << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+             << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                  count, N, C, H, W, out_h, out_w,
                      scale_h, scale_w, dy, dx);
     } else if(data_format == "NHWC") {
          _BilinearResizeGrad_NHWC<float>
-             << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+             << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                  count, N, C, H, W, out_h, out_w,
                      scale_h, scale_w, dy, dx);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** vision.conv ********************/
@@ -3027,19 +2987,18 @@ template <> void Im2Col2d<float, CUDAContext>(
     if (data_format == "NCHW") {
          const int count = (C * col_h * col_w);
          _Im2Col2d_NCHW<float> 
-             << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+             << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                  count, H, W, col_h, col_w,
                      kernel_h, kernel_w, stride_h, stride_w,
                          pad_h, pad_w, dilation_h, dilation_w, im, col);
     } else if (data_format == "NHWC") {
          const int count = (col_h * col_w * C);
          _Im2Col2d_NHWC<float> 
-             << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+             << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                  count, C, H, W, col_h, col_w,
                      kernel_h, kernel_w, stride_h, stride_w,
                          pad_h, pad_w, dilation_h, dilation_w, im, col);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template<typename T>
@@ -3171,19 +3130,18 @@ template <> void Col2Im2d<float, CUDAContext>(
     if (data_format == "NCHW") {
          const int count = (C * H * W);
          _Col2Im2d_NCHW<float>
-             << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+             << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                  count, H, W, col_h, col_w, kernel_h, kernel_w,
                      stride_h, stride_w, pad_h, pad_w,
                          dilation_h, dilation_w, col, im);
     } else if (data_format == "NHWC") {
          const int count = (H * W * C);
          _Col2Im2d_NHWC<float> 
-             << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+             << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                  count, C, H, W, col_h, col_w, kernel_h, kernel_w,
                      stride_h, stride_w, pad_h, pad_w,
                          dilation_h, dilation_w, col, im);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** vision.nn_resize ********************/
@@ -3251,16 +3209,15 @@ template <> void NNResize<float, CUDAContext>(
     const float scale_w = (float)W / out_w;
     if (data_format == "NCHW") {
         _NNResize_NCHW<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, out_h, out_w,
                     scale_h, scale_w, x, y);
     } else if(data_format == "NHWC") {
         _NNResize_NHWC<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, out_h, out_w,
                     scale_h, scale_w, x, y);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -3327,16 +3284,15 @@ template <> void NNResizeGrad<float, CUDAContext>(
     math::Set<float, CUDAContext>(N * C * H * W, 0, dx);
     if (data_format == "NCHW") {
         _NNResizeGrad_NCHW<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, out_h, out_w,
                     scale_h, scale_w, dy, dx);
     } else if(data_format == "NHWC") {
         _NNResizeGrad_NHWC<float> 
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, out_h, out_w,
                     scale_h, scale_w, dy, dx);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** vision.pooling ********************/
@@ -3458,16 +3414,15 @@ template<> void MAXPooling2d<float, CUDAContext>(
     float*                  y) {
     if (data_format == "NCHW") {
         _MAXPooling2d_NCHW<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
                     stride_h, stride_w, pad_h, pad_w, x, mask, y);
     } else if (data_format == "NHWC") {                        
         _MAXPooling2d_NHWC<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
                     stride_h, stride_w, pad_h, pad_w, x, mask, y);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template<typename T>
@@ -3579,16 +3534,15 @@ template<> void AVGPooling2d<float, CUDAContext>(
     float*                  y) {
     if (data_format == "NCHW") {
         _AVGPooling2d_NCHW<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
                     stride_h, stride_w, pad_h, pad_w, x, y);
     } else if (data_format == "NHWC") {
         _AVGPooling2d_NHWC<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
                     stride_h, stride_w, pad_h, pad_w, x, y);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template<typename T>
@@ -3705,16 +3659,15 @@ template<> void MAXPooling2dGrad<float, CUDAContext>(
     float*                  dx) {
     if (data_format == "NCHW") {
         _MAXPooling2dGrad_NCHW<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
                     stride_h, stride_w, pad_h, pad_w, dy,mask, dx);
     } else if (data_format == "NHWC") {
         _MAXPooling2dGrad_NHWC<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
                     stride_h, stride_w, pad_h, pad_w, dy, mask, dx);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template<typename T>
@@ -3828,16 +3781,15 @@ template<> void AVGPooling2dGrad<float, CUDAContext>(
     float*                  dx) {
    if (data_format == "NCHW") {
         _AVGPooling2dGrad_NCHW<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
                     stride_h, stride_w, pad_h, pad_w, dy, dx);
     } else if (data_format == "NHWC") {
         _AVGPooling2dGrad_NHWC<float>
-            << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
                 count, N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
                     stride_h, stride_w, pad_h, pad_w, dy, dx);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** vision.roi_pooling ********************/
@@ -3923,10 +3875,9 @@ template<> void ROIPooling<float, CUDAContext>(
     int*                    mask,
     float*                  y) {
     _ROIPooling<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, spatial_scale, C, H, W,
                 pool_h, pool_w, x, rois, mask, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -4017,10 +3968,9 @@ template<> void ROIPoolingGrad<float, CUDAContext>(
     const int*              mask,
     float*                  dx) {
     _ROIPoolingGrad<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, num_rois, spatial_scale, C, H, W,
                 pool_h, pool_w, dy, rois, mask, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** vision.roi_align ********************/
@@ -4144,10 +4094,9 @@ template<> void ROIAlign<float, CUDAContext>(
     const float*            rois,
     float*                  y) {
     _ROIAlign<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, spatial_scale, C, H, W,
                 pool_h, pool_w, sampling_ratio, x, rois, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -4164,7 +4113,8 @@ __device__ void _ROIAlignInterpolateGrad(
     int&                    x_high,
     int&                    y_low,
     int&                    y_high) {
-    if (y < -1.0 || y > height || x < -1.0 || x > width) {
+    if (y < -1.0 || y > height ||
+            x < -1.0 || x > width) {
         w1 = w2 = w3 = w4 = 0.;
         x_low = x_high = y_low = y_high = -1;
         return;
@@ -4232,7 +4182,8 @@ __global__ void _ROIAlignGrad(
         T bin_size_h = static_cast<T>(roi_height) / static_cast<T>(pool_h);
         T bin_size_w = static_cast<T>(roi_width) / static_cast<T>(pool_w);
 
-        T* offset_dXdata = dXdata + (roi_batch_ind * channels + c) * height * width;
+        T* offset_dXdata = dXdata + 
+            (roi_batch_ind * channels + c) * height * width;
 
         int y_offset = (n * channels + c) * pool_h * pool_w;
         const T* offset_dYdata = dYdata + y_offset;
@@ -4246,11 +4197,13 @@ __global__ void _ROIAlignGrad(
         const T num_bin_grids = roi_bin_grid_h * roi_bin_grid_w;
 
         for (int iy = 0; iy < roi_bin_grid_h; iy++) {
-            const T y = roi_start_h + ph * bin_size_h + 
-                static_cast<T>(iy + .5f) * bin_size_h / static_cast<T>(roi_bin_grid_h);
+            const T y = roi_start_h + ph * bin_size_h +
+                static_cast<T>(iy + .5f) * bin_size_h /
+                    static_cast<T>(roi_bin_grid_h);
             for (int ix = 0; ix < roi_bin_grid_w; ix++) {
-                const T x = roi_start_w + pw * bin_size_w + 
-                    static_cast<T>(ix + .5f) * bin_size_w / static_cast<T>(roi_bin_grid_w);
+                const T x = roi_start_w + pw * bin_size_w +
+                    static_cast<T>(ix + .5f) * bin_size_w /
+                        static_cast<T>(roi_bin_grid_w);
 
                 T w1, w2, w3, w4;
                 int x_low, x_high, y_low, y_high;
@@ -4264,11 +4217,20 @@ __global__ void _ROIAlignGrad(
                 T g3 = dYdata_this_bin * w3 / num_bin_grids;
                 T g4 = dYdata_this_bin * w4 / num_bin_grids;
 
-                if (x_low >= 0 && x_high >= 0 && y_low >= 0 && y_high >= 0) {
-                    atomicAdd(offset_dXdata + y_low * width + x_low, static_cast<T>(g1));
-                    atomicAdd(offset_dXdata + y_low * width + x_high, static_cast<T>(g2));
-                    atomicAdd(offset_dXdata + y_high * width + x_low, static_cast<T>(g3));
-                    atomicAdd(offset_dXdata + y_high * width + x_high, static_cast<T>(g4));
+                if (x_low >= 0 && x_high >= 0 
+                        && y_low >= 0 && y_high >= 0) {
+                    atomicAdd(
+                        offset_dXdata + y_low * width + x_low,
+                        static_cast<T>(g1));
+                    atomicAdd(
+                        offset_dXdata + y_low * width + x_high,
+                        static_cast<T>(g2));
+                    atomicAdd(
+                        offset_dXdata + y_high * width + x_low,
+                        static_cast<T>(g3));
+                    atomicAdd(
+                        offset_dXdata + y_high * width + x_high,
+                        static_cast<T>(g4));
                 }
             }
         }
@@ -4290,10 +4252,9 @@ template<> void ROIAlignGrad<float, CUDAContext>(
     const float*            rois,
     float*                  dx) {
     _ROIAlignGrad<float>
-        << <GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, num_rois, spatial_scale, C, H, W,
                 pool_h, pool_w, sampling_ratio, dy, rois, dx);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 }    // namespace kernel

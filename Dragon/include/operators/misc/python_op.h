@@ -23,7 +23,7 @@ namespace dragon {
 template <class Context>
 class RunOp : public Operator<Context> {
  public:
-    RunOp(const OperatorDef& op_def, Workspace* ws);
+    RunOp(const OperatorDef& def, Workspace* ws);
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -36,16 +36,16 @@ class RunOp : public Operator<Context> {
 template <class Context>
 class TemplateOp : public RunOp<Context> {
  public:
-    TemplateOp(const OperatorDef& op_def, Workspace* ws)
-        : RunOp<Context>(op_def, ws) {}
+    TemplateOp(const OperatorDef& def, Workspace* ws)
+        : RunOp<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
 };
 
 template <class Context>
-class TemplateGradientOp : public TemplateOp<Context> {
+class TemplateGradientOp final : public TemplateOp<Context> {
 public:
-    TemplateGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : TemplateOp<Context>(op_def, ws) {}
+    TemplateGradientOp(const OperatorDef& def, Workspace* ws)
+        : TemplateOp<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

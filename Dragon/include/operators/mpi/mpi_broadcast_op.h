@@ -21,8 +21,8 @@ namespace dragon {
 template <class Context>
 class MPIBroadcastOp final : public ModelMPIBase<Context> {
  public:
-    MPIBroadcastOp(const OperatorDef& op_def, Workspace* ws)
-        : ModelMPIBase<Context>(op_def, ws) {}
+    MPIBroadcastOp(const OperatorDef& def, Workspace* ws)
+        : ModelMPIBase<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
     USE_MPIMODEL_FUNCTIONS(Context);
 
@@ -33,8 +33,8 @@ class MPIBroadcastOp final : public ModelMPIBase<Context> {
 template <class Context>
 class MPIBroadcastGradientOp final : public ModelMPIBase<Context> {
 public:
-    MPIBroadcastGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : ModelMPIBase<Context>(op_def, ws) {}
+    MPIBroadcastGradientOp(const OperatorDef& def, Workspace* ws)
+        : ModelMPIBase<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
     USE_MPIMODEL_FUNCTIONS(Context);
 

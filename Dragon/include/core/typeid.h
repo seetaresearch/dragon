@@ -82,39 +82,48 @@ class TypeMeta {
     template <typename T>
     static void Ctor(void* ptr, size_t n) {
         T* typed_ptr = static_cast<T*>(ptr);
-        for (unsigned int i = 0; i < n; i++) new(typed_ptr + i) T;
+        for (unsigned int i = 0; i < n; i++)
+            new(typed_ptr + i) T;
     }
 
     template <typename T>
     static void Copy(const void* src, void* dst, size_t n) {
         const T* typed_src = static_cast<const T*>(src);
         T* typed_dst = static_cast<T*>(dst);
-        for (unsigned int i = 0; i < n; i++) typed_dst[i] = typed_src[i];
+        for (unsigned int i = 0; i < n; i++)
+            typed_dst[i] = typed_src[i];
     }
 
     template <typename T>
     static void Dtor(void* ptr, size_t n) {
         T* typed_ptr = static_cast<T*>(ptr);
-        for (unsigned int i = 0; i < n; i++) typed_ptr[i].~T();
+        for (unsigned int i = 0; i < n; i++)
+            typed_ptr[i].~T();
     }
 
 #define FundMeta std::enable_if<std::is_fundamental<T>::value,TypeMeta>::type
+#define StructMeta std::enable_if<!std::is_fundamental<T>::value && std::is_copy_assignable<T>::value, TypeMeta>::type 
+
     template <typename T>
     static typename FundMeta Make() {
-        return TypeMeta(Id<T>(), Itemsize<T>(), nullptr, nullptr, nullptr);
+        return TypeMeta(Id<T>(), Itemsize<T>(),
+            nullptr, nullptr, nullptr);
     }
-
-#define StructMeta std::enable_if<!std::is_fundamental<T>::value && std::is_copy_assignable<T>::value, TypeMeta>::type 
 
     template<typename T>
     static typename StructMeta Make() {
-        return TypeMeta(Id<T>(), Itemsize<T>(), Ctor<T>, Copy<T>, Dtor<T>);
+        return TypeMeta(Id<T>(), Itemsize<T>(),
+            Ctor<T>, Copy<T>, Dtor<T>);
     }
 
  private:
-    TypeMeta(TypeId id, size_t itemsize, 
-             PlacementNew ctor, TypedCopy copy, TypedDestructor dtor) 
-        : id_(id), itemsize_(itemsize), 
+    TypeMeta(
+        TypeId              id,
+        size_t              itemsize,
+        PlacementNew        ctor,
+        TypedCopy           copy,
+        TypedDestructor     dtor)
+        : id_(id), itemsize_(itemsize),
           ctor_(ctor), copy_(copy), dtor_(dtor) {}
 
  private:

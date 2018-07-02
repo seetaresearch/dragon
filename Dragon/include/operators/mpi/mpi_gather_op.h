@@ -21,8 +21,8 @@ namespace dragon {
 template <class Context>
 class MPIGatherOp final : public ModelMPIBase<Context> {
  public:
-    MPIGatherOp(const OperatorDef& op_def, Workspace *ws)
-        : ModelMPIBase<Context>(op_def, ws) {}
+    MPIGatherOp(const OperatorDef& def, Workspace *ws)
+        : ModelMPIBase<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
     USE_MPIMODEL_FUNCTIONS(Context);
 
@@ -33,8 +33,8 @@ class MPIGatherOp final : public ModelMPIBase<Context> {
 template <class Context>
 class MPIGatherGradientOp final : public ModelMPIBase<Context> {
  public:
-    MPIGatherGradientOp(const OperatorDef& op_def, Workspace *ws) 
-        : ModelMPIBase<Context>(op_def, ws) {}
+    MPIGatherGradientOp(const OperatorDef& def, Workspace *ws) 
+        : ModelMPIBase<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
     USE_MPIMODEL_FUNCTIONS(Context);
 

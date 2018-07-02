@@ -17,10 +17,10 @@
 namespace dragon {
 
 template <class Context>
-class TileOp : public Operator<Context> {
+class TileOp final : public Operator<Context> {
  public:
-    TileOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws) {
+    TileOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws) {
         GET_ARGUMENTS_WITH_DESC(int, multiples);
     }
     USE_OPERATOR_FUNCTIONS;
@@ -35,10 +35,10 @@ class TileOp : public Operator<Context> {
 };
 
 template <class Context>
-class TileGradientOp : public Operator<Context> {
+class TileGradientOp final : public Operator<Context> {
  public:
-    TileGradientOp(const OperatorDef& op_def, Workspace* ws) 
-        : Operator<Context>(op_def, ws) {
+    TileGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws) {
         GET_ARGUMENTS_WITH_DESC(int, multiples);
     }
     USE_OPERATOR_FUNCTIONS;

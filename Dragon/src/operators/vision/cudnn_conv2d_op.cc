@@ -54,13 +54,15 @@ void CuDNNConv2dOp<Context>::ResetDesc() {
     }
 
     CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(
-        handle[0], input_desc, filter_desc, conv_desc, output_desc,
-            CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
-                WORKSPACE_LIMIT_BYTES, &fwd_algo));
+        ctx().cudnn_handle(), input_desc,
+            filter_desc, conv_desc, output_desc,
+                CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
+                    WORKSPACE_LIMIT_BYTES, &fwd_algo));
 
     CUDNN_CHECK(cudnnGetConvolutionForwardWorkspaceSize(
-        handle[0], input_desc, filter_desc, conv_desc,
-            output_desc, fwd_algo, &fwd_data_size));
+        ctx().cudnn_handle(), input_desc,
+            filter_desc, conv_desc, output_desc,
+                fwd_algo, &fwd_data_size));
 }
 
 template <class Context> template <typename T>
@@ -73,22 +75,24 @@ void CuDNNConv2dOp<Context>::RunWithType() {
     auto* Wdata = Input(1).template data<T, Context>();
     if (HasBias()) TENSOR_FILL(Input(2), bias_shape);
 
+    auto* WSdata = (uint8_t*)ws()->template
+        caches<Context>({ fwd_data_size })[0];
+
+    auto cudnn_handle = ctx().cudnn_handle();
+
     for (int g = 0; g < cudnn_group; g++) {
-        auto* WSdata = (uint8_t*)ws()->template caches<Context>({
-            cudnn_group * fwd_data_size })[0];
-        CUDNN_CHECK(cudnnConvolutionForward(handle[g],
+        CUDNN_CHECK(cudnnConvolutionForward(cudnn_handle,
             CUDNNType<T>::one, input_desc, Xdata + x_offset * g,
-                filter_desc, Wdata + weight_offset * g, conv_desc, fwd_algo,
-                    WSdata + g * fwd_data_size, fwd_data_size,
-                        CUDNNType<T>::zero, output_desc, Ydata + y_offset * g));
+                filter_desc, Wdata + weight_offset * g,
+                    conv_desc, fwd_algo, WSdata, fwd_data_size,
+            CUDNNType<T>::zero, output_desc, Ydata + y_offset * g));
         if (HasBias()) {
             auto* bias = Input(2).template data<T, Context>();
-            CUDNN_CHECK(cudnnAddTensor(handle[g],
+            CUDNN_CHECK(cudnnAddTensor(cudnn_handle,
                 CUDNNType<T>::one, bias_desc, bias + bias_offset * g,
                     CUDNNType<T>::one, output_desc, Ydata + y_offset * g));
         }
     }
-    kernel::Empty<T, Context>();
 }
 
 template <class Context>
@@ -195,64 +199,65 @@ void CuDNNConv2dGradientOp<Context>::ResetDesc() {
     }
 
     CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(
-        handle[0], output_desc, input_desc, conv_desc, filter_desc,
-            CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT,
-                WORKSPACE_LIMIT_BYTES, &bwd_filter_algo));
+        ctx().cudnn_handle(), output_desc,
+            input_desc, conv_desc, filter_desc,
+                CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT,
+                    WORKSPACE_LIMIT_BYTES, &bwd_filter_algo));
 
     CUDNN_CHECK(cudnnGetConvolutionBackwardFilterWorkspaceSize(
-        handle[0], output_desc, input_desc, conv_desc, filter_desc,
-            bwd_filter_algo, &bwd_filter_size));
+        ctx().cudnn_handle(), output_desc,
+            input_desc, conv_desc, filter_desc,
+                bwd_filter_algo, &bwd_filter_size));
 
     CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm(
-        handle[0], filter_desc, input_desc, conv_desc, output_desc,
-            CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT,
-                WORKSPACE_LIMIT_BYTES, &bwd_data_algo));
+        ctx().cudnn_handle(), filter_desc,
+            input_desc, conv_desc, output_desc,
+                CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT,
+                    WORKSPACE_LIMIT_BYTES, &bwd_data_algo));
 
     CUDNN_CHECK(cudnnGetConvolutionBackwardDataWorkspaceSize(
-        handle[0], filter_desc, input_desc, conv_desc, output_desc,
-            bwd_data_algo, &bwd_data_size));
+        ctx().cudnn_handle(), filter_desc,
+            input_desc, conv_desc, output_desc,
+                bwd_data_algo, &bwd_data_size));
 }
 
 template <class Context> template <typename T>
 void CuDNNConv2dGradientOp<Context>::RunWithType() {
     if (Input(0).dims() != input_dims) ResetDesc<T>();
-    vector<void*> workspaces = ws()->template caches<Context>({
-        Output(0)->name() != "ignore" ? cudnn_group * bwd_data_size : 0,
-        Output(1)->name() != "ignore" ? cudnn_group * bwd_filter_size : 0,
-    });
 
     const T* dYdata = Input(2).template data<T, Context>();
+
+    auto* WSdata = ws()->template caches<Context>({
+        std::max(bwd_data_size, bwd_filter_size)})[0];
+
+    auto cudnn_handle = ctx().cudnn_handle();
+
     for (int g = 0; g < cudnn_group; g++) {
         if (Output(2)->name() != "ignore") {
             T* dBdata = Output(2)->template mutable_data<T, Context>();
-            CUDNN_CHECK(cudnnConvolutionBackwardBias(handle[g],
+            CUDNN_CHECK(cudnnConvolutionBackwardBias(cudnn_handle,
                 CUDNNType<T>::one, input_desc, dYdata + y_offset * g,
                     CUDNNType<T>::one, bias_desc, dBdata + bias_offset * g));
         }
         if (Output(1)->name() != "ignore") {
             auto* Xdata = Input(0).template data<T, Context>();
             auto* dWdata = Output(1)->template mutable_data<T, Context>();
-            auto* WSdata = (uint8_t*)workspaces[1];
-            CUDNN_CHECK(cudnnConvolutionBackwardFilter(handle[cudnn_group + g],
-                          CUDNNType<T>::one, output_desc, Xdata + x_offset * g,
-                                             input_desc, dYdata + y_offset * g,
-                                                    conv_desc, bwd_filter_algo,
-                                 WSdata + g * bwd_filter_size, bwd_filter_size,
-                  CUDNNType<T>::one, filter_desc, dWdata + weight_offset * g));
+            CUDNN_CHECK(cudnnConvolutionBackwardFilter(cudnn_handle,
+                CUDNNType<T>::one, output_desc, Xdata + x_offset * g,
+                    input_desc, dYdata + y_offset * g,
+                        conv_desc, bwd_filter_algo, WSdata, bwd_filter_size,
+                CUDNNType<T>::one, filter_desc, dWdata + weight_offset * g));
         }
         if (Output(0)->name() != "ignore") {
             auto* Wdata = Input(1).template data<T, Context>();
             auto* dXdata = Output(0)->template mutable_data<T, Context>();
-            auto* WSdata = (uint8_t*)workspaces[0];
-            CUDNN_CHECK(cudnnConvolutionBackwardData(handle[2 * cudnn_group + g],
-                       CUDNNType<T>::one, filter_desc, Wdata + weight_offset * g,
-                                               input_desc, dYdata + y_offset * g,
-                                                        conv_desc, bwd_data_algo,
-                                       WSdata + g * bwd_data_size, bwd_data_size,
-                        CUDNNType<T>::zero, output_desc, dXdata + x_offset * g));
+            CUDNN_CHECK(cudnnConvolutionBackwardData(cudnn_handle,
+                CUDNNType<T>::one, filter_desc, Wdata + weight_offset * g,
+                    input_desc, dYdata + y_offset * g,
+                        conv_desc, bwd_data_algo, WSdata, bwd_data_size,
+                CUDNNType<T>::zero, output_desc, dXdata + x_offset * g));
         }
     }
-    kernel::Empty<T, Context>();
 }
 
 template <class Context>

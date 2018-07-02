@@ -19,17 +19,16 @@ namespace dragon {
 template <class Context>
 class MovingAverageOp final : public Operator<Context> {
  public:
-    MovingAverageOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws), 
-          decay(OperatorBase::GetSingleArg<float>("decay", 1.0)) {}
+    MovingAverageOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          decay(OperatorBase::Arg<float>("decay", 1.0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
-  protected:
+ protected:
     float decay;
-
 };
 
 }   // namespace dragon

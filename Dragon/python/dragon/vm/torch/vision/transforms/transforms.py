@@ -47,10 +47,13 @@ class Compose(object):
         self.transforms = transforms
         self.n_transformers = 1
         for t in self.transforms:
+            if isinstance(t, Normalize):
+                # Add 1 transformer for normalization
+                self.n_transformers += 1
             if isinstance(t, ColorJitter):
                 # Add 1 transformer for color augmentation
                 self.n_transformers += 1
-            elif isinstance(t, (RandomCrop, RandomResizedCrop, RandomSizedCrop)):
+            if isinstance(t, (RandomCrop, RandomResizedCrop, RandomSizedCrop)):
                 # Add 1 transformer for random scale
                 self.n_transformers += 1
         self.n_transformers = min(self.n_transformers, 3)

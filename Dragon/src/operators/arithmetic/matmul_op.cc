@@ -16,7 +16,8 @@ void MatmulOp<Context>::RunWithType() {
             TransA ? CblasTrans : CblasNoTrans,
                 TransB ? CblasTrans : CblasNoTrans,
                     M, N, K1,
-                        1.0, X1data, X2data, 0.0, Ydata);
+                        1.0, X1data, X2data,
+                            0.0, Ydata, &ctx());
         X1data += x1_offset;
         X2data += x2_offset;
         Ydata += y_offset;
@@ -39,12 +40,12 @@ void MatmulOp<Context>::RunOnDevice() {
     K2 = TransB ? Input(1).dim(-1) : Input(1).dim(-2);
     N = TransB ? Input(1).dim(-2) : Input(1).dim(-1);
     CHECK_EQ(K1, K2) << "\nTensor(" << Input(0).name() << "): "
-                     << Input(0).dim_string() << " can not mul with Tensor"
-                     << "(" << Input(1).name() << "): " << Input(1).dim_string();
+                     << Input(0).DimString() << " can not mul with Tensor"
+                     << "(" << Input(1).name() << "): " << Input(1).DimString();
     CHECK_EQ(Input(0).count() / M / K1, Input(1).count() / K2 / N)
                      << "\nTensor(" << Input(0).name() << "): "
-                     << Input(0).dim_string() << " can not mul with Tensor"
-                     << "(" << Input(1).name() << "): " << Input(1).dim_string();
+                     << Input(0).DimString() << " can not mul with Tensor"
+                     << "(" << Input(1).name() << "): " << Input(1).DimString();
     vector<TIndex> dims = Input(0).dims();
     dims[dims.size() - 2] = M;
     dims[dims.size() - 1] = N;
@@ -75,12 +76,14 @@ void MatmulGradientOp<Context>::RunWithType() {
             CblasNoTrans,
                 TransB ? CblasNoTrans : CblasTrans,
                     M, K1, N,
-                        1.0, dYdata, X2data, 0.0, dX1data);
+                        1.0, dYdata, X2data,
+                            0.0, dX1data, &ctx());
         math::Gemm<T, Context>(
             TransA ? CblasNoTrans : CblasTrans,
                 CblasNoTrans,
                     K1, N, M,
-                        1.0, X1data, dYdata, 0.0, dX2data);
+                        1.0, X1data, dYdata,
+                            0.0, dX2data, &ctx());
         X1data += x1_offset;
         X2data += x2_offset;
         dX1data += x1_offset;
@@ -105,12 +108,12 @@ void MatmulGradientOp<Context>::RunOnDevice() {
     K2 = TransB ? Input(1).dim(-1) : Input(1).dim(-2);
     N = TransB ? Input(1).dim(-2) : Input(1).dim(-1);
     CHECK_EQ(K1, K2) << "\nTensor(" << Input(0).name() << "): "
-        << Input(0).dim_string() << " can not mul with Tensor"
-        << "(" << Input(1).name() << "): " << Input(1).dim_string();
+        << Input(0).DimString() << " can not mul with Tensor"
+        << "(" << Input(1).name() << "): " << Input(1).DimString();
     CHECK_EQ(Input(0).count() / M / K1, Input(1).count() / K2 / N)
         << "\nTensor(" << Input(0).name() << "): "
-        << Input(0).dim_string() << " can not mul with Tensor"
-        << "(" << Input(1).name() << "): " << Input(1).dim_string();
+        << Input(0).DimString() << " can not mul with Tensor"
+        << "(" << Input(1).name() << "): " << Input(1).DimString();
     Output(0)->ReshapeLike(Input(0));
     Output(1)->ReshapeLike(Input(1));
 

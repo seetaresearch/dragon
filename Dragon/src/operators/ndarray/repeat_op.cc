@@ -18,7 +18,7 @@ void RepeatOp<Context>::RunOnDevice() {
     if (axis == -1) {
         outer_dim = inner_dim = 1;
         dim = Input(0).count();
-        Output(0)->Reshape(vector<TIndex>(1, dim * repeats()));
+        Output(0)->Reshape({ dim * repeats() });
     } else {
         outer_dim = Input(0).count(0, axis);
         dim = Input(0).dim(axis);
@@ -43,8 +43,8 @@ void RepeatGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     kernel::RepeatGrad<T, Context>(
-        Output(0)->count(), outer_dim, dim,
-            inner_dim, repeats(), dYdata, dXdata);
+        Output(0)->count(), outer_dim, dim, inner_dim,
+            repeats(), dYdata, dXdata, &ctx());
 }
 
 template <class Context>

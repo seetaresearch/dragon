@@ -45,7 +45,7 @@ class RNN(RNNBase):
             The number of recurrent layers.
         bidirectional : boolean
             Whether to use bidirectional rnn.
-        dropout : float
+        dropout : number
             The dropout ratio. ``0`` means ``Disabled``.
         name : str or None
             The optional name for weights.
@@ -87,7 +87,7 @@ class LSTM(RNNBase):
             The number of recurrent layers.
         bidirectional : boolean
             Whether to use bidirectional rnn.
-        dropout : float
+        dropout : number
             The dropout ratio. ``0`` means ``Disabled``.
         name : str or None
             The optional name for weights.
@@ -128,7 +128,7 @@ class GRU(RNNBase):
             The number of recurrent layers.
         bidirectional : boolean
             Whether to use bidirectional rnn.
-        dropout : float
+        dropout : number
             The dropout ratio. ``0`` means ``Disabled``.
         name : str or None
             The optional name for weights.

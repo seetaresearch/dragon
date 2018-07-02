@@ -19,9 +19,9 @@ namespace dragon {
 template <class Context>
 class GatherOp final : public Operator<Context> {
  public:
-    GatherOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 0)) {}
+    GatherOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -35,10 +35,10 @@ class GatherOp final : public Operator<Context> {
 template <class Context>
 class GatherGradientOp final : public Operator<Context> {
  public:
-    GatherGradientOp(const OperatorDef& op_def, Workspace* ws) 
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 0)),
-          acc_grad(OperatorBase::GetSingleArg<bool>("acc_gradient", false)) {}
+    GatherGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 0)),
+          acc_grad(OperatorBase::Arg<bool>("acc_gradient", false)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

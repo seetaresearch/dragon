@@ -203,7 +203,6 @@ def Stack(inputs, axis=0, **kwargs):
     """
     CheckInputs(inputs, 1, INT_MAX)
     arguments = ParseArguments(locals())
-    arguments['num_input'] = len(inputs)
 
     output = Tensor.CreateOperator(nout=1, op_type='Stack', **arguments)
 
@@ -466,18 +465,27 @@ def Transpose(inputs, perms=None, **kwargs):
     """
     CheckInputs(inputs, 1)
     arguments = ParseArguments(locals())
-    if perms is None: arguments['perms'] = []
+    if perms is None:
+        arguments['perms'] = []
+    else:
+        AddArgumentsWithDesc(arguments, perms, 'perms', 'int32', as_target=True)
 
     output = Tensor.CreateOperator(nout=1, op_type='Transpose', **arguments)
 
     if inputs.shape is not None:
         if perms is None: perms = list(range(((len(inputs.shape)) - 1), -1, -1))
-        if len(inputs.shape) != len(perms):
-            raise ValueError('The ndim of inputs is {}, but perms provide {}'. \
-                             format(len(inputs.shape), len(perms)))
-        output.shape = inputs.shape[:]
-        for i, axis in enumerate(perms):
-            output.shape[i] = inputs.shape[axis]
+        else:
+            possible_to_infer_shape = True
+            for perm in perms:
+                if isinstance(perm, Tensor):
+                    possible_to_infer_shape = False
+            if possible_to_infer_shape:
+                if len(inputs.shape) != len(perms):
+                    raise ValueError('The ndim of inputs is {}, but perms provide {}'
+                            .format(len(inputs.shape), len(perms)))
+                output.shape = inputs.shape[:]
+                for i, axis in enumerate(perms):
+                    output.shape[i] = inputs.shape[axis]
 
     return output
 

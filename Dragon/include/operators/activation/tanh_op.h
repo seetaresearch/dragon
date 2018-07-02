@@ -41,8 +41,8 @@ class TanhGradientOp : public Operator<Context> {
 template <class Context>
 class CuDNNTanhOp final : public TanhOp<Context> {
 public:
-    CuDNNTanhOp(const OperatorDef& op_def, Workspace* ws)
-        : TanhOp<Context>(op_def, ws) {
+    CuDNNTanhOp(const OperatorDef& def, Workspace* ws)
+        : TanhOp<Context>(def, ws) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc));
@@ -68,8 +68,8 @@ public:
 template <class Context>
 class CuDNNTanhGradientOp final : public TanhGradientOp<Context> {
  public:
-    CuDNNTanhGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : TanhGradientOp<Context>(op_def, ws) {
+    CuDNNTanhGradientOp(const OperatorDef& def, Workspace* ws)
+        : TanhGradientOp<Context>(def, ws) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc));

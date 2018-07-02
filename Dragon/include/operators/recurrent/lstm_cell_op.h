@@ -17,10 +17,10 @@
 namespace dragon {
 
 template <class Context>
-class LSTMCellOp : public Operator<Context> {
+class LSTMCellOp final : public Operator<Context> {
  public:
-    LSTMCellOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws) {}
+    LSTMCellOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -29,10 +29,10 @@ class LSTMCellOp : public Operator<Context> {
 };
 
 template <class Context>
-class LSTMCellGradientOp : public Operator<Context> {
+class LSTMCellGradientOp final : public Operator<Context> {
  public:
-    LSTMCellGradientOp(const OperatorDef& op_def, Workspace* ws)
-         : Operator<Context>(op_def, ws) {}
+    LSTMCellGradientOp(const OperatorDef& def, Workspace* ws)
+         : Operator<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

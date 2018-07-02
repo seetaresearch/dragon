@@ -19,11 +19,17 @@ namespace dragon {
 
 class MixedMemory {
  public:
-    enum State { UNINITIALIZED, STATE_AT_CPU, STATE_AT_CUDA, SWITCHED, SYNCED };
+    enum State {
+        UNINITIALIZED,
+        STATE_AT_CPU,
+        STATE_AT_CUDA,
+        SWITCHED,
+        SYNCED };
+
     MixedMemory() : cpu_ptr_(nullptr), cuda_ptr_(nullptr) {}
     MixedMemory(const TypeMeta& meta, const size_t nbytes)
         : meta_(meta), nbytes_(nbytes),
-        cpu_ptr_(nullptr), cuda_ptr_(nullptr) {}
+          cpu_ptr_(nullptr), cuda_ptr_(nullptr) {}
     ~MixedMemory();
 
     const void* cpu_data();
@@ -31,9 +37,6 @@ class MixedMemory {
     void* mutable_cpu_data();
     void* mutable_cuda_data();
     void set_cpu_data(void* cpu_ptr, size_t nbytes);
-#ifdef WITH_CUDA
-    void async_cuda_data(const cudaStream_t& stream);
-#endif
 
     void SwitchToDevice();
     void SwitchToCUDADevice(int device_id);

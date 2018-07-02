@@ -9,7 +9,7 @@ DEPLOY_CPU(Recurrent);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Recurrent);
 #endif
-OPERATOR_SCHEMA(Recurrent).NumInputs(4).NumOutputs(1, 3);
+OPERATOR_SCHEMA(Recurrent).NumInputs(2, 4).NumOutputs(1, 3);
 
 DEPLOY_CPU(RecurrentGradient);
 #ifdef WITH_CUDA
@@ -21,11 +21,16 @@ class GetRecurrentGradient final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetRecurrentGradient);
     vector<OperatorDef> MakeDefs() override {
-        vector<string> inputs({ I(0), I(1), I(2), I(3), O(0), GO(0) });
-        if (def.output_size() > 1) inputs.push_back(GO(1));
-        if (def.output_size() > 2) inputs.push_back(GO(2));
-        return SingleDef(def.type() + "Gradient", "", inputs,
-                vector<string> {GI(0), GI(1), GI(2), GI(3)});
+        vector<string> inputs({ I(0), I(1),
+            def.input_size() > 2 ? I(2) : "ignore",
+            def.input_size() > 3 ? I(3) : "ignore",
+            O(0), GO(0),
+            def.output_size() > 1 ? GO(1) : "ignore",
+            def.output_size() > 2 ? GO(2) : "ignore"});
+        vector<string> outputs({ GI(0), GI(1),
+            def.input_size() > 2 ? GI(2) : "ignore",
+            def.input_size() > 3 ? GI(3) : "ignore"});
+        return SingleDef(def.type() + "Gradient", "", inputs, outputs);
     }
 };
 REGISTER_GRADIENT(Recurrent, GetRecurrentGradient);

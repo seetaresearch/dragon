@@ -19,15 +19,25 @@ namespace dragon {
 #ifdef WITH_MPI
 
 template <class Context>
-class CollectiveUpdateOp : public Operator<Context> {
+class CollectiveUpdateOp final : public Operator<Context> {
  public:
-    CollectiveUpdateOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          mode(OperatorBase::GetSingleArg<string>("mode", "UNKNOWN")) {
+    CollectiveUpdateOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          mode(OperatorBase::Arg<string>("mode", "UNKNOWN")) {
          InitMPI();
          if (mode.find("NCCL") != string::npos) InitNCCL();
     }
     USE_OPERATOR_FUNCTIONS;
+
+    ~CollectiveUpdateOp() {
+        /*  TODO(PhyscalX): Temporarily disable it,
+                            to avoid a unhandled error. */
+#ifdef WITH_MPI_NCCL
+        if (mode.find("NCCL") != string::npos) {
+            /* ncclCommDestroy(nccl_comm); */
+        }
+#endif
+    }
 
     void InitMPI();
     void InitNCCL();
@@ -41,14 +51,14 @@ class CollectiveUpdateOp : public Operator<Context> {
  protected:
     int comm_size, comm_rank, comm_root;
     int world_size, world_rank;
-    string  mode;
+    string mode;
 
     MPI_Comm comm;
     MPI_Group group;
 
 #ifdef WITH_MPI_NCCL
     ncclComm_t nccl_comm;
-    cudaStream_t stream;
+    CUDAClosure<Context> closure;
 #endif
 };
 

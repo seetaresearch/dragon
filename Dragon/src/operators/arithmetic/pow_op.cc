@@ -16,7 +16,7 @@ void PowOp<Context>::RunWithType() {
     }
     auto* Xdata = Input(0).template data<T, Context>();
     ctx().template Copy<T, Context, Context>(count, Ydata, Xdata);
-    if (scale != float(1)) math::Scal<T, Context>(count, scale, Ydata);
+    if (scale != float(1)) math::Scal<T, Context>(count, scale, Ydata, &ctx());
     if (shift != float(0)) math::AddScalar<T, Context>(count, shift, Ydata);
     if (power != float(1)) math::Pow<T, Context>(count, power, Ydata, Ydata);
 }
@@ -48,23 +48,25 @@ void PowGradientOp<Context>::RunWithType() {
     } else {
         auto* Xdata = Input(0).template data<T, Context>();
         if (power == float(2)) {
-            math::Axpby<T, Context>(count, power_scale * scale, Xdata, 0, dXdata);
+            math::Axpby<T, Context>(count,
+                power_scale * scale, Xdata,
+                    0, dXdata, &ctx());
             if (shift != float(0)) 
                 math::AddScalar<T, Context>(count, power_scale * shift, dXdata);
         } else if (shift == float(0)) {
             auto* Ydata = Input(1).template data<T, Context>();
             math::Div<T, Context>(count, Ydata, Xdata, dXdata);
-            math::Scal<T, Context>(count, power, dXdata);
+            math::Scal<T, Context>(count, power, dXdata, &ctx());
         } else {
             auto* Ydata = Input(1).template data<T, Context>();
             ctx().template Copy<T, Context, Context>(count, dXdata, Xdata);
             if (scale != float(1))
-                math::Scal<T, Context>(count, scale, dXdata);
+                math::Scal<T, Context>(count, scale, dXdata, &ctx());
             if (shift != float(0))
                 math::AddScalar<T, Context>(count, shift, dXdata);
             math::Div<T, Context>(count, Ydata, dXdata, dXdata);
             if (power_scale != float(1))
-                math::Scal<T, Context>(count, power_scale, dXdata);
+                math::Scal<T, Context>(count, power_scale, dXdata, &ctx());
         }
     }
     if (power_scale != float(0))

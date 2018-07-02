@@ -19,9 +19,9 @@ namespace dragon {
 template <class Context>
 class GramMatrixOp final : public Operator<Context> {
  public:
-    GramMatrixOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 1)) {}
+    GramMatrixOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -35,9 +35,9 @@ class GramMatrixOp final : public Operator<Context> {
 template <class Context>
 class GramMatrixGradientOp final : public Operator<Context> {
  public:
-    GramMatrixGradientOp(const OperatorDef& op_def, Workspace* ws) 
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 1)) {}
+    GramMatrixGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

@@ -19,8 +19,8 @@ namespace dragon {
 template <class Context>
 class SGDUpdateOp final : public UpdateOpBase<Context> {
  public:
-    SGDUpdateOp(const OperatorDef& op_def, Workspace* ws) 
-        : UpdateOpBase<Context>(op_def, ws),
+    SGDUpdateOp(const OperatorDef& def, Workspace* ws)
+        : UpdateOpBase<Context>(def, ws),
         old_lr(-1.f), correction(1.f) {}
     USE_OPERATOR_FUNCTIONS;
     USE_UPDATER_FUNCTIONS(Context);

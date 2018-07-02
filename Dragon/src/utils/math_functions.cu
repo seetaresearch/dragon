@@ -32,9 +32,8 @@ template <> void Set<float, CUDAContext>(
         return;
     }
     _Set<float>
-        << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
             n, alpha, x);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <> void Set<int, CUDAContext>(
@@ -46,34 +45,37 @@ template <> void Set<int, CUDAContext>(
         return;
     }
     _Set<int> 
-        << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
             n, alpha, x);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <> void RandomUniform<uint32_t, CUDAContext>(
     const int               n,
     const float             low,
     const float             high,
-    uint32_t*               x) {
+    uint32_t*               x,
+    CUDAContext*            ctx) {
     //  note that we ignore the low / high
     //  curand could only generates in the range of [0, uint32]
-    CURAND_CHECK(curandGenerate(curand_generator(), x, n));
+    auto* rng = ctx->curand_generator();
+    CURAND_CHECK(curandGenerate(rng, x, n));
 }
 
 template <> void RandomNormal<float, CUDAContext>(
     const int               n,
     const float             mu,
     const float             sigma,
-    float*                  x) {
-    CURAND_CHECK(curandGenerateNormal(
-        curand_generator(), x, n, mu, sigma));
+    float*                  x,
+    CUDAContext*            ctx) {
+    auto* rng = ctx->curand_generator();
+    CURAND_CHECK(curandGenerateNormal(rng, x, n, mu, sigma));
 }
 
 template <> void RandomBernoulli<float, CUDAContext>(
     const int               n,
     const float             p,
-    unsigned int*           x) {
+    unsigned int*           x,
+    CUDAContext*            ctx) {
     //  curand could not generate bernoulli distribution
     //  we recommend implement it within specfic case, e.g. Dropout
     NOT_IMPLEMENTED;
@@ -98,9 +100,8 @@ template <> void Add<float, CUDAContext>(
     const float*            b,
     float*                  y) {
     _Add<float>
-        << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
             n, a, b, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -120,9 +121,8 @@ template <> void Sub<float, CUDAContext>(
     const float*            b,
     float*                  y) {
     _Sub<float>
-        << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
             n, a, b, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -135,16 +135,15 @@ __global__ void _Mul(
         y[idx] = a[idx] * b[idx];
     }
 }
-    
+
 template <> void Mul<float, CUDAContext>(
     int                     n,
     const float*            a,
     const float*            b,
     float*                  y) {
     _Mul<float>
-        << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
             n, a, b, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -164,9 +163,8 @@ template <> void Div<float, CUDAContext>(
     const float*            b,
     float*                  y) {
     _Div<float>
-        << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
             n, a, b, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -187,9 +185,8 @@ template <> void Clip<float, CUDAContext>(
     const float             high,
     float*                  x) {
     _Clip<float>
-        << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
             n, low, high, x);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -207,9 +204,8 @@ template <> void Exp<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _Exp<float>
-        << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
             n, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -227,9 +223,8 @@ template <> void Log<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _Log<float>
-        << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
             n, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -247,9 +242,8 @@ template <> void Square<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _Square<float>
-        << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
             n, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -267,9 +261,8 @@ template <> void Sqrt<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _Sqrt<float>
-        << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
             n, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -289,9 +282,8 @@ template <> void Pow<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _Pow<float>
-        << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
             n, alpha, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -311,9 +303,8 @@ template <> void Inv<float, CUDAContext>(
     const float*            x,
     float*                  y) {
     _Inv<float>
-        << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
             n, numerator, x, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 /******************** Level-2 ********************/
@@ -321,20 +312,22 @@ template <> void Inv<float, CUDAContext>(
 template <> void Scal<float, CUDAContext>(
     const int               n,
     const float             alpha,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     CUBLAS_CHECK(cublasSscal_v2(
-        cublas_handle(), n, &alpha, y, 1));
+        ctx->cublas_handle(), n, &alpha, y, 1));
 }
 
 template <> void Scale<float, CUDAContext>(
     const int               n,
     const float             alpha,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     CUBLAS_CHECK(cublasScopy_v2(
-        cublas_handle(), n, x, 1, y, 1));
+        ctx->cublas_handle(), n, x, 1, y, 1));
     CUBLAS_CHECK(cublasSscal_v2(
-        cublas_handle(), n, &alpha, y, 1));
+        ctx->cublas_handle(), n, &alpha, y, 1));
 }
 
 template <> float StridedDot<float, CUDAContext>(
@@ -342,19 +335,21 @@ template <> float StridedDot<float, CUDAContext>(
     const float*            a,
     const int               incx,
     const float*            b,
-    const int               incy) {
+    const int               incy,
+    CUDAContext*            ctx) {
     float result;
-    CUBLAS_CHECK(cublasSdot_v2(
-        cublas_handle(), n, a, incx, b, incy, &result));
+    CUBLAS_CHECK(cublasSdot_v2(ctx->cublas_handle(),
+        n, a, incx, b, incy, &result));
     return result;
 }
 
 template <> float Dot<float, CUDAContext>(
     int                     n,
     const float*            a,
-    const float*            b) {
+    const float*            b,
+    CUDAContext*            ctx) {
     return StridedDot<float, CUDAContext>(
-        n, a, 1, b, 1);
+        n, a, 1, b, 1, ctx);
 }
 
 template <> float ASum<float, CUDAContext>(
@@ -378,9 +373,8 @@ template <> void AddScalar<float, CUDAContext>(
     const float             alpha,
     float*                  y) {
     _AddScalar<float>
-        << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
             n, alpha, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <typename T>
@@ -398,18 +392,18 @@ template <> void MulScalar<float, CUDAContext>(
     const float             alpha,
     float*                  y) {
     _MulScalar<float>
-        << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
             n, alpha, y);
-    CUDA_POST_KERNEL_CHECK;
 }
 
 template <> void Axpy<float, CUDAContext>(
     const int               n,
     float                   alpha,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     CUBLAS_CHECK(cublasSaxpy_v2(
-        cublas_handle(), n, &alpha, x, 1, y, 1));
+        ctx->cublas_handle(), n, &alpha, x, 1, y, 1));
 }
 
 template <> void Axpby<float, CUDAContext>(
@@ -417,20 +411,23 @@ template <> void Axpby<float, CUDAContext>(
     float                   alpha,
     const float*            x,
     float                   beta,
-    float*                  y) {
-    Scal<float, CUDAContext>(n, beta, y);
-    Axpy<float, CUDAContext>(n, alpha, x, y);
+    float*                  y,
+    CUDAContext*            ctx) {
+    Scal<float, CUDAContext>(n, beta, y, ctx);
+    Axpy<float, CUDAContext>(n, alpha, x, y, ctx);
 }
 
 template <> void RandomUniform<float, CUDAContext>(
     const int               n,
     const float             low,
     const float             high,
-    float*                  x) {
-    CURAND_CHECK(curandGenerateUniform(curand_generator(), x, n));
+    float*                  x,
+    CUDAContext*            ctx) {
+    CURAND_CHECK(curandGenerateUniform(
+        ctx->curand_generator(), x, n));
     float range = high - low;
-    if (range != float(1)) Scal<float, CUDAContext>(n, range, x);
-    if (low != float(0)) AddScalar<float, CUDAContext>(n, low, x);
+    if (range != 1.f) Scal<float, CUDAContext>(n, range, x, ctx);
+    if (low != 0.f) AddScalar<float, CUDAContext>(n, low, x);
 }
 
 /******************** Level-3 ********************/
@@ -446,6 +443,7 @@ template <> void Gemm<float, CUDAContext>(
     const float*            B,
     const float             beta,
     float*                  C,
+    CUDAContext*            ctx,
     TensorProto_DataType math_type) {
     int lda = (TransA == CblasNoTrans) ? K : M;
     int ldb = (TransB == CblasNoTrans) ? N : K;
@@ -454,9 +452,9 @@ template <> void Gemm<float, CUDAContext>(
     cublasOperation_t cuTransB = (TransB == CblasNoTrans) ?
         CUBLAS_OP_N : CUBLAS_OP_T;
     const float _alpha_ = alpha, _beta_ = beta;
-    CUBLAS_CHECK(cublasSgemm_v2(
-        cublas_handle(), cuTransB, cuTransA,
-            N, M, K, &_alpha_, B, ldb, A, lda, &_beta_, C, N));
+    CUBLAS_CHECK(cublasSgemm_v2(ctx->cublas_handle(),
+        cuTransB, cuTransA, N, M, K,
+            &_alpha_, B, ldb, A, lda, &_beta_, C, N));
 }
 
 template <> void Gemv<float, CUDAContext>(
@@ -468,13 +466,14 @@ template <> void Gemv<float, CUDAContext>(
     const float*            x,
     const float             beta,
     float*                  y,
+    CUDAContext*            ctx,
     TensorProto_DataType    math_type) {
     cublasOperation_t cuTransA = (TransA == CblasNoTrans) ?
         CUBLAS_OP_T : CUBLAS_OP_N;
     const float _alpha_ = alpha, _beta_ = beta;
     CUBLAS_CHECK(cublasSgemv_v2(
-        cublas_handle(), cuTransA,
-            N, M, &_alpha_, A, N, x, 1, &_beta_, y, 1));
+        ctx->cublas_handle(), cuTransA, N, M,
+            &_alpha_, A, N, x, 1, &_beta_, y, 1));
 }
 
 }    // namespace math

@@ -20,35 +20,50 @@ namespace dragon {
 
 template <class SrcType, class ObjType, class... Args>
 class Registry {
-public:
+ public:
     typedef std::function<ObjType*(Args ...)> Creator;
     void Register(const SrcType& key, Creator creator) {
-        CHECK(!registry_.count(key)) << "\nKey(" << key  << ") has already registered.";
+        CHECK(!registry_.count(key))
+            << "\nKey(" << key  << ") has already registered.";
         registry_[key] = creator;
     }
+
     ObjType* Create(const SrcType& key, Args ... args) {
-        CHECK(registry_.count(key)) << "\nKey(" << key << ") has not registered yet.";
+        CHECK(registry_.count(key))
+            << "\nKey(" << key << ") has not registered yet.";
         return registry_[key](args...);
     }
-    bool Has(const SrcType& key) { return (registry_.count(key)) != 0; }
+
+    bool Has(const SrcType& key) {
+        return (registry_.count(key)) != 0; 
+    }
+
     vector<SrcType> keys() {
         vector<SrcType> ret;
-        for (const auto& it : registry_) ret.push_back(it.first);
+        for (const auto& it : registry_)
+            ret.push_back(it.first);
         return ret;
     }
-private:
-    Map<SrcType, Creator> registry_; 
+
+ private:
+    Map<SrcType, Creator> registry_;
 };
 
 template <class SrcType, class ObjType, class... Args>
 class Registerer {
-public:
-    Registerer(const SrcType& key, Registry<SrcType, ObjType, Args...>* registry,
-        typename Registry<SrcType, ObjType, Args...>::Creator creator, const string& help_msg = "") {
+ public:
+    Registerer(
+        const SrcType& key,
+        Registry<SrcType, ObjType, Args...>* registry,
+        typename Registry<SrcType, ObjType, Args...>::Creator creator,
+        const string& help_msg = "") {
         registry->Register(key, creator);
     }
+
     template <class DerivedType>
-    static ObjType* defaultCreator(Args ... args) {return new DerivedType(args...);}
+    static ObjType* defaultCreator(Args ... args) {
+        return new DerivedType(args...);
+    }
 };
 
 //  use in *.h files

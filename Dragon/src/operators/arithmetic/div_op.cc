@@ -31,7 +31,8 @@ void DivOp<Context>::BroadcastRunWithType(int type) {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 outer_dim, inner_dim, 1,
-                    1.0, multiplier, X2data, 0.0, Ydata);
+                    1.0, multiplier, X2data,
+                        0.0, Ydata, &ctx());
         math::Div<T, Context>(Input(0).count(), X1data, Ydata, Ydata);
     } 
     else if (type == 2) {
@@ -41,7 +42,8 @@ void DivOp<Context>::BroadcastRunWithType(int type) {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 outer_dim, inner_dim, 1,
-                    1.0, X2data, multiplier, 0.0, Ydata);
+                    1.0, X2data, multiplier,
+                        0.0, Ydata, &ctx());
         math::Div<T, Context>(Input(0).count(), X1data, Ydata, Ydata);
     }
 }
@@ -61,7 +63,7 @@ void DivOp<Context>::RunOnDevice() {
         else if (Input(1).ndim() == 1 && Input(1).dim(0) == 1)
             BroadcastRunWithType<float>(0);
         else LOG(FATAL) << "Could not be broadcast together with shapes "
-                        << Input(0).dim_string() << "  " << Input(1).dim_string();
+                        << Input(0).DimString() << "  " << Input(1).DimString();
     } else if (XIsType(Input(0), float16)) {
         if (Input(0).dims() == Input(1).dims())
             EltwiseRunWithType<float16>();
@@ -73,7 +75,7 @@ void DivOp<Context>::RunOnDevice() {
         else if (Input(1).ndim() == 1 && Input(1).dim(0) == 1)
             BroadcastRunWithType<float16>(0);
         else LOG(FATAL) << "Could not be broadcast together with shapes "
-                        << Input(0).dim_string() << "  " << Input(1).dim_string();
+                        << Input(0).DimString() << "  " << Input(1).DimString();
     } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
@@ -130,18 +132,18 @@ void DivGradientOp<Context>::BroadcastRunWithType(int type) {
             math::Square<T, Context>(Input(1).count(), X2data, dX2data); // X_{2}^{2}
             math::Inv<T, Context>(Input(1).count(), -1.0, dX2data, dX2data); // -1 / X_{2}^{2}
             math::Gemv<T, Context>(
-                CblasTrans,
-                    outer_dim, inner_dim, 1.0,
-                        dX1data, multiplier, 0.0, Bdata);
+                CblasTrans, outer_dim, inner_dim,
+                    1.0, dX1data, multiplier,
+                        0.0, Bdata, &ctx());
         }
         else if (type == 2) {
             DECLARE_MULTIPLIER(multiplier, inner_dim);
             math::Square<T, Context>(Input(1).count(), X2data, dX2data); // X_{2}^{2}
             math::Inv<T, Context>(Input(1).count(), -1.0, dX2data, dX2data); // -1 / X_{2}^{2}
             math::Gemv<T, Context>(
-                CblasNoTrans,
-                    outer_dim, inner_dim, 1.0,
-                        dX1data, multiplier, 0.0, Bdata);
+                CblasNoTrans, outer_dim, inner_dim,
+                    1.0, dX1data, multiplier,
+                        0.0, Bdata, &ctx());
         }
         math::Mul<T, Context>(Input(1).count(), Bdata, dX2data, dX2data);
     }
@@ -154,13 +156,15 @@ void DivGradientOp<Context>::BroadcastRunWithType(int type) {
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
                     outer_dim, inner_dim, 1,
-                        1.0, multiplier, X2data, 0.0, dX1data);
+                        1.0, multiplier, X2data,
+                            0.0, dX1data, &ctx());
         } else if (type == 2) {
             DECLARE_MULTIPLIER(multiplier, inner_dim);
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
                     outer_dim, inner_dim, 1,
-                        1.0, X2data, multiplier, 0.0, dX1data);
+                        1.0, X2data, multiplier,
+                            0.0, dX1data, &ctx());
         }
         math::Div<T, Context>(Output(0)->count(), dYdata, dX1data, dX1data);
     }
@@ -182,7 +186,7 @@ void DivGradientOp<Context>::RunOnDevice() {
         else if (Input(1).ndim() == 1 && Input(1).dim(0) == 1)
             BroadcastRunWithType<float>(0);
         else LOG(FATAL) << "Could not be broadcast together with shapes "
-                        << Input(-1).dim_string() << "  " << Input(0).dim_string();
+                        << Input(-1).DimString() << "  " << Input(0).DimString();
     } else if (XIsType(Input(0), float16)) {
         if (Input(0).dims() == Input(1).dims())
             EltwiseRunWithType<float16>();
@@ -194,7 +198,7 @@ void DivGradientOp<Context>::RunOnDevice() {
         else if (Input(1).ndim() == 1 && Input(1).dim(0) == 1)
             BroadcastRunWithType<float16>(0);
         else LOG(FATAL) << "Could not be broadcast together with shapes "
-                        << Input(-1).dim_string() << "  " << Input(0).dim_string();
+                        << Input(-1).DimString() << "  " << Input(0).DimString();
     } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 

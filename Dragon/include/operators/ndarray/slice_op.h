@@ -17,12 +17,12 @@
 namespace dragon {
 
 template <class Context>
-class SliceOp : public Operator<Context> {
+class SliceOp final : public Operator<Context> {
  public:
-    SliceOp(const OperatorDef& op_def, Workspace* ws):
-        Operator<Context>(op_def, ws),
-        axis(OperatorBase::GetSingleArg<int>("axis", 1)),
-        nout(OperatorBase::GetSingleArg<int>("num_output", 1)) {}
+    SliceOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 1)),
+          nout(OperatorBase::Arg<int>("num_output", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -38,10 +38,10 @@ class SliceOp : public Operator<Context> {
 template <class Context>
 class SliceGradientOp final : public Operator<Context> {
  public:
-    SliceGradientOp(const OperatorDef& op_def, Workspace* ws):
-        Operator<Context>(op_def, ws),
-        axis(OperatorBase::GetSingleArg<int>("axis", 1)),
-        nout(OperatorBase::GetSingleArg<int>("num_output", 1)) {}
+    SliceGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 1)),
+          nout(OperatorBase::Arg<int>("num_output", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

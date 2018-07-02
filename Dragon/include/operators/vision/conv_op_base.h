@@ -21,14 +21,14 @@ namespace dragon {
 template <class Context>
 class ConvOpBase : public Operator<Context> {
  public:
-    ConvOpBase(const OperatorDef& op_def, Workspace* ws) 
-        : Operator<Context>(op_def, ws),
-          data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")),
-          padding(OperatorBase::GetSingleArg<string>("padding", "VALID")),
-          num_output(OperatorBase::GetSingleArg<int>("num_output", 1)),
-          group(OperatorBase::GetSingleArg<int>("group", 1)) {
-        output_dims_value = OperatorBase::GetRepeatedArg<int>("output_shape");
-        output_dims_desc = OperatorBase::GetRepeatedArg<string>("output_shape_desc");
+    ConvOpBase(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          data_format(OperatorBase::Arg<string>("data_format", "NCHW")),
+          padding(OperatorBase::Arg<string>("padding", "VALID")),
+          num_output(OperatorBase::Arg<int>("num_output", 1)),
+          group(OperatorBase::Arg<int>("group", 1)) {
+        output_dims_value = OperatorBase::Args<int>("output_shape");
+        output_dims_desc = OperatorBase::Args<string>("output_shape_desc");
         if (data_format == "NCHW") spatial_axis = 2;
         else if (data_format == "NHWC") spatial_axis = 1;
         else LOG(FATAL) << "Unknown data format: " << data_format;

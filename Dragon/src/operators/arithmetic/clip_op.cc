@@ -7,7 +7,8 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void ClipOp<Context>::RunWithType() {
-    Tensor* mask = ws()->CreateTensor("/mnt/" + anchor() + "/clip/mask");
+    Tensor* mask = ws()->CreateTensor(
+        "/mnt/" + anchor() + "/clip/mask");
     mask->ReshapeLike(Input(0));
 
     auto* Xdata = Input(0).template data<T, Context>();
@@ -33,7 +34,8 @@ OPERATOR_SCHEMA(Clip).NumInputs(1).NumOutputs(1).Inplace({ { 0, 0 } });
 
 template <class Context> template <typename T>
 void ClipGradientOp<Context>::RunWithType() {
-    Tensor* mask = ws()->GetTensor("/mnt/" + anchor() + "/clip/mask");
+    Tensor* mask = ws()->GetTensor(
+        "/mnt/" + anchor() + "/clip/mask");
 
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* Mdata = mask->template data<T, Context>();

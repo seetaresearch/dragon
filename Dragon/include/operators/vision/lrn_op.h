@@ -21,14 +21,14 @@ enum LRNMode { ACROSS_CHANNELS, WITHIN_CHANNEL };
 template <class Context>
 class LRNOp : public Operator<Context> {
  public:
-    LRNOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          local_size(OperatorBase::GetSingleArg<int>("local_size", 5)),
-          alpha(OperatorBase::GetSingleArg<float>("alpha", float(0.0001))),
-          beta(OperatorBase::GetSingleArg<float>("beta", float(0.75))),
-          k(OperatorBase::GetSingleArg<float>("k", float(2.0))),
-          mode(OperatorBase::GetSingleArg<string>("mode", "ACROSS_CHANNELS")),
-          data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
+    LRNOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          local_size(OperatorBase::Arg<int>("local_size", 5)),
+          alpha(OperatorBase::Arg<float>("alpha", float(0.0001))),
+          beta(OperatorBase::Arg<float>("beta", float(0.75))),
+          k(OperatorBase::Arg<float>("k", float(2.0))),
+          mode(OperatorBase::Arg<string>("mode", "ACROSS_CHANNELS")),
+          data_format(OperatorBase::Arg<string>("data_format", "NCHW")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -52,14 +52,14 @@ class LRNOp : public Operator<Context> {
 template <class Context>
 class LRNGradientOp : public Operator<Context> {
  public:
-    LRNGradientOp(const OperatorDef& op_def, Workspace* ws) 
-        : Operator<Context>(op_def, ws),
-          local_size(OperatorBase::GetSingleArg<int>("local_size", 5)),
-          alpha(OperatorBase::GetSingleArg<float>("alpha", float(0.0001))),
-          beta(OperatorBase::GetSingleArg<float>("beta", float(0.75))),
-          k(OperatorBase::GetSingleArg<float>("k", float(2.0))),
-          mode(OperatorBase::GetSingleArg<string>("mode", "ACROSS_CHANNELS")),
-          data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
+    LRNGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          local_size(OperatorBase::Arg<int>("local_size", 5)),
+          alpha(OperatorBase::Arg<float>("alpha", float(0.0001))),
+          beta(OperatorBase::Arg<float>("beta", float(0.75))),
+          k(OperatorBase::Arg<float>("k", float(2.0))),
+          mode(OperatorBase::Arg<string>("mode", "ACROSS_CHANNELS")),
+          data_format(OperatorBase::Arg<string>("data_format", "NCHW")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -85,17 +85,15 @@ class LRNGradientOp : public Operator<Context> {
 #include "utils/cudnn_device.h"
 
 template <class Context>
-class CuDNNLRNOp : public LRNOp<Context> {
+class CuDNNLRNOp final : public LRNOp<Context> {
  public:
-    CuDNNLRNOp(const OperatorDef& op_def, Workspace* ws) 
-        : LRNOp<Context>(op_def, ws) {
+    CuDNNLRNOp(const OperatorDef& def, Workspace* ws)
+        : LRNOp<Context>(def, ws) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateLRNDescriptor(&norm_desc));
-        CUDNN_CHECK(cudnnSetLRNDescriptor(norm_desc, this->local_size, 
-                                                     this->alpha, 
-                                                     this->beta, 
-                                                     this->k));
+        CUDNN_CHECK(cudnnSetLRNDescriptor(norm_desc,
+            this->local_size, this->alpha, this->beta, this->k));
     }
     USE_OPERATOR_FUNCTIONS;
 
@@ -114,17 +112,15 @@ class CuDNNLRNOp : public LRNOp<Context> {
 };
 
 template <class Context>
-class CuDNNLRNGradientOp : public LRNGradientOp<Context > {
+class CuDNNLRNGradientOp final : public LRNGradientOp<Context > {
  public:
-    CuDNNLRNGradientOp(const OperatorDef& op_def, Workspace* ws) :
-        LRNGradientOp<Context>(op_def, ws) {
+    CuDNNLRNGradientOp(const OperatorDef& def, Workspace* ws) 
+        : LRNGradientOp<Context>(def, ws) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateLRNDescriptor(&norm_desc));
-        CUDNN_CHECK(cudnnSetLRNDescriptor(norm_desc, this->local_size,
-                                                     this->alpha, 
-                                                     this->beta, 
-                                                     this->k));
+        CUDNN_CHECK(cudnnSetLRNDescriptor(norm_desc,
+            this->local_size, this->alpha, this->beta, this->k));
     }
     USE_OPERATOR_FUNCTIONS;
 

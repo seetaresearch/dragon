@@ -33,19 +33,26 @@ using google::protobuf::io::ZeroCopyInputStream;
 using google::protobuf::io::CodedInputStream;
 using google::protobuf::io::FileInputStream;
 
-inline void WriteProtoToBinaryFile(const Message& proto, const char* filename) {
-    std::fstream output(filename, std::ios::out | std::ios::trunc | std::ios::binary);
+inline void WriteProtoToBinaryFile(
+    const Message&              proto,
+    const char*                 filename) {
+    std::fstream output(filename,
+        std::ios::out |
+            std::ios::trunc |
+                std::ios::binary);
     proto.SerializeToOstream(&output);
 }
 
-inline bool ReadProtoFromBinaryFile(const char* filename, Message* proto) {
+inline bool ReadProtoFromBinaryFile(
+    const char*                 filename,
+    Message*                    proto) {
 #ifdef _MSC_VER
     int fd = _open(filename, O_RDONLY | O_BINARY);
 #else
     int fd = open(filename, O_RDONLY);
 #endif
-    ZeroCopyInputStream *raw_input = new FileInputStream(fd);
-    CodedInputStream *coded_input = new CodedInputStream(raw_input);
+    ZeroCopyInputStream* raw_input = new FileInputStream(fd);
+    CodedInputStream* coded_input = new CodedInputStream(raw_input);
     coded_input->SetTotalBytesLimit(INT_MAX, -1);
     bool success = proto->ParseFromCodedStream(coded_input);
     delete raw_input;
@@ -54,7 +61,9 @@ inline bool ReadProtoFromBinaryFile(const char* filename, Message* proto) {
     return success;
 }
 
-inline void LoadCaffeModel(string file, Workspace* ws) {
+inline void LoadCaffeModel(
+    string                      file,
+    Workspace*                  ws) {
     NetParameter net_param;
     ReadProtoFromBinaryFile(file.c_str(), &net_param);
     LOG(INFO) << "Restore From Model @: " << file << "......";
@@ -73,36 +82,40 @@ inline void LoadCaffeModel(string file, Workspace* ws) {
                 vector<TIndex> dims;
                 for (auto dim : blob.shape().dim()) dims.push_back(dim);
                 Tensor* tensor = ws->GetTensor(tensor_name);
-                std::stringstream dim_string;
+                std::stringstream DimString;
                 if (dims.size() > 0) {
                     tensor->Reshape(dims);
                     CHECK_EQ(tensor->count(), blob.data_size())
                         << "\nTensor(" << tensor_name << ") "
                         << "failed to load, except size:  "
-                        << tensor->count() << ", loaded: " << blob.data_size();
-                    dim_string << tensor->dim_string();
+                        << tensor->count()
+                        << ", loaded: " << blob.data_size();
+                    DimString << tensor->DimString();
                 } else {
-                    tensor->Reshape(vector<TIndex>(1, blob.data_size()));
-                    dim_string << "(missing)";
+                    tensor->Reshape({ blob.data_size() });
+                    DimString << "(missing)";
                 }
                 float* Xdata = tensor->mutable_data<float, CPUContext>();
                 for (int idx = 0; idx < blob.data_size(); idx++)
                     Xdata[idx] = blob.data(idx);
                 LOG(INFO) << "Tensor(" << tensor_name << ") "
-                          << "loaded, shape: " << dim_string.str()
+                          << "loaded, shape: " << DimString.str()
                           << ", size: " << blob.data_size();
             }    
         }
     }
 }
 
-inline void SavaCaffeModel(string file, const vector<Tensor*>& tensors) {
+inline void SavaCaffeModel(
+    string                      file,
+    const vector<Tensor*>&      tensors) {
     NetParameter net_param;
     Map<string, int> layer_hash;
     int layer_idx = -1;
     for (int i = 0; i < tensors.size(); i++) {
         if (tensors[i]->count() <= 0) continue;
-        vector<string> splits = SplitString(tensors[i]->name(), "/param:");
+        vector<string> splits = SplitString(
+            tensors[i]->name(), "/param:");
         if (layer_hash.count(splits[0]) == 0) {
             layer_hash[splits[0]] = ++layer_idx;
             LayerParameter* layer = net_param.add_layer();
@@ -110,11 +123,14 @@ inline void SavaCaffeModel(string file, const vector<Tensor*>& tensors) {
         }
         BlobProto* blob = net_param.mutable_layer(layer_idx)->add_blobs();
         for (auto dim : tensors[i]->dims()) blob->mutable_shape()->add_dim(dim);
-        const float* Xdata = tensors[i]->data < float, CPUContext >();
+        const float* Xdata = tensors[i]->data<float, CPUContext>();
         for (int id = 0; id < tensors[i]->count(); id++)
             blob->mutable_data()->Add(Xdata[id]);
     }
-    std::fstream output(file, std::ios::out | std::ios::trunc | std::ios::binary);
+    std::fstream output(file,
+        std::ios::out |
+            std::ios::trunc |
+                std::ios::binary);
     CHECK(net_param.SerializeToOstream(&output));
     LOG(INFO) << "Save the model @: " << file << "......";
     LOG(INFO) << "Model format: caffemodel";

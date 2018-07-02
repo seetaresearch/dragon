@@ -17,20 +17,20 @@
 namespace dragon {
 
 template <class Context>
-class RandomPickOp : public Operator<Context> {
+class RandomPickOp final : public Operator<Context> {
  public:
-    RandomPickOp(const OperatorDef& op_def, Workspace* ws) :
-        Operator<Context>(op_def, ws),
-        axis(OperatorBase::GetSingleArg<int>("axis", 0)),
-        max_samples(OperatorBase::GetSingleArg<int>("max_samples", 1)) {}
+    RandomPickOp(const OperatorDef& def, Workspace* ws) :
+        Operator<Context>(def, ws),
+        axis(OperatorBase::Arg<int>("axis", 0)),
+        max_samples(OperatorBase::Arg<int>("max_samples", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    TIndex axis, max_samples;
-    TIndex outer_dim, inner_dim, x_slice_dim, y_slice_dim;
+    TIndex axis, outer_dim, inner_dim, max_samples;
+    TIndex x_slice_dim, y_slice_dim;
     vector<TIndex> output_dims;
     Tensor* pick_indices;
 };
@@ -38,17 +38,17 @@ class RandomPickOp : public Operator<Context> {
 template <class Context>
 class RandomPickGradientOp final : public Operator<Context> {
 public:
-    RandomPickGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-        axis(OperatorBase::GetSingleArg<int>("axis", 0)) {}
+    RandomPickGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
 protected:
-    TIndex axis;
-    TIndex outer_dim, inner_dim, x_slice_dim, y_slice_dim;
+    TIndex axis, outer_dim, inner_dim;
+    TIndex x_slice_dim, y_slice_dim;
     Tensor* pick_indices;
 };
 

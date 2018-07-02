@@ -43,14 +43,16 @@ void RandomUniform(
     const int               n,
     const float             low,
     const float             high,
-    T*                      x);
+    T*                      x,
+    Context*                ctx);
 
 template <typename T, class Context>
 void RandomNormal(
     const int               n,
     const float             mu,
     const float             sigma,
-    T*                      x);
+    T*                      x,
+    Context*                ctx);
 
 template <typename T, class Context>
 void RandomTruncatedNormal(
@@ -59,13 +61,15 @@ void RandomTruncatedNormal(
     const float             sigma,
     const float             low,
     const float             high,
-    T*                      x);
+    T*                      x,
+    Context*                ctx);
 
 template <typename T, class Context>
 void RandomBernoulli(
     const int               n,
     const float             p,
-    uint32_t*               x);
+    uint32_t*               x,
+    Context*                ctx);
 
 /******************** Level-1 ********************/
 
@@ -148,14 +152,16 @@ template <typename T, class Context>
 void Scal(
     const int               n,
     const float             alpha,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 template <typename T, class Context>
 void Scale(
     const int               n,
     const float             alpha,
     const T*                x,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 template <typename T, class Context>
 T StridedDot(
@@ -163,13 +169,15 @@ T StridedDot(
     const T*                a,
     const int               incx,
     const T*                b,
-    const int               incy);
+    const int               incy,
+    Context*                ctx);
 
 template <typename T, class Context>
 float Dot(
     const int               n,
     const T*                a,
-    const T*                b);
+    const T*                b,
+    Context*                ctx);
 
 template<typename T, class Context>
 float ASum(
@@ -193,7 +201,8 @@ void Axpy(
     const int               n,
     float                   alpha,
     const T*                x,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 template<typename T, class Context>
 void Axpby(
@@ -201,7 +210,8 @@ void Axpby(
     float                   alpha,
     const T*                x,
     float                   beta,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 /******************** Level-3 ********************/
 
@@ -217,6 +227,7 @@ void Gemm(
     const T*                B,
     const float             beta,
     T*                      C,
+    Context*                ctx,
     TensorProto_DataType    math_type = TensorProto_DataType_FLOAT);
 
 template<typename T, class Context>
@@ -229,6 +240,7 @@ void Gemv(
     const T*                x,
     const float             beta,
     T*                      y,
+    Context*                ctx,
     TensorProto_DataType    math_type = TensorProto_DataType_FLOAT);
 
 }    // namespace math

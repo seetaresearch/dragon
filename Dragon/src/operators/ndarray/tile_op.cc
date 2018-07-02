@@ -80,9 +80,9 @@ void TileGradientOp<Context>::TileRunWithType() {
         dXdata = ws()->template caches<T, Context>({ dest->count() })[0];
     } else { dXdata = dest->template mutable_data<T, Context>(); }
 
-    kernel::TileGrad<T, Context>(dest->count(),
-        outer_dim, ex_inner_dim,
-            multiple, dYdata, dXdata);
+    kernel::TileGrad<T, Context>(
+        dest->count(), outer_dim, ex_inner_dim,
+            multiple, dYdata, dXdata, &ctx());
 }
 
 template <class Context>

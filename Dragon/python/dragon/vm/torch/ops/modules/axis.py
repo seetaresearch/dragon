@@ -41,3 +41,29 @@ class Concat(BaseModule):
         inputs = xs; self.unify_devices(inputs)
         outputs = [y] if y else [self.register_output(xs[0].dtype)]
         return self.run(inputs, outputs)
+
+
+class Gather(BaseModule):
+    def __init__(self, key, ctx, **kwargs):
+        super(Gather, self).__init__(key, ctx, **kwargs)
+        self.axis = kwargs.get('axis', 0)
+        self.register_arguments()
+        self.register_op()
+
+    def register_arguments(self):
+        """No Arguments for concat op."""
+        pass
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'Gather',
+            'n_inputs': 2, 'n_outputs': 1,
+            'arguments': {
+                'axis': self.axis,
+            }
+        }
+
+    def forward(self, x, indices, y):
+        inputs = [x, indices]; self.unify_devices(inputs)
+        outputs = [y] if y else [self.register_output(x.dtype)]
+        return self.run(inputs, outputs)

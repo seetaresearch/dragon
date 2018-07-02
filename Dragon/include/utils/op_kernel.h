@@ -20,9 +20,6 @@ namespace kernel {
 
 typedef int64_t TIndex;
 
-template <typename T, class Context>
-void Empty();
-
 /******************** activation.dropout ********************/
 
 template <typename T, class Context>
@@ -32,7 +29,8 @@ void Dropout(
     T                       scale,
     const T*                x,
     uint32_t*               mask,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 template <typename T, class Context>
 void DropoutGrad(
@@ -41,7 +39,8 @@ void DropoutGrad(
     T                       scale,
     const T*                dy,
     const uint32_t*         mask,
-    T*                      dx);
+    T*                      dx,
+    Context*                ctx);
 
 /******************** activation.elu ********************/
 
@@ -97,7 +96,8 @@ void PReluWGrad(
     const T*                x,
     const T*                multiplier,
     T*                      bcast_dw,
-    T*                      dw);
+    T*                      dw,
+    Context*                ctx);
 
 /******************** activation.relu ********************/
 
@@ -157,7 +157,8 @@ void Softmax(
     const T*                sum_multiplier,
     const T*                x,
     T*                      scale,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 template <typename T, class Context>
 void SoftmaxGrad(
@@ -169,7 +170,8 @@ void SoftmaxGrad(
     const T*                dy,
     const T*                y,
     T*                      scale,
-    T*                      dx);
+    T*                      dx,
+    Context*                ctx);
 
 /******************** activation.tanh ********************/
 
@@ -198,7 +200,8 @@ void Affine(
     const T*                alpha,
     const T*                beta,
     const T*                beta_multiplier,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 template <typename T, class Context>
 void AffineGrad(
@@ -208,7 +211,8 @@ void AffineGrad(
     const int               inner_dim,
     const T*                dy,
     const T*                alpha,
-    T*                      dx);
+    T*                      dx,
+    Context*                ctx);
 
 /******************** arithmetic.clip ********************/
 
@@ -293,7 +297,8 @@ void SparseSoftmaxCrossEntropy(
     const Ty*               labels,
     Tx*                     loss,
     Tx*                     valid,
-    Tensor*                 ignore);
+    Tensor*                 ignore,
+    Context*                ctx);
 
 template <typename Tx, typename Ty, class Context>
 void SparseSoftmaxCrossEntropyGrad(
@@ -305,7 +310,8 @@ void SparseSoftmaxCrossEntropyGrad(
     const Ty*               labels,
     Tx*                     valid,
     Tensor*                 ignore,
-    Tx*                     dx);
+    Tx*                     dx,
+    Context*                ctx);
 
 /******************** loss.sparse_softmax_focal_loss ********************/
 
@@ -585,7 +591,8 @@ void RepeatGrad(
     const int               inner_dim,
     const int               repeats,
     const T*                dy,
-    T*                      dx);
+    T*                      dx,
+    Context*                ctx);
 
 /******************** ndarray.slice ********************/
 
@@ -629,7 +636,8 @@ void TileGrad(
     const int               ex_inner_dim,
     const int               multiple,
     const T*                dy,
-    T*                      dx);
+    T*                      dx,
+    Context*                ctx);
 
 /******************** ndarray.transpose ********************/
 
@@ -733,7 +741,8 @@ void BiasAdd(
     const string&           data_format,
     const T*                bias,
     const T*                bias_multiplier,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 /******************** vision.bilinear_resize ********************/
 

@@ -29,7 +29,7 @@ class Workspace;
 
 class OperatorBase {
  public:
-    OperatorBase(const OperatorDef& op_def, Workspace* ws);
+    OperatorBase(const OperatorDef& def, Workspace* ws);
     virtual ~OperatorBase() {}
 
     Tensor& Input(int idx);
@@ -38,66 +38,73 @@ class OperatorBase {
     inline size_t InputSize() { return inputs_.size(); }
     inline size_t OutputSize() { return outputs_.size(); }
 
-    void MutableOp(const OperatorDef& op_def);
+    void MutableOp(const OperatorDef& def);
     void MutableOp(const vector<string>& inputs,
                    const vector<string>& outputs,
                    const string& anchor);
 
-    inline void SwitchToPhase(const string& phase) { this->phase_ = phase; }
+    inline void SwitchToPhase(const string& phase) { phase_ = phase; }
     virtual void Run() { NOT_IMPLEMENTED; }
 
-    inline const string& name() const { return op_def_.name(); }
-    inline const string& type() const { return op_def_.type(); }
+    inline const string& name() const { return def_.name(); }
+    inline const string& type() const { return def_.type(); }
     inline const string& phase() const { return phase_; }
     inline const string& anchor() { return anchor_; }
     inline Workspace* ws() const { return ws_; }
 
     template <typename T>
-    T GetSingleArg(const string& name, const T& default_value);
+    T Arg(const string& name, const T& default_value);
 
     template <typename T>
-    vector<T> GetRepeatedArg(const string& name);
+    vector<T> Args(const string& name);
 
     inline const Map<std::string, const Argument*>& args() { return args_; }
     inline const Argument& arg(const string& name) { return *(args_[name]); }
 
     typedef Map<string, vector<OperatorBase*> > RecomputeMap;
     inline RecomputeMap& recompute_map() { return recompute_map_; }
-    void set_recompute_map(RecomputeMap recompute_map) { recompute_map_ = recompute_map; }
+    void set_recompute_map(RecomputeMap recompute_map) {
+        recompute_map_ = recompute_map; 
+    }
 
-    inline const OperatorDef& op_def() const { return op_def_; }
-    inline string DebugString() const { return op_def_.DebugString(); }
-    string DTypeHelper(const Tensor& tensor, const Set<string>& dtypes) const;
-    string DTypeHelper(const string& dtype, const Set<string>& dtypes) const;
+    inline const OperatorDef& def() const { return def_; }
+    inline string DebugString() const { return def_.DebugString(); }
+    string DTypeHelper(
+        const Tensor&           tensor,
+        const Set<string>&      dtypes) const;
+    string DTypeHelper(
+        const string&           dtype,
+        const Set<string>&      dtypes) const;
 
  protected:
     string phase_, anchor_;
     Map<std::string, const Argument*> args_;
     Map<string, vector<OperatorBase*> > recompute_map_;
     vector<Tensor*> inputs_, outputs_;
-    OperatorDef op_def_;
+    OperatorDef def_;
     Workspace* ws_;
 };
 
 template <class Context>
 class Operator : public OperatorBase {
  public:
-    Operator(const OperatorDef& op_def, Workspace* ws)
-        : OperatorBase(op_def, ws), ctx_(op_def.device_option()),
-          do_synchronize_(Operator::GetSingleArg<bool>("do_synchronize", false)),
-          recomputing_aware_(Operator::GetSingleArg<bool>("recomputing_aware", false)) {
+    Operator(const OperatorDef& def, Workspace* ws)
+        : OperatorBase(def, ws), ctx_(def.device_option()),
+          recomputing_aware_(OperatorBase::Arg<bool>(
+              "recomputing_aware", false)) {
         allow_run_ = true;
         allow_run_ &= _MPICheck();
-        allow_run_ &= (!(OutputSize() == 1 && Output(0)->name() == "ignore"));
+        allow_run_ &= (!(OutputSize() == 1 &&
+            Output(0)->name() == "ignore"));
     }
 
     virtual void Run() final {
         if (!allow_run_)  return;
         if (recomputing_aware_) MakeResource();
-        ctx_.SwitchToDevice();
+        ctx().SwitchToDevice();
         MemorySwitch();
         RunOnDevice();
-        if (do_synchronize_) ctx_.FinishDeviceCompution();
+        ctx().FinishDeviceCompution();
         if (recomputing_aware_) CleanResource();
     }
 
@@ -106,8 +113,10 @@ class Operator : public OperatorBase {
     virtual void CleanResource();
 
     void MemorySwitch() {
-        for (auto* I : inputs_) if(I->name() != "ignore") I->SwitchToDevice();
-        for (auto* O : outputs_) if(O->name() != "ignore") O->SwitchToDevice();
+        for (auto* I : inputs_)
+            if(I->name() != "ignore") I->SwitchToDevice();
+        for (auto* O : outputs_) 
+            if(O->name() != "ignore") O->SwitchToDevice();
     }
 
     virtual void RunOnDevice() = 0;
@@ -117,14 +126,15 @@ class Operator : public OperatorBase {
 
  protected:
     Context ctx_;
-    bool allow_run_, recomputing_aware_, do_synchronize_;
+    bool allow_run_, recomputing_aware_;
 
  private:
     bool _MPICheck() {
 #ifndef WITH_MPI
         return true;
 #else
-        vector<int> allow_ranks = Operator::GetRepeatedArg<int>("mpi_ranks");
+        vector<int> allow_ranks =
+            OperatorBase::Args<int>("mpi_ranks");
         if (allow_ranks.empty()) return true;
         int cur_rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &cur_rank);
@@ -135,11 +145,11 @@ class Operator : public OperatorBase {
     }
 };
 
-OperatorBase* CreateOperator(const OperatorDef& op_def, Workspace* ws);
+OperatorBase* CreateOperator(const OperatorDef& def, Workspace* ws);
 
 #define USE_SIMPLE_CTOR_DTOR(name) \
-    name(const OperatorDef& op_def, Workspace* ws) \
-        : Operator<Context>(op_def, ws) {} \
+    name(const OperatorDef& def, Workspace* ws) \
+        : Operator<Context>(def, ws) {} \
     virtual ~name() {}
 
 #define USE_OPERATOR_BASE_FUNCTIONS \
@@ -150,7 +160,7 @@ OperatorBase* CreateOperator(const OperatorDef& op_def, Workspace* ws);
     using OperatorBase::type; \
     using OperatorBase::phase; \
     using OperatorBase::anchor; \
-    using OperatorBase::op_def; \
+    using OperatorBase::def; \
     using OperatorBase::InputSize; \
     using OperatorBase::OutputSize; \
     using OperatorBase::DebugString; \
@@ -162,9 +172,23 @@ OperatorBase* CreateOperator(const OperatorDef& op_def, Workspace* ws);
     using Operator<Context>::ctx; \
     using Operator<Context>::AllowRun
 
-DECLARE_REGISTRY(CPUOperatorRegistry, OperatorBase,const OperatorDef&, Workspace*);
-DECLARE_REGISTRY(CUDAOperatorRegistry, OperatorBase, const OperatorDef&, Workspace*);
-DECLARE_REGISTRY(CUDNNOperatorRegistry, OperatorBase, const OperatorDef&, Workspace*);
+DECLARE_REGISTRY(
+    CPUOperatorRegistry,
+    OperatorBase,
+    const OperatorDef&,
+    Workspace*);
+
+DECLARE_REGISTRY(
+    CUDAOperatorRegistry,
+    OperatorBase,
+    const OperatorDef&,
+    Workspace*);
+
+DECLARE_REGISTRY(
+    CUDNNOperatorRegistry,
+    OperatorBase,
+    const OperatorDef&,
+    Workspace*);
 
 #define TENSOR_FILL(tensor, shape) \
     if (tensor.count() == 0) { \
@@ -174,7 +198,7 @@ DECLARE_REGISTRY(CUDNNOperatorRegistry, OperatorBase, const OperatorDef&, Worksp
         tensor.Reshape(shape); \
         unique_ptr< Filler<T, Context> > filler(  \
             CreateFiller<T, Context>(*ws()->GetFiller(tensor.name()))); \
-        filler->Fill(&tensor); \
+        filler->Fill(&tensor, &ctx()); \
     } else { \
          TIndex count = 1; \
          for(int i = 0; i < shape.size(); i++) count *= shape[i]; \
@@ -189,7 +213,7 @@ DECLARE_REGISTRY(CUDNNOperatorRegistry, OperatorBase, const OperatorDef&, Worksp
 #define INIT_MULTIPLIER(ptr_tensor, size) { \
     ptr_tensor = ws()->CreateTensor("/share/multiplier"); \
     if (size > ptr_tensor->count()) { \
-        ptr_tensor->Reshape(vector<TIndex>(1, size)); \
+        ptr_tensor->Reshape({ size }); \
         math::Set<T, Context>(size, dragon_cast<T, float>(1.f), \
             ptr_tensor->template mutable_data<T, Context>()); \
     } \
@@ -214,12 +238,12 @@ DECLARE_REGISTRY(CUDNNOperatorRegistry, OperatorBase, const OperatorDef&, Worksp
     type argument(int idx)
 
 #define GET_ARGUMENT_WITH_DESC(type, argument, default_value) \
-    argument##_value = OperatorBase::GetSingleArg<type>(#argument, default_value); \
-    argument##_desc = OperatorBase::GetSingleArg<string>(string(#argument) + "_desc", "")
+    argument##_value = OperatorBase::Arg<type>(#argument, default_value); \
+    argument##_desc = OperatorBase::Arg<string>(string(#argument) + "_desc", "")
 
 #define GET_ARGUMENTS_WITH_DESC(type, argument) \
-    argument##_value = OperatorBase::GetRepeatedArg<type>(#argument); \
-    argument##_desc = OperatorBase::GetRepeatedArg<string>(string(#argument) + "_desc")
+    argument##_value = OperatorBase::Args<type>(#argument); \
+    argument##_desc = OperatorBase::Args<string>(string(#argument) + "_desc")
 
 #define DEFINE_ARGUMENT_WITH_DESC(type, classname, argument) \
     template <class Context> \

@@ -11,7 +11,8 @@ void ReduceOp<Context>::SumRunWithType() {
     if (axis == -1) {
         DECLARE_MULTIPLIER(multiplier, Input(0).count());
         auto* Ydata = Output(0)->template mutable_data<T, CPUContext>();
-        Ydata[0] = math::Dot<T, Context>(Input(0).count(), multiplier, Xdata);
+        Ydata[0] = math::Dot<T, Context>(
+            Input(0).count(), multiplier, Xdata, &ctx());
     } else {
         auto* Ydata = Output(0)->template mutable_data<T, Context>();
         kernel::Sum<T, Context>(count, axis_dim, inner_dim, Xdata, Ydata);
@@ -23,7 +24,7 @@ void ReduceOp<Context>::MeanRunWithType() {
     SumRunWithType<T>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
     T coeff = axis != -1 ? 1.0 / axis_dim : 1.0 / Input(0).count();
-    math::Scal<T, Context>(Output(0)->count(), coeff, Ydata);
+    math::Scal<T, Context>(Output(0)->count(), coeff, Ydata, &ctx());
 }
 
 template <class Context>

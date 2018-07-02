@@ -14,7 +14,7 @@ void CuDNNEluOp<Context>::RunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
     CUDNN_CHECK(cudnnActivationForward(
-        cudnn_handle(), act_desc,
+        ctx().cudnn_handle(), act_desc,
             CUDNNType<T>::one, input_desc, Xdata,
                 CUDNNType<T>::zero, output_desc, Ydata));
 }
@@ -41,7 +41,7 @@ void CuDNNEluGradientOp<Context>::RunWithType() {
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
     CUDNN_CHECK(cudnnActivationBackward(
-        cudnn_handle(), act_desc,
+        ctx().cudnn_handle(), act_desc,
             CUDNNType<T>::one, input_desc, Ydata,
                 input_desc, dYdata, output_desc, Ydata,
                     CUDNNType<T>::zero, output_desc, dXdata));

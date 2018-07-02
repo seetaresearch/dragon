@@ -8,9 +8,9 @@ namespace dragon {
 
 template <class Context>
 void CollectiveUpdateOp<Context>::InitMPI() {
-    comm = (MPI_Comm)OperatorBase::GetSingleArg<int64_t>("comm", 0);
-    group = (MPI_Group)OperatorBase::GetSingleArg<int64_t>("group", 0);
-    int world_root = OperatorBase::GetSingleArg<int>("root", 0);
+    comm = (MPI_Comm)OperatorBase::Arg<int64_t>("comm", 0);
+    group = (MPI_Group)OperatorBase::Arg<int64_t>("group", 0);
+    int world_root = OperatorBase::Arg<int>("root", 0);
     CHECK(comm != MPI_COMM_NULL) << "\nMPI is not initialized.";
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -18,19 +18,21 @@ void CollectiveUpdateOp<Context>::InitMPI() {
     MPI_Comm_rank(comm, &comm_rank);
     MPI_Group world_group;
     MPI_Comm_group(MPI_COMM_WORLD, &world_group);
-    MPI_Group_translate_ranks(world_group, 1, &world_root, group, &comm_root);
-    CHECK(comm_root != MPI_UNDEFINED) << "\nMPI root is not included in layer group.";
+    MPI_Group_translate_ranks(
+        world_group, 1, &world_root,
+            group, &comm_root);
+    CHECK(comm_root != MPI_UNDEFINED)
+        << "\nMPI root is not included in layer group.";
 }
 
 template <class Context>
 void CollectiveUpdateOp<Context>::InitNCCL() {
 #ifdef WITH_MPI_NCCL
     ncclUniqueId id;
-    if (comm_rank == comm_root) ncclGetUniqueId(&id);
+    if (comm_rank == comm_root) NCCL_CHECK(ncclGetUniqueId(&id));
     MPI_Bcast((void *)&id, sizeof(id), MPI_BYTE, comm_root, comm);
-    ctx().SwitchToDevice();
     NCCL_CHECK(ncclCommInitRank(&nccl_comm, comm_size, id, comm_rank));
-    CUDA_CHECK(cudaStreamCreate(&stream));
+    closure = CUDAClosure<Context>(&ctx());
 #else
     LOG(FATAL) << "NCCL was not compiled.";
 #endif
@@ -63,26 +65,24 @@ void CollectiveUpdateOp<Context>::MPIAllReduceWithFloat() {
         for (int i = 0; i < comm_size - 1; i++) {
             int recv_chunk = (comm_rank - i - 1 + comm_size) % comm_size;
             int send_chunk = (comm_rank - i + comm_size) % comm_size;
-            auto* segment_send = &(dXdata[segment_ends[send_chunk] -
-                                        segment_sizes[send_chunk]]);
+            auto* segment_send = &(dXdata[
+                segment_ends[send_chunk] - segment_sizes[send_chunk]
+            ]);
             MPI_Irecv(WSdata, segment_sizes[recv_chunk],
-                                              MPI_FLOAT,
-                                           recv_from, 0,
-                                       comm, &recv_req);
+                MPI_FLOAT, recv_from, 0, comm, &recv_req);
             MPI_Send(segment_send, segment_sizes[send_chunk],
-                                                  MPI_FLOAT, 
-                                                 send_to, 0, 
-                                                      comm);
-            auto* segment_update = &(dXdata[segment_ends[recv_chunk] - 
-                                        segment_sizes[recv_chunk]]);
+                MPI_FLOAT, send_to, 0, comm);
+            auto* segment_update = &(dXdata[
+                segment_ends[recv_chunk] - segment_sizes[recv_chunk]
+            ]);
             MPI_Wait(&recv_req, MPI_STATUS_IGNORE);
 #ifdef WITH_MPI_CUDA
             math::Axpy<float, Context>(segment_sizes[recv_chunk],
-                                    1.0, WSdata, segment_update);
-            cudaStreamSynchronize(cudaStreamDefault);
+                1.0, WSdata, segment_update, &ctx());
+            ctx().FinishDeviceCompution();
 #else 
             math::Axpy<float, CPUContext>(segment_sizes[recv_chunk],
-                                       1.0, WSdata, segment_update);
+                1.0, WSdata, segment_update, &ctx());
 #endif // WITH_MPI_CUDA
         }
 
@@ -90,25 +90,27 @@ void CollectiveUpdateOp<Context>::MPIAllReduceWithFloat() {
         for (int i = 0; i < comm_size - 1; i++) {
             int send_chunk = (comm_rank - i + 1 + comm_size) % comm_size;
             int recv_chunk = (comm_rank - i + comm_size) % comm_size;
-            auto* segment_send = &(dXdata[segment_ends[send_chunk] - 
-                                        segment_sizes[send_chunk]]);
-            auto* segment_recv = &(dXdata[segment_ends[recv_chunk] -
-                                        segment_sizes[recv_chunk]]);
+            auto* segment_send = &(dXdata[
+                segment_ends[send_chunk] - segment_sizes[send_chunk]
+            ]);
+            auto* segment_recv = &(dXdata[
+                segment_ends[recv_chunk] - segment_sizes[recv_chunk]
+            ]);
             MPI_Sendrecv(segment_send, segment_sizes[send_chunk],
-                                                       MPI_FLOAT, 
-                                                      send_to, 0, 
-                         segment_recv, segment_sizes[recv_chunk], 
-                                                       MPI_FLOAT, 
-                                                    recv_from, 0, 
-                                        comm, MPI_STATUS_IGNORE);
+                MPI_FLOAT, send_to, 0,
+                    segment_recv, segment_sizes[recv_chunk],
+                        MPI_FLOAT, recv_from, 0,
+                            comm, MPI_STATUS_IGNORE);
         }
 
         //  normalization
         if (comm_size > 1) {
 #ifdef WITH_MPI_CUDA
-            math::Scal<float, Context>(count, float(1.0 / comm_size), dXdata);
+            math::Scal<float, Context>(count,
+                1.f / comm_size, dXdata, &ctx());
 #else
-            math::Scal<float, CPUContext>(count, float(1.0 / comm_size), dXdata);
+            math::Scal<float, CPUContext>(count,
+                1.f / comm_size, dXdata, &ctx());
 #endif  // WITH_MPI_CUDA
         }
     }
@@ -117,23 +119,18 @@ void CollectiveUpdateOp<Context>::MPIAllReduceWithFloat() {
 template <class Context>
 void CollectiveUpdateOp<Context>::NCCLAllReduceWithFloat() {
 #ifdef WITH_MPI_NCCL
-    ctx().FinishDeviceCompution();
+    auto stream = closure.cuda_stream(0);
     for (int i = 0; i < InputSize(); i++) {
         TIndex count = Input(i).count();
         auto* dXdata = Input(i).template mutable_data<float, Context>();
-        NCCL_CHECK(ncclAllReduce((const void*)dXdata,
-                                       (void*)dXdata,
-                                               count,
-                                           ncclFloat,
-                                             ncclSum,
-                                           nccl_comm,
-                                            stream));
+        NCCL_CHECK(ncclAllReduce((const void*)dXdata, (void*)dXdata,
+            count, ncclFloat, ncclSum, nccl_comm, stream));
     }
-    CUDA_CHECK(cudaStreamSynchronize(stream));
+    closure.Sync();
     for (int i = 0; i < InputSize(); i++) {
         TIndex count = Input(i).count();
         auto* dXdata = Input(i).template mutable_data<float, Context>();
-        math::Scal<float, Context>(count, float(1.0 / comm_size), dXdata);
+        math::Scal<float, Context>(count, 1.f / comm_size, dXdata, &ctx());
     }
 #endif
 }
@@ -154,17 +151,14 @@ void CollectiveUpdateOp<Context>::MPIBcastWithFloat() {
 template <class Context>
 void CollectiveUpdateOp<Context>::NCCLBcastWithFloat() {
 #ifdef WITH_MPI_NCCL
-    ctx().FinishDeviceCompution();
+    auto stream = closure.cuda_stream(0);
     for (int i = 0; i < InputSize(); i++) {
         TIndex count = Input(i).count();
         auto* dXdata = Input(i).template mutable_data<float, Context>();
-        NCCL_CHECK(ncclBcast((void*)dXdata,
-                                     count,
-                                 ncclFloat,
-                                 comm_root,
-                                 nccl_comm,
-                                  stream));
+        NCCL_CHECK(ncclBcast((void*)dXdata, count,
+            ncclFloat, comm_root, nccl_comm, stream));
     }
+    closure.Sync();
 #endif
 }
 

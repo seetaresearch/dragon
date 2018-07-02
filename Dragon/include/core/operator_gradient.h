@@ -23,17 +23,20 @@ struct Gradient {
     vector<OperatorDef> ops;
     vector<string> g_inputs;
     vector<float> defaults;
-    Gradient(const vector<OperatorDef>& ops,
-             const vector<string>& g_inputs,
-             const vector<float>& defaults)
+    Gradient(
+        const vector<OperatorDef>&   ops,
+        const vector<string>&        g_inputs,
+        const vector<float>&         defaults)
         : ops(ops), g_inputs(g_inputs), defaults(defaults) {}
 };
 
 class GradientMakerBase {
  public:
-    GradientMakerBase(const OperatorDef& def,
-                      const vector<string>& g_outputs)
-        : def(def), g_outputs_(g_outputs), g_inputs_(def.input_size()) {}
+    GradientMakerBase(
+        const OperatorDef&          def,
+        const vector<string>&       g_outputs)
+        : def(def), g_outputs_(g_outputs),
+          g_inputs_(def.input_size()) {}
     virtual ~GradientMakerBase() {}
 
     inline virtual bool CopyDeviceOption() const { return true; }
@@ -80,7 +83,9 @@ class GradientMakerBase {
 };
 
 //  implemented in operator.cc
-Gradient MakeGradientForOp(const OperatorDef& op_def, const vector<string>& g_outputs);
+Gradient MakeGradientForOp(
+    const OperatorDef&              op_def,
+    const vector<string>&           g_outputs);
 
 # define GRADIENT_MAKER_CTOR(name) \
     name(const OperatorDef& def, const vector<string>& g_output) \
@@ -94,15 +99,17 @@ class NoGradient : public GradientMakerBase {
     }
 };
 
-DECLARE_REGISTRY(GradientRegistry,
-                 GradientMakerBase,
-                 const OperatorDef&,
-                 const vector<string>&);
+DECLARE_REGISTRY(
+    GradientRegistry,
+    GradientMakerBase,
+    const OperatorDef&,
+    const vector<string>&);
 
-DECLARE_REGISTRY(NoGradientRegistry,
-                 GradientMakerBase,
-                 const OperatorDef&,
-                 const vector<string>&);
+DECLARE_REGISTRY(
+    NoGradientRegistry,
+    GradientMakerBase,
+    const OperatorDef&,
+    const vector<string>&);
 
 //  define in the operator.cc
 #define REGISTER_GRADIENT(name, ...) \

@@ -3,7 +3,7 @@
 
 namespace dragon {
 
-string dim_string(const vector<TIndex>& shape) {
+string DimString(const vector<TIndex>& shape) {
     std::stringstream ss;
     ss << "(";
     for (int i = 0; i < shape.size() - 1; i++) ss << shape[i] << ",";
@@ -55,7 +55,7 @@ void ReshapeOp<Context>::RunOnDevice() {
             if (new_shape[i] == -1) {
                 CHECK_EQ(Input(0).count() % total_count, 0)
                     << "\nCan not change the total size: "
-                    << Input(0).dim_string() << " -> " << dim_string(new_shape);
+                    << Input(0).DimString() << " -> " << DimString(new_shape);
                 new_shape[i] = Input(0).count() / total_count;
                 total_count *= new_shape[i];
                 break;
@@ -64,10 +64,10 @@ void ReshapeOp<Context>::RunOnDevice() {
     }
     CHECK_EQ(total_count, Input(0).count())
         << "\nCan not change the total size."
-        << Input(0).dim_string() << " -> " << dim_string(new_shape);
+        << Input(0).DimString() << " -> " << DimString(new_shape);
     //  save Xshape
     Tensor* sv = ws()->CreateTensor("/mnt/" + anchor() + "/reshape/x_shape");
-    sv->Reshape(vector<TIndex>(1, Input(0).ndim()));
+    sv->Reshape({ (TIndex)Input(0).ndim() });
     auto* Sdata = sv->template mutable_data<TIndex, CPUContext>();
     for (int i = 0; i < Input(0).ndim(); i++) Sdata[i] = Input(0).dim(i);
     Output(0)->Reshape(new_shape); 

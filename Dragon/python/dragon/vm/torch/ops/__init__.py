@@ -19,7 +19,7 @@ from .arithmetic import (
 )
 
 from .ndarray import (
-    sum, mean, argmin, argmax, max, topk, cat
+    sum, mean, argmin, argmax, max, topk, cat, gather
 )
 
 from .vision import (

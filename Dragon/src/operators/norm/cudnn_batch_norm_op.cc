@@ -32,14 +32,20 @@ void CuDNNBatchNormOp<Context>::RunWithType() {
         else if (data_format == "NHWC") {
             switch (Input(0).ndim()) {
             case 3:
-                cudnnSetTensor3dDesc<T>(&input_desc, data_format, &Input(0));
-                cudnnSetTensor3dDesc<T>(&output_desc, data_format, Output(0));
+                cudnnSetTensor3dDesc<T>(
+                    &input_desc, data_format, &Input(0));
+                cudnnSetTensor3dDesc<T>(
+                    &output_desc, data_format, Output(0));
             case 4:
-                cudnnSetTensor4dDesc<T>(&input_desc, data_format, &Input(0));
-                cudnnSetTensor4dDesc<T>(&output_desc, data_format, Output(0));
+                cudnnSetTensor4dDesc<T>(
+                    &input_desc, data_format, &Input(0));
+                cudnnSetTensor4dDesc<T>(
+                    &output_desc, data_format, Output(0));
             case 5:
-                cudnnSetTensor5dDesc<T>(&input_desc, data_format, &Input(0));
-                cudnnSetTensor5dDesc<T>(&output_desc, data_format, Output(0));
+                cudnnSetTensor5dDesc<T>(
+                    &input_desc, data_format, &Input(0));
+                cudnnSetTensor5dDesc<T>(
+                    &output_desc, data_format, Output(0));
             default:
                 LOG(FATAL) << "Only support the 3d/4d/5d input at NHWC mode.";
             }
@@ -62,37 +68,23 @@ void CuDNNBatchNormOp<Context>::RunWithType() {
     auto* Bdata = Input(4).template data<T, Context>();
 
     if (this->use_global_stats) {
-        CUDNN_CHECK(cudnnBatchNormalizationForwardInference(cudnn_handle(),
-                                                                   bn_mode,
-                                                         CUDNNType<T>::one,
-                                                        CUDNNType<T>::zero,
-                                                         input_desc, Xdata,
-                                                        output_desc, Ydata,
-                                                                   bn_desc,
-                                                                     Sdata,
-                                                                     Bdata,
-                                                                     Hmean,
-                                                                      Hvar,
-                                                                   eps64));
-
+        CUDNN_CHECK(cudnnBatchNormalizationForwardInference(
+            ctx().cudnn_handle(), bn_mode,
+                CUDNNType<T>::one, CUDNNType<T>::zero,
+                    input_desc, Xdata, output_desc, Ydata,
+                        bn_desc, Sdata, Bdata,
+                            Hmean, Hvar, eps64));
     } else {
         auto* Tmean = mean->template mutable_data<T, Context>();
         auto* Tvar = var->template mutable_data<T, Context>();
-        CUDNN_CHECK(cudnnBatchNormalizationForwardTraining(cudnn_handle(),
-                                                                  bn_mode,
-                                                        CUDNNType<T>::one,
-                                                       CUDNNType<T>::zero,
-                                                        input_desc, Xdata,
-                                                       output_desc, Ydata,
-                                                                  bn_desc,
-                                                                    Sdata,
-                                                                    Bdata,
-                        this->is_recomputing ? 0.0 : 1.0 - this->momentum,
-                                                                    Hmean,
-                                                                     Hvar,
-                                                                    eps64,
-                                                                    Tmean,
-                                                                   Tvar));
+        auto mt = this->is_recomputing ? 0.0 : 1.0 - this->momentum;
+        CUDNN_CHECK(cudnnBatchNormalizationForwardTraining(
+            ctx().cudnn_handle(), bn_mode,
+                CUDNNType<T>::one, CUDNNType<T>::zero,
+                    input_desc, Xdata, output_desc, Ydata,
+                        bn_desc, Sdata, Bdata,
+                            mt, Hmean, Hvar,
+                                eps64, Tmean, Tvar));
     }
 }
 
@@ -120,8 +112,8 @@ void CuDNNBatchNormOp<Context>::Setup() {
     var = ws()->CreateTensor("/mnt/" + anchor() + "/bn/var");
 
     //  reshape
-    mean->Reshape(vector<TIndex>(1, C));
-    var->Reshape(vector<TIndex>(1, C));
+    mean->Reshape({ C });
+    var->Reshape({ C });
     Output(0)->ReshapeLike(Input(0));
 }
 
@@ -167,9 +159,9 @@ void CuDNNBatchNormGradientOp<Context>::Setup() {
     var = ws()->GetTensor("/mnt/" + anchor() + "/bn/var");
 
     //  reshape
-    mean->Reshape(vector<TIndex>(1, C));
-    var->Reshape(vector<TIndex>(1, C));
-    nc.Reshape(vector<TIndex>(1, NC));
+    mean->Reshape({ C });
+    var->Reshape({ C });
+    nc.Reshape({ NC });
     Output(0)->ReshapeLike(Input(0));  // dX
     Output(1)->ReshapeLike(Input(3));  // dScale
     Output(2)->ReshapeLike(Input(3));  // dBias
@@ -198,14 +190,20 @@ void CuDNNBatchNormGradientOp<Context>::TrainingRunWithType() {
         } else if (data_format == "NHWC") {
             switch (Input(0).ndim()) {
                 case 3:
-                    cudnnSetTensor3dDesc<T>(&input_desc, data_format, &Input(-1));
-                    cudnnSetTensor3dDesc<T>(&output_desc, data_format, Output(0));
+                    cudnnSetTensor3dDesc<T>(
+                        &input_desc, data_format, &Input(-1));
+                    cudnnSetTensor3dDesc<T>(
+                        &output_desc, data_format, Output(0));
                 case 4:
-                    cudnnSetTensor4dDesc<T>(&input_desc, data_format, &Input(-1));
-                    cudnnSetTensor4dDesc<T>(&output_desc, data_format, Output(0));
+                    cudnnSetTensor4dDesc<T>(
+                        &input_desc, data_format, &Input(-1));
+                    cudnnSetTensor4dDesc<T>(
+                        &output_desc, data_format, Output(0));
                 case 5:
-                    cudnnSetTensor5dDesc<T>(&input_desc, data_format, &Input(-1));
-                    cudnnSetTensor5dDesc<T>(&output_desc, data_format, Output(0));
+                    cudnnSetTensor5dDesc<T>(
+                        &input_desc, data_format, &Input(-1));
+                    cudnnSetTensor5dDesc<T>(
+                        &output_desc, data_format, Output(0));
                 default:
                     LOG(FATAL) << "Only support the 3d/4d/5d input at NHWC mode.";
             }
@@ -226,22 +224,14 @@ void CuDNNBatchNormGradientOp<Context>::TrainingRunWithType() {
         auto* Tmean = mean->template data<T, Context>();
         auto* Tvar = var->template data<T, Context>();
 
-        CUDNN_CHECK(cudnnBatchNormalizationBackward(cudnn_handle(),
-                                                           bn_mode,
-                                                 CUDNNType<T>::one,
-                                                CUDNNType<T>::zero,
-                                                 CUDNNType<T>::one,
-                                                 CUDNNType<T>::one,
-                                                output_desc, Xdata,
-                                                input_desc, dYdata,
-                                               output_desc, dXdata,
-                                                           bn_desc,
-                                                             Sdata,
-                                                            dSdata,
-                                                            dBdata,
-                                                             eps64,
-                                                             Tmean,
-                                                            Tvar));
+        CUDNN_CHECK(cudnnBatchNormalizationBackward(
+            ctx().cudnn_handle(), bn_mode,
+                CUDNNType<T>::one, CUDNNType<T>::zero,
+                    CUDNNType<T>::one, CUDNNType<T>::one,
+                        output_desc, Xdata, input_desc, dYdata,
+                            output_desc, dXdata, bn_desc,
+                                Sdata, dSdata, dBdata,
+                                    eps64, Tmean, Tvar));
     }
 }
 
@@ -263,16 +253,19 @@ void CuDNNBatchNormGradientOp<Context>::InferenceRunWithType() {
     if (Output(2)->name() != "ignore") {
         auto* dBdata = Output(2)->template mutable_data<T, Context>();
         if (data_format == "NCHW") {
-            math::Gemv<T, Context>(CblasNoTrans, NC, S,
-                                   1.0, dYdata, MXmult,
-                                          0.0, NCdata);
-            math::Gemv<T, Context>(CblasTrans, N, C,
-                                1.0, NCdata, MXmult,
-                                       1.0, dBdata);
+            math::Gemv<T, Context>(
+                CblasNoTrans, NC, S,
+                    1.0, dYdata, MXmult,
+                        0.0, NCdata, &ctx());
+            math::Gemv<T, Context>(
+                CblasTrans, N, C,
+                    1.0, NCdata, MXmult,
+                        1.0, dBdata, &ctx());
         } else if (data_format == "NHWC") {
-            math::Gemv<T, Context>(CblasTrans, NS, C,
-                                 1.0, dYdata, MXmult,
-                                        1.0, dBdata);
+            math::Gemv<T, Context>(
+                CblasTrans, NS, C,
+                    1.0, dYdata, MXmult,
+                        1.0, dBdata, &ctx());
         }
     }
 
@@ -291,16 +284,22 @@ void CuDNNBatchNormGradientOp<Context>::InferenceRunWithType() {
 
         //  compute dE/dY \cot (scale / std(X))
         if (data_format == "NCHW") {
-            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, N, C, 1,
-                                                     1.0, MXmult, Tvar,
-                                                          0.0, NCdata);
-            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                                    1.0, NCdata, MXmult,
-                                                           0.0, WSdata);
+            math::Gemm<T, Context>(
+                CblasNoTrans, CblasNoTrans,
+                    N, C, 1,
+                        1.0, MXmult, Tvar,
+                            0.0, NCdata, &ctx());
+            math::Gemm<T, Context>(
+                CblasNoTrans, CblasNoTrans,
+                    NC, S, 1,
+                        1.0, NCdata, MXmult,
+                            0.0, WSdata, &ctx());
         } else if (data_format == "NHWC") {
-            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NS, C, 1,
-                                                      1.0, MXmult, Tvar,
-                                                           0.0, WSdata);
+            math::Gemm<T, Context>(
+                CblasNoTrans, CblasNoTrans,
+                    NS, C, 1,
+                        1.0, MXmult, Tvar,
+                            0.0, WSdata, &ctx());
         }
         math::Mul<T, Context>(Output(0)->count(), dYdata, WSdata, dXdata);
     }

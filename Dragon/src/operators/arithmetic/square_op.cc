@@ -31,7 +31,7 @@ void SquareGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     math::Mul<T, Context>(Output(0)->count(), dYdata, Xdata, dXdata);
-    math::Scal<T, Context>(Output(0)->count(), 2.0, dXdata);
+    math::Scal<T, Context>(Output(0)->count(), 2.0, dXdata, &ctx());
 }
 
 template <class Context>

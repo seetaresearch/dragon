@@ -30,14 +30,13 @@ template <> void Set<float16, CUDAContext>(
 #ifdef WITH_CUDA_FP16
     if (n % 2 == 0) {
         _SetHalf<half2>
-            << <GET_BLOCKS(n / 2), CUDA_NUM_THREADS >> >(n / 2,
+            << <CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
                 dragon_cast<half2, float16>(alpha),
                     reinterpret_cast<half2*>(x));
     } else {
         _SetHalf<float16>
-            << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n, alpha, x);
+            << <CUDA_BLOCKS(n), CUDA_THREADS >> >(n, alpha, x);
     }
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -58,15 +57,15 @@ template <> void RandomNormal<float16, CUDAContext>(
     const int               n,
     const float             mu,
     const float             sigma,
-    float16*                x) {
+    float16*                x,
+    CUDAContext*            ctx) {
 #ifdef WITH_CUDA_FP16
     float* xf32 = (float*)CUDAContext::New(n * sizeof(float));
     CURAND_CHECK(curandGenerateNormal(
-        curand_generator(), xf32, n, mu, sigma));
+        ctx->curand_generator(), xf32, n, mu, sigma));
     _TypeFloat2Half
-        << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
             n, xf32, reinterpret_cast<half*>(x));
-    CUDA_POST_KERNEL_CHECK;
     CUDAContext::Delete(xf32);
 #else
     CUDA_FP16_NOT_COMPILED;
@@ -111,18 +110,17 @@ template <> void Add<float16, CUDAContext>(
 #ifdef WITH_CUDA_FP16
     if (n % 2 == 0) {
         _AddHalf2<half2>
-            << <GET_BLOCKS(n / 2), CUDA_NUM_THREADS >> >(n / 2,
+            << <CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
                 reinterpret_cast<const half2*>(a),
                     reinterpret_cast<const half2*>(b),
                         reinterpret_cast<half2*>(y));
     } else {
         _AddHalf<half>
-            << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n,
+            << <CUDA_BLOCKS(n), CUDA_THREADS >> >(n,
                 reinterpret_cast<const half*>(a),
                     reinterpret_cast<const half*>(b),
                         reinterpret_cast<half*>(y));
     }
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -164,18 +162,17 @@ template <> void Sub<float16, CUDAContext>(
 #ifdef WITH_CUDA_FP16
     if (n % 2 == 0) {
         _SubHalf2<half2>
-            << <GET_BLOCKS(n / 2), CUDA_NUM_THREADS >> >(n / 2,
+            << <CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
                 reinterpret_cast<const half2*>(a),
                     reinterpret_cast<const half2*>(b),
                         reinterpret_cast<half2*>(y));
     } else {
         _SubHalf<half>
-            << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n,
+            << <CUDA_BLOCKS(n), CUDA_THREADS >> >(n,
                 reinterpret_cast<const half*>(a),
                     reinterpret_cast<const half*>(b),
                         reinterpret_cast<half*>(y));
     }
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -217,18 +214,17 @@ template <> void Mul<float16, CUDAContext>(
 #ifdef WITH_CUDA_FP16
     if (n % 2 == 0) {
         _MulHalf2<half2>
-            << <GET_BLOCKS(n / 2), CUDA_NUM_THREADS >> >(n / 2,
+            << <CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
                 reinterpret_cast<const half2*>(a),
                     reinterpret_cast<const half2*>(b),
                         reinterpret_cast<half2*>(y));
     } else {
         _MulHalf<half>
-            << <GET_BLOCKS(n), CUDA_NUM_THREADS >> > (n,
+            << <CUDA_BLOCKS(n), CUDA_THREADS >> > (n,
                 reinterpret_cast<const half*>(a),
                     reinterpret_cast<const half*>(b),
                         reinterpret_cast<half*>(y));
     }
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -256,11 +252,10 @@ template <> void Div<float16, CUDAContext>(
     float16*                y) {
 #ifdef WITH_CUDA_FP16
     _DivHalf<half>
-        << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n,
+        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(n,
             reinterpret_cast<const half*>(a),
                 reinterpret_cast<const half*>(b),
                     reinterpret_cast<half*>(y));
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -299,16 +294,15 @@ template <> void Square<float16, CUDAContext>(
 #ifdef WITH_CUDA_FP16
     if (n % 2 == 0) {
         _SquareHalf2<half2>
-            << < GET_BLOCKS(n / 2), CUDA_NUM_THREADS >> >(n / 2,
+            << < CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
                 reinterpret_cast<const half2*>(x),
                     reinterpret_cast<half2*>(y));
     } else {
         _SquareHalf<half>
-            << < GET_BLOCKS(n), CUDA_NUM_THREADS >> > (n,
+            << < CUDA_BLOCKS(n), CUDA_THREADS >> > (n,
                 reinterpret_cast<const half*>(x),
                     reinterpret_cast<half*>(y));
     }
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -347,16 +341,15 @@ template <> void Sqrt<float16, CUDAContext>(
 #ifdef WITH_CUDA_FP16
     if (n % 2 == 0) {
         _SqrtHalf2<half2>
-            << < GET_BLOCKS(n / 2), CUDA_NUM_THREADS >> >(n / 2,
+            << < CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
                 reinterpret_cast<const half2*>(x),
                     reinterpret_cast<half2*>(y));
     } else {
         _SqrtHalf<half>
-            << < GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n,
+            << < CUDA_BLOCKS(n), CUDA_THREADS >> >(n,
                 reinterpret_cast<const half*>(x),
                     reinterpret_cast<half*>(y));
     }
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -399,16 +392,15 @@ template <> void Pow<float16, CUDAContext>(
     CHECK(alpha == float(2)) << "fp16 only support the power of 2";
     if (n % 2 == 0) {
         _PowHalf2<half2>
-            << < GET_BLOCKS(n / 2), CUDA_NUM_THREADS >> >(n / 2,
+            << < CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
                 alpha, reinterpret_cast<const half2*>(x),
                     reinterpret_cast<half2*>(y));
     } else {
         _PowHalf<half>
-            << < GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n,
+            << < CUDA_BLOCKS(n), CUDA_THREADS >> >(n,
                 alpha, reinterpret_cast<const half*>(x),
                     reinterpret_cast<half*>(y));
     }
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -450,18 +442,17 @@ template <> void Inv<float16, CUDAContext>(
 #ifdef WITH_CUDA_FP16
     if (n % 2 == 0) {
         _InvHalf2<half2>
-            << < GET_BLOCKS(n / 2), CUDA_NUM_THREADS >> >(n / 2,
+            << < CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
                 dragon_cast<half2, float>(numerator),
                     reinterpret_cast<const half2*>(x),
                         reinterpret_cast<half2*>(y));
     } else {
         _InvHalf<half>
-            << < GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n,
+            << < CUDA_BLOCKS(n), CUDA_THREADS >> >(n,
                 dragon_cast<half, float>(numerator),
                     reinterpret_cast<const half*>(x),
                         reinterpret_cast<half*>(y));
     }
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -472,10 +463,11 @@ template <> void Inv<float16, CUDAContext>(
 template <> void Scal<float16, CUDAContext>(
     const int               n,
     const float             alpha,
-    float16*                y) {
+    float16*                y,
+    CUDAContext*            ctx) {
 #ifdef WITH_CUDA_FP16
     CUBLAS_CHECK(cublasScalEx(
-        cublas_handle(), n, 
+        ctx->cublas_handle(), n,
             &alpha, CUDA_R_32F,
                 y, CUDA_R_16F, 1,
                     CUDA_R_32F));
@@ -488,19 +480,21 @@ template <> void Scale<float16, CUDAContext>(
     const int               n,
     const float             alpha,
     const float16*          x,
-    float16*                y) {
+    float16*                y,
+    CUDAContext*            ctx) {
     CUDAContext::Copy<float16, CUDAContext, CUDAContext>(n, y, x);
-    Scal<float16, CUDAContext>(n, alpha, y);
+    Scal<float16, CUDAContext>(n, alpha, y, ctx);
 }
 
 template <> float Dot<float16, CUDAContext>(
     int                     n,
     const float16*          a,
-    const float16*          b) {
+    const float16*          b,
+    CUDAContext*            ctx) {
 #ifdef WITH_CUDA_FP16
     float16 result;
     CUBLAS_CHECK(cublasDotEx(
-        cublas_handle(), n,
+        ctx->cublas_handle(), n,
             a, CUDA_R_16F, 1,
                 b, CUDA_R_16F, 1,
                     &result, CUDA_R_16F,
@@ -545,16 +539,15 @@ template <> void AddScalar<float16, CUDAContext>(
 #ifdef WITH_CUDA_FP16
     if (n % 2 == 0) {
         _AddScalarHalf2<half2>
-            << <GET_BLOCKS(n / 2), CUDA_NUM_THREADS >> >(n / 2,
+            << <CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
                 dragon_cast<half2, float>(alpha),
                     reinterpret_cast<half2*>(y));
     } else {
         _AddScalarHalf<half>
-            << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n,
+            << <CUDA_BLOCKS(n), CUDA_THREADS >> >(n,
                 dragon_cast<half, float>(alpha),
                     reinterpret_cast<half*>(y));
     }
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -593,16 +586,15 @@ template <> void MulScalar<float16, CUDAContext>(
 #ifdef WITH_CUDA_FP16
     if (n % 2 == 0) {
         _MulScalarHalf2<half2>
-            << <GET_BLOCKS(n / 2), CUDA_NUM_THREADS >> >(n / 2,
+            << <CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
                 dragon_cast<half2, float>(alpha),
                     reinterpret_cast<half2*>(y));
     } else {
         _MulScalarHalf<half>
-            << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(n,
+            << <CUDA_BLOCKS(n), CUDA_THREADS >> >(n,
                 dragon_cast<half, float>(alpha),
                     reinterpret_cast<half*>(y));
     }
-    CUDA_POST_KERNEL_CHECK;
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -612,10 +604,11 @@ template <> void Axpy<float16, CUDAContext>(
     const int               n,
     float                   alpha,
     const float16*          x,
-    float16*                y) {
+    float16*                y,
+    CUDAContext*            ctx) {
 #ifdef WITH_CUDA_FP16
     CUBLAS_CHECK(cublasAxpyEx(
-        cublas_handle(), n,
+        ctx->cublas_handle(), n,
             &alpha, CUDA_R_32F,
                 x, CUDA_R_16F, 1,
                     y, CUDA_R_16F, 1,
@@ -628,29 +621,31 @@ template <> void Axpy<float16, CUDAContext>(
 template <> void Axpby<float16, CUDAContext>(
     const int               n,
     float                   alpha,
-    const                   float16* x,
+    const float16*          x,
     float                   beta,
-    float16*                y) {
-    Scal<float16, CUDAContext>(n, beta, y);
-    Axpy<float16, CUDAContext>(n, alpha, x, y);
+    float16*                y,
+    CUDAContext*            ctx) {
+    Scal<float16, CUDAContext>(n, beta, y, ctx);
+    Axpy<float16, CUDAContext>(n, alpha, x, y, ctx);
 }
 
 template <> void RandomUniform<float16, CUDAContext>(
     const int               n,
     const float             low,
     const float             high,
-    float16*                x) {
+    float16*                x,
+    CUDAContext*            ctx) {
 #ifdef WITH_CUDA_FP16
-    float* xf32 = (float*)CUDAContext::New(n * sizeof(float));
-    CURAND_CHECK(curandGenerateUniform(curand_generator(), xf32, n));
+    float* xf32 = (float*)ctx->New(n * sizeof(float));
+    CURAND_CHECK(curandGenerateUniform(
+        ctx->curand_generator(), xf32, n));
     _TypeFloat2Half
-        << <GET_BLOCKS(n), CUDA_NUM_THREADS >> >(
+        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
             n, xf32, reinterpret_cast<half*>(x));
-    CUDA_POST_KERNEL_CHECK;
     float range = high - low;
-    if (range != float(1)) Scal<float16, CUDAContext>(n, range, x);
+    if (range != float(1)) Scal<float16, CUDAContext>(n, range, x, ctx);
     if (low != float(0)) AddScalar<float16, CUDAContext>(n, low, x);
-    CUDAContext::Delete(xf32);
+    ctx->Delete(xf32);
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -669,6 +664,7 @@ template <> void Gemm<float16, CUDAContext>(
     const float16*          B,
     const float             beta,
     float16*                C,
+    CUDAContext*            ctx,
     TensorProto_DataType    math_type) {
 #ifdef WITH_CUDA_FP16
     int lda = (TransA == CblasNoTrans) ? K : M;
@@ -682,36 +678,36 @@ template <> void Gemm<float16, CUDAContext>(
 #if CUDA_VERSION >= 9000
         if (TENSOR_CORE_AVAILABLE()) {
             //  GEMM + MATH32 + TENSOR-CORE
-            CUBLAS_CHECK(cublasGemmEx(cublas_handle(),
-                                   cuTransB, cuTransA,
-                                              N, M, K,
-                                             &_alpha_,
-                                   B, CUDA_R_16F, ldb,
-                                   A, CUDA_R_16F, lda,
-                                              &_beta_,
-                                     C, CUDA_R_16F, N,
-                                           CUDA_R_32F,
-                      CUBLAS_GEMM_DEFAULT_TENSOR_OP));
+            CUBLAS_CHECK(cublasGemmEx(
+                ctx->cublas_handle(),
+                cuTransB, cuTransA, N, M, K,
+                &_alpha_,
+                    B, CUDA_R_16F, ldb,
+                    A, CUDA_R_16F, lda,
+                &_beta_,
+                    C, CUDA_R_16F, N,
+                CUDA_R_32F,
+                CUBLAS_GEMM_DEFAULT_TENSOR_OP));
         } else {
             //  GEMM + MATH32 + DEFAULT
-            CUBLAS_CHECK(cublasSgemmEx(cublas_handle(),
-                                    cuTransB, cuTransA,
-                                               N, M, K,
-                                              &_alpha_,
-                                    B, CUDA_R_16F, ldb,
-                                    A, CUDA_R_16F, lda,
-                                               &_beta_,
-                                    C, CUDA_R_16F, N));
+            CUBLAS_CHECK(cublasSgemmEx(
+                ctx->cublas_handle(),
+                cuTransB, cuTransA, N, M, K,
+                &_alpha_,
+                    B, CUDA_R_16F, ldb,
+                    A, CUDA_R_16F, lda,
+                &_beta_,
+                    C, CUDA_R_16F, N));
         }
 #else
-       CUBLAS_CHECK(cublasSgemmEx(cublas_handle(),
-                               cuTransB, cuTransA,
-                                          N, M, K,
-                                         &_alpha_,
-                               B, CUDA_R_16F, ldb,
-                               A, CUDA_R_16F, lda,
-                                          &_beta_,
-                               C, CUDA_R_16F, N));
+       CUBLAS_CHECK(cublasSgemmEx(
+           ctx->cublas_handle(),
+           cuTransB, cuTransA, N, M, K,
+           &_alpha_,
+               B, CUDA_R_16F, ldb,
+               A, CUDA_R_16F, lda,
+           &_beta_,
+               C, CUDA_R_16F, N));
 #endif
     } else if (math_type == TensorProto_DataType_FLOAT16) {
         const half _alpha_ = dragon_cast<half, float>(alpha);
@@ -719,37 +715,36 @@ template <> void Gemm<float16, CUDAContext>(
 #if CUDA_VERSION >= 9000
         if (TENSOR_CORE_AVAILABLE()) {
             //  GEMM + MATH16 + TENSOR-CORE
-            CUBLAS_CHECK(cublasGemmEx(cublas_handle(),
-                                   cuTransB, cuTransA,
-                                              N, M, K,
-                                             &_alpha_,
-                                   B, CUDA_R_16F, ldb,
-                                   A, CUDA_R_16F, lda,
-                                              &_beta_,
-                                     C, CUDA_R_16F, N,
-                                           CUDA_R_16F,
-                      CUBLAS_GEMM_DEFAULT_TENSOR_OP));
+            CUBLAS_CHECK(cublasGemmEx(
+                ctx->cublas_handle(),
+                cuTransB, cuTransA, N, M, K,
+                &_alpha_,
+                    B, CUDA_R_16F, ldb,
+                    A, CUDA_R_16F, lda,
+                &_beta_,
+                    C, CUDA_R_16F, N,
+                CUDA_R_16F,
+                CUBLAS_GEMM_DEFAULT_TENSOR_OP));
         } else {
             //  GEMM + MATH16 + DEFAULT
-             CUBLAS_CHECK(cublasHgemm(cublas_handle(),
-                                   cuTransB, cuTransA,
-                                              N, M, K,
-                                             &_alpha_,
-                reinterpret_cast<const half*>(B), ldb,
-                reinterpret_cast<const half*>(A), lda,
-                                              &_beta_,
-                      reinterpret_cast<half*>(C), N));
+            CUBLAS_CHECK(cublasHgemm(
+                ctx->cublas_handle(),
+                cuTransB, cuTransA, N, M, K,
+                &_alpha_,
+                    reinterpret_cast<const half*>(B), ldb,
+                    reinterpret_cast<const half*>(A), lda,
+                &_beta_,
+                    reinterpret_cast<half*>(C), N));
         }
 #else
-        CUBLAS_CHECK(cublasHgemm(cublas_handle(),
-                              cuTransB, cuTransA,
-                                         N, M, K,
-                                        &_alpha_,
-           reinterpret_cast<const half*>(B), ldb,
-           reinterpret_cast<const half*>(A), lda,
-                                         &_beta_,
-                 reinterpret_cast<half*>(C), N));
-
+        CUBLAS_CHECK(cublasHgemm(
+            ctx->cublas_handle(),
+            cuTransB, cuTransA, N, M, K,
+            &_alpha_,
+                reinterpret_cast<const half*>(B), ldb,
+                reinterpret_cast<const half*>(A), lda,
+            &_beta_,
+                reinterpret_cast<half*>(C), N));
 #endif
     } else {
         LOG(FATAL) << "Unsupported math type";
@@ -768,6 +763,7 @@ template <> void Gemv<float16, CUDAContext>(
     const float16*          x,
     const float             beta,
     float16*                y,
+    CUDAContext*            ctx,
     TensorProto_DataType    math_type) {
 #ifdef WITH_CUDA_FP16
     cublasOperation_t cuTransA = (TransA == CblasNoTrans) ?
@@ -781,36 +777,36 @@ template <> void Gemv<float16, CUDAContext>(
 #if CUDA_VERSION >= 9000
         if (TENSOR_CORE_AVAILABLE()) {
             //  GEMV + MATH32 + TENSOR-CORE
-            CUBLAS_CHECK(cublasGemmEx(cublas_handle(),
-                                cuTransA, CUBLAS_OP_N,
-                                              m, 1, k,
-                                             &_alpha_,
-                                   A, CUDA_R_16F, LDA,
-                                     x, CUDA_R_16F, k,
-                                              &_beta_,
-                                   y, CUDA_R_16F, LDC,
-                                           CUDA_R_32F,
-                      CUBLAS_GEMM_DEFAULT_TENSOR_OP));
+            CUBLAS_CHECK(cublasGemmEx(
+                ctx->cublas_handle(),
+                cuTransA, CUBLAS_OP_N, m, 1, k,
+                &_alpha_,
+                    A, CUDA_R_16F, LDA,
+                    x, CUDA_R_16F, k,
+                &_beta_,
+                    y, CUDA_R_16F, LDC,
+                CUDA_R_32F,
+                CUBLAS_GEMM_DEFAULT_TENSOR_OP));
         } else {
             //  GEMV + MATH32 + DEFAULT
-            CUBLAS_CHECK(cublasSgemmEx(cublas_handle(),
-                                 cuTransA, CUBLAS_OP_N,
-                                               m, 1, k,
-                                              &_alpha_,
-                                    A, CUDA_R_16F, LDA,
-                                      x, CUDA_R_16F, k,
-                                               &_beta_,
-                                  y, CUDA_R_16F, LDC));
+            CUBLAS_CHECK(cublasSgemmEx(
+                ctx->cublas_handle(),
+                cuTransA, CUBLAS_OP_N, m, 1, k,
+                &_alpha_,
+                    A, CUDA_R_16F, LDA,
+                    x, CUDA_R_16F, k,
+                &_beta_,
+                    y, CUDA_R_16F, LDC));
         }
 #else
-        CUBLAS_CHECK(cublasSgemmEx(cublas_handle(),
-                             cuTransA, CUBLAS_OP_N,
-                                           m, 1, k,
-                                          &_alpha_,
-                                A, CUDA_R_16F, LDA,
-                                  x, CUDA_R_16F, k,
-                                           &_beta_,
-                              y, CUDA_R_16F, LDC));
+        CUBLAS_CHECK(cublasSgemmEx(
+            ctx->cublas_handle(),
+            cuTransA, CUBLAS_OP_N, m, 1, k,
+            &_alpha_,
+                A, CUDA_R_16F, LDA,
+                x, CUDA_R_16F, k,
+            &_beta_,
+                y, CUDA_R_16F, LDC));
 #endif
     } else if (math_type == TensorProto_DataType_FLOAT16) {
         const half _alpha_ = dragon_cast<half, float>(alpha);
@@ -818,36 +814,36 @@ template <> void Gemv<float16, CUDAContext>(
 #if CUDA_VERSION >= 9000
         if (TENSOR_CORE_AVAILABLE()) {
             //  GEMV + MATH16 + TENSOR-CORE
-            CUBLAS_CHECK(cublasGemmEx(cublas_handle(),
-                                cuTransA, CUBLAS_OP_N,
-                                              m, 1, k,
-                                             &_alpha_,
-                                   A, CUDA_R_16F, LDA,
-                                     x, CUDA_R_16F, k,
-                                              &_beta_,
-                                   y, CUDA_R_16F, LDC,
-                                           CUDA_R_16F,
-                      CUBLAS_GEMM_DEFAULT_TENSOR_OP));
+            CUBLAS_CHECK(cublasGemmEx(
+                ctx->cublas_handle(),
+                cuTransA, CUBLAS_OP_N, m, 1, k,
+                &_alpha_,
+                    A, CUDA_R_16F, LDA,
+                    x, CUDA_R_16F, k,
+                &_beta_,
+                    y, CUDA_R_16F, LDC,
+                CUDA_R_16F,
+                CUBLAS_GEMM_DEFAULT_TENSOR_OP));
         } else {
             //  GEMV + MATH16 + DEFAULT
-            CUBLAS_CHECK(cublasHgemm(cublas_handle(),
-                               cuTransA, CUBLAS_OP_N,
-                                             m, 1, k,
-                                            &_alpha_,
-               reinterpret_cast<const half*>(A), LDA,
-                 reinterpret_cast<const half*>(x), k,
-                                             &_beta_,
-                   reinterpret_cast<half*>(y), LDC));
+            CUBLAS_CHECK(cublasHgemm(
+                ctx->cublas_handle(),
+                cuTransA, CUBLAS_OP_N, m, 1, k,
+                &_alpha_,
+                    reinterpret_cast<const half*>(A), LDA,
+                    reinterpret_cast<const half*>(x), k,
+                &_beta_,
+                    reinterpret_cast<half*>(y), LDC));
         }
 #else
-        CUBLAS_CHECK(cublasHgemm(cublas_handle(),
-                           cuTransA, CUBLAS_OP_N,
-                                         m, 1, k,
-                                        &_alpha_,
-           reinterpret_cast<const half*>(A), LDA,
-             reinterpret_cast<const half*>(x), k,
-                                         &_beta_,
-               reinterpret_cast<half*>(y), LDC));
+        CUBLAS_CHECK(cublasHgemm(
+            ctx->cublas_handle(),
+            cuTransA, CUBLAS_OP_N, m, 1, k,
+            &_alpha_,
+                reinterpret_cast<const half*>(A), LDA,
+                reinterpret_cast<const half*>(x), k,
+            &_beta_,
+                reinterpret_cast<half*>(y), LDC));
 #endif
     } else {
             LOG(FATAL) << "Unsupported math type";

@@ -19,17 +19,17 @@ namespace dragon {
 template <class Context>
 class DenseConcatOp final : public ConcatOp<Context> {
  public:
-    DenseConcatOp(const OperatorDef& op_def, Workspace* ws)
-        : ConcatOp<Context>(op_def, ws) {}
+    DenseConcatOp(const OperatorDef& def, Workspace* ws)
+        : ConcatOp<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
 };
 
 template <class Context>
-class DenseConcatGradientOp : public ConcatGradientOp<Context> {
+class DenseConcatGradientOp final : public ConcatGradientOp<Context> {
  public:
-    DenseConcatGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : ConcatGradientOp<Context>(op_def, ws),
-          growth_rate(OperatorBase::GetSingleArg<int>("growth_rate", 0)) {}
+    DenseConcatGradientOp(const OperatorDef& def, Workspace* ws)
+        : ConcatGradientOp<Context>(def, ws),
+          growth_rate(OperatorBase::Arg<int>("growth_rate", 0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void ElimateCorruption() override;

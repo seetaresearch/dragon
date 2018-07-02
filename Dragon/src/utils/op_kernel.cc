@@ -14,8 +14,6 @@ namespace dragon {
 
 namespace kernel {
 
-template<> void Empty<float, CPUContext>() {}
-
 /******************** activation.dropout ********************/
 
 template<> void Dropout<float, CPUContext>(
@@ -24,9 +22,10 @@ template<> void Dropout<float, CPUContext>(
     float                   scale,
     const float*            x,
     uint32_t*               mask,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     uint32_t thresh = static_cast<uint32_t>(UINT_MAX * prob);
-    math::RandomBernoulli<float, CPUContext>(count, 1 - prob, mask);
+    math::RandomBernoulli<float, CPUContext>(count, 1 - prob, mask, ctx);
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -39,11 +38,13 @@ template<> void DropoutGrad<float, CPUContext>(
     float                   scale,
     const float*            dy,
     const uint32_t*         mask,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
-    for (int i = 0; i < count; ++i) dx[i] = dy[i] * mask[i] * scale;
+    for (int i = 0; i < count; ++i)
+        dx[i] = dy[i] * mask[i] * scale;
 }
 
 /******************** activation.elu ********************/
@@ -57,8 +58,8 @@ template<> void Elu<float, CPUContext>(
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
-        y[i] = std::max(x[i], float(0))
-            + alpha * (std::exp(std::min(x[i], float(0))) - float(1));
+        y[i] = std::max(x[i], 0.f) + alpha *
+            (std::exp(std::min(x[i], 0.f)) - 1.f);
     }
 }
 
@@ -72,7 +73,9 @@ template<> void EluGrad<float, CPUContext>(
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
-        dx[i] = dy[i] * ((y[i] > 0) + (alpha + y[i]) * (y[i] <= 0));
+        dx[i] = dy[i] * (
+            (y[i] > 0) + (alpha + y[i]) * (y[i] <= 0)
+        );
     }
 }
 
@@ -92,8 +95,8 @@ template<> void PRelu<float, CPUContext>(
         #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
         for (int i = 0; i < count; ++i) {
-            y[i] = std::max(x[i], float(0)) +
-                w[0] * std::min(x[i], float(0));
+            y[i] = std::max(x[i], 0.f) +
+                w[0] * std::min(x[i], 0.f);
         }
     } else {
         if (data_format == "NCHW") {
@@ -102,8 +105,8 @@ template<> void PRelu<float, CPUContext>(
 #endif
             for (int i = 0; i < count; ++i) {
                 int c = (i / dim) % channels;
-                y[i] = std::max(x[i], float(0)) +
-                    w[c] * std::min(x[i], float(0));
+                y[i] = std::max(x[i], 0.f) +
+                    w[c] * std::min(x[i], 0.f);
             }
         } else if (data_format == "NHWC") {
 #ifdef WITH_OMP
@@ -111,8 +114,8 @@ template<> void PRelu<float, CPUContext>(
 #endif
             for (int i = 0; i < count; ++i) {
                 int c = i % channels;
-                y[i] = std::max(x[i], float(0)) +
-                    w[c] * std::min(x[i], float(0));
+                y[i] = std::max(x[i], 0.f) +
+                    w[c] * std::min(x[i], 0.f);
             }
         } else LOG(FATAL) << "Unknown data format: " << data_format;
     }
@@ -167,7 +170,8 @@ template<> void PReluWGrad<float, CPUContext>(
     const float*            x,
     const float*            multiplier,
     float*                  bcast_dw,
-    float*                  dw) {
+    float*                  dw,
+    CPUContext*             ctx) {
     const int cdim = channels * dim;
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(cdim))
@@ -181,17 +185,19 @@ template<> void PReluWGrad<float, CPUContext>(
     }
     if (channel_shared) {
         float w_sum = math::Dot<float, CPUContext>(
-            channels * dim, bcast_dw, multiplier);
+            channels * dim, bcast_dw, multiplier, ctx);
         math::AddScalar<float, CPUContext>(1, w_sum, dw);
     } else {
         if (data_format == "NCHW") {
             math::Gemv<float, CPUContext>(
                 CblasNoTrans, channels, dim,
-                    1.0, bcast_dw, multiplier, 1.0, dw);
+                    1.0, bcast_dw, multiplier,
+                        1.0, dw, ctx);
         } else if (data_format == "NHWC") {
             math::Gemv<float, CPUContext>(
                 CblasTrans, dim, channels,
-                    1.0, bcast_dw, multiplier, 1.0, dw);
+                    1.0, bcast_dw, multiplier,
+                        1.0, dw, ctx);
         } else LOG(FATAL) << "Unknown data format: " << data_format;
     }
 }
@@ -243,8 +249,8 @@ template<> void SElu<float, CPUContext>(
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
-        y[i] = 1.0507 * std::max(x[i], float(0))
-             + 1.7581 * (std::exp(std::min(x[i], float(0))) - float(1));
+        y[i] = 1.0507 * std::max(x[i], 0.f)
+             + 1.7581 * (std::exp(std::min(x[i], 0.f)) - 1.f);
     }
 }
 
@@ -257,7 +263,8 @@ template<> void SEluGrad<float, CPUContext>(
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
-        dx[i] = y[i] > 0 ? 1.0507 * dy[i] : (1.7581 + y[i]) * dy[i];
+        dx[i] = y[i] > 0 ? 1.0507 * dy[i] :
+            (1.7581 + y[i]) * dy[i];
     }
 }
 
@@ -299,7 +306,8 @@ template<> void Softmax<float, CPUContext>(
     const float*            sum_multiplier,
     const float*            x,
     float*                  scale,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     const int dim = count / outer_dim;
     for (int i = 0; i < outer_dim; ++i) {
        CPUContext::Copy<float, CPUContext, CPUContext>(
@@ -311,12 +319,14 @@ template<> void Softmax<float, CPUContext>(
                 );
         }
         math::Gemm<float, CPUContext>(
-            CblasNoTrans, CblasNoTrans, classes, inner_dim, 1,
-                -1.0, sum_multiplier, scale, 1.0, y);
+            CblasNoTrans, CblasNoTrans, 
+                classes, inner_dim, 1,
+                    -1.0, sum_multiplier, scale, 1.0, y, ctx);
         math::Exp<float, CPUContext>(dim, y, y);
         math::Gemv<float, CPUContext>(
             CblasTrans, classes, inner_dim,
-                1.0, y, sum_multiplier, 0.0, scale);
+                1.0, y, sum_multiplier,
+                    0.0, scale, ctx);
         for (int j = 0; j < classes; ++j) {
             math::Div<float, CPUContext>(inner_dim, y, scale, y);
             y += inner_dim;
@@ -333,17 +343,20 @@ template<> void SoftmaxGrad<float, CPUContext>(
     const float*            dy,
     const float*            y,
     float*                  scale,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     const int dim = count / outer_dim;
     for (int i = 0; i < outer_dim; ++i) {
         for (int k = 0; k < inner_dim; ++k)
             scale[k] = math::StridedDot<float, CPUContext>(
                 classes,
                     dx + i * dim + k, inner_dim,
-                        y + i*dim + k, inner_dim);
+                        y + i*dim + k, inner_dim, ctx);
          math::Gemm<float, CPUContext>(
-             CblasNoTrans, CblasNoTrans, classes, inner_dim, 1,
-                 -1.0, sum_multiplier, scale, 1.0, dx + i*dim);
+             CblasNoTrans, CblasNoTrans,
+                classes, inner_dim, 1,
+                    -1.0, sum_multiplier, scale,
+                        1.0, dx + i * dim, ctx);
     }
     math::Mul<float, CPUContext>(count, dx, y, dx);
 }
@@ -386,13 +399,14 @@ template<> void Affine<float, CPUContext>(
     const float*            alpha,
     const float*            beta,
     const float*            beta_multiplier,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     //  Ax
     auto* Xdata = x; auto* Ydata = y;
     for (int n = 0; n < outer_dim; ++n) {
         for (int d = 0; d < scale_dim; ++d) {
             math::Scale<float, CPUContext>(
-                inner_dim, alpha[d], Xdata, Ydata);
+                inner_dim, alpha[d], Xdata, Ydata, ctx);
             Xdata += inner_dim; 
             Ydata += inner_dim;
         }
@@ -405,7 +419,8 @@ template<> void Affine<float, CPUContext>(
             math::Gemm<float, CPUContext>(
                 CblasNoTrans, CblasNoTrans,
                     scale_dim, inner_dim, 1,
-                        1.0, beta, beta_multiplier, 1.0, Ydata);
+                        1.0, beta, beta_multiplier,
+                            1.0, Ydata, ctx);
              Ydata += dim;
         }
     }
@@ -420,7 +435,8 @@ template<> void Affine<float16, CPUContext>(
     const float16*          alpha,
     const float16*          beta,
     const float16*          beta_multiplier,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -431,12 +447,13 @@ template <> void AffineGrad<float, CPUContext>(
     const int               inner_dim,
     const float*            dy,
     const float*            alpha,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     auto* dYdata = dy; auto* dXdata = dx;
     for (int n = 0; n < outer_dim; ++n) {
         for (int d = 0; d < scale_dim; ++d) {
             math::Scale<float, CPUContext>(
-                inner_dim, alpha[d], dYdata, dXdata);
+                inner_dim, alpha[d], dYdata, dXdata, ctx);
             dYdata += inner_dim; dXdata += inner_dim;
         }
     }
@@ -628,7 +645,8 @@ template <> void SparseSoftmaxCrossEntropy<float, float, CPUContext>(
     const float*            labels,
     float*                  loss,
     float*                  valid,
-    Tensor*                 ignore) {
+    Tensor*                 ignore,
+    CPUContext*             ctx) {
     _SparseSoftmaxCrossEntropy<float, float>(
         count, classes, outer_dim, inner_dim,
             prob, labels, loss, valid, ignore);
@@ -643,7 +661,8 @@ template <> void SparseSoftmaxCrossEntropy<float, int64_t, CPUContext>(
     const int64_t*          labels,
     float*                  loss,
     float*                  valid,
-    Tensor*                 ignore) {
+    Tensor*                 ignore,
+    CPUContext*             ctx) {
     _SparseSoftmaxCrossEntropy<float, int64_t>(
         count, classes, outer_dim, inner_dim,
             prob, labels, loss, valid, ignore);
@@ -690,7 +709,8 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, float, CPUContext>(
     const float*            labels,
     float*                  valid,
     Tensor*                 ignore,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     _SparseSoftmaxCrossEntropyGrad<float, float>(
         count, classes, outer_dim, inner_dim,
             prob, labels, valid, ignore, dx);
@@ -705,7 +725,8 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, int64_t, CPUContext>(
     const int64_t*          labels,
     float*                  valid,
     Tensor*                 ignore,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     _SparseSoftmaxCrossEntropyGrad<float, int64_t>(
         count, classes, outer_dim, inner_dim,
             prob, labels, valid, ignore, dx);
@@ -789,9 +810,10 @@ template<> void SparseSoftmaxFocalLossGrad<float, CPUContext>(
                     dx[i * dim + c * inner_dim + j] = 0;
             } else {
                 const int t_ = i * dim + label * inner_dim + j;
-                float grad = -gamma * (scale[t_] / std::max((1.0f - prob[t_]), eps))
-                                    * std::log(std::max(prob[t_], FLT_MIN)) 
-                                    * prob[t_] + scale[t_];
+                float grad = -gamma
+                    * (scale[t_] / std::max((1.0f - prob[t_]), eps))
+                    * std::log(std::max(prob[t_], FLT_MIN))
+                    * prob[t_] + scale[t_];
                 for (int c = 0; c < classes; ++c) {
                     const int i_ = i * dim + c * inner_dim + j;
                     if (c == label) {
@@ -1597,14 +1619,16 @@ template <> void RepeatGrad<float, CPUContext>(
     const int               inner_dim,
     const int               repeats,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     for (int i = 0; i < outer_dim; ++i) {
         for (int j = 0; j < dim; ++j) {
             CPUContext::Copy<float, CPUContext, CPUContext>(
                 inner_dim, dx, dy);
             dy += inner_dim;
             for (int k = 1; k < repeats; ++k) {
-                math::Axpy<float, CPUContext>(inner_dim, 1.0, dy, dx);
+                math::Axpy<float, CPUContext>(
+                    inner_dim, 1.0, dy, dx, ctx);
                 dy += inner_dim;
             }
             dx += inner_dim;
@@ -1675,13 +1699,15 @@ template <> void TileGrad<float, CPUContext>(
     const int               ex_inner_dim,
     const int               multiple,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     for (int i = 0; i < outer_dim; ++i) {
         CPUContext::Copy<float, CPUContext, CPUContext>(
             ex_inner_dim, dx, dy);
         dy += ex_inner_dim;
         for (int t = 1; t < multiple; ++t) {
-            math::Axpy<float, CPUContext>(ex_inner_dim, 1.0, dy, dx);
+            math::Axpy<float, CPUContext>(
+                ex_inner_dim, 1.0, dy, dx, ctx);
             dy += ex_inner_dim;
         }
         dx += ex_inner_dim;
@@ -1991,19 +2017,22 @@ template<> void BiasAdd<float, CPUContext>(
     const string&           data_format,
     const float*            bias,
     const float*            bias_multiplier,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     const int y_offset = dim * inner_dim;
     for (int n = 0; n < outer_dim; ++n) {
         if (data_format == "NCHW") {
             math::Gemm<float, CPUContext>(
                 CblasNoTrans, CblasNoTrans,
                     dim, inner_dim, 1,
-                        1.0, bias, bias_multiplier, 1.0, y);
+                        1.0, bias, bias_multiplier,
+                            1.0, y, ctx);
         } else if (data_format == "NHWC") {
             math::Gemm<float, CPUContext>(
                 CblasNoTrans, CblasNoTrans,
                     inner_dim, dim, 1,
-                        1.0, bias_multiplier, bias, 1.0, y);
+                        1.0, bias_multiplier, bias,
+                            1.0, y, ctx);
         } else LOG(FATAL) << "Unknown data format: " << data_format;
         y += y_offset;
     }

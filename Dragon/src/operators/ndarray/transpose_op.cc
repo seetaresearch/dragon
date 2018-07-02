@@ -13,39 +13,44 @@ void TransposeOp<Context>::RunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
     kernel::Transpose<T, Context>(
-        Output(0)->count(), int(perms.size()),
+        Output(0)->count(), (int)Output(0)->ndim(),
             ORdata, OSdata, NSdata, Xdata, Ydata);
 }
 
 template <class Context>
 void TransposeOp<Context>::RunOnDevice() {
-    if (reverse_dims) {
-        perms.clear();
-        for (int i = (int)Input(0).ndim() - 1; i >= 0; i--) perms.push_back(i);
+    auto given_n_perms = std::max(
+        perms_desc.size(), perms_value.size());
+    if (given_n_perms == 0) {
+        //  reverse dimensions directly if missing perms
+        perms_value.clear(); given_n_perms = Input(0).ndim();
+        for (int i = (int)given_n_perms - 1; i >= 0; i--)
+            perms_value.push_back(i);
     }
-    CHECK_EQ(Input(0).ndim(), perms.size())
-        << "\nProvide " << perms.size() << " dims to permsute,"
-        << "\nbut Tensor(" << Input(0).name() << ")'s dims are "
-        << Input(0).dim_string();
+    CHECK_EQ(Input(0).ndim(), given_n_perms)
+        << "\nProvide " << given_n_perms << " dims to permsute, "
+        << "but Tensor(" << Input(0).name() << ")'s dims are "
+        << Input(0).DimString();
+   
     vector<TIndex> output_dims;
     order = ws()->CreateTensor("/mnt/" + anchor() + "/transpose/order");
     old_steps = ws()->CreateTensor("/mnt/" + anchor() + "/transpose/old_steps");
     new_steps = ws()->CreateTensor("/mnt/" + anchor() + "/transpose/new_steps");
-    order->Reshape(vector<TIndex>(1, perms.size()));
-    old_steps->Reshape(vector<TIndex>(1, perms.size()));
-    new_steps->Reshape(vector<TIndex>(1, perms.size()));
+    order->Reshape({ (TIndex)given_n_perms });
+    old_steps->Reshape({ (TIndex)given_n_perms });
+    new_steps->Reshape({ (TIndex)given_n_perms });
     auto* OSdata = old_steps->template mutable_data<int, CPUContext>();
     auto* NSdata = new_steps->template mutable_data<int, CPUContext>();
     auto* ORdata = order->template mutable_data<int, CPUContext>();
-    for (int i = 0; i < perms.size(); i++) {
-        if (i == perms.size() - 1) OSdata[i] = 1;
+    for (int i = 0; i < given_n_perms; i++) {
+        if (i == given_n_perms - 1) OSdata[i] = 1;
         else OSdata[i] = Input(0).count(i + 1);
-        ORdata[i] = perms[i];
-        output_dims.push_back(Input(0).dim(perms[i]));
+        ORdata[i] = perms(i);
+        output_dims.push_back(Input(0).dim(perms(i)));
     }
     Output(0)->Reshape(output_dims);
-    for (int i = 0; i < perms.size(); i++) {
-        if (i == perms.size() - 1) NSdata[i] = 1;
+    for (int i = 0; i < given_n_perms; i++) {
+        if (i == given_n_perms - 1) NSdata[i] = 1;
         else NSdata[i] = Output(0)->count(i + 1);
     }
 

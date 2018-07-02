@@ -30,7 +30,7 @@ void L1LossOp<Context>::RunWithType() {
 template <class Context>
 void L1LossOp<Context>::RunOnDevice() {
     CHECK_EQ(Input(0).count(), Input(1).count());
-    Output(0)->Reshape(vector<TIndex>(1, 1));
+    Output(0)->Reshape({ 1 });
     diff = ws()->CreateTensor("/mnt/" + anchor() + "/l1_loss/diff");
     diff->ReshapeLike(Input(0));
 
@@ -48,7 +48,7 @@ template <class Context> template <typename T>
 void L1LossGradientOp<Context>::RunWithType() {
     auto* diff_data = diff->template mutable_data<T, Context>();
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; Context::template Copy<T, CPUContext, Context>(
+    T dYdata_host; ctx().template Copy<T, CPUContext, Context>(
         1, &dYdata_host, dYdata);
     kernel::AbsGrad<T, Context>(diff->count(), diff_data, diff_data);
 
@@ -64,7 +64,7 @@ void L1LossGradientOp<Context>::RunWithType() {
         const T sign = (i == 0) ? 1 : -1;
         alpha *= sign;
         math::Axpby<T, Context>(Output(i)->count(),
-            alpha, diff_data, 0, dXdata);
+            alpha, diff_data, 0, dXdata, &ctx());
     }
 }
 

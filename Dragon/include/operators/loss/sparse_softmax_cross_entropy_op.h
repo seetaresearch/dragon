@@ -19,15 +19,16 @@ namespace dragon {
 template <class Context>
 class SparseSoftmaxCrossEntropyOp : public Operator<Context> {
  public:
-    SparseSoftmaxCrossEntropyOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 1)),
-          normalization(OperatorBase::GetSingleArg<string>("normalization", "VALID")) {
-        vector<int> args = OperatorBase::GetRepeatedArg<int>("ignore_labels");
-        if (args.size()) {
-            ignore.Reshape(vector<TIndex>(1, args.size()));
-            int* ignore_data = ignore.mutable_data<int, CPUContext>();
-            for (int i = 0; i < args.size(); i++) ignore_data[i] = args[i];
+    SparseSoftmaxCrossEntropyOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 1)),
+          normalization(OperatorBase::Arg<string>(
+              "normalization", "VALID")) {
+        vector<int> ignores = OperatorBase::Args<int>("ignore_labels");
+        if (ignores.size()) {
+            ignore.Reshape({ (TIndex)ignores.size() });
+            auto* Idata = ignore.mutable_data<int, CPUContext>();
+            for (int i = 0; i < ignores.size(); i++) Idata[i] = ignores[i];
         }
     }
     USE_OPERATOR_FUNCTIONS;
@@ -49,15 +50,16 @@ class SparseSoftmaxCrossEntropyOp : public Operator<Context> {
 template <class Context>
 class SparseSoftmaxCrossEntropyGradientOp : public Operator<Context> {
  public:
-    SparseSoftmaxCrossEntropyGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 1)),
-          normalization(OperatorBase::GetSingleArg<string>("normalization", "VALID")) {
-        vector<int> args = OperatorBase::GetRepeatedArg<int>("ignore_labels");
-        if (args.size()) {
-            ignore.Reshape(vector<TIndex>(1, args.size()));
-            int* ignore_data = ignore.mutable_data<int, CPUContext>();
-            for (int i = 0; i < args.size(); i++) ignore_data[i] = args[i];
+    SparseSoftmaxCrossEntropyGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 1)),
+          normalization(OperatorBase::Arg<string>(
+              "normalization", "VALID")) {
+        vector<int> ignores = OperatorBase::Args<int>("ignore_labels");
+        if (ignores.size()) {
+            ignore.Reshape({ (TIndex)ignores.size() });
+            auto* Idata = ignore.mutable_data<int, CPUContext>();
+            for (int i = 0; i < ignores.size(); i++) Idata[i] = ignores[i];
         }
     }
     USE_OPERATOR_FUNCTIONS;

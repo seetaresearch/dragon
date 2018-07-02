@@ -164,7 +164,9 @@ class Tensor(object):
             The dragon tensor.
 
         """
-        return self._dg_tensor
+        if isinstance(self._dg_tensor, str):
+            return dg.Tensor(_name=self._dg_tensor)
+        else: return self._dg_tensor
 
     def __add__(self, other):
         """Calculate x + y.
@@ -556,7 +558,7 @@ class Tensor(object):
         raise NotImplementedError('Refer torch.ops.builtin.view')
 
     def view_as(self, other):
-        """Returns a new tensor with the same data but a different size as the given tensor.
+        """Return a new tensor with the same data but a different size as the given tensor.
 
         Parameters
         ----------
@@ -570,6 +572,38 @@ class Tensor(object):
 
         """
         raise NotImplementedError('Refer torch.ops.builtin.view_as')
+
+    def permute(self, dims=None):
+        """Return a new tensor with the specific order of dimensions.
+
+        Parameters
+        ----------
+        dims : list of int
+            The new order of dimensions.
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The output tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.builtin.permute')
+
+    def repeat(self, *sizes):
+        """Repeat this tensor along the specified dimensions.
+
+        Parameters
+        ----------
+        sizes : vm.torch.Size or int...
+            The number of times to repeat.
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The output tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.builtin.repeat')
 
     def copy_(self, src):
         """Copy the elements from ``src`` into this tensor and return ``self``.

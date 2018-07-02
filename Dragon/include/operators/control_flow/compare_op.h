@@ -19,9 +19,9 @@ namespace dragon {
 template <class Context>
 class CompareOp final : public Operator<Context> {
  public:
-    CompareOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          operation(OperatorBase::GetSingleArg<string>("operation", "NONE")) {}
+    CompareOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          operation(OperatorBase::Arg<string>("operation", "NONE")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

@@ -19,8 +19,8 @@ namespace dragon {
 template <class Context>
 class NesterovUpdateOp final : public UpdateOpBase<Context> {
  public:
-    NesterovUpdateOp(const OperatorDef& op_def, Workspace* ws)
-        : UpdateOpBase<Context>(op_def, ws) {}
+    NesterovUpdateOp(const OperatorDef& def, Workspace* ws)
+        : UpdateOpBase<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
     USE_UPDATER_FUNCTIONS(Context);
 

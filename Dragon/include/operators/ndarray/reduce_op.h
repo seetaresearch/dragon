@@ -19,11 +19,11 @@ namespace dragon {
 template <class Context>
 class ReduceOp final : public Operator<Context> {
  public:
-    ReduceOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          operation(OperatorBase::GetSingleArg<string>("operation", "NONE")),
-          keep_dims(OperatorBase::GetSingleArg<bool>("keep_dims", false)) {}
+    ReduceOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", -1)),
+          operation(OperatorBase::Arg<string>("operation", "NONE")),
+          keep_dims(OperatorBase::Arg<bool>("keep_dims", false)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -38,10 +38,10 @@ class ReduceOp final : public Operator<Context> {
 template <class Context>
 class ReduceGradientOp final : public Operator<Context> {
  public:
-    ReduceGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-        axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-        operation(OperatorBase::GetSingleArg<string>("operation", "NONE")) {}
+    ReduceGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", -1)),
+          operation(OperatorBase::Arg<string>("operation", "NONE")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

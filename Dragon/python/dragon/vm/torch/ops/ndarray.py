@@ -15,18 +15,32 @@ from __future__ import print_function
 
 from dragon.vm.torch.ops.primitive import MakeContext, CanonicalAxis
 from dragon.vm.torch.ops.factory import get_module
-from dragon.vm.torch.ops.modules.shape import Reshape, Fill
+from dragon.vm.torch.ops.modules.shape import Reshape, Fill, Permute, Repeat
 from dragon.vm.torch.ops.modules.reduce import Reduce, ArgReduce
 from dragon.vm.torch.ops.modules.crop import Crop
-from dragon.vm.torch.ops.modules.concat import Concat
+from dragon.vm.torch.ops.modules.axis import Concat, Gather
 
 
 def reshape(input, shape, shape_like=None):
     if shape_like is not None: shape = shape_like.shape
     ctx = MakeContext(inputs=[input]); len_shape = len(shape)
-    key = 'torch/ops/reshape/{}:{}/ndims:#{}'.format(ctx[0].lower(), ctx[1], len_shape)
+    key = 'torch/ops/reshape/{}:{}/n_dims:#{}'.format(ctx[0].lower(), ctx[1], len_shape)
     module = get_module(Reshape, key, ctx, len_shape=len_shape)
     return module.forward(input, shape)
+
+
+def _permute(input, perms=None):
+    ctx = MakeContext(inputs=[input]); len_perms = len(perms) if perms else 0
+    key = 'torch/ops/permute/{}:{}/n_dims:#{}'.format(ctx[0].lower(), ctx[1], len_perms)
+    module = get_module(Permute, key, ctx, len_perms=len_perms)
+    return module.forward(input, perms)
+
+
+def _repeat(input, times):
+    ctx = MakeContext(inputs=[input]); len_times = len(times)
+    key = 'torch/ops/repeat/{}:{}/n_times:#{}'.format(ctx[0].lower(), ctx[1], len_times)
+    module = get_module(Repeat, key, ctx, len_times=len_times)
+    return module.forward(input, times)
 
 
 def _fill(input, shape, value):
@@ -253,6 +267,37 @@ def cat(seq, dim=0, out=None):
         ctx[0].lower(), ctx[1], dim)
     module = get_module(Concat, key, ctx, axis=dim)
     return module.forward(seq, out)
+
+
+def gather(input, dim, index, out=None):
+    """Gather the input values along the given axis.
+
+    Note that it is a tensorflow style gather, which takes a vector index,
+
+    values of other dimension will be copied automatically.
+
+    Parameters
+    ----------
+    input : vm.torch.Tensor
+        The values.
+    dim : int
+        The dim to gather.
+    index : vm.torch.Tensor
+        The indices.
+    out : vm.torch.Tensor or None
+        The optional output tensor.
+
+    Returns
+    -------
+    vm.torch.Tensor
+        The output tensor.
+
+    """
+    ctx = MakeContext(inputs=[input, index], outputs=[out] if out else [])
+    key = 'torch/ops/gather/{}:{}/dim:{}'.format(
+        ctx[0].lower(), ctx[1], dim)
+    module = get_module(Gather, key, ctx, axis=dim)
+    return module.forward(input, index, out)
 
 
 def _crop(input, starts, ends):

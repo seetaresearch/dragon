@@ -17,11 +17,12 @@
 namespace dragon {
 
 template <class Context>
-class L1LossOp : public Operator<Context> {
+class L1LossOp final : public Operator<Context> {
  public:
-    L1LossOp(const OperatorDef& op_def, Workspace* ws) 
-        : Operator<Context>(op_def, ws),
-          normalization(OperatorBase::GetSingleArg<string>("normalization", "BATCH_SIZE")) {}
+    L1LossOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          normalization(OperatorBase::Arg<string>(
+              "normalization", "BATCH_SIZE")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -35,9 +36,10 @@ class L1LossOp : public Operator<Context> {
 template <class Context>
 class L1LossGradientOp final : public Operator<Context> {
  public:
-    L1LossGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          normalization(OperatorBase::GetSingleArg<string>("normalization", "BATCH_SIZE")) {}
+    L1LossGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          normalization(OperatorBase::Arg<string>(
+              "normalization", "BATCH_SIZE")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

@@ -192,24 +192,17 @@ class RNNBase(object):
             Return ``y``, ``hidden``, ``cell`` if ``True``.
 
         """
-        if hx is None:
-            self.hx = Tensor().Constant(value=0) # zero state
-        else:
-            if not isinstance(hx, Tensor):
-                raise TypeError('Excepted hx as a Tensor, got {}.'.format(type(hx)))
-            self.hx = hx
-
-        if cx is None:
-            self.cx = Tensor().Constant(value=0)  # zero state
-        else:
-            if not isinstance(cx, Tensor):
-                raise TypeError('Excepted cx as a Tensor, got {}.'.format(type(cx)))
-            self.cx = cx
+        if hx and not isinstance(hx, Tensor):
+            raise TypeError('Excepted hx as a Tensor, got {}.'.format(type(hx)))
+        if cx and not isinstance(cx, Tensor):
+            raise TypeError('Excepted cx as a Tensor, got {}.'.format(type(cx)))
 
         if not self._init_params: self._reset_params()
 
         arguments = {
-            'inputs': [x, self.weights, self.hx, self.cx],
+            'inputs': [x, self.weights] +
+                          ([hx] if hx else []) +
+                              ([cx] if cx else []),
             'hidden_size': self.hidden_size,
             'num_layers': self.num_layers,
             'bidirectional': self.bidirectional,

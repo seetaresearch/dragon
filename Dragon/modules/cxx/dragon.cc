@@ -147,7 +147,7 @@ void TransplantCaffeModel(const std::string& input_model, const std::string& out
             for (auto data : blob.data()) proto->add_float_data(data);
             Tensor fake_tensor; fake_tensor.Reshape(dims);
             LOG(INFO) << "Tensor(" << tensor_name << ") "
-                << "transplanted, shape: " << fake_tensor.dim_string()
+                << "transplanted, shape: " << fake_tensor.DimString()
                 << ", size: " << blob.data_size();
         }
     }
@@ -169,23 +169,23 @@ void LoadDragonmodel(const std::string& model_file, Workspace* ws){
         vector<TIndex> dims;
         for (auto dim : proto.dims()) dims.push_back(dim);
         Tensor* tensor = ws->GetTensor(tensor_name);
-        std::stringstream dim_string;
+        std::stringstream DimString;
         if (dims.size() > 0) {
             tensor->Reshape(dims);
             CHECK_EQ(tensor->count(), proto.float_data_size())
                     << "Tensor(" << tensor_name << ") "
                     << "failed to load, except size:  "
                     << tensor->count() << ", loaded " << proto.float_data_size();
-                dim_string << tensor->dim_string();
+                DimString << tensor->DimString();
         } else{
             tensor->Reshape(vector<TIndex>(1, proto.float_data_size()));
-            dim_string << "(missing)";
+            DimString << "(missing)";
         }
         float* Xdata = tensor->mutable_data<float, CPUContext>();
         for (int idx = 0; idx < proto.float_data_size(); idx++) 
             Xdata[idx] = proto.float_data(idx);
         LOG(INFO) << "Tensor(" << tensor_name << ") "
-                  << "loaded, shape: " << dim_string.str()
+                  << "loaded, shape: " << DimString.str()
                   << ", size: " << proto.float_data_size();
     }
 }
@@ -208,24 +208,24 @@ void LoadCaffemodel(const std::string& model_file, Workspace* ws){
             vector<TIndex> dims;
             for (auto dim : blob.shape().dim()) dims.push_back(dim);
             Tensor* tensor = ws->GetTensor(tensor_name);
-            std::stringstream dim_string;
+            std::stringstream DimString;
             if (dims.size() > 0) {
                 tensor->Reshape(dims);
                 CHECK_EQ(tensor->count(), blob.data_size())
                     << "Tensor(" << tensor_name << ") "
                     << "failed to load, except size:  "
                     << tensor->count() << ", loaded " << blob.data_size();
-                dim_string << tensor->dim_string();
+                DimString << tensor->DimString();
             }
             else{
                 tensor->Reshape(vector<TIndex>(1, blob.data_size()));
-                dim_string << "(missing)";
+                DimString << "(missing)";
             }
             float* Xdata = tensor->mutable_data<float, CPUContext>();
             for (int idx = 0; idx < blob.data_size(); idx++)
                 Xdata[idx] = blob.data(idx);
             LOG(INFO) << "Tensor(" << tensor_name << ") "
-                << "loaded, shape: " << dim_string.str()
+                << "loaded, shape: " << DimString.str()
                 << ", size: " << blob.data_size();
         }
     }

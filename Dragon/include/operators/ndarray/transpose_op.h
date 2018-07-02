@@ -19,11 +19,9 @@ namespace dragon {
 template <class Context>
 class TransposeOp final: public Operator<Context> {
  public:
-    TransposeOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          perms(OperatorBase::GetRepeatedArg<int>("perms")) {
-        if (perms.size() > 0) reverse_dims = false;
-        else reverse_dims = true;
+    TransposeOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws) {
+        GET_ARGUMENTS_WITH_DESC(int, perms);
     }
     USE_OPERATOR_FUNCTIONS;
 
@@ -31,17 +29,17 @@ class TransposeOp final: public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    vector<int> perms;
-    bool reverse_dims;
+    DECLARE_ARGUMENTS_WITH_DESC(int, perms);
     Tensor* order, *old_steps, *new_steps;
 };
 
+DEFINE_ARGUMENTS_WITH_DESC(int, TransposeOp, perms);
 
 template <class Context>
 class TransposeGradientOp final : public Operator<Context> {
  public:
-    TransposeGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws) {}
+    TransposeGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

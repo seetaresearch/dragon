@@ -16,6 +16,7 @@ from __future__ import print_function
 import numpy as np
 
 from . import *
+from .activation import Softmax
 
 
 def SparseSoftmaxCrossEntropy(inputs, axis=1, normalization='VALID', ignore_labels=(), **kwargs):
@@ -262,4 +263,47 @@ def SparseSoftmaxFocalLoss(inputs, axis=1, normalization='VALID', ignore_labels=
             output.shape = [outer_dim * inner_dim]
         else: output.shape = [None]
 
+    return output
+
+
+def CTCLoss(inputs, blank_first=True, padding_mask=-1,
+            use_softmax=True, **kwargs):
+    """CTCLoss with batched variable length of labels. `[Graves & Gomez, 2006] <http://www.cs.utoronto.ca/~graves/icml_2006.pdf>`_.
+
+    The data format of inputs should be ``[T, N, C]``.
+
+    If ``blank_first`` is ``True``, ``0`` is reserved and
+
+    label values are between ``1`` and ``C - 1``.
+
+    Otherwise, ``C - 1`` is reserved and ``0`` to ``C - 2`` can be used.
+
+    Parameters
+    ----------
+    inputs : list of Tensor
+        The inputs, represent [input, labels].
+    blank_first : boolean
+        Whether to put the blank at ``0``.
+    padding_mask : int
+        The mask for padding the redundant labels.
+    use_softmax : boolean
+        Whether to use softmax before computing loss.
+
+    Returns
+    -------
+    Tensor
+        The loss.
+
+    Notes
+    -----
+    The magnitude of loss is related to the ``sequence length``.
+
+    """
+    CheckInputs(inputs, 2)
+    arguments = ParseArguments(locals())
+    if use_softmax:
+        arguments['inputs'][0] = Softmax(arguments['inputs'][0], axis=2)
+
+    output = Tensor.CreateOperator(nout=1, op_type='CTCLoss', **arguments)
+    if inputs[0].shape is not None: output.shape = [1]
     return output

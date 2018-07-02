@@ -19,18 +19,21 @@ void GroupNormOp<Context>::RunWithType() {
 
     //  compute mean
     if (data_format == "NCHW") {
-        math::Gemv<T, Context>(CblasNoTrans, NG, CGS,
-                            1.0 / CGS, Xdata, MXmult,
-                                           0, Tmean);
+        math::Gemv<T, Context>(
+            CblasNoTrans, NG, CGS,
+                1.0 / CGS, Xdata, MXmult,
+                    0, Tmean, &ctx());
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
     }
 
     //  subtract mean
     if (data_format == "NCHW") {
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NG, CGS, 1,
-                                                  -1.0, Tmean, MXmult,
-                                                          1.0, Ydata);
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                NG, CGS, 1,
+                    -1.0, Tmean, MXmult,
+                        1.0, Ydata, &ctx());
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
     }
@@ -39,9 +42,10 @@ void GroupNormOp<Context>::RunWithType() {
     //  note that we use VAR(X) = E((X - EX) ^ 2)
     math::Square<T, Context>(Output(0)->count(), Ydata, WSdata);
     if (data_format == "NCHW") {
-        math::Gemv<T, Context>(CblasNoTrans, NG, CGS,
-                           1.0 / CGS, WSdata, MXmult,
-                                          0.0, Tvar);
+        math::Gemv<T, Context>(
+            CblasNoTrans, NG, CGS,
+                1.0 / CGS, WSdata, MXmult,
+                    0.0, Tvar, &ctx());
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
     }
@@ -52,9 +56,11 @@ void GroupNormOp<Context>::RunWithType() {
 
     //  divide by stddev
     if (data_format == "NCHW") {
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NG, CGS, 1,
-                                                    1.0, Tvar, MXmult,
-                                                         0.0, WSdata);
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                NG, CGS, 1,
+                    1.0, Tvar, MXmult,
+                        0.0, WSdata, &ctx());
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
     }
@@ -85,9 +91,9 @@ void GroupNormOp<Context>::Setup() {
     var = ws()->CreateTensor("/mnt/" + anchor() + "/gn/var");
 
     //  reshape
-    mean.Reshape(vector<TIndex>(1, NG));
-    var->Reshape(vector<TIndex>(1, NG));
-    nc.Reshape(vector<TIndex>(1, NC));
+    mean.Reshape({ NG });
+    var->Reshape({ NG });
+    nc.Reshape({ NC });
     Output(0)->ReshapeLike(Input(0));
 }
 
@@ -117,9 +123,11 @@ void GroupNormGradientOp<Context>::RunWithType() {
     auto* WSdata = ws()->template caches<T, Context>({ Output(0)->count() })[0];
 
     if (data_format == "NCHW") {
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NG, CGS, 1,
-                                                    1.0, Tvar, MXmult,
-                                                         0.0, WSdata);
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                NG, CGS, 1,
+                    1.0, Tvar, MXmult,
+                        0.0, WSdata, &ctx());
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
     }
@@ -129,12 +137,15 @@ void GroupNormGradientOp<Context>::RunWithType() {
 
      //  sum(dE/dY \cdot Y)
     if (data_format == "NCHW") {
-        math::Gemv<T, Context>(CblasNoTrans, NG, CGS,
-                                 1.0, dXdata, MXmult,
-                                          0.0, Tvar);
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NG, CGS, 1,
-                                                    1.0, Tvar, MXmult,
-                                                         0.0, dXdata);
+        math::Gemv<T, Context>(
+            CblasNoTrans, NG, CGS,
+                1.0, dXdata, MXmult,
+                    0.0, Tvar, &ctx());
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                NG, CGS, 1,
+                    1.0, Tvar, MXmult,
+                        0.0, dXdata, &ctx());
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
     }
@@ -144,19 +155,23 @@ void GroupNormGradientOp<Context>::RunWithType() {
 
     //  sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y
     if (data_format == "NCHW") {
-        math::Gemv<T, Context>(CblasNoTrans, NG, CGS,
-                                 1.0, dYdata, MXmult,
-                                          0.0, Tvar);
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NG, CGS, 1,
-                                                    1.0, Tvar, MXmult,
-                                                         1.0, dXdata);
+        math::Gemv<T, Context>(
+            CblasNoTrans, NG, CGS,
+                1.0, dYdata, MXmult,
+                    0.0, Tvar, &ctx());
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                NG, CGS, 1,
+                    1.0, Tvar, MXmult,
+                        1.0, dXdata, &ctx());
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
     }
 
     //   dE/dY - mean(dE/dY)- mean(dE/dY \cdot Y) \cdot Y
     // = dE/dY - mean(sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y)
-    math::Axpby<T, Context>(Output(0)->count(), 1.0, dYdata, -1.0 / CGS, dXdata);
+    math::Axpby<T, Context>(Output(0)->count(),
+        1.0, dYdata, -1.0 / CGS, dXdata, &ctx());
 
     //  divide by stddev
     math::Div<T, Context>(Output(0)->count(), dXdata, WSdata, dXdata);
@@ -186,7 +201,7 @@ void GroupNormGradientOp<Context>::Setup() {
     var = ws()->GetTensor("/mnt/" + anchor() + "/gn/var");
 
     //  reshape
-    nc.Reshape(vector<TIndex>(1, NC));
+    nc.Reshape({ NC });
     Output(0)->ReshapeLike(Input(0));
 }
 

@@ -22,8 +22,9 @@
 
 namespace dragon {
 
-inline std::vector<std::string> SplitString(const std::string& str, 
-                                            const std::string& c) {
+inline std::vector<std::string> SplitString(
+    const std::string&              str,
+    const std::string&              c) {
     std::vector<std::string> ret;
     std::string temp(str);
     size_t pos;
@@ -43,7 +44,7 @@ inline std::vector<std::string> SplitString(const std::string& str,
 DEFINE_NUMBER2STRING(int);
 DEFINE_NUMBER2STRING(unsigned long long);
 
-template<> inline int dragon_cast<int, std::string>(std::string val) { 
+template<> inline int dragon_cast<int, std::string>(std::string val) {
     return atoi(val.c_str()); 
 }
 

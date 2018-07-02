@@ -11,7 +11,7 @@ void EltwiseOp<Context>::SumRunWithType() {
     math::Set<T, Context>(count, dragon_cast<T, float>(0), Ydata);
     for (int i = 0; i < InputSize(); ++i) {
         math::Axpy<T, Context>(count, coeffs[i],
-            Input(i).template data<T, Context>(), Ydata);
+            Input(i).template data<T, Context>(), Ydata, &ctx());
     }
 }
 
@@ -26,7 +26,7 @@ void EltwiseOp<Context>::ProdRunWithType() {
     for (int i = 2; i < InputSize(); i++) {
         math::Mul<T, Context>(count,
             Ydata,
-                Input(i).template data<T, Context>(), 
+                Input(i).template data<T, Context>(),
                     Ydata);
     }
 }
@@ -70,8 +70,8 @@ void EltwiseGradientOp<Context>::SumRunWithType() {
             ctx().template Copy<T, Context, Context>(
                 count, dXdata, dYdata);
         } else {
-            math::Scale<T, Context>(
-                count, coeffs[i], dYdata, dXdata);
+            math::Scale<T, Context>(count,
+                coeffs[i], dYdata, dXdata, &ctx());
         }
     }
 }

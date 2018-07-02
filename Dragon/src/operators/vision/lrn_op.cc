@@ -34,9 +34,9 @@ void LRNOp<Context>::SquareRunWithType() {
             vector<string>({ sqr_in->name() }),
                 vector<string>({ sqr_out->name() }),
                     vector<Argument>({ power }));
-        if (op_def().has_device_option())
+        if (def().has_device_option())
             sqr_op_def.mutable_device_option()
-                ->CopyFrom(op_def().device_option());
+                ->CopyFrom(def().device_option());
         sqr_op.reset(CreateOperator(sqr_op_def, ws()));
     }
     sqr_op->Run();
@@ -56,9 +56,9 @@ void LRNOp<Context>::PoolRunWithType() {
             vector<string>({ sqr_out->name() }),
                 vector<string>({ pool_out->name() }),
                     vector<Argument>({ ks, s, p, m, df }));
-        if (op_def().has_device_option())
+        if (def().has_device_option())
             pool_op_def.mutable_device_option()
-                ->CopyFrom(op_def().device_option());
+                ->CopyFrom(def().device_option());
         pool_op.reset(CreateOperator(pool_op_def, ws()));
     }
     pool_op->Run();
@@ -76,9 +76,9 @@ void LRNOp<Context>::PowRunWithType() {
             vector<string>({ pool_out->name() }),
                 vector<string>({ pow_out->name() }),
                     vector<Argument>({ scale, shift, power }));
-        if (op_def().has_device_option())
+        if (def().has_device_option())
             pow_op_def.mutable_device_option()
-                ->CopyFrom(op_def().device_option());
+                ->CopyFrom(def().device_option());
         pow_op.reset(CreateOperator(pow_op_def, ws()));
     }
     pow_op->Run();
@@ -93,9 +93,9 @@ void LRNOp<Context>::ProdRunWithType() {
             vector<string>({ prod_in->name(), pow_out->name() }),
                 vector<string>({ Output(0)->name() }),
                     vector<Argument>({ operation }));
-        if (op_def().has_device_option())
+        if (def().has_device_option())
             prod_op_def.mutable_device_option()
-                ->CopyFrom(op_def().device_option());
+                ->CopyFrom(def().device_option());
         prod_op.reset(CreateOperator(prod_op_def, ws()));
     }
     prod_op->Run();
@@ -146,9 +146,9 @@ void LRNGradientOp<Context>::ProdRunWithType() {
                 vector<string>({ prod_in->name() + "_grad",
                                      pow_out->name() + "_grad" }),
                     vector<Argument>({ operation }));
-        if (op_def().has_device_option())
+        if (def().has_device_option())
             prod_op_def.mutable_device_option()
-                ->CopyFrom(op_def().device_option());
+                ->CopyFrom(def().device_option());
         prod_op.reset(CreateOperator(prod_op_def, ws()));
     }
     prod_op->Run();
@@ -168,9 +168,9 @@ void LRNGradientOp<Context>::PowRunWithType() {
                                     pow_out->name() + "_grad" }),
                 vector<string>({ pool_out->name() + "_grad" }),
                     vector<Argument>({ scale, shift, power }));
-        if (op_def().has_device_option())
+        if (def().has_device_option())
             pow_op_def.mutable_device_option()
-                ->CopyFrom(op_def().device_option());
+                ->CopyFrom(def().device_option());
         pow_op.reset(CreateOperator(pow_op_def, ws()));
     }
     pow_op->Run();
@@ -192,9 +192,9 @@ void LRNGradientOp<Context>::PoolRunWithType() {
                                      pool_out->name() + "_grad" }),
                 vector<string>({ sqr_out->name() + "_grad" }),
                     vector<Argument>({ ks, s, p, m, df }));
-        if (op_def().has_device_option())
+        if (def().has_device_option())
             pool_op_def.mutable_device_option()
-                ->CopyFrom(op_def().device_option());
+                ->CopyFrom(def().device_option());
         pool_op.reset(CreateOperator(pool_op_def, ws()));
     }
     pool_op->Run();
@@ -212,9 +212,9 @@ void LRNGradientOp<Context>::SquareRunWithType() {
                                      sqr_out->name() + "_grad" }),
                 vector<string>({ sqr_in->name() + "_grad" }),
                     vector<Argument>({ power }));
-        if (op_def().has_device_option())
+        if (def().has_device_option())
             sqr_op_def.mutable_device_option()
-                ->CopyFrom(op_def().device_option());
+                ->CopyFrom(def().device_option());
         sqr_op.reset(CreateOperator(sqr_op_def, ws()));
     }
     sqr_op->Run();

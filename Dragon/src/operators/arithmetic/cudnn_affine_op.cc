@@ -10,8 +10,8 @@ namespace dragon {
 template <class Context> template <typename T>
 void CuDNNAffineOp<Context>::RunWithType() {
     this->template ResetDesc<T>();
-    const vector<TIndex>::const_iterator& dim_start = Input(0).dims().begin() + start_axis;
-    const vector<TIndex>::const_iterator& dim_end = dim_start + num_axes;
+    const auto& dim_start = Input(0).dims().begin() + start_axis;
+    const auto& dim_end = dim_start + num_axes;
     vector<TIndex> param_dims(dim_start, dim_end);
     TENSOR_FILL(Input(1), param_dims);
     auto* Xdata = Input(0).template data<T, Context>();
@@ -23,7 +23,7 @@ void CuDNNAffineOp<Context>::RunWithType() {
         mul_desc, CUDNN_OP_TENSOR_MUL,
             CUDNNType<T>::type, CUDNN_PROPAGATE_NAN));
     CUDNN_CHECK(cudnnOpTensor(
-        cudnn_handle(), mul_desc,
+        ctx().cudnn_handle(), mul_desc,
             CUDNNType<T>::one, input_desc, Xdata,
                 CUDNNType<T>::one, param_desc, Adata,
                     CUDNNType<T>::zero, input_desc, Ydata));
@@ -36,7 +36,7 @@ void CuDNNAffineOp<Context>::RunWithType() {
             add_desc, CUDNN_OP_TENSOR_ADD,
                 CUDNNType<T>::type, CUDNN_PROPAGATE_NAN));
         CUDNN_CHECK(cudnnOpTensor(
-            cudnn_handle(), add_desc,
+            ctx().cudnn_handle(), add_desc,
                 CUDNNType<T>::one, input_desc, Ydata,
                     CUDNNType<T>::one, param_desc, Bdata,
                         CUDNNType<T>::zero, input_desc, Ydata));
@@ -80,13 +80,13 @@ void CuDNNAffineGradientOp<Context>::RunWithType() {
         //  eltwise
         if (Input(0).count() == Input(1).count()) {
             CUDNN_CHECK(cudnnOpTensor(
-                cudnn_handle(), mul_desc,
+                ctx().cudnn_handle(), mul_desc,
                     CUDNNType<T>::one, input_desc, Xdata,
                         CUDNNType<T>::one, input_desc, dYdata,
                             CUDNNType<T>::one, param_desc, dAdata));
         } else {
             CUDNN_CHECK(cudnnOpTensor(
-                cudnn_handle(), mul_desc,
+                ctx().cudnn_handle(), mul_desc,
                     CUDNNType<T>::one, input_desc, Xdata,
                         CUDNNType<T>::one, input_desc, dYdata,
                             CUDNNType<T>::zero, input_desc, dXdata));
@@ -100,7 +100,8 @@ void CuDNNAffineGradientOp<Context>::RunWithType() {
         auto* dBdata = Output(2)->template mutable_data<T, Context>();
         //  eltwise
         if (Input(0).count() == Input(1).count()) {
-            math::Axpy<T, Context>(Output(2)->count(), 1.f, dYdata, dBdata);
+            math::Axpy<T, Context>(Output(2)->count(),
+                1.f, dYdata, dBdata, &ctx());
         } else {
             ComputeBiasGradient_v2<T>(dYdata, dBdata);
         }
@@ -108,14 +109,16 @@ void CuDNNAffineGradientOp<Context>::RunWithType() {
 
     //  dx = alpha * dy
     CUDNN_CHECK(cudnnOpTensor(
-        cudnn_handle(), mul_desc,
+        ctx().cudnn_handle(), mul_desc,
             CUDNNType<T>::one, input_desc, dYdata,
                 CUDNNType<T>::one, param_desc, Adata,
                     CUDNNType<T>::zero, input_desc, dXdata));
 }
 
 template <class Context> template <typename T>
-void CuDNNAffineGradientOp<Context>::ComputeScaleGradient(T* dYxX, T* dA) {
+void CuDNNAffineGradientOp<Context>::ComputeScaleGradient(
+    T*              dYxX,
+    T*              dA) {
 #if CUDNN_VERSION_MIN(6, 0, 0)
     CUDNN_CHECK(cudnnSetReduceTensorDescriptor(
         reduce_desc, CUDNN_REDUCE_TENSOR_ADD,
@@ -123,11 +126,11 @@ void CuDNNAffineGradientOp<Context>::ComputeScaleGradient(T* dYxX, T* dA) {
                 CUDNN_REDUCE_TENSOR_NO_INDICES, CUDNN_32BIT_INDICES));
     size_t workspace_size = 0;
     CUDNN_CHECK(cudnnGetReductionWorkspaceSize(
-        cudnn_handle(), reduce_desc,
+        ctx().cudnn_handle(), reduce_desc,
             input_desc, param_desc, &workspace_size));
     auto* WSdata = ws()->template caches<Context>({ workspace_size })[0];;
     CUDNN_CHECK(cudnnReduceTensor(
-        cudnn_handle(), reduce_desc,
+        ctx().cudnn_handle(), reduce_desc,
             nullptr, 0, WSdata, workspace_size,
                 CUDNNType<T>::one, input_desc, dYxX,
                     CUDNNType<T>::one, param_desc, dA));
@@ -135,15 +138,18 @@ void CuDNNAffineGradientOp<Context>::ComputeScaleGradient(T* dYxX, T* dA) {
 }
 
 template <class Context> template <typename T>
-void CuDNNAffineGradientOp<Context>::ComputeScaleGradient_v2(T* dYxX, T* dA) {
+void CuDNNAffineGradientOp<Context>::ComputeScaleGradient_v2(
+    T*              dYxX,
+    T*              dA) {
     DECLARE_MULTIPLIER(multiplier, sum_dim);
-    sum_result.Reshape(vector<TIndex>(1, outer_dim * scale_dim));
+    sum_result.Reshape({ outer_dim * scale_dim });
 
     T* SRes_data = nullptr;
     if (inner_dim == 1) SRes_data = dYxX;
     else if (sum_result.count() == 1) {
         auto* dAC = Output(1)->template mutable_data<T, CPUContext>();
-        T result = math::Dot<T, Context>(inner_dim, dYxX, multiplier);
+        T result = math::Dot<T, Context>(
+            inner_dim, dYxX, multiplier, &ctx());
         *dAC += result;
     } else {
         SRes_data = (outer_dim == 1) ?
@@ -151,23 +157,27 @@ void CuDNNAffineGradientOp<Context>::ComputeScaleGradient_v2(T* dYxX, T* dA) {
         math::Gemv<T, Context>(
             CblasNoTrans, sum_result.count(), inner_dim,
                 1.0, dYxX, multiplier,
-                    SRes_data == dA ? 1.0 : 0.0, SRes_data);
+                    SRes_data == dA ? 1.0 : 0.0, SRes_data, &ctx());
     }
     if (outer_dim != 1) {
         if (scale_dim == 1) {
             auto* dAC = Output(1)->template mutable_data<T, CPUContext>();
-            T result = math::Dot<T, Context>(outer_dim, multiplier, SRes_data);
+            T result = math::Dot<T, Context>(
+                outer_dim, multiplier, SRes_data, &ctx());
             *dAC += result;
         } else {
             math::Gemv<T, Context>(
                 CblasTrans, outer_dim, scale_dim,
-                    1.0, SRes_data, multiplier, 1.0, dA);
+                    1.0, SRes_data, multiplier,
+                        1.0, dA, &ctx());
         }
     }
 }
 
 template <class Context> template <typename T>
-void CuDNNAffineGradientOp<Context>::ComputeBiasGradient(const T* dY, T* dB) {
+void CuDNNAffineGradientOp<Context>::ComputeBiasGradient(
+    const T*        dY,
+    T*              dB) {
 #if CUDNN_VERSION_MIN(6, 0, 0)
     CUDNN_CHECK(cudnnSetReduceTensorDescriptor(
         reduce_desc, CUDNN_REDUCE_TENSOR_ADD,
@@ -175,11 +185,11 @@ void CuDNNAffineGradientOp<Context>::ComputeBiasGradient(const T* dY, T* dB) {
                 CUDNN_REDUCE_TENSOR_NO_INDICES, CUDNN_32BIT_INDICES));
     size_t workspace_size = 0;
     CUDNN_CHECK(cudnnGetReductionWorkspaceSize(
-        cudnn_handle(), reduce_desc,
+        ctx().cudnn_handle(), reduce_desc,
             input_desc, param_desc, &workspace_size));
     auto* WSdata = ws()->template caches<Context>({ workspace_size })[0];
     CUDNN_CHECK(cudnnReduceTensor(
-        cudnn_handle(), reduce_desc,
+        ctx().cudnn_handle(), reduce_desc,
             nullptr, 0, WSdata, workspace_size,
                 CUDNNType<T>::one, input_desc, dY,
                     CUDNNType<T>::one, param_desc, dB));
@@ -187,12 +197,15 @@ void CuDNNAffineGradientOp<Context>::ComputeBiasGradient(const T* dY, T* dB) {
 }
 
 template <class Context> template <typename T>
-void CuDNNAffineGradientOp<Context>::ComputeBiasGradient_v2(const T* dY, T* dB) {
+void CuDNNAffineGradientOp<Context>::ComputeBiasGradient_v2(
+    const T*        dY,
+    T*              dB) {
     DECLARE_MULTIPLIER(multiplier, inner_dim);
     for (int n = 0; n < outer_dim; n++) {
         math::Gemv<T, Context>(
             CblasNoTrans, scale_dim, inner_dim,
-                1.0, dY, multiplier, 1.0, dB);
+                1.0, dY, multiplier,
+                    1.0, dB, &ctx());
         dY += dim;
     }
 }

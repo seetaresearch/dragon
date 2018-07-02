@@ -17,11 +17,11 @@
 namespace dragon {
 
 template <class Context>
-class RepeatOp : public Operator<Context> {
+class RepeatOp final : public Operator<Context> {
  public:
-    RepeatOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", -1)) {
+    RepeatOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", -1)) {
         GET_ARGUMENT_WITH_DESC(int, repeats, 1);
     }
     USE_OPERATOR_FUNCTIONS;
@@ -35,11 +35,11 @@ class RepeatOp : public Operator<Context> {
 };
 
 template <class Context>
-class RepeatGradientOp : public Operator<Context> {
+class RepeatGradientOp final : public Operator<Context> {
  public:
-    RepeatGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", -1)) {
+    RepeatGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", -1)) {
         GET_ARGUMENT_WITH_DESC(int, repeats, 1);
     }
     USE_OPERATOR_FUNCTIONS;

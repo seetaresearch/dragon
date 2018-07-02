@@ -58,19 +58,22 @@ template <> void RandomUniform<float, CPUContext>(
     const int               n,
     const float             low,
     const float             high,
-    float*                  x) {
+    float*                  x,
+    CPUContext*             ctx) {
     std::uniform_real_distribution<float> distribution(low, high);
+    auto* rng = ctx->rand_generator();
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
 #endif
-    for (int i = 0; i < n; ++i) x[i] = distribution(*rand_generator());
+    for (int i = 0; i < n; ++i) x[i] = distribution(*rng);
 }
 
 template <> void RandomUniform<float16, CPUContext>(
     const int               n,
     const float             low,
     const float             high,
-    float16*                x) {
+    float16*                x,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -78,31 +81,36 @@ template <> void RandomUniform<uint32_t, CPUContext>(
     const int               n,
     const float             low,
     const float             high,
-    uint32_t*               x) {
+    uint32_t*               x,
+    CPUContext*             ctx) {
     std::uniform_int_distribution<uint32_t> distribution(low, high);
+    auto* rng = ctx->rand_generator();
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
 #endif
-    for (int i = 0; i < n; ++i) x[i] = distribution(*rand_generator());
+    for (int i = 0; i < n; ++i) x[i] = distribution(*rng);
 }
 
 template <> void RandomNormal<float, CPUContext>(
     const int               n,
     const float             mu,
     const float             sigma,
-    float*                  x) {
+    float*                  x,
+    CPUContext*             ctx) {
     std::normal_distribution<float> distribution(mu, sigma);
+    auto* rng = ctx->rand_generator();
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
 #endif
-    for (int i = 0; i < n; ++i) x[i] = distribution(*rand_generator());
+    for (int i = 0; i < n; ++i) x[i] = distribution(*rng);
 }
 
 template <> void RandomNormal<float16, CPUContext>(
     const int               n,
     const float             mu,
     const float             sigma,
-    float16*                x) {
+    float16*                x,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -112,11 +120,13 @@ template <> void RandomTruncatedNormal<float, CPUContext>(
     const float             sigma,
     const float             low,
     const float             high,
-    float*                  x) {
+    float*                  x,
+    CPUContext*             ctx) {
     std::normal_distribution<float> distribution(mu, sigma);
+    auto* rng = ctx->rand_generator();
     int cur_pos = 0; float gen_value;
     while (1) {
-        gen_value = distribution(*rand_generator());
+        gen_value = distribution(*rng);
         if (gen_value < low) continue;
         if (gen_value > high) continue;
         x[cur_pos++] = gen_value;
@@ -130,19 +140,22 @@ template <> void RandomTruncatedNormal<float16, CPUContext>(
     const float             sigma,
     const float             low,
     const float             high,
-    float16*                x) {
+    float16*                x,
+    CPUContext*             ctx) {
     NOT_IMPLEMENTED;
 }
 
 template <> void RandomBernoulli<float, CPUContext>(
     const int               n,
     const float             p,
-    uint32_t*               x) {
+    uint32_t*               x,
+    CPUContext*             ctx) {
     std::bernoulli_distribution distribution(p);
+    auto* rng = ctx->rand_generator();
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
 #endif
-    for (int i = 0; i < n; ++i) x[i] = distribution(*rand_generator());
+    for (int i = 0; i < n; ++i) x[i] = distribution(*rng);
 }
 
 /******************** Level-1 ********************/
@@ -360,7 +373,8 @@ template <> void Inv<float16, CPUContext>(
 template <> void Scal<float, CPUContext>(
     const int               n,
     const float             alpha,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_BLAS
     cblas_sscal(n, alpha, y, 1);
 #elif  WITH_SSE
@@ -376,7 +390,8 @@ template <> void Scal<float, CPUContext>(
 template <> void Scal<float16, CPUContext>(
     const int               n,
     const float             alpha,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -384,7 +399,8 @@ template <> void Scale<float16, CPUContext>(
     const int               n,
     const float             alpha,
     const float16*          x,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -392,7 +408,8 @@ template <> void Scale<float, CPUContext>(
     const int               n,
     const float             alpha,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_BLAS
     cblas_scopy(n, x, 1, y, 1);
     cblas_sscal(n, alpha, y, 1);
@@ -411,7 +428,8 @@ template <> float StridedDot<float, CPUContext>(
     const float*            a,
     const int               incx,
     const float*            b,
-    const int               incy) {
+    const int               incy,
+    CPUContext*             ctx) {
 #ifdef WITH_BLAS
     return cblas_sdot(n, a, incx, b, incy);
 #else
@@ -427,9 +445,10 @@ template <> float StridedDot<float, CPUContext>(
 template <> float Dot<float, CPUContext>(
     int                     n,
     const float*            a,
-    const float*            b) {
+    const float*            b,
+    CPUContext*             ctx) {
 #ifdef WITH_BLAS
-    return StridedDot<float, CPUContext>(n, a, 1, b, 1);
+    return StridedDot<float, CPUContext>(n, a, 1, b, 1, ctx);
 #elif  WITH_SSE
     return sse::Dot<float>(n, a, b);
 #else
@@ -445,7 +464,8 @@ template <> float Dot<float, CPUContext>(
 template <> float Dot<float16, CPUContext>(
     int                     n,
     const float16*          a,
-    const float16*          b) {
+    const float16*          b,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
     return 0;
 }
@@ -513,7 +533,8 @@ template <> void Axpy<float, CPUContext>(
     const int               n,
     float                   alpha,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_BLAS
     cblas_saxpy(n, alpha, x, 1, y, 1);
 #elif  WITH_SSE
@@ -530,7 +551,8 @@ template <> void Axpy<float16, CPUContext>(
     const int               n,
     float                   alpha,
     const float16*          x,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -539,7 +561,8 @@ template <> void Axpby<float, CPUContext>(
     float                   alpha,
     const float*            x,
     float                   beta,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_BLAS
     cblas_sscal(n, beta, y, 1);
     cblas_saxpy(n, alpha, x, 1, y, 1);
@@ -558,7 +581,8 @@ template <> void Axpby<float16, CPUContext>(
     float                   alpha,
     const float16*          x,
     float                   beta,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -575,6 +599,7 @@ template <> void Gemm<float, CPUContext>(
     const float*            B,
     const float             beta,
     float*                  C,
+    CPUContext*             ctx,
     TensorProto_DataType    math_type) {
 #ifdef WITH_BLAS
     int lda = (TransA == CblasNoTrans) ? K : M;
@@ -598,6 +623,7 @@ template <> void Gemm<float16, CPUContext>(
     const float16*          B,
     const float             beta,
     float16*                C,
+    CPUContext*             ctx,
     TensorProto_DataType    math_type) {
     CPU_FP16_NOT_SUPPORTED;
 }
@@ -611,6 +637,7 @@ template <> void Gemv<float, CPUContext>(
     const float*            x,
     const float             beta,
     float*                  y,
+    CPUContext*             ctx,
     TensorProto_DataType    math_type) {
 #ifdef WITH_BLAS
     int lda = (TransA == CblasNoTrans) ? N : M;
@@ -631,6 +658,7 @@ template <> void Gemv<float16, CPUContext>(
     const float16*          x,
     const float             beta,
     float16*                y,
+    CPUContext*             ctx,
     TensorProto_DataType    math_type) {
     CPU_FP16_NOT_SUPPORTED;
 }

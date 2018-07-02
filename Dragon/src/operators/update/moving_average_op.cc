@@ -8,7 +8,7 @@ void MovingAverageOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
     math::Axpby<T, Context>(Input(0).count(),
-        1.f - decay, Xdata, decay, Ydata);
+        1.f - decay, Xdata, decay, Ydata, &ctx());
 }
 
 template <class Context>
@@ -17,7 +17,7 @@ void MovingAverageOp<Context>::RunOnDevice() {
         << "\nVariable(" << Output(0)->name() << ") and "
         << "new Value(" << Input(0).name() << ") "
         << "should have same dims.\nGot "
-        << Output(0)->dim_string() << " and " << Input(0).dim_string();
+        << Output(0)->DimString() << " and " << Input(0).DimString();
 
     if (XIsType(Input(0), float)) RunWithType<float>();
     else if (XIsType(Input(0), float16)) RunWithType<float16>();

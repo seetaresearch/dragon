@@ -8,25 +8,42 @@ namespace dragon {
 
 LogSeverity g_log_destination = INFO;
 
-std::string LOG_SEVERITIES[] = { "DEBUG", "INFO", "WARNING", "ERROR", "FATAL" };
+std::string LOG_SEVERITIES[] = {
+    "DEBUG",
+    "INFO",
+    "WARNING",
+    "ERROR",
+    "FATAL"
+};
 
 std::map<std::string, LogSeverity> LOG_LEVELS = {
-        { "DEBUG", DEBUG }, { "INFO", INFO }, { "WARNING", WARNING },
-        { "ERROR", ERROR }, { "FATAL", FATAL } 
+    { "DEBUG", DEBUG },
+    { "INFO", INFO },
+    { "WARNING", WARNING },
+    { "ERROR", ERROR },
+    { "FATAL", FATAL }
 };
 
 std::map<std::string, int> g_log_count, g_log_every;
 
-void SetLogDestination(LogSeverity type) { g_log_destination = type; }
-
-LogSeverity StrToLogSeverity(std::string level) { return LOG_LEVELS[level]; }
-
-std::string GenLogHashKey(const char* file, int line) {
-    std::string hash_key = std::string(file) + dragon_cast<std::string, int>(line);
-    return hash_key;
+void SetLogDestination(LogSeverity type) {
+    g_log_destination = type;
 }
 
-int EveryNRegister(const char* file, int line, int severity, int n) {
+LogSeverity StrToLogSeverity(std::string level) {
+    return LOG_LEVELS[level];
+}
+
+std::string GenLogHashKey(const char* file, int line) {
+    return std::string(file) +
+        dragon_cast<std::string, int>(line);
+}
+
+int EveryNRegister(
+    const char*             file,
+    int                     line,
+    int                     severity,
+    int                     n) {
     std::string hash_key = GenLogHashKey(file, line);
     if (!g_log_every.count(hash_key)) g_log_every[hash_key] = n;
     if (++g_log_count[hash_key] == g_log_every[hash_key]) {
@@ -37,7 +54,10 @@ int EveryNRegister(const char* file, int line, int severity, int n) {
     }
 }
 
-MessageLogger::MessageLogger(const char* file, int line, int severity)
+MessageLogger::MessageLogger(
+    const char*             file,
+    int                     line,
+    int                     severity)
     : severity_(severity) {
     if (severity < g_log_destination) return;
     std::string filename_only;
@@ -56,7 +76,9 @@ MessageLogger::~MessageLogger() {
     }
 }
 
-void MessageLogger::StripBasename(const std::string &full_path, std::string* filename) {
+void MessageLogger::StripBasename(
+    const std::string&      full_path,
+    std::string*            filename) {
     size_t pos1 = full_path.rfind('/');
     size_t pos2 = full_path.rfind('\\');
     size_t pos = std::string::npos;

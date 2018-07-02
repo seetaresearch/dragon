@@ -17,13 +17,13 @@
 namespace dragon {
 
 template <class Context>
-class InnerProductOp: public Operator<Context> {
+class InnerProductOp final : public Operator<Context> {
  public:
-    InnerProductOp(const OperatorDef& op_def, Workspace *ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 1)),
-          num_output(OperatorBase::GetSingleArg<int>("num_output", 0)),
-          TransW(OperatorBase::GetSingleArg<bool>("TransW", true)) {}
+    InnerProductOp(const OperatorDef& def, Workspace *ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 1)),
+          num_output(OperatorBase::Arg<int>("num_output", 0)),
+          TransW(OperatorBase::Arg<bool>("TransW", true)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice();
@@ -37,11 +37,11 @@ class InnerProductOp: public Operator<Context> {
 template <class Context>
 class InnerProductGradientOp final : public Operator<Context> {
  public:
-    InnerProductGradientOp(const OperatorDef& op_def, Workspace *ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 1)),
-          num_output(OperatorBase::GetSingleArg<int>("num_output", 0)),
-          TransW(OperatorBase::GetSingleArg<bool>("TransW", true)) {}
+    InnerProductGradientOp(const OperatorDef& def, Workspace *ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 1)),
+          num_output(OperatorBase::Arg<int>("num_output", 0)),
+          TransW(OperatorBase::Arg<bool>("TransW", true)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

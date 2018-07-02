@@ -19,15 +19,15 @@
 namespace dragon {
 
 template <class Context>
-class BatchNormOp : public Operator<Context> {
+class BatchNormOp final : public Operator<Context> {
  public:
-    BatchNormOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          momentum(OperatorBase::GetSingleArg<float>("momentum", 0.9f)),
-          eps(OperatorBase::GetSingleArg<float>("eps", 1e-3f)),
-          use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)),
-          mode(OperatorBase::GetSingleArg<string>("mode", "DEFAULT")) {
+    BatchNormOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", -1)),
+          momentum(OperatorBase::Arg<float>("momentum", 0.9f)),
+          eps(OperatorBase::Arg<float>("eps", 1e-3f)),
+          use_stats(OperatorBase::Arg<int>("use_stats", -1)),
+          mode(OperatorBase::Arg<string>("mode", "DEFAULT")) {
         if (axis != -1) 
             CHECK_EQ(axis, 1) 
                 << "\nThe axis can only be set to 1.";
@@ -51,10 +51,10 @@ class BatchNormOp : public Operator<Context> {
 template <class Context>
 class BatchNormGradientOp final : public Operator<Context> {
  public:
-    BatchNormGradientOp(const OperatorDef& op_def, Workspace *ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {
+    BatchNormGradientOp(const OperatorDef& def, Workspace *ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", -1)),
+          use_stats(OperatorBase::Arg<int>("use_stats", -1)) {
         if (axis != -1)
             CHECK_EQ(axis, 1)
                 << "\nThe axis can only be set to 1.";
@@ -77,12 +77,12 @@ class BatchNormGradientOp final : public Operator<Context> {
 template <class Context>
 class FusedBatchNormOp : public Operator<Context> {
  public:
-    FusedBatchNormOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          momentum(OperatorBase::GetSingleArg<float>("momentum", 0.9f)),
-          eps(OperatorBase::GetSingleArg<float>("eps", 1e-3f)),
-          use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {}
+    FusedBatchNormOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", -1)),
+          momentum(OperatorBase::Arg<float>("momentum", 0.9f)),
+          eps(OperatorBase::Arg<float>("eps", 1e-3f)),
+          use_stats(OperatorBase::Arg<int>("use_stats", -1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void Setup();
@@ -102,11 +102,11 @@ class FusedBatchNormOp : public Operator<Context> {
 template <class Context>
 class FusedBatchNormGradientOp : public Operator<Context> {
  public:
-    FusedBatchNormGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          eps(OperatorBase::GetSingleArg<float>("eps", 1e-3f)),
-          use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {}
+    FusedBatchNormGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", -1)),
+          eps(OperatorBase::Arg<float>("eps", 1e-3f)),
+          use_stats(OperatorBase::Arg<int>("use_stats", -1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void Setup();
@@ -132,9 +132,9 @@ class FusedBatchNormGradientOp : public Operator<Context> {
 template <class Context>
 class CuDNNBatchNormOp final : public FusedBatchNormOp<Context> {
  public:
-    CuDNNBatchNormOp(const OperatorDef& op_def, Workspace* ws)
-        : FusedBatchNormOp<Context>(op_def, ws),
-        eps64(OperatorBase::GetSingleArg<float>("eps", 1e-3f)) {
+    CuDNNBatchNormOp(const OperatorDef& def, Workspace* ws)
+        : FusedBatchNormOp<Context>(def, ws),
+          eps64(OperatorBase::Arg<float>("eps", 1e-3f)) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&bn_desc));
@@ -169,9 +169,9 @@ class CuDNNBatchNormOp final : public FusedBatchNormOp<Context> {
 template <class Context>
 class CuDNNBatchNormGradientOp final : public FusedBatchNormGradientOp<Context> {
  public:
-    CuDNNBatchNormGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : FusedBatchNormGradientOp<Context>(op_def, ws),
-        eps64(OperatorBase::GetSingleArg<float>("eps", 1e-3f)) {
+    CuDNNBatchNormGradientOp(const OperatorDef& def, Workspace* ws)
+        : FusedBatchNormGradientOp<Context>(def, ws),
+          eps64(OperatorBase::Arg<float>("eps", 1e-3f)) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&bn_desc));

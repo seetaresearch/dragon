@@ -17,12 +17,12 @@
 namespace dragon {
 
 template <class Context>
-class InstanceNormOp : public Operator<Context> {
+class InstanceNormOp final : public Operator<Context> {
  public:
-    InstanceNormOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          eps(OperatorBase::GetSingleArg<float>("eps", 1e-3f)) {
+    InstanceNormOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", -1)),
+          eps(OperatorBase::Arg<float>("eps", 1e-3f)) {
         if (axis != -1) 
             CHECK_EQ(axis, 1) << "\nThe axis can only be set to 1.";
     }
@@ -43,9 +43,9 @@ class InstanceNormOp : public Operator<Context> {
 template <class Context>
 class InstanceNormGradientOp final : public Operator<Context> {
  public:
-    InstanceNormGradientOp(const OperatorDef& op_def, Workspace *ws) 
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", -1)) {
+    InstanceNormGradientOp(const OperatorDef& def, Workspace *ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", -1)) {
         if (axis != -1)
             CHECK_EQ(axis, 1) << "\nThe axis can only be set to 1.";
     }

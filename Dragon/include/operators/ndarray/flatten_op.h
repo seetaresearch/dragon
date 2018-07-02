@@ -19,11 +19,11 @@ namespace dragon {
 template <class Context>
 class FlattenOp final : public Operator<Context> {
  public:
-    FlattenOp(const OperatorDef& op_def, Workspace* ws) 
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 0)),
-          num_axes(OperatorBase::GetSingleArg<int>("num_axes", -1)),
-          keep_axes(OperatorBase::GetSingleArg<int>("keep_axes", INT_MAX)) {}
+    FlattenOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 0)),
+          num_axes(OperatorBase::Arg<int>("num_axes", -1)),
+          keep_axes(OperatorBase::Arg<int>("keep_axes", INT_MAX)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

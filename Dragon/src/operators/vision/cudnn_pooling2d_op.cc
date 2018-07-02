@@ -25,7 +25,7 @@ void CuDNNPooling2dOp<Context>::RunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
     CUDNN_CHECK(cudnnPoolingForward(
-        cudnn_handle(), pool_desc,
+        ctx().cudnn_handle(), pool_desc,
             CUDNNType<T>::one, input_desc, Xdata,
                 CUDNNType<T>::zero, output_desc, Ydata));
 }
@@ -69,7 +69,7 @@ void CuDNNPooling2dGradientOp<Context>::RunWithType() {
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
     CUDNN_CHECK(cudnnPoolingBackward(
-        cudnn_handle(), pool_desc,
+        ctx().cudnn_handle(), pool_desc,
             CUDNNType<T>::one, input_desc, Ydata,
                 input_desc, dYdata, output_desc, Xdata,
                     CUDNNType<T>::zero, output_desc, dXdata));

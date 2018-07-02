@@ -26,9 +26,13 @@ template<> inline int dragon_cast<int, float>(float val) {
     return static_cast<int>(val);
 }
 
-template<> inline float dragon_cast<float, float>(float val) { return val; }
+template<> inline float dragon_cast<float, float>(float val) {
+    return val; 
+}
 
-template<> inline float16 dragon_cast<float16, float16>(float16 val) { return val; }
+template<> inline float16 dragon_cast<float16, float16>(float16 val) {
+    return val; 
+}
 
 template<> inline float16 dragon_cast<float16, float>(float val) {
     float16 ret;
@@ -67,7 +71,8 @@ template<> inline float16 dragon_cast<float16, float>(float val) {
     // Round to nearest even.
     remainder = (mantissa & lsb_m1);
     mantissa >>= shift;
-    if (remainder > lsb_s1 || (remainder == lsb_s1 && (mantissa & 0x1))) {
+    if (remainder > lsb_s1 ||
+            (remainder == lsb_s1 && (mantissa & 0x1))) {
         ++mantissa;
         if (!(mantissa & 0x3ff)) {
             ++exponent;

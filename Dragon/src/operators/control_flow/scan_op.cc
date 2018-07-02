@@ -13,7 +13,7 @@ namespace dragon {
 
 template <class Context>
 void ScanOp<Context>::InitTemplate() {
-    string func_str = OperatorBase::GetSingleArg<string>("func_str", "");
+    string func_str = OperatorBase::Arg<string>("func_str", "");
     ParseProtoFromText(func_str, &func_def);
     nrepeats = func_def.op_size();
     OperatorDef slice_def;
@@ -23,7 +23,8 @@ void ScanOp<Context>::InitTemplate() {
     arg_nout.set_name("num_output"); arg_nout.set_i(1);
     slice_def.add_arg()->CopyFrom(arg_axis);
     slice_def.add_arg()->CopyFrom(arg_nout);
-    template_def.mutable_device_option()->CopyFrom(op_def().device_option());
+    template_def.mutable_device_option()
+        ->CopyFrom(def().device_option());
     //  init for the first step
     for (int i = 0; i < nseqs; i++) {
         OperatorDef* op = template_def.add_op();
@@ -145,7 +146,7 @@ void ScanOp<Context>::UnrollTemplate() {
     }
     //  upload
     Tensor* string_tensor = ws()->CreateTensor("/mnt/" + anchor() + "/raw_ops");
-    string_tensor->Reshape(vector<TIndex>(1, 1));
+    string_tensor->Reshape({ 1 });
     string* data = string_tensor->mutable_data <string, CPUContext>();
     data[0] = new_def.SerializeAsString();
 }

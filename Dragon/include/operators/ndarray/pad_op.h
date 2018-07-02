@@ -19,12 +19,12 @@ namespace dragon {
 template <class Context>
 class PadOp final : public Operator<Context> {
  public:
-    PadOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          pad_l(OperatorBase::GetRepeatedArg<int>("pad_l")),
-          pad_r(OperatorBase::GetRepeatedArg<int>("pad_r")),
-          mode(OperatorBase::GetSingleArg<string>("mode", "CONSTANT")), 
-          value(OperatorBase::GetSingleArg<float>("value", 0.0f)) {
+    PadOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          pad_l(OperatorBase::Args<int>("pad_l")),
+          pad_r(OperatorBase::Args<int>("pad_r")),
+          mode(OperatorBase::Arg<string>("mode", "CONSTANT")),
+          value(OperatorBase::Arg<float>("value", 0.0f)) {
         if (pad_r.size() == 0) pad_r = pad_l;
         else CHECK_EQ(pad_l.size(), pad_r.size())
             << "The pad_l and pad_r should have the same length.";
@@ -54,11 +54,11 @@ class PadOp final : public Operator<Context> {
 template <class Context>
 class PadGradientOp final : public Operator<Context> {
  public:
-    PadGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),    
-          pad_l(OperatorBase::GetRepeatedArg<int>("pad_l")),
-          pad_r(OperatorBase::GetRepeatedArg<int>("pad_r")),
-          mode(OperatorBase::GetSingleArg<string>("mode", "CONSTANT")) {
+    PadGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          pad_l(OperatorBase::Args<int>("pad_l")),
+          pad_r(OperatorBase::Args<int>("pad_r")),
+          mode(OperatorBase::Arg<string>("mode", "CONSTANT")) {
         if (pad_r.size() == 0) pad_r = pad_l;
         else CHECK_EQ(pad_l.size(), pad_r.size())
             << "The pad_l and pad_r should have the same length.";

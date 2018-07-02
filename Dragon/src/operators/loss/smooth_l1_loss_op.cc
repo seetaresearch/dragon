@@ -40,7 +40,7 @@ void SmoothL1LossOp<Context>::RunOnDevice() {
     CHECK(Input(0).dims() == Input(1).dims());
     if (InputSize() > 2) CHECK(Input(0).dims() == Input(2).dims());
     if (InputSize() > 3) CHECK(Input(0).dims() == Input(3).dims());
-    Output(0)->Reshape(vector<TIndex>(1, 1));
+    Output(0)->Reshape({ 1 });
 
     diff = ws()->CreateTensor("/mnt/" + anchor() + "/smoothl1_loss/diff");
     error = ws()->CreateTensor("/share/smoothl1_loss_error");
@@ -61,7 +61,7 @@ template <class Context> template <typename T>
 void SmoothL1LossGradientOp<Context>::RunWithType() {
     auto* diff_data = diff->template mutable_data<T, Context>();
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; Context::template Copy<T, CPUContext, Context>(
+    T dYdata_host; ctx().template Copy<T, CPUContext, Context>(
         1, &dYdata_host, dYdata);
     kernel::SmoothL1Grad<T, Context>(
         diff->count(), beta, diff_data, diff_data);
@@ -79,7 +79,7 @@ void SmoothL1LossGradientOp<Context>::RunWithType() {
         const T sign = (i == 0) ? 1 : -1;
         alpha *= sign;
         math::Axpby<T, Context>(Output(i)->count(),
-            alpha, diff_data, 0, dXdata);
+            alpha, diff_data, 0, dXdata, &ctx());
         if (InputSize() > 3) {
             auto* inside_w_data = Input(2).template data<T, Context>();
             math::Mul<T, Context>(Output(i)->count(),

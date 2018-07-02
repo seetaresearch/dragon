@@ -19,19 +19,19 @@ namespace dragon {
 template <class Context>
 class ProposalOp final : public Operator<Context> {
  public:
-    ProposalOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          strides(OperatorBase::GetRepeatedArg<int>("strides")),
-          ratios(OperatorBase::GetRepeatedArg<float>("ratios")),
-          scales(OperatorBase::GetRepeatedArg<float>("scales")),
-          pre_nms_top_n(OperatorBase::GetSingleArg<int>("pre_nms_top_n", 6000)),
-          post_nms_top_n(OperatorBase::GetSingleArg<int>("post_nms_top_n", 300)),
-          nms_thresh(OperatorBase::GetSingleArg<float>("nms_thresh", (float)0.7)),
-          min_size(OperatorBase::GetSingleArg<int>("min_size", 16)), 
-          min_level(OperatorBase::GetSingleArg<int>("min_level", 2)),
-          max_level(OperatorBase::GetSingleArg<int>("max_level", 5)),
-          canonical_level(OperatorBase::GetSingleArg<int>("canonical_level", 4)),
-          canonical_scale(OperatorBase::GetSingleArg<int>("canonical_scale", 224)) {}
+    ProposalOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          strides(OperatorBase::Args<int>("strides")),
+          ratios(OperatorBase::Args<float>("ratios")),
+          scales(OperatorBase::Args<float>("scales")),
+          pre_nms_top_n(OperatorBase::Arg<int>("pre_nms_top_n", 6000)),
+          post_nms_top_n(OperatorBase::Arg<int>("post_nms_top_n", 300)),
+          nms_thresh(OperatorBase::Arg<float>("nms_thresh", (float)0.7)),
+          min_size(OperatorBase::Arg<int>("min_size", 16)),
+          min_level(OperatorBase::Arg<int>("min_level", 2)),
+          max_level(OperatorBase::Arg<int>("max_level", 5)),
+          canonical_level(OperatorBase::Arg<int>("canonical_level", 4)),
+          canonical_scale(OperatorBase::Arg<int>("canonical_scale", 224)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

@@ -29,13 +29,13 @@ void AccuracyOp<Context>::RunWithType() {
     } else Xdata = Input(0).template data<Tx, CPUContext>();
 
     auto* labels = Input(1).template data<Ty, CPUContext>();
-    auto* ignores = ignore_labels.count() > 0 ?
-        ignore_labels.data<int, CPUContext>() : nullptr;
+    auto* ignores = ignore.count() > 0 ?
+        ignore.data<int, CPUContext>() : nullptr;
     const TIndex dim = Input(0).count() / outer_dim;
     for (int i = 0; i < outer_dim; i++) {
         for (int j = 0; j < inner_dim; j++) {
             const int label = labels[i * inner_dim + j];
-            for (int k = 0; k < ignore_labels.count(); k++)
+            for (int k = 0; k < ignore.count(); k++)
                 if (label == ignores[k]) continue;
             if (OutputSize() > 1) num_per_class[label]++;
             vector<pair<Tx, int> > vec;
@@ -75,8 +75,8 @@ void AccuracyOp<Context>::RunOnDevice() {
     CHECK_EQ(outer_dim * inner_dim, Input(1).count())
         << "\nGiven (" << outer_dim << "," << inner_dim << ") predictions,"
         << "\nbut provided " << Input(1).count() << " labels.";
-    Output(0)->Reshape(vector<TIndex>(1, 1));
-    if (OutputSize() > 1) Output(1)->Reshape(vector<TIndex>(1, num_classes)); 
+    Output(0)->Reshape({ 1 });
+    if (OutputSize() > 1) Output(1)->Reshape({ num_classes });
 
     if (XIsType(Input(0), float) || XIsType(Input(0), float16)) {
         if (XIsType(Input(1), float)) RunWithType<float, float>();

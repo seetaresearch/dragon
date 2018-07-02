@@ -7,7 +7,6 @@
 #
 #      <https://opensource.org/licenses/BSD-2-Clause>
 #
-#
 # Codes are based on:
 #
 #      <https://github.com/pytorch/pytorch/blob/master/torch/nn/modules/loss.py>

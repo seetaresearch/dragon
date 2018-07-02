@@ -23,21 +23,18 @@
 
 namespace dragon {
 
-class CPUObject {
-public:
-    unique_ptr<std::mt19937> rand_generator;
-};
-
 class CPUContext {
  public:
-    CPUContext(): random_seed_(3) { generator(); }
-    CPUContext(unsigned int random_seed): random_seed_(random_seed) { generator(); }
-    CPUContext(const DeviceOption& option): random_seed_(option.has_random_seed() ?
-                                                         option.random_seed() : 3) { generator(); }
+    CPUContext(): random_seed_(3) {}
+    CPUContext(unsigned int random_seed)
+        : random_seed_(random_seed)  {}
+    CPUContext(const DeviceOption& option)
+        : random_seed_(option.has_random_seed() ?
+            option.random_seed() : DEFAULT_RNG_SEED) {}
     virtual ~CPUContext() {}
 
     inline void SwitchToDevice() {}
-    inline void static FinishDeviceCompution() { return; }
+    inline void FinishDeviceCompution() {}
 
     inline static void* New(size_t nbytes) {
         void* data;
@@ -50,39 +47,53 @@ class CPUContext {
         return data;
     }
 
-    inline static void Memset(size_t nbytes, void* ptr) { memset(ptr, 0, nbytes); }
+    inline static void Memset(size_t nbytes, void* ptr) {
+        memset(ptr, 0, nbytes);
+    }
+
     template<class DstContext, class SrcContext>
-    inline static void Memcpy(size_t nbytes, void* dst, const void* src) { memcpy(dst, src, nbytes); }
+    inline static void Memcpy(
+        size_t              nbytes,
+        void*               dst,
+        const void*         src) {
+        memcpy(dst, src, nbytes);
+    }
+
     inline static void Delete(void* data) { free(data); }
 
     template<class DstContext, class SrcContext>
-    inline static void MemcpyAsync(size_t nbytes, void* dst, const void* src) { NOT_IMPLEMENTED; }
+    inline static void MemcpyAsync(
+        size_t              nbytes,
+        void*               dst,
+        const void*         src) {
+        NOT_IMPLEMENTED;
+    }
 
     template<typename T, class DstContext, class SrcContext>
-    inline static void Copy(int n, T* dst, const T* src) {
+    inline static void Copy(
+        int                 n,
+        T*                  dst,
+        const T*            src) {
         if (dst == src) return;
         //  only the basic types(e.g. int/float) can memcpy correctly
         if (std::is_fundamental<T>::value)
-            Memcpy<DstContext, SrcContext>(n * sizeof(T), (void*)dst, (const void*)src);
+            Memcpy<DstContext, SrcContext>(
+                n * sizeof(T), (void*)dst, (const void*)src);
         else for (int i = 0; i < n; i++) dst[i] = src[i];
     }
 
-    inline std::mt19937* generator() {
-        auto& generator = cpu_object_.rand_generator;
-        if (!generator.get())
-            generator.reset(new std::mt19937(random_seed_));
-        return generator.get();
-    }
+    inline int device_id() const { return 0; }
 
-    static CPUObject cpu_object_;
+    inline std::mt19937* rand_generator() {
+        if (!rand_generator_.get())
+            rand_generator_.reset(new std::mt19937(random_seed_));
+        return rand_generator_.get();
+    }
 
  private:
     unsigned int random_seed_;
+    unique_ptr<std::mt19937> rand_generator_;
 };
-
-static inline std::mt19937* rand_generator() {
-    return CPUContext::cpu_object_.rand_generator.get();
-}
 
 #define CPU_FP16_NOT_SUPPORTED \
     LOG(FATAL) << "FP16 is unsupported for CPUContext.";

@@ -39,13 +39,16 @@ class Workspace {
 
     inline void InitWorkspace() {
         CreateTensor("ignore");
-        Tensor* head = CreateTensor("/opt/mirror_stage/head");
-        head->Reshape(vector<TIndex>(1, WORKSPACE_MAX_CORRUPTED_SIZE));
-        Tensor* recompute_flag = CreateTensor("/opt/mirror_stage/recompute_flag");
-        recompute_flag->Reshape(vector<TIndex>(1, 1));
+        Tensor* head = CreateTensor(
+            "/opt/mirror_stage/head");
+        head->Reshape({ WORKSPACE_MAX_CORRUPTED_SIZE });
+        Tensor* recompute_flag = CreateTensor(
+            "/opt/mirror_stage/recompute_flag");
+        recompute_flag->Reshape({ 1 });
         recompute_flag->mutable_data<bool, CPUContext>()[0] = false;
         for (int i = 0; i < WORKSPACE_MAX_CORRUPTED_SIZE; i++) {
-            string name = "/opt/mirror_stage/buffer_" + dragon_cast<string, int>(i);
+            string name = "/opt/mirror_stage/buffer_" +
+                dragon_cast<string, int>(i);
             Tensor* buffer = CreateTensor(name);
             head->mutable_data<string, CPUContext>()[i] = "";
         }
@@ -72,7 +75,9 @@ class Workspace {
         } else { return name; }
     }
 
-    inline Tensor* TryGetTensor(const string& name, bool use_remote=true) {
+    inline Tensor* TryGetTensor(
+        const string&           name,
+        bool                    use_remote = true) {
         string query = GetTensorName(name);
         //  search local workspace
         if (tensor_map_.count(query) > 0)
@@ -87,7 +92,9 @@ class Workspace {
         return nullptr;
     }
 
-    inline bool HasTensor(const string& name, bool use_remote=true) {
+    inline bool HasTensor(
+        const string&           name,
+        bool                    use_remote = true) {
         return TryGetTensor(name, use_remote) ? true : false;
     }
 
@@ -100,7 +107,9 @@ class Workspace {
         return tensor;
     }
 
-    inline Tensor* GetTensor(const string& name, bool use_remote=true) {
+    inline Tensor* GetTensor(
+        const string&           name,
+        bool                    use_remote = true) {
         Tensor* tensor = TryGetTensor(name, use_remote);
         CHECK(tensor) << "\nTensor(" << name << ") does not exist "
                       << "in current workspace or sub-workspace.";
@@ -122,14 +131,17 @@ class Workspace {
         //  serach remote workspace
         for (auto& it : workspace_map_) {
             vector<string> sub_names = it.second->GetTensors();
-            names.insert(names.end(), sub_names.begin(), sub_names.end());
+            names.insert(names.end(),
+                sub_names.begin(), sub_names.end());
         }
         return names;
     }
 
     /******************** Filler ********************/
 
-    inline bool HasFiller(const string& name, bool use_remote=true) {
+    inline bool HasFiller(
+        const string&           name,
+        bool                    use_remote = true) {
         //  search local workspace
         bool result = filler_map_.count(name) > 0;
         if (!use_remote) return result;
@@ -140,14 +152,16 @@ class Workspace {
         return result;
     }
 
-    inline void CreateFiller(const TensorFiller filler) {
+    inline void CreateFiller(
+        const TensorFiller      filler) {
         CHECK_GT(filler.tensor().size(), 0)
             << "Tensor without a valid name can not be filled.";
         if (HasFiller(filler.tensor())) return;
         filler_map_[filler.tensor()] = filler;
     }
 
-    inline const TensorFiller* GetFiller(const string& name) {
+    inline const TensorFiller* GetFiller(
+        const string&           name) {
         //  search local workspace
         if (filler_map_.count(name) > 0)
             return &filler_map_[name];
@@ -163,11 +177,12 @@ class Workspace {
     /******************** Cache ********************/
 
     template <class Context>
-    inline vector<void*> caches(const vector<size_t>& segments) {
+    inline vector<void*> caches(
+        const vector<size_t>&   segments) {
         TIndex total_size = 0;
         for (auto& segment : segments) total_size += (TIndex)segment;
         Tensor* cacheT = CreateTensor("/share/cache");
-        cacheT->Reshape(vector<TIndex>(1, total_size));
+        cacheT->Reshape({ total_size });
         vector<void*> caches(segments.size());
         caches[0] = cacheT->template mutable_data<uint8_t, Context>();
         for (int i = 1; i < segments.size(); i++)
@@ -176,11 +191,12 @@ class Workspace {
     }
 
     template <typename T, class Context>
-    inline vector<T*> caches(const vector<TIndex>& segments) {
+    inline vector<T*> caches(
+        const vector<TIndex>&   segments) {
         TIndex total_count = 0;
         for (auto& segment : segments) total_count += segment;
         Tensor* cacheT = CreateTensor("/share/cache");
-        cacheT->Reshape(vector<TIndex>(1, total_count));
+        cacheT->Reshape({ total_count });
         vector<T*> caches(segments.size());
         caches[0] = cacheT->template mutable_data<T, Context>();
         for (int i = 1; i < segments.size(); i++)
@@ -190,12 +206,14 @@ class Workspace {
 
     /******************** Operator ********************/
 
-    inline void CreatePersistentOp(const OperatorDef& meta_op) {
+    inline void CreatePersistentOp(
+        const OperatorDef& meta_op) {
         string persistent_key;
         for (auto& arg : meta_op.arg())
             if (arg.name() == "persistent_key")
                 persistent_key = arg.s();
-        CHECK(persistent_key.size() > 0) << "\nGot empty persistent key.";
+        CHECK(persistent_key.size() > 0)
+            << "\nGot empty persistent key.";
         if (!op_map_.count(persistent_key)) {
             for (auto& input : meta_op.input()) CreateTensor(input);
             op_map_[persistent_key] = unique_ptr<OperatorBase>(
@@ -203,9 +221,11 @@ class Workspace {
         }
     }
 
-    inline void RunPersistentOp(const string& key, const string& anchor,
-                                const vector<string>& inputs,
-                                const vector<string>& outputs) {
+    inline void RunPersistentOp(
+        const string&           key,
+        const string&           anchor,
+        const vector<string>&   inputs,
+        const vector<string>&   outputs) {
         CHECK(op_map_.count(key) > 0)
             << "\nPersistentOp(" << key << ") does not exist.";
        op_map_[key]->MutableOp(inputs, outputs, anchor);
@@ -236,11 +256,13 @@ class Workspace {
 
     GraphBase* CreateGraph(const GraphDef& meta_graph);
 
-    void RunGraph(const string& graph_name,
-                  const string& include,
-                  const string& exclude) {
+    void RunGraph(
+        const string&           graph_name,
+        const string&           include,
+        const string&           exclude) {
         if (!graph_map_.count(graph_name))
-            LOG(FATAL) << "Graph(" << graph_name << ") does not exist.";
+            LOG(FATAL) << "Graph(" << graph_name
+                       << ") does not exist.";
         graph_map_[graph_name]->Run(include, exclude);
     }
 
@@ -252,8 +274,9 @@ class Workspace {
 
     /******************** Utility ********************/
 
-    inline void CreateRename(const string& old_tensor,
-                             const string& new_tensor) {
+    inline void CreateRename(
+        const string&           old_tensor,
+        const string&           new_tensor) {
         rename_map_[old_tensor] = new_tensor;
     }
 

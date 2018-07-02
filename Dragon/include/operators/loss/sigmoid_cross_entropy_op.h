@@ -19,9 +19,10 @@ namespace dragon {
 template <class Context>
 class SigmoidCrossEntropyOp final : public Operator<Context> {
  public:
-    SigmoidCrossEntropyOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          normalization(OperatorBase::GetSingleArg<string>("normalization", "VALID")) {}
+    SigmoidCrossEntropyOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          normalization(OperatorBase::Arg<string>(
+              "normalization", "VALID")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -35,9 +36,10 @@ class SigmoidCrossEntropyOp final : public Operator<Context> {
 template <class Context>
 class SigmoidCrossEntropyGradientOp final : public Operator<Context> {
  public:
-    SigmoidCrossEntropyGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          normalization(OperatorBase::GetSingleArg<string>("normalization", "VALID")) {}
+    SigmoidCrossEntropyGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          normalization(OperatorBase::Arg<string>(
+              "normalization", "VALID")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

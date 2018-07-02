@@ -15,7 +15,7 @@ void BiasAddOp<Context>::RunWithType() {
 
     kernel::BiasAdd<T, Context>(
         Output(0)->count(), outer_dim, dim, inner_dim,
-            data_format, Bdata, multiplier, Ydata);
+            data_format, Bdata, multiplier, Ydata, &ctx());
 }
 
 template <class Context>
@@ -51,11 +51,13 @@ void BiasAddGradientOp<Context>::RunWithType() {
             if (data_format == "NCHW") {
                 math::Gemv<T, Context>(
                     CblasNoTrans, dim, inner_dim,
-                        1.0, dYdata, multiplier, 1.0, dBias);
+                        1.0, dYdata, multiplier,
+                            1.0, dBias, &ctx());
             } else if (data_format == "NHWC") {
                 math::Gemv<T, Context>(
                     CblasTrans, inner_dim, dim,
-                        1.0, dYdata, multiplier, 1.0, dBias);
+                        1.0, dYdata, multiplier,
+                            1.0, dBias, &ctx());
             }
             dYdata += y_offset;
         }

@@ -17,12 +17,12 @@
 namespace dragon {
 
 template <class Context>
-class AffineOp : public Operator<Context> {
+class AffineOp final : public Operator<Context> {
  public:
-    AffineOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 1)),
-          num_axes(OperatorBase::GetSingleArg<int>("num_axes", 1)) {}
+    AffineOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 1)),
+          num_axes(OperatorBase::Arg<int>("num_axes", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -36,10 +36,10 @@ class AffineOp : public Operator<Context> {
 template <class Context>
 class AffineGradientOp final : public Operator<Context> {
  public:
-    AffineGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-        axis(OperatorBase::GetSingleArg<int>("axis", 1)),
-        num_axes(OperatorBase::GetSingleArg<int>("num_axes", -1)) {}
+    AffineGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 1)),
+          num_axes(OperatorBase::Arg<int>("num_axes", -1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -60,10 +60,10 @@ class AffineGradientOp final : public Operator<Context> {
 template <class Context>
 class CuDNNAffineOpBase : public Operator<Context> {
  public:
-    CuDNNAffineOpBase(const OperatorDef& op_def, Workspace* ws)
-         : Operator<Context>(op_def, ws),
-        axis(OperatorBase::GetSingleArg<int>("axis", 1)),
-        num_axes(OperatorBase::GetSingleArg<int>("num_axes", -1)) {
+    CuDNNAffineOpBase(const OperatorDef& def, Workspace* ws)
+         : Operator<Context>(def, ws),
+           axis(OperatorBase::Arg<int>("axis", 1)),
+           num_axes(OperatorBase::Arg<int>("num_axes", -1)) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&param_desc));
         CUDNN_CHECK(cudnnCreateOpTensorDescriptor(&mul_desc));
@@ -120,10 +120,10 @@ class CuDNNAffineOpBase : public Operator<Context> {
     using CuDNNAffineOpBase<Context>::reduce_desc
 
 template <class Context>
-class CuDNNAffineOp : public CuDNNAffineOpBase<Context> {
+class CuDNNAffineOp final : public CuDNNAffineOpBase<Context> {
  public:
-    CuDNNAffineOp(const OperatorDef& op_def, Workspace* ws)
-         : CuDNNAffineOpBase<Context>(op_def, ws) {}
+    CuDNNAffineOp(const OperatorDef& def, Workspace* ws)
+         : CuDNNAffineOpBase<Context>(def, ws) {}
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
@@ -133,10 +133,10 @@ class CuDNNAffineOp : public CuDNNAffineOpBase<Context> {
 };
 
 template <class Context>
-class CuDNNAffineGradientOp : public CuDNNAffineOpBase<Context> {
+class CuDNNAffineGradientOp final : public CuDNNAffineOpBase<Context> {
 public:
-    CuDNNAffineGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : CuDNNAffineOpBase<Context>(op_def, ws) {}
+    CuDNNAffineGradientOp(const OperatorDef& def, Workspace* ws)
+        : CuDNNAffineOpBase<Context>(def, ws) {}
 
     void RunOnDevice() override;
     template <typename T> void ComputeScaleGradient(T* dYxX, T* dA);

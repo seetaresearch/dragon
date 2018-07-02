@@ -18,16 +18,18 @@ void InstanceNormOp<Context>::RunWithType() {
 
     //  compute mean
     if (data_format == "NCHW") {
-        math::Gemv<T, Context>(CblasNoTrans, NC, S,
-                             1.0 / S, Xdata, Smult,
-                                         0, Tmean);
+        math::Gemv<T, Context>(
+            CblasNoTrans, NC, S,
+                1.0 / S, Xdata, Smult,
+                    0.0, Tmean, &ctx());
     } else if (data_format == "NHWC") {
         auto* x = Xdata;
         auto* tm = Tmean;
         for (int i = 0; i < N; i++) {
-            math::Gemv<T, Context>(CblasTrans, S, C,
-                                  1.0 / S, x, Smult,
-                                             0, tm);
+            math::Gemv<T, Context>(
+                CblasTrans, S, C,
+                    1.0 / S, x, Smult,
+                        0.0, tm, &ctx());
             x += CS;
             tm += C;
         }
@@ -35,16 +37,20 @@ void InstanceNormOp<Context>::RunWithType() {
 
     //  subtract mean
     if (data_format == "NCHW") {
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                                 -1.0, Tmean, Smult,
-                                                        1.0, Ydata);
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                NC, S, 1,
+                    -1.0, Tmean, Smult,
+                        1.0, Ydata, &ctx());
     } else if (data_format == "NHWC") {
         auto* y = Ydata;
         auto* tm = Tmean;
         for (int i = 0; i < N; i++) {
-            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, S, C, 1,
-                                                       -1.0, Smult, tm,
-                                                               1.0, y);
+            math::Gemm<T, Context>(
+                CblasNoTrans, CblasNoTrans,
+                    S, C, 1,
+                        -1.0, Smult, tm,
+                            1.0, y, &ctx());
             y += CS;
             tm += C;
         }
@@ -54,16 +60,18 @@ void InstanceNormOp<Context>::RunWithType() {
     //  note that we use VAR(X) = E((X - EX) ^ 2)
     math::Square<T, Context>(Output(0)->count(), Ydata, WSdata);
     if (data_format == "NCHW") {
-        math::Gemv<T, Context>(CblasNoTrans, NC, S,
-                            1.0 / S, WSdata, Smult,
-                                        0.0, Tvar);
+        math::Gemv<T, Context>(
+            CblasNoTrans, NC, S,
+                1.0 / S, WSdata, Smult,
+                    0.0, Tvar, &ctx());
     } else if (data_format == "NHWC") {
         auto* x2 = WSdata;
         auto* tv = Tvar;
         for (int i = 0; i < N; i++) {
-            math::Gemv<T, Context>(CblasTrans, S, C,
-                                 1.0 / S, x2, Smult,
-                                             0, tv);
+            math::Gemv<T, Context>(
+                CblasTrans, S, C,
+                    1.0 / S, x2, Smult,
+                        0.0, tv, &ctx());
             x2 += CS;
             tv += C;
         }
@@ -75,16 +83,20 @@ void InstanceNormOp<Context>::RunWithType() {
 
     //  divide by stddev
     if (data_format == "NCHW") {
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                                   1.0, Tvar, Smult,
-                                                       0.0, WSdata);
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                NC, S, 1,
+                    1.0, Tvar, Smult,
+                        0.0, WSdata, &ctx());
     } else if (data_format == "NHWC") {
         auto* std = WSdata;
         auto* tv = Tvar;
         for (int i = 0; i < N; i++) {
-            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, S, C, 1,
-                                                        1.0, Smult, tv,
-                                                             0.0, std);
+            math::Gemm<T, Context>(
+                CblasNoTrans, CblasNoTrans,
+                    S, C, 1,
+                        1.0, Smult, tv,
+                            0.0, std, &ctx());
             std += CS;
             tv += C;
         }
@@ -111,8 +123,8 @@ void InstanceNormOp<Context>::Setup() {
     var = ws()->CreateTensor("/mnt/" + anchor() + "/ins_norm/var");
 
     //  reshape
-    mean.Reshape(vector<TIndex>(1, NC));
-    var->Reshape(vector<TIndex>(1, NC));
+    mean.Reshape({ NC });
+    var->Reshape({ NC });
     Output(0)->ReshapeLike(Input(0));
 }
 
@@ -141,16 +153,20 @@ void InstanceNormGradientOp<Context>::RunWithType() {
     auto* WSdata = ws()->template caches<T, Context>({ Output(0)->count() })[0];
 
     if (data_format == "NCHW") {
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                                   1.0, Tvar, Smult,
-                                                       0.0, WSdata);
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                NC, S, 1,
+                    1.0, Tvar, Smult,
+                        0.0, WSdata, &ctx());
     } else if (data_format == "NHWC") {
         auto* std = WSdata;
         auto* tv = Tvar;
         for (int i = 0; i < N; i++) {
-            math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, S, C, 1,
-                                                        1.0, Smult, tv,
-                                                             0.0, std);
+            math::Gemm<T, Context>(
+                CblasNoTrans, CblasNoTrans,
+                    S, C, 1,
+                        1.0, Smult, tv,
+                            0.0, std, &ctx());
             std += CS;
             tv += C;
         }
@@ -161,23 +177,29 @@ void InstanceNormGradientOp<Context>::RunWithType() {
 
     //  sum(dE/dY \cdot Y)
     if (data_format == "NCHW") {
-        math::Gemv<T, Context>(CblasNoTrans, NC, S,
-                                1.0, dXdata, Smult,
-                                        0.0, Tvar);
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                                   1.0, Tvar, Smult,
-                                                       0.0, dXdata);
+        math::Gemv<T, Context>(
+            CblasNoTrans, NC, S,
+                1.0, dXdata, Smult,
+                    0.0, Tvar, &ctx());
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                NC, S, 1,
+                    1.0, Tvar, Smult,
+                        0.0, dXdata, &ctx());
     } else if (data_format == "NHWC") {
         for (int i = 0; i < N; i++) {
             auto* dx = dXdata;
             auto* tv = Tvar;
             for (int i = 0; i < N; i++) {
-                math::Gemv<T, Context>(CblasTrans, S, C,
-                                         1.0, dx, Smult,
-                                                 0, tv);
-                math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, S, C, 1,
-                                                            1.0, Smult, tv,
-                                                                  0.0, dx);
+                math::Gemv<T, Context>(
+                    CblasTrans, S, C,
+                        1.0, dx, Smult,
+                            0, tv, &ctx());
+                math::Gemm<T, Context>(
+                    CblasNoTrans, CblasNoTrans,
+                        S, C, 1,
+                            1.0, Smult, tv,
+                                0.0, dx, &ctx());
                 dx += CS;
                 tv += C;
             }
@@ -189,24 +211,30 @@ void InstanceNormGradientOp<Context>::RunWithType() {
 
     //  sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y
     if (data_format == "NCHW") {
-        math::Gemv<T, Context>(CblasNoTrans, NC, S,
-                                1.0, dYdata, Smult,
-                                        0.0, Tvar);
-        math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, NC, S, 1,
-                                                   1.0, Tvar, Smult,
-                                                       1.0, dXdata);
+        math::Gemv<T, Context>(
+            CblasNoTrans, NC, S,
+                1.0, dYdata, Smult,
+                    0.0, Tvar, &ctx());
+        math::Gemm<T, Context>(
+            CblasNoTrans, CblasNoTrans,
+                NC, S, 1,
+                    1.0, Tvar, Smult,
+                        1.0, dXdata, &ctx());
     } else if (data_format == "NHWC") {
         for (int i = 0; i < N; i++) {
             auto* dy = dYdata;
             auto* dx = dXdata;
             auto* tv = Tvar;
             for (int i = 0; i < N; i++) {
-                math::Gemv<T, Context>(CblasTrans, S, C,
-                                         1.0, dy, Smult,
-                                                 0, tv);
-                math::Gemm<T, Context>(CblasNoTrans, CblasNoTrans, S, C, 1,
-                                                            1.0, Smult, tv,
-                                                                  1.0, dx);
+                math::Gemv<T, Context>(
+                    CblasTrans, S, C,
+                        1.0, dy, Smult,
+                            0, tv, &ctx());
+                math::Gemm<T, Context>(
+                    CblasNoTrans, CblasNoTrans,
+                        S, C, 1,
+                            1.0, Smult, tv,
+                                1.0, dx, &ctx());
                 dy += CS;
                 dx += CS;
                 tv += C;
@@ -216,7 +244,8 @@ void InstanceNormGradientOp<Context>::RunWithType() {
    
     //  dE/dY - mean(dE/dY)- mean(dE/dY \cdot Y) \cdot Y
     //  = dE/dY - mean(sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y)
-    math::Axpby<T, Context>(Output(0)->count(), 1.0, dYdata, -1.0 / S, dXdata);
+    math::Axpby<T, Context>(Output(0)->count(),
+        1.0, dYdata, -1.0 / S, dXdata, &ctx());
 
     //  divide by stddev
     math::Div<T, Context>(Output(0)->count(), dXdata, WSdata, dXdata);

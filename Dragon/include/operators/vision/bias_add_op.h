@@ -17,11 +17,11 @@
 namespace dragon {
 
 template <class Context>
-class BiasAddOp : public Operator<Context> {
+class BiasAddOp final : public Operator<Context> {
  public:
-    BiasAddOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
+    BiasAddOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          data_format(OperatorBase::Arg<string>("data_format", "NCHW")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -35,9 +35,9 @@ class BiasAddOp : public Operator<Context> {
 template <class Context>
 class BiasAddGradientOp final : public Operator<Context> {
  public:
-    BiasAddGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
+    BiasAddGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          data_format(OperatorBase::Arg<string>("data_format", "NCHW")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

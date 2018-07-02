@@ -49,29 +49,29 @@ class cudnnTensorDescriptors {
 template <class Context>
 class CuDNNRecurrentOpBase : public Operator<Context> {
  public:
-    CuDNNRecurrentOpBase(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws), states_initialized(false),
-        hidden_size(OperatorBase::GetSingleArg<int>("hidden_size", 0)),
-        num_layers(OperatorBase::GetSingleArg<int>("num_layers", 1)),
-        bidirectional(OperatorBase::GetSingleArg<bool>("bidirectional", false)),
-        dropout_ratio(OperatorBase::GetSingleArg<float>("dropout_ratio", 1.0)),
-        random_seed(op_def.device_option().random_seed()) {
+    CuDNNRecurrentOpBase(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws), states_initialized(false), 
+          hidden_size(OperatorBase::Arg<int>("hidden_size", 0)),
+          num_layers(OperatorBase::Arg<int>("num_layers", 1)),
+          bidirectional(OperatorBase::Arg<bool>("bidirectional", false)),
+          dropout_ratio(OperatorBase::Arg<float>("dropout_ratio", 1.0)),
+          random_seed(def.device_option().random_seed()) {
         //  determine the rnn direction
         rnn_direction = bidirectional ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL;
         //  determine the rnn mode
-        const string mode = OperatorBase::GetSingleArg<string>("rnn_mode", "");
+        const string mode = OperatorBase::Arg<string>("rnn_mode", "");
         if (mode == "rnn_tanh") rnn_mode = CUDNN_RNN_TANH;
         else if (mode == "rnn_relu") rnn_mode = CUDNN_RNN_RELU;
         else if (mode == "lstm") rnn_mode = CUDNN_LSTM;
         else if (mode == "gru") rnn_mode = CUDNN_GRU;
         else LOG(FATAL) << "Unsupported rnn mode: " << mode;
         //  determine the rnn input mode
-        const string input_mode = OperatorBase::GetSingleArg<string>("rnn_input_mode", "linear");
+        const string input_mode = OperatorBase::Arg<string>("rnn_input_mode", "linear");
         if (input_mode == "skip") rnn_input_mode = CUDNN_SKIP_INPUT;
         else if (input_mode == "linear") rnn_input_mode = CUDNN_LINEAR_INPUT;
         else LOG(FATAL) << "Unsupported rnn input mode: " << input_mode;
         //  override the running phase
-        SwitchToPhase(OperatorBase::GetSingleArg<string>("phase", ""));
+        SwitchToPhase(OperatorBase::Arg<string>("phase", ""));
         CUDNN_CHECK(cudnnCreateRNNDescriptor(&rnn_desc));
         CUDNN_CHECK(cudnnCreateDropoutDescriptor(&dropout_desc));
         CUDNN_CHECK(cudnnCreateFilterDescriptor(&w_desc));
@@ -92,8 +92,7 @@ class CuDNNRecurrentOpBase : public Operator<Context> {
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(cy_desc));
     }
 
-    template <typename T> void ResetDesc(Tensor* X, Tensor* Hx, Tensor* Cx,
-                                         Tensor* Y, Tensor* Hy, Tensor* Cy);
+    template <typename T> void ResetDesc();
 
  public:
     TIndex hidden_size, num_layers;
@@ -109,7 +108,7 @@ class CuDNNRecurrentOpBase : public Operator<Context> {
     cudnnFilterDescriptor_t w_desc;
     cudnnTensorDescriptor_t hx_desc, cx_desc;
     cudnnTensorDescriptor_t hy_desc, cy_desc;
-    vector<TIndex> input_dims;
+    vector<TIndex> input_dims, output_dims, hidden_dims;
     size_t workspace_size, reserve_size, states_size;
 
     std::unique_ptr<cudnnTensorDescriptors> xs_desc;
@@ -128,14 +127,16 @@ class CuDNNRecurrentOpBase : public Operator<Context> {
     using CuDNNRecurrentOpBase<Context>::xs_desc; \
     using CuDNNRecurrentOpBase<Context>::ys_desc; \
     using CuDNNRecurrentOpBase<Context>::input_dims; \
+    using CuDNNRecurrentOpBase<Context>::output_dims; \
+    using CuDNNRecurrentOpBase<Context>::hidden_dims; \
     using CuDNNRecurrentOpBase<Context>::workspace_size; \
     using CuDNNRecurrentOpBase<Context>::reserve_size
 
 template <class Context>
-class CuDNNRecurrentOp : public CuDNNRecurrentOpBase<Context> {
+class CuDNNRecurrentOp final : public CuDNNRecurrentOpBase<Context> {
  public:
-    CuDNNRecurrentOp(const OperatorDef& op_def, Workspace* ws)
-        : CuDNNRecurrentOpBase<Context>(op_def, ws) {}
+    CuDNNRecurrentOp(const OperatorDef& def, Workspace* ws)
+        : CuDNNRecurrentOpBase<Context>(def, ws) {}
     USE_CUDNN_RECURRENT_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -143,10 +144,10 @@ class CuDNNRecurrentOp : public CuDNNRecurrentOpBase<Context> {
 };
 
 template <class Context>
-class CuDNNRecurrentGradientOp : public CuDNNRecurrentOpBase<Context> {
+class CuDNNRecurrentGradientOp final : public CuDNNRecurrentOpBase<Context> {
  public:
-    CuDNNRecurrentGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : CuDNNRecurrentOpBase<Context>(op_def, ws) {}
+    CuDNNRecurrentGradientOp(const OperatorDef& def, Workspace* ws)
+        : CuDNNRecurrentOpBase<Context>(def, ws) {}
     USE_CUDNN_RECURRENT_FUNCTIONS;
 
     void RunOnDevice() override;

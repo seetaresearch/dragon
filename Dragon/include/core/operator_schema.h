@@ -21,14 +21,25 @@ namespace dragon {
 
 class OpSchema {
  public:
-    OpSchema() 
-        : op_type_("unknown"), file_("unknown"), line_(0) { Init(); }
-    OpSchema(const string& op_type, const string& file, const int line)
-        : op_type_(op_type), file_(file), line_(line) { Init(); }
+    OpSchema()
+        : op_type_("unknown"), file_("unknown"), line_(0) {
+        Init();
+    }
+
+    OpSchema(
+        const string&               op_type,
+        const string&               file, 
+        const int                   line)
+        : op_type_(op_type), file_(file), line_(line) {
+        Init();
+    }
 
     bool Verify(const OperatorDef& def) const;
 
-    inline OpSchema& IgnoreVerify() { ignore_verify_ = true; return *this; }
+    inline OpSchema& IgnoreVerify() {
+        ignore_verify_ = true; 
+        return *this; 
+    }
 
     OpSchema& Inplace(set<pair<int, int> > inplace);
     std::function<bool(int, int)> CheckInplace;
@@ -56,20 +67,26 @@ class OpSchema {
 
 class OpSchemaRegistry {
  public:
-    static OpSchema& NewSchema(const string& op_type, const string& file, const int line) {
+    static OpSchema& NewSchema(
+        const string&               op_type,
+        const string&               file,
+        const int                   line) {
         auto& m = schema_map();
         CHECK(!m.count(op_type))
-            << "\nOpSchema(" << op_type << ") has registered before."
+            << "\nOpSchema(" << op_type
+            << ") has registered before."
             << "\nat file: " << file
             << "\n   line: " << line;
-        m.emplace(std::make_pair(op_type, OpSchema(op_type, file, line)));
+        m.emplace(std::make_pair(op_type,
+            OpSchema(op_type, file, line)));
         return m[op_type];
     }
 
     static const OpSchema* Schema(const string& op_type) {
         auto& m = schema_map();
         if (m.count(op_type)) return &m[op_type];
-        else LOG(FATAL) << "OpSchema(" << op_type << ") has not registered yet.";
+        else LOG(FATAL) << "OpSchema(" << op_type
+                        << ") has not registered yet.";
         return nullptr;
     }
 

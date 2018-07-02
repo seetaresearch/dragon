@@ -17,13 +17,13 @@
 namespace dragon {
 
 template <class Context>
-class PowOp: public Operator<Context> {
+class PowOp final : public Operator<Context> {
  public:
-    PowOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          scale(OperatorBase::GetSingleArg<float>("scale", 1.0)),
-          shift(OperatorBase::GetSingleArg<float>("shift", 0.0)),
-          power(OperatorBase::GetSingleArg<float>("power", 1.0)) {
+    PowOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          scale(OperatorBase::Arg<float>("scale", 1.0)),
+          shift(OperatorBase::Arg<float>("shift", 0.0)),
+          power(OperatorBase::Arg<float>("power", 1.0)) {
           power_scale = power * scale;
     }
     USE_OPERATOR_FUNCTIONS;
@@ -38,11 +38,11 @@ class PowOp: public Operator<Context> {
 template <class Context>
 class PowGradientOp final : public Operator<Context> {
  public:
-    PowGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-        scale(OperatorBase::GetSingleArg<float>("scale", 1.0)),
-        shift(OperatorBase::GetSingleArg<float>("shift", 0.0)),
-        power(OperatorBase::GetSingleArg<float>("power", 1.0)) {
+    PowGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+        scale(OperatorBase::Arg<float>("scale", 1.0)),
+        shift(OperatorBase::Arg<float>("shift", 0.0)),
+        power(OperatorBase::Arg<float>("power", 1.0)) {
         power_scale = power * scale;
     }
     USE_OPERATOR_FUNCTIONS;

@@ -22,17 +22,20 @@ void UpdateOpBase<Context>::PreprocessRunWithType() {
     scale_factor = Param("scale_gradient");
     if (scale_factor != 1) {
         auto* dXdata = Input(0).template mutable_data<T, Context>();
-        math::Scal<T, Context>(Input(0).count(), scale_factor, dXdata);
+        math::Scal<T, Context>(Input(0).count(),
+            scale_factor, dXdata, &ctx());
     }
     //  clip
     clip_thresh = Param("clip_gradient");
     if (clip_thresh > 0) {
         auto* dXdata = Input(0).template mutable_data<T, Context>();
-        float sumsq_grad = math::Dot<T, Context>(Input(0).count(), dXdata, dXdata);
+        float sumsq_grad = math::Dot<T, Context>(
+            Input(0).count(), dXdata, dXdata, &ctx());
         const float l2norm = sqrt(sumsq_grad);
         if (l2norm > clip_thresh) {
-            float factor = clip_thresh / l2norm;
-            math::Scal<T, Context>(Input(0).count(), factor, dXdata);
+            float norm_factor = clip_thresh / l2norm;
+            math::Scal<T, Context>(Input(0).count(),
+                norm_factor, dXdata, &ctx());
         }
     }
     //  decay
@@ -40,7 +43,8 @@ void UpdateOpBase<Context>::PreprocessRunWithType() {
     if (l2_decay > 0) {
         auto* dXdata = Input(0).template mutable_data<T, Context>();
         auto* Xdata = Output(0)->template data<T, Context>();
-        math::Axpy<T, Context>(Input(0).count(), l2_decay, Xdata, dXdata);
+        math::Axpy<T, Context>(Input(0).count(),
+            l2_decay, Xdata, dXdata, &ctx());
     }
 }
 
@@ -48,7 +52,7 @@ template <class Context> template <typename T>
 void UpdateOpBase<Context>::UpdateRunWithType() {
     auto* dXdata = Input(0).template mutable_data<T, Context>();
     auto* Xdata = Output(0)->template mutable_data<T, Context>();
-    math::Axpy<T, Context>(Output(0)->count(), -1.0, dXdata, Xdata);
+    math::Axpy<T, Context>(Output(0)->count(), -1, dXdata, Xdata, &ctx());
     T zeroT = dragon_cast<T, float>(0.f);
     if (zero_grad) math::Set<T, Context>(Input(0).count(), zeroT, dXdata);
 }
@@ -59,7 +63,7 @@ void UpdateOpBase<Context>::RunOnDevice() {
     if (Input(0).count() == 0 || Output(0)->count() == 0) return;
     CHECK(Input(0).dims() == Output(0)->dims())
         << "\nTensor and its gradients should have same dims.\nGot "
-        << Output(0)->dim_string() << " and " << Input(0).dim_string();
+        << Output(0)->DimString() << " and " << Input(0).DimString();
     if (XIsType(Input(0), float)) {
         PreprocessRunWithType<float>();
         ComputeRunWithFloat();

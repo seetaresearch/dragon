@@ -96,9 +96,9 @@ void CropOp<Context>::Setup() {
     Tensor* tst = ws()->CreateTensor("/mnt/" + anchor() + "/crop/starts");
     Tensor* ted = ws()->CreateTensor("/mnt/" + anchor() + "/crop/ends");
     Tensor* tkd = ws()->CreateTensor("/mnt/" + anchor() + "/crop/keep_dims");
-    tst->Reshape(vector<TIndex>(1, st.size()));
-    ted->Reshape(vector<TIndex>(1, ed.size()));
-    tkd->Reshape(vector<TIndex>(1, keep_dims.size()));
+    tst->Reshape({ (TIndex)st.size() });
+    ted->Reshape({ (TIndex)ed.size() });
+    tkd->Reshape({ (TIndex)keep_dims.size() });
     auto* Sdata = tst->template mutable_data<int, CPUContext>();
     auto* Edata = ted->template mutable_data<int, CPUContext>();
     auto* Kdata = tkd->template mutable_data<int, CPUContext>();

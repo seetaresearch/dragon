@@ -17,14 +17,14 @@
 namespace dragon {
 
 template <class Context>
-class ROIAlignOp : public Operator<Context> {
+class ROIAlignOp final : public Operator<Context> {
  public:
-    ROIAlignOp(const OperatorDef& op_def, Workspace *ws)
-        : Operator<Context>(op_def, ws),
-          pool_h(OperatorBase::GetSingleArg<int>("pool_h", 0)),
-          pool_w(OperatorBase::GetSingleArg<int>("pool_w", 0)),
-          spatial_scale(OperatorBase::GetSingleArg<float>("spatial_scale", 1.0)),
-          sampling_ratio(OperatorBase::GetSingleArg<int>("sampling_ratio", 2)) {
+    ROIAlignOp(const OperatorDef& def, Workspace *ws)
+        : Operator<Context>(def, ws),
+          pool_h(OperatorBase::Arg<int>("pool_h", 0)),
+          pool_w(OperatorBase::Arg<int>("pool_w", 0)),
+          spatial_scale(OperatorBase::Arg<float>("spatial_scale", 1.0)),
+          sampling_ratio(OperatorBase::Arg<int>("sampling_ratio", 2)) {
         CHECK_GT(pool_h, 0) << "\npool_h must > 0";
         CHECK_GT(pool_w, 0) << "\npool_w must > 0";
     }
@@ -39,14 +39,14 @@ class ROIAlignOp : public Operator<Context> {
 };
 
 template <class Context>
-class ROIAlignGradientOp : public Operator<Context> {
+class ROIAlignGradientOp final : public Operator<Context> {
  public:
-    ROIAlignGradientOp(const OperatorDef& op_def, Workspace *ws)
-        : Operator<Context>(op_def, ws),
-          pool_h(OperatorBase::GetSingleArg<int>("pool_h", 0)),
-          pool_w(OperatorBase::GetSingleArg<int>("pool_w", 0)),
-          spatial_scale(OperatorBase::GetSingleArg<float>("spatial_scale", 1.0)),
-          sampling_ratio(OperatorBase::GetSingleArg<int>("sampling_ratio", 2)) {
+    ROIAlignGradientOp(const OperatorDef& def, Workspace *ws)
+        : Operator<Context>(def, ws),
+          pool_h(OperatorBase::Arg<int>("pool_h", 0)),
+          pool_w(OperatorBase::Arg<int>("pool_w", 0)),
+          spatial_scale(OperatorBase::Arg<float>("spatial_scale", 1.f)),
+          sampling_ratio(OperatorBase::Arg<int>("sampling_ratio", 2)) {
         CHECK_GT(pool_h, 0) << "\npool_h must > 0";
         CHECK_GT(pool_w, 0) << "\npool_w must > 0";
     }

@@ -13,7 +13,7 @@ void CuDNNLRNOp<Context>::RunWithType() {
         auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
         CUDNN_CHECK(cudnnLRNCrossChannelForward(
-            cudnn_handle(), norm_desc,
+            ctx().cudnn_handle(), norm_desc,
                 CUDNN_LRN_CROSS_CHANNEL_DIM1,
                     CUDNNType<T>::one, input_desc, Xdata,
                         CUDNNType<T>::zero, output_desc, Ydata));
@@ -55,7 +55,7 @@ void CuDNNLRNGradientOp<Context>::RunWithType() {
         auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
         CUDNN_CHECK(cudnnLRNCrossChannelBackward(
-            cudnn_handle(), norm_desc,
+            ctx().cudnn_handle(), norm_desc,
                 CUDNN_LRN_CROSS_CHANNEL_DIM1,
                     CUDNNType<T>::one, input_desc, Ydata,
                         input_desc, dYdata, output_desc, Xdata,

@@ -19,10 +19,11 @@ namespace dragon {
 template <class Context>
 class SmoothL1LossOp final : public Operator<Context> {
  public:
-    SmoothL1LossOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          beta(OperatorBase::GetSingleArg<float>("beta", 1.0)),
-          normalization(OperatorBase::GetSingleArg<string>("normalization", "BATCH_SIZE")) {}
+    SmoothL1LossOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          beta(OperatorBase::Arg<float>("beta", 1.0)),
+          normalization(OperatorBase::Arg<string>(
+              "normalization", "BATCH_SIZE")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -37,10 +38,11 @@ class SmoothL1LossOp final : public Operator<Context> {
 template <class Context>
 class SmoothL1LossGradientOp final : public Operator<Context> {
  public:
-    SmoothL1LossGradientOp(const OperatorDef& op_def, Workspace* ws) 
-        : Operator<Context>(op_def, ws),
-        beta(OperatorBase::GetSingleArg<float>("beta", 1.0)),
-        normalization(OperatorBase::GetSingleArg<string>("normalization", "BATCH_SIZE")) {}
+    SmoothL1LossGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          beta(OperatorBase::Arg<float>("beta", 1.0)),
+          normalization(OperatorBase::Arg<string>(
+              "normalization", "BATCH_SIZE")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

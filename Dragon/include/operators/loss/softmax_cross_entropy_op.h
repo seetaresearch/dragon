@@ -19,11 +19,11 @@ namespace dragon {
 template <class Context>
 class SoftmaxCrossEntropyOp final : public Operator<Context> {
  public:
-    SoftmaxCrossEntropyOp(const OperatorDef& op_def, Workspace* ws) 
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 1)),
-          normalization(OperatorBase::GetSingleArg<string>("normalization", "FULL")) {
-    }
+    SoftmaxCrossEntropyOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 1)),
+          normalization(OperatorBase::Arg<string>(
+              "normalization", "FULL")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void SoftmaxRun();
@@ -41,10 +41,11 @@ class SoftmaxCrossEntropyOp final : public Operator<Context> {
 template <class Context>
 class SoftmaxCrossEntropyGradientOp final : public Operator<Context> {
  public:
-    SoftmaxCrossEntropyGradientOp(const OperatorDef& op_def, Workspace* ws) 
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 1)),
-          normalization(OperatorBase::GetSingleArg<string>("normalization", "FULL")) {}
+    SoftmaxCrossEntropyGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 1)),
+          normalization(OperatorBase::Arg<string>(
+              "normalization", "FULL")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

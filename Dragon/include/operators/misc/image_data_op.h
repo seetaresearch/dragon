@@ -19,23 +19,23 @@ namespace dragon {
 template <class Context>
 class ImageDataOp final : public Operator<Context> {
  public:
-    ImageDataOp(const OperatorDef& op_def, Workspace* ws)
-         : Operator<Context>(op_def, ws),
-           dtype(OperatorBase::GetSingleArg<string>("dtype", "FLOAT32")),
-           mean_values(OperatorBase::GetRepeatedArg<float>("mean_values")),
-           std_values(OperatorBase::GetRepeatedArg<float>("std_values")),
-           data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {
+    ImageDataOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          dtype(OperatorBase::Arg<string>("dtype", "FLOAT32")),
+          mean_values(OperatorBase::Args<float>("mean_values")),
+          std_values(OperatorBase::Args<float>("std_values")),
+          data_format(OperatorBase::Arg<string>("data_format", "NCHW")) {
         if (mean_values.size() > 0) {
             CHECK_EQ((int)mean_values.size(), 3)
                 << "The mean values should be a list with length 3.";
-            mean.Reshape(vector<TIndex>(1, 3));
+            mean.Reshape({ 3 });
             for (int i = 0; i < 3; i++)
                 mean.mutable_data<float, CPUContext>()[i] = mean_values[i];
         }
         if (std_values.size() > 0) {
             CHECK_EQ((int)std_values.size(), 3)
                 << "The std values should be a list with length 3.";
-            std.Reshape(vector<TIndex>(1, 3));
+            std.Reshape({ 3 });
             for (int i = 0; i < 3; i++)
                 std.mutable_data<float, CPUContext>()[i] = std_values[i];
         }

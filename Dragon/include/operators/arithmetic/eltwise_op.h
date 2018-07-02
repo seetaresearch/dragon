@@ -19,10 +19,10 @@ namespace dragon {
 template <class Context>
 class EltwiseOp final : public Operator<Context> {
  public:
-    EltwiseOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          operation(OperatorBase::GetSingleArg<string>("operation", "SUM")),
-          coeffs(OperatorBase::GetRepeatedArg<float>("coeffs")) {
+    EltwiseOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          operation(OperatorBase::Arg<string>("operation", "SUM")),
+          coeffs(OperatorBase::Args<float>("coeffs")) {
         if (coeffs.size() > 0) {
             CHECK_EQ(coeffs.size(), InputSize())
                 << "\nOp has " << InputSize() << " inputs, "
@@ -43,10 +43,10 @@ class EltwiseOp final : public Operator<Context> {
 template <class Context>
 class EltwiseGradientOp final : public Operator<Context> {
  public:
-    EltwiseGradientOp(const OperatorDef& op_def, Workspace* ws) 
-        : Operator<Context>(op_def, ws),
-          operation(OperatorBase::GetSingleArg<string>("operation", "SUM")),
-          coeffs(OperatorBase::GetRepeatedArg<float>("coeff")) {
+    EltwiseGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          operation(OperatorBase::Arg<string>("operation", "SUM")),
+          coeffs(OperatorBase::Args<float>("coeff")) {
         if (coeffs.size() > 0) {
             CHECK_EQ(coeffs.size(), InputSize())
                 << "\nop has " << InputSize() << " inputs, "

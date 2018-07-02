@@ -53,7 +53,7 @@ void LSTMCellGradientOp<Context>::RunOnDevice() {
     Output(1)->ReshapeLike(Input(1));
 
     if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input types.";
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(LSTMCellGradient);

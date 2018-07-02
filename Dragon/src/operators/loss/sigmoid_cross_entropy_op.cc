@@ -29,7 +29,7 @@ void SigmoidCrossEntropyOp<Context>::RunWithType() {
     else if (normalization == "FULL") normalizer = Input(0).count();
     else if (normalization == "NONE") normalizer = 1;
     T loss = math::ASum<T, Context>(losses.count(), Ldata);
-    Output(0)->Reshape(vector<TIndex>(1, 1));
+    Output(0)->Reshape({ 1 });
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
     math::Set<T, Context>(1, loss / normalizer, Ydata);
 }
@@ -75,10 +75,10 @@ void SigmoidCrossEntropyGradientOp<Context>::RunWithType() {
     else if (normalization == "FULL") normalizer = Input(0).count();
     else if (normalization == "NONE") normalizer = 1;
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; Context::template Copy<T, CPUContext, Context>(
+    T dYdata_host; ctx().template Copy<T, CPUContext, Context>(
         1, &dYdata_host, dYdata);
     math::Scal<T, Context>(Output(0)->count(),
-        dYdata_host / normalizer, dXdata);
+        dYdata_host / normalizer, dXdata, &ctx());
 }
 
 template <class Context>

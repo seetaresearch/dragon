@@ -26,11 +26,18 @@ class GraphBase {
         string op_type;
     };
 
-    GraphBase(const GraphDef& meta_graph, Workspace* ws);
+    GraphBase(
+        const GraphDef&         meta_graph,
+        Workspace*              ws);
     virtual ~GraphBase() {}
 
-    virtual bool Create(const GraphDef& optimized_graph, Workspace* ws) = 0;
-    virtual bool Run(const string& include, const string& exclude) = 0;
+    virtual bool Create(
+        const GraphDef&         optimized_graph,
+        Workspace*              ws) = 0;
+
+    virtual bool Run(
+        const string&           include,
+        const string&           exclude) = 0;
 
     inline string name() const { return name_; }
 
@@ -45,21 +52,31 @@ class Graph final : public GraphBase {
     Graph(const GraphDef& meta_graph, Workspace* ws);
     ~Graph() { for (auto* op : ops_) delete op; }
 
-    bool Create(const GraphDef& optimized_graph, Workspace* ws) override;
-    bool Run(const string& include, const string& exclude) override;
+    bool Create(
+        const GraphDef&         optimized_graph,
+        Workspace*              ws) override;
+
+    bool Run(
+        const string&           include,
+        const string&           exclude) override;
 
     GraphDef Prune(const GraphDef& meta_graph);
     GraphDef MakeUpdate(const GraphDef& meta_graph);
     GraphDef Share(const GraphDef& optimized_graph);
     void ShareGrads(GraphDef& optimized_graph);
 
-    void RecomputingAware(const GraphDef& optimized_graph, Workspace* ws);
+    void RecomputingAware(
+        const GraphDef&         optimized_graph,
+        Workspace*              ws);
 
     inline Workspace* ws() const { return ws_; }
 
  private:
     void ForwardShareDyeing(string u, string ancestor);
-    void ForwardPruneDyeing(string u, string leaf, vector<string> path);
+    void ForwardPruneDyeing(
+        string                  u,
+        string                  leaf,
+        vector<string>          path);
     void BackwardPruneDyeing(string v);
 
     vector<OperatorBase*> ops_;
@@ -69,8 +86,15 @@ class Graph final : public GraphBase {
     Set<string> targets_;
 };
 
-GraphBase* NewGraph(const GraphDef& meta_graph, Workspace* ws);
-DECLARE_REGISTRY(GraphRegistry, GraphBase, const GraphDef&, Workspace*);
+GraphBase* NewGraph(
+    const GraphDef&             meta_graph,
+    Workspace*                  ws);
+
+DECLARE_REGISTRY(
+    GraphRegistry,
+    GraphBase,
+    const GraphDef&,
+    Workspace*);
 
 }    // namespace dragon
 

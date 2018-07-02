@@ -14,7 +14,7 @@ void DropoutOp<Context>::RunWithType() {
             ctx().template Copy<T, Context, Context>(
                 Output(0)->count(), Ydata, Xdata);
             if (scale == 1.0) math::Scal<T, Context>(
-                Output(0)->count(), 1.0 - prob(), Ydata);
+                Output(0)->count(), 1.0 - prob(), Ydata, &ctx());
         }
     } else if (phase() == "TRAIN") {
         Tensor* mask = ws()->CreateTensor(
@@ -23,7 +23,7 @@ void DropoutOp<Context>::RunWithType() {
         uint32_t* Mdata = mask->template mutable_data<uint32_t, Context>();
         kernel::Dropout<T, Context>(
             Output(0)->count(), prob(), scale,
-                Xdata, Mdata, Ydata);
+                Xdata, Mdata, Ydata, &ctx());
     } else LOG(FATAL) << "Incorrect Op phase: " << phase();
 }
 
@@ -52,7 +52,7 @@ void DropoutGradientOp<Context>::RunWithType() {
     else if (phase() == "TRAIN") {
         kernel::DropoutGrad<T, Context>(
             Output(0)->count(), prob(), scale,
-                dYdata, Mdata, dXdata);
+                dYdata, Mdata, dXdata, &ctx());
         mask->Reset();
     } else LOG(FATAL) << "Incorrect Op phase: " << phase();
 }

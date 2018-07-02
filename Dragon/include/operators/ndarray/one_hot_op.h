@@ -19,11 +19,11 @@ namespace dragon {
 template <class Context>
 class OneHotOp final : public Operator < Context > {
  public:
-    OneHotOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          depth(OperatorBase::GetSingleArg<int>("depth", -1)),
-          on_value(OperatorBase::GetSingleArg<int>("on_value", 1)),
-          off_value(OperatorBase::GetSingleArg<int>("off_value", 0)) {}
+    OneHotOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          depth(OperatorBase::Arg<int>("depth", -1)),
+          on_value(OperatorBase::Arg<int>("on_value", 1)),
+          off_value(OperatorBase::Arg<int>("off_value", 0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

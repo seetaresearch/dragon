@@ -29,9 +29,9 @@ namespace dragon {
 
 #ifdef WITH_CUDA
 
-static const int CUDA_NUM_THREADS = 1024;
+static const int CUDA_THREADS = 1024;
 //  We do have a server with 10 GPUs :-)
-#define MAX_GPUS 10
+#define CUDA_MAX_DEVICES 10
 
 #define CUDA_VERSION_MIN(major, minor, patch) \
     (CUDA_VERSION >= (major * 1000 + minor * 100 + patch))
@@ -42,7 +42,8 @@ static const int CUDA_NUM_THREADS = 1024;
 #define CUDA_CHECK(condition) \
   do { \
     cudaError_t error = condition; \
-    CHECK_EQ(error, cudaSuccess) << "\n" << cudaGetErrorString(error); \
+    CHECK_EQ(error, cudaSuccess) \
+        << "\n" << cudaGetErrorString(error); \
   } while (0)
 
 #define CUBLAS_CHECK(condition) \
@@ -61,7 +62,8 @@ static const int CUDA_NUM_THREADS = 1024;
 #define NCCL_CHECK(condition) \
   do { \
     ncclResult_t status = condition; \
-    CHECK_EQ(status, ncclSuccess) << "\n" << ncclGetErrorString(status); \
+    CHECK_EQ(status, ncclSuccess) \
+        << "\n" << ncclGetErrorString(status); \
   } while (0)
 #endif  // WITH_MPI_NCCL
 
@@ -69,11 +71,9 @@ static const int CUDA_NUM_THREADS = 1024;
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; \
        i < n; i += blockDim.x * gridDim.x)
 
-inline int GET_BLOCKS(const int N) {
-    return (N + CUDA_NUM_THREADS - 1) / CUDA_NUM_THREADS;
+inline int CUDA_BLOCKS(const int N) {
+    return (N + CUDA_THREADS - 1) / CUDA_THREADS;
 }
-
-#define CUDA_POST_KERNEL_CHECK CUDA_CHECK(cudaPeekAtLastError())
 
 #if CUDA_VERSION_MAX(9, 0, 0)
 #define __hdiv hdiv
@@ -83,18 +83,19 @@ inline int CUDA_NUM_DEVICES() {
     static int count = -1;
     if (count < 0) {
         auto err = cudaGetDeviceCount(&count);
-        if (err == cudaErrorNoDevice || err == cudaErrorInsufficientDriver) count = 0;
+        if (err == cudaErrorNoDevice ||
+            err == cudaErrorInsufficientDriver) count = 0;
     }
     return count;
 }
 
-inline int CUDA_CURRENT_DEVICE() {
+inline int CUDA_DEVICE() {
     int gpu_id;
     cudaGetDevice(&gpu_id);
     return gpu_id;
 }
 
-inline int CUDA_POINTER_DEVICE(const void* ptr) {
+inline int CUDA_DEVICE(const void* ptr) {
     cudaPointerAttributes attr;
     CUDA_CHECK(cudaPointerGetAttributes(&attr, ptr));
     return attr.device;
@@ -108,16 +109,18 @@ struct CUDADeviceProps {
     vector<cudaDeviceProp> props;
 };
 
-inline const cudaDeviceProp& GetDeviceProperty(const int device_id) {
+inline const cudaDeviceProp& GetDeviceProperty(
+    const int               device_id) {
     static CUDADeviceProps props;
     CHECK_LT(device_id, (int)props.props.size())
         << "Invalid device id: " << device_id
-        << "\nDetected " << props.props.size() << " eligible cuda devices.";
+        << "\nDetected " << props.props.size()
+        << " eligible cuda devices.";
     return props.props[device_id];
 }
 
 inline bool CUDA_TRUE_FP16_AVAILABLE() {
-    int device = CUDA_CURRENT_DEVICE();
+    int device = CUDA_DEVICE();
     auto& prop = GetDeviceProperty(device);
     return prop.major >= 6;
 }
@@ -126,7 +129,7 @@ inline bool TENSOR_CORE_AVAILABLE() {
 #if CUDA_VERSION < 9000
     return false;
 #else
-    int device = CUDA_CURRENT_DEVICE();
+    int device = CUDA_DEVICE();
     auto& prop = GetDeviceProperty(device);
     return prop.major >= 7;
 #endif
@@ -134,11 +137,15 @@ inline bool TENSOR_CORE_AVAILABLE() {
 
 class DeviceGuard {
  public:
-    DeviceGuard(int newDevice) : previous_(CUDA_CURRENT_DEVICE()) {
-        if (previous_ != newDevice) 
+    DeviceGuard(int newDevice)
+        : previous_(CUDA_DEVICE()) {
+        if (previous_ != newDevice)
             CUDA_CHECK(cudaSetDevice(newDevice));
     }
-    ~DeviceGuard() { CUDA_CHECK(cudaSetDevice(previous_)); }
+
+    ~DeviceGuard() {
+        CUDA_CHECK(cudaSetDevice(previous_));
+    }
 
  private:
     int previous_;

@@ -19,9 +19,9 @@ namespace dragon {
 template <class Context>
 class ReluOp : public Operator<Context> {
  public:
-    ReluOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          slope(OperatorBase::GetSingleArg<float>("slope", 0.0)) {}
+    ReluOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          slope(OperatorBase::Arg<float>("slope", 0.0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -34,9 +34,9 @@ class ReluOp : public Operator<Context> {
 template <class Context>
 class ReluGradientOp : public Operator<Context> {
  public:
-    ReluGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          slope(OperatorBase::GetSingleArg<float>("slope", 0.0)) {}
+    ReluGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          slope(OperatorBase::Arg<float>("slope", 0.0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -51,8 +51,8 @@ class ReluGradientOp : public Operator<Context> {
 template <class Context>
 class CuDNNReluOp final : public ReluOp<Context> {
 public:
-    CuDNNReluOp(const OperatorDef& op_def, Workspace* ws) 
-        : ReluOp<Context>(op_def, ws) {
+    CuDNNReluOp(const OperatorDef& def, Workspace* ws)
+        : ReluOp<Context>(def, ws) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc));
@@ -78,8 +78,8 @@ public:
 template <class Context>
 class CuDNNReluGradientOp final : public ReluGradientOp<Context> {
  public:
-    CuDNNReluGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : ReluGradientOp<Context>(op_def, ws) {
+    CuDNNReluGradientOp(const OperatorDef& def, Workspace* ws)
+        : ReluGradientOp<Context>(def, ws) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc));

@@ -34,7 +34,7 @@ void SparseSoftmaxFocalLossOp<Context>::RunWithType() {
     else if (normalization == "FULL") normalizer = outer_dim * inner_dim;
     else if (normalization == "NONE") normalizer = 1;
     T loss = math::ASum<T, Context>(this->losses.count(), loss_data);
-    Output(0)->Reshape(vector<TIndex>(1, 1));
+    Output(0)->Reshape({ 1 });
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
     math::Set<T, Context>(1, loss / normalizer, Ydata);
 }
@@ -45,8 +45,8 @@ void SparseSoftmaxFocalLossOp<Context>::RunOnDevice() {
     inner_dim = Input(0).count(axis + 1);
     CHECK_EQ(outer_dim * inner_dim, Input(1).count())
         << "\nNumber of predictions must match the number of labels.";
-    this->valid.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
-    this->losses.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
+    this->valid.Reshape({ outer_dim * inner_dim });
+    this->losses.Reshape({ outer_dim * inner_dim });
     ws()->CreateTensor("/mnt/" + anchor() + "/softmax/prob");
     this->SoftmaxRun();
     this->prob = ws()->GetTensor("/mnt/" + anchor() + "/softmax/prob");
@@ -88,13 +88,16 @@ void SparseSoftmaxFocalLossGradientOp<Context>::RunWithType() {
 
     T normalizer;
     if (normalization == "VALID")
-        normalizer = std::max(math::ASum<T, Context>(this->valid.count(), valid_data), 1.f);
+        normalizer = std::max(
+            math::ASum<T, Context>(this->valid.count(), valid_data), 1.f);
     else if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
     else if (normalization == "FULL") normalizer = outer_dim * inner_dim;
     else if (normalization == "NONE") normalizer = 1;
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; Context::template Copy<T, CPUContext, Context>(1, &dYdata_host, dYdata);
-    math::Scal<T, Context>(Output(0)->count(), dYdata_host / normalizer, dXdata);
+    T dYdata_host; ctx().template Copy<T, CPUContext, Context>(
+        1, &dYdata_host, dYdata);
+    math::Scal<T, Context>(Output(0)->count(),
+        dYdata_host / normalizer, dXdata, &ctx());
 }
 
 template <class Context>
@@ -104,7 +107,7 @@ void SparseSoftmaxFocalLossGradientOp<Context>::RunOnDevice() {
     outer_dim = this->prob->count(0, axis);
     inner_dim = this->prob->count(axis + 1);
     Output(0)->ReshapeLike(Input(0));
-    this->valid.Reshape(vector<TIndex>(1, outer_dim * inner_dim));
+    this->valid.Reshape({ outer_dim * inner_dim });
 
     if (XIsType(Input(0), float)) RunWithType<float>();
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });

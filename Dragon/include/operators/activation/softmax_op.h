@@ -19,9 +19,9 @@ namespace dragon {
 template <class Context>
 class SoftmaxOp final : public Operator<Context> {
  public:
-    SoftmaxOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 1)) {}
+    SoftmaxOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -34,9 +34,9 @@ class SoftmaxOp final : public Operator<Context> {
 template <class Context>
 class SoftmaxGradientOp final : public Operator<Context> {
  public:
-    SoftmaxGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 1)) {}
+    SoftmaxGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -53,9 +53,9 @@ class SoftmaxGradientOp final : public Operator<Context> {
 template <class Context>
 class CuDNNSoftmaxOp final : public Operator<Context> {
  public:
-    CuDNNSoftmaxOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 1)) {
+    CuDNNSoftmaxOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 1)) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
     }
@@ -78,9 +78,9 @@ class CuDNNSoftmaxOp final : public Operator<Context> {
 template <class Context>
 class CuDNNSoftmaxGradientOp final : public Operator<Context> {
  public:
-    CuDNNSoftmaxGradientOp(const OperatorDef& op_def, Workspace* ws) 
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 1)) {
+    CuDNNSoftmaxGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 1)) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
     }

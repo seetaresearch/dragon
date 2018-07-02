@@ -18,24 +18,32 @@ namespace dragon {
 
 class GraphGradientMaker {
  public:
-    GraphGradientMaker() : cur_op_idx_(0) {}
+    GraphGradientMaker(): cur_op_idx_(0) {}
 
-    void Make(const GraphDef& forward_def,
-              const vector<string>& targets,
-              GraphDef& new_def);
+    void Make(
+        const GraphDef&         forward_def,
+        const vector<string>&   targets,
+        GraphDef&               new_def);
 
     void Share(const string& grads_prefix, GraphDef& graph);
 
-    inline void SetTerms(const Map<string, string>& terms) { terms_ = terms; }
-    inline void SetOperatorPrefix(const string& prefix) { op_prefix_ = prefix; }
-    inline void SetOperatorSuffix(const string& suffix) { op_suffix_ = suffix; }
-    inline void AddExternalGrad(const string& name) { external_grads_.insert(name); }
-    inline void AddIgnoreGrad(const string& name) { ignore_grads_.insert(name); }
+    inline void SetTerms(
+        const Map<string, string>& terms) { terms_ = terms; }
+    inline void SetOperatorPrefix(
+        const string& prefix) { op_prefix_ = prefix; }
+    inline void SetOperatorSuffix(
+        const string& suffix) { op_suffix_ = suffix; }
+    inline void AddExternalGrad(
+        const string& name) { external_grads_.insert(name); }
+    inline void AddIgnoreGrad(
+        const string& name) { ignore_grads_.insert(name); }
 
  private:
-    bool CheckGrad(const OperatorDef& forward_op,
-                          const Set<string>& targets, 
-                          vector< pair<string, int> >& gen_grads);
+    bool CheckGrad(
+        const OperatorDef&              forward_op,
+        const Set<string>&              targets,
+        vector< pair<string, int> >&    gen_grads);
+
     string GetOperatorName();
 
     Map<string, string> terms_, inputs_to_grads_;

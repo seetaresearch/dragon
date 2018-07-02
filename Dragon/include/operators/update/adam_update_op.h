@@ -19,8 +19,8 @@ namespace dragon {
 template <class Context>
 class AdamUpdateOp final : public UpdateOpBase<Context> {
  public:
-    AdamUpdateOp(const OperatorDef& op_def, Workspace* ws) 
-        : UpdateOpBase<Context>(op_def, ws), t(0) {}
+    AdamUpdateOp(const OperatorDef& def, Workspace* ws)
+        : UpdateOpBase<Context>(def, ws), t(0) {}
     USE_OPERATOR_FUNCTIONS;
     USE_UPDATER_FUNCTIONS(Context);
 

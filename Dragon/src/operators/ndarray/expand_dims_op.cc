@@ -10,7 +10,7 @@ void ExpandDimsOp<Context>::RunOnDevice() {
     else dims.insert(dims.begin() + axis, 1);
     //  save Xshape
     Tensor* sv = ws()->CreateTensor("/mnt/" + anchor() + "/expand_dims/x_shape");
-    sv->Reshape(vector<TIndex>(1, Input(0).ndim()));
+    sv->Reshape({ (TIndex)Input(0).ndim() });
     auto* Sdata = sv->template mutable_data<TIndex, CPUContext>();
     for (int i = 0; i < Input(0).ndim(); i++) Sdata[i] = Input(0).dim(i);
     Output(0)->Reshape(dims);

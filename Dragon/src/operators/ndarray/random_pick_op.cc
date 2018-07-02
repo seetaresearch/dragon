@@ -8,8 +8,9 @@ namespace dragon {
 template <class Context> template <typename T>
 void RandomPickOp<Context>::RunWithType() {
     auto* indices = pick_indices->template mutable_data<int, CPUContext>();
+    /*
     for (int i = 0; i < pick_indices->count(); i++)
-        indices[i] = int((*rand_generator())() % x_slice_dim);
+        indices[i] = int((*ctx().rand_generator())() % x_slice_dim);  */
 
     auto* Xdata = Input(0).template data<T, Context>();
     indices = pick_indices->template mutable_data<int, Context>();
@@ -31,7 +32,7 @@ void RandomPickOp<Context>::RunOnDevice() {
     Output(0)->Reshape(output_dims);
 
     pick_indices = ws()->CreateTensor("/mnt/" + anchor() + "/pick/indices");
-    pick_indices->Reshape(vector<TIndex>(1, max_samples));
+    pick_indices->Reshape({ max_samples });
 
     if (XIsType(Input(0), float)) RunWithType<float>();
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });

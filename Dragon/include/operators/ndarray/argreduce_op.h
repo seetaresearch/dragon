@@ -19,12 +19,12 @@ namespace dragon {
 template <class Context>
 class ArgReduceOp final : public Operator<Context> {
  public:
-    ArgReduceOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          operation(OperatorBase::GetSingleArg<string>("operation", "NONE")),
-          keep_dims(OperatorBase::GetSingleArg<bool>("keep_dims", false)),
-          top_k(OperatorBase::GetSingleArg<int>("top_k", 1)) {}
+    ArgReduceOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", -1)),
+          operation(OperatorBase::Arg<string>("operation", "NONE")),
+          keep_dims(OperatorBase::Arg<bool>("keep_dims", false)),
+          top_k(OperatorBase::Arg<int>("top_k", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

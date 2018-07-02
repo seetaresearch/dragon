@@ -17,8 +17,8 @@ void SoftmaxOp<Context>::RunWithType() {
 
     kernel::Softmax<T, Context>(
         Output(0)->count(), Input(0).dim(axis),
-            outer_dim, inner_dim,
-                multiplier, Xdata, WSdata, Ydata);
+            outer_dim, inner_dim, multiplier,
+                Xdata, WSdata, Ydata, &ctx());
 }
 
 template <class Context>
@@ -51,8 +51,8 @@ void SoftmaxGradientOp<Context>::RunWithType() {
 
     kernel::SoftmaxGrad<T, Context>(
         Output(0)->count(), Input(0).dim(axis),
-            outer_dim, inner_dim,
-                multiplier, dYdata, Ydata, WSdata, dXdata);
+            outer_dim, inner_dim, multiplier,
+                dYdata, Ydata, WSdata, dXdata, &ctx());
 }
 
 template <class Context>

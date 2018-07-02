@@ -20,11 +20,11 @@ namespace dragon {
 template <class Context>
 class DropoutOp final : public Operator<Context> {
  public:
-    DropoutOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          use_scale(OperatorBase::GetSingleArg<bool>("scale", true)) {
+    DropoutOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          use_scale(OperatorBase::Arg<bool>("scale", true)) {
         GET_ARGUMENT_WITH_DESC(float, prob, 0.5);
-        SwitchToPhase(OperatorBase::GetSingleArg<string>("phase", ""));
+        SwitchToPhase(OperatorBase::Arg<string>("phase", ""));
     }
     USE_OPERATOR_FUNCTIONS;
 
@@ -39,11 +39,11 @@ class DropoutOp final : public Operator<Context> {
 template <class Context>
 class DropoutGradientOp final : public Operator<Context> {
  public:
-    DropoutGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          use_scale(OperatorBase::GetSingleArg<bool>("scale", true)) {
+    DropoutGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          use_scale(OperatorBase::Arg<bool>("scale", true)) {
         GET_ARGUMENT_WITH_DESC(float, prob, 0.5);
-        SwitchToPhase(OperatorBase::GetSingleArg<string>("phase", ""));
+        SwitchToPhase(OperatorBase::Arg<string>("phase", ""));
     }
     USE_OPERATOR_FUNCTIONS;
 
@@ -66,12 +66,12 @@ DEFINE_ARGUMENT_WITH_DESC(float, DropoutGradientOp, prob);
 template <class Context>
 class CuDNNDropoutOp final : public Operator<Context> {
 public:
-    CuDNNDropoutOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws), states_initialized(false),
-        use_scale(OperatorBase::GetSingleArg<bool>("scale", true)),
-        random_seed(op_def.device_option().random_seed()) {
+    CuDNNDropoutOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws), states_initialized(false),
+        use_scale(OperatorBase::Arg<bool>("scale", true)),
+        random_seed(DEFAULT_RNG_SEED) {
         GET_ARGUMENT_WITH_DESC(float, prob, 0.5);
-        SwitchToPhase(OperatorBase::GetSingleArg<string>("phase", ""));
+        SwitchToPhase(OperatorBase::Arg<string>("phase", ""));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateDropoutDescriptor(&dropout_desc));
     }
@@ -97,12 +97,12 @@ public:
 template <class Context>
 class CuDNNDropoutGradientOp final : public Operator<Context> {
 public:
-    CuDNNDropoutGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws), states_initialized(false),
-        use_scale(OperatorBase::GetSingleArg<bool>("scale", true)),
-        random_seed(op_def.device_option().random_seed()) {
+    CuDNNDropoutGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws), states_initialized(false),
+        use_scale(OperatorBase::Arg<bool>("scale", true)),
+        random_seed(DEFAULT_RNG_SEED) {
         GET_ARGUMENT_WITH_DESC(float, prob, 0.5);
-        SwitchToPhase(OperatorBase::GetSingleArg<string>("phase", ""));
+        SwitchToPhase(OperatorBase::Arg<string>("phase", ""));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateDropoutDescriptor(&dropout_desc));
     }

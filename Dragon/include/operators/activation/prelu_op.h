@@ -17,12 +17,12 @@
 namespace dragon {
 
 template <class Context>
-class PReluOp : public Operator<Context> {
+class PReluOp final : public Operator<Context> {
  public:
-    PReluOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          channel_shared(OperatorBase::GetSingleArg<bool>("channel_shared", false)),
-          data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
+    PReluOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          channel_shared(OperatorBase::Arg<bool>("channel_shared", false)),
+          data_format(OperatorBase::Arg<string>("data_format", "NCHW")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -34,12 +34,12 @@ class PReluOp : public Operator<Context> {
 };
 
 template <class Context>
-class PReluGradientOp : public Operator<Context> {
+class PReluGradientOp final : public Operator<Context> {
  public:
-    PReluGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          channel_shared(OperatorBase::GetSingleArg<bool>("channel_shared", false)),
-          data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
+    PReluGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          channel_shared(OperatorBase::Arg<bool>("channel_shared", false)),
+          data_format(OperatorBase::Arg<string>("data_format", "NCHW")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

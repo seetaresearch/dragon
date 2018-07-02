@@ -21,14 +21,15 @@ void L2LossOp<Context>::RunWithType() {
     if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
     else if (normalization == "FULL") normalizer = Input(0).count();
     else if (normalization == "NONE") normalizer = 1;
-    T loss = T(0.5) * math::Dot<T, Context>(diff->count(), diff_data, diff_data);
+    T loss = T(0.5) * math::Dot<T, Context>(diff->count(),
+        diff_data, diff_data, &ctx());
     math::Set<T, Context>(1, loss / normalizer, Ydata);
 }
 
 template <class Context>
 void L2LossOp<Context>::RunOnDevice() {
     CHECK_EQ(Input(0).count(), Input(1).count());
-    Output(0)->Reshape(vector<TIndex>(1, 1));
+    Output(0)->Reshape({ 1 });
     diff = ws()->CreateTensor("/mnt/" + anchor() + "/l2_loss/diff");
     diff->ReshapeLike(Input(0));
 
@@ -46,7 +47,7 @@ template <class Context> template <typename T>
 void L2LossGradientOp<Context>::RunWithType() {
     auto* diff_data = diff->template mutable_data<T, Context>();
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; Context::template Copy<T, CPUContext, Context>(
+    T dYdata_host; ctx().template Copy<T, CPUContext, Context>(
         1, &dYdata_host, dYdata);
 
     T alpha = dYdata_host, normalizer;
@@ -61,7 +62,7 @@ void L2LossGradientOp<Context>::RunWithType() {
         const T sign = (i == 0) ? 1 : -1;
         alpha *= sign;
         math::Axpby<T, Context>(Output(i)->count(),
-            alpha, diff_data, 0, dXdata);
+            alpha, diff_data, 0, dXdata, &ctx());
     }
 }
 

@@ -19,16 +19,16 @@ namespace dragon {
 template <class Context>
 class ScanOp final: public Operator<Context> {
  public:
-    ScanOp(const OperatorDef& op_def, Workspace *ws) 
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 0)),
-          nsteps(OperatorBase::GetSingleArg<int>("nsteps", 0)),
-          step_type(OperatorBase::GetSingleArg<string>("step_type", "Static")),
-          step_tensor(OperatorBase::GetSingleArg<string>("step_tensor", "")),
-          nseqs(OperatorBase::GetSingleArg<int>("nseqs", 0)),
-          default_outputs(OperatorBase::GetRepeatedArg<string>("default_outputs")),
+    ScanOp(const OperatorDef& def, Workspace *ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 0)),
+          nsteps(OperatorBase::Arg<int>("nsteps", 0)),
+          step_type(OperatorBase::Arg<string>("step_type", "Static")),
+          step_tensor(OperatorBase::Arg<string>("step_tensor", "")),
+          nseqs(OperatorBase::Arg<int>("nseqs", 0)),
+          default_outputs(OperatorBase::Args<string>("default_outputs")),
           nout((int)default_outputs.size()),
-          debug_mode(OperatorBase::GetSingleArg<bool>("debug_mode", false)) { 
+          debug_mode(OperatorBase::Arg<bool>("debug_mode", false)) {
         InitTemplate(); 
     }
     USE_OPERATOR_FUNCTIONS;
@@ -52,14 +52,14 @@ class ScanOp final: public Operator<Context> {
 template <class Context>
 class ScanGradientOp final: public Operator<Context> {
  public:
-    ScanGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", 0)),
-          nsteps(OperatorBase::GetSingleArg<int>("nsteps", 0)),
-          step_type(OperatorBase::GetSingleArg<string>("step_type", "Static")),
-          step_tensor(OperatorBase::GetSingleArg<string>("step_tensor", "")),
-          forward_inputs(OperatorBase::GetRepeatedArg<string>("inputs_name")),
-          forward_outputs(OperatorBase::GetRepeatedArg<string>("outputs_name")) {
+    ScanGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", 0)),
+          nsteps(OperatorBase::Arg<int>("nsteps", 0)),
+          step_type(OperatorBase::Arg<string>("step_type", "Static")),
+          step_tensor(OperatorBase::Arg<string>("step_tensor", "")),
+          forward_inputs(OperatorBase::Args<string>("inputs_name")),
+          forward_outputs(OperatorBase::Args<string>("outputs_name")) {
         //  handle GO(x)
         for (int i = 0; i < forward_outputs.size(); i++)
             terms[forward_outputs[i] + "_grad"] = Input(i + (int)OutputSize()).name();

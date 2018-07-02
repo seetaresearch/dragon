@@ -5,7 +5,7 @@ namespace dragon {
 template <class Context>
 void ShapeOp<Context>::RunOnDevice() {
     //  reshape
-    Output(0)->Reshape(vector<TIndex>(1, Input(0).ndim()));
+    Output(0)->Reshape({ (TIndex)Input(0).ndim() });
 
     //  forward
     auto* Ydata = Output(0)->template mutable_data<int, CPUContext>();

@@ -54,7 +54,7 @@ void PReluGradientOp<Context>::RunWithType() {
         kernel::PReluWGrad<T, Context>(
             Input(0).dim(0), Input(0).count(1), channels, dim,
                 channel_shared ? true : false, data_format,
-                    dYdata, Xdata, multiplier, dWBdata, dWdata);
+                    dYdata, Xdata, multiplier, dWBdata, dWdata, &ctx());
     }
 
     if (Output(0)->name() != "ignore") {

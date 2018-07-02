@@ -17,9 +17,9 @@ void CuDNNDropoutOp<Context>::RunWithType() {
         if (Output(0) != &Input(0)) {
             ctx().template Copy<T, Context, Context>(
                 Output(0)->count(), Ydata, Xdata);
-            if (scale == 1.0) 
-                math::Scal<T, Context>(
-                    Output(0)->count(), 1.0 - prob(), Ydata);
+            if (scale == 1.0)
+                math::Scal<T, Context>(Output(0)->count(),
+                    1.0 - prob(), Ydata, &ctx());
         }
     } else if (phase() == "TRAIN") {
         CHECK(use_scale) << "\nCuDNN only supports scale-dropout";
@@ -28,20 +28,20 @@ void CuDNNDropoutOp<Context>::RunWithType() {
         if (!states_initialized) {
             states_initialized = true;
             CUDNN_CHECK(cudnnDropoutGetStatesSize(
-                cudnn_handle(), &states_size));
+                ctx().cudnn_handle(), &states_size));
             std::lock_guard<std::mutex> lk(CUDAContext::mutex());
             Tensor* states = ws()->CreateTensor("/share/cudnn/dropout:" +
                 dragon_cast<string, unsigned long long>(random_seed) + "/states");
             if (states->count() > 0) {
                 auto* Sdata = states->template mutable_data<uint8_t, Context>();
                 CUDNN_CHECK(cudnnRestoreDropoutDescriptor(
-                    dropout_desc, cudnn_handle(), prob(),
+                    dropout_desc, ctx().cudnn_handle(), prob(),
                         Sdata, states_size, random_seed));
             } else {
-                states->Reshape(vector<TIndex>(1, states_size));
+                states->Reshape({ (TIndex)states_size });
                 auto* Sdata = states->template mutable_data<uint8_t, Context>();
                 CUDNN_CHECK(cudnnSetDropoutDescriptor(
-                    dropout_desc, cudnn_handle(), prob(),
+                    dropout_desc, ctx().cudnn_handle(), prob(),
                         Sdata, states_size, random_seed));
             }
         }
@@ -50,10 +50,10 @@ void CuDNNDropoutOp<Context>::RunWithType() {
             vector<TIndex>({ Input(0).count(), 1, 1, 1 }));
         CUDNN_CHECK(cudnnDropoutGetReserveSpaceSize(
             input_desc, &reserve_space_size));
-        mask->Reshape(vector<TIndex>(1, reserve_space_size));
+        mask->Reshape({ (TIndex)reserve_space_size });
         auto* Rdata = mask->template mutable_data<uint8_t, Context>();
         CUDNN_CHECK(cudnnDropoutForward(
-            cudnn_handle(), dropout_desc,
+            ctx().cudnn_handle(), dropout_desc,
                 input_desc, Xdata,
                     input_desc, Ydata,
                         Rdata, reserve_space_size));
@@ -78,18 +78,17 @@ void CuDNNDropoutGradientOp<Context>::RunWithType() {
         CHECK(use_scale) << "\nCuDNN only supports scale-dropout";
         Tensor* mask = ws()->GetTensor("/mnt/" + anchor() + "/dropout/mask");
         //  determine the dropout states
-        CUDNN_CHECK(cudnnDropoutGetStatesSize(cudnn_handle(), &states_size));
         if (!states_initialized) {
             states_initialized = true;
             CUDNN_CHECK(cudnnDropoutGetStatesSize(
-                cudnn_handle(), &states_size));
+                ctx().cudnn_handle(), &states_size));
             std::lock_guard<std::mutex> lk(CUDAContext::mutex());
             Tensor* states = ws()->CreateTensor("/share/cudnn/dropout:" +
                 dragon_cast<string, unsigned long long>(random_seed) + "/states");
             if (states->count() > 0) {
                 auto* Sdata = states->template mutable_data<uint8_t, Context>();
                 CUDNN_CHECK(cudnnRestoreDropoutDescriptor(
-                    dropout_desc, cudnn_handle(), prob(),
+                    dropout_desc, ctx().cudnn_handle(), prob(),
                         Sdata, states_size, random_seed));
             } else { LOG(FATAL) << "Missing states with seed: " << random_seed; }
         }
@@ -102,7 +101,7 @@ void CuDNNDropoutGradientOp<Context>::RunWithType() {
             input_desc, &reserve_space_size));
         auto* Rdata = mask->template mutable_data<uint8_t, Context>();
         CUDNN_CHECK(cudnnDropoutBackward(
-            cudnn_handle(), dropout_desc,
+            ctx().cudnn_handle(), dropout_desc,
                 input_desc, dYdata,
                     input_desc, dXdata,
                         Rdata, reserve_space_size));

@@ -89,11 +89,11 @@ PyObject* RunGradientFlowCC(PyObject* self, PyObject* args) {
     if (share_grads) maker.Share("/share/buffer/grads", bp_ops);
     if (export_graph) {
         Tensor* t = ws()->CreateTensor("/export/dynamic_graph/gradient_flow");
-        t->Reshape(vector<TIndex>(1, 1));
+        t->Reshape({ 1 });
         string* data = t->mutable_data<string, CPUContext>();
         data[0] = bp_ops.SerializeAsString();
         t = ws()->CreateTensor("/export/dynamic_graph/forward_flow");
-        t->Reshape(vector<TIndex>(1, 1));
+        t->Reshape({ 1 });
         data = t->mutable_data<string, CPUContext>();
         data[0] = fp_ops.SerializeAsString();
     }

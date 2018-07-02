@@ -44,7 +44,9 @@ class BaseThread {
     ~BaseThread() { Stop(); }
     void Start() {
         thread = std::unique_ptr<std::thread>(
-            new std::thread(std::bind(&BaseThread::ThreadRun, this)));
+            new std::thread(
+                std::bind(&BaseThread::ThreadRun, this))
+            );
     }
     void Stop() {
         interruption_point.Interrupt();

@@ -19,8 +19,8 @@ namespace dragon {
 template <class Context>
 class RecurrentOp : public Operator<Context> {
  public:
-    RecurrentOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws) {
+    RecurrentOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws) {
         LOG(FATAL) << "RNN Operators require CuDNN support.";
     }
     USE_OPERATOR_FUNCTIONS;
@@ -31,8 +31,8 @@ class RecurrentOp : public Operator<Context> {
 template <class Context>
 class RecurrentGradientOp : public Operator<Context> {
 public:
-    RecurrentGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws) {
+    RecurrentGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws) {
         LOG(FATAL) << "RNN Operators require CuDNN support.";
     }
     USE_OPERATOR_FUNCTIONS;

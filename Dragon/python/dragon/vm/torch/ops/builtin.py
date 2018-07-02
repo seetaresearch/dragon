@@ -14,7 +14,7 @@ from __future__ import division
 from __future__ import print_function
 
 
-from dragon.vm.torch.tensor import Tensor
+from dragon.vm.torch.tensor import Tensor, Size
 from dragon.vm.torch.execute_engine import RunOperator
 from dragon.vm.torch.ops.factory import get_module
 from dragon.vm.torch.autograd.grad_mode import no_grad
@@ -22,7 +22,7 @@ from dragon.vm.torch.ops.primitive import MakeContext
 from dragon.vm.torch.ops.arithmetic import _fundamental, _rfundamental
 from dragon.vm.torch.ops.control_flow import _copy
 from dragon.vm.torch.ops.ndarray import \
-    (reshape, _fill, _reduce, _arg_reduce,  _crop)
+    (reshape, _permute, _repeat, _fill, _reduce, _arg_reduce,  _crop)
 from dragon.vm.torch.ops.modules.dtype import AsType
 
 
@@ -322,6 +322,17 @@ def view_as(self, other):
     return reshape(self, shape=None, shape_like=other)
 
 
+def permute(self, dims=None):
+    return _permute(self, dims)
+
+
+def repeat(self, *sizes):
+    if len(sizes) == 1 and \
+        isinstance(sizes[0], Size):
+            sizes = sizes[0]
+    return _repeat(self, sizes)
+
+
 def crop(self, starts, ends):
     return _crop(self, starts, ends)
 
@@ -344,6 +355,8 @@ def min(self, dim=None, keepdim=False):
 
 Tensor.view = view
 Tensor.view_as = view_as
+Tensor.permute = permute
+Tensor.repeat = repeat
 Tensor.mean = mean
 Tensor.sum = sum
 Tensor.max = max

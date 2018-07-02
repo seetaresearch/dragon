@@ -198,7 +198,7 @@ void GraphGradientMaker::Share(const string& grads_prefix, GraphDef& graph) {
         for (auto& input : op.input())
             if (input.find("grad") != string::npos) ref_count[input] += 1;
     }
-    //  heuristically limit the max number of temporal grads
+    //  heuristically limits the max number of temporal grads
     //  for stable and efficient memory reusing
     //  "2" works well under the most conditions
     //  which represents "GIVE ME ONE, THEN GIVE YOU ONE"

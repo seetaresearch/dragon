@@ -19,10 +19,10 @@ namespace dragon {
 template <class Context>
 class MatmulOp final : public Operator<Context> {
  public:
-    MatmulOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          TransA(OperatorBase::GetSingleArg<bool>("TransA", false)),
-          TransB(OperatorBase::GetSingleArg<bool>("TransB", false)) {}
+    MatmulOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          TransA(OperatorBase::Arg<bool>("TransA", false)),
+          TransB(OperatorBase::Arg<bool>("TransB", false)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -36,10 +36,10 @@ class MatmulOp final : public Operator<Context> {
 template <class Context>
 class MatmulGradientOp final : public Operator<Context> {
  public:
-    MatmulGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-        TransA(OperatorBase::GetSingleArg<bool>("TransA", false)),
-        TransB(OperatorBase::GetSingleArg<bool>("TransB", false)) {}
+    MatmulGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          TransA(OperatorBase::Arg<bool>("TransA", false)),
+          TransB(OperatorBase::Arg<bool>("TransB", false)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

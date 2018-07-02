@@ -77,6 +77,7 @@ SmoothL1Loss = loss.SmoothL1Loss
 L1Loss = loss.L1Loss
 L2Loss = loss.L2Loss
 SparseSoftmaxFocalLoss = loss.SparseSoftmaxFocalLoss
+CTCLoss = loss.CTCLoss
 
 # arithmetic
 Add = math.Add

@@ -7,7 +7,7 @@ namespace dragon {
 template <class Context> template <typename T>
 void StackOp<Context>::RunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    for (int i = 0; i < nin; i++) {
+    for (int i = 0; i < InputSize(); i++) {
         auto* Xdata = Input(i).template data<T, Context>();
         TIndex count = Input(i).count();
         x_concat_dim = 1;
@@ -23,8 +23,8 @@ template <class Context>
 void StackOp<Context>::RunOnDevice() {
     while (axis < 0) axis += (Input(0).ndim() + 1);
     stack_dims = concat_dims =  Input(0).dims();
-    concat_dims.insert(concat_dims.begin() + axis, nin);
-    for (int i = 1; i < nin; i++) {
+    concat_dims.insert(concat_dims.begin() + axis, InputSize());
+    for (int i = 1; i < InputSize(); i++) {
         CHECK_EQ(stack_dims.size(), Input(i).ndim())
             << "\nAll inputs should have the same ndim.";
         for (int j = 0; j < stack_dims.size(); j++)
@@ -51,7 +51,7 @@ OPERATOR_SCHEMA(Stack).NumInputs(1, INT_MAX).NumOutputs(1);
 template <class Context> template <typename T>
 void StackGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
-    for (int i = 0; i < nin; i++) {
+    for (int i = 0; i < OutputSize(); i++) {
         x_concat_dim = 1;
         if (Output(i)->name() != "ignore") {
             auto* dXdata = Output(i)->template mutable_data<T, Context>();
@@ -74,7 +74,8 @@ void StackGradientOp<Context>::RunOnDevice() {
     outer_dim = Input(0).count(0, axis);
     inner_dim = Input(0).count(axis);
     concat_offset = 0;
-    for (int i = 0; i < nin; i++) Output(i)->ReshapeLike(Input(i));
+    for (int i = 0; i < OutputSize(); i++)
+        Output(i)->ReshapeLike(Input(i));
 
     if (XIsType(Input(0), float)) RunWithType<float>();
     else if (XIsType(Input(0), float16)) RunWithType<float16>();

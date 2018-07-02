@@ -17,14 +17,14 @@
 namespace dragon {
 
 template <class Context>
-class CropOp: public Operator<Context> {
+class CropOp final : public Operator<Context> {
  public:
-    CropOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          start_axis(OperatorBase::GetSingleArg<int>("start_axis", -1)),
-          offsets(OperatorBase::GetRepeatedArg<int>("offsets")),
-          shape(OperatorBase::GetRepeatedArg<int>("shape")),
-          shape_like(OperatorBase::GetSingleArg<string>("shape_like", "")) {
+    CropOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          start_axis(OperatorBase::Arg<int>("start_axis", -1)),
+          offsets(OperatorBase::Args<int>("offsets")),
+          shape(OperatorBase::Args<int>("shape")),
+          shape_like(OperatorBase::Arg<string>("shape_like", "")) {
         GET_ARGUMENTS_WITH_DESC(int, starts);
         GET_ARGUMENTS_WITH_DESC(int, ends);
     }

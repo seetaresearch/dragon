@@ -17,19 +17,19 @@
 namespace dragon {
 
 template <class Context>
-class BatchRenormOp : public Operator<Context> {
+class BatchRenormOp final : public Operator<Context> {
  public:
-    BatchRenormOp(const OperatorDef& op_def, Workspace* ws) 
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          momentum(OperatorBase::GetSingleArg<float>("momentum", 0.9f)),
-          eps(OperatorBase::GetSingleArg<float>("eps", 1e-3f)),
-          r_max(OperatorBase::GetSingleArg<float>("r_max", 3.f)),
-          d_max(OperatorBase::GetSingleArg<float>("d_max", 5.f)),
-          t_delta(OperatorBase::GetSingleArg<float>("t_delta", 1.f)),
-          use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)),
+    BatchRenormOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", -1)),
+          momentum(OperatorBase::Arg<float>("momentum", 0.9f)),
+          eps(OperatorBase::Arg<float>("eps", 1e-3f)),
+          r_max(OperatorBase::Arg<float>("r_max", 3.f)),
+          d_max(OperatorBase::Arg<float>("d_max", 5.f)),
+          t_delta(OperatorBase::Arg<float>("t_delta", 1.f)),
+          use_stats(OperatorBase::Arg<int>("use_stats", -1)),
           t_r_max(1.f), t_d_max(0.f), t_val(0.f),
-          mode(OperatorBase::GetSingleArg<string>("mode", "DEFAULT")) {
+          mode(OperatorBase::Arg<string>("mode", "DEFAULT")) {
         if (axis != -1)
             CHECK_EQ(axis, 1)
                 << "\nThe axis can only be set to 1.";
@@ -55,10 +55,10 @@ class BatchRenormOp : public Operator<Context> {
 template <class Context>
 class BatchRenormGradientOp final : public Operator<Context> {
  public:
-    BatchRenormGradientOp(const OperatorDef& op_def, Workspace *ws) 
-        : Operator<Context>(op_def, ws),
-          axis(OperatorBase::GetSingleArg<int>("axis", -1)),
-          use_stats(OperatorBase::GetSingleArg<int>("use_stats", -1)) {
+    BatchRenormGradientOp(const OperatorDef& def, Workspace *ws)
+        : Operator<Context>(def, ws),
+          axis(OperatorBase::Arg<int>("axis", -1)),
+          use_stats(OperatorBase::Arg<int>("use_stats", -1)) {
         if (axis != -1)
             CHECK_EQ(axis, 1)
                 << "\nThe axis can only be set to 1.";

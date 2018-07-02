@@ -83,6 +83,7 @@ List                               Brief
 `L1Loss`_                          L1Loss.
 `L2Loss`_                          L2Loss(EuclideanLoss).
 `SparseSoftmaxFocalLoss`_          SoftmaxFocalLoss with sparse labels. `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`_.
+`CTCLoss`_                         CTCLoss with batched variable length of labels. `[Graves & Gomez, 2006] <http://www.cs.utoronto.ca/~graves/icml_2006.pdf>`_.
 =============================      ======================================================================
 
 Arithmetic
@@ -235,6 +236,7 @@ List                 Brief
 .. _L1Loss: operators/loss.html#dragon.operators.loss.L1Loss
 .. _L2Loss: operators/loss.html#dragon.operators.loss.L2Loss
 .. _SparseSoftmaxFocalLoss: operators/loss.html#dragon.operators.loss.SparseSoftmaxFocalLoss
+.. _CTCLoss: operators/loss.html#dragon.operators.loss.CTCLoss
 
 .. _Add: operators/arithmetic.html#dragon.operators.arithmetic.Add
 .. _Sub: operators/arithmetic.html#dragon.operators.arithmetic.Sub

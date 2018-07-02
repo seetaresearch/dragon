@@ -19,9 +19,9 @@ namespace dragon {
 template <class Context>
 class EluOp : public Operator<Context> {
  public:
-    EluOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          alpha(OperatorBase::GetSingleArg<float>("alpha", 1.0)) {}
+    EluOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          alpha(OperatorBase::Arg<float>("alpha", 1.0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -34,9 +34,9 @@ class EluOp : public Operator<Context> {
 template <class Context>
 class EluGradientOp : public Operator<Context> {
  public:
-    EluGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          alpha(OperatorBase::GetSingleArg<float>("alpha", 1.0)) {}
+    EluGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          alpha(OperatorBase::Arg<float>("alpha", 1.0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -53,12 +53,12 @@ class EluGradientOp : public Operator<Context> {
 template <class Context>
 class CuDNNEluOp final : public EluOp<Context> {
 public:
-    CuDNNEluOp(const OperatorDef& op_def, Workspace* ws) 
-        : EluOp<Context>(op_def, ws) {
+    CuDNNEluOp(const OperatorDef& def, Workspace* ws)
+        : EluOp<Context>(def, ws) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc));
-        CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc, 
+        CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc,
             CUDNN_ACTIVATION_ELU, CUDNN_PROPAGATE_NAN, this->alpha));
     }
     USE_OPERATOR_FUNCTIONS;
@@ -70,7 +70,7 @@ public:
     }
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType(); 
+    template <typename T> void RunWithType();
 
  protected:
     cudnnTensorDescriptor_t input_desc, output_desc;
@@ -80,8 +80,8 @@ public:
 template <class Context>
 class CuDNNEluGradientOp final : public EluGradientOp<Context> {
  public:
-    CuDNNEluGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : EluGradientOp<Context>(op_def, ws) {
+    CuDNNEluGradientOp(const OperatorDef& def, Workspace* ws)
+        : EluGradientOp<Context>(def, ws) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc));

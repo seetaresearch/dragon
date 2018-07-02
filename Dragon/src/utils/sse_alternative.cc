@@ -10,14 +10,20 @@ namespace dragon {
 
 namespace sse {
 
-template<> void Set(const int n, const float alpha, float* x) {
+template<> void Set(
+    const int               n,
+    const float             alpha,
+    float*                  x) {
     __m128 scalar = SSE_FP32_SCALAR(alpha);
     int32_t i = 0;
     SSE_LOOP1(i, n) SSE_FP32_STORE(x + i, scalar);
     SSE_LOOP2(i, n) x[i] = alpha;
 }
 
-template<> void Set(const int n, const int alpha, int* x) {
+template<> void Set(
+    const int               n,
+    const int               alpha,
+    int*                    x) {
     __m128i scalar = SSE_INT32_SCALAR(alpha);
     __m128i* x1 = reinterpret_cast<__m128i*>(x);
     int32_t i = 0;
@@ -25,7 +31,11 @@ template<> void Set(const int n, const int alpha, int* x) {
     SSE_LOOP2(i, n) x[i] = alpha;
 }
 
-template<> void Add(const int n, const float* a, const float* b, float* y) {
+template<> void Add(
+    const int               n,
+    const float*            a,
+    const float*            b,
+    float*                  y) {
     __m128 x1, y1, z1;
     int32_t i = 0;
     SSE_LOOP1(i, n) {
@@ -37,7 +47,11 @@ template<> void Add(const int n, const float* a, const float* b, float* y) {
     SSE_LOOP2(i, n) y[i] = a[i] + b[i];
 }
 
-template<> void Sub(const int n, const float* a, const float* b, float* y) {
+template<> void Sub(
+    const int               n,
+    const float*            a,
+    const float*            b,
+    float*                  y) {
     __m128 x1, y1, z1;
     int32_t i = 0;
     SSE_LOOP1(i, n) {
@@ -49,7 +63,11 @@ template<> void Sub(const int n, const float* a, const float* b, float* y) {
     SSE_LOOP2(i, n) y[i] = a[i] - b[i];
 }
 
-template<> void Mul(const int n, const float* a, const float* b, float* y) {
+template<> void Mul(
+    const int               n,
+    const float*            a,
+    const float*            b,
+    float*                  y) {
     __m128 x1, y1, z1;
     int32_t i = 0;
     SSE_LOOP1(i, n) {
@@ -61,7 +79,11 @@ template<> void Mul(const int n, const float* a, const float* b, float* y) {
     SSE_LOOP2(i, n) y[i] = a[i] * b[i];
 }
 
-template<> void Div(const int n, const float* a, const float* b, float* y) {
+template<> void Div(
+    const int               n,
+    const float*            a,
+    const float*            b,
+    float*                  y) {
     __m128 x1, y1, z1;
     int32_t i = 0;
     SSE_LOOP1(i, n) {
@@ -73,7 +95,10 @@ template<> void Div(const int n, const float* a, const float* b, float* y) {
     SSE_LOOP2(i, n) y[i] = a[i] / b[i];
 }
 
-template<> void Scal(const int n, const float alpha, float* y) {
+template<> void Scal(
+    const int               n,
+    const float             alpha,
+    float*                  y) {
     __m128 y1, scalar = SSE_FP32_SCALAR(alpha);
     int32_t i = 0;
     SSE_LOOP1(i, n) {
@@ -84,7 +109,11 @@ template<> void Scal(const int n, const float alpha, float* y) {
     SSE_LOOP2(i, n) y[i] *= alpha;
 }
 
-template<> void Scale(const int n, const float alpha, const float* x, float* y) {
+template<> void Scale(
+    const int               n,
+    const float             alpha,
+    const float*            x,
+    float*                  y) {
     __m128 x1, scalar = SSE_FP32_SCALAR(alpha);
     int32_t i = 0;
     SSE_LOOP1(i, n) {
@@ -95,7 +124,11 @@ template<> void Scale(const int n, const float alpha, const float* x, float* y) 
     SSE_LOOP2(i, n) y[i] = x[i] * alpha;
 }
 
-template<> void Axpy(const int n, float alpha, const float* x, float *y) {
+template<> void Axpy(
+    const int               n,
+    const float             alpha,
+    const float*            x,
+    float*                  y) {
     __m128 x1, y1, scalar = SSE_FP32_SCALAR(alpha);
     int32_t i = 0;
     SSE_LOOP1(i, n) {
@@ -108,11 +141,12 @@ template<> void Axpy(const int n, float alpha, const float* x, float *y) {
     SSE_LOOP2(i, n) y[i] = alpha * x[i] + y[i];
 }
 
-template<> void Axpby(const int n, 
-                      float alpha, 
-                      const float* x, 
-                      const float beta, 
-                      float *y) {
+template<> void Axpby(
+    const int               n,
+    const float             alpha,
+    const float*            x,
+    const float             beta,
+    float*                  y) {
     __m128 x1, y1, z1;
     __m128 scalar1 = SSE_FP32_SCALAR(alpha);
     __m128 scalar2 = SSE_FP32_SCALAR(beta);
@@ -128,7 +162,9 @@ template<> void Axpby(const int n,
     SSE_LOOP2(i, n) y[i] = alpha * x[i] + beta* y[i];
 }
 
-template<> float ASum(const int n, const float *x) {
+template<> float ASum(
+    const int               n,
+    const float*            x) {
     __m128 x1, sum = SSE_FP32_ZERO;
     int32_t i = 0;
     SSE_LOOP1(i, n) {
@@ -142,7 +178,10 @@ template<> float ASum(const int n, const float *x) {
     return ret;
 }
 
-template<> void AddScalar(const int n, const float alpha, float* y) {
+template<> void AddScalar(
+    const int               n,
+    const float             alpha,
+    float*                  y) {
     __m128 y1, scalar = SSE_FP32_SCALAR(alpha);
     int32_t i = 0;
     SSE_LOOP1(i, n) {
@@ -153,7 +192,10 @@ template<> void AddScalar(const int n, const float alpha, float* y) {
      SSE_LOOP2(i, n) y[i] += alpha;
 }
 
-template<> void MulScalar(const int n, const float alpha, float* y) {
+template<> void MulScalar(
+    const int               n,
+    const float             alpha,
+    float*                  y) {
     __m128 y1, scalar = SSE_FP32_SCALAR(alpha);
     int32_t i = 0;
     SSE_LOOP1(i, n) {
@@ -164,7 +206,10 @@ template<> void MulScalar(const int n, const float alpha, float* y) {
     SSE_LOOP2(i, n) y[i] *= alpha;
 }
 
-template <> float Dot(const int n, const float* a, const float* b) {
+template <> float Dot(
+    const int               n,
+    const float*            a,
+    const float*            b) {
     __m128 x1, y1, sum = SSE_FP32_ZERO;
     int32_t i = 0;
     SSE_LOOP1(i, n) {

@@ -21,192 +21,287 @@ namespace dragon {
 
 #ifdef WITH_CUDA
 
-/**************************************************************************
- *  cuXXX libraries wrapper "Context" as "Handle".
- *  It's well known that each "Context" binds to some "Devices" in OpenCL.
- *  So, we must create different handles to associate different devices or
-    the computations will be dispatched to the same GPU.
- *  Read more: http://docs.nvidia.com/cuda/cublas/, Sec 2.1.2.
- *  Also, "Handle" is thread safe,
-    it seems not necessary to create handles for different threads
- *************************************************************************/
-
 class CUDAObject {
  public:
-    CUDAObject(): cur_gpu(0) {
-        for (int i = 0; i < MAX_GPUS; i++) {
-            cublas_handle[i] = nullptr;
-            curand_generator[i] = nullptr;
+    CUDAObject(int default_stream = 1)
+        : default_stream(default_stream) {
+        for (int i = 0; i < CUDA_MAX_DEVICES; i++) {
+            cuda_streams[i] = vector<cudaStream_t>();
+            cublas_handles[i] = vector<cublasHandle_t>();
 #ifdef WITH_CUDNN
-            cudnn_handle[i] = nullptr;
+            cudnn_handles[i] = vector<cudnnHandle_t>();
 #endif
         }
     }
 
     ~CUDAObject() {
-        for (int i = 0; i < MAX_GPUS; i++) {
-            if (cublas_handle[i]) cublasDestroy_v2(cublas_handle[i]);
-            if (curand_generator[i]) curandDestroyGenerator(curand_generator[i]);
+        for (int i = 0; i < CUDA_MAX_DEVICES; i++) {
+            for (int j = 0; j < cuda_streams[i].size(); j++) {
+                auto& stream = cuda_streams[i][j];
+                //  follow caffe2, do not check the stream destroying
+                //  Error code 29 (driver shutting down) is inevitable
+                //  TODO(PhyscalX): Can someone solve this issue?
+                if (stream) cudaStreamDestroy(stream);
+            }
+            for (auto& handle : cublas_handles[i])
+                if (handle) { CUBLAS_CHECK(cublasDestroy_v2(handle)); }
 #ifdef WITH_CUDNN
-            if (cudnn_handle[i]) cudnnDestroy(cudnn_handle[i]);
+            for (auto& handle : cudnn_handles[i])
+                if (handle) { CUDNN_CHECK(cudnnDestroy(handle)); }
 #endif
         }
     }
 
-    int cur_gpu;
-    cublasHandle_t cublas_handle[MAX_GPUS];
-    curandGenerator_t curand_generator[MAX_GPUS];
+    /**
+     * Each device takes a group of streams.
+     *
+     * The stream 0 is reserved for default stream,
+     * stream 1 or higher is created as ``cudaStreamNonBlocking``.
+     */
+    cudaStream_t GetStream(int device_id, int stream_id) {
+        vector<cudaStream_t>& dev_streams = cuda_streams[device_id];
+        if (dev_streams.size() <= (unsigned)stream_id)
+            dev_streams.resize(stream_id + 1, nullptr);
+        if (!dev_streams[stream_id]) {
+            DeviceGuard guard(device_id);
+            unsigned int flags = !stream_id && default_stream ?
+                cudaStreamDefault : cudaStreamNonBlocking;
+            CUDA_CHECK(cudaStreamCreateWithFlags(
+                &dev_streams[stream_id], flags));
+        } return dev_streams[stream_id];
+    }
+
+    cublasHandle_t GetCuBLASHandle(int device_id, int stream_id) {
+        vector<cublasHandle_t>& dev_handles = cublas_handles[device_id];
+        if (dev_handles.size() <= (unsigned)stream_id)
+            dev_handles.resize(stream_id + 1, nullptr);
+        if (!dev_handles[stream_id]) {
+            DeviceGuard guard(device_id);
+            CUBLAS_CHECK(cublasCreate_v2(&dev_handles[stream_id]));
+            CUBLAS_CHECK(cublasSetStream_v2(dev_handles[stream_id],
+                GetStream(device_id, stream_id)));
+#if CUDA_VERSION >= 9000
+            if (TENSOR_CORE_AVAILABLE())
+                CUBLAS_CHECK(cublasSetMathMode(
+                    dev_handles[stream_id], CUBLAS_TENSOR_OP_MATH));
+#endif
+        } return dev_handles[stream_id];
+    }
+
 #ifdef WITH_CUDNN
-    cudnnHandle_t cudnn_handle[MAX_GPUS];
+    cudnnHandle_t GetCuDNNHandle(int device_id, int stream_id) {
+        vector<cudnnHandle_t>& dev_handles = cudnn_handles[device_id];
+        if (dev_handles.size() <= (unsigned)stream_id)
+            dev_handles.resize(stream_id + 1, nullptr);
+        if (!dev_handles[stream_id]) {
+            DeviceGuard guard(device_id);
+            CUDNN_CHECK(cudnnCreate(&dev_handles[stream_id]));
+            CUDNN_CHECK(cudnnSetStream(dev_handles[stream_id],
+                GetStream(device_id, stream_id)));
+        } return dev_handles[stream_id];
+    }
+#endif
+
+    int default_stream;
+
+    vector<cudaStream_t> cuda_streams[CUDA_MAX_DEVICES];
+    vector<cublasHandle_t> cublas_handles[CUDA_MAX_DEVICES];
+#ifdef WITH_CUDNN
+    vector<cudnnHandle_t> cudnn_handles[CUDA_MAX_DEVICES];
 #endif
 };
 
 class CUDAContext {
  public:
     CUDAContext(const DeviceOption& option)
-        : gpu_id_(option.device_id()),
-          random_seed_(option.has_random_seed() ? option.random_seed() : 3) {
-        CPUContext context(option);
+        : device_id_(option.device_id()),
+          random_seed_(option.has_random_seed() ?
+              option.random_seed() : DEFAULT_RNG_SEED) {
         CHECK_EQ(option.device_type(), CUDA);
-        cublas_handle();
-        curand_generator();
-#ifdef WITH_CUDNN
-        cudnn_handle();
-#endif
     }
 
-    CUDAContext(const int gpu_id = 0)
-        : gpu_id_(gpu_id), random_seed_(3) {
-        CPUContext context;
-        cublas_handle();
-        curand_generator();
-#ifdef WITH_CUDNN
-        cudnn_handle();
-#endif
+    CUDAContext(const int device_id = 0)
+        : device_id_(device_id),
+          random_seed_(DEFAULT_RNG_SEED) {}
+
+    inline void SwitchToDevice(int stream_id) {
+        CUDA_CHECK(cudaSetDevice(device_id_));
+        stream_id_ = stream_id;
     }
 
-    void SwitchToDevice() {
-        CUDA_CHECK(cudaSetDevice(gpu_id_));
-        cuda_object_.cur_gpu = gpu_id_;
-    }
+    inline void SwitchToDevice() { SwitchToDevice(0); }
 
-    inline static void FinishDeviceCompution() {
-        cudaStreamSynchronize(cudaStreamDefault);
+    inline void FinishDeviceCompution() {
+        cudaStreamSynchronize(cuda_object_
+            .GetStream(device_id_, stream_id_));
         cudaError_t error = cudaGetLastError();
-        CHECK_EQ(error, cudaSuccess) << "CUDA Error: " << cudaGetErrorString(error);
+        CHECK_EQ(error, cudaSuccess)
+            << "\nCUDA Error: " << cudaGetErrorString(error);
     }
 
     inline static void* New(size_t nbytes) {
         void* data;
         cudaMalloc(&data, nbytes);
-        CHECK(data) << "Malloc cuda mem: " << nbytes << " bytes failed.";
+        CHECK(data) << "Malloc cuda mem: " 
+                    << nbytes << " bytes failed.";
         return data;
     }
 
-    inline static void Memset(size_t nbytes, void* ptr) { cudaMemset(ptr, 0, nbytes); }
-
-    template<class DstContext, class SrcContext>
-    inline static void Memcpy(size_t nbytes, void* dst, const void* src) {
-        CUDA_CHECK(cudaMemcpy(dst, src, nbytes, cudaMemcpyDefault));
+    inline static void Memset(size_t nbytes, void* ptr) {
+        cudaMemset(ptr, 0, nbytes); 
     }
 
     template<class DstContext, class SrcContext>
-    inline static void MemcpyAsync(size_t nbytes, void* dst, const void* src) {
-        cudaStream_t stream;
-        CUDA_CHECK(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
-        CUDA_CHECK(cudaMemcpyAsync(dst, src, nbytes, cudaMemcpyDefault, stream));
-        CUDA_CHECK(cudaStreamDestroy(stream));
+    inline static void Memcpy(
+        size_t              nbytes,
+        void*               dst,
+        const void*         src) {
+        CUDA_CHECK(cudaMemcpy(dst, src, nbytes,
+            cudaMemcpyDefault));
+    }
+
+    template<class DstContext, class SrcContext>
+    inline void MemcpyAsync(
+        size_t              nbytes,
+        void*               dst,
+        const void*         src) {
+        CUDA_CHECK(cudaMemcpyAsync(dst, src, nbytes,
+            cudaMemcpyDefault, cuda_stream()));
     }
 
     inline static void Delete(void* data) { cudaFree(data); }
 
     template<typename T, class DstContext, class SrcContext>
-    static void Copy(int n, T* dst, const T* src) {
+    static void Copy(
+        int                 n,
+        T*                  dst,
+        const T*            src) {
         if (dst == src) return;
-        Memcpy<SrcContext, DstContext>(n * sizeof(T), (void*)dst, (const void*)src);
+        Memcpy<SrcContext, DstContext>(
+            n * sizeof(T), (void*)dst, (const void*)src);
     }
 
-    cublasHandle_t& cublas_handle() {
-        auto& handle = cuda_object_.cublas_handle[gpu_id_];
-        if (handle)  {
-            return handle;
-        } else {
-            DeviceGuard gurad(gpu_id_);
-            CUBLAS_CHECK(cublasCreate_v2(&handle));
-#if CUDA_VERSION >= 9000
-            if (TENSOR_CORE_AVAILABLE())
-                cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH);
-#endif
-            return handle;
-        }
+    inline int device_id() const { return device_id_; }
+
+    inline cudaStream_t cuda_stream() {
+        return cuda_stream(device_id_, stream_id_);
+    }
+
+    static cudaStream_t cuda_stream(
+        int                 device_id,
+        int                 stream_id) {
+        return cuda_object_.GetStream(device_id, stream_id);
+    }
+
+    cublasHandle_t cublas_handle() {
+        return cuda_object_.GetCuBLASHandle(device_id_, stream_id_);
+    }
+
+    inline std::mt19937* rand_generator() {
+        if (!rand_generator_.get())
+            rand_generator_.reset(new std::mt19937(random_seed_));
+        return rand_generator_.get();
     }
 
     curandGenerator_t& curand_generator() {
-        auto& generator = cuda_object_.curand_generator[gpu_id_];
-        if (generator) {
-            return generator;
-        } else {
-            DeviceGuard gurad(gpu_id_);
-            CURAND_CHECK(curandCreateGenerator(&generator, CURAND_RNG_PSEUDO_DEFAULT));
-            CURAND_CHECK(curandSetPseudoRandomGeneratorSeed(generator, random_seed_));
-            return generator;
+        if (!curand_generator_) {
+            DeviceGuard guard(device_id_);
+            CURAND_CHECK(curandCreateGenerator(
+                &curand_generator_, CURAND_RNG_PSEUDO_DEFAULT));
+            CURAND_CHECK(curandSetPseudoRandomGeneratorSeed(
+                curand_generator_, random_seed_));
         }
+        CURAND_CHECK(curandSetStream(
+            curand_generator_, cuda_stream()));
+        return curand_generator_;
     }
 
 #ifdef WITH_CUDNN
     cudnnHandle_t cudnn_handle() {
-        auto& handle = cuda_object_.cudnn_handle[gpu_id_];
-        if (handle)  {
-            return handle;
-        } else{
-            DeviceGuard gurad(gpu_id_);
-            CUDNN_CHECK(cudnnCreate(&handle));
-            return handle;
-        }
+        return cuda_object_.GetCuDNNHandle(device_id_, stream_id_);
     }
 #endif
 
     static std::mutex& mutex() { static std::mutex m; return m; }
 
-    static CUDAObject cuda_object_;
+    static thread_local CUDAObject cuda_object_;
 
  private:
-    int gpu_id_, random_seed_;
+    int device_id_, stream_id_ = 0, random_seed_;
+    unique_ptr<std::mt19937> rand_generator_;
+    curandGenerator_t curand_generator_ = nullptr;
 };
 
-static inline cublasHandle_t& cublas_handle() {
-    int cur_gpu = CUDAContext::cuda_object_.cur_gpu;
-    CHECK(CUDAContext::cuda_object_.cublas_handle[cur_gpu] != nullptr);
-    return CUDAContext::cuda_object_.cublas_handle[cur_gpu];
-}
+template <class Context>
+class CUDAClosure {
+ public:
+    CUDAClosure() {}
+    explicit CUDAClosure(Context* ctx): ctx_(ctx) {}
 
-static inline curandGenerator_t& curand_generator() {
-    int cur_gpu = CUDAContext::cuda_object_.cur_gpu;
-    CHECK(CUDAContext::cuda_object_.curand_generator[cur_gpu] != nullptr);
-    return CUDAContext::cuda_object_.curand_generator[cur_gpu];
-}
+    void Sync() {
+        for (auto stream_id : active_streams_) {
+            cudaStreamSynchronize(cuda_object_
+                .GetStream(ctx_->device_id(), stream_id));
+            cudaError_t error = cudaGetLastError();
+            CHECK_EQ(error, cudaSuccess)
+                << "\nCUDA Error: " << cudaGetErrorString(error);
+        }
+        active_streams_.clear();
+    }
+
+    inline cudaStream_t cuda_stream(int stream_id) {
+        active_streams_.push_back(stream_id);
+        return cuda_object_.GetStream(
+            ctx_->device_id(), stream_id);
+    }
+
+    inline cublasHandle_t cublas_handle(int stream_id) {
+        active_streams_.push_back(stream_id);
+        return cuda_object_.GetCuBLASHandle(
+            ctx_->device_id(), stream_id);
+    }
 
 #ifdef WITH_CUDNN
-static inline cudnnHandle_t& cudnn_handle() {
-    int cur_gpu = CUDAContext::cuda_object_.cur_gpu;
-    CHECK(CUDAContext::cuda_object_.cudnn_handle[cur_gpu] != nullptr);
-    return CUDAContext::cuda_object_.cudnn_handle[cur_gpu];
-}
-
+    inline cudnnHandle_t cudnn_handle(int stream_id) {
+        active_streams_.push_back(stream_id);
+        return cuda_object_.GetCuDNNHandle(
+            ctx_->device_id(), stream_id);
+    }
 #endif
+
+ protected:
+    Context* ctx_;
+    CUDAObject cuda_object_ = 0;
+    vector<int> active_streams_;
+};
 
 #else  // WITH_CUDA
 
 class CUDAContext {
  public:
     CUDAContext(const DeviceOption& option) { CUDA_NOT_COMPILED; }
-    CUDAContext(const int gpu_id = 0) { CUDA_NOT_COMPILED; }
+    CUDAContext(const int device_id = 0) { CUDA_NOT_COMPILED; }
 
-    void SwitchToDevice() { CUDA_NOT_COMPILED; }
-    void FinishDeviceCompution() { CUDA_NOT_COMPILED; }
+    inline void SwitchToDevice() { CUDA_NOT_COMPILED; }
+    inline void FinishDeviceCompution() { CUDA_NOT_COMPILED; }
 
     template<class DstContext, class SrcContext>
-    static void Memcpy(size_t nbytes, void* dst, const void* src) { CUDA_NOT_COMPILED; }
+    inline static void Memcpy(
+        size_t              nbytes,
+        void*               dst,
+        const void*         src) {
+        CUDA_NOT_COMPILED;
+    }
+
+    template<class DstContext, class SrcContext>
+    inline void MemcpyAsync(
+        size_t              nbytes,
+        void*               dst,
+        const void*         src) {
+        CUDA_NOT_COMPILED;
+    }
+
+    inline int device_id() const { return 0; }
 };
 
 #endif // WITH_CUDA

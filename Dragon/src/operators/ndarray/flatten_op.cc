@@ -38,7 +38,7 @@ template <class Context>
 void FlattenOp<Context>::RunOnDevice() {
     //  save Xshape
     Tensor* sv = ws()->CreateTensor("/mnt/" + anchor() + "/flatten/x_shape");
-    sv->Reshape(vector<TIndex>(1, Input(0).ndim()));
+    sv->Reshape({ (TIndex)Input(0).ndim() });
     auto* Sdata = sv->template mutable_data<TIndex, CPUContext>();
     for (int i = 0; i < Input(0).ndim(); i++) Sdata[i] = Input(0).dim(i);
     if (keep_axes != INT_MAX) KeepRun();

@@ -20,10 +20,10 @@ namespace dragon {
 template <class Context>
 class ClipOp final : public Operator<Context> {
  public:
-    ClipOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          low(OperatorBase::GetSingleArg<float>("low", -FLT_MAX)),
-          high(OperatorBase::GetSingleArg<float>("high", FLT_MAX)) {}
+    ClipOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          low(OperatorBase::Arg<float>("low", -FLT_MAX)),
+          high(OperatorBase::Arg<float>("high", FLT_MAX)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

@@ -41,8 +41,8 @@ class SigmoidGradientOp : public Operator<Context> {
 template <class Context>
 class CuDNNSigmoidOp final : public SigmoidOp<Context> {
 public:
-    CuDNNSigmoidOp(const OperatorDef& op_def, Workspace* ws) 
-        : SigmoidOp<Context>(op_def, ws) {
+    CuDNNSigmoidOp(const OperatorDef& def, Workspace* ws)
+        : SigmoidOp<Context>(def, ws) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc));
@@ -68,8 +68,8 @@ public:
 template <class Context>
 class CuDNNSigmoidGradientOp final : public SigmoidGradientOp<Context> {
  public:
-    CuDNNSigmoidGradientOp(const OperatorDef& op_def, Workspace* ws)
-        : SigmoidGradientOp<Context>(op_def, ws) {
+    CuDNNSigmoidGradientOp(const OperatorDef& def, Workspace* ws)
+        : SigmoidGradientOp<Context>(def, ws) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc));

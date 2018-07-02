@@ -74,10 +74,15 @@ class Tensor {
         return ret;
     }
     inline TIndex count() const { return size_; }
-    inline TIndex count(const TIndex start) const { return count(start, ndim()); }
+    inline TIndex count(const TIndex start) const {
+        return count(start, ndim());
+    }
 
-    inline TIndex offset(const TIndex n, const TIndex c = 0,
-                         const TIndex h = 0, const TIndex w = 0) {
+    inline TIndex offset(
+        const TIndex            n,
+        const TIndex            c = 0,
+        const TIndex            h = 0,
+        const TIndex            w = 0) {
         CHECK_LE(n, dim(0));
         CHECK_LE(c, dim(1));
         CHECK_LE(h, dim(2));
@@ -95,7 +100,7 @@ class Tensor {
         return offset;
     }
 
-    inline string dim_string() const {
+    inline string DimString() const {
         if (ndim() == 0) return "(0,)";
         std::stringstream ss;
         ss << "(";
@@ -108,9 +113,18 @@ class Tensor {
     inline bool is_corrupted() const { return is_corrupted_; }
     inline void Corrupt() { is_corrupted_ = true; }
 
-    inline bool has_memory() const { return memory_ || ex_memory_ != nullptr; }
-    MixedMemory* memory() const { return own_mem_ ? memory_.get() : ex_memory_; }
-    void set_memory(MixedMemory* mem) { memory_.reset(mem); capacity_ = mem->nbytes(); }
+    inline bool has_memory() const {
+        return memory_ || ex_memory_ != nullptr; 
+    }
+
+    MixedMemory* memory() const {
+        return own_mem_ ? memory_.get() : ex_memory_;
+    }
+
+    void set_memory(MixedMemory* mem) { 
+        memory_.reset(mem); capacity_ = mem->nbytes();
+    }
+
     MixedMemory::State memory_state() const {
         MixedMemory* mem = memory();
         CHECK(mem) << "\nMemory access before allowcating.";
@@ -124,7 +138,8 @@ class Tensor {
 
     const TypeMeta& meta() const { return meta_; }
     void SetMeta(const TypeMeta& meta) { meta_ = meta; }
-    template <typename T> inline bool IsType() { return meta_.Match<T>(); }
+    template <typename T>
+    inline bool IsType() { return meta_.Match<T>(); }
 
     template <class Context>
     void mutable_data_ptr(void** data_ptr) {
@@ -132,12 +147,15 @@ class Tensor {
         if (!mem) {
             *data_ptr = nullptr;
         } else {
-            if (TypeMeta::Id<Context>() == TypeMeta::Id<CPUContext>()) {
+            if (TypeMeta::Id<Context>() ==
+                    TypeMeta::Id<CPUContext>()) {
                 *data_ptr = mem->mutable_cpu_data();
-            } else if (TypeMeta::Id<Context>() == TypeMeta::Id<CUDAContext>()) {
+            } else if (TypeMeta::Id<Context>() ==
+                    TypeMeta::Id<CUDAContext>()) {
                 *data_ptr = mem->mutable_cuda_data();
             } else {
-                LOG(FATAL) << "Unknown memory type. Only CPU or CUDA is supported.";
+                LOG(FATAL) << "Unknown memory type. "
+                           << "Only CPU or CUDA is supported.";
             }
         }
     }
@@ -146,12 +164,15 @@ class Tensor {
     const void* const_data_ptr() const {
         MixedMemory* mem = memory();
         CHECK(mem) << "\nMemory access before allowcating.";
-        if (TypeMeta::Id<Context>() == TypeMeta::Id<CPUContext>()) {
+        if (TypeMeta::Id<Context>() ==
+                TypeMeta::Id<CPUContext>()) {
              return mem->cpu_data();
-        } else if (TypeMeta::Id<Context>() == TypeMeta::Id<CUDAContext>()) {
+        } else if (TypeMeta::Id<Context>() ==
+                TypeMeta::Id<CUDAContext>()) {
              return mem->cuda_data();
         } else {
-             LOG(FATAL) << "Unknown memory type. Only CPU or CUDA are supported.";
+             LOG(FATAL) << "Unknown memory type. "
+                        << "Only CPU or CUDA are supported.";
              return nullptr;
         }
     }
@@ -164,10 +185,17 @@ class Tensor {
         if (meta_ != meta && data_ptr && !own_mem_) delete ex_memory_;
         meta_ = meta;
         CHECK_GT(size_, 0);
-        if (own_mem_) memory_.reset(new MixedMemory(meta, size_* meta_.itemsize()));
-        else ex_memory_ = new MixedMemory(meta, size_* meta_.itemsize());
-        mutable_data_ptr<Context>(&data_ptr);    //  malloc memory
-        if (meta.ctor()) meta_.ctor()(data_ptr, size_);  //  call the constructor
+        if (own_mem_) {
+            memory_.reset(new MixedMemory(
+                meta, size_* meta_.itemsize()));
+        } else {
+            ex_memory_ = new MixedMemory(
+                meta, size_* meta_.itemsize());
+        }
+        //  malloc memory
+        mutable_data_ptr<Context>(&data_ptr);
+        //  call the constructors
+        if (meta.ctor()) meta_.ctor()(data_ptr, size_);
         capacity_ = size_ * meta.itemsize();
         return data_ptr;
     }
@@ -189,8 +217,10 @@ class Tensor {
     T* mutable_data() {
         void* data_ptr;
         mutable_data_ptr<Context>(&data_ptr);
-        if (data_ptr && meta_ == TypeMeta::Make<T>()) return static_cast<T*>(data_ptr);
-        return static_cast<T*>(raw_mutable_data<Context>(TypeMeta::Make<T>()));
+        if (data_ptr && meta_ == TypeMeta::Make<T>())
+            return static_cast<T*>(data_ptr);
+        return static_cast<T*>(
+            raw_mutable_data<Context>(TypeMeta::Make<T>()));
     }
 
     template <typename T, class Context>
@@ -208,9 +238,11 @@ class Tensor {
         auto* src = other.template raw_data<SrcCTX>();
         auto* dst = raw_mutable_data<DstCTX>(other.meta_);
         if (dst == src) return;
-        if (TypeMeta::Id<DstCTX>() == TypeMeta::Id<CPUContext>()) {
+        if (TypeMeta::Id<DstCTX>() ==
+                TypeMeta::Id<CPUContext>()) {
             CPUContext::Memcpy<DstCTX, SrcCTX>(nbytes(), dst, src);
-        } else if (TypeMeta::Id<DstCTX>() == TypeMeta::Id<CUDAContext>()) {
+        } else if (TypeMeta::Id<DstCTX>() == 
+                TypeMeta::Id<CUDAContext>()) {
             CUDAContext::Memcpy<DstCTX, SrcCTX>(nbytes(), dst, src);
         }
     }

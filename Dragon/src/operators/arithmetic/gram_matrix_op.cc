@@ -12,7 +12,8 @@ void GramMatrixOp<Context>::RunWithType() {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasTrans,
                 dim, dim, inner_dim,
-                    1.0, Xdata, Xdata, 0.0, Ydata);
+                    1.0, Xdata, Xdata,
+                        0.0, Ydata, &ctx());
         Xdata += x_offset;
         Ydata += y_offset;
     }
@@ -46,7 +47,8 @@ void GramMatrixGradientOp<Context>::RunWithType() {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 dim, inner_dim, dim,
-                    2.0, dYdata, Xdata, 0.0, dXdata);
+                    2.0, dYdata, Xdata,
+                        0.0, dXdata, &ctx());
         dYdata += y_offset;
         dXdata += x_offset;
     }

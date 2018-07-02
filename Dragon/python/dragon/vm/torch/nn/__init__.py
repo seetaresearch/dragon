@@ -25,4 +25,5 @@ from .modules.container import Container, Sequential, ModuleList
 from .modules.batchnorm import BatchNorm1d, BatchNorm2d, BatchNorm3d
 from .modules.affine import Affine
 from .modules.dropout import Dropout, Dropout2d, Dropout3d
+from .modules.rnn import RNNBase, RNN, LSTM, GRU
 from . import init

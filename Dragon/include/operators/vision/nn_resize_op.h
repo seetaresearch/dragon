@@ -17,14 +17,14 @@
 namespace dragon {
 
 template <class Context>
-class NNResizeOp : public Operator<Context> {
+class NNResizeOp final : public Operator<Context> {
  public:
-    NNResizeOp(const OperatorDef& op_def, Workspace* ws)
-        : Operator<Context>(op_def, ws),
-          fy(OperatorBase::GetSingleArg<float>("fy", -1.0)),
-          fx(OperatorBase::GetSingleArg<float>("fx", -1.0)),
-          shape_like_desc(OperatorBase::GetSingleArg<string>("shape_like", "")),
-          data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {
+    NNResizeOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          fy(OperatorBase::Arg<float>("fy", -1.0)),
+          fx(OperatorBase::Arg<float>("fx", -1.0)),
+          shape_like_desc(OperatorBase::Arg<string>("shape_like", "")),
+          data_format(OperatorBase::Arg<string>("data_format", "NCHW")) {
         GET_ARGUMENTS_WITH_DESC(int, dsize);
         if (data_format == "NCHW") spatial_axis = 2;
         else if (data_format == "NHWC") spatial_axis = 1;
@@ -43,11 +43,11 @@ class NNResizeOp : public Operator<Context> {
 };
 
 template <class Context>
-class NNResizeGradientOp : public Operator<Context> {
+class NNResizeGradientOp final : public Operator<Context> {
  public:
-    NNResizeGradientOp(const OperatorDef& op_def, Workspace* ws) 
-        : Operator<Context>(op_def, ws),
-          data_format(OperatorBase::GetSingleArg<string>("data_format", "NCHW")) {}
+    NNResizeGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          data_format(OperatorBase::Arg<string>("data_format", "NCHW")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

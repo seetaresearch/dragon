@@ -7,7 +7,7 @@ template <class Context> template <typename T>
 void InitializeOp<Context>::RunWithType() {
     unique_ptr< Filler<T, Context> > f;
     f.reset(CreateFiller<T, Context>(filler));
-    f->Fill(Output(0));
+    f->Fill(Output(0), &ctx());
 }
 
 template <class Context>

@@ -19,9 +19,9 @@ namespace dragon {
 template <class Context>
 class ReshapeOp final : public Operator<Context> {
  public:
-    ReshapeOp(const OperatorDef& op_def, Workspace* ws) 
-        : Operator<Context>(op_def, ws),
-          shape_like_desc(OperatorBase::GetSingleArg<string>("shape_like", "")) {
+    ReshapeOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          shape_like_desc(OperatorBase::Arg<string>("shape_like", "")) {
         GET_ARGUMENTS_WITH_DESC(int, shape);
     }
     USE_OPERATOR_FUNCTIONS;
