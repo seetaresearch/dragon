@@ -289,37 +289,36 @@ void SoftmaxCrossEntropy(
 
 template <typename Tx, typename Ty, class Context>
 void SparseSoftmaxCrossEntropy(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
     const Tx*               prob,
     const Ty*               labels,
-    Tx*                     loss,
-    Tx*                     valid,
-    Tensor*                 ignore,
+    const int*              ignores,
+    const int               num_ignores,
+    Tx*                     losses,
+    Tx*                     flags,
     Context*                ctx);
 
 template <typename Tx, typename Ty, class Context>
 void SparseSoftmaxCrossEntropyGrad(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
     const Tx*               prob,
     const Ty*               labels,
-    Tx*                     valid,
-    Tensor*                 ignore,
+    const int*              ignores,
+    const int               num_ignores,
     Tx*                     dx,
+    Tx*                     flags,
     Context*                ctx);
 
 /******************** loss.sparse_softmax_focal_loss ********************/
 
 template <typename T, class Context>
 void SparseSoftmaxFocalLoss(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
     const float             pos_alpha,
     const float             neg_alpha,
@@ -327,26 +326,28 @@ void SparseSoftmaxFocalLoss(
     const int               neg_id,
     const T*                prob,
     const T*                labels,
-    T*                      scale,
-    T*                      loss,
-    T*                      valid,
-    Tensor*                 ignore);
+    const int*              ignores,
+    const int               num_ignores,
+    T*                      losses,
+    T*                      flags ,
+    Context*                ctx);
 
 template <typename T, class Context>
 void SparseSoftmaxFocalLossGrad(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
     const float             gamma,
     const int               neg_id,
-    const float             eps,
-    const T*                scale,
     const T*                prob,
     const T*                labels,
-    T*                      valid,
-    Tensor*                 ignore,
-    T*                      dx);
+    const int*              ignores,
+    const int               num_ignores,
+    T*                      dx,
+    T*                      flags,
+    Context*                ctx);
 
 /******************** misc.astype ********************/
 

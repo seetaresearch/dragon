@@ -218,7 +218,7 @@ def L2Loss(inputs, normalization='BATCH_SIZE', **kwargs):
 
 
 def SparseSoftmaxFocalLoss(inputs, axis=1, normalization='VALID', ignore_labels=(),
-                           alpha=0.5, gamma=0.0, eps=1e-10, neg_id=-1, **kwargs):
+                           alpha=0.25, gamma=2.0, neg_id=0, **kwargs):
     """SoftmaxFocalLoss with sparse labels. `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`_.
 
     Parameters
@@ -232,13 +232,11 @@ def SparseSoftmaxFocalLoss(inputs, axis=1, normalization='VALID', ignore_labels=
     ignore_label : tuple or list
         The label id to ignore. Default is ``empty``.
     alpha : float
-        The scale factor on the rare class. Default is ``0.5``.
+        The scale factor on the rare class. Default is ``0.25``.
     gamma : float
-        The exponential decay factor on the easy examples. Default is ``0.0``.
-    eps : float
-        The eps.
+        The exponential decay factor on the easy examples. Default is ``2.0``.
     neg_id : int
-        The negative id. Default is ``-1`` (Without Class Balance)
+        The negative id. Default is ``0``.
 
     Returns
     -------

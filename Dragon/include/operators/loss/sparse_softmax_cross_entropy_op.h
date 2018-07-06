@@ -24,11 +24,11 @@ class SparseSoftmaxCrossEntropyOp : public Operator<Context> {
           axis(OperatorBase::Arg<int>("axis", 1)),
           normalization(OperatorBase::Arg<string>(
               "normalization", "VALID")) {
-        vector<int> ignores = OperatorBase::Args<int>("ignore_labels");
-        if (ignores.size()) {
-            ignore.Reshape({ (TIndex)ignores.size() });
-            auto* Idata = ignore.mutable_data<int, CPUContext>();
-            for (int i = 0; i < ignores.size(); i++) Idata[i] = ignores[i];
+        auto xs = OperatorBase::Args<int>("ignore_labels");
+        if (xs.size()) {
+            ignores.Reshape({ (TIndex)xs.size() });
+            auto* Idata = ignores.mutable_data<int, CPUContext>();
+            for (int i = 0; i < xs.size(); i++) Idata[i] = xs[i];
         }
     }
     USE_OPERATOR_FUNCTIONS;
@@ -41,8 +41,7 @@ class SparseSoftmaxCrossEntropyOp : public Operator<Context> {
 
  protected:
     TIndex axis, outer_dim, inner_dim;
-    Tensor ignore, valid, losses;
-    Tensor* prob;
+    Tensor* prob, losses, flags, ignores;
     unique_ptr<OperatorBase> softmax_op;
     string normalization;
 };
@@ -55,11 +54,11 @@ class SparseSoftmaxCrossEntropyGradientOp : public Operator<Context> {
           axis(OperatorBase::Arg<int>("axis", 1)),
           normalization(OperatorBase::Arg<string>(
               "normalization", "VALID")) {
-        vector<int> ignores = OperatorBase::Args<int>("ignore_labels");
-        if (ignores.size()) {
-            ignore.Reshape({ (TIndex)ignores.size() });
-            auto* Idata = ignore.mutable_data<int, CPUContext>();
-            for (int i = 0; i < ignores.size(); i++) Idata[i] = ignores[i];
+        auto xs = OperatorBase::Args<int>("ignore_labels");
+        if (xs.size()) {
+            ignores.Reshape({ (TIndex)xs.size() });
+            auto* Idata = ignores.mutable_data<int, CPUContext>();
+            for (int i = 0; i < xs.size(); i++) Idata[i] = xs[i];
         }
     }
     USE_OPERATOR_FUNCTIONS;
@@ -69,8 +68,7 @@ class SparseSoftmaxCrossEntropyGradientOp : public Operator<Context> {
 
  protected:
     TIndex axis, outer_dim, inner_dim;
-    Tensor ignore, valid;
-    Tensor* prob;
+    Tensor* prob, ignores, flags;
     string normalization;
 };
 

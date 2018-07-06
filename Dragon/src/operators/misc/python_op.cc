@@ -3,11 +3,14 @@
 #ifdef WITH_PYTHON
 
 #ifdef WITH_PYTHON3
-#define PyBytes_FromStringAndSize PyUnicode_FromStringAndSize
+#define PyBytes_FromStringAndSize \
+    PyUnicode_FromStringAndSize
 #endif
 
-#define String(str) \
+#define Bytes(str) \
     PyBytes_FromStringAndSize(str, string(str).size())
+
+#define CS2Bytes(cstr) Bytes(cstr.c_str())
 
 namespace dragon {
 
@@ -17,6 +20,9 @@ RunOp<Context>::RunOp(const OperatorDef& def, Workspace* ws)
       module(OperatorBase::Arg<string>("module", "")),
       op(OperatorBase::Arg<string>("op", "")),
       param_str((OperatorBase::Arg<string>("param_str", ""))) {
+    //  optimization for all python ops
+    if (!AllowRun()) return; this->do_sync_ = false;
+
     //  init interpreter & load module
     Py_Initialize();
     PyObject* py_module = PyImport_ImportModule(module.c_str());
@@ -27,37 +33,38 @@ RunOp<Context>::RunOp(const OperatorDef& def, Workspace* ws)
                  << " from module: " << module;
     self = PyObject_CallObject(py_op, NULL);
 
-    //  pass param string
-    PyObject_SetAttr(self, String("param_str"), String(param_str.c_str()));
-    PyObject_SetAttr(self, String("param_str_"), String(param_str.c_str()));
-
-    //  build inputs and outputs for Python
+    //  wrap inputs and outputs
     inputs = PyList_New(InputSize());
     for (int i = 0; i < InputSize(); i++)
-        PyList_SetItem(inputs, i, String(Input(i).name().c_str()));
+        PyList_SetItem(inputs, i, CS2Bytes(Input(i).name()));
     outputs = PyList_New(OutputSize());
     for (int i = 0; i < OutputSize(); i++)
-        PyList_SetItem(outputs, i, String(Output(i)->name().c_str()));
-    if (!AllowRun()) return;
+        PyList_SetItem(outputs, i, CS2Bytes(Output(i)->name()));
 
-    //  setup
-    if (PyObject_HasAttr(self, String("setup")))
+    //  backward compatibility: param_str
+    PyObject_SetAttr(self, Bytes("param_str"), CS2Bytes(param_str));
+    PyObject_SetAttr(self, Bytes("param_str_"), CS2Bytes(param_str));
+
+    //  backward compatibility: self.setup(inputs, outputs)
+    if (PyObject_HasAttr(self, Bytes("setup"))) {
         PyObject_CallMethod(self, "setup", "OO", inputs, outputs);
+    }
 }
 
 template <class Context>
 void RunOp<Context>::RunOnDevice() {
-    //  init phase
-    PyObject_SetAttr(self, String("phase"), String(phase().c_str()));
+    //  reset phase
+    PyObject_SetAttr(self, Bytes("phase"), CS2Bytes(phase()));
 
-    //  reshape
-    if (PyObject_HasAttr(self, String("reshape")))
+    //  backward compatibility: reshape(inputs, outputs)
+    if (PyObject_HasAttr(self, Bytes("reshape"))) {
         PyObject_CallMethod(self, "reshape", "OO", inputs, outputs);
+    }
 
-    //  run
-    if (PyObject_HasAttr(self, String("forward"))) {
+    //  overloaded run inferfaces
+    if (PyObject_HasAttr(self, Bytes("forward"))) {
         PyObject_CallMethod(self, "forward", "OO", inputs, outputs);
-    } else if (PyObject_HasAttr(self, String("run"))) {
+    } else if (PyObject_HasAttr(self, Bytes("run"))) {
         PyObject_CallMethod(self, "run", "OO", inputs, outputs);
     }
 }
@@ -72,18 +79,23 @@ NO_GRADIENT(Run);
 
 template <class Context>
 void TemplateGradientOp<Context>::RunOnDevice() {
-    //  init phase
-    PyObject_SetAttr(this->self, String("phase"), String(phase().c_str()));
+    //  reset phase
+    PyObject_SetAttr(this->self,
+        Bytes("phase"), CS2Bytes(phase()));
 
-    //  reshape
-    if (PyObject_HasAttr(this->self, String("reshape")))
-        PyObject_CallMethod(this->self, "reshape", "OO", this->inputs, this->outputs);
+    //  backward compatibility: reshape(inputs, outputs)
+    if (PyObject_HasAttr(this->self, Bytes("reshape"))) {
+        PyObject_CallMethod(this->self, "reshape",
+            "OO", this->inputs, this->outputs);
+    }
 
-    //  run
-    if (PyObject_HasAttr(this->self, String("backward"))) {
-        PyObject_CallMethod(this->self, "forward", "OO", this->inputs, this->outputs);
-    } else if (PyObject_HasAttr(this->self, String("grad"))) {
-        PyObject_CallMethod(this->self, "grad", "OO", this->inputs, this->outputs);
+    //  overloaded run inferfaces
+    if (PyObject_HasAttr(this->self, Bytes("backward"))) {
+        PyObject_CallMethod(this->self, "forward",
+            "OO", this->inputs, this->outputs);
+    } else if (PyObject_HasAttr(this->self, Bytes("grad"))) {
+        PyObject_CallMethod(this->self, "grad",
+            "OO", this->inputs, this->outputs);
     }
 }
 

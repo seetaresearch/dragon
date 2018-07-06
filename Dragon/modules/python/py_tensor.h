@@ -52,6 +52,11 @@ inline PyObject* CreateFillerCC(PyObject* self, PyObject* args) {
     Py_RETURN_TRUE;
 }
 
+inline PyObject* GetFillerTypeCC(PyObject* self, PyObject* args) {
+    const auto* f = ws()->GetFiller(ParseName(self, args));
+    return String_AsPyUnicode(f->type());
+}
+
 inline PyObject* RenameTensorCC(PyObject* self, PyObject* args) {
     char* ori_name, *tar_name;
     if (!PyArg_ParseTuple(args, "ss", &ori_name, &tar_name)) {

@@ -604,140 +604,137 @@ template <> void SoftmaxCrossEntropy<float, CPUContext>(
 
 template <typename Tx, typename Ty>
 void _SparseSoftmaxCrossEntropy(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
     const Tx*               prob,
     const Ty*               labels,
-    Tx*                     loss,
-    Tx*                     valid,
-    Tensor*                 ignore) {
-    const int* ignores = ignore->count() > 0 ?
-        ignore->data<int, CPUContext>() : nullptr;
-    const int dim = count / outer_dim;
-    for (int i = 0; i < outer_dim; ++i) {
-        for (int j = 0; j < inner_dim; ++j) {
-            const int idx = i * inner_dim + j;
+    const int*              ignores,
+    const int               num_ignores,
+    Tx*                     losses,
+    Tx*                     flags) {
+    for (int oix = 0; oix < outer_dim; ++oix) {
+        for (int iix = 0; iix < inner_dim; ++iix) {
+            const int idx = oix * inner_dim + iix;
             const int label = labels[idx];
             int k;
-            for (k = 0; k < ignore->count(); ++k) {
+            for (k = 0; k < num_ignores; ++k) {
                 if (label == ignores[k]) {
-                    loss[idx] = valid[idx] = 0;
+                    losses[idx] = flags[idx] = 0;
                     break;
                 }
             }
-            if (k == ignore->count()) {
-                Tx labeled_prob = prob[i * dim + label * inner_dim + j];
-                loss[idx] = -std::log(std::max(labeled_prob, FLT_MIN));
-                valid[idx] = 1;
+            if (k == num_ignores) {
+                const int t = (oix * axis_dim + label) * inner_dim + iix;
+                losses[idx] = -std::log(std::max(prob[t], FLT_MIN));
+                flags[idx] = 1;
             }
         }
     }
 }
 
 template <> void SparseSoftmaxCrossEntropy<float, float, CPUContext>(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
     const float*            prob,
     const float*            labels,
-    float*                  loss,
-    float*                  valid,
-    Tensor*                 ignore,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
     CPUContext*             ctx) {
     _SparseSoftmaxCrossEntropy<float, float>(
-        count, classes, outer_dim, inner_dim,
-            prob, labels, loss, valid, ignore);
+        outer_dim, axis_dim, inner_dim,
+            prob, labels, ignores, num_ignores,
+                losses, flags);
 }
 
 template <> void SparseSoftmaxCrossEntropy<float, int64_t, CPUContext>(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
     const float*            prob,
     const int64_t*          labels,
-    float*                  loss,
-    float*                  valid,
-    Tensor*                 ignore,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
     CPUContext*             ctx) {
     _SparseSoftmaxCrossEntropy<float, int64_t>(
-        count, classes, outer_dim, inner_dim,
-            prob, labels, loss, valid, ignore);
+        outer_dim, axis_dim, inner_dim,
+            prob, labels, ignores, num_ignores,
+                losses, flags);
 }
 
 template <typename Tx, typename Ty>
 void _SparseSoftmaxCrossEntropyGrad(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
     const Tx*               prob,
     const Ty*               labels,
-    Tx*                     valid,
-    Tensor*                 ignore,
-    Tx*                     dx) {
-    int dim = count / outer_dim;
-    const int* ignores = ignore->count() > 0 ?
-        ignore->data <int, CPUContext>() : nullptr;
-    valid[0] = 0;
-    for (int i = 0; i < outer_dim; ++i) {
-        for (int j = 0; j < inner_dim; ++j) {
-            const int label = labels[i * inner_dim + j];
+    const int*              ignores,
+    const int               num_ignores,
+    Tx*                     dx,
+    Tx*                     flags) {
+    flags[0] = 0;
+    for (int oix = 0; oix < outer_dim; ++oix) {
+        for (int iix = 0; iix < inner_dim; ++iix) {
+            const int label = labels[oix * inner_dim + iix];
             int k;
-            for (k = 0; k < ignore->count(); ++k)
+            for (k = 0; k < num_ignores; ++k)
                 if (label == ignores[k]) break;
-            if (k != ignore->count()) {
-                for (int c = 0; c < classes; ++c)
-                    dx[i * dim + c * inner_dim + j] = 0;
+            if (k != num_ignores) {
+                for (int c = 0; c < axis_dim; ++c)
+                    dx[(oix * axis_dim + c) * inner_dim + iix] = 0;
             } else {
-                dx[i * dim + label * inner_dim + j] -= 1;
-                valid[0]++;
+                dx[(oix * axis_dim + label) * inner_dim + iix] -= 1;
+                flags[0]++;
             }
         }
     }
 }
 
 template<> void SparseSoftmaxCrossEntropyGrad<float, float, CPUContext>(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
     const float*            prob,
     const float*            labels,
-    float*                  valid,
-    Tensor*                 ignore,
+    const int*              ignores,
+    const int               num_ignores,
     float*                  dx,
+    float*                  flags,
     CPUContext*             ctx) {
     _SparseSoftmaxCrossEntropyGrad<float, float>(
-        count, classes, outer_dim, inner_dim,
-            prob, labels, valid, ignore, dx);
+        outer_dim, axis_dim, inner_dim,
+            prob, labels, ignores,
+                num_ignores, dx, flags);
 }
 
 template<> void SparseSoftmaxCrossEntropyGrad<float, int64_t, CPUContext>(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
     const float*            prob,
     const int64_t*          labels,
-    float*                  valid,
-    Tensor*                 ignore,
+    const int*              ignores,
+    const int               num_ignores,
     float*                  dx,
+    float*                  flags,
     CPUContext*             ctx) {
     _SparseSoftmaxCrossEntropyGrad<float, int64_t>(
-        count, classes, outer_dim, inner_dim,
-            prob, labels, valid, ignore, dx);
+        outer_dim, axis_dim, inner_dim,
+            prob, labels, ignores,
+                num_ignores, dx, flags);
 }
 
 /******************** loss.sparse_softmax_focal_loss ********************/
 
 template <> void SparseSoftmaxFocalLoss<float, CPUContext>(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
     const float             pos_alpha,
     const float             neg_alpha,
@@ -745,84 +742,78 @@ template <> void SparseSoftmaxFocalLoss<float, CPUContext>(
     const int               neg_id,
     const float*            prob,
     const float*            labels,
-    float*                  scale,
-    float*                  loss,
-    float*                  valid,
-    Tensor*                 ignore) {
-    const int* ignores = ignore->count() > 0 ?
-        ignore->data<int, CPUContext>() : nullptr;
-    const int dim = count / outer_dim;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
-#endif
-    for (int i = 0; i < count; ++i) 
-        scale[i] = std::pow((1.0f - prob[i]), gamma);
-
-    for (int i = 0; i < outer_dim; ++i) {
-        for (int j = 0; j < inner_dim; ++j) {
-            const int idx = i * inner_dim + j;
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    CPUContext*             ctx) {
+    for (int oix = 0; oix < outer_dim; ++oix) {
+        for (int iix = 0; iix < inner_dim; ++iix) {
+            const int idx = oix * inner_dim + iix;
             const int label = labels[idx];
             int k;
-            for (k = 0; k < ignore->count(); ++k) {
+            for (k = 0; k < num_ignores; ++k) {
                 if (label == ignores[k]) {
-                    loss[idx] = valid[idx] = 0;
+                    losses[idx] = flags[idx] = 0;
                     break;
                 }
             }
-            if (k == ignore->count()) {
-                const int t_ = i * dim + label * inner_dim + j;
+            if (k == num_ignores) {
+                const int t = (oix * axis_dim + label) * inner_dim + iix;
                 float labeled_prob = std::max(labeled_prob, FLT_MIN);
-                scale[t_] = label > neg_id ?
-                    pos_alpha * scale[t_] :  neg_alpha * scale[t_];
-                loss[idx] = -scale[t_] * std::log(labeled_prob);
-                valid[idx] = label > neg_id ? 1 : 0;
+                float scale = std::pow((1.f - prob[t]), gamma);
+                scale = label > neg_id ?
+                    pos_alpha * scale :  neg_alpha * scale;
+                losses[idx] = -scale * std::log(labeled_prob);
+                flags[idx] = label > neg_id ? 1 : 0;
             }
         }
     }
 }
 
 template<> void SparseSoftmaxFocalLossGrad<float, CPUContext>(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
     const float             gamma,
     const int               neg_id,
-    const float             eps,
-    const float*            scale,
     const float*            prob,
     const float*            labels,
-    float*                  valid,
-    Tensor*                 ignore,
-    float*                  dx) {
-    int dim = count / outer_dim;
-    const int* ignores = ignore->count() > 0 ?
-        ignore->data <int, CPUContext>() : nullptr;
-    valid[0] = 0;
-    for (int i = 0; i < outer_dim; ++i) {
-        for (int j = 0; j < inner_dim; ++j) {
-            const int label = labels[i * inner_dim + j];
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  dx,
+    float*                  flags,
+    CPUContext*             ctx) {
+    flags[0] = 0;
+    for (int oix = 0; oix < outer_dim; ++oix) {
+        for (int iix = 0; iix < inner_dim; ++iix) {
+            const int label = labels[oix * inner_dim + iix];
             int k;
-            for (k = 0; k < ignore->count(); ++k)
+            for (k = 0; k < num_ignores; ++k)
                 if (label == ignores[k]) break;
-            if (k != ignore->count()) {
-                for (int c = 0; c < classes; ++c)
-                    dx[i * dim + c * inner_dim + j] = 0;
+            if (k != num_ignores) {
+                for (int c = 0; c < axis_dim; ++c)
+                    dx[(oix * axis_dim + c) * inner_dim + iix] = 0;
             } else {
-                const int t_ = i * dim + label * inner_dim + j;
-                float grad = -gamma
-                    * (scale[t_] / std::max((1.0f - prob[t_]), eps))
-                    * std::log(std::max(prob[t_], FLT_MIN))
-                    * prob[t_] + scale[t_];
-                for (int c = 0; c < classes; ++c) {
-                    const int i_ = i * dim + c * inner_dim + j;
+                const int t = (oix * axis_dim + label) * inner_dim + iix;
+                float onemp = 1. - prob[t];
+                //  unstable if gamma is 0
+                float grad = -gamma * pow(onemp, gamma - 1)
+                                    * log(std::max(prob[t], FLT_MIN))
+                                    * prob[t] + pow(onemp, gamma);
+                grad = label > neg_id ?
+                    pos_alpha * grad : neg_alpha * grad;
+                for (int c = 0; c < axis_dim; ++c) {
+                    const int i_ = (oix * axis_dim + c) * inner_dim + iix;
                     if (c == label) {
-                        dx[i_] = grad * (prob[t_] - 1);
+                        dx[i_] = grad * (prob[t] - 1);
                     } else {
                         dx[i_] = grad * prob[i_];
                     }
                 }
-                if (label > neg_id) valid[0]++;
+                if (label > neg_id) flags[0]++;
             }
         }
     }

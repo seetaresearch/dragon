@@ -44,6 +44,7 @@ __all__ = [
     'HasTensor',
     'CreateTensor',
     'CreateFiller',
+    'GetFillerType',
     'GetTensorName',
     'RenameTensor',
     'FeedTensor',
@@ -335,7 +336,7 @@ def CreateFiller(filler_def):
     Parameters
     ----------
     filler_def : dragon_pb2.TensorFiller
-        The
+        The filler.
 
     Returns
     -------
@@ -354,6 +355,31 @@ def CreateFiller(filler_def):
     filler_def = filler_def if isinstance(filler_def, str) \
         else filler_def.SerializeToString()
     CreateFillerCC(filler_def)
+
+
+def GetFillerType(tensor):
+    """Get the filler type of specific tensor.
+
+    It is useful if you want to tag some tensors,
+
+    e.g. tag with ``numpy``, and get to initialize them lazily.
+
+    Parameters
+    ----------
+    tensor : Tensor or str
+        The tensor to query.
+
+    Returns
+    -------
+    str
+        The filler type.
+
+    References
+    ----------
+    The wrapper of ``GetFillerTypeCC``.
+
+    """
+    return GetFillerTypeCC(_stringify_tensor(tensor))
 
 
 def GetTensorName(tensor):

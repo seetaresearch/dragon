@@ -227,6 +227,7 @@ PyMethodDef* GetAllMethods() {
         PYFUNC(HasTensorCC),
         PYFUNC(CreateTensorCC),
         PYFUNC(CreateFillerCC),
+        PYFUNC(GetFillerTypeCC),
         PYFUNC(RenameTensorCC),
         PYFUNC(TensorFromShapeCC),
         PYFUNC(TensorFromPyArrayCC),

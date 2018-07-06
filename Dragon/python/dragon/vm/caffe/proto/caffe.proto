@@ -1504,10 +1504,9 @@ message DenseConcatParameter {
 }
 
 message FocalLossParameter {
-  optional float alpha = 1 [default = 0.5];
-  optional float gamma = 2 [default = 0.0];
-  optional float eps = 3 [default = 1e-10];
-  optional int32 neg_id = 4 [default = -1];
+  optional float alpha = 1 [default = 0.25];
+  optional float gamma = 2 [default = 2.0];
+  optional int32 neg_id = 3 [default = 0];
 }
 
 message GatherParameter {

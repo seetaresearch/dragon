@@ -938,205 +938,186 @@ template <> void SoftmaxCrossEntropy<float, CUDAContext>(
 template <typename Tx, typename Ty>
 __global__ void _SparseSoftmaxCrossEntropy(
     const int               count,
+    const int               axis_dim,
+    const int               inner_dim,
     const Tx*               prob,
     const Ty*               labels,
-    Tx*                     loss,
-    const int               classes,
-    const int               inner_dim,
     const int*              ignores,
-    const int               ignore_num,
-    Tx*                     valid) {
+    const int               num_ignores,
+    Tx*                     losses,
+    Tx*                     flags) {
     CUDA_KERNEL_LOOP(idx, count) {
-        const int o_idx = idx / inner_dim;
-        const int i_idx = idx % inner_dim;
-        const int label = labels[o_idx * inner_dim + i_idx];
+        const int oix = idx / inner_dim;
+        const int iix = idx % inner_dim;
+        const int label = labels[oix * inner_dim + iix];
         int k;
-        for (k = 0; k < ignore_num; k++) {
+        for (k = 0; k < num_ignores; k++) {
             if (label == ignores[k]) {
-                loss[idx] = valid[idx] = 0;
+                losses[idx] = flags[idx] = 0;
                 break;
             }
         }
-        if (k == ignore_num) {
-            loss[idx] = -log(
-                max(prob[(o_idx * classes + label)
-                            * inner_dim + i_idx], FLT_MIN)
+        if (k == num_ignores) {
+            losses[idx] = -log(
+                max(prob[(oix * axis_dim + label)
+                    * inner_dim + iix], FLT_MIN)
             );
-            valid[idx] = 1;
+            flags[idx] = 1;
         }
     }
 }
 
 template <> void SparseSoftmaxCrossEntropy<float, float, CUDAContext>(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
     const float*            prob,
     const float*            labels,
-    float*                  loss,
-    float*                  valid,
-    Tensor*                 ignore,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
     CUDAContext*            ctx) {
-    const int* ignores = ignore->count() > 0 ?
-        ignore->data<int, CUDAContext>() : nullptr;
     const int num_preds = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropy<float, float>
         << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
             0, ctx->cuda_stream() >> >(
-                num_preds, prob, labels, loss,
-                    classes, inner_dim,
-                        ignores, ignore->count(), valid);
+                num_preds, axis_dim, inner_dim,
+                    prob, labels, ignores, num_ignores,
+                        losses, flags);
 }
 
 template <> void SparseSoftmaxCrossEntropy<float, int64_t, CUDAContext>(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
     const float*            prob,
     const int64_t*          labels,
-    float*                  loss,
-    float*                  valid,
-    Tensor*                 ignore,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
     CUDAContext*            ctx) {
-    const int* ignores = ignore->count() > 0 ?
-        ignore->data<int, CUDAContext>() : nullptr;
     const int num_preds = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropy<float, int64_t>
         << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
             0, ctx->cuda_stream() >> >(
-                num_preds, prob, labels, loss,
-                    classes, inner_dim,
-                        ignores, ignore->count(), valid);
+                num_preds, axis_dim, inner_dim,
+                    prob, labels, ignores, num_ignores,
+                        losses, flags);
 }
 
 template <typename Tx, typename Ty>
 __global__ void _SparseSoftmaxCrossEntropyGrad(
     const int               count,
+    const int               axis_dim,
+    const int               inner_dim,
     const Tx*               prob,
     const Ty*               labels,
-    Tx*                     dx,
-    const int               classes,
-    const int               inner_dim,
     const int*              ignores,
-    const int               ignore_num,
-    Tx*                     valid) {
+    const int               num_ignores,
+    Tx*                     dx,
+    Tx*                     flags) {
     CUDA_KERNEL_LOOP(idx, count) {
-        const int o_idx = idx / inner_dim;
-        const int i_idx = idx % inner_dim;
-        const int label = labels[o_idx * inner_dim + i_idx];
+        const int oix = idx / inner_dim;
+        const int iix = idx % inner_dim;
+        const int label = labels[oix * inner_dim + iix];
         int k;
-        for (k = 0; k < ignore_num; k++) 
+        for (k = 0; k < num_ignores; k++)
                 if (label == ignores[k]) break;
-        if (k != ignore_num) {
-                for (int c = 0; c < classes; c++)
-                    dx[(o_idx * classes + c) * inner_dim + i_idx] = 0;
-                valid[idx] = 0;
+        if (k != num_ignores) {
+            for (int c = 0; c < axis_dim; c++)
+                dx[(oix * axis_dim + c) * inner_dim + iix] = 0;
+            flags[idx] = 0;
         } else {
-                dx[(o_idx * classes + label) * inner_dim + i_idx] -= 1;
-                valid[idx] = 1;
+            dx[(oix * axis_dim + label) * inner_dim + iix] -= 1;
+            flags[idx] = 1;
         }
     }
 }
 
 template<> void SparseSoftmaxCrossEntropyGrad<float, float, CUDAContext>(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
     const float*            prob,
     const float*            labels,
-    float*                  valid,
-    Tensor*                 ignore,
-    float*                  dXdata,
-    CUDAContext*             ctx) {
-    const int* ignores = ignore->count() > 0 ?
-        ignore->data <int, CUDAContext >() : nullptr;
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  dx,
+    float*                  flags,
+    CUDAContext*            ctx) {
     const int num_preds = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropyGrad<float, float>
         << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
             0, ctx->cuda_stream() >> >(
-                num_preds, prob, labels, dXdata,
-                    classes, inner_dim,
-                        ignores, ignore->count(), valid);
+                num_preds, axis_dim, inner_dim,
+                    prob, labels, ignores, num_ignores, 
+                        dx, flags);
 }
 
 template<> void SparseSoftmaxCrossEntropyGrad<float, int64_t, CUDAContext>(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
     const float*            prob,
     const int64_t*          labels,
-    float*                  valid,
-    Tensor*                 ignore,
-    float*                  dXdata,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  dx,
+    float*                  flags,
     CUDAContext*            ctx) {
-    const int* ignores = ignore->count() > 0 ?
-        ignore->data <int, CUDAContext >() : nullptr;
     const int num_preds = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropyGrad<float, int64_t>
         << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
             0, ctx->cuda_stream() >> >(
-                num_preds, prob, labels, dXdata,
-                    classes, inner_dim,
-                        ignores, ignore->count(), valid);
+                num_preds, axis_dim, inner_dim,
+                    prob, labels, ignores, num_ignores,
+                        dx, flags);
 }
 
 /******************** loss.sparse_softmax_focal_loss ********************/
 
 template <typename T>
-__global__ void _SparseSoftmaxFocalScale(
-    const int               count,
-    const float             gamma,
-    const T*                prob,
-    T*                      scale) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        scale[idx] = std::pow((1.0f - prob[idx]), gamma);
-    }
-}
-
-template <typename T>
 __global__ void _SparseSoftmaxFocalLoss(
     const int               count,
+    const int               axis_dim,
+    const int               inner_dim,
     const float             pos_alpha,
     const float             neg_alpha,
+    const float             gamma,
     const int               neg_id,
-    T*                      scale,
     const T*                prob,
     const T*                labels,
-    T*                      loss,
-    const int               classes,
-    const int               inner_dim,
     const int*              ignores,
-    const int               ignore_num,
-    T*                      valid) {
+    const int               num_ignores,
+    T*                      losses,
+    T*                      flags) {
     CUDA_KERNEL_LOOP(idx, count) {
-        const int o_idx = idx / inner_dim;
-        const int i_idx = idx % inner_dim;
-        const int label = labels[o_idx * inner_dim + i_idx];
+        const int oix = idx / inner_dim;
+        const int iix = idx % inner_dim;
+        const int label = labels[oix * inner_dim + iix];
         int k;
-        for (k = 0; k < ignore_num; k++) {
+        for (k = 0; k < num_ignores; k++) {
             if (label == ignores[k]) {
-                loss[idx] = valid[idx] = 0;
+                losses[idx] = flags[idx] = 0;
                 break;
             }
         }
-        if (k == ignore_num) {
-            const int t_ = (o_idx * classes + label) * inner_dim + i_idx;
-            scale[t_] = label > neg_id ? pos_alpha * scale[t_] :
-                                         neg_alpha * scale[t_];
-            loss[idx] = -scale[t_] * std::log(max(prob[t_], FLT_MIN));
-            valid[idx] = label > neg_id ? 1 : 0;
+        if (k == num_ignores) {
+            const int t = (oix * axis_dim + label) * inner_dim + iix;
+            T scale = pow(1.f - prob[t], gamma);
+            scale = label > neg_id ?
+                pos_alpha * scale : neg_alpha * scale;
+            losses[idx] = -scale * std::log(max(prob[t], FLT_MIN));
+            flags[idx] = label > neg_id ? 1 : 0;
         }
     }
 }
 
 template <> void SparseSoftmaxFocalLoss<float, CUDAContext>(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
     const float             pos_alpha,
     const float             neg_alpha,
@@ -1144,89 +1125,92 @@ template <> void SparseSoftmaxFocalLoss<float, CUDAContext>(
     const int               neg_id,
     const float*            prob,
     const float*            labels,
-    float*                  scale,
-    float*                  loss,
-    float*                  valid,
-    Tensor*                 ignore) {
-    const int* ignores = ignore->count() > 0 ? 
-        ignore->data<int, CUDAContext>() : nullptr;
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    CUDAContext*            ctx) {
     const int num_preds = outer_dim * inner_dim;
-    _SparseSoftmaxFocalScale<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, gamma, prob, scale);
     _SparseSoftmaxFocalLoss<float>
-        << <CUDA_BLOCKS(num_preds), CUDA_THREADS >> >(
-            num_preds, pos_alpha, neg_alpha, neg_id, scale,
-                prob, labels, loss, classes, inner_dim,
-                    ignores, ignore->count(), valid);
+        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                num_preds, axis_dim, inner_dim,
+                    pos_alpha, neg_alpha, gamma, neg_id,
+                        prob, labels, ignores, num_ignores,
+                            losses, flags);
 }
 
 template <typename T>
 __global__ void _SparseSoftmaxFocalLossGrad(
     const int               count,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
     const float             gamma,
     const int               neg_id,
-    const float             eps,
-    const T*                scale,
     const T*                prob,
     const T*                labels,
-    T*                      dx,
-    const int               classes,
-    const int               inner_dim,
     const int*              ignores,
-    const int               ignore_num,
-    T*                      valid) {
+    const int               num_ignores,
+    T*                      dx,
+    T*                      flags) {
     CUDA_KERNEL_LOOP(idx, count) {
-        const int o_idx = idx / inner_dim;
-        const int i_idx = idx % inner_dim;
-        const int label = labels[o_idx * inner_dim + i_idx];
+        const int oix = idx / inner_dim;
+        const int iix = idx % inner_dim;
+        const int label = labels[oix * inner_dim + iix];
         int k;
-        for (k = 0; k < ignore_num; k++) 
+        for (k = 0; k < num_ignores; k++)
             if (label == ignores[k]) break;
-        if (k != ignore_num) {
-            for (int c = 0; c < classes; c++)
-                dx[(o_idx * classes + c) * inner_dim + i_idx] = 0;
-            valid[idx] = 0;
+        if (k != num_ignores) {
+            for (int c = 0; c < axis_dim; c++)
+                dx[(oix * axis_dim + c) * inner_dim + iix] = 0;
+            flags[idx] = 0;
         } else {
-            const int t_ = (o_idx * classes + label) * inner_dim + i_idx;
-            T grad = -gamma * (scale[t_] / max((1.0f - prob[t_]), eps))
-                            * std::log(max(prob[t_], FLT_MIN))
-                            * prob[t_] + scale[t_];
-            for (int c = 0; c < classes; c++) {
-                const int i_ = (o_idx * classes + c) * inner_dim + i_idx;
+            const int t = (oix * axis_dim + label) * inner_dim + iix;
+            T onemp = 1. - prob[t];
+            //  unstable if gamma is 0
+            T grad = -gamma * pow(onemp, gamma - 1)
+                            * log(max(prob[t], FLT_MIN))
+                            * prob[t] + pow(onemp, gamma);
+            grad = label > neg_id ?
+                pos_alpha * grad : neg_alpha * grad;
+            for (int c = 0; c < axis_dim; c++) {
+                const int i = (oix * axis_dim + c) * inner_dim + iix;
                 if (c == label) {
-                    dx[i_] = grad * (prob[t_] - 1);
+                    dx[i] = grad * (prob[t] - 1);
                 } else {
-                    dx[i_] = grad * prob[i_];
+                    dx[i] = grad * prob[i];
                 }
             }
-            valid[idx] = label > neg_id ? 1 : 0;
+            flags[idx] = label > neg_id ? 1 : 0;
         }
     }
 }
 
 template<> void SparseSoftmaxFocalLossGrad<float, CUDAContext>(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
     const float             gamma,
     const int               neg_id,
-    const float             eps,
-    const float*            scale,
     const float*            prob,
     const float*            labels,
-    float*                  valid,
-    Tensor*                 ignore,
-    float*                  dXdata) {
-    const int* ignores = ignore->count() > 0 ?
-        ignore->data <int, CUDAContext >() : nullptr;
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  dx,
+    float*                  flags,
+    CUDAContext*            ctx) {
     const int num_preds = outer_dim * inner_dim;
     _SparseSoftmaxFocalLossGrad<float>
-        << <CUDA_BLOCKS(num_preds), CUDA_THREADS >> >(
-            num_preds, gamma, neg_id, eps, scale,
-                prob, labels, dXdata, classes, inner_dim,
-                    ignores, ignore->count(), valid);
+        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                num_preds, axis_dim, inner_dim,
+                    pos_alpha, neg_alpha, gamma, neg_id,
+                        prob, labels, ignores, num_ignores,
+                            dx, flags);
 }
 
 /******************** misc.astype ********************/

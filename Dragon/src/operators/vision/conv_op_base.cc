@@ -235,7 +235,7 @@ void ConvOpBase<Context>::Reshape() {
         weight_shape.push_back(conv_in_channels / group);
         weight_shape.push_back(conv_out_channels);
     }
-    bias_shape.assign(1, num_output);
+    bias_shape = { num_output };
 
     //  determine the bottom and top shape
     bottom_shape = Input(0).dims();

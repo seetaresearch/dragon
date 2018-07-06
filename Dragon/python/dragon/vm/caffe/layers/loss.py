@@ -149,8 +149,6 @@ class SoftmaxWithFocalLossLayer(Layer):
         The scale on the rare class. Refer `FocalLossParameter.alpha`_.
     gamma : float
         The exponential decay. Refer `FocalLossParameter.gamma`_.
-    eps : float
-        The eps. Refer `FocalLossParameter.eps`_.
     neg_id : int
         The negative id. Refer `FocalLossParameter.neg_id`_.
     normalization : NormalizationMode
@@ -174,7 +172,6 @@ class SoftmaxWithFocalLossLayer(Layer):
                        'ignore_labels': [param.ignore_label] if param.HasField('ignore_label') else [],
                        'alpha': float(focal_loss_param.alpha),
                        'gamma': float(focal_loss_param.gamma),
-                       'eps': float(focal_loss_param.eps),
                        'neg_id': focal_loss_param.neg_id}
 
     def Setup(self, bottom):

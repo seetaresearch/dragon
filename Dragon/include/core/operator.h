@@ -90,8 +90,10 @@ class Operator : public OperatorBase {
  public:
     Operator(const OperatorDef& def, Workspace* ws)
         : OperatorBase(def, ws), ctx_(def.device_option()),
-          recomputing_aware_(OperatorBase::Arg<bool>(
-              "recomputing_aware", false)) {
+          allow_recompute_(OperatorBase::Arg<bool>(
+              "recomputing_aware", false)),
+          do_sync_(OperatorBase::Arg<bool>(
+              "do_sync", true)) {
         allow_run_ = true;
         allow_run_ &= _MPICheck();
         allow_run_ &= (!(OutputSize() == 1 &&
@@ -99,13 +101,13 @@ class Operator : public OperatorBase {
     }
 
     virtual void Run() final {
-        if (!allow_run_)  return;
-        if (recomputing_aware_) MakeResource();
+        if (!allow_run_) return;
+        if (allow_recompute_) MakeResource();
         ctx().SwitchToDevice();
         MemorySwitch();
         RunOnDevice();
-        ctx().FinishDeviceCompution();
-        if (recomputing_aware_) CleanResource();
+        if (do_sync_) ctx().FinishDeviceCompution();
+        if (allow_recompute_) CleanResource();
     }
 
     virtual void ElimateCorruption();
@@ -126,7 +128,7 @@ class Operator : public OperatorBase {
 
  protected:
     Context ctx_;
-    bool allow_run_, recomputing_aware_;
+    bool allow_run_, allow_recompute_, do_sync_;
 
  private:
     bool _MPICheck() {

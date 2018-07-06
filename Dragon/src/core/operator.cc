@@ -229,11 +229,35 @@ void Operator<Context>::CleanResource() {
     }
 }
 
-DEFINE_REGISTRY(CPUOperatorRegistry, OperatorBase, const OperatorDef&, Workspace*);
-DEFINE_REGISTRY(CUDAOperatorRegistry, OperatorBase, const OperatorDef&, Workspace*);
-DEFINE_REGISTRY(CUDNNOperatorRegistry, OperatorBase, const OperatorDef&, Workspace*);
-DEFINE_REGISTRY(GradientRegistry, GradientMakerBase, const OperatorDef&, const vector<string>&);
-DEFINE_REGISTRY(NoGradientRegistry, GradientMakerBase, const OperatorDef&, const vector<string>&);
+DEFINE_REGISTRY(
+    CPUOperatorRegistry,
+    OperatorBase,
+    const OperatorDef&,
+    Workspace*);
+
+DEFINE_REGISTRY(
+    CUDAOperatorRegistry,
+    OperatorBase,
+    const OperatorDef&,
+    Workspace*);
+
+DEFINE_REGISTRY(
+    CUDNNOperatorRegistry,
+    OperatorBase,
+    const OperatorDef&,
+    Workspace*);
+
+DEFINE_REGISTRY(
+    GradientRegistry,
+    GradientMakerBase,
+    const OperatorDef&,
+    const vector<string>&);
+
+DEFINE_REGISTRY(
+    NoGradientRegistry,
+    GradientMakerBase,
+    const OperatorDef&,
+    const vector<string>&);
 
 #define INSTANTIATE_GET_SINGLE_ARGUMENT(T, fieldname) \
 template <> T OperatorBase::Arg( \
@@ -251,7 +275,6 @@ INSTANTIATE_GET_SINGLE_ARGUMENT(int, i)
 INSTANTIATE_GET_SINGLE_ARGUMENT(string, s)
 INSTANTIATE_GET_SINGLE_ARGUMENT(bool, b);
 INSTANTIATE_GET_SINGLE_ARGUMENT(int64_t, i64);
-
 
 #define INSTANTIATE_GET_REPEATED_ARGUMENT(T, fieldname) \
 template<> vector<T> OperatorBase::Args<T>(const string& name) { \

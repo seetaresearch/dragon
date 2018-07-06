@@ -17,18 +17,19 @@
 namespace dragon {
 
 template <class Context>
-class SparseSoftmaxFocalLossOp final : public SparseSoftmaxCrossEntropyOp<Context> {
+class SparseSoftmaxFocalLossOp final
+    : public SparseSoftmaxCrossEntropyOp<Context> {
  public:
     SparseSoftmaxFocalLossOp(const OperatorDef& def, Workspace* ws)
         : SparseSoftmaxCrossEntropyOp<Context>(def, ws),
            axis(OperatorBase::Arg<int>("axis", 1)),
            normalization(OperatorBase::Arg<string>(
                "normalization", "VALID")),
-           alpha(OperatorBase::Arg<float>("alpha", 0.5)),
-           gamma(OperatorBase::Arg<float>("gamma", 0.0)),
-           neg_id(OperatorBase::Arg<int>("neg_id", -1)) {
-        pos_alpha = alpha * 2.0;
-        neg_alpha = (1 - alpha) * 2.0;
+           alpha(OperatorBase::Arg<float>("alpha", 0.25f)),
+           gamma(OperatorBase::Arg<float>("gamma", 2.f)),
+           neg_id(OperatorBase::Arg<int>("neg_id", 0)) {
+        pos_alpha = alpha;
+        neg_alpha = 1.f - alpha;
     }
     USE_OPERATOR_FUNCTIONS;
 
@@ -36,35 +37,36 @@ class SparseSoftmaxFocalLossOp final : public SparseSoftmaxCrossEntropyOp<Contex
     template <typename T> void RunWithType();
 
  protected:
-    float alpha, gamma;
-    int neg_id;
-    float pos_alpha, neg_alpha;
-    TIndex axis, outer_dim, inner_dim;
-    Tensor* scale;
+    float alpha, gamma, pos_alpha, neg_alpha;
+    TIndex axis, neg_id, outer_dim, inner_dim;
+    Tensor losses, flags;
     string normalization;
 };
 
 template <class Context>
-class SparseSoftmaxFocalLossGradientOp final : public SparseSoftmaxCrossEntropyGradientOp<Context> {
+class SparseSoftmaxFocalLossGradientOp final
+    : public SparseSoftmaxCrossEntropyGradientOp<Context> {
  public:
     SparseSoftmaxFocalLossGradientOp(const OperatorDef& def, Workspace* ws)
          : SparseSoftmaxCrossEntropyGradientOp<Context>(def, ws),
            axis(OperatorBase::Arg<int>("axis", 1)),
            normalization(OperatorBase::Arg<string>(
                "normalization", "VALID")),
-           gamma(OperatorBase::Arg<float>("gamma", 0.0)),
-           eps(OperatorBase::Arg<float>("eps", float(1e-10))),
-           neg_id(OperatorBase::Arg<int>("neg_id", -1)) {}
+           alpha(OperatorBase::Arg<float>("alpha", 0.25f)),
+           gamma(OperatorBase::Arg<float>("gamma", 2.f)),
+           neg_id(OperatorBase::Arg<int>("neg_id", 0)) {
+        pos_alpha = alpha;
+        neg_alpha = 1.f - alpha;
+    }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    float gamma, eps;
-    int neg_id;
-    TIndex axis, outer_dim, inner_dim;
-    Tensor* scale;
+    float alpha, gamma, pos_alpha, neg_alpha;
+    TIndex axis, neg_id, outer_dim, inner_dim;
+    Tensor flags;
     string normalization;
 };
 

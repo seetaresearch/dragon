@@ -56,12 +56,14 @@ class NumpyFetcher : public TensorFetcherBase {
         for (const auto dim : tensor.dims()) npy_dims.push_back(dim);
         int npy_type = TypeMetaToNPY(tensor.meta());
         if (npy_type == -1) {
-            string s = "The data type of Tensor(" + tensor.name() + ") is unknown. Have you solved it ?";
+            string s = "The data type of Tensor(" +
+                tensor.name() + ") is unknown. Have you solved it ?";
             PyErr_SetString(PyExc_RuntimeError, s.c_str());
             return nullptr;
         }
         //  create a empty array with r shape
-        PyObject* array = PyArray_SimpleNew(tensor.ndim(), npy_dims.data(), npy_type);
+        PyObject* array = PyArray_SimpleNew(
+            tensor.ndim(), npy_dims.data(), npy_type);
         //  copy the tensor data to the numpy array
         if (tensor.memory_state() == MixedMemory::STATE_AT_CUDA) {
             CUDAContext::Memcpy<CPUContext, CUDAContext>(tensor.nbytes(),
@@ -86,8 +88,8 @@ class StringFetcher : public TensorFetcherBase {
 
 class NumpyFeeder : public TensorFeederBase {
  public:
-    PyObject* Feed(const DeviceOption& option, 
-                   PyArrayObject* original_array, 
+    PyObject* Feed(const DeviceOption& option,
+                   PyArrayObject* original_array,
                    Tensor* tensor) override {
         PyArrayObject* array = PyArray_GETCONTIGUOUS(original_array);
         const TypeMeta& meta = TypeNPYToMeta(PyArray_TYPE(array));
