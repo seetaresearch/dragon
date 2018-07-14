@@ -1,7 +1,7 @@
-#include "operators/loss/smooth_l1_loss_op.h"
 #include "core/workspace.h"
-#include "utils/math_functions.h"
 #include "utils/op_kernel.h"
+#include "utils/math_functions.h"
+#include "operators/loss/smooth_l1_loss_op.h"
 
 namespace dragon {
 
@@ -27,10 +27,13 @@ void SmoothL1LossOp<Context>::RunWithType() {
             outside_w_data, error_data, error_data);
     }
 
-    T normalizer;
-    if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
-    else if (normalization == "FULL") normalizer = Input(0).count();
-    else if (normalization == "NONE") normalizer = 1;
+    T normalizer = 1;
+    if (normalization == "BATCH_SIZE") {
+        normalizer = Input(0).dim(0);
+    } else if (normalization == "FULL") {
+        normalizer = Input(0).count();
+    }
+
     T loss = math::ASum<T, Context>(error->count(), error_data);
     math::Set<T, Context>(1, loss / normalizer, Ydata);
 }
@@ -66,11 +69,12 @@ void SmoothL1LossGradientOp<Context>::RunWithType() {
     kernel::SmoothL1Grad<T, Context>(
         diff->count(), beta, diff_data, diff_data);
 
-    T alpha = dYdata_host, normalizer;
-    if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
-    else if (normalization == "FULL") normalizer = Input(0).count();
-    else if (normalization == "NONE") normalizer = 1;
-    alpha = alpha / normalizer;
+    T alpha = dYdata_host, normalizer = 1;
+    if (normalization == "BATCH_SIZE") {
+        normalizer = Input(0).dim(0);
+    } else if (normalization == "FULL") {
+        normalizer = Input(0).count();
+    } alpha = alpha / normalizer;
 
     for (int i = 0; i < 2; i++) {
         if (Output(i)->name() == "ignore") continue;
@@ -107,7 +111,8 @@ DEPLOY_CUDA(SmoothL1LossGradient);
 #endif
 OPERATOR_SCHEMA(SmoothL1LossGradient).NumInputs(3, 5).NumOutputs(2);
 
-class GetSmoothL1LossGradient final : public GradientMakerBase {
+class GetSmoothL1LossGradient
+    final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetSmoothL1LossGradient);
     vector<OperatorDef> MakeDefs() override {
@@ -119,6 +124,9 @@ class GetSmoothL1LossGradient final : public GradientMakerBase {
                       vector<string> {GI(0), GI(1)});
     }
 };
-REGISTER_GRADIENT(SmoothL1Loss, GetSmoothL1LossGradient);
+REGISTER_GRADIENT(
+    SmoothL1Loss,
+    GetSmoothL1LossGradient
+);
 
 }    // namespace dragon

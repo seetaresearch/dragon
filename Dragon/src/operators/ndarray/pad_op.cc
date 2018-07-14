@@ -1,7 +1,7 @@
-#include "operators/ndarray/pad_op.h"
 #include "core/workspace.h"
-#include "utils/math_functions.h"
 #include "utils/op_kernel.h"
+#include "utils/math_functions.h"
+#include "operators/ndarray/pad_op.h"
 
 namespace dragon {
 
@@ -53,8 +53,10 @@ void PadOp<Context>::EdgeRunWithType() {
 template <class Context>
 void PadOp<Context>::RunOnDevice() {
     CHECK_EQ(Input(0).ndim(), pad_l.size())
-        << "\nThe padding is performed on " << pad_l.size() << " dimensions, "
-        << "but the num of dimensions of input is " << Input(0).ndim() << ".";
+        << "\nThe padding is performed on "
+        << pad_l.size() << " dimensions, "
+        << "but the num of dimensions of input is "
+        << Input(0).ndim() << ".";
 
     //  do nothing
     if (process_axes.size() == 0) {
@@ -80,11 +82,15 @@ void PadOp<Context>::RunOnDevice() {
             else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
         } else if (mode == "REFLECT") {
             CHECK_LE(pad_l[axis], dim + 1)
-                << "\nThe dimension of axis " << axis << " is " << dim << ","
-                << "\nwhile the excepted bounds of pad_l for reflecting are (0, " << dim + 1 << "].";
+                << "\nThe dimension of axis " << axis
+                << " is " << dim << ","
+                << "\nwhile the excepted bounds of pad_l "
+                << "for reflecting are (0, " << dim + 1 << "].";
             CHECK_LE(pad_r[axis], dim - 1)
-                << "\nThe dimension of axis " << axis << " is " << dim << ","
-                << "\nwhile the excepted bounds of pad_r for reflecting are (0, " << dim - 1 << "].";
+                << "\nThe dimension of axis " << axis
+                << " is " << dim << ","
+                << "\nwhile the excepted bounds of pad_r "
+                << "for reflecting are (0, " << dim - 1 << "].";
             if (XIsType(Input(0), float)) ReflectRunWithType<float>();
             else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
         } else if (mode == "EDGE")  {
@@ -161,8 +167,10 @@ void PadGradientOp<Context>::EdgeRunWithType() {
 template <class Context>
 void PadGradientOp<Context>::RunOnDevice() {
     CHECK_EQ(Input(0).ndim(), pad_l.size())
-        << "\nThe padding is performed on " << pad_l.size() << " dimensions, "
-        << "but the number of dimensions of input is " << Input(0).ndim() << ".";
+        << "\nThe padding is performed on "
+        << pad_l.size() << " dimensions, "
+        << "but the number of dimensions of input is "
+        << Input(0).ndim() << ".";
 
     //  do nothing 
     if (process_axes.size() == 0) {
@@ -188,11 +196,15 @@ void PadGradientOp<Context>::RunOnDevice() {
             else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
         } else if (mode == "REFLECT") {
             CHECK_LE(pad_l[axis], dim + 1)
-                << "\nThe dimension of axis " << axis << " is " << dim << ","
-                << "\nwhile the excepted bounds of pad_l for reflecting are (0, " << dim + 1 << "].";
+                << "\nThe dimension of axis " << axis
+                << " is " << dim << ","
+                << "\nwhile the excepted bounds of pad_l "
+                << "for reflecting are (0, " << dim + 1 << "].";
             CHECK_LE(pad_r[axis], dim - 1)
-                << "\nThe dimension of axis " << axis << " is " << dim << ","
-                << "\nwhile the excepted bounds of pad_r for reflecting are (0, " << dim - 1 << "].";
+                << "\nThe dimension of axis " << axis 
+                << " is " << dim << ","
+                << "\nwhile the excepted bounds of pad_r "
+                << "for reflecting are (0, " << dim - 1 << "].";
             if (XIsType(Input(0), float)) ReflectRunWithType<float>();
             else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
         } else if (mode == "EDGE")  {

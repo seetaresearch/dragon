@@ -1,7 +1,7 @@
-#include "operators/ndarray/crop_op.h"
 #include "core/workspace.h"
-#include "utils/math_functions.h"
 #include "utils/op_kernel.h"
+#include "utils/math_functions.h"
+#include "operators/ndarray/crop_op.h"
 
 namespace dragon {
 

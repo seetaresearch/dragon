@@ -80,17 +80,17 @@ class CuDNNAffineOpBase : public Operator<Context> {
     }
 
     template <typename T>
-    void ResetDesc() {
+    void ResetDesc(const Tensor& X) {
         //  determine the range of affine
         start_axis = axis;
-        if (start_axis < 0) start_axis += (int)Input(0).ndim();
-        if (num_axes == -1) num_axes = (int)Input(0).ndim() - start_axis;
+        if (start_axis < 0) start_axis += (int)X.ndim();
+        if (num_axes == -1) num_axes = (int)X.ndim() - start_axis;
         else if (num_axes == 0) num_axes = 1;
         end_axis = start_axis + num_axes;
-        CHECK_LT(start_axis, (int)Input(0).ndim());
-        CHECK_LE(start_axis + num_axes, (int)Input(0).ndim());
+        CHECK_LT(start_axis, (int)X.ndim());
+        CHECK_LE(start_axis + num_axes, (int)X.ndim());
         //  determine the input desc
-        vector<TIndex> input_dims = Input(0).dims();
+        vector<TIndex> input_dims = X.dims();
         //  cudnn requires ndimensions range from [4, 5]
         if (input_dims.size() < 4) input_dims.resize(4, 1);
         else if (input_dims.size() > 5) 
@@ -98,7 +98,8 @@ class CuDNNAffineOpBase : public Operator<Context> {
         cudnnSetTensorDesc<T>(&input_desc, input_dims);
         //  determine the scale desc
         vector<TIndex> param_dims(input_dims.size(), 1);
-        for (int i = start_axis; i < end_axis; i++) param_dims[i] = input_dims[i];
+        for (int i = start_axis; i < end_axis; i++)
+            param_dims[i] = input_dims[i];
         cudnnSetTensorDesc<T>(&param_desc, param_dims);
     }
 

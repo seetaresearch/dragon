@@ -247,18 +247,52 @@ void AbsGrad(
 template <typename T, class Context>
 void SigmoidCrossEntropy(
     const int               count,
-    const T*                x,
-    const T*                target,
-    T*                      loss,
-    T*                      valid);
+    const T*                logits,
+    const T*                targets,
+    T*                      losses,
+    T*                      flags,
+    Context*                ctx);
 
 template <typename T, class Context>
 void SigmoidCrossEntropyGrad(
     const int               count,
-    const T*                x,
-    const T*                target,
-    T*                      dx,
-    T*                      valid);
+    const T*                logits,
+    const T*                targets,
+    T*                      dlogits,
+    T*                      flags,
+    Context*                ctx);
+
+/******************** loss.sigmoid_focal_loss ********************/
+
+template <typename T, class Context>
+void SigmoidFocalLoss(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
+    const float             gamma,
+    const int               neg_id,
+    const float*            logits,
+    const float*            targets,
+    float*                  losses,
+    float*                  flags,
+    Context*                ctx);
+
+template <typename T, class Context>
+void SigmoidFocalLossGradient(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
+    const float             gamma,
+    const int               neg_id,
+    const float*            logits,
+    const float*            targets,
+    float*                  dlogits,
+    float*                  flags,
+    Context*                ctx);
 
 /******************** loss.smooth_l1_loss ********************/
 
@@ -284,6 +318,42 @@ void SoftmaxCrossEntropy(
     const T*                prob,
     const T*                target,
     T*                      loss);
+
+/******************** loss.softmax_focal_loss ********************/
+
+template <typename T, class Context>
+void SoftmaxFocalLoss(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
+    const float             gamma,
+    const int               neg_id,
+    const T*                prob,
+    const T*                labels,
+    const int*              ignores,
+    const int               num_ignores,
+    T*                      losses,
+    T*                      flags,
+    Context*                ctx);
+
+template <typename T, class Context>
+void SoftmaxFocalLossGrad(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
+    const float             gamma,
+    const int               neg_id,
+    const T*                prob,
+    const T*                labels,
+    const int*              ignores,
+    const int               num_ignores,
+    T*                      dx,
+    T*                      flags,
+    Context*                ctx);
 
 /******************** loss.sparse_softmax_cross_entropy ********************/
 
@@ -311,42 +381,6 @@ void SparseSoftmaxCrossEntropyGrad(
     const int               num_ignores,
     Tx*                     dx,
     Tx*                     flags,
-    Context*                ctx);
-
-/******************** loss.sparse_softmax_focal_loss ********************/
-
-template <typename T, class Context>
-void SparseSoftmaxFocalLoss(
-    const int               outer_dim,
-    const int               axis_dim,
-    const int               inner_dim,
-    const float             pos_alpha,
-    const float             neg_alpha,
-    const float             gamma,
-    const int               neg_id,
-    const T*                prob,
-    const T*                labels,
-    const int*              ignores,
-    const int               num_ignores,
-    T*                      losses,
-    T*                      flags ,
-    Context*                ctx);
-
-template <typename T, class Context>
-void SparseSoftmaxFocalLossGrad(
-    const int               outer_dim,
-    const int               axis_dim,
-    const int               inner_dim,
-    const float             pos_alpha,
-    const float             neg_alpha,
-    const float             gamma,
-    const int               neg_id,
-    const T*                prob,
-    const T*                labels,
-    const int*              ignores,
-    const int               num_ignores,
-    T*                      dx,
-    T*                      flags,
     Context*                ctx);
 
 /******************** misc.astype ********************/

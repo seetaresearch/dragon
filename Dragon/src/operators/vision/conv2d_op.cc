@@ -1,6 +1,6 @@
-#include "operators/vision/conv_op.h"
 #include "core/workspace.h"
 #include "utils/filler.h"
+#include "operators/vision/conv_op.h"
 
 namespace dragon {
 

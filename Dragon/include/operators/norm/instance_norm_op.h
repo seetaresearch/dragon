@@ -52,7 +52,7 @@ class InstanceNormGradientOp final : public Operator<Context> {
     USE_OPERATOR_FUNCTIONS;
 
     void Setup();
-                          
+
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 

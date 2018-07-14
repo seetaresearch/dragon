@@ -1,6 +1,6 @@
-#include "operators/misc/astype_op.h"
 #include "core/workspace.h"
 #include "utils/op_kernel.h"
+#include "operators/misc/astype_op.h"
 
 namespace dragon {
 

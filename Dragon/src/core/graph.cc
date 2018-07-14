@@ -56,10 +56,14 @@ void Graph::ForwardShareDyeing(string u, string ancestor) {
     if (renamed_.count(u)) return;
     renamed_[u] = ancestor;
     if (dag_[u].childs.size() == 1) {
-        string op_type = dag_[dag_[u].childs[0]].op_type;
-        auto* schema = OpSchemaRegistry::Schema(op_type);
+        auto& v = dag_[u].childs[0];
+        auto& op_def = dag_[v].op_def;
+        auto* schema = OpSchemaRegistry::Schema(op_def.type());
         if (schema->AllowInplace())
-            ForwardShareDyeing(dag_[u].childs[0], ancestor);
+            for (int i = 0; i < op_def.input_size(); i++)
+                if (op_def.input(i) == u &&
+                        schema->CheckInplace(i, 0))
+                            ForwardShareDyeing(v, ancestor);
     }
 }
 
@@ -95,7 +99,7 @@ void Graph::BackwardPruneDyeing(string v) {
 
 GraphDef Graph::Prune(const GraphDef& meta_graph) {
     dag_.clear(); colored_.clear();
-    //  build Graph
+    //  build DAG
     for (int i = 0; i < meta_graph.op_size(); i++) {
         const OperatorDef& op = meta_graph.op(i);
         for (auto& v : op.output()) {
@@ -108,7 +112,7 @@ GraphDef Graph::Prune(const GraphDef& meta_graph) {
                 dag_[u].childs.push_back(v);
                 dag_[v].op_idx = i;
             }
-            dag_[v].op_type = op.type();
+            dag_[v].op_def = op;
         }
     }
 
@@ -150,7 +154,7 @@ GraphDef Graph::Prune(const GraphDef& meta_graph) {
     //  check if having feeded tensors
     for (auto& tensor : ws()->GetTensors()) outputs.insert(tensor);
     //  note that we use map to keep topo-order
-    map<int, OperatorDef> ops_final;
+    map<int, OperatorDef> final_sequence;
 
     for (auto it : selected_op_indices) {
         OperatorDef op_def;
@@ -167,19 +171,56 @@ GraphDef Graph::Prune(const GraphDef& meta_graph) {
             if (!colored_[output]) *op_def.mutable_output(i) = "ignore";
             else outputs.insert(op_def.output(i));
         }
-        ops_final[it].CopyFrom(op_def);
+        //  handle handcraft cases
+        if (op_def.type() == "AffineGradient") {
+            //  trigger in-place if not solving dAlpha
+            if (op_def.output(1) == "ignore")
+                *op_def.mutable_input(0) = "ignore";
+        } else if (op_def.type() == "MulGradient" ||
+                   op_def.type() == "RMulGradient") {
+            if (op_def.output(0) == "ignore")
+                *op_def.mutable_input(1) = "ignore";
+            if (op_def.output(1) == "ignore")
+                *op_def.mutable_input(0) = "ignore";
+        } else if (op_def.type() == "DivGradient" ||
+                   op_def.type() == "RDivGradient") {
+            //  dX2 requires both X1 and X2
+            if (op_def.output(1) == "ignore") {
+                *op_def.mutable_input(0) = "ignore";
+                if (op_def.output(0) == "ignore")
+                    *op_def.mutable_input(1) = "ignore";
+            }
+        }
+        //  push into the final sequence
+        final_sequence[it].CopyFrom(op_def);
     }
 
-    //  build the pruned graph
-    GraphDef pruned_graph;
-    pruned_graph.CopyFrom(meta_graph);
-    pruned_graph.clear_op();
-    for (auto it : ops_final) pruned_graph.add_op()->CopyFrom(it.second);
-    return pruned_graph;
+    //  done!
+    GraphDef g;
+    g.CopyFrom(meta_graph); g.clear_op();
+    for (auto it : final_sequence)
+        g.add_op()->CopyFrom(it.second);
+    return g;
 }
 
 GraphDef Graph::Share(const GraphDef& optimized_graph) {
-    renamed_.clear();
+    dag_.clear(); renamed_.clear();
+    //  build DAG
+    for (int i = 0; i < optimized_graph.op_size(); i++) {
+        const OperatorDef& op = optimized_graph.op(i);
+        for (auto& v : op.output()) {
+            vector<string> sp_u;
+            if (!op.input_size()) sp_u.resize(op.output_size(), "");
+            else sp_u.assign(op.input().begin(), op.input().end());
+            for (auto& u : sp_u) {
+                if (u == "ignore") continue;
+                dag_[v].parents.push_back(u);
+                dag_[u].childs.push_back(v);
+                dag_[v].op_idx = i;
+            }
+            dag_[v].op_def = op;
+        }
+    }
 
     //  forward dyeing to search available tensors that be shared
     for (int i = 0; i < optimized_graph.op_size(); i++) {
@@ -188,28 +229,27 @@ GraphDef Graph::Share(const GraphDef& optimized_graph) {
         for (auto& v : op.output()) ForwardShareDyeing(v, v);
     }
 
-    GraphDef shared_graph;
-    shared_graph.CopyFrom(optimized_graph);
+    GraphDef g; g.CopyFrom(optimized_graph);
 
     //  rename to create in-place
     for (int i = 0; i < optimized_graph.op_size(); i++) {
         const OperatorDef& op = optimized_graph.op(i);
         for (int j = 0; j < op.input_size(); j++) {
-            if (renamed_.count(op.input(j))) {
-                *shared_graph.mutable_op(i)->
-                    mutable_input(j) = renamed_[op.input(j)];
-                ws()->CreateRename(op.input(j), renamed_[op.input(j)]);
-            }
+            if (renamed_.count(op.input(j)) &&
+                ws()->SetProxy(op.input(j), renamed_[op.input(j)]))
+                    *g.mutable_op(i)->mutable_input(j)
+                        = renamed_[op.input(j)];
         }
         for (int j = 0; j < op.output_size(); j++) {
-            if (renamed_.count(op.output(j))) {
-                *shared_graph.mutable_op(i)->
-                    mutable_output(j) = renamed_[op.output(j)];
-                ws()->CreateRename(op.output(j), renamed_[op.output(j)]);
-            }
+            if (renamed_.count(op.output(j)) &&
+                ws()->SetProxy(op.output(j), renamed_[op.output(j)]))
+                    *g.mutable_op(i)->mutable_output(j)
+                        = renamed_[op.output(j)];
         }
     }
-    return shared_graph;
+
+    //  done!
+    return g;
 }
 
 void Graph::ShareGrads(GraphDef& optimized_graph) {

@@ -1,7 +1,7 @@
-#include "operators/arithmetic/clip_op.h"
+#include "core/workspace.h"
 #include "utils/op_kernel.h"
 #include "utils/math_functions.h"
-#include "core/workspace.h"
+#include "operators/arithmetic/clip_op.h"
 
 namespace dragon {
 

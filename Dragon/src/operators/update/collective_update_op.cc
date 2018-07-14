@@ -1,6 +1,6 @@
-#include "operators/update/collective_update_op.h"
 #include "core/workspace.h"
 #include "utils/math_functions.h"
+#include "operators/update/collective_update_op.h"
 
 namespace dragon {
 

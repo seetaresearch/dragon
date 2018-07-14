@@ -34,6 +34,7 @@ from .loss import SoftmaxWithLossLayer, \
                   SigmoidCrossEntropyLossLayer, \
                   L2LossLayer, \
                   SmoothL1LossLayer, \
+                  SigmoidWithFocalLossLayer, \
                   SoftmaxWithFocalLossLayer
 
 from .mpi import MPIBroadcastLayer,\

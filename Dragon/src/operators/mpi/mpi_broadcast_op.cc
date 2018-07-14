@@ -1,5 +1,5 @@
-#include "operators/mpi/mpi_broadcast_op.h"
 #include "utils/math_functions.h"
+#include "operators/mpi/mpi_broadcast_op.h"
 
 #ifdef WITH_MPI
 

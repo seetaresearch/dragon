@@ -1,6 +1,5 @@
-#include "operators/arithmetic/eltwise_op.h"
-#include "core/workspace.h"
 #include "utils/math_functions.h"
+#include "operators/arithmetic/eltwise_op.h"
 
 namespace dragon {
 

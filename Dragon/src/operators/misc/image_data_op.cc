@@ -1,5 +1,5 @@
-#include "operators/misc/image_data_op.h"
 #include "utils/op_kernel.h"
+#include "operators/misc/image_data_op.h"
 
 namespace dragon {
 

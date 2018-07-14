@@ -1,7 +1,7 @@
-#include "operators/recurrent/lstm_cell_op.h"
 #include "core/workspace.h"
-#include "utils/math_functions.h"
 #include "utils/op_kernel.h"
+#include "utils/math_functions.h"
+#include "operators/recurrent/lstm_cell_op.h"
 
 namespace dragon {
 
@@ -12,8 +12,8 @@ void LSTMCellOp<Context>::RunWithType() {
     auto* Hdata = Output(0)->template mutable_data<T, Context>();
     auto* Cdata = Output(1)->template mutable_data<T, Context>();
 
-    kernel::LSTMCell<T, Context>(Input(1).count(),
-        Input(1).dim(0), Input(1).ndim() == 2 ? Input(1).dim(1) : Input(1).dim(2),
+    kernel::LSTMCell<T, Context>(Input(1).count(), Input(1).dim(0),
+        Input(1).ndim() == 2 ? Input(1).dim(1) : Input(1).dim(2),
             CXdata, XAdata, Cdata, Hdata);
 }
 
@@ -42,8 +42,8 @@ void LSTMCellGradientOp<Context>::RunWithType() {
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* dCXdata = Output(1)->template mutable_data<T, Context>();
 
-    kernel::LSTMCellGrad<T, Context>(Input(1).count(),
-        Input(1).dim(0), Input(1).ndim() == 2 ? Input(1).dim(1) : Input(1).dim(2),
+    kernel::LSTMCellGrad<T, Context>(Input(1).count(), Input(1).dim(0),
+        Input(1).ndim() == 2 ? Input(1).dim(1) : Input(1).dim(2),
             CXdata, XAdata, Cdata, dCdata, dHdata, dCXdata, dXdata);
 }
 

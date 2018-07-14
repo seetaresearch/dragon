@@ -1,15 +1,15 @@
 #ifdef WITH_CUDNN
 
-#include "operators/arithmetic/affine_op.h"
 #include "core/workspace.h"
 #include "utils/filler.h"
 #include "utils/math_functions.h"
+#include "operators/arithmetic/affine_op.h"
 
 namespace dragon {
 
 template <class Context> template <typename T>
 void CuDNNAffineOp<Context>::RunWithType() {
-    this->template ResetDesc<T>();
+    this->template ResetDesc<T>(Input(0));
     const auto& dim_start = Input(0).dims().begin() + start_axis;
     const auto& dim_end = dim_start + num_axes;
     vector<TIndex> param_dims(dim_start, dim_end);
@@ -56,13 +56,13 @@ DEPLOY_CUDNN(Affine);
 
 template <class Context> template <typename T>
 void CuDNNAffineGradientOp<Context>::RunWithType() {
-    this->template ResetDesc<T>();
-    outer_dim = Input(0).count(0, start_axis);
-    inner_dim = Input(0).count(start_axis + num_axes);
+    this->template ResetDesc<T>(Input(-1));
+    outer_dim = Input(-1).count(0, start_axis);
+    inner_dim = Input(-1).count(start_axis + num_axes);
     scale_dim = Input(1).count();
     sum_dim = std::max(outer_dim, inner_dim);
     dim = scale_dim * inner_dim;
-    Output(0)->ReshapeLike(Input(0));
+    Output(0)->ReshapeLike(Input(-1));
 
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* Adata = Input(1).template data<T, Context>();
@@ -99,7 +99,7 @@ void CuDNNAffineGradientOp<Context>::RunWithType() {
         Output(2)->ReshapeLike(Input(1));
         auto* dBdata = Output(2)->template mutable_data<T, Context>();
         //  eltwise
-        if (Input(0).count() == Input(1).count()) {
+        if (Input(-1).count() == Input(1).count()) {
             math::Axpy<T, Context>(Output(2)->count(),
                 1.f, dYdata, dBdata, &ctx());
         } else {
@@ -212,8 +212,8 @@ void CuDNNAffineGradientOp<Context>::ComputeBiasGradient_v2(
 
 template <class Context>
 void CuDNNAffineGradientOp<Context>::RunOnDevice() {
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    if (XIsType(Input(-1), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(-1), { "float32" });
 }
 
 DEPLOY_CUDNN(AffineGradient);

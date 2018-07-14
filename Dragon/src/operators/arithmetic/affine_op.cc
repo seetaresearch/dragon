@@ -1,7 +1,7 @@
-#include "operators/arithmetic/affine_op.h"
 #include "core/workspace.h"
 #include "utils/filler.h"
 #include "utils/op_kernel.h"
+#include "operators/arithmetic/affine_op.h"
 
 namespace dragon {
 
@@ -50,7 +50,7 @@ DEPLOY_CPU(Affine);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Affine);
 #endif
-OPERATOR_SCHEMA(Affine).NumInputs(2, 3).NumOutputs(1);
+OPERATOR_SCHEMA(Affine).NumInputs(2, 3).NumOutputs(1).Inplace({ { 0, 0 } });
 
 template <class Context> template <typename T>
 void AffineGradientOp<Context>::BiasRunWithType() {
@@ -71,12 +71,12 @@ void AffineGradientOp<Context>::BiasRunWithType() {
 
 template <class Context> template <typename T>
 void AffineGradientOp<Context>::ScaleRunWithType() {
-    Output(0)->ReshapeLike(Input(0));
+    Output(0)->ReshapeLike(Input(-1));
     Output(1)->ReshapeLike(Input(1));
     DECLARE_MULTIPLIER(multiplier, sum_dim);
 
     sum_result.Reshape({ outer_dim * scale_dim });
-    bool is_eltwise = (Input(0).count() == Input(1).count());
+    bool is_eltwise = (Input(-1).count() == Input(1).count());
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* Xdata = Input(0).template data<T, Context>();
     auto* dScale = Output(1)->template mutable_data<T, Context>();
@@ -123,7 +123,7 @@ void AffineGradientOp<Context>::ScaleRunWithType() {
 
 template <class Context> template <typename T>
 void AffineGradientOp<Context>::RunWithType() {
-    Output(0)->ReshapeLike(Input(0));
+    Output(0)->ReshapeLike(Input(-1));
 
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* Adata = Input(1).template data<T, Context>();
@@ -137,25 +137,25 @@ void AffineGradientOp<Context>::RunWithType() {
 template <class Context>
 void AffineGradientOp<Context>::RunOnDevice() {
     start_axis = axis;
-    if (start_axis < 0) start_axis += (int)Input(0).ndim();
-    if (num_axes == -1) num_axes = (int)Input(0).ndim() - start_axis;
+    if (start_axis < 0) start_axis += (int)Input(-1).ndim();
+    if (num_axes == -1) num_axes = (int)Input(-1).ndim() - start_axis;
     else if (num_axes == 0) num_axes = 1;
 
-    CHECK_LT(start_axis, (int)Input(0).ndim());
-    CHECK_LE(start_axis + num_axes, (int)Input(0).ndim());
+    CHECK_LT(start_axis, (int)Input(-1).ndim());
+    CHECK_LE(start_axis + num_axes, (int)Input(-1).ndim());
 
-    outer_dim = Input(0).count(0, start_axis);
-    inner_dim = Input(0).count(start_axis + num_axes);
+    outer_dim = Input(-1).count(0, start_axis);
+    inner_dim = Input(-1).count(start_axis + num_axes);
     scale_dim = Input(1).count();
     sum_dim = std::max(outer_dim, inner_dim);
     dim = scale_dim * inner_dim;
 
-    if (XIsType(Input(0), float)) {
+    if (XIsType(Input(-1), float)) {
         if (Output(2)->name() != "ignore") BiasRunWithType<float>();
         if (Output(1)->name() != "ignore") ScaleRunWithType<float>();
-        if (Output(0)->name() != "ignore") RunWithType<float>();  
+        if (Output(0)->name() != "ignore") RunWithType<float>();
     } else {
-        LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+        LOG(FATAL) << DTypeHelper(Input(-1), { "float32" });
     }
 }
 

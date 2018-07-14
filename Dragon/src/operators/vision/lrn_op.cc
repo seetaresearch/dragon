@@ -1,9 +1,9 @@
-#include "operators/vision/lrn_op.h"
-#include "operators/arithmetic/pow_op.h"
-#include "operators/arithmetic/eltwise_op.h"
-#include "operators/vision/pooling_op.h"
 #include "core/workspace.h"
 #include "utils/math_functions.h"
+#include "operators/arithmetic/pow_op.h"
+#include "operators/arithmetic/eltwise_op.h"
+#include "operators/vision/lrn_op.h"
+#include "operators/vision/pooling_op.h"
 
 namespace dragon {
 

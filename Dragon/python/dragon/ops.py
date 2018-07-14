@@ -76,7 +76,8 @@ SoftmaxCrossEntropy = loss.SoftmaxCrossEntropy
 SmoothL1Loss = loss.SmoothL1Loss
 L1Loss = loss.L1Loss
 L2Loss = loss.L2Loss
-SparseSoftmaxFocalLoss = loss.SparseSoftmaxFocalLoss
+SigmoidFocalLoss = loss.SigmoidFocalLoss
+SoftmaxFocalLoss = loss.SoftmaxFocalLoss
 CTCLoss = loss.CTCLoss
 
 # arithmetic

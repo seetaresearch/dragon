@@ -947,6 +947,7 @@ class Tensor(object):
 
         Examples
         --------
+        >>> import dragon as dg
         >>> a = Tensor().Variable()
         >>> b = Tensor().Variable()
         >>> c = Tensor.CreateOperator(inputs=[a, b], op_type='Add', nout=1)
@@ -956,12 +957,10 @@ class Tensor(object):
         >>> c = Tensor().Variable()
         >>> c = Tensor.CreateOperator(inputs=[a, b], op_type='Add', existing_outputs=c)
 
-        >>> import dragon.core.workspace as ws
-        >>> import dragon.vm.theano as theano
         >>> dynamic_shape = Tensor().Variable()
-        >>> ws.FeedTensor(dynamic_shape, [1, 2, 3, 4])
-        >>> a = ops.Fill(shape=dynamic_shape, value=5.0)
-        >>> print theano.function(outputs=a)
+        >>> dg.workspace.FeedTensor(dynamic_shape, [1, 2, 3, 4])
+        >>> a = dg.Fill(shape=dynamic_shape, value=5.0)
+        >>> print dg.function(outputs=a)
         >>> [[ 5.  5.  5.]
              [ 5.  5.  5.]]
 

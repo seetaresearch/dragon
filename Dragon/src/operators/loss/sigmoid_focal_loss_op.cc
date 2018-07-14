@@ -1,19 +1,21 @@
 #include "core/workspace.h"
 #include "utils/op_kernel.h"
 #include "utils/math_functions.h"
-#include "operators/loss/sigmoid_cross_entropy_op.h"
+#include "operators/loss/sigmoid_focal_loss_op.h"
 
 namespace dragon {
 
 template <class Context> template <typename T>
-void SigmoidCrossEntropyOp<Context>::RunWithType() {
+void SigmoidFocalLossOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Tdata = Input(1).template data<T, Context>();
     auto* Ldata = losses.template mutable_data<T, Context>();
     auto* Fdata = flags.template mutable_data<T, Context>();
 
-    kernel::SigmoidCrossEntropy<T, Context>(
-        Input(0).count(), Xdata, Tdata, Ldata, Fdata, &ctx());
+    kernel::SigmoidFocalLoss<T, Context>(
+        outer_dim, axis_dim, inner_dim,
+            pos_alpha, neg_alpha, gamma, neg_id,
+                Xdata, Tdata, Ldata, Fdata, &ctx());
 
     if (normalization == "UNIT") {
         Output(0)->ReshapeLike(losses);
@@ -29,7 +31,7 @@ void SigmoidCrossEntropyOp<Context>::RunWithType() {
     } else if (normalization == "BATCH_SIZE") {
         normalizer = Input(0).dim(0);
     } else if (normalization == "FULL") {
-        normalizer = Input(0).count();
+        normalizer = outer_dim * inner_dim;
     }
 
     T loss = math::ASum<T, Context>(losses.count(), Ldata);
@@ -39,9 +41,13 @@ void SigmoidCrossEntropyOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void SigmoidCrossEntropyOp<Context>::RunOnDevice() {
-    CHECK_EQ(Input(0).count(), Input(1).count())
+void SigmoidFocalLossOp<Context>::RunOnDevice() {
+    outer_dim = Input(0).count(0, axis);
+    axis_dim = Input(0).dim(axis);
+    inner_dim = Input(0).count(axis + 1);
+    CHECK_EQ(outer_dim * inner_dim, Input(1).count())
         << "\nNumber of predictions must match the number of labels.";
+
     losses.ReshapeLike(Input(0));
     flags.ReshapeLike(Input(0));
 
@@ -49,21 +55,23 @@ void SigmoidCrossEntropyOp<Context>::RunOnDevice() {
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
-DEPLOY_CPU(SigmoidCrossEntropy);
+DEPLOY_CPU(SigmoidFocalLoss);
 #ifdef WITH_CUDA
-DEPLOY_CUDA(SigmoidCrossEntropy);
+DEPLOY_CUDA(SigmoidFocalLoss);
 #endif
-OPERATOR_SCHEMA(SigmoidCrossEntropy).NumInputs(2).NumOutputs(1);
+OPERATOR_SCHEMA(SigmoidFocalLoss).NumInputs(2).NumOutputs(1);
 
 template <class Context> template <typename T>
-void SigmoidCrossEntropyGradientOp<Context>::RunWithType() {
+void SigmoidFocalLossGradientOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Tdata = Input(1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* Fdata = flags.template mutable_data<T, Context>();
 
-    kernel::SigmoidCrossEntropyGrad<T, Context>(
-        Input(0).count(), Xdata, Tdata, dXdata, Fdata, &ctx());
+    kernel::SigmoidFocalLossGradient<T, Context>(
+        outer_dim, axis_dim, inner_dim,
+            pos_alpha, neg_alpha, gamma, neg_id,
+                Xdata, Tdata, dXdata, Fdata, &ctx());
 
     if (normalization == "UNIT") {
         auto* dYdata = Input(-1).template data<T, Context>();
@@ -90,7 +98,11 @@ void SigmoidCrossEntropyGradientOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void SigmoidCrossEntropyGradientOp<Context>::RunOnDevice() {
+void SigmoidFocalLossGradientOp<Context>::RunOnDevice() {
+    outer_dim = Input(0).count(0, axis);
+    axis_dim = Input(0).dim(axis);
+    inner_dim = Input(0).count(axis + 1);
+
     Output(0)->ReshapeLike(Input(0));
     flags.ReshapeLike(Input(0));
 
@@ -98,16 +110,16 @@ void SigmoidCrossEntropyGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
-DEPLOY_CPU(SigmoidCrossEntropyGradient);
+DEPLOY_CPU(SigmoidFocalLossGradient);
 #ifdef WITH_CUDA
-DEPLOY_CUDA(SigmoidCrossEntropyGradient);
+DEPLOY_CUDA(SigmoidFocalLossGradient);
 #endif
-OPERATOR_SCHEMA(SigmoidCrossEntropyGradient).NumInputs(3).NumOutputs(1);
+OPERATOR_SCHEMA(SigmoidFocalLossGradient).NumInputs(3).NumOutputs(1);
 
-class GetSigmoidCrossEntropyGradient
+class GetSigmoidFocalLossGradient
     final : public GradientMakerBase {
  public:
-    GRADIENT_MAKER_CTOR(GetSigmoidCrossEntropyGradient);
+    GRADIENT_MAKER_CTOR(GetSigmoidFocalLossGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
             vector<string> {I(0), I(1), GO(0)},
@@ -115,8 +127,8 @@ class GetSigmoidCrossEntropyGradient
     }
 };
 REGISTER_GRADIENT(
-    SigmoidCrossEntropy,
-    GetSigmoidCrossEntropyGradient
+    SigmoidFocalLoss,
+    GetSigmoidFocalLossGradient
 );
 
 }    // namespace dragon

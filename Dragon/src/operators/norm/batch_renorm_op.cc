@@ -1,7 +1,7 @@
-#include "operators/norm/batch_renorm_op.h"
 #include "core/workspace.h"
-#include "utils/math_functions.h"
 #include "utils/filler.h"
+#include "utils/math_functions.h"
+#include "operators/norm/batch_renorm_op.h"
 
 namespace dragon {
 

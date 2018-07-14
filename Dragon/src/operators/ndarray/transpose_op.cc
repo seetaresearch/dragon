@@ -1,6 +1,6 @@
-#include "operators/ndarray/transpose_op.h"
 #include "core/workspace.h"
 #include "utils/op_kernel.h"
+#include "operators/ndarray/transpose_op.h"
 
 namespace dragon {
 

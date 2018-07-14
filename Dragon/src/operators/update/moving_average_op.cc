@@ -1,5 +1,5 @@
-#include "operators/update/moving_average_op.h"
 #include "utils/math_functions.h"
+#include "operators/update/moving_average_op.h"
 
 namespace dragon {
 

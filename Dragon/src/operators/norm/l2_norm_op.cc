@@ -1,6 +1,6 @@
-#include "operators/norm/l2_norm_op.h"
 #include "core/workspace.h"
 #include "utils/math_functions.h"
+#include "operators/norm/l2_norm_op.h"
 
 namespace dragon {
 
@@ -14,7 +14,8 @@ void L2NormOp<Context>::RunWithType() {
     buffer.Reshape(dims);
 
     //  normalize by inner_dim independently if not across it
-    norm = ws()->CreateTensor("/mnt/" + anchor() + "/l2norm/normalizer");
+    norm = ws()->CreateTensor(
+        "/mnt/" + anchor() + "/l2norm/normalizer");
     dims = Input(0).dims();
     for (int i = axis; i < end_axis; i++) dims[i] = 1;
     norm->Reshape(dims);

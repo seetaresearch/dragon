@@ -1,5 +1,5 @@
-#include "operators/loss/ctc_loss_op.h"
 #include "core/workspace.h"
+#include "operators/loss/ctc_loss_op.h"
 
 #ifdef WITH_CUDNN
 
@@ -15,7 +15,8 @@ void CuDNNCTCLossOp<Context>::WrapIO() {
     const auto batch_size = Input(0).dim(1);
     const auto max_num_labels = Input(1).dim(1);
     CHECK_EQ(batch_size, Input(1).dim(0))
-        << "\nExcepted " << batch_size << " groups(i.e. batch_size) of labels,"
+        << "\nExcepted " << batch_size
+        << " groups(i.e. batch_size) of labels,"
         << "\nbut got " << Input(1).dim(0) << ".";
     //  CuDNN currently does not support variable input lengths
     input_lengths = vector<int>(batch_size, max_seq_len);
@@ -23,12 +24,16 @@ void CuDNNCTCLossOp<Context>::WrapIO() {
     auto* Ldata = Input(1).template data<int, CPUContext>();
     for (int n = 0; n < batch_size; ++n) {
         auto start = Ldata + n * max_num_labels;
-        auto res = std::find(start, start + max_num_labels, (int)padding_mask);
+        auto res = std::find(
+            start, start + max_num_labels,
+                (int)padding_mask);
         int len = std::distance(start, res);
         CHECK_LE(len, CUDNN_LABEL_LENGTH_LIMIT)
-            << "\nThe max label length is " << CUDNN_LABEL_LENGTH_LIMIT
+            << "\nThe max label length is "
+            << CUDNN_LABEL_LENGTH_LIMIT
             << ", but got " << len << ".";
-        std::copy(start, start + len, std::back_inserter(packed_labels));
+        std::copy(start, start + len,
+            std::back_inserter(packed_labels));
         label_lengths[n] = len;
     }
     Output(0)->Reshape(vector<TIndex>({ 1 }));

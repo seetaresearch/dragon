@@ -1,6 +1,5 @@
+#include "utils/math_functions.h"
 #include "operators/arithmetic/dot_op.h"
-#include "core/workspace.h"
-#include "utils/math_functions.h" 
 
 namespace dragon {
 
@@ -99,9 +98,9 @@ void DotGradientOp<Context>::DotRunWithType() {
     auto* dYdata = Input(2).template data<T, CPUContext>();
     auto* dX1data = Output(0)->template mutable_data<T, Context>();
     auto* dX2data = Output(1)->template mutable_data<T, Context>();
-    this->ctx().template Copy<T, Context, Context>(
+    ctx().template Copy<T, Context, Context>(
         Output(0)->count(), dX1data, X2data);
-    this->ctx().template Copy<T, Context, Context>(
+    ctx().template Copy<T, Context, Context>(
         Output(1)->count(), dX2data, X1data);
     math::MulScalar<T, Context>(Output(0)->count(), dYdata[0], dX1data);
     math::MulScalar<T, Context>(Output(1)->count(), dYdata[0], dX2data);

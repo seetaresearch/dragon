@@ -1,7 +1,7 @@
-#include "operators/ndarray/gather_op.h"
 #include "core/workspace.h"
-#include "utils/math_functions.h"
 #include "utils/op_kernel.h"
+#include "utils/math_functions.h"
+#include "operators/ndarray/gather_op.h"
 
 namespace dragon {
 
@@ -29,7 +29,8 @@ void GatherOp<Context>::RunOnDevice() {
     inner_dim = Input(0).count(axis + 1);
     Output(0)->Reshape(output_dims);
 
-    CHECK(Input(1).template IsType<int>()) << "\nThe type of indices should be int32.";
+    CHECK(Input(1).template IsType<int>()) 
+        << "\nThe type of indices should be int32.";
     if (XIsType(Input(0), float)) RunWithType<float>();
     else if (XIsType(Input(0), int)) RunWithType<int>();
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "int32" });
@@ -62,7 +63,8 @@ void GatherGradientOp<Context>::RunOnDevice() {
     inner_dim = Input(0).count(axis + 1);
     Output(0)->ReshapeLike(Input(0));
 
-    CHECK(Input(1).template IsType<int>()) << "\nThe type of indices should be int32.";
+    CHECK(Input(1).template IsType<int>()) 
+        << "\nThe type of indices should be int32.";
     if (XIsType(Input(0), float)) RunWithType<float>();
     else if (XIsType(Input(0), int)) RunWithType<int>();
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "int32" });

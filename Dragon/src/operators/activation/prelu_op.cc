@@ -1,8 +1,8 @@
-#include "operators/activation/prelu_op.h"
 #include "core/workspace.h"
 #include "utils/filler.h"
 #include "utils/math_functions.h"
 #include "utils/op_kernel.h"
+#include "operators/activation/prelu_op.h"
 
 namespace dragon {
 

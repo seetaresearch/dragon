@@ -34,12 +34,12 @@ class Net(object):
     especially when extending the modern architectures of `ConvNets`.
     """
     def __init__(self, *args):
-        """Construct a Net by the ``prototxt`` file.
+        """Construct a Net by the ``proto_txt`` file.
 
         Parameters
         ----------
-        prototxt : str
-            The path of ``.prototxt`` file.
+        proto_txt : str
+            The path of ``.proto_txt`` file.
         model : str
             (Optional) The path of the ``.caffemodel`` file.
         phase : str
@@ -58,22 +58,22 @@ class Net(object):
 
         References
         ----------
-        `NetInit(prototxt, phase)`_ - Construct a Net.
+        `NetInit(proto_txt, phase)`_ - Construct a Net.
 
-        `NetInitLoad(prototxt, model, phase)`_ - Construct a Net and load the model.
+        `NetInitLoad(proto_txt, model, phase)`_ - Construct a Net and load the model.
 
         """
         if len(args) == 2:
             self.NetInit(args[0], args[1])
         else: self.NetInitLoad(args[0], args[1], args[2])
 
-    def NetInit(self, prototxt, phase='TRAIN'):
-        """Construct a Net by the ``prototxt`` file.
+    def NetInit(self, proto_txt, phase='TRAIN'):
+        """Construct a Net by the ``proto_txt`` file.
 
         Parameters
         ----------
-        prototxt : str
-            The path of ``.prototxt`` file.
+        proto_txt : str
+            The path of ``proto_txt`` file.
         phase : str
             The phase, ``TRAIN`` or ``TEST``.
 
@@ -88,11 +88,11 @@ class Net(object):
 
         """
         self._net = pb.NetParameter()
-        Parse(open(prototxt,'r').read(), self._net)
+        Parse(open(proto_txt,'r').read(), self._net)
         self._phase = phase
         self._layers = []
         if not hasattr(self, '_blobs'): self._blobs = {}
-        self._params = {};
+        self._params = {}
         self._swap_tensors = {}
         self._inputs_to_tensors = {}
         self._costs = []; self._wrts = []
@@ -115,13 +115,13 @@ class Net(object):
             if not self.FilterLayer(layer): continue
             self.CheckBackward(layer)
 
-    def NetInitLoad(self, prototxt, model, phase='TRAIN'):
-        """Construct a Net by the ``prototxt`` file.
+    def NetInitLoad(self, proto_txt, model, phase='TRAIN'):
+        """Construct a Net by the ``proto_txt`` file.
 
         Parameters
         ----------
-        prototxt : str
-            The path of ``.prototxt`` file.
+        proto_txt : str
+            The path of ``proto_txt`` file.
         model : str
             (Optional) The path of the ``.caffemodel`` file.
         phase : str
@@ -137,7 +137,7 @@ class Net(object):
         The implementation of `Net_Init_Load(_caffe.cpp, L137)`_.
 
         """
-        self.NetInit(prototxt, phase)
+        self.NetInit(proto_txt, phase)
         self._model = model  # lazy-loading model
 
     def FilterLayer(self, LayerParameter):
@@ -518,7 +518,7 @@ class Net(object):
         Examples
         --------
         >>> import dragon.core.workspace as ws
-        >>> ws.Snapshot(net.store_params(), filename='xxx', suffix='.caffeomdel')
+        >>> ws.Snapshot(self.store_params(), filename='xxx', suffix='.caffeomdel')
 
         """
         params = []
@@ -577,8 +577,8 @@ class Net(object):
         --------
         >>> import dragon.ops as ops
         >>> data, label = ops.LMDBData()
-        >>> net.replace(net.blobs['data'].data, data)
-        >>> net.replace(net.blobs['label'].data, label)
+        >>> self.replace(self.blobs['data'].data, data)
+        >>> self.replace(self.blobs['label'].data, label)
 
         """
         self._swap_tensors[A] = B
@@ -590,7 +590,7 @@ class PartialNet(Net):
     Examples
     --------
     >>> from dragon.core.tensor import Tensor
-    >>> net = PartialNet('xxx.prototxt', 'TEST', **{'blob_name': Tensor().Variable()})
+    >>> net = PartialNet('xxx.proto_txt', 'TEST', **{'blob_name': Tensor().Variable()})
 
     """
     def __init__(self, *args, **kwargs):

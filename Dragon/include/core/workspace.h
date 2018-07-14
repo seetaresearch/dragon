@@ -27,7 +27,7 @@ class Workspace {
     typedef Map<string, unique_ptr<OperatorBase> > OperatorMap;
     typedef Map<string, unique_ptr<GraphBase> > GraphMap;
     typedef Map<string, TensorFiller> FillerMap;
-    typedef Map<string, string> RenameMap;
+    typedef Map<string, string> ProxyMap;
 
     Workspace(const string& name) : name_(name) { InitWorkspace(); }
 
@@ -56,9 +56,9 @@ class Workspace {
 
     inline Workspace* MoveWorkspace(Workspace* ws) {
         CHECK(ws) << "The given Workspace is invalid.";
-        if (workspace_map_.count(ws->name()))
-            return workspace_map_[ws->name()];
-        return workspace_map_[ws->name()] = ws;
+        if (ws_map_.count(ws->name()))
+            return ws_map_[ws->name()];
+        return ws_map_[ws->name()] = ws;
     }
 
     inline void ClearWorkspace() {
@@ -70,8 +70,8 @@ class Workspace {
     /******************** Tensor ********************/
 
     inline string GetTensorName(const string& name) {
-        if (rename_map_.count(name) > 0) {
-            return rename_map_[name];
+        if (proxy_map_.count(name) > 0) {
+            return proxy_map_[name];
         } else { return name; }
     }
 
@@ -84,7 +84,7 @@ class Workspace {
             return tensor_map_[query].get();
         if (use_remote) {
             //  search remote workspace
-            for (auto& it : workspace_map_) {
+            for (auto& it : ws_map_) {
                 if (it.second->HasTensor(query))
                     return it.second->GetTensor(query);
             }
@@ -129,7 +129,7 @@ class Workspace {
         for (auto& it : tensor_map_)
             names.push_back(it.first);
         //  serach remote workspace
-        for (auto& it : workspace_map_) {
+        for (auto& it : ws_map_) {
             vector<string> sub_names = it.second->GetTensors();
             names.insert(names.end(),
                 sub_names.begin(), sub_names.end());
@@ -147,7 +147,7 @@ class Workspace {
         if (!use_remote) return result;
 
         //  search remote workspace
-        for (auto& it : workspace_map_)
+        for (auto& it : ws_map_)
             result |= it.second->HasFiller(name);
         return result;
     }
@@ -167,7 +167,7 @@ class Workspace {
             return &filler_map_[name];
 
         //  search remote workspace
-        for (auto& it : workspace_map_) {
+        for (auto& it : ws_map_) {
             if (it.second->HasFiller(name))
                 return it.second->GetFiller(name);
         }
@@ -274,20 +274,23 @@ class Workspace {
 
     /******************** Utility ********************/
 
-    inline void CreateRename(
-        const string&           old_tensor,
-        const string&           new_tensor) {
-        rename_map_[old_tensor] = new_tensor;
+    inline bool SetProxy(
+        const string&           key,
+        const string&           proxy) {
+        if (proxy_map_.count(key))
+            return proxy_map_[key] == proxy;
+        proxy_map_[key] = proxy;
+        return true;
     }
 
  private:
     string name_;
-    WorkspaceMap workspace_map_;
+    WorkspaceMap ws_map_;
     TensorMap tensor_map_;
     OperatorMap op_map_;
     GraphMap graph_map_;
     FillerMap filler_map_;
-    RenameMap rename_map_;
+    ProxyMap proxy_map_;
 };
 
 }    // namespace dragon

@@ -63,13 +63,12 @@ def Drop(op_func, *args, **kwargs):
 
     Examples
     --------
-    >>> from dragon.core.tensor import Tensor
-    >>> import dragon.ops as ops
+    >>> import dragon as dg
     >>> import dragon.memonger as opt
-    >>> data = Tensor().Variable()
-    >>> conv_1 = ops.Conv2d(data, num_output=8)
-    >>> conv_1_bn = opt.Drop(ops.BatchNorm, [conv_1, Tensor().Variable(), Tensor.Variable()])
-    >>> conv_1_relu = opt.Drop(ops.Relu, conv_1_bn)
+    >>> data = dg.Tensor().Variable()
+    >>> conv_1 = dg.Conv2d(data, num_output=8)
+    >>> conv_1_bn = opt.Drop(dg.BatchNorm, [conv_1, dg.Tensor().Variable(), dg.Tensor.Variable()])
+    >>> conv_1_relu = opt.Drop(dg.Relu, conv_1_bn)
 
     """
     kwargs['mirror_stage'] = True

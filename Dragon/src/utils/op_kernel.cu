@@ -282,7 +282,7 @@ __global__ void _Elu(
     T*                      y) {
     CUDA_KERNEL_LOOP(idx, count) {
         y[idx] = x[idx] > 0 ? x[idx] :
-            alpha * (std::exp(x[idx]) - 1);
+            alpha * (exp(x[idx]) - 1);
     }
 }
 
@@ -378,7 +378,7 @@ __global__ void _SElu(
     T*                      y) {
     CUDA_KERNEL_LOOP(idx, count) {
         y[idx] = x[idx] > 0 ? 1.0507 * x[idx] :
-            1.7581 * (std::exp(x[idx]) - 1);
+            1.7581 * (exp(x[idx]) - 1);
     }
 }
 
@@ -500,7 +500,7 @@ __global__ void _SoftmaxExp(
     const int               count,
     T*                      y) {
     CUDA_KERNEL_LOOP(idx, count) {
-        y[idx] = std::exp(y[idx]);
+        y[idx] = exp(y[idx]);
     }
 }
 
@@ -619,7 +619,7 @@ __global__ void _Tanh(
     const T*                x,
     T*                      y) {
     CUDA_KERNEL_LOOP(i, count) {
-        y[i] = std::tanh(x[i]);
+        y[i] = tanh(x[i]);
     }
 }
 
@@ -804,59 +804,192 @@ template<> void AbsGrad<float, CUDAContext>(
 template <typename T>
 __global__ void _SigmoidCrossEntropy(
     const int               count,
-    const T*                x,
-    const T*                target,
-    T*                      loss,
-    T*                      valid) {
+    const T*                logits,
+    const T*                targets,
+    T*                      losses,
+    T*                      flags) {
     CUDA_KERNEL_LOOP(idx, count) {
-        if (target[idx] < 0) {
-            loss[idx] = valid[idx] = 0.;
+        if (targets[idx] < 0) {
+            losses[idx] = flags[idx] = 0;
         } else {
-            loss[idx] = std::log(1 +
-                std::exp(x[idx] - 2 * x[idx] * (x[idx] >= 0))
-            ) + x[idx] * ((x[idx] >= 0) - target[idx]);
-            valid[idx] = 1.;
+            losses[idx] = log(1 +
+                exp(logits[idx] - 2 * logits[idx] * (logits[idx] >= 0))
+            ) + logits[idx] * ((logits[idx] >= 0) - targets[idx]);
+            flags[idx] = 1;
         }
     }
 }
 
 template <> void SigmoidCrossEntropy<float, CUDAContext>(
     const int               count,
-    const float*            x,
-    const float*            target,
-    float*                  loss,
-    float*                  valid) {
+    const float*            logits,
+    const float*            targets,
+    float*                  losses,
+    float*                  flags,
+    CUDAContext*            ctx) {
     _SigmoidCrossEntropy<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, x, target, loss, valid);
+        << <CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                count, logits, targets, losses, flags);
 }
 
 template <typename T>
 __global__ void _SigmoidCrossEntropyGrad(
     const int               count,
-    const T*                x,
-    const T*                target,
-    T*                      dx,
-    T*                      valid) {
+    const T*                logits,
+    const T*                targets,
+    T*                      dlogits,
+    T*                      flags) {
     CUDA_KERNEL_LOOP(idx, count) {
-        if (target[idx] < 0) {
-            dx[idx] = valid[idx] = 0.;
+        if (targets[idx] < 0) {
+            dlogits[idx] = flags[idx] = 0;
         } else {
-            dx[idx] = 1. / (1. + expf(-x[idx])) - target[idx];
-            valid[idx] = 1.;
+            dlogits[idx] = 1 / (1 + exp(-logits[idx])) - targets[idx];
+            flags[idx] = 1;
         }
     }
 }
 
 template <> void SigmoidCrossEntropyGrad<float, CUDAContext>(
     const int               count,
-    const float*            x,
-    const float*            target,
-    float*                  dx,
-    float*                  valid) {
+    const float*            logits,
+    const float*            targets,
+    float*                  dlogits,
+    float*                  flags,
+    CUDAContext*            ctx) {
     _SigmoidCrossEntropyGrad<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, x, target, dx, valid);
+        << <CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                count, logits, targets, dlogits, flags);
+}
+
+/******************** loss.sigmoid_focal_loss ********************/
+
+template <typename T>
+__global__ void _SigmoidFocalLoss(
+    const int               count,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
+    const float             gamma,
+    const int               neg_id,
+    const T*                logits,
+    const T*                targets,
+    T*                      losses,
+    T*                      flags) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int iix = idx % inner_dim;
+        const int aix = (idx / inner_dim) % axis_dim;
+        const int oix = idx / inner_dim / axis_dim;
+        const int t = targets[oix * inner_dim + iix];
+        //  ``0`` is reserved for targets if neg id is zero
+        //  use ``aix + 1`` to match the targets
+        T c1 = (t == (aix + (neg_id ? 0 : 1)));
+        T c2 = (t != -1) & (t != (aix + (neg_id ? 0 : 1)));
+        T p = 1 / (1 + exp(-logits[idx]));  //  logit -> prob
+
+        // (1 - p)^{gamma} * log(p)
+        T pos_term = pow(1 - p, gamma) * log(max(p, FLT_MIN));
+
+        // p^{gamma} * log(1 - p)
+        T neg_term = pow(p, gamma) * (
+            -logits[idx] * (logits[idx] >= 0) - log(
+                1 + exp(logits[idx] - 2 * logits[idx] * (logits[idx] >= 0)))
+       );
+
+        losses[idx] = 0.0;
+        losses[idx] += -c1 * pos_term * pos_alpha;
+        losses[idx] += -c2 * neg_term * neg_alpha;
+        flags[idx] = c1;
+    }
+}
+
+template <> void SigmoidFocalLoss<float, CUDAContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
+    const float             gamma,
+    const int               neg_id,
+    const float*            logits,
+    const float*            targets,
+    float*                  losses,
+    float*                  flags,
+    CUDAContext*            ctx) {
+    TIndex count = outer_dim * axis_dim * inner_dim;
+    _SigmoidFocalLoss<float>
+        << <CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                count, axis_dim, inner_dim,
+                    pos_alpha, neg_alpha, gamma, neg_id,
+                        logits, targets, losses, flags);
+}
+
+template <typename T>
+__global__ void _SigmoidFocalLossGradient(
+    const int               count,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
+    const float             gamma,
+    const int               neg_id,
+    const T*                logits,
+    const T*                targets,
+    T*                      dlogits,
+    T*                      flags) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int iix = idx % inner_dim;
+        const int aix = (idx / inner_dim) % axis_dim;
+        const int oix = idx / inner_dim / axis_dim;
+        const int t = targets[oix * inner_dim + iix];
+        //  ``0`` is reserved for targets if neg id is zero
+        //  use ``aix + 1`` to match the targets
+        T c1 = (t == (aix + (neg_id ? 0 : 1)));
+        T c2 = (t != -1) & (t != (aix + (neg_id ? 0 : 1)));
+        T p = 1 / (1 + exp(-logits[idx]));  //  logit -> prob
+
+        // (1 - p)^{gamma} * (1 - p - gamma * p * log(p))
+        T pos_term = pow((1 - p), gamma) * (
+            1 - p - p * gamma * log(max(p, FLT_MIN))
+        );
+
+        // p^{gamma} * (gamma * (1 - p) * log(1-p) - p)
+        T neg_term = pow(p, gamma) * (
+            (-logits[idx] * (logits[idx] >= 0) - log(
+                1 + exp(logits[idx] - 2 * logits[idx] * (logits[idx] >= 0)))
+            ) * (1 - p) * gamma - p
+        );
+
+        dlogits[idx] = 0.0;
+        dlogits[idx] += -c1 * pos_term * pos_alpha;
+        dlogits[idx] += -c2 * neg_term * neg_alpha;
+        flags[idx] = c1;
+    }
+}
+
+template <> void SigmoidFocalLossGradient<float, CUDAContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
+    const float             gamma,
+    const int               neg_id,
+    const float*            logits,
+    const float*            targets,
+    float*                  dlogits,
+    float*                  flags,
+    CUDAContext*            ctx) {
+    TIndex count = outer_dim * axis_dim * inner_dim;
+    _SigmoidFocalLossGradient<float>
+        << <CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                count, axis_dim, inner_dim,
+                    pos_alpha, neg_alpha, gamma, neg_id,
+                        logits, targets, dlogits, flags);
 }
 
 /******************** loss.smooth_l1_loss ********************/
@@ -931,6 +1064,143 @@ template <> void SoftmaxCrossEntropy<float, CUDAContext>(
     _SoftmaxCrossEntropy<float>
         << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
             count, prob, target, loss);
+}
+
+/******************** loss.softmax_focal_loss ********************/
+
+template <typename T>
+__global__ void _SoftmaxFocalLoss(
+    const int               count,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
+    const float             gamma,
+    const int               neg_id,
+    const T*                prob,
+    const T*                labels,
+    const int*              ignores,
+    const int               num_ignores,
+    T*                      losses,
+    T*                      flags) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int oix = idx / inner_dim;
+        const int iix = idx % inner_dim;
+        const int label = labels[oix * inner_dim + iix];
+        int k;
+        for (k = 0; k < num_ignores; k++) {
+            if (label == ignores[k]) {
+                losses[idx] = flags[idx] = 0;
+                break;
+            }
+        }
+        if (k == num_ignores) {
+            const int t = (oix * axis_dim + label) * inner_dim + iix;
+            T scale = pow(1.f - prob[t], gamma);
+            scale = label > neg_id ?
+                pos_alpha * scale : neg_alpha * scale;
+            losses[idx] = -scale * log(max(prob[t], FLT_MIN));
+            flags[idx] = label > neg_id ? 1 : 0;
+        }
+    }
+}
+
+template <> void SoftmaxFocalLoss<float, CUDAContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
+    const float             gamma,
+    const int               neg_id,
+    const float*            prob,
+    const float*            labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    CUDAContext*            ctx) {
+    const int num_preds = outer_dim * inner_dim;
+    _SoftmaxFocalLoss<float>
+        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                num_preds, axis_dim, inner_dim,
+                    pos_alpha, neg_alpha, gamma, neg_id,
+                        prob, labels, ignores, num_ignores,
+                            losses, flags);
+}
+
+template <typename T>
+__global__ void _SoftmaxFocalLossGrad(
+    const int               count,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
+    const float             gamma,
+    const int               neg_id,
+    const T*                prob,
+    const T*                labels,
+    const int*              ignores,
+    const int               num_ignores,
+    T*                      dx,
+    T*                      flags) {
+    CUDA_KERNEL_LOOP(idx, count) {
+        const int oix = idx / inner_dim;
+        const int iix = idx % inner_dim;
+        const int label = labels[oix * inner_dim + iix];
+        int k;
+        for (k = 0; k < num_ignores; k++)
+            if (label == ignores[k]) break;
+        if (k != num_ignores) {
+            for (int c = 0; c < axis_dim; c++)
+                dx[(oix * axis_dim + c) * inner_dim + iix] = 0;
+            flags[idx] = 0;
+        } else {
+            const int t = (oix * axis_dim + label) * inner_dim + iix;
+            T onemp = 1. - prob[t];
+            //  unstable if gamma is 0
+            T grad = -gamma * pow(onemp, gamma - 1)
+                            * log(max(prob[t], FLT_MIN))
+                            * prob[t] + pow(onemp, gamma);
+            grad = label > neg_id ?
+                pos_alpha * grad : neg_alpha * grad;
+            for (int c = 0; c < axis_dim; c++) {
+                const int i = (oix * axis_dim + c) * inner_dim + iix;
+                if (c == label) {
+                    dx[i] = grad * (prob[t] - 1);
+                } else {
+                    dx[i] = grad * prob[i];
+                }
+            }
+            flags[idx] = label > neg_id ? 1 : 0;
+        }
+    }
+}
+
+template<> void SoftmaxFocalLossGrad<float, CUDAContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
+    const float             gamma,
+    const int               neg_id,
+    const float*            prob,
+    const float*            labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  dx,
+    float*                  flags,
+    CUDAContext*            ctx) {
+    const int num_preds = outer_dim * inner_dim;
+    _SoftmaxFocalLossGrad<float>
+        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(
+                num_preds, axis_dim, inner_dim,
+                    pos_alpha, neg_alpha, gamma, neg_id,
+                        prob, labels, ignores, num_ignores,
+                            dx, flags);
 }
 
 /******************** loss.sparse_softmax_cross_entropy ********************/
@@ -1074,143 +1344,6 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, int64_t, CUDAContext>(
                 num_preds, axis_dim, inner_dim,
                     prob, labels, ignores, num_ignores,
                         dx, flags);
-}
-
-/******************** loss.sparse_softmax_focal_loss ********************/
-
-template <typename T>
-__global__ void _SparseSoftmaxFocalLoss(
-    const int               count,
-    const int               axis_dim,
-    const int               inner_dim,
-    const float             pos_alpha,
-    const float             neg_alpha,
-    const float             gamma,
-    const int               neg_id,
-    const T*                prob,
-    const T*                labels,
-    const int*              ignores,
-    const int               num_ignores,
-    T*                      losses,
-    T*                      flags) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        const int oix = idx / inner_dim;
-        const int iix = idx % inner_dim;
-        const int label = labels[oix * inner_dim + iix];
-        int k;
-        for (k = 0; k < num_ignores; k++) {
-            if (label == ignores[k]) {
-                losses[idx] = flags[idx] = 0;
-                break;
-            }
-        }
-        if (k == num_ignores) {
-            const int t = (oix * axis_dim + label) * inner_dim + iix;
-            T scale = pow(1.f - prob[t], gamma);
-            scale = label > neg_id ?
-                pos_alpha * scale : neg_alpha * scale;
-            losses[idx] = -scale * std::log(max(prob[t], FLT_MIN));
-            flags[idx] = label > neg_id ? 1 : 0;
-        }
-    }
-}
-
-template <> void SparseSoftmaxFocalLoss<float, CUDAContext>(
-    const int               outer_dim,
-    const int               axis_dim,
-    const int               inner_dim,
-    const float             pos_alpha,
-    const float             neg_alpha,
-    const float             gamma,
-    const int               neg_id,
-    const float*            prob,
-    const float*            labels,
-    const int*              ignores,
-    const int               num_ignores,
-    float*                  losses,
-    float*                  flags,
-    CUDAContext*            ctx) {
-    const int num_preds = outer_dim * inner_dim;
-    _SparseSoftmaxFocalLoss<float>
-        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                num_preds, axis_dim, inner_dim,
-                    pos_alpha, neg_alpha, gamma, neg_id,
-                        prob, labels, ignores, num_ignores,
-                            losses, flags);
-}
-
-template <typename T>
-__global__ void _SparseSoftmaxFocalLossGrad(
-    const int               count,
-    const int               axis_dim,
-    const int               inner_dim,
-    const float             pos_alpha,
-    const float             neg_alpha,
-    const float             gamma,
-    const int               neg_id,
-    const T*                prob,
-    const T*                labels,
-    const int*              ignores,
-    const int               num_ignores,
-    T*                      dx,
-    T*                      flags) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        const int oix = idx / inner_dim;
-        const int iix = idx % inner_dim;
-        const int label = labels[oix * inner_dim + iix];
-        int k;
-        for (k = 0; k < num_ignores; k++)
-            if (label == ignores[k]) break;
-        if (k != num_ignores) {
-            for (int c = 0; c < axis_dim; c++)
-                dx[(oix * axis_dim + c) * inner_dim + iix] = 0;
-            flags[idx] = 0;
-        } else {
-            const int t = (oix * axis_dim + label) * inner_dim + iix;
-            T onemp = 1. - prob[t];
-            //  unstable if gamma is 0
-            T grad = -gamma * pow(onemp, gamma - 1)
-                            * log(max(prob[t], FLT_MIN))
-                            * prob[t] + pow(onemp, gamma);
-            grad = label > neg_id ?
-                pos_alpha * grad : neg_alpha * grad;
-            for (int c = 0; c < axis_dim; c++) {
-                const int i = (oix * axis_dim + c) * inner_dim + iix;
-                if (c == label) {
-                    dx[i] = grad * (prob[t] - 1);
-                } else {
-                    dx[i] = grad * prob[i];
-                }
-            }
-            flags[idx] = label > neg_id ? 1 : 0;
-        }
-    }
-}
-
-template<> void SparseSoftmaxFocalLossGrad<float, CUDAContext>(
-    const int               outer_dim,
-    const int               axis_dim,
-    const int               inner_dim,
-    const float             pos_alpha,
-    const float             neg_alpha,
-    const float             gamma,
-    const int               neg_id,
-    const float*            prob,
-    const float*            labels,
-    const int*              ignores,
-    const int               num_ignores,
-    float*                  dx,
-    float*                  flags,
-    CUDAContext*            ctx) {
-    const int num_preds = outer_dim * inner_dim;
-    _SparseSoftmaxFocalLossGrad<float>
-        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                num_preds, axis_dim, inner_dim,
-                    pos_alpha, neg_alpha, gamma, neg_id,
-                        prob, labels, ignores, num_ignores,
-                            dx, flags);
 }
 
 /******************** misc.astype ********************/
@@ -2355,7 +2488,7 @@ __global__ void _LSTMCellAct(
     CUDA_KERNEL_LOOP(idx, count) {
         const int offset = idx % x_offset;
         xact[idx] = offset < c_offset ?
-            _SigmoidUnit<float>(xact[idx]) : std::tanh(xact[idx]);
+            _SigmoidUnit<float>(xact[idx]) : tanh(xact[idx]);
     }
 }
 
@@ -2379,7 +2512,7 @@ __global__ void _LSTMCellGate(
         const T o = x[offset + o_offset];
         T c_ = x[offset + c_offset];
         c_ = c[idx] = f * cx[idx] + i * c_;
-        h[idx] = o * std::tanh(c_);
+        h[idx] = o * tanh(c_);
     }
 }
 

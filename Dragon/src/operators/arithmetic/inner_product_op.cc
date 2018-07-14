@@ -1,6 +1,6 @@
-#include "operators/arithmetic/inner_product_op.h"
 #include "core/workspace.h"
 #include "utils/filler.h"
+#include "operators/arithmetic/inner_product_op.h"
 
 namespace dragon {
 

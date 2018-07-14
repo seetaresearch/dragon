@@ -1,6 +1,6 @@
-#include "operators/vision/dense_concat_op.h"
 #include "core/workspace.h"
 #include "utils/op_kernel.h"
+#include "operators/vision/dense_concat_op.h"
 
 namespace dragon {
 
@@ -12,7 +12,8 @@ OPERATOR_SCHEMA(DenseConcat).NumInputs(2).NumOutputs(1);
 
 template <class Context> template <typename T>
 void DenseConcatGradientOp<Context>::RestoreX1() {
-    CHECK_GT(growth_rate, 0) << "\nInvalid growth rate, please preset it.";
+    CHECK_GT(growth_rate, 0)
+        << "\nInvalid growth rate, please preset it.";
     this->concat_dims = Input(-1).dims();
     this->y_concat_dim = this->concat_dims[this->axis];
     this->outer_dim = Input(-1).count(0, this->axis);

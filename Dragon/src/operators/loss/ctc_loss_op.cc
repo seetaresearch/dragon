@@ -1,6 +1,6 @@
-#include "operators/loss/ctc_loss_op.h"
 #include "core/workspace.h"
 #include "utils/filler.h"
+#include "operators/loss/ctc_loss_op.h"
 
 namespace dragon {
 
@@ -12,7 +12,8 @@ OPERATOR_SCHEMA(CTCLoss).NumInputs(2).NumOutputs(1);
 
 template <class Context> template <typename T>
 void CTCLossGradientOp<Context>::RunWithType() {
-    auto* gradT = ws()->GetTensor("/mnt/" + anchor() + "/ctc/grads");
+    auto* gradT = ws()->GetTensor(
+        "/mnt/" + anchor() + "/ctc/grads");
     Output(0)->ReshapeLike(*gradT);
 
     auto* Gdata = gradT->template data<T, Context>();

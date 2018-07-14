@@ -1,23 +1,25 @@
-#include "operators/arithmetic/mul_op.h"
 #include "core/workspace.h"
-#include "utils/math_functions.h" 
+#include "utils/math_functions.h"
+#include "operators/arithmetic/fundamental_op.h"
 
 namespace dragon {
 
 template <class Context> template <typename T>
 void MulOp<Context>::EltwiseRunWithType() {
-    auto* X1data = Input(0).template data<T, Context>();
-    auto* X2data = Input(1).template data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Mul<T, Context>(Input(0).count(), X1data, X2data, Ydata);
+    auto* x1 = Input(0).template data<T, Context>();
+    auto* x2 = Input(1).template data<T, Context>();
+    auto* y = Output(0)->template mutable_data<T, Context>();
+    math::Mul<T, Context>(Output(0)->count(), x1, x2, y);
 }
 
 template <class Context> template <typename T>
 void MulOp<Context>::BroadcastRunWithType(int type) {
     TIndex outer_dim, inner_dim;
-    auto* X1data = Input(0).template data<T, Context>();
-    auto* X2data = Input(1).template data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    auto* x1 = Input(0).template data<T, Context>();
+    auto* x2 = Input(1).template data<T, Context>();
+    auto* y = Output(0)->template mutable_data<T, Context>();
+    auto* c = ws()->template caches<T, Context>({ 
+        Output(0)->count() })[0];
 
     if (type == 0 || type == 1) {
         if (type == 0) {
@@ -31,165 +33,135 @@ void MulOp<Context>::BroadcastRunWithType(int type) {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 outer_dim, inner_dim, 1,
-                    1.0, multiplier, X2data,
-                        0.0, Ydata, &ctx());
-        math::Mul<T, Context>(Input(0).count(), X1data, Ydata, Ydata);
-    } 
-    else if (type == 2) {
+                    1.0, multiplier, x2,
+                        0.0, c, &ctx());
+        math::Mul<T, Context>(Output(0)->count(), x1, c, y);
+    } else if (type == 2) {
         outer_dim = Input(0).dim(0);
         inner_dim = Input(0).count(1);
         DECLARE_MULTIPLIER(multiplier, inner_dim);
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 outer_dim, inner_dim, 1,
-                    1.0, X2data, multiplier,
-                        0.0, Ydata, &ctx());
-        math::Mul<T, Context>(Input(0).count(), X1data, Ydata, Ydata);
+                    1.0, x2, multiplier,
+                        0.0, c, &ctx());
+        math::Mul<T, Context>(Output(0)->count(), x1, c, y);
     }
 }
 
 template <class Context>
 void MulOp<Context>::RunOnDevice() {
+    DeclareX1X2;
     Output(0)->ReshapeLike(Input(0));
 
     if (XIsType(Input(0), float)) {
-        if (Input(0).dims() == Input(1).dims()) 
-            EltwiseRunWithType<float>();
-        else if (Input(0).dim(0) == Input(1).dim(0) && Input(1).count(1) == 1) 
-            BroadcastRunWithType<float>(2);
-        else if (Input(0).dim(-1) == Input(1).dim(-1) && 
-                 Input(1).count(0, Input(1).axis(-1)) == 1)  
-            BroadcastRunWithType<float>(1);
-        else if (Input(1).ndim() == 1 && Input(1).dim(0) == 1)
-            BroadcastRunWithType<float>(0);
-        else LOG(FATAL) << "Could not be broadcast together with shapes "
-                        << Input(0).DimString() << "  " << Input(1).DimString();
+        RunByX1X2(float);
     } else if (XIsType(Input(0), float16)) {
-        if (Input(0).dims() == Input(1).dims())
-            EltwiseRunWithType<float16>();
-        else if (Input(0).dim(0) == Input(1).dim(0) && Input(1).count(1) == 1)
-            BroadcastRunWithType<float16>(2);
-        else if (Input(0).dim(-1) == Input(1).dim(-1) &&
-            Input(1).count(0, Input(1).axis(-1)) == 1)
-            BroadcastRunWithType<float16>(1);
-        else if (Input(1).ndim() == 1 && Input(1).dim(0) == 1)
-            BroadcastRunWithType<float16>(0);
-        else LOG(FATAL) << "Could not be broadcast together with shapes "
-                        << Input(0).DimString() << "  " << Input(1).DimString();
-    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+        RunByX1X2(float16);
+    } else {
+        LOG(FATAL) << DTypeHelper(Input(0),
+            { "float32", "float16" });
+    }
 }
 
 DEPLOY_CPU(Mul);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Mul);
 #endif
-OPERATOR_SCHEMA(Mul).NumInputs(2).NumOutputs(1);
+OPERATOR_SCHEMA(Mul)
+    .NumInputs(2).NumOutputs(1)
+    .Inplace({ { 0, 0 } });
 
 template <class Context> template <typename T>
 void MulGradientOp<Context>::EltwiseRunWithType() {
-    auto* dYdata = Input(2).template data<T, Context>();
+    auto* dy = Input(-1).template data<T, Context>();
+
     if (Output(1)->name() != "ignore") {
-        auto* X1data = Input(0).template data<T, Context>();
-        auto* dX2data = Output(1)->template mutable_data<T, Context>();
-        math::Mul<T, Context>(Input(0).count(), dYdata, X1data, dX2data);
+        auto* x1 = Input(0).template data<T, Context>();
+        auto* dx2 = Output(1)->template mutable_data<T, Context>();
+        math::Mul<T, Context>(Output(1)->count(), dy, x1, dx2);
     }
+
     if (Output(0)->name() != "ignore") {
-        auto* X2data = Input(1).template data<T, Context>();
-        auto* dX1data = Output(0)->template mutable_data<T, Context>();
-        math::Mul<T, Context>(Input(0).count(), dYdata, X2data, dX1data);
+        auto* x2 = Input(1).template data<T, Context>();
+        auto* dx1 = Output(0)->template mutable_data<T, Context>();
+        math::Mul<T, Context>(Output(0)->count(), dy, x2, dx1);
     }
 }
 
 template <class Context> template <typename T>
 void MulGradientOp<Context>::BroadcastRunWithType(int type) {
+    DefineX1X2;
     TIndex outer_dim, inner_dim;
-    auto* dYdata = Input(2).template data<T, Context>();
+    auto* dy = Input(-1).template data<T, Context>();
+
     if (type == 0) {
-        outer_dim = Input(0).count();
+        outer_dim = X1->count();
         inner_dim = 1;
     } else if (type == 1) {
-        outer_dim = Input(0).count(0, Input(0).axis(-1));
-        inner_dim = Input(0).dim(-1);
+        outer_dim = X1->count(0, X1->axis(-1));
+        inner_dim = X1->dim(-1);
     } else if (type == 2) {
-        outer_dim = Input(0).dim(0);
-        inner_dim = Input(0).count(1);
+        outer_dim = X1->dim(0);
+        inner_dim = X1->count(1);
     }
 
     if (Output(1)->name() != "ignore") {
-        auto* X1data = Input(0).template data<T, Context>();
-        auto* dX1data = Output(0)->template mutable_data<T, Context>();
-        auto* dX2data = Output(1)->template mutable_data<T, Context>();
+        auto* x1 = Input(0).template data<T, Context>();
+        auto* dx2 = Output(1)->template mutable_data<T, Context>();
+        auto* c = ws()->template caches<T, Context>({ X1->count() })[0];
+        math::Mul<T, Context>(X1->count(), dy, x1, c);
         if (type == 0 || type == 1) {
             DECLARE_MULTIPLIER(multiplier,  outer_dim);
-            math::Mul<T, Context>(Input(-1).count(), dYdata, X1data, dX1data);
             math::Gemv<T, Context>(
                 CblasTrans, outer_dim, inner_dim,
-                    1.0, dX1data, multiplier,
-                        0.0, dX2data, &ctx());
+                    1.0, c, multiplier,
+                        0.0, dx2, &ctx());
         } else if (type == 2) {
-            outer_dim = Input(0).dim(0);
-            inner_dim = Input(0).count(1);
             DECLARE_MULTIPLIER(multiplier, inner_dim);
-            math::Mul<T, Context>(Input(-1).count(), dYdata, X1data, dX1data);
             math::Gemv<T, Context>(
                 CblasNoTrans, outer_dim, inner_dim,
-                    1.0, X1data, multiplier,
-                        0.0, dX2data, &ctx());
+                    1.0, c, multiplier,
+                        0.0, dx2, &ctx());
         }
     }
 
     if (Output(0)->name() != "ignore") {
-        auto* X2data = Input(1).template data<T, Context>();
-        auto* dX1data = Output(0)->template mutable_data<T, Context>();
+        auto* x2 = Input(1).template data<T, Context>();
+        auto* dx1 = Output(0)->template mutable_data<T, Context>();
         if (type == 0 || type == 1) {
             DECLARE_MULTIPLIER(multiplier, outer_dim);
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
                     outer_dim, inner_dim, 1,
-                        1.0, multiplier, X2data,
-                            0.0, dX1data, &ctx());
+                        1.0, multiplier, x2,
+                            0.0, dx1, &ctx());
         } else if (type == 2) {
             DECLARE_MULTIPLIER(multiplier, inner_dim);
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
                     outer_dim, inner_dim, 1,
-                        1.0, X2data, multiplier,
-                            0.0, dX1data, &ctx());
+                        1.0, x2, multiplier,
+                            0.0, dx1, &ctx());
         }
-        math::Mul<T, Context>(Output(0)->count(), dYdata, dX1data, dX1data);
+        math::Mul<T, Context>(X1->count(), dy, dx1, dx1);
     }
 }
 
 template <class Context>
 void MulGradientOp<Context>::RunOnDevice() {
-    Output(0)->ReshapeLike(Input(0));
-    Output(1)->ReshapeLike(Input(1));
+    DefineX1X2;
+    Output(0)->ReshapeLike(*X1);
+    Output(1)->ReshapeLike(*X2);
 
-    if (XIsType(Input(0), float)) {
-        if (Input(0).dims() == Input(1).dims()) 
-            EltwiseRunWithType<float>();
-        else if (Input(0).dim(0) == Input(1).dim(0) && Input(1).count(1) == 1)
-            BroadcastRunWithType<float>(2);
-        else if (Input(0).dim(-1) == Input(1).dim(-1) &&
-                 Input(1).count(0, Input(1).axis(-1)) == 1)
-            BroadcastRunWithType<float>(1);
-        else if (Input(1).ndim() == 1 && Input(1).dim(0) == 1)
-            BroadcastRunWithType<float>(0);
-        else LOG(FATAL) << "Could not be broadcast together with shapes "
-                        << Input(-1).DimString() << "  " << Input(0).DimString();
-    } else if (XIsType(Input(0), float16)) {
-        if (Input(0).dims() == Input(1).dims())
-            EltwiseRunWithType<float16>();
-        else if (Input(0).dim(0) == Input(1).dim(0) && Input(1).count(1) == 1)
-            BroadcastRunWithType<float16>(2);
-        else if (Input(0).dim(-1) == Input(1).dim(-1) &&
-            Input(1).count(0, Input(1).axis(-1)) == 1)
-            BroadcastRunWithType<float16>(1);
-        else if (Input(1).ndim() == 1 && Input(1).dim(0) == 1)
-            BroadcastRunWithType<float16>(0);
-        else LOG(FATAL) << "Could not be broadcast together with shapes "
-                        << Input(-1).DimString() << "  " << Input(0).DimString();
-    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+    if (XIsType(Input(-1), float)) {
+        RunByX1X2(float);
+    } else if (XIsType(Input(-1), float16)) {
+        RunByX1X2(float16);
+    } else {
+        LOG(FATAL) << DTypeHelper(Input(-1),
+            { "float32", "float16" });
+    }
 }
 
 DEPLOY_CPU(MulGradient);

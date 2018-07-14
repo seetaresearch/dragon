@@ -69,7 +69,7 @@ inline PyObject* RenameTensorCC(PyObject* self, PyObject* args) {
         PyErr_SetString(PyExc_ValueError, err_msg.c_str());
         return nullptr;
     }
-    ws()->CreateRename(ori_name, tar_name);
+    ws()->SetProxy(ori_name, tar_name);
     Py_RETURN_TRUE;
 }
 

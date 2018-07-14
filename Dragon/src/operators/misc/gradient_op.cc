@@ -1,6 +1,6 @@
-#include "operators/misc/gradient_op.h"
 #include "core/workspace.h"
 #include "utils/math_functions.h"
+#include "operators/misc/gradient_op.h"
 
 namespace dragon {
 

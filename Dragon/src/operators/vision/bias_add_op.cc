@@ -1,7 +1,7 @@
-#include "operators/vision/bias_add_op.h"
 #include "core/workspace.h"
 #include "utils/filler.h"
 #include "utils/op_kernel.h"
+#include "operators/vision/bias_add_op.h"
 
 namespace dragon {
 

@@ -1,6 +1,6 @@
-#include "operators/loss/l2_loss_op.h"
 #include "core/workspace.h"
 #include "utils/math_functions.h"
+#include "operators/loss/l2_loss_op.h"
 
 namespace dragon {
 
@@ -17,10 +17,13 @@ void L2LossOp<Context>::RunWithType() {
         math::Mul<T, Context>(diff->count(), Wdata, diff_data, diff_data);
     }
 
-    T normalizer;
-    if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
-    else if (normalization == "FULL") normalizer = Input(0).count();
-    else if (normalization == "NONE") normalizer = 1;
+    T normalizer = 1;
+    if (normalization == "BATCH_SIZE") {
+        normalizer = Input(0).dim(0);
+    } else if (normalization == "FULL") {
+        normalizer = Input(0).count();
+    }
+
     T loss = T(0.5) * math::Dot<T, Context>(diff->count(),
         diff_data, diff_data, &ctx());
     math::Set<T, Context>(1, loss / normalizer, Ydata);
@@ -50,11 +53,13 @@ void L2LossGradientOp<Context>::RunWithType() {
     T dYdata_host; ctx().template Copy<T, CPUContext, Context>(
         1, &dYdata_host, dYdata);
 
-    T alpha = dYdata_host, normalizer;
-    if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
-    else if (normalization == "FULL") normalizer = Input(0).count();
-    else if (normalization == "NONE") normalizer = 1;
-    alpha = alpha / normalizer;
+    T alpha = dYdata_host, normalizer = 1;
+    if (normalization == "BATCH_SIZE") {
+        normalizer = Input(0).dim(0);
+    } else if (normalization == "FULL") {
+        normalizer = Input(0).count();
+    } alpha = alpha / normalizer;
+
     for (int i = 0; i < 2; i++) {
         if (Output(i)->name() == "ignore") continue;
         Output(i)->ReshapeLike(Input(i));

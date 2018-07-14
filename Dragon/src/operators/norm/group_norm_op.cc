@@ -1,7 +1,7 @@
-#include "operators/norm/group_norm_op.h"
 #include "core/workspace.h"
-#include "utils/math_functions.h"
 #include "utils/filler.h"
+#include "utils/math_functions.h"
+#include "operators/norm/group_norm_op.h"
 
 namespace dragon {
 

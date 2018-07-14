@@ -1,16 +1,15 @@
-#include "operators/ndarray/random_pick_op.h"
 #include "core/workspace.h"
-#include "utils/math_functions.h"
 #include "utils/op_kernel.h"
+#include "utils/math_functions.h"
+#include "operators/ndarray/random_pick_op.h"
 
 namespace dragon {
 
 template <class Context> template <typename T>
 void RandomPickOp<Context>::RunWithType() {
     auto* indices = pick_indices->template mutable_data<int, CPUContext>();
-    /*
     for (int i = 0; i < pick_indices->count(); i++)
-        indices[i] = int((*ctx().rand_generator())() % x_slice_dim);  */
+        indices[i] = int((*ctx().rand_generator())() % x_slice_dim);
 
     auto* Xdata = Input(0).template data<T, Context>();
     indices = pick_indices->template mutable_data<int, Context>();
@@ -31,7 +30,8 @@ void RandomPickOp<Context>::RunOnDevice() {
     inner_dim = Input(0).count(axis + 1);
     Output(0)->Reshape(output_dims);
 
-    pick_indices = ws()->CreateTensor("/mnt/" + anchor() + "/pick/indices");
+    pick_indices = ws()->CreateTensor(
+        "/mnt/" + anchor() + "/pick/indices");
     pick_indices->Reshape({ max_samples });
 
     if (XIsType(Input(0), float)) RunWithType<float>();
@@ -64,7 +64,8 @@ void RandomPickGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void RandomPickGradientOp<Context>::RunOnDevice() {
-    pick_indices = ws()->GetTensor("/mnt/" + anchor() + "/pick/indices");
+    pick_indices = ws()->GetTensor(
+        "/mnt/" + anchor() + "/pick/indices");
 
     x_slice_dim = Input(0).dim(axis);
     y_slice_dim = pick_indices->count();

@@ -1,5 +1,5 @@
-#include "operators/ndarray/flatten_op.h"
 #include "core/workspace.h"
+#include "operators/ndarray/flatten_op.h"
 
 namespace dragon {
 
@@ -28,8 +28,12 @@ void FlattenOp<Context>::KeepRun() {
         << ", can not keep " + keep_axes << " .";
     vector<TIndex> output_dims;
     int i = 0;
-    for (; i < keep_axes - 1; i++) output_dims.push_back(Input(0).dim(i));
-    if (Input(0).count(i) != 1) output_dims.push_back(Input(0).count(i));
+    for (; i < keep_axes - 1; i++)
+        output_dims.push_back(Input(0).dim(i));
+
+    if (Input(0).count(i) != 1)
+        output_dims.push_back(Input(0).count(i));
+
     if (Output(0)->name() != Input(0).name())
         Output(0)->template Copy<Context, Context>(Input(0));
 }
@@ -37,10 +41,12 @@ void FlattenOp<Context>::KeepRun() {
 template <class Context>
 void FlattenOp<Context>::RunOnDevice() {
     //  save Xshape
-    Tensor* sv = ws()->CreateTensor("/mnt/" + anchor() + "/flatten/x_shape");
+    Tensor* sv = ws()->CreateTensor(
+        "/mnt/" + anchor() + "/flatten/x_shape");
     sv->Reshape({ (TIndex)Input(0).ndim() });
     auto* Sdata = sv->template mutable_data<TIndex, CPUContext>();
-    for (int i = 0; i < Input(0).ndim(); i++) Sdata[i] = Input(0).dim(i);
+    for (int i = 0; i < Input(0).ndim(); i++) 
+        Sdata[i] = Input(0).dim(i);
     if (keep_axes != INT_MAX) KeepRun();
     else SqueezeRun();
 }
@@ -49,12 +55,15 @@ DEPLOY_CPU(Flatten);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Flatten);
 #endif
-OPERATOR_SCHEMA(Flatten).NumInputs(1).NumOutputs(1).Inplace({ { 0, 0 } });
+OPERATOR_SCHEMA(Flatten)
+    .NumInputs(1).NumOutputs(1)
+    .Inplace({ { 0, 0 } });
 
 
 template <class Context>
 void FlattenGradientOp<Context>::RunOnDevice() {
-    Tensor* sv = ws()->GetTensor("/mnt/" + anchor() + "/flatten/x_shape");
+    Tensor* sv = ws()->GetTensor(
+        "/mnt/" + anchor() + "/flatten/x_shape");
     auto* Sdata = sv->template mutable_data<TIndex, CPUContext>();
     vector<TIndex> x_shape(sv->count());
     for (int i = 0; i < sv->count(); i++) x_shape[i] = Sdata[i];
@@ -67,7 +76,9 @@ DEPLOY_CPU(FlattenGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(FlattenGradient);
 #endif
-OPERATOR_SCHEMA(FlattenGradient).NumInputs(1).NumOutputs(1).Inplace({ { 0, 0 } });
+OPERATOR_SCHEMA(FlattenGradient)
+    .NumInputs(1).NumOutputs(1)
+    .Inplace({ { 0, 0 } });
 
 class GetFlattenGradient final : public GradientMakerBase {
  public:

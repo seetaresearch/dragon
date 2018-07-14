@@ -1456,7 +1456,7 @@ message NormalizeParameter {
   // Whether or not scale parameters are shared across channels.
   optional bool channel_shared = 3 [default = true];
   // Epsilon for not dividing by zero while normalizing variance
-  optional float eps = 4 [default = 1e-10];
+  optional float eps = 4 [default = 1e-3];
 }
 
 message ParallelParameter {

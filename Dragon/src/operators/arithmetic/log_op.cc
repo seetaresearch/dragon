@@ -1,6 +1,5 @@
-#include "operators/arithmetic/log_op.h"
-#include "core/workspace.h"
 #include "utils/math_functions.h"
+#include "operators/arithmetic/log_op.h"
 
 namespace dragon {
 

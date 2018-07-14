@@ -1,9 +1,9 @@
+#include "core/workspace.h"
+#include "utils/op_kernel.h"
+#include "utils/math_functions.h"
+#include "utils/proto_utils.h"
 #include "operators/activation/softmax_op.h"
 #include "operators/loss/softmax_cross_entropy_op.h"
-#include "core/workspace.h"
-#include "utils/math_functions.h"
-#include "utils/op_kernel.h"
-#include "utils/proto_utils.h"
 
 namespace dragon {
 
@@ -37,10 +37,13 @@ void SoftmaxCrossEntropyOp<Context>::RunWithType() {
                 Ldata, Ydata); return;
     }
 
-    T normalizer;
-    if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
-    else if (normalization == "FULL") normalizer = outer_dim * inner_dim;
-    else if (normalization == "NONE") normalizer = 1;
+    T normalizer = 1;
+    if (normalization == "BATCH_SIZE") {
+        normalizer = Input(0).dim(0);
+    } else if (normalization == "FULL") {
+        normalizer = outer_dim * inner_dim;
+    }
+
     T loss = math::ASum<T, Context>(losses.count(), Ldata);
     Output(0)->Reshape({ 1 });
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
@@ -85,10 +88,13 @@ void SoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
             Pdata, dXdata, dXdata); return;
     }
 
-    T normalizer;
-    if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
-    else if (normalization == "FULL") normalizer = outer_dim * inner_dim;
-    else if (normalization == "NONE") normalizer = 1;
+    T normalizer = 1;
+    if (normalization == "BATCH_SIZE") {
+        normalizer = Input(0).dim(0);
+    } else if (normalization == "FULL") {
+        normalizer = outer_dim * inner_dim;
+    }
+
     auto* dYdata = Input(-1).template data<T, Context>();
     T dYdata_host; ctx().template Copy<T, CPUContext, Context>(
         1, &dYdata_host, dYdata);
@@ -113,7 +119,8 @@ DEPLOY_CUDA(SoftmaxCrossEntropyGradient);
 #endif
 OPERATOR_SCHEMA(SoftmaxCrossEntropyGradient).NumInputs(3).NumOutputs(1);
 
-class GetSoftmaxCrossEntropyGradient final : public GradientMakerBase {
+class GetSoftmaxCrossEntropyGradient
+    final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetSoftmaxCrossEntropyGradient);
     vector<OperatorDef> MakeDefs() override {
@@ -122,6 +129,9 @@ class GetSoftmaxCrossEntropyGradient final : public GradientMakerBase {
             vector<string> {GI(0)});
     }
 };
-REGISTER_GRADIENT(SoftmaxCrossEntropy, GetSoftmaxCrossEntropyGradient);
+REGISTER_GRADIENT(
+    SoftmaxCrossEntropy,
+    GetSoftmaxCrossEntropyGradient
+);
 
 }    // namespace dragon

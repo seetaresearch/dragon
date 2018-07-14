@@ -26,11 +26,11 @@ RunOp<Context>::RunOp(const OperatorDef& def, Workspace* ws)
     //  init interpreter & load module
     Py_Initialize();
     PyObject* py_module = PyImport_ImportModule(module.c_str());
-    CHECK(py_module) << "\nFail to import py module: " << module;
+    CHECK(py_module) << "\nFailed to Import Module: " << module;
     PyObject* py_dict = PyModule_GetDict(py_module);
     PyObject* py_op = PyDict_GetItemString(py_dict, op.c_str());
-    CHECK(py_op) << "\nFail not import operator: " << op
-                 << " from module: " << module;
+    CHECK(py_op) << "\nFailed to Import Operator: " << op
+                 << " from Module: " << module;
     self = PyObject_CallObject(py_op, NULL);
 
     //  wrap inputs and outputs
@@ -46,9 +46,22 @@ RunOp<Context>::RunOp(const OperatorDef& def, Workspace* ws)
     PyObject_SetAttr(self, Bytes("param_str_"), CS2Bytes(param_str));
 
     //  backward compatibility: self.setup(inputs, outputs)
-    if (PyObject_HasAttr(self, Bytes("setup"))) {
-        PyObject_CallMethod(self, "setup", "OO", inputs, outputs);
-    }
+    if (PyObject_HasAttr(self, Bytes("setup")))
+        CHECK(PyObject_CallMethod(
+            self, "setup", "OO", inputs, outputs))
+                << CallMethodHelper("setup");
+}
+
+template <class Context>
+string RunOp<Context>::CallMethodHelper(
+    const string&           method) {
+    std::stringstream ss;
+    ss <<"\nFailed to call: "
+       << "<" + module << "." << op
+       << "." << method << "(*args, **kwargs)>\n"
+       << "This is a FATAL error to terminate "
+       << "<" << name() << ">.";
+    return ss.str();
 }
 
 template <class Context>
@@ -58,14 +71,20 @@ void RunOp<Context>::RunOnDevice() {
 
     //  backward compatibility: reshape(inputs, outputs)
     if (PyObject_HasAttr(self, Bytes("reshape"))) {
-        PyObject_CallMethod(self, "reshape", "OO", inputs, outputs);
+        CHECK(PyObject_CallMethod(
+            self, "reshape", "OO", inputs, outputs))
+                << CallMethodHelper("reshape");
     }
 
     //  overloaded run inferfaces
     if (PyObject_HasAttr(self, Bytes("forward"))) {
-        PyObject_CallMethod(self, "forward", "OO", inputs, outputs);
+        CHECK(PyObject_CallMethod(
+            self, "forward", "OO", inputs, outputs))
+                << CallMethodHelper("forward");
     } else if (PyObject_HasAttr(self, Bytes("run"))) {
-        PyObject_CallMethod(self, "run", "OO", inputs, outputs);
+        CHECK(PyObject_CallMethod(
+            self, "run", "OO", inputs, outputs))
+                << CallMethodHelper("run");
     }
 }
 
@@ -85,17 +104,20 @@ void TemplateGradientOp<Context>::RunOnDevice() {
 
     //  backward compatibility: reshape(inputs, outputs)
     if (PyObject_HasAttr(this->self, Bytes("reshape"))) {
-        PyObject_CallMethod(this->self, "reshape",
-            "OO", this->inputs, this->outputs);
+        CHECK(PyObject_CallMethod(this->self, "reshape",
+            "OO", this->inputs, this->outputs))
+                << this->CallMethodHelper("reshape");
     }
 
     //  overloaded run inferfaces
     if (PyObject_HasAttr(this->self, Bytes("backward"))) {
-        PyObject_CallMethod(this->self, "forward",
-            "OO", this->inputs, this->outputs);
+        CHECK(PyObject_CallMethod(this->self, "backward",
+            "OO", this->inputs, this->outputs))
+                << this->CallMethodHelper("backward");
     } else if (PyObject_HasAttr(this->self, Bytes("grad"))) {
-        PyObject_CallMethod(this->self, "grad",
-            "OO", this->inputs, this->outputs);
+        CHECK(PyObject_CallMethod(this->self, "grad",
+            "OO", this->inputs, this->outputs))
+                << this->CallMethodHelper("grad");
     }
 }
 

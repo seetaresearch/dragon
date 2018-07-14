@@ -450,7 +450,7 @@ def FetchTensor(tensor):
     return FetchTensorCC(_stringify_tensor(tensor))
 
 
-def FeedTensor(tensor, ndarray, force_cpu=False, dtype=None):
+def FeedTensor(tensor, array, force_cpu=False, dtype=None):
     """Feed the values to the given tensor.
 
     Parameters
@@ -461,8 +461,8 @@ def FeedTensor(tensor, ndarray, force_cpu=False, dtype=None):
         The values to feed.
     force_cpu : boolean
         Whether force to feed to cpu context.
-    dtype : np.dtype or None
-        The data type. If ``None``, np.float32 will be used instead.
+    dtype : str
+        The data type. If ``None``, ``float32`` will be used instead.
 
     Returns
     -------
@@ -470,14 +470,14 @@ def FeedTensor(tensor, ndarray, force_cpu=False, dtype=None):
 
     Examples
     --------
-    >>> import dragon.core.workspace as ws
-    >>> a = Tensor().Variable()
-    >>> ws.FeedTensor(a, 1)
-    >>> a_value = ws.FetchTensor(a)
+    >>> import dragon as dg
+    >>> a = dg.Tensor().Variable()
+    >>> dg.workspace.FeedTensor(a, 1)
+    >>> a_value = dg.workspace.FetchTensor(a)
     >>> a_value, a_value.dtype
     >>> [ 1.], float32
 
-    >>> ws.FeedTensor(a, [[1, 2, 3]], dtype=np.float16)
+    >>> dg.workspace.FeedTensor(a, [[1, 2, 3]], dtype='float16')
     >>> a_value = a.get_value()
     >>> a_value, a_value.dtype
     >>> [[ 1.  2.  3.]], float16
@@ -504,24 +504,24 @@ def FeedTensor(tensor, ndarray, force_cpu=False, dtype=None):
             elif option['device'] == 'CPU':
                 dev = utils.MakeDeviceOption(0, 0)
 
-    if not isinstance(ndarray, np.ndarray):
-        if not isinstance(ndarray, list):
-            ndarray = [ndarray]
-        auto_dtype = np.float32 if dtype is None else dtype
+    if not isinstance(array, np.ndarray):
+        if not isinstance(array, list):
+            array = [array]
+        auto_data_type = np.float32 if dtype is None else dtype
     else:
-        auto_dtype = ndarray.dtype if dtype is None else dtype
+        auto_data_type = array.dtype if dtype is None else dtype
 
     if hasattr(tensor, 'dtype') and tensor.dtype is not None:
         if tensor.dtype not in _DATA_TYPES:
             raise TypeError('Unsupported data types: {}.'.format(tensor.dtype))
-        preset_dtype = _DATA_TYPES[tensor.dtype]
+        preset_data_type = _DATA_TYPES[tensor.dtype]
         if dtype is not None:
-            if dtype != preset_dtype:
+            if dtype != preset_data_type:
                 raise TypeError('The preset data type is {}, but force to {}.'.
-                                format(preset_dtype, dtype))
-        auto_dtype = preset_dtype
-    ndarray = np.array(ndarray, dtype=auto_dtype, copy=False)
-    FeedTensorCC(name, ndarray, _stringify_proto(dev))
+                                format(preset_data_type, dtype))
+        auto_data_type = preset_data_type
+    nd_array = np.array(array, dtype=auto_data_type, copy=False)
+    FeedTensorCC(name, nd_array, _stringify_proto(dev))
 
 
 stages = {
@@ -729,7 +729,10 @@ def ExportMetaGraph(meta_graph):
         logger.info('Export meta graph into: {}'.format(filepath))
 
 
-def Snapshot(tensors, filename, prefix='', suffix='.bin', format='default'):
+def Snapshot(
+        tensors, filename,
+        prefix='', suffix='.bin',
+        format='default'):
     """Snapshot tensors into a binary file.
 
     Parameters
@@ -751,42 +754,42 @@ def Snapshot(tensors, filename, prefix='', suffix='.bin', format='default'):
 
     Notes
     -----
-    The full filepath will be:  ``prefix`` + ``filename`` + ``suffix``.
+    The full file path will be:  ``prefix`` + ``filename`` + ``suffix``.
 
     Available formats: ['default', 'caffe'].
 
     """
     from dragon.config import logger
-    filepath = prefix + filename + suffix
+    file_path = prefix + filename + suffix
     if mpi.Is_Init():
         if not mpi.AllowSnapshot(): return
-        filepath = filepath + '.rank.{}'.format(mpi.Rank())
+        file_path = file_path + '.rank.{}'.format(mpi.Rank())
 
-    dir = os.path.split(filepath)[0]
+    dir = os.path.split(file_path)[0]
     if len(dir) > 0 and not os.path.exists(dir): os.makedirs(dir)
 
     if format == 'default':
-        content = {}
+        state_dict = {}
         for tensor in tensors:
-            content[tensor.name] = FetchTensor(tensor)
-        with open(filepath, 'wb') as f:
-            cPickle.dump(content, f, cPickle.HIGHEST_PROTOCOL)
-        logger.info('Snapshot Model@: ' + filepath)
+            state_dict[tensor.name] = FetchTensor(tensor)
+        with open(file_path, 'wb') as f:
+            cPickle.dump(state_dict, f, cPickle.HIGHEST_PROTOCOL)
+        logger.info('Snapshot Model@: ' + file_path)
         logger.info('Model Format: cPickle')
 
     elif format is 'caffe':
         names = [tensor.name for tensor in tensors]
-        SnapshotCC(filepath, names, 1)
+        SnapshotCC(file_path, names, 1)
 
     else: raise TypeError('Unknown binary format: {}'.format(format))
 
 
-def Restore(filepath, format='default'):
+def Restore(binary_file, format='default'):
     """Restore tensors from a binary file.
 
     Parameters
     ----------
-    filepath : str
+    binary_file : str
         The path of binary file.
     format : str
         The format of this binary file.
@@ -801,25 +804,27 @@ def Restore(filepath, format='default'):
 
     """
     from dragon.config import logger
-    assert os.path.exists(filepath), 'model of path({}) does not exist.'.format(filepath)
+    assert os.path.exists(binary_file), \
+        'Binary file({}) does not exist.'.format(binary_file)
+
     if format == 'default':
         try:
-            content = cPickle.load(open(filepath, 'rb'))
+            state_dict = cPickle.load(open(binary_file, 'rb'))
         except UnicodeDecodeError:
-            content = cPickle.load(open(filepath, 'rb'), encoding='iso-8859-1')
-        logger.info('Restore From Model@: ' + filepath)
+            state_dict = cPickle.load(open(binary_file, 'rb'), encoding='iso-8859-1')
+        logger.info('Restore From Model@: ' + binary_file)
         logger.info('Model Format: cPickle')
-        for key, ndarray in content.items():
-            if not HasTensor(key):
-                logger.info('[Warning]:  Tensor({}) of model does not exist in any Graphs, skip.'.format(key))
+        for k, v in state_dict.items():
+            if not HasTensor(k):
+                logger.info('[Warning]: Tensor({}) does not exist in any Graphs, skip.'.format(k))
             else:
-                logger.info('[Info]: Tensor({}) restored.'.format(key))
-                FeedTensor(key, ndarray)
+                FeedTensor(k, v)
+                logger.info('[Info]: Tensor({}) is restored.'.format(k))
 
     elif format == 'caffe':
-        # TODO(PhyscalX): caffemodel can't save the tensor name
+        # TODO(PhyscalX): caffe models can't save the tensor name
         # TODO(PhyscalX): we simply use layer_name + @paramX
-        RestoreCC(filepath, 1)
+        RestoreCC(binary_file, 1)
 
     else:
         raise TypeError('Unknown binary format: {}'.format(format))

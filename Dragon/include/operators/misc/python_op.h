@@ -29,6 +29,7 @@ class RunOp : public Operator<Context> {
     void RunOnDevice() override;
 
  protected:
+    string CallMethodHelper(const string& method);
     PyObject* self, *inputs, *outputs;
     string module, op, param_str;
 };

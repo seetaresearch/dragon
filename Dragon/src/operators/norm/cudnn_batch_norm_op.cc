@@ -1,6 +1,6 @@
-#include "operators/norm/batch_norm_op.h"
 #include "core/workspace.h"
 #include "utils/filler.h"
+#include "operators/norm/batch_norm_op.h"
 
 #ifdef WITH_CUDNN
 

@@ -512,40 +512,135 @@ template<> void AbsGrad<float, CPUContext>(
 
 template <> void SigmoidCrossEntropy<float, CPUContext>(
     const int               count,
-    const float*            x,
-    const float*            target,
-    float*                  loss,
-    float*                  valid) {
+    const float*            logits,
+    const float*            targets,
+    float*                  losses,
+    float*                  flags,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
-        if (target[i] < 0) {
-            loss[i] = valid[i] = 0.;
+        if (targets[i] < 0) {
+            losses[i] = flags[i] = 0;
         } else {
-            loss[i] = std::log(
-                1 + std::exp(x[i] - 2 * x[i] * (x[i] >= 0))
-            ) + x[i] * ((x[i] >= 0) - target[i]);
-            valid[i] = 1.;
+            losses[i] = std::log(
+                1 + std::exp(logits[i] - 2 * logits[i] * (logits[i] >= 0))
+            ) + logits[i] * ((logits[i] >= 0) - targets[i]);
+            flags[i] = 1;
         }
     }
 }
 
 template <> void SigmoidCrossEntropyGrad<float, CPUContext>(
     const int               count,
-    const float*            x,
-    const float*            target,
-    float*                  dx,
-    float*                  valid) {
+    const float*            logits,
+    const float*            targets,
+    float*                  dlogits,
+    float*                  flags,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
-        if (target[i] < 0) {
-            dx[i] = valid[i] = 0.;
+        if (targets[i] < 0) {
+            dlogits[i] = flags[i] = 0;
         } else {
-            dx[i] = 1. / (1. + expf(-x[i])) - target[i];
-            valid[i] = 1.;
+            dlogits[i] = 1 / (1 + std::exp(-logits[i])) - targets[i];
+            flags[i] = 1;
+        }
+    }
+}
+
+/******************** loss.sigmoid_focal_loss ********************/
+
+template <> void SigmoidFocalLoss<float, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
+    const float             gamma,
+    const int               neg_id,
+    const float*            logits,
+    const float*            targets,
+    float*                  losses,
+    float*                  flags,
+    CPUContext*             ctx) {
+    for (int oix = 0; oix < outer_dim; ++oix) {
+        for (int aix = 0; aix < axis_dim; ++aix) {
+            TIndex offset = oix * axis_dim + aix;
+            for (int iix = 0; iix < inner_dim; ++iix) {
+                const TIndex i = offset * inner_dim + iix;
+                const int t = targets[oix * inner_dim + iix];
+                //  ``0`` is reserved for targets if neg id is zero
+                //  use ``aix + 1`` to match the targets
+                float c1 = (t == (aix + (neg_id ? 0 : 1)));
+                float c2 = (t != -1) & (t != (aix + (neg_id ? 0 : 1)));
+                float p = 1 / (1 + std::exp(-logits[i]));  //  logit -> prob
+
+                //  (1 - p)^{gamma} * log(p)
+                float pos_term = std::pow(1 - p, gamma) * (
+                    std::log(std::max(p, FLT_MIN))
+                );
+    
+                //  p^{gamma} * log(1 - p)
+                float neg_term = std::pow(p, gamma) * (
+                    -logits[i] * (logits[i] >= 0) - std::log(
+                        1 + std::exp(logits[i] - 2 * logits[i] * (logits[i] >= 0)))
+                );
+
+                losses[i] = 0.0;
+                losses[i] += -c1 * pos_term * pos_alpha;
+                losses[i] += -c2 * neg_term * neg_alpha;
+                flags[i] = c1;
+            }
+        }
+    }
+}
+
+template <> void SigmoidFocalLossGradient<float, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
+    const float             gamma,
+    const int               neg_id,
+    const float*            logits,
+    const float*            targets,
+    float*                  dlogits,
+    float*                  flags,
+    CPUContext*             ctx) {
+    for (int oix = 0; oix < outer_dim; ++oix) {
+        for (int aix = 0; aix < axis_dim; ++aix) {
+            TIndex offset = oix * axis_dim + aix;
+            for (int iix = 0; iix < inner_dim; ++iix) {
+                const TIndex i = offset * inner_dim + iix;
+                const int t = targets[oix * inner_dim + iix];
+                //  ``0`` is reserved for targets if neg id is zero
+                //  use ``aix + 1`` to match the targets
+                float c1 = (t == (aix + (neg_id ? 0 : 1)));
+                float c2 = (t != -1) & (t != (aix + (neg_id ? 0 : 1)));
+                float p = 1 / (1 + std::exp(-logits[i]));  //  logit -> prob
+
+                // (1 - p)^{gamma} * (1 - p - gamma * p * log(p))
+                float pos_term = std::pow((1 - p), gamma) * (
+                    1 - p - p * gamma * std::log(std::max(p, FLT_MIN))
+                );
+
+                // p^{gamma} * (gamma * (1 - p) * log(1-p) - p)
+                float neg_term = std::pow(p, gamma) * (
+                    (-logits[i] * (logits[i] >= 0) - log(
+                        1 + exp(logits[i] - 2 * logits[i] * (logits[i] >= 0)))
+                    ) * (1 - p) * gamma - p
+                );
+
+                dlogits[i] = 0.0;
+                dlogits[i] += -c1 * pos_term * pos_alpha;
+                dlogits[i] += -c2 * neg_term * neg_alpha;
+                flags[i] = c1;
+            }
         }
     }
 }
@@ -597,6 +692,95 @@ template <> void SoftmaxCrossEntropy<float, CPUContext>(
 #endif
     for (int i = 0; i < count; ++i) {
         loss[i] = - target[i] * std::log(std::max(prob[i], FLT_MIN));
+    }
+}
+
+/******************** loss.softmax_focal_loss ********************/
+
+template <> void SoftmaxFocalLoss<float, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
+    const float             gamma,
+    const int               neg_id,
+    const float*            prob,
+    const float*            labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    CPUContext*             ctx) {
+    for (int oix = 0; oix < outer_dim; ++oix) {
+        for (int iix = 0; iix < inner_dim; ++iix) {
+            const int idx = oix * inner_dim + iix;
+            const int label = labels[idx];
+            int k;
+            for (k = 0; k < num_ignores; ++k) {
+                if (label == ignores[k]) {
+                    losses[idx] = flags[idx] = 0;
+                    break;
+                }
+            }
+            if (k == num_ignores) {
+                const int t = (oix * axis_dim + label) * inner_dim + iix;
+                float labeled_prob = std::max(labeled_prob, FLT_MIN);
+                float scale = std::pow((1.f - prob[t]), gamma);
+                scale = label > neg_id ?
+                    pos_alpha * scale :  neg_alpha * scale;
+                losses[idx] = -scale * std::log(labeled_prob);
+                flags[idx] = label > neg_id ? 1 : 0;
+            }
+        }
+    }
+}
+
+template<> void SoftmaxFocalLossGrad<float, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
+    const float             gamma,
+    const int               neg_id,
+    const float*            prob,
+    const float*            labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  dx,
+    float*                  flags,
+    CPUContext*             ctx) {
+    flags[0] = 0;
+    for (int oix = 0; oix < outer_dim; ++oix) {
+        for (int iix = 0; iix < inner_dim; ++iix) {
+            const int label = labels[oix * inner_dim + iix];
+            int k;
+            for (k = 0; k < num_ignores; ++k)
+                if (label == ignores[k]) break;
+            if (k != num_ignores) {
+                for (int c = 0; c < axis_dim; ++c)
+                    dx[(oix * axis_dim + c) * inner_dim + iix] = 0;
+            } else {
+                const int t = (oix * axis_dim + label) * inner_dim + iix;
+                float onemp = 1. - prob[t];
+                //  unstable if gamma is 0
+                float grad = -gamma * pow(onemp, gamma - 1)
+                                    * log(std::max(prob[t], FLT_MIN))
+                                    * prob[t] + pow(onemp, gamma);
+                grad = label > neg_id ?
+                    pos_alpha * grad : neg_alpha * grad;
+                for (int c = 0; c < axis_dim; ++c) {
+                    const int i_ = (oix * axis_dim + c) * inner_dim + iix;
+                    if (c == label) {
+                        dx[i_] = grad * (prob[t] - 1);
+                    } else {
+                        dx[i_] = grad * prob[i_];
+                    }
+                }
+                if (label > neg_id) flags[0]++;
+            }
+        }
     }
 }
 
@@ -728,95 +912,6 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, int64_t, CPUContext>(
         outer_dim, axis_dim, inner_dim,
             prob, labels, ignores,
                 num_ignores, dx, flags);
-}
-
-/******************** loss.sparse_softmax_focal_loss ********************/
-
-template <> void SparseSoftmaxFocalLoss<float, CPUContext>(
-    const int               outer_dim,
-    const int               axis_dim,
-    const int               inner_dim,
-    const float             pos_alpha,
-    const float             neg_alpha,
-    const float             gamma,
-    const int               neg_id,
-    const float*            prob,
-    const float*            labels,
-    const int*              ignores,
-    const int               num_ignores,
-    float*                  losses,
-    float*                  flags,
-    CPUContext*             ctx) {
-    for (int oix = 0; oix < outer_dim; ++oix) {
-        for (int iix = 0; iix < inner_dim; ++iix) {
-            const int idx = oix * inner_dim + iix;
-            const int label = labels[idx];
-            int k;
-            for (k = 0; k < num_ignores; ++k) {
-                if (label == ignores[k]) {
-                    losses[idx] = flags[idx] = 0;
-                    break;
-                }
-            }
-            if (k == num_ignores) {
-                const int t = (oix * axis_dim + label) * inner_dim + iix;
-                float labeled_prob = std::max(labeled_prob, FLT_MIN);
-                float scale = std::pow((1.f - prob[t]), gamma);
-                scale = label > neg_id ?
-                    pos_alpha * scale :  neg_alpha * scale;
-                losses[idx] = -scale * std::log(labeled_prob);
-                flags[idx] = label > neg_id ? 1 : 0;
-            }
-        }
-    }
-}
-
-template<> void SparseSoftmaxFocalLossGrad<float, CPUContext>(
-    const int               outer_dim,
-    const int               axis_dim,
-    const int               inner_dim,
-    const float             pos_alpha,
-    const float             neg_alpha,
-    const float             gamma,
-    const int               neg_id,
-    const float*            prob,
-    const float*            labels,
-    const int*              ignores,
-    const int               num_ignores,
-    float*                  dx,
-    float*                  flags,
-    CPUContext*             ctx) {
-    flags[0] = 0;
-    for (int oix = 0; oix < outer_dim; ++oix) {
-        for (int iix = 0; iix < inner_dim; ++iix) {
-            const int label = labels[oix * inner_dim + iix];
-            int k;
-            for (k = 0; k < num_ignores; ++k)
-                if (label == ignores[k]) break;
-            if (k != num_ignores) {
-                for (int c = 0; c < axis_dim; ++c)
-                    dx[(oix * axis_dim + c) * inner_dim + iix] = 0;
-            } else {
-                const int t = (oix * axis_dim + label) * inner_dim + iix;
-                float onemp = 1. - prob[t];
-                //  unstable if gamma is 0
-                float grad = -gamma * pow(onemp, gamma - 1)
-                                    * log(std::max(prob[t], FLT_MIN))
-                                    * prob[t] + pow(onemp, gamma);
-                grad = label > neg_id ?
-                    pos_alpha * grad : neg_alpha * grad;
-                for (int c = 0; c < axis_dim; ++c) {
-                    const int i_ = (oix * axis_dim + c) * inner_dim + iix;
-                    if (c == label) {
-                        dx[i_] = grad * (prob[t] - 1);
-                    } else {
-                        dx[i_] = grad * prob[i_];
-                    }
-                }
-                if (label > neg_id) flags[0]++;
-            }
-        }
-    }
 }
 
 /******************** misc.astype ********************/

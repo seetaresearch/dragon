@@ -1,6 +1,6 @@
-#include "operators/recurrent/cudnn_recurrent_op.h"
 #include "core/workspace.h"
 #include "utils/filler.h"
+#include "operators/recurrent/cudnn_recurrent_op.h"
 
 #ifdef WITH_CUDNN
 

@@ -1,5 +1,5 @@
-#include "operators/ndarray/reshape_op.h"
 #include "core/workspace.h"
+#include "operators/ndarray/reshape_op.h"
 
 namespace dragon {
 
@@ -32,8 +32,8 @@ void ReshapeOp<Context>::RunOnDevice() {
         if (require_shape[i] == 0) {
             //  handle unchanged dim
             CHECK_LT(i, (int)Xdims.size())
-                << "\nDim(" << i << ") is out of the Xdims range of (0, "
-                << Xdims.size() << ").";
+                << "\nDim(" << i << ") is out of the Xdims "
+                << "range of (0, " << Xdims.size() << ").";
             new_shape[i] = Xdims[i];
         } else if (require_shape[i] > 0) {
             //  handle reseted dim
@@ -41,8 +41,8 @@ void ReshapeOp<Context>::RunOnDevice() {
         } else {
             //  handle inferred dim
             CHECK_EQ(infer_dim, -1)
-                << "\nDim(" << infer_dim << ") required infer before"
-                << "\ncould not infer for dim(" << i << ") both.";
+                << "\nCould not infer Dim( " << infer_dim << "), "
+                << "Dim(" << i << ") both.";
             new_shape[i] = -1;
             infer_dim = i;
         }
@@ -55,7 +55,8 @@ void ReshapeOp<Context>::RunOnDevice() {
             if (new_shape[i] == -1) {
                 CHECK_EQ(Input(0).count() % total_count, 0)
                     << "\nCan not change the total size: "
-                    << Input(0).DimString() << " -> " << DimString(new_shape);
+                    << Input(0).DimString()
+                    << " -> " << DimString(new_shape);
                 new_shape[i] = Input(0).count() / total_count;
                 total_count *= new_shape[i];
                 break;
@@ -64,9 +65,11 @@ void ReshapeOp<Context>::RunOnDevice() {
     }
     CHECK_EQ(total_count, Input(0).count())
         << "\nCan not change the total size."
-        << Input(0).DimString() << " -> " << DimString(new_shape);
+        << Input(0).DimString()
+        << " -> " << DimString(new_shape);
     //  save Xshape
-    Tensor* sv = ws()->CreateTensor("/mnt/" + anchor() + "/reshape/x_shape");
+    Tensor* sv = ws()->CreateTensor(
+        "/mnt/" + anchor() + "/reshape/x_shape");
     sv->Reshape({ (TIndex)Input(0).ndim() });
     auto* Sdata = sv->template mutable_data<TIndex, CPUContext>();
     for (int i = 0; i < Input(0).ndim(); i++) Sdata[i] = Input(0).dim(i);
@@ -79,12 +82,15 @@ DEPLOY_CPU(Reshape);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Reshape);
 #endif
-OPERATOR_SCHEMA(Reshape).NumInputs(1).NumOutputs(1).Inplace({ { 0, 0 } });
+OPERATOR_SCHEMA(Reshape)
+    .NumInputs(1).NumOutputs(1)
+    .Inplace({ { 0, 0 } });
 
 
 template <class Context>
 void ReshapeGradientOp<Context>::RunOnDevice() {
-    Tensor* sv = ws()->GetTensor("/mnt/" + anchor() + "/reshape/x_shape");
+    Tensor* sv = ws()->GetTensor(
+        "/mnt/" + anchor() + "/reshape/x_shape");
     auto* Sdata = sv->template mutable_data<TIndex, CPUContext>();
     vector<TIndex> x_shape(sv->count());
     for (int i = 0; i < sv->count(); i++) x_shape[i] = Sdata[i];

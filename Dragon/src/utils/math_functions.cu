@@ -195,7 +195,7 @@ __global__ void _Exp(
     const T*                a,
     T*                      y) {
     CUDA_KERNEL_LOOP(idx, n) {
-        y[idx] = std::exp(a[idx]);
+        y[idx] = exp(a[idx]);
     }
 }
 
@@ -214,7 +214,7 @@ __global__ void _Log(
     const T*                a,
     T*                      y) {
     CUDA_KERNEL_LOOP(idx, n) {
-        y[idx] = std::log(a[idx]);
+        y[idx] = log(a[idx]);
     }
 }
 
@@ -252,7 +252,7 @@ __global__ void _Sqrt(
     const T*                x,
     T*                      y) {
     CUDA_KERNEL_LOOP(idx, n) {
-        y[idx] = std::sqrt(x[idx]);
+        y[idx] = sqrt(x[idx]);
     }
 }
 
@@ -272,7 +272,7 @@ __global__ void _Pow(
     const T*                a,
     T*                      y) {
     CUDA_KERNEL_LOOP(idx, n) {
-        y[idx] = std::pow(a[idx], alpha);
+        y[idx] = pow(a[idx], alpha);
     }
 }
 

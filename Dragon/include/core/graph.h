@@ -23,7 +23,7 @@ class GraphBase {
         vector<string> parents;
         vector<string> childs;
         int op_idx = -1;
-        string op_type;
+        OperatorDef op_def;
     };
 
     GraphBase(

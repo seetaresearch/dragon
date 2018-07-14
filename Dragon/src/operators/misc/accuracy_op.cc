@@ -1,9 +1,9 @@
 #include <algorithm>
-#include "operators/misc/accuracy_op.h"
+
 #include "core/workspace.h"
 #include "utils/op_kernel.h"
 #include "utils/math_functions.h"
-
+#include "operators/misc/accuracy_op.h"
 
 namespace dragon {
 

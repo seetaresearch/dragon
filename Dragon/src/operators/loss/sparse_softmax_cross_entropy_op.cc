@@ -1,9 +1,9 @@
-﻿#include "operators/activation/softmax_op.h"
-#include "operators/loss/sparse_softmax_cross_entropy_op.h"
-#include "core/workspace.h"
-#include "utils/math_functions.h"
+﻿#include "core/workspace.h"
 #include "utils/op_kernel.h"
+#include "utils/math_functions.h"
 #include "utils/proto_utils.h"
+#include "operators/activation/softmax_op.h"
+#include "operators/loss/sparse_softmax_cross_entropy_op.h"
 
 namespace dragon {
 
@@ -23,11 +23,13 @@ void SparseSoftmaxCrossEntropyOp<Context>::SoftmaxRun() {
 
 template <class Context>
 void SparseSoftmaxCrossEntropyOp<Context>::SoftmaxRunFP16() {
-    Tensor* XF32 = ws()->CreateTensor("/mnt/" + anchor() + "/softmax/xf32");
+    Tensor* XF32 = ws()->CreateTensor(
+        "/mnt/" + anchor() + "/softmax/xf32");
     XF32->ReshapeLike(Input(0));
     auto* XdataF16 = Input(0).template data<float16, Context>();
     auto* XdataF32 = XF32->template mutable_data<float, Context>();
-    kernel::TypeA2B<float16, float, Context>(Input(0).count(), XdataF16, XdataF32);
+    kernel::TypeA2B<float16, float, Context>(
+        Input(0).count(), XdataF16, XdataF32);
     OperatorDef softmax_def = MakeOperatorDef("Softmax", "",
         vector<string>({ XF32->name() }),
         vector<string>({ "/mnt/" + anchor() + "/softmax/prob" }));
@@ -35,7 +37,8 @@ void SparseSoftmaxCrossEntropyOp<Context>::SoftmaxRunFP16() {
     if (def().has_device_option())
         softmax_def.mutable_device_option()
             ->CopyFrom(def().device_option());
-    if (!softmax_op) softmax_op.reset(CreateOperator(softmax_def, ws()));
+    if (!softmax_op) softmax_op.reset(
+        CreateOperator(softmax_def, ws()));
     else softmax_op->MutableOp(softmax_def);
     softmax_op->Run();
 }
@@ -60,13 +63,17 @@ void SparseSoftmaxCrossEntropyOp<Context>::RunWithType() {
         return;
     }
 
-    Tx normalizer;
-    if (normalization == "VALID")
+    Tx normalizer = 1;
+    if (normalization == "VALID") {
         normalizer = std::max(
-            math::ASum<Tx, Context>(flags.count(), Fdata), (Tx)1.f);
-    else if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
-    else if (normalization == "FULL") normalizer = outer_dim * inner_dim;
-    else if (normalization == "NONE") normalizer = 1;
+            math::ASum<Tx, Context>(
+                flags.count(), Fdata), (Tx)1.f);
+    } else if (normalization == "BATCH_SIZE") {
+        normalizer = Input(0).dim(0);
+    } else if (normalization == "FULL") {
+        normalizer = outer_dim * inner_dim;
+    }
+
     Tx loss = math::ASum<Tx, Context>(losses.count(), Ldata);
     Output(0)->Reshape({ 1 });
     auto* Ydata = Output(0)->template mutable_data<Tx, Context>();
@@ -126,13 +133,17 @@ void SparseSoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
         return;
     }
 
-    Tx normalizer;
-    if (normalization == "VALID")
+    Tx normalizer = 1;
+    if (normalization == "VALID") {
         normalizer = std::max(
-            math::ASum<Tx, Context>(flags.count(), Fdata), (Tx)1.f);
-    else if (normalization == "BATCH_SIZE") normalizer = Input(0).dim(0);
-    else if (normalization == "FULL") normalizer = outer_dim * inner_dim;
-    else if (normalization == "NONE") normalizer = 1;
+            math::ASum<Tx, Context>(
+                flags.count(), Fdata), (Tx)1.f);
+    } else if (normalization == "BATCH_SIZE") {
+        normalizer = Input(0).dim(0);
+    } else if (normalization == "FULL") {
+        normalizer = outer_dim * inner_dim;
+    }
+
     auto* dYdata = Input(-1).template data<Tx, Context>();
     Tx dYdata_host; ctx().template Copy<Tx, CPUContext, Context>(
         1, &dYdata_host, dYdata);
@@ -167,7 +178,8 @@ DEPLOY_CUDA(SparseSoftmaxCrossEntropyGradient);
 #endif
 OPERATOR_SCHEMA(SparseSoftmaxCrossEntropyGradient).NumInputs(3).NumOutputs(1);
 
-class GetSparseSoftmaxCrossEntropyGradient final : public GradientMakerBase {
+class GetSparseSoftmaxCrossEntropyGradient
+    final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetSparseSoftmaxCrossEntropyGradient);
     vector<OperatorDef> MakeDefs() override {
@@ -176,6 +188,9 @@ class GetSparseSoftmaxCrossEntropyGradient final : public GradientMakerBase {
             vector<string> {GI(0)});
     }
 };
-REGISTER_GRADIENT(SparseSoftmaxCrossEntropy, GetSparseSoftmaxCrossEntropyGradient);
+REGISTER_GRADIENT(
+    SparseSoftmaxCrossEntropy,
+    GetSparseSoftmaxCrossEntropyGradient
+);
 
 }    // namespace dragon

@@ -1,7 +1,7 @@
-#include "operators/update/nesterov_update_op.h"
 #include "core/workspace.h"
 #include "utils/math_functions.h"
 #include "utils/op_kernel.h"
+#include "operators/update/nesterov_update_op.h"
 
 namespace dragon {
 

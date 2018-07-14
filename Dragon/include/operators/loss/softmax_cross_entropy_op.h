@@ -17,9 +17,12 @@
 namespace dragon {
 
 template <class Context>
-class SoftmaxCrossEntropyOp final : public Operator<Context> {
+class SoftmaxCrossEntropyOp
+    final : public Operator<Context> {
  public:
-    SoftmaxCrossEntropyOp(const OperatorDef& def, Workspace* ws)
+    SoftmaxCrossEntropyOp(
+        const OperatorDef&          def,
+        Workspace*                  ws)
         : Operator<Context>(def, ws),
           axis(OperatorBase::Arg<int>("axis", 1)),
           normalization(OperatorBase::Arg<string>(
@@ -39,9 +42,12 @@ class SoftmaxCrossEntropyOp final : public Operator<Context> {
 };
 
 template <class Context>
-class SoftmaxCrossEntropyGradientOp final : public Operator<Context> {
+class SoftmaxCrossEntropyGradientOp
+    final : public Operator<Context> {
  public:
-    SoftmaxCrossEntropyGradientOp(const OperatorDef& def, Workspace* ws)
+    SoftmaxCrossEntropyGradientOp(
+        const OperatorDef&          def,
+        Workspace*                  ws)
         : Operator<Context>(def, ws),
           axis(OperatorBase::Arg<int>("axis", 1)),
           normalization(OperatorBase::Arg<string>(

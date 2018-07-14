@@ -1,7 +1,7 @@
-#include "operators/recurrent/recurrent_op.h"
 #include "core/workspace.h"
-#include "utils/math_functions.h"
 #include "utils/op_kernel.h"
+#include "utils/math_functions.h"
+#include "operators/recurrent/recurrent_op.h"
 
 namespace dragon {
 

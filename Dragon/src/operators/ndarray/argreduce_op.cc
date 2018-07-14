@@ -1,5 +1,5 @@
-#include "operators/ndarray/argreduce_op.h"
 #include "utils/op_kernel.h"
+#include "operators/ndarray/argreduce_op.h"
 
 namespace dragon {
 

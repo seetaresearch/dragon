@@ -138,6 +138,48 @@ class SmoothL1LossLayer(Layer):
         return loss
 
 
+class SigmoidWithFocalLossLayer(Layer):
+    """The implementation of ``SigmoidWithFocalLossLayer``.
+
+    Parameters
+    ----------
+    axis : int
+        The axis of softmax. Refer `SoftmaxParameter.axis`_.
+    alpha : float
+        The scale on the rare class. Refer `FocalLossParameter.alpha`_.
+    gamma : float
+        The exponential decay. Refer `FocalLossParameter.gamma`_.
+    neg_id : int
+        The negative id. Refer `FocalLossParameter.neg_id`_.
+    normalization : NormalizationMode
+        The normalization. Refer `LossParameter.normalization`_.
+    normalize : boolean
+        Whether to normalize. Refer `LossParameter.normalize`_.
+
+    """
+    def __init__(self, LayerParameter):
+        super(SigmoidWithFocalLossLayer, self).__init__(LayerParameter)
+        param = LayerParameter.loss_param
+        softmax_param = LayerParameter.softmax_param
+        focal_loss_param = LayerParameter.focal_loss_param
+        norm_mode = {0: 'FULL', 1: 'VALID', 2: 'BATCH_SIZE', 3: 'NONE', 4: 'UNIT'}
+        normalization = 'VALID'
+        if param.HasField('normalize'):
+            if not param.normalize: normalization = 'BATCH_SIZE'
+        else: normalization = norm_mode[param.normalization]
+        self._param = {'axis': softmax_param.axis,
+                       'normalization': normalization,
+                       'alpha': float(focal_loss_param.alpha),
+                       'gamma': float(focal_loss_param.gamma),
+                       'neg_id': focal_loss_param.neg_id}
+
+    def Setup(self, bottom):
+        super(SigmoidWithFocalLossLayer, self).Setup(bottom)
+        loss = ops.SigmoidFocalLoss(bottom, **self._param)
+        if self._loss_weight is not None: loss *= self._loss_weight
+        return loss
+
+
 class SoftmaxWithFocalLossLayer(Layer):
     """The implementation of ``SoftmaxWithFocalLossLayer``.
 
@@ -176,6 +218,6 @@ class SoftmaxWithFocalLossLayer(Layer):
 
     def Setup(self, bottom):
         super(SoftmaxWithFocalLossLayer, self).Setup(bottom)
-        loss = ops.SparseSoftmaxFocalLoss(bottom, **self._param)
+        loss = ops.SoftmaxFocalLoss(bottom, **self._param)
         if self._loss_weight is not None: loss *= self._loss_weight
         return loss

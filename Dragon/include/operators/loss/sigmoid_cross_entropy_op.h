@@ -17,9 +17,12 @@
 namespace dragon {
 
 template <class Context>
-class SigmoidCrossEntropyOp final : public Operator<Context> {
+class SigmoidCrossEntropyOp
+    final : public Operator<Context> {
  public:
-    SigmoidCrossEntropyOp(const OperatorDef& def, Workspace* ws)
+    SigmoidCrossEntropyOp(
+        const OperatorDef&          def,
+        Workspace*                  ws)
         : Operator<Context>(def, ws),
           normalization(OperatorBase::Arg<string>(
               "normalization", "VALID")) {}
@@ -29,14 +32,17 @@ class SigmoidCrossEntropyOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    Tensor valid, losses;
+    Tensor losses, flags;
     string normalization;
 };
 
 template <class Context>
-class SigmoidCrossEntropyGradientOp final : public Operator<Context> {
+class SigmoidCrossEntropyGradientOp
+    final : public Operator<Context> {
  public:
-    SigmoidCrossEntropyGradientOp(const OperatorDef& def, Workspace* ws)
+    SigmoidCrossEntropyGradientOp(
+        const OperatorDef&          def,
+        Workspace*                  ws)
         : Operator<Context>(def, ws),
           normalization(OperatorBase::Arg<string>(
               "normalization", "VALID")) {}
@@ -46,7 +52,7 @@ class SigmoidCrossEntropyGradientOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    Tensor valid;
+    Tensor flags;
     string normalization;
 };
 

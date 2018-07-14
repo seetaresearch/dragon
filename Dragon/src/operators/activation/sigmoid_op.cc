@@ -1,6 +1,6 @@
-#include "operators/activation/sigmoid_op.h"
 #include "utils/math_functions.h"
 #include "utils/op_kernel.h"
+#include "operators/activation/sigmoid_op.h"
 
 namespace dragon {
 

@@ -1,5 +1,5 @@
-#include "operators/control_flow/compare_op.h"
 #include "utils/op_kernel.h"
+#include "operators/control_flow/compare_op.h"
 
 namespace dragon {
 

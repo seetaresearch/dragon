@@ -9,18 +9,20 @@
 //
 // -------------------------------------------------------------
 
-#ifndef DRAGON_OPERATORS_LOSS_SPARSE_SOFTMAX_FOCAL_LOSS_OP_H_
-#define DRAGON_OPERATORS_LOSS_SPARSE_SOFTMAX_FOCAL_LOSS_OP_H_
+#ifndef DRAGON_OPERATORS_LOSS_SOFTMAX_FOCAL_LOSS_OP_H_
+#define DRAGON_OPERATORS_LOSS_SOFTMAX_FOCAL_LOSS_OP_H_
 
 #include "operators/loss/sparse_softmax_cross_entropy_op.h"
 
 namespace dragon {
 
 template <class Context>
-class SparseSoftmaxFocalLossOp final
-    : public SparseSoftmaxCrossEntropyOp<Context> {
+class SoftmaxFocalLossOp
+    final : public SparseSoftmaxCrossEntropyOp<Context> {
  public:
-    SparseSoftmaxFocalLossOp(const OperatorDef& def, Workspace* ws)
+    SoftmaxFocalLossOp(
+        const OperatorDef&          def,
+        Workspace*                  ws)
         : SparseSoftmaxCrossEntropyOp<Context>(def, ws),
            axis(OperatorBase::Arg<int>("axis", 1)),
            normalization(OperatorBase::Arg<string>(
@@ -44,10 +46,12 @@ class SparseSoftmaxFocalLossOp final
 };
 
 template <class Context>
-class SparseSoftmaxFocalLossGradientOp final
-    : public SparseSoftmaxCrossEntropyGradientOp<Context> {
+class SoftmaxFocalLossGradientOp
+    final : public SparseSoftmaxCrossEntropyGradientOp<Context> {
  public:
-    SparseSoftmaxFocalLossGradientOp(const OperatorDef& def, Workspace* ws)
+    SoftmaxFocalLossGradientOp(
+        const OperatorDef&          def,
+        Workspace*                  ws)
          : SparseSoftmaxCrossEntropyGradientOp<Context>(def, ws),
            axis(OperatorBase::Arg<int>("axis", 1)),
            normalization(OperatorBase::Arg<string>(
@@ -72,4 +76,4 @@ class SparseSoftmaxFocalLossGradientOp final
 
 }    // namespace dragon
 
-#endif    // DRAGON_OPERATORS_LOSS_SPARSE_SOFTMAX_FOCAL_LOSS_OP_H_
+#endif    // DRAGON_OPERATORS_LOSS_SOFTMAX_FOCAL_LOSS_OP_H_

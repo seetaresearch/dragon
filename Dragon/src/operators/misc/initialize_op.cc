@@ -1,5 +1,5 @@
-#include "operators/misc/initialize_op.h"
 #include "core/workspace.h"
+#include "operators/misc/initialize_op.h"
 
 namespace dragon {
 

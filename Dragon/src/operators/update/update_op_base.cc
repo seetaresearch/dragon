@@ -1,7 +1,7 @@
-#include "operators/update/update_op_base.h"
 #include "core/workspace.h"
-#include "utils/math_functions.h"
 #include "utils/cast.h"
+#include "utils/math_functions.h"
+#include "operators/update/update_op_base.h"
 
 namespace dragon {
 
