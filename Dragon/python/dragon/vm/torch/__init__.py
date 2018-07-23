@@ -9,10 +9,6 @@
 #
 # ------------------------------------------------------------
 
-# Default configs
-import dragon.memonger as opt
-opt.ShareGrads(enabled=True)
-
 # Import Dynamic Methods
 import dragon.vm.torch.ops.builtin
 

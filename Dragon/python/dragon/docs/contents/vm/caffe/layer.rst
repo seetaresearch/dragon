@@ -95,6 +95,8 @@ List                                  Brief
 `SigmoidCrossEntropyLossLayer`_       The implementation of ``SigmoidCrossEntropyLossLayer``.
 `L2LossLayer`_                        The implementation of ``L2LossLayer``.
 `SmoothL1LossLayer`_                  The implementation of ``SmoothL1LossLayer``.
+`SigmoidWithFocalLossLayer`_          The implementation of ``SigmoidWithFocalLossLayer``.
+`SoftmaxWithFocalLossLayer`_          The implementation of ``SoftmaxWithFocalLossLayer``.
 =================================     =============================================================================
 
 MPI
@@ -198,6 +200,8 @@ API Reference
 .. _SigmoidCrossEntropyLossLayer: #dragon.vm.caffe.layers.loss.SigmoidCrossEntropyLossLayer
 .. _L2LossLayer: #dragon.vm.caffe.layers.loss.L2LossLayer
 .. _SmoothL1LossLayer: #dragon.vm.caffe.layers.loss.SmoothL1LossLayer
+.. _SigmoidWithFocalLossLayer: #dragon.vm.caffe.layers.loss.SigmoidWithFocalLossLayer
+.. _SoftmaxWithFocalLossLayer: #dragon.vm.caffe.layers.loss.SoftmaxWithFocalLossLayer
 
 .. _MPIBroadcastLayer: #dragon.vm.caffe.layers.mpi.MPIBroadcastLayer
 .. _MPIGatherLayer: #dragon.vm.caffe.layers.mpi.MPIGatherLayer

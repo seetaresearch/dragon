@@ -41,8 +41,8 @@ option['random_seed'] = 3
 # Disable the memonger if true
 option['debug_mode'] = False
 
-# Set it by the memonger
-option['share_grads'] = False
+# Whether to share grads
+option['share_grads'] = True
 
 # Whether to log the meta graphs
 option['log_meta_graph'] = False

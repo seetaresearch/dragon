@@ -88,6 +88,13 @@ class LMDB(object):
         self.txn = self.env.begin(write=(mode == 'w'))
         self.cursor = self.txn.cursor()
 
+    def zfill(self):
+        self.cursor.first()
+        return len(self.key())
+
+    def num_entries(self):
+        return self.env.stat()['entries']
+
     def _try_put(self):
         """Try to commit the buffers.
 

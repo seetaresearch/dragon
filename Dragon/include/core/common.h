@@ -52,9 +52,9 @@ using Set = std::unordered_set<Value> ;
 /*
  * Define the Kernel version.
  *
- * | Major(2) | Minor(2) | Patch(08) |
+ * | Major(2) | Minor(2) | Patch(09) |
  */
-#define DRAGON_VERSION 2208
+#define DRAGON_VERSION 2209
 
 /*
  * Define the default random seed.

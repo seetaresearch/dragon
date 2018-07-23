@@ -39,7 +39,6 @@ class ScalarSummary(object):
 
         """
         self.log_dir = os.path.join(log_dir, 'scalar')
-        if not os.path.exists(self.log_dir): os.makedirs(self.log_dir)
 
     def add_summary(self, scalar, global_step):
         """Add a summary.
@@ -62,5 +61,6 @@ class ScalarSummary(object):
         else: raise TypeError()
         key = key.replace('/', '_')
 
+        if not os.path.exists(self.log_dir): os.makedirs(self.log_dir)
         with open(os.path.join(self.log_dir, key + '.txt'), 'a') as f:
             f.write(str(global_step) + ' ' + str(value) + '\n')

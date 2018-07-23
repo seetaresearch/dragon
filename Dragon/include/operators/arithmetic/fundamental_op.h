@@ -259,16 +259,18 @@ class RDivGradientOp final : public Operator<Context> {
 
 #define RunByX1X2(dtype) \
     DefineX1X2; \
-    if (X1->dims() == X2->dims()) { \
-        EltwiseRunWithType<dtype>(); \
-    } else if (X1->dim(0) == X2->dim(0) && \
-        X2->count(1) == 1) { \
-        BroadcastRunWithType<dtype>(2); \
+    if (X2->ndim() == 0) { \
+        BroadcastRunWithType<dtype>(0); \
+    } else if (X2->ndim() == 1 && X2->dim(0) == 1) { \
+        BroadcastRunWithType<dtype>(0); \
     } else if (X1->dim(-1) == X2->dim(-1) && \
         X2->count(0, X2->axis(-1)) == 1) { \
         BroadcastRunWithType<dtype>(1); \
-    } else if (X2->ndim() == 1 && X2->dim(0) == 1) { \
-        BroadcastRunWithType<dtype>(0); \
+    } else if (X1->dim(0) == X2->dim(0) && \
+               X2->count(1) == 1) { \
+        BroadcastRunWithType<dtype>(2); \
+    } else if (X1->dims() == X2->dims()) { \
+        EltwiseRunWithType<dtype>(); \
     } else { \
         LOG(FATAL) << "Could not broadcast with shapes " \
                    << X1->DimString() << "  " \
@@ -277,16 +279,18 @@ class RDivGradientOp final : public Operator<Context> {
 
 #define RRunByX1X2(dtype) \
     DefineX1X2; \
-    if (X1->dims() == X2->dims()) { \
-        EltwiseRunWithType<dtype>(); \
-    } else if (X1->dim(0) == X2->dim(0) && \
-        X1->count(1) == 1) { \
-        BroadcastRunWithType<dtype>(2); \
+    if (X1->ndim() == 0) { \
+        BroadcastRunWithType<dtype>(0); \
+    } else if (X1->ndim() == 1 && X1->dim(0) == 1) { \
+        BroadcastRunWithType<dtype>(0); \
     } else if (X1->dim(-1) == X2->dim(-1) && \
         X1->count(0, X1->axis(-1)) == 1) { \
         BroadcastRunWithType<dtype>(1); \
-    } else if (X1->ndim() == 1 && X1->dim(0) == 1) { \
-        BroadcastRunWithType<dtype>(0); \
+    } else if (X1->dim(0) == X2->dim(0) && \
+        X1->count(1) == 1) { \
+        BroadcastRunWithType<dtype>(2); \
+    } else if (X1->dims() == X2->dims()) { \
+        EltwiseRunWithType<dtype>(); \
     } else { \
         LOG(FATAL) << "Could not broadcast with shapes " \
                    << X1->DimString() << "  " \

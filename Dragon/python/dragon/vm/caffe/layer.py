@@ -58,22 +58,6 @@ class Layer(object):
             self._common_param['mirror_stage'] = LayerParameter.mirror_stage
 
     def Setup(self, bottom):
-        """Setup the parameters.
-
-        Parameters
-        ----------
-        bottom : list of Tensor
-            The inputs.
-
-        Returns
-        -------
-        None
-
-        References
-        ---------=
-        The implementation of `LayerSetUp(layer.hpp, L91)`_.
-
-        """
         self._param = dict(self._param, **self._common_param)
 
     def Fill(self, tensor, layer_param, filler):

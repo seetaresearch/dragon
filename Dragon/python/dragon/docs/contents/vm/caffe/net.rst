@@ -47,8 +47,8 @@ API Reference
 .. _Net.replace: #dragon.vm.caffe.net.Net.replace
 .. _Net.function: #dragon.vm.caffe.net.Net.function
 
-.. _NetInit(prototxt, phase): #dragon.vm.caffe.net.Net.NetInit
-.. _NetInitLoad(prototxt, model, phase): #dragon.vm.caffe.net.Net.NetInitLoad
+.. _NetInit(proto_txt, phase): #dragon.vm.caffe.net.Net.NetInit
+.. _NetInitLoad(proto_txt, model, phase): #dragon.vm.caffe.net.Net.NetInitLoad
 .. _workspace.Snapshot(*args, **kwargs): ../../core/workspace.html#dragon.core.workspace.Snapshot
 .. _workspace.Restore(*args, **kwargs): ../../core/workspace.html#dragon.core.workspace.Restore
 

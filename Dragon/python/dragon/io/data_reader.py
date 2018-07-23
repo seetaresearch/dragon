@@ -165,8 +165,8 @@ class DataReader(Process):
         # init db
         self._db = LMDB()
         self._db.open(self._source)
-        self._db_size = int(self._db.get('size'))
-        self._db_zfill = int(self._db.get('zfill'))
+        self._db_zfill = self._db.zfill()
+        self._db_size = self._db.num_entries()
         self._epoch_size = int(self._db_size / self._num_parts + 1)
 
         if self._use_shuffle:

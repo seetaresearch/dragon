@@ -219,7 +219,7 @@ def L2Loss(inputs, normalization='BATCH_SIZE', **kwargs):
 
 def SigmoidFocalLoss(inputs, axis=1, normalization='VALID',
                      alpha=0.25, gamma=2.0, neg_id=0, **kwargs):
-    """SoftmaxFocalLoss with sparse labels. `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`_.
+    """SigmoidFocalLoss with sparse labels. `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`_.
 
     Parameters
     ----------
