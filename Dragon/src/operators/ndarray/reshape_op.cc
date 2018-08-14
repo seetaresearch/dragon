@@ -1,5 +1,5 @@
 #include "core/workspace.h"
-#include "operators/ndarray/reshape_op.h"
+#include "operators/ndarray/dimension_op.h"
 
 namespace dragon {
 
@@ -67,50 +67,31 @@ void ReshapeOp<Context>::RunOnDevice() {
         << "\nCan not change the total size."
         << Input(0).DimString()
         << " -> " << DimString(new_shape);
-    //  save Xshape
-    Tensor* sv = ws()->CreateTensor(
-        "/mnt/" + anchor() + "/reshape/x_shape");
-    sv->Reshape({ (TIndex)Input(0).ndim() });
-    auto* Sdata = sv->template mutable_data<TIndex, CPUContext>();
-    for (int i = 0; i < Input(0).ndim(); i++) Sdata[i] = Input(0).dim(i);
-    Output(0)->Reshape(new_shape); 
-    if (Output(0)->name() != Input(0).name())
-        Output(0)->template Copy<Context, Context>(Input(0));
+    Output(0)->Reshape(new_shape);
+    Output(0)->SetMeta(Input(0).meta());
+    Output(0)->Share(Input(0).memory());
 }
 
 DEPLOY_CPU(Reshape);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Reshape);
 #endif
-OPERATOR_SCHEMA(Reshape)
-    .NumInputs(1).NumOutputs(1)
-    .Inplace({ { 0, 0 } });
+OPERATOR_SCHEMA(Reshape).NumInputs(1).NumOutputs(1);
 
-
-template <class Context>
-void ReshapeGradientOp<Context>::RunOnDevice() {
-    Tensor* sv = ws()->GetTensor(
-        "/mnt/" + anchor() + "/reshape/x_shape");
-    auto* Sdata = sv->template mutable_data<TIndex, CPUContext>();
-    vector<TIndex> x_shape(sv->count());
-    for (int i = 0; i < sv->count(); i++) x_shape[i] = Sdata[i];
-    Output(0)->Reshape(x_shape);
-    if (Output(0)->name() != Input(-1).name())
-        Output(0)->template Copy<Context, Context>(Input(-1));
-}
 
 DEPLOY_CPU(ReshapeGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(ReshapeGradient);
 #endif
-OPERATOR_SCHEMA(ReshapeGradient).NumInputs(1).NumOutputs(1).Inplace({ { 0, 0 } });
+OPERATOR_SCHEMA(ReshapeGradient)
+    .NumInputs(2).NumOutputs(1).Inplace({ { 1, 0 } });
 
 class GetReshapeGradient final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetReshapeGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
-            vector<string> {GO(0)},
+            vector<string> {I(0), GO(0)},
             vector<string> {GI(0)});
     }
 };

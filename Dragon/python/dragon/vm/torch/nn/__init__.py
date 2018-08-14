@@ -18,7 +18,7 @@ from dragon.vm.torch.module import Module
 from dragon.vm.torch.tensor import Parameter
 from .modules.conv import Conv2d, ConvTranspose2d
 from .modules.pooling import MaxPool2d, AvgPool2d
-from .modules.activation import ReLU, Sigmoid, Softmax
+from .modules.activation import ReLU, LeakyReLU, Sigmoid, Softmax
 from .modules.linear import Linear
 from .modules.loss import CrossEntropyLoss
 from .modules.container import Container, Sequential, ModuleList

@@ -97,7 +97,7 @@ class DataReader(Process):
         self._db.close()
         self._db.open(self._source)
         self._cur_idx = target_idx
-        self._db.set(str(self._cur_idx).zfill(self._db_zfill))
+        self._db.set(str(self._cur_idx).zfill(self._zfill))
 
     def reset(self):
         """Reset the cursor and environment.
@@ -112,12 +112,12 @@ class DataReader(Process):
             self._cur_chunk_idx = 0
             self._start_idx = int(self._part_idx * self._num_shuffle_parts + self._perm[self._cur_chunk_idx])
             self._start_idx = int(self._start_idx * self._chunk_size)
-            if self._start_idx >= self._db_size: self.next_chunk()
+            if self._start_idx >= self._num_entries: self.next_chunk()
             self._end_idx = self._start_idx + self._chunk_size
-            self._end_idx = min(self._db_size, self._end_idx)
+            self._end_idx = min(self._num_entries, self._end_idx)
         else:
             self._start_idx = 0
-            self._end_idx = self._db_size
+            self._end_idx = self._num_entries
 
         self.redirect(self._start_idx)
 
@@ -145,10 +145,10 @@ class DataReader(Process):
         else:
             self._start_idx = self._part_idx * self._num_shuffle_parts + self._perm[self._cur_chunk_idx]
             self._start_idx = self._start_idx * self._chunk_size
-            if self._start_idx >= self._db_size: self.next_chunk()
+            if self._start_idx >= self._num_entries: self.next_chunk()
             else:
                 self._end_idx = self._start_idx + self._chunk_size
-                self._end_idx = min(self._db_size, self._end_idx)
+                self._end_idx = min(self._num_entries, self._end_idx)
             self.redirect(self._start_idx)
 
     def run(self):
@@ -165,14 +165,14 @@ class DataReader(Process):
         # init db
         self._db = LMDB()
         self._db.open(self._source)
-        self._db_size = int(self._db.get('size'))
-        self._db_zfill = int(self._db.get('zfill'))
-        self._epoch_size = int(self._db_size / self._num_parts + 1)
+        self._zfill = self._db.zfill()
+        self._num_entries = self._db.num_entries()
+        self._epoch_size = int(self._num_entries / self._num_parts + 1)
 
         if self._use_shuffle:
             if self._chunk_size == 1:
                 # each chunk has at most 1 record [For Fully Shuffle]
-                self._num_shuffle_parts = int(self._db_size / self._chunk_size / self._num_parts) + 1
+                self._num_shuffle_parts = int(self._num_entries / self._chunk_size / self._num_parts) + 1
             else:
                 if self._use_shuffle and self._chunk_size == -1:
                     # search a optimal chunk size by chunks [For Chunk Shuffle]
@@ -182,12 +182,12 @@ class DataReader(Process):
                     self._chunk_size = min_chunk_size
                     self._num_shuffle_parts = int(math.ceil(self._db._total_size * 1.1 /
                                                  (self._num_parts * self._chunk_size << 20)))
-                    self._chunk_size = int(self._db_size / self._num_shuffle_parts / self._num_parts + 1)
+                    self._chunk_size = int(self._num_entries / self._num_shuffle_parts / self._num_parts + 1)
         else:
             # each chunk has at most K records [For Multiple Nodes]
             # note that if ``shuffle`` and ``multiple_nodes`` are all ``False``,
             # ``chunk_size`` and ``num_shuffle_parts`` are meaningless
-            self._chunk_size = int(self._db_size / self._num_parts) + 1
+            self._chunk_size = int(self._num_entries / self._num_parts) + 1
             self._num_shuffle_parts = 1
 
         self._perm = np.arange(self._num_shuffle_parts)

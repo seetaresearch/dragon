@@ -68,7 +68,7 @@ template <class Context>
 void StopGradientOp<Context>::RunOnDevice() {
     if (Output(0)->name() != Input(0).name()) {
         Output(0)->ReshapeLike(Input(0));
-        Output(0)->template Copy<Context, Context>(Input(0));
+        Output(0)->template CopyFrom<Context>(Input(0));
     }
 }
 

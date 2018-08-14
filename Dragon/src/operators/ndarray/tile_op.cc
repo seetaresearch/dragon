@@ -35,7 +35,7 @@ void TileOp<Context>::RunOnDevice() {
     //  do nothing 
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(0));
-        Output(0)->template Copy<Context, Context>(Input(0));
+        Output(0)->template CopyFrom<Context>(Input(0));
         return;
     }
 
@@ -96,7 +96,7 @@ void TileGradientOp<Context>::RunOnDevice() {
     //  do nothing 
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(-1));
-        Output(0)->template Copy<Context, Context>(Input(-1));
+        Output(0)->template CopyFrom<Context>(Input(-1));
         return;
     }
 

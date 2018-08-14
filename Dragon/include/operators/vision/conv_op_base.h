@@ -55,7 +55,7 @@ class ConvOpBase : public Operator<Context> {
     void GradientReshape();
     virtual void ComputeOutputShape();
     virtual bool ReverseDimensions() = 0;
-    virtual bool HasBias() = 0;
+    virtual bool HasBias() { NOT_IMPLEMENTED; return true; }
 
     template <typename T> void Wx(const T* x,
         const T* weights, T* y, bool skip_im2col = false);

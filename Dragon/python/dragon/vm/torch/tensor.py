@@ -13,6 +13,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import sys
+import copy
 import numpy as np
 import dragon as dg
 import dragon.core.tensor_utils as tensor_utils
@@ -23,9 +25,11 @@ from dragon.vm.torch.constants import CTX_TO_DEVICE_OPTION
 from .c_apis import *
 
 
-__all__ = ['Tensor', 'Parameter',
+__all__ = [
+    'Tensor', 'Parameter',
     'FloatTensor', 'DoubleTensor',
-    'IntTensor', 'LongTensor', 'ByteTensor',
+    'IntTensor', 'LongTensor',
+    'ByteTensor', 'CharTensor',
 ]
 
 
@@ -48,6 +52,9 @@ class Tensor(object):
         self._requires_grad = kwargs.get('requires_grad', False)
         self._dg_tensor = kwargs.get('dg_tensor', None)
         self._own_storage = kwargs.get('own_storage', True)
+
+        # Hold it to lock shared objects(i.e., tensor with same storage)
+        self._ref_objects = []
         # Owned by the leaf variables(i.e. Can not be Reshaped)
         self._static_shape = None
         # Owned by the grad required variables
@@ -541,6 +548,71 @@ class Tensor(object):
     #                                            #
     ##############################################
 
+    def squeeze(self, dim=None):
+        """Returns a tensor with all the dimensions of input of size 1 removed.
+
+        Parameters
+        ----------
+        dim : int
+            The optional dim to remove.
+
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The new tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.builtin._squeeze')
+
+    def squeeze_(self, dim=None):
+        """Inplace of ``Tensor.squeeze()``
+
+        Parameters
+        ----------
+        dim : int
+            The optional dim to remove.
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The self.
+
+        """
+        raise NotImplementedError('Refer torch.ops.builtin._squeeze_')
+
+    def unsqueeze(self, dim):
+        """Returns a tensor with a dimension of size 1 inserted at the specified position.
+
+        Parameters
+        ----------
+        dim : int
+            The dim to insert.
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The new tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.builtin._unsqueeze')
+
+    def unsqueeze_(self, dim):
+        """Inplace of ``Tensor.unsqueeze()``
+
+        Parameters
+        ----------
+        dim : int
+            The dim to insert.
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The self.
+
+        """
+        raise NotImplementedError('Refer torch.ops.builtin._unsqueeze_')
+
     def view(self, *args):
         """Return a new tensor with the same data but a different size.
 
@@ -605,13 +677,15 @@ class Tensor(object):
         """
         raise NotImplementedError('Refer torch.ops.builtin.repeat')
 
-    def copy_(self, src):
+    def copy_(self, src, non_blocking=False):
         """Copy the elements from ``src`` into this tensor and return ``self``.
 
         Parameters
         ----------
         src : vm.torch.Tensor
             The source tensor.
+        non_blocking : boolean
+            Whether to copy asynchronously between CPU and GPU.
 
         Returns
         -------
@@ -1034,6 +1108,28 @@ class Tensor(object):
         """
         raise NotImplementedError('Refer torch.ops.builtin.byte_')
 
+    def char(self):
+        """Return a ``int8`` tensor with elements of ``self``.
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The byte tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.builtin.char')
+
+    def char_(self):
+        """Inplace of ``Tensor.char()``.
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The byte tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.builtin.char_')
+
     ##############################################
     #                                            #
     #                  AUTO-GRAD                 #
@@ -1126,6 +1222,11 @@ def ByteTensor(*args, **kwargs):
     return Tensor(*args, **kwargs)
 
 
+def CharTensor(*args, **kwargs):
+    kwargs['dtype'] = 'int8'
+    return Tensor(*args, **kwargs)
+
+
 _DTYPE_TO_TENSOR = {
     'float16': HalfTensor,
     'float32': FloatTensor,
@@ -1133,6 +1234,7 @@ _DTYPE_TO_TENSOR = {
     'int32': IntTensor,
     'int64': LongTensor,
     'uint8': ByteTensor,
+    'int8': CharTensor,
 }
 
 
@@ -1156,6 +1258,23 @@ def RuntimeTensor(name, dtype='float32', ctx=None):
     constructor = _DTYPE_TO_TENSOR[dtype]
     dg.workspace.CreateTensor(name)
     return constructor(dg_tensor=name, ctx=ctx)
+
+
+def ReferneceTensor(src):
+    """Create a reference from source tensor.
+
+    Commonly used to hold the same storage but takes different sizes,
+    i.e., view, squeeze, and unsqueeze.
+
+    """
+    constructor = _DTYPE_TO_TENSOR[src._dtype]
+    ref = constructor(dg_tensor=src.name, ctx=src._ctx)
+    name = '{}/id:{}'.format(
+        src.name.replace('[TPool]', '[Ref]'), id(ref))
+    dg.workspace.CreateTensor(name)
+    ref._dg_tensor, ref._own_storage = name, False
+    ref._ref_objects.append(src)
+    return ref
 
 
 ##############################################

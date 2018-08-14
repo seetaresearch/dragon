@@ -24,6 +24,7 @@ from dragon.core.utils import MakeDeviceOption
 __all__ = [
     'FromShape',
     'SetShape',
+    'FromTensor',
     'FromPyArray',
     'SetPyArray',
     'ToPyArray',
@@ -113,6 +114,40 @@ def SetShape(tensor, shape, dtype='float32'):
     TensorFromShapeCC(_stringify_tensor(tensor), shape, dtype)
 
 
+def FromTensor(src, src_ctx=None, name=None, ctx=None):
+    """Create a Tensor from a existing tensor.
+
+    Parameters
+    ----------
+    src_ctx : str
+        The name of source tensor.
+    src_ctx : dragon_pb2.DeviceOption
+        The context of source tensor.
+    name : str
+        The optional tensor name for destination tensor.
+    ctx : dragon_pb2.DeviceOption
+        The context for destination tensor.
+
+    Returns
+    -------
+    Tensor
+        The tensor with the same data as source.
+
+    References
+    ----------
+    The wrapper of ``TensorFromTensorCC``.
+
+    """
+    if name is None: tensor = Tensor(name=name)
+    else: tensor = Tensor(_name=name)
+    if src_ctx is None: src_ctx = MakeDeviceOption(0, 0) # CPUContext
+    if ctx is None: ctx = MakeDeviceOption(0, 0)  # CPUContext
+    TensorFromTensorCC(
+        _stringify_tensor(tensor), _stringify_tensor(src),
+        _stringify_proto(ctx), _stringify_proto(src_ctx))
+    return tensor
+
+
 def FromPyArray(array, name=None):
     """Create a Tensor from a existing Array.
 
@@ -120,7 +155,7 @@ def FromPyArray(array, name=None):
 
     Parameters
     ----------
-    array : np.ndarray
+    array : ndarray
         The array for creating the tensor.
     name : str
         The optional tensor name.
@@ -152,7 +187,7 @@ def SetPyArray(tensor, array):
     ----------
     tensor : Tensor, str or None
         The specific tensor to use.
-    array : numpy.ndarray
+    array : ndarray
         The array for creating the tensor.
 
     Returns
@@ -179,7 +214,7 @@ def ToPyArray(tensor):
 
     Returns
     -------
-    numpy.ndarray
+    ndarray
         The array sharing the memory with original tensor.
 
     References
@@ -202,7 +237,7 @@ def ToPyArrayEx(tensor):
 
     Returns
     -------
-    numpy.ndarray
+    ndarray
         The array sharing the memory with original tensor.
 
     References

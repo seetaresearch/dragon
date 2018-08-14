@@ -727,11 +727,11 @@ def Reshape(inputs, shape, shape_like=None, **kwargs):
     Examples
     --------
     >>> a = Tensor(shape=[1, 2, 3, 4]).Variable()
-    >>> print Reshape(a, shape=[6, 4])
+    >>> print(Reshape(a, shape=[6, 4]))
     >>> [6, 4]
 
     >>> b = Reshape(a, shape=[-1, 4]) # shape will be [6, 4] in the backend
-    >>> print b.shape
+    >>> print(b.shape)
     >>> [1, 4] # fake dimension at axis 0
 
     """
@@ -766,15 +766,58 @@ def Reshape(inputs, shape, shape_like=None, **kwargs):
     return output
 
 
-def ExpandDims(inputs, axis=-1, **kwargs):
-    """ExpandDims interface of NDArray.
+def Squeeze(inputs, axis=None, **kwargs):
+    """Remove the dimensions with size 1.
+
+    Set ``axis`` to remove the specific position.
+
+    Parameters
+    ----------
+    inputs : Tensor
+        The input tensor.
+    axis : int or None
+        The specific axis to remove.
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
+    Examples
+    --------
+    >>> a = Tensor(shape=[2, 1, 3, 4]).Variable()
+    >>> print(Squeeze(a).shape)
+    >>> print(Squeeze(a, axis=0).shape)
+
+    """
+    CheckInputs(inputs, 1)
+    arguments = ParseArguments(locals())
+
+    output = Tensor.CreateOperator(nout=1, op_type='Squeeze', **arguments)
+
+    if inputs.shape is not None:
+        output_shape = []
+        if axis: axis += (0 if axis >= 0 else len(inputs.shape))
+        for idx, dim in enumerate(inputs.shape[:]):
+            if dim != 1 or \
+                (axis and dim == 1 and idx != axis):
+                    output_shape.append(dim)
+        output.shape = output_shape
+
+    return output
+
+
+def ExpandDims(inputs, axis, **kwargs):
+    """Expand the new dimension with size 1 to specific axis.
+
+    Negative ``axis`` is equal to ``axis = axis + num_axes + 1``.
 
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
     axis : int
-        The insert position of new dimension. Default is ``-1`` (Push Back).
+        The insert axis of new dimension.
 
     Returns
     -------
@@ -784,9 +827,8 @@ def ExpandDims(inputs, axis=-1, **kwargs):
     Examples
     --------
     >>> a = Tensor(shape=[1, 2, 3, 4]).Variable()
-    >>> print ExpandDims(a).shape
-
-    >>> print ExpandDims(a, axis=2).shape
+    >>> print(ExpandDims(a).shape)
+    >>> print(ExpandDims(a, axis=2).shape)
 
     """
     CheckInputs(inputs, 1)
@@ -796,7 +838,8 @@ def ExpandDims(inputs, axis=-1, **kwargs):
 
     if inputs.shape is not None:
         output.shape = inputs.shape[:]
-        if axis == -1 or axis >= len(inputs.shape):
+        axis += (0 if axis >= 0 else len(inputs.shape) + 1)
+        if axis < 0 or axis >= len(inputs.shape):
             output.shape.append(np.long(1))
         else: output.shape.insert(axis, np.long(1))
 

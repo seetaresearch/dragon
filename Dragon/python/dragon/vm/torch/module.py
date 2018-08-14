@@ -115,8 +115,8 @@ class Module(object):
     def _load_state_dict_key_mismatch(self, full_name, name, is_missing):
         pass
 
-    def load_state_dict(self, state_dict, strict=True):
-        logger.info('Load the state dict from numpy arrays.')
+    def load_state_dict(self, state_dict, strict=True, verbose=True):
+        if verbose: logger.info('Load the state dict.')
         def submodule_key_mismatch(full_name, is_missing):
             module = self
             names = full_name.split(".")
@@ -131,9 +131,6 @@ class Module(object):
         own_state = self.state_dict()
         for name, param in state_dict.items():
             if name in own_state:
-                if not isinstance(param, np.ndarray):
-                    raise ValueError('PyTorch@Dragon can only load params '
-                                     'that saved as numpy array.')
                 state_shape = own_state[name].shape
                 param_shape = param.shape
                 if state_shape != param_shape:
@@ -145,8 +142,15 @@ class Module(object):
                     raise ValueError('DType of state({}) is {}, \n'
                         'While load from a PyArray of {}.'.format(name,
                         own_state[name].dtype, str(param.dtype)))
-                dg.workspace.FeedTensor(own_state[name].name, param)
-                logger.info('* Tensor({}) loaded, Size: ({})'.format(name,
+                if isinstance(param, Tensor):
+                    own_state[name].copy_(param)
+                elif isinstance(param, np.ndarray):
+                    dg.tensor_utils.SetPyArray(own_state[name], param)
+                else:
+                    raise ValueError('Excepted the type of source state is either '
+                        'torch.Tensor or numpy.ndarray, got {}.'.format(type(param)))
+                if verbose:
+                    logger.info('* Tensor({}) loaded, Size: ({})'.format(name,
                             ', '.join([str(d) for d in param_shape])))
         if strict:
             missing = set(own_state.keys()) - set(state_dict.keys())

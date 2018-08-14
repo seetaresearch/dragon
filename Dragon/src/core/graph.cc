@@ -231,17 +231,24 @@ GraphDef Graph::Share(const GraphDef& optimized_graph) {
 
     GraphDef g; g.CopyFrom(optimized_graph);
 
+    //  actually we need a white list
+    Set<string> whitelist;
+    for (auto& target : optimized_graph.target())
+        whitelist.insert(target);
+
     //  rename to create in-place
     for (int i = 0; i < optimized_graph.op_size(); i++) {
         const OperatorDef& op = optimized_graph.op(i);
         for (int j = 0; j < op.input_size(); j++) {
-            if (renamed_.count(op.input(j)) &&
+            if (whitelist.count(op.input(j)) == 0 &&
+                renamed_.count(op.input(j)) &&
                 ws()->SetProxy(op.input(j), renamed_[op.input(j)]))
                     *g.mutable_op(i)->mutable_input(j)
                         = renamed_[op.input(j)];
         }
         for (int j = 0; j < op.output_size(); j++) {
-            if (renamed_.count(op.output(j)) &&
+            if (whitelist.count(op.output(j)) == 0 &&
+                renamed_.count(op.output(j)) &&
                 ws()->SetProxy(op.output(j), renamed_[op.output(j)]))
                     *g.mutable_op(i)->mutable_output(j)
                         = renamed_[op.output(j)];

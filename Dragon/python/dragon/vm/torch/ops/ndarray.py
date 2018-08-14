@@ -15,7 +15,8 @@ from __future__ import print_function
 
 from dragon.vm.torch.ops.primitive import MakeContext, CanonicalAxis
 from dragon.vm.torch.ops.factory import get_module
-from dragon.vm.torch.ops.modules.shape import Reshape, Fill, Permute, Repeat
+from dragon.vm.torch.ops.modules.shape import \
+    Reshape, Squeeze, UnSqueeze, Fill, Permute, Repeat
 from dragon.vm.torch.ops.modules.reduce import Reduce, ArgReduce
 from dragon.vm.torch.ops.modules.crop import Crop
 from dragon.vm.torch.ops.modules.axis import Concat, Gather
@@ -27,6 +28,22 @@ def reshape(input, shape, shape_like=None):
     key = 'torch/ops/reshape/{}:{}/n_dims:#{}'.format(ctx[0].lower(), ctx[1], len_shape)
     module = get_module(Reshape, key, ctx, len_shape=len_shape)
     return module.forward(input, shape)
+
+
+def squeeze(input, dim=None, out=None):
+    ctx = MakeContext(inputs=[input])
+    key = 'torch/ops/squeeze/{}:{}/dim:{}'.format(
+        ctx[0].lower(), ctx[1], dim if dim else 'None')
+    module = get_module(Squeeze, key, ctx, dim=dim)
+    return module.forward(input, out=out)
+
+
+def unsqueeze(input, dim, out=None):
+    ctx = MakeContext(inputs=[input])
+    key = 'torch/ops/unsqueeze/{}:{}/dim:{}'.format(
+        ctx[0].lower(), ctx[1], dim if dim else 'None')
+    module = get_module(UnSqueeze, key, ctx, dim=dim)
+    return module.forward(input, out=out)
 
 
 def _permute(input, perms=None):

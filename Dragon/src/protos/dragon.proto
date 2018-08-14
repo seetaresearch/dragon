@@ -1,5 +1,7 @@
 syntax = "proto2";
 
+package dragon;
+
 message TensorProto {
   repeated int32 dims = 1;
   enum DataType {

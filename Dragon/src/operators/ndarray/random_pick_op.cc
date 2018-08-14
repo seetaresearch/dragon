@@ -39,7 +39,7 @@ void RandomPickOp<Context>::RunOnDevice() {
 
     if (Output(1)->name() != "ignore") {
         Output(1)->ReshapeLike(*pick_indices);
-        Output(1)->template Copy<Context, Context>(*pick_indices);
+        Output(1)->template CopyFrom<Context>(*pick_indices);
     }
 }
 

@@ -49,7 +49,8 @@ inline const TypeMeta& TypeStringToMeta(
             { "int64", TypeMeta::Make<int64_t>() },
             { "float64", TypeMeta::Make<double>() },
             { "float16", TypeMeta::Make<float16>() },
-            { "uint8", TypeMeta::Make<uint8_t>() } 
+            { "uint8", TypeMeta::Make<uint8_t>() },
+            { "int8", TypeMeta::Make<char>() },
     };
     static TypeMeta unknown_type;
     return s2m_type_map.count(str_type) ?
@@ -65,7 +66,8 @@ inline const std::string TypeMetaToString(
             { TypeMeta::Id<int64_t>(), "int64" },
             { TypeMeta::Id<double>(), "float64", },
             { TypeMeta::Id<float16>(), "float16" },
-            { TypeMeta::Id<uint8_t>(), "uint8" } 
+            { TypeMeta::Id<uint8_t>(), "uint8" },
+            { TypeMeta::Id<char>(), "int8" }
     };
     return m2s_type_map.count(meta.id()) ?
         m2s_type_map[meta.id()] : "unknown";

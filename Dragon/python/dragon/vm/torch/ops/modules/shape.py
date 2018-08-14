@@ -14,6 +14,7 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.vm.torch.ops.modules.base import BaseModule
+from dragon.vm.torch.tensor import ReferneceTensor
 
 
 class Fill(BaseModule):
@@ -69,10 +70,58 @@ class Reshape(BaseModule):
 
     def forward(self, x, shape):
         inputs = [x]; self.unify_devices(inputs)
-        outputs = [self.register_output(x.dtype)]
+        outputs = [ReferneceTensor(x)]
         if shape is not None:
             for ix, d in enumerate(shape):
                 self.set_argument_i(self.shape[ix], d)
+        return self.run(inputs, outputs)
+
+
+class Squeeze(BaseModule):
+    def __init__(self, key, ctx, **kwargs):
+        super(Squeeze, self).__init__(key, ctx, **kwargs)
+        self.dim = kwargs.get('dim', None)
+        self.register_arguments()
+        self.register_op()
+
+    def register_arguments(self):
+        """No Arguments for squeeze op."""
+        pass
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'Squeeze',
+            'n_inputs': 1, 'n_outputs': 1,
+            'arguments': {'axis': self.dim}
+        }
+
+    def forward(self, x, out=None):
+        inputs = [x]; self.unify_devices(inputs)
+        outputs = [out] if out else [ReferneceTensor(x)]
+        return self.run(inputs, outputs)
+
+
+class UnSqueeze(BaseModule):
+    def __init__(self, key, ctx, **kwargs):
+        super(UnSqueeze, self).__init__(key, ctx, **kwargs)
+        self.dim = kwargs.get('dim', None)
+        self.register_arguments()
+        self.register_op()
+
+    def register_arguments(self):
+        """No Arguments for squeeze op."""
+        pass
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'ExpandDims',
+            'n_inputs': 1, 'n_outputs': 1,
+            'arguments': {'axis': self.dim}
+        }
+
+    def forward(self, x, out=None):
+        inputs = [x]; self.unify_devices(inputs)
+        outputs = [out] if out else [ReferneceTensor(x)]
         return self.run(inputs, outputs)
 
 

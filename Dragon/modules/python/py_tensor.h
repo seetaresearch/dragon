@@ -152,6 +152,55 @@ PyObject* TensorFromPyArrayCC(PyObject* self, PyObject* args) {
     Py_RETURN_TRUE;
 }
 
+PyObject* TensorFromTensorCC(PyObject* self, PyObject* args) {
+    char* dst_name, *src_name;
+    PyObject* py_dst_ctx = nullptr, *py_src_ctx = nullptr;
+    if (!PyArg_ParseTuple(args, "ssOO",
+        &dst_name, &src_name, &py_dst_ctx, &py_src_ctx)) {
+        PyErr_SetString(PyExc_ValueError,
+            "Failed to create tensor from tensor.\n"
+            "Excepted the (dest, src) name and context.");
+        return nullptr;
+    }
+    DeviceOption dst_ctx, src_ctx;
+    dst_ctx.ParseFromString(PyBytes_AsStringEx(py_dst_ctx));
+    src_ctx.ParseFromString(PyBytes_AsStringEx(py_src_ctx));
+    Tensor* srcT = ws()->GetTensor(src_name);
+    Tensor* dstT = ws()->CreateTensor(dst_name);
+    dstT->ReshapeLike(*srcT);
+    dstT->SetMeta(srcT->meta());
+    if (dst_ctx.device_type() == DeviceType::CUDA) {
+        if (src_ctx.device_type() == DeviceType::CUDA) {
+            //  CUDA <- CUDA
+            CUDAContext::Memcpy<CUDAContext, CUDAContext>(
+                srcT->nbytes(),
+                    dstT->raw_mutable_data<CUDAContext>(),
+                        srcT->raw_data<CUDAContext>());
+        } else {
+            //  CUDA <- CPU
+            CUDAContext::Memcpy<CUDAContext, CUDAContext>(
+                srcT->nbytes(),
+                    dstT->raw_mutable_data<CUDAContext>(),
+                        srcT->raw_data<CPUContext>());
+        }
+    } else {
+        if (src_ctx.device_type() == DeviceType::CUDA) {
+            //  CPU <- CUDA
+            CUDAContext::Memcpy<CUDAContext, CUDAContext>(
+                srcT->nbytes(),
+                    dstT->raw_mutable_data<CPUContext>(),
+                        srcT->raw_data<CUDAContext>());
+        } else {
+            //  CPU <- CPU
+            CUDAContext::Memcpy<CUDAContext, CUDAContext>(
+                srcT->nbytes(),
+                    dstT->raw_mutable_data<CPUContext>(),
+                        srcT->raw_data<CPUContext>());
+        }
+    }
+    Py_RETURN_TRUE;
+}
+
 inline PyObject* TensorToPyArrayCC(PyObject* self, PyObject* args) {
     Tensor* tensor = ws()->GetTensor(ParseName(self, args));
     CHECK_GT(tensor->count(), 0);
@@ -183,7 +232,8 @@ inline PyObject* TensorToPyArrayExCC(PyObject* self, PyObject* args) {
         return nullptr;
     }
     auto* data = const_cast<void*>(tensor->raw_data<CPUContext>());
-    PyObject* array = PyArray_SimpleNewFromData(tensor->ndim(), dims.data(), npy_type, data);
+    PyObject* array = PyArray_SimpleNewFromData(
+        tensor->ndim(), dims.data(), npy_type, data);
     Py_XINCREF(array);
     return array;
 }
@@ -202,7 +252,8 @@ inline PyObject* ToCUDATensorCC(PyObject* self, PyObject* args) {
     char* cname;
     int device_id;
     if (!PyArg_ParseTuple(args, "si", &cname, &device_id)) {
-        PyErr_SetString(PyExc_ValueError, "Excepted the tensor name and device id.");
+        PyErr_SetString(PyExc_ValueError,
+            "Excepted the tensor name and device id.");
         return nullptr;
     }
     Tensor* t = ws()->GetTensor(cname);

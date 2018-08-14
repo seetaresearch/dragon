@@ -6,7 +6,6 @@
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
 #include "dragon.h"
-#include "protos/dragon.pb.h"
 #include "core/common.h"
 #include "core/workspace.h"
 #include "utils/caffemodel.h"
@@ -35,7 +34,8 @@ Workspace* ResetWorkspace(const std::string& name) {
     g_workspaces[name].reset(new Workspace(name));
     for (auto& sub_workspace : sub_workspaces[name]) {
         if (g_workspaces.count(sub_workspace) > 0)
-            g_workspaces[name]->MoveWorkspace(g_workspaces[sub_workspace].get());
+            g_workspaces[name]->MoveWorkspace(
+                g_workspaces[sub_workspace].get());
     }
     return g_workspaces[name].get();
 }
@@ -49,7 +49,9 @@ void ReleaseWorkspace(const std::string& name) {
     g_workspaces.erase(name);
 }
 
-void MoveWorkspace(Workspace* target_ws, Workspace* source_ws) {
+void MoveWorkspace(
+    Workspace*                  target_ws,
+    Workspace*                  source_ws) {
     std::unique_lock<std::mutex> lock(g_mutex);
     CHECK(source_ws) << "\nThe given source workspace is invalid."; 
     CHECK(target_ws) << "\nThe given target workspace is invalid.";
@@ -59,7 +61,9 @@ void MoveWorkspace(Workspace* target_ws, Workspace* source_ws) {
               << "into the Workspace(" << target_ws->name() << ").";
 }
 
-std::string CreateGraph(const std::string& graph_file, Workspace* ws) {
+std::string CreateGraph(
+    const std::string&          graph_file,
+    Workspace*                  ws) {
     GraphDef meta_graph;
     int fd = open(graph_file.c_str(), O_RDONLY);
     CHECK_NE(fd, -1) << "\nFile not found: " << graph_file;
@@ -75,7 +79,10 @@ std::string CreateGraph(const std::string& graph_file, Workspace* ws) {
     return meta_graph.name();
 }
 
-std::string CreateGraph(const std::string& graph_file, const Device& device, Workspace* ws) {
+std::string CreateGraph(
+    const std::string&          graph_file,
+    const Device&               device,
+    Workspace*                  ws) {
     GraphDef meta_graph;
     int fd = open(graph_file.c_str(), O_RDONLY);
     CHECK_NE(fd, -1) << "\nFile not found: " << graph_file;
@@ -95,26 +102,29 @@ std::string CreateGraph(const std::string& graph_file, const Device& device, Wor
     return meta_graph.name();
 }
 
-void CreateTensor(const std::string& name, Workspace* ws) {
+void CreateTensor(
+    const std::string&          name,
+    Workspace*                  ws) {
     ws->CreateTensor(name);
 }
 
 template <typename T>
-void FeedTensor(const std::string& name,
-                const vector<TIndex>& shape,
-                const T* data,
-                const Device& device,
-                Workspace* ws) {
+void FeedTensor(
+    const std::string&          name,
+    const vector<TIndex>&       shape,
+    const T*                    data,
+    const Device&               device,
+    Workspace*                  ws) {
     Tensor* tensor = ws->CreateTensor(name);
     tensor->Reshape(shape);
-    if (device.device_type() == CUDA) {
+    if (device.device_type() == 1) {
         CUDAContext context(device.device_id());
         context.SwitchToDevice();
         tensor->mutable_data<T, CUDAContext>();
         context.Memcpy<CUDAContext, CPUContext>(tensor->nbytes(),
                          tensor->raw_mutable_data<CUDAContext>(),
                                  static_cast<const void*>(data));
-    } else if (device.device_type() == CPU) {
+    } else if (device.device_type() == 0) {
         CPUContext context;
         tensor->mutable_data<T, CPUContext>();
         context.Memcpy<CPUContext, CPUContext>(tensor->nbytes(),
@@ -125,7 +135,9 @@ void FeedTensor(const std::string& name,
     }
 }
 
-void TransplantCaffeModel(const std::string& input_model, const std::string& output_model) {
+void TransplantCaffeModel(
+    const std::string&          input_model,
+    const std::string&          output_model) {
     TensorProtos protos;
     NetParameter net_param;
     ReadProtoFromBinaryFile(input_model.c_str(), &net_param);
@@ -151,13 +163,16 @@ void TransplantCaffeModel(const std::string& input_model, const std::string& out
                 << ", size: " << blob.data_size();
         }
     }
-    std::fstream output(output_model, std::ios::out | std::ios::trunc | std::ios::binary);
+    std::fstream output(output_model,
+        std::ios::out | std::ios::trunc | std::ios::binary);
     CHECK(protos.SerializeToOstream(&output));
     LOG(INFO) << "save the model @: " << output_model << "......";
     LOG(INFO) << "model format: DragonMoel";
 }
 
-void LoadDragonmodel(const std::string& model_file, Workspace* ws){
+void LoadDragonmodel(
+    const std::string&          model_file,
+    Workspace*                  ws){
     TensorProtos tensors;
     ReadProtoFromBinaryFile(model_file.c_str(), &tensors);
     LOG(INFO) << "Restore From Model @: " << model_file << "......";
@@ -190,7 +205,9 @@ void LoadDragonmodel(const std::string& model_file, Workspace* ws){
     }
 }
 
-void LoadCaffemodel(const std::string& model_file, Workspace* ws){
+void LoadCaffemodel(
+    const std::string&          model_file,
+    Workspace*                  ws){
     NetParameter net_param;
     ReadProtoFromBinaryFile(model_file.c_str(), &net_param);
     std::string scope = "";
@@ -231,14 +248,17 @@ void LoadCaffemodel(const std::string& model_file, Workspace* ws){
     }
 }
 
-void RunGraph(const std::string& graph_name, Workspace* ws) {
+void RunGraph(
+    const std::string&          graph_name,
+    Workspace*                  ws) {
     ws->RunGraph(graph_name, "", "");
 }
 
 template <typename T>
-T* FetchTensor(const std::string& name,
-               vector<TIndex>& shape, 
-               Workspace* ws){
+T* FetchTensor(
+    const std::string&          name,
+    vector<TIndex>&             shape,
+    Workspace*                  ws){
     if (!ws->HasTensor(name)){
         LOG(FATAL) << "Tensor(" << name << ")"
             << " doesn't exist, try create it before.";
@@ -251,13 +271,11 @@ T* FetchTensor(const std::string& name,
     shape = tensor->dims();
     void* data = malloc(tensor->nbytes());
     if (tensor->memory_state() == MixedMemory::STATE_AT_CUDA) {
-        CUDAContext::Memcpy<CPUContext, CUDAContext>(tensor->nbytes(),
-                                                                 data,
-                                     tensor->raw_data<CUDAContext>());
+        CUDAContext::Memcpy<CPUContext, CUDAContext>(
+            tensor->nbytes(), data, tensor->raw_data<CUDAContext>());
     } else {
-        CPUContext::Memcpy<CPUContext, CPUContext>(tensor->nbytes(),
-                                                               data,
-                                    tensor->raw_data<CPUContext>());
+        CPUContext::Memcpy<CPUContext, CPUContext>(
+            tensor->nbytes(), data, tensor->raw_data<CPUContext>());
     }
     return static_cast<T*>(data);
 }
@@ -265,5 +283,31 @@ T* FetchTensor(const std::string& name,
 void SetLogLevel(const std::string& level) {
     SetLogDestination(StrToLogSeverity(level));
 }
+
+template float* FetchTensor<float>(
+    const std::string&,
+    std::vector<TIndex>&,
+    Workspace*);
+
+template void FeedTensor<float>(
+    const std::string&,
+    const std::vector<TIndex>&,
+    const float*,
+    const Device&,
+    Workspace*);
+
+template void FeedTensor<int>(
+    const std::string&,
+    const std::vector<TIndex>&,
+    const int*,
+    const Device&,
+    Workspace*);
+
+template void FeedTensor<uint8_t>(
+    const std::string&,
+    const std::vector<TIndex>&,
+    const uint8_t*,
+    const Device&,
+    Workspace*);
 
 }    // namespace dragon

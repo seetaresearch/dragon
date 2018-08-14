@@ -23,7 +23,7 @@ def from_numpy(data):
 
     Parameters
     ----------
-    data : numpy.ndarray
+    data : ndarray
         The nd-array with various data type.
 
     Return
@@ -113,4 +113,5 @@ __NUMPY_TYPE_TO_TORCH = {
     'int32': 'IntTensor',
     'int64': 'LongTensor',
     'uint8': 'ByteTensor',
+    'int8': 'CharTensor',
 }

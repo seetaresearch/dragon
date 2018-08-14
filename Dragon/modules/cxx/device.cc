@@ -16,12 +16,12 @@ int type_from_string(std::string type) {
 }
 
 Device::Device()
-    : device_type_(CPU), device_id_(0) {}
+    : device_type_(0), device_id_(0) {}
 
 Device::Device(std::string device_type, int device_id)
-    : device_type_((DeviceType)type_from_string(device_type)), device_id_(device_id) {}
+    : device_type_(type_from_string(device_type)), device_id_(device_id) {}
 
 Device::Device(std::string device_type)
-    : device_type_((DeviceType)type_from_string(device_type)), device_id_(0) {}
+    : device_type_(type_from_string(device_type)), device_id_(0) {}
 
 }    // namespace dragon

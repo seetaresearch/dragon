@@ -114,7 +114,7 @@ inline void GenerateGridAnchors(
 /******************** Proposal ********************/
 
 template <typename T, class Context>
-inline void GenerateProposals(
+void GenerateProposals(
     const int                       A,
     const int                       feat_h,
     const int                       feat_w,
@@ -129,7 +129,7 @@ inline void GenerateProposals(
     T*                              proposals);
 
 template <typename T, class Context>
-inline void GenerateProposals_v2(
+void GenerateProposals_v2(
     const int                       total_anchors,
     const float                     im_h,
     const float                     im_w,

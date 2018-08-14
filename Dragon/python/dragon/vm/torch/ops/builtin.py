@@ -13,6 +13,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from dragon.vm.torch.constants import CTX_TO_DEVICE_OPTION
+from dragon.core.tensor_utils import FromTensor
 
 from dragon.vm.torch.tensor import Tensor, Size
 from dragon.vm.torch.execute_engine import RunOperator
@@ -20,9 +22,11 @@ from dragon.vm.torch.ops.factory import get_module
 from dragon.vm.torch.autograd.grad_mode import no_grad
 from dragon.vm.torch.ops.primitive import MakeContext
 from dragon.vm.torch.ops.arithmetic import _fundamental, _rfundamental
-from dragon.vm.torch.ops.control_flow import _copy
-from dragon.vm.torch.ops.ndarray import \
-    (reshape, _permute, _repeat, _fill, _reduce, _arg_reduce,  _crop)
+from dragon.vm.torch.ops.ndarray import (
+    reshape, squeeze, unsqueeze,
+    _permute, _repeat, _crop,
+    _fill, _reduce, _arg_reduce,
+)
 from dragon.vm.torch.ops.modules.dtype import AsType
 
 
@@ -33,13 +37,15 @@ from dragon.vm.torch.ops.modules.dtype import AsType
 ##############################################
 
 
-def copy_(self, src):
+def copy_(self, src, non_blocking=False):
     """Copy the elements from ``src`` into this tensor and return ``self``.
 
     Parameters
     ----------
     src : vm.torch.Tensor
         The source tensor.
+    non_blocking : boolean
+        Whether to copy asynchronously between CPU and GPU.
 
     Returns
     -------
@@ -47,7 +53,10 @@ def copy_(self, src):
         The ``self`` tensor.
 
     """
-    return _copy(self, src)
+    FromTensor(
+        src, CTX_TO_DEVICE_OPTION[tuple(src._ctx)],
+        self.name, CTX_TO_DEVICE_OPTION[tuple(self._ctx)])
+    return self
 
 
 Tensor.copy_ = copy_
@@ -308,6 +317,75 @@ Tensor.__rtruediv__ = rdiv
 ##############################################
 
 
+def _squeeze(self, dim=None):
+    """Returns a tensor with all the dimensions of input of size 1 removed.
+
+    Parameters
+    ----------
+    dim : int
+        The optional dim to remove.
+
+
+    Returns
+    -------
+    vm.torch.Tensor
+        The new tensor.
+
+    """
+    return squeeze(self, dim=dim)
+
+
+def _squeeze_(self, dim=None):
+    """Inplace of ``Tensor.squeeze()``
+
+    Parameters
+    ----------
+    dim : int
+        The optional dim to remove.
+
+    Returns
+    -------
+    vm.torch.Tensor
+        The self.
+
+    """
+    return squeeze(self, dim=dim, out=self)
+
+
+def _unsqueeze(self, dim):
+    """Returns a tensor with a dimension of size 1 inserted at the specified position.
+
+    Parameters
+    ----------
+    dim : int
+        The dim to insert.
+
+    Returns
+    -------
+    vm.torch.Tensor
+        The new tensor.
+
+    """
+    return unsqueeze(self, dim=dim)
+
+
+def _unsqueeze_(self, dim=None):
+    """Inplace of ``Tensor.unsqueeze()``
+
+    Parameters
+    ----------
+    dim : int
+        The optional dim to remove.
+
+    Returns
+    -------
+    vm.torch.Tensor
+        The self.
+
+    """
+    return unsqueeze(self, dim=dim, out=self)
+
+
 def view(self, *args):
     if self._static_shape:
         raise RuntimeError('Can not view a leaf variable, it owns the static sizes.')
@@ -353,6 +431,10 @@ def min(self, dim=None, keepdim=False):
     return _arg_reduce(self, 'MIN', dim, keepdim)
 
 
+Tensor.squeeze = _squeeze
+Tensor.squeeze_ = _squeeze_
+Tensor.unsqueeze = _unsqueeze
+Tensor.unsqueeze_ = _unsqueeze_
 Tensor.view = view
 Tensor.view_as = view_as
 Tensor.permute = permute
@@ -412,6 +494,8 @@ Tensor.double = lambda self: _type_to(self, dtype='float64', inplace=False)
 Tensor.double_ = lambda self: _type_to(self, dtype='float64', inplace=True)
 Tensor.byte = lambda self: _type_to(self, dtype='uint8', inplace=False)
 Tensor.byte_ = lambda self: _type_to(self, dtype='uint8', inplace=True)
+Tensor.char = lambda self: _type_to(self, dtype='int8', inplace=False)
+Tensor.char_ = lambda self: _type_to(self, dtype='int8', inplace=True)
 Tensor.int = lambda self: _type_to(self, dtype='int32', inplace=False)
 Tensor.int_ = lambda self: _type_to(self, dtype='int32', inplace=True)
 Tensor.long = lambda self: _type_to(self, dtype='int64', inplace=False)

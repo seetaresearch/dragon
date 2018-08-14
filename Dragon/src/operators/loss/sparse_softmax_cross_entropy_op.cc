@@ -59,7 +59,7 @@ void SparseSoftmaxCrossEntropyOp<Context>::RunWithType() {
 
     if (normalization == "UNIT") {
         Output(0)->ReshapeLike(losses);
-        Output(0)->template Copy<Context, Context>(losses);
+        Output(0)->template CopyFrom<Context>(losses);
         return;
     }
 
@@ -167,7 +167,7 @@ void SparseSoftmaxCrossEntropyGradientOp<Context>::RunOnDevice() {
             auto* dXdataF32 = Output(0)->template data<float, Context>();
             auto* dXdataF16 = prob->template mutable_data<float16, Context>();
             kernel::TypeA2B<float, float16, Context>(Output(0)->count(), dXdataF32, dXdataF16);
-            Output(0)->template Copy<Context, Context>(*prob);
+            Output(0)->template CopyFrom<Context>(*prob);
         }
     } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }

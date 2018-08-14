@@ -129,6 +129,7 @@ OneHot = ndarray.OneHot
 Flatten = ndarray.Flatten
 Reshape = ndarray.Reshape
 ExpandDims = ndarray.ExpandDims
+Squeeze = ndarray.Squeeze
 Shape = ndarray.Shape
 Arange = ndarray.Arange
 

@@ -40,8 +40,9 @@ class Tensor {
                 capacity_ = 0;
             }
         } else {
-            if (ex_memory_ && TIndex(ex_memory_->nbytes()) <
-                              TIndex(new_size * meta_.itemsize())) {
+            if (ex_memory_ && !is_shared_ && 
+                    TIndex(ex_memory_->nbytes()) <
+                        TIndex(new_size * meta_.itemsize())) {
                 delete ex_memory_;
                 ex_memory_ = nullptr;
                 capacity_ = 0;
@@ -232,18 +233,18 @@ class Tensor {
         return static_cast<const T*>(raw_data<Context>());
     }
 
-    template <class DstCTX, class SrcCTX>
-    inline void Copy(const Tensor& other) {
+    template <class Context>
+    inline void CopyFrom(const Tensor& other) {
         CHECK_EQ(size_, other.size_);
-        auto* src = other.template raw_data<SrcCTX>();
-        auto* dst = raw_mutable_data<DstCTX>(other.meta_);
+        auto* src = other.template raw_data<Context>();
+        auto* dst = raw_mutable_data<Context>(other.meta_);
         if (dst == src) return;
-        if (TypeMeta::Id<DstCTX>() ==
+        if (TypeMeta::Id<Context>() ==
                 TypeMeta::Id<CPUContext>()) {
-            CPUContext::Memcpy<DstCTX, SrcCTX>(nbytes(), dst, src);
-        } else if (TypeMeta::Id<DstCTX>() == 
+            CPUContext::Memcpy<Context, Context>(nbytes(), dst, src);
+        } else if (TypeMeta::Id<Context>() ==
                 TypeMeta::Id<CUDAContext>()) {
-            CUDAContext::Memcpy<DstCTX, SrcCTX>(nbytes(), dst, src);
+            CUDAContext::Memcpy<Context, Context>(nbytes(), dst, src);
         }
     }
 
@@ -252,6 +253,8 @@ class Tensor {
         else ex_memory_ = new MixedMemory(TypeMeta::Make<float>(), 4);
         own_mem_ = false;
     }
+
+    inline void Share(MixedMemory* mem) { Move(mem); is_shared_ = true; }
 
     inline void Reset() {
         size_ = capacity_ = 0;
@@ -271,7 +274,8 @@ class Tensor {
     string name_;
     shared_ptr<MixedMemory> memory_;
     MixedMemory* ex_memory_ = nullptr;
-    bool is_corrupted_ = false, own_mem_ = true;
+    bool is_corrupted_ = false, is_shared_ = false;
+    bool own_mem_ = true;
 };
 
 }    // namespace dragon

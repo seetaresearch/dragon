@@ -24,7 +24,7 @@ void SoftmaxFocalLossOp<Context>::RunWithType() {
 
     if (normalization == "UNIT") {
         Output(0)->ReshapeLike(losses);
-        Output(0)->template Copy<Context, Context>(losses);
+        Output(0)->template CopyFrom<Context>(losses);
         return;
     }
 

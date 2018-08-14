@@ -17,11 +17,11 @@ template <class Context> template <typename T>
 void LRNOp<Context>::SplitRunWithType() {
     sqr_in = ws()->CreateTensor("/mnt/" + anchor() + "/sqr/in");
     sqr_in->ReshapeLike(Input(0));
-    sqr_in->template Copy<Context, Context>(Input(0));
+    sqr_in->template CopyFrom<Context>(Input(0));
 
     prod_in = ws()->CreateTensor("/mnt/" + anchor() + "/prod/in");
     prod_in->ReshapeLike(Input(0));
-    prod_in->template Copy<Context, Context>(Input(0));
+    prod_in->template CopyFrom<Context>(Input(0));
 }
 
 template <class Context> template <typename T>

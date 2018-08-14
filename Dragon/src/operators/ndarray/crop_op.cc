@@ -125,7 +125,7 @@ void CropOp<Context>::RunOnDevice() {
     //  do nothing
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(0));
-        Output(0)->template Copy<Context, Context>(Input(0));
+        Output(0)->template CopyFrom<Context>(Input(0));
         //  squeeze dimensions
         vector<TIndex> squeeze_shape;
         for (int i = 0; i < keep_dims.size(); i++)
@@ -229,7 +229,7 @@ void CropGradientOp<Context>::RunOnDevice() {
     //  do nothing 
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(-1));
-        Output(0)->template Copy<Context, Context>(Input(-1));
+        Output(0)->template CopyFrom<Context>(Input(-1));
         return;
     }
 

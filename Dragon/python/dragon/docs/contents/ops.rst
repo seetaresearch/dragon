@@ -149,7 +149,8 @@ List               Brief
 `OneHot`_          Generate the one-hot representation of inputs.
 `Flatten`_         Flatten the input along the given axes.
 `Reshape`_         Reshape the dimensions of input.
-`ExpandDims`_      ExpandDims interface of NDArray.
+`Squeeze`_         Remove the dimensions with size 1.
+`ExpandDims`_      Expand the new dimension with size 1 to specific axis.
 `Shape`_           Get the dynamic shape of a Tensor.
 `Arange`_          Return a vector of elements by arange.
 ===============    ======================================================================
@@ -285,6 +286,7 @@ List                 Brief
 .. _OneHot: operators/ndarray.html#dragon.operators.ndarray.OneHot
 .. _Flatten: operators/ndarray.html#dragon.operators.ndarray.Flatten
 .. _Reshape: operators/ndarray.html#dragon.operators.ndarray.Reshape
+.. _Squeeze: operators/ndarray.html#dragon.operators.ndarray.Squeeze
 .. _ExpandDims: operators/ndarray.html#dragon.operators.ndarray.ExpandDims
 .. _Shape: operators/ndarray.html#dragon.operators.ndarray.Shape
 .. _Arange: operators/ndarray.html#dragon.operators.ndarray.Arange

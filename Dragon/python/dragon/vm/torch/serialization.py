@@ -51,7 +51,8 @@ def _with_file_like(f, mode, body):
             (sys.version_info[0] == 3 and isinstance(f, pathlib.Path)):
         new_fd = True
         dir = os.path.dirname(f)
-        if not os.path.exists(dir): os.makedirs(dir)
+        # Bug fix: empty directory, i.e., under the work directory
+        if dir != '' and not os.path.exists(dir): os.makedirs(dir)
         f = open(f, mode)
     try:
         return body(f)

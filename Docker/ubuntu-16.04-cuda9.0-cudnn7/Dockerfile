@@ -21,7 +21,7 @@ RUN rm /etc/apt/sources.list.d/cuda.list && rm /etc/apt/sources.list.d/nvidia-ml
     python3-tk \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --no-cache-dir --upgrade setuptools wheel && \
+RUN pip3 install --no-cache-dir --upgrade setuptools wheel -i https://pypi.tuna.tsinghua.edu.cn/simple && \
     pip3 install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple \
     numpy \
     protobuf \ 
@@ -30,6 +30,7 @@ RUN pip3 install --no-cache-dir --upgrade setuptools wheel && \
     six \ 
     Pillow \
     matplotlib \
+    scikit-image \
     pyyaml \
     cython
 

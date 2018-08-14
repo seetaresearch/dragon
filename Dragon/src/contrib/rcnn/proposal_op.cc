@@ -34,7 +34,7 @@ void ProposalOp<Context>::RunWithType() {
             rcnn::GenerateProposals<T, Context>(
                 A, feat_height, feat_width, strides[0],
                     im_height, im_width, min_box_h, min_box_w,
-                        Input(0).template data<T, Context>() + num_proposals,
+                        Input(0).template data<T, Context>(),
                             Input(1).template data<T, Context>(),
                                 anchors_.template mutable_data<T, Context>(),
                                     proposals_.template mutable_data<T, Context>());
@@ -59,9 +59,9 @@ void ProposalOp<Context>::RunWithType() {
             CHECK_EQ(strides.size(), scales.size())
                 << "\nGiven " << strides.size() << " strides and "
                 << scales.size() << " scales";
-            //  cls_probs: [1, 2, total_proposals]
+            //  cls_probs: [1, total_proposals]
             //  bbox_deltas: [1, 4, total_proposals]
-            TIndex total_proposals = Input(-3).dim(2), acc_proposals = 0;
+            TIndex total_proposals = Input(-3).dim(1), acc_proposals = 0;
             const TIndex pre_nms_topn = std::min(total_proposals, pre_nms_top_n);;
             proposals_.Reshape({ total_proposals, 5 });
             auto* proposals = proposals_.template mutable_data<T, CPUContext>();
@@ -93,7 +93,7 @@ void ProposalOp<Context>::RunWithType() {
 
             rcnn::GenerateProposals_v2<T, Context>(total_proposals,
                 im_height, im_width, min_box_h, min_box_w,
-                    Input(-3).template data<T, Context>() + total_proposals,
+                    Input(-3).template data<T, Context>(),
                         Input(-2).template data<T, Context>(),
                             proposals_.template mutable_data<T, Context>());
 
@@ -113,7 +113,7 @@ void ProposalOp<Context>::RunWithType() {
         }
         total_rois += num_rois;
         Ydata += (num_rois * 5);
-        im_info += 3;
+        im_info += Input(-1).dim(1);
     }
     Output(0)->Reshape(vector<TIndex>({ total_rois, 5 }));
 
@@ -148,9 +148,9 @@ void ProposalOp<Context>::RunWithType() {
 template <class Context>
 void ProposalOp<Context>::RunOnDevice() {
     num_images = Input(0).dim(0);
-    CHECK_EQ(Input(-1).count(), num_images * 3)
-        << "\nExcepted " << num_images * 3 << " groups image info, "
-        << "but got " << Input(-1).count() / 3 << ".";
+    CHECK_EQ(Input(-1).dim(0), num_images)
+        << "\nExcepted " << num_images << " groups image info, "
+        << "but got " << Input(-1).dim(0) << ".";
     roi_indices_.Reshape({ post_nms_top_n });
     Output(0)->Reshape({ num_images * post_nms_top_n, 5 });
 

@@ -114,7 +114,7 @@ class Operator : public OperatorBase {
     virtual void MakeResource();
     virtual void CleanResource();
 
-    void MemorySwitch() {
+    virtual void MemorySwitch() {
         for (auto* I : inputs_)
             if(I->name() != "ignore") I->SwitchToDevice();
         for (auto* O : outputs_) 

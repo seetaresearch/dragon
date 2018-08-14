@@ -14,7 +14,7 @@ void MPIBroadcastOp<Context>::RunWithType() {
         auto* Xdata = Input(0).template mutable_data<T, CPUContext>();
 #endif
         MPI_Bcast(Xdata, Input(0).count(), mpi_dtype(), comm_root, comm);
-        Output(0)->template Copy<Context, Context>(Input(0));
+        Output(0)->template CopyFrom<Context>(Input(0));
     } else { 
 #ifdef WITH_MPI_CUDA
         auto* Ydata = Output(0)->template mutable_data<T, Context>();

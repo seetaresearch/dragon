@@ -35,6 +35,26 @@ class ReLU(Module):
         return self.run(inputs, outputs)
 
 
+class LeakyReLU(Module):
+    def __init__(self, negative_slope=0.01, inplace=False):
+        super(LeakyReLU, self).__init__()
+        self._negative_slope = negative_slope
+        self._inplace = inplace
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'Relu',
+            'n_inputs': 1, 'n_outputs': 1,
+            'arguments': {'slope': self._negative_slope}
+        }
+
+    def forward(self, x):
+        inputs = [x]; self.unify_devices(inputs)
+        outputs = [x if self._inplace else self.register_output(x.dtype)]
+        return self.run(inputs, outputs)
+
+
 class Sigmoid(Module):
     def __init__(self, inplace=False):
         super(Sigmoid, self).__init__()
