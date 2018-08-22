@@ -44,7 +44,7 @@ class OperatorBase {
                    const string& anchor);
 
     inline void SwitchToPhase(const string& phase) { phase_ = phase; }
-    virtual void Run() { NOT_IMPLEMENTED; }
+    virtual void Run(int stream_id = 1) { NOT_IMPLEMENTED; }
 
     inline const string& name() const { return def_.name(); }
     inline const string& type() const { return def_.type(); }
@@ -100,13 +100,13 @@ class Operator : public OperatorBase {
             Output(0)->name() == "ignore"));
     }
 
-    virtual void Run() final {
+    void Run(int stream_id = 1) final {
         if (!allow_run_) return;
         if (allow_recompute_) MakeResource();
-        ctx().SwitchToDevice();
+        ctx()->SwitchToDevice(stream_id);
         MemorySwitch();
         RunOnDevice();
-        if (do_sync_) ctx().FinishDeviceCompution();
+        if (do_sync_) ctx()->FinishDeviceCompution();
         if (allow_recompute_) CleanResource();
     }
 
@@ -123,7 +123,7 @@ class Operator : public OperatorBase {
 
     virtual void RunOnDevice() = 0;
 
-    inline Context& ctx() { return ctx_; }
+    inline Context* ctx() { return &ctx_; }
     inline bool AllowRun() { return allow_run_; }
 
  protected:
@@ -192,6 +192,27 @@ DECLARE_REGISTRY(
     const OperatorDef&,
     Workspace*);
 
+#define TENSOR_FILL_WITH_TYPE(tensor, shape, type) \
+    if (tensor.count() == 0) { \
+        CHECK(ws()->GetFiller(tensor.name())) \
+            << "\nTensor(" << tensor.name() << ") is empty. \n" \
+            << "may be specify a filler for it ?"; \
+        tensor.Reshape(shape); \
+        unique_ptr< Filler<type, Context> > filler(  \
+            CreateFiller<type, Context>(*ws()->GetFiller(tensor.name()))); \
+        filler->Fill(&tensor, ctx()); \
+        ctx()->FinishDeviceCompution(); \
+    } else { \
+         TIndex count = 1; \
+         for(int i = 0; i < shape.size(); i++) count *= shape[i]; \
+         CHECK_EQ(count, tensor.count()) \
+            << "\nModel request " << "Tensor(" << tensor.name() << ")'s " \
+            << "size is " << count << ", \n" \
+            << "but now is " << tensor.count() << ", " \
+            << "did you feed the incorrect Tensor before ?"; \
+        tensor.Reshape(shape); \
+    }
+
 #define TENSOR_FILL(tensor, shape) \
     if (tensor.count() == 0) { \
         CHECK(ws()->GetFiller(tensor.name())) \
@@ -200,7 +221,8 @@ DECLARE_REGISTRY(
         tensor.Reshape(shape); \
         unique_ptr< Filler<T, Context> > filler(  \
             CreateFiller<T, Context>(*ws()->GetFiller(tensor.name()))); \
-        filler->Fill(&tensor, &ctx()); \
+        filler->Fill(&tensor, ctx()); \
+        ctx()->FinishDeviceCompution(); \
     } else { \
          TIndex count = 1; \
          for(int i = 0; i < shape.size(); i++) count *= shape[i]; \
@@ -217,7 +239,7 @@ DECLARE_REGISTRY(
     if (size > ptr_tensor->count()) { \
         ptr_tensor->Reshape({ size }); \
         math::Set<T, Context>(size, dragon_cast<T, float>(1.f), \
-            ptr_tensor->template mutable_data<T, Context>()); \
+            ptr_tensor->template mutable_data<T, Context>(), ctx()); \
     } \
   }
 

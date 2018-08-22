@@ -6,16 +6,16 @@
 namespace dragon {
 
 template <class Context>
-void NesterovUpdateOp<Context>::ComputeRunWithFloat() {
+void NesterovUpdateOp<Context>::ComputeRunWithFloat32() {
     Tensor* h = ws()->CreateTensor("/mnt/" + Slot() + "/nesterov/h");
     h->ReshapeLike(Input(0));
 
     lr = Param("base_lr") * this->lr_mult, momentum = Param("momentum");
     auto* dXdata = Input(0).template mutable_data<float, Context>();
-    auto* Hdata = h->template mutable_data<float, Context>();
+    auto* Hdata = h->template mutable_data<float, Context>(ctx());
 
     kernel::NesterovUpdate<float, Context>(
-        Input(0).count(), lr, momentum, dXdata, Hdata);
+        Input(0).count(), lr, momentum, dXdata, Hdata, ctx());
 }
 
 template <class Context>
@@ -24,11 +24,18 @@ void NesterovUpdateOp<Context>::ComputeRunWithFloat16() {
     h->ReshapeLike(Input(0));
 
     lr = Param("base_lr") * this->lr_mult, momentum = Param("momentum");
-    auto* dXdata = Input(0).template mutable_data<float16, Context>();
-    auto* Hdata = h->template mutable_data<float16, Context>();
 
-    kernel::NesterovUpdate<float16, Context>(
-        Input(0).count(), lr, momentum, dXdata, Hdata);
+    auto* dX32T = ws()->CreateTensor(Input(0).name() + "/f32");
+    dX32T->ReshapeLike(Input(0));
+
+    auto* dX32 = dX32T->template mutable_data<float, Context>();
+    auto* dX16 = Input(0).template mutable_data<float16, Context>();
+    auto* H32 = h->template mutable_data<float, Context>(ctx());
+
+    kernel::TypeA2B<float16, float, Context>(
+        Input(0).count(), dX16, dX32, ctx());
+    kernel::NesterovUpdate<float, Context>(
+        Input(0).count(), lr, momentum, dX32, H32, ctx());
 }
 
 DEPLOY_CPU(NesterovUpdate);

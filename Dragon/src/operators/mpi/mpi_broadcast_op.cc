@@ -14,7 +14,7 @@ void MPIBroadcastOp<Context>::RunWithType() {
         auto* Xdata = Input(0).template mutable_data<T, CPUContext>();
 #endif
         MPI_Bcast(Xdata, Input(0).count(), mpi_dtype(), comm_root, comm);
-        Output(0)->template CopyFrom<Context>(Input(0));
+        Output(0)->template CopyFrom<Context>(Input(0), ctx());
     } else { 
 #ifdef WITH_MPI_CUDA
         auto* Ydata = Output(0)->template mutable_data<T, Context>();
@@ -62,12 +62,13 @@ void MPIBroadcastGradientOp<Context>::RunWithType() {
 #ifdef WITH_MPI_CUDA
         auto* dYdata = Input(-1).template mutable_data<T, Context>();
         auto* dXdata = Output(0)->template mutable_data<T, Context>();
-        ctx().template Copy<T, Context, Context>(
+        ctx()->template Copy<T, Context, Context>(
             Output(0)->count(), dXdata, dYdata);
 #else
         auto* dYdata = Input(-1).template mutable_data<T, CPUContext>();
         auto* dXdata = Output(0)->template mutable_data<T, CPUContext>();
-        CPUContext::template Copy<T, CPUContext, CPUContext>(
+        static CPUContext cctx;
+        cctx.template Copy<T, CPUContext, CPUContext>(
             Output(0)->count(), dXdata, dYdata);
 #endif
         for (int i = 0; i < comm_size; i++) {
@@ -76,10 +77,10 @@ void MPIBroadcastGradientOp<Context>::RunWithType() {
                 i, 0, comm, MPI_STATUS_IGNORE);
 #ifdef WITH_MPI_CUDA
             math::Add<T, Context>(Output(0)->count(),
-                dYdata, dXdata, dXdata);
+                dYdata, dXdata, dXdata, ctx());
 #else
-            math::Add<T, CPUContext>(Output(0)->count(), 
-                dYdata, dXdata, dXdata);
+            math::Add<T, CPUContext>(Output(0)->count(),
+                dYdata, dXdata, dXdata, &cctx);
 #endif
         }
     }

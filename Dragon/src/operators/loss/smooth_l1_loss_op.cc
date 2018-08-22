@@ -11,20 +11,21 @@ void SmoothL1LossOp<Context>::RunWithType() {
     auto* X1data = Input(1).template data<T, Context>();
     auto* diff_data = diff->template mutable_data<T, Context>();
     auto* error_data = error->template mutable_data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<float, Context>();
 
-    math::Sub<T, Context>(diff->count(), X0data, X1data, diff_data);
+    math::Sub<T, Context>(diff->count(),
+        X0data, X1data, diff_data, ctx());
     if (InputSize() > 2) {
         auto* inside_w_data = Input(2).template data<T, Context>();
         math::Mul<T, Context>(diff->count(),
-            inside_w_data, diff_data, diff_data);
+            inside_w_data, diff_data, diff_data, ctx());
     }
-    kernel::SmoothL1<T, Context>(
-        diff->count(), beta, diff_data, error_data);
+    kernel::SmoothL1<T, Context>(diff->count(),
+        beta, diff_data, error_data, ctx());
     if (InputSize() > 3) {
         auto* outside_w_data = Input(3).template data<T, Context>();
         math::Mul<T, Context>(diff->count(),
-            outside_w_data, error_data, error_data);
+            outside_w_data, error_data, error_data, ctx());
     }
 
     T normalizer = 1;
@@ -34,12 +35,14 @@ void SmoothL1LossOp<Context>::RunWithType() {
         normalizer = Input(0).count();
     }
 
-    T loss = math::ASum<T, Context>(error->count(), error_data);
-    math::Set<T, Context>(1, loss / normalizer, Ydata);
+    float loss = math::ASum<float, Context>(error->count(), error_data);
+    math::Set<float, Context>(1, loss / normalizer, Ydata, ctx());
 }
 
 template <class Context>
 void SmoothL1LossOp<Context>::RunOnDevice() {
+    ctx()->set_stream_id(0);  //  enforce default stream
+
     CHECK(Input(0).dims() == Input(1).dims());
     if (InputSize() > 2) CHECK(Input(0).dims() == Input(2).dims());
     if (InputSize() > 3) CHECK(Input(0).dims() == Input(3).dims());
@@ -64,10 +67,12 @@ template <class Context> template <typename T>
 void SmoothL1LossGradientOp<Context>::RunWithType() {
     auto* diff_data = diff->template mutable_data<T, Context>();
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; ctx().template Copy<T, CPUContext, Context>(
+    T dYdata_host; ctx()->template Copy<T, CPUContext, Context>(
         1, &dYdata_host, dYdata);
-    kernel::SmoothL1Grad<T, Context>(
-        diff->count(), beta, diff_data, diff_data);
+    ctx()->FinishDeviceCompution();
+
+    kernel::SmoothL1Grad<T, Context>(diff->count(),
+        beta, diff_data, diff_data, ctx());
 
     T alpha = dYdata_host, normalizer = 1;
     if (normalization == "BATCH_SIZE") {
@@ -83,16 +88,16 @@ void SmoothL1LossGradientOp<Context>::RunWithType() {
         const T sign = (i == 0) ? 1 : -1;
         alpha *= sign;
         math::Axpby<T, Context>(Output(i)->count(),
-            alpha, diff_data, 0, dXdata, &ctx());
+            alpha, diff_data, 0, dXdata, ctx());
         if (InputSize() > 3) {
             auto* inside_w_data = Input(2).template data<T, Context>();
             math::Mul<T, Context>(Output(i)->count(),
-                inside_w_data, dXdata, dXdata);
+                inside_w_data, dXdata, dXdata, ctx());
         }
         if (InputSize() > 4) {
             auto* outside_w_data = Input(3).template data<T, Context>();
             math::Mul<T, Context>(Output(i)->count(),
-                outside_w_data, dXdata, dXdata);
+                outside_w_data, dXdata, dXdata, ctx());
         }
     }
 }

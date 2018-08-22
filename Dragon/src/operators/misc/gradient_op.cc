@@ -11,7 +11,7 @@ void GradientGenerateOp<Context>::RunWithType() {
         Output(i)->ReshapeLike(Input(i));
         auto* dXdata = Output(0)->template mutable_data<T, Context>();
         math::Set<T, Context>(Output(0)->count(),
-            dragon_cast<T, float>(defaults[i]), dXdata);
+            dragon_cast<T, float>(defaults[i]), dXdata, ctx());
     }
 }
 
@@ -37,12 +37,13 @@ void GradientGatherOp<Context>::RunWithType() {
         CHECK(Output(0)->dims() == Input(indices[i]).dims());
         auto* dYdata = Input(indices[i]).template data<T, Context>();
         if (i == 0) {
-            ctx().template Copy<T, Context, Context>(
+            ctx()->template Copy<T, Context, Context>(
                 count, dXdata, dYdata);
         } else {
             math::Add<T, Context>(
-                count, dXdata, dYdata, dXdata);
+                count, dXdata, dYdata, dXdata, ctx());
         }
+        ctx()->FinishDeviceCompution();
         Input(indices[i]).Reset();
     }
 }
@@ -68,7 +69,7 @@ template <class Context>
 void StopGradientOp<Context>::RunOnDevice() {
     if (Output(0)->name() != Input(0).name()) {
         Output(0)->ReshapeLike(Input(0));
-        Output(0)->template CopyFrom<Context>(Input(0));
+        Output(0)->template CopyFrom<Context>(Input(0), ctx());
     }
 }
 

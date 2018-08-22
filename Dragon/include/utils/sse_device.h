@@ -15,6 +15,7 @@
 #ifdef WITH_SSE
 
 #include <immintrin.h>
+#include <tmmintrin.h>
 #include <cstdint>
 
 namespace dragon {

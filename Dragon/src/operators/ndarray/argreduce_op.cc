@@ -1,4 +1,5 @@
 #include "utils/op_kernel.h"
+#include "utils/math_functions.h"
 #include "operators/ndarray/argreduce_op.h"
 
 namespace dragon {
@@ -12,14 +13,15 @@ void ArgReduceOp<Context>::RunWithType() {
         auto* Idata = Output(0)->template mutable_data<int64_t, CPUContext>();
         auto* Vdata = OutputSize() == 2 ?
             Output(1)->template mutable_data<T, CPUContext>() : nullptr;
+        static CPUContext cctx;
         if (operation == "ARGMAX") {
             kernel::Argmax<T, CPUContext>(
                 count, axis_dim, inner_dim,
-                    top_k, Xdata, Idata, Vdata);
+                    top_k, Xdata, Idata, Vdata, &cctx);
         } else if (operation == "ARGMIN") {
             kernel::Argmin<T, CPUContext>(
                 count, axis_dim, inner_dim, 
-                    top_k, Xdata, Idata, Vdata);
+                    top_k, Xdata, Idata, Vdata, &cctx);
         } else LOG(FATAL) << "Unknown operation: [" << operation << "].";
     } else {
         auto* Xdata = Input(0).template data<T, Context>();
@@ -29,11 +31,11 @@ void ArgReduceOp<Context>::RunWithType() {
         if (operation == "ARGMAX") {
             kernel::Argmax<T, Context>(
                 count, axis_dim, inner_dim,
-                    top_k, Xdata, Idata, Vdata);
+                    top_k, Xdata, Idata, Vdata, ctx());
         } else if (operation == "ARGMIN") {
             kernel::Argmin<T, Context>(
-                count, axis_dim, inner_dim, 
-                    top_k, Xdata, Idata, Vdata);
+                count, axis_dim, inner_dim,
+                    top_k, Xdata, Idata, Vdata, ctx());
         } else LOG(FATAL) << "Unknown operation: [" << operation << "].";
     }
 }

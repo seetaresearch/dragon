@@ -21,14 +21,14 @@ void FusedGroupNormOp<Context>::RunWithType() {
 
     auto* NCdata = nc.template mutable_data<T, Context>();
     auto* WSdata = ws()->template caches<T, Context>({ Input(0).count() })[0];
-    ctx().template Copy<T, Context, Context>(Output(0)->count(), Ydata, Xdata);
+    ctx()->template Copy<T, Context, Context>(Output(0)->count(), Ydata, Xdata);
 
     //  compute mean
     if (data_format == "NCHW") {
         math::Gemv<T, Context>(
             CblasNoTrans, NG, CGS,
                 1.0 / CGS, Xdata, MXmult,
-                    0.0, Tmean, &ctx());
+                    0.0, Tmean, ctx());
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
     }
@@ -39,26 +39,26 @@ void FusedGroupNormOp<Context>::RunWithType() {
             CblasNoTrans, CblasNoTrans,
                 NG, CGS, 1,
                     -1.0, Tmean, MXmult,
-                        1.0, Ydata, &ctx());
+                        1.0, Ydata, ctx());
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
     }
 
     //  compute variance
     //  note that we use VAR(X) = E((X - EX) ^ 2)
-    math::Square<T, Context>(Output(0)->count(), Ydata, WSdata);
+    math::Square<T, Context>(Output(0)->count(), Ydata, WSdata, ctx());
     if (data_format == "NCHW") {
         math::Gemv<T, Context>(
             CblasNoTrans, NG, CGS,
                 1.0 / CGS, WSdata, MXmult,
-                    0.0, Tvar, &ctx());
+                    0.0, Tvar, ctx());
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
     }
 
     //  compute stddev
-    math::AddScalar<T, Context>(var->count(), eps, Tvar);
-    math::Sqrt<T, Context>(var->count(), Tvar, Tvar);
+    math::AddScalar<T, Context>(var->count(), eps, Tvar, ctx());
+    math::Sqrt<T, Context>(var->count(), Tvar, Tvar, ctx());
 
     //  divide by stddev
     if (data_format == "NCHW") {
@@ -66,15 +66,16 @@ void FusedGroupNormOp<Context>::RunWithType() {
             CblasNoTrans, CblasNoTrans,
                 NG, CGS, 1,
                     1.0, Tvar, MXmult,
-                        0.0, WSdata, &ctx());
+                        0.0, WSdata, ctx());
     } else if (data_format == "NHWC") {
         NOT_IMPLEMENTED;
     }
-    math::Div<T, Context>(Output(0)->count(), Ydata, WSdata, Ydata);
+    math::Div<T, Context>(Output(0)->count(),
+        Ydata, WSdata, Ydata, ctx());
 
     //  store x_norm for backward
     auto* XNorm_data = x_norm->template mutable_data<T, Context>();
-    ctx().template Copy<T, Context, Context>(
+    ctx()->template Copy<T, Context, Context>(
         Output(0)->count(), XNorm_data, Ydata);
 
     // scale
@@ -83,20 +84,21 @@ void FusedGroupNormOp<Context>::RunWithType() {
              CblasNoTrans, CblasNoTrans,
                  N, C, 1,
                      1.0, MXmult, Sdata,
-                         0.0, NCdata, &ctx());
+                         0.0, NCdata, ctx());
          math::Gemm<T, Context>(
              CblasNoTrans, CblasNoTrans,
                  NC, S, 1,
                      1.0, NCdata, MXmult,
-                         0.0, WSdata, &ctx());
+                         0.0, WSdata, ctx());
     } else if (data_format == "NHWC") {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                  NS, C, 1,
                      1.0, MXmult, Sdata,
-                         0.0, WSdata, &ctx());
+                         0.0, WSdata, ctx());
     }
-    math::Mul<T, Context>(Output(0)->count(), Ydata, WSdata, Ydata);
+    math::Mul<T, Context>(Output(0)->count(),
+        Ydata, WSdata, Ydata, ctx());
 
     // shift
     if (data_format == "NCHW") {
@@ -104,18 +106,18 @@ void FusedGroupNormOp<Context>::RunWithType() {
             CblasNoTrans, CblasNoTrans,
                 N, C, 1,
                     1.0, MXmult, Bdata,
-                        0.0, NCdata, &ctx());
+                        0.0, NCdata, ctx());
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 NC, S, 1,
                     1.0, NCdata, MXmult,
-                        1.0, Ydata, &ctx());
+                        1.0, Ydata, ctx());
     } else if (data_format == "NHWC") {
          math::Gemm<T, Context>(
              CblasNoTrans, CblasNoTrans,
                 NS, C, 1,
                     1.0, MXmult,  Bdata,
-                        1.0, Ydata, &ctx());
+                        1.0, Ydata, ctx());
     }
 }
 
@@ -157,8 +159,7 @@ void FusedGroupNormOp<Context>::RunOnDevice() {
     Setup();
 
     if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 
@@ -184,21 +185,22 @@ void FusedGroupNormGradientOp<Context>::RunWithType() {
     // gradient w.r.t. scale
     if (Output(1)->name() != "ignore") {
         auto* dSdata = Output(1)->template mutable_data<T, Context>();
-        math::Mul<T, Context>(x_norm->count(), XNorm_data, dYdata, WSdata);
+        math::Mul<T, Context>(x_norm->count(),
+            XNorm_data, dYdata, WSdata, ctx());
         if (data_format == "NCHW") {
             math::Gemv<T, Context>(
                 CblasNoTrans, NC, S,
                     1.0, WSdata, MXmult,
-                        0.0, NCdata, &ctx());
+                        0.0, NCdata, ctx());
             math::Gemv<T, Context>(
                 CblasTrans, N, C,
                     1.0, NCdata, MXmult,
-                        1.0, dSdata, &ctx());
+                        1.0, dSdata, ctx());
         } else if (data_format == "NHWC") {
             math::Gemv<T, Context>(
                 CblasTrans, NS, C,
                     1.0, WSdata, MXmult,
-                        1.0, dSdata, &ctx());
+                        1.0, dSdata, ctx());
         }
     }
 
@@ -209,16 +211,16 @@ void FusedGroupNormGradientOp<Context>::RunWithType() {
             math::Gemv<T, Context>(
                 CblasNoTrans, NC, S,
                     1.0, dYdata, MXmult,
-                        0.0, NCdata, &ctx());
+                        0.0, NCdata, ctx());
             math::Gemv<T, Context>(
                 CblasTrans, N, C,
                     1.0, NCdata, MXmult,
-                        1.0, dBdata, &ctx());
+                        1.0, dBdata, ctx());
         } else if (data_format == "NHWC") {
             math::Gemv<T, Context>(
                 CblasTrans, NS, C,
                     1.0, dYdata, MXmult,
-                        1.0, dBdata, &ctx());
+                        1.0, dBdata, ctx());
         }
     }
 
@@ -230,28 +232,30 @@ void FusedGroupNormGradientOp<Context>::RunWithType() {
                 CblasNoTrans, CblasNoTrans,
                     N, C, 1,
                         1.0, MXmult, Sdata,
-                            0.0, NCdata, &ctx());
+                            0.0, NCdata, ctx());
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
                     NC, S, 1,
                         1.0, NCdata, MXmult,
-                            0.0, WSdata, &ctx());
+                            0.0, WSdata, ctx());
          } else if (data_format == "NHWC") {
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
                     NS, C, 1,
                         1.0, MXmult, Sdata,
-                            0.0, WSdata, &ctx());
+                            0.0, WSdata, ctx());
          }
-         math::Mul<T, Context>(x_norm->count(), WSdata, dYdata, WSdata);
+         math::Mul<T, Context>(x_norm->count(),
+             WSdata, dYdata, WSdata, ctx());
 
          // sum of x_hat * (dl / dx_hat)
-         math::Mul<T, Context>(x_norm->count(), XNorm_data, WSdata, dXdata);
+         math::Mul<T, Context>(x_norm->count(),
+             XNorm_data, WSdata, dXdata, ctx());
          if (data_format == "NCHW") {
              math::Gemv<T, Context>(
                  CblasNoTrans, NG, CGS,
                     1.0, dXdata, MXmult,
-                        0.0, Tmean, &ctx());
+                        0.0, Tmean, ctx());
          } else if (data_format == "NHWC") {
              NOT_IMPLEMENTED;
          }
@@ -262,28 +266,29 @@ void FusedGroupNormGradientOp<Context>::RunWithType() {
                  CblasNoTrans, CblasNoTrans,
                     NG, CGS, 1,
                         1.0, Tmean, MXmult,
-                            0.0, dXdata, &ctx());
+                            0.0, dXdata, ctx());
          } else if (data_format == "NHWC") {
              NOT_IMPLEMENTED;
          }
-         math::Mul<T, Context>(x_norm->count(), XNorm_data, dXdata, dXdata);
+         math::Mul<T, Context>(x_norm->count(),
+             XNorm_data, dXdata, dXdata, ctx());
 
         // subtract the average of x_hat times the sum
         if (data_format == "NCHW") {
             math::Gemv<T, Context>(
                 CblasNoTrans, NG, CGS,
                     1.0, WSdata, MXmult,
-                        0.0, Tmean, &ctx());
+                        0.0, Tmean, ctx());
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
                     NG, CGS, 1,
                         1.0, Tmean, MXmult,
-                            1.0, dXdata, &ctx());
+                            1.0, dXdata, ctx());
         } else if (data_format == "NHWC") {
             NOT_IMPLEMENTED;
         }
         math::Axpby<T, Context>(x_norm->count(),
-            1.0, WSdata, -1.0 / CGS, dXdata, &ctx());
+            1.0, WSdata, -1.0 / CGS, dXdata, ctx());
 
         // multiply with the inverse std
          if (data_format == "NCHW") {
@@ -291,12 +296,13 @@ void FusedGroupNormGradientOp<Context>::RunWithType() {
                  CblasNoTrans, CblasNoTrans,
                     NG, CGS, 1,
                         1.0, Tvar, MXmult,
-                            0.0, WSdata, &ctx());
+                            0.0, WSdata, ctx());
         } else if (data_format == "NHWC") {
              NOT_IMPLEMENTED;
         }
         //  divide by stddev
-        math::Div<T, Context>(Output(0)->count(), dXdata, WSdata, dXdata);
+        math::Div<T, Context>(Output(0)->count(),
+            dXdata, WSdata, dXdata, ctx());
     }
 }
 
@@ -337,8 +343,7 @@ void FusedGroupNormGradientOp<Context>::RunOnDevice() {
     Setup();
 
     if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(FusedGroupNormGradient);

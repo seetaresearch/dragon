@@ -42,7 +42,7 @@ public:
         //  simply copy the dY to dX
         Output(0)->ReshapeLike(Input(0));
         if (Output(0)->name() != Input(-1).name())
-            Output(0)->template CopyFrom<Context>(Input(-1));
+            Output(0)->template CopyFrom<Context>(Input(-1), ctx());
     }
 };
 

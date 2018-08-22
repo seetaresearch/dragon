@@ -15,11 +15,11 @@ void SigmoidFocalLossOp<Context>::RunWithType() {
     kernel::SigmoidFocalLoss<T, Context>(
         outer_dim, axis_dim, inner_dim,
             pos_alpha, neg_alpha, gamma, neg_id,
-                Xdata, Tdata, Ldata, Fdata, &ctx());
+                Xdata, Tdata, Ldata, Fdata, ctx());
 
     if (normalization == "UNIT") {
         Output(0)->ReshapeLike(losses);
-        Output(0)->template CopyFrom<Context>(losses);
+        Output(0)->template CopyFrom<Context>(losses, ctx());
         return;
     }
 
@@ -37,11 +37,13 @@ void SigmoidFocalLossOp<Context>::RunWithType() {
     T loss = math::ASum<T, Context>(losses.count(), Ldata);
     Output(0)->Reshape({ 1 });
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Set<T, Context>(1, loss / normalizer, Ydata);
+    math::Set<T, Context>(1, loss / normalizer, Ydata, ctx());
 }
 
 template <class Context>
 void SigmoidFocalLossOp<Context>::RunOnDevice() {
+    ctx()->set_stream_id(0);  //  enforce default stream
+
     outer_dim = Input(0).count(0, axis);
     axis_dim = Input(0).dim(axis);
     inner_dim = Input(0).count(axis + 1);
@@ -71,12 +73,12 @@ void SigmoidFocalLossGradientOp<Context>::RunWithType() {
     kernel::SigmoidFocalLossGradient<T, Context>(
         outer_dim, axis_dim, inner_dim,
             pos_alpha, neg_alpha, gamma, neg_id,
-                Xdata, Tdata, dXdata, Fdata, &ctx());
+                Xdata, Tdata, dXdata, Fdata, ctx());
 
     if (normalization == "UNIT") {
         auto* dYdata = Input(-1).template data<T, Context>();
         math::Mul<T, Context>(Output(0)->count(),
-            dYdata, dXdata, dXdata); return;
+            dYdata, dXdata, dXdata, ctx()); return;
     }
 
     T normalizer = 1;
@@ -91,14 +93,16 @@ void SigmoidFocalLossGradientOp<Context>::RunWithType() {
     }
 
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; ctx().template Copy<T, CPUContext, Context>(
+    T dYdata_host; ctx()->template Copy<T, CPUContext, Context>(
         1, &dYdata_host, dYdata);
     math::Scal<T, Context>(Output(0)->count(),
-        dYdata_host / normalizer, dXdata, &ctx());
+        dYdata_host / normalizer, dXdata, ctx());
 }
 
 template <class Context>
 void SigmoidFocalLossGradientOp<Context>::RunOnDevice() {
+    ctx()->set_stream_id(0);  //  enforce default stream
+
     outer_dim = Input(0).count(0, axis);
     axis_dim = Input(0).dim(axis);
     inner_dim = Input(0).count(axis + 1);

@@ -37,7 +37,7 @@ void ProposalOp<Context>::RunWithType() {
                         Input(0).template data<T, Context>(),
                             Input(1).template data<T, Context>(),
                                 anchors_.template mutable_data<T, Context>(),
-                                    proposals_.template mutable_data<T, Context>());
+                                    proposals_.template mutable_data<T, Context>(), ctx());
 
             rcnn::SortProposals(0, num_proposals - 1, pre_nms_top_n,
                 proposals_.template mutable_data<T, CPUContext>());
@@ -45,7 +45,8 @@ void ProposalOp<Context>::RunWithType() {
             rcnn::ApplyNMS<T, Context>(
                 pre_nms_topn, post_nms_top_n, nms_thresh,
                     proposals_.template mutable_data<T, Context>(),
-                        roi_indices_.template mutable_data<int, CPUContext>(), num_rois);
+                        roi_indices_.template mutable_data<int, CPUContext>(),
+                            num_rois, ctx());
 
             rcnn::RetrieveRoIs<T>(num_rois, n,
                 proposals_.template mutable_data<T, CPUContext>(),
@@ -95,14 +96,15 @@ void ProposalOp<Context>::RunWithType() {
                 im_height, im_width, min_box_h, min_box_w,
                     Input(-3).template data<T, Context>(),
                         Input(-2).template data<T, Context>(),
-                            proposals_.template mutable_data<T, Context>());
+                            proposals_.template mutable_data<T, Context>(), ctx());
 
             rcnn::SortProposals(0, total_proposals - 1, pre_nms_top_n,
                 proposals_.template mutable_data<T, CPUContext>());
 
             rcnn::ApplyNMS<T, Context>(pre_nms_topn, post_nms_top_n, nms_thresh,
                 proposals_.template mutable_data<T, Context>(),
-                    roi_indices_.template mutable_data<int, CPUContext>(), num_rois);
+                    roi_indices_.template mutable_data<int, CPUContext>(),
+                        num_rois, ctx());
 
             rcnn::RetrieveRoIs<T>(num_rois, n,
                 proposals_.template mutable_data<T, CPUContext>(),
@@ -128,7 +130,7 @@ void ProposalOp<Context>::RunWithType() {
         collective_rois.ReshapeLike(*Output(0));
         auto* rois = collective_rois.template mutable_data<T, CPUContext>();
 
-        CPUContext::template Copy<T, CPUContext, CPUContext>(
+        ctx()->template Copy<T, CPUContext, CPUContext>(
             collective_rois.count(), rois,
                 Output(0)->template data<T, CPUContext>());
 
@@ -147,6 +149,8 @@ void ProposalOp<Context>::RunWithType() {
 
 template <class Context>
 void ProposalOp<Context>::RunOnDevice() {
+    ctx()->set_stream_id(0);  //  enforce default stream
+
     num_images = Input(0).dim(0);
     CHECK_EQ(Input(-1).dim(0), num_images)
         << "\nExcepted " << num_images << " groups image info, "

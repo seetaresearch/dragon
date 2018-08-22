@@ -19,13 +19,13 @@ inline PyObject* SnapshotCC(PyObject* self, PyObject* args) {
     char* path; int format;
     PyObject* names; vector<Tensor*> tensors;
     if (!PyArg_ParseTuple(args, "sOi", &path, &names, &format)) {
-        PyErr_SetString(PyExc_ValueError, 
+        PyErr_SetString(PyExc_ValueError,
             "Excepted the model path, tensors, and data format.");
         return nullptr;
     }
     switch (format) {
         case 0:  //  Pickle
-            PyErr_SetString(PyExc_NotImplementedError, 
+            PyErr_SetString(PyExc_NotImplementedError,
                 "Format depends on Pickle. Can't be used in C++.");
             break;
         case 1:  //  CaffeModel
@@ -42,13 +42,13 @@ inline PyObject* SnapshotCC(PyObject* self, PyObject* args) {
 inline PyObject* RestoreCC(PyObject* self, PyObject* args) {
     char* path; int format;
     if (!PyArg_ParseTuple(args, "si", &path, &format)) {
-        PyErr_SetString(PyExc_ValueError, 
+        PyErr_SetString(PyExc_ValueError,
             "Excepted the model path and data format.");
         return nullptr;
     }
     switch (format) {
         case 0:  //  Pickle
-            PyErr_SetString(PyExc_NotImplementedError, 
+            PyErr_SetString(PyExc_NotImplementedError,
                 "Format depends on Pickle. Can't be used in C++.");
             break;
         case 1:  //  CaffeModel

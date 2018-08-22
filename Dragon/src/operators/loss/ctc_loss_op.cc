@@ -20,10 +20,10 @@ void CTCLossGradientOp<Context>::RunWithType() {
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* dYdata = Input(-1).template data<T, Context>();
 
-    T dYdata_host; ctx().template Copy<T, CPUContext, Context>(
+    T dYdata_host; ctx()->template Copy<T, CPUContext, Context>(
         1, &dYdata_host, dYdata);
     math::Scale<T, Context>(Output(0)->count(),
-        dYdata_host, Gdata, dXdata, &ctx());
+        dYdata_host, Gdata, dXdata, ctx());
 }
 
 template <class Context>

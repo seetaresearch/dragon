@@ -11,7 +11,7 @@ void ArangeOp<Context>::RunWithType() {
     count = (stop_ - start_ - 1) / step_ + 1;
     Output(0)->Reshape({ count });
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    kernel::Arange<T, Context>(count, start_, step_, Ydata);
+    kernel::Arange<T, Context>(count, start_, step_, Ydata, ctx());
 }
 
 template <class Context>

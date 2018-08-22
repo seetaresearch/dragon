@@ -17,7 +17,7 @@ void PadOp<Context>::ConstRunWithType() {
 
     kernel::ConstPad1D<T, Context>(dest->count(),
         dim, dim + pad_l[axis] + pad_r[axis], inner_dim,
-            pad_l[axis], value, Xdata, Ydata);
+            pad_l[axis], value, Xdata, Ydata, ctx());
 }
 
 template <class Context> template <typename T>
@@ -32,7 +32,7 @@ void PadOp<Context>::ReflectRunWithType() {
 
     kernel::ReflectPad1D<T, Context>(dest->count(),
         dim, dim + pad_l[axis] + pad_r[axis], inner_dim,
-            pad_l[axis], Xdata, Ydata);
+            pad_l[axis], Xdata, Ydata, ctx());
 }
 
 template <class Context> template <typename T>
@@ -47,7 +47,7 @@ void PadOp<Context>::EdgeRunWithType() {
 
     kernel::EdgePad1D<T, Context>(dest->count(),
         dim, dim + pad_l[axis] + pad_r[axis], inner_dim,
-            pad_l[axis], Xdata, Ydata);
+            pad_l[axis], Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -61,7 +61,7 @@ void PadOp<Context>::RunOnDevice() {
     //  do nothing
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(0));
-        Output(0)->template CopyFrom<Context>(Input(0));
+        Output(0)->template CopyFrom<Context>(Input(0), ctx());
         return;
     }
 
@@ -99,6 +99,7 @@ void PadOp<Context>::RunOnDevice() {
         } else {
             LOG(FATAL) << "Unsupported padding mode: " << mode << ".";
         }
+        ctx()->FinishDeviceCompution();
         //  allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
@@ -127,7 +128,7 @@ void PadGradientOp<Context>::ConstRunWithType() {
 
     kernel::ConstPad1DGrad<T, Context>(dest->count(),
         dim - pad_l[axis] - pad_r[axis], dim, inner_dim,
-            pad_l[axis], dYdata, dXdata);
+            pad_l[axis], dYdata, dXdata, ctx());
 }
 
 template <class Context> template <typename T>
@@ -140,11 +141,11 @@ void PadGradientOp<Context>::ReflectRunWithType() {
         dXdata = ws()->template caches<T, Context>({ dest->count() })[0];
     } else { dXdata = dest->template mutable_data<T, Context>(); }
 
-    math::Set<T, Context>(dest->count(), 0, dXdata);
+    math::Set<T, Context>(dest->count(), 0, dXdata, ctx());
 
     kernel::ReflectPad1DGrad<T, Context>(source->count(),
         dim - pad_l[axis] - pad_r[axis], dim, inner_dim,
-            pad_l[axis], dYdata, dXdata);
+            pad_l[axis], dYdata, dXdata, ctx());
 }
 
 template <class Context> template <typename T>
@@ -157,11 +158,11 @@ void PadGradientOp<Context>::EdgeRunWithType() {
         dXdata = ws()->template caches<T, Context>({ dest->count() })[0];
     } else { dXdata = dest->template mutable_data<T, Context>(); }
 
-    math::Set<T, Context>(dest->count(), 0, dXdata);
+    math::Set<T, Context>(dest->count(), 0, dXdata, ctx());
 
     kernel::EdgePad1DGrad<T, Context>(source->count(),
         dim - pad_l[axis] - pad_r[axis], dim, inner_dim,
-            pad_l[axis], dYdata, dXdata);
+            pad_l[axis], dYdata, dXdata, ctx());
 }
 
 template <class Context>
@@ -175,7 +176,7 @@ void PadGradientOp<Context>::RunOnDevice() {
     //  do nothing 
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(-1));
-        Output(0)->template CopyFrom<Context>(Input(-1));
+        Output(0)->template CopyFrom<Context>(Input(-1), ctx());
         return;
     }
 
@@ -213,6 +214,7 @@ void PadGradientOp<Context>::RunOnDevice() {
         } else {
             LOG(FATAL) << "Unsupported padding mode: " << mode << ".";
         }
+        ctx()->FinishDeviceCompution();
         //  allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {

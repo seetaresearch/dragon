@@ -14,7 +14,7 @@ void StackOp<Context>::RunWithType() {
         kernel::Concat<T, Context>(
             count, outer_dim, inner_dim,
                 x_concat_dim, y_concat_dim,
-                    concat_offset, Xdata, Ydata);
+                    concat_offset, Xdata, Ydata, ctx());
         concat_offset += x_concat_dim;
     }
 }
@@ -59,7 +59,7 @@ void StackGradientOp<Context>::RunWithType() {
             kernel::ConcatGrad<T, Context>(
                 count, outer_dim, inner_dim,
                     x_concat_dim, y_concat_dim,
-                        concat_offset, dYdata, dXdata);
+                        concat_offset, dYdata, dXdata, ctx());
         }
         concat_offset += x_concat_dim;
     }

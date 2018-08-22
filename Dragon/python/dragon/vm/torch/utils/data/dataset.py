@@ -13,7 +13,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.utils.data.io.data_reader import DataReader
+from dragon.io.data_reader import DataReader
 from dragon.vm.torch.utils.data.io.data_transformer import DataTransformer
 
 

@@ -9,15 +9,15 @@ template <class Context> template <typename T>
 void RandomPickOp<Context>::RunWithType() {
     auto* indices = pick_indices->template mutable_data<int, CPUContext>();
     for (int i = 0; i < pick_indices->count(); i++)
-        indices[i] = int((*ctx().rand_generator())() % x_slice_dim);
+        indices[i] = int((*ctx()->rand_generator())() % x_slice_dim);
 
     auto* Xdata = Input(0).template data<T, Context>();
     indices = pick_indices->template mutable_data<int, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
-    kernel::Gather<T, Context>(
-        Output(0)->count(), outer_dim, inner_dim,
-            x_slice_dim, y_slice_dim, indices, Xdata, Ydata);
+    kernel::Gather<T, Context>(Output(0)->count(),
+        outer_dim, inner_dim, x_slice_dim, y_slice_dim,
+            indices, Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -39,7 +39,7 @@ void RandomPickOp<Context>::RunOnDevice() {
 
     if (Output(1)->name() != "ignore") {
         Output(1)->ReshapeLike(*pick_indices);
-        Output(1)->template CopyFrom<Context>(*pick_indices);
+        Output(1)->template CopyFrom<Context>(*pick_indices, ctx());
     }
 }
 
@@ -55,11 +55,11 @@ void RandomPickGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
-    math::Set<T, Context>(Output(0)->count(), 0, dXdata);
+    math::Set<T, Context>(Output(0)->count(), 0, dXdata, ctx());
 
-    kernel::GatherGrad<T, Context>(
-        Input(-1).count(), outer_dim, inner_dim,
-            x_slice_dim, y_slice_dim, indices, dYdata, dXdata);
+    kernel::GatherGrad<T, Context>(Input(-1).count(),
+        outer_dim, inner_dim, x_slice_dim, y_slice_dim,
+            indices, dYdata, dXdata, ctx());
 }
 
 template <class Context>

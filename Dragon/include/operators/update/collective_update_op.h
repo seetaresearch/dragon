@@ -43,10 +43,26 @@ class CollectiveUpdateOp final : public Operator<Context> {
     void InitNCCL();
 
     void RunOnDevice() override;
-    void MPIAllReduceWithFloat();
-    void NCCLAllReduceWithFloat();
-    void MPIBcastWithFloat();
-    void NCCLBcastWithFloat();
+
+    template <typename T> void MPIAllReduce(
+        Tensor*                 tensor,
+        MPI_Datatype            dtype);
+
+    template <typename T> void MPIBcast(
+        Tensor*                 tensor,
+        MPI_Datatype            dtype);
+
+#ifdef WITH_MPI_NCCL
+    template <typename T> void NCCLAllReduce(
+        Tensor*                 tensor,
+        ncclDataType_t          dtype,
+        cudaStream_t&           stream);
+
+    template <typename T> void NCCLBcast(
+        Tensor*                 tensor,
+        ncclDataType_t          dtype,
+        cudaStream_t&           stream);
+#endif
 
  protected:
     int comm_size, comm_rank, comm_root;

@@ -10,8 +10,9 @@ void SliceOp<Context>::RunWithType() {
     for (int i = 0; i < nout; i++) {
         auto* Ydata = Output(i)->template mutable_data<T, Context>();
         TIndex count = Output(i)->count();
-        kernel::Slice<T, Context>(count, outer_dim, inner_dim,
-            x_slice_dim, y_slice_dim, slice_offset, Xdata, Ydata);
+        kernel::Slice<T, Context>(count,
+            outer_dim, inner_dim, x_slice_dim, y_slice_dim,
+                slice_offset, Xdata, Ydata, ctx());
         slice_offset += y_slice_dim;
     }
 }
@@ -46,8 +47,9 @@ void SliceGradientOp<Context>::RunWithType() {
         if (Input(i + 1).name() == "ignore") continue;
         auto* dYdata = Input(i + 1).template data<T, Context>();
         TIndex count = Input(i + 1).count();
-        kernel::SliceGrad<T, Context>(count, outer_dim, inner_dim,
-            x_slice_dim, y_slice_dim, slice_offset, dYdata, dXdata);
+        kernel::SliceGrad<T, Context>(count,
+            outer_dim, inner_dim, x_slice_dim, y_slice_dim,
+                slice_offset, dYdata, dXdata, ctx());
         slice_offset += y_slice_dim;
     }
 }

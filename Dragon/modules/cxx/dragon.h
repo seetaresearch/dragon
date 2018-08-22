@@ -38,8 +38,7 @@ class Device {
     EXPORT const int device_id() const { return device_id_; }
 
  private:
-     int device_type_;
-     int device_id_;
+     int device_type_, device_id_;
 };
 
 EXPORT Workspace* CreateWorkspace(const std::string& name);
@@ -61,7 +60,8 @@ EXPORT std::string CreateGraph(
 
 EXPORT void RunGraph(
     const std::string&          graph_name,
-    Workspace*                  ws);
+    Workspace*                  ws,
+    const int                   stream_id = 1);
 
 EXPORT void CreateTensor(
     const std::string&          name,

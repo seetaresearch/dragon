@@ -39,12 +39,14 @@ inline PyObject* CreateTensorCC(PyObject* self, PyObject* args) {
 inline PyObject* CreateFillerCC(PyObject* self, PyObject* args) {
     PyObject* filler_string;
     if (!PyArg_ParseTuple(args, "S", &filler_string)) {
-        PyErr_SetString(PyExc_ValueError, "Excepted a serialized string of TensorFiller.");
+        PyErr_SetString(PyExc_ValueError,
+            "Excepted a serialized string of TensorFiller.");
         return nullptr;
     }
     TensorFiller filler_def;
     if (!filler_def.ParseFromString(PyBytes_AsStringEx(filler_string))) {
-        PyErr_SetString(PyExc_RuntimeError, "Failed to parse the TensorFiller.");
+        PyErr_SetString(PyExc_RuntimeError,
+            "Failed to parse the TensorFiller.");
         return nullptr;
     }
     ws()->CreateFiller(filler_def);
@@ -60,7 +62,8 @@ inline PyObject* GetFillerTypeCC(PyObject* self, PyObject* args) {
 inline PyObject* RenameTensorCC(PyObject* self, PyObject* args) {
     char* ori_name, *tar_name;
     if (!PyArg_ParseTuple(args, "ss", &ori_name, &tar_name)) {
-        PyErr_SetString(PyExc_ValueError, "Excepted the original and target name.");
+        PyErr_SetString(PyExc_ValueError,
+            "Excepted the original and target name.");
         return nullptr;
     }
     if (!ws()->HasTensor(tar_name)) {
@@ -77,7 +80,8 @@ PyObject* TensorFromShapeCC(PyObject* self, PyObject* args) {
     char* cname, *dtype;
     PyObject* shape, *device_option = nullptr;
     if (!PyArg_ParseTuple(args, "sOs|O", &cname, &shape, &dtype, &device_option)) {
-        PyErr_SetString(PyExc_ValueError, "Excepted the name, shape, dtype and optional device option.");
+        PyErr_SetString(PyExc_ValueError,
+            "Excepted the name, shape, dtype and optional device option.");
         return nullptr;
     }
     const TypeMeta& meta = TypeStringToMeta(dtype);
@@ -119,7 +123,8 @@ PyObject* TensorFromPyArrayCC(PyObject* self, PyObject* args) {
     char* cname;
     PyArrayObject* original_array = nullptr;
     if (!PyArg_ParseTuple(args, "sO", &cname, &original_array)) {
-        PyErr_SetString(PyExc_ValueError, "Failed to create tensor from numpy.ndarray.\n"
+        PyErr_SetString(PyExc_ValueError,
+            "Failed to create tensor from numpy.ndarray.\n"
             "Excepted the name and numpy.ndarray both.");
         return nullptr;
     }
@@ -214,7 +219,8 @@ inline PyObject* TensorToPyArrayCC(PyObject* self, PyObject* args) {
         return nullptr;
     }
     auto* data = tensor->raw_mutable_data<CPUContext>();
-    PyObject* array = PyArray_SimpleNewFromData(tensor->ndim(), dims.data(), npy_type, data);
+    PyObject* array = PyArray_SimpleNewFromData(
+        (int)tensor->ndim(), dims.data(), npy_type, data);
     Py_XINCREF(array);
     return array;
 }

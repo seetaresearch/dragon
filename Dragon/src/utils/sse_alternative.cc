@@ -162,7 +162,7 @@ template<> void Axpby(
     SSE_LOOP2(i, n) y[i] = alpha * x[i] + beta* y[i];
 }
 
-template<> float ASum(
+template<> float Sum(
     const int               n,
     const float*            x) {
     __m128 x1, sum = SSE_FP32_ZERO;

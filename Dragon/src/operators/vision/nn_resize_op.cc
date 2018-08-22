@@ -26,7 +26,7 @@ void NNResizeOp<Context>::RunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
     kernel::NNResize<T, Context>(Output(0)->count(),
-        n, c, h, w, out_h, out_w, data_format, Xdata, Ydata);
+        n, c, h, w, out_h, out_w, data_format, Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -77,8 +77,10 @@ void NNResizeGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
+    math::Set<T, Context>(Output(0)->count(), 0, dXdata, ctx());
+
     kernel::NNResizeGrad<T, Context>(Input(-1).count(),
-        n, c, h, w, out_h, out_w, data_format, dYdata, dXdata);
+        n, c, h, w, out_h, out_w, data_format, dYdata, dXdata, ctx());
 }
 
 template <class Context>

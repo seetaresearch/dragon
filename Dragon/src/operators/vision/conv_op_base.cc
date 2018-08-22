@@ -77,7 +77,7 @@ void ConvOpBase<Context>::Wx(
                                    kernel_dim,
                 1.0, weights + weight_offset * g,
                      col_buffer + col_offset * g,
-                0.0, y + output_offset * g, &ctx());
+                0.0, y + output_offset * g, ctx());
         } else if (data_format == "NHWC") {
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
@@ -86,7 +86,7 @@ void ConvOpBase<Context>::Wx(
                                    kernel_dim,
                 1.0, col_buffer + col_offset * g,
                      weights + weight_offset * g,
-                0.0, y + output_offset * g, &ctx());
+                0.0, y + output_offset * g, ctx());
         }
     }
 }
@@ -99,13 +99,13 @@ void ConvOpBase<Context>::Pb(const T* bias, T* y) {
             CblasNoTrans, CblasNoTrans,
                 num_output, out_spatial_dim, 1,
                     1.0, bias, multiplier,
-                        1.0, y, &ctx());
+                        1.0, y, ctx());
     } else if (data_format == "NHWC") {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 out_spatial_dim, num_output, 1,
                     1.0, multiplier, bias,
-                        1.0, y, &ctx());
+                        1.0, y, ctx());
     }
 }
 
@@ -122,7 +122,7 @@ void ConvOpBase<Context>::Dx(const T* dy, const T* weights, T* dx) {
                     conv_out_channels / group,
                 1.0, weights + weight_offset * g,
                           dy + output_offset * g,
-                0.0, col_buffer + col_offset * g, &ctx());
+                0.0, col_buffer + col_offset * g, ctx());
         } else if (data_format == "NHWC") {
              math::Gemm<T, Context>(
                  CblasNoTrans, CblasTrans,
@@ -131,7 +131,7 @@ void ConvOpBase<Context>::Dx(const T* dy, const T* weights, T* dx) {
                      conv_out_channels / group,
                  1.0, dy + output_offset * g,
                      weights + weight_offset * g,
-                 0.0, col_buffer + col_offset * g, &ctx());
+                 0.0, col_buffer + col_offset * g, ctx());
         }
     }
     if (!is_1x1) Col2Im(col_buffer, dx);
@@ -154,7 +154,7 @@ void ConvOpBase<Context>::Dw(const T* dy, const T* x, T *dw) {
                          conv_out_spatial_dim,
                 1.0, dy + output_offset * g,
                     col_buffer + col_offset * g,
-                1.0, dw + weight_offset * g, &ctx());
+                1.0, dw + weight_offset * g, ctx());
         } else if (data_format == "NHWC") {
             math::Gemm<T, Context>(
                 CblasTrans, CblasNoTrans,
@@ -163,7 +163,7 @@ void ConvOpBase<Context>::Dw(const T* dy, const T* x, T *dw) {
                          conv_out_spatial_dim,
                 1.0, col_buffer + col_offset * g,
                           dy + output_offset * g,
-                1.0, dw + weight_offset * g, &ctx());
+                1.0, dw + weight_offset * g, ctx());
         }
     }
 }
@@ -175,12 +175,12 @@ void ConvOpBase<Context>::Db(const T* dy, T* db) {
         math::Gemv<T, Context>(
             CblasNoTrans, num_output, out_spatial_dim,
                 1.0, dy, multiplier,
-                    1.0, db, &ctx());
+                    1.0, db, ctx());
     } else if (data_format == "NHWC") {
         math::Gemv<T, Context>(
             CblasTrans, out_spatial_dim, num_output,
                 1.0, dy, multiplier,
-                    1.0, db, &ctx());
+                    1.0, db, ctx());
     }
 }
 

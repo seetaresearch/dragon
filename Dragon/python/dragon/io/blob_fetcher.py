@@ -30,6 +30,8 @@ class BlobFetcher(Process):
         ----------
         batch_size : int
             The size of a training batch.
+        dtype : str
+            The data type of batch. Default is ``float32``.
         partition : boolean
             Whether to partition batch. Default is ``False``.
         prefetch : int
@@ -42,6 +44,7 @@ class BlobFetcher(Process):
         """
         super(BlobFetcher, self).__init__()
         self._batch_size = kwargs.get('batch_size', 100)
+        self._dtype = kwargs.get('dtype', 'float32')
         self._partition  = kwargs.get('partition', False)
         self._mean_values = kwargs.get('mean_values', [])
         self._scale = kwargs.get('scale', 1.0)
@@ -68,7 +71,7 @@ class BlobFetcher(Process):
             if ix != self._batch_size - 1: im, labels = self.Q_in.get()
 
         # mean subtraction & numerical scale
-        im_blob = im_blob.astype(np.float32)
+        im_blob = im_blob.astype(self._dtype)
         if len(self._mean_values) > 0:
             im_blob -= self._mean_values
         if self._scale != 1.0:

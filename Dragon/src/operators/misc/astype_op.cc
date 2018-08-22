@@ -14,14 +14,14 @@ namespace dragon {
             Output(0)->ReshapeLike(Input(0)); \
             auto* Xdata = Input(0).template data<type_a, Context>(); \
             auto* Ydata = Output(0)->template mutable_data<type_b, Context>(); \
-            kernel::TypeA2B<type_a, type_b, Context>(Input(0).count(), Xdata, Ydata); \
+            kernel::TypeA2B<type_a, type_b, Context>(Input(0).count(), Xdata, Ydata, ctx()); \
         } else { \
             TIndex count = Output(0)->count(); \
             auto* Xdata = Output(0)->template data<type_a, Context>(); \
             auto* Cdata = ws()->template caches<type_b, Context>({ count })[0]; \
-            kernel::TypeA2B<type_a, type_b, Context>(count, Xdata, Cdata); \
+            kernel::TypeA2B<type_a, type_b, Context>(count, Xdata, Cdata, ctx()); \
             auto* Ydata = Output(0)->template mutable_data<type_b, Context>(); \
-            ctx().template Copy<type_b, Context, Context>(count, Ydata, Cdata); \
+            ctx()->template Copy<type_b, Context, Context>(count, Ydata, Cdata); \
         } \
         return; \
     }

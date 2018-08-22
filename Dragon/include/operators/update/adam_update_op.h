@@ -24,7 +24,7 @@ class AdamUpdateOp final : public UpdateOpBase<Context> {
     USE_OPERATOR_FUNCTIONS;
     USE_UPDATER_FUNCTIONS(Context);
 
-    void ComputeRunWithFloat() override;
+    void ComputeRunWithFloat32() override;
     void ComputeRunWithFloat16() override;
 
  protected:

@@ -37,7 +37,8 @@ class GraphBase {
 
     virtual bool Run(
         const string&           include,
-        const string&           exclude) = 0;
+        const string&           exclude,
+        const int               stream_id = 1) = 0;
 
     inline string name() const { return name_; }
 
@@ -58,7 +59,8 @@ class Graph final : public GraphBase {
 
     bool Run(
         const string&           include,
-        const string&           exclude) override;
+        const string&           exclude,
+        const int               stream_id = 1) override;
 
     GraphDef Prune(const GraphDef& meta_graph);
     GraphDef MakeUpdate(const GraphDef& meta_graph);

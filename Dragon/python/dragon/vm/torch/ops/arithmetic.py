@@ -13,7 +13,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-
 from dragon.vm.torch.tensor import Tensor
 from dragon.vm.torch.ops.primitive import MakeContext, WrapScalar
 from dragon.vm.torch.ops.factory import get_module
@@ -26,7 +25,6 @@ def _fundamental(input, value, op='Add', out=None):
             raise TypeError('Type of value should be numerical, got {}.'
                     .format(type(value)))
         value = WrapScalar(value, input._dtype, input._ctx)
-
     ctx = MakeContext(inputs=[input, value])
     key = 'torch/ops/{}/{}:{}'.format(op.lower(), ctx[0].lower(), ctx[1])
     module = get_module(Fundamental, key, ctx, op_type=op)

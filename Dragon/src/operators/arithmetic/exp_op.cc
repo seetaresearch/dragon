@@ -8,7 +8,7 @@ template <class Context> template <typename T>
 void ExpOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Exp<T, Context>(Output(0)->count(), Xdata, Ydata);
+    math::Exp<T, Context>(Output(0)->count(), Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -30,7 +30,8 @@ void ExpGradientOp<Context>::RunWithType() {
     auto* Ydata = Input(0).template data<T, Context >();
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    math::Mul<T, Context>(Output(0)->count(), dYdata, Ydata, dXdata);
+    math::Mul<T, Context>(Output(0)->count(),
+        dYdata, Ydata, dXdata, ctx());
 }
 
 template <class Context>

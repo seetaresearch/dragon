@@ -23,20 +23,20 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
         if (!states_initialized) {
             states_initialized = true;
             CUDNN_CHECK(cudnnDropoutGetStatesSize(
-                ctx().cudnn_handle(), &states_size));
+                ctx()->cudnn_handle(), &states_size));
             std::lock_guard<std::mutex> lk(CUDAContext::mutex());
             Tensor* states = ws()->CreateTensor("/share/cudnn/dropout:" +
                 dragon_cast<string, unsigned long long>(random_seed) + "/states");
             if (states->count() > 0) {
                 auto* Sdata = states->template mutable_data<uint8_t, Context>();
                 CUDNN_CHECK(cudnnRestoreDropoutDescriptor(
-                    dropout_desc, ctx().cudnn_handle(), dropout_ratio,
+                    dropout_desc, ctx()->cudnn_handle(), dropout_ratio,
                         Sdata, states_size, random_seed));
             } else {
                 states->Reshape({ (TIndex)states_size });
                 auto* Sdata = states->template mutable_data<uint8_t, Context>();
                 CUDNN_CHECK(cudnnSetDropoutDescriptor(
-                    dropout_desc, ctx().cudnn_handle(), dropout_ratio,
+                    dropout_desc, ctx()->cudnn_handle(), dropout_ratio,
                         Sdata, states_size, random_seed));
             }
         }
@@ -48,7 +48,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
     //  setup rnn
 #if CUDNN_VERSION_MIN(7, 0, 0)
     CUDNN_CHECK(cudnnSetRNNDescriptor(
-        ctx().cudnn_handle(), rnn_desc,
+        ctx()->cudnn_handle(), rnn_desc,
             hidden_size, num_layers,
                 dropout_desc,
                     rnn_input_mode, rnn_direction, rnn_mode,
@@ -68,7 +68,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
     xs_desc->Set<T>({ batch_size, input_dim, 1 }, { input_dim, 1, 1 });
     ys_desc.reset(new cudnnTensorDescriptors(seq_length));
     ys_desc->Set<T>({ batch_size, output_dim, 1 }, { output_dim, 1, 1 });
-    CUDNN_CHECK(cudnnGetRNNWorkspaceSize(ctx().cudnn_handle(),
+    CUDNN_CHECK(cudnnGetRNNWorkspaceSize(ctx()->cudnn_handle(),
         rnn_desc, seq_length, xs_desc->descs(), &workspace_size));
     output_dims = { seq_length, batch_size, output_dim };
 
@@ -82,7 +82,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
     //  setup packed weights
     size_t weights_size; TIndex weights_count;
     CUDNN_CHECK(cudnnGetRNNParamsSize(
-        ctx().cudnn_handle(), rnn_desc, xs_desc->descs()[0],
+        ctx()->cudnn_handle(), rnn_desc, xs_desc->descs()[0],
             &weights_size, CUDNNType<T>::type));
     weights_count = (TIndex)weights_size / sizeof(T);
     CHECK_EQ(weights_count, Input(1).count())
@@ -96,7 +96,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
 
     //  setup rnn workspace
     CUDNN_CHECK(cudnnGetRNNWorkspaceSize(
-        ctx().cudnn_handle(), rnn_desc, seq_length,
+        ctx()->cudnn_handle(), rnn_desc, seq_length,
             xs_desc->descs(), &workspace_size));
 }
 
@@ -122,7 +122,7 @@ void CuDNNRecurrentOp<Context>::RunWithType() {
 
     auto* WSdata = ws()->template caches<Context>({ workspace_size })[0];
 
-    auto handle = ctx().cudnn_handle();
+    auto handle = ctx()->cudnn_handle();
 
     if (phase() == "TRAIN") {
         CUDNN_CHECK(cudnnGetRNNTrainingReserveSize(handle,
@@ -157,8 +157,12 @@ void CuDNNRecurrentOp<Context>::RunWithType() {
 
 template <class Context>
 void CuDNNRecurrentOp<Context>::RunOnDevice() {
+    ctx()->set_stream_id(0);  //  enforce default stream
+
     if (XIsType(Input(0), float)) RunWithType<float>();
+#ifdef WITH_CUDA_FP16
     else if (XIsType(Input(0), float16)) RunWithType<float16>();
+#endif
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
@@ -182,7 +186,7 @@ void CuDNNRecurrentGradientOp<Context>::RunWithType() {
 
     auto* WSdata = ws()->template caches<Context>({ workspace_size })[0];
     //  check the reserve space
-    CUDNN_CHECK(cudnnGetRNNTrainingReserveSize(ctx().cudnn_handle(),
+    CUDNN_CHECK(cudnnGetRNNTrainingReserveSize(ctx()->cudnn_handle(),
         rnn_desc, seq_length, xs_desc->descs(), &reserve_size));
     auto* reserveT = ws()->GetTensor("/mnt/" + anchor() + "/rnn/reserve");
     CHECK_EQ(reserve_size, reserveT->nbytes());
@@ -192,7 +196,7 @@ void CuDNNRecurrentGradientOp<Context>::RunWithType() {
     auto* RSdata = reserveT->template data<uint8_t, Context>();
 #endif
 
-    auto handle = ctx().cudnn_handle();
+    auto handle = ctx()->cudnn_handle();
 
     if (Output(0)->name() != "ignore" ||
             Output(1)->name() != "ignore" ||
@@ -228,13 +232,17 @@ void CuDNNRecurrentGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void CuDNNRecurrentGradientOp<Context>::RunOnDevice() {
+    ctx()->set_stream_id(0);  //  enforce default stream
+
     Output(0)->ReshapeLike(Input(0));  // dX
     Output(1)->ReshapeLike(Input(1));  // dW
     Output(2)->ReshapeLike(Input(2));  // dHx
     Output(3)->ReshapeLike(Input(3));  // dCx
 
     if (XIsType(Input(0), float)) RunWithType<float>();
+#ifdef WITH_CUDA_FP16
     else if (XIsType(Input(0), float16)) RunWithType<float16>();
+#endif
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 

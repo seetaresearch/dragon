@@ -37,12 +37,14 @@ inline PyObject* NoGradientOperatorsCC(PyObject* self, PyObject* args) {
 inline PyObject* RunOperatorCC(PyObject* self, PyObject* args) {
     PyObject* op_str;
     if (!PyArg_ParseTuple(args, "S", &op_str)) {
-        PyErr_SetString(PyExc_ValueError, "Excepted a serialized string of OperatorDef.");
+        PyErr_SetString(PyExc_ValueError,
+            "Excepted a serialized string of OperatorDef.");
         return nullptr;
     }
     OperatorDef op_def;
     if (!op_def.ParseFromString(PyBytes_AsStringEx(op_str))) {
-        PyErr_SetString(PyExc_RuntimeError, "Failed to parse the OperatorDef.");
+        PyErr_SetString(PyExc_RuntimeError,
+            "Failed to parse the OperatorDef.");
         return nullptr;
     }
     ws()->RunOperator(op_def);
@@ -52,7 +54,8 @@ inline PyObject* RunOperatorCC(PyObject* self, PyObject* args) {
 inline PyObject* RunOperatorsCC(PyObject* self, PyObject* args) {
     PyObject* py_ops;
     if (!PyArg_ParseTuple(args, "O", &py_ops)) {
-        PyErr_SetString(PyExc_ValueError, "Excepted a list of serialized string of OperatorDef.");
+        PyErr_SetString(PyExc_ValueError,
+            "Excepted a list of serialized string of OperatorDef.");
         return nullptr;
     }
     OperatorDef op_def;
@@ -67,12 +70,14 @@ inline PyObject* RunOperatorsCC(PyObject* self, PyObject* args) {
 inline PyObject* CreatePersistentOpCC(PyObject* self, PyObject* args) {
     PyObject* op_str;
     if (!PyArg_ParseTuple(args, "S", &op_str)) {
-        PyErr_SetString(PyExc_ValueError, "Excepted a serialized string of OperatorDef.");
+        PyErr_SetString(PyExc_ValueError,
+            "Excepted a serialized string of OperatorDef.");
         return nullptr;
     }
     OperatorDef op_def;
     if (!op_def.ParseFromString(PyBytes_AsStringEx(op_str))) {
-        PyErr_SetString(PyExc_RuntimeError, "Failed to parse the OperatorDef.");
+        PyErr_SetString(PyExc_RuntimeError,
+            "Failed to parse the OperatorDef.");
         return nullptr;
     }
     ws()->CreatePersistentOp(op_def);
@@ -82,9 +87,11 @@ inline PyObject* CreatePersistentOpCC(PyObject* self, PyObject* args) {
 inline PyObject* RunPersistentOpCC(PyObject* self, PyObject* args) {
     char* key, *anchor;
     PyObject* py_inputs, *py_outputs;
-    if (!PyArg_ParseTuple(args, "ssOO", &key, &anchor, &py_inputs, &py_outputs)) {
-        PyErr_SetString(PyExc_ValueError, "Excepted a persistent key, anchor, " 
-                                          "list of inputs and outputs.");
+    if (!PyArg_ParseTuple(args, "ssOO",
+            &key, &anchor, &py_inputs, &py_outputs)) {
+        PyErr_SetString(PyExc_ValueError, 
+            "Excepted a persistent key, anchor, "
+            "list of inputs and outputs.");
         return nullptr;
     }
     vector<string> inputs, outputs;

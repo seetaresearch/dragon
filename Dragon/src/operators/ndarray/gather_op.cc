@@ -12,11 +12,11 @@ void GatherOp<Context>::RunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
     kernel::CanonicalAxis<int, Context>(
-        Input(1).count(), x_slice_dim, indices);
+        Input(1).count(), x_slice_dim, indices, ctx());
 
-    kernel::Gather<T, Context>(
-        Output(0)->count(), outer_dim, inner_dim,
-            x_slice_dim, y_slice_dim, indices, Xdata, Ydata);
+    kernel::Gather<T, Context>(Output(0)->count(),
+        outer_dim, inner_dim, x_slice_dim, y_slice_dim,
+            indices, Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -46,13 +46,18 @@ template <class Context> template <typename T>
 void GatherGradientOp<Context>::RunWithType() {
     auto* indices = Input(1).template data<int, Context>();
     auto* dYdata = Input(-1).template data<T, Context>();
-    auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
-    if (!acc_grad) math::Set<T, Context>(Output(0)->count(), 0, dXdata);
+    T* dXdata = nullptr;
+    if (!acc_grad) {
+        dXdata = Output(0)->template mutable_data<T, Context>();
+        math::Set<T, Context>(Output(0)->count(), 0, dXdata, ctx());
+    } else {
+        dXdata = Output(0)->template mutable_data<T, Context>(ctx());
+    }
 
-    kernel::GatherGrad<T, Context>(
-        Input(-1).count(), outer_dim, inner_dim,
-            x_slice_dim, y_slice_dim, indices, dYdata, dXdata);
+    kernel::GatherGrad<T, Context>(Input(-1).count(),
+        outer_dim, inner_dim, x_slice_dim, y_slice_dim,
+            indices, dYdata, dXdata, ctx());
 }
 
 template <class Context>

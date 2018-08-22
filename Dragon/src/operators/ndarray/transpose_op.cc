@@ -14,7 +14,7 @@ void TransposeOp<Context>::RunWithType() {
 
     kernel::Transpose<T, Context>(
         Output(0)->count(), (int)Output(0)->ndim(),
-            ORdata, OSdata, NSdata, Xdata, Ydata);
+            ORdata, OSdata, NSdata, Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -75,7 +75,7 @@ void TransposeGradientOp<Context>::RunWithType() {
 
     kernel::TransposeGrad<T, Context>(
         Input(-1).count(), order->count(),
-            ORdata, OSdata, NSdata, dYdata, dXdata);
+            ORdata, OSdata, NSdata, dYdata, dXdata, ctx());
 }
 
 template <class Context>

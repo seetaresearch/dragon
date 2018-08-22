@@ -23,7 +23,7 @@ void InnerProductOp<Context>::TransRunWithType() {
         CblasNoTrans, CblasTrans,
             M, num_output, K,
                 1.0, Xdata, Wdata,
-                    0.0, Ydata, &ctx());
+                    0.0, Ydata, ctx());
 
     if (InputSize() > 2) {
         DECLARE_MULTIPLIER(multiplier, M);
@@ -32,7 +32,7 @@ void InnerProductOp<Context>::TransRunWithType() {
             CblasNoTrans, CblasNoTrans,
                 M, num_output, 1,
                     1.0, multiplier, Bdata,
-                        1.0, Ydata, &ctx());
+                        1.0, Ydata, ctx());
     }
 }
 
@@ -55,7 +55,7 @@ void InnerProductOp<Context>::NoTransRunWithType() {
         CblasNoTrans, CblasNoTrans,
             M, num_output, K,
                 1.0, Xdata, Wdata,
-                    0.0, Ydata, &ctx());
+                    0.0, Ydata, ctx());
 
     if (InputSize() > 2) {
         DECLARE_MULTIPLIER(multiplier, M);
@@ -64,7 +64,7 @@ void InnerProductOp<Context>::NoTransRunWithType() {
             CblasNoTrans, CblasNoTrans,
                 M, num_output, 1,
                     1.0, multiplier, Bdata,
-                        1.0, Ydata, &ctx());
+                        1.0, Ydata, ctx());
     }
 }
 
@@ -102,30 +102,30 @@ void InnerProductGradientOp<Context>::RunWithType() {
 
     if (Output(1)->name() != "ignore") {
         Output(1)->ReshapeLike(Input(1));
-        auto* dWdata = Output(1)->template mutable_data<T, Context>();
+        auto* dWdata = Output(1)->template mutable_data<T, Context>(ctx());
         if (TransW) {
             math::Gemm<T, Context>(
                 CblasTrans, CblasNoTrans,
                     num_output, K, M,
                         1.0, dYdata, Xdata,
-                            1.0, dWdata, &ctx());
+                            1.0, dWdata, ctx());
         } else {
             math::Gemm<T, Context>(
                 CblasTrans, CblasNoTrans,
                     K, num_output, M,
                         1.0, Xdata, dYdata,
-                            1.0, dWdata, &ctx());
+                            1.0, dWdata, ctx());
         }
     }
 
     if (Output(2)->name() != "ignore") {
         DECLARE_MULTIPLIER(multiplier, M);
         Output(2)->Reshape({ num_output });
-        auto* dBdata = Output(2)->template mutable_data<T, Context>();
+        auto* dBdata = Output(2)->template mutable_data<T, Context>(ctx());
         math::Gemv<T, Context>(
             CblasTrans, M, num_output,
                 1.0, dYdata, multiplier,
-                    1.0, dBdata, &ctx());
+                    1.0, dBdata, ctx());
     }
 
     if (Output(0)->name() != "ignore") {
@@ -136,13 +136,13 @@ void InnerProductGradientOp<Context>::RunWithType() {
                 CblasNoTrans, CblasNoTrans,
                     M, K, num_output,
                         1.0, dYdata, Wdata,
-                            0.0, dXdata, &ctx());
+                            0.0, dXdata, ctx());
         } else {
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasTrans,
                     M, K, num_output,
                         1.0, dYdata, Wdata,
-                            0.0, dXdata, &ctx());
+                            0.0, dXdata, ctx());
         }
     }
 }

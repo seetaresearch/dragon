@@ -29,9 +29,17 @@ namespace dragon {
 
 #ifdef WITH_CUDA
 
-static const int CUDA_THREADS = 1024;
-//  We do have a server with 10 GPUs :-)
-#define CUDA_MAX_DEVICES 10
+//  The number of cuda threads to use. We set it to
+//  1024 which would work for compute capability 2.x
+//  Set it to 512 if using compute capability 1.x
+const int CUDA_THREADS = 1024;
+
+//  The maximum number of blocks to use in the default kernel call. We set it to
+//  65535 which would work for compute capability 2.x (where 65536 is the limit)
+const int CUDA_MAX_BLOCKS = 65535;
+
+//  You really need a NVIDIA DGX-2 !!! :-)
+#define CUDA_MAX_DEVICES 16
 
 #define CUDA_VERSION_MIN(major, minor, patch) \
     (CUDA_VERSION >= (major * 1000 + minor * 100 + patch))
@@ -67,12 +75,16 @@ static const int CUDA_THREADS = 1024;
   } while (0)
 #endif  // WITH_MPI_NCCL
 
-#define CUDA_KERNEL_LOOP(i, n) \
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; \
+#define CUDA_1D_KERNEL_LOOP(i, n) \
+  for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; \
        i < n; i += blockDim.x * gridDim.x)
 
 inline int CUDA_BLOCKS(const int N) {
-    return (N + CUDA_THREADS - 1) / CUDA_THREADS;
+    return std::max(
+        std::min(
+            (N + CUDA_THREADS - 1) / CUDA_THREADS,
+            CUDA_MAX_BLOCKS
+        ), 1);
 }
 
 #if CUDA_VERSION_MAX(9, 0, 0)

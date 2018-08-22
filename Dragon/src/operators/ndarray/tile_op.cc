@@ -22,7 +22,7 @@ void TileOp<Context>::TileRunWithType() {
 
     kernel::Tile<T, Context>(dest->count(),
         outer_dim, ex_inner_dim,
-            multiple, Xdata, Ydata);
+            multiple, Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -35,7 +35,7 @@ void TileOp<Context>::RunOnDevice() {
     //  do nothing 
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(0));
-        Output(0)->template CopyFrom<Context>(Input(0));
+        Output(0)->template CopyFrom<Context>(Input(0), ctx());
         return;
     }
 
@@ -48,6 +48,7 @@ void TileOp<Context>::RunOnDevice() {
         axis = task.second; multiple = task.first;
         if (XIsType(Input(0), float)) TileRunWithType<float>();
         else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+        ctx()->FinishDeviceCompution();
         //  allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
@@ -82,7 +83,7 @@ void TileGradientOp<Context>::TileRunWithType() {
 
     kernel::TileGrad<T, Context>(
         dest->count(), outer_dim, ex_inner_dim,
-            multiple, dYdata, dXdata, &ctx());
+            multiple, dYdata, dXdata, ctx());
 }
 
 template <class Context>
@@ -96,7 +97,7 @@ void TileGradientOp<Context>::RunOnDevice() {
     //  do nothing 
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(-1));
-        Output(0)->template CopyFrom<Context>(Input(-1));
+        Output(0)->template CopyFrom<Context>(Input(-1), ctx());
         return;
     }
 
@@ -109,6 +110,7 @@ void TileGradientOp<Context>::RunOnDevice() {
         axis = task.second; multiple = task.first;
         if (XIsType(Input(0), float)) TileRunWithType<float>();
         else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+        ctx()->FinishDeviceCompution();
         //  allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {

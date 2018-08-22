@@ -9,7 +9,7 @@ void RDivOp<Context>::EltwiseRunWithType() {
     auto* x1 = Input(0).template data<T, Context>();
     auto* x2 = Input(1).template data<T, Context>();
     auto* y = Output(0)->template mutable_data<T, Context>();
-    math::Div<T, Context>(Output(0)->count(), x1, x2, y);
+    math::Div<T, Context>(Output(0)->count(), x1, x2, y, ctx());
 }
 
 template <class Context> template <typename T>
@@ -34,8 +34,8 @@ void RDivOp<Context>::BroadcastRunWithType(int type) {
             CblasNoTrans, CblasNoTrans,
                 outer_dim, inner_dim, 1,
                     1.0, multiplier, x1,
-                        0.0, c, &ctx());
-        math::Div<T, Context>(Output(0)->count(), c, x2, y);
+                        0.0, c, ctx());
+        math::Div<T, Context>(Output(0)->count(), c, x2, y, ctx());
     } else if (type == 2) {
         outer_dim = Input(1).dim(0);
         inner_dim = Input(1).count(1);
@@ -44,8 +44,8 @@ void RDivOp<Context>::BroadcastRunWithType(int type) {
             CblasNoTrans, CblasNoTrans,
                 outer_dim, inner_dim, 1,
                     1.0, x1, multiplier,
-                        0.0, c, &ctx());
-        math::Div<T, Context>(Output(0)->count(), c, x2, y);
+                        0.0, c, ctx());
+        math::Div<T, Context>(Output(0)->count(), c, x2, y, ctx());
     }
 }
 
@@ -82,16 +82,16 @@ void RDivGradientOp<Context>::EltwiseRunWithType() {
         auto* x2 = Input(1).template data<T, Context>();
         auto* dx2 = Output(1)->template mutable_data<T, Context>();
         auto* c = ws()->template caches<T, Context>({ X1->count() })[0];
-        math::Mul<T, Context>(X1->count(), dy, x1, c); // dY * X1
-        math::Square<T, Context>(X2->count(), x2, dx2); // X2^{2}
-        math::Inv<T, Context>(X2->count(), -1, dx2, dx2); // -1 / X2^{2}
-        math::Mul<T, Context>(X2->count(), c, dx2, dx2);
+        math::Mul<T, Context>(X1->count(), dy, x1, c, ctx()); // dY * X1
+        math::Square<T, Context>(X2->count(), x2, dx2, ctx()); // X2^{2}
+        math::Inv<T, Context>(X2->count(), -1, dx2, dx2, ctx()); // -1 / X2^{2}
+        math::Mul<T, Context>(X2->count(), c, dx2, dx2, ctx());
     }
 
     if (Output(0)->name() != "ignore") {
         auto* x2 = Input(1).template data<T, Context>();
         auto* dx1 = Output(0)->template mutable_data<T, Context>();
-        math::Div<T, Context>(X1->count(), dy, x2, dx1);
+        math::Div<T, Context>(X1->count(), dy, x2, dx1, ctx());
     }
 }
 
@@ -116,19 +116,19 @@ void RDivGradientOp<Context>::BroadcastRunWithType(int type) {
         auto* x2 = Input(1).template data<T, Context>();
         auto* dx1 = Output(0)->template mutable_data<T, Context>();
         auto* c = ws()->template caches<T, Context>({ X2->count() })[0];
-        math::Div<T, Context>(X2->count(), dy, x2, c);
+        math::Div<T, Context>(X2->count(), dy, x2, c, ctx());
         if (type == 0 || type == 1) {
             DECLARE_MULTIPLIER(multiplier, outer_dim);
             math::Gemv<T, Context>(
                 CblasTrans, outer_dim, inner_dim,
                     1.0, c, multiplier,
-                        0.0, dx1, &ctx());
+                        0.0, dx1, ctx());
         } else if (type == 2) {
             DECLARE_MULTIPLIER(multiplier, inner_dim);
             math::Gemv<T, Context>(
                 CblasNoTrans, outer_dim, inner_dim,
                     1.0, c, multiplier,
-                        0.0, dx1, &ctx());
+                        0.0, dx1, ctx());
         }
     }
 
@@ -142,18 +142,18 @@ void RDivGradientOp<Context>::BroadcastRunWithType(int type) {
                 CblasNoTrans, CblasNoTrans,
                     outer_dim, inner_dim, 1,
                         -1.0, multiplier, x1,
-                            0.0, dx2, &ctx());
+                            0.0, dx2, ctx());
         } else if (type == 2) {
             DECLARE_MULTIPLIER(multiplier, inner_dim);
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
                     outer_dim, inner_dim, 1,
                         -1.0, x1, multiplier,
-                            0.0, dx2, &ctx());
+                            0.0, dx2, ctx());
         }
-        math::Mul<T, Context>(X2->count(), dy, dx2, dx2);
-        math::Div<T, Context>(X2->count(), dx2, x2, dx2);
-        math::Div<T, Context>(X2->count(), dx2, x2, dx2);
+        math::Mul<T, Context>(X2->count(), dy, dx2, dx2, ctx());
+        math::Div<T, Context>(X2->count(), dx2, x2, dx2, ctx());
+        math::Div<T, Context>(X2->count(), dx2, x2, dx2, ctx());
     }
 }
 

@@ -53,7 +53,8 @@ template<> void Elu<float, CPUContext>(
     const int               count,
     const float             alpha,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -68,7 +69,8 @@ template<> void EluGrad<float, CPUContext>(
     const float             alpha,
     const float*            dy,
     const float*            y,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -89,7 +91,8 @@ template<> void PRelu<float, CPUContext>(
     const string&           data_format,
     const float*            x,
     const float*            w,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     if (channel_shared) {
 #ifdef WITH_OMP
         #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
@@ -130,7 +133,8 @@ template<> void PReluGrad<float, CPUContext>(
     const float*            dy,
     const float*            x,
     const float*            w,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     if (channel_shared) {
 #ifdef WITH_OMP
         #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
@@ -184,9 +188,10 @@ template<> void PReluWGrad<float, CPUContext>(
         }
     }
     if (channel_shared) {
-        float w_sum = math::Dot<float, CPUContext>(
-            channels * dim, bcast_dw, multiplier, ctx);
-        math::AddScalar<float, CPUContext>(1, w_sum, dw);
+        float w_sum;
+        math::Dot<float, CPUContext>(channels * dim,
+            bcast_dw, multiplier, &w_sum, ctx);
+        math::AddScalar<float, CPUContext>(1, w_sum, dw, ctx);
     } else {
         if (data_format == "NCHW") {
             math::Gemv<float, CPUContext>(
@@ -208,7 +213,8 @@ template<> void Relu<float, CPUContext>(
     const int               count,
     const float             slope,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -221,7 +227,8 @@ template<> void Relu<float16, CPUContext>(
     const int               count,
     const float             slope,
     const float16*          x,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -230,7 +237,8 @@ template<> void ReluGrad<float, CPUContext>(
     const float             slope,
     const float*            dy,
     const float*            y,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -244,7 +252,8 @@ template<> void ReluGrad<float, CPUContext>(
 template<> void SElu<float, CPUContext>(
     const int               count,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -258,7 +267,8 @@ template<> void SEluGrad<float, CPUContext>(
     const int               count,
     const float*            dy,
     const float*            y,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -276,7 +286,8 @@ T _sigmoid(T x) { return T(1) / (T(1) + exp(-x)); }
 template<> void Sigmoid<float, CPUContext>(
     const int               count,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -287,7 +298,8 @@ template<> void SigmoidGrad<float, CPUContext>(
     const int               count,
     const float*            dy,
     const float*            y,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -310,7 +322,7 @@ template<> void Softmax<float, CPUContext>(
     CPUContext*             ctx) {
     const int dim = count / outer_dim;
     for (int i = 0; i < outer_dim; ++i) {
-       CPUContext::Copy<float, CPUContext, CPUContext>(
+       ctx->Copy<float, CPUContext, CPUContext>(
             inner_dim, scale, x + i*dim);
         for (int j = 0; j < classes; ++j) {
             for (int k = 0; k < inner_dim; k++)
@@ -322,13 +334,13 @@ template<> void Softmax<float, CPUContext>(
             CblasNoTrans, CblasNoTrans, 
                 classes, inner_dim, 1,
                     -1.0, sum_multiplier, scale, 1.0, y, ctx);
-        math::Exp<float, CPUContext>(dim, y, y);
+        math::Exp<float, CPUContext>(dim, y, y, ctx);
         math::Gemv<float, CPUContext>(
             CblasTrans, classes, inner_dim,
                 1.0, y, sum_multiplier,
                     0.0, scale, ctx);
         for (int j = 0; j < classes; ++j) {
-            math::Div<float, CPUContext>(inner_dim, y, scale, y);
+            math::Div<float, CPUContext>(inner_dim, y, scale, y, ctx);
             y += inner_dim;
         }
     }
@@ -348,17 +360,16 @@ template<> void SoftmaxGrad<float, CPUContext>(
     const int dim = count / outer_dim;
     for (int i = 0; i < outer_dim; ++i) {
         for (int k = 0; k < inner_dim; ++k)
-            scale[k] = math::StridedDot<float, CPUContext>(
-                classes,
-                    dx + i * dim + k, inner_dim,
-                        y + i*dim + k, inner_dim, ctx);
+            math::StridedDot<float, CPUContext>(classes,
+                dx + i * dim + k, inner_dim,
+                    y + i * dim + k, inner_dim, scale + k, ctx);
          math::Gemm<float, CPUContext>(
              CblasNoTrans, CblasNoTrans,
                 classes, inner_dim, 1,
                     -1.0, sum_multiplier, scale,
                         1.0, dx + i * dim, ctx);
     }
-    math::Mul<float, CPUContext>(count, dx, y, dx);
+    math::Mul<float, CPUContext>(count, dx, y, dx, ctx);
 }
 
 /******************** activation.tanh ********************/
@@ -366,7 +377,8 @@ template<> void SoftmaxGrad<float, CPUContext>(
 template<> void Tanh<float, CPUContext>(
     const int               count,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -379,7 +391,8 @@ template<> void TanhGrad<float, CPUContext>(
     const int               count,
     const float*            dy,
     const float*            y,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -467,7 +480,8 @@ template <> void Clip<float, CPUContext>(
     const float             high,
     const float*            x,
     float*                  mask,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -484,7 +498,8 @@ template <> void Equal<float, CPUContext>(
     const int               count,
     const float*            a,
     const float*            b,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -497,7 +512,8 @@ template <> void Equal<float, CPUContext>(
 template<> void AbsGrad<float, CPUContext>(
     const int               count,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -651,7 +667,8 @@ template<> void SmoothL1<float, CPUContext>(
     const int               count,
     const float             beta,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -667,7 +684,8 @@ template<> void SmoothL1Grad<float, CPUContext>(
     const int               count,
     const float             beta,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -686,7 +704,8 @@ template <> void SoftmaxCrossEntropy<float, CPUContext>(
     const int               count,
     const float*            prob,
     const float*            target,
-    float*                  loss) {
+    float*                  loss,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -834,6 +853,20 @@ template <> void SparseSoftmaxCrossEntropy<float, float, CPUContext>(
                 losses, flags);
 }
 
+template <> void SparseSoftmaxCrossEntropy<float16, float, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float16*          prob,
+    const float*            labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    CPUContext*             ctx) {
+    CPU_FP16_NOT_SUPPORTED;
+}
+
 template <> void SparseSoftmaxCrossEntropy<float, int64_t, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
@@ -849,6 +882,20 @@ template <> void SparseSoftmaxCrossEntropy<float, int64_t, CPUContext>(
         outer_dim, axis_dim, inner_dim,
             prob, labels, ignores, num_ignores,
                 losses, flags);
+}
+
+template <> void SparseSoftmaxCrossEntropy<float16, int64_t, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float16*          prob,
+    const int64_t*          labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    CPUContext*             ctx) {
+    CPU_FP16_NOT_SUPPORTED;
 }
 
 template <typename Tx, typename Ty>
@@ -897,6 +944,20 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, float, CPUContext>(
                 num_ignores, dx, flags);
 }
 
+template<> void SparseSoftmaxCrossEntropyGrad<float16, float, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float16*          prob,
+    const float*            labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float16*                dx,
+    float*                  flags,
+    CPUContext*             ctx) {
+    CPU_FP16_NOT_SUPPORTED;
+}
+
 template<> void SparseSoftmaxCrossEntropyGrad<float, int64_t, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
@@ -912,6 +973,20 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, int64_t, CPUContext>(
         outer_dim, axis_dim, inner_dim,
             prob, labels, ignores,
                 num_ignores, dx, flags);
+}
+
+template<> void SparseSoftmaxCrossEntropyGrad<float16, int64_t, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float16*          prob,
+    const int64_t*          labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float16*                dx,
+    float*                  flags,
+    CPUContext*             ctx) {
+    CPU_FP16_NOT_SUPPORTED;
 }
 
 /******************** misc.astype ********************/
@@ -936,7 +1011,8 @@ void _TypeA2B_v2(const int count, const Ta* a, Tb* b) {
     template <> void TypeA2B<type_a, type_b, CPUContext>( \
         const int           count, \
         const type_a*       a, \
-        type_b*             b) { \
+        type_b*             b, \
+        CPUContext*         ctx) { \
         _TypeA2B<type_a, type_b>(count, a, b); \
     }
 
@@ -944,7 +1020,8 @@ void _TypeA2B_v2(const int count, const Ta* a, Tb* b) {
     template <> void TypeA2B<type_a, type_b, CPUContext>( \
         const int           count, \
         const type_a*       a, \
-        type_b*             b) { \
+        type_b*             b, \
+        CPUContext*         ctx) { \
         _TypeA2B_v2<type_a, type_b>(count, a, b); \
     }
 
@@ -952,13 +1029,15 @@ void _TypeA2B_v2(const int count, const Ta* a, Tb* b) {
     template <> void TypeA2B<float16, type, CPUContext>( \
         const int           count, \
         const float16*      a, \
-        type*               b) { \
+        type*               b, \
+        CPUContext*         ctx) { \
         CPU_FP16_NOT_SUPPORTED; \
     } \
     template <> void TypeA2B<type, float16, CPUContext>( \
         const int           count, \
         const type*         a, \
-        float16*            b) { \
+        float16*            b, \
+        CPUContext*         ctx) { \
         CPU_FP16_NOT_SUPPORTED; \
     }
 
@@ -1039,7 +1118,8 @@ template <> void ImageData<float, float, CPUContext>(
     const float*            std_values,
     const string&           data_format,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     if (data_format == "NCHW") {
         _ImageData_NCHW<float, float>(
             N, C, H, W, mean_values, std_values, x, y);
@@ -1059,7 +1139,8 @@ template <> void ImageData<uint8_t, float, CPUContext>(
     const float*            std_values,
     const string&           data_format,
     const uint8_t*          x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     if (data_format == "NCHW") {
         _ImageData_NCHW<uint8_t, float>(
             N, C, H, W, mean_values, std_values, x, y);
@@ -1079,7 +1160,8 @@ template <> void ImageData<float, float16, CPUContext>(
     const float*            std_values,
     const string&           data_format,
     const float*            x,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -1093,7 +1175,8 @@ template <> void ImageData<uint8_t, float16, CPUContext>(
     const float*            std_values,
     const string&           data_format,
     const uint8_t*          x,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -1103,7 +1186,8 @@ template<> void Arange<float, CPUContext>(
     const int               count,
     const int               start,
     const int               step,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -1114,7 +1198,8 @@ template<> void Arange<int, CPUContext>(
     const int               count,
     const int               start,
     const int               step,
-    int*                    y) {
+    int*                    y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -1130,7 +1215,8 @@ template<> void Argmax<float, CPUContext>(
     const int               top_k,
     const float*            x,
     int64_t*                indices,
-    float*                  values) {
+    float*                  values,
+    CPUContext*             ctx) {
     vector<pair<float, int> > vec(axis_dim);
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
@@ -1158,7 +1244,8 @@ template<> void Argmin<float, CPUContext>(
     const int               top_k,
     const float*            x,
     int64_t*                indices,
-    float*                  values) {
+    float*                  values,
+    CPUContext*             ctx) {
     vector<pair<float, int> > vec(axis_dim);
 #ifdef WITH_OMP
 #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
@@ -1182,7 +1269,8 @@ template<> void Argmin<float, CPUContext>(
 template <> void CanonicalAxis<int, CPUContext>(
     const int               count,
     const int               dim,
-    int*                    y) {
+    int*                    y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -1198,7 +1286,8 @@ void _Gather(
     const int               y_slice_dim,
     const int*              indices,
     const T*                x,
-    T*                      y) {
+    T*                      y,
+    CPUContext*             ctx) {
     TIndex x_offset, y_offset, x_idx_offset, y_idx_offset;
     for (int i = 0; i < y_slice_dim; ++i) {
         y_idx_offset = i;
@@ -1206,7 +1295,7 @@ void _Gather(
         for (int n = 0; n < outer_dim; ++n) {
             x_offset = (n * x_slice_dim + x_idx_offset) * inner_dim;
             y_offset = (n * y_slice_dim + y_idx_offset) * inner_dim;
-            CPUContext::Copy<T, CPUContext, CPUContext>(
+            ctx->Copy<T, CPUContext, CPUContext>(
                 inner_dim, y + y_offset, x + x_offset);
         }
     }
@@ -1220,9 +1309,10 @@ template <> void Gather<float, CPUContext>(
     const int               y_slice_dim,
     const int*              indices,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     _Gather<float>(count, outer_dim, inner_dim,
-        x_slice_dim, y_slice_dim, indices, x, y);
+        x_slice_dim, y_slice_dim, indices, x, y, ctx);
 }
 
 template <> void Gather<int, CPUContext>(
@@ -1233,9 +1323,10 @@ template <> void Gather<int, CPUContext>(
     const int               y_slice_dim,
     const int*              indices,
     const int*              x,
-    int*                    y) {
+    int*                    y,
+    CPUContext*             ctx) {
     _Gather<int>(count, outer_dim, inner_dim,
-        x_slice_dim, y_slice_dim, indices, x, y);
+        x_slice_dim, y_slice_dim, indices, x, y, ctx);
 }
 
 template <typename T>
@@ -1247,7 +1338,8 @@ void _GatherGrad(
     const int               y_slice_dim,
     const int*              indices,
     const T*                dy,
-    T*                      dx) {
+    T*                      dx,
+    CPUContext*             ctx) {
     TIndex x_offset, y_offset, x_idx_offset, y_idx_offset;
     for (int i = 0; i < y_slice_dim; ++i) {
         y_idx_offset = i;
@@ -1256,7 +1348,7 @@ void _GatherGrad(
             x_offset = (n * x_slice_dim + x_idx_offset) * inner_dim;
             y_offset = (n * y_slice_dim + y_idx_offset) * inner_dim;
             math::Add<T, CPUContext>(inner_dim,
-                dy + y_offset, dx + x_offset, dx + x_offset);
+                dy + y_offset, dx + x_offset, dx + x_offset, ctx);
         }
     }
 }
@@ -1269,9 +1361,10 @@ template <> void GatherGrad<float, CPUContext>(
     const int               y_slice_dim,
     const int*              indices,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     _GatherGrad<float>(count, outer_dim, inner_dim,
-        x_slice_dim, y_slice_dim, indices, dy, dx);
+        x_slice_dim, y_slice_dim, indices, dy, dx, ctx);
 }
 
 template <> void GatherGrad<int, CPUContext>(
@@ -1282,9 +1375,10 @@ template <> void GatherGrad<int, CPUContext>(
     const int               y_slice_dim,
     const int*              indices,
     const int*              dy,
-    int*                    dx) {
+    int*                    dx,
+    CPUContext*             ctx) {
     _GatherGrad<int>(count, outer_dim, inner_dim,
-        x_slice_dim, y_slice_dim, indices, dy, dx);
+        x_slice_dim, y_slice_dim, indices, dy, dx, ctx);
 }
 
 /******************** ndarray.concat ********************/
@@ -1297,12 +1391,13 @@ template <> void Concat<float, CPUContext>(
     const int               y_concat_dim,
     const int               concat_offset,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     TIndex x_offset, y_offset;
     for (int n = 0; n < outer_dim; ++n) {
         x_offset = n * x_concat_dim * inner_dim;
         y_offset = (n * y_concat_dim + concat_offset) * inner_dim;
-        CPUContext::Copy<float, CPUContext, CPUContext>(
+        ctx->Copy<float, CPUContext, CPUContext>(
             x_concat_dim * inner_dim, y + y_offset, x + x_offset);
     }
 }
@@ -1315,12 +1410,13 @@ template <> void Concat<float16, CPUContext>(
     const int               y_concat_dim,
     const int               concat_offset,
     const float16*          x,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     TIndex x_offset, y_offset;
     for (int n = 0; n < outer_dim; ++n) {
         x_offset = n * x_concat_dim * inner_dim;
         y_offset = (n * y_concat_dim + concat_offset) * inner_dim;
-        CPUContext::Copy<float16, CPUContext, CPUContext>(
+        ctx->Copy<float16, CPUContext, CPUContext>(
             x_concat_dim * inner_dim, y + y_offset, x + x_offset);
     }
 }
@@ -1333,12 +1429,13 @@ template <> void ConcatGrad<float, CPUContext>(
     const int               y_concat_dim,
     const int               concat_offset,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     TIndex x_offset, y_offset;
     for (int n = 0; n < outer_dim; ++n) {
         x_offset = n * x_concat_dim * inner_dim;
         y_offset = (n * y_concat_dim + concat_offset) * inner_dim;
-        CPUContext::Copy<float, CPUContext, CPUContext>(
+        ctx->Copy<float, CPUContext, CPUContext>(
             x_concat_dim * inner_dim, dx + x_offset, dy + y_offset);
     }
 }
@@ -1351,12 +1448,13 @@ template <> void ConcatGrad<float16, CPUContext>(
     const int               y_concat_dim,
     const int               concat_offset,
     const float16*          dy,
-    float16*                dx) {
+    float16*                dx,
+    CPUContext*             ctx) {
     TIndex x_offset, y_offset;
     for (int n = 0; n < outer_dim; ++n) {
         x_offset = n * x_concat_dim * inner_dim;
         y_offset = (n * y_concat_dim + concat_offset) * inner_dim;
-        CPUContext::Copy<float16, CPUContext, CPUContext>(
+        ctx->Copy<float16, CPUContext, CPUContext>(
             x_concat_dim * inner_dim, dx + x_offset, dy + y_offset);
     }
 }
@@ -1371,7 +1469,8 @@ void _Crop1D(
     const int               inner_dim,
     const int               start,
     const T*                x,
-    T*                      y) {
+    T*                      y,
+    CPUContext*             ctx) {
     const int count_v2 = count / inner_dim;
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
@@ -1381,7 +1480,7 @@ void _Crop1D(
         const int o = idx / ex_dim;
         const T* x_ptr = x + (o * dim + ex_d + start) * inner_dim;
         T* y_ptr = y + (o * ex_dim + ex_d) * inner_dim;
-        CPUContext::Copy<T, CPUContext, CPUContext>(
+        ctx->Copy<T, CPUContext, CPUContext>(
             inner_dim, y_ptr, x_ptr);
     }
 }
@@ -1393,8 +1492,10 @@ template<> void Crop1D<int, CPUContext>(
     const int               inner_dim,
     const int               start,
     const int*              x,
-    int*                    y) {
-    _Crop1D<int>(count, dim, ex_dim, inner_dim, start, x, y);
+    int*                    y,
+    CPUContext*             ctx) {
+    _Crop1D<int>(count, dim, ex_dim,
+        inner_dim, start, x, y, ctx);
 }
 
 template<> void Crop1D<float, CPUContext>(
@@ -1404,8 +1505,10 @@ template<> void Crop1D<float, CPUContext>(
     const int               inner_dim,
     const int               start,
     const float*            x,
-    float*                  y) {
-    _Crop1D<float>(count, dim, ex_dim, inner_dim, start, x, y);
+    float*                  y,
+    CPUContext*             ctx) {
+    _Crop1D<float>(count, dim, ex_dim,
+        inner_dim, start, x, y, ctx);
 }
 
 template <typename T>
@@ -1417,7 +1520,8 @@ void _Crop1DGrad(
     const int               start,
     const int               end,
     const T*                dy,
-    T*                      dx) {
+    T*                      dx,
+    CPUContext*             ctx) {
     const int count_v2 = count / inner_dim;
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
@@ -1430,7 +1534,7 @@ void _Crop1DGrad(
             for (int i = 0; i < inner_dim; ++i) dx_ptr[i] = 0;
         } else {
             const T* dy_ptr = dy + (o * ex_dim + d - start) * inner_dim;
-            CPUContext::Copy<T, CPUContext, CPUContext>(
+            ctx->Copy<T, CPUContext, CPUContext>(
                 inner_dim, dx_ptr, dy_ptr);
         }
     }
@@ -1444,10 +1548,11 @@ template<> void Crop1DGrad<int, CPUContext>(
     const int               start,
     const int               end,
     const int*              dy,
-    int*                    dx) {
+    int*                    dx,
+    CPUContext*             ctx) {
     _Crop1DGrad<int>(
         count, dim, ex_dim, inner_dim,
-            start, end, dy, dx);
+            start, end, dy, dx, ctx);
 }
 
 template<> void Crop1DGrad<float, CPUContext>(
@@ -1458,10 +1563,11 @@ template<> void Crop1DGrad<float, CPUContext>(
     const int               start,
     const int               end,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     _Crop1DGrad<float>(
         count, dim, ex_dim, inner_dim,
-            start, end, dy, dx);
+            start, end, dy, dx, ctx);
 }
 
 /******************** ndarray.pad ********************/
@@ -1474,7 +1580,8 @@ template <> void ConstPad1D<float, CPUContext>(
     const int               pad_l,
     const float             value,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     const int count_v2 = count / inner_dim;
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
@@ -1488,7 +1595,7 @@ template <> void ConstPad1D<float, CPUContext>(
             for (int i = 0; i < inner_dim; ++i) y_ptr[i] = value;
         } else {
             const float* x_ptr = x + (o * dim + d) * inner_dim;
-            CPUContext::Copy<float, CPUContext, CPUContext>(
+            ctx->Copy<float, CPUContext, CPUContext>(
                 inner_dim, y_ptr, x_ptr);
         }
     }
@@ -1501,7 +1608,8 @@ template <> void ReflectPad1D<float, CPUContext>(
     const int               inner_dim,
     const int               pad_l,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     const int count_v2 = count / inner_dim;
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
@@ -1518,7 +1626,7 @@ template <> void ReflectPad1D<float, CPUContext>(
                 y_ptr[i] = x[(o * dim + d) * inner_dim + i];
         } else {
             const float* x_ptr = x + (o * dim + d) * inner_dim;
-            CPUContext::Copy<float, CPUContext, CPUContext>(
+            ctx->Copy<float, CPUContext, CPUContext>(
                 inner_dim, y_ptr, x_ptr);
         }
     }
@@ -1531,7 +1639,8 @@ template <> void EdgePad1D<float, CPUContext>(
     const int               inner_dim,
     const int               pad_l,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     const int count_v2 = count / inner_dim;
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
@@ -1546,7 +1655,7 @@ template <> void EdgePad1D<float, CPUContext>(
                 y_ptr[i] = x[(o * dim + d) * inner_dim + i];
         } else {
             const float* x_ptr = x + (o * dim + d) * inner_dim;
-            CPUContext::Copy<float, CPUContext, CPUContext>(
+            ctx->Copy<float, CPUContext, CPUContext>(
                 inner_dim, y_ptr, x_ptr);
         }
     }
@@ -1559,7 +1668,8 @@ template <> void ConstPad1DGrad<float, CPUContext>(
     const int               inner_dim,
     const int               pad_l,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     const int count_v2 = count / inner_dim;
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
@@ -1570,7 +1680,7 @@ template <> void ConstPad1DGrad<float, CPUContext>(
         const int ex_d = d + pad_l;
         const float* dy_ptr = dy + (o * ex_dim + ex_d) * inner_dim;
         float* dx_ptr = dx + (o * dim + d) * inner_dim;
-        CPUContext::Copy<float, CPUContext, CPUContext>(
+        ctx->Copy<float, CPUContext, CPUContext>(
             inner_dim, dx_ptr, dy_ptr);
     }
 }
@@ -1582,7 +1692,8 @@ template <> void ReflectPad1DGrad<float, CPUContext>(
     const int               inner_dim,
     const int               pad_l,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     for (int idx = 0; idx < count; ++idx) {
         const int i = idx % inner_dim;
         const int ex_d = (idx / inner_dim) % ex_dim;
@@ -1601,7 +1712,8 @@ template <> void EdgePad1DGrad<float, CPUContext>(
     const int               inner_dim,
     const int               pad_l,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     const int count_v2 = count / inner_dim;
     for (int idx = 0; idx < count_v2; ++idx) {
         const int ex_d = idx % ex_dim;
@@ -1613,7 +1725,7 @@ template <> void EdgePad1DGrad<float, CPUContext>(
                 dx[(o * dim + d) * inner_dim + i] += dy_ptr[i];
         } else {
             float* dx_ptr = dx + (o * dim + d) * inner_dim;
-            CPUContext::Copy<float, CPUContext, CPUContext>(
+            ctx->Copy<float, CPUContext, CPUContext>(
                 inner_dim, dx_ptr, dy_ptr);
         }
     }
@@ -1626,7 +1738,8 @@ template <> void OneHot<float, CPUContext>(
     const int               depth,
     const int               on_value,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -1643,7 +1756,8 @@ template<> void Sum<float, CPUContext>(
     const int               axis_dim,
     const int               inner_dim,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -1662,7 +1776,8 @@ template<> void SumGrad<float, CPUContext>(
     const int               inner_dim,
     const float             coeff,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -1682,14 +1797,15 @@ template <> void Repeat<float, CPUContext>(
     const int               inner_dim,
     const int               repeats,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
     for (int i = 0; i < outer_dim; ++i) {
         for (int j = 0; j < dim; ++j) {
             for (int k = 0; k < repeats; ++k) {
-                CPUContext::Copy<float, CPUContext, CPUContext>(
+                ctx->Copy<float, CPUContext, CPUContext>(
                     inner_dim, y, x);
                 y += inner_dim;
             }
@@ -1709,7 +1825,7 @@ template <> void RepeatGrad<float, CPUContext>(
     CPUContext*             ctx) {
     for (int i = 0; i < outer_dim; ++i) {
         for (int j = 0; j < dim; ++j) {
-            CPUContext::Copy<float, CPUContext, CPUContext>(
+            ctx->Copy<float, CPUContext, CPUContext>(
                 inner_dim, dx, dy);
             dy += inner_dim;
             for (int k = 1; k < repeats; ++k) {
@@ -1732,12 +1848,13 @@ template <> void Slice<float, CPUContext>(
     const int               y_slice_dim,
     const int               slice_offset,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     TIndex x_offset, y_offset;
     for (int n = 0; n < outer_dim; ++n) {
         x_offset = (n * x_slice_dim + slice_offset) * inner_dim;
         y_offset = n * y_slice_dim * inner_dim;
-        CPUContext::Copy<float, CPUContext, CPUContext>(
+        ctx->Copy<float, CPUContext, CPUContext>(
             y_slice_dim * inner_dim, y + y_offset, x + x_offset);
     }
 }
@@ -1750,12 +1867,13 @@ template <> void SliceGrad<float, CPUContext>(
     const int               y_slice_dim,
     const int               slice_offset,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     TIndex x_offset, y_offset;
     for (int n = 0; n < outer_dim; ++n) {
         x_offset = (n * x_slice_dim + slice_offset) * inner_dim;
         y_offset = n * y_slice_dim * inner_dim;
-        CPUContext::Copy<float, CPUContext, CPUContext>(
+        ctx->Copy<float, CPUContext, CPUContext>(
             y_slice_dim * inner_dim, dx + x_offset, dy + y_offset);
     }
 }
@@ -1768,10 +1886,11 @@ template <> void Tile<float, CPUContext>(
     const int               ex_inner_dim,
     const int               multiple,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     for (int i = 0; i < outer_dim; ++i) {
         for (int t = 0; t < multiple; ++t) {
-            CPUContext::Copy<float, CPUContext, CPUContext>(
+            ctx->Copy<float, CPUContext, CPUContext>(
                 ex_inner_dim, y, x);
             y += ex_inner_dim;
         }
@@ -1788,7 +1907,7 @@ template <> void TileGrad<float, CPUContext>(
     float*                  dx,
     CPUContext*             ctx) {
     for (int i = 0; i < outer_dim; ++i) {
-        CPUContext::Copy<float, CPUContext, CPUContext>(
+        ctx->Copy<float, CPUContext, CPUContext>(
             ex_inner_dim, dx, dy);
         dy += ex_inner_dim;
         for (int t = 1; t < multiple; ++t) {
@@ -1809,7 +1928,8 @@ template <> void Transpose<float, CPUContext>(
     const int*              old_steps,
     const int*              new_steps,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -1831,7 +1951,8 @@ template <> void Transpose<float16, CPUContext>(
     const int*              old_steps,
     const int*              new_steps,
     const float16*          x,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -1842,7 +1963,8 @@ template <> void TransposeGrad<float, CPUContext>(
     const int*              old_steps,
     const int*              new_steps,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
@@ -1864,7 +1986,8 @@ template <> void TransposeGrad<float16, CPUContext>(
     const int*              old_steps,
     const int*              new_steps,
     const float16*          dy,
-    float16*                dx) {
+    float16*                dx,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -1877,7 +2000,8 @@ template <> void LSTMCell<float, CPUContext>(
     const float*            cx,
     float*                  xact,
     float*                  c,
-    float*                  h) {
+    float*                  h,
+    CPUContext*             ctx) {
     float i, f, o, c_;
     int f_offset = C, o_offset = 2 * C, c_offset = 3 * C, x_offset = 4 * C;
     for (int n = 0; n < N; ++n) {
@@ -1903,7 +2027,8 @@ template <> void LSTMCellGrad<float, CPUContext>(
     const float*            dc,
     const float*            dh,
     float*                  dcx,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     float i, f, o, g, tanh_c, dcx_sum_term;
     int f_offset = C,
             o_offset = 2 * C,
@@ -1964,7 +2089,8 @@ template <> void AdamUpdate<float, CPUContext>(
     const float             eps,
     float*                  g,
     float*                  m,
-    float*                  v) {
+    float*                  v,
+    CPUContext*             ctx) {
     _AdamUpdate<float>(count, lr, beta1, beta2, eps, g, m, v);
 }
 
@@ -1976,7 +2102,8 @@ template <> void AdamUpdate<float16, CPUContext>(
     const float             eps,
     float16*                g,
     float16*                m,
-    float16*                v) {
+    float16*                v,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -2004,7 +2131,8 @@ template <> void NesterovUpdate<float, CPUContext>(
     const float             lr,
     const float             momentum,
     float*                  g,
-    float*                  h) {
+    float*                  h,
+    CPUContext*             ctx) {
     _NesterovUpdate<float>(count, lr, momentum, g, h);
 }
 
@@ -2013,7 +2141,8 @@ template <> void NesterovUpdate<float16, CPUContext>(
     const float             lr,
     const float             momentum,
     float16*                g,
-    float16*                h) {
+    float16*                h,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -2043,7 +2172,8 @@ template <> void RMSPropUpdate<float, CPUContext>(
     const float             decay,
     const float             eps,
     float*                  g,
-    float*                  h) {
+    float*                  h,
+    CPUContext*             ctx) {
     _RMSPropUpdate<float>(count, lr, decay, eps, g, h);
 }
 
@@ -2053,7 +2183,8 @@ template <> void RMSPropUpdate<float16, CPUContext>(
     const float             decay,
     const float             eps,
     float16*                g,
-    float16*                h) {
+    float16*                h,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -2080,7 +2211,8 @@ template <> void SGDUpdate<float, CPUContext>(
     const float             lr,
     const float             momentum,
     float*                  g,
-    float*                  h) {
+    float*                  h,
+    CPUContext*             ctx) {
     _SGDUpdate<float>(count, lr, momentum, g, h);
 }
 
@@ -2089,7 +2221,8 @@ template <> void SGDUpdate<float16, CPUContext>(
     const float             lr,
     const float             momentum,
     float16*                g,
-    float16*                h) {
+    float16*                h,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -2217,7 +2350,8 @@ template <> void BilinearResize<float, CPUContext>(
     const int               out_w,
     const string&           data_format,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     const float scale_h = (float)H / out_h;
     const float scale_w = (float)W / out_w;
     if (data_format == "NCHW") {
@@ -2326,10 +2460,10 @@ template <> void BilinearResizeGrad<float, CPUContext>(
     const int               out_w,
     const string&           data_format,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     const float scale_h = (float)H / out_h;
     const float scale_w = (float)W / out_w;
-    math::Set<float, CPUContext>(N * C * H * W, 0, dx);
     if (data_format == "NCHW") {
         _BilinearResizeGrad_NCHW<float>(
             N, C, H, W, out_h, out_w,
@@ -2439,7 +2573,8 @@ template <> void Im2Col2d<float, CPUContext>(
     const int               dilation_w,
     const string&           data_format,
     const float*            im,
-    float*                  col) {
+    float*                  col,
+    CPUContext*             ctx) {
     if (data_format == "NCHW") {
         const int count = (C * col_h * col_w);
         _Im2Col2d_NCHW<float>(
@@ -2471,8 +2606,9 @@ void _Col2Im2d_NCHW(
     const int               dilation_h,
     const int               dilation_w,
     const T*                col,
-    T*                      im) {
-    math::Set<float, CPUContext>(C * H * W, 0, im);
+    T*                      im,
+    CPUContext*             ctx) {
+    math::Set<float, CPUContext>(C * H * W, 0, im, ctx);
     const int im_offset = H * W;
     for (int c = 0; c < C; ++c, im += im_offset) {
         for (int kh = 0; kh < kernel_h; ++kh) {
@@ -2512,8 +2648,9 @@ void _Col2Im2d_NHWC(
     const int               dilation_h,
     const int               dilation_w,
     const T*                col,
-    T*                      im) {
-    math::Set<float, CPUContext>(C * H * W, 0, im);
+    T*                      im,
+    CPUContext*             ctx) {
+    math::Set<float, CPUContext>(C * H * W, 0, im, ctx);
     for (int output_h = 0; output_h < col_h; ++output_h) {
         const int base_h = -pad_h + stride_h * output_h;
         for (int output_w = 0; output_w < col_w; ++output_w) {
@@ -2552,19 +2689,20 @@ template<> void Col2Im2d<float, CPUContext>(
     const int               dilation_w,
     const string&           data_format,
     const float*            col,
-    float*                  im) {
+    float*                  im,
+    CPUContext*             ctx) {
     if (data_format == "NCHW") {
         const int count = (C * H * W);
         _Col2Im2d_NCHW<float>(
             C, H, W, col_h, col_w, kernel_h, kernel_w,
                 stride_h, stride_w, pad_h, pad_w,
-                    dilation_h, dilation_w, col, im);
+                    dilation_h, dilation_w, col, im, ctx);
     } else if (data_format == "NHWC") {
         const int count = (H * W * C);
         _Col2Im2d_NHWC<float>(
             C, H, W, col_h, col_w, kernel_h, kernel_w,
                 stride_h, stride_w, pad_h, pad_w,
-                    dilation_h, dilation_w, col, im);
+                    dilation_h, dilation_w, col, im, ctx);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
@@ -2632,7 +2770,8 @@ template <> void NNResize<float, CPUContext>(
     const int               out_w,
     const string&           data_format,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     const float scale_h = (float)H / out_h;
     const float scale_w = (float)W / out_w;
     if (data_format == "NCHW") {
@@ -2708,10 +2847,10 @@ template <> void NNResizeGrad<float, CPUContext>(
     const int               out_w,
     const string&           data_format,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     const float scale_h = (float)H / out_h;
     const float scale_w = (float)W / out_w;
-    math::Set<float, CPUContext>(N * C * H * W, 0, dx);
     if (data_format == "NCHW") {
         _NNResizeGrad_NCHW<float>(
             N, C, H, W, out_h, out_w,
@@ -2847,7 +2986,8 @@ template<> void MAXPooling2d<float, CPUContext>(
     const string&           data_format,
     const float*            x,
     int*                    mask,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     if (data_format == "NCHW") {
         _MAXPooling2d_NCHW<float>(
             N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
@@ -2966,7 +3106,8 @@ template<> void AVGPooling2d<float, CPUContext>(
     const int               pad_w,
     const string&           data_format,
     const float*            x,
-    float* y) {
+    float*                  y,
+    CPUContext*             ctx) {
     if (data_format == "NCHW") {
         _AVGPooling2d_NCHW<float>(
             N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
@@ -2994,10 +3135,11 @@ void _MAXPooling2dGrad_NCHW(
     const int               pad_w,
     const float*            dy,
     const int*              mask,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     int x_offset = H * W;
     int y_offset = pool_h * pool_w;
-    math::Set<float, CPUContext>(N * C * H * W, 0, dx);
+    math::Set<float, CPUContext>(N * C * H * W, 0, dx, ctx);
     for (int n = 0; n < N; ++n) {
         for (int c = 0; c < C; ++c) {
             for (int ph = 0; ph < pool_h; ++ph) {
@@ -3030,10 +3172,11 @@ void _MAXPooling2dGrad_NHWC(
     const int               pad_w,
     const float*            dy,
     const int*              mask,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     int x_offset = H * W * C;
     int y_offset = pool_h * pool_w * C;
-    math::Set<float, CPUContext>(N * H * W * C, 0, dx);
+    math::Set<float, CPUContext>(N * H * W * C, 0, dx, ctx);
     for (int n = 0; n < N; ++n) {
         for (int ph = 0; ph < pool_h; ph++) {
             for (int pw = 0; pw < pool_w; ++pw) {
@@ -3067,15 +3210,16 @@ template<> void MAXPooling2dGrad<float, CPUContext>(
     const string&           data_format,
     const float*            dy,
     const int*              mask,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
    if (data_format == "NCHW") {
         _MAXPooling2dGrad_NCHW<float>(
             N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, dy, mask, dx);
+                stride_h, stride_w, pad_h, pad_w, dy, mask, dx, ctx);
     } else if (data_format == "NHWC") {
         _MAXPooling2dGrad_NHWC<float>(
             N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, dy, mask, dx);
+                stride_h, stride_w, pad_h, pad_w, dy, mask, dx, ctx);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
@@ -3094,10 +3238,11 @@ void _AVGPooling2dGrad_NCHW(
     const int               pad_h,
     const int               pad_w,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     int x_offset = H * W;
     int y_offset = pool_h * pool_w;
-    math::Set<float, CPUContext>(N * C * H * W, 0, dx);
+    math::Set<float, CPUContext>(N * C * H * W, 0, dx,ctx);
     for (int n = 0; n < N; ++n) {
         for (int c = 0; c < C; ++c) {
             for (int ph = 0; ph < pool_h; ++ph) {
@@ -3141,10 +3286,11 @@ void _AVGPooling2dGrad_NHWC(
     const int               pad_h,
     const int               pad_w,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     int x_offset = H * W * C;
     int y_offset = pool_h * pool_w * C;
-    math::Set<float, CPUContext>(N * H * W * C, 0, dx);
+    math::Set<float, CPUContext>(N * H * W * C, 0, dx, ctx);
     for (int n = 0; n < N; ++n) {
         for (int ph = 0; ph < pool_h; ph++) {
             for (int pw = 0; pw < pool_w; ++pw) {
@@ -3187,15 +3333,16 @@ template<> void AVGPooling2dGrad<float, CPUContext>(
     const int               pad_w,
     const string&           data_format,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     if (data_format == "NCHW") {
         _AVGPooling2dGrad_NCHW<float>(
             N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, dy, dx);
+                stride_h, stride_w, pad_h, pad_w, dy, dx, ctx);
     } else if (data_format == "NHWC") {
         _AVGPooling2dGrad_NHWC<float>(
             N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, dy, dx);
+                stride_h, stride_w, pad_h, pad_w, dy, dx, ctx);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
@@ -3214,12 +3361,11 @@ template<> void ROIPooling<float, CPUContext>(
     const float*            x,
     const float*            rois,
     int*                    mask,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     const TIndex x_offset = H * W,
                      y_offset = pool_h * pool_w,
                          im_offset = C * H * W;
-    math::Set<float, CPUContext>(count, -FLT_MAX, y);
-    math::Set<int, CPUContext>(count, -1, mask);
     for (int n = 0; n < num_rois; ++n) {
         int im_idx = rois[0];
         int x1 = round(rois[1] * spatial_scale);
@@ -3248,10 +3394,10 @@ template<> void ROIPooling<float, CPUContext>(
                     end_w = std::min(end_w, W);
                     bool is_empty = (end_h == start_h) || (end_w == start_w);
                     const int pool_idx = ph * pool_w + pw;
-                    if (is_empty) {
-                        y[pool_idx] = 0;
-                        mask[pool_idx] = -1;
-                    }
+                    if (is_empty || im_idx < 0) y[pool_idx] = 0;
+                    else y[pool_idx] = -FLT_MAX;
+                    mask[pool_idx] = -1;
+                    if (im_idx < 0) continue;
                     for (int h = start_h; h < end_h; ++h) {
                         for (int w = start_w; w < end_w; ++w) {
                             const int idx = h * W + w;
@@ -3286,7 +3432,8 @@ template<> void ROIPoolingGrad<float, CPUContext>(
     const float*            dy,
     const float*            rois,
     const int*              mask,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     NOT_IMPLEMENTED;
 }
 
@@ -3305,7 +3452,8 @@ template<> void ROIAlign<float, CPUContext>(
     const int               sampling_ratio,
     const float*            x,
     const float*            rois,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
     NOT_IMPLEMENTED;
 }
 
@@ -3322,7 +3470,8 @@ template<> void ROIAlignGrad<float, CPUContext>(
     const int               sampling_ratio,
     const float*            dy,
     const float*            rois,
-    float*                  dx) {
+    float*                  dx,
+    CPUContext*             ctx) {
     NOT_IMPLEMENTED;
 }
 

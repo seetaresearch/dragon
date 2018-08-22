@@ -18,7 +18,7 @@ __global__ void _Set(
     const int               n,
     const T                 alpha,
     T*                      x) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
         x[idx] = alpha;
     }
 }
@@ -26,27 +26,31 @@ __global__ void _Set(
 template <> void Set<float, CUDAContext>(
     const int               n,
     const float             alpha,
-    float*                  x) {
-    if (alpha == 0) {
-        CUDA_CHECK(cudaMemset(x, 0, sizeof(float) * n));
-        return;
+    float*                  x,
+    CUDAContext*            ctx) {
+    if (alpha == 0.f) {
+        CUDA_CHECK(cudaMemsetAsync(x, 0,
+            sizeof(float) * n, ctx->cuda_stream()));
+    } else {
+        _Set<float>
+            << < CUDA_BLOCKS(n), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n, alpha, x);
     }
-    _Set<float>
-        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
-            n, alpha, x);
 }
 
 template <> void Set<int, CUDAContext>(
     const int               n,
     const int               alpha,
-    int*                    x) {
+    int*                    x,
+    CUDAContext*            ctx) {
     if (alpha == 0) {
-        CUDA_CHECK(cudaMemset(x, 0, sizeof(int) * n));
-        return;
+        CUDA_CHECK(cudaMemsetAsync(x, 0,
+            sizeof(int) * n, ctx->cuda_stream()));
+    } else {
+        _Set<int>
+            << < CUDA_BLOCKS(n), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n, alpha, x);
     }
-    _Set<int> 
-        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
-            n, alpha, x);
 }
 
 template <> void RandomUniform<uint32_t, CUDAContext>(
@@ -89,7 +93,7 @@ __global__ void _Add(
     const T*                a,
     const T*                b,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
         y[idx] = a[idx] + b[idx];
     }
 }
@@ -98,10 +102,11 @@ template <> void Add<float, CUDAContext>(
     int                     n,
     const float*            a,
     const float*            b,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Add<float>
-        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
-            n, a, b, y);
+        << < CUDA_BLOCKS(n), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(n, a, b, y);
 }
 
 template <typename T>
@@ -110,7 +115,7 @@ __global__ void _Sub(
     const T*                a,
     const T*                b,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
         y[idx] = a[idx] - b[idx];
     }
 }
@@ -119,10 +124,11 @@ template <> void Sub<float, CUDAContext>(
     int                     n,
     const float*            a,
     const float*            b,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Sub<float>
-        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
-            n, a, b, y);
+        << < CUDA_BLOCKS(n), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(n, a, b, y);
 }
 
 template <typename T>
@@ -131,7 +137,7 @@ __global__ void _Mul(
     const T*                a,
     const T*                b,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
         y[idx] = a[idx] * b[idx];
     }
 }
@@ -140,10 +146,11 @@ template <> void Mul<float, CUDAContext>(
     int                     n,
     const float*            a,
     const float*            b,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Mul<float>
-        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
-            n, a, b, y);
+        << < CUDA_BLOCKS(n), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(n, a, b, y);
 }
 
 template <typename T>
@@ -152,7 +159,7 @@ __global__ void _Div(
     const T*                a,
     const T*                b,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
         y[idx] = a[idx] / b[idx];
     }
 }
@@ -161,10 +168,11 @@ template <> void Div<float, CUDAContext>(
     int                     n,
     const float*            a,
     const float*            b,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Div<float>
-        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
-            n, a, b, y);
+        << < CUDA_BLOCKS(n), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(n, a, b, y);
 }
 
 template <typename T>
@@ -173,7 +181,7 @@ __global__ void _Clip(
     const T                 low,
     const T                 high,
     T*                      x) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
         x[idx] = x[idx] > high ? high : x[idx];
         x[idx] = x[idx] < low ? low : x[idx];
     }
@@ -183,10 +191,11 @@ template <> void Clip<float, CUDAContext>(
     const int               n,
     const float             low,
     const float             high,
-    float*                  x) {
+    float*                  x,
+    CUDAContext*            ctx) {
     _Clip<float>
-        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
-            n, low, high, x);
+        << < CUDA_BLOCKS(n), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(n, low, high, x);
 }
 
 template <typename T>
@@ -194,7 +203,7 @@ __global__ void _Exp(
     const int               n,
     const T*                a,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
         y[idx] = exp(a[idx]);
     }
 }
@@ -202,10 +211,11 @@ __global__ void _Exp(
 template <> void Exp<float, CUDAContext>(
     int                     n,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Exp<float>
-        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
-            n, x, y);
+        << < CUDA_BLOCKS(n), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(n, x, y);
 }
 
 template <typename T>
@@ -213,7 +223,7 @@ __global__ void _Log(
     const int               n,
     const T*                a,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
         y[idx] = log(a[idx]);
     }
 }
@@ -221,10 +231,11 @@ __global__ void _Log(
 template <> void Log<float, CUDAContext>(
     int                     n,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Log<float>
-        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
-            n, x, y);
+        << < CUDA_BLOCKS(n), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(n, x, y);
 }
 
 template <typename T>
@@ -232,7 +243,7 @@ __global__ void _Square(
     const int               n,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
         y[idx] = x[idx] * x[idx];
     }
 }
@@ -240,10 +251,11 @@ __global__ void _Square(
 template <> void Square<float, CUDAContext>(
     int                     n,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Square<float>
-        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
-            n, x, y);
+        << < CUDA_BLOCKS(n), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(n, x, y);
 }
 
 template <typename T>
@@ -251,7 +263,7 @@ __global__ void _Sqrt(
     const int               n,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
         y[idx] = sqrt(x[idx]);
     }
 }
@@ -259,10 +271,11 @@ __global__ void _Sqrt(
 template <> void Sqrt<float, CUDAContext>(
     int                     n,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Sqrt<float>
-        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
-            n, x, y);
+        << < CUDA_BLOCKS(n), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(n, x, y);
 }
 
 template <typename T>
@@ -271,7 +284,7 @@ __global__ void _Pow(
     const T                 alpha,
     const T*                a,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
         y[idx] = pow(a[idx], alpha);
     }
 }
@@ -280,10 +293,11 @@ template <> void Pow<float, CUDAContext>(
     int                     n,
     const float             alpha,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Pow<float>
-        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
-            n, alpha, x, y);
+        << < CUDA_BLOCKS(n), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(n, alpha, x, y);
 }
 
 template <typename T>
@@ -292,7 +306,7 @@ __global__ void _Inv(
     const float             numerator,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
         y[idx] = numerator / x[idx];
     }
 }
@@ -301,10 +315,11 @@ template <> void Inv<float, CUDAContext>(
     const int               n,
     const float             numerator,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Inv<float>
-        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
-            n, numerator, x, y);
+        << < CUDA_BLOCKS(n), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(n, numerator, x, y);
 }
 
 /******************** Level-2 ********************/
@@ -330,26 +345,27 @@ template <> void Scale<float, CUDAContext>(
         ctx->cublas_handle(), n, &alpha, y, 1));
 }
 
-template <> float StridedDot<float, CUDAContext>(
+template <> void StridedDot<float, CUDAContext>(
     const int               n,
     const float*            a,
     const int               incx,
     const float*            b,
     const int               incy,
+    float*                  y,
     CUDAContext*            ctx) {
-    float result;
     CUBLAS_CHECK(cublasSdot_v2(ctx->cublas_handle(),
-        n, a, incx, b, incy, &result));
-    return result;
+        n, a, incx, b, incy, y));
 }
 
-template <> float Dot<float, CUDAContext>(
+template <> void Dot<float, CUDAContext>(
     int                     n,
     const float*            a,
     const float*            b,
+    float*                  y,
     CUDAContext*            ctx) {
-    return StridedDot<float, CUDAContext>(
-        n, a, 1, b, 1, ctx);
+    StridedDot<float, CUDAContext>(
+        n, a, 1, b, 1, y, ctx);
+    ctx->FinishDeviceCompution();
 }
 
 template <> float ASum<float, CUDAContext>(
@@ -363,7 +379,7 @@ __global__ void _AddScalar(
     const int               n,
     T                       alpha,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
         y[idx] += alpha;
     }
 }
@@ -371,10 +387,11 @@ __global__ void _AddScalar(
 template <> void AddScalar<float, CUDAContext>(
     const int               n,
     const float             alpha,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _AddScalar<float>
-        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
-            n, alpha, y);
+        << < CUDA_BLOCKS(n), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(n, alpha, y);
 }
 
 template <typename T>
@@ -382,7 +399,7 @@ __global__ void _MulScalar(
     const int               n,
     T                       alpha,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
         y[idx] *= alpha;
     }
 }
@@ -390,10 +407,11 @@ __global__ void _MulScalar(
 template <> void MulScalar<float, CUDAContext>(
     const int               n,
     const float             alpha,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _MulScalar<float>
-        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
-            n, alpha, y);
+        << < CUDA_BLOCKS(n), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(n, alpha, y);
 }
 
 template <> void Axpy<float, CUDAContext>(
@@ -427,7 +445,7 @@ template <> void RandomUniform<float, CUDAContext>(
         ctx->curand_generator(), x, n));
     float range = high - low;
     if (range != 1.f) Scal<float, CUDAContext>(n, range, x, ctx);
-    if (low != 0.f) AddScalar<float, CUDAContext>(n, low, x);
+    if (low != 0.f) AddScalar<float, CUDAContext>(n, low, x, ctx);
 }
 
 /******************** Level-3 ********************/

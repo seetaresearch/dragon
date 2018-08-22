@@ -12,11 +12,13 @@ void L1LossOp<Context>::RunWithType() {
     auto* diff_data = diff->template mutable_data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
-    math::Sub<T, Context>(Input(0).count(), X0data, X1data, diff_data);
+    math::Sub<T, Context>(Input(0).count(),
+        X0data, X1data, diff_data, ctx());
     if (InputSize() > 2) {
         CHECK_EQ(Input(0).count(), Input(2).count());
         auto* Wdata = Input(2).template data<T, Context>();
-        math::Mul<T, Context>(diff->count(), Wdata, diff_data, diff_data);
+        math::Mul<T, Context>(diff->count(),
+            Wdata, diff_data, diff_data, ctx());
     }
 
     T normalizer = 1;
@@ -27,11 +29,13 @@ void L1LossOp<Context>::RunWithType() {
     }
 
     T loss = math::ASum<T, Context>(diff->count(), diff_data);
-    math::Set<T, Context>(1, loss / normalizer, Ydata);
+    math::Set<T, Context>(1, loss / normalizer, Ydata, ctx());
 }
 
 template <class Context>
 void L1LossOp<Context>::RunOnDevice() {
+    ctx()->set_stream_id(0);  //  enforce default stream
+
     CHECK_EQ(Input(0).count(), Input(1).count());
     Output(0)->Reshape({ 1 });
     diff = ws()->CreateTensor("/mnt/" + anchor() + "/l1_loss/diff");
@@ -51,9 +55,11 @@ template <class Context> template <typename T>
 void L1LossGradientOp<Context>::RunWithType() {
     auto* diff_data = diff->template mutable_data<T, Context>();
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; ctx().template Copy<T, CPUContext, Context>(
+    T dYdata_host; ctx()->template Copy<T, CPUContext, Context>(
         1, &dYdata_host, dYdata);
-    kernel::AbsGrad<T, Context>(diff->count(), diff_data, diff_data);
+    ctx()->FinishDeviceCompution();
+    kernel::AbsGrad<T, Context>(diff->count(),
+        diff_data, diff_data, ctx());
 
     T alpha = dYdata_host, normalizer = 1;
     if (normalization == "BATCH_SIZE") {
@@ -69,7 +75,7 @@ void L1LossGradientOp<Context>::RunWithType() {
         const T sign = (i == 0) ? 1 : -1;
         alpha *= sign;
         math::Axpby<T, Context>(Output(i)->count(),
-            alpha, diff_data, 0, dXdata, &ctx());
+            alpha, diff_data, 0, dXdata, ctx());
     }
 }
 

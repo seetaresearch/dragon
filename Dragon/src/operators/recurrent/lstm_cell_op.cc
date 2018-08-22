@@ -14,7 +14,7 @@ void LSTMCellOp<Context>::RunWithType() {
 
     kernel::LSTMCell<T, Context>(Input(1).count(), Input(1).dim(0),
         Input(1).ndim() == 2 ? Input(1).dim(1) : Input(1).dim(2),
-            CXdata, XAdata, Cdata, Hdata);
+            CXdata, XAdata, Cdata, Hdata, ctx());
 }
 
 template <class Context>
@@ -44,7 +44,7 @@ void LSTMCellGradientOp<Context>::RunWithType() {
 
     kernel::LSTMCellGrad<T, Context>(Input(1).count(), Input(1).dim(0),
         Input(1).ndim() == 2 ? Input(1).dim(1) : Input(1).dim(2),
-            CXdata, XAdata, Cdata, dCdata, dHdata, dCXdata, dXdata);
+            CXdata, XAdata, Cdata, dCdata, dHdata, dCXdata, dXdata, ctx());
 }
 
 template <class Context>

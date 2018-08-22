@@ -13,7 +13,7 @@ void CuDNNReluOp<Context>::RunWithType() {
 
 #if CUDNN_VERSION_MIN(5, 0, 0)
     CUDNN_CHECK(cudnnActivationForward(
-        ctx().cudnn_handle(), act_desc,
+        ctx()->cudnn_handle(), act_desc,
             CUDNNType<T>::one, input_desc, Xdata,
                 CUDNNType<T>::zero, output_desc, Ydata));
 #else
@@ -49,7 +49,7 @@ void CuDNNReluGradientOp<Context>::RunWithType() {
 
 #if CUDNN_VERSION_MIN(5, 0, 0)
     CUDNN_CHECK(cudnnActivationBackward(
-        ctx().cudnn_handle(), act_desc,
+        ctx()->cudnn_handle(), act_desc,
             CUDNNType<T>::one, input_desc, Ydata,
                 input_desc, dYdata, output_desc, Ydata,
                     CUDNNType<T>::zero, output_desc, dXdata));

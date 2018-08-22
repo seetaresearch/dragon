@@ -80,7 +80,7 @@ T Dot(
     const T*                b);
 
 template<typename T>
-T ASum(
+T Sum(
     const int               n,
     const T*                x);
 

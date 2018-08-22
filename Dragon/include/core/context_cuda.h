@@ -23,8 +23,7 @@ namespace dragon {
 
 class CUDAObject {
  public:
-    CUDAObject(int default_stream = 1)
-        : default_stream(default_stream) {
+    CUDAObject() {
         for (int i = 0; i < CUDA_MAX_DEVICES; i++) {
             cuda_streams[i] = vector<cudaStream_t>();
             cublas_handles[i] = vector<cublasHandle_t>();
@@ -38,7 +37,7 @@ class CUDAObject {
         for (int i = 0; i < CUDA_MAX_DEVICES; i++) {
             for (int j = 0; j < cuda_streams[i].size(); j++) {
                 auto& stream = cuda_streams[i][j];
-                //  follow caffe2, do not check the stream destroying
+                //  follow the caffe2, do not check the stream destroying
                 //  Error code 29 (driver shutting down) is inevitable
                 //  TODO(PhyscalX): Can someone solve this issue?
                 if (stream) cudaStreamDestroy(stream);
@@ -52,19 +51,21 @@ class CUDAObject {
         }
     }
 
-    /**
-     * Each device takes a group of streams.
-     *
-     * The stream 0 is reserved for default stream,
-     * stream 1 or higher is created as ``cudaStreamNonBlocking``.
-     */
+    //  follow the caffe2,
+    //  each device takes a group of non-bl0cking streams
+    //  the stream 0 is reserved for default stream,
+    //  as some computations really require it,
+    //  e.g. cublas.asum() and mixed cpu/cuda operations
+    //  besides, somes calls, such as cudnn.conv() and cudnn.rnn(),
+    //  produce wrong results if running them on non-blocking streams
+    //  note that caffe2 also use default streams (within CuDNNState)
     cudaStream_t GetStream(int device_id, int stream_id) {
         vector<cudaStream_t>& dev_streams = cuda_streams[device_id];
         if (dev_streams.size() <= (unsigned)stream_id)
             dev_streams.resize(stream_id + 1, nullptr);
         if (!dev_streams[stream_id]) {
             DeviceGuard guard(device_id);
-            unsigned int flags = !stream_id && default_stream ?
+            unsigned int flags = !stream_id ?
                 cudaStreamDefault : cudaStreamNonBlocking;
             CUDA_CHECK(cudaStreamCreateWithFlags(
                 &dev_streams[stream_id], flags));
@@ -102,8 +103,6 @@ class CUDAObject {
     }
 #endif
 
-    int default_stream;
-
     vector<cudaStream_t> cuda_streams[CUDA_MAX_DEVICES];
     vector<cublasHandle_t> cublas_handles[CUDA_MAX_DEVICES];
 #ifdef WITH_CUDNN
@@ -129,11 +128,10 @@ class CUDAContext {
         stream_id_ = stream_id;
     }
 
-    inline void SwitchToDevice() { SwitchToDevice(0); }
+    inline void SwitchToDevice() { SwitchToDevice(1); }
 
     inline void FinishDeviceCompution() {
-        cudaStreamSynchronize(cuda_object_
-            .GetStream(device_id_, stream_id_));
+        cudaStreamSynchronize(cuda_stream());
         cudaError_t error = cudaGetLastError();
         CHECK_EQ(error, cudaSuccess)
             << "\nCUDA Error: " << cudaGetErrorString(error);
@@ -147,8 +145,17 @@ class CUDAContext {
         return data;
     }
 
-    inline static void Memset(size_t nbytes, void* ptr) {
-        cudaMemset(ptr, 0, nbytes); 
+    inline static void Memset(
+        size_t              nbytes,
+        void*               ptr) {
+        CUDA_CHECK(cudaMemset(ptr, 0, nbytes));
+    }
+
+    inline void MemsetAsync(
+        size_t              nbytes,
+        void*               ptr) {
+        CUDA_CHECK(cudaMemsetAsync(ptr, 0,
+            nbytes, cuda_stream()));
     }
 
     template<class DstContext, class SrcContext>
@@ -169,19 +176,21 @@ class CUDAContext {
             cudaMemcpyDefault, cuda_stream()));
     }
 
-    inline static void Delete(void* data) { cudaFree(data); }
-
     template<typename T, class DstContext, class SrcContext>
-    static void Copy(
+    inline void Copy(
         int                 n,
         T*                  dst,
         const T*            src) {
         if (dst == src) return;
-        Memcpy<SrcContext, DstContext>(
+        MemcpyAsync<SrcContext, DstContext>(
             n * sizeof(T), (void*)dst, (const void*)src);
     }
 
+    inline static void Delete(void* data) { cudaFree(data); }
+
     inline int device_id() const { return device_id_; }
+
+    inline void set_stream_id(int stream_id) { stream_id_ = stream_id; }
 
     inline cudaStream_t cuda_stream() {
         return cuda_stream(device_id_, stream_id_);
@@ -227,7 +236,7 @@ class CUDAContext {
     static thread_local CUDAObject cuda_object_;
 
  private:
-    int device_id_, stream_id_ = 0, random_seed_;
+    int device_id_, stream_id_ = 1, random_seed_;
     unique_ptr<std::mt19937> rand_generator_;
     curandGenerator_t curand_generator_ = nullptr;
 };
@@ -271,7 +280,7 @@ class CUDAClosure {
 
  protected:
     Context* ctx_;
-    CUDAObject cuda_object_ = 0;
+    CUDAObject cuda_object_;
     vector<int> active_streams_;
 };
 
@@ -283,7 +292,21 @@ class CUDAContext {
     CUDAContext(const int device_id = 0) { CUDA_NOT_COMPILED; }
 
     inline void SwitchToDevice() { CUDA_NOT_COMPILED; }
+    inline void SwitchToDevice(int stream_id) { CUDA_NOT_COMPILED; }
+
     inline void FinishDeviceCompution() { CUDA_NOT_COMPILED; }
+
+    inline static void Memset(
+        size_t              nbytes,
+        void*               ptr) {
+        CUDA_NOT_COMPILED;
+    }
+
+    inline void MemsetAsync(
+        size_t              nbytes,
+        void*               ptr) {
+        CUDA_NOT_COMPILED;
+    }
 
     template<class DstContext, class SrcContext>
     inline static void Memcpy(
@@ -302,6 +325,7 @@ class CUDAContext {
     }
 
     inline int device_id() const { return 0; }
+    inline void set_stream_id(int stream_id) {}
 };
 
 #endif // WITH_CUDA

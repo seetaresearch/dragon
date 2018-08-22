@@ -49,15 +49,13 @@ class DataReader(Process):
         self._source = kwargs.get('source', '')
         self._multiple_nodes = kwargs.get('multiple_nodes', False)
         self._use_shuffle = kwargs.get('shuffle', False)
+        self._use_instance_chunk = kwargs.get('instance_chunk', False)
         self._num_chunks = kwargs.get('num_chunks', 2048)
         self._chunk_size = kwargs.get('chunk_size', -1)
 
-        self._num_parts = 1
-        self._part_idx = 0
+        self._part_idx, self._num_parts = 0, 1
+        self._cur_idx, self._cur_chunk_idx = 0, 0
         self._random_seed = config.GetRandomSeed()
-
-        self._cur_idx = 0
-        self._cur_chunk_idx = 0
 
         self.Q_out = None
         self.daemon = True
@@ -167,12 +165,13 @@ class DataReader(Process):
         self._db.open(self._source)
         self._zfill = self._db.zfill()
         self._num_entries = self._db.num_entries()
-        self._epoch_size = int(self._num_entries / self._num_parts + 1)
+        self._epoch_size = int(self._num_entries/ self._num_parts + 1)
 
         if self._use_shuffle:
             if self._chunk_size == 1:
                 # each chunk has at most 1 record [For Fully Shuffle]
-                self._num_shuffle_parts = int(self._num_entries / self._chunk_size / self._num_parts) + 1
+                self._chunk_size, self._num_shuffle_parts = \
+                    1, int(self._num_entries / self._num_parts) + 1
             else:
                 if self._use_shuffle and self._chunk_size == -1:
                     # search a optimal chunk size by chunks [For Chunk Shuffle]
@@ -183,6 +182,11 @@ class DataReader(Process):
                     self._num_shuffle_parts = int(math.ceil(self._db._total_size * 1.1 /
                                                  (self._num_parts * self._chunk_size << 20)))
                     self._chunk_size = int(self._num_entries / self._num_shuffle_parts / self._num_parts + 1)
+                    limit = (self._num_parts - 0.5) * self._num_shuffle_parts * self._chunk_size
+                    if self._num_entries <= limit:
+                        # roll back to fully shuffle
+                        self._chunk_size, self._num_shuffle_parts = \
+                            1, int(self._num_entries / self._num_parts) + 1
         else:
             # each chunk has at most K records [For Multiple Nodes]
             # note that if ``shuffle`` and ``multiple_nodes`` are all ``False``,

@@ -46,7 +46,8 @@ inline PyObject* MPICreateGroupCC(PyObject* self, PyObject* args) {
     PyObject *incl, *excl, *ret;
     int local_root, world_size;
     if (!PyArg_ParseTuple(args, "iOO", &local_root, &incl, &excl)) {
-        PyErr_SetString(PyExc_ValueError, "Excepted the local root, include and exclued list.");
+        PyErr_SetString(PyExc_ValueError,
+            "Excepted the local root, include and exclued list.");
         return nullptr;
     }
     MPI_Group world_group, local_group;

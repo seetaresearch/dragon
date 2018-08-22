@@ -13,11 +13,11 @@ void SigmoidCrossEntropyOp<Context>::RunWithType() {
     auto* Fdata = flags.template mutable_data<T, Context>();
 
     kernel::SigmoidCrossEntropy<T, Context>(
-        Input(0).count(), Xdata, Tdata, Ldata, Fdata, &ctx());
+        Input(0).count(), Xdata, Tdata, Ldata, Fdata, ctx());
 
     if (normalization == "UNIT") {
         Output(0)->ReshapeLike(losses);
-        Output(0)->template CopyFrom<Context>(losses);
+        Output(0)->template CopyFrom<Context>(losses, ctx());
         return;
     }
 
@@ -35,11 +35,13 @@ void SigmoidCrossEntropyOp<Context>::RunWithType() {
     T loss = math::ASum<T, Context>(losses.count(), Ldata);
     Output(0)->Reshape({ 1 });
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Set<T, Context>(1, loss / normalizer, Ydata);
+    math::Set<T, Context>(1, loss / normalizer, Ydata, ctx());
 }
 
 template <class Context>
 void SigmoidCrossEntropyOp<Context>::RunOnDevice() {
+    ctx()->set_stream_id(0);  //  enforce default stream
+
     CHECK_EQ(Input(0).count(), Input(1).count())
         << "\nNumber of predictions must match the number of labels.";
     losses.ReshapeLike(Input(0));
@@ -63,12 +65,12 @@ void SigmoidCrossEntropyGradientOp<Context>::RunWithType() {
     auto* Fdata = flags.template mutable_data<T, Context>();
 
     kernel::SigmoidCrossEntropyGrad<T, Context>(
-        Input(0).count(), Xdata, Tdata, dXdata, Fdata, &ctx());
+        Input(0).count(), Xdata, Tdata, dXdata, Fdata, ctx());
 
     if (normalization == "UNIT") {
         auto* dYdata = Input(-1).template data<T, Context>();
         math::Mul<T, Context>(Output(0)->count(),
-            dYdata, dXdata, dXdata); return;
+            dYdata, dXdata, dXdata, ctx()); return;
     }
 
     T normalizer = 1;
@@ -83,14 +85,16 @@ void SigmoidCrossEntropyGradientOp<Context>::RunWithType() {
     }
 
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; ctx().template Copy<T, CPUContext, Context>(
+    T dYdata_host; ctx()->template Copy<T, CPUContext, Context>(
         1, &dYdata_host, dYdata);
     math::Scal<T, Context>(Output(0)->count(),
-        dYdata_host / normalizer, dXdata, &ctx());
+        dYdata_host / normalizer, dXdata, ctx());
 }
 
 template <class Context>
 void SigmoidCrossEntropyGradientOp<Context>::RunOnDevice() {
+    ctx()->set_stream_id(0);  //  enforce default stream
+
     Output(0)->ReshapeLike(Input(0));
     flags.ReshapeLike(Input(0));
 

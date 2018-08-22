@@ -455,7 +455,10 @@ Graph::Graph(const GraphDef& meta_graph, Workspace* ws)
     RecomputingAware(optimized_graph, ws);
 }
 
-bool Graph::Run(const string& include, const string& exclude) {
+bool Graph::Run(
+    const string&               include,
+    const string&               exclude,
+    const int                   stream_id) {
     LOG(DEBUG) << "Run Graph: " << name();
     for (auto op : ops_) {
         if (!include.empty())
@@ -464,7 +467,7 @@ bool Graph::Run(const string& include, const string& exclude) {
             if (op->type().find(exclude) != string::npos) continue;
         op->SwitchToPhase(this->args_["phase"].s());
         LOG(DEBUG) << "$ Before Operator: " << op->name();
-        op->Run();
+        op->Run(stream_id);
         LOG(DEBUG) << "$ After Operator: " << op->name();
     }
     return true;

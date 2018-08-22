@@ -18,7 +18,7 @@ __global__ void _SetHalf(
     const int               n,
     const T                 alpha,
     T*                      x) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
         x[idx] = alpha;
     }
 }
@@ -26,16 +26,19 @@ __global__ void _SetHalf(
 template <> void Set<float16, CUDAContext>(
     const int               n,
     const float16           alpha,
-    float16*                x) {
+    float16*                x,
+    CUDAContext*            ctx) {
 #ifdef WITH_CUDA_FP16
-    if (n % 2 == 0) {
+    if ((n & 1) == 0) {
         _SetHalf<half2>
-            << <CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
-                dragon_cast<half2, float16>(alpha),
-                    reinterpret_cast<half2*>(x));
+            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n >> 1,
+                     dragon_cast<half2, float16>(alpha),
+                         reinterpret_cast<half2*>(x));
     } else {
         _SetHalf<float16>
-            << <CUDA_BLOCKS(n), CUDA_THREADS >> >(n, alpha, x);
+            << < CUDA_BLOCKS(n), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n, alpha, x);
     }
 #else
     CUDA_FP16_NOT_COMPILED;
@@ -47,7 +50,7 @@ __global__ void _TypeFloat2Half(
     const int               n,
     const float*            a,
     half*                   b) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
         b[idx] = __float2half(a[idx]);
     }
 }
@@ -64,8 +67,9 @@ template <> void RandomNormal<float16, CUDAContext>(
     CURAND_CHECK(curandGenerateNormal(
         ctx->curand_generator(), xf32, n, mu, sigma));
     _TypeFloat2Half
-        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
-            n, xf32, reinterpret_cast<half*>(x));
+        << < CUDA_BLOCKS(n), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(n,
+                 xf32, reinterpret_cast<half*>(x));
     CUDAContext::Delete(xf32);
 #else
     CUDA_FP16_NOT_COMPILED;
@@ -81,7 +85,7 @@ __global__ void _AddHalf(
     const half*             a,
     const half*             b,
     half*                   y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = __hadd(a[idx], b[idx]);
 #endif
@@ -94,7 +98,7 @@ __global__ void _AddHalf2(
     const half2*            a,
     const half2*            b,
     half2*                  y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = __hadd2(a[idx], b[idx]);
 #endif
@@ -106,20 +110,23 @@ template <> void Add<float16, CUDAContext>(
     int                     n,
     const float16*          a,
     const float16*          b,
-    float16*                y) {
+    float16*                y,
+    CUDAContext*            ctx) {
 #ifdef WITH_CUDA_FP16
-    if (n % 2 == 0) {
+    if ((n & 1) == 0) {
         _AddHalf2<half2>
-            << <CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
-                reinterpret_cast<const half2*>(a),
-                    reinterpret_cast<const half2*>(b),
-                        reinterpret_cast<half2*>(y));
+            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n >> 1,
+                     reinterpret_cast<const half2*>(a),
+                         reinterpret_cast<const half2*>(b),
+                             reinterpret_cast<half2*>(y));
     } else {
         _AddHalf<half>
-            << <CUDA_BLOCKS(n), CUDA_THREADS >> >(n,
-                reinterpret_cast<const half*>(a),
-                    reinterpret_cast<const half*>(b),
-                        reinterpret_cast<half*>(y));
+            << < CUDA_BLOCKS(n), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n,
+                     reinterpret_cast<const half*>(a),
+                         reinterpret_cast<const half*>(b),
+                             reinterpret_cast<half*>(y));
     }
 #else
     CUDA_FP16_NOT_COMPILED;
@@ -133,7 +140,7 @@ __global__ void _SubHalf(
     const half*             a,
     const half*             b,
     half*                   y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = __hsub(a[idx], b[idx]);
 #endif
@@ -146,7 +153,7 @@ __global__ void _SubHalf2(
     const half2*            a,
     const half2*            b,
     half2*                  y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = __hsub2(a[idx], b[idx]);
 #endif
@@ -158,20 +165,23 @@ template <> void Sub<float16, CUDAContext>(
     int                     n,
     const float16*          a,
     const float16*          b,
-    float16*                y) {
+    float16*                y,
+    CUDAContext*            ctx) {
 #ifdef WITH_CUDA_FP16
-    if (n % 2 == 0) {
+    if ((n & 1) == 0) {
         _SubHalf2<half2>
-            << <CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
-                reinterpret_cast<const half2*>(a),
-                    reinterpret_cast<const half2*>(b),
-                        reinterpret_cast<half2*>(y));
+            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n >> 1,
+                     reinterpret_cast<const half2*>(a),
+                         reinterpret_cast<const half2*>(b),
+                             reinterpret_cast<half2*>(y));
     } else {
         _SubHalf<half>
-            << <CUDA_BLOCKS(n), CUDA_THREADS >> >(n,
-                reinterpret_cast<const half*>(a),
-                    reinterpret_cast<const half*>(b),
-                        reinterpret_cast<half*>(y));
+            << < CUDA_BLOCKS(n), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n,
+                     reinterpret_cast<const half*>(a),
+                         reinterpret_cast<const half*>(b),
+                             reinterpret_cast<half*>(y));
     }
 #else
     CUDA_FP16_NOT_COMPILED;
@@ -185,7 +195,7 @@ __global__ void _MulHalf(
     const half*             a,
     const half*             b,
     half*                   y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = __hmul(a[idx], b[idx]);
 #endif
@@ -198,7 +208,7 @@ __global__ void _MulHalf2(
     const half2*            a,
     const half2*            b,
     half2*                  y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = __hmul2(a[idx], b[idx]);
 #endif
@@ -210,20 +220,23 @@ template <> void Mul<float16, CUDAContext>(
     int                     n,
     const float16*          a,
     const float16*          b,
-    float16*                y) {
+    float16*                y,
+    CUDAContext*            ctx) {
 #ifdef WITH_CUDA_FP16
-    if (n % 2 == 0) {
+    if ((n & 1) == 0) {
         _MulHalf2<half2>
-            << <CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
-                reinterpret_cast<const half2*>(a),
-                    reinterpret_cast<const half2*>(b),
-                        reinterpret_cast<half2*>(y));
+            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n >> 1,
+                     reinterpret_cast<const half2*>(a),
+                         reinterpret_cast<const half2*>(b),
+                             reinterpret_cast<half2*>(y));
     } else {
         _MulHalf<half>
-            << <CUDA_BLOCKS(n), CUDA_THREADS >> > (n,
-                reinterpret_cast<const half*>(a),
-                    reinterpret_cast<const half*>(b),
-                        reinterpret_cast<half*>(y));
+            << < CUDA_BLOCKS(n), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n,
+                     reinterpret_cast<const half*>(a),
+                         reinterpret_cast<const half*>(b),
+                             reinterpret_cast<half*>(y));
     }
 #else
     CUDA_FP16_NOT_COMPILED;
@@ -237,7 +250,7 @@ __global__ void _DivHalf(
     const half*             a,
     const half*             b,
     half*                   y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = __hdiv(a[idx], b[idx]);
 #endif
@@ -249,13 +262,15 @@ template <> void Div<float16, CUDAContext>(
     int                     n,
     const float16*          a,
     const float16*          b,
-    float16*                y) {
+    float16*                y,
+    CUDAContext*            ctx) {
 #ifdef WITH_CUDA_FP16
     _DivHalf<half>
-        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(n,
-            reinterpret_cast<const half*>(a),
-                reinterpret_cast<const half*>(b),
-                    reinterpret_cast<half*>(y));
+        << < CUDA_BLOCKS(n), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(n,
+                 reinterpret_cast<const half*>(a),
+                      reinterpret_cast<const half*>(b),
+                          reinterpret_cast<half*>(y));
 #else
     CUDA_FP16_NOT_COMPILED;
 #endif
@@ -267,7 +282,7 @@ __global__ void _SquareHalf(
     const int               n,
     const half*             x,
     half*                   y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = __hmul(x[idx], x[idx]);
 #endif
@@ -279,7 +294,7 @@ __global__ void _SquareHalf2(
     const int               n,
     const half2*            x,
     half2*                  y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = __hmul2(x[idx], x[idx]);
 #endif
@@ -290,18 +305,21 @@ __global__ void _SquareHalf2(
 template <> void Square<float16, CUDAContext>(
     int                     n,
     const float16*          x,
-    float16*                y) {
+    float16*                y,
+    CUDAContext*            ctx) {
 #ifdef WITH_CUDA_FP16
-    if (n % 2 == 0) {
+    if ((n & 1) == 0) {
         _SquareHalf2<half2>
-            << < CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
-                reinterpret_cast<const half2*>(x),
-                    reinterpret_cast<half2*>(y));
+            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n >> 1,
+                     reinterpret_cast<const half2*>(x),
+                         reinterpret_cast<half2*>(y));
     } else {
         _SquareHalf<half>
-            << < CUDA_BLOCKS(n), CUDA_THREADS >> > (n,
-                reinterpret_cast<const half*>(x),
-                    reinterpret_cast<half*>(y));
+            << < CUDA_BLOCKS(n), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n,
+                     reinterpret_cast<const half*>(x),
+                         reinterpret_cast<half*>(y));
     }
 #else
     CUDA_FP16_NOT_COMPILED;
@@ -314,7 +332,7 @@ __global__ void _SqrtHalf(
     int                     n,
     const half*             x,
     half*                   y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = hsqrt(x[idx]);
 #endif
@@ -326,7 +344,7 @@ __global__ void _SqrtHalf2(
     const int               n,
     const half2*            x,
     half2*                  y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = h2sqrt(x[idx]);
 #endif
@@ -337,18 +355,21 @@ __global__ void _SqrtHalf2(
 template <> void Sqrt<float16, CUDAContext>(
     int                     n,
     const float16*          x,
-    float16*                y) {
+    float16*                y,
+    CUDAContext*            ctx) {
 #ifdef WITH_CUDA_FP16
-    if (n % 2 == 0) {
+    if ((n & 1) == 0) {
         _SqrtHalf2<half2>
-            << < CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
-                reinterpret_cast<const half2*>(x),
-                    reinterpret_cast<half2*>(y));
+            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n >> 1,
+                     reinterpret_cast<const half2*>(x),
+                         reinterpret_cast<half2*>(y));
     } else {
         _SqrtHalf<half>
-            << < CUDA_BLOCKS(n), CUDA_THREADS >> >(n,
-                reinterpret_cast<const half*>(x),
-                    reinterpret_cast<half*>(y));
+            << < CUDA_BLOCKS(n), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n,
+                     reinterpret_cast<const half*>(x),
+                         reinterpret_cast<half*>(y));
     }
 #else
     CUDA_FP16_NOT_COMPILED;
@@ -362,7 +383,7 @@ __global__ void _PowHalf(
     const float             alpha,
     const half*             a,
     half*                   y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = __hmul(a[idx], a[idx]);
 #endif
@@ -375,7 +396,7 @@ __global__ void _PowHalf2(
     const float             alpha,
     const half2*            a,
     half2*                  y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = __hmul2(a[idx], a[idx]);
 #endif
@@ -387,19 +408,22 @@ template <> void Pow<float16, CUDAContext>(
     int                     n,
     const float             alpha,
     const float16*          x,
-    float16*                y) {
+    float16*                y,
+    CUDAContext*            ctx) {
 #ifdef WITH_CUDA_FP16
     CHECK(alpha == float(2)) << "fp16 only support the power of 2";
-    if (n % 2 == 0) {
+    if ((n & 1) == 0) {
         _PowHalf2<half2>
-            << < CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
-                alpha, reinterpret_cast<const half2*>(x),
-                    reinterpret_cast<half2*>(y));
+            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n >> 1,
+                     alpha, reinterpret_cast<const half2*>(x),
+                         reinterpret_cast<half2*>(y));
     } else {
         _PowHalf<half>
-            << < CUDA_BLOCKS(n), CUDA_THREADS >> >(n,
-                alpha, reinterpret_cast<const half*>(x),
-                    reinterpret_cast<half*>(y));
+            << < CUDA_BLOCKS(n), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n,
+                     alpha, reinterpret_cast<const half*>(x),
+                         reinterpret_cast<half*>(y));
     }
 #else
     CUDA_FP16_NOT_COMPILED;
@@ -413,7 +437,7 @@ __global__ void _InvHalf(
     const half              numerator,
     const half*             x,
     half*                   y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] =  __hmul(hrcp(x[idx]), numerator);
 #endif
@@ -426,7 +450,7 @@ __global__ void _InvHalf2(
     const half2             numerator,
     const half2*            x,
     half2*                  y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = __hmul2(h2rcp(x[idx]), numerator);
 #endif
@@ -438,20 +462,23 @@ template <> void Inv<float16, CUDAContext>(
     const int               n,
     const float             numerator,
     const float16*          x,
-    float16*                y) {
+    float16*                y,
+    CUDAContext*            ctx) {
 #ifdef WITH_CUDA_FP16
-    if (n % 2 == 0) {
+    if ((n & 1) == 0) {
         _InvHalf2<half2>
-            << < CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
-                dragon_cast<half2, float>(numerator),
-                    reinterpret_cast<const half2*>(x),
-                        reinterpret_cast<half2*>(y));
+            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n >> 1,
+                     dragon_cast<half2, float>(numerator),
+                         reinterpret_cast<const half2*>(x),
+                             reinterpret_cast<half2*>(y));
     } else {
         _InvHalf<half>
-            << < CUDA_BLOCKS(n), CUDA_THREADS >> >(n,
-                dragon_cast<half, float>(numerator),
-                    reinterpret_cast<const half*>(x),
-                        reinterpret_cast<half*>(y));
+            << < CUDA_BLOCKS(n), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n,
+                     dragon_cast<half, float>(numerator),
+                         reinterpret_cast<const half*>(x),
+                             reinterpret_cast<half*>(y));
     }
 #else
     CUDA_FP16_NOT_COMPILED;
@@ -482,27 +509,26 @@ template <> void Scale<float16, CUDAContext>(
     const float16*          x,
     float16*                y,
     CUDAContext*            ctx) {
-    CUDAContext::Copy<float16, CUDAContext, CUDAContext>(n, y, x);
+    ctx->Copy<float16, CUDAContext, CUDAContext>(n, y, x);
     Scal<float16, CUDAContext>(n, alpha, y, ctx);
 }
 
-template <> float Dot<float16, CUDAContext>(
+template <> void Dot<float16, CUDAContext>(
     int                     n,
     const float16*          a,
     const float16*          b,
+    float16*                y,
     CUDAContext*            ctx) {
 #ifdef WITH_CUDA_FP16
-    float16 result;
     CUBLAS_CHECK(cublasDotEx(
         ctx->cublas_handle(), n,
             a, CUDA_R_16F, 1,
                 b, CUDA_R_16F, 1,
-                    &result, CUDA_R_16F,
+                    y, CUDA_R_16F,
                         CUDA_R_32F));
-    return dragon_cast<float, float16>(result);
+    ctx->FinishDeviceCompution();
 #else
     CUDA_FP16_NOT_COMPILED;
-    return 0.;
 #endif
 }
 
@@ -512,7 +538,7 @@ __global__ void _AddScalarHalf(
     const int               n,
     half                    alpha,
     half*                   y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = __hadd(y[idx], alpha);
 #endif
@@ -524,7 +550,7 @@ __global__ void _AddScalarHalf2(
     const int               n,
     half2                   alpha,
     half2*                  y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = __hadd2(y[idx], alpha);
 #endif
@@ -535,18 +561,21 @@ __global__ void _AddScalarHalf2(
 template <> void AddScalar<float16, CUDAContext>(
     const int               n,
     const float             alpha,
-    float16*                y) {
+    float16*                y,
+    CUDAContext*            ctx) {
 #ifdef WITH_CUDA_FP16
-    if (n % 2 == 0) {
+    if ((n & 1) == 0) {
         _AddScalarHalf2<half2>
-            << <CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
-                dragon_cast<half2, float>(alpha),
-                    reinterpret_cast<half2*>(y));
+            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n >> 1,
+                     dragon_cast<half2, float>(alpha),
+                         reinterpret_cast<half2*>(y));
     } else {
         _AddScalarHalf<half>
-            << <CUDA_BLOCKS(n), CUDA_THREADS >> >(n,
-                dragon_cast<half, float>(alpha),
-                    reinterpret_cast<half*>(y));
+            << < CUDA_BLOCKS(n), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n,
+                     dragon_cast<half, float>(alpha),
+                         reinterpret_cast<half*>(y));
     }
 #else
     CUDA_FP16_NOT_COMPILED;
@@ -559,7 +588,7 @@ __global__ void _MulScalarHalf(
     const int               n,
     half                    alpha,
     half*                   y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = __hmul(y[idx], alpha);
 #endif
@@ -571,7 +600,7 @@ __global__ void _MulScalarHalf2(
     const int               n,
     half2                   alpha,
     half2*                  y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = __hmul2(y[idx], alpha);
 #endif
@@ -582,18 +611,21 @@ __global__ void _MulScalarHalf2(
 template <> void MulScalar<float16, CUDAContext>(
     const int               n,
     const float             alpha,
-    float16*                y) {
+    float16*                y,
+    CUDAContext*            ctx) {
 #ifdef WITH_CUDA_FP16
-    if (n % 2 == 0) {
+    if ((n & 1) == 0) {
         _MulScalarHalf2<half2>
-            << <CUDA_BLOCKS(n / 2), CUDA_THREADS >> >(n / 2,
-                dragon_cast<half2, float>(alpha),
-                    reinterpret_cast<half2*>(y));
+            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n >> 1,
+                     dragon_cast<half2, float>(alpha),
+                         reinterpret_cast<half2*>(y));
     } else {
         _MulScalarHalf<half>
-            << <CUDA_BLOCKS(n), CUDA_THREADS >> >(n,
-                dragon_cast<half, float>(alpha),
-                    reinterpret_cast<half*>(y));
+            << < CUDA_BLOCKS(n), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n,
+                     dragon_cast<half, float>(alpha),
+                         reinterpret_cast<half*>(y));
     }
 #else
     CUDA_FP16_NOT_COMPILED;
@@ -640,11 +672,12 @@ template <> void RandomUniform<float16, CUDAContext>(
     CURAND_CHECK(curandGenerateUniform(
         ctx->curand_generator(), xf32, n));
     _TypeFloat2Half
-        << <CUDA_BLOCKS(n), CUDA_THREADS >> >(
-            n, xf32, reinterpret_cast<half*>(x));
+        << < CUDA_BLOCKS(n), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(n,
+                 xf32, reinterpret_cast<half*>(x));
     float range = high - low;
-    if (range != float(1)) Scal<float16, CUDAContext>(n, range, x, ctx);
-    if (low != float(0)) AddScalar<float16, CUDAContext>(n, low, x);
+    if (range != 1.f) Scal<float16, CUDAContext>(n, range, x, ctx);
+    if (low != 0.f) AddScalar<float16, CUDAContext>(n, low, x, ctx);
     ctx->Delete(xf32);
 #else
     CUDA_FP16_NOT_COMPILED;

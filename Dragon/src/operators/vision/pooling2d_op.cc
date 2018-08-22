@@ -17,7 +17,7 @@ void Pooling2dOp<Context>::MAXRunWithType() {
     kernel::MAXPooling2d<T, Context>(Output(0)->count(),
         n, c, h, w, pool_h, pool_w, kernel_size[0], kernel_size[1],
             stride[0], stride[1], pad[0], pad[1],
-                data_format, Xdata, Mdata, Ydata);
+                data_format, Xdata, Mdata, Ydata, ctx());
 }
 
 template <class Context> template <typename T>
@@ -28,7 +28,7 @@ void Pooling2dOp<Context>::AVGRunWithType() {
     kernel::AVGPooling2d<T, Context>(Output(0)->count(),
         n, c, h, w, pool_h, pool_w, kernel_size[0], kernel_size[1],
             stride[0], stride[1], pad[0], pad[1],
-                data_format, Xdata, Ydata);
+                data_format, Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -127,8 +127,9 @@ void Pooling2dGradientOp<Context>::MAXRunWithType() {
     kernel::MAXPooling2dGrad<T, Context>(Output(0)->count(),
         n, c, h, w, pool_h, pool_w, kernel_size[0], kernel_size[1],
             stride[0], stride[1], pad[0], pad[1],
-                data_format, dYdata, Mdata, dXdata);
+                data_format, dYdata, Mdata, dXdata, ctx());
 
+    ctx()->FinishDeviceCompution();
     mask->Reset();
 }
 
@@ -140,7 +141,7 @@ void Pooling2dGradientOp<Context>::AVGRunWithType() {
     kernel::AVGPooling2dGrad<T, Context>(Output(0)->count(),
         n, c, h, w, pool_h, pool_w, kernel_size[0], kernel_size[1],
             stride[0], stride[1], pad[0], pad[1],
-                data_format, dYdata, dXdata);
+                data_format, dYdata, dXdata, ctx());
 }
 
 template <class Context>

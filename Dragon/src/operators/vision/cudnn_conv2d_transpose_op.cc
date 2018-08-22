@@ -54,13 +54,13 @@ void CuDNNConv2dTransposeOp<Context>::ResetDesc() {
     }
 
     CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm(
-        ctx().cudnn_handle(), filter_desc,
+        ctx()->cudnn_handle(), filter_desc,
             input_desc, conv_desc, output_desc,
                 CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT,
                     WORKSPACE_LIMIT_BYTES, &fwd_algo));
 
     CUDNN_CHECK(cudnnGetConvolutionBackwardDataWorkspaceSize(
-        ctx().cudnn_handle(), filter_desc,
+        ctx()->cudnn_handle(), filter_desc,
             input_desc, conv_desc, output_desc,
                 fwd_algo, &fwd_data_size));
 }
@@ -78,7 +78,7 @@ void CuDNNConv2dTransposeOp<Context>::RunWithType() {
     auto* WSdata = (uint8_t*)ws()->template
         caches<Context>({ fwd_data_size })[0];
 
-    auto cudnn_handle = ctx().cudnn_handle();
+    auto cudnn_handle = ctx()->cudnn_handle();
 
     for (int g = 0; g < cudnn_group; g++) {
         CUDNN_CHECK(cudnnConvolutionBackwardData(cudnn_handle,
@@ -103,6 +103,8 @@ void CuDNNConv2dTransposeOp<Context>::RunOnDevice() {
             return Conv2dTransposeOp<Context>::RunOnDevice();
 #endif
     Conv2dTransposeOp<Context>::Reshape();
+
+    ctx()->set_stream_id(0);  //  enforce default stream
 
     if (XIsType(Input(0), float)) {
 #if CUDNN_VERSION_MIN(6, 0, 0)
@@ -199,24 +201,24 @@ void CuDNNConv2dTransposeGradientOp<Context>::ResetDesc() {
     }
 
     CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(
-        ctx().cudnn_handle(), input_desc,
+        ctx()->cudnn_handle(), input_desc,
             output_desc, conv_desc, filter_desc,
                 CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT,
                     WORKSPACE_LIMIT_BYTES, &bwd_filter_algo));
 
     CUDNN_CHECK(cudnnGetConvolutionBackwardFilterWorkspaceSize(
-        ctx().cudnn_handle(), input_desc,
+        ctx()->cudnn_handle(), input_desc,
             output_desc, conv_desc, filter_desc,
                 bwd_filter_algo, &bwd_filter_size));
 
     CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(
-        ctx().cudnn_handle(), input_desc,
+        ctx()->cudnn_handle(), input_desc,
             filter_desc, conv_desc, output_desc,
                 CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
                     WORKSPACE_LIMIT_BYTES, &bwd_data_algo));
 
     CUDNN_CHECK(cudnnGetConvolutionForwardWorkspaceSize(
-        ctx().cudnn_handle(), input_desc,
+        ctx()->cudnn_handle(), input_desc,
             filter_desc, conv_desc, output_desc,
                 bwd_data_algo, &bwd_data_size));
 }
@@ -230,18 +232,18 @@ void CuDNNConv2dTransposeGradientOp<Context>::RunWithType() {
     auto* WSdata = ws()->template caches<Context>({
         std::max(bwd_data_size, bwd_filter_size) })[0];
 
-    auto cudnn_handle = ctx().cudnn_handle();
+    auto cudnn_handle = ctx()->cudnn_handle();
 
     for (int g = 0; g < cudnn_group; g++) {
         if (Output(2)->name() != "ignore") {
-            T* dBdata = Output(2)->template mutable_data<T, Context>();
+            T* dBdata = Output(2)->template mutable_data<T, Context>(ctx());
             CUDNN_CHECK(cudnnConvolutionBackwardBias(cudnn_handle,
                 CUDNNType<T>::one, input_desc, dYdata + y_offset * g,
                     CUDNNType<T>::one, bias_desc, dBdata + bias_offset * g));
         }
         if (Output(1)->name() != "ignore") {
             auto* Xdata = Input(0).template data<T, Context>();
-            auto* dWdata = Output(1)->template mutable_data<T, Context>();
+            auto* dWdata = Output(1)->template mutable_data<T, Context>(ctx());
             CUDNN_CHECK(cudnnConvolutionBackwardFilter(cudnn_handle,
                 CUDNNType<T>::one, input_desc, dYdata + y_offset * g,
                     output_desc, Xdata + x_offset * g,
@@ -268,6 +270,8 @@ void CuDNNConv2dTransposeGradientOp<Context>::RunOnDevice() {
             return Conv2dTransposeGradientOp<Context>::RunOnDevice();
 #endif
     Conv2dTransposeGradientOp<Context>::GradientReshape();
+
+    ctx()->set_stream_id(0);  //  enforce default stream
 
     if (XIsType(Input(0), float)) {
 #if CUDNN_VERSION_MIN(6, 0, 0)

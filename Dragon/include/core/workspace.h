@@ -179,29 +179,28 @@ class Workspace {
     template <class Context>
     inline vector<void*> caches(
         const vector<size_t>&   segments) {
-        TIndex total_size = 0;
-        for (auto& segment : segments) total_size += (TIndex)segment;
-        Tensor* cacheT = CreateTensor("/share/cache");
-        cacheT->Reshape({ total_size });
-        vector<void*> caches(segments.size());
-        caches[0] = cacheT->template mutable_data<uint8_t, Context>();
+        TIndex nbytes = 0;
+        for (auto& segment : segments) nbytes += (TIndex)segment;
+        Tensor* cache_t = CreateTensor("/share/cache");
+        cache_t->Reshape({ nbytes });
+        vector<void*> Bcaches(segments.size());
+        Bcaches[0] = cache_t->template mutable_data<uint8_t, Context>();
         for (int i = 1; i < segments.size(); i++)
-            caches[i] = (uint8_t*)caches[i - 1] + segments[i - 1];
-        return caches;
+            Bcaches[i] = (uint8_t*)Bcaches[i - 1] + segments[i - 1];
+        return Bcaches;
     }
 
     template <typename T, class Context>
     inline vector<T*> caches(
         const vector<TIndex>&   segments) {
-        TIndex total_count = 0;
-        for (auto& segment : segments) total_count += segment;
-        Tensor* cacheT = CreateTensor("/share/cache");
-        cacheT->Reshape({ total_count });
-        vector<T*> caches(segments.size());
-        caches[0] = cacheT->template mutable_data<T, Context>();
-        for (int i = 1; i < segments.size(); i++)
-            caches[i] = caches[i - 1] + segments[i - 1];
-        return caches;
+        vector<size_t> Tsegments;
+        for (auto& segment : segments)
+            Tsegments.emplace_back(segment * sizeof(T));
+        vector<void*> Bcaches = caches<Context>(Tsegments);
+        vector<T*> Tcaches(segments.size());
+        for (int i = 0; i < segments.size(); i++)
+            Tcaches[i] = (T*)Bcaches[i];
+        return Tcaches;
     }
 
     /******************** Operator ********************/
@@ -259,11 +258,12 @@ class Workspace {
     void RunGraph(
         const string&           graph_name,
         const string&           include,
-        const string&           exclude) {
+        const string&           exclude,
+        const int               stream_id = 1) {
         if (!graph_map_.count(graph_name))
             LOG(FATAL) << "Graph(" << graph_name
                        << ") does not exist.";
-        graph_map_[graph_name]->Run(include, exclude);
+        graph_map_[graph_name]->Run(include, exclude, stream_id);
     }
 
     vector<string> GetGraphs() {

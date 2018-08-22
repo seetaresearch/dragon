@@ -10,10 +10,10 @@ void OneHotOp<Context>::RunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
     math::Set<T, Context>(Output(0)->count(),
-        dragon_cast<T, float>(float(off_value)), Ydata);
+        dragon_cast<T, float>(float(off_value)), Ydata, ctx());
 
     kernel::OneHot<T, Context>(Input(0).count(),
-        depth, on_value, Xdata, Ydata);
+        depth, on_value, Xdata, Ydata, ctx());
 }
 
 template <class Context>

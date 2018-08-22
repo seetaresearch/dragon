@@ -26,15 +26,15 @@ void SoftmaxCrossEntropyOp<Context>::RunWithType() {
     auto* Pdata = prob->template data<T, Context>();
     auto* Tdata = Input(1).template data<T, Context>();
     auto* Ldata = losses.template mutable_data<T, Context>();
-    kernel::SoftmaxCrossEntropy<T, Context>(
-        Input(0).count(), Pdata, Tdata, Ldata);
+    kernel::SoftmaxCrossEntropy<T, Context>(Input(0).count(),
+        Pdata, Tdata, Ldata, ctx());
 
     if (normalization == "UNIT") {
         Output(0)->Reshape({ outer_dim * inner_dim });
         auto* Ydata = Output(0)->template mutable_data<T, Context>();
         kernel::Sum<T, Context>(outer_dim * inner_dim,
             Input(0).dim(axis), inner_dim,
-                Ldata, Ydata); return;
+                Ldata, Ydata, ctx()); return;
     }
 
     T normalizer = 1;
@@ -47,11 +47,13 @@ void SoftmaxCrossEntropyOp<Context>::RunWithType() {
     T loss = math::ASum<T, Context>(losses.count(), Ldata);
     Output(0)->Reshape({ 1 });
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Set<T, Context>(1, loss / normalizer, Ydata);
+    math::Set<T, Context>(1, loss / normalizer, Ydata, ctx());
 }
 
 template <class Context>
 void SoftmaxCrossEntropyOp<Context>::RunOnDevice() {
+    ctx()->set_stream_id(0);  //  enforce default stream
+
     outer_dim = Input(0).count(0, axis);
     inner_dim = Input(0).count(axis + 1);
     CHECK_EQ(Input(0).count(), Input(1).count())
@@ -76,16 +78,16 @@ void SoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
     auto* Tdata = Input(1).template data<T, Context>();
     auto* Pdata = prob->template mutable_data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    ctx().template Copy<T, Context, Context>(prob->count(), dXdata, Pdata);
+    ctx()->template Copy<T, Context, Context>(prob->count(), dXdata, Pdata);
     math::Axpy<T, Context>(Output(0)->count(),
-        -1.0, Tdata, dXdata, &ctx());
+        -1.0, Tdata, dXdata, ctx());
 
     if (normalization == "UNIT") {
         auto* dYdata = Input(-1).template data<T, Context>();
         kernel::SumGrad<T, Context>(outer_dim * inner_dim,
-            Input(0).dim(axis), inner_dim, 1.0, dYdata, Pdata);
+            Input(0).dim(axis), inner_dim, 1.0, dYdata, Pdata, ctx());
         math::Mul<T, Context>(Output(0)->count(),
-            Pdata, dXdata, dXdata); return;
+            Pdata, dXdata, dXdata, ctx()); return;
     }
 
     T normalizer = 1;
@@ -96,10 +98,10 @@ void SoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
     }
 
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; ctx().template Copy<T, CPUContext, Context>(
+    T dYdata_host; ctx()->template Copy<T, CPUContext, Context>(
         1, &dYdata_host, dYdata);
     math::Scal<T, Context>(Output(0)->count(),
-        dYdata_host / normalizer, dXdata, &ctx());
+        dYdata_host / normalizer, dXdata, ctx());
 }
 
 template <class Context>

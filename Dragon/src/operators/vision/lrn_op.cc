@@ -17,11 +17,11 @@ template <class Context> template <typename T>
 void LRNOp<Context>::SplitRunWithType() {
     sqr_in = ws()->CreateTensor("/mnt/" + anchor() + "/sqr/in");
     sqr_in->ReshapeLike(Input(0));
-    sqr_in->template CopyFrom<Context>(Input(0));
+    sqr_in->template CopyFrom<Context>(Input(0), ctx());
 
     prod_in = ws()->CreateTensor("/mnt/" + anchor() + "/prod/in");
     prod_in->ReshapeLike(Input(0));
-    prod_in->template CopyFrom<Context>(Input(0));
+    prod_in->template CopyFrom<Context>(Input(0), ctx());
 }
 
 template <class Context> template <typename T>
@@ -229,7 +229,7 @@ void LRNGradientOp<Context>::SplitRunWithType() {
     auto* data0 = g_sqr_in->template data<T, Context>();
     auto* data1 = g_prod_in->template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    math::Add<T, Context>(Output(0)->count(), data0, data1, dXdata);
+    math::Add<T, Context>(Output(0)->count(), data0, data1, dXdata, ctx());
 }
 
 template <class Context>

@@ -17,7 +17,8 @@
 inline PyObject* SetLogLevelCC(PyObject* self, PyObject* args) {
     char* cname;
     if (!PyArg_ParseTuple(args, "s", &cname)) {
-        PyErr_SetString(PyExc_ValueError, "Excepted the logging level.");
+        PyErr_SetString(PyExc_ValueError,
+            "Excepted the logging level.");
         return nullptr;
     }
     SetLogDestination(StrToLogSeverity(string(cname)));

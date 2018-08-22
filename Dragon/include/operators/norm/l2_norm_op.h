@@ -34,7 +34,6 @@ class L2NormOp final : public Operator<Context> {
     TIndex axis, num_axes, end_axis;
     float eps;
     string mode;
-    bool across_inner;
     Tensor* norm, buffer;
     TIndex outer_dim, dim, inner_dim, spatial_dim;
 };
@@ -55,7 +54,6 @@ class L2NormGradientOp final : public Operator<Context> {
  protected:
     TIndex axis, num_axes, end_axis;
     string mode;
-    bool across_inner;
     Tensor* norm, buffer, buffer_inner;
     TIndex outer_dim, dim, inner_dim;
 };

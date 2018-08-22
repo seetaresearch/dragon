@@ -9,7 +9,7 @@ void RAddOp<Context>::EltwiseRunWithType() {
     auto* x1 = Input(0).template data<T, Context>();
     auto* x2 = Input(1).template data<T, Context>();
     auto* y = Output(0)->template mutable_data<T, Context>();
-    math::Add<T, Context>(Output(0)->count(), x1, x2, y);
+    math::Add<T, Context>(Output(0)->count(), x1, x2, y, ctx());
 }
 
 template <class Context> template <typename T>
@@ -19,23 +19,24 @@ void RAddOp<Context>::BroadcastRunWithType(int type) {
     auto* x2 = Input(1).template data<T, Context>();
     auto* y = Output(0)->template mutable_data<T, Context>();
 
-    ctx().template Copy<T, Context, Context>(
+    ctx()->template Copy<T, Context, Context>(
         Output(0)->count(), y, x2);
 
     if (type == 0 || type == 1) {
         if (type == 0) {
-            outer_dim = Input(1).count();
-            inner_dim = 1;
+            x1 = Input(0).template data<T, CPUContext>();
+            math::AddScalar<T, Context>(Output(0)->count(),
+                dragon_cast<float, T>(x1[0]), y, ctx());
         } else {
             outer_dim = Input(1).count(0, Input(1).axis(-1));
             inner_dim = Input(1).dim(-1);
+            DECLARE_MULTIPLIER(multiplier, outer_dim);
+            math::Gemm<T, Context>(
+                CblasNoTrans, CblasNoTrans,
+                    outer_dim, inner_dim, 1,
+                        1.0, multiplier, x1,
+                            1.0, y, ctx());
         }
-        DECLARE_MULTIPLIER(multiplier, outer_dim);
-        math::Gemm<T, Context>(
-            CblasNoTrans, CblasNoTrans,
-                outer_dim, inner_dim, 1,
-                    1.0, multiplier, x1,
-                        1.0, y, &ctx());
     } else if (type == 2) {
         outer_dim = Input(1).dim(0);
         inner_dim = Input(1).count(1);
@@ -44,7 +45,7 @@ void RAddOp<Context>::BroadcastRunWithType(int type) {
             CblasNoTrans, CblasNoTrans,
                 outer_dim, inner_dim, 1,
                     1.0, x1, multiplier,
-                        1.0, y, &ctx());
+                        1.0, y, ctx());
     }
 }
 
@@ -77,13 +78,13 @@ void RAddGradientOp<Context>::EltwiseRunWithType() {
 
     if (Output(1)->name() != "ignore") {
         auto* dx2 = Output(1)->template mutable_data<T, Context>();
-        ctx().template Copy<T, Context, Context>(
+        ctx()->template Copy<T, Context, Context>(
             Output(1)->count(), dx2, dy);
     }
 
     if (Output(0)->name() != "ignore") {
         auto* dx1 = Output(0)->template mutable_data<T, Context>();
-        ctx().template Copy<T, Context, Context>(
+        ctx()->template Copy<T, Context, Context>(
             Output(0)->count(), dx1, dy);
     }
 }
@@ -108,7 +109,7 @@ void RAddGradientOp<Context>::BroadcastRunWithType(int type) {
             math::Gemv<T, Context>(
                 CblasTrans, outer_dim, inner_dim,
                     1.0, dy, multiplier,
-                        0.0, dx1, &ctx());
+                        0.0, dx1, ctx());
         } else if (type == 2) {
             outer_dim = X2->dim(0);
             inner_dim = X2->count(1);
@@ -116,13 +117,13 @@ void RAddGradientOp<Context>::BroadcastRunWithType(int type) {
             math::Gemv<T, Context>(
                 CblasNoTrans, outer_dim, inner_dim,
                     1.0, dy, multiplier,
-                        0.0, dx1, &ctx());
+                        0.0, dx1, ctx());
         }
     }
 
     if (Output(1)->name() != "ignore") {
         auto* dx2 = Output(1)->template mutable_data<T, Context>();
-        ctx().template Copy<T, Context, Context>(
+        ctx()->template Copy<T, Context, Context>(
             X2->count(), dx2, dy);
     }
 }

@@ -23,7 +23,7 @@ __global__ void _Dropout(
     const T*                x,
     const uint32_t*         mask,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         y[idx] = x[idx] * (mask[idx] > thresh) * scale;
     }
 }
@@ -40,9 +40,9 @@ template<> void Dropout<float, CUDAContext>(
     math::RandomUniform<uint32_t, CUDAContext>(
         count, float(0), float(UINT_MAX), mask, ctx);
     _Dropout<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                count, thresh, scale, x, mask, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 count, thresh, scale, x, mask, y);
 }
 
 template <typename T>
@@ -53,7 +53,7 @@ __global__ void _DropoutGrad(
     const T*                dy, 
     const uint32_t*         mask,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         dx[idx] = dy[idx] * (mask[idx] > thresh) * scale;
     }
 }
@@ -68,9 +68,9 @@ template<> void DropoutGrad<float, CUDAContext>(
     CUDAContext*            ctx) {
     uint32_t thresh = static_cast<uint32_t>(UINT_MAX * prob);
     _DropoutGrad<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                count, thresh, scale, dy, mask, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 count, thresh, scale, dy, mask, dx);
 }
 
 /******************** activation.prelu ********************/
@@ -83,7 +83,7 @@ __global__ void _PRelu(
     const T*                x,
     const T*                w,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         y[idx] = (x[idx] > 0) * x[idx] +
             (x[idx] < 0) * x[idx] * w[0];
     }
@@ -97,7 +97,7 @@ __global__ void _PReluNCHW(
     const T*                x,
     const T*                w,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int c = (idx / dim) % channels;
         y[idx] = (x[idx] > 0) * x[idx] +
             (x[idx] < 0) * x[idx] * w[c];
@@ -112,7 +112,7 @@ __global__ void _PReluNHWC(
     const T*                x,
     const T*                w,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int c = idx % channels;
         y[idx] = (x[idx] > 0) * x[idx] +
             (x[idx] < 0) * x[idx] * w[c];
@@ -126,20 +126,24 @@ template<> void PRelu<float, CUDAContext>(const int count,
     const string&           data_format,
     const float*            x,
     const float*            w,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     if (channel_shared) {
         _PRelu<float> 
-            << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, channels, dim, x, w, y);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     channels, dim, x, w, y);
     } else {
         if (data_format == "NCHW") {
             _PReluNCHW<float>
-                << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                    count, channels, dim, x, w, y);
+                << < CUDA_BLOCKS(count), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(count,
+                         channels, dim, x, w, y);
         } else if (data_format == "NHWC") {
             _PReluNHWC<float>
-                << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                    count, channels, dim, x, w, y);
+                << < CUDA_BLOCKS(count), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(count,
+                         channels, dim, x, w, y);
         } else LOG(FATAL) << "Unknown data format: " << data_format;
     }
 }
@@ -153,7 +157,7 @@ __global__ void _PReluGrad(
     const T*                x,
     const T*                w,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         dx[idx] = dy[idx] * (
             (x[idx] > 0) + (x[idx] <= 0) * w[0]
         );
@@ -169,7 +173,7 @@ __global__ void _PReluGradNCHW(
     const T*                x,
     const T*                w,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int c = (idx / dim) % channels;
         dx[idx] = dy[idx] * (
             (x[idx] > 0) + (x[idx] <= 0) * w[c]
@@ -186,7 +190,7 @@ __global__ void _PReluGradNHWC(
     const T*                x,
     const T*                w,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int c = idx % channels;
         dx[idx] = dy[idx] * ((x[idx] > 0) + (x[idx] <= 0) * w[c]);
     }
@@ -201,20 +205,24 @@ template<> void PReluGrad<float, CUDAContext>(
     const float*            dy,
     const float*            x,
     const float*            w,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     if (channel_shared) {
         _PReluGrad<float>
-            << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, channels, dim, dy, x, w, dx);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     channels, dim, dy, x, w, dx);
     } else {
         if (data_format == "NCHW") {
             _PReluGradNCHW<float>
-                << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                    count, channels, dim, dy, x, w, dx);
+                << < CUDA_BLOCKS(count), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(count,
+                         channels, dim, dy, x, w, dx);
         } else if (data_format == "NHWC") {
             _PReluGradNHWC<float>
-                << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                    count, channels, dim, dy, x, w, dx);
+                << < CUDA_BLOCKS(count), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(count,
+                         channels, dim, dy, x, w, dx);
         } else LOG(FATAL) << "Unknown data format: " << data_format;
     }
 }
@@ -227,7 +235,7 @@ __global__ void _PReluWGradBcast(
     const T*                dy,
     const T*                x,
     T*                      bcast_dw) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         bcast_dw[idx] = dy[idx] * x[idx] * (x[idx] <= 0);
         for (int n = 1; n < rows; n++) {
             const int cur_idx = idx + n * row_offset;
@@ -256,9 +264,10 @@ template<> void PReluWGrad<float, CUDAContext>(
              0, ctx->cuda_stream() >> >(
                  cdim, rows, row_offset, dy, x, bcast_dw);
     if (channel_shared) {
-        float w_sum = math::Dot<float, CUDAContext>(
-            channels * dim, bcast_dw, multiplier, ctx);
-        math::AddScalar<float, CUDAContext>(1, w_sum, dw);
+        float w_sum;
+        math::Dot<float, CUDAContext>(channels * dim,
+            bcast_dw, multiplier, &w_sum, ctx);
+        math::AddScalar<float, CUDAContext>(1, w_sum, dw, ctx);
     } else {
         if (data_format == "NCHW") {
             math::Gemv<float, CUDAContext>(
@@ -280,7 +289,7 @@ __global__ void _Elu(
     const T*                x,
     const float             alpha,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         y[idx] = x[idx] > 0 ? x[idx] :
             alpha * (exp(x[idx]) - 1);
     }
@@ -290,10 +299,11 @@ template<> void Elu<float, CUDAContext>(
     const int               count,
     const float             alpha,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Elu<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, x, alpha, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, x, alpha, y);
 }
 
 template <typename T>
@@ -303,7 +313,7 @@ __global__ void _EluGrad(
     const T*                dy,
     const T*                y,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         dx[idx] = dy[idx] * (
             (y[idx] > 0) + (alpha + y[idx]) * (y[idx] <= 0)
         );
@@ -315,10 +325,11 @@ template<> void EluGrad<float, CUDAContext>(
     const float             alpha,
     const float*            dy,
     const float*            y,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _EluGrad<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, alpha, dy, y, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, alpha, dy, y, dx);
 }
 
 /******************** activation.relu ********************/
@@ -329,7 +340,7 @@ __global__ void _Relu(
     const float             slope,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         y[idx] = x[idx] > 0 ? x[idx] : x[idx] * slope;
     }
 }
@@ -338,10 +349,11 @@ template<> void Relu<float, CUDAContext>(
     const int               count,
     const float             slope,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Relu<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, slope, x, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, slope, x, y);
 }
 
 template <typename T>
@@ -351,7 +363,7 @@ __global__ void _ReluGrad(
     const T*                dy,
     const T*                y,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         dx[idx] = dy[idx] * (
             (y[idx] > 0) + slope * (y[idx] <= 0)
         );
@@ -363,10 +375,11 @@ template<> void ReluGrad<float, CUDAContext>(
     const float             slope,
     const float*            dy,
     const float*            y,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _ReluGrad<float> 
-        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, slope, dy, y, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, slope, dy, y, dx);
 }
 
 /******************** activation.selu ********************/
@@ -376,7 +389,7 @@ __global__ void _SElu(
     const int               count,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         y[idx] = x[idx] > 0 ? 1.0507 * x[idx] :
             1.7581 * (exp(x[idx]) - 1);
     }
@@ -385,10 +398,11 @@ __global__ void _SElu(
 template<> void SElu<float, CUDAContext>(
     const int               count,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _SElu<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, x, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, x, y);
 }
 
 template <typename T>
@@ -397,7 +411,7 @@ __global__ void _SEluGrad(
     const T*                dy,
     const T*                y,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         dx[idx] = y[idx] > 0 ? 1.0507 * dy[idx] :
             (1.7581 + y[idx]) * dy[idx];
     }
@@ -407,10 +421,11 @@ template<> void SEluGrad<float, CUDAContext>(
     const int               count,
     const float*            dy,
     const float*            y,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _SEluGrad<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, dy, y, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, dy, y, dx);
 }
 
 /******************** activation.sigmoid ********************/
@@ -425,7 +440,7 @@ __global__ void _Sigmoid(
     const int               n,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, n) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
         y[idx] = _SigmoidUnit<T>(x[idx]);
     }
 }
@@ -433,10 +448,11 @@ __global__ void _Sigmoid(
 template<> void Sigmoid<float, CUDAContext>(
     const int               count,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Sigmoid<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, x, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, x, y);
 }
 
 template <typename T>
@@ -445,7 +461,7 @@ __global__ void _SigmoidGrad(
     const T*                dy,
     const T*                y,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         dx[idx] = dy[idx] * y[idx] * (1 - y[idx]);
     }
 }
@@ -454,10 +470,11 @@ template<> void SigmoidGrad<float, CUDAContext>(
     const int               count,
     const float*            dy,
     const float*            y,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _SigmoidGrad<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, dy, y, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, dy, y, dx);
 }
 
 /******************** activation.softmax ********************/
@@ -469,7 +486,7 @@ __global__ void _SoftmaxMaxClass(
     const int               inner_dim,
     const T*                x,
     T*                      scale) {
-    CUDA_KERNEL_LOOP(idx, outer_dim * inner_dim) {
+    CUDA_1D_KERNEL_LOOP(idx, outer_dim * inner_dim) {
         int o_idx = idx / inner_dim;
         int i_idx = idx % inner_dim;
         T max_val = -FLT_MAX;
@@ -488,7 +505,7 @@ __global__ void _SoftmaxSubtract(
     const int               inner_dim,
     const T*                scale,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         int o_idx = idx / inner_dim / classes;
         int i_idx = idx % inner_dim;
         y[idx] -= scale[o_idx * inner_dim + i_idx];
@@ -499,7 +516,7 @@ template <typename T>
 __global__ void _SoftmaxExp(
     const int               count,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         y[idx] = exp(y[idx]);
     }
 }
@@ -511,7 +528,7 @@ __global__ void _SoftmaxSumClass(
     const int               inner_dim,
     const T*                y,
     T* scale) {
-    CUDA_KERNEL_LOOP(idx, outer_dim * inner_dim) {
+    CUDA_1D_KERNEL_LOOP(idx, outer_dim * inner_dim) {
         int o_idx = idx / inner_dim;
         int i_idx = idx % inner_dim;
         T sum = 0;
@@ -528,7 +545,7 @@ template <typename T>
      const int              inner_dim,
      const T*               scale,
      T*                     y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         int o_idx = idx / inner_dim / classes;
         int i_idx = idx % inner_dim;
         y[idx] /= scale[o_idx * inner_dim + i_idx];
@@ -547,23 +564,23 @@ template<> void Softmax<float, CUDAContext>(
     CUDAContext*            ctx) {
     const int num_preds = inner_dim * outer_dim;
     _SoftmaxMaxClass<float>
-        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                outer_dim, classes, inner_dim, x, scale);
+        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 outer_dim, classes, inner_dim, x, scale);
     _SoftmaxSubtract<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                count, classes, inner_dim, scale, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 count, classes, inner_dim, scale, y);
     _SoftmaxExp<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(count, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, y);
     _SoftmaxSumClass<float>
-        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                outer_dim, classes, inner_dim, y, scale);
+        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 outer_dim, classes, inner_dim, y, scale);
     _SoftmaxDiv<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
                 count, classes, inner_dim, scale, y);
 }
 
@@ -575,7 +592,7 @@ __global__ void _SoftmaxDot(
     const T*                dy,
     const T*                y,
     T*                      scale) {
-    CUDA_KERNEL_LOOP(idx, outer_dim * inner_dim) {
+    CUDA_1D_KERNEL_LOOP(idx, outer_dim * inner_dim) {
         int o_idx = idx / inner_dim;
         int i_idx = idx % inner_dim;
         T dot = 0;
@@ -601,14 +618,14 @@ template<> void SoftmaxGrad<float, CUDAContext>(
     CUDAContext*            ctx) {
     const int num_preds = inner_dim * outer_dim;
     _SoftmaxDot<float> 
-        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                outer_dim, classes, inner_dim, dy, y, scale);
+        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 outer_dim, classes, inner_dim, dy, y, scale);
     _SoftmaxSubtract<float> 
-        << <CUDA_BLOCKS(count), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                count, classes,inner_dim, scale, dx);
-    math::Mul<float, CUDAContext>(count, dx, y, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 count, classes,inner_dim, scale, dx);
+    math::Mul<float, CUDAContext>(count, dx, y, dx, ctx);
 }
 
 /******************** activation.tanh ********************/
@@ -618,7 +635,7 @@ __global__ void _Tanh(
     const int               count,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(i, count) {
+    CUDA_1D_KERNEL_LOOP(i, count) {
         y[i] = tanh(x[i]);
     }
 }
@@ -626,10 +643,11 @@ __global__ void _Tanh(
 template<> void Tanh<float, CUDAContext>(
     const int               count,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Tanh<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, x, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, x, y);
 }
 
 template <typename T>
@@ -638,7 +656,7 @@ __global__ void _TanhGrad(
     const T*                dy,
     const T*                y,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(i, count) {
+    CUDA_1D_KERNEL_LOOP(i, count) {
         dx[i] = dy[i] * (1 - y[i] * y[i]);
     }
 }
@@ -647,10 +665,11 @@ template<> void TanhGrad<float, CUDAContext>(
     const int               count,
     const float*            dy,
     const float*            y,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _TanhGrad<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, dy, y, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, dy, y, dx);
 }
 
 /******************** arithmetic.scale ********************/
@@ -663,7 +682,7 @@ __global__ void _AffineWithOBias(
     const T*                x,
     const T*                alpha,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int scale_idx = (idx / inner_dim) % scale_dim;
          y[idx] = alpha[scale_idx] * x[idx];
     }
@@ -678,7 +697,7 @@ __global__ void _AffineWithBias(
     const T*                alpha,
     const T*                beta,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int scale_idx = (idx / inner_dim) % scale_dim;
         y[idx] = alpha[scale_idx] * x[idx] + beta[scale_idx];
     }
@@ -697,10 +716,10 @@ template<> void Affine<float, CUDAContext>(
     CUDAContext*            ctx) {
     if (beta != nullptr) {
         _AffineWithBias<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS,
-                0, ctx->cuda_stream() >> >(
-                    count, scale_dim, inner_dim,
-                        x, alpha, beta, y);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(
+                     count, scale_dim, inner_dim,
+                         x, alpha, beta, y);
     } else {
         _AffineWithOBias<float>
             << <CUDA_BLOCKS(count), CUDA_THREADS,
@@ -720,10 +739,10 @@ template <> void AffineGrad<float, CUDAContext>(
     float*                  dx,
     CUDAContext*            ctx) {
     _AffineWithOBias<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                count, scale_dim, inner_dim,
-                    dy, alpha, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 count, scale_dim, inner_dim,
+                     dy, alpha, dx);
 }
 
 /******************** arithmetic.clip ********************/
@@ -736,7 +755,7 @@ __global__ void _Clip(
     const T*                x,
     T*                      mask,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         mask[idx] = 1.0;
         if (x[idx] > high || x[idx] < low) mask[idx] = 0.0;
         y[idx] = x[idx] > high ? high : x[idx];
@@ -750,9 +769,12 @@ template <> void Clip<float, CUDAContext>(
     const float             high,
     const float*            x,
     float*                  mask,
-    float*                  y) {
-    _Clip<float> << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-        count, low, high, x, mask, y);
+    float*                  y,
+    CUDAContext*            ctx) {
+    _Clip<float>
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 low, high, x, mask, y);
 }
 
 /******************** control_flow.compare ********************/
@@ -763,7 +785,7 @@ __global__ void _Equal(
     const T*                a,
     const T*                b,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         y[idx] = fabs(a[idx] - b[idx]) < FLT_EPSILON ? 1.0 : 0.0;
     }
 }
@@ -772,9 +794,11 @@ template <> void Equal<float, CUDAContext>(
     const int               count,
     const float*            a,
     const float*            b,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Equal<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(count, a, b, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, a, b, y);
 }
 
 /******************** loss.l1_loss ********************/
@@ -784,7 +808,7 @@ __global__ void _AbsGrad(
     const int               count,
     const T*                dy,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
        const T val = dy[idx];
        //  val > 0: 1 | val == 0: 0 | val < 0: -1
        dx[idx] = (val > T(0)) - (val < T(0));
@@ -794,9 +818,11 @@ __global__ void _AbsGrad(
 template<> void AbsGrad<float, CUDAContext>(
     const int               count,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _AbsGrad<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(count, dy, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, dy, dx);
 }
 
 /******************** loss.sigmoid_cross_entropy ********************/
@@ -808,7 +834,7 @@ __global__ void _SigmoidCrossEntropy(
     const T*                targets,
     T*                      losses,
     T*                      flags) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         if (targets[idx] < 0) {
             losses[idx] = flags[idx] = 0;
         } else {
@@ -828,9 +854,9 @@ template <> void SigmoidCrossEntropy<float, CUDAContext>(
     float*                  flags,
     CUDAContext*            ctx) {
     _SigmoidCrossEntropy<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                count, logits, targets, losses, flags);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 count, logits, targets, losses, flags);
 }
 
 template <typename T>
@@ -840,7 +866,7 @@ __global__ void _SigmoidCrossEntropyGrad(
     const T*                targets,
     T*                      dlogits,
     T*                      flags) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         if (targets[idx] < 0) {
             dlogits[idx] = flags[idx] = 0;
         } else {
@@ -858,9 +884,9 @@ template <> void SigmoidCrossEntropyGrad<float, CUDAContext>(
     float*                  flags,
     CUDAContext*            ctx) {
     _SigmoidCrossEntropyGrad<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                count, logits, targets, dlogits, flags);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 count, logits, targets, dlogits, flags);
 }
 
 /******************** loss.sigmoid_focal_loss ********************/
@@ -878,7 +904,7 @@ __global__ void _SigmoidFocalLoss(
     const T*                targets,
     T*                      losses,
     T*                      flags) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int iix = idx % inner_dim;
         const int aix = (idx / inner_dim) % axis_dim;
         const int oix = idx / inner_dim / axis_dim;
@@ -920,11 +946,11 @@ template <> void SigmoidFocalLoss<float, CUDAContext>(
     CUDAContext*            ctx) {
     TIndex count = outer_dim * axis_dim * inner_dim;
     _SigmoidFocalLoss<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                count, axis_dim, inner_dim,
-                    pos_alpha, neg_alpha, gamma, neg_id,
-                        logits, targets, losses, flags);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 count, axis_dim, inner_dim,
+                     pos_alpha, neg_alpha, gamma, neg_id,
+                         logits, targets, losses, flags);
 }
 
 template <typename T>
@@ -940,7 +966,7 @@ __global__ void _SigmoidFocalLossGradient(
     const T*                targets,
     T*                      dlogits,
     T*                      flags) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int iix = idx % inner_dim;
         const int aix = (idx / inner_dim) % axis_dim;
         const int oix = idx / inner_dim / axis_dim;
@@ -985,11 +1011,11 @@ template <> void SigmoidFocalLossGradient<float, CUDAContext>(
     CUDAContext*            ctx) {
     TIndex count = outer_dim * axis_dim * inner_dim;
     _SigmoidFocalLossGradient<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                count, axis_dim, inner_dim,
-                    pos_alpha, neg_alpha, gamma, neg_id,
-                        logits, targets, dlogits, flags);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 count, axis_dim, inner_dim,
+                     pos_alpha, neg_alpha, gamma, neg_id,
+                         logits, targets, dlogits, flags);
 }
 
 /******************** loss.smooth_l1_loss ********************/
@@ -1000,7 +1026,7 @@ __global__ void _SmoothL1(
     const float             beta,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const T val = x[idx];
         const T abs_val = abs(val);
         if (abs_val < beta) y[idx] = 0.5 * val * val / beta;
@@ -1012,10 +1038,11 @@ template<> void SmoothL1<float, CUDAContext>(
     const int               count,
     const float             beta,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _SmoothL1<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, beta, x, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, beta, x, y);
 }
 
 template <typename T>
@@ -1024,7 +1051,7 @@ __global__ void _SmoothL1Grad(
     const float             beta,
     const T*                dy,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const T val = dy[idx];
         const T abs_val = abs(val);
         if (abs_val < beta) dx[idx] = val / beta;
@@ -1037,10 +1064,11 @@ template<> void SmoothL1Grad<float, CUDAContext>(
     const int               count,
     const float             beta,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _SmoothL1Grad<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, beta, dy, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, beta, dy, dx);
 }
 
 /******************** loss.softmax_cross_entropy ********************/
@@ -1051,7 +1079,7 @@ __global__ void _SoftmaxCrossEntropy(
     const T*                prob,
     const T*                target,
     T*                      loss) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         loss[idx] = -target[idx] * log(max(prob[idx], FLT_MIN));
     }
 }
@@ -1060,10 +1088,11 @@ template <> void SoftmaxCrossEntropy<float, CUDAContext>(
     const int               count,
     const float*            prob,
     const float*            target,
-    float*                  loss) {
+    float*                  loss,
+    CUDAContext*            ctx) {
     _SoftmaxCrossEntropy<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, prob, target, loss);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, prob, target, loss);
 }
 
 /******************** loss.softmax_focal_loss ********************/
@@ -1083,7 +1112,7 @@ __global__ void _SoftmaxFocalLoss(
     const int               num_ignores,
     T*                      losses,
     T*                      flags) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int oix = idx / inner_dim;
         const int iix = idx % inner_dim;
         const int label = labels[oix * inner_dim + iix];
@@ -1122,12 +1151,12 @@ template <> void SoftmaxFocalLoss<float, CUDAContext>(
     CUDAContext*            ctx) {
     const int num_preds = outer_dim * inner_dim;
     _SoftmaxFocalLoss<float>
-        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                num_preds, axis_dim, inner_dim,
-                    pos_alpha, neg_alpha, gamma, neg_id,
-                        prob, labels, ignores, num_ignores,
-                            losses, flags);
+        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 num_preds, axis_dim, inner_dim,
+                     pos_alpha, neg_alpha, gamma, neg_id,
+                         prob, labels, ignores, num_ignores,
+                             losses, flags);
 }
 
 template <typename T>
@@ -1145,7 +1174,7 @@ __global__ void _SoftmaxFocalLossGrad(
     const int               num_ignores,
     T*                      dx,
     T*                      flags) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int oix = idx / inner_dim;
         const int iix = idx % inner_dim;
         const int label = labels[oix * inner_dim + iix];
@@ -1195,12 +1224,12 @@ template<> void SoftmaxFocalLossGrad<float, CUDAContext>(
     CUDAContext*            ctx) {
     const int num_preds = outer_dim * inner_dim;
     _SoftmaxFocalLossGrad<float>
-        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                num_preds, axis_dim, inner_dim,
-                    pos_alpha, neg_alpha, gamma, neg_id,
-                        prob, labels, ignores, num_ignores,
-                            dx, flags);
+        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 num_preds, axis_dim, inner_dim,
+                     pos_alpha, neg_alpha, gamma, neg_id,
+                         prob, labels, ignores, num_ignores,
+                             dx, flags);
 }
 
 /******************** loss.sparse_softmax_cross_entropy ********************/
@@ -1216,7 +1245,7 @@ __global__ void _SparseSoftmaxCrossEntropy(
     const int               num_ignores,
     Tx*                     losses,
     Tx*                     flags) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int oix = idx / inner_dim;
         const int iix = idx % inner_dim;
         const int label = labels[oix * inner_dim + iix];
@@ -1250,11 +1279,11 @@ template <> void SparseSoftmaxCrossEntropy<float, float, CUDAContext>(
     CUDAContext*            ctx) {
     const int num_preds = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropy<float, float>
-        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                num_preds, axis_dim, inner_dim,
-                    prob, labels, ignores, num_ignores,
-                        losses, flags);
+        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 num_preds, axis_dim, inner_dim,
+                     prob, labels, ignores, num_ignores,
+                         losses, flags);
 }
 
 template <> void SparseSoftmaxCrossEntropy<float, int64_t, CUDAContext>(
@@ -1270,11 +1299,11 @@ template <> void SparseSoftmaxCrossEntropy<float, int64_t, CUDAContext>(
     CUDAContext*            ctx) {
     const int num_preds = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropy<float, int64_t>
-        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                num_preds, axis_dim, inner_dim,
-                    prob, labels, ignores, num_ignores,
-                        losses, flags);
+        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 num_preds, axis_dim, inner_dim,
+                     prob, labels, ignores, num_ignores,
+                         losses, flags);
 }
 
 template <typename Tx, typename Ty>
@@ -1288,7 +1317,7 @@ __global__ void _SparseSoftmaxCrossEntropyGrad(
     const int               num_ignores,
     Tx*                     dx,
     Tx*                     flags) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int oix = idx / inner_dim;
         const int iix = idx % inner_dim;
         const int label = labels[oix * inner_dim + iix];
@@ -1319,11 +1348,11 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, float, CUDAContext>(
     CUDAContext*            ctx) {
     const int num_preds = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropyGrad<float, float>
-        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                num_preds, axis_dim, inner_dim,
-                    prob, labels, ignores, num_ignores, 
-                        dx, flags);
+        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 num_preds, axis_dim, inner_dim,
+                     prob, labels, ignores, num_ignores,
+                         dx, flags);
 }
 
 template<> void SparseSoftmaxCrossEntropyGrad<float, int64_t, CUDAContext>(
@@ -1339,11 +1368,11 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, int64_t, CUDAContext>(
     CUDAContext*            ctx) {
     const int num_preds = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropyGrad<float, int64_t>
-        << <CUDA_BLOCKS(num_preds), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                num_preds, axis_dim, inner_dim,
-                    prob, labels, ignores, num_ignores,
-                        dx, flags);
+        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 num_preds, axis_dim, inner_dim,
+                     prob, labels, ignores, num_ignores,
+                         dx, flags);
 }
 
 /******************** misc.astype ********************/
@@ -1353,7 +1382,7 @@ __global__ void _TypeA2B(
     const int               count,
     const Ta*               a,
     Tb*                     b) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         b[idx] = a[idx];
     }
 }
@@ -1362,10 +1391,11 @@ __global__ void _TypeA2B(
     template <> void TypeA2B<type_a, type_b, CUDAContext>( \
         const int           count, \
         const               type_a* a, \
-        type_b*             b) { \
+        type_b*             b, \
+        CUDAContext*        ctx) { \
         _TypeA2B<type_a, type_b> \
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >( \
-                count, a, b); \
+            << < CUDA_BLOCKS(count), CUDA_THREADS, \
+                 0, ctx->cuda_stream() >> >(count, a, b); \
     }
 
 #define DEFINE_TYPE_A2ALL(type_a) \
@@ -1394,7 +1424,7 @@ __global__ void _ImageData_NCHW(
     const float*            std_values,
     const Tx*               x,
     Ty*                     y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int w = idx % W;
         const int h = (idx / W) % H;
         const int c = (idx / W / H) % C;
@@ -1417,7 +1447,7 @@ __global__ void _ImageData_NHWC(
     const float*            std_values,
     const Tx*               x,
     Ty*                     y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int c = idx % C;
         Ty raw_value = x[idx];
         if (mean_values != nullptr) raw_value -= mean_values[c];
@@ -1436,15 +1466,18 @@ template <> void ImageData<float, float, CUDAContext>(
     const float*            std_values,
     const string&           data_format,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     if (data_format == "NCHW") {
         _ImageData_NCHW<float, float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, N, C, H, W, mean_values, std_values, x, y);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     N, C, H, W, mean_values, std_values, x, y);
     } else if (data_format == "NHWC") {
         _ImageData_NHWC<float, float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, N, C, H, W, mean_values, std_values, x, y);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     N, C, H, W, mean_values, std_values, x, y);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
@@ -1458,19 +1491,22 @@ template <> void ImageData<uint8_t, float, CUDAContext>(
     const float*            std_values,
     const string&           data_format,
     const uint8_t*          x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     if (data_format == "NCHW") {
         _ImageData_NCHW<uint8_t, float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, N, C, H, W, mean_values, std_values, x, y);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     N, C, H, W, mean_values, std_values, x, y);
     } else if (data_format == "NHWC") {
         _ImageData_NHWC<uint8_t, float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, N, C, H, W, mean_values, std_values, x, y);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     N, C, H, W, mean_values, std_values, x, y);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
-/******************** ndarray.argmax ********************/
+/******************** ndarray.arange ********************/
 
 template <typename T>
 __global__ void _Arange(
@@ -1478,7 +1514,7 @@ __global__ void _Arange(
     const int               start,
     const int               step,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         y[idx] = start + idx * step;
     }
 }
@@ -1487,20 +1523,22 @@ template<> void Arange<float, CUDAContext>(
     const int               count,
     const int               start,
     const int               step,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Arange<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, start, step, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, start, step, y);
 }
 
 template<> void Arange<int, CUDAContext>(
     const int               count,
     const int               start,
     const int               step,
-    int*                    y) {
+    int*                    y,
+    CUDAContext*            ctx) {
     _Arange<int>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, start, step, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, start, step, y);
 }
 
 /******************** ndarray.argreduce ********************/
@@ -1510,14 +1548,16 @@ __global__ void _Argmax(
     const int               count,
     const int               axis_dim,
     const int               inner_dim,
+    const T                 neg_bound,
     const T*                x,
     int64_t*                indices) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        T max_val = -FLT_MAX;
-        int max_idx = -1;
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        const int oix = idx / inner_dim;
+        const int iix = idx % inner_dim;
+        int max_idx = -1; T max_val = neg_bound;
         for (int j = 0; j < axis_dim; ++j) {
-            const T val = x[(idx / inner_dim * axis_dim + j)
-                                * inner_dim + idx % inner_dim];
+            const T val = x[(oix * axis_dim + j)
+                                 * inner_dim + iix];
             if (val > max_val) {
                 max_val = val;
                 max_idx = j;
@@ -1532,15 +1572,17 @@ __global__ void _Argmax_v2(
     const int               count,
     const int               axis_dim,
     const int               inner_dim,
+    const T                 neg_bound,
     const T*                x,
     int64_t*                indices,
     T*                      values) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        T max_val = -FLT_MAX;
-        int max_idx = -1;
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        const int oix = idx / inner_dim;
+        const int iix = idx % inner_dim;
+        int max_idx = -1; T max_val = neg_bound;
         for (int j = 0; j < axis_dim; ++j) {
-            const T val = x[(idx / inner_dim * axis_dim + j)
-                                * inner_dim + idx % inner_dim];
+            const T val = x[(oix * axis_dim + j)
+                                 * inner_dim + iix];
             if (val > max_val) {
                 max_val = val;
                 max_idx = j;
@@ -1558,16 +1600,21 @@ template<> void Argmax<float, CUDAContext>(
     const int               top_k,
     const float*            x,
     int64_t*                indices,
-    float*                  values) {
+    float*                  values,
+    CUDAContext*            ctx) {
     CHECK_EQ(top_k, 1) << "top_k > 1 is not supported with CUDA";
     if (values == nullptr) {
         _Argmax<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, axis_dim, inner_dim, x, indices);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     axis_dim, inner_dim, -FLT_MAX,
+                         x, indices);
     } else {
         _Argmax_v2<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, axis_dim, inner_dim, x, indices, values);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     axis_dim, inner_dim, -FLT_MAX,
+                         x, indices, values);
     }
 }
 
@@ -1576,14 +1623,16 @@ __global__ void _Argmin(
     const int               count,
     const int               axis_dim,
     const int               inner_dim,
+    const T                 pos_bound,
     const T*                x,
     int64_t*                indices) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        T min_val = FLT_MAX;
-        int min_idx = -1;
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        const int oix = idx / inner_dim;
+        const int iix = idx % inner_dim;
+        int min_idx = -1; T min_val = pos_bound;
         for (int j = 0; j < axis_dim; ++j) {
-            const T val = x[(idx / inner_dim * axis_dim + j) 
-                                * inner_dim + idx % inner_dim];
+            const T val = x[(oix * axis_dim + j)
+                                 * inner_dim + iix];
             if (val < min_val) {
                 min_val = val;
                 min_idx = j;
@@ -1598,15 +1647,17 @@ __global__ void _Argmin_v2(
     const int               count,
     const int               axis_dim,
     const int               inner_dim,
+    const T                 pos_bound,
     const T*                x,
     int64_t*                indices,
     T*                      values) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        T min_val = FLT_MAX;
-        int min_idx = -1;
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        const int oix = idx / inner_dim;
+        const int iix = idx % inner_dim;
+        int min_idx = -1; T min_val = pos_bound;
         for (int j = 0; j < axis_dim; ++j) {
-            const T val = x[(idx / inner_dim * axis_dim + j) 
-                                * inner_dim + idx % inner_dim];
+            const T val = x[(oix * axis_dim + j)
+                                 * inner_dim + iix];
             if (val < min_val) {
                 min_val = val;
                 min_idx = j;
@@ -1624,16 +1675,21 @@ template<> void Argmin<float, CUDAContext>(
     const int               top_k,
     const float*            x,
     int64_t*                indices,
-    float*                  values) {
+    float*                  values,
+    CUDAContext*            ctx) {
     CHECK_EQ(top_k, 1) << "top_k > 1 is not supported with CUDA";
     if (values == nullptr) {
         _Argmin<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, axis_dim, inner_dim, x, indices);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     axis_dim, inner_dim, FLT_MAX,
+                         x, indices);
     } else {
         _Argmin_v2<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, axis_dim, inner_dim, x, indices, values);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     axis_dim, inner_dim, FLT_MAX,
+                         x, indices, values);
     }
 }
 
@@ -1644,7 +1700,7 @@ __global__ void _CanonicalAxis(
     const int               count,
     const int               dim,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         if (y[idx] < 0) y[idx] += dim;
     }
 }
@@ -1652,10 +1708,11 @@ __global__ void _CanonicalAxis(
 template <> void CanonicalAxis<int, CUDAContext>(
     const int               count,
     const int               dim,
-    int*                    y) {
-    _CanonicalAxis<int> 
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, dim, y);
+    int*                    y,
+    CUDAContext*            ctx) {
+    _CanonicalAxis<int>
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, dim, y);
 }
 
 template <typename T>
@@ -1668,7 +1725,7 @@ __global__ void _Gather(
     const int*              indices,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int outer_idx = idx / inner_dim / y_slice_dim;
         const int slice_idx = idx % inner_dim;
         const int y_idx_offset = (idx / inner_dim) % y_slice_dim;
@@ -1687,12 +1744,14 @@ template <> void Gather<float, CUDAContext>(
     const int               y_slice_dim,
     const int*              indices,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Gather<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, outer_dim, inner_dim,
-                x_slice_dim, y_slice_dim,
-                    indices, x, y);
+        << <CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(count,
+                outer_dim, inner_dim,
+                    x_slice_dim, y_slice_dim,
+                        indices, x, y);
 }
 
 template <> void Gather<int, CUDAContext>(
@@ -1703,12 +1762,14 @@ template <> void Gather<int, CUDAContext>(
     const int               y_slice_dim,
     const int*              indices,
     const int*              x,
-    int*                    y) {
+    int*                    y,
+    CUDAContext*            ctx) {
     _Gather<int>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, outer_dim, inner_dim,
-                x_slice_dim, y_slice_dim,
-                    indices, x, y);
+        << <CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(count,
+                outer_dim, inner_dim,
+                    x_slice_dim, y_slice_dim,
+                        indices, x, y);
 }
 
 template <typename T>
@@ -1721,7 +1782,7 @@ __global__ void _GatherGrad(
     const int*              indices,
     const T*                dy,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int outer_idx = idx / inner_dim / y_slice_dim;
         const int slice_idx = idx % inner_dim;
         const int y_idx_offset = (idx / inner_dim) % y_slice_dim;
@@ -1740,12 +1801,14 @@ template <> void GatherGrad<float, CUDAContext>(
     const int               y_slice_dim,
     const int*              indices,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _GatherGrad<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, outer_dim, inner_dim,
-                x_slice_dim, y_slice_dim,
-                    indices, dy, dx);
+        << <CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(count,
+                outer_dim, inner_dim,
+                    x_slice_dim, y_slice_dim,
+                        indices, dy, dx);
 }
 
 template <> void GatherGrad<int, CUDAContext>(
@@ -1756,12 +1819,14 @@ template <> void GatherGrad<int, CUDAContext>(
     const int               y_slice_dim,
     const int*              indices,
     const int*              dy,
-    int*                    dx) {
+    int*                    dx,
+    CUDAContext*            ctx) {
     _GatherGrad<int>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, outer_dim, inner_dim,
-                x_slice_dim, y_slice_dim,
-                    indices, dy, dx);
+        << <CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >> >(count,
+                outer_dim, inner_dim,
+                    x_slice_dim, y_slice_dim,
+                        indices, dy, dx);
 }
 
 /******************** ndarray.concat ********************/
@@ -1776,7 +1841,7 @@ __global__ void _Concat(
     const int               concat_offset,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int tmp = x_concat_dim * inner_dim;
         const int outer_idx = idx / tmp;
         const int concat_idx = idx % tmp;
@@ -1794,12 +1859,14 @@ template <> void Concat<float, CUDAContext>(
     const int               y_concat_dim,
     const int               concat_offset,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Concat<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, outer_dim, inner_dim,
-                x_concat_dim, y_concat_dim,
-                    concat_offset, x, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 outer_dim, inner_dim,
+                     x_concat_dim, y_concat_dim,
+                         concat_offset, x, y);
 }
 
 template <typename T>
@@ -1812,7 +1879,7 @@ __global__ void _ConcatGrad(
     const int               concat_offset,
     const T*                dy,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int tmp = x_concat_dim * inner_dim;
         const int outer_idx = idx / tmp;
         const int concat_idx = idx % tmp;
@@ -1830,12 +1897,14 @@ template <> void ConcatGrad<float, CUDAContext>(
     const int               y_concat_dim,
     const int               concat_offset,
     const float*            dy,
-    float*                  dx) {
-    _ConcatGrad<float> 
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, outer_dim, inner_dim,
-                x_concat_dim, y_concat_dim,
-                    concat_offset, dy, dx);
+    float*                  dx,
+    CUDAContext*            ctx) {
+    _ConcatGrad<float>
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 outer_dim, inner_dim,
+                     x_concat_dim, y_concat_dim,
+                         concat_offset, dy, dx);
 }
 
 /******************** ndarray.crop ********************/
@@ -1849,7 +1918,7 @@ __global__ void _Crop1D(
     const int               start,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int i = idx % inner_dim;
         const int ex_d = (idx / inner_dim) % ex_dim;
         const int o = idx / inner_dim / ex_dim;
@@ -1864,10 +1933,12 @@ template<> void Crop1D<int, CUDAContext>(
     const int               inner_dim,
     const int               start,
     const int*              x,
-    int*                    y) {
+    int*                    y,
+    CUDAContext*            ctx) {
     _Crop1D<int>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, dim, ex_dim, inner_dim, start, x, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 dim, ex_dim, inner_dim, start, x, y);
 }
 
 template<> void Crop1D<float, CUDAContext>(
@@ -1877,10 +1948,12 @@ template<> void Crop1D<float, CUDAContext>(
     const int               inner_dim,
     const int               start,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Crop1D<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, dim, ex_dim, inner_dim, start, x, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 dim, ex_dim, inner_dim, start, x, y);
 }
 
 template<typename T>
@@ -1893,7 +1966,7 @@ __global__ void _Crop1DGrad(
     const int               end,
     const T*                dy,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int i = idx % inner_dim;
         const int d = (idx / inner_dim) % dim;
         const int o = idx / inner_dim / dim;
@@ -1910,10 +1983,12 @@ template<> void Crop1DGrad<int, CUDAContext>(
     const int               start,
     const int               end,
     const int*              dy,
-    int*                    dx) {
+    int*                    dx,
+    CUDAContext*            ctx) {
     _Crop1DGrad<int>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, dim, ex_dim, inner_dim, start, end, dy, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 dim, ex_dim, inner_dim, start, end, dy, dx);
 }
 
 template<> void Crop1DGrad<float, CUDAContext>(
@@ -1924,10 +1999,12 @@ template<> void Crop1DGrad<float, CUDAContext>(
     const int               start,
     const int               end,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _Crop1DGrad<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, dim, ex_dim, inner_dim, start, end, dy, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 dim, ex_dim, inner_dim, start, end, dy, dx);
 }
 
 /******************** ndarray.pad ********************/
@@ -1942,7 +2019,7 @@ __global__ void _ConstPad1D(
     const T                 value,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int i = idx % inner_dim;
         const int ex_d = (idx / inner_dim) % ex_dim;
         const int o = idx / inner_dim / ex_dim;
@@ -1960,10 +2037,12 @@ template <> void ConstPad1D<float, CUDAContext>(
     const int               pad_l,
     const float             value,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _ConstPad1D<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, dim, ex_dim, inner_dim, pad_l, value, x, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 dim, ex_dim, inner_dim, pad_l, value, x, y);
 }
 
 template <typename T>
@@ -1975,7 +2054,7 @@ __global__ void _ReflectPad1D(
     const int               pad_l,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int i = idx % inner_dim;
         const int ex_d = (idx / inner_dim) % ex_dim;
         const int o = idx / inner_dim / ex_dim;
@@ -1993,10 +2072,12 @@ template <> void ReflectPad1D<float, CUDAContext>(
     const int               inner_dim,
     const int               pad_l,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _ReflectPad1D<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, dim, ex_dim, inner_dim, pad_l, x, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 dim, ex_dim, inner_dim, pad_l, x, y);
 }
 
 template <typename T>
@@ -2008,7 +2089,7 @@ __global__ void _EdgePad1D(
     const int               pad_l,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int i = idx % inner_dim;
         const int ex_d = (idx / inner_dim) % ex_dim;
         const int o = idx / inner_dim / ex_dim;
@@ -2024,10 +2105,12 @@ template <> void EdgePad1D<float, CUDAContext>(
     const int               inner_dim,
     const int               pad_l,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _EdgePad1D<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, dim, ex_dim, inner_dim, pad_l, x, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 dim, ex_dim, inner_dim, pad_l, x, y);
 }
 
 template <typename T>
@@ -2039,7 +2122,7 @@ __global__ void _ConstPad1DGrad(
     const int               pad_l,
     const T*                dy,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int i = idx % inner_dim;
         const int ex_d = (idx / inner_dim) % dim + pad_l;
         const int o = idx / inner_dim / dim;
@@ -2054,10 +2137,12 @@ template <> void ConstPad1DGrad<float, CUDAContext>(
     const int               inner_dim,
     const int               pad_l,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _ConstPad1DGrad<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, dim, ex_dim, inner_dim, pad_l, dy, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 dim, ex_dim, inner_dim, pad_l, dy, dx);
 }
 
 template <typename T>
@@ -2069,7 +2154,7 @@ __global__ void _ReflectPad1DGrad(
     const int               pad_l,
     const T*                dy,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int i = idx % inner_dim;
         const int ex_d = (idx / inner_dim) % ex_dim;
         const int o = idx / inner_dim / ex_dim;
@@ -2087,10 +2172,12 @@ template <> void ReflectPad1DGrad<float, CUDAContext>(
     const int               inner_dim,
     const int               pad_l,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _ReflectPad1DGrad<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, dim, ex_dim, inner_dim, pad_l, dy, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 dim, ex_dim, inner_dim, pad_l, dy, dx);
 }
 
 template <typename T>
@@ -2102,7 +2189,7 @@ __global__ void _EdgePad1DGrad(
     const int               pad_l,
     const T*                dy,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int i = idx % inner_dim;
         const int ex_d = (idx / inner_dim) % ex_dim;
         const int o = idx / inner_dim / ex_dim;
@@ -2118,10 +2205,12 @@ template <> void EdgePad1DGrad<float, CUDAContext>(
     const int               inner_dim,
     const int               pad_l,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _EdgePad1DGrad<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, dim, ex_dim, inner_dim, pad_l, dy, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 dim, ex_dim, inner_dim, pad_l, dy, dx);
 }
 
 /******************** ndarray.one_hot ********************/
@@ -2133,7 +2222,7 @@ __global__ void _OneHot(
     const int               on_value,
     const float*            x,
     float*                  y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int val = x[idx];
         y[idx * depth + val] = on_value;
     }
@@ -2144,10 +2233,12 @@ template <> void OneHot<float, CUDAContext>(
     const int               depth,
     const int               on_value,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _OneHot<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, depth, on_value, x, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 depth, on_value, x, y);
 }
 
 /******************** ndarray.reduce ********************/
@@ -2159,11 +2250,12 @@ __global__ void _Sum(
     const int               inner_dim,
     const T*                x,
     float*                  y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         T sum_val = 0.0;
+        const int offset = (idx / inner_dim * axis_dim)
+            * inner_dim + idx % inner_dim;
         for (int j = 0; j < axis_dim; j++)
-            sum_val += x[(idx / inner_dim * axis_dim + j)
-                          * inner_dim + idx % inner_dim];
+            sum_val += x[offset + j * inner_dim];
         y[idx] = sum_val;
    }
 }
@@ -2173,10 +2265,12 @@ template<> void Sum<float, CUDAContext>(
     const int               axis_dim,
     const int               inner_dim,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Sum<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, axis_dim, inner_dim, x, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 axis_dim, inner_dim, x, y);
 }
 
 template <typename T>
@@ -2187,11 +2281,11 @@ __global__ void _SumGrad(
     const T                 coeff,
     const T*                dy,
     float*                  dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        const int offset = (idx / inner_dim * axis_dim)
+            * inner_dim + idx % inner_dim;
         for (int j = 0; j < axis_dim; j++)
-            dx[(idx / inner_dim * axis_dim + j)
-                    * inner_dim + idx % inner_dim]
-            = dy[idx] * coeff;
+            dx[offset + j * inner_dim] = dy[idx] * coeff;
     }
 }
 
@@ -2201,10 +2295,12 @@ template<> void SumGrad<float, CUDAContext>(
     const int               inner_dim,
     const float             coeff,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _SumGrad<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, axis_dim, inner_dim, coeff, dy, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 axis_dim, inner_dim, coeff, dy, dx);
 }
 
 /******************** ndarray.repeat ********************/
@@ -2217,7 +2313,7 @@ __global__ void _Repeat(
     const int               dim,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int d = idx % inner_dim;
         const int b = (idx / inner_dim / repeats) % dim;
         const int n = idx / inner_dim / repeats / dim;
@@ -2233,10 +2329,12 @@ template <> void Repeat<float, CUDAContext>(
     const int               inner_dim,
     const int               repeats,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Repeat<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, inner_dim, repeats, dim, x, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 inner_dim, repeats, dim, x, y);
 }
 
 template <typename T>
@@ -2247,7 +2345,7 @@ __global__ void _RepeatGrad(
     const int               dim,
     const T*                dy,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int d = idx % inner_dim;
         const int b = (idx / inner_dim) % dim;
         const int n = idx / inner_dim  / dim;
@@ -2270,9 +2368,9 @@ template <> void RepeatGrad<float, CUDAContext>(
     float*                  dx,
     CUDAContext*            ctx) {
     _RepeatGrad<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                count, inner_dim, repeats, dim, dy, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 count, inner_dim, repeats, dim, dy, dx);
 }
 
 /******************** ndarray.slice ********************/
@@ -2287,7 +2385,7 @@ __global__ void _Slice(
     const int               slice_offset,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int tmp = y_slice_dim * inner_dim;
         const int outer_idx = idx / tmp;
         const int slice_idx = idx % tmp;
@@ -2305,12 +2403,14 @@ template <> void Slice<float, CUDAContext>(
     const int               y_slice_dim,
     const int               slice_offset,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Slice<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, outer_dim, inner_dim,
-                x_slice_dim, y_slice_dim,
-                    slice_offset, x, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 outer_dim, inner_dim,
+                    x_slice_dim, y_slice_dim,
+                        slice_offset, x, y);
 }
 
 template <typename T>
@@ -2323,7 +2423,7 @@ __global__ void _SliceGrad(
     const int               slice_offset,
     const T*                dy,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int tmp = y_slice_dim * inner_dim;
         const int outer_idx = idx / tmp;
         const int slice_idx = idx % tmp;
@@ -2341,12 +2441,14 @@ template <> void SliceGrad<float, CUDAContext>(
     const int               y_slice_dim,
     const int               slice_offset,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _SliceGrad<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, outer_dim, inner_dim,
-                x_slice_dim, y_slice_dim,
-                    slice_offset, dy,  dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 outer_dim, inner_dim,
+                     x_slice_dim, y_slice_dim,
+                         slice_offset, dy,  dx);
 }
 
 /******************** ndarray.tile ********************/
@@ -2358,7 +2460,7 @@ __global__ void _Tile(
     const int               multiple,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int d = idx % ex_inner_dim;
         const int n = idx / ex_inner_dim / multiple;
         const int x_idx = n * ex_inner_dim + d;
@@ -2372,10 +2474,12 @@ template <> void Tile<float, CUDAContext>(
     const int               ex_inner_dim,
     const int               multiple,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Tile<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, ex_inner_dim, multiple, x, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 ex_inner_dim, multiple, x, y);
 }
 
 template <typename T>
@@ -2385,12 +2489,12 @@ __global__ void _TileGrad(
     const int               multiple,
     const T*                dy,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
-        const int d = idx % ex_inner_dim;
-        const int n = idx / ex_inner_dim;
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         T gradient = 0;
-        for (int t = 0; t < multiple; t++) 
-            gradient += dy[(n * multiple + t) * ex_inner_dim + d];
+        const int offset = (idx / ex_inner_dim * multiple)
+            * ex_inner_dim + idx % ex_inner_dim;
+        for (int t = 0; t < multiple; t++)
+            gradient += dy[offset + t * ex_inner_dim];
         dx[idx] = gradient;
     }
 }
@@ -2404,9 +2508,9 @@ template <> void TileGrad<float, CUDAContext>(
     float*                  dx,
     CUDAContext*            ctx) {
     _TileGrad<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS,
-            0, ctx->cuda_stream() >> >(
-                count, ex_inner_dim, multiple, dy, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 count, ex_inner_dim, multiple, dy, dx);
 }
 
 /******************** ndarray.transpose ********************/
@@ -2420,7 +2524,7 @@ __global__ void _Transpose(
     const int*              new_steps,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
        int x_idx = 0, y_idx = idx;
        for (int j = 0; j < ndim; ++j) {
            int k = order[j];
@@ -2438,10 +2542,12 @@ template <> void Transpose<float, CUDAContext>(
     const int*              old_steps,
     const int*              new_steps,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _Transpose<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, ndim, order, old_steps, new_steps, x, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 ndim, order, old_steps, new_steps, x, y);
 }
 
 template <typename T>
@@ -2453,7 +2559,7 @@ __global__ void _TransposeGrad(
     const int*              new_steps,
     const T*                dy,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         int x_idx = 0, y_idx = idx;
         for (int j = 0; j < ndim; ++j) {
             int k = order[j];
@@ -2471,10 +2577,12 @@ template <> void TransposeGrad<float, CUDAContext>(
     const int*              old_steps,
     const int*              new_steps,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _TransposeGrad<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, ndim, order, old_steps, new_steps, dy, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 ndim, order, old_steps, new_steps, dy, dx);
 }
 
 /******************** recurrent.lstm_cell ********************/
@@ -2485,7 +2593,7 @@ __global__ void _LSTMCellAct(
     const int               c_offset,
     const int               x_offset,
     T*                      xact) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int offset = idx % x_offset;
         xact[idx] = offset < c_offset ?
             _SigmoidUnit<float>(xact[idx]) : tanh(xact[idx]);
@@ -2503,7 +2611,7 @@ __global__ void _LSTMCellGate(
     const T*                xact,
     T*                      c,
     T*                      h) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int n = idx / hidden_size;
         const int offset = idx % hidden_size;
         const T* x  = xact + n * x_offset;
@@ -2523,16 +2631,20 @@ template <> void LSTMCell<float, CUDAContext>(
     const float*            cx,
     float*                  xact,
     float*                  c,
-    float*                  h) {
+    float*                  h,
+    CUDAContext*            ctx) {
     const int o_offset = 2 * C,
                   c_offset = 3 * C,
                       x_offset = 4 * C;
     _LSTMCellAct<float>
-        << <CUDA_BLOCKS(count * 4), CUDA_THREADS >> > (
-            count * 4, c_offset, x_offset, xact);
-    _LSTMCellGate<float> 
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, C, o_offset, c_offset, x_offset, cx, xact, c, h);
+        << < CUDA_BLOCKS(count * 4), CUDA_THREADS,
+             0, ctx->cuda_stream() >> > (count * 4,
+                 c_offset, x_offset, xact);
+    _LSTMCellGate<float>
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 C, o_offset, c_offset, x_offset,
+                    cx, xact, c, h);
 }
 
 template <typename T>
@@ -2549,7 +2661,7 @@ __global__ void _LSTMCellGateGrad(
     const T*                dh,
     T*                      dcx,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int n = idx / hidden_size;
         const int offset = idx % hidden_size;
         const T* xact_ = xact + n * x_offset;
@@ -2576,7 +2688,7 @@ __global__ void _LSTMCellActGrad(
     const int               x_offset,
     const T*                xact,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int offset = idx % x_offset;
         const T val = xact[idx];
         if (offset < c_offset) dx[idx] = dx[idx] * val * (T(1) - val);
@@ -2594,17 +2706,20 @@ template <> void LSTMCellGrad<float, CUDAContext>(
     const float*            dc,
     const float*            dh,
     float*                  dcx,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     const int o_offset = 2 * C, 
                   c_offset = 3 * C,
                       x_offset = 4 * C;
     _LSTMCellGateGrad<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, C, o_offset, c_offset, x_offset,
-                cx, xact, c, dc, dh, dcx, dx);
-    _LSTMCellActGrad<float> 
-        << <CUDA_BLOCKS(count * 4), CUDA_THREADS >> >(
-            count * 4, c_offset, x_offset, xact, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 C, o_offset, c_offset, x_offset,
+                    cx, xact, c, dc, dh, dcx, dx);
+    _LSTMCellActGrad<float>
+        << < CUDA_BLOCKS(count * 4), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count * 4,
+                 c_offset, x_offset, xact, dx);
 }
 
 /******************** update.adam_update ********************/
@@ -2619,7 +2734,7 @@ __global__ void _AdamUpdate(
     T*                      g,
     T*                      m,
     T*                      v) {
-    CUDA_KERNEL_LOOP(i, count) {
+    CUDA_1D_KERNEL_LOOP(i, count) {
         T gi = g[i];
         T mi = m[i] = m[i] * beta1 + gi * (1 - beta1);
         T vi = v[i] = v[i] * beta2 + gi * gi * (1 - beta2);
@@ -2635,10 +2750,12 @@ template <> void AdamUpdate<float, CUDAContext>(
     const float             eps,
     float*                  g,
     float*                  m,
-    float*                  v) {
+    float*                  v,
+    CUDAContext*            ctx) {
     _AdamUpdate<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> > (
-            count, lr, beta1, beta2, eps, g, m, v);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> > (count,
+                 lr, beta1, beta2, eps, g, m, v);
 }
 
 /******************** update.nesterov_update ********************/
@@ -2650,7 +2767,7 @@ __global__ void _NesterovUpdate(
     const T                 momentum,
     T*                      g,
     T*                      h) {
-    CUDA_KERNEL_LOOP(i, count) {
+    CUDA_1D_KERNEL_LOOP(i, count) {
         T hi = h[i];
         T hi_new = h[i] = momentum * hi + lr * g[i];
         g[i] = (1 + momentum) * hi_new - momentum * hi;
@@ -2662,10 +2779,12 @@ template <> void NesterovUpdate<float, CUDAContext>(
     const float             lr,
     const float             momentum,
     float*                  g,
-    float*                  h) {
+    float*                  h,
+    CUDAContext*            ctx) {
     _NesterovUpdate<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> > (
-            count, lr, momentum, g, h);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> > (count,
+                 lr, momentum, g, h);
 }
 
 /******************** update.rmsprop_update ********************/
@@ -2678,7 +2797,7 @@ __global__ void _RMSPropUpdate(
     const T                 eps,
     T*                      g,
     T*                      h) {
-    CUDA_KERNEL_LOOP(i, count) {
+    CUDA_1D_KERNEL_LOOP(i, count) {
         T gi = g[i];
         T hi = h[i] = decay * h[i] + (1 - decay) * gi * gi;
         g[i] = lr * g[i] / (sqrt(hi) + eps);
@@ -2691,10 +2810,12 @@ template <> void RMSPropUpdate<float, CUDAContext>(
     const float             decay,
     const float             eps,
     float*                  g,
-    float*                  h) {
+    float*                  h,
+    CUDAContext*            ctx) {
     _RMSPropUpdate<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, lr, decay, eps, g, h);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 lr, decay, eps, g, h);
 }
 
 /******************** update.sgd_update ********************/
@@ -2706,7 +2827,7 @@ __global__ void _SGDUpdate(
     const T                 momentum,
     T*                      g,
     T*                      h) {
-    CUDA_KERNEL_LOOP(i, count) {
+    CUDA_1D_KERNEL_LOOP(i, count) {
         T hi = h[i];
         g[i] = h[i] = momentum * hi + lr * g[i];
     }
@@ -2717,10 +2838,12 @@ template <> void SGDUpdate<float, CUDAContext>(
     const float             lr,
     const float             momentum,
     float*                  g,
-    float*                  h) {
+    float*                  h,
+    CUDAContext*            ctx) {
     _SGDUpdate<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, lr, momentum, g, h);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 lr, momentum, g, h);
 }
 
 /******************** vision.bias_add ********************/
@@ -2732,7 +2855,7 @@ __global__ void _BiasAdd_NCHW(
     const int               inner_dim,
     const T*                bias,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int bias_idx = (idx / inner_dim) % dim;
         y[idx] += bias[bias_idx];
     }
@@ -2745,7 +2868,7 @@ __global__ void _BiasAdd_NHWC(
     const int               inner_dim,
     const T*                bias,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         y[idx] += bias[idx % dim];
     }
 }
@@ -2762,14 +2885,14 @@ template<> void BiasAdd<float, CUDAContext>(
     CUDAContext*            ctx) {
     if (data_format == "NCHW") {
         _BiasAdd_NCHW<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS,
-                0, ctx->cuda_stream() >> >(
-                    count, dim, inner_dim, bias, y);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(
+                     count, dim, inner_dim, bias, y);
     } else if (data_format == "NHWC") {
         _BiasAdd_NHWC<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS,
-                0, ctx->cuda_stream() >> >(
-                    count, dim,  inner_dim, bias, y);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(
+                     count, dim, inner_dim, bias, y);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
@@ -2788,7 +2911,7 @@ __global__ void _BilinearResize_NCHW(
     const float             scale_w,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int w = idx % out_w;
         const int h = (idx / out_w) % out_h;
         const int c = (idx / out_w / out_h) % C;
@@ -2831,7 +2954,7 @@ __global__ void _BilinearResize_NHWC(
     const float             scale_w,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int c = idx % C;
         const int w = (idx / C) % out_w;
         const int h = (idx / C / out_w) % out_h;
@@ -2871,19 +2994,22 @@ template <> void BilinearResize<float, CUDAContext>(
     const int               out_w,
     const string&           data_format,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     const float scale_h = (float)H / out_h;
     const float scale_w = (float)W / out_w;
      if (data_format == "NCHW") {
          _BilinearResize_NCHW<float>
-             << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                 count, N, C, H, W, out_h, out_w,
-                     scale_h, scale_w, x, y);
+             << < CUDA_BLOCKS(count), CUDA_THREADS,
+                  0, ctx->cuda_stream() >> >(
+                      count, N, C, H, W, out_h, out_w,
+                          scale_h, scale_w, x, y);
     } else if(data_format == "NHWC") {
          _BilinearResize_NHWC<float>
-             << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                 count, N, C, H, W, out_h, out_w,
-                     scale_h, scale_w, x, y);
+             << < CUDA_BLOCKS(count), CUDA_THREADS,
+                  0, ctx->cuda_stream() >> >(
+                      count, N, C, H, W, out_h, out_w,
+                          scale_h, scale_w, x, y);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
@@ -2900,7 +3026,7 @@ __global__ void _BilinearResizeGrad_NCHW(
     const float             scale_w,
     const T*                dy,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int w = idx % out_w;
         const int h = (idx / out_w) % out_h;
         const int c = (idx / out_w / out_h) % C;
@@ -2941,7 +3067,7 @@ __global__ void _BilinearResizeGrad_NHWC(
     const float             scale_w,
     const T*                dy,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int c = idx % C;
         const int w = (idx / C) % out_w;
         const int h = (idx / C / out_w) % out_h;
@@ -2979,20 +3105,22 @@ template <> void BilinearResizeGrad<float, CUDAContext>(
     const int               out_w,
     const string&           data_format,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     const float scale_h = (float)H / out_h;
     const float scale_w = (float)W / out_w;
-    math::Set<float, CUDAContext>(N * C * H * W, 0, dx);
      if (data_format == "NCHW") {
          _BilinearResizeGrad_NCHW<float>
-             << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                 count, N, C, H, W, out_h, out_w,
-                     scale_h, scale_w, dy, dx);
+             << < CUDA_BLOCKS(count), CUDA_THREADS,
+                  0, ctx->cuda_stream() >> >(
+                      count, N, C, H, W, out_h, out_w,
+                          scale_h, scale_w, dy, dx);
     } else if(data_format == "NHWC") {
          _BilinearResizeGrad_NHWC<float>
-             << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                 count, N, C, H, W, out_h, out_w,
-                     scale_h, scale_w, dy, dx);
+             << < CUDA_BLOCKS(count), CUDA_THREADS,
+                  0, ctx->cuda_stream() >> >(
+                      count, N, C, H, W, out_h, out_w,
+                          scale_h, scale_w, dy, dx);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
@@ -3015,7 +3143,7 @@ __global__ void _Im2Col2d_NCHW(
     const int               dilation_w,
     const T*                im,
     T*                      col) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int w = idx % col_w;
         const int h_idx = idx / col_w;
         const int h = h_idx % col_h;
@@ -3061,7 +3189,7 @@ __global__ void _Im2Col2d_NHWC(
     const int               dilation_w,
     const T*                im,
     T*                      col) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int c = idx % C;
         const int w = (idx / C) % col_w;
         const int h = idx / C / col_w;
@@ -3100,21 +3228,24 @@ template <> void Im2Col2d<float, CUDAContext>(
     const int               dilation_w,
     const string&           data_format,
     const float*            im,
-    float*                  col) {
+    float*                  col,
+    CUDAContext*            ctx) {
     if (data_format == "NCHW") {
          const int count = (C * col_h * col_w);
          _Im2Col2d_NCHW<float> 
-             << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                 count, H, W, col_h, col_w,
-                     kernel_h, kernel_w, stride_h, stride_w,
-                         pad_h, pad_w, dilation_h, dilation_w, im, col);
+             << < CUDA_BLOCKS(count), CUDA_THREADS,
+                  0, ctx->cuda_stream() >> >(count,
+                      H, W, col_h, col_w, kernel_h, kernel_w,
+                          stride_h, stride_w, pad_h, pad_w,
+                              dilation_h, dilation_w, im, col);
     } else if (data_format == "NHWC") {
          const int count = (col_h * col_w * C);
          _Im2Col2d_NHWC<float> 
-             << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                 count, C, H, W, col_h, col_w,
-                     kernel_h, kernel_w, stride_h, stride_w,
-                         pad_h, pad_w, dilation_h, dilation_w, im, col);
+             << < CUDA_BLOCKS(count), CUDA_THREADS,
+                  0, ctx->cuda_stream() >> >(count, 
+                      C, H, W, col_h, col_w, kernel_h, kernel_w,
+                          stride_h, stride_w, pad_h, pad_w,
+                              dilation_h, dilation_w, im, col);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
@@ -3135,7 +3266,7 @@ __global__ void _Col2Im2d_NCHW(
     const int               dilation_w,
     const T*                col,
     T*                      im) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         T val = 0;
         const int im_w = idx % W + pad_w;
         const int im_h = (idx / W) % H + pad_h;
@@ -3190,7 +3321,7 @@ __global__ void _Col2Im2d_NHWC(
     const int               dilation_w,
     const T*                col,
     T*                      im) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         T val = 0;
         const int im_c = idx % C;
         const int im_w = (idx / C) % W + pad_w;
@@ -3243,21 +3374,24 @@ template <> void Col2Im2d<float, CUDAContext>(
     const int               dilation_w,
     const string&           data_format,
     const float*            col,
-    float*                  im) {
+    float*                  im,
+    CUDAContext*            ctx) {
     if (data_format == "NCHW") {
          const int count = (C * H * W);
          _Col2Im2d_NCHW<float>
-             << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                 count, H, W, col_h, col_w, kernel_h, kernel_w,
-                     stride_h, stride_w, pad_h, pad_w,
-                         dilation_h, dilation_w, col, im);
+             << < CUDA_BLOCKS(count), CUDA_THREADS,
+                  0, ctx->cuda_stream() >> >(count,
+                      H, W, col_h, col_w, kernel_h, kernel_w,
+                          stride_h, stride_w, pad_h, pad_w,
+                              dilation_h, dilation_w, col, im);
     } else if (data_format == "NHWC") {
          const int count = (H * W * C);
          _Col2Im2d_NHWC<float> 
-             << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                 count, C, H, W, col_h, col_w, kernel_h, kernel_w,
-                     stride_h, stride_w, pad_h, pad_w,
-                         dilation_h, dilation_w, col, im);
+             << < CUDA_BLOCKS(count), CUDA_THREADS,
+                  0, ctx->cuda_stream() >> >(count,
+                      C, H, W, col_h, col_w, kernel_h, kernel_w,
+                          stride_h, stride_w, pad_h, pad_w,
+                              dilation_h, dilation_w, col, im);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
@@ -3276,7 +3410,7 @@ __global__ void _NNResize_NCHW(
     const float             scale_w,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int w = idx % out_w;
         const int h = (idx / out_w) % out_h;
         const int c = (idx / out_w / out_h) % C;
@@ -3300,7 +3434,7 @@ __global__ void _NNResize_NHWC(
     const float             scale_w,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int c = idx % C;
         const int w = (idx / C) % out_w;
         const int h = (idx / C / out_w) % out_h;
@@ -3321,19 +3455,22 @@ template <> void NNResize<float, CUDAContext>(
     const int               out_w,
     const string&           data_format,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     const float scale_h = (float)H / out_h;
     const float scale_w = (float)W / out_w;
     if (data_format == "NCHW") {
         _NNResize_NCHW<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, N, C, H, W, out_h, out_w,
-                    scale_h, scale_w, x, y);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(
+                     count, N, C, H, W, out_h, out_w,
+                         scale_h, scale_w, x, y);
     } else if(data_format == "NHWC") {
         _NNResize_NHWC<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, N, C, H, W, out_h, out_w,
-                    scale_h, scale_w, x, y);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(
+                     count, N, C, H, W, out_h, out_w,
+                         scale_h, scale_w, x, y);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
@@ -3350,7 +3487,7 @@ template <typename T>
      const float            scale_w,
      const T*               dy,
      T*                     dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int w = idx % out_w;
         const int h = (idx / out_w) % out_h;
         const int c = (idx / out_w / out_h) % C;
@@ -3374,7 +3511,7 @@ __global__ void _NNResizeGrad_NHWC(
     const float             scale_w,
     const T*                dy,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int c = idx % C;
         const int w = (idx / C) % out_w;
         const int h = (idx / C / out_w) % out_h;
@@ -3395,20 +3532,22 @@ template <> void NNResizeGrad<float, CUDAContext>(
     const int               out_w,
     const string&           data_format,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     const float scale_h = (float)H / out_h;
     const float scale_w = (float)W / out_w;
-    math::Set<float, CUDAContext>(N * C * H * W, 0, dx);
     if (data_format == "NCHW") {
         _NNResizeGrad_NCHW<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, N, C, H, W, out_h, out_w,
-                    scale_h, scale_w, dy, dx);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(
+                     count, N, C, H, W, out_h, out_w,
+                         scale_h, scale_w, dy, dx);
     } else if(data_format == "NHWC") {
         _NNResizeGrad_NHWC<float> 
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, N, C, H, W, out_h, out_w,
-                    scale_h, scale_w, dy, dx);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(
+                     count, N, C, H, W, out_h, out_w,
+                         scale_h, scale_w, dy, dx);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
@@ -3432,7 +3571,7 @@ __global__ void _MAXPooling2d_NCHW(
     const T*                x,
     int*                    mask,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int pw = idx % pool_w;
         const int ph = (idx / pool_w) % pool_h;
         const int pc = (idx / pool_w / pool_h) % C;
@@ -3481,7 +3620,7 @@ __global__ void _MAXPooling2d_NHWC(
     const T*                x,
     int*                    mask,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int pc = idx % C;
         const int pw = (idx / C) % pool_w;
         const int ph = (idx / C / pool_w) % pool_h;
@@ -3528,17 +3667,20 @@ template<> void MAXPooling2d<float, CUDAContext>(
     const string&           data_format,
     const float*            x,
     int*                    mask,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     if (data_format == "NCHW") {
         _MAXPooling2d_NCHW<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                    stride_h, stride_w, pad_h, pad_w, x, mask, y);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
+                         stride_h, stride_w, pad_h, pad_w, x, mask, y);
     } else if (data_format == "NHWC") {                        
         _MAXPooling2d_NHWC<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                    stride_h, stride_w, pad_h, pad_w, x, mask, y);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
+                         stride_h, stride_w, pad_h, pad_w, x, mask, y);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
@@ -3559,7 +3701,7 @@ __global__ void _AVGPooling2d_NCHW(
     const int               pad_w,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int pw = idx % pool_w;
         const int ph = (idx / pool_w) % pool_h;
         const int pc = (idx / pool_w / pool_h) % C;
@@ -3605,7 +3747,7 @@ __global__ void _AVGPooling2d_NHWC(
     const int               pad_w,
     const T*                x,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int pc = idx % C;
         const int pw = (idx / C) % pool_w;
         const int ph = (idx / C / pool_w) % pool_h;
@@ -3648,17 +3790,20 @@ template<> void AVGPooling2d<float, CUDAContext>(
     const int               pad_w,
     const string&           data_format,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     if (data_format == "NCHW") {
         _AVGPooling2d_NCHW<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                    stride_h, stride_w, pad_h, pad_w, x, y);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
+                         stride_h, stride_w, pad_h, pad_w, x, y);
     } else if (data_format == "NHWC") {
         _AVGPooling2d_NHWC<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                    stride_h, stride_w, pad_h, pad_w, x, y);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
+                         stride_h, stride_w, pad_h, pad_w, x, y);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
@@ -3680,7 +3825,7 @@ __global__ void _MAXPooling2dGrad_NCHW(
     const T*                dy,
     const int*              mask,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int w = idx % W;
         const int h = (idx / W) % H;
         const int c = (idx / W / H) % C;
@@ -3729,7 +3874,7 @@ __global__ void _MAXPooling2dGrad_NHWC(
     const T*                dy,
     const int*              mask,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int c = idx % C;
         const int w = (idx / C) % W;
         const int h = (idx / C / W) % H;
@@ -3773,17 +3918,20 @@ template<> void MAXPooling2dGrad<float, CUDAContext>(
     const string&           data_format,
     const float*            dy,
     const int*              mask,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     if (data_format == "NCHW") {
         _MAXPooling2dGrad_NCHW<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                    stride_h, stride_w, pad_h, pad_w, dy,mask, dx);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
+                         stride_h, stride_w, pad_h, pad_w, dy,mask, dx);
     } else if (data_format == "NHWC") {
         _MAXPooling2dGrad_NHWC<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                    stride_h, stride_w, pad_h, pad_w, dy, mask, dx);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
+                         stride_h, stride_w, pad_h, pad_w, dy, mask, dx);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
@@ -3804,7 +3952,7 @@ __global__ void _AVGPooling2dGrad_NCHW(
     const int               pad_w,
     const T*                dy,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int w = idx % W;
         const int h = (idx / W) % H;
         const int c = (idx / W / H) % C;
@@ -3850,7 +3998,7 @@ __global__ void _AVGPooling2dGrad_NHWC(
     const int               pad_w,
     const T*                dy,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         const int c = idx % C;
         const int w = (idx / C) % W;
         const int h = (idx / C / W) % H;
@@ -3895,17 +4043,20 @@ template<> void AVGPooling2dGrad<float, CUDAContext>(
     const int               pad_w,
     const string&           data_format,
     const float*            dy,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
    if (data_format == "NCHW") {
         _AVGPooling2dGrad_NCHW<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                    stride_h, stride_w, pad_h, pad_w, dy, dx);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
+                         stride_h, stride_w, pad_h, pad_w, dy, dx);
     } else if (data_format == "NHWC") {
         _AVGPooling2dGrad_NHWC<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-                count, N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                    stride_h, stride_w, pad_h, pad_w, dy, dx);
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
+                         stride_h, stride_w, pad_h, pad_w, dy, dx);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
@@ -3924,7 +4075,7 @@ __global__ void _ROIPooling(
     const T*                rois,
     int*                    mask,
     T*                      y) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         int pw = idx % pool_w;
         int ph = (idx / pool_w) % pool_h;
         int c = (idx / pool_w / pool_h) % channels;
@@ -3935,7 +4086,7 @@ __global__ void _ROIPooling(
 
         if (roi_batch_ind < 0) {
             y[idx] = 0;
-            mask[idx] = 0;
+            mask[idx] = -1;
             continue;
         }
 
@@ -3990,11 +4141,13 @@ template<> void ROIPooling<float, CUDAContext>(
     const float*            x,
     const float*            rois,
     int*                    mask,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _ROIPooling<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, spatial_scale, C, H, W,
-                pool_h, pool_w, x, rois, mask, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 spatial_scale, C, H, W,
+                     pool_h, pool_w, x, rois, mask, y);
 }
 
 template <typename T>
@@ -4011,7 +4164,7 @@ __global__ void _ROIPoolingGrad(
     const T*                rois,
     const int*              mask,
     T*                      dx) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         int w = idx % width;
         int h = (idx / width) % height;
         int c = (idx / width / height) % channels;
@@ -4083,11 +4236,13 @@ template<> void ROIPoolingGrad<float, CUDAContext>(
     const float*            dy,
     const float*            rois,
     const int*              mask,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _ROIPoolingGrad<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, num_rois, spatial_scale, C, H, W,
-                pool_h, pool_w, dy, rois, mask, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 num_rois, spatial_scale, C, H, W,
+                     pool_h, pool_w, dy, rois, mask, dx);
 }
 
 /******************** vision.roi_align ********************/
@@ -4147,7 +4302,7 @@ __global__ void _ROIAlign(
     const T*                Xdata,
     const T*                rois,
     T*                      Ydata) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         int pw = idx % pool_w;
         int ph = (idx / pool_w) % pool_h;
         int c = (idx / pool_w / pool_h) % channels;
@@ -4209,11 +4364,13 @@ template<> void ROIAlign<float, CUDAContext>(
     const int               sampling_ratio,
     const float*            x,
     const float*            rois,
-    float*                  y) {
+    float*                  y,
+    CUDAContext*            ctx) {
     _ROIAlign<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, spatial_scale, C, H, W,
-                pool_h, pool_w, sampling_ratio, x, rois, y);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 spatial_scale, C, H, W, pool_h, pool_w,
+                     sampling_ratio, x, rois, y);
 }
 
 template <typename T>
@@ -4278,7 +4435,7 @@ __global__ void _ROIAlignGrad(
     const T*                dYdata,
     const T*                rois,
     T*                      dXdata) {
-    CUDA_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
         int pw = idx % pool_w;
         int ph = (idx / pool_w) % pool_h;
         int c = (idx / pool_w / pool_h) % channels;
@@ -4367,11 +4524,13 @@ template<> void ROIAlignGrad<float, CUDAContext>(
     const int               sampling_ratio,
     const float*            dy,
     const float*            rois,
-    float*                  dx) {
+    float*                  dx,
+    CUDAContext*            ctx) {
     _ROIAlignGrad<float>
-        << <CUDA_BLOCKS(count), CUDA_THREADS >> >(
-            count, num_rois, spatial_scale, C, H, W,
-                pool_h, pool_w, sampling_ratio, dy, rois, dx);
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 num_rois, spatial_scale, C, H, W,
+                     pool_h, pool_w, sampling_ratio, dy, rois, dx);
 }
 
 }    // namespace kernel

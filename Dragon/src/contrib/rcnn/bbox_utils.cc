@@ -19,7 +19,8 @@ template <> void GenerateProposals<float, CPUContext>(
     const float*            scores,
     const float*            bbox_deltas,
     const float*            anchors,
-    float*                  proposals) {
+    float*                  proposals,
+    CPUContext*             ctx) {
     float* proposal = proposals;
     const int K = feat_h * feat_w;
     for (int h = 0; h < feat_h; ++h) {
@@ -57,7 +58,8 @@ template <> void GenerateProposals_v2<float, CPUContext>(
     const float             min_box_w,
     const float*            scores,
     const float*            bbox_deltas,
-    float*                  proposals) {
+    float*                  proposals,
+    CPUContext*             ctx) {
     float* proposal = proposals;
     for (int i = 0; i < total_anchors; ++i) {
         //  bbox_deltas: [1, 4, total_anchors]
@@ -98,7 +100,8 @@ template <> void ApplyNMS<float, CPUContext>(
     const float             thresh,
     const float*            boxes,
     int*                    keep_indices,
-    int&                    num_keep) {
+    int&                    num_keep,
+    CPUContext*             ctx) {
     int count = 0;
     std::vector<char> is_dead(num_boxes);
     for (int i = 0; i < num_boxes; ++i) is_dead[i] = 0;

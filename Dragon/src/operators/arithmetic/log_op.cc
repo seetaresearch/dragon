@@ -7,7 +7,7 @@ template <class Context> template <typename T>
 void LogOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Log<T, Context>(Output(0)->count(), Xdata, Ydata);
+    math::Log<T, Context>(Output(0)->count(), Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -29,7 +29,7 @@ void LogGradientOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    math::Div<T, Context>(Output(0)->count(), dYdata, Xdata, dXdata);
+    math::Div<T, Context>(Output(0)->count(), dYdata, Xdata, dXdata, ctx());
 }
 
 template <class Context>

@@ -20,11 +20,11 @@ void SoftmaxFocalLossOp<Context>::RunWithType() {
         outer_dim, Input(0).dim(axis), inner_dim,
             pos_alpha, neg_alpha, gamma, neg_id,
                 Pdata, Tdata, Idata, this->ignores.count(),
-                    Ldata, Fdata, &ctx());
+                    Ldata, Fdata, ctx());
 
     if (normalization == "UNIT") {
         Output(0)->ReshapeLike(losses);
-        Output(0)->template CopyFrom<Context>(losses);
+        Output(0)->template CopyFrom<Context>(losses, ctx());
         return;
     }
 
@@ -42,11 +42,13 @@ void SoftmaxFocalLossOp<Context>::RunWithType() {
     T loss = math::ASum<T, Context>(losses.count(), Ldata);
     Output(0)->Reshape({ 1 });
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Set<T, Context>(1, loss / normalizer, Ydata);
+    math::Set<T, Context>(1, loss / normalizer, Ydata, ctx());
 }
 
 template <class Context>
 void SoftmaxFocalLossOp<Context>::RunOnDevice() {
+    ctx()->set_stream_id(0);  //  enforce default stream
+
     outer_dim = Input(0).count(0, axis);
     inner_dim = Input(0).count(axis + 1);
     CHECK_EQ(outer_dim * inner_dim, Input(1).count())
@@ -80,16 +82,16 @@ void SoftmaxFocalLossGradientOp<Context>::RunWithType() {
         outer_dim, Output(0)->dim(axis), inner_dim,
             pos_alpha, neg_alpha, gamma, neg_id,
                 Pdata, Tdata, Idata, this->ignores.count(),
-                    dXdata, Fdata, &ctx());
+                    dXdata, Fdata, ctx());
 
     if (normalization == "UNIT") {
         auto* dYdata = Input(-1).template data<T, Context>();
         kernel::SumGrad<T, Context>(
             Input(0).count() / Input(0).dim(axis),
                 Input(0).dim(axis), inner_dim,
-                    1.0, dYdata, Pdata);
+                    1.0, dYdata, Pdata, ctx());
         math::Mul<T, Context>(Output(0)->count(),
-            Pdata, dXdata, dXdata); return;
+            Pdata, dXdata, dXdata, ctx()); return;
     }
 
     T normalizer = 1;
@@ -104,14 +106,16 @@ void SoftmaxFocalLossGradientOp<Context>::RunWithType() {
     }
 
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; ctx().template Copy<T, CPUContext, Context>(
+    T dYdata_host; ctx()->template Copy<T, CPUContext, Context>(
         1, &dYdata_host, dYdata);
     math::Scal<T, Context>(Output(0)->count(),
-        dYdata_host / normalizer, dXdata, &ctx());
+        dYdata_host / normalizer, dXdata, ctx());
 }
 
 template <class Context>
 void SoftmaxFocalLossGradientOp<Context>::RunOnDevice() {
+    ctx()->set_stream_id(0);  //  enforce default stream
+
     this->prob = ws()->GetTensor("/mnt/" + anchor() + "/softmax/prob");
     outer_dim = this->prob->count(0, axis);
     inner_dim = this->prob->count(axis + 1);

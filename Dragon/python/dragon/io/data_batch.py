@@ -70,6 +70,8 @@ class DataBatch(object):
             The phase of this operator, ``TRAIN`` or ``TEST``. Default is ``TRAIN``.
         batch_size : int
             The size of a training batch.
+        dtype : str
+            The data type of batch. Default is ``float32``.
         partition : boolean
             Whether to partition batch. Default is ``False``.
         prefetch : int

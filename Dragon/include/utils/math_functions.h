@@ -36,7 +36,8 @@ template <typename T, class Context>
 void Set(
     const int               n,
     const T                 alpha,
-    T*                      x);
+    T*                      x,
+    Context*                ctx);
 
 template <typename T, class Context>
 void RandomUniform(
@@ -78,73 +79,84 @@ void Add(
     const int               n,
     const T*                a,
     const T*                b,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 template <typename T, class Context>
 void Sub(
     const int               n,
     const T*                a,
     const T*                b,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 template <typename T, class Context>
 void Mul(
     const int               n,
     const T*                a,
     const T*                b,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 template <typename T, class Context>
 void Div(
     const int               n,
     const T*                a,
     const T*                b,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 template <typename T, class Context>
 void Clip(
     const int               n,
     const float             low,
     const float             high,
-    T*                      x);
+    T*                      x,
+    Context*                ctx);
 
 template <typename T, class Context>
 void Exp(
     const int               n,
     const T*                x,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 template <typename T, class Context>
 void Log(
     const int               n,
     const T*                x,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 template <typename T, class Context>
 void Square(
     const int               n,
     const T*                x,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 template <typename T, class Context>
 void Sqrt(
     const int               n,
     const T*                x,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 template <typename T, class Context>
 void Pow(
     const int               n,
     const float             alpha,
     const T*                x,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 template <typename T, class Context>
 void Inv(
     const int               n,
     const float             numerator,
     const T*                x,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 /******************** Level-2 ********************/
 
@@ -164,19 +176,21 @@ void Scale(
     Context*                ctx);
 
 template <typename T, class Context>
-T StridedDot(
+void StridedDot(
     const int               n,
     const T*                a,
     const int               incx,
     const T*                b,
     const int               incy,
+    T*                      y,
     Context*                ctx);
 
 template <typename T, class Context>
-float Dot(
+void Dot(
     const int               n,
     const T*                a,
     const T*                b,
+    T*                      y,
     Context*                ctx);
 
 template<typename T, class Context>
@@ -188,13 +202,15 @@ template<typename T, class Context>
 void AddScalar(
     const int               n,
     const float             alpha,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 template<typename T, class Context>
 void MulScalar(
     const int               n,
     const float             alpha,
-    T*                      y);
+    T*                      y,
+    Context*                ctx);
 
 template<typename T, class Context>
 void Axpy(

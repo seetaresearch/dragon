@@ -14,7 +14,8 @@ namespace math {
 template <> void Set<float, CPUContext>(
     const int               n,
     const float             alpha,
-    float*                  x) {
+    float*                  x,
+    CPUContext*             ctx) {
     if (alpha == 0) {
         memset(x, 0, sizeof(float) * n);
         return;
@@ -32,7 +33,8 @@ template <> void Set<float, CPUContext>(
 template <> void Set<int, CPUContext>(
     const int               n,
     const int               alpha,
-    int*                    x) {
+    int*                    x,
+    CPUContext*             ctx) {
     if (alpha == 0) {
         memset(x, 0, sizeof(int) * n);
         return;
@@ -50,7 +52,8 @@ template <> void Set<int, CPUContext>(
 template <> void Set<float16, CPUContext>(
     const int               n,
     const float16           alpha,
-    float16*                x) {
+    float16*                x,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -164,7 +167,8 @@ template <> void Add<float, CPUContext>(
     const int               n,
     const float*            a,
     const float*            b,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_SSE
     sse::Add<float>(n, a, b, y);
 #else
@@ -179,7 +183,8 @@ template <> void Add<int, CPUContext>(
     const int               n,
     const int*              a,
     const int*              b,
-    int*                    y) {
+    int*                    y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
 #endif
@@ -190,7 +195,8 @@ template <> void Add<float16, CPUContext>(
     const int               n,
     const float16*          a,
     const float16*          b,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -198,7 +204,8 @@ template <> void Sub<float, CPUContext>(
     const int               n,
     const float*            a,
     const float*            b,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_SSE
     sse::Sub<float>(n, a, b, y);
 #else
@@ -213,7 +220,8 @@ template <> void Sub<float16, CPUContext>(
     const int               n,
     const float16*          a,
     const float16*          b,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -221,7 +229,8 @@ template <> void Mul<float, CPUContext>(
     const int               n,
     const float*            a,
     const float*            b,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_SSE
     sse::Mul<float>(n, a, b, y);
 #else
@@ -236,7 +245,8 @@ template <> void Mul<float16, CPUContext>(
     const int               n,
     const float16*          a,
     const float16*          b,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -244,7 +254,8 @@ template <> void Div<float, CPUContext>(
     const int               n,
     const float*            a,
     const float*            b,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_SSE
     sse::Div<float>(n, a, b, y);
 #else
@@ -259,7 +270,8 @@ template <> void Div<float16, CPUContext>(
     const int               n,
     const float16*          a,
     const float16*          b,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -267,7 +279,8 @@ template <> void Clip<float, CPUContext>(
     const int               n,
     const float             low,
     const float             high,
-    float*                  x) {
+    float*                  x,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
 #endif
@@ -279,7 +292,8 @@ template <> void Clip<float, CPUContext>(
 template <> void Exp<float, CPUContext>(
     int                     n,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
 #endif
@@ -289,7 +303,8 @@ template <> void Exp<float, CPUContext>(
 template <> void Log<float, CPUContext>(
     int                     n,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
 #endif
@@ -299,7 +314,8 @@ template <> void Log<float, CPUContext>(
 template <> void Square<float, CPUContext>(
     int                     n,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
 #endif
@@ -309,14 +325,16 @@ template <> void Square<float, CPUContext>(
 template <> void Square<float16, CPUContext>(
     int                     n,
     const float16*          x,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
 template <> void Sqrt<float, CPUContext>(
     int                     n,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
 #endif
@@ -326,7 +344,8 @@ template <> void Sqrt<float, CPUContext>(
 template <> void Sqrt<float16, CPUContext>(
     int                     n,
     const float16*          x,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -334,7 +353,8 @@ template <> void Pow<float, CPUContext>(
     int                     n,
     const float             alpha,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
 #endif
@@ -345,7 +365,8 @@ template <> void Pow<float16, CPUContext>(
     int                     n,
     const float             alpha,
     const float16*          x,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -353,7 +374,8 @@ template <> void Inv<float, CPUContext>(
     const int               n,
     const float             numerator,
     const float*            x,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
 #endif
@@ -364,7 +386,8 @@ template <> void Inv<float16, CPUContext>(
     const int               n,
     const float             numerator,
     const float16*          x,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
@@ -423,51 +446,51 @@ template <> void Scale<float, CPUContext>(
 #endif  // WITH_BLAS
 }
 
-template <> float StridedDot<float, CPUContext>(
+template <> void StridedDot<float, CPUContext>(
     const int               n,
     const float*            a,
     const int               incx,
     const float*            b,
     const int               incy,
+    float*                  y,
     CPUContext*             ctx) {
 #ifdef WITH_BLAS
-    return cblas_sdot(n, a, incx, b, incy);
+    float result = cblas_sdot(n, a, incx, b, incy);
 #else
-    float ret = 0.f;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
-#endif
-    for (int i = 0; i < n; ++i) ret += a[i] * b[i];
-    return ret;
+    float result = 0.f;
+    int cx = 0, cy = 0;
+    for (int i = 0; i < n; ++i) {
+        result += a[cx] * b[cy];
+        cx += incx; cy += incy;
+    }
 #endif  //  WITH_BLAS
+    *y = result;
 }
 
-template <> float Dot<float, CPUContext>(
+template <> void Dot<float, CPUContext>(
     int                     n,
     const float*            a,
     const float*            b,
+    float*                  y,
     CPUContext*             ctx) {
 #ifdef WITH_BLAS
-    return StridedDot<float, CPUContext>(n, a, 1, b, 1, ctx);
-#elif  WITH_SSE
-    return sse::Dot<float>(n, a, b);
+    StridedDot<float, CPUContext>(n, a, 1, b, 1, y, ctx);
+#elif WITH_SSE
+    *y = sse::Dot<float>(n, a, b);
 #else
-    float ret = 0.f;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
-#endif
-    for (int i = 0; i < n; ++i) ret += a[i] * b[i];
-    return ret;
+    float result = 0.f;
+    for (int i = 0; i < n; ++i) result += a[i] * b[i];
+    *y = result;
 #endif  // WITH_BLAS
 }
 
-template <> float Dot<float16, CPUContext>(
+template <> void Dot<float16, CPUContext>(
     int                     n,
     const float16*          a,
     const float16*          b,
+    float16*                y,
     CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
-    return 0;
 }
 
 template <> float ASum<float, CPUContext>(
@@ -475,22 +498,19 @@ template <> float ASum<float, CPUContext>(
     const float*            x) {
 #ifdef WITH_BLAS
     return cblas_sasum(n, x, 1);
-#elif WITH_SSE
-    return sse::ASum<float>(n, x);
 #else
-    float ret = 0.f;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
-#endif
-    for (int i = 0; i < n; ++i) ret += x[i];
-    return ret;
+    float result = 0.f;
+    for (int i = 0; i < n; ++i)
+        result += std::abs(x[i]);
+    return result;
 #endif  // WITH_BLAS
 }
 
 template <> void AddScalar<float, CPUContext>(
     const int               n,
     const float             alpha,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_SSE
     sse::AddScalar<float>(n, alpha, y);
 #else
@@ -504,14 +524,16 @@ template <> void AddScalar<float, CPUContext>(
 template <> void AddScalar<float16, CPUContext>(
     const int               n,
     const float             alpha,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 
 template <> void MulScalar<float, CPUContext>(
     const int               n,
     const float             alpha,
-    float*                  y) {
+    float*                  y,
+    CPUContext*             ctx) {
 #ifdef WITH_SSE
     sse::MulScalar<float>(n, alpha, y);
 #else
@@ -525,7 +547,8 @@ template <> void MulScalar<float, CPUContext>(
 template <> void MulScalar<float16, CPUContext>(
     const int               n,
     const float             alpha,
-    float16*                y) {
+    float16*                y,
+    CPUContext*             ctx) {
     CPU_FP16_NOT_SUPPORTED;
 }
 

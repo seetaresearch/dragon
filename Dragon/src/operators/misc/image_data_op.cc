@@ -14,7 +14,7 @@ void ImageDataOp<Context>::RunWithType() {
 
     kernel::ImageData<Tx, Ty, Context>(
         Output(0)->count(), n, c, h, w, Mdata, Sdata,
-            data_format, Xdata, Ydata);
+            data_format, Xdata, Ydata, ctx());
 }
 
 template <class Context>

@@ -44,7 +44,7 @@ void Conv2dTransposeGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
 
     if (Output(2)->name() != "ignore") {
-        auto* dBdata = Output(2)->template mutable_data<T, Context>();
+        auto* dBdata = Output(2)->template mutable_data<T, Context>(ctx());
         for (int n = 0; n < Input(2).dim(0); n++)
             Db(dYdata + n * y_offset, dBdata);
     }
@@ -52,7 +52,7 @@ void Conv2dTransposeGradientOp<Context>::RunWithType() {
     for (int n = 0; n < Input(2).dim(0); n++) {
         if (Output(1)->name() != "ignore") {
             auto* Xdata = Input(0).template data<T, Context>();
-            auto* dWdata = Output(1)->template mutable_data<T, Context>();
+            auto* dWdata = Output(1)->template mutable_data<T, Context>(ctx());
             Dw(Xdata + n * x_offset, dYdata + n * y_offset, dWdata);
         }
         if (Output(0)->name() != "ignore") {

@@ -9,23 +9,27 @@ namespace dragon {
 
 template <class Context> template <typename Tx, typename Ty>
 void AccuracyOp<Context>::RunWithType() {
+    static CPUContext cctx;
+    float* Y1data, *Y2data = nullptr;
+    Y1data = Output(0)->template mutable_data<float, CPUContext>();
     if (OutputSize() > 1) {
-        math::Set<float, CPUContext>(num_classes, 0,
-            Output(1)->template mutable_data<float, CPUContext>());
+        Y2data = Output(1)->template mutable_data<float, CPUContext>();
+        math::Set<float, CPUContext>(num_classes, 0, Y2data, &cctx);
     }
-    Map<int, TIndex> num_per_class;
 
+    Map<int, TIndex> num_per_class;
     TIndex acc = 0, count = 0;
 
     const Tx* Xdata;
     if (XIsType(Input(0), float16)) {
-        Tensor* XF32 = ws()->CreateTensor("/mnt/" + anchor() + "/accuracy/xf32");
-        XF32->ReshapeLike(Input(0));
-        auto* XdataF16 = Input(0).template data<float16, CPUContext>();
-        auto* XdataF32 = XF32->template mutable_data<float, CPUContext>();
+        Tensor* X32T = ws()->CreateTensor(
+            "/mnt/" + anchor() + "/accuracy/f32");
+        X32T->ReshapeLike(Input(0));
+        auto* X16 = Input(0).template data<float16, CPUContext>();
+        auto* X32 = X32T->template mutable_data<float, CPUContext>();
         kernel::TypeA2B<float16, float, CPUContext>(
-            Input(0).count(), XdataF16, XdataF32);
-        Xdata = XdataF32;
+            Input(0).count(), X16, X32, &cctx);
+        Xdata = X32;
     } else Xdata = Input(0).template data<Tx, CPUContext>();
 
     auto* labels = Input(1).template data<Ty, CPUContext>();
@@ -41,15 +45,13 @@ void AccuracyOp<Context>::RunWithType() {
             vector<pair<Tx, int> > vec;
             for (int k = 0; k < num_classes; k++)
                 vec.push_back(
-                    std::make_pair(Xdata[i * dim + k * inner_dim + j], k)
-                );
+                    std::make_pair(Xdata[i * dim + k * inner_dim + j], k));
             std::partial_sort(
                 vec.begin(), vec.begin() + top_k, vec.end(),
                     std::greater<pair<Tx, int> >());
             for (int k = 0; k < top_k; k++) {
                 if (vec[k].second == label) {
-                    if (OutputSize() > 1)
-                        Output(1)->template mutable_data<float, CPUContext>()[label]++;
+                    if (OutputSize() > 1) Y2data[label]++;
                     acc++;
                     break;
                 }
@@ -58,12 +60,11 @@ void AccuracyOp<Context>::RunWithType() {
         }    //  end inner_dim
     }    // end outer_dim
 
-    Output(0)->template mutable_data<float, CPUContext>()[0] = (float)acc / count;
-    if (OutputSize() > 1) {
-        auto* acc_per_class = Output(1)->template mutable_data<float, CPUContext>();
+    Y1data[0] = (float)acc / count;
+    if (Y2data) {
         for (int i = 0; i < num_classes; i++)
-            acc_per_class[i] = num_per_class[i] == 0 ?
-                0 : acc_per_class[i] / num_per_class[i];
+            Y2data[i] = num_per_class[i] == 0 ?
+                0 : Y2data[i] / num_per_class[i];
     }
 }
 

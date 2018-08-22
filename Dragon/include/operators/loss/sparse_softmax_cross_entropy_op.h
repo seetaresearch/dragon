@@ -36,7 +36,6 @@ class SparseSoftmaxCrossEntropyOp : public Operator<Context> {
     USE_OPERATOR_FUNCTIONS;
 
     void SoftmaxRun();
-    void SoftmaxRunFP16();
 
     void RunOnDevice() override;
     template <typename Tx, typename Ty> void RunWithType();

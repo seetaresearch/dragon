@@ -18,18 +18,22 @@
 PyObject* CreateGradientDefsCC(PyObject* self, PyObject* args) {
     PyObject* def_string = nullptr;
     PyObject* py_g_outputs = nullptr;
-    if (!PyArg_ParseTuple(args, "SO!", &def_string, &PyList_Type, &py_g_outputs)) {
-        PyErr_SetString(PyExc_ValueError, "Excepted a serialized string of OperatorDef "
-                                          "and a list containing outputs of this GradientOp.");
+    if (!PyArg_ParseTuple(args, "SO!",
+            &def_string, &PyList_Type, &py_g_outputs)) {
+        PyErr_SetString(PyExc_ValueError,
+            "Excepted a serialized string of OperatorDef "
+            "and a list containing outputs of this GradientOp.");
          return nullptr;
     }
     OperatorDef def;
     if (!def.ParseFromString(PyBytes_AsStringEx(def_string))) {
-        PyErr_SetString(PyExc_ValueError, "Failed to parse the OperatorDef.");
+        PyErr_SetString(PyExc_ValueError,
+            "Failed to parse the OperatorDef.");
         return nullptr;
     }
     if (!GradientRegistry()->Has(def.type())) {
-        PyErr_SetString(PyExc_KeyError, "This Operator does not register GradientOp.");
+        PyErr_SetString(PyExc_KeyError,
+            "This Operator does not register GradientOp.");
         return nullptr;
     }
     vector<string> g_outputs;
@@ -61,9 +65,10 @@ PyObject* RunGradientFlowCC(PyObject* self, PyObject* args) {
     PyObject* py_fp_ops, *py_targets;   
     PyObject* py_input_grads, *py_ignore_grads;
     PyObject* py_share_grads, *py_export_graph;
-    if (!PyArg_ParseTuple(args, "OOOOOO", &py_fp_ops, &py_targets,
-                                          &py_input_grads, &py_ignore_grads, 
-                                          &py_share_grads, &py_export_graph)) {
+    if (!PyArg_ParseTuple(args, "OOOOOO",
+        &py_fp_ops, &py_targets,
+            &py_input_grads, &py_ignore_grads,
+                &py_share_grads, &py_export_graph)) {
         PyErr_SetString(PyExc_ValueError,
             "Excepted a list of serialized input ops, targets, "
             "input grads, ignore grads and whehter to share grads or log graph.");
@@ -84,8 +89,8 @@ PyObject* RunGradientFlowCC(PyObject* self, PyObject* args) {
     for (auto& grad : input_grads) maker.AddExternalGrad(grad);
     for (auto& grad : ignore_grads) maker.AddIgnoreGrad(grad);
     maker.Make(fp_ops, targets, bp_ops);
-    bool share_grads = (bool)PyObject_IsTrue(py_share_grads);
-    bool export_graph = (bool)PyObject_IsTrue(py_export_graph);
+    bool share_grads = PyObject_IsTrue(py_share_grads) ? true : false;
+    bool export_graph = PyObject_IsTrue(py_export_graph) ? true : false;
     if (share_grads) maker.Share("/share/buffer/grads", bp_ops);
     if (export_graph) {
         Tensor* t = ws()->CreateTensor("/export/dynamic_graph/gradient_flow");

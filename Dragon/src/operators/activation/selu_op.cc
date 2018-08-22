@@ -8,7 +8,7 @@ template <class Context> template <typename T>
 void SEluOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    kernel::SElu<T, Context>(Output(0)->count(), Xdata, Ydata);
+    kernel::SElu<T, Context>(Output(0)->count(), Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -23,15 +23,17 @@ DEPLOY_CPU(SElu);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(SElu);
 #endif
-OPERATOR_SCHEMA(SElu).NumInputs(1).NumOutputs(1).Inplace({ { 0, 0 } });
+OPERATOR_SCHEMA(SElu)
+    .NumInputs(1).NumOutputs(1)
+    .Inplace({ { 0, 0 } });
 
 template <class Context> template <typename T>
 void SEluGradientOp<Context>::RunWithType() {
     auto* Ydata = Input(0).template data<T, Context>();
     auto* dYdata = Input(1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    kernel::SEluGrad<T, Context>(
-        Output(0)->count(), dYdata, Ydata, dXdata);
+    kernel::SEluGrad<T, Context>(Output(0)->count(),
+        dYdata, Ydata, dXdata, ctx());
 }
 
 template <class Context>
@@ -46,7 +48,9 @@ DEPLOY_CPU(SEluGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(SEluGradient);
 #endif
-OPERATOR_SCHEMA(SEluGradient).NumInputs(2).NumOutputs(1).Inplace({ { 1, 0 }});
+OPERATOR_SCHEMA(SEluGradient)
+    .NumInputs(2).NumOutputs(1)
+    .Inplace({ { 1, 0 }});
 
 class GetSEluGradient final : public GradientMakerBase {
  public:

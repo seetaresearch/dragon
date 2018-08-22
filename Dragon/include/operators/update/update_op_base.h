@@ -35,13 +35,11 @@ class UpdateOpBase : public Operator<Context> {
     void RunOnDevice() override;
     template <typename T> void PreprocessRunWithType();
 
-    virtual void ComputeRunWithFloat() = 0;
+    virtual void ComputeRunWithFloat32() = 0;
+    virtual void ComputeRunWithFloat16() = 0;
 
-    virtual void ComputeRunWithFloat16() {
-        LOG(FATAL) << "This Updater does not support FP16."; 
-    }
-
-    template <typename T> void UpdateRunWithType();
+    void UpdateRunWithFloat32();
+    void UpdateRunWithFloat16();
 
  protected:
     float lr_mult, decay_mult;

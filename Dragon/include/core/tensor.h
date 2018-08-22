@@ -74,7 +74,9 @@ class Tensor {
         for (TIndex i = start; i < end; i++) ret *= dim(i);
         return ret;
     }
+
     inline TIndex count() const { return size_; }
+
     inline TIndex count(const TIndex start) const {
         return count(start, ndim());
     }
@@ -115,14 +117,14 @@ class Tensor {
     inline void Corrupt() { is_corrupted_ = true; }
 
     inline bool has_memory() const {
-        return memory_ || ex_memory_ != nullptr; 
+        return memory_ || ex_memory_ != nullptr;
     }
 
     MixedMemory* memory() const {
         return own_mem_ ? memory_.get() : ex_memory_;
     }
 
-    void set_memory(MixedMemory* mem) { 
+    void set_memory(MixedMemory* mem) {
         memory_.reset(mem); capacity_ = mem->nbytes();
     }
 
@@ -197,7 +199,7 @@ class Tensor {
         mutable_data_ptr<Context>(&data_ptr);
         //  call the constructors
         if (meta.ctor()) meta_.ctor()(data_ptr, size_);
-        capacity_ = size_ * meta.itemsize();
+        capacity_ = size_ * meta.itemsize(), require_init_ = true;
         return data_ptr;
     }
 
@@ -225,6 +227,15 @@ class Tensor {
     }
 
     template <typename T, class Context>
+    T* mutable_data(Context* ctx) {
+        auto* data = mutable_data<T, Context>();
+        if (!require_init_) return data;
+        ctx->MemsetAsync(nbytes(), (void*)data);
+        require_init_ = false;
+        return data;
+    }
+
+    template <typename T, class Context>
     const T* data() const {
         CHECK(meta_ == TypeMeta::Make<T>())
             << "\nThe DType of Tensor(" << name() << ") is "
@@ -234,27 +245,31 @@ class Tensor {
     }
 
     template <class Context>
-    inline void CopyFrom(const Tensor& other) {
+    inline void CopyFrom(const Tensor& other, Context* ctx) {
+        if ((void*)&other == (void*)this) return;
         CHECK_EQ(size_, other.size_);
         auto* src = other.template raw_data<Context>();
         auto* dst = raw_mutable_data<Context>(other.meta_);
-        if (dst == src) return;
-        if (TypeMeta::Id<Context>() ==
-                TypeMeta::Id<CPUContext>()) {
-            CPUContext::Memcpy<Context, Context>(nbytes(), dst, src);
-        } else if (TypeMeta::Id<Context>() ==
-                TypeMeta::Id<CUDAContext>()) {
-            CUDAContext::Memcpy<Context, Context>(nbytes(), dst, src);
-        }
+        ctx->template MemcpyAsync<Context, Context>(
+            nbytes(), dst, src);
+        require_init_ = false;
     }
 
     inline void Move(MixedMemory* mem) {
-        if (mem != nullptr) ex_memory_ = mem;
-        else ex_memory_ = new MixedMemory(TypeMeta::Make<float>(), 4);
-        own_mem_ = false;
+        if (mem != nullptr) {
+            ex_memory_ = mem;
+            require_init_ = false;
+        } else {
+            ex_memory_ = new MixedMemory(
+                TypeMeta::Make<float>(), 4);
+            require_init_ = true;
+        } own_mem_ = false;
     }
 
-    inline void Share(MixedMemory* mem) { Move(mem); is_shared_ = true; }
+    inline void Share(MixedMemory* mem) {
+        Move(mem); is_shared_ = true;
+        require_init_ = false;
+    }
 
     inline void Reset() {
         size_ = capacity_ = 0;
@@ -275,7 +290,7 @@ class Tensor {
     shared_ptr<MixedMemory> memory_;
     MixedMemory* ex_memory_ = nullptr;
     bool is_corrupted_ = false, is_shared_ = false;
-    bool own_mem_ = true;
+    bool own_mem_ = true, require_init_ = true;
 };
 
 }    // namespace dragon

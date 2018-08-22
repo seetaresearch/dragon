@@ -15,7 +15,7 @@ void ClipOp<Context>::RunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
     auto* Mdata = mask->template mutable_data<T, Context>();
     kernel::Clip<T, Context>(Output(0)->count(),
-        low, high, Xdata, Mdata, Ydata);
+        low, high, Xdata, Mdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -30,7 +30,9 @@ DEPLOY_CPU(Clip);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Clip);
 #endif
-OPERATOR_SCHEMA(Clip).NumInputs(1).NumOutputs(1).Inplace({ { 0, 0 } });
+OPERATOR_SCHEMA(Clip)
+    .NumInputs(1).NumOutputs(1)
+    .Inplace({ { 0, 0 } });
 
 template <class Context> template <typename T>
 void ClipGradientOp<Context>::RunWithType() {
@@ -39,7 +41,8 @@ void ClipGradientOp<Context>::RunWithType() {
 
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* Mdata = mask->template data<T, Context>();
-    math::Mul<T, Context>(Output(0)->count(), dXdata, Mdata, dXdata);
+    math::Mul<T, Context>(Output(0)->count(),
+        dXdata, Mdata, dXdata, ctx());
 }
 
 template <class Context>
@@ -54,7 +57,9 @@ DEPLOY_CPU(ClipGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(ClipGradient);
 #endif
-OPERATOR_SCHEMA(ClipGradient).NumInputs(2).NumOutputs(1).Inplace({ { 1, 0 } });
+OPERATOR_SCHEMA(ClipGradient)
+    .NumInputs(2).NumOutputs(1)
+    .Inplace({ { 1, 0 } });
 
 class GetClipGradient final : public GradientMakerBase {
  public:

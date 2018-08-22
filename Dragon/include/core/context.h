@@ -34,6 +34,8 @@ class CPUContext {
     virtual ~CPUContext() {}
 
     inline void SwitchToDevice() {}
+    inline void SwitchToDevice(int stream_id) {}
+
     inline void FinishDeviceCompution() {}
 
     inline static void* New(size_t nbytes) {
@@ -47,7 +49,15 @@ class CPUContext {
         return data;
     }
 
-    inline static void Memset(size_t nbytes, void* ptr) {
+    inline static void Memset(
+        size_t              nbytes,
+        void*               ptr) {
+        memset(ptr, 0, nbytes);
+    }
+
+    inline void MemsetAsync(
+        size_t              nbytes,
+        void*               ptr) {
         memset(ptr, 0, nbytes);
     }
 
@@ -59,18 +69,16 @@ class CPUContext {
         memcpy(dst, src, nbytes);
     }
 
-    inline static void Delete(void* data) { free(data); }
-
     template<class DstContext, class SrcContext>
-    inline static void MemcpyAsync(
+    inline void MemcpyAsync(
         size_t              nbytes,
         void*               dst,
         const void*         src) {
-        NOT_IMPLEMENTED;
+        memcpy(dst, src, nbytes);
     }
 
     template<typename T, class DstContext, class SrcContext>
-    inline static void Copy(
+    inline void Copy(
         int                 n,
         T*                  dst,
         const T*            src) {
@@ -82,7 +90,10 @@ class CPUContext {
         else for (int i = 0; i < n; i++) dst[i] = src[i];
     }
 
+    inline static void Delete(void* data) { free(data); }
+
     inline int device_id() const { return 0; }
+    inline void set_stream_id(int stream_id) {}
 
     inline std::mt19937* rand_generator() {
         if (!rand_generator_.get())

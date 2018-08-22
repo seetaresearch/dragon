@@ -45,7 +45,7 @@ void CuDNNCTCLossOp<Context>::RunWithType() {
     cudnnSetTensorDesc<T>(&grad_desc, Input(0).dims());
 
     CUDNN_CHECK(cudnnGetCTCLossWorkspaceSize(
-        ctx().cudnn_handle(), prob_desc, grad_desc,
+        ctx()->cudnn_handle(), prob_desc, grad_desc,
             packed_labels.data(), label_lengths.data(),
                 input_lengths.data(),
                     ctc_algo, ctc_desc, &workspace_size));
@@ -58,7 +58,7 @@ void CuDNNCTCLossOp<Context>::RunWithType() {
     auto* WSdata = (uint8_t*)ws()->template caches<Context>({
         workspace_size })[0];
 
-    CUDNN_CHECK(cudnnCTCLoss(ctx().cudnn_handle(),
+    CUDNN_CHECK(cudnnCTCLoss(ctx()->cudnn_handle(),
         prob_desc, Pdata, packed_labels.data(),
             label_lengths.data(), input_lengths.data(),
                 Ydata, grad_desc, Gdata,

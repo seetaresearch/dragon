@@ -8,7 +8,7 @@ namespace dragon {
 template <class Context> template <typename T>
 void MPIGatherOp<Context>::RunWithType() {
     if (comm_rank == comm_root) {
-        Output(comm_rank)->template CopyFrom<Context>(Input(0));
+        Output(comm_rank)->template CopyFrom<Context>(Input(0), ctx());
         for (int i = 0; i < comm_size; i++) {
             if (i == comm_root) continue;
 #ifdef WITH_MPI_CUDA
@@ -76,7 +76,8 @@ OPERATOR_SCHEMA(MPIGather).NumInputs(1).NumOutputs(1, INT_MAX);
 template <class Context> template <typename T>
 void MPIGatherGradientOp<Context>::RunWithType() {
     if (comm_rank == comm_root) {
-        Output(0)->template CopyFrom<Context>(Input(this->comm_rank + 1));
+        Output(0)->template CopyFrom<Context>(
+            Input(this->comm_rank + 1), ctx());
         for (int i = 0; i < comm_size; i++) {
             if (i == comm_root) continue;
 #ifdef WITH_MPI_CUDA

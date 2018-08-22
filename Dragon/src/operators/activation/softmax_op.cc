@@ -12,13 +12,13 @@ void SoftmaxOp<Context>::RunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
     auto* WSdata = ws()->template caches<T, Context>({ Input(0).count() })[0];
 
-    ctx().template Copy<T, Context, Context>(
+    ctx()->template Copy<T, Context, Context>(
         Input(0).count(), Ydata, Xdata);
 
     kernel::Softmax<T, Context>(
         Output(0)->count(), Input(0).dim(axis),
             outer_dim, inner_dim, multiplier,
-                Xdata, WSdata, Ydata, &ctx());
+                Xdata, WSdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -36,7 +36,9 @@ DEPLOY_CPU(Softmax);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Softmax);
 #endif
-OPERATOR_SCHEMA(Softmax).NumInputs(1).NumOutputs(1).Inplace({ { 0, 0 } });
+OPERATOR_SCHEMA(Softmax)
+    .NumInputs(1).NumOutputs(1)
+    .Inplace({ { 0, 0 } });
 
 template <class Context> template <typename T>
 void SoftmaxGradientOp<Context>::RunWithType() {
@@ -44,15 +46,16 @@ void SoftmaxGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* Ydata = Input(0).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    auto* WSdata = ws()->template caches<T, Context>({ Input(0).count() })[0];
+    auto* WSdata = ws()->template caches<T, Context>(
+        { Input(0).count() })[0];
 
-    ctx().template Copy<T, Context, Context>(
+    ctx()->template Copy<T, Context, Context>(
         Input(0).count(), dXdata, dYdata);
 
     kernel::SoftmaxGrad<T, Context>(
         Output(0)->count(), Input(0).dim(axis),
             outer_dim, inner_dim, multiplier,
-                dYdata, Ydata, WSdata, dXdata, &ctx());
+                dYdata, Ydata, WSdata, dXdata, ctx());
 }
 
 template <class Context>
@@ -70,7 +73,9 @@ DEPLOY_CPU(SoftmaxGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(SoftmaxGradient);
 #endif
-OPERATOR_SCHEMA(SoftmaxGradient).NumInputs(2).NumOutputs(1).Inplace({ { 1, 0 } });
+OPERATOR_SCHEMA(SoftmaxGradient)
+    .NumInputs(2).NumOutputs(1)
+    .Inplace({ { 1, 0 } });
 
 class GetSoftmaxGradient final : public GradientMakerBase {
  public:

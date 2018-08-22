@@ -19,6 +19,8 @@
 
 namespace dragon {
 
+#define HFLT_MIN 6.10e-5F
+
 template <typename DestType, typename SrcType>
 DestType dragon_cast(SrcType val);
 

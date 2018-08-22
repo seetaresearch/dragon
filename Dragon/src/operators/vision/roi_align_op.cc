@@ -14,7 +14,8 @@ void ROIAlignOp<Context>::RunWithType() {
     kernel::ROIAlign<T, Context>(
         Output(0)->count(), Input(0).dim(0), Input(0).dim(1),
             Input(0).dim(2), Input(0).dim(3), pool_h, pool_w,
-                Input(1).dim(0), spatial_scale, sampling_ratio, Xdata, Rdata, Ydata);
+                Input(1).dim(0), spatial_scale, sampling_ratio,
+                    Xdata, Rdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -38,12 +39,13 @@ void ROIAlignGradientOp<Context>::RunWithType() {
     auto* Rdata = Input(1).template data<T, CUDAContext>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
-    math::Set<T, Context>(Output(0)->count(), 0, dXdata);
+    math::Set<T, Context>(Output(0)->count(), 0, dXdata, ctx());
 
     kernel::ROIAlignGrad<T, Context>(
         Input(-1).count(), Output(0)->dim(0), Output(0)->dim(1),
             Output(0)->dim(2), Output(0)->dim(3), pool_h, pool_w,
-                Input(1).dim(0), spatial_scale, sampling_ratio, dYdata, Rdata, dXdata);
+                Input(1).dim(0), spatial_scale, sampling_ratio,
+                    dYdata, Rdata, dXdata, ctx());
 }
 
 template <class Context>

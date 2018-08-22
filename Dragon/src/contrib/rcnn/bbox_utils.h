@@ -126,7 +126,8 @@ void GenerateProposals(
     const T*                        scores,
     const T*                        bbox_deltas,
     const T*                        anchors,
-    T*                              proposals);
+    T*                              proposals,
+    Context*                        ctx);
 
 template <typename T, class Context>
 void GenerateProposals_v2(
@@ -137,7 +138,8 @@ void GenerateProposals_v2(
     const float                     min_box_w,
     const T*                        scores,
     const T*                        bbox_deltas,
-    T*                              proposals);
+    T*                              proposals,
+    Context*                        ctx);
 
 template <typename T>
 inline void SortProposals(
@@ -246,7 +248,8 @@ void ApplyNMS(
     const T                         thresh,
     const T*                        boxes,
     int*                            keep_indices,
-    int&                            num_keep);
+    int&                            num_keep,
+    Context*                        ctx);
 
 }    // namespace rcnn
 

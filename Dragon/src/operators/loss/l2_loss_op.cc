@@ -9,12 +9,14 @@ void L2LossOp<Context>::RunWithType() {
     auto* X0data = Input(0).template data<T, Context>();
     auto* X1data = Input(1).template data<T, Context>();
     auto* diff_data = diff->template mutable_data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Sub<T, Context>(diff->count(), X0data, X1data, diff_data);
+    auto* Ydata = Output(0)->template mutable_data<float, Context>();
+    math::Sub<T, Context>(diff->count(),
+        X0data, X1data, diff_data, ctx());
     if (InputSize() > 2) {
         CHECK_EQ(Input(0).count(), Input(2).count());
         auto* Wdata = Input(2).template data<T, Context>();
-        math::Mul<T, Context>(diff->count(), Wdata, diff_data, diff_data);
+        math::Mul<T, Context>(diff->count(),
+            Wdata, diff_data, diff_data, ctx());
     }
 
     T normalizer = 1;
@@ -23,10 +25,12 @@ void L2LossOp<Context>::RunWithType() {
     } else if (normalization == "FULL") {
         normalizer = Input(0).count();
     }
+    normalizer *= 2;
 
-    T loss = T(0.5) * math::Dot<T, Context>(diff->count(),
-        diff_data, diff_data, &ctx());
-    math::Set<T, Context>(1, loss / normalizer, Ydata);
+    T loss;
+    math::Dot<T, Context>(diff->count(),
+        diff_data, diff_data, &loss, ctx());
+    math::Set<T, Context>(1, loss / normalizer, Ydata, ctx());
 }
 
 template <class Context>
@@ -48,10 +52,11 @@ OPERATOR_SCHEMA(L2Loss).NumInputs(2, 3).NumOutputs(1);
 
 template <class Context> template <typename T>
 void L2LossGradientOp<Context>::RunWithType() {
-    auto* diff_data = diff->template mutable_data<T, Context>();
+    auto* diff_data = diff->template data<T, Context>();
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; ctx().template Copy<T, CPUContext, Context>(
+    T dYdata_host; ctx()->template Copy<T, CPUContext, Context>(
         1, &dYdata_host, dYdata);
+    ctx()->FinishDeviceCompution();
 
     T alpha = dYdata_host, normalizer = 1;
     if (normalization == "BATCH_SIZE") {
@@ -67,7 +72,7 @@ void L2LossGradientOp<Context>::RunWithType() {
         const T sign = (i == 0) ? 1 : -1;
         alpha *= sign;
         math::Axpby<T, Context>(Output(i)->count(),
-            alpha, diff_data, 0, dXdata, &ctx());
+            alpha, diff_data, 0, dXdata, ctx());
     }
 }
 

@@ -8,7 +8,8 @@ template <class Context> template <typename T>
 void EluOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    kernel::Elu<T, Context>(Output(0)->count(), alpha, Xdata, Ydata);
+    kernel::Elu<T, Context>(Output(0)->count(),
+        alpha, Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -30,8 +31,8 @@ void EluGradientOp<Context>::RunWithType() {
     auto* Ydata = Input(0).template data<T, Context>();
     auto* dYdata = Input(1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    kernel::EluGrad<T, Context>(
-        Output(0)->count(), alpha, dYdata, Ydata, dXdata);
+    kernel::EluGrad<T, Context>(Output(0)->count(),
+        alpha, dYdata, Ydata, dXdata, ctx());
 }
 
 template <class Context>

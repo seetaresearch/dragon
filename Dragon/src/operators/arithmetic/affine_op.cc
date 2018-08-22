@@ -34,7 +34,7 @@ void AffineOp<Context>::RunWithType() {
 
     kernel::Affine<T, Context>(
         Output(0)->count(), outer_dim, scale_dim, inner_dim,
-            Xdata, Adata, Bdata, bias_multiplier, Ydata, &ctx());
+            Xdata, Adata, Bdata, bias_multiplier, Ydata, ctx());
 }
 
 template <class Context>
@@ -58,13 +58,13 @@ void AffineGradientOp<Context>::BiasRunWithType() {
     DECLARE_MULTIPLIER(multiplier, inner_dim);
 
     auto* dYdata = Input(-1).template data<T, Context>();
-    auto* dBias = Output(2)->template mutable_data<T, Context>();
+    auto* dBias = Output(2)->template mutable_data<T, Context>(ctx());
 
     for (int n = 0; n < outer_dim; n++) {
         math::Gemv<T, Context>(
             CblasNoTrans, scale_dim, inner_dim,
                 1.0, dYdata, multiplier,
-                    1.0, dBias, &ctx());
+                    1.0, dBias, ctx());
         dYdata += dim;
     }
 }
@@ -79,45 +79,36 @@ void AffineGradientOp<Context>::ScaleRunWithType() {
     bool is_eltwise = (Input(-1).count() == Input(1).count());
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* Xdata = Input(0).template data<T, Context>();
-    auto* dScale = Output(1)->template mutable_data<T, Context>();
+    auto* dScale = Output(1)->template mutable_data<T, Context>(ctx());
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* dYxX = dXdata;
 
-    math::Mul<T, Context>(Output(0)->count(), dYdata, Xdata, dYxX);
+    math::Mul<T, Context>(Output(0)->count(), dYdata, Xdata, dYxX, ctx());
 
     if (!is_eltwise) {
         T* SRes_data = nullptr;
+        //  reduce inner dimensions
         if (inner_dim == 1) {
             SRes_data = dYxX;
-        } else if (sum_result.count() == 1) {    //  handle inner only
-            dScale = Output(1)->template mutable_data<T, CPUContext>();
-            T result = math::Dot<T, Context>(
-                inner_dim, dYxX, multiplier, &ctx());
-            *dScale += result;
         } else {
-            SRes_data = (outer_dim == 1) ?  //  handle scale only
+            SRes_data = (outer_dim == 1) ?
                 dScale : sum_result.template mutable_data<T, Context>();
             math::Gemv<T, Context>(
                 CblasNoTrans, sum_result.count(), inner_dim,
                     1.0, dYxX, multiplier,
-                        SRes_data == dScale ? 1.0 : 0.0, SRes_data, &ctx());
+                        SRes_data == dScale ? 1.0 : 0.0,
+                            SRes_data, ctx());
         } 
+        //  reduce outer dimensions
         if (outer_dim != 1) {
-            if (scale_dim == 1) {    //  handle outer only
-                dScale = Output(1)->template mutable_data<T, CPUContext>();
-                T result = math::Dot<T, Context>(
-                    outer_dim, multiplier, SRes_data, &ctx());
-                *dScale += result;
-            } else {
-                math::Gemv<T, Context>(
-                    CblasTrans, outer_dim, scale_dim,
-                        1.0, SRes_data, multiplier,
-                            1.0, dScale, &ctx());
-            }
+            math::Gemv<T, Context>(
+                CblasTrans, outer_dim, scale_dim,
+                    1.0, SRes_data, multiplier,
+                        1.0, dScale, ctx());
         }
     } else {
         math::Axpy<T, Context>(Output(1)->count(),
-            1.f, dYxX, dScale, &ctx());
+            1.f, dYxX, dScale, ctx());
     }
 }
 
@@ -131,7 +122,7 @@ void AffineGradientOp<Context>::RunWithType() {
 
     kernel::AffineGrad<T, Context>(
         Output(0)->count(), outer_dim, scale_dim, inner_dim,
-            dYdata, Adata, dXdata, &ctx());
+            dYdata, Adata, dXdata, ctx());
 }
 
 template <class Context>

@@ -9,7 +9,7 @@ void RSubOp<Context>::EltwiseRunWithType() {
     auto* x1 = Input(0).template data<T, Context>();
     auto* x2 = Input(1).template data<T, Context>();
     auto* y = Output(0)->template mutable_data<T, Context>();
-    math::Sub<T, Context>(Output(0)->count(), x1, x2, y);
+    math::Sub<T, Context>(Output(0)->count(), x1, x2, y, ctx());
 }
 
 template <class Context> template <typename T>
@@ -19,7 +19,7 @@ void RSubOp<Context>::BroadcastRunWithType(int type) {
     auto* x2 = Input(1).template data<T, Context>();
     auto* y = Output(0)->template mutable_data<T, Context>();
 
-    ctx().template Copy<T, Context, Context>(
+    ctx()->template Copy<T, Context, Context>(
         Output(0)->count(), y, x2);
 
     if (type == 0 || type == 1) {
@@ -35,7 +35,7 @@ void RSubOp<Context>::BroadcastRunWithType(int type) {
             CblasNoTrans, CblasNoTrans,
                 outer_dim, inner_dim, 1,
                     1.0, multiplier, x1,
-                        -1.0, y, &ctx());
+                        -1.0, y, ctx());
     } else if (type == 2) {
         outer_dim = Input(1).dim(0);
         inner_dim = Input(1).count(1);
@@ -44,7 +44,7 @@ void RSubOp<Context>::BroadcastRunWithType(int type) {
             CblasNoTrans, CblasNoTrans,
                 outer_dim, inner_dim, 1,
                     1.0, x1, multiplier,
-                        -1.0, y, &ctx());
+                        -1.0, y, ctx());
     }
 }
 
@@ -78,12 +78,12 @@ void RSubGradientOp<Context>::EltwiseRunWithType() {
     if (Output(1)->name() != "ignore") {
         auto* dx2 = Output(1)->template mutable_data<T, Context>();
         math::Scale<T, Context>(
-            Output(1)->count(), -1, dy, dx2, &ctx());
+            Output(1)->count(), -1, dy, dx2, ctx());
     }
 
     if (Output(0)->name() != "ignore") {
         auto* dx1 = Output(0)->template mutable_data<T, Context>();
-        ctx().template Copy<T, Context, Context>(
+        ctx()->template Copy<T, Context, Context>(
             Output(0)->count(), dx1, dy);
     }
 }
@@ -108,7 +108,7 @@ void RSubGradientOp<Context>::BroadcastRunWithType(int type) {
             math::Gemv<T, Context>(
                 CblasTrans, outer_dim, inner_dim,
                     1.0, dy, multiplier,
-                        0.0, dx1, &ctx());
+                        0.0, dx1, ctx());
         } else if (type == 2) {
             outer_dim = X2->dim(0);
             inner_dim = X2->count(1);
@@ -116,14 +116,14 @@ void RSubGradientOp<Context>::BroadcastRunWithType(int type) {
             math::Gemv<T, Context>(
                 CblasNoTrans, outer_dim, inner_dim,
                     1.0, dy, multiplier,
-                        0.0, dx1, &ctx());
+                        0.0, dx1, ctx());
         }
     }
 
     if (Output(1)->name() != "ignore") {
         auto* dx2 = Output(1)->template mutable_data<T, Context>();
         math::Scale<T, Context>(
-            X2->count(), -1, dy, dx2, &ctx());
+            X2->count(), -1, dy, dx2, ctx());
     }
 }
 

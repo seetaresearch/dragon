@@ -16,7 +16,7 @@ void MatmulOp<Context>::RunWithType() {
                 TransB ? CblasTrans : CblasNoTrans,
                     M, N, K1,
                         1.0, X1data, X2data,
-                            0.0, Ydata, &ctx());
+                            0.0, Ydata, ctx());
         X1data += x1_offset;
         X2data += x2_offset;
         Ydata += y_offset;
@@ -76,13 +76,13 @@ void MatmulGradientOp<Context>::RunWithType() {
                 TransB ? CblasNoTrans : CblasTrans,
                     M, K1, N,
                         1.0, dYdata, X2data,
-                            0.0, dX1data, &ctx());
+                            0.0, dX1data, ctx());
         math::Gemm<T, Context>(
             TransA ? CblasNoTrans : CblasTrans,
                 CblasNoTrans,
                     K1, N, M,
                         1.0, X1data, dYdata,
-                            0.0, dX2data, &ctx());
+                            0.0, dX2data, ctx());
         X1data += x1_offset;
         X2data += x2_offset;
         dX1data += x1_offset;

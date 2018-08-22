@@ -250,8 +250,9 @@ void LoadCaffemodel(
 
 void RunGraph(
     const std::string&          graph_name,
-    Workspace*                  ws) {
-    ws->RunGraph(graph_name, "", "");
+    Workspace*                  ws,
+    const int                   stream_id) {
+    ws->RunGraph(graph_name, "", "", stream_id);
 }
 
 template <typename T>

@@ -8,14 +8,17 @@ namespace dragon {
 template <class Context> template <typename T>
 void ReduceOp<Context>::SumRunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
     if (axis == -1) {
         DECLARE_MULTIPLIER(multiplier, Input(0).count());
-        auto* Ydata = Output(0)->template mutable_data<T, CPUContext>();
-        Ydata[0] = math::Dot<T, Context>(
-            Input(0).count(), multiplier, Xdata, &ctx());
+        T result_host;
+        math::Dot<T, Context>(Input(0).count(),
+            multiplier, Xdata, &result_host, ctx());
+        ctx()->template Copy<T, Context, CPUContext>(
+            1, Ydata, &result_host);
     } else {
-        auto* Ydata = Output(0)->template mutable_data<T, Context>();
-        kernel::Sum<T, Context>(count, axis_dim, inner_dim, Xdata, Ydata);
+        kernel::Sum<T, Context>(count,
+            axis_dim, inner_dim, Xdata, Ydata, ctx());
     }
 }
 
@@ -24,7 +27,7 @@ void ReduceOp<Context>::MeanRunWithType() {
     SumRunWithType<T>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
     T coeff = axis != -1 ? 1.0 / axis_dim : 1.0 / Input(0).count();
-    math::Scal<T, Context>(Output(0)->count(), coeff, Ydata, &ctx());
+    math::Scal<T, Context>(Output(0)->count(), coeff, Ydata, ctx());
 }
 
 template <class Context>
@@ -62,11 +65,12 @@ void ReduceGradientOp<Context>::SumRunWithType() {
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     if (axis == -1) {
         auto* dYdata = Input(-1).template data<T, CPUContext>();
-        math::Set<T, Context>(Output(0)->count(), dYdata[0], dXdata);
+        math::Set<T, Context>(Output(0)->count(),
+            dYdata[0], dXdata, ctx());
     } else {
         auto* dYdata = Input(-1).template data<T, Context>();
         kernel::SumGrad<T, Context>(count,
-            axis_dim, inner_dim, 1.0, dYdata, dXdata);
+            axis_dim, inner_dim, 1.0, dYdata, dXdata, ctx());
     }
 }
 
@@ -76,11 +80,12 @@ void ReduceGradientOp<Context>::MeanRunWithType() {
     if (axis == -1) {
         auto* dYdata = Input(-1).template data<T, CPUContext>();
         math::Set<T, Context>(Output(0)->count(),
-            dYdata[0] / Input(0).count(), dXdata);
+            dYdata[0] / Input(0).count(), dXdata, ctx());
     } else {
         auto* dYdata = Input(-1).template data<T, Context>();
         kernel::SumGrad<T, Context>(count,
-            axis_dim, inner_dim, 1.0 / axis_dim, dYdata, dXdata);
+            axis_dim, inner_dim, 1.0 / axis_dim,
+                dYdata, dXdata, ctx());
     }
 }
 

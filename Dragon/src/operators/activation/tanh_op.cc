@@ -8,7 +8,7 @@ template <class Context> template <typename T>
 void TanhOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    kernel::Tanh<T, Context>(Output(0)->count(), Xdata, Ydata);
+    kernel::Tanh<T, Context>(Output(0)->count(), Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -30,8 +30,8 @@ void TanhGradientOp<Context>::RunWithType() {
     auto* Ydata = Input(0).template data<T, Context>();
     auto* dYdata = Input(1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    kernel::TanhGrad<T, Context>(
-        Output(0)->count(), dYdata, Ydata, dXdata);
+    kernel::TanhGrad<T, Context>(Output(0)->count(),
+        dYdata, Ydata, dXdata, ctx());
 }
 
 template <class Context>

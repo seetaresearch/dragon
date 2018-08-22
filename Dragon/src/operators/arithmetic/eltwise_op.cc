@@ -7,10 +7,11 @@ template <class Context> template <typename T>
 void EltwiseOp<Context>::SumRunWithType() {
     TIndex count = Output(0)->count();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Set<T, Context>(count, dragon_cast<T, float>(0), Ydata);
+    math::Set<T, Context>(count,
+        dragon_cast<T, float>(0), Ydata, ctx());
     for (int i = 0; i < InputSize(); ++i) {
         math::Axpy<T, Context>(count, coeffs[i],
-            Input(i).template data<T, Context>(), Ydata, &ctx());
+            Input(i).template data<T, Context>(), Ydata, ctx());
     }
 }
 
@@ -21,19 +22,24 @@ void EltwiseOp<Context>::ProdRunWithType() {
     math::Mul<T, Context>(count,
         Input(0).template data<T, Context>(),
             Input(1).template data<T, Context>(),
-                Ydata);
+                Ydata, ctx());
     for (int i = 2; i < InputSize(); i++) {
         math::Mul<T, Context>(count,
             Ydata,
                 Input(i).template data<T, Context>(),
-                    Ydata);
+                    Ydata, ctx());
     }
 }
 
 template <class Context>
 void EltwiseOp<Context>::RunOnDevice() {
-    for (int i = 1; i < InputSize(); i++)
-        CHECK(Input(i).dims() == Input(0).dims());
+    for (int i = 1; i < InputSize(); i++) {
+        CHECK(Input(i).dims() == Input(0).dims())
+            << "\nExcepted Input(" << i << ")'s dims as "
+            << Input(0).DimString() << ",\n but got "
+            << Input(1).DimString() << ".";
+    }
+
     Output(0)->ReshapeLike(Input(0));
 
     if (operation == "SUM") {
@@ -65,12 +71,12 @@ void EltwiseGradientOp<Context>::SumRunWithType() {
     for (int i = 0; i < OutputSize(); i++) {
         if (Output(i)->name() == "ignore") continue;
         auto* dXdata = Output(i)->template mutable_data<T, Context>();
-        if (coeffs[i] == float(1)) {
-            ctx().template Copy<T, Context, Context>(
+        if (coeffs[i] == 1.f) {
+            ctx()->template Copy<T, Context, Context>(
                 count, dXdata, dYdata);
         } else {
             math::Scale<T, Context>(count,
-                coeffs[i], dYdata, dXdata, &ctx());
+                coeffs[i], dYdata, dXdata, ctx());
         }
     }
 }
@@ -88,11 +94,11 @@ void EltwiseGradientOp<Context>::ProdRunWithType() {
             if (i == j) continue;
             auto* Xdata = Input(j).template data<T, Context>();
             if (!initialized) {
-                ctx().template Copy<T, Context, Context>(count, dXdata, Xdata);
+                ctx()->template Copy<T, Context, Context>(count, dXdata, Xdata);
                 initialized = true;
-            } else math::Mul<T, Context>(count, Xdata, dXdata, dXdata);
+            } else math::Mul<T, Context>(count, Xdata, dXdata, dXdata, ctx());
         }
-        math::Mul<T, Context>(count, dYdata, dXdata, dXdata);
+        math::Mul<T, Context>(count, dYdata, dXdata, dXdata, ctx());
     }
 }
 

@@ -17,16 +17,19 @@
 inline PyObject* CreateGraphCC(PyObject* self, PyObject* args) {
     PyObject* graph_str;
     if (!PyArg_ParseTuple(args, "S", &graph_str)) {
-        PyErr_SetString(PyExc_ValueError, "Excepted a serialized string of GraphDef.");
+        PyErr_SetString(PyExc_ValueError,
+            "Excepted a serialized string of GraphDef.");
         return nullptr;
     }
     GraphDef graph_def;
     if (!graph_def.ParseFromString(PyBytes_AsStringEx(graph_str))) {
-        PyErr_SetString(PyExc_RuntimeError, "Failed to parse the GraphDef.");
+        PyErr_SetString(PyExc_RuntimeError,
+            "Failed to parse the GraphDef.");
         return nullptr;
     } 
     if (!ws()->CreateGraph(graph_def)) {
-        PyErr_SetString(PyExc_RuntimeError, "Failed to create the Graph.");
+        PyErr_SetString(PyExc_RuntimeError,
+            "Failed to create the Graph.");
         return nullptr;
     }
     Py_RETURN_TRUE;
@@ -34,11 +37,17 @@ inline PyObject* CreateGraphCC(PyObject* self, PyObject* args) {
 
 inline PyObject* RunGraphCC(PyObject* self, PyObject* args) {
     char* cname, *include, *exclude;
-    if (!PyArg_ParseTuple(args, "sss", &cname, &include, &exclude)) {
-        PyErr_SetString(PyExc_ValueError, "Excepted the graph name, include and exclude rules.");
+    if (!PyArg_ParseTuple(args, "sss",
+            &cname, &include, &exclude)) {
+        PyErr_SetString(PyExc_ValueError,
+            "Excepted the graph name, include and exclude rules.");
         return nullptr;
     }
-    ws()->RunGraph(string(cname), string(include), string(exclude));
+    ws()->RunGraph(
+        string(cname),
+        string(include),
+        string(exclude)
+    );
     Py_RETURN_TRUE;
 }
 

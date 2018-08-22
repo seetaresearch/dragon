@@ -8,7 +8,8 @@ void CompareOp<Context>::EqualRunWithType() {
     auto* X1data = Input(0).template data<T, Context>();
     auto* X2data = Input(1).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    kernel::Equal<T, Context>(Output(0)->count(), X1data, X2data, Ydata);
+    kernel::Equal<T, Context>(Output(0)->count(),
+        X1data, X2data, Ydata, ctx());
 }
 
 template <class Context>

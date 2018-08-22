@@ -7,9 +7,13 @@ template <class Context> template <typename T>
 void DotOp<Context>::DotRunWithType() {
     auto* X1data = Input(0).template data<T, Context>();
     auto* X2data = Input(1).template data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, CPUContext>();
-    Ydata[0] = math::Dot<T, Context>(
-        Input(0).count(), X1data, X2data, &ctx());
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+
+    T result_host;
+    math::Dot<T, Context>(Input(0).count(),
+        X1data, X2data, &result_host, ctx());
+    ctx()->template Copy<T, Context, CPUContext>(
+        1, Ydata, &result_host);
 }
 
 template <class Context> template <typename T>
@@ -22,7 +26,7 @@ void DotOp<Context>::GemmRunWithType() {
             TransB ? CblasTrans : CblasNoTrans,
                 M, N1, K1,
                     1.0, X1data, X2data,
-                        0.0, Ydata, &ctx());
+                        0.0, Ydata, ctx());
 }
 
 template <class Context> template <typename T>
@@ -33,7 +37,7 @@ void DotOp<Context>::GemvRunWithType() {
     math::Gemv<T, Context>(
         TransA ? CblasTrans : CblasNoTrans, M, N1,
             1.0, X1data, X2data,
-                0.0, Ydata, &ctx());
+                0.0, Ydata, ctx());
 }
 
 template <class Context>
@@ -98,12 +102,14 @@ void DotGradientOp<Context>::DotRunWithType() {
     auto* dYdata = Input(2).template data<T, CPUContext>();
     auto* dX1data = Output(0)->template mutable_data<T, Context>();
     auto* dX2data = Output(1)->template mutable_data<T, Context>();
-    ctx().template Copy<T, Context, Context>(
+    ctx()->template Copy<T, Context, Context>(
         Output(0)->count(), dX1data, X2data);
-    ctx().template Copy<T, Context, Context>(
+    ctx()->template Copy<T, Context, Context>(
         Output(1)->count(), dX2data, X1data);
-    math::MulScalar<T, Context>(Output(0)->count(), dYdata[0], dX1data);
-    math::MulScalar<T, Context>(Output(1)->count(), dYdata[0], dX2data);
+    math::MulScalar<T, Context>(
+        Output(0)->count(), dYdata[0], dX1data, ctx());
+    math::MulScalar<T, Context>(
+        Output(1)->count(), dYdata[0], dX2data, ctx());
 }
 
 template <class Context> template <typename T>
@@ -118,13 +124,13 @@ void DotGradientOp<Context>::GemmRunWithType() {
             TransB ? CblasNoTrans : CblasTrans,
                 M, K1, N1,
                     1.0, dYdata, X2data,
-                        0.0, dX1data, &ctx());
+                        0.0, dX1data, ctx());
     math::Gemm<T, Context>(
         TransA ? CblasNoTrans : CblasTrans,
             CblasNoTrans,
                 K1, N1, M,
                     1.0, X1data, dYdata,
-                        0.0, dX2data, &ctx());
+                        0.0, dX2data, ctx());
 }
 
 template <class Context> template <typename T>
@@ -138,11 +144,11 @@ void DotGradientOp<Context>::GemvRunWithType() {
         CblasNoTrans, CblasNoTrans,
             M, N1, 1,
                 1.0, dYdata, X2data,
-                    0.0, dX1data, &ctx());
+                    0.0, dX1data, ctx());
     math::Gemv<T, Context>(
         TransA ? CblasNoTrans : CblasTrans, M, N1,
             1.0, X1data, dYdata,
-                0.0, dX2data, &ctx());
+                0.0, dX2data, ctx());
 }
 
 template <class Context>

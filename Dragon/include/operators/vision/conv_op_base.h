@@ -80,7 +80,8 @@ class ConvOpBase : public Operator<Context> {
                                   dilation[0], dilation[1],
                                                data_format,
                                                         im,
-                                                      col);
+                                                       col,
+                                                   ctx());
         } else LOG(FATAL) << "ConvNd has not been implemented yet";
     }
     template <typename T> void Col2Im(const T* col, T* im) {
@@ -94,7 +95,8 @@ class ConvOpBase : public Operator<Context> {
                                   dilation[0], dilation[1],
                                                data_format,
                                                        col,
-                                                       im);
+                                                        im,
+                                                   ctx());
         } else LOG(FATAL) << "ConvNd has not been implemented yet";
     }
 };

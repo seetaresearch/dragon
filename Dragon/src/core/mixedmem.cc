@@ -8,7 +8,6 @@ void MixedMemory::ToCPU() {
     switch (state_) {
     case UNINITIALIZED:
         cpu_ptr_ = CPUContext::New(nbytes_);
-        CPUContext::Memset(nbytes_, cpu_ptr_);
         state_ = STATE_AT_CPU;
         break;
     case STATE_AT_CUDA:
@@ -32,7 +31,6 @@ void MixedMemory::ToCUDA() {
     switch (state_) {
     case UNINITIALIZED:
         cuda_ptr_ = CUDAContext::New(nbytes_);
-        CUDAContext::Memset(nbytes_, cuda_ptr_);
         state_ = STATE_AT_CUDA;
         break;
     case STATE_AT_CPU:

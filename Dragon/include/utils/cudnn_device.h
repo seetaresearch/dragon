@@ -44,6 +44,7 @@ template<> class CUDNNType<float>  {
     static const cudnnDataType_t type = CUDNN_DATA_FLOAT;
     static float oneval, zeroval;
     static const void *one, *zero;
+    typedef float BNParamType;
 };
 
 template<> class CUDNNType<double> {
@@ -51,6 +52,7 @@ template<> class CUDNNType<double> {
     static const cudnnDataType_t type = CUDNN_DATA_DOUBLE;
     static double oneval, zeroval;
     static const void *one, *zero;
+    typedef double BNParamType;
 };
 
 #ifdef WITH_CUDA_FP16
@@ -59,6 +61,7 @@ template<> class CUDNNType<float16> {
     static const cudnnDataType_t type = CUDNN_DATA_HALF;
     static float oneval, zeroval;
     static const void *one, *zero;
+    typedef float BNParamType;
 };
 #endif
 

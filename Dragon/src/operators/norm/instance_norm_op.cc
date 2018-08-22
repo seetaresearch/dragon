@@ -14,14 +14,14 @@ void InstanceNormOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
     auto* WSdata = ws()->template caches<T, Context>({ Input(0).count() })[0];
-    ctx().template Copy<T, Context, Context>(Output(0)->count(), Ydata, Xdata);
+    ctx()->template Copy<T, Context, Context>(Output(0)->count(), Ydata, Xdata);
 
     //  compute mean
     if (data_format == "NCHW") {
         math::Gemv<T, Context>(
             CblasNoTrans, NC, S,
                 1.0 / S, Xdata, Smult,
-                    0.0, Tmean, &ctx());
+                    0.0, Tmean, ctx());
     } else if (data_format == "NHWC") {
         auto* x = Xdata;
         auto* tm = Tmean;
@@ -29,7 +29,7 @@ void InstanceNormOp<Context>::RunWithType() {
             math::Gemv<T, Context>(
                 CblasTrans, S, C,
                     1.0 / S, x, Smult,
-                        0.0, tm, &ctx());
+                        0.0, tm, ctx());
             x += CS;
             tm += C;
         }
@@ -41,7 +41,7 @@ void InstanceNormOp<Context>::RunWithType() {
             CblasNoTrans, CblasNoTrans,
                 NC, S, 1,
                     -1.0, Tmean, Smult,
-                        1.0, Ydata, &ctx());
+                        1.0, Ydata, ctx());
     } else if (data_format == "NHWC") {
         auto* y = Ydata;
         auto* tm = Tmean;
@@ -50,7 +50,7 @@ void InstanceNormOp<Context>::RunWithType() {
                 CblasNoTrans, CblasNoTrans,
                     S, C, 1,
                         -1.0, Smult, tm,
-                            1.0, y, &ctx());
+                            1.0, y, ctx());
             y += CS;
             tm += C;
         }
@@ -58,12 +58,12 @@ void InstanceNormOp<Context>::RunWithType() {
   
     //  compute variance
     //  note that we use VAR(X) = E((X - EX) ^ 2)
-    math::Square<T, Context>(Output(0)->count(), Ydata, WSdata);
+    math::Square<T, Context>(Output(0)->count(), Ydata, WSdata, ctx());
     if (data_format == "NCHW") {
         math::Gemv<T, Context>(
             CblasNoTrans, NC, S,
                 1.0 / S, WSdata, Smult,
-                    0.0, Tvar, &ctx());
+                    0.0, Tvar, ctx());
     } else if (data_format == "NHWC") {
         auto* x2 = WSdata;
         auto* tv = Tvar;
@@ -71,15 +71,15 @@ void InstanceNormOp<Context>::RunWithType() {
             math::Gemv<T, Context>(
                 CblasTrans, S, C,
                     1.0 / S, x2, Smult,
-                        0.0, tv, &ctx());
+                        0.0, tv, ctx());
             x2 += CS;
             tv += C;
         }
     }
 
     //  compute stddev
-    math::AddScalar<T, Context>(var->count(), eps, Tvar);
-    math::Sqrt<T, Context>(var->count(), Tvar, Tvar);
+    math::AddScalar<T, Context>(var->count(), eps, Tvar, ctx());
+    math::Sqrt<T, Context>(var->count(), Tvar, Tvar, ctx());
 
     //  divide by stddev
     if (data_format == "NCHW") {
@@ -87,7 +87,7 @@ void InstanceNormOp<Context>::RunWithType() {
             CblasNoTrans, CblasNoTrans,
                 NC, S, 1,
                     1.0, Tvar, Smult,
-                        0.0, WSdata, &ctx());
+                        0.0, WSdata, ctx());
     } else if (data_format == "NHWC") {
         auto* std = WSdata;
         auto* tv = Tvar;
@@ -96,12 +96,13 @@ void InstanceNormOp<Context>::RunWithType() {
                 CblasNoTrans, CblasNoTrans,
                     S, C, 1,
                         1.0, Smult, tv,
-                            0.0, std, &ctx());
+                            0.0, std, ctx());
             std += CS;
             tv += C;
         }
     }
-    math::Div<T, Context>(Output(0)->count(), Ydata, WSdata, Ydata);
+    math::Div<T, Context>(Output(0)->count(),
+        Ydata, WSdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -133,8 +134,7 @@ void InstanceNormOp<Context>::RunOnDevice() {
     Setup();
 
     if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(InstanceNorm);
@@ -157,7 +157,7 @@ void InstanceNormGradientOp<Context>::RunWithType() {
             CblasNoTrans, CblasNoTrans,
                 NC, S, 1,
                     1.0, Tvar, Smult,
-                        0.0, WSdata, &ctx());
+                        0.0, WSdata, ctx());
     } else if (data_format == "NHWC") {
         auto* std = WSdata;
         auto* tv = Tvar;
@@ -166,26 +166,27 @@ void InstanceNormGradientOp<Context>::RunWithType() {
                 CblasNoTrans, CblasNoTrans,
                     S, C, 1,
                         1.0, Smult, tv,
-                            0.0, std, &ctx());
+                            0.0, std, ctx());
             std += CS;
             tv += C;
         }
     }
 
     auto* Ydata = Input(-2).template data<T, Context>();
-    math::Mul<T, Context>(Output(0)->count(), Ydata, dYdata, dXdata);
+    math::Mul<T, Context>(Output(0)->count(),
+        Ydata, dYdata, dXdata, ctx());
 
     //  sum(dE/dY \cdot Y)
     if (data_format == "NCHW") {
         math::Gemv<T, Context>(
             CblasNoTrans, NC, S,
                 1.0, dXdata, Smult,
-                    0.0, Tvar, &ctx());
+                    0.0, Tvar, ctx());
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 NC, S, 1,
                     1.0, Tvar, Smult,
-                        0.0, dXdata, &ctx());
+                        0.0, dXdata, ctx());
     } else if (data_format == "NHWC") {
         for (int i = 0; i < N; i++) {
             auto* dx = dXdata;
@@ -194,12 +195,12 @@ void InstanceNormGradientOp<Context>::RunWithType() {
                 math::Gemv<T, Context>(
                     CblasTrans, S, C,
                         1.0, dx, Smult,
-                            0, tv, &ctx());
+                            0, tv, ctx());
                 math::Gemm<T, Context>(
                     CblasNoTrans, CblasNoTrans,
                         S, C, 1,
                             1.0, Smult, tv,
-                                0.0, dx, &ctx());
+                                0.0, dx, ctx());
                 dx += CS;
                 tv += C;
             }
@@ -207,19 +208,20 @@ void InstanceNormGradientOp<Context>::RunWithType() {
     }
 
     //  sum(dE/dY \cdot Y) \cdot Y
-    math::Mul<T, Context>(Output(0)->count(), Ydata, dXdata, dXdata);
+    math::Mul<T, Context>(Output(0)->count(),
+        Ydata, dXdata, dXdata, ctx());
 
     //  sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y
     if (data_format == "NCHW") {
         math::Gemv<T, Context>(
             CblasNoTrans, NC, S,
                 1.0, dYdata, Smult,
-                    0.0, Tvar, &ctx());
+                    0.0, Tvar, ctx());
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 NC, S, 1,
                     1.0, Tvar, Smult,
-                        1.0, dXdata, &ctx());
+                        1.0, dXdata, ctx());
     } else if (data_format == "NHWC") {
         for (int i = 0; i < N; i++) {
             auto* dy = dYdata;
@@ -229,12 +231,12 @@ void InstanceNormGradientOp<Context>::RunWithType() {
                 math::Gemv<T, Context>(
                     CblasTrans, S, C,
                         1.0, dy, Smult,
-                            0, tv, &ctx());
+                            0, tv, ctx());
                 math::Gemm<T, Context>(
                     CblasNoTrans, CblasNoTrans,
                         S, C, 1,
                             1.0, Smult, tv,
-                                1.0, dx, &ctx());
+                                1.0, dx, ctx());
                 dy += CS;
                 dx += CS;
                 tv += C;
@@ -245,10 +247,11 @@ void InstanceNormGradientOp<Context>::RunWithType() {
     //  dE/dY - mean(dE/dY)- mean(dE/dY \cdot Y) \cdot Y
     //  = dE/dY - mean(sum(dE/dY) + sum(dE/dY \cdot Y) \cdot Y)
     math::Axpby<T, Context>(Output(0)->count(),
-        1.0, dYdata, -1.0 / S, dXdata, &ctx());
+        1.0, dYdata, -1.0 / S, dXdata, ctx());
 
     //  divide by stddev
-    math::Div<T, Context>(Output(0)->count(), dXdata, WSdata, dXdata);
+    math::Div<T, Context>(Output(0)->count(),
+        dXdata, WSdata, dXdata, ctx());
 }
 
 template <class Context>
@@ -279,8 +282,7 @@ void InstanceNormGradientOp<Context>::RunOnDevice() {
     Setup();
 
     if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(InstanceNormGradient);

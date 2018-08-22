@@ -62,7 +62,7 @@ __global__ void _GenerateProposals(
     const T*                bbox_deltas,
     const T*                anchors,
     T*                      proposals) {
-    CUDA_KERNEL_LOOP(idx, nthreads) {
+    CUDA_1D_KERNEL_LOOP(idx, nthreads) {
         const int h = idx / A / feat_w;
         const int w = (idx / A) % feat_w;
         const int a = idx % A;
@@ -99,13 +99,15 @@ template <> void GenerateProposals<float, CUDAContext>(
     const float*            scores,
     const float*            bbox_deltas,
     const float*            anchors,
-    float*                  proposals) {
+    float*                  proposals,
+    CUDAContext*            ctx) {
     const int num_proposals = A * feat_h * feat_w;
     _GenerateProposals<float>
-        << <CUDA_BLOCKS(num_proposals), CUDA_THREADS >> >(
-            num_proposals, A, feat_h, feat_w, stride,
-                im_h, im_w, min_box_h, min_box_w,
-                    scores, bbox_deltas, anchors, proposals);
+        << < CUDA_BLOCKS(num_proposals), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(num_proposals,
+                 A, feat_h, feat_w, stride,
+                     im_h, im_w, min_box_h, min_box_w,
+                         scores, bbox_deltas, anchors, proposals);
 }
 
 template <typename T>
@@ -118,7 +120,7 @@ __global__ void _GenerateProposals_v2(
     const T*                scores,
     const T*                bbox_deltas,
     T*                      proposals) {
-    CUDA_KERNEL_LOOP(idx, nthreads) {
+    CUDA_1D_KERNEL_LOOP(idx, nthreads) {
         const float dx = bbox_deltas[idx];
         const float dy = bbox_deltas[nthreads + idx];
         const float d_log_w = bbox_deltas[2 * nthreads + idx];
@@ -139,11 +141,13 @@ template <> void GenerateProposals_v2<float, CUDAContext>(
     const float             min_box_w,
     const float*            scores,
     const float*            bbox_deltas,
-    float*                  proposals) {
+    float*                  proposals,
+    CUDAContext*            ctx) {
     _GenerateProposals_v2<float>
-        << <CUDA_BLOCKS(total_anchors), CUDA_THREADS >> >(
-            total_anchors, im_h, im_w, min_box_h, min_box_w,
-                scores, bbox_deltas, proposals);
+        << < CUDA_BLOCKS(total_anchors), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(total_anchors,
+                 im_h, im_w, min_box_h, min_box_w,
+                     scores, bbox_deltas, proposals);
 }
 
 /******************** NMS ********************/
@@ -170,7 +174,7 @@ __global__ void nms_mask(
     const int               num_boxes,
     const T                 nms_thresh,
     const T*                boxes,
-    unsigned long long*     mask) {
+    uint64_t*               mask) {
     const int i_start = blockIdx.x * NMS_BLOCK_SIZE;
     const int di_end = min(num_boxes - i_start, NMS_BLOCK_SIZE);
     const int j_start = blockIdx.y * NMS_BLOCK_SIZE;
@@ -209,25 +213,30 @@ void _ApplyNMS(
     const float             thresh,
     const T*                boxes,
     int*                    keep_indices,
-    int&                    num_keep) {
+    int&                    num_keep,
+    CUDAContext*            ctx) {
     const int num_blocks = DIV_UP(num_boxes, NMS_BLOCK_SIZE);
     const dim3 blocks(num_blocks, num_blocks);
-    size_t mask_nbytes = num_boxes * num_blocks * sizeof(unsigned long long);
+    size_t mask_nbytes = num_boxes * num_blocks * sizeof(uint64_t);
     size_t boxes_nbytes = num_boxes * 5 * sizeof(T);
 
     void* boxes_dev, *mask_dev;
     CUDA_CHECK(cudaMalloc(&boxes_dev, boxes_nbytes));
     CUDA_CHECK(cudaMalloc(&mask_dev, mask_nbytes));
-    CUDA_CHECK(cudaMemcpy(boxes_dev, boxes, boxes_nbytes, cudaMemcpyHostToDevice));
-    nms_mask<T> << <blocks, NMS_BLOCK_SIZE >> > (
-        num_boxes, thresh, (T*)boxes_dev, (unsigned long long*)mask_dev);
+    CUDA_CHECK(cudaMemcpy(boxes_dev, boxes,
+        boxes_nbytes, cudaMemcpyHostToDevice));
+    nms_mask<T>
+        << < blocks, NMS_BLOCK_SIZE,
+             0, ctx->cuda_stream() >> > (num_boxes,
+                 thresh, (T*)boxes_dev, (uint64_t*)mask_dev);
     CUDA_CHECK(cudaPeekAtLastError());
 
-    std::vector<unsigned long long> mask_host(num_boxes * num_blocks);
-    CUDA_CHECK(cudaMemcpy(&mask_host[0], mask_dev, mask_nbytes, cudaMemcpyDeviceToHost));
+    std::vector<uint64_t> mask_host(num_boxes * num_blocks);
+    CUDA_CHECK(cudaMemcpy(&mask_host[0], mask_dev,
+        mask_nbytes, cudaMemcpyDeviceToHost));
 
-    std::vector<unsigned long long> dead_bit(num_blocks);
-    memset(&dead_bit[0], 0, sizeof(unsigned long long) * num_blocks);
+    std::vector<uint64_t> dead_bit(num_blocks);
+    memset(&dead_bit[0], 0, sizeof(uint64_t) * num_blocks);
     int num_selected = 0;
 
     for (int i = 0; i < num_boxes; ++i) {
@@ -235,7 +244,7 @@ void _ApplyNMS(
         const int inblock = i % NMS_BLOCK_SIZE;
         if (!(dead_bit[nblock] & (1ULL << inblock))) {
             keep_indices[num_selected++] = i;
-            unsigned long long* mask_i = &mask_host[0] + i * num_blocks;
+            uint64_t* mask_i = &mask_host[0] + i * num_blocks;
             for (int j = nblock; j < num_blocks; ++j) dead_bit[j] |= mask_i[j];
             if (num_selected == max_keeps) break;
         }
@@ -251,9 +260,10 @@ template <> void ApplyNMS<float, CUDAContext>(
     const float             thresh,
     const float*            boxes,
     int*                    keep_indices,
-    int&                    num_keep) {
+    int&                    num_keep,
+    CUDAContext*            ctx) {
     _ApplyNMS<float>(num_boxes, max_keeps, thresh,
-        boxes, keep_indices, num_keep);
+        boxes, keep_indices, num_keep, ctx);
 }
 
 }    // namespace rcnn

@@ -116,7 +116,7 @@ class NumpyFeeder : public TensorFeederBase {
 #else   
             LOG(FATAL) << "CUDA was not compiled.";
 #endif
-        } else{
+        } else {
             CPUContext::Memcpy<CPUContext, CPUContext>(tensor->nbytes(),
                                  tensor->raw_mutable_data<CPUContext>(),
                                static_cast<void*>(PyArray_DATA(array)));

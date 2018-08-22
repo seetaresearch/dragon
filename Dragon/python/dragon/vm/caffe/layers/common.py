@@ -364,7 +364,7 @@ class BatchNormLayer(Layer):
         var  = Tensor(scope + '/param:1').Constant(value=0.0)
         factor = Tensor(scope + '/param:2').Constant(value=0.0)
         # in dragon, set diff as None will ignore computing grad automatically
-        # but in bvlc-caffe1, you must set lr_mult = 0 manually
+        # but in bvlc-caffe, you must set lr_mult = 0 manually
         self._blobs.append({'data': mean, 'diff': None})
         self._blobs.append({'data': var, 'diff': None})
         self._blobs.append({'data': factor, 'diff': None})

@@ -18,7 +18,7 @@ void PReluOp<Context>::RunWithType() {
     kernel::PRelu<T, Context>(
         Output(0)->count(), channels, dim,
             channel_shared ? true : false, data_format,
-                Xdata, Wdata, Ydata);
+                Xdata, Wdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -49,12 +49,12 @@ void PReluGradientOp<Context>::RunWithType() {
 
     if (Output(1)->name() != "ignore") {
         DECLARE_MULTIPLIER(multiplier, channels * dim);
-        auto* dWdata = Output(1)->template mutable_data<T, Context>();
+        auto* dWdata = Output(1)->template mutable_data<T, Context>(ctx());
         auto* dWBdata = ws()->template caches<T, Context>({ channels * dim })[0];
         kernel::PReluWGrad<T, Context>(
             Input(0).dim(0), Input(0).count(1), channels, dim,
                 channel_shared ? true : false, data_format,
-                    dYdata, Xdata, multiplier, dWBdata, dWdata, &ctx());
+                    dYdata, Xdata, multiplier, dWBdata, dWdata, ctx());
     }
 
     if (Output(0)->name() != "ignore") {
@@ -63,7 +63,7 @@ void PReluGradientOp<Context>::RunWithType() {
         kernel::PReluGrad<T, Context>(
             Output(0)->count(), channels, dim,
                 channel_shared ? true : false, data_format,
-                    dYdata, Xdata, Wdata, dXdata);
+                    dYdata, Xdata, Wdata, dXdata, ctx());
     }
 }
 

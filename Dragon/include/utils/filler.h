@@ -40,7 +40,7 @@ class ConstantFiller final : public Filler<T, Context> {
     void Fill(Tensor* tensor, Context* ctx) override {
         math::Set<T, Context>(tensor->count(),
             dragon_cast<T, float>(filler().value()),
-                tensor->mutable_data<T, Context>());
+                tensor->mutable_data<T, Context>(), ctx);
     }
 
  protected:
@@ -71,11 +71,11 @@ class TruncatedNormalFiller final : public Filler<T, Context> {
 
     void Fill(Tensor* tensor, Context* ctx) override {
         //  implement it on gpu is difficult
-        static CPUContext cpu_ctx;
+        static CPUContext cctx;
         math::RandomTruncatedNormal<T, CPUContext>(tensor->count(),
             filler().mean(), filler().std(),
                 filler().low(), filler().high(),
-                    tensor->mutable_data<T, CPUContext>(), &cpu_ctx);
+                    tensor->mutable_data<T, CPUContext>(), &cctx);
     }
 
  protected:

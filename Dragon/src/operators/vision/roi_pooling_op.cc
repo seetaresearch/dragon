@@ -19,7 +19,8 @@ void ROIPoolingOp<Context>::RunWithType() {
     kernel::ROIPooling<T, Context>(
         Output(0)->count(), Input(0).dim(0), Input(0).dim(1),
             Input(0).dim(2), Input(0).dim(3), pool_h, pool_w,
-                Input(1).dim(0), spatial_scale, Xdata, Rdata, Mdata, Ydata);
+                Input(1).dim(0), spatial_scale,
+                    Xdata, Rdata, Mdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -50,7 +51,8 @@ void ROIPoolingGradientOp<Context>::RunWithType() {
     kernel::ROIPoolingGrad<T, Context>(
         Output(0)->count(), Output(0)->dim(0), Output(0)->dim(1),
             Output(0)->dim(2), Output(0)->dim(3), pool_h, pool_w,
-                Input(1).dim(0), spatial_scale, dYdata, Rdata, Mdata, dXdata);
+                Input(1).dim(0), spatial_scale,
+                    dYdata, Rdata, Mdata, dXdata, ctx());
 }
 
 template <class Context>

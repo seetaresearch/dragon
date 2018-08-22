@@ -20,7 +20,7 @@ from .arithmetic import (
 
 from .ndarray import (
     squeeze, unsqueeze,
-    sum, mean, argmin, argmax, max, topk,
+    sum, mean, argmin, argmax, max, min, topk,
     cat, gather,
 )
 

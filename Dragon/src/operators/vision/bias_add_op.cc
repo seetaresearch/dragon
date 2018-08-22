@@ -15,7 +15,7 @@ void BiasAddOp<Context>::RunWithType() {
 
     kernel::BiasAdd<T, Context>(
         Output(0)->count(), outer_dim, dim, inner_dim,
-            data_format, Bdata, multiplier, Ydata, &ctx());
+            data_format, Bdata, multiplier, Ydata, ctx());
 }
 
 template <class Context>
@@ -45,19 +45,19 @@ void BiasAddGradientOp<Context>::RunWithType() {
     if (Output(1)->name() != "ignore") {
         DECLARE_MULTIPLIER(multiplier, inner_dim);
         auto* dYdata = Input(-1).template data<T, Context>();
-        auto* dBias = Output(1)->template mutable_data<T, Context>();
+        auto* dBias = Output(1)->template mutable_data<T, Context>(ctx());
         const int y_offset = dim * inner_dim;
         for (int n = 0; n < outer_dim; n++) {
             if (data_format == "NCHW") {
                 math::Gemv<T, Context>(
                     CblasNoTrans, dim, inner_dim,
                         1.0, dYdata, multiplier,
-                            1.0, dBias, &ctx());
+                            1.0, dBias, ctx());
             } else if (data_format == "NHWC") {
                 math::Gemv<T, Context>(
                     CblasTrans, inner_dim, dim,
                         1.0, dYdata, multiplier,
-                            1.0, dBias, &ctx());
+                            1.0, dBias, ctx());
             }
             dYdata += y_offset;
         }

@@ -30,7 +30,7 @@ void RNNParamSetOp<Context>::RunWithType() {
         << "\nExcepted the size of param is " << size
         << ", but got " << Input(0).count();
     offset += param_type == "bias" ? matrix_count : 0;
-    ctx().template Copy<T, Context, Context>(size, Wdata + offset, Pdata);
+    ctx()->template Copy<T, Context, Context>(size, Wdata + offset, Pdata);
 }
 
 template <class Context>

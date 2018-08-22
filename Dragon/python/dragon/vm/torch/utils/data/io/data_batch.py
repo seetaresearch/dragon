@@ -19,7 +19,7 @@ from multiprocessing import Queue
 
 import dragon.core.mpi as mpi
 
-from .data_reader import DataReader
+from dragon.io.data_reader import DataReader
 from .data_transformer import DataTransformer
 from .blob_fetcher import BlobFetcher
 

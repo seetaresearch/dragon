@@ -28,7 +28,7 @@ void DenseConcatGradientOp<Context>::RestoreX1() {
     kernel::ConcatGrad<T, Context>(
         count, this->outer_dim, this->inner_dim,
             this->x_concat_dim, this->y_concat_dim,
-                0, Ydata, Xdata);
+                0, Ydata, Xdata, ctx());
 }
 
 template <class Context>

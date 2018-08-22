@@ -7,7 +7,7 @@ template <class Context> template <typename T>
 void SquareOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Pow<T, Context>(Output(0)->count(), 2.0, Xdata, Ydata);
+    math::Pow<T, Context>(Output(0)->count(), 2.0, Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -29,8 +29,8 @@ void SquareGradientOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    math::Mul<T, Context>(Output(0)->count(), dYdata, Xdata, dXdata);
-    math::Scal<T, Context>(Output(0)->count(), 2.0, dXdata, &ctx());
+    math::Mul<T, Context>(Output(0)->count(), dYdata, Xdata, dXdata, ctx());
+    math::Scal<T, Context>(Output(0)->count(), 2.0, dXdata, ctx());
 }
 
 template <class Context>

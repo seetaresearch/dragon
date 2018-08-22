@@ -17,7 +17,7 @@ void CropOp<Context>::RunWithType() {
 
     kernel::Crop1D<T, Context>(dest->count(),
         dim, ed[axis] - st[axis], inner_dim,
-            st[axis], Xdata, Ydata);
+            st[axis], Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -46,7 +46,7 @@ void CropOp<Context>::Setup() {
 
     // make ends
     ed.assign(Input(0).ndim(), 0);
-    keep_dims.resize(Input(0).ndim(), 0);
+    keep_dims.assign(Input(0).ndim(), 1);
     if (shape.size() + shape_like.size() != 0) {
         CHECK(shape.size() * shape_like.size() == 0)
             << "\nCan not set shape and shape_like both.";
@@ -75,7 +75,6 @@ void CropOp<Context>::Setup() {
         //  static crop
         int n_given = (int)GET_ARGUMENTS_SIZE(ends);
         for (int i = 0; i < ed.size(); i++) {
-            keep_dims[i] = 1;
             if (i < n_given) ed[i] = ends(i);
             if (ed[i] == 0) ed[i] = Input(0).dim(i);
             if (ed[i] == -1) { ed[i] = st[i] + 1; keep_dims[i] = 0; }
@@ -125,7 +124,7 @@ void CropOp<Context>::RunOnDevice() {
     //  do nothing
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(0));
-        Output(0)->template CopyFrom<Context>(Input(0));
+        Output(0)->template CopyFrom<Context>(Input(0), ctx());
         //  squeeze dimensions
         vector<TIndex> squeeze_shape;
         for (int i = 0; i < keep_dims.size(); i++)
@@ -149,6 +148,7 @@ void CropOp<Context>::RunOnDevice() {
         if (XIsType(Input(0), float)) RunWithType<float>();
         else if (XIsType(Input(0), int)) RunWithType<int>();
         else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "int32" });
+        ctx()->FinishDeviceCompution();
         //  allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
@@ -160,7 +160,7 @@ void CropOp<Context>::RunOnDevice() {
 
     //  squeeze dimensions
     vector<TIndex> squeeze_shape;
-    for (int i = 0; i < keep_dims.size(); i++) 
+    for (int i = 0; i < keep_dims.size(); i++)
         if (keep_dims[i]) squeeze_shape.push_back(Output(0)->dim(i));
     Output(0)->Reshape(squeeze_shape);
 }
@@ -206,10 +206,10 @@ void CropGradientOp<Context>::RunWithType() {
     if (dest == &navigator) {
         dXdata = ws()->template caches<T, Context>({ dest->count() })[0];
     } else { dXdata = dest->template mutable_data<T, Context>(); }
-    
+
     kernel::Crop1DGrad<T, Context>(dest->count(),
         Input(0).dim(axis), dim, inner_dim,
-            st[axis], ed[axis], dYdata, dXdata);
+            st[axis], ed[axis], dYdata, dXdata, ctx());
 }
 
 template <class Context>
@@ -226,10 +226,10 @@ void CropGradientOp<Context>::RunOnDevice() {
         expand_shape[keep_axes[i]] = Input(-1).dim(i);
     Input(-1).Reshape(expand_shape);
 
-    //  do nothing 
+    //  do nothing
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(-1));
-        Output(0)->template CopyFrom<Context>(Input(-1));
+        Output(0)->template CopyFrom<Context>(Input(-1), ctx());
         return;
     }
 
@@ -248,6 +248,7 @@ void CropGradientOp<Context>::RunOnDevice() {
         if (XIsType(Input(0), float)) RunWithType<float>();
         else if (XIsType(Input(0), int)) RunWithType<int>();
         else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "int32" });
+        ctx()->FinishDeviceCompution();
         //  allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
