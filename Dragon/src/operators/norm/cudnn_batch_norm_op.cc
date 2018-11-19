@@ -123,14 +123,9 @@ template <class Context>
 void CuDNNBatchNormOp<Context>::RunOnDevice() {
     Setup();
 
-#ifdef WITH_CUDA_FP16
     if (XIsType(Input(0), float)) RunWithType<float>();
     else if (XIsType(Input(0), float16)) RunWithType<float16>();
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
-#else
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
-#endif
 }
 
 REGISTER_CUDNN_OPERATOR(
@@ -317,7 +312,6 @@ template <class Context>
 void CuDNNBatchNormGradientOp<Context>::RunOnDevice() {
     Setup();
 
-#ifdef WITH_CUDA_FP16
     if (XIsType(Input(0), float)) {
         if (this->use_global_stats) InferenceRunWithType<float>();
         else TrainingRunWithType<float>();
@@ -327,12 +321,6 @@ void CuDNNBatchNormGradientOp<Context>::RunOnDevice() {
             LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
         } else TrainingRunWithType<float16>();
     } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
-#else
-    if (XIsType(Input(0), float)) {
-        if (this->use_global_stats) InferenceRunWithType<float>();
-        else TrainingRunWithType<float>();
-    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
-#endif
 }
 
 REGISTER_CUDNN_OPERATOR(

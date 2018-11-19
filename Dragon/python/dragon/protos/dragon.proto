@@ -35,7 +35,11 @@ message Argument {
     repeated string strings=7;
 }
 
-enum DeviceType { CPU = 0; CUDA = 1; OPENCL = 2; }
+enum DeviceType { 
+	CPU = 0; 
+	CUDA = 1; 
+	CNML = 2; 
+}
 
 message DeviceOption {
     optional DeviceType device_type = 1 [default = CPU];

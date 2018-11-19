@@ -28,7 +28,6 @@ template <> void Set<float16, CUDAContext>(
     const float16           alpha,
     float16*                x,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     if ((n & 1) == 0) {
         _SetHalf<half2>
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
@@ -40,12 +39,8 @@ template <> void Set<float16, CUDAContext>(
             << < CUDA_BLOCKS(n), CUDA_THREADS,
                  0, ctx->cuda_stream() >> >(n, alpha, x);
     }
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
-#ifdef WITH_CUDA_FP16
 __global__ void _TypeFloat2Half(
     const int               n,
     const float*            a,
@@ -54,7 +49,6 @@ __global__ void _TypeFloat2Half(
         b[idx] = __float2half(a[idx]);
     }
 }
-#endif
 
 template <> void RandomNormal<float16, CUDAContext>(
     const int               n,
@@ -62,7 +56,6 @@ template <> void RandomNormal<float16, CUDAContext>(
     const float             sigma,
     float16*                x,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     float* xf32 = (float*)CUDAContext::New(n * sizeof(float));
     CURAND_CHECK(curandGenerateNormal(
         ctx->curand_generator(), xf32, n, mu, sigma));
@@ -71,14 +64,10 @@ template <> void RandomNormal<float16, CUDAContext>(
              0, ctx->cuda_stream() >> >(n,
                  xf32, reinterpret_cast<half*>(x));
     CUDAContext::Delete(xf32);
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 /******************** Level-1 ********************/
 
-#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _AddHalf(
     const int               n,
@@ -104,7 +93,6 @@ __global__ void _AddHalf2(
 #endif
     }
 }
-#endif
 
 template <> void Add<float16, CUDAContext>(
     int                     n,
@@ -112,7 +100,6 @@ template <> void Add<float16, CUDAContext>(
     const float16*          b,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     if ((n & 1) == 0) {
         _AddHalf2<half2>
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
@@ -128,12 +115,8 @@ template <> void Add<float16, CUDAContext>(
                          reinterpret_cast<const half*>(b),
                              reinterpret_cast<half*>(y));
     }
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
-#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _SubHalf(
     const int               n,
@@ -159,7 +142,6 @@ __global__ void _SubHalf2(
 #endif
     }
 }
-#endif
 
 template <> void Sub<float16, CUDAContext>(
     int                     n,
@@ -167,7 +149,6 @@ template <> void Sub<float16, CUDAContext>(
     const float16*          b,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     if ((n & 1) == 0) {
         _SubHalf2<half2>
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
@@ -183,12 +164,8 @@ template <> void Sub<float16, CUDAContext>(
                          reinterpret_cast<const half*>(b),
                              reinterpret_cast<half*>(y));
     }
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
-#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _MulHalf(
     const int               n,
@@ -214,7 +191,6 @@ __global__ void _MulHalf2(
 #endif
     }
 }
-#endif
 
 template <> void Mul<float16, CUDAContext>(
     int                     n,
@@ -222,7 +198,6 @@ template <> void Mul<float16, CUDAContext>(
     const float16*          b,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     if ((n & 1) == 0) {
         _MulHalf2<half2>
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
@@ -238,12 +213,8 @@ template <> void Mul<float16, CUDAContext>(
                          reinterpret_cast<const half*>(b),
                              reinterpret_cast<half*>(y));
     }
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
-#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _DivHalf(
     const int               n,
@@ -256,7 +227,6 @@ __global__ void _DivHalf(
 #endif
     }
 }
-#endif
 
 template <> void Div<float16, CUDAContext>(
     int                     n,
@@ -264,19 +234,59 @@ template <> void Div<float16, CUDAContext>(
     const float16*          b,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     _DivHalf<half>
         << < CUDA_BLOCKS(n), CUDA_THREADS,
              0, ctx->cuda_stream() >> >(n,
                  reinterpret_cast<const half*>(a),
                       reinterpret_cast<const half*>(b),
                           reinterpret_cast<half*>(y));
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
-#ifdef WITH_CUDA_FP16
+template <typename T>
+__global__ void _LogHalf(
+    const int               n,
+    const T*                a,
+    T*                      y) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
+#if __CUDA_ARCH__ >= 530
+        y[idx] = hlog(a[idx]);
+#endif
+    }
+}
+
+template <typename T>
+__global__ void _LogHalf2(
+    const int               n,
+    const T*                a,
+    T*                      y) {
+    CUDA_1D_KERNEL_LOOP(idx, n) {
+#if __CUDA_ARCH__ >= 530
+        y[idx] = h2log(a[idx]);
+#endif
+    }
+}
+
+template <> void Log<float16, CUDAContext>(
+    int                     n,
+    const float16*          x,
+    float16*                y,
+    CUDAContext*            ctx) {
+    if ((n & 1) == 0) {
+        _LogHalf2<half2>
+            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n >> 1,
+                    reinterpret_cast<const half2*>(x),
+                        reinterpret_cast<half2*>(y));
+    }
+    else {
+        _LogHalf<half>
+            << < CUDA_BLOCKS(n), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n,
+                     reinterpret_cast<const half*>(x),
+                        reinterpret_cast<half*>(y));
+    }
+}
+
 template <typename T>
 __global__ void _SquareHalf(
     const int               n,
@@ -300,14 +310,12 @@ __global__ void _SquareHalf2(
 #endif
     }
 }
-#endif
 
 template <> void Square<float16, CUDAContext>(
     int                     n,
     const float16*          x,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     if ((n & 1) == 0) {
         _SquareHalf2<half2>
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
@@ -321,12 +329,8 @@ template <> void Square<float16, CUDAContext>(
                      reinterpret_cast<const half*>(x),
                          reinterpret_cast<half*>(y));
     }
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
-#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _SqrtHalf(
     int                     n,
@@ -350,14 +354,12 @@ __global__ void _SqrtHalf2(
 #endif
     }
 }
-#endif
 
 template <> void Sqrt<float16, CUDAContext>(
     int                     n,
     const float16*          x,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     if ((n & 1) == 0) {
         _SqrtHalf2<half2>
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
@@ -371,12 +373,8 @@ template <> void Sqrt<float16, CUDAContext>(
                      reinterpret_cast<const half*>(x),
                          reinterpret_cast<half*>(y));
     }
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
-#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _PowHalf(
     const int               n,
@@ -402,7 +400,6 @@ __global__ void _PowHalf2(
 #endif
     }
 }
-#endif
 
 template <> void Pow<float16, CUDAContext>(
     int                     n,
@@ -410,7 +407,6 @@ template <> void Pow<float16, CUDAContext>(
     const float16*          x,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     CHECK(alpha == float(2)) << "fp16 only support the power of 2";
     if ((n & 1) == 0) {
         _PowHalf2<half2>
@@ -425,12 +421,8 @@ template <> void Pow<float16, CUDAContext>(
                      alpha, reinterpret_cast<const half*>(x),
                          reinterpret_cast<half*>(y));
     }
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
-#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _InvHalf(
     const int               n,
@@ -456,7 +448,6 @@ __global__ void _InvHalf2(
 #endif
     }
 }
-#endif
 
 template <> void Inv<float16, CUDAContext>(
     const int               n,
@@ -464,7 +455,6 @@ template <> void Inv<float16, CUDAContext>(
     const float16*          x,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     if ((n & 1) == 0) {
         _InvHalf2<half2>
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
@@ -480,9 +470,6 @@ template <> void Inv<float16, CUDAContext>(
                          reinterpret_cast<const half*>(x),
                              reinterpret_cast<half*>(y));
     }
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 /******************** Level-2 ********************/
@@ -492,15 +479,11 @@ template <> void Scal<float16, CUDAContext>(
     const float             alpha,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     CUBLAS_CHECK(cublasScalEx(
         ctx->cublas_handle(), n,
             &alpha, CUDA_R_32F,
                 y, CUDA_R_16F, 1,
                     CUDA_R_32F));
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 template <> void Scale<float16, CUDAContext>(
@@ -519,7 +502,6 @@ template <> void Dot<float16, CUDAContext>(
     const float16*          b,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     CUBLAS_CHECK(cublasDotEx(
         ctx->cublas_handle(), n,
             a, CUDA_R_16F, 1,
@@ -527,12 +509,8 @@ template <> void Dot<float16, CUDAContext>(
                     y, CUDA_R_16F,
                         CUDA_R_32F));
     ctx->FinishDeviceCompution();
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
-#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _AddScalarHalf(
     const int               n,
@@ -556,14 +534,12 @@ __global__ void _AddScalarHalf2(
 #endif
     }
 }
-#endif
 
 template <> void AddScalar<float16, CUDAContext>(
     const int               n,
     const float             alpha,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     if ((n & 1) == 0) {
         _AddScalarHalf2<half2>
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
@@ -577,12 +553,8 @@ template <> void AddScalar<float16, CUDAContext>(
                      dragon_cast<half, float>(alpha),
                          reinterpret_cast<half*>(y));
     }
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
-#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _MulScalarHalf(
     const int               n,
@@ -606,14 +578,12 @@ __global__ void _MulScalarHalf2(
 #endif
     }
 }
-#endif
 
 template <> void MulScalar<float16, CUDAContext>(
     const int               n,
     const float             alpha,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     if ((n & 1) == 0) {
         _MulScalarHalf2<half2>
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
@@ -627,9 +597,6 @@ template <> void MulScalar<float16, CUDAContext>(
                      dragon_cast<half, float>(alpha),
                          reinterpret_cast<half*>(y));
     }
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 template <> void Axpy<float16, CUDAContext>(
@@ -638,16 +605,12 @@ template <> void Axpy<float16, CUDAContext>(
     const float16*          x,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     CUBLAS_CHECK(cublasAxpyEx(
         ctx->cublas_handle(), n,
             &alpha, CUDA_R_32F,
                 x, CUDA_R_16F, 1,
                     y, CUDA_R_16F, 1,
                         CUDA_R_32F));
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 template <> void Axpby<float16, CUDAContext>(
@@ -667,7 +630,6 @@ template <> void RandomUniform<float16, CUDAContext>(
     const float             high,
     float16*                x,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     float* xf32 = (float*)ctx->New(n * sizeof(float));
     CURAND_CHECK(curandGenerateUniform(
         ctx->curand_generator(), xf32, n));
@@ -679,9 +641,6 @@ template <> void RandomUniform<float16, CUDAContext>(
     if (range != 1.f) Scal<float16, CUDAContext>(n, range, x, ctx);
     if (low != 0.f) AddScalar<float16, CUDAContext>(n, low, x, ctx);
     ctx->Delete(xf32);
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 /******************** Level-3 ********************/
@@ -699,7 +658,6 @@ template <> void Gemm<float16, CUDAContext>(
     float16*                C,
     CUDAContext*            ctx,
     TensorProto_DataType    math_type) {
-#ifdef WITH_CUDA_FP16
     int lda = (TransA == CblasNoTrans) ? K : M;
     int ldb = (TransB == CblasNoTrans) ? N : K;
     cublasOperation_t cuTransA = (TransA == CblasNoTrans) ?
@@ -782,9 +740,6 @@ template <> void Gemm<float16, CUDAContext>(
     } else {
         LOG(FATAL) << "Unsupported math type";
     }
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 template <> void Gemv<float16, CUDAContext>(
@@ -798,7 +753,6 @@ template <> void Gemv<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx,
     TensorProto_DataType    math_type) {
-#ifdef WITH_CUDA_FP16
     cublasOperation_t cuTransA = (TransA == CblasNoTrans) ?
         CUBLAS_OP_T : CUBLAS_OP_N;
     int m = (cuTransA == CUBLAS_OP_N) ? N : M;
@@ -881,9 +835,6 @@ template <> void Gemv<float16, CUDAContext>(
     } else {
             LOG(FATAL) << "Unsupported math type";
     }
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 }    // namespace math

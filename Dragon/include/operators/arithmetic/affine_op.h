@@ -55,7 +55,7 @@ class AffineGradientOp final : public Operator<Context> {
 
 #ifdef WITH_CUDNN
 
-#include "utils/cudnn_device.h"
+#if CUDNN_VERSION_MIN(6, 0, 0)
 
 template <class Context>
 class CuDNNAffineOpBase : public Operator<Context> {
@@ -151,6 +151,8 @@ protected:
     TIndex outer_dim, inner_dim, scale_dim, sum_dim, dim;
     Tensor sum_result;
 };
+
+#endif
 
 #endif    // WITH_CUDNN
 

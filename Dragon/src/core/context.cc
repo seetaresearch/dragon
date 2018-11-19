@@ -3,10 +3,6 @@
 
 namespace dragon {
 
-#ifdef WITH_CUDA
-thread_local CUDAObject CUDAContext::cuda_object_;
-#endif    // WITH_CUDA
-
 //  cpu <- gpu
 template<> void CPUContext::Memcpy<CPUContext, CUDAContext>(
     size_t                  nbytes,

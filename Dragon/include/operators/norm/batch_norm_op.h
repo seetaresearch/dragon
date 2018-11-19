@@ -25,7 +25,7 @@ class BatchNormOp final : public Operator<Context> {
         : Operator<Context>(def, ws),
           axis(OperatorBase::Arg<int>("axis", -1)),
           momentum(OperatorBase::Arg<float>("momentum", 0.9f)),
-          eps(OperatorBase::Arg<float>("eps", 1e-3f)),
+          eps(OperatorBase::Arg<float>("eps", 1e-5f)),
           use_stats(OperatorBase::Arg<int>("use_stats", -1)),
           mode(OperatorBase::Arg<string>("mode", "DEFAULT")) {
         if (axis != -1) 
@@ -81,7 +81,7 @@ class FusedBatchNormOp : public Operator<Context> {
         : Operator<Context>(def, ws),
           axis(OperatorBase::Arg<int>("axis", -1)),
           momentum(OperatorBase::Arg<float>("momentum", 0.9f)),
-          eps(OperatorBase::Arg<float>("eps", 1e-3f)),
+          eps(OperatorBase::Arg<float>("eps", 1e-5f)),
           use_stats(OperatorBase::Arg<int>("use_stats", -1)) {}
     USE_OPERATOR_FUNCTIONS;
 
@@ -105,7 +105,7 @@ class FusedBatchNormGradientOp : public Operator<Context> {
     FusedBatchNormGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
           axis(OperatorBase::Arg<int>("axis", -1)),
-          eps(OperatorBase::Arg<float>("eps", 1e-3f)),
+          eps(OperatorBase::Arg<float>("eps", 1e-5f)),
           use_stats(OperatorBase::Arg<int>("use_stats", -1)) {}
     USE_OPERATOR_FUNCTIONS;
 
@@ -127,14 +127,13 @@ class FusedBatchNormGradientOp : public Operator<Context> {
 
 #if CUDNN_VERSION_MIN(5, 0, 0)
 
-#include "utils/cudnn_device.h"
-
 template <class Context>
-class CuDNNBatchNormOp final : public FusedBatchNormOp<Context> {
+class CuDNNBatchNormOp final
+    : public FusedBatchNormOp<Context> {
  public:
     CuDNNBatchNormOp(const OperatorDef& def, Workspace* ws)
         : FusedBatchNormOp<Context>(def, ws),
-          eps64(OperatorBase::Arg<float>("eps", 1e-3f)) {
+          eps64(OperatorBase::Arg<float>("eps", 1e-5f)) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&bn_desc));
@@ -167,11 +166,12 @@ class CuDNNBatchNormOp final : public FusedBatchNormOp<Context> {
 };
 
 template <class Context>
-class CuDNNBatchNormGradientOp final : public FusedBatchNormGradientOp<Context> {
+class CuDNNBatchNormGradientOp final
+    : public FusedBatchNormGradientOp<Context> {
  public:
     CuDNNBatchNormGradientOp(const OperatorDef& def, Workspace* ws)
         : FusedBatchNormGradientOp<Context>(def, ws),
-          eps64(OperatorBase::Arg<float>("eps", 1e-3f)) {
+          eps64(OperatorBase::Arg<float>("eps", 1e-5f)) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&bn_desc));

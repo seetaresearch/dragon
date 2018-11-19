@@ -72,10 +72,9 @@ class Optimizer(object):
         param_temp = group['slot'] + '/{}'
         for k, v in group.items():
             if k in self._mutable_parameters:
-                # convert all defaults as float32 for convenience
                 dg.workspace.FeedTensor(param_temp.format(
-                    self._mutable_parameters[k]),
-                        np.array([v], dtype=np.float32))
+                    self._mutable_parameters[k]), v,
+                        dtype='float32', force_cpu=True)
 
     def _run_update_ops(self, group):
         """Generate & Run UpdateOps.
@@ -107,10 +106,12 @@ class Optimizer(object):
 
         # Run regular update ops
         for p, g in zip(params, grads):
-            _update(p, g, op_type=self._update_type,
+            _update(p, g,
+                op_type=self._update_type,
                 slot=group['slot'],
                 lr_mult=group.get('lr_mult', 1.0),
-                decay_mult=group.get('decay_mult', 1.0))
+                decay_mult=group.get('decay_mult', 1.0)
+            )
 
     def zero_grad(self):
         """Set all gradients to zeros.

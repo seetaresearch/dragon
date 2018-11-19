@@ -48,10 +48,10 @@ class GraphBase {
     Workspace* ws_;
 };
 
-class Graph final : public GraphBase {
+class Graph : public GraphBase {
  public:
     Graph(const GraphDef& meta_graph, Workspace* ws);
-    ~Graph() { for (auto* op : ops_) delete op; }
+    virtual ~Graph() { for (auto* op : ops_) delete op; }
 
     bool Create(
         const GraphDef&         optimized_graph,
@@ -73,7 +73,7 @@ class Graph final : public GraphBase {
 
     inline Workspace* ws() const { return ws_; }
 
- private:
+ protected:
     void ForwardShareDyeing(string u, string ancestor);
     void ForwardPruneDyeing(
         string                  u,
@@ -97,6 +97,9 @@ DECLARE_REGISTRY(
     GraphBase,
     const GraphDef&,
     Workspace*);
+
+#define REGISTER_GRAPH(name, ...) \
+    REGISTER_CLASS(GraphRegistry, name, __VA_ARGS__)
 
 }    // namespace dragon
 

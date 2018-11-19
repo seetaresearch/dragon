@@ -50,8 +50,6 @@ class Conv2dGradientOp : public Conv2dOp<Context> {
 
 #ifdef WITH_CUDNN
 
-#include "utils/cudnn_device.h"
-
 template <class Context>
 class CuDNNConv2dOp final : public Conv2dOp<Context> {
  public:
@@ -97,7 +95,7 @@ class CuDNNConv2dOp final : public Conv2dOp<Context> {
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;
     size_t fwd_data_size;
-    TIndex bias_offset, cudnn_group;
+    TIndex cudnn_group;
     vector<TIndex> input_dims;
     bool enable_tensor_core;
 };
@@ -148,7 +146,7 @@ class CuDNNConv2dGradientOp final : public Conv2dGradientOp<Context> {
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;
     size_t bwd_filter_size, bwd_data_size;
-    TIndex bias_offset, cudnn_group;
+    TIndex cudnn_group;
     vector<TIndex> input_dims;
     bool enable_tensor_core;
 };

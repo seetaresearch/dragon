@@ -13,12 +13,12 @@ void Conv2dOp<Context>::RunWithType() {
     auto* Wdata = Input(1).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
-    for (int n = 0; n < Input(0).dim(0); n++) {
+    for (int n = 0; n < Input(0).dim(0); n++)
         Wx(Xdata + n * x_offset, Wdata, Ydata + n * y_offset);
-        if (HasBias()) {
-            auto* Bdata = Input(2).template data<T, Context>();
-            Pb(Bdata, Ydata + n * y_offset);
-        }
+  
+    if (HasBias()) {
+        auto* Bdata = Input(2).template data<T, Context>();
+        Pb(Bdata, Ydata);
     }
 }
 

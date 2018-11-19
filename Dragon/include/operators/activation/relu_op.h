@@ -21,7 +21,7 @@ class ReluOp : public Operator<Context> {
  public:
     ReluOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          slope(OperatorBase::Arg<float>("slope", 0.0)) {}
+          slope(OperatorBase::Arg<float>("slope", 0.f)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -36,7 +36,7 @@ class ReluGradientOp : public Operator<Context> {
  public:
     ReluGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          slope(OperatorBase::Arg<float>("slope", 0.0)) {}
+          slope(OperatorBase::Arg<float>("slope", 0.f)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -68,7 +68,7 @@ public:
     }
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType(); 
+    template <typename T> void RunWithType();
 
  protected:
     cudnnTensorDescriptor_t input_desc, output_desc;

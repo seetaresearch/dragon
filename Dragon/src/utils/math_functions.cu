@@ -53,6 +53,22 @@ template <> void Set<int, CUDAContext>(
     }
 }
 
+template <> void Set<int64_t, CUDAContext>(
+    const int               n,
+    const int64_t           alpha,
+    int64_t*                x,
+    CUDAContext*            ctx) {
+    if (alpha == 0) {
+        CUDA_CHECK(cudaMemsetAsync(x, 0,
+            sizeof(int64_t) * n, ctx->cuda_stream()));
+    }
+    else {
+        _Set<int64_t>
+            << < CUDA_BLOCKS(n), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(n, alpha, x);
+    }
+}
+
 template <> void RandomUniform<uint32_t, CUDAContext>(
     const int               n,
     const float             low,
@@ -73,16 +89,6 @@ template <> void RandomNormal<float, CUDAContext>(
     CUDAContext*            ctx) {
     auto* rng = ctx->curand_generator();
     CURAND_CHECK(curandGenerateNormal(rng, x, n, mu, sigma));
-}
-
-template <> void RandomBernoulli<float, CUDAContext>(
-    const int               n,
-    const float             p,
-    unsigned int*           x,
-    CUDAContext*            ctx) {
-    //  curand could not generate bernoulli distribution
-    //  we recommend implement it within specfic case, e.g. Dropout
-    NOT_IMPLEMENTED;
 }
 
 /******************** Level-1 ********************/

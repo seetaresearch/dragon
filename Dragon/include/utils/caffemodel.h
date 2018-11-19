@@ -73,7 +73,7 @@ inline void LoadCaffeModel(
         const string& layer_name = layer.name();
         string prefix = layer_name + "/param:";
         for (int j = 0; j < layer.blobs_size(); j++) {
-            string tensor_name = prefix + dragon_cast<string, int>(j);
+            string tensor_name = prefix + std::to_string(j);
             if (!ws->HasTensor(tensor_name))
                 LOG(WARNING) << "Tensor(" << tensor_name << ") "
                 << "does not exist in any Graphs, skip.";
@@ -114,7 +114,7 @@ inline void SavaCaffeModel(
     int layer_idx = -1;
     for (int i = 0; i < tensors.size(); i++) {
         if (tensors[i]->count() <= 0) continue;
-        vector<string> splits = SplitString(
+        vector<string> splits = str::split(
             tensors[i]->name(), "/param:");
         if (layer_hash.count(splits[0]) == 0) {
             layer_hash[splits[0]] = ++layer_idx;

@@ -34,7 +34,7 @@ class Dropout(Module):
         }
 
     def forward(self, input):
-        if not input.requires_grad: return input
+        if not self.training: return input
         inputs = [input]
         self.unify_devices(inputs)
         outputs = [input if self.inplace else self.register_output(input.dtype)]

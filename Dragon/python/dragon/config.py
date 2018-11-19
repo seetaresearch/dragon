@@ -26,11 +26,11 @@ option = {}
 REGISTERED_OPERATORS = set(s for s in RegisteredOperatorsCC())
 NO_GRADIENT_OPERATORS = set(s for s in NoGradientOperatorsCC())
 
-# The current device, 'CPU' or 'CUDA'
+# The current device, 'CPU', 'CUDA' or 'CNML'
 option['device'] = 'CPU'
 
 # The device id
-option['gpu_id'] = 0
+option['device_id'] = 0
 
 # Whether to use cuDNN if possible
 option['use_cudnn'] = False
@@ -43,6 +43,9 @@ option['debug_mode'] = False
 
 # Whether to share grads
 option['share_grads'] = True
+
+# Optional graph type
+option['graph_type'] = ''
 
 # Whether to log the meta graphs
 option['log_meta_graph'] = False
@@ -84,7 +87,7 @@ def IsCUDADriverSufficient():
 
 
 def EnableCUDA(gpu_id=0, use_cudnn=True):
-    """Enable CUDA mode globally.
+    """Enable NVIDIA's CUDA mode globally.
 
     Parameters
     ----------
@@ -100,8 +103,27 @@ def EnableCUDA(gpu_id=0, use_cudnn=True):
     """
     global option
     option['device'] = 'CUDA'
-    option['gpu_id'] = gpu_id
+    option['device_id'] = gpu_id
     option['use_cudnn'] = use_cudnn
+
+
+def EnableCNML(mlu_id=0):
+    """Enable Cambricon's CNML mode globally.
+
+    Parameters
+    ----------
+    device_id : int
+        The id of MLU to use.
+
+    Returns
+    -------
+    None
+
+    """
+    global option
+    option['device'] = 'CNML'
+    option['device_id'] = mlu_id
+
 
 # TODO(PhyscalX): please not use @setter
 # TODO(PhyscalX): seems that it can't change the global value
@@ -133,7 +155,6 @@ def GetRandomSeed():
         The global random seed.
 
     """
-    global option
     return option['random_seed']
 
 
@@ -151,7 +172,7 @@ def SetGPU(id):
 
     """
     global option
-    option['gpu_id'] = id
+    option['device_id'] = id
 
 
 def GetGPU():
@@ -163,8 +184,7 @@ def GetGPU():
         The global id of GPU.
 
     """
-    global option
-    return option['gpu_id']
+    return option['device_id']
 
 
 def SetDebugMode(enabled=True):
@@ -184,6 +204,25 @@ def SetDebugMode(enabled=True):
     """
     global option
     option['debug_mode'] = enabled
+
+
+def SetGraphType(graph_type=''):
+    """Set the graph type.
+
+    If empty, the default DAG graph will be used.
+
+    Parameters
+    ----------
+    graph_type : str
+        The graph type.
+
+    Returns
+    -------
+    None
+
+    """
+    global option
+    option['graph_type'] = graph_type
 
 
 def LogMetaGraph(enabled=True):

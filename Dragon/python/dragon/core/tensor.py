@@ -737,7 +737,7 @@ class Tensor(object):
 
         Parameters
         ----------
-        new_value : basic type, list or numpy.ndarray
+        new_value : number, list or numpy.ndarray
             The values to set.
 
         Returns

@@ -13,6 +13,7 @@
 #define DRAGON_CORE_COMMON_H_
 
 #include <ctime>
+#include <random>
 #include <climits>
 #include <memory>
 #include <string>
@@ -49,25 +50,35 @@ using Map = std::unordered_map<Key, Value>;
 template <typename Value>
 using Set = std::unordered_set<Value> ;
 
-/*
- * Define the Kernel version.
- *
- * | Major(2) | Minor(2) | Patch(11) |
- */
-#define DRAGON_VERSION 2211
+/* * * * * * * * * * * * * * * * * * * * *
+ *                                       *
+ *            Kernel Version             *
+ *                                       *
+ *     Major(2) | Minor(2) | Patch(12)   *
+ *                                       *
+ * * * * * * * * * * * * * * * * * * * * */
 
-/*
- * Define the default random seed.
- */
+#define DRAGON_VERSION 2212
+
+/* * * * * * * * * * * * * * * * * * * * *
+ *                                       *
+ *          Default Random Seed          *
+ *                                       *
+ * * * * * * * * * * * * * * * * * * * * */
+
 #define DEFAULT_RNG_SEED 3
 
-/*
- * Define the common marcos.
- */
-#ifdef _MSC_VER
-#if _MSC_VER < 1900
-#define thread_local __declspec(thread)
-#endif
+/* * * * * * * * * * * * * * * * * * * * *
+ *                                       *
+ *                Macros                 *
+ *                                       *
+ * * * * * * * * * * * * * * * * * * * * */
+
+//  avoid using of "thread_local" for VS2013 or older Xcode
+#if defined(__clang__) || defined(__GNUC__)
+#define TLS_OBJECT __thread
+#else
+#define TLS_OBJECT __declspec(thread)
 #endif
 
 #define CONCATENATE_IMPL(s1, s2) s1##s2

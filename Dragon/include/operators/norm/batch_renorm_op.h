@@ -23,7 +23,7 @@ class BatchRenormOp final : public Operator<Context> {
         : Operator<Context>(def, ws),
           axis(OperatorBase::Arg<int>("axis", -1)),
           momentum(OperatorBase::Arg<float>("momentum", 0.9f)),
-          eps(OperatorBase::Arg<float>("eps", 1e-3f)),
+          eps(OperatorBase::Arg<float>("eps", 1e-5f)),
           r_max(OperatorBase::Arg<float>("r_max", 3.f)),
           d_max(OperatorBase::Arg<float>("d_max", 5.f)),
           t_delta(OperatorBase::Arg<float>("t_delta", 1.f)),

@@ -62,9 +62,10 @@ def _repeat(input, times):
 
 def _fill(input, shape, value):
     ctx = MakeContext(inputs=[input]); len_shape = len(shape)
-    key = 'torch/ops/fill/{}:{}/ndims:#{}/value:{}'.format(
-        ctx[0].lower(), ctx[1], len_shape, value)
-    module = get_module(Fill, key, ctx, len_shape=len_shape, value=value)
+    key = 'torch/ops/fill/{}:{}/dtype:{}/ndims:#{}/value:{}'.format(
+        ctx[0].lower(), ctx[1], input._dtype, len_shape, value)
+    module = get_module(Fill, key, ctx, len_shape=len_shape,
+        value=value, dtype=input._dtype)
     return module.forward(input, shape)
 
 

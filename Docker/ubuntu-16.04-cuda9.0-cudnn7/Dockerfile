@@ -9,10 +9,14 @@ RUN rm /etc/apt/sources.list.d/cuda.list && rm /etc/apt/sources.list.d/nvidia-ml
     unzip \
     ssh \
     vim \
+    libtbb-dev \
+    libsdl2-dev \
     libnuma-dev \
     libprotobuf-dev \
     protobuf-compiler \
+    libopencv-dev \
     libopenblas-dev \
+    libboost-all-dev \
     libnccl2 \
     libnccl-dev \
     python3-pip \
@@ -43,3 +47,5 @@ RUN git clone https://github.com/seetaresearch/Dragon.git && \
     wget http://dragon.seetatech.com/download/docker/ubuntu-16.04-cuda9.0-cudnn7/CMakeLists.txt && \
     mkdir build && cd build && cmake .. && make install -j8 && cd .. && rm -rf build && \
     cd python && python3 setup.py install
+
+RUN rm /usr/bin/python && ln -s /usr/bin/python3 /usr/bin/python && ln -s /usr/bin/pip3 /usr/bin/pip

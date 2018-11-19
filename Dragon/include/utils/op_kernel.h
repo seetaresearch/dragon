@@ -25,21 +25,21 @@ typedef int64_t TIndex;
 template <typename T, class Context>
 void Dropout(
     const int               count,
-    T                       prob,
-    T                       scale,
+    float                   prob,
+    float                   scale,
     const T*                x,
-    uint32_t*               mask,
+    uint32_t*               mask32,
+    uint8_t*                mask8,
     T*                      y,
     Context*                ctx);
 
-template <typename T, class Context>
-void DropoutGrad(
+template <typename Tx, typename Tm, class Context>
+void ApplyMask(
     const int               count,
-    T                       prob,
-    T                       scale,
-    const T*                dy,
-    const uint32_t*         mask,
-    T*                      dx,
+    const float             scale,
+    const Tx*               x,
+    const Tm*               mask,
+    Tx*                     y,
     Context*                ctx);
 
 /******************** activation.elu ********************/
@@ -234,8 +234,93 @@ void Clip(
     const float             low,
     const float             high,
     const T*                x,
-    T*                      mask,
     T*                      y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void ClipGrad(
+    const int               count,
+    const float             low,
+    const float             high,
+    const T*                x,
+    const T*                dy,
+    T*                      dx,
+    Context*                ctx);
+
+/******************** arithmetic.maximum ********************/
+
+template <typename T, class Context>
+void MaximumE(
+    const int               count,
+    const T*                x1,
+    const T*                x2,
+    T*                      y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void MaximumB(
+    const int               count,
+    const T*                x1,
+    const T                 x2,
+    T*                      y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void MaximumEGrad(
+    const int               count,
+    const T*                x1,
+    const T*                x2,
+    const T*                dy,
+    T*                      dx1,
+    T*                      dx2,
+    Context*                ctx);
+
+template <typename T, class Context>
+void MaximumBGrad(
+    const int               count,
+    const T*                x1,
+    const T                 x2,
+    const T*                dy,
+    T*                      dx1,
+ /* T*                      dx2, */
+    Context*                ctx);
+
+/******************** arithmetic.minimum ********************/
+
+template <typename T, class Context>
+void MinimumE(
+    const int               count,
+    const T*                x1,
+    const T*                x2,
+    T*                      y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void MinimumB(
+    const int               count,
+    const T*                x1,
+    const T                 x2,
+    T*                      y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void MinimumEGrad(
+    const int               count,
+    const T*                x1,
+    const T*                x2,
+    const T*                dy,
+    T*                      dx1,
+    T*                      dx2,
+    Context*                ctx);
+
+template <typename T, class Context>
+void MinimumBGrad(
+    const int               count,
+    const T*                x1,
+    const T                 x2,
+    const T*                dy,
+    T*                      dx1,
+ /* T*                      dx2, */
     Context*                ctx);
 
 /******************** control_flow.compare ********************/
@@ -255,6 +340,34 @@ void AbsGrad(
     const int               count,
     const T*                dy,
     T*                      dx,
+    Context*                ctx);
+
+/******************** loss.nll_loss ********************/
+
+template <typename Tx, typename Ty, class Context>
+void NLLLoss(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const Tx*               log_prob,
+    const Ty*               labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    Context*                ctx);
+
+template <typename Tx, typename Ty, class Context>
+void NLLLossGrad(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const Tx*               prob,
+    const Ty*               labels,
+    const int*              ignores,
+    const int               num_ignores,
+    Tx*                     dx,
+    float*                  flags,
     Context*                ctx);
 
 /******************** loss.sigmoid_cross_entropy ********************/
@@ -900,6 +1013,23 @@ void Col2Im2d(
     const string&           data_format,
     const T*                col,
     T*                      im,
+    Context*                ctx);
+
+/******************** vision.drop_block ********************/
+
+template <class Context>
+void DropBlock2d(
+    const int               N,
+    const int               C,
+    const int               H,
+    const int               W,
+    const int               seed_h,
+    const int               seed_w,
+    const int               block_size,
+    const float             gamma,
+    const string&           data_format,
+    uint32_t*               seed,
+    int*                    mask,
     Context*                ctx);
 
 /******************** vision.nn_resize ********************/

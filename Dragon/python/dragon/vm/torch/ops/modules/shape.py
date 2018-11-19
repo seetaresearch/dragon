@@ -22,6 +22,7 @@ class Fill(BaseModule):
         super(Fill, self).__init__(key, ctx, **kwargs)
         self.len_shape = kwargs.get('len_shape', 0)
         self.value = kwargs.get('value', 0.0)
+        self.dtype = kwargs.get('dtype', 'float32')
         self.register_arguments()
         self.register_op()
 
@@ -34,6 +35,7 @@ class Fill(BaseModule):
             'op_type': 'Fill',
             'n_inputs': 0, 'n_outputs': 1,
             'arguments': {
+                'dtype': self.dtype,
                 'value': float(self.value),
                 'dims_desc': [d for d in self.shape] if len(self.shape) > 0 else None,
             }

@@ -19,6 +19,46 @@ from . import *
 from .activation import Softmax
 
 
+def NLLLoss(inputs, axis=1, normalization='VALID', ignore_labels=(), **kwargs):
+    """Negative likelihood loss with sparse labels.
+
+    Parameters
+    ----------
+    inputs : list of Tensor
+        The inputs, represent [input, sparse_labels].
+    axis : int
+        The axis of softmax function.
+    normalization : str
+        The normalization, ``UNIT``, ``FULL``, ``VALID``, ``BATCH_SIZE`` or ``NONE``.
+    ignore_label : tuple or list
+        The label id to ignore. Default is ``empty``.
+
+    Returns
+    -------
+    Tensor
+        The loss.
+
+    Notes
+    -----
+    Set the normalization to ``UNIT`` will return unreduced losses.
+
+    """
+    CheckInputs(inputs, 2)
+    arguments = ParseArguments(locals())
+
+    output = Tensor.CreateOperator(nout=1, op_type='NLLLoss', **arguments)
+
+    if inputs[0].shape is not None:
+        if normalization != 'UNIT': output.shape = [1]
+        elif all(dim is not None for dim in inputs[0].shape):
+            outer_dim = int(np.prod(inputs[0].shape[0 : axis]))
+            inner_dim = int(np.prod(inputs[0].shape[axis + 1 :]))
+            output.shape = [outer_dim * inner_dim]
+        else: output.shape = [None]
+
+    return output
+
+
 def SparseSoftmaxCrossEntropy(inputs, axis=1, normalization='VALID', ignore_labels=(), **kwargs):
     """SoftmaxCrossEntropy with sparse labels.
 

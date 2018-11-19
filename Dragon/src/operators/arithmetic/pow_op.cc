@@ -15,6 +15,7 @@ void PowOp<Context>::RunWithType() {
             dragon_cast<T, float>(value), Ydata, ctx());
         return;
     }
+
     auto* Xdata = Input(0).template data<T, Context>();
     ctx()->template Copy<T, Context, Context>(count, Ydata, Xdata);
     if (scale != 1.f) math::Scal<T, Context>(count, scale, Ydata, ctx());

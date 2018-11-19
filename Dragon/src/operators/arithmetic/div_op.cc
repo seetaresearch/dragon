@@ -146,6 +146,7 @@ void DivGradientOp<Context>::BroadcastRunWithType(int type) {
     if (Output(0)->name() != "ignore") {
         auto* x2 = Input(1).template data<T, Context>();
         auto* dx1 = Output(0)->template mutable_data<T, Context>();
+        CHECK(dy != dx1) << "\nCan't set inplace if X2 was broadcast.";
         if (type == 0 || type == 1) {
             DECLARE_MULTIPLIER(multiplier, outer_dim);
             math::Gemm<T, Context>(
@@ -185,7 +186,9 @@ DEPLOY_CPU(DivGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(DivGradient);
 #endif
-OPERATOR_SCHEMA(DivGradient).NumInputs(3).NumOutputs(2);
+OPERATOR_SCHEMA(DivGradient)
+    .NumInputs(3).NumOutputs(2)
+    .Inplace({ { 2, 0 } });
 
 class GetDivGradient final : public GradientMakerBase {
  public:

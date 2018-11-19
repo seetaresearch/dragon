@@ -19,7 +19,8 @@ from .vision import ConvolutionLayer, \
                     ROIPoolingLayer, \
                     ROIAlignLayer, \
                     NNResizeLayer, \
-                    BilinearResizeLayer
+                    BilinearResizeLayer, \
+                    DropBlockLayer
 
 from .neuron import ReLULayer, \
                     PReLULayer, \

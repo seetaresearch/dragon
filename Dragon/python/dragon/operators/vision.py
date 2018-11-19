@@ -630,3 +630,44 @@ def DenseConcat(inputs, growth_rate=0, axis=1, **kwargs):
                 output.shape[axis] += inputs[i].shape[axis]
 
     return output
+
+
+def DropBlock2d(inputs, block_size=7, keep_prob=0.9,
+                alpha=1., decrement=0., data_format='NCHW', **kwargs):
+    """Randomly drop the outputs according to the spatial blocks. `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
+
+    Set the ``decrement`` to schedule ``keep_prob`` for each iteration.
+
+    Set the ``alpha`` to decrease ``gamma`` for different stages.
+
+    Parameters
+    ----------
+    inputs : Tensor
+        The input tensor.
+    block_size : int
+        The size of dropping block.
+    keep_prob : float or Tensor
+        The prob of keeping. Default is ``0.9``.
+    alpha : float
+        The scale factor to gamma.
+    decrement : float
+        The decrement to keep prob.
+    data_format : str
+        The data format, ``NCHW`` or ``NHWC``.
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
+    """
+    CheckInputs(inputs, 1)
+    arguments = ParseArguments(locals())
+    arguments = AddArgumentWithDesc(arguments, keep_prob, 'keep_prob', as_target=False)
+
+    output = Tensor.CreateOperator(nout=1, op_type='DropBlock2d', **arguments)
+
+    if inputs.shape is not None:
+        output.shape = inputs.shape[:]
+
+    return output

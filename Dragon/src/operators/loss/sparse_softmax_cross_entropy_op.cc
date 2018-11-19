@@ -36,7 +36,9 @@ void SparseSoftmaxCrossEntropyOp<Context>::RunWithType() {
                 Ldata, Fdata, ctx());
 
     if (normalization == "UNIT") {
-        Output(0)->ReshapeLike(losses);
+        vector<TIndex> output_dims = Input(0).dims();
+        output_dims.erase(output_dims.begin() + axis);
+        Output(0)->Reshape(output_dims);
         Output(0)->template CopyFrom<Context>(losses, ctx());
         return;
     }

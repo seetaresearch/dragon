@@ -14,7 +14,6 @@ from __future__ import division
 from __future__ import print_function
 
 import pprint
-import numpy as np
 
 import dragon.core.workspace as ws
 from dragon.core.tensor import Tensor
@@ -43,7 +42,7 @@ class BaseUpdater(object):
         self._defaults = {
             'scale_gradient': scale_gradient,
             'clip_gradient': clip_gradient,
-            'l2_decay': l2_decay
+            'l2_decay': l2_decay,
         }
         self._param_group = []
         self._slot = slot
@@ -77,7 +76,7 @@ class BaseUpdater(object):
         defaults = self.__dict__.get('_defaults')
         if item in defaults:
             if self._registered:
-                return ws.FetchTensor(self._slot + '/' + item)[0]
+                return ws.FetchTensor(self._slot + '/' + item)
             else: return defaults[item]
         return self.__dict__[item]
 
@@ -85,9 +84,8 @@ class BaseUpdater(object):
         defaults = self.__dict__.get('_defaults')
         if defaults is not None and key in defaults:
             if self._registered:
-                # convert all defaults as float32 for convenience
-                ws.FeedTensor(self._slot + '/' + key,
-                    np.array([value], dtype=np.float32))
+                ws.FeedTensor(self._slot + '/' + key, value,
+                    dtype='float32', force_cpu=True)
             else:
                 self._defaults[key] = value
         else:
@@ -96,8 +94,8 @@ class BaseUpdater(object):
     def register_in_workspace(self):
         if not self._registered:
             for k, v in self._defaults.items():
-                # convert all defaults as float32 for convenience
-                ws.FeedTensor(self._slot + "/" + k, np.array([v], dtype=np.float32))
+                ws.FeedTensor(self._slot + "/" + k, v,
+                    dtype='float32', force_cpu=True)
             self._registered = True
             if self._verbose:
                 from dragon.config import logger

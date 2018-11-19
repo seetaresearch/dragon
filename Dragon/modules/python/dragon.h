@@ -31,16 +31,17 @@ class TensorFetcherBase {
 class TensorFeederBase {
  public:
     virtual ~TensorFeederBase() {}
-    virtual PyObject* Feed(const DeviceOption& option, 
-                           PyArrayObject* array, 
-                           Tensor* tensor) = 0;
+    virtual PyObject* Feed(
+        const DeviceOption&             option,
+        PyArrayObject*                  array,
+        Tensor*                         tensor) = 0;
 };
 
 DECLARE_TYPED_REGISTRY(TensorFetcherRegistry, TypeId, TensorFetcherBase);
 #define REGISTER_TENSOR_FETCHER(type, ...) \
     REGISTER_TYPED_CLASS(TensorFetcherRegistry, type, __VA_ARGS__)
 
-inline TensorFetcherBase* CreateFetcher(TypeId type) { 
+inline TensorFetcherBase* CreateFetcher(TypeId type) {
     return TensorFetcherRegistry()->Create(type); 
 }
 
@@ -61,7 +62,7 @@ class NumpyFetcher : public TensorFetcherBase {
             PyErr_SetString(PyExc_RuntimeError, s.c_str());
             return nullptr;
         }
-        //  create a empty array with r shape
+        //  create a empty array with the same shape
         PyObject* array = PyArray_SimpleNew(
             tensor.ndim(), npy_dims.data(), npy_type);
         //  copy the tensor data to the numpy array
@@ -88,9 +89,10 @@ class StringFetcher : public TensorFetcherBase {
 
 class NumpyFeeder : public TensorFeederBase {
  public:
-    PyObject* Feed(const DeviceOption& option,
-                   PyArrayObject* original_array,
-                   Tensor* tensor) override {
+    PyObject* Feed(
+        const DeviceOption&         option,
+        PyArrayObject*              original_array,
+        Tensor*                     tensor) override {
         PyArrayObject* array = PyArray_GETCONTIGUOUS(original_array);
         const TypeMeta& meta = TypeNPYToMeta(PyArray_TYPE(array));
         if (meta.id() == 0) {
@@ -100,7 +102,6 @@ class NumpyFeeder : public TensorFeederBase {
         if (meta.id() != tensor->meta().id() && tensor->meta().id() != 0)
             LOG(WARNING) << "Feed Tensor(" << tensor->name() << ")"
                          << " with different data type from original one.";
-        tensor->SetMeta(meta);
         int ndim = PyArray_NDIM(array);
         npy_intp* npy_dims = PyArray_DIMS(array);
         vector<TIndex> dims;
@@ -110,16 +111,16 @@ class NumpyFeeder : public TensorFeederBase {
 #ifdef WITH_CUDA
             CUDAContext context(option);
             context.SwitchToDevice();
+            auto* data = tensor->raw_mutable_data<CUDAContext>(meta);
             context.Memcpy<CUDAContext, CPUContext>(tensor->nbytes(),
-                             tensor->raw_mutable_data<CUDAContext>(),
-                            static_cast<void*>(PyArray_DATA(array)));
+                      data, static_cast<void*>(PyArray_DATA(array)));
 #else   
             LOG(FATAL) << "CUDA was not compiled.";
 #endif
         } else {
+            auto* data = tensor->raw_mutable_data<CPUContext>(meta);
             CPUContext::Memcpy<CPUContext, CPUContext>(tensor->nbytes(),
-                                 tensor->raw_mutable_data<CPUContext>(),
-                               static_cast<void*>(PyArray_DATA(array)));
+                         data, static_cast<void*>(PyArray_DATA(array)));
         }
         Py_XDECREF(array);
         Py_RETURN_TRUE;

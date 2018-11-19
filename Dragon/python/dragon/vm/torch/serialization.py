@@ -17,9 +17,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
-import sys
-import io
+import os, sys, io
+from dragon.core.tensor_utils import ToPyArrayEx
 
 if sys.version_info[0] == 2:
     import cPickle as pickle
@@ -61,17 +60,27 @@ def _with_file_like(f, mode, body):
             f.close()
 
 
-def _save(obj, f, pickle_module, pickle_protocol):
-    """Pickle the object into binary file.
-
-    """
+def _save_dict(obj):
+    """Recursively save the dict."""
     if not isinstance(obj, dict):
         raise ValueError('Currently only the state dict can be saved.')
-    from collections import OrderedDict
-    from dragon.core.tensor_utils import ToPyArrayEx
-    py_dict = OrderedDict()
+    py_dict = type(obj)()
     for k, v in obj.items():
-        py_dict[k] = ToPyArrayEx(v)
+        if isinstance(v, dict): py_dict[k] = _save_dict(v)
+        elif hasattr(v, 'name'): py_dict[k] = ToPyArrayEx(v)
+        else: py_dict[k] = v
+    return py_dict
+
+
+def _save(obj, f, pickle_module, pickle_protocol):
+    """Pickle the object into binary file."""
+    if not isinstance(obj, dict):
+        raise ValueError('Currently only the state dict can be saved.')
+    py_dict = type(obj)()
+    for k, v in obj.items():
+        if isinstance(v, dict): py_dict[k] = _save_dict(v)
+        elif hasattr(v, 'name'): py_dict[k] = ToPyArrayEx(v)
+        else: py_dict[k] = v
     pickle_module.dump(py_dict, f, pickle_protocol)
 
 

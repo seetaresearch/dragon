@@ -250,7 +250,7 @@ class NNResizeLayer(Layer):
 
     Parameters
     ----------
-    shape : caffe_pb2. BlobShape
+    shape : caffe_pb2.BlobShape
         The output shape. Refer `ResizeParameter.shape`_.
     fx : float
         The scale factor of height. Refer `ResizeParameter.fx`_.
@@ -283,7 +283,7 @@ class BilinearResizeLayer(Layer):
 
     Parameters
     ----------
-    shape : caffe_pb2. BlobShape
+    shape : caffe_pb2.BlobShape
         The output shape. Refer `ResizeParameter.shape`_.
     fx : float
         The scale factor of height. Refer `ResizeParameter.fx`_.
@@ -309,3 +309,33 @@ class BilinearResizeLayer(Layer):
                 raise ValueError('The second bottom should be provided to determine the shape.')
             self._param['shape_like'] = bottom[1]
         return ops.BilinearResize(input, **self._param)
+
+
+class DropBlockLayer(Layer):
+    """The implementation of ``DropBlock2dLayer``.
+
+    Parameters
+    ----------
+    block_size : int
+        The size of dropping block. Refer ``DropBlockParameter.block_size``.
+    keep_prob : float
+        The prob of keeping. Refer ``DropBlockParameter.keep_prob``.
+    alpha : float
+        The scale factor to gamma. Refer ``DropBlockParameter.alpha``.
+    decrement : float
+        The decrement to keep prob. Refer ``DropBlockParameter.decrement``.
+
+    """
+    def __init__(self, LayerParameter):
+        super(DropBlockLayer, self).__init__(LayerParameter)
+        param = LayerParameter.drop_block_param
+        self._param = {'block_size': param.block_size,
+                       'keep_prob': param.keep_prob,
+                       'alpha': param.alpha,
+                       'decrement': param.decrement,
+                       'data_format': 'NCHW'}
+
+    def Setup(self, bottom):
+        super(DropBlockLayer, self).Setup(bottom)
+        input = bottom[0] if isinstance(bottom, list) else bottom
+        return ops.DropBlock2d(input, **self._param)

@@ -24,9 +24,7 @@ void CuDNNEluOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
 
     if (XIsType(Input(0), float)) RunWithType<float>();
-#ifdef WITH_CUDA_FP16
     else if (XIsType(Input(0), float16)) RunWithType<float16>();
-#endif
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
@@ -52,9 +50,7 @@ void CuDNNEluGradientOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
 
     if (XIsType(Input(0), float)) RunWithType<float>();
-#ifdef WITH_CUDA_FP16
     else if (XIsType(Input(0), float16)) RunWithType<float16>();
-#endif
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 

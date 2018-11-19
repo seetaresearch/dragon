@@ -15,6 +15,7 @@ import numpy as np
 import dragon.core.mpi as mpi
 import dragon.core.workspace as ws
 import dragon.protos.dragon_pb2 as pb
+
 from dragon.core.utils import MakeArgument
 from dragon.core.gradient_maker import GraphGradientMaker
 from dragon.core.scope import GetOperatorName, GetTensorName
@@ -156,6 +157,7 @@ def GraphDef_Opt(meta_graph):
     OX = 3 if option['share_grads'] else 2
     if option['debug_mode']: OX = 1
     meta_graph.arg.add().CopyFrom(MakeArgument('optimization_level', OX))
+    meta_graph.graph_type = option['graph_type']
 
 
 def GraphDef_Device(meta_graph):
@@ -181,12 +183,13 @@ def GraphDef_Device(meta_graph):
     """
     from dragon.config import option
     if option['device'] is not 'None':
-        supports = {'CPU': 0, 'CUDA': 1}
+        supports = {'CPU': 0, 'CUDA': 1, 'CNML': 2}
         device_option = pb.DeviceOption()
         device_option.device_type = supports[option['device']]
-        device_option.device_id = option['gpu_id']
+        device_option.device_id = option['device_id']
         device_option.random_seed = option['random_seed']
-        if option['use_cudnn']: device_option.engine = 'CUDNN'
+        if option['device'] == 'CUDA':
+            if option['use_cudnn']: device_option.engine = 'CUDNN'
         meta_graph.device_option.CopyFrom(device_option)
 
 
@@ -217,16 +220,16 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
 
     Examples
     --------
-    >>> x = Tensor('x').Variable()
+    >>> x = Tensor('x', dtype='float32').Variable()
     >>> y = x * 2
-    >>> f = theano.function(outputs=y)
-    >>> x.set_value(np.ones((2, 3), dtype=np.float32))
+    >>> f = function(outputs=y)
+    >>> x.set_value(np.ones((2, 3)))
     >>> print(f())
     >>> [[ 2.  2.  2.]
          [ 2.  2.  2.]]
 
-    >>> f = theano.function(inputs=x, outputs=y)
-    >>> print(f(np.ones((2, 3), dtype=np.float32)))
+    >>> f = function(inputs=x, outputs=y)
+    >>> print(f(np.ones((2, 3)))
     >>> [[ 2.  2.  2.]
          [ 2.  2.  2.]]
 
@@ -339,15 +342,17 @@ def eval(self, feed_dict=None):
                 raise TypeError('The key of feed_dict key should be a Tensor.')
             if key.shape is not None:
                 if len(key.shape) != len(value.shape):
-                    raise RuntimeError('The Tensor({}) was limited to {} dimensions, \
-                                                    while feed a value with {} dimensions.'.
-                                       format(key.name, len(key.shape), len(value.shape)))
+                    raise RuntimeError(
+                        'The Tensor({}) was limited to {} dimensions, \
+                         while feed a value with {} dimensions.'.format(
+                            key.name, len(key.shape), len(value.shape)))
                 for i in range(len(key.shape)):
                     if key.shape[i] is None: continue
                     if key.shape[i] != value.shape[i]:
-                        raise RuntimeError('The shape of Tensor({}) was limited as ('.format(key.name) +
-                                           ','.join([str(dim) for dim in key.shape]) + '), ' +
-                                           'while feed a value with (' + ','.join([str(dim) for dim in value.shape]) + ').')
+                        raise RuntimeError(
+                            'The shape of Tensor({}) was limited as ('.format(key.name) +
+                            ','.join([str(dim) for dim in key.shape]) + '), ' +
+                            'while feed a value with (' + ','.join([str(dim) for dim in value.shape]) + ').')
         return self._eval_func(*feed_dict.values())
     else:
         # cond.2: run without feeding

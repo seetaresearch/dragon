@@ -17,7 +17,6 @@ option(WITH_SSE                    "Set ON to use SSE 4.1"  ON)
 option(WITH_MPI                    "Set ON to use MPI"  OFF)
 option(WITH_MPI_CUDA               "Set ON to use MPI-CUDA"  OFF)
 option(WITH_MPI_NCCL               "Set ON to use MPI-NCCL"  OFF)
-option(WITH_CUDA_FP16              "Set ON to use FP16"  ON)
 
 # Set your 3rdparty
 set(3RDPARTY_DIR  ${PROJECT_SOURCE_DIR}/../3rdparty)
@@ -162,10 +161,6 @@ endif()
 if (WITH_MPI_NCCL)
     ADD_DEFINITIONS(-DWITH_MPI_NCCL)
     message(STATUS "Use MPI-NCCL [Optional]")
-endif()
-if (WITH_CUDA_FP16)
-    ADD_DEFINITIONS(-DWITH_CUDA_FP16)
-    message(STATUS "Use CUDA FP16 [Optional]")
 endif()
 
 # ---[ Flags

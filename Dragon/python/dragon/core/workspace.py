@@ -439,7 +439,7 @@ def FetchTensor(tensor):
 
     Returns
     -------
-    numpy.ndarray
+    ndarray
         The values copied from the backend.
 
     References
@@ -457,7 +457,7 @@ def FeedTensor(tensor, array, force_cpu=False, dtype=None):
     ----------
     tensor : Tensor or str
         The tensor to feed.
-    ndarray : basic type, list or numpy.ndarray
+    ndarray : number, list or ndarray
         The values to feed.
     force_cpu : boolean
         Whether force to feed to cpu context.
@@ -488,25 +488,23 @@ def FeedTensor(tensor, array, force_cpu=False, dtype=None):
 
     """
     name = tensor.name if hasattr(tensor, 'name') else str(tensor)
-    dev = None
-    if force_cpu is True: dev = utils.MakeDeviceOption(0, 0)
+    if force_cpu is True:
+        dev = utils.MakeDeviceOption(0, 0)
     else:
         from dragon.core.scope import _DEVICE_SCOPE
         if _DEVICE_SCOPE != '':
-            supports = {'/cpu': 0, '/gpu': 1}
+            supports = {'/cpu': 0, '/gpu': 1, '/mlu': 2}
             dev = pb.DeviceOption()
             dev.device_type = supports[_DEVICE_SCOPE.split(':')[0]]
-            dev.gpu_id = int(_DEVICE_SCOPE.split(':')[1])
+            dev.device_id = int(_DEVICE_SCOPE.split(':')[1])
         else:
             from dragon.config import option
-            if  option['device'] == 'CUDA':
-                dev = utils.MakeDeviceOption(1, option['gpu_id'])
-            elif option['device'] == 'CPU':
+            if option['device'] == 'CUDA':
+                dev = utils.MakeDeviceOption(1, option['device_id'])
+            else:
                 dev = utils.MakeDeviceOption(0, 0)
 
     if not isinstance(array, np.ndarray):
-        if not isinstance(array, list):
-            array = [array]
         auto_data_type = np.float32 if dtype is None else dtype
     else:
         auto_data_type = array.dtype if dtype is None else dtype
@@ -573,8 +571,8 @@ def RunGraph(graph_name, inputs=(), outputs=[], stage=None, return_outputs=True)
 
     Returns
     -------
-    None, numpy.ndarray or list of numpy.ndarray
-        The outputs, format as numpy.ndarray.
+    None, ndarray or list of ndarray
+        The outputs, format as ndarray.
 
     See Also
     --------

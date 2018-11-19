@@ -47,8 +47,8 @@ class Workspace {
         recompute_flag->Reshape({ 1 });
         recompute_flag->mutable_data<bool, CPUContext>()[0] = false;
         for (int i = 0; i < WORKSPACE_MAX_CORRUPTED_SIZE; i++) {
-            string name = "/opt/mirror_stage/buffer_" +
-                dragon_cast<string, int>(i);
+            string name = "/opt/mirror_stage/buffer_"
+                + std::to_string(i);
             Tensor* buffer = CreateTensor(name);
             head->mutable_data<string, CPUContext>()[i] = "";
         }
@@ -277,7 +277,8 @@ class Workspace {
     inline bool SetProxy(
         const string&           key,
         const string&           proxy) {
-        if (proxy_map_.count(key))
+        if (key == proxy) return false;
+        if (proxy_map_.count(key) > 0)
             return proxy_map_[key] == proxy;
         proxy_map_[key] = proxy;
         return true;

@@ -23,7 +23,7 @@ class DropoutOp final : public Operator<Context> {
     DropoutOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
           use_scale(OperatorBase::Arg<bool>("scale", true)) {
-        GET_ARGUMENT_WITH_DESC(float, prob, 0.5);
+        GET_ARGUMENT_WITH_DESC(float, prob, 0.5f);
         SwitchToPhase(OperatorBase::Arg<string>("phase", ""));
     }
     USE_OPERATOR_FUNCTIONS;
@@ -42,7 +42,7 @@ class DropoutGradientOp final : public Operator<Context> {
     DropoutGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
           use_scale(OperatorBase::Arg<bool>("scale", true)) {
-        GET_ARGUMENT_WITH_DESC(float, prob, 0.5);
+        GET_ARGUMENT_WITH_DESC(float, prob, 0.5f);
         SwitchToPhase(OperatorBase::Arg<string>("phase", ""));
     }
     USE_OPERATOR_FUNCTIONS;
@@ -53,7 +53,6 @@ class DropoutGradientOp final : public Operator<Context> {
  protected:
      DECLARE_ARGUMENT_WITH_DESC(float, prob);
      bool use_scale;
-     Tensor* mask;
 };
 
 DEFINE_ARGUMENT_WITH_DESC(float, DropoutOp, prob);
@@ -70,7 +69,7 @@ public:
         : Operator<Context>(def, ws), states_initialized(false),
         use_scale(OperatorBase::Arg<bool>("scale", true)),
         random_seed(DEFAULT_RNG_SEED) {
-        GET_ARGUMENT_WITH_DESC(float, prob, 0.5);
+        GET_ARGUMENT_WITH_DESC(float, prob, 0.5f);
         SwitchToPhase(OperatorBase::Arg<string>("phase", ""));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateDropoutDescriptor(&dropout_desc));
@@ -101,7 +100,7 @@ public:
         : Operator<Context>(def, ws), states_initialized(false),
         use_scale(OperatorBase::Arg<bool>("scale", true)),
         random_seed(DEFAULT_RNG_SEED) {
-        GET_ARGUMENT_WITH_DESC(float, prob, 0.5);
+        GET_ARGUMENT_WITH_DESC(float, prob, 0.5f);
         SwitchToPhase(OperatorBase::Arg<string>("phase", ""));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateDropoutDescriptor(&dropout_desc));

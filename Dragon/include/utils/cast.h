@@ -28,6 +28,10 @@ template<> inline int dragon_cast<int, float>(float val) {
     return static_cast<int>(val);
 }
 
+template<> inline int64_t dragon_cast<int64_t, float>(float val) {
+    return static_cast<int64_t>(val);
+}
+
 template<> inline float dragon_cast<float, float>(float val) {
     return val; 
 }
@@ -127,7 +131,7 @@ template<> inline float32 dragon_cast<float32, float>(float val) {
     return dragon_cast<float32, float16>(t);
 }
 
-#ifdef WITH_CUDA_FP16
+#ifdef WITH_CUDA
 
 template<> inline half dragon_cast<half, float>(float val) {
 #if CUDA_VERSION_MIN(9, 0, 0)
@@ -165,7 +169,7 @@ template<> inline half2 dragon_cast<half2, float16>(float16 val) {
 
 }
 
-#endif    // WITH_CUDA_FP16
+#endif    // WITH_CUDA
 
 }    // namespace dragon
 

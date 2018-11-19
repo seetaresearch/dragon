@@ -21,12 +21,18 @@ from dragon.vm.torch.execute_engine import RunOperator
 from dragon.vm.torch.ops.factory import get_module
 from dragon.vm.torch.autograd.grad_mode import no_grad
 from dragon.vm.torch.ops.primitive import MakeContext
-from dragon.vm.torch.ops.arithmetic import _fundamental, _rfundamental
+
+from dragon.vm.torch.ops.arithmetic import (
+    _fundamental, _rfundamental, _log, _exp,
+    _clamp,
+)
+
 from dragon.vm.torch.ops.ndarray import (
     reshape, squeeze, unsqueeze,
     _permute, _repeat, _crop,
     _fill, _reduce, _arg_reduce,
 )
+
 from dragon.vm.torch.ops.modules.dtype import AsType
 
 
@@ -53,9 +59,14 @@ def copy_(self, src, non_blocking=False):
         The ``self`` tensor.
 
     """
+    # Copy memory
     FromTensor(
         src, CTX_TO_DEVICE_OPTION[tuple(src._ctx)],
         self.name, CTX_TO_DEVICE_OPTION[tuple(self._ctx)])
+    self._dtype = src._dtype
+    # Transfer the static shape if necessary
+    self._static_shape = src.size() \
+        if self._static_shape else None
     return self
 
 
@@ -295,6 +306,76 @@ def rdiv(self, value):
     return _rfundamental(self, value, op='RDiv')
 
 
+def clamp(self, min=None, max=None):
+    """Return a tensor that all elements are clamped into the range [min, max].
+
+    Parameters
+    ----------
+    min : numerical or None
+        The min value.
+    max : numerical or None
+        The max value.
+
+    Returns
+    -------
+    vm.torch.Tensor
+        The output tensor.
+
+    """
+    return _clamp(self, min, max)
+
+
+def clamp_(self, min=None, max=None):
+    """Clamp all elements are clamped into the range [min, max].
+
+    Parameters
+    ----------
+    min : numerical or None
+        The min value.
+    max : numerical or None
+        The max value.
+
+    Returns
+    -------
+    vm.torch.Tensor
+        The output tensor.
+
+    """
+    return _clamp(self, min, max, self)
+
+
+def log(self):
+    """Compute the natural logarithm of this tensor.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    vm.torch.Tensor
+        The log tensor.
+
+    """
+    return _log(self)
+
+
+def exp(self):
+    """Compute the exponential of this tensor.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    vm.torch.Tensor
+        The exp tensor.
+
+    """
+    return _exp(self)
+
+
 Tensor.add = add
 Tensor.add_ = add_
 Tensor.__radd__ = radd
@@ -308,6 +389,10 @@ Tensor.div = div
 Tensor.div_ = div_
 Tensor.__rdiv__ = rdiv
 Tensor.__rtruediv__ = rdiv
+Tensor.clamp = clamp
+Tensor.clamp_ = clamp_
+Tensor.log = log
+Tensor.exp = exp
 
 
 ##############################################
@@ -387,16 +472,12 @@ def _unsqueeze_(self, dim=None):
 
 
 def view(self, *args):
-    if self._static_shape:
-        raise RuntimeError('Can not view a leaf variable, it owns the static sizes.')
     return reshape(self, shape=args)
 
 
 def view_as(self, other):
     if not isinstance(other, Tensor):
         raise ValueError('The other should be a torch tensor.')
-    if self._static_shape:
-        raise RuntimeError('Can not view a leaf variable, it owns the static sizes.')
     return reshape(self, shape=None, shape_like=other)
 
 

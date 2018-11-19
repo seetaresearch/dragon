@@ -22,9 +22,10 @@ class InstanceNormOp final : public Operator<Context> {
     InstanceNormOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
           axis(OperatorBase::Arg<int>("axis", -1)),
-          eps(OperatorBase::Arg<float>("eps", 1e-3f)) {
+          eps(OperatorBase::Arg<float>("eps", 1e-5f)) {
         if (axis != -1) 
-            CHECK_EQ(axis, 1) << "\nThe axis can only be set to 1.";
+            CHECK_EQ(axis, 1)
+                << "\nThe axis can only be set to 1.";
     }
     USE_OPERATOR_FUNCTIONS;
 
@@ -47,7 +48,8 @@ class InstanceNormGradientOp final : public Operator<Context> {
         : Operator<Context>(def, ws),
           axis(OperatorBase::Arg<int>("axis", -1)) {
         if (axis != -1)
-            CHECK_EQ(axis, 1) << "\nThe axis can only be set to 1.";
+            CHECK_EQ(axis, 1)
+                << "\nThe axis can only be set to 1.";
     }
     USE_OPERATOR_FUNCTIONS;
 

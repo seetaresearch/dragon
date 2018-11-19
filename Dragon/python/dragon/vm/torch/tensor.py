@@ -13,8 +13,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import sys
-import copy
+import six
 import numpy as np
 import dragon as dg
 import dragon.core.tensor_utils as tensor_utils
@@ -73,12 +72,12 @@ class Tensor(object):
                 self._init_from_numpy(args[0])
             else:
                 # + class torch.Tensor(size)
-                if not isinstance(args[0], int):
+                if not isinstance(args[0], six.integer_types):
                     raise ValueError('Excepted integer as size.')
                 self._init_from_shape(args[0])
         else:
             # + torch.Tensor(*sizes)
-            if not all(type(arg) is int for arg in args):
+            if not all(isinstance(arg, six.integer_types) for arg in args):
                 raise ValueError('Excepted integer(s) as sizes.')
             self._init_from_shape(shape=args)
 
@@ -90,7 +89,7 @@ class Tensor(object):
         self._ignored_grads = {self.name + '_grad'} if not self._requires_grad else None
 
     def _init_from_shape(self, shape):
-        if isinstance(shape, int): shape = [shape]
+        if isinstance(shape, six.integer_types): shape = [shape]
         self._static_shape = Size(shape)
         self._dg_tensor = tensor_utils.FromShape(shape, self._dtype,
                 ctx=CTX_TO_DEVICE_OPTION[tuple(self._ctx)], name=TPool.get('leaf'))
@@ -903,6 +902,72 @@ class Tensor(object):
 
         """
         raise NotImplementedError('Refer torch.ops.builtin.div_')
+
+    def clamp(self, min=None, max=None):
+        """Return a tensor that all elements are clamped into the range [min, max].
+
+        Parameters
+        ----------
+        min : numerical or None
+            The min value.
+        max : numerical or None
+            The max value.
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The output tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.builtin.clamp')
+
+    def clamp_(self, min=None, max=None):
+        """Clamp all elements are clamped into the range [min, max].
+
+        Parameters
+        ----------
+        min : numerical or None
+            The min value.
+        max : numerical or None
+            The max value.
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The output tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.builtin.clamp_')
+
+    def log(self):
+        """Compute the natural logarithm of this tensor.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The log tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.builtin.log')
+
+    def exp(self):
+        """Compute the exponential of this tensor.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        vm.torch.Tensor
+            The exp tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.builtin.exp')
 
     def mean(self, dim=None, keepdim=False):
         """Returns the mean of all elements or elements along the given dim.

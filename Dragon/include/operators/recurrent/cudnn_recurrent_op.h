@@ -20,8 +20,6 @@ namespace dragon {
 
 #if CUDNN_VERSION_MIN(5, 0, 0)
 
-#include "utils/cudnn_device.h"
-
 class cudnnTensorDescriptors {
  public:
     cudnnTensorDescriptors(const int num_descs) {

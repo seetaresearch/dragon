@@ -16,10 +16,28 @@
 #include <cstdint>
 #include <vector>
 
-#ifdef WIN32
-    #define EXPORT __declspec(dllexport)
+#ifdef _MSC_VER
+    #ifdef DRAGON_CXX_EXPORTS
+        #define DRAGON_API __declspec(dllexport)
+    #else
+        #define DRAGON_API __declspec(dllimport)
+    #endif
 #else
-    #define EXPORT
+    #define DRAGON_API
+#endif
+
+/* * * * * * * * * * * * * * * * * * * * *
+ *                                       *
+ *           Internal Headers            *
+ *                                       *
+ * * * * * * * * * * * * * * * * * * * * */
+
+#ifdef DRAGON_CXX_EXPORTS
+#include "core/types.h"
+#else
+namespace dragon {
+    struct float16;
+}
 #endif
 
 namespace dragon {
@@ -28,72 +46,102 @@ typedef int64_t TIndex;
 
 class Workspace;
 
-class Device {
+class DRAGON_API Device {
  public:
-    EXPORT Device();
-    EXPORT explicit Device(std::string device_type);
-    EXPORT Device(std::string device_type, int device_id);
+    Device();
+    explicit Device(std::string device_type);
+    Device(std::string device_type, int device_id);
 
-    EXPORT const int& device_type() const { return device_type_; }
-    EXPORT const int device_id() const { return device_id_; }
+    const int& device_type() const { return device_type_; }
+    const int device_id() const { return device_id_; }
 
  private:
-     int device_type_, device_id_;
+    int device_type_, device_id_;
 };
 
-EXPORT Workspace* CreateWorkspace(const std::string& name);
+/* * * * * * * * * * * * * * * * * * * * *
+ *                                       *
+ *               Workspace               *
+ *                                       *
+ * * * * * * * * * * * * * * * * * * * * */
 
-EXPORT Workspace* ResetWorkspace(const std::string& name);
+DRAGON_API Workspace* CreateWorkspace(const std::string& name);
 
-EXPORT void ReleaseWorkspace(const std::string& name);
+DRAGON_API Workspace* ResetWorkspace(const std::string& name);
 
-EXPORT void MoveWorkspace(Workspace* main, Workspace* sub);
+DRAGON_API void ReleaseWorkspace(const std::string& name);
 
-EXPORT std::string CreateGraph(
+DRAGON_API void MoveWorkspace(Workspace* main, Workspace* sub);
+
+/* * * * * * * * * * * * * * * * * * * * *
+ *                                       *
+ *                Graph                  *
+ *                                       *
+ * * * * * * * * * * * * * * * * * * * * */
+
+DRAGON_API std::string CreateGraph(
     const std::string&          graph_file,
     Workspace*                  ws);
 
-EXPORT std::string CreateGraph(
+DRAGON_API std::string CreateGraph(
     const std::string&          graph_file,
     const Device&               device,
     Workspace*                  ws);
 
-EXPORT void RunGraph(
+DRAGON_API void RunGraph(
     const std::string&          graph_name,
     Workspace*                  ws,
     const int                   stream_id = 1);
 
-EXPORT void CreateTensor(
+/* * * * * * * * * * * * * * * * * * * * *
+ *                                       *
+ *                Tensor                 *
+ *                                       *
+ * * * * * * * * * * * * * * * * * * * * */
+
+DRAGON_API void CreateTensor(
     const std::string&          name,
     Workspace*                  ws);
 
 template <typename T>
-EXPORT void FeedTensor(
+DRAGON_API T* FetchTensor(
+    const std::string&          name,
+    std::vector<TIndex>&        shape,
+    Workspace*                  ws);
+
+template <typename T>
+DRAGON_API void FeedTensor(
     const std::string&          name,
     const std::vector<TIndex>&  shape,
     const T*                    data,
     const Device&               device,
     Workspace*                  ws);
 
-template <typename T>
-EXPORT T* FetchTensor(
-    const std::string&          name,
-    std::vector<TIndex>&        shape,
-    Workspace*                  ws);
+/* * * * * * * * * * * * * * * * * * * * *
+ *                                       *
+ *                I / O                  *
+ *                                       *
+ * * * * * * * * * * * * * * * * * * * * */
 
-EXPORT void LoadCaffemodel(
+DRAGON_API void LoadCaffemodel(
     const std::string&          model_file,
     Workspace*                  ws);
 
-EXPORT void TransplantCaffeModel(
+DRAGON_API void TransplantCaffeModel(
     const std::string&          input_model,
     const std::string&          output_model);
 
-EXPORT void LoadDragonmodel(
+DRAGON_API void LoadDragonmodel(
     const std::string&          model_file,
     Workspace*                  ws);
 
-EXPORT void SetLogLevel(const std::string& level);
+/* * * * * * * * * * * * * * * * * * * * *
+ *                                       *
+ *                Config                 *
+ *                                       *
+ * * * * * * * * * * * * * * * * * * * * */
+
+DRAGON_API void SetLogLevel(const std::string& level);
 
 }    // namespace dragon
 

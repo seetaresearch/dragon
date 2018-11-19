@@ -18,11 +18,11 @@
 #include <iostream>
 #include <cstdlib>
 
-#include "utils/cast.h"
-
 namespace dragon {
 
-inline std::vector<std::string> SplitString(
+namespace str {
+
+inline std::vector<std::string> split(
     const std::string&              str,
     const std::string&              c) {
     std::vector<std::string> ret;
@@ -36,17 +36,7 @@ inline std::vector<std::string> SplitString(
     return ret;
 }
 
-#define DEFINE_NUMBER2STRING(T) \
-    template<> inline std::string dragon_cast<std::string, T>(T val) { \
-       std::stringstream ss; ss << val; return ss.str(); \
-    }
-
-DEFINE_NUMBER2STRING(int);
-DEFINE_NUMBER2STRING(unsigned long long);
-
-template<> inline int dragon_cast<int, std::string>(std::string val) {
-    return atoi(val.c_str()); 
-}
+}    // namespace str
 
 }    // namespace dragon
 

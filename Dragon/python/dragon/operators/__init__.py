@@ -9,9 +9,11 @@
 #
 # ------------------------------------------------------------
 
+import numpy as np
 from dragon.core.tensor import Tensor
 
 INT_MAX = 2147483647
+
 
 def CheckInputs(inputs, *args):
     def Verify(inputs, min_num, max_num):
@@ -42,6 +44,17 @@ def ParseArguments(locals):
     __all__ = locals
     kwargs = __all__['kwargs']; del __all__['kwargs']
     return dict(__all__, **kwargs)
+
+
+def WrapConstants(constants, dtype='float32'):
+    if not isinstance(constants, Tensor):
+        if not isinstance(constants, np.ndarray):
+            constants = np.array(constants, dtype=dtype)
+        tensor = Tensor()
+        tensor.set_value(constants)
+        tensor.shape = constants.shape
+        constants = tensor
+    return constants
 
 
 def AddArgumentWithDesc(arguments, property, name, as_target=True):

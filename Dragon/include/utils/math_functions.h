@@ -69,7 +69,7 @@ template <typename T, class Context>
 void RandomBernoulli(
     const int               n,
     const float             p,
-    uint32_t*               x,
+    T*                      x,
     Context*                ctx);
 
 /******************** Level-1 ********************/

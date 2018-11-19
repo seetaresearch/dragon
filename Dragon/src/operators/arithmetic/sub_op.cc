@@ -150,7 +150,9 @@ DEPLOY_CPU(SubGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(SubGradient);
 #endif
-OPERATOR_SCHEMA(SubGradient).NumInputs(1).NumOutputs(2);
+OPERATOR_SCHEMA(SubGradient)
+    .NumInputs(1).NumOutputs(2)
+    .Inplace({ { 0, 0 } });
 
 class GetSubGradient : public GradientMakerBase {
  public:

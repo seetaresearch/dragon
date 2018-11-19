@@ -21,30 +21,65 @@ template<> void Dropout<float, CPUContext>(
     float                   prob,
     float                   scale,
     const float*            x,
-    uint32_t*               mask,
+    uint32_t*               mask32,
+    uint8_t*                mask8,
     float*                  y,
     CPUContext*             ctx) {
-    uint32_t thresh = static_cast<uint32_t>(UINT_MAX * prob);
-    math::RandomBernoulli<float, CPUContext>(count, 1 - prob, mask, ctx);
+    math::RandomBernoulli<uint8_t, CPUContext>(
+        count, 1 - prob, mask8, ctx);
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
-    for (int i = 0; i < count; ++i) y[i] = x[i] * mask[i] * scale;
+    for (int i = 0; i < count; ++i) {
+        y[i] = x[i] * mask8[i] * scale;
+    }
 }
 
-template<> void DropoutGrad<float, CPUContext>(
+template<> void Dropout<float16, CPUContext>(
     const int               count,
     float                   prob,
     float                   scale,
-    const float*            dy,
-    const uint32_t*         mask,
-    float*                  dx,
+    const float16*          x,
+    uint32_t*               mask32,
+    uint8_t*                mask8,
+    float16*                y,
     CPUContext*             ctx) {
+    CPU_FP16_NOT_SUPPORTED;
+}
+
+template <typename Tx, typename Tm>
+void _ApplyMask(
+    const int               count,
+    const float             scale,
+    const Tx*               x,
+    const Tm*               mask,
+    Tx*                     y) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
-    for (int i = 0; i < count; ++i)
-        dx[i] = dy[i] * mask[i] * scale;
+    for (int i = 0; i < count; ++i) {
+        y[i] = x[i] * mask[i] * scale;
+    }
+}
+
+template <> void ApplyMask<float, uint8_t, CPUContext>(
+    const int               count,
+    const float             scale,
+    const float*            x,
+    const uint8_t*          mask,
+    float*                  y,
+    CPUContext*             ctx) {
+    _ApplyMask<float, uint8_t>(count, scale, x, mask, y);
+}
+
+template <> void ApplyMask<float16, uint8_t, CPUContext>(
+    const int               count,
+    const float             scale,
+    const float16*          x,
+    const uint8_t*          mask,
+    float16*                y,
+    CPUContext*             ctx) {
+    CPU_FP16_NOT_SUPPORTED;
 }
 
 /******************** activation.elu ********************/
@@ -479,16 +514,158 @@ template <> void Clip<float, CPUContext>(
     const float             low,
     const float             high,
     const float*            x,
-    float*                  mask,
     float*                  y,
     CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
-        mask[i] = 1.0;
-        if (x[i] < low || x[i] > high) mask[i] = 0.0;
         y[i] = std::max(low, std::min(x[i], high));
+    }
+}
+
+template <> void ClipGrad<float, CPUContext>(
+    const int               count,
+    const float             low,
+    const float             high,
+    const float*            x,
+    const float*            dy,
+    float*                  dx,
+    CPUContext*             ctx) {
+#ifdef WITH_OMP
+#pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        const float xi = x[i];
+        dx[i] = (xi < low || xi > high) ? 0 : dy[i];
+    }
+}
+
+/******************** arithmetic.maximum ********************/
+
+template <> void MaximumE<float, CPUContext>(
+    const int               count,
+    const float*            x1,
+    const float*            x2,
+    float*                  y,
+    CPUContext*             ctx) {
+#ifdef WITH_OMP
+#pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        y[i] = std::max(x1[i], x2[i]);
+    }
+}
+
+template <> void MaximumB<float, CPUContext>(
+    const int               count,
+    const float*            x1,
+    const float             x2,
+    float*                  y,
+    CPUContext*             ctx) {
+#ifdef WITH_OMP
+#pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        y[i] = std::max(x1[i], x2);
+    }
+}
+
+template <> void MaximumEGrad<float, CPUContext>(
+    const int               count,
+    const float*            x1,
+    const float*            x2,
+    const float*            dy,
+    float*                  dx1,
+    float*                  dx2,
+    CPUContext*             ctx) {
+#ifdef WITH_OMP
+#pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        const bool dy_to_dx1 = x1[i] > x2[i];
+        dx1[i] = dy_to_dx1 ? dy[i] : 0;
+        dx2[i] = dy_to_dx1 ? 0 : dy[i];
+    }
+}
+
+template <> void MaximumBGrad<float, CPUContext>(
+    const int               count,
+    const float*            x1,
+    const float             x2,
+    const float*            dy,
+    float*                  dx1,
+ /* float*                  dx2, */
+    CPUContext*             ctx) {
+#ifdef WITH_OMP
+#pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        dx1[i] = (x1[i] > x2) ? dy[i] : 0;
+    }
+}
+
+/******************** arithmetic.minimum ********************/
+
+template <> void MinimumE<float, CPUContext>(
+    const int               count,
+    const float*            x1,
+    const float*            x2,
+    float*                  y,
+    CPUContext*             ctx) {
+#ifdef WITH_OMP
+#pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        y[i] = std::min(x1[i], x2[i]);
+    }
+}
+
+template <> void MinimumB<float, CPUContext>(
+    const int               count,
+    const float*            x1,
+    const float             x2,
+    float*                  y,
+    CPUContext*             ctx) {
+#ifdef WITH_OMP
+#pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        y[i] = std::min(x1[i], x2);
+    }
+}
+
+template <> void MinimumEGrad<float, CPUContext>(
+    const int               count,
+    const float*            x1,
+    const float*            x2,
+    const float*            dy,
+    float*                  dx1,
+    float*                  dx2,
+    CPUContext*             ctx) {
+#ifdef WITH_OMP
+#pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        const bool dy_to_dx1 = x1[i] < x2[i];
+        dx1[i] = dy_to_dx1 ? dy[i] : 0;
+        dx2[i] = dy_to_dx1 ? 0 : dy[i];
+    }
+}
+
+template <> void MinimumBGrad<float, CPUContext>(
+    const int               count,
+    const float*            x1,
+    const float             x2,
+    const float*            dy,
+    float*                  dx1,
+ /* float*                  dx2, */
+    CPUContext*             ctx) {
+#ifdef WITH_OMP
+#pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        dx1[i] = (x1[i] < x2) ? dy[i] : 0;
     }
 }
 
@@ -522,6 +699,189 @@ template<> void AbsGrad<float, CPUContext>(
         //  val > 0: 1 | val == 0: 0 | val < 0: -1
         dx[i] = (val > float(0)) - (val < float(0));
     }
+}
+
+/******************** loss.nll_loss ********************/
+
+template <typename Tx, typename Ty>
+void _NLLLoss(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const Tx*               log_prob,
+    const Ty*               labels,
+    const int*              ignores,
+    const int               num_ignores,
+    Tx*                     losses,
+    Tx*                     flags) {
+    for (int oix = 0; oix < outer_dim; ++oix) {
+        for (int iix = 0; iix < inner_dim; ++iix) {
+            const int idx = oix * inner_dim + iix;
+            const int label = labels[idx];
+            int k;
+            for (k = 0; k < num_ignores; ++k) {
+                if (label == ignores[k]) {
+                    losses[idx] = flags[idx] = 0;
+                    break;
+                }
+            }
+            if (k == num_ignores) {
+                losses[idx] = -log_prob[
+                    (oix * axis_dim + label) * inner_dim + iix];
+                flags[idx] = 1;
+            }
+        }
+    }
+}
+
+template <> void NLLLoss<float, float, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float*            log_prob,
+    const float*            labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    CPUContext*             ctx) {
+    _NLLLoss<float, float>(
+        outer_dim, axis_dim, inner_dim,
+            log_prob, labels, ignores,
+                num_ignores, losses, flags);
+}
+
+template <> void NLLLoss<float16, float, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float16*          log_prob,
+    const float*            labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    CPUContext*             ctx) {
+    CPU_FP16_NOT_SUPPORTED;
+}
+
+template <> void NLLLoss<float, int64_t, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float*            log_prob,
+    const int64_t*          labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    CPUContext*             ctx) {
+    _NLLLoss<float, int64_t>(
+        outer_dim, axis_dim, inner_dim,
+            log_prob, labels, ignores,
+                num_ignores, losses, flags);
+}
+
+template <> void NLLLoss<float16, int64_t, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float16*          log_prob,
+    const int64_t*          labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    CPUContext*             ctx) {
+    CPU_FP16_NOT_SUPPORTED;
+}
+
+template <typename Tx, typename Ty>
+void _NLLLossGrad(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const Tx*               log_prob,
+    const Ty*               labels,
+    const int*              ignores,
+    const int               num_ignores,
+    Tx*                     dx,
+    Tx*                     flags) {
+    flags[0] = 0;
+    for (int oix = 0; oix < outer_dim; ++oix) {
+        for (int iix = 0; iix < inner_dim; ++iix) {
+            const int label = labels[oix * inner_dim + iix];
+            int k;
+            for (k = 0; k < num_ignores; ++k)
+                if (label == ignores[k]) break;
+            if (k == num_ignores) {
+                dx[(oix * axis_dim + label) * inner_dim + iix] = -1;
+                flags[0]++;
+            }
+        }
+    }
+}
+
+template<> void NLLLossGrad<float, float, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float*            log_prob,
+    const float*            labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  dx,
+    float*                  flags,
+    CPUContext*             ctx) {
+    _NLLLossGrad<float, float>(
+        outer_dim, axis_dim, inner_dim,
+            log_prob, labels, ignores,
+                num_ignores, dx, flags);
+}
+
+template<> void NLLLossGrad<float16, float, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float16*          log_prob,
+    const float*            labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float16*                dx,
+    float*                  flags,
+    CPUContext*             ctx) {
+    CPU_FP16_NOT_SUPPORTED;
+}
+
+template<> void NLLLossGrad<float, int64_t, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float*            log_prob,
+    const int64_t*          labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  dx,
+    float*                  flags,
+    CPUContext*             ctx) {
+    _NLLLossGrad<float, int64_t>(
+        outer_dim, axis_dim, inner_dim,
+            log_prob, labels, ignores,
+                num_ignores, dx, flags);
+}
+
+template<> void NLLLossGrad<float16, int64_t, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float16*          log_prob,
+    const int64_t*          labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float16*                dx,
+    float*                  flags,
+    CPUContext*             ctx) {
+    CPU_FP16_NOT_SUPPORTED;
 }
 
 /******************** loss.sigmoid_cross_entropy ********************/
@@ -2703,6 +3063,94 @@ template<> void Col2Im2d<float, CPUContext>(
             C, H, W, col_h, col_w, kernel_h, kernel_w,
                 stride_h, stride_w, pad_h, pad_w,
                     dilation_h, dilation_w, col, im, ctx);
+    } else LOG(FATAL) << "Unknown data format: " << data_format;
+}
+
+/******************** vision.drop_block ********************/
+
+void _DropBlock2d_NCHW(
+    const int               N,
+    const int               C,
+    const int               H,
+    const int               W,
+    const int               seed_h,
+    const int               seed_w,
+    const int               block_size,
+    const uint32_t*         seed,
+    int*                    mask) {
+    TIndex seed_idx = 0;
+    for (int n = 0; n < N; ++n) {
+        for (int c = 0; c < C; ++c) {
+            const int nc = (n * C + c) * H;
+            for (int y = 0; y < seed_h; ++y) {
+                for (int x = 0; x < seed_w; ++x) {
+                    if (seed[seed_idx] > 0) {
+                        for (int i = 0; i < block_size; ++i) {
+                            const int nch = (nc + y + i) * W;
+                            for (int j = 0; j < block_size; ++j) {
+                                mask[nch + x + j] &= 0;
+                            }  // end j
+                        }  // end i
+                    }
+                    seed_idx++;
+                }  // end x
+            }  // end y
+        }  // end c
+    }  // end n
+}
+
+void _DropBlock2d_NHWC(
+    const int               N,
+    const int               C,
+    const int               H,
+    const int               W,
+    const int               seed_h,
+    const int               seed_w,
+    const int               block_size,
+    const uint32_t*         seed,
+    int*                    mask) {
+    TIndex seed_idx = 0;
+    for (int n = 0; n < N; ++n) {
+        for (int c = 0; c < C; ++c) {
+            for (int y = 0; y < seed_h; ++y) {
+                for (int x = 0; x < seed_w; ++x) {
+                    if (seed[seed_idx] > 0) {
+                        for (int i = 0; i < block_size; ++i) {
+                            const int nh = (n * H + y + i) * W;
+                            for (int j = 0; j < block_size; ++j) {
+                                mask[(nh + x + j) * C + c] &= 0;
+                            }  // end j
+                        }  // end i
+                    }
+                    seed_idx++;
+                }  // end x
+            }  // end y
+        }  // end c
+    }  // end n
+}
+
+template <> void DropBlock2d<CPUContext>(
+    const int               N,
+    const int               C,
+    const int               H,
+    const int               W,
+    const int               seed_h,
+    const int               seed_w,
+    const int               block_size,
+    const float             gamma,
+    const string&           data_format,
+    uint32_t*               seed,
+    int*                    mask,
+    CPUContext*             ctx) {
+    const int count = N * C * seed_h * seed_w;
+    math::RandomBernoulli<uint32_t, CPUContext>(
+        count, gamma, seed, ctx);
+    if (data_format == "NCHW") {
+        _DropBlock2d_NCHW(N, C, H, W,
+            seed_h, seed_w, block_size, seed, mask);
+    } else if (data_format == "NHWC") {
+        _DropBlock2d_NHWC(N, C, H, W,
+            seed_h, seed_w, block_size, seed, mask);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 

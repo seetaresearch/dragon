@@ -36,8 +36,10 @@ def _wrap_output_shape(output, shape):
     return output
 
 
-def Fill(shape, value=0, **kwargs):
+def Fill(shape, value=0, dtype='float32', **kwargs):
     """Return a Tensor with specific value filled.
+
+    If ``dtype`` is None, tensor
 
     Parameters
     ----------
@@ -45,6 +47,8 @@ def Fill(shape, value=0, **kwargs):
         The output shape.
     value : basic numerical type
         The value to fill.
+    dtype : str
+        The optional data type.
 
     Returns
     -------

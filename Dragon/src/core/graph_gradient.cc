@@ -4,10 +4,10 @@
 
 namespace dragon {
 
-#define str dragon_cast<std::string, int>
-
-bool GraphGradientMaker::CheckGrad(const OperatorDef& forward_op, 
-    const Set<string>& targets, vector< pair<string, int> >& gen_grads) {
+bool GraphGradientMaker::CheckGrad(
+    const OperatorDef&              forward_op,
+    const Set<string>&              targets,
+    vector< pair<string, int> >&    gen_grads) {
     if (NoGradientRegistry()->Has(forward_op.type())) {
         for (auto& input : forward_op.input()) 
             blacklist_set_.insert(input);
@@ -41,15 +41,16 @@ bool GraphGradientMaker::CheckGrad(const OperatorDef& forward_op,
 
 string GraphGradientMaker::GetOperatorName() {
     if (op_prefix_.empty()) return "runtime";
-    return op_prefix_ + str(cur_op_idx_++) + op_suffix_;
+    return op_prefix_ + std::to_string(cur_op_idx_++) + op_suffix_;
 }
 
-void GraphGradientMaker::Make(const GraphDef& forward_def, 
-                              const vector<string>& targets,
-                              GraphDef& new_def) {
+void GraphGradientMaker::Make(
+    const GraphDef&                 forward_def,
+    const vector<string>&           targets,
+    GraphDef&                       new_def) {
     Map<string, int> inputs_count, grads_count;
     Set<string> all_split_grads, targets_set;
-    // PLAY for the forward
+    //  PLAY for the forward
     for (auto& op : forward_def.op()) {
         if (NoGradientRegistry()->Has(op.type())) continue;
         for (auto& input : op.input()) {
@@ -61,9 +62,10 @@ void GraphGradientMaker::Make(const GraphDef& forward_def,
         }
     }
     for (auto& t : targets) targets_set.insert(t);
-    // PLAY for the backward
+
+    //  PLAY for the backward
     for (int i = forward_def.op_size() - 1; i >= 0; i--) {
-        //  collect inputs & outputs, generate grad
+        //  collect inputs & outputs, generate RAW grad ops
         const OperatorDef& op = forward_def.op(i);
         vector< pair<string, int> > gen_grads;
         bool is_skip = CheckGrad(op, targets_set, gen_grads);
@@ -76,8 +78,9 @@ void GraphGradientMaker::Make(const GraphDef& forward_def,
             g_outputs.emplace_back(g_output);
         }
         Gradient grad = MakeGradientForOp(op, g_outputs);
-        //  post-process grad ops
-        unique_ptr<OperatorDef> gather_op;
+
+        //  process the RAW grad ops
+        vector<OperatorDef> gather_ops;
         for (auto& g_op : grad.ops) {
             //  set op name
             g_op.set_name(GetOperatorName());
@@ -112,27 +115,32 @@ void GraphGradientMaker::Make(const GraphDef& forward_def,
                 string original_name = op.input(original_idx);
                 if (inputs_count[original_name] > 1) {
                     //  split
-                    string split_name = *output + "_autosplit_" + str(grads_count[*output]++);
+                    string split_name = *output + "_autosplit_" 
+                        + std::to_string(grads_count[*output]++);
                     if (!is_skip) all_split_grads.insert(split_name);
                     //  gather
                     if (grads_count[*output] == inputs_count[original_name]) {
-                        gather_op.reset(new OperatorDef());
-                        gather_op->set_name(GetOperatorName());
-                        gather_op->set_type("GradientGather");
-                        gather_op->add_output(*output);
+                        OperatorDef gather_op;
+                        gather_op.set_name(GetOperatorName());
+                        gather_op.set_type("GradientGather");
+                        gather_op.add_output(*output);
                         if (g_op.has_device_option())
-                            gather_op->mutable_device_option()->CopyFrom(g_op.device_option());
+                            gather_op.mutable_device_option()
+                                ->CopyFrom(g_op.device_option());
                         for (int j = 0; j < grads_count[*output]; j++) {
-                            string key = *output + "_autosplit_" + str(j);
-                            if (all_split_grads.count(key)) gather_op->add_input(key);
+                            string key = *output + "_autosplit_" + std::to_string(j);
+                            if (all_split_grads.count(key)) gather_op.add_input(key);
                         }
+                        gather_ops.emplace_back(gather_op);
                     }
                     *output = split_name;
                 }
             }
         }
-        //  append ops
+
+        //  now, append the required ops
         if (!is_skip) {
+            //  1) GradientGenerateOp
             if (gen_grads.size() > 0) {
                 vector<string> op_inputs, op_outputs;
                 Argument arg_defaults; arg_defaults.set_name("defaults");
@@ -143,21 +151,24 @@ void GraphGradientMaker::Make(const GraphDef& forward_def,
                     op_outputs.emplace_back(output);
                     arg_defaults.add_floats(grad.defaults[gen_grad.second]);
                 }
-                OperatorDef generate_op = MakeOperatorDef("GradientGenerate",
-                                                           GetOperatorName(),
-                                                                   op_inputs,
-                                                                  op_outputs,
-                                          vector<Argument>(1, arg_defaults));
+                OperatorDef generate_op = MakeOperatorDef(
+                    "GradientGenerate", GetOperatorName(),
+                        op_inputs, op_outputs,
+                            vector<Argument>(1, arg_defaults));
                 if (op.has_device_option())
-                    generate_op.mutable_device_option()->CopyFrom(op.device_option());
+                    generate_op.mutable_device_option()
+                        ->CopyFrom(op.device_option());
                 new_def.add_op()->CopyFrom(generate_op);
             }
-            for (auto& g_op : grad.ops) {
+            //  2) GradientOp
+            for (auto& g_op : grad.ops)
                 new_def.add_op()->CopyFrom(g_op);
-            }
         }
-        if (gather_op) new_def.add_op()->CopyFrom(*gather_op);
-        //  done
+        //  3) GradientGatherOp
+        for (auto& gather_op : gather_ops)
+            new_def.add_op()->CopyFrom(gather_op);
+
+        //  done!
         if (!is_skip) {
             for (int i = 0; i < op.input_size(); i++) {
                 if (!grad.g_inputs[i].empty())
@@ -189,7 +200,9 @@ void GraphGradientMaker::Make(const GraphDef& forward_def,
     } \
     *op->mutable_output(ix) = temp_grad;}
 
-void GraphGradientMaker::Share(const string& grads_prefix, GraphDef& graph) {
+void GraphGradientMaker::Share(
+    const string&                   grads_prefix,
+    GraphDef&                       graph) {
     Map<string, int> ref_count;
     //  count the refs for detecting leaf nodes
     for (auto& op : graph.op()) {
@@ -205,8 +218,7 @@ void GraphGradientMaker::Share(const string& grads_prefix, GraphDef& graph) {
     Map<string, string> temporary_grads;
     std::deque<string> grads_pool; 
     for (int i = 0; i < TEMPORARY_GRADS_LIMITS; i++)
-        grads_pool.push_back(grads_prefix + ":" +
-            dragon_cast<string, int>(i));
+        grads_pool.push_back(grads_prefix + ":" + std::to_string(i));
 
     for (int i = 0; i < graph.op_size(); i++) {
         OperatorDef* op = graph.mutable_op(i);

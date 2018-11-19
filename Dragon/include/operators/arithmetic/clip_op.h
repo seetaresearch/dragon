@@ -36,11 +36,17 @@ class ClipOp final : public Operator<Context> {
 template <class Context>
 class ClipGradientOp final : public Operator<Context> {
  public:
-    USE_SIMPLE_CTOR_DTOR(ClipGradientOp);
+    ClipGradientOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          low(OperatorBase::Arg<float>("low", -FLT_MAX)),
+          high(OperatorBase::Arg<float>("high", FLT_MAX)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
+
+ protected:
+    float low, high;
 };
 
 }    // namespace dragon

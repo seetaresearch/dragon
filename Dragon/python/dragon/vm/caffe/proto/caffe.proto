@@ -424,7 +424,9 @@ message LayerParameter {
   optional DenseConcatParameter dense_concat_param = 163;
   optional FocalLossParameter focal_loss_param = 164;
   optional GatherParameter gather_param = 165;
-  optional GroupNormParameter group_norm_param = 166;
+  optional InstanceNormParameter instance_norm_param = 166;
+  optional GroupNormParameter group_norm_param = 167;
+  optional DropBlockParameter drop_block_param = 168;
 }
 
 // Message that stores parameters used to apply transformation
@@ -537,7 +539,7 @@ message BatchNormParameter {
   optional float moving_average_fraction = 2 [default = 0.9];
   // Small value to add to the variance estimate so that we don't divide by
   // zero.
-  optional float eps = 3 [default = 1e-3];
+  optional float eps = 3 [default = 1e-5];
 }
 
 message BiasParameter {
@@ -595,7 +597,7 @@ message ConvolutionParameter {
   repeated uint32 stride = 6; // The stride; defaults to 1
   // Factor used to dilate the kernel, (implicitly) zero-filling the resulting
   // holes. (Kernel dilation is sometimes referred to by its use in the
-  // algorithme ├а trous from Holschneider et al. 1987.)
+  // algorithme ид trous from Holschneider et al. 1987.)
   repeated uint32 dilation = 18; // The dilation; defaults to 1
 
   // For 2D convolution only, the *_h and *_w versions may also be used to
@@ -1456,7 +1458,7 @@ message NormalizeParameter {
   // Whether or not scale parameters are shared across channels.
   optional bool channel_shared = 3 [default = true];
   // Epsilon for not dividing by zero while normalizing variance
-  optional float eps = 4 [default = 1e-3];
+  optional float eps = 4 [default = 1e-5];
 }
 
 message ParallelParameter {
@@ -1492,7 +1494,7 @@ message ProposalParameter {
 message BatchRenormParameter {
   optional bool use_global_stats = 1;
   optional float moving_average_fraction = 2 [default = 0.9];
-  optional float eps = 3 [default = 1e-3];
+  optional float eps = 3 [default = 1e-5];
   optional float r_max = 4 [default = 3.0];
   optional float d_max = 5 [default = 5.0];
   optional float t_delta = 6 [default = 0.001];
@@ -1513,17 +1515,18 @@ message GatherParameter {
   optional int32 axis = 1 [default = 0];
 }
 
-message GroupNormParameter {
-  // If false, accumulate global mean/variance values via a moving average. If
-  // true, use those accumulated values instead of computing mean/variance
-  // across the batch.
-  optional bool use_global_stats = 1;
-  // How much does the moving average decay each iteration?
-  optional float moving_average_fraction = 2 [default = 0.9];
-  // Small value to add to the variance estimate so that we don't divide by
-  // zero.
-  optional float eps = 3 [default = 1e-3];
-  optional uint32 group = 5 [default = 32]; // The group size
+message InstanceNormParameter {
+  optional float eps = 1 [default = 1e-5];
 }
 
+message GroupNormParameter {
+  optional float eps = 1 [default = 1e-5];
+  optional int32 group = 2 [default = 32]; // The group size
+}
 
+message DropBlockParameter {
+  optional int32 block_size = 1 [default = 7];
+  optional float keep_prob = 2 [default = 0.9];
+  optional float alpha = 3 [default = 1.0];
+  optional float decrement = 4 [default = 0.0];
+}

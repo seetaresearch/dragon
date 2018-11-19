@@ -102,7 +102,7 @@ class _BatchNorm(Module):
         inputs = [input] + self.inputs
         self.unify_devices(inputs)
         outputs = [self.register_output(input.dtype)]
-        phase = 'TRAIN' if input.requires_grad else 'TEST'
+        phase = 'TRAIN' if self.training else 'TEST'
         # Normalize the input by using batch stats ALWAYS
         # Note that the update of moving average is meaningless(
         # Because we can not remove it. Why? Ask nvidia and cuDNN -:)

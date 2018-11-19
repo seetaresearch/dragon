@@ -12,14 +12,7 @@
 #ifndef DRAGON_CORE_CONTEXT_H_
 #define DRAGON_CORE_CONTEXT_H_
 
-#include <random>
-#include <ctime>
-
 #include "core/common.h"
-
-#ifdef WITH_CUDA
-#include "utils/cuda_device.h"
-#endif
 
 namespace dragon {
 
@@ -45,7 +38,7 @@ class CPUContext {
 #else
         data = malloc(nbytes);
 #endif
-        CHECK(data) << "Malloc mem: " << nbytes << " bytes failed.";
+        CHECK(data) << "\nMalloc mem: " << nbytes << " bytes failed.";
         return data;
     }
 

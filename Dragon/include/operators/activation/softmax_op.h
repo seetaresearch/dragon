@@ -25,7 +25,7 @@ class SoftmaxOp final : public Operator<Context> {
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType(); 
+    template <typename T> void RunWithType();
 
  protected:
     TIndex axis, outer_dim, inner_dim;
@@ -48,8 +48,6 @@ class SoftmaxGradientOp final : public Operator<Context> {
 
 #ifdef WITH_CUDNN
 
-#include "utils/cudnn_device.h"
-
 template <class Context>
 class CuDNNSoftmaxOp final : public Operator<Context> {
  public:
@@ -70,8 +68,7 @@ class CuDNNSoftmaxOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    int axis;
-    TIndex outer_dim, inner_dim;
+    TIndex axis, outer_dim, inner_dim;
     cudnnTensorDescriptor_t input_desc, output_desc;
 };
 
@@ -95,8 +92,7 @@ class CuDNNSoftmaxGradientOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    int axis;
-    TIndex outer_dim, inner_dim;
+    TIndex axis, outer_dim, inner_dim;
     cudnnTensorDescriptor_t input_desc, output_desc;
 };
 

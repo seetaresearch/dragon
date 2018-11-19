@@ -55,6 +55,47 @@ class LeakyReLU(Module):
         return self.run(inputs, outputs)
 
 
+class ELU(Module):
+    def __init__(self, alpha=1.0, inplace=False):
+        super(ELU, self).__init__()
+        self.alpha = alpha
+        self._inplace = inplace
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'Elu',
+            'n_inputs': 1, 'n_outputs': 1,
+            'arguments': {
+                'alpha': self.alpha,
+            }
+        }
+
+    def forward(self, x):
+        inputs = [x]; self.unify_devices(inputs)
+        outputs = [x if self._inplace else self.register_output(x.dtype)]
+        return self.run(inputs, outputs)
+
+
+class SELU(Module):
+    def __init__(self, inplace=False):
+        super(SELU, self).__init__()
+        self._inplace = inplace
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'SElu',
+            'n_inputs': 1, 'n_outputs': 1,
+            'arguments': {}
+        }
+
+    def forward(self, x):
+        inputs = [x]; self.unify_devices(inputs)
+        outputs = [x if self._inplace else self.register_output(x.dtype)]
+        return self.run(inputs, outputs)
+
+
 class Sigmoid(Module):
     def __init__(self, inplace=False):
         super(Sigmoid, self).__init__()

@@ -51,7 +51,8 @@ void DenseConcatGradientOp<Context>::ElimateCorruption() {
         }
         int idx = safe_heads.front();
         safe_heads.pop();
-        Tensor* buffer = ws()->GetTensor("/opt/mirror_stage/buffer_" + dragon_cast<string, int>(idx));
+        Tensor* buffer = ws()->GetTensor(
+            "/opt/mirror_stage/buffer_" + std::to_string(idx));
         Input(0).Move(buffer->memory());
         head_data[idx] = Input(0).name();
         if (XIsType(Input(-2), float)) RestoreX1<float>();
@@ -86,7 +87,8 @@ void DenseConcatGradientOp<Context>::ElimateCorruption() {
                 << "\nadd WORKSPACE_MAX_CORRUPTED_SIZE for more powerful mirror stage ?";
             int idx = safe_heads.front();
             safe_heads.pop();
-            Tensor* buffer = ws()->GetTensor("/opt/mirror_stage/buffer_" + dragon_cast<string, int>(idx));
+            Tensor* buffer = ws()->GetTensor(
+                "/opt/mirror_stage/buffer_" + std::to_string(idx));
             Output(i)->Move(buffer->memory());
             head_data[idx] = Output(i)->name();
         }

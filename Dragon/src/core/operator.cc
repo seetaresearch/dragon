@@ -5,7 +5,8 @@
 namespace dragon {
 
 OperatorBase::OperatorBase(
-    const OperatorDef& def, Workspace* ws)
+    const OperatorDef&          def,
+    Workspace*                  ws)
         : def_(def), ws_(ws), anchor_(def.name()) {
     for (auto& arg : def_.arg()) {
         CHECK_GT(arg.name().size(), 0);
@@ -38,8 +39,8 @@ inline Tensor* OperatorBase::Output(int idx) {
 }
 
 string OperatorBase::DTypeHelper(
-    const Tensor& tensor,
-    const Set<string>& dtypes) const {
+    const Tensor&               tensor,
+    const Set<string>&          dtypes) const {
     std::stringstream ss;
     ss << "Unsupported DType of Input(" << tensor.name() << "): "
        << TypeMetaToString(tensor.meta()) << "\n";
@@ -50,8 +51,8 @@ string OperatorBase::DTypeHelper(
 }
 
 string OperatorBase::DTypeHelper(
-    const string& dtype,
-    const Set<string>& dtypes) const {
+    const string&               dtype,
+    const Set<string>&          dtypes) const {
     std::stringstream ss;
     ss << "Unsupported DType: " << dtype << "\n";
     ss << "<" << type() << "Op>" << " supports the following dtypes: {\n";
@@ -61,9 +62,9 @@ string OperatorBase::DTypeHelper(
 }
 
 OperatorBase* TryCreateOperator(
-    const string& key,
-    const OperatorDef& def,
-    Workspace* ws) {
+    const string&               key,
+    const OperatorDef&          def,
+    Workspace*                  ws) {
     switch (def.device_option().device_type()) {
         case CPU:
             return CPUOperatorRegistry()->Create(key, def, ws);
@@ -73,6 +74,8 @@ OperatorBase* TryCreateOperator(
                 CUDNNOperatorRegistry()->Has(key))
                 return CUDNNOperatorRegistry()->Create(key, def, ws);
             return CUDAOperatorRegistry()->Create(key, def, ws);
+        case CNML:
+            return CNMLOperatorRegistry()->Create(key, def, ws);
         default:
             LOG(FATAL) << "Unknown device type: "
                        << def.device_option().device_type();
@@ -81,9 +84,9 @@ OperatorBase* TryCreateOperator(
 }
 
 void OperatorBase::MutableOp(
-    const vector<string>& inputs,
-    const vector<string>& outputs,
-    const string& anchor) {
+    const vector<string>&       inputs,
+    const vector<string>&       outputs,
+    const string&               anchor) {
     inputs_.resize(inputs.size());
     outputs_.resize(outputs.size());
     for (int i = 0; i < inputs_.size(); i++)
@@ -106,8 +109,8 @@ void OperatorBase::MutableOp(const OperatorDef& def) {
 }
 
 OperatorBase* CreateOperator(
-    const OperatorDef& def,
-    Workspace* ws) {
+    const OperatorDef&          def,
+    Workspace*                  ws) {
     auto* schema = OpSchemaRegistry::Schema(def.type());
     CHECK(schema->Verify(def))
         << "\nOperator failed to pass the schema checking.";
@@ -121,8 +124,8 @@ OperatorBase* CreateOperator(
 }
 
 Gradient MakeGradientForOp(
-    const OperatorDef& def,
-    const vector<string>& g_outputs) {
+    const OperatorDef&          def,
+    const vector<string>&       g_outputs) {
     unique_ptr<GradientMakerBase> maker(
         GradientRegistry()->Create(def.type(), def, g_outputs));
     if (maker.get() == nullptr)
@@ -198,7 +201,8 @@ void Operator<Context>::ElimateCorruption() {
             int idx = safe_heads.front();
             safe_heads.pop();
             Tensor* buffer = ws()->GetTensor(
-                "/opt/mirror_stage/buffer_" + dragon_cast<string, int>(idx));
+                "/opt/mirror_stage/buffer_" 
+                    + std::to_string(idx));
             Output(i)->Move(buffer->memory());
             head_data[idx] = Output(i)->name();
         }
@@ -220,8 +224,8 @@ void Operator<Context>::CleanResource() {
     for (int i = 0; i < OutputSize(); i++) {
         if (Output(i)->is_corrupted() &&
                 head_to_idx.count(Output(i)->name())) {
-            string used = "/opt/mirror_stage/buffer_" +
-                dragon_cast<string, int>(head_to_idx[Output(i)->name()]);
+            string used = "/opt/mirror_stage/buffer_" 
+                + std::to_string(head_to_idx[Output(i)->name()]);
             Tensor* buffer = ws()->GetTensor(used);
             if (Output(i)->memory() != buffer->memory())
                 buffer->Move(Output(i)->memory());
@@ -243,6 +247,12 @@ DEFINE_REGISTRY(
 
 DEFINE_REGISTRY(
     CUDNNOperatorRegistry,
+    OperatorBase,
+    const OperatorDef&,
+    Workspace*);
+
+DEFINE_REGISTRY(
+    CNMLOperatorRegistry,
     OperatorBase,
     const OperatorDef&,
     Workspace*);
@@ -291,9 +301,12 @@ INSTANTIATE_GET_REPEATED_ARGUMENT(string, strings)
 
 template void Operator<CPUContext>::ElimateCorruption();
 template void Operator<CUDAContext>::ElimateCorruption();
+template void Operator<CNMLContext>::ElimateCorruption();
 template void Operator<CPUContext>::MakeResource();
 template void Operator<CUDAContext>::MakeResource();
+template void Operator<CNMLContext>::MakeResource();
 template void Operator<CPUContext>::CleanResource();
 template void Operator<CUDAContext>::CleanResource();
+template void Operator<CNMLContext>::CleanResource();
 
 }    // namespace dragon

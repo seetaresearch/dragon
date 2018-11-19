@@ -29,6 +29,7 @@ void BiasAddOp<Context>::RunOnDevice() {
         dim = Input(0).dim(-1);
         inner_dim = Input(0).count(1) / dim;
     } else LOG(FATAL) << "Unknown data format: " << data_format;
+    Output(0)->ReshapeLike(Input(0));
 
     if (XIsType(Input(0), float)) RunWithType<float>();
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
@@ -38,7 +39,9 @@ DEPLOY_CPU(BiasAdd);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(BiasAdd);
 #endif
-OPERATOR_SCHEMA(BiasAdd).NumInputs(2).NumOutputs(1).Inplace({ { 0, 0 } });
+OPERATOR_SCHEMA(BiasAdd)
+    .NumInputs(2).NumOutputs(1)
+    .Inplace({ { 0, 0 } });
 
 template <class Context> template <typename T>
 void BiasAddGradientOp<Context>::RunWithType() {
@@ -61,6 +64,12 @@ void BiasAddGradientOp<Context>::RunWithType() {
             }
             dYdata += y_offset;
         }
+    }
+
+    if (Output(0)->name() != "ignore" &&
+        Output(0)->name() != Input(-1).name()) {
+        Output(0)->ReshapeLike(Input(-1));
+        Output(0)->template CopyFrom<Context>(Input(-1), ctx());
     }
 }
 
@@ -85,7 +94,9 @@ DEPLOY_CPU(BiasAddGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(BiasAddGradient);
 #endif
-OPERATOR_SCHEMA(BiasAddGradient).NumInputs(3).NumOutputs(2);
+OPERATOR_SCHEMA(BiasAddGradient)
+    .NumInputs(3).NumOutputs(2)
+    .Inplace({ { 2, 0 } });
 
 class GetBiasAddGradient final : public GradientMakerBase {
  public:

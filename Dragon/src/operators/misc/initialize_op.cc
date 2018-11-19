@@ -28,6 +28,36 @@ void InitializeOp<Context>::RunOnDevice() {
     RunWithType<float>();
 }
 
+template <class Context> template <typename T>
+void FillOp<Context>::RunWithType() {
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    math::Set<T, Context>(Output(0)->count(),
+        dragon_cast<T, float>(value), Ydata, ctx());
+}
+
+template <class Context>
+void FillOp<Context>::RunOnDevice() {
+    vector<TIndex> output_shape;
+    if (shape_desc.empty()) {
+        //  determine the shape from dimensions
+        int ndims = (int)std::max(dims_value.size(), dims_desc.size());
+        for (int i = 0; i < ndims; i++) output_shape.push_back(dims(i));
+    } else {
+        //  determine the shape from given shape
+        Tensor* shape = ws()->GetTensor(shape_desc);
+        CHECK(shape->IsType<int>()) << "\nThe type of shape should be int32.";
+        auto* shape_data = shape->template data<int, CPUContext>();
+        for (int i = 0; i < shape->count(); i++) output_shape.push_back(shape_data[i]);
+    }
+    Output(0)->Reshape(output_shape);
+    if (dtype == "float32") RunWithType<float>();
+    else if (dtype == "float32") RunWithType<float16>();
+    else if (dtype == "int32") RunWithType<int>();
+    else if (dtype == "int64") RunWithType<int64_t>();
+    else LOG(FATAL) << DTypeHelper(dtype,
+        { "float32", "float16", "int32", "int64" });
+}
+
 //  constant
 DEPLOY_CPU(Fill);
 #ifdef WITH_CUDA

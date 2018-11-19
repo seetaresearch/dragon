@@ -7,15 +7,11 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void ClipOp<Context>::RunWithType() {
-    Tensor* mask = ws()->CreateTensor(
-        "/mnt/" + anchor() + "/clip/mask");
-    mask->ReshapeLike(Input(0));
-
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    auto* Mdata = mask->template mutable_data<T, Context>();
+
     kernel::Clip<T, Context>(Output(0)->count(),
-        low, high, Xdata, Mdata, Ydata, ctx());
+        low, high, Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -30,19 +26,16 @@ DEPLOY_CPU(Clip);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Clip);
 #endif
-OPERATOR_SCHEMA(Clip)
-    .NumInputs(1).NumOutputs(1)
-    .Inplace({ { 0, 0 } });
+OPERATOR_SCHEMA(Clip).NumInputs(1).NumOutputs(1);
 
 template <class Context> template <typename T>
 void ClipGradientOp<Context>::RunWithType() {
-    Tensor* mask = ws()->GetTensor(
-        "/mnt/" + anchor() + "/clip/mask");
-
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    auto* Mdata = mask->template data<T, Context>();
-    math::Mul<T, Context>(Output(0)->count(),
-        dXdata, Mdata, dXdata, ctx());
+
+    kernel::ClipGrad<T, Context>(Output(0)->count(),
+        low, high, Xdata, dYdata, dXdata, ctx());
 }
 
 template <class Context>
@@ -57,16 +50,14 @@ DEPLOY_CPU(ClipGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(ClipGradient);
 #endif
-OPERATOR_SCHEMA(ClipGradient)
-    .NumInputs(2).NumOutputs(1)
-    .Inplace({ { 1, 0 } });
+OPERATOR_SCHEMA(ClipGradient).NumInputs(2).NumOutputs(1);
 
 class GetClipGradient final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetClipGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
-            vector<string> {O(0), GO(0)},
+            vector<string> {I(0), GO(0)},
             vector<string> {GI(0)});
     }
 };

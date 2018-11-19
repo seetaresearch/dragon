@@ -13,14 +13,20 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from dragon.vm.torch.ops.primitive import MakeContext, CanonicalAxis
+from dragon.vm.torch.ops.factory import get_module
+
 from dragon.vm.torch.tensor import LeafTensor
 from dragon.vm.torch.execute_engine import RunOperator
 from dragon.vm.torch.ops.primitive import MakeContext
+from dragon.vm.torch.ops.factory import get_module
+
+from dragon.vm.torch.ops.modules.creation import OneHot
 
 
 __all__= [
     'zeros', 'zeros_like', 'ones', 'ones_like',
-    'rand', 'randn',
+    'one_hot', 'rand', 'randn',
 ]
 
 
@@ -180,3 +186,26 @@ def randn(*sizes, **kwargs):
     inputs = []; outputs = [out]; ctx = MakeContext(inputs, outputs)
     meta = ('ONCE', 'RandomNormal', ctx)
     return RunOperator(inputs, outputs, meta, **arguments)
+
+
+def one_hot(input, depth):
+    """Return a ont hot tensor according to given input.
+
+    Parameters
+    ----------
+    input : vm.torch.Tensor
+        The input tensor.
+    depth : int
+        The depth of channels.
+
+    Returns
+    -------
+    vm.torch.FloatTensor
+        The output tensor.
+
+    """
+    ctx = MakeContext(inputs=[input])
+    key = 'torch/ops/one_hot/{}:{}/depth:{}'.format(
+        ctx[0].lower(), ctx[1], depth)
+    module = get_module(OneHot, key, ctx, depth=depth)
+    return module.forward(input)

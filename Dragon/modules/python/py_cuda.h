@@ -25,4 +25,4 @@ inline PyObject* IsCUDADriverSufficientCC(PyObject* self, PyObject* args) {
 #endif
 }
 
-#endif    // DRAGON_PYTHON_PY_MPI_H_
+#endif    // DRAGON_PYTHON_PY_CUDA_H_

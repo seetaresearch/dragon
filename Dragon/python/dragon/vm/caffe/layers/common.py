@@ -446,10 +446,13 @@ class InstanceNormLayer(Layer):
     The implementation of ``InstanceNormLayer``.
 
     Introduced by `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_
+
     """
     def __init__(self, LayerParameter):
         super(InstanceNormLayer, self).__init__(LayerParameter)
-        self._param = {'axis': 1}
+        param = LayerParameter.instance_norm_param
+        self._param = {'eps': param.eps,
+                       'axis': 1}
 
     def Setup(self, bottom):
         super(InstanceNormLayer, self).Setup(bottom)

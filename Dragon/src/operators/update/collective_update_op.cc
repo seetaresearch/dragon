@@ -31,8 +31,9 @@ void CollectiveUpdateOp<Context>::InitNCCL() {
     ncclUniqueId id;
     if (comm_rank == comm_root) NCCL_CHECK(ncclGetUniqueId(&id));
     MPI_Bcast((void *)&id, sizeof(id), MPI_BYTE, comm_root, comm);
-    NCCL_CHECK(ncclCommInitRank(&nccl_comm, comm_size, id, comm_rank));
+    ctx()->SwitchToDevice();
     closure = CUDAClosure<Context>(ctx());
+    NCCL_CHECK(ncclCommInitRank(&nccl_comm, comm_size, id, comm_rank));
 #else
     LOG(FATAL) << "NCCL was not compiled.";
 #endif

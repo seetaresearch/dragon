@@ -246,6 +246,9 @@ GraphDef Graph::Share(const GraphDef& optimized_graph) {
                     *g.mutable_op(i)->mutable_input(j)
                         = renamed_[op.input(j)];
         }
+        //  handle handcraft cases
+        if (op.type() == "BiasAddGradient")
+            renamed_[op.output(0)] = g.op(i).input(2);
         for (int j = 0; j < op.output_size(); j++) {
             if (whitelist.count(op.output(j)) == 0 &&
                 renamed_.count(op.output(j)) &&
@@ -443,9 +446,10 @@ Graph::Graph(const GraphDef& meta_graph, Workspace* ws)
     }
 
     //  store the final graph as a tensor for visualization
-    Tensor* string_tensor = ws_->CreateTensor("GraphDef_" + optimized_graph.name());
-    string_tensor->Reshape({ 1 });
-    string* data = string_tensor->mutable_data<string, CPUContext>();
+    Tensor* graphT = ws_->CreateTensor(
+        "GraphDef_" + optimized_graph.name());
+    graphT->Reshape({ 1 });
+    auto* data = graphT->mutable_data<string, CPUContext>();
     data[0] = optimized_graph.SerializeAsString();
 
     //  create
@@ -473,11 +477,22 @@ bool Graph::Run(
     return true;
 }
 
-DEFINE_REGISTRY(GraphRegistry, GraphBase, const GraphDef&, Workspace*);
+GraphBase* NewGraph(
+    const GraphDef&             meta_graph,
+    Workspace*                  ws) {
+    if (!meta_graph.has_graph_type() ||
+         meta_graph.graph_type().empty())
+        return new Graph(meta_graph, ws);
 
-GraphBase* NewGraph(const GraphDef& meta_graph, Workspace* ws) {
-    if (!meta_graph.has_graph_type()) return new Graph(meta_graph, ws);
-    return GraphRegistry()->Create(meta_graph.graph_type(), meta_graph, ws);
+    return GraphRegistry()->Create(
+        meta_graph.graph_type(), meta_graph, ws);
 }
+
+DEFINE_REGISTRY(
+    GraphRegistry,
+    GraphBase,
+    const GraphDef&,
+    Workspace*
+);
 
 }    // namespace dragon

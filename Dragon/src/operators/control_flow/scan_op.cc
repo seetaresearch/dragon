@@ -7,8 +7,6 @@
 #include "operators/control_flow/scan_op.h"
 #include "operators/ndarray/slice_op.h"
 
-#define str dragon_cast<string, int>
-
 namespace dragon {
 
 template <class Context>
@@ -29,14 +27,14 @@ void ScanOp<Context>::InitTemplate() {
     for (int i = 0; i < nseqs; i++) {
         OperatorDef* op = template_def.add_op();
         op->CopyFrom(slice_def);
-        op->set_name(name() + "(BodyOp." + str(i) + ")");
+        op->set_name(name() + "(BodyOp." + std::to_string(i) + ")");
         op->add_input(Input(i).name());
         terms[Input(i).name()] = Input(i).name() + "@1";
     }
     for (int i = 0; i < nrepeats; i++) {
         OperatorDef* op = template_def.add_op();
         op->CopyFrom(func_def.op(i));
-        op->set_name(name() + "(BodyOp." + str(i + nseqs) + ")@1");
+        op->set_name(name() + "(BodyOp." + std::to_string(i + nseqs) + ")@1");
         //  replace inputs term
         for (int j = 0; j < op->input_size(); j++) {
             string* input = op->mutable_input(j);
@@ -61,8 +59,8 @@ void ScanOp<Context>::UpdateTerms(int cur_step) {
     string prev, now;
     //  update sequences term
     for (int i = 0; i < nseqs; i++) {
-        prev = Input(i).name() + "@" + str(cur_step - 1);
-        now = Input(i).name() + "@" + str(cur_step);
+        prev = Input(i).name() + "@" + std::to_string(cur_step - 1);
+        now = Input(i).name() + "@" + std::to_string(cur_step);
         terms[prev] = now;
     }
     if (cur_step < 3) return;
@@ -70,8 +68,8 @@ void ScanOp<Context>::UpdateTerms(int cur_step) {
     //  only support the latest one-step (as Theano's done)
     for (int i = 0; i < nout; i++) {
         if (default_outputs[i].empty()) continue;
-        prev = Output(i)->name() + "@" + str(cur_step - 2);
-        now = Output(i)->name() + "@" + str(cur_step - 1);
+        prev = Output(i)->name() + "@" + std::to_string(cur_step - 2);
+        now = Output(i)->name() + "@" + std::to_string(cur_step - 1);
         terms[prev] = now;
     }
 }
@@ -90,7 +88,7 @@ void ScanOp<Context>::UnrollTemplate() {
     if (graphs.count(nsteps)) return;
 
     new_def.CopyFrom(template_def);
-    new_def.set_name(name() + "(ScanLen." + str(nsteps) + ")");
+    new_def.set_name(name() + "(ScanLen." + std::to_string(nsteps) + ")");
     Argument phase; phase.set_name("phase");
     phase.set_s(this->phase()); new_def.add_arg()->CopyFrom(phase);
     for (int idx = 0; idx < nseqs; idx++) {
@@ -100,7 +98,7 @@ void ScanOp<Context>::UnrollTemplate() {
         op->mutable_arg(1)->set_i(nslices);
         //  add slices as outputs
         for (int t = 1; t <= nslices; t++) {
-            string slice = op->input(0) + "@" + str(t);
+            string slice = op->input(0) + "@" + std::to_string(t);
             op->add_output(slice);
         }
     }
@@ -111,7 +109,8 @@ void ScanOp<Context>::UnrollTemplate() {
         for (int idx = copy_l; idx < copy_r; idx++) {
             OperatorDef* op = new_def.add_op();
             op->CopyFrom(new_def.op(idx));
-            op->set_name(SplitString(op->name(), "@")[0] + "@" + str(t));
+            op->set_name(str::split(op->name(), "@")[0]
+                + "@" + std::to_string(t));
             //  replace inputs
             for (int j = 0; j < op->input_size(); j++) {
                 string* input = op->mutable_input(j);
@@ -120,18 +119,19 @@ void ScanOp<Context>::UnrollTemplate() {
             //  replace outputs
             for (int j = 0; j < op->output_size(); j++) {
                 string* output = op->mutable_output(j);
-                terms[*output] = SplitString(*output, "@")[0] + "@" + str(t);
+                terms[*output] = str::split(*output, "@")[0]
+                    + "@" + std::to_string(t);
                 *output = terms[*output];
             }
         }
     }
     for (int i = 0; i < nout; i++) {
         //  solve the last step only
-        new_def.add_target(func_def.target(i) + "@" + str(nsteps));
+        new_def.add_target(func_def.target(i) + "@" + std::to_string(nsteps));
         //  concat all steps if necessary
         if (Output(i)->name() == "ignore") continue;
         OperatorDef* op = new_def.add_op();
-        op->set_name(name() + "(BodyOp." + str(nseqs + nrepeats + i) + ")");
+        op->set_name(name() + "(BodyOp." + std::to_string(nseqs + nrepeats + i) + ")");
         op->set_type("Concat");
         Argument arg_axis, arg_nin;
         arg_axis.set_name("axis"); arg_axis.set_i(axis);
@@ -139,7 +139,7 @@ void ScanOp<Context>::UnrollTemplate() {
         op->add_arg()->CopyFrom(arg_axis);
         op->add_arg()->CopyFrom(arg_nin);
         for (int t = 1; t <= nsteps; t++)
-            op->add_input(Output(i)->name() + "@" + str(t));
+            op->add_input(Output(i)->name() + "@" + std::to_string(t));
         op->add_output(Output(i)->name());
         //  solve all the all steps
         new_def.add_target(Output(i)->name());
@@ -195,7 +195,7 @@ void ScanGradientOp<Context>::MakeOps(const GraphDef& forward_def,
     maker.Make(forward_def, targets, new_def);
 
     //  post-process
-    new_def.set_name(name() + "(ScanLen." + str(nsteps) + ")");
+    new_def.set_name(name() + "(ScanLen." + std::to_string(nsteps) + ")");
     for (auto& target : targets) {
         for (int i = 0; i < OutputSize(); i++) {
             if (Output(i)->name() == "ignore") continue;

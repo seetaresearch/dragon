@@ -16,7 +16,10 @@
 
 namespace dragon {
 
-enum LRNMode { ACROSS_CHANNELS, WITHIN_CHANNEL };
+typedef enum {
+    ACROSS_CHANNELS,
+    WITHIN_CHANNEL,
+} LRNMode;
 
 template <class Context>
 class LRNOp : public Operator<Context> {
@@ -81,8 +84,6 @@ class LRNGradientOp : public Operator<Context> {
 };
 
 #ifdef WITH_CUDNN
-
-#include "utils/cudnn_device.h"
 
 template <class Context>
 class CuDNNLRNOp final : public LRNOp<Context> {

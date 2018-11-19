@@ -3,14 +3,6 @@
 
 namespace dragon {
 
-string DimString(const vector<TIndex>& shape) {
-    std::stringstream ss;
-    ss << "(";
-    for (int i = 0; i < shape.size() - 1; i++) ss << shape[i] << ",";
-    ss << shape[shape.size() - 1] << ")";
-    return ss.str();
-}
-
 template <class Context>
 void ReshapeOp<Context>::RunOnDevice() {
     if (shape_desc.size() > 0 || shape_value.size() > 0) {
@@ -56,7 +48,7 @@ void ReshapeOp<Context>::RunOnDevice() {
                 CHECK_EQ(Input(0).count() % total_count, 0)
                     << "\nCan not change the total size: "
                     << Input(0).DimString()
-                    << " -> " << DimString(new_shape);
+                    << " -> " << Tensor::DimString(new_shape);
                 new_shape[i] = Input(0).count() / total_count;
                 total_count *= new_shape[i];
                 break;
@@ -66,7 +58,7 @@ void ReshapeOp<Context>::RunOnDevice() {
     CHECK_EQ(total_count, Input(0).count())
         << "\nCan not change the total size."
         << Input(0).DimString()
-        << " -> " << DimString(new_shape);
+        << " -> " << Tensor::DimString(new_shape);
     Output(0)->Reshape(new_shape);
     Output(0)->SetMeta(Input(0).meta());
     Output(0)->Share(Input(0).memory());

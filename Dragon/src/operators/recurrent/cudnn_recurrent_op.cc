@@ -25,8 +25,8 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
             CUDNN_CHECK(cudnnDropoutGetStatesSize(
                 ctx()->cudnn_handle(), &states_size));
             std::lock_guard<std::mutex> lk(CUDAContext::mutex());
-            Tensor* states = ws()->CreateTensor("/share/cudnn/dropout:" +
-                dragon_cast<string, unsigned long long>(random_seed) + "/states");
+            Tensor* states = ws()->CreateTensor("/share/cudnn/dropout:" 
+                + std::to_string(random_seed) + "/states");
             if (states->count() > 0) {
                 auto* Sdata = states->template mutable_data<uint8_t, Context>();
                 CUDNN_CHECK(cudnnRestoreDropoutDescriptor(
@@ -160,9 +160,7 @@ void CuDNNRecurrentOp<Context>::RunOnDevice() {
     ctx()->set_stream_id(0);  //  enforce default stream
 
     if (XIsType(Input(0), float)) RunWithType<float>();
-#ifdef WITH_CUDA_FP16
     else if (XIsType(Input(0), float16)) RunWithType<float16>();
-#endif
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
@@ -240,9 +238,7 @@ void CuDNNRecurrentGradientOp<Context>::RunOnDevice() {
     Output(3)->ReshapeLike(Input(3));  // dCx
 
     if (XIsType(Input(0), float)) RunWithType<float>();
-#ifdef WITH_CUDA_FP16
     else if (XIsType(Input(0), float16)) RunWithType<float16>();
-#endif
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 

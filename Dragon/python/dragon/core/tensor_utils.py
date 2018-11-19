@@ -325,5 +325,7 @@ def GetTensorInfo(tensor, stream=1):
         info['mem'].append('CPU'); info['device_id'] = 0
     if 'CUDA' in info:
         info['mem'].append('CUDA'); info['device_id'] = int(info['CUDA'])
+    if 'CNML' in info:
+        info['mem'].append('CNML'); info['device_id'] = int(info['CNML'])
     info['init'] = len(info['mem']) > 0
     return info

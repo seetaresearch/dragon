@@ -78,7 +78,7 @@ void FusedGroupNormOp<Context>::RunWithType() {
     ctx()->template Copy<T, Context, Context>(
         Output(0)->count(), XNorm_data, Ydata);
 
-    // scale
+    //  scale
     if (data_format == "NCHW") {
          math::Gemm<T, Context>(
              CblasNoTrans, CblasNoTrans,

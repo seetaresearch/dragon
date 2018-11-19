@@ -111,7 +111,7 @@ void Axpby(
     const T                 beta,
     T*                      y);
 
-}    // namespace ssd
+}    // namespace sse
 
 }    // namespace dragon
 

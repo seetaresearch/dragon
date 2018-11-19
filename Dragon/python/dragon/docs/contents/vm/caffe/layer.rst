@@ -32,6 +32,7 @@ List                       Brief
 `LRNLayer`_                The implementation of ``LRNLayer``.
 `NNResizeLayer`_           The implementation of ``NNResizeLayer``.
 `BilinearResizeLayer`_     The implementation of ``BilinearResizeLayer``.
+`DropBlockLayer`_          The implementation of ``DropBlockLayer``.
 ======================     =============================================================================
 
 
@@ -160,6 +161,7 @@ API Reference
 .. _LRNLayer: #dragon.vm.caffe.layers.vision.LRNLayer
 .. _NNResizeLayer: #dragon.vm.caffe.layers.vision.NNResizeLayer
 .. _BilinearResizeLayer: #dragon.vm.caffe.layers.vision.BilinearResizeLayer
+.. _DropBlockLayer: #dragon.vm.caffe.layers.vision.DropBlockLayer
 
 .. _ReLULayer: #dragon.vm.caffe.layers.neuron.ReLULayer
 .. _PReLULayer: #dragon.vm.caffe.layers.neuron.PReLULayer

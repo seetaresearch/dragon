@@ -94,7 +94,6 @@ PyObject* TensorFromShapeCC(PyObject* self, PyObject* args) {
     if (meta.id() != tensor->meta().id() && tensor->meta().id() != 0)
         LOG(WARNING) << "Set Tensor(" << tensor->name() << ")"
         << " with different data type from original one.";
-    tensor->SetMeta(meta);
     int ndim = PyList_Size(shape);
     CHECK_GT(ndim, 0)
         << "\nThe len of shape should be greater than 1. Got " << ndim << ".";
@@ -112,9 +111,9 @@ PyObject* TensorFromShapeCC(PyObject* self, PyObject* args) {
     if (dev_opt.device_type() == CUDA) {
         CUDAContext ctx(dev_opt);
         ctx.SwitchToDevice();
-        tensor->raw_mutable_data<CUDAContext>();
+        tensor->raw_mutable_data<CUDAContext>(meta);
     } else {
-        tensor->raw_mutable_data<CPUContext>();
+        tensor->raw_mutable_data<CPUContext>(meta);
     }
     Py_RETURN_TRUE;
 }
@@ -173,19 +172,19 @@ PyObject* TensorFromTensorCC(PyObject* self, PyObject* args) {
     Tensor* srcT = ws()->GetTensor(src_name);
     Tensor* dstT = ws()->CreateTensor(dst_name);
     dstT->ReshapeLike(*srcT);
-    dstT->SetMeta(srcT->meta());
+    const TypeMeta& meta = srcT->meta();
     if (dst_ctx.device_type() == DeviceType::CUDA) {
         if (src_ctx.device_type() == DeviceType::CUDA) {
             //  CUDA <- CUDA
             CUDAContext::Memcpy<CUDAContext, CUDAContext>(
                 srcT->nbytes(),
-                    dstT->raw_mutable_data<CUDAContext>(),
+                    dstT->raw_mutable_data<CUDAContext>(meta),
                         srcT->raw_data<CUDAContext>());
         } else {
             //  CUDA <- CPU
             CUDAContext::Memcpy<CUDAContext, CUDAContext>(
                 srcT->nbytes(),
-                    dstT->raw_mutable_data<CUDAContext>(),
+                    dstT->raw_mutable_data<CUDAContext>(meta),
                         srcT->raw_data<CPUContext>());
         }
     } else {
@@ -193,13 +192,13 @@ PyObject* TensorFromTensorCC(PyObject* self, PyObject* args) {
             //  CPU <- CUDA
             CUDAContext::Memcpy<CUDAContext, CUDAContext>(
                 srcT->nbytes(),
-                    dstT->raw_mutable_data<CPUContext>(),
+                    dstT->raw_mutable_data<CPUContext>(meta),
                         srcT->raw_data<CUDAContext>());
         } else {
             //  CPU <- CPU
             CUDAContext::Memcpy<CUDAContext, CUDAContext>(
                 srcT->nbytes(),
-                    dstT->raw_mutable_data<CPUContext>(),
+                    dstT->raw_mutable_data<CPUContext>(meta),
                         srcT->raw_data<CPUContext>());
         }
     }

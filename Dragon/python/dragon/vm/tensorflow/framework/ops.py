@@ -24,7 +24,7 @@ def convert_to_tensor(value, dtype=None, name=None, **kwargs):
 
     Parameters
     ----------
-    value : basic type, list or numpy.ndarray
+    value : number, list or numpy.ndarray
         The value to convert.
     dtype : Dtype or None
         The data type. If ``None``, inferred from the type of `value`.

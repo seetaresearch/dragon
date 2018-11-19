@@ -43,9 +43,9 @@ template <class Context>
 void SmoothL1LossOp<Context>::RunOnDevice() {
     ctx()->set_stream_id(0);  //  enforce default stream
 
-    CHECK(Input(0).dims() == Input(1).dims());
-    if (InputSize() > 2) CHECK(Input(0).dims() == Input(2).dims());
-    if (InputSize() > 3) CHECK(Input(0).dims() == Input(3).dims());
+    CHECK(Input(0).count() == Input(1).count());
+    if (InputSize() > 2) CHECK(Input(0).count() == Input(2).count());
+    if (InputSize() > 3) CHECK(Input(0).count() == Input(3).count());
     Output(0)->Reshape({ 1 });
 
     diff = ws()->CreateTensor("/mnt/" + anchor() + "/smoothl1_loss/diff");

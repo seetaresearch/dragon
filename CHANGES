@@ -1,0 +1,89 @@
+------------------------------------------------------------------------
+The list of most significant changes made over time in Dragon.
+
+Dragon 0.2.2.12 (20181120)
+DRAGON_VERSION == 2212
+
+Changes (w.r.t. Dragon 0.2.2.11):
+
+Preview Features:
+
+- Added Cambricon's CNML context.
+
+- Added the support for Int8(Char) Tensor.
+
+- Removed the cuda device id query from pointer.
+
+- Added ``DropBlock2dOp``
+
+- Added ``MaximumOp``, ``MinimumOp``, ``NLLLossOp``.
+
+- Added CuDNN support for ``BiasAddOp``.
+
+- Optimized memory usage of ``DropoutOp``.
+
+- Replaced ``thread_local`` with platform TLS solution.
+
+- Changed the default norm eps from 1e-3 to 1e-5,
+
+  affected: ``BatchNorm``, ``BatchRenorm``, ``GroupNorm``, ``InstanceNorm``, ``L2Norm``.
+
+- Enforced CUDA FP16 support (i.e. Removed ``WITH_CUDA_FP16``).
+
+- [PyTorch] Added ``torch.one_hot``.
+
+- [PyTorch] Added ``torch.log``, ``Tensor.log``, ``torch.exp`` and ``Tensor.exp``.
+
+- [PyTorch] Added ``torch.minimum``, ``torch.maximum``,
+
+   ``torch.clamp``, ``Tensor.clamp``, ``Tensor.clamp_``.
+
+- [PyTorch] Added ``nn.ELU`` and ``nn.SELU``.
+
+- [PyTorch] Added ``nn.GroupNorm``.
+
+- [PyTorch] Added ``nn.NLLLoss``, ``nn.BCEWithLogitsLoss``,
+
+   ``nn.L1Loss``, ``nn.MSELoss``, ``nn.SmoothL1Loss``.
+
+- [PyTorch] Added ``nn.DropBlock2d``.
+
+- [PyTorch] Added ``train`` and ``eval`` mode for Module,
+
+   affected: ``nn.BatchNorm``, ``nn.Dropout``.
+
+- [PyTorch] Deprecated the ``size_average`` and ``reduce`` in
+
+    ``nn.Loss``, added ``reduction`` instead.
+
+- [PyTorch] ``torch.save`` can save both ``torch.Tensor`` and other pickle values.
+
+- [PyCaffe] Added ``DropBlockLayer``.
+
+Bugs fixed:
+
+- Fixed the uncomputed output in ``BiasAddGradientOp``.
+
+- Fixed the incorrect gradients of ``ClipGradientOp``.
+
+- Fixed the wrong results of ``math::Inv`` under ``CPUContext``.
+
+- Fixed the issue that the default device is used on initializing NCCL.
+
+- Removed the strictly shape check in ``SmoothL1Op``.
+
+- Fixed wrong CXX API exporting under Win32.
+
+- [PyTorch] Fixed an issue that multiple ``GradientGather`` are triggered by one Operator.
+
+- [PyTorch] Fixed the schema check by in-place fundamental ops.
+
+- [PyTorch] Fixed the missing shape and dtype after ``Tensor.copy_``.
+
+- [PyTorch] Fixed an issue that ``Tensor.fill_`` and ``Tensor.zero_``
+
+  will change the data type of an non-empty Tensor.
+
+- [PyTorch] Fixed the Python2 Int(s) check.
+
+------------------------------------------------------------------------

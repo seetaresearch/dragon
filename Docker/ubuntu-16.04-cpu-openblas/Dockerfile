@@ -8,10 +8,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     ssh \
     vim \
+    libtbb-dev \
+    libsdl2-dev \
     libnuma-dev \
     libprotobuf-dev \
     protobuf-compiler \
+    libopencv-dev \
     libopenblas-dev \
+    libboost-all-dev \
     python3-pip \
     python3-dev \
     python3-pyqt4 \
@@ -40,3 +44,5 @@ RUN git clone https://github.com/seetaresearch/Dragon.git && \
     wget http://dragon.seetatech.com/download/docker/ubuntu-16.04-cpu-openblas/CMakeLists.txt && \
     mkdir build && cd build && cmake .. && make install -j8 && cd .. && rm -rf build && \
     cd python && python3 setup.py install
+
+RUN rm /usr/bin/python && ln -s /usr/bin/python3 /usr/bin/python && ln -s /usr/bin/pip3 /usr/bin/pip

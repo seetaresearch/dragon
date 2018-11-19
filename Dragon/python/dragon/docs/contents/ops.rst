@@ -42,6 +42,7 @@ List                   Brief
 `BilinearResize`_      Resize the image with Bi-linear method.
 `BiasAdd`_             Add the bias across channels to a ``NCHW`` or ``NHWC`` input.
 `DenseConcat`_         Memory-efficient concatenation for DenseNet. `[Huang et.al, 2017] <http://arxiv.org/abs/1608.06993>`_.
+`DropBlock2d`_         Randomly drop the outputs according to the spatial blocks. `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
 ===================    ======================================================================
 
 Recurrent
@@ -76,6 +77,7 @@ Loss
 =============================      ======================================================================
 List                               Brief
 =============================      ======================================================================
+`NLLLoss`_                         Negative likelihood loss with sparse labels.
 `SparseSoftmaxCrossEntropy`_       SoftmaxCrossEntropy with sparse labels.
 `SigmoidCrossEntropy`_             SigmoidCrossEntropy.
 `SoftmaxCrossEntropy`_             SoftmaxCrossEntropy with dense(one-hot) labels.
@@ -102,6 +104,8 @@ List               Brief
 `Exp`_             Calculate the exponential of input.
 `Square`_          Calculate the square of input.
 `Sqrt`_            Calculate the sqrt of input.
+`Maximum`_         Return the max value of given two inputs.
+`Minimum`_          Return the min value of given two inputs.
 `Clip`_            Clip the input to be between lower and higher bounds.
 `Matmul`_          Matrix Multiplication.
 `InnerProduct`_    InnerProduct Function.
@@ -215,6 +219,7 @@ List                 Brief
 .. _BilinearResize: operators/vision.html#dragon.operators.vision.BilinearResize
 .. _BiasAdd: operators/vision.html#dragon.operators.vision.BiasAdd
 .. _DenseConcat: operators/vision.html#dragon.operators.vision.DenseConcat
+.. _DropBlock2d: operators/vision.html#dragon.operators.vision.DropBlock2d
 
 .. _RNN: operators/recurrent.html#dragon.operators.recurrent.RNN
 .. _LSTM: operators/recurrent.html#dragon.operators.recurrent.LSTM
@@ -231,6 +236,7 @@ List                 Brief
 .. _Softmax: operators/activation.html#dragon.operators.activation.Softmax
 .. _Dropout: operators/activation.html#dragon.operators.activation.Dropout
 
+.. _NLLLoss: operators/loss.html#dragon.operators.loss.NLLLoss
 .. _SparseSoftmaxCrossEntropy: operators/loss.html#dragon.operators.loss.SparseSoftmaxCrossEntropy
 .. _SigmoidCrossEntropy: operators/loss.html#dragon.operators.loss.SigmoidCrossEntropy
 .. _SoftmaxCrossEntropy: operators/loss.html#dragon.operators.loss.SoftmaxCrossEntropy
@@ -246,6 +252,8 @@ List                 Brief
 .. _Mul: operators/arithmetic.html#dragon.operators.arithmetic.Mul
 .. _Div: operators/arithmetic.html#dragon.operators.arithmetic.Div
 .. _Clip: operators/arithmetic.html#dragon.operators.arithmetic.Clip
+.. _Maximum: operators/arithmetic.html#dragon.operators.arithmetic.Maximum
+.. _Minimum: operators/arithmetic.html#dragon.operators.arithmetic.Minimum
 .. _Pow: operators/arithmetic.html#dragon.operators.arithmetic.Pow
 .. _Log: operators/arithmetic.html#dragon.operators.arithmetic.Log
 .. _Exp: operators/arithmetic.html#dragon.operators.arithmetic.Exp

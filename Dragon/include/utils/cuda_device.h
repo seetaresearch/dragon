@@ -101,16 +101,10 @@ inline int CUDA_NUM_DEVICES() {
     return count;
 }
 
-inline int CUDA_DEVICE() {
-    int gpu_id;
-    cudaGetDevice(&gpu_id);
-    return gpu_id;
-}
-
-inline int CUDA_DEVICE(const void* ptr) {
-    cudaPointerAttributes attr;
-    CUDA_CHECK(cudaPointerGetAttributes(&attr, ptr));
-    return attr.device;
+inline int CUDA_GET_DEVICE() {
+    int device_id;
+    cudaGetDevice(&device_id);
+    return device_id;
 }
 
 struct CUDADeviceProps {
@@ -132,7 +126,7 @@ inline const cudaDeviceProp& GetDeviceProperty(
 }
 
 inline bool CUDA_TRUE_FP16_AVAILABLE() {
-    int device = CUDA_DEVICE();
+    int device = CUDA_GET_DEVICE();
     auto& prop = GetDeviceProperty(device);
     return prop.major >= 6;
 }
@@ -141,7 +135,7 @@ inline bool TENSOR_CORE_AVAILABLE() {
 #if CUDA_VERSION < 9000
     return false;
 #else
-    int device = CUDA_DEVICE();
+    int device = CUDA_GET_DEVICE();
     auto& prop = GetDeviceProperty(device);
     return prop.major >= 7;
 #endif
@@ -149,22 +143,15 @@ inline bool TENSOR_CORE_AVAILABLE() {
 
 class DeviceGuard {
  public:
-    DeviceGuard(int newDevice)
-        : previous_(CUDA_DEVICE()) {
-        if (previous_ != newDevice)
-            CUDA_CHECK(cudaSetDevice(newDevice));
+    DeviceGuard(int new_id) : prev_id(CUDA_GET_DEVICE()) {
+        if (prev_id != new_id) CUDA_CHECK(cudaSetDevice(new_id));
     }
 
-    ~DeviceGuard() {
-        CUDA_CHECK(cudaSetDevice(previous_));
-    }
+    ~DeviceGuard() { CUDA_CHECK(cudaSetDevice(prev_id)); }
 
  private:
-    int previous_;
+    int prev_id;
 };
-
-#define CUDA_FP16_NOT_COMPILED \
-    LOG(FATAL) << "CUDA-FP16 was not compiled."
 
 #else
 

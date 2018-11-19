@@ -42,6 +42,7 @@ class Module(object):
         self._buffers = OrderedDict()
         self._persistent_key = self._op = None
         self._ctx = ('CPU', 0)
+        self.training = True
 
     def __getattr__(self, item):
         if '_parameters' in self.__dict__:
@@ -363,3 +364,12 @@ class Module(object):
     def run(self, inputs, outputs, auto_grad=True):
         meta = ('PERSISTENT', self.persistent_key, self.op)
         return RunOperator(inputs, outputs, meta, auto_grad=auto_grad)
+
+    def train(self, mode=True):
+        self.training = mode
+        for module in self.children():
+            module.train(mode)
+        return self
+
+    def eval(self):
+        return self.train(False)

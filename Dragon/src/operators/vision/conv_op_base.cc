@@ -94,19 +94,9 @@ void ConvOpBase<Context>::Wx(
 template <class Context> template <typename T>
 void ConvOpBase<Context>::Pb(const T* bias, T* y) {
     DECLARE_MULTIPLIER(multiplier, out_spatial_dim);
-    if (data_format == "NCHW") {
-        math::Gemm<T, Context>(
-            CblasNoTrans, CblasNoTrans,
-                num_output, out_spatial_dim, 1,
-                    1.0, bias, multiplier,
-                        1.0, y, ctx());
-    } else if (data_format == "NHWC") {
-        math::Gemm<T, Context>(
-            CblasNoTrans, CblasNoTrans,
-                out_spatial_dim, num_output, 1,
-                    1.0, multiplier, bias,
-                        1.0, y, ctx());
-    }
+    kernel::BiasAdd<T, Context>(Output(0)->count(), 
+        Input(0).dim(0), num_output, out_spatial_dim,
+            data_format, bias, multiplier, y, ctx());
 }
 
 template <class Context> template <typename T>
@@ -117,18 +107,16 @@ void ConvOpBase<Context>::Dx(const T* dy, const T* weights, T* dx) {
         if (data_format == "NCHW") {
             math::Gemm<T, Context>(
                 CblasTrans, CblasNoTrans,
-                                   kernel_dim,
-                         conv_out_spatial_dim,
-                    conv_out_channels / group,
+                    kernel_dim, conv_out_spatial_dim,
+                        conv_out_channels / group,
                 1.0, weights + weight_offset * g,
                           dy + output_offset * g,
                 0.0, col_buffer + col_offset * g, ctx());
         } else if (data_format == "NHWC") {
              math::Gemm<T, Context>(
                  CblasNoTrans, CblasTrans,
-                          conv_out_spatial_dim,
-                                    kernel_dim,
-                     conv_out_channels / group,
+                     conv_out_spatial_dim, kernel_dim,
+                         conv_out_channels / group,
                  1.0, dy + output_offset * g,
                      weights + weight_offset * g,
                  0.0, col_buffer + col_offset * g, ctx());

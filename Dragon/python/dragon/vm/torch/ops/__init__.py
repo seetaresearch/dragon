@@ -11,11 +11,12 @@
 
 from .creation import (
     zeros, zeros_like, ones, ones_like,
-    rand, randn
+    one_hot, rand, randn,
 )
 
 from .arithmetic import (
-    add, sub, mul, div,
+    add, sub, mul, div, log, exp,
+    maximum, minimum, clamp,
 )
 
 from .ndarray import (

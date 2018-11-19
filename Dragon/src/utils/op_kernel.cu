@@ -19,12 +19,14 @@ template<typename T>
 __global__ void _Dropout(
     const int               count,
     const uint32_t          thresh,
-    const T                 scale,
+    const float             scale,
     const T*                x,
-    const uint32_t*         mask,
+    const uint32_t*         mask32,
+    uint8_t*                mask8,
     T*                      y) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
-        y[idx] = x[idx] * (mask[idx] > thresh) * scale;
+        mask8[idx] = (mask32[idx] > thresh);
+        y[idx] = x[idx] * mask8[idx] * scale;
     }
 }
 
@@ -33,44 +35,42 @@ template<> void Dropout<float, CUDAContext>(
     float                   prob,
     float                   scale,
     const float*            x,
-    uint32_t*               mask,
+    uint32_t*               mask32,
+    uint8_t*                mask8,
     float*                  y,
     CUDAContext*            ctx) {
-    uint32_t thresh = static_cast<uint32_t>(UINT_MAX * prob);
     math::RandomUniform<uint32_t, CUDAContext>(
-        count, float(0), float(UINT_MAX), mask, ctx);
+        count, float(0), float(UINT_MAX), mask32, ctx);
+    auto thresh = static_cast<uint32_t>(UINT_MAX * prob);
     _Dropout<float>
         << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
-                 count, thresh, scale, x, mask, y);
+             0, ctx->cuda_stream() >> >(count,
+                 thresh, scale, x, mask32, mask8, y);
 }
 
-template <typename T>
-__global__ void _DropoutGrad(
+template <typename Tx, typename Tm>
+__global__ void _ApplyMask(
     const int               count,
-    const uint32_t          thresh,
-    const T                 scale,
-    const T*                dy, 
-    const uint32_t*         mask,
-    T*                      dx) {
+    const float             scale,
+    const Tx*               x,
+    const Tm*               mask,
+    Tx*                     y) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
-        dx[idx] = dy[idx] * (mask[idx] > thresh) * scale;
+        y[idx] = x[idx] * mask[idx] * scale;
     }
 }
 
-template<> void DropoutGrad<float, CUDAContext>(
+template <> void ApplyMask<float, uint8_t, CUDAContext>(
     const int               count,
-    float                   prob,
-    float                   scale,
-    const float*            dy, 
-    const uint32_t*         mask,
-    float*                  dx,
+    const float             scale,
+    const float*            x,
+    const uint8_t*          mask,
+    float*                  y,
     CUDAContext*            ctx) {
-    uint32_t thresh = static_cast<uint32_t>(UINT_MAX * prob);
-    _DropoutGrad<float>
+    _ApplyMask<float, uint8_t>
         << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
-                 count, thresh, scale, dy, mask, dx);
+             0, ctx->cuda_stream() >> >(count,
+                 scale, x, mask, y);
 }
 
 /******************** activation.prelu ********************/
@@ -753,13 +753,9 @@ __global__ void _Clip(
     const T                 low,
     const T                 high,
     const T*                x,
-    T*                      mask,
     T*                      y) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
-        mask[idx] = 1.0;
-        if (x[idx] > high || x[idx] < low) mask[idx] = 0.0;
-        y[idx] = x[idx] > high ? high : x[idx];
-        y[idx] = x[idx] < low ? low : x[idx];
+        y[idx] = max(low, min(x[idx], high));
     }
 }
 
@@ -768,13 +764,237 @@ template <> void Clip<float, CUDAContext>(
     const float             low,
     const float             high,
     const float*            x,
-    float*                  mask,
     float*                  y,
     CUDAContext*            ctx) {
     _Clip<float>
         << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, low, high, x, y);
+}
+
+template <typename T>
+__global__ void _ClipGrad(
+    const int               count,
+    const T                 low,
+    const T                 high,
+    const T*                x,
+    const T*                dy,
+    T*                      dx) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        const T xi = x[idx];
+        dx[idx] = (xi < low || xi > high) ? 0 : dy[idx];
+    }
+}
+
+template <> void ClipGrad<float, CUDAContext>(
+    const int               count,
+    const float             low,
+    const float             high,
+    const float*            x,
+    const float*            dy,
+    float*                  dx,
+    CUDAContext*            ctx) {
+    _ClipGrad<float>
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
              0, ctx->cuda_stream() >> >(count,
-                 low, high, x, mask, y);
+                 low, high, x, dy, dx);
+}
+
+/******************** arithmetic.maximum ********************/
+
+template <typename T>
+__global__ void _MaximumE(
+    const int               count,
+    const T*                x1,
+    const T*                x2,
+    T*                      y) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        y[idx] = max(x1[idx], x2[idx]);
+    }
+}
+
+template <> void MaximumE<float, CUDAContext>(
+    const int               count,
+    const float*            x1,
+    const float*            x2,
+    float*                  y,
+    CUDAContext*            ctx) {
+    _MaximumE<float>
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+              0, ctx->cuda_stream() >> >(count, x1, x2, y);
+}
+
+template <typename T>
+__global__ void _MaximumB(
+    const int               count,
+    const T*                x1,
+    const T                 x2,
+    T*                      y) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        y[idx] = max(x1[idx], x2);
+    }
+}
+
+template <> void MaximumB<float, CUDAContext>(
+    const int               count,
+    const float*            x1,
+    const float             x2,
+    float*                  y,
+    CUDAContext*            ctx) {
+    _MaximumB<float>
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, x1, x2, y);
+}
+
+template <typename T>
+__global__ void _MaximumEGrad(
+    const int               count,
+    const T*                x1,
+    const T*                x2,
+    const T*                dy,
+    T*                      dx1,
+    T*                      dx2) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        const bool dy_to_dx1 = x1[idx] > x2[idx];
+        dx1[idx] = dy_to_dx1 ? dy[idx] : 0;
+        dx2[idx] = dy_to_dx1 ? 0 : dy[idx];
+    }
+}
+
+template <> void MaximumEGrad<float, CUDAContext>(
+    const int               count,
+    const float*            x1,
+    const float*            x2,
+    const float*            dy,
+    float*                  dx1,
+    float*                  dx2,
+    CUDAContext*            ctx) {
+    _MaximumEGrad<float>
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, x1, x2, dy, dx1, dx2);
+}
+
+template <typename T>
+__global__ void _MaximumBGrad(
+    const int               count,
+    const T*                x1,
+    const T                 x2,
+    const T*                dy,
+    T*                      dx1) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        dx1[idx] = (x1[idx] > x2) ? dy[idx] : 0;
+    }
+}
+
+template <> void MaximumBGrad<float, CUDAContext>(
+    const int               count,
+    const float*            x1,
+    const float             x2,
+    const float*            dy,
+    float*                  dx1,
+ /* float*                  dx2, */
+    CUDAContext*            ctx) {
+    _MaximumBGrad<float>
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, x1, x2, dy, dx1);
+}
+
+/******************** arithmetic.minimum ********************/
+
+template <typename T>
+__global__ void _MinimumE(
+    const int               count,
+    const T*                x1,
+    const T*                x2,
+    T*                      y) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        y[idx] = min(x1[idx], x2[idx]);
+    }
+}
+
+template <> void MinimumE<float, CUDAContext>(
+    const int               count,
+    const float*            x1,
+    const float*            x2,
+    float*                  y,
+    CUDAContext*            ctx) {
+    _MinimumE<float>
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+              0, ctx->cuda_stream() >> >(count, x1, x2, y);
+}
+
+template <typename T>
+__global__ void _MinimumB(
+    const int               count,
+    const T*                x1,
+    const T                 x2,
+    T*                      y) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        y[idx] = min(x1[idx], x2);
+    }
+}
+
+template <> void MinimumB<float, CUDAContext>(
+    const int               count,
+    const float*            x1,
+    const float             x2,
+    float*                  y,
+    CUDAContext*            ctx) {
+    _MinimumB<float>
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, x1, x2, y);
+}
+
+template <typename T>
+__global__ void _MinimumEGrad(
+    const int               count,
+    const T*                x1,
+    const T*                x2,
+    const T*                dy,
+    T*                      dx1,
+    T*                      dx2) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        const bool dy_to_dx1 = x1[idx] < x2[idx];
+        dx1[idx] = dy_to_dx1 ? dy[idx] : 0;
+        dx2[idx] = dy_to_dx1 ? 0 : dy[idx];
+    }
+}
+
+template <> void MinimumEGrad<float, CUDAContext>(
+    const int               count,
+    const float*            x1,
+    const float*            x2,
+    const float*            dy,
+    float*                  dx1,
+    float*                  dx2,
+    CUDAContext*            ctx) {
+    _MinimumEGrad<float>
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, x1, x2, dy, dx1, dx2);
+}
+
+template <typename T>
+__global__ void _MinimumBGrad(
+    const int               count,
+    const T*                x1,
+    const T                 x2,
+    const T*                dy,
+    T*                      dx1) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        dx1[idx] = (x1[idx] < x2) ? dy[idx] : 0;
+    }
+}
+
+template <> void MinimumBGrad<float, CUDAContext>(
+    const int               count,
+    const float*            x1,
+    const float             x2,
+    const float*            dy,
+    float*                  dx1,
+ /* float*                  dx2, */
+    CUDAContext*            ctx) {
+    _MinimumBGrad<float>
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count, x1, x2, dy, dx1);
 }
 
 /******************** control_flow.compare ********************/
@@ -823,6 +1043,145 @@ template<> void AbsGrad<float, CUDAContext>(
     _AbsGrad<float>
         << < CUDA_BLOCKS(count), CUDA_THREADS,
              0, ctx->cuda_stream() >> >(count, dy, dx);
+}
+
+/******************** loss.nll_loss ********************/
+
+template <typename Tx, typename Ty>
+__global__ void _NLLLoss(
+    const int               count,
+    const int               axis_dim,
+    const int               inner_dim,
+    const Tx*               log_prob,
+    const Ty*               labels,
+    const int*              ignores,
+    const int               num_ignores,
+    Tx*                     losses,
+    Tx*                     flags) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        const int oix = idx / inner_dim;
+        const int iix = idx % inner_dim;
+        const int label = labels[oix * inner_dim + iix];
+        int k;
+        for (k = 0; k < num_ignores; k++) {
+            if (label == ignores[k]) {
+                losses[idx] = flags[idx] = 0;
+                break;
+            }
+        }
+        if (k == num_ignores) {
+            losses[idx] = -log_prob[
+                (oix * axis_dim + label) * inner_dim + iix];
+            flags[idx] = 1;
+        }
+    }
+}
+
+template <> void NLLLoss<float, float, CUDAContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float*            log_prob,
+    const float*            labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    CUDAContext*            ctx) {
+    const int num_preds = outer_dim * inner_dim;
+    _NLLLoss<float, float>
+        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 num_preds, axis_dim, inner_dim,
+                    log_prob, labels, ignores,
+                        num_ignores, losses, flags);
+}
+
+template <> void NLLLoss<float, int64_t, CUDAContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float*            log_prob,
+    const int64_t*          labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    CUDAContext*            ctx) {
+    const int num_preds = outer_dim * inner_dim;
+    _NLLLoss<float, int64_t>
+        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 num_preds, axis_dim, inner_dim,
+                     log_prob, labels, ignores,
+                        num_ignores, losses, flags);
+}
+
+template <typename Tx, typename Ty>
+__global__ void _NLLLossGrad(
+    const int               count,
+    const int               axis_dim,
+    const int               inner_dim,
+    const Tx*               log_prob,
+    const Ty*               labels,
+    const int*              ignores,
+    const int               num_ignores,
+    Tx*                     dx,
+    Tx*                     flags) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        const int oix = idx / inner_dim;
+        const int iix = idx % inner_dim;
+        const int label = labels[oix * inner_dim + iix];
+        int k;
+        for (k = 0; k < num_ignores; k++)
+            if (label == ignores[k]) break;
+        if (k != num_ignores) {
+            flags[idx] = 0;
+        } else {
+            dx[(oix * axis_dim + label) * inner_dim + iix] = -1;
+            flags[idx] = 1;
+        }
+    }
+}
+
+template<> void NLLLossGrad<float, float, CUDAContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float*            log_prob,
+    const float*            labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  dx,
+    float*                  flags,
+    CUDAContext*            ctx) {
+    const int num_preds = outer_dim * inner_dim;
+    _NLLLossGrad<float, float>
+        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                num_preds, axis_dim, inner_dim,
+                    log_prob, labels, ignores,
+                        num_ignores, dx, flags);
+}
+
+template<> void NLLLossGrad<float, int64_t, CUDAContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float*            log_prob,
+    const int64_t*          labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  dx,
+    float*                  flags,
+    CUDAContext*            ctx) {
+    const int num_preds = outer_dim * inner_dim;
+    _NLLLossGrad<float, int64_t>
+        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 num_preds, axis_dim, inner_dim,
+                    log_prob, labels, ignores,
+                        num_ignores, dx, flags);
 }
 
 /******************** loss.sigmoid_cross_entropy ********************/
@@ -2856,8 +3215,7 @@ __global__ void _BiasAdd_NCHW(
     const T*                bias,
     T*                      y) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
-        const int bias_idx = (idx / inner_dim) % dim;
-        y[idx] += bias[bias_idx];
+        y[idx] += bias[(idx / inner_dim) % dim];
     }
 }
 
@@ -3392,6 +3750,95 @@ template <> void Col2Im2d<float, CUDAContext>(
                       C, H, W, col_h, col_w, kernel_h, kernel_w,
                           stride_h, stride_w, pad_h, pad_w,
                               dilation_h, dilation_w, col, im);
+    } else LOG(FATAL) << "Unknown data format: " << data_format;
+}
+
+/******************** vision.drop_block ********************/
+
+template <typename T>
+__global__ void _DropBlock2d_NCHW(
+    const int               count,
+    const int               C,
+    const int               H,
+    const int               W,
+    const int               seed_h,
+    const int               seed_w,
+    const int               block_size,
+    const uint32_t          thresh,
+    const uint32_t*         seed,
+    int*                    mask) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        if (seed[idx] < thresh) {
+            const int x = idx % seed_w;
+            const int y = (idx / seed_w) % seed_h;
+            const int c = (idx / seed_w / seed_h) % C;
+            const int n = (idx / seed_w / seed_h) / C;
+            const int nc = (n * C + c) * H;
+            for (int i = 0; i < block_size; ++i) {
+                const int nch = (nc + y + i) * W;
+                for (int j = 0; j < block_size; ++j)
+                    atomicAnd(&mask[nch + x + j], 0);
+            }
+        }
+    }
+}
+
+template <typename T>
+__global__ void _DropBlock2d_NHWC(
+    const int               count,
+    const int               C,
+    const int               H,
+    const int               W,
+    const int               seed_h,
+    const int               seed_w,
+    const int               block_size,
+    const uint32_t          thresh,
+    const uint32_t*         seed,
+    int*                    mask) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        if (seed[idx] < thresh) {
+            const int x = idx % seed_w;
+            const int y = (idx / seed_w) % seed_h;
+            const int c = (idx / seed_w / seed_h) % C;
+            const int n = (idx / seed_w / seed_h) / C;
+            for (int i = 0; i < block_size; ++i) {
+                const int nh = (n * H + y + i) * W;
+                for (int j = 0; j < block_size; ++j)
+                    atomicAnd(&mask[(nh + x + j) * C + c], 0);
+            }
+        }
+    }
+}
+
+template <> void DropBlock2d<CUDAContext>(
+    const int               N,
+    const int               C,
+    const int               H,
+    const int               W,
+    const int               seed_h,
+    const int               seed_w,
+    const int               block_size,
+    const float             gamma,
+    const string&           data_format,
+    uint32_t*               seed,
+    int*                    mask,
+    CUDAContext*            ctx) {
+    const int count = N * C * seed_h * seed_w;
+    math::RandomUniform<uint32_t, CUDAContext>(
+        count, 0.f, float(UINT_MAX), seed, ctx);
+    auto thresh = static_cast<uint32_t>(UINT_MAX * gamma);
+    if (data_format == "NCHW") {
+        _DropBlock2d_NCHW<int>
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                     C, H, W, seed_h, seed_w, block_size,
+                        thresh, seed, mask);
+    } else if(data_format == "NHWC") {
+        _DropBlock2d_NHWC<int>
+            << < CUDA_BLOCKS(count), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(count,
+                    C, H, W, seed_h, seed_w, block_size,
+                        thresh, seed, mask);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 

@@ -44,7 +44,9 @@ class OperatorBase {
                    const string& anchor);
 
     inline void SwitchToPhase(const string& phase) { phase_ = phase; }
+
     virtual void Run(int stream_id = 1) { NOT_IMPLEMENTED; }
+    virtual void Fusion(void* graph) { NOT_IMPLEMENTED; }
 
     inline const string& name() const { return def_.name(); }
     inline const string& type() const { return def_.type(); }
@@ -186,8 +188,18 @@ DECLARE_REGISTRY(
     const OperatorDef&,
     Workspace*);
 
+/* NVIDIA's Accelerated Library - CUDNN */
+
 DECLARE_REGISTRY(
     CUDNNOperatorRegistry,
+    OperatorBase,
+    const OperatorDef&,
+    Workspace*);
+
+/* CAMBRICON's Accelerated Library - CNML */
+
+DECLARE_REGISTRY(
+    CNMLOperatorRegistry,
     OperatorBase,
     const OperatorDef&,
     Workspace*);
@@ -305,10 +317,13 @@ DECLARE_REGISTRY(
     x.template IsType<dtype>()
 
 #define INSTANTIATE_OPERATOR(name, context) \
-  template class name##Op<context>;
+    template class name##Op<context>;
 
 #define INSTANTIATE_CUDNN_OPERATOR(name) \
-  template class CuDNN##name##Op<CUDAContext>;
+    template class CuDNN##name##Op<CUDAContext>;
+
+#define INSTANTIATE_CNML_OPERATOR(name) \
+    template class CnML##name##Op<CNMLContext>;
 
 #define REGISTER_CPU_OPERATOR(name, ...) \
     REGISTER_CLASS(CPUOperatorRegistry, name, __VA_ARGS__)
@@ -318,6 +333,9 @@ DECLARE_REGISTRY(
 
 #define REGISTER_CUDNN_OPERATOR(name, ...) \
     REGISTER_CLASS(CUDNNOperatorRegistry, name, __VA_ARGS__)
+
+#define REGISTER_CNML_OPERATOR(name, ...) \
+    REGISTER_CLASS(CNMLOperatorRegistry, name, __VA_ARGS__)
 
 #define DEPLOY_CPU(name) \
     REGISTER_CPU_OPERATOR(name, name##Op<CPUContext>); \
@@ -335,6 +353,10 @@ DECLARE_REGISTRY(
 #define DEPLOY_CUDNN(name) \
     REGISTER_CUDNN_OPERATOR(name, CuDNN##name##Op<CUDAContext>); \
     INSTANTIATE_CUDNN_OPERATOR(name);
+
+#define DEPLOY_CNML(name) \
+    REGISTER_CNML_OPERATOR(name, CnML##name##Op<CNMLContext>); \
+    INSTANTIATE_CNML_OPERATOR(name);
 
 }    // namespace dragon
 

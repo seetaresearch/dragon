@@ -10,7 +10,7 @@
 // ------------------------------------------------------------
 
 #ifndef DRAGON_CORE_TENSOR_H_
-#define DRAONG_CORE_TENSOR_H_
+#define DRAGON_CORE_TENSOR_H_
 
 #include "core/common.h"
 #include "core/mixedmem.h"
@@ -103,15 +103,19 @@ class Tensor {
         return offset;
     }
 
-    inline string DimString() const {
-        if (ndim() == 0) return "(0,)";
+    static inline string DimString(
+        const vector<TIndex>&   dims) {
+        if (dims.size() == 0) return "(0,)";
         std::stringstream ss;
         ss << "(";
-        for (int i = 0; i < ndim() - 1; i++) ss << dim(i) << ",";
-        if (ndim() == 1) ss << dim(0) << ",)";
-        else ss << dim(ndim() - 1) << ")";
+        for (int i = 0; i < dims.size() - 1; i++)
+            ss << dims[i] << ",";
+        if (dims.size() == 1) ss << dims[0] << ",)";
+        else ss << dims.back() << ")";
         return ss.str();
     }
+
+    inline string DimString() const { return DimString(dims_); }
 
     inline bool is_corrupted() const { return is_corrupted_; }
     inline void Corrupt() { is_corrupted_ = true; }
@@ -156,9 +160,12 @@ class Tensor {
             } else if (TypeMeta::Id<Context>() ==
                     TypeMeta::Id<CUDAContext>()) {
                 *data_ptr = mem->mutable_cuda_data();
+            } else if (TypeMeta::Id<Context>() == 
+                    TypeMeta::Id<CNMLContext>()) {
+                *data_ptr = mem->mutable_cnml_data();
             } else {
-                LOG(FATAL) << "Unknown memory type. "
-                           << "Only CPU or CUDA is supported.";
+                LOG(FATAL) << "Unknown memory type.\n"
+                           << "Only CPU, CUDA and CNML are supported.";
             }
         }
     }
@@ -173,9 +180,12 @@ class Tensor {
         } else if (TypeMeta::Id<Context>() ==
                 TypeMeta::Id<CUDAContext>()) {
              return mem->cuda_data();
+        } else if (TypeMeta::Id<Context>() == 
+                TypeMeta::Id<CNMLContext>()) {
+            return mem->cnml_data();
         } else {
-             LOG(FATAL) << "Unknown memory type. "
-                        << "Only CPU or CUDA are supported.";
+             LOG(FATAL) << "Unknown memory type.\n"
+                        << "Only CPU, CUDA, and CNML are supported.";
              return nullptr;
         }
     }
@@ -295,4 +305,4 @@ class Tensor {
 
 }    // namespace dragon
 
-#endif    // DRAONG_CORE_TENSOR_H_
+#endif    // DRAGON_CORE_TENSOR_H_

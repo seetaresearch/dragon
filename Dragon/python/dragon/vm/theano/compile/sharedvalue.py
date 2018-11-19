@@ -20,7 +20,7 @@ def shared(value, name=None, **kwargs):
 
     Parameters
     ----------
-    value : basic type, list or numpy.ndarray
+    value : number, list or numpy.ndarray
         The numerical values.
     name : str
         The name of tensor.

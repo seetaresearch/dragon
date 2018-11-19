@@ -171,5 +171,5 @@ class CuDNNPooling2dGradientOp final : public Pooling2dGradientOp<Context> {
 #endif    // WITH_CUDNN
 
 }    // namespace dragon
-    
+
 #endif    // DRAGON_OPERATORS_VISION_POOLING_OP_H_

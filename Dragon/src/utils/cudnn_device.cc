@@ -20,16 +20,12 @@ static_cast<void *>(&CUDNNType<double>::oneval);
 const void* CUDNNType<double>::zero =
 static_cast<void *>(&CUDNNType<double>::zeroval);
 
-#ifdef WITH_CUDA_FP16
-
 float CUDNNType<float16>::oneval = 1.0;
 float CUDNNType<float16>::zeroval = 0.0;
 const void* CUDNNType<float16>::one =
 static_cast<void*>(&CUDNNType<float16>::oneval);
 const void* CUDNNType<float16>::zero =
 static_cast<void*>(&CUDNNType<float16>::zeroval);
-
-#endif
 
 template <typename T>
 void cudnnSetTensorDesc(
@@ -173,8 +169,7 @@ void cudnnSetTensor4dDesc(
         << "\nThe num of dimensions of Tensor("
         << tensor->name() << ") "
         << "should be 4, but got " << tensor->ndim() << ".";
-    cudnnSetTensor4dDesc<T>(
-        desc, data_format, tensor->dims());
+    cudnnSetTensor4dDesc<T>(desc, data_format, tensor->dims());
 }
 
 template <typename T>
@@ -186,8 +181,7 @@ void cudnnSetTensor5dDesc(
         << "\nThe num of dimensions of Tensor("
         << tensor->name() << ") "
         << "should be 5, but got " << tensor->ndim() << ".";
-    cudnnSetTensor5dDesc<T>(
-        desc, data_format, tensor->dims());
+    cudnnSetTensor5dDesc<T>(desc, data_format, tensor->dims());
 }
 
 template <typename T>
@@ -300,9 +294,6 @@ template void cudnnSetTensorDesc<double>(
     const vector<TIndex>&,
     const vector<TIndex>&);
 
-
-#ifdef WITH_CUDA_FP16
-
 template void cudnnSetTensorDesc<float16>(
     cudnnTensorDescriptor_t*,
     Tensor*);
@@ -351,8 +342,6 @@ template void cudnnSetTensorDesc<float16>(
     cudnnTensorDescriptor_t*,
     const vector<TIndex>&,
     const vector<TIndex>&);
-
-#endif    // WITH_CUDA_FP16
 
 }    // namespace dragon
 

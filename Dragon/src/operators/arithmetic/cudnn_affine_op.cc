@@ -5,6 +5,8 @@
 #include "utils/math_functions.h"
 #include "operators/arithmetic/affine_op.h"
 
+#if CUDNN_VERSION_MIN(6, 0, 0)
+
 namespace dragon {
 
 template <class Context> template <typename T>
@@ -48,9 +50,7 @@ void CuDNNAffineOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
 
     if (XIsType(Input(0), float)) RunWithType<float>();
-#ifdef WITH_CUDA_FP16
     else if (XIsType(Input(0), float16)) RunWithType<float16>();
-#endif
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
@@ -212,5 +212,7 @@ void CuDNNAffineGradientOp<Context>::RunOnDevice() {
 DEPLOY_CUDNN(AffineGradient);
 
 }    // namespace dragon
+
+#endif
 
 #endif    // WITH_CUDNN

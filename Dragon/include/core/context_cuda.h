@@ -12,8 +12,9 @@
 #ifndef DRAGON_CORE_CONTEXT_CUDA_H_
 #define DRAGON_CORE_CONTEXT_CUDA_H_
 
+/* NVIDIA's CUDA Environment */
+
 #include "core/common.h"
-#include "core/context.h"
 #include "utils/cuda_device.h"
 #include "utils/cudnn_device.h"
 
@@ -52,13 +53,13 @@ class CUDAObject {
     }
 
     //  follow the caffe2,
-    //  each device takes a group of non-bl0cking streams
+    //  each device takes a group of non-blocking streams
     //  the stream 0 is reserved for default stream,
     //  as some computations really require it,
     //  e.g. cublas.asum() and mixed cpu/cuda operations
     //  besides, somes calls, such as cudnn.conv() and cudnn.rnn(),
     //  produce wrong results if running them on non-blocking streams
-    //  note that caffe2 also use default streams (within CuDNNState)
+    //  note that caffe2 also uses default streams (within CuDNNState)
     cudaStream_t GetStream(int device_id, int stream_id) {
         vector<cudaStream_t>& dev_streams = cuda_streams[device_id];
         if (dev_streams.size() <= (unsigned)stream_id)
@@ -140,7 +141,7 @@ class CUDAContext {
     inline static void* New(size_t nbytes) {
         void* data;
         cudaMalloc(&data, nbytes);
-        CHECK(data) << "Malloc cuda mem: " 
+        CHECK(data) << "\nMalloc cuda mem: "
                     << nbytes << " bytes failed.";
         return data;
     }
@@ -199,11 +200,11 @@ class CUDAContext {
     static cudaStream_t cuda_stream(
         int                 device_id,
         int                 stream_id) {
-        return cuda_object_.GetStream(device_id, stream_id);
+        return cuda_object()->GetStream(device_id, stream_id);
     }
 
     cublasHandle_t cublas_handle() {
-        return cuda_object_.GetCuBLASHandle(device_id_, stream_id_);
+        return cuda_object()->GetCuBLASHandle(device_id_, stream_id_);
     }
 
     inline std::mt19937* rand_generator() {
@@ -227,13 +228,17 @@ class CUDAContext {
 
 #ifdef WITH_CUDNN
     cudnnHandle_t cudnn_handle() {
-        return cuda_object_.GetCuDNNHandle(device_id_, stream_id_);
+        return cuda_object()->GetCuDNNHandle(device_id_, stream_id_);
     }
 #endif
 
     static std::mutex& mutex() { static std::mutex m; return m; }
 
-    static thread_local CUDAObject cuda_object_;
+    static CUDAObject* cuda_object() {
+        static TLS_OBJECT CUDAObject* cuda_object_;
+        if (!cuda_object_) cuda_object_ = new CUDAObject();
+        return cuda_object_;
+    }
 
  private:
     int device_id_, stream_id_ = 1, random_seed_;

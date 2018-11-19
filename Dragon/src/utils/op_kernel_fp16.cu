@@ -13,9 +13,77 @@ namespace dragon {
 
 namespace kernel {
 
+/******************** activation.dropout ********************/
+
+__global__ void _DropoutHalf(
+    const int               count,
+    const uint32_t          thresh,
+    const half              scale,
+    const half*             x,
+    const uint32_t*         mask32,
+    uint8_t*                mask8,
+    half*                   y) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+#if __CUDA_ARCH__ >= 530
+        mask8[idx] = (mask32[idx] > thresh);
+        y[idx] = __hmul(__hmul(x[idx], scale),
+            __float2half((float)mask8[idx]));
+#endif
+    }
+}
+
+template<> void Dropout<float16, CUDAContext>(
+    const int               count,
+    float                   prob,
+    float                   scale,
+    const float16*          x,
+    uint32_t*               mask32,
+    uint8_t*                mask8,
+    float16*                y,
+    CUDAContext*            ctx) {
+    math::RandomUniform<uint32_t, CUDAContext>(
+        count, float(0), float(UINT_MAX), mask32, ctx);
+    auto thresh = static_cast<uint32_t>(UINT_MAX * prob);
+    _DropoutHalf
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 thresh, dragon_cast<half, float>(scale),
+                     reinterpret_cast<const half*>(x),
+                         mask32, mask8, reinterpret_cast<half*>(y));
+}
+
+template <typename Tm>
+__global__ void _ApplyMaskHalf(
+    const int               count,
+    const half              scale,
+    const half*             x,
+    const Tm*               mask,
+    half*                   y) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+#if __CUDA_ARCH__ >= 530
+        y[idx] = __hmul(__hmul(x[idx], scale),
+            __float2half((float)mask[idx]));
+#endif
+    }
+}
+
+template <> void ApplyMask<float16, uint8_t, CUDAContext>(
+    const int               count,
+    const float             scale,
+    const float16*          x,
+    const uint8_t*          mask,
+    float16*                y,
+    CUDAContext*            ctx) {
+    _ApplyMaskHalf<uint8_t>
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(count,
+                 dragon_cast<half, float>(scale),
+                     reinterpret_cast<const half*>(x),
+                         mask, reinterpret_cast<half*>(y));
+}
+
 /******************** activation.relu ********************/
 
-#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _ReluHalf(
     const int               count,
@@ -45,7 +113,6 @@ __global__ void _ReluHalf2(
 #endif
     }
 }
-#endif
 
 template<> void Relu<float16, CUDAContext>(
     const int               count,
@@ -53,8 +120,7 @@ template<> void Relu<float16, CUDAContext>(
     const float16*          x,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
-    if ((count & 1) == 0 == 0) {
+    if ((count & 1) == 0) {
         _ReluHalf2<half2>
             << < CUDA_BLOCKS(count >> 1), CUDA_THREADS,
                  0, ctx->cuda_stream() >> > (count >> 1,
@@ -69,14 +135,10 @@ template<> void Relu<float16, CUDAContext>(
                          reinterpret_cast<const half*>(x),
                              reinterpret_cast<half*>(y));
     }
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 /******************** arithmetic.affine ********************/
 
-#ifdef WITH_CUDA_FP16
 template <typename T>
 __global__ void _AffineWithOBiasHalf(
     const int               count,
@@ -112,7 +174,6 @@ __global__ void _AffineWithBiasHalf(
 #endif
     }
 }
-#endif
 
 template<> void Affine<float16, CUDAContext>(
     const int               count,
@@ -125,7 +186,6 @@ template<> void Affine<float16, CUDAContext>(
     const float16*          beta_multiplier,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     if (beta != nullptr) {
         _AffineWithBiasHalf<float>
             << < CUDA_BLOCKS(count), CUDA_THREADS,
@@ -144,9 +204,151 @@ template<> void Affine<float16, CUDAContext>(
                              reinterpret_cast<const half*>(alpha),
                                  reinterpret_cast<half*>(y));
     }
-#else
-    CUDA_FP16_NOT_COMPILED;
+}
+
+/******************** loss.nll_loss ********************/
+
+template <typename Ty>
+__global__ void _NLLLossHalf(
+    const int               count,
+    const int               axis_dim,
+    const int               inner_dim,
+    const half*             log_prob,
+    const Ty*               labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+#if __CUDA_ARCH__ >= 530
+        const int oix = idx / inner_dim;
+        const int iix = idx % inner_dim;
+        const int label = labels[oix * inner_dim + iix];
+        int k;
+        for (k = 0; k < num_ignores; k++) {
+            if (label == ignores[k]) {
+                losses[idx] = flags[idx] = 0;
+                break;
+            }
+        }
+        if (k == num_ignores) {
+            losses[idx] = __half2float(__hneg(
+                log_prob[(oix * axis_dim + label) * inner_dim + iix]));
+            flags[idx] = 1;
+        }
 #endif
+    }
+}
+
+template <> void NLLLoss<float16, float, CUDAContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float16*          log_prob,
+    const float*            labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    CUDAContext*            ctx) {
+    const int num_preds = outer_dim * inner_dim;
+    _NLLLossHalf<float>
+        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 num_preds, axis_dim, inner_dim,
+                     reinterpret_cast<const half*>(log_prob), labels,
+                         ignores, num_ignores, losses, flags);
+}
+
+template <> void NLLLoss<float16, int64_t, CUDAContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float16*          log_prob,
+    const int64_t*          labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    CUDAContext*            ctx) {
+    const int num_preds = outer_dim * inner_dim;
+    _NLLLossHalf<int64_t>
+        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 num_preds, axis_dim, inner_dim,
+                     reinterpret_cast<const half*>(log_prob), labels,
+                         ignores, num_ignores, losses, flags);
+}
+
+template <typename Ty>
+__global__ void _NLLLossGradHalf(
+    const int               count,
+    const int               axis_dim,
+    const int               inner_dim,
+    const half*             log_prob,
+    const Ty*               labels,
+    const int*              ignores,
+    const int               num_ignores,
+    half*                   dx,
+    float*                  flags) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+#if __CUDA_ARCH__ >= 530
+        const int oix = idx / inner_dim;
+        const int iix = idx % inner_dim;
+        const int label = labels[oix * inner_dim + iix];
+        int k;
+        for (k = 0; k < num_ignores; k++)
+            if (label == ignores[k]) break;
+        if (k != num_ignores) {
+            flags[idx] = 0;
+        } else {
+            dx[(oix * axis_dim + label) * inner_dim + iix] = __float2half(-1.);
+            flags[idx] = 1;
+        }
+#endif
+    }
+}
+
+template<> void NLLLossGrad<float16, float, CUDAContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float16*          log_prob,
+    const float*            labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float16*                dx,
+    float*                  flags,
+    CUDAContext*            ctx) {
+    const int num_preds = outer_dim * inner_dim;
+    _NLLLossGradHalf<float>
+        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 num_preds, axis_dim, inner_dim,
+                     reinterpret_cast<const half*>(log_prob), labels,
+                         ignores, num_ignores,
+                             reinterpret_cast<half*>(dx), flags);
+}
+
+template<> void NLLLossGrad<float16, int64_t, CUDAContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float16*          log_prob,
+    const int64_t*          labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float16*                dx,
+    float*                  flags,
+    CUDAContext*            ctx) {
+    const int num_preds = outer_dim * inner_dim;
+    _NLLLossGradHalf<int64_t>
+        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+                 num_preds, axis_dim, inner_dim,
+                     reinterpret_cast<const half*>(log_prob), labels,
+                         ignores, num_ignores,
+                             reinterpret_cast<half*>(dx), flags);
 }
 
 /******************** loss.sparse_softmax_cross_entropy ********************/
@@ -304,11 +506,11 @@ template<> void SparseSoftmaxCrossEntropyGrad<float16, int64_t, CUDAContext>(
                      reinterpret_cast<const half*>(prob), labels,
                          ignores, num_ignores,
                              reinterpret_cast<half*>(dx), flags);
+
 }
 
 /******************** misc.astype ********************/
 
-#ifdef WITH_CUDA_FP16
 __global__ void _TypeHalf2Float(
     const int               count,
     const half*             a,
@@ -334,7 +536,6 @@ __global__ void _TypeHalf2Half(
         b[idx] = a[idx];
     }
 }
-#endif
 
 #define DEFINE_TYPE_DISABLE_FP16(type) \
     template <> void TypeA2B<float16, type, CUDAContext>( \
@@ -376,7 +577,6 @@ __global__ void _TypeHalf2Half(
                      a, reinterpret_cast<half*>(b)); \
     }
 
-#ifdef WITH_CUDA_FP16
 template <> void TypeA2B<float16, float16, CUDAContext>(
     const int               count,
     const float16*          a,
@@ -388,29 +588,15 @@ template <> void TypeA2B<float16, float16, CUDAContext>(
                  reinterpret_cast<const half*>(a),
                      reinterpret_cast<half*>(b));
 }
+
 DEFINE_TYPE_ENABLE_FP16_FP32;
 DEFINE_TYPE_DISABLE_FP16(double);
 DEFINE_TYPE_DISABLE_FP16(int);
 DEFINE_TYPE_DISABLE_FP16(int64_t);
 DEFINE_TYPE_DISABLE_FP16(uint8_t);
-#else
-template <> void TypeA2B<float16, float16, CUDAContext>(
-    const int               count,
-    const float16*          a,
-    float16*                b,
-    CUDAContext*            ctx) {
-    LOG(FATAL) << "CUDAContext has not implemented: float16 -> float16";
-}
-DEFINE_TYPE_DISABLE_FP16(float);
-DEFINE_TYPE_DISABLE_FP16(double);
-DEFINE_TYPE_DISABLE_FP16(int);
-DEFINE_TYPE_DISABLE_FP16(int64_t);
-DEFINE_TYPE_DISABLE_FP16(uint8_t);
-#endif
 
 /******************** misc.image_data ********************/
 
-#ifdef WITH_CUDA_FP16
 template <typename Tx, typename Ty>
 __global__ void _ImageDataHalf_NCHW(
     const int               count,
@@ -453,7 +639,6 @@ __global__ void _ImageDataHalf_NHWC(
         y[idx] = __float2half(raw_value);
     }
 }
-#endif
 
 template <> void ImageData<float, float16, CUDAContext>(
     const int               count,
@@ -467,7 +652,6 @@ template <> void ImageData<float, float16, CUDAContext>(
     const float*            x,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     if (data_format == "NCHW") {
         _ImageDataHalf_NCHW<float, half>
             << < CUDA_BLOCKS(count), CUDA_THREADS,
@@ -481,9 +665,6 @@ template <> void ImageData<float, float16, CUDAContext>(
                      N, C, H, W, mean_values, std_values,
                          x, reinterpret_cast<half*>(y));
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 template <> void ImageData<uint8_t, float16, CUDAContext>(
@@ -498,7 +679,6 @@ template <> void ImageData<uint8_t, float16, CUDAContext>(
     const uint8_t*          x,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     if (data_format == "NCHW") {
         _ImageDataHalf_NCHW<uint8_t, half>
             << < CUDA_BLOCKS(count), CUDA_THREADS,
@@ -512,9 +692,6 @@ template <> void ImageData<uint8_t, float16, CUDAContext>(
                      N, C, H, W, mean_values, std_values,
                          x, reinterpret_cast<half*>(y));
     } else LOG(FATAL) << "Unknown data format: " << data_format;
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 /******************** ndarray.concat ********************/
@@ -549,7 +726,6 @@ template <> void Concat<float16, CUDAContext>(
     const float16*          x,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     _ConcatHalf<half>
         << < CUDA_BLOCKS(count), CUDA_THREADS,
              0, ctx->cuda_stream() >> >(count,
@@ -557,9 +733,6 @@ template <> void Concat<float16, CUDAContext>(
                      x_concat_dim, y_concat_dim, concat_offset,
                          reinterpret_cast<const half*>(x),
                              reinterpret_cast<half*>(y));
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 template <typename T>
@@ -592,7 +765,6 @@ template <> void ConcatGrad<float16, CUDAContext>(
     const float16*          dy,
     float16*                dx,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     _ConcatGradHalf<half>
         << < CUDA_BLOCKS(count), CUDA_THREADS,
              0, ctx->cuda_stream() >> >(count,
@@ -600,9 +772,6 @@ template <> void ConcatGrad<float16, CUDAContext>(
                      x_concat_dim, y_concat_dim, concat_offset,
                          reinterpret_cast<const half*>(dy),
                              reinterpret_cast<half*>(dx));
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 /******************** ndarray.transpose ********************/
@@ -636,16 +805,12 @@ template <> void Transpose<float16, CUDAContext>(
     const float16*          x,
     float16*                y,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     _TransposeHalf<half>
         << < CUDA_BLOCKS(count), CUDA_THREADS,
              0, ctx->cuda_stream() >> >(count,
                  ndim, order, old_steps, new_steps,
                      reinterpret_cast<const half*>(x),
                          reinterpret_cast<half*>(y));
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 template <typename T>
@@ -677,21 +842,16 @@ template <> void TransposeGrad<float16, CUDAContext>(
     const float16*          dy,
     float16*                dx,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     _TransposeGradHalf<half>
         << < CUDA_BLOCKS(count), CUDA_THREADS,
              0, ctx->cuda_stream() >> >(count,
                  ndim, order, old_steps, new_steps,
                      reinterpret_cast<const half*>(dy),
                          reinterpret_cast<half*>(dx));
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 /******************** update.adam_update ********************/
 
-#ifdef WITH_CUDA_FP16
 __global__ void _AdamUpdateHalf(
     const int               count,
     const half              lr,
@@ -720,7 +880,6 @@ __global__ void _AdamUpdateHalf(
 #endif
     }
 }
-#endif
 
 template <> void AdamUpdate<float16, CUDAContext>(
     const int               count,
@@ -732,7 +891,6 @@ template <> void AdamUpdate<float16, CUDAContext>(
     float16*                m,
     float16*                v,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     _AdamUpdateHalf
         << < CUDA_BLOCKS(count), CUDA_THREADS,
              0, ctx->cuda_stream() >> >(count,
@@ -743,14 +901,10 @@ template <> void AdamUpdate<float16, CUDAContext>(
                                  reinterpret_cast<half*>(g),
                                      reinterpret_cast<half*>(m),
                                          reinterpret_cast<half*>(v));
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 /******************** update.nesterov_update ********************/
 
-#ifdef WITH_CUDA_FP16
 __global__ void _NesterovUpdateHalf(
     const int               count,
     const half              lr,
@@ -794,7 +948,6 @@ __global__ void _NesterovUpdateHalf2(
 #endif
     }
 }
-#endif
 
 template <> void NesterovUpdate<float16, CUDAContext>(
     const int               count,
@@ -803,8 +956,7 @@ template <> void NesterovUpdate<float16, CUDAContext>(
     float16*                g,
     float16*                h,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
-    if ((count & 1) == 0 == 0) {
+    if ((count & 1) == 0) {
         _NesterovUpdateHalf2
             << < CUDA_BLOCKS(count >> 1), CUDA_THREADS,
                  0, ctx->cuda_stream() >> >(count >> 1,
@@ -821,14 +973,10 @@ template <> void NesterovUpdate<float16, CUDAContext>(
                              reinterpret_cast<half*>(g),
                                  reinterpret_cast<half*>(h));
     }
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 /******************** update.rmsprop_update ********************/
 
-#ifdef WITH_CUDA_FP16
 __global__ void _RMSPropUpdateHalf(
     const int               count,
     const half              lr,
@@ -851,7 +999,6 @@ __global__ void _RMSPropUpdateHalf(
 #endif
     }
 }
-#endif
 
 template <> void RMSPropUpdate<float16, CUDAContext>(
     const int               count,
@@ -861,7 +1008,6 @@ template <> void RMSPropUpdate<float16, CUDAContext>(
     float16*                g,
     float16*                h,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
     _RMSPropUpdateHalf
         << < CUDA_BLOCKS(count), CUDA_THREADS,
              0, ctx->cuda_stream() >> >(count,
@@ -870,14 +1016,10 @@ template <> void RMSPropUpdate<float16, CUDAContext>(
                          dragon_cast<half, float>(eps),
                              reinterpret_cast<half*>(g),
                                  reinterpret_cast<half*>(h));
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 /******************** update.sgd_update ********************/
 
-#ifdef WITH_CUDA_FP16
 __global__ void _SGDUpdateHalf(
     const int               count,
     const half              lr,
@@ -911,7 +1053,6 @@ __global__ void _SGDUpdateHalf2(
 #endif
     }
 }
-#endif
 
 template <> void SGDUpdate<float16, CUDAContext>(
     const int               count,
@@ -920,8 +1061,7 @@ template <> void SGDUpdate<float16, CUDAContext>(
     float16*                g,
     float16*                h,
     CUDAContext*            ctx) {
-#ifdef WITH_CUDA_FP16
-    if ((count & 1) == 0 == 0) {
+    if ((count & 1) == 0) {
         _SGDUpdateHalf2
             << < CUDA_BLOCKS(count >> 1), CUDA_THREADS,
                  0, ctx->cuda_stream() >> >(count >> 1,
@@ -938,9 +1078,6 @@ template <> void SGDUpdate<float16, CUDAContext>(
                              reinterpret_cast<half*>(g),
                                  reinterpret_cast<half*>(h));
     }
-#else
-    CUDA_FP16_NOT_COMPILED;
-#endif
 }
 
 }    // namespace kernel

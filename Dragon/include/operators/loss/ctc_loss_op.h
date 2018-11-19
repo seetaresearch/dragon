@@ -43,8 +43,6 @@ public:
 
 #if CUDNN_VERSION_MIN(7, 0, 0)
 
-#include "utils/cudnn_device.h"
-
 template <class Context>
 class CuDNNCTCLossOp final : public Operator<Context> {
  public:

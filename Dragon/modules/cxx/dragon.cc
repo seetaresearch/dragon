@@ -12,6 +12,12 @@
 
 namespace dragon {
 
+/* * * * * * * * * * * * * * * * * * * * *
+ *                                       *
+ *               Workspace               *
+ *                                       *
+ * * * * * * * * * * * * * * * * * * * * */
+
 Map<string, unique_ptr < Workspace > > g_workspaces;
 Map<string, vector<string> > sub_workspaces;
 std::mutex g_mutex;
@@ -29,7 +35,8 @@ Workspace* CreateWorkspace(const std::string& name){
 Workspace* ResetWorkspace(const std::string& name) {
     std::unique_lock<std::mutex> lock(g_mutex);
     CHECK(g_workspaces.count(name))
-        << "\nWorkspace(" << name << ") does not exist, can not be reset.";
+        << "\nWorkspace(" << name << ") does not exist."
+        << "\nCan not be reset.";
     LOG(INFO) << "Reset the Workspace(" << name << ").";
     g_workspaces[name].reset(new Workspace(name));
     for (auto& sub_workspace : sub_workspaces[name]) {
@@ -43,7 +50,8 @@ Workspace* ResetWorkspace(const std::string& name) {
 void ReleaseWorkspace(const std::string& name) {
     std::unique_lock<std::mutex> lock(g_mutex);
     CHECK(g_workspaces.count(name))
-        << "\nWorkspace(" << name << ") does not exist, can not be released.";
+        << "\nWorkspace(" << name << ") does not exist."
+        << "\nCan not be released.";
     LOG(INFO) << "Release the Workspace(" << name << ").";
     g_workspaces[name].reset();
     g_workspaces.erase(name);
@@ -60,6 +68,12 @@ void MoveWorkspace(
     LOG(INFO) << "Move the Workspace(" << source_ws->name() << ") "
               << "into the Workspace(" << target_ws->name() << ").";
 }
+
+/* * * * * * * * * * * * * * * * * * * * *
+ *                                       *
+ *                Graph                  *
+ *                                       *
+ * * * * * * * * * * * * * * * * * * * * */
 
 std::string CreateGraph(
     const std::string&          graph_file,
@@ -102,10 +116,49 @@ std::string CreateGraph(
     return meta_graph.name();
 }
 
+void RunGraph(
+    const std::string&          graph_name,
+    Workspace*                  ws,
+    const int                   stream_id) {
+    ws->RunGraph(graph_name, "", "", stream_id);
+}
+
+/* * * * * * * * * * * * * * * * * * * * *
+ *                                       *
+ *                Tensor                 *
+ *                                       *
+ * * * * * * * * * * * * * * * * * * * * */
+
 void CreateTensor(
     const std::string&          name,
     Workspace*                  ws) {
     ws->CreateTensor(name);
+}
+
+template <typename T>
+T* FetchTensor(
+    const std::string&          name,
+    vector<TIndex>&             shape,
+    Workspace*                  ws){
+    if (!ws->HasTensor(name)){
+        LOG(FATAL) << "Tensor(" << name << ")"
+            << " doesn't exist, try create it before.";
+    }
+    Tensor* tensor = ws->GetTensor(name);
+    if (tensor->meta().id() == 0){
+        LOG(FATAL) << "Tensor(" << name << ")"
+            << " has not been computed yet";
+    }
+    shape = tensor->dims();
+    void* data = malloc(tensor->nbytes());
+    if (tensor->memory_state() == MixedMemory::STATE_AT_CUDA) {
+        CUDAContext::Memcpy<CPUContext, CUDAContext>(
+            tensor->nbytes(), data, tensor->raw_data<CUDAContext>());
+    } else {
+        CPUContext::Memcpy<CPUContext, CPUContext>(
+            tensor->nbytes(), data, tensor->raw_data<CPUContext>());
+    }
+    return static_cast<T*>(data);
 }
 
 template <typename T>
@@ -135,6 +188,12 @@ void FeedTensor(
     }
 }
 
+/* * * * * * * * * * * * * * * * * * * * *
+ *                                       *
+ *                I / O                  *
+ *                                       *
+ * * * * * * * * * * * * * * * * * * * * */
+
 void TransplantCaffeModel(
     const std::string&          input_model,
     const std::string&          output_model) {
@@ -146,7 +205,7 @@ void TransplantCaffeModel(
         const string& layer_name = layer.name();
         string prefix = layer_name + "/param:";
         for (int j = 0; j < layer.blobs_size(); j++) {
-            string tensor_name = prefix + dragon_cast<string, int>(j);
+            string tensor_name = prefix + std::to_string(j);
             BlobProto blob = layer.blobs(j);
             TensorProto* proto = protos.add_protos();
             proto->set_data_type(TensorProto_DataType_FLOAT);
@@ -218,7 +277,7 @@ void LoadCaffemodel(
         const string& layer_name = layer.name();
         string prefix = scope + layer_name + "/param:";
         for (int j = 0; j < layer.blobs_size(); j++){
-            string tensor_name = prefix + dragon_cast<string, int>(j);
+            string tensor_name = prefix + std::to_string(j);
             if (!ws->HasTensor(tensor_name))
                 ws->CreateTensor(tensor_name);
             BlobProto blob = layer.blobs(j);
@@ -248,63 +307,54 @@ void LoadCaffemodel(
     }
 }
 
-void RunGraph(
-    const std::string&          graph_name,
-    Workspace*                  ws,
-    const int                   stream_id) {
-    ws->RunGraph(graph_name, "", "", stream_id);
-}
-
-template <typename T>
-T* FetchTensor(
-    const std::string&          name,
-    vector<TIndex>&             shape,
-    Workspace*                  ws){
-    if (!ws->HasTensor(name)){
-        LOG(FATAL) << "Tensor(" << name << ")"
-            << " doesn't exist, try create it before.";
-    }
-    Tensor* tensor = ws->GetTensor(name);
-    if (tensor->meta().id() == 0){
-        LOG(FATAL) << "Tensor(" << name << ")"
-            << " has not been computed yet";
-    }
-    shape = tensor->dims();
-    void* data = malloc(tensor->nbytes());
-    if (tensor->memory_state() == MixedMemory::STATE_AT_CUDA) {
-        CUDAContext::Memcpy<CPUContext, CUDAContext>(
-            tensor->nbytes(), data, tensor->raw_data<CUDAContext>());
-    } else {
-        CPUContext::Memcpy<CPUContext, CPUContext>(
-            tensor->nbytes(), data, tensor->raw_data<CPUContext>());
-    }
-    return static_cast<T*>(data);
-}
+/* * * * * * * * * * * * * * * * * * * * *
+ *                                       *
+ *                Config                 *
+ *                                       *
+ * * * * * * * * * * * * * * * * * * * * */
 
 void SetLogLevel(const std::string& level) {
     SetLogDestination(StrToLogSeverity(level));
 }
 
-template float* FetchTensor<float>(
+/* * * * * * * * * * * * * * * * * * * * *
+ *                                       *
+ *               Template                *
+ *                                       *
+ * * * * * * * * * * * * * * * * * * * * */
+
+template DRAGON_API float* FetchTensor<float>(
     const std::string&,
     std::vector<TIndex>&,
     Workspace*);
 
-template void FeedTensor<float>(
+template DRAGON_API float16* FetchTensor<float16>(
+    const std::string&,
+    std::vector<TIndex>&,
+    Workspace*);
+
+template DRAGON_API void FeedTensor<float>(
     const std::string&,
     const std::vector<TIndex>&,
     const float*,
     const Device&,
     Workspace*);
 
-template void FeedTensor<int>(
+template DRAGON_API void FeedTensor<float16>(
+    const std::string&,
+    const std::vector<TIndex>&,
+    const float16*,
+    const Device&,
+    Workspace*);
+
+template DRAGON_API void FeedTensor<int>(
     const std::string&,
     const std::vector<TIndex>&,
     const int*,
     const Device&,
     Workspace*);
 
-template void FeedTensor<uint8_t>(
+template DRAGON_API void FeedTensor<uint8_t>(
     const std::string&,
     const std::vector<TIndex>&,
     const uint8_t*,

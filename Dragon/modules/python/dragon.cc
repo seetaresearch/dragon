@@ -19,13 +19,14 @@ Workspace* ws() { return g_workspace; }
 
 TypeId CTypeToFetcher(TypeId type) {
     static Map<TypeId,TypeId> c_type_map {
-            { TypeMeta::Id<uint8_t>(), TypeMeta::Id<NumpyFetcher>() },
-            { TypeMeta::Id<int>(), TypeMeta::Id<NumpyFetcher>() },
-            { TypeMeta::Id<int64_t>(), TypeMeta::Id<NumpyFetcher>() },
-            { TypeMeta::Id<float>(), TypeMeta::Id<NumpyFetcher>() },
-            { TypeMeta::Id<double>(), TypeMeta::Id<NumpyFetcher>() },
-            { TypeMeta::Id<float16>(), TypeMeta::Id<NumpyFetcher>() },
-            { TypeMeta::Id<string>(), TypeMeta::Id<StringFetcher>() }};
+        { TypeMeta::Id<int8>(), TypeMeta::Id<NumpyFetcher>() },
+        { TypeMeta::Id<uint8>(), TypeMeta::Id<NumpyFetcher>() },
+        { TypeMeta::Id<int>(), TypeMeta::Id<NumpyFetcher>() },
+        { TypeMeta::Id<int64_t>(), TypeMeta::Id<NumpyFetcher>() },
+        { TypeMeta::Id<float>(), TypeMeta::Id<NumpyFetcher>() },
+        { TypeMeta::Id<double>(), TypeMeta::Id<NumpyFetcher>() },
+        { TypeMeta::Id<float16>(), TypeMeta::Id<NumpyFetcher>() },
+        { TypeMeta::Id<string>(), TypeMeta::Id<StringFetcher>() }};
     return c_type_map.count(type) ? c_type_map[type] : 0;
 }
 
@@ -197,6 +198,11 @@ inline PyObject* FeedTensorCC(PyObject* self, PyObject* args) {
     }
 }
 
+inline PyObject* OnModuleExitCC(PyObject* self, PyObject* args) {
+    g_workspaces.clear();
+    Py_RETURN_TRUE;
+}
+
 #define PYFUNC(name) {#name, name, METH_VARARGS, ""}
 #define PYENDFUNC {nullptr, nullptr, 0, nullptr}
 
@@ -255,6 +261,7 @@ PyMethodDef* GetAllMethods() {
         PYFUNC(SnapshotCC),
         /****  Config ****/
         PYFUNC(SetLogLevelCC),
+        PYFUNC(OnModuleExitCC),
         PYENDFUNC,
     };
     return g_python_methods;
@@ -272,9 +279,11 @@ void common_init() {
 }
 
 #ifdef WITH_PYTHON3
-static struct PyModuleDef libdragon = { PyModuleDef_HEAD_INIT,
-                                        "libdragon", "", -1,
-                                        GetAllMethods() };
+static struct PyModuleDef libdragon = {
+    PyModuleDef_HEAD_INIT,
+    "libdragon", "", -1,
+    GetAllMethods() 
+};
 
 PyMODINIT_FUNC PyInit_libdragon(void) {
     PyObject* module = PyModule_Create(&libdragon);
@@ -285,7 +294,8 @@ PyMODINIT_FUNC PyInit_libdragon(void) {
 
 #else   // WITH_PYTHON2
 PyMODINIT_FUNC initlibdragon(void) {
-    PyObject* moudle = Py_InitModule("libdragon", GetAllMethods());
+    PyObject* moudle = Py_InitModule(
+        "libdragon", GetAllMethods());
     if (moudle == nullptr) return;
     common_init();
 }

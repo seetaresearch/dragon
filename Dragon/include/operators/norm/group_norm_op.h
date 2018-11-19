@@ -23,7 +23,7 @@ class GroupNormOp final : public Operator<Context> {
         : Operator<Context>(def, ws),
           group(OperatorBase::Arg<int>("group", 32)),
           axis(OperatorBase::Arg<int>("axis", -1)),
-          eps(OperatorBase::Arg<float>("eps", 1e-3f)) {
+          eps(OperatorBase::Arg<float>("eps", 1e-5f)) {
         if (axis != -1) 
             CHECK_EQ(axis, 1) 
                 << "\nThe axis can only be set to 1.";
@@ -73,7 +73,7 @@ class FusedGroupNormOp final : public Operator<Context> {
         : Operator<Context>(def, ws),
           group(OperatorBase::Arg<int>("group", 32)),
           axis(OperatorBase::Arg<int>("axis", -1)),
-          eps(OperatorBase::Arg<float>("eps", 1e-3f)) {}
+          eps(OperatorBase::Arg<float>("eps", 1e-5f)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void Setup();

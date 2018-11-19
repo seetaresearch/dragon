@@ -54,8 +54,6 @@ class Conv2dTransposeGradientOp : public Conv2dTransposeOp<Context> {
 
 #ifdef WITH_CUDNN
 
-#include "utils/cudnn_device.h"
-
 template <class Context>
 class CuDNNConv2dTransposeOp final : public Conv2dTransposeOp<Context> {
  public:
@@ -100,7 +98,7 @@ class CuDNNConv2dTransposeOp final : public Conv2dTransposeOp<Context> {
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;
     size_t fwd_data_size;
-    TIndex bias_offset, cudnn_group;
+    TIndex cudnn_group;
     vector<TIndex> input_dims;
     bool enable_tensor_core;
 };
@@ -150,7 +148,7 @@ public:
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;
     size_t bwd_filter_size, bwd_data_size;
-    TIndex bias_offset, cudnn_group;
+    TIndex cudnn_group;
     vector<TIndex> input_dims;
     bool enable_tensor_core;
 };

@@ -16,8 +16,10 @@ from __future__ import print_function
 from . import *
 
 
-def BatchNorm(inputs, axis=-1, momentum=0.9, eps=1e-3,
-              use_stats=-1, mode='DEFAULT', **kwargs):
+def BatchNorm(
+    inputs, axis=-1, momentum=0.9, eps=1e-5,
+    use_stats=-1, mode='DEFAULT', **kwargs
+):
     """Batch Normalization. `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
     It follows the implementation of `Caffe`_, that scale procedure is moved to `ops.Scale(*args, **kwargs)`_.
@@ -70,9 +72,11 @@ def BatchNorm(inputs, axis=-1, momentum=0.9, eps=1e-3,
     return output
 
 
-def BatchRenorm(inputs, axis=-1, momentum=0.9, eps=1e-3,
-                r_max=3.0, d_max=5.0, t_delta=0.001,
-                use_stats=-1, mode='DEFAULT', **kwargs):
+def BatchRenorm(
+    inputs, axis=-1, momentum=0.9, eps=1e-5,
+    r_max=3.0, d_max=5.0, t_delta=0.001,
+    use_stats=-1, mode='DEFAULT', **kwargs
+):
     """Batch Renormalization. `[Ioffe, 2017] <https://arxiv.org/abs/1702.03275>`_.
 
     It follows the implementation of `Caffe`_, that scale procedure is moved to `ops.Scale(*args, **kwargs)`_.
@@ -131,7 +135,10 @@ def BatchRenorm(inputs, axis=-1, momentum=0.9, eps=1e-3,
     return output
 
 
-def FusedBatchNorm(inputs, axis=-1, momentum=0.9, eps=1e-3, use_stats=-1, **kwargs):
+def FusedBatchNorm(
+    inputs, axis=-1, momentum=0.9, eps=1e-5,
+    use_stats=-1, **kwargs
+):
     """Batch Normalization, with scale procedure after normalization.
 
     Parameters
@@ -170,7 +177,7 @@ def FusedBatchNorm(inputs, axis=-1, momentum=0.9, eps=1e-3, use_stats=-1, **kwar
     return output
 
 
-def GroupNorm(inputs, group=32, axis=-1, eps=1e-3, **kwargs):
+def GroupNorm(inputs, group=32, axis=-1, eps=1e-5, **kwargs):
     """Group Normalization. `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
 
     Parameters
@@ -203,7 +210,7 @@ def GroupNorm(inputs, group=32, axis=-1, eps=1e-3, **kwargs):
     return output
 
 
-def FusedGroupNorm(inputs, group=32, axis=-1, eps=1e-3, **kwargs):
+def FusedGroupNorm(inputs, group=32, axis=-1, eps=1e-5, **kwargs):
     """Group Normalization, with scale procedure after normalization.
 
     Parameters
@@ -236,7 +243,7 @@ def FusedGroupNorm(inputs, group=32, axis=-1, eps=1e-3, **kwargs):
     return output
 
 
-def InstanceNorm(inputs, axis=-1, eps=1e-3, **kwargs):
+def InstanceNorm(inputs, axis=-1, eps=1e-5, **kwargs):
     """Instance Normalization. `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_
 
     Parameters

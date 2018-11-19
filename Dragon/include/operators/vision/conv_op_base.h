@@ -84,6 +84,7 @@ class ConvOpBase : public Operator<Context> {
                                                    ctx());
         } else LOG(FATAL) << "ConvNd has not been implemented yet";
     }
+
     template <typename T> void Col2Im(const T* col, T* im) {
         if (Input(0).ndim() == 4) {
              kernel::Col2Im2d<T, Context>(conv_in_channels,

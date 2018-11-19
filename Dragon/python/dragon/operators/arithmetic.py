@@ -115,6 +115,70 @@ def Div(inputs, **kwargs):
     return output
 
 
+def Maximum(inputs, **kwargs):
+    """Return the max value of given two inputs.
+
+    Parameters
+    ----------
+    inputs : list
+        The input tensors, A and B.
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
+    """
+    inputs[0] = WrapConstants(inputs[0], dtype='float32')
+    inputs[1] = WrapConstants(inputs[1], dtype='float32')
+
+    CheckInputs(inputs, 2)
+    arguments = ParseArguments(locals())
+
+    output = Tensor.CreateOperator(nout=1, op_type='Maximum', **arguments)
+
+    if inputs[0].shape is not None and \
+        inputs[1].shape is not None:
+            output.shape = inputs[0].shape[:]
+            if output.shape != inputs[1].shape and \
+                len(output.shape) < len(inputs[1].shape):
+                    output.shape = inputs[1].shape
+
+    return output
+
+
+def Minimum(inputs, **kwargs):
+    """Return the min value of given two inputs.
+
+    Parameters
+    ----------
+    inputs : list
+        The input tensors, A and B.
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
+    """
+    inputs[0] = WrapConstants(inputs[0], dtype='float32')
+    inputs[1] = WrapConstants(inputs[1], dtype='float32')
+
+    CheckInputs(inputs, 2)
+    arguments = ParseArguments(locals())
+
+    output = Tensor.CreateOperator(nout=1, op_type='Minimum', **arguments)
+
+    if inputs[0].shape is not None and \
+        inputs[1].shape is not None:
+            output.shape = inputs[0].shape[:]
+            if output.shape != inputs[1].shape and \
+                len(output.shape) < len(inputs[1].shape):
+                    output.shape = inputs[1].shape
+
+    return output
+
+
 def Clip(inputs, low=None, high=None, **kwargs):
     """Clip the input to be between lower and higher bounds.
 

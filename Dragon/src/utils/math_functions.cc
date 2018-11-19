@@ -49,6 +49,21 @@ template <> void Set<int, CPUContext>(
 #endif  // WITH_SSE
 }
 
+template <> void Set<int64_t, CPUContext>(
+    const int               n,
+    const int64_t           alpha,
+    int64_t*                x,
+    CPUContext*             ctx) {
+    if (alpha == 0) {
+        memset(x, 0, sizeof(int64_t) * n);
+        return;
+    }
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
+#endif
+    for (int i = 0; i < n; ++i) x[i] = alpha;
+}
+
 template <> void Set<float16, CPUContext>(
     const int               n,
     const float16           alpha,
@@ -148,17 +163,34 @@ template <> void RandomTruncatedNormal<float16, CPUContext>(
     NOT_IMPLEMENTED;
 }
 
-template <> void RandomBernoulli<float, CPUContext>(
+template <typename T>
+void _RandomBernoulli(
     const int               n,
     const float             p,
-    uint32_t*               x,
+    T*                      x,
     CPUContext*             ctx) {
     std::bernoulli_distribution distribution(p);
     auto* rng = ctx->rand_generator();
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
+#pragma omp parallel for num_threads(GET_OMP_THREADS(n))
 #endif
     for (int i = 0; i < n; ++i) x[i] = distribution(*rng);
+}
+
+template <> void RandomBernoulli<uint8_t, CPUContext>(
+    const int               n,
+    const float             p,
+    uint8_t*                x,
+    CPUContext*             ctx) {
+    _RandomBernoulli<uint8_t>(n, p, x, ctx);
+}
+
+template <> void RandomBernoulli<uint32_t, CPUContext>(
+    const int               n,
+    const float             p,
+    uint32_t*               x,
+    CPUContext*             ctx) {
+    _RandomBernoulli<uint32_t>(n, p, x, ctx);
 }
 
 /******************** Level-1 ********************/
@@ -311,6 +343,14 @@ template <> void Log<float, CPUContext>(
     for (int i = 0; i < n; ++i) y[i] = std::log(x[i]);
 }
 
+template <> void Log<float16, CPUContext>(
+    int                     n,
+    const float16*          x,
+    float16*                y,
+    CPUContext*             ctx) {
+    CPU_FP16_NOT_SUPPORTED;
+}
+
 template <> void Square<float, CPUContext>(
     int                     n,
     const float*            x,
@@ -379,7 +419,7 @@ template <> void Inv<float, CPUContext>(
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
 #endif
-    for (int i = 0; i < n; ++i) y[i] = numerator / y[i];
+    for (int i = 0; i < n; ++i) y[i] = numerator / x[i];
 }
 
 template <> void Inv<float16, CPUContext>(

@@ -22,7 +22,8 @@ class InitializeOp : public Operator<Context> {
  public:
     InitializeOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          shape_desc(OperatorBase::Arg<string>("shape", "")) {
+          shape_desc(OperatorBase::Arg<string>("shape", "")),
+          dtype(OperatorBase::Arg<string>("dtype", "float32")) {
         GET_ARGUMENTS_WITH_DESC(int, dims);
     }
     USE_OPERATOR_FUNCTIONS;
@@ -32,19 +33,29 @@ class InitializeOp : public Operator<Context> {
 
  protected:
     DECLARE_ARGUMENTS_WITH_DESC(int, dims);
-    string shape_desc;
+    string shape_desc, dtype;
     TensorFiller filler;
 };
 
 template <class Context>
-class FillOp final : public InitializeOp<Context> {
+class FillOp final : public Operator<Context> {
  public:
     FillOp(const OperatorDef& def, Workspace* ws)
-        : InitializeOp<Context>(def, ws) {
-        this->filler.set_type("constant");
-        this->filler.set_value(OperatorBase::Arg<float>("value", 0.0));
+        : Operator<Context>(def, ws),
+          shape_desc(OperatorBase::Arg<string>("shape", "")),
+          dtype(OperatorBase::Arg<string>("dtype", "float32")),
+          value(OperatorBase::Arg<float>("value", 0.0)) {
+        GET_ARGUMENTS_WITH_DESC(int, dims);
     }
     USE_OPERATOR_FUNCTIONS;
+
+    void RunOnDevice() override;
+    template <typename T> void RunWithType();
+
+ protected:
+    DECLARE_ARGUMENTS_WITH_DESC(int, dims);
+    string shape_desc, dtype;
+    float value;
 };
 
 template <class Context>
@@ -130,6 +141,7 @@ public:
 };
 
 DEFINE_ARGUMENTS_WITH_DESC(int, InitializeOp, dims);
+DEFINE_ARGUMENTS_WITH_DESC(int, FillOp, dims);
 
 }    // namespace
 

@@ -51,6 +51,7 @@ NNResize = vision.NNResize
 BilinearResize = vision.BilinearResize
 BiasAdd = vision.BiasAdd
 DenseConcat = vision.DenseConcat
+DropBlock2d = vision.DropBlock2d
 
 # recurrent
 LSTMCell = recurrent.LSTMCell
@@ -70,6 +71,7 @@ Softmax = act.Softmax
 Dropout = act.Dropout
 
 # loss
+NLLLoss = loss.NLLLoss
 SparseSoftmaxCrossEntropy = loss.SparseSoftmaxCrossEntropy
 SigmoidCrossEntropy = loss.SigmoidCrossEntropy
 SoftmaxCrossEntropy = loss.SoftmaxCrossEntropy
@@ -85,6 +87,8 @@ Add = math.Add
 Sub = math.Sub
 Mul = math.Mul
 Div = math.Div
+Maximum = math.Maximum
+Minimum = math.Minimum
 Clip = math.Clip
 Matmul = math.Matmul
 Pow = math.Pow

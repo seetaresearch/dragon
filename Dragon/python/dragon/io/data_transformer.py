@@ -101,8 +101,9 @@ class DataTransformer(Process):
             im = im.reshape((datum.height, datum.width, datum.channels))
 
         # random scale
-        random_scale = npr.uniform() * (self._max_random_scale - self._min_random_scale) \
-                            + self._min_random_scale
+        random_scale = npr.uniform() * (
+            self._max_random_scale - self._min_random_scale) \
+                + self._min_random_scale
         if random_scale != 1.0:
             if sys.version_info >= (3, 0):
                 im = cv2.resize(im, None, interpolation=cv2.INTER_LINEAR,
@@ -110,7 +111,9 @@ class DataTransformer(Process):
             else:
                 # Fuck Fuck Fuck opencv-python2, it always has a BUG
                 # that leads to duplicate cuDA handles created at gpu:0
-                new_shape = (int(im.shape[1] * random_scale), int(im.shape[0] * random_scale))
+                new_shape = (
+                    int(np.ceil(im.shape[1] * random_scale)),
+                    int(np.ceil(im.shape[0] * random_scale)))
                 im = PIL.Image.fromarray(im)
                 im = im.resize(new_shape, PIL.Image.BILINEAR)
                 im = np.array(im)

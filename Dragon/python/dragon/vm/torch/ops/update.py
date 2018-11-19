@@ -35,7 +35,7 @@ def _update(param, grad, op_type, slot,
             lr_mult=1.0, decay_mult=1.0):
     ctx = MakeContext(inputs=[param])
     key = 'torch/ops/{}/{}:{}/{}/{}'.format(op_type.lower(),
-        ctx[0].lower(),ctx[1], slot, param.name)
+        ctx[0].lower(), ctx[1], slot, param.name)
     module = get_module(Update, key, ctx, op_type=op_type,
             lr_mult=lr_mult, decay_mult=decay_mult, slot=slot)
     return module.forward(param, grad)

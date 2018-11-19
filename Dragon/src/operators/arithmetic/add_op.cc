@@ -148,7 +148,9 @@ DEPLOY_CPU(AddGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(AddGradient);
 #endif
-OPERATOR_SCHEMA(AddGradient).NumInputs(1).NumOutputs(2);
+OPERATOR_SCHEMA(AddGradient)
+    .NumInputs(1).NumOutputs(2)
+    .Inplace({ { 0, 0 } });
 
 class GetAddGradient : public GradientMakerBase {
  public:
