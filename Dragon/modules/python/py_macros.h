@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_PYTHON_PY_MACROS_H_
 #define DRAGON_PYTHON_PY_MACROS_H_
@@ -18,25 +19,32 @@
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
+namespace dragon {
+
+namespace python {
+
 #ifdef WITH_PYTHON3
 #define PyInt_FromLong PyLong_FromLong
 #define _PyInt_AsInt _PyLong_AsInt
 #define PyString_AsString PyUnicode_AsUTF8
 #endif
 
-/************************************************************************
-                        <Having Fun with PyString>
-
-*  For Python3, Get/Return PyUnicode for regular string.
-*  For Python3, Get/Return PyBytes for google-protobuf.
-*  For Python2, Get/Return PyBytes only.
-
-*************************************************************************/
+/*!
+ * ------------------------------------------------------------
+ *
+ *                  <Having Fun with PyString>
+ *
+ * For Python3, Get/Return PyUnicode for regular string.
+ * For Python3, Get/Return PyBytes for google-protobuf.
+ * For Python2, Get/Return PyBytes only.
+ *
+ * ------------------------------------------------------------
+ */
 
 #define PyBytes_AsStringEx(pystring) \
     std::string(PyBytes_AsString(pystring), PyBytes_Size(pystring))
 
-//  Return string to Python
+// Return string to Python
 inline PyObject* String_AsPyBytes(const std::string& cstring) {
     return PyBytes_FromStringAndSize(cstring.c_str(), cstring.size());
 }
@@ -66,7 +74,7 @@ inline PyObject* String_AsPyUnicode(const std::string& cstring) {
 #define SetPyDictS2I(object, key, value) \
     PyDict_SetItemString(object, key, Py_BuildValue("i", value))
 
-//  Misc
+// Misc
 template <typename T>
 inline void MakeStringInternal(std::stringstream& ss, const T& t) { ss << t; }
 
@@ -87,4 +95,8 @@ inline void PrErr_SetString(PyObject* type, const std::string& str) {
     PyErr_SetString(type, str.c_str()); 
 }
 
-#endif    // DRAGON_PYTHON_PY_MACROS_H_
+}  // namespace python
+
+}  // namespace dragon
+
+#endif  // DRAGON_PYTHON_PY_MACROS_H_

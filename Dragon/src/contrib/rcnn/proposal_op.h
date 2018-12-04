@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_CONTRIB_RCNN_PROPOSAL_OP_H_
 #define DRAGON_CONTRIB_RCNN_PROPOSAL_OP_H_
@@ -35,7 +36,9 @@ class ProposalOp final : public Operator<Context> {
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+
+    template <typename T> void RunWithType(
+        const T* scores, const T* bbox_deltas);
 
  protected:
     vector<int> strides;
@@ -46,6 +49,6 @@ class ProposalOp final : public Operator<Context> {
     Tensor anchors_, proposals_, roi_indices_, nms_mask_;
 };
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_CONTRIB_RCNN_PROPOSAL_OP_H_
+#endif  // DRAGON_CONTRIB_RCNN_PROPOSAL_OP_H_

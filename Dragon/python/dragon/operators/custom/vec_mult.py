@@ -117,8 +117,7 @@ class VecMultOp(object):
 
 
 if __name__ == '__main__':
-
-    # def
+    # Def
     x1 = dg.Tensor('x1').Variable()
     x2 = dg.Tensor('x2').Variable()
     y = dg.ops.Template([x1, x2], module=__name__, op='VecMultOp', nout=1)
@@ -126,14 +125,14 @@ if __name__ == '__main__':
     dx2 = dg.grad(y, x2)
     foo = dg.function(outputs=y)
 
-    # feed
+    # Feed
     dg.workspace.FeedTensor(x1, np.ones((5, 3), dtype=np.float32))
     dg.workspace.FeedTensor(x2, np.ones((5, 3), dtype=np.float32) * 5.0)
 
-    # run
+    # Run
     foo()
 
-    # fetch
+    # Fetch
     print('y \n-------------- \n', y.get_value(), '\n')
     print('dx1 \n-------------- \n', dx1.get_value(), '\n')
     print('dx2 \n-------------- \n', dx2.get_value(), '\n')

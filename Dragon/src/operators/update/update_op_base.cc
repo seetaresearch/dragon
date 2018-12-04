@@ -19,14 +19,14 @@ string UpdateOpBase<Context>::Slot() {
 
 template <class Context> template <typename T>
 void UpdateOpBase<Context>::PreprocessRunWithType() {
-    //  scale
+    // Scale
     scale_factor = Param("scale_gradient");
     if (scale_factor != 1.f) {
         auto* dXdata = Input(0).template mutable_data<T, Context>();
         math::Scal<T, Context>(Input(0).count(),
             scale_factor, dXdata, ctx());
     }
-    //  clip
+    // Clip
     clip_thresh = Param("clip_gradient");
     if (clip_thresh > 0) {
         auto* dXdata = Input(0).template mutable_data<T, Context>();
@@ -41,7 +41,7 @@ void UpdateOpBase<Context>::PreprocessRunWithType() {
                 norm_factor, dXdata, ctx());
         }
     }
-    //  decay
+    // L2 Decay
     l2_decay = Param("l2_decay") * decay_mult;
     if (l2_decay > 0) {
         auto* dXdata = Input(0).template mutable_data<T, Context>();
@@ -55,7 +55,7 @@ template <class Context>
 void UpdateOpBase<Context>::UpdateRunWithFloat32() {
     auto* dXdata = Input(0).template mutable_data<float, Context>();
     auto* Xdata = Output(0)->template mutable_data<float, Context>();
-    //  weights update & zero grads
+    // Weights Update & Zero Grads
     math::Axpy<float, Context>(Output(0)->count(),
         -1, dXdata, Xdata, ctx());
     if (zero_grad) math::Set<float, Context>(
@@ -65,46 +65,32 @@ void UpdateOpBase<Context>::UpdateRunWithFloat32() {
 template <class Context>
 void UpdateOpBase<Context>::UpdateRunWithFloat16() {
 
-    /* ------------------------------------------------
+    /*!
+     * -----------------------------------------------
      *
-     *              Mixed Precision Training
+     *            Mixed Precision Training
      *
-     *           http://arxiv.org/abs/1710.03740
+     *         http://arxiv.org/abs/1710.03740
      *
-     * ------------------------------------------------ */
+     * ------------------------------------------------
+     */
 
-    //  the "master" weights
-    auto* X32T = ws()->CreateTensor(Output(0)->name() + "/f32");
-    X32T->ReshapeLike(Input(0));
-
-    //  the "master" updates
+    // The "master" updates
     auto* dX32T = ws()->GetTensor(Input(0).name() + "/f32");
-    
     auto* dX32 = dX32T->template data<float, Context>();
+
+    // The "fp16" weights && grads
     auto* X16 = Output(0)->template mutable_data<float16, Context>();
-    auto* X32 = X32T->template mutable_data<float, Context>();
+    auto* dX16 = Input(0).template mutable_data<float16, Context>();
 
-    //  X16 -> X32
-    kernel::TypeA2B<float16, float, Context>(
-        Input(0).count(), X16, X32, ctx());
-
-    //  weights update & zero grads
-    math::Axpy<float, Context>(
-        Input(0).count(), -1, dX32, X32, ctx());
-    if (zero_grad) {
-        float16 zero = dragon_cast<float16, float>(0.f);
-        auto* dX16 = Input(0).template mutable_data<float16, Context>();
-        math::Set<float16, Context>(Input(0).count(), zero, dX16, ctx());
-    }
-
-    //  X32 -> X16
-    kernel::TypeA2B<float, float16, Context>(
-        Input(0).count(), X32, X16, ctx());
+    // Apply Update
+    kernel::MixedPrecisionUpdate<float16, Context>(
+        Output(0)->count(), dX32, X16, dX16, ctx());
 }
 
 template <class Context>
 void UpdateOpBase<Context>::RunOnDevice() {
-    //  skip empty param or grads
+    // Skip empty param or grads
     if (Input(0).count() == 0 || Output(0)->count() == 0) return;
     CHECK(Input(0).dims() == Output(0)->dims())
         << "\nTensor and its gradients should have same dims.\nGot "
@@ -125,4 +111,4 @@ template class UpdateOpBase<CPUContext>;
 template class UpdateOpBase<CUDAContext>;
 #endif
 
-}    // namespace dragon
+}  // namespace dragon

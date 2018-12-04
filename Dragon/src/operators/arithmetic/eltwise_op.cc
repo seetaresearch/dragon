@@ -141,4 +141,4 @@ class GetEltwiseGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Eltwise, GetEltwiseGradient);
 
-}    // namespace dragon
+}  // namespace dragon

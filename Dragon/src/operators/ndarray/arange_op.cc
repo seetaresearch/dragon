@@ -16,8 +16,9 @@ void ArangeOp<Context>::RunWithType() {
 
 template <class Context>
 void ArangeOp<Context>::RunOnDevice() {
-    if (dtype == "FLOAT32") RunWithType<float>(); 
+    if (dtype == "FLOAT32") RunWithType<float>();
     else if (dtype == "INT32") RunWithType<int>();
+    else if (dtype == "INT64") RunWithType<int64_t>();
     else LOG(FATAL) << "Unsupported DType: " << dtype;
 }
 
@@ -29,4 +30,4 @@ OPERATOR_SCHEMA(Arange).NumInputs(0).NumOutputs(1);
 
 NO_GRADIENT(Arange);
 
-}    // namespace dragon
+}  // namespace dragon

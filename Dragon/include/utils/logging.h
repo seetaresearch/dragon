@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_UTILS_LOGGING_H_
 #define DRAGON_UTILS_LOGGING_H_
@@ -54,6 +55,6 @@ class MessageLogger {
 #define LOG_IF(severity, condition) if(condition) MessageLogger(__FILE__, __LINE__, severity).stream()
 #define LOG_EVERY_N(severity, n) MessageLogger(__FILE__, __LINE__, EveryNRegister(__FILE__, __LINE__, severity, n)).stream()
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif // DRAGON_UTILS_LOGGING_H_
+#endif  // DRAGON_UTILS_LOGGING_H_

@@ -125,10 +125,6 @@ def EnableCNML(mlu_id=0):
     option['device_id'] = mlu_id
 
 
-# TODO(PhyscalX): please not use @setter
-# TODO(PhyscalX): seems that it can't change the global value
-
-
 def SetRandomSeed(seed):
     """Set the global random seed.
 

@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_CONTRIB_RCNN_BBOX_UTILS_H_
 #define DRAGON_CONTRIB_RCNN_BBOX_UTILS_H_
@@ -36,18 +37,18 @@ inline int BBoxTransform(
     T*                              bbox) {
     const T w = bbox[2] - bbox[0] + 1;
     const T h = bbox[3] - bbox[1] + 1;
-    const T ctr_x = bbox[0] + 0.5 * w;
-    const T ctr_y = bbox[1] + 0.5 * h;
+    const T ctr_x = bbox[0] + (T)0.5 * w;
+    const T ctr_y = bbox[1] + (T)0.5 * h;
 
     const T pred_ctr_x = dx * w + ctr_x;
     const T pred_ctr_y = dy * h + ctr_y;
     const T pred_w = exp(d_log_w) * w;
     const T pred_h = exp(d_log_h) * h;
 
-    bbox[0] = pred_ctr_x - 0.5 * pred_w;
-    bbox[1] = pred_ctr_y - 0.5 * pred_h;
-    bbox[2] = pred_ctr_x + 0.5 * pred_w;
-    bbox[3] = pred_ctr_y + 0.5 * pred_h;
+    bbox[0] = pred_ctr_x - (T)0.5 * pred_w;
+    bbox[1] = pred_ctr_y - (T)0.5 * pred_h;
+    bbox[2] = pred_ctr_x + (T)0.5 * pred_w;
+    bbox[3] = pred_ctr_y + (T)0.5 * pred_h;
 
     bbox[0] = std::max((T)0, std::min(bbox[0], im_w - 1));
     bbox[1] = std::max((T)0, std::min(bbox[1], im_h - 1));
@@ -99,8 +100,8 @@ inline void GenerateGridAnchors(
     for (int a = 0; a < A; ++a) {
         for (int h = 0; h < feat_h; ++h) {
             for (int w = 0; w < feat_w; ++w) {
-                const T x = w * stride;
-                const T y = h * stride;
+                const T x = (T)w * stride;
+                const T y = (T)h * stride;
                 proposal[0] = x + anchors[a * 4 + 0];
                 proposal[1] = y + anchors[a * 4 + 1];
                 proposal[2] = x + anchors[a * 4 + 2];
@@ -177,7 +178,7 @@ inline void RetrieveRoIs(
     T*                              rois) {
     for (int i = 0; i < num_rois; ++i) {
         const T* proposal = proposals + roi_indices[i] * 5;
-        rois[i * 5 + 0] = roi_batch_ind;
+        rois[i * 5 + 0] = (T)roi_batch_ind;
         rois[i * 5 + 1] = proposal[0];
         rois[i * 5 + 2] = proposal[1];
         rois[i * 5 + 3] = proposal[2];
@@ -194,9 +195,9 @@ inline int roi_level(
     T*                              roi) {
     T w = roi[3] - roi[1] + 1;
     T h = roi[4] - roi[2] + 1;
-    //  reference the settings of paper
-    int level = canonical_level + std::log(
-            std::max(std::sqrt(w * h), T(1)) / T(canonical_scale));
+    // Refer the settings of paper
+    int level = canonical_level + (int)std::log(
+            std::max(std::sqrt(w * h), (T)1) / (T)canonical_scale);
     return std::min(max_level, std::max(min_level, level));
 }
 
@@ -227,7 +228,7 @@ inline void DistributeRoIs(
     for (int i = 0; i < roi_bins.size(); i++) {
         auto* y = outputs[i];
         if (roi_bins[i].size() == 0) {
-            //  fake a tiny roi to avoid empty roi pooling
+            // Fake a tiny roi to avoid empty roi pooling
             y[0] = 0, y[1] = 0, y[2] = 0, y[3] = 1, y[4] = 1;
         } else {
             for (int j = 0; j < roi_bins[i].size(); ++j) {
@@ -251,8 +252,8 @@ void ApplyNMS(
     int&                            num_keep,
     Context*                        ctx);
 
-}    // namespace rcnn
+}  // namespace rcnn
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    //  DRAGON_OPERATORS_CONTRIB_BBOX_UTILS_H_
+#endif  // DRAGON_OPERATORS_CONTRIB_BBOX_UTILS_H_

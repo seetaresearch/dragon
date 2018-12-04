@@ -80,4 +80,4 @@ class GetRepeatGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Repeat, GetRepeatGradient);
 
-}    // namespace dragon
+}  // namespace dragon

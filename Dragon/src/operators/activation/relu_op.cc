@@ -65,4 +65,4 @@ class GetReluGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Relu, GetReluGradient);
 
-}    // namespace dragon
+}  // namespace dragon

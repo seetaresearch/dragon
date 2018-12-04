@@ -115,7 +115,7 @@ OperatorBase* CreateOperator(
     CHECK(schema->Verify(def))
         << "\nOperator failed to pass the schema checking.";
     OperatorDef mutable_def(def);
-    //  heuristically makes each random seed slightly differnet
+    // Heuristically makes each random seed slightly differnet
     static unsigned int op_seed_uuid = 0;
     mutable_def.mutable_device_option()->set_random_seed(
         op_seed_uuid + def.device_option().random_seed());
@@ -133,7 +133,7 @@ Gradient MakeGradientForOp(
                    << def.type() << "not implemented.";
     Gradient grad = maker->Make();
     OperatorDef reference_def(def);
-    //  custom arguments
+    // Custom arguments
     for (int i = 0; i < reference_def.arg_size(); i++) {
         if (reference_def.arg(i).name() == "persistent_key") {
             string s = reference_def.arg(i).s();
@@ -141,12 +141,12 @@ Gradient MakeGradientForOp(
                 ->mutable_s() = s + "/grad";
         }
     }
-    //  copy device option, engine, and arguments
+    // Copy device option, engine, and arguments
     if (maker->CopyDeviceOption() && def.has_device_option())
         for (auto& grad_def : grad.ops)
             grad_def.mutable_device_option()->CopyFrom(
                 def.device_option());
-    //  copy arguments
+    // Copy arguments
     if (maker->CopyArguments() && def.arg_size())
         for (auto& grad_def : grad.ops)
             grad_def.mutable_arg()->MergeFrom(
@@ -162,7 +162,7 @@ void Operator<Context>::ElimateCorruption() {
     string* head_data = head->mutable_data<string, CPUContext>();
     for (int i = 0; i < head->count(); i++)
         all_heads.insert(head_data[i]);
-    //  sub-graph run
+    // Sub-graph run
     for (int i = 0; i < InputSize(); i++) {
         if (Input(i).is_corrupted())   {
             if (all_heads.count(Input(i).name())) continue;
@@ -176,7 +176,7 @@ void Operator<Context>::ElimateCorruption() {
             recompute_flag->mutable_data<bool, CPUContext>()[0] = false;
         }
     }
-    //  check available head
+    // Check available head
     all_heads.clear();
     for (int i = 0; i < head->count(); i++) {
         bool safe = true;
@@ -185,13 +185,13 @@ void Operator<Context>::ElimateCorruption() {
         if (safe) safe_heads.push(i);
         all_heads.insert(head_data[i]);
     }
-    //  pre-process
+    // Pre-process
     for (int i = 0; i < OutputSize(); i++) {
         if (Output(i)->is_corrupted()) {
             bool inplace_flag = false;
             for (int j = 0; j < InputSize(); j++)
                 if (Output(i)->name() == Input(j).name()) inplace_flag = true;
-            //  skip to use new buffer
+            // Skip to use new buffer
             if (inplace_flag || all_heads.count(Output(i)->name())) continue;
             CHECK(!safe_heads.empty())
                 << "\nAt most (" << safe_heads.size() << " [safe] / "
@@ -216,7 +216,7 @@ void Operator<Context>::MakeResource() {
 
 template <class Context>
 void Operator<Context>::CleanResource() {
-    //  post-process for mirror stage
+    // Post-process for mirror stage
     Map<string, int> head_to_idx;
     Tensor* head = ws()->GetTensor("/opt/mirror_stage/head");
     string* head_data = head->mutable_data<string, CPUContext>();
@@ -309,4 +309,4 @@ template void Operator<CPUContext>::CleanResource();
 template void Operator<CUDAContext>::CleanResource();
 template void Operator<CNMLContext>::CleanResource();
 
-}    // namespace dragon
+}  // namespace dragon

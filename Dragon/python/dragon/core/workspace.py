@@ -54,7 +54,7 @@ __all__ = [
     'Restore',
     'LogMetaGraph',
     'LogOptimizedGraph',
-    'ExportMetaGraph'
+    'ExportMetaGraph',
 ]
 
 _DATA_TYPES = {
@@ -475,12 +475,12 @@ def FeedTensor(tensor, array, force_cpu=False, dtype=None):
     >>> dg.workspace.FeedTensor(a, 1)
     >>> a_value = dg.workspace.FetchTensor(a)
     >>> a_value, a_value.dtype
-    >>> [ 1.], float32
+    >>> [ 1.], "float32"
 
     >>> dg.workspace.FeedTensor(a, [[1, 2, 3]], dtype='float16')
     >>> a_value = a.get_value()
     >>> a_value, a_value.dtype
-    >>> [[ 1.  2.  3.]], float16
+    >>> [[ 1.  2.  3.]], "float16"
 
     References
     ----------
@@ -527,7 +527,7 @@ stages = {
     'forward': {'include': '', 'exclude': 'Gradient'},
     'backward': {'include': 'Gradient', 'exclude': 'Generate'},
     'backward_v2': {'include': 'Gradient', 'exclude': ''},
-    'external_grads': {'include': '', 'exclude': 'Generate'}
+    'external_grads': {'include': '', 'exclude': 'Generate'},
 }
 
 
@@ -623,10 +623,11 @@ def RunGradientFlow(input_flow, targets, input_grads=None, ignored_grads=None):
             'a list of OperatorDef or a GraphDef, got {}.'.format(type(input_flow)))
     from dragon.config import option, logger
     log_flow = True if option['log_optimized_graph'] or option['log_meta_graph'] else False
-    RunGradientFlowCC(_stringify_proto(input_flow), targets,
-                      input_grads if input_grads else [],
-                      ignored_grads if ignored_grads else [],
-                      option['share_grads'], log_flow)
+    RunGradientFlowCC(
+        _stringify_proto(input_flow), targets,
+            input_grads if input_grads else [],
+                ignored_grads if ignored_grads else [],
+                    option['share_grads'], log_flow)
     if log_flow:
         g_flow = pb.GraphDef()
         g_flow.ParseFromString(FetchTensor('/export/dynamic_graph/gradient_flow'))
@@ -671,7 +672,8 @@ def GetOptimizedGraph(meta_graph):
     graph_tensor = 'GraphDef_' + graph_name
 
     if not HasTensorCC(graph_tensor):
-        logger.info('Graph({}) does not exist, ignore printing....'.format(graph_name))
+        logger.info('Graph({}) does not exist, '
+            'ignore printing....'.format(graph_name))
         return
 
     opt_graph_def = pb.GraphDef()
@@ -728,9 +730,10 @@ def ExportMetaGraph(meta_graph):
 
 
 def Snapshot(
-        tensors, filename,
+    tensors, filename,
         prefix='', suffix='.bin',
-        format='default'):
+            format='default'
+):
     """Snapshot tensors into a binary file.
 
     Parameters
@@ -820,8 +823,8 @@ def Restore(binary_file, format='default'):
                 logger.info('[Info]: Tensor({}) is restored.'.format(k))
 
     elif format == 'caffe':
-        # TODO(PhyscalX): caffe models can't save the tensor name
-        # TODO(PhyscalX): we simply use layer_name + @paramX
+        # Caffe models can't save the tensor name
+        # We simply use "layer_name/param:X"
         RestoreCC(binary_file, 1)
 
     else:

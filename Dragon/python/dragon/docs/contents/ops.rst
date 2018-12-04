@@ -33,6 +33,7 @@ Vision
 List                   Brief
 ===================    ======================================================================
 `Conv2d`_              2d Convolution.
+`DepthwiseConv2d`_     Depthwise 2d Convolution. `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
 `Conv2dTranspose`_     2d Deconvolution.
 `Pool2d`_              2d Pooling, MAX or AVG.
 `ROIPooling`_          ROIPooling(MAX). `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
@@ -210,6 +211,7 @@ List                 Brief
 .. _GlorotNormal: operators/initializer.html#dragon.operators.initializer.GlorotNormal
 
 .. _Conv2d: operators/vision.html#dragon.operators.vision.Conv2d
+.. _DepthwiseConv2d: operators/vision.html#dragon.operators.vision.DepthwiseConv2d
 .. _Conv2dTranspose: operators/vision.html#dragon.operators.vision.Conv2dTranspose
 .. _Pool2d: operators/vision.html#dragon.operators.vision.Pool2d
 .. _ROIPooling: operators/vision.html#dragon.operators.vision.ROIPooling

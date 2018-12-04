@@ -30,14 +30,10 @@ class DataLayer(Layer):
         The size of a mini-batch. Refer `DataParameter.batch_size`_.
     phase : caffe_pb2.Phase
         The phase of layer. Refer `LayerParameter.phase`_.
-    scale : float
-        The scaling factor. Refer `TransformationParameter.scale`_.
     mirrow : boolean
         Whether to randomly mirror. Refer `TransformationParameter.mirror`_.
     crop_size : int
         The crop size. Refer `TransformationParameter.crop_size`_.
-    mean_value : list of float
-        The mean of each channel. Refer `TransformationParameter.mean_value`_.
     force_color : boolean
         Force to have 3 channels. Refer `TransformationParameter.force_color`_.
     color_augmentation : boolean
@@ -48,35 +44,53 @@ class DataLayer(Layer):
         The min scale of the images. Extension of `TransformationParameter`_.
     max_random_scale : float
         The max scale of the images. Extension of `TransformationParameter`_.
+    dtype : caffe_pb2.MemoryDataParameter.DataType
+        The output data type. ``FLOAT32`` or ``FLOAT16``.
+    mean_value : list of float
+        The mean of each channel. Refer `TransformationParameter.mean_value`_.
+    scale : float
+        The scaling factor. Refer `TransformationParameter.scale`_.
 
     """
     def __init__(self, LayerParameter):
         super(DataLayer, self).__init__(LayerParameter)
 
         param = LayerParameter.data_param
+        memory_param = LayerParameter.memory_data_param
         transform_param = LayerParameter.transform_param
         parallel_param = LayerParameter.parallel_param
 
-        self._param = {'source': param.source,
-                       'prefetch': param.prefetch,
-                       'batch_size': param.batch_size,
-                       'phase': {0: 'TRAIN', 1: 'TEST'}[int(LayerParameter.phase)],
-                       'scale': transform_param.scale,
-                       'mirror': transform_param.mirror,
-                       'crop_size': transform_param.crop_size,
-                       'mean_values': [float(element) for element in transform_param.mean_value],
-                       'force_color': transform_param.force_color,
-                       'color_augmentation': transform_param.color_augmentation,
-                       'padding': transform_param.padding,
-                       'min_random_scale': transform_param.min_random_scale,
-                       'max_random_scale': transform_param.max_random_scale,
-                       'shuffle': parallel_param.shuffle,
-                       'multiple_nodes': parallel_param.multiple_nodes,
-                       'partition': parallel_param.partition}
+        self._param = {
+            'source': param.source,
+            'prefetch': param.prefetch,
+            'batch_size': param.batch_size,
+            'phase': {0: 'TRAIN', 1: 'TEST'}[int(LayerParameter.phase)],
+            'mirror': transform_param.mirror,
+            'crop_size': transform_param.crop_size,
+            'force_color': transform_param.force_color,
+            'color_augmentation': transform_param.color_augmentation,
+            'padding': transform_param.padding,
+            'min_random_scale': transform_param.min_random_scale,
+            'max_random_scale': transform_param.max_random_scale,
+            'shuffle': parallel_param.shuffle,
+            'multiple_nodes': parallel_param.multiple_nodes,
+            'partition': parallel_param.partition,
+            'dtype': {0: 'FLOAT32', 1: 'FLOAT16'}[memory_param.dtype],
+            'data_format': 'NCHW',
+        }
+
+        if len(transform_param.mean_value) > 0:
+            self._param['mean_values'] = [float(element)
+                for element in transform_param.mean_value]
+
+        if transform_param.scale != 1:
+            self._param['mean_values'] = \
+                [1. / transform_param.scale] * 3
 
     def Setup(self, bottom):
         super(DataLayer, self).Setup(bottom)
-        return ops.LMDBData(**self._param)
+        data, label = ops.LMDBData(**self._param)
+        return ops.ImageData(data, **self._param), label
 
 
 class MemoryDataLayer(Layer):
@@ -87,19 +101,30 @@ class MemoryDataLayer(Layer):
     Parameters
     ----------
     dtype : caffe_pb2.MemoryDataParameter.DataType
-        The dest data type. ``FLOAT32`` or ``FLOAT16``.
+        The output data type. ``FLOAT32`` or ``FLOAT16``.
     mean_value : list of float
         The mean of each channel. Refer `TransformationParameter.mean_value`_.
+    scale : float
+        The scaling factor. Refer `TransformationParameter.scale`_.
 
     """
     def __init__(self, LayerParameter):
         super(MemoryDataLayer, self).__init__(LayerParameter)
         param = LayerParameter.memory_data_param
         transform_param = LayerParameter.transform_param
-        self._param = {'dtype': {0: 'FLOAT32', 1: 'FLOAT16'}[param.dtype]}
+
+        self._param = {
+            'dtype': {0: 'FLOAT32', 1: 'FLOAT16'}[param.dtype],
+            'data_format': 'NCHW',
+        }
+
         if len(transform_param.mean_value) > 0:
             self._param['mean_values'] = \
                 [float(element) for element in transform_param.mean_value]
+
+        if transform_param.scale != 1:
+            self._param['mean_values'] = \
+                [1. / transform_param.scale] * 3
 
     def Setup(self, bottom):
         super(MemoryDataLayer, self).Setup(bottom)

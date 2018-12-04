@@ -26,7 +26,7 @@ template <class Context> template <typename T>
 void ReduceOp<Context>::MeanRunWithType() {
     SumRunWithType<T>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    T coeff = axis != -1 ? 1.0 / axis_dim : 1.0 / Input(0).count();
+    T coeff = axis != -1 ? (T)1 / axis_dim : (T)1 / Input(0).count();
     math::Scal<T, Context>(Output(0)->count(), coeff, Ydata, ctx());
 }
 
@@ -70,7 +70,7 @@ void ReduceGradientOp<Context>::SumRunWithType() {
     } else {
         auto* dYdata = Input(-1).template data<T, Context>();
         kernel::SumGrad<T, Context>(count,
-            axis_dim, inner_dim, 1.0, dYdata, dXdata, ctx());
+            axis_dim, inner_dim, 1.f, dYdata, dXdata, ctx());
     }
 }
 
@@ -84,7 +84,7 @@ void ReduceGradientOp<Context>::MeanRunWithType() {
     } else {
         auto* dYdata = Input(-1).template data<T, Context>();
         kernel::SumGrad<T, Context>(count,
-            axis_dim, inner_dim, 1.0 / axis_dim,
+            axis_dim, inner_dim, 1.f / axis_dim,
                 dYdata, dXdata, ctx());
     }
 }
@@ -122,4 +122,4 @@ class GetReduceGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Reduce, GetReduceGradient);
 
-}    // namespace dragon
+}  // namespace dragon

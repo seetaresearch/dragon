@@ -22,16 +22,16 @@ void ReshapeOp<Context>::RunOnDevice() {
     TIndex total_count = 1;
     for (int i = 0; i < require_shape.size(); i++) {
         if (require_shape[i] == 0) {
-            //  handle unchanged dim
+            // Handle unchanged dim
             CHECK_LT(i, (int)Xdims.size())
                 << "\nDim(" << i << ") is out of the Xdims "
                 << "range of (0, " << Xdims.size() << ").";
             new_shape[i] = Xdims[i];
         } else if (require_shape[i] > 0) {
-            //  handle reseted dim
+            // Handle reseted dim
             new_shape[i] = require_shape[i];
         } else {
-            //  handle inferred dim
+            // Handle inferred dim
             CHECK_EQ(infer_dim, -1)
                 << "\nCould not infer Dim( " << infer_dim << "), "
                 << "Dim(" << i << ") both.";
@@ -41,7 +41,7 @@ void ReshapeOp<Context>::RunOnDevice() {
         if (new_shape[i] != -1) total_count *= new_shape[i];
     }
 
-    //  solve inferred dim if necessary
+    // Solve inferred dim if necessary
     if (infer_dim != -1) {
         for (int i = 0; i < new_shape.size(); i++) {
             if (new_shape[i] == -1) {
@@ -89,4 +89,4 @@ class GetReshapeGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Reshape, GetReshapeGradient);
 
-}    // namespace dragon
+}  // namespace dragon

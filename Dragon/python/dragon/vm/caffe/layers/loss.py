@@ -38,9 +38,12 @@ class SoftmaxWithLossLayer(Layer):
         if param.HasField('normalize'):
             if not param.normalize: normalization = 'BATCH_SIZE'
         else: normalization = norm_mode[param.normalization]
-        self._param = {'axis': softmax_param.axis,
-                       'normalization': normalization,
-                       'ignore_labels': [param.ignore_label] if param.HasField('ignore_label') else [] }
+        self._param = {
+            'axis': softmax_param.axis,
+            'normalization': normalization,
+            'ignore_labels': [param.ignore_label]
+                if param.HasField('ignore_label') else [],
+        }
 
     def Setup(self, bottom):
         super(SoftmaxWithLossLayer, self).Setup(bottom)
@@ -128,8 +131,10 @@ class SmoothL1LossLayer(Layer):
             if param.normalize: normalization = 'FULL'
         else: normalization = norm_mode[param.normalization]
         sigma2 = smooth_l1_param.sigma * smooth_l1_param.sigma
-        self._param = {'beta': float(1. / sigma2),
-                       'normalization': normalization}
+        self._param = {
+            'beta': float(1. / sigma2),
+            'normalization': normalization,
+        }
 
     def Setup(self, bottom):
         super(SmoothL1LossLayer, self).Setup(bottom)
@@ -167,11 +172,13 @@ class SigmoidWithFocalLossLayer(Layer):
         if param.HasField('normalize'):
             if not param.normalize: normalization = 'BATCH_SIZE'
         else: normalization = norm_mode[param.normalization]
-        self._param = {'axis': softmax_param.axis,
-                       'normalization': normalization,
-                       'alpha': float(focal_loss_param.alpha),
-                       'gamma': float(focal_loss_param.gamma),
-                       'neg_id': focal_loss_param.neg_id}
+        self._param = {
+            'axis': softmax_param.axis,
+            'normalization': normalization,
+            'alpha': float(focal_loss_param.alpha),
+            'gamma': float(focal_loss_param.gamma),
+            'neg_id': focal_loss_param.neg_id,
+        }
 
     def Setup(self, bottom):
         super(SigmoidWithFocalLossLayer, self).Setup(bottom)
@@ -209,12 +216,14 @@ class SoftmaxWithFocalLossLayer(Layer):
         if param.HasField('normalize'):
             if not param.normalize: normalization = 'BATCH_SIZE'
         else: normalization = norm_mode[param.normalization]
-        self._param = {'axis': softmax_param.axis,
-                       'normalization': normalization,
-                       'ignore_labels': [param.ignore_label] if param.HasField('ignore_label') else [],
-                       'alpha': float(focal_loss_param.alpha),
-                       'gamma': float(focal_loss_param.gamma),
-                       'neg_id': focal_loss_param.neg_id}
+        self._param = {
+            'axis': softmax_param.axis,
+            'normalization': normalization,
+            'ignore_labels': [param.ignore_label] if param.HasField('ignore_label') else [],
+            'alpha': float(focal_loss_param.alpha),
+            'gamma': float(focal_loss_param.gamma),
+            'neg_id': focal_loss_param.neg_id,
+        }
 
     def Setup(self, bottom):
         super(SoftmaxWithFocalLossLayer, self).Setup(bottom)

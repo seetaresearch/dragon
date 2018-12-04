@@ -92,4 +92,4 @@ class GetGatherGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Gather, GetGatherGradient);
 
-}    // namespace dragon
+}  // namespace dragon

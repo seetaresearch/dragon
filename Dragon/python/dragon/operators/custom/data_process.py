@@ -93,13 +93,12 @@ class DataProcessOp(object):
 
 
 if __name__ == '__main__':
-
-    # def
+    # Def
     y = dg.ops.Run([], module=__name__, op='DataProcessOp', nout=1)
     foo = dg.function(outputs=y)
 
-    # run
+    # Run
     foo()
 
-    # fetch
+    # Fetch
     print(y.get_value())

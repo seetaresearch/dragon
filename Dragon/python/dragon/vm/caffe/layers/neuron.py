@@ -50,8 +50,10 @@ class PReLULayer(Layer):
     def __init__(self, LayerParameter):
         super(PReLULayer, self).__init__(LayerParameter)
         param = LayerParameter.prelu_param
-        self._param = {'channel_shared': param.channel_shared,
-                       'data_format': 'NCHW'}
+        self._param = {
+            'channel_shared': param.channel_shared,
+            'data_format': 'NCHW',
+        }
         scope = LayerParameter.name
         slope = Tensor(scope + '/param:0')
         slope_diff = Tensor(scope + '/param:0_grad')
@@ -139,9 +141,11 @@ class DropoutLayer(Layer):
     def __init__(self, LayerParameter):
         super(DropoutLayer, self).__init__(LayerParameter)
         param = LayerParameter.dropout_param
-        self._param = {'prob': param.dropout_ratio,
-                       'scale': param.scale_train \
-                            if hasattr(param, 'scale_train') else True}
+        self._param = {
+            'prob': param.dropout_ratio,
+            'scale': param.scale_train \
+                if hasattr(param, 'scale_train') else True,
+        }
 
     def Setup(self, bottom):
         super(DropoutLayer, self).Setup(bottom)
@@ -165,9 +169,11 @@ class PowerLayer(Layer):
     def __init__(self, LayerParameter):
         super(PowerLayer, self).__init__(LayerParameter)
         param = LayerParameter.power_param
-        self._param = {'power': param.power,
-                       'scale': param.scale,
-                       'shift': param.shift}
+        self._param = {
+            'power': param.power,
+            'scale': param.scale,
+            'shift': param.shift,
+        }
 
     def Setup(self, bottom):
         super(PowerLayer, self).Setup(bottom)

@@ -26,6 +26,10 @@ template <class Context>
 void Conv2dOp<Context>::RunOnDevice() {
     Reshape();
 
+    // You really need the CuDNN to help you -:)
+    if (data_format == "NHWC" && group != 1)
+        LOG(FATAL) << "GroupConv(NHWC) is not supported.";
+
     if (XIsType(Input(0), float)) RunWithType<float>();
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
@@ -64,6 +68,10 @@ template <class Context>
 void Conv2dGradientOp<Context>::RunOnDevice() {
     GradientReshape();
 
+    // You really need the CuDNN to help you -:)
+    if (data_format == "NHWC" && group != 1)
+        LOG(FATAL) << "GroupConv(NHWC) is not supported.";
+
     if (XIsType(Input(0), float)) RunWithType<float>();
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
@@ -85,4 +93,4 @@ class GetConv2dGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Conv2d, GetConv2dGradient);
 
-}    // namespace dragon
+}  // namespace dragon

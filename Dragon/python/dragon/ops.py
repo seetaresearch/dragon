@@ -41,6 +41,7 @@ GlorotNormal = init.GlorotNormal
 
 # vision
 Conv2d = vision.Conv2d
+DepthwiseConv2d = vision.DepthwiseConv2d
 Conv2dTranspose = vision.Conv2dTranspose
 Deconv2d = vision.Conv2dTranspose
 Pool2d = vision.Pool2d

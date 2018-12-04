@@ -25,11 +25,11 @@ template <> void GenerateProposals<float, CPUContext>(
     const int K = feat_h * feat_w;
     for (int h = 0; h < feat_h; ++h) {
         for (int w = 0; w < feat_w; ++w) {
-            const float x = w * stride;
-            const float y = h * stride;
-            //  bbox_deltas: [1, A, 4, K]
+            const float x = (float)w * stride;
+            const float y = (float)h * stride;
+            // bbox_deltas: [1, A, 4, K]
             const float* bbox_delta = bbox_deltas + h * feat_w + w;
-            //  scores: [1, A, K]
+            // scores: [1, A, K]
             const float* score = scores + h * feat_w + w;
             for (int a = 0; a < A; ++a) {
                 const float dx = bbox_delta[(a * 4 + 0) * K];
@@ -62,8 +62,8 @@ template <> void GenerateProposals_v2<float, CPUContext>(
     CPUContext*             ctx) {
     float* proposal = proposals;
     for (int i = 0; i < total_anchors; ++i) {
-        //  bbox_deltas: [1, 4, total_anchors]
-        //  scores: [1, total_anchors]
+        // bbox_deltas: [1, 4, total_anchors]
+        // scores: [1, total_anchors]
         const float dx = bbox_deltas[i];
         const float dy = bbox_deltas[total_anchors + i];
         const float d_log_w = bbox_deltas[2 * total_anchors + i];
@@ -117,7 +117,6 @@ template <> void ApplyNMS<float, CPUContext>(
     num_keep = count;
 }
 
+}  // namespace rcnn
 
-}    // namespace rcnn
-
-}    // namespace dragon
+}  // namespace dragon

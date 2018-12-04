@@ -57,4 +57,4 @@ OPERATOR_SCHEMA(AdamUpdate).NumInputs(1).NumOutputs(1);
 
 NO_GRADIENT(AdamUpdate);
 
-}    // namespace dragon
+}  // namespace dragon

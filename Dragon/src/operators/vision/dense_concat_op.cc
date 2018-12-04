@@ -39,9 +39,9 @@ void DenseConcatGradientOp<Context>::ElimateCorruption() {
     string* head_data = head->mutable_data<string, CPUContext>();
     for (int i = 0; i < head->count(); i++) all_heads.insert(head_data[i]);
 
-    //  sub-graph run
+    // Sub-graph run
     if (Input(0).is_corrupted() && !all_heads.count(Input(0).name())) {
-        //  pre-process
+        // Pre-process
         LOG(DEBUG) << "Tensor(" << Input(0).name() << ") is corrupted, recompute...  ";
         for (int i = 0; i < head->count(); i++) {
             bool safe = true;
@@ -58,11 +58,11 @@ void DenseConcatGradientOp<Context>::ElimateCorruption() {
         if (XIsType(Input(-2), float)) RestoreX1<float>();
         else if (XIsType(Input(-2), float16)) RestoreX1<float16>();
         else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
-        //  post-process
+        // Post-process
         if (Input(0).memory() != buffer->memory()) buffer->Move(Input(0).memory());
     }
 
-    //  check available head
+    // Check available head
     while (!safe_heads.empty()) safe_heads.pop();
     all_heads.clear();
     for (int i = 0; i < head->count(); i++) {
@@ -73,7 +73,7 @@ void DenseConcatGradientOp<Context>::ElimateCorruption() {
         all_heads.insert(head_data[i]);
     }
 
-    //  pre-process
+    // Pre-process
     for (int i = 0; i < OutputSize(); i++) {
         if (Output(i)->is_corrupted()) {
             bool inplace_flag = false;

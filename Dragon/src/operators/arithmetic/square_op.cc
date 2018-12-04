@@ -7,7 +7,7 @@ template <class Context> template <typename T>
 void SquareOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Pow<T, Context>(Output(0)->count(), 2.0, Xdata, Ydata, ctx());
+    math::Pow<T, Context>(Output(0)->count(), 2.f, Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -30,7 +30,7 @@ void SquareGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     math::Mul<T, Context>(Output(0)->count(), dYdata, Xdata, dXdata, ctx());
-    math::Scal<T, Context>(Output(0)->count(), 2.0, dXdata, ctx());
+    math::Scal<T, Context>(Output(0)->count(), 2.f, dXdata, ctx());
 }
 
 template <class Context>
@@ -58,4 +58,4 @@ class GetSquareGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Square, GetSquareGradient);
 
-}    // namespace dragon
+}  // namespace dragon

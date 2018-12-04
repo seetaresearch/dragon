@@ -34,4 +34,4 @@ OPERATOR_SCHEMA(Compare).NumInputs(2).NumOutputs(1);
 
 NO_GRADIENT(Compare);
 
-}    // namespace dragon
+}  // namespace dragon

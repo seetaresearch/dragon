@@ -1,18 +1,23 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_PYTHON_PY_MPI_H_
 #define DRAGON_PYTHON_PY_MPI_H_
 
-#include "dragon.h"
+#include "py_dragon.h"
+
+namespace dragon {
+
+namespace python {
 
 #ifdef WITH_MPI 
 #include <mpi/mpi.h>
@@ -59,8 +64,8 @@ inline PyObject* MPICreateGroupCC(PyObject* self, PyObject* args) {
     for (int i = 0; i < world_size; i++) all_ranks.insert(i);
     local_group = world_group;
 
-    //  check inclue ranks
-    int size = PyList_Size(incl);
+    // Check inclue ranks
+    int size = (int)PyList_Size(incl);
     if (size > 0) {
         all_ranks.clear();
         unique_ptr<int> incl_ranks(new int[size]);
@@ -73,8 +78,8 @@ inline PyObject* MPICreateGroupCC(PyObject* self, PyObject* args) {
         CHECK(err_code == MPI_SUCCESS) << "\nFail to create mpi group.";
     }
 
-    //  check exclude ranks
-    size = PyList_Size(excl);
+    // Check exclude ranks
+    size = (int)PyList_Size(excl);
     if (size > 0) {
         all_ranks.clear(); Set<int> tmp;
         unique_ptr<int> excl_ranks(new int[size]);
@@ -127,6 +132,10 @@ inline PyObject* MPIRankCC(PyObject* self, PyObject* args) { MPI_NOT_IMPLEMENTED
 inline PyObject* MPISizeCC(PyObject* self, PyObject* args) { MPI_NOT_IMPLEMENTED; }
 inline PyObject* MPICreateGroupCC(PyObject* self, PyObject* args) { MPI_NOT_IMPLEMENTED; }
 
-#endif // WITH_MPI
+#endif  // WITH_MPI
 
-#endif    // DRAGON_PYTHON_PY_MPI_H_
+}  // namespace python
+
+}  // namespace dragon
+
+#endif  // DRAGON_PYTHON_PY_MPI_H_

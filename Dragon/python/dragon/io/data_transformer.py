@@ -100,7 +100,7 @@ class DataTransformer(Process):
         else:
             im = im.reshape((datum.height, datum.width, datum.channels))
 
-        # random scale
+        # Random scale
         random_scale = npr.uniform() * (
             self._max_random_scale - self._min_random_scale) \
                 + self._min_random_scale
@@ -118,7 +118,7 @@ class DataTransformer(Process):
                 im = im.resize(new_shape, PIL.Image.BILINEAR)
                 im = np.array(im)
 
-        # random crop
+        # Random crop
         if self._crop_size > 0:
             if self._phase == 'TRAIN':
                 h_off = npr.randint(im.shape[0] - self._crop_size + 1)
@@ -129,18 +129,18 @@ class DataTransformer(Process):
             im = im[h_off : h_off + self._crop_size,
                     w_off : w_off + self._crop_size, :]
 
-        # random mirror
+        # Random mirror
         if self._mirror:
             if npr.randint(0, 2) > 0:
                 im = im[:, ::-1, :]
 
-        # gray transformation
+        # Gray Transformation
         if self._force_color:
             if im.shape[2] == 1:
                 # duplicate to 3 channels
                 im = np.concatenate([im, im, im], axis=2)
 
-        # color augmentation
+        # Color Augmentation
         if self._color_aug:
             im = PIL.Image.fromarray(im)
             delta_brightness = npr.uniform(-0.4, 0.4) + 1.0
@@ -154,17 +154,17 @@ class DataTransformer(Process):
             im = im.enhance(delta_saturation)
             im = np.array(im)
 
-        # padding
+        # Padding
         if self._padding > 0:
-            pad_img = np.empty((im.shape[0] + 2 * self._padding,
-                                im.shape[1] + 2 * self._padding, im.shape[2]),
-                                dtype=im.dtype)
+            pad_img = np.empty((
+                im.shape[0] + 2 * self._padding,
+                im.shape[1] + 2 * self._padding, im.shape[2]), dtype=im.dtype)
             pad_img.fill(self._fill_value)
             pad_img[self._padding : self._padding + im.shape[0],
                     self._padding : self._padding + im.shape[1], :] = im
             im = pad_img
 
-        # labels
+        # Extract Labels
         labels = []
         if len(datum.labels) > 0: labels.extend(datum.labels)
         else: labels.append(datum.label)
@@ -179,7 +179,10 @@ class DataTransformer(Process):
         None
 
         """
+        # Fix the random seed
         npr.seed(self._random_seed)
+
+        # Run!
         while True:
             serialized = self.Q_in.get()
             self.Q_out.put(self.get(serialized))

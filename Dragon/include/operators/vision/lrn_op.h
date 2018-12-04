@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// -------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_OPERATORS_VISION_LRN_OP_H_
 #define DRAGON_OPERATORS_VISION_LRN_OP_H_
@@ -27,9 +28,9 @@ class LRNOp : public Operator<Context> {
     LRNOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
           local_size(OperatorBase::Arg<int>("local_size", 5)),
-          alpha(OperatorBase::Arg<float>("alpha", float(0.0001))),
-          beta(OperatorBase::Arg<float>("beta", float(0.75))),
-          k(OperatorBase::Arg<float>("k", float(2.0))),
+          alpha(OperatorBase::Arg<float>("alpha", 0.0001f)),
+          beta(OperatorBase::Arg<float>("beta", 0.75f)),
+          k(OperatorBase::Arg<float>("k", 2.f)),
           mode(OperatorBase::Arg<string>("mode", "ACROSS_CHANNELS")),
           data_format(OperatorBase::Arg<string>("data_format", "NCHW")) {}
     USE_OPERATOR_FUNCTIONS;
@@ -58,9 +59,9 @@ class LRNGradientOp : public Operator<Context> {
     LRNGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
           local_size(OperatorBase::Arg<int>("local_size", 5)),
-          alpha(OperatorBase::Arg<float>("alpha", float(0.0001))),
-          beta(OperatorBase::Arg<float>("beta", float(0.75))),
-          k(OperatorBase::Arg<float>("k", float(2.0))),
+          alpha(OperatorBase::Arg<float>("alpha", 0.0001f)),
+          beta(OperatorBase::Arg<float>("beta", 0.75f)),
+          k(OperatorBase::Arg<float>("k", 2.f)),
           mode(OperatorBase::Arg<string>("mode", "ACROSS_CHANNELS")),
           data_format(OperatorBase::Arg<string>("data_format", "NCHW")) {}
     USE_OPERATOR_FUNCTIONS;
@@ -139,8 +140,8 @@ class CuDNNLRNGradientOp final : public LRNGradientOp<Context > {
     cudnnLRNDescriptor_t norm_desc;
 };
 
-#endif    // WITH CUDNN
+#endif  // WITH CUDNN
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_OPERATORS_VISION_LRN_OP_H_
+#endif  // DRAGON_OPERATORS_VISION_LRN_OP_H_

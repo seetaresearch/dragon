@@ -18,7 +18,7 @@ void CuDNNCTCLossOp<Context>::WrapIO() {
         << "\nExcepted " << batch_size
         << " groups(i.e. batch_size) of labels,"
         << "\nbut got " << Input(1).dim(0) << ".";
-    //  CuDNN currently does not support variable input lengths
+    // CuDNN currently does not support variable input lengths
     input_lengths = vector<int>(batch_size, max_seq_len);
     packed_labels.clear(); label_lengths.resize(batch_size);
     auto* Ldata = Input(1).template data<int, CPUContext>();
@@ -27,7 +27,7 @@ void CuDNNCTCLossOp<Context>::WrapIO() {
         auto res = std::find(
             start, start + max_num_labels,
                 (int)padding_mask);
-        int len = std::distance(start, res);
+        int len = (int)std::distance(start, res);
         CHECK_LE(len, CUDNN_LABEL_LENGTH_LIMIT)
             << "\nThe max label length is "
             << CUDNN_LABEL_LENGTH_LIMIT
@@ -36,7 +36,7 @@ void CuDNNCTCLossOp<Context>::WrapIO() {
             std::back_inserter(packed_labels));
         label_lengths[n] = len;
     }
-    Output(0)->Reshape(vector<TIndex>({ 1 }));
+    Output(0)->Reshape(vector<TIndex>({ (TIndex)1 }));
 }
 
 template <class Context> template <typename T>
@@ -79,8 +79,8 @@ void CuDNNCTCLossOp<Context>::RunOnDevice() {
 
 DEPLOY_CUDNN(CTCLoss);
 
-}    // namespace dragon
+}  // namespace dragon
 
 #endif
 
-#endif    // WITH_CUDNN
+#endif  // WITH_CUDNN

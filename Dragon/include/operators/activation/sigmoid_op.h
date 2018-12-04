@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_OPERATORS_ACTIVATION_SIGMOID_OP_HPP
 #define DRAGON_OPERATORS_ACTIVATION_SIGMOID_OP_HPP
@@ -92,8 +93,8 @@ class CuDNNSigmoidGradientOp final : public SigmoidGradientOp<Context> {
     cudnnActivationDescriptor_t act_desc;
 };
 
-#endif // WITH_CUDNN
+#endif  // WITH_CUDNN
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_OPERATORS_ACTIVATION_SIGMOID_OP_HPP
+#endif  // DRAGON_OPERATORS_ACTIVATION_SIGMOID_OP_HPP

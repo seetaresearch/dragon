@@ -35,8 +35,8 @@ void SubOp<Context>::BroadcastRunWithType(int type) {
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
                     outer_dim, inner_dim, 1,
-                        -1.0, multiplier, x2,
-                            1.0, y, ctx());
+                        -1.f, multiplier, x2,
+                            1.f, y, ctx());
         }
     } 
     else if (type == 2) {
@@ -46,8 +46,8 @@ void SubOp<Context>::BroadcastRunWithType(int type) {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 outer_dim, inner_dim, 1,
-                    -1.0, x2, multiplier,
-                        1.0, y, ctx());
+                    -1.f, x2, multiplier,
+                        1.f, y, ctx());
     }
 }
 
@@ -81,7 +81,7 @@ void SubGradientOp<Context>::EltwiseRunWithType() {
     if (Output(1)->name() != "ignore") {
         auto* dx2 = Output(1)->template mutable_data<T, Context>();
         math::Scale<T, Context>(Output(1)->count(),
-            -1.0, dy, dx2, ctx());
+            -1.f, dy, dx2, ctx());
     }
 
     if (Output(0)->name() != "ignore") {
@@ -110,16 +110,16 @@ void SubGradientOp<Context>::BroadcastRunWithType(int type) {
             DECLARE_MULTIPLIER(multiplier, outer_dim);
             math::Gemv<T, Context>(
                 CblasTrans, outer_dim, inner_dim,
-                    -1.0, dy, multiplier,
-                        0.0, dx2, ctx());
+                    -1.f, dy, multiplier,
+                        0.f, dx2, ctx());
         } else if (type == 2) {
             outer_dim = X1->dim(0);
             inner_dim = X1->count(1);
             DECLARE_MULTIPLIER(multiplier, inner_dim);
             math::Gemv<T, Context>(
                 CblasNoTrans, outer_dim, inner_dim,
-                    -1.0, dy, multiplier,
-                        0.0, dx2, ctx());
+                    -1.f, dy, multiplier,
+                        0.f, dx2, ctx());
         }
     }
 
@@ -165,4 +165,4 @@ class GetSubGradient : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Sub, GetSubGradient);
 
-}    // namespace dragon
+}  // namespace dragon

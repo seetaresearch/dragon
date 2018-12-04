@@ -55,4 +55,4 @@ OpSchema& OpSchema::Inplace(set< pair<int, int> > inplace) {
     return *this;
 }
 
-}    // namespace dragon
+}  // namespace dragon

@@ -54,13 +54,13 @@ void BiasAddGradientOp<Context>::RunWithType() {
             if (data_format == "NCHW") {
                 math::Gemv<T, Context>(
                     CblasNoTrans, dim, inner_dim,
-                        1.0, dYdata, multiplier,
-                            1.0, dBias, ctx());
+                        1.f, dYdata, multiplier,
+                            1.f, dBias, ctx());
             } else if (data_format == "NHWC") {
                 math::Gemv<T, Context>(
                     CblasTrans, inner_dim, dim,
-                        1.0, dYdata, multiplier,
-                            1.0, dBias, ctx());
+                        1.f, dYdata, multiplier,
+                            1.f, dBias, ctx());
             }
             dYdata += y_offset;
         }
@@ -109,4 +109,4 @@ class GetBiasAddGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(BiasAdd, GetBiasAddGradient);
 
-}    // namespace dragon
+}  // namespace dragon

@@ -56,8 +56,8 @@ void CuDNNEluGradientOp<Context>::RunOnDevice() {
 
 DEPLOY_CUDNN(EluGradient);
 
-}    // namespace dragon
+}  // namespace dragon
 
 #endif
 
-#endif    // WITH_CUDNN
+#endif  // WITH_CUDNN

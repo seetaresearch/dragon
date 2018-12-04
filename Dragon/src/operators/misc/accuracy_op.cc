@@ -57,8 +57,8 @@ void AccuracyOp<Context>::RunWithType() {
                 }
             }
             count++;
-        }    //  end inner_dim
-    }    // end outer_dim
+        }  // End inner_dim
+    }  // End outer_dim
 
     Y1data[0] = (float)acc / count;
     if (Y2data) {
@@ -94,4 +94,4 @@ OPERATOR_SCHEMA(Accuracy).NumInputs(2).NumOutputs(1, 2);
 
 NO_GRADIENT(Accuracy);
 
-}    // namespace dragon
+}  // namespace dragon

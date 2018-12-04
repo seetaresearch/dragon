@@ -37,9 +37,11 @@ class InnerProductLayer(Layer):
     def __init__(self, LayerParameter):
         super(InnerProductLayer, self).__init__(LayerParameter)
         param = LayerParameter.inner_product_param
-        self._param = {'axis': param.axis,
-                       'num_output': param.num_output,
-                       'TransW': not param.transpose}
+        self._param = {
+            'axis': param.axis,
+            'num_output': param.num_output,
+            'TransW': not param.transpose,
+        }
         scope = LayerParameter.name
         weight = Tensor(scope + '/param:0')
         weight_diff = Tensor(scope + '/param:0_grad')
@@ -73,9 +75,11 @@ class AccuracyLayer(Layer):
     def __init__(self, LayerParameter):
         super(AccuracyLayer, self).__init__(LayerParameter)
         param = LayerParameter.accuracy_param
-        self._param = {'top_k': param.top_k,
-                       'ignore_labels': [param.ignore_label]
-                            if param.HasField('ignore_label') else []}
+        self._param = {
+            'top_k': param.top_k,
+            'ignore_labels': [param.ignore_label]
+                if param.HasField('ignore_label') else [],
+        }
 
     def Setup(self, bottom):
         super(AccuracyLayer, self).Setup(bottom)
@@ -98,9 +102,11 @@ class PythonLayer(Layer):
     def __init__(self, LayerParameter):
         super(PythonLayer, self).__init__(LayerParameter)
         param = LayerParameter.python_param
-        self._param = {'module': param.module,
-                       'op': param.layer,
-                       'param_str': param.param_str}
+        self._param = {
+            'module': param.module,
+            'op': param.layer,
+            'param_str': param.param_str,
+        }
 
     def Setup(self, bottom):
         super(PythonLayer, self).Setup(bottom)
@@ -121,9 +127,11 @@ class EltwiseLayer(Layer):
     def __init__(self, LayerParameter):
         super(EltwiseLayer, self).__init__(LayerParameter)
         param = LayerParameter.eltwise_param
-        self._param = {'operation': {0: 'PROD', 1: 'SUM', 2: 'MAX'}[param.operation],
-                       'coeffs': [element for element in param.coeff]
-                            if len(param.coeff) > 0 else None}
+        self._param = {
+            'operation': {0: 'PROD', 1: 'SUM', 2: 'MAX'}[param.operation],
+            'coeffs': [element for element in param.coeff]
+                if len(param.coeff) > 0 else None,
+        }
 
     def Setup(self, bottom):
         super(EltwiseLayer, self).Setup(bottom)
@@ -175,8 +183,10 @@ class DenseConcatLayer(Layer):
     def __init__(self, LayerParameter):
         super(DenseConcatLayer, self).__init__(LayerParameter)
         param = LayerParameter.dense_concat_param
-        self._param = {'axis': param.axis,
-                       'growth_rate': param.growth_rate}
+        self._param = {
+            'axis': param.axis,
+            'growth_rate': param.growth_rate,
+        }
 
     def Setup(self, bottom):
         super(DenseConcatLayer, self).Setup(bottom)
@@ -197,8 +207,10 @@ class CropLayer(Layer):
     def __init__(self, LayerParameter):
         super(CropLayer, self).__init__(LayerParameter)
         param = LayerParameter.crop_param
-        self._param = {'start_axis': param.axis,
-                       'offsets': [int(element) for element in param.offset]}
+        self._param = {
+            'start_axis': param.axis,
+            'offsets': [int(element) for element in param.offset],
+        }
 
     def Setup(self, bottom):
         super(CropLayer, self).Setup(bottom)
@@ -326,9 +338,11 @@ class ArgMaxLayer(Layer):
     def __init__(self, LayerParameter):
         super(ArgMaxLayer, self).__init__(LayerParameter)
         param = LayerParameter.argmax_param
-        self._param = {'top_k': param.top_k,
-                       'axis': param.axis,
-                       'keep_dims': True}
+        self._param = {
+            'top_k': param.top_k,
+            'axis': param.axis,
+            'keep_dims': True,
+        }
 
     def Setup(self, bottom):
         super(ArgMaxLayer, self).Setup(bottom)
@@ -352,12 +366,14 @@ class BatchNormLayer(Layer):
     def __init__(self, LayerParameter):
         super(BatchNormLayer, self).__init__(LayerParameter)
         param = LayerParameter.batch_norm_param
-        self._param = {'use_stats': int(param.use_global_stats)
-                            if param.HasField('use_global_stats') else -1,
-                       'momentum': param.moving_average_fraction,
-                       'eps': param.eps,
-                       'axis': 1,
-                       'mode': 'CAFFE'}
+        self._param = {
+            'use_stats': int(param.use_global_stats)
+                if param.HasField('use_global_stats') else -1,
+            'momentum': param.moving_average_fraction,
+            'eps': param.eps,
+            'axis': 1,
+            'mode': 'CAFFE',
+        }
         scope = LayerParameter.name
         # mean, var, factor are set to 0 in order to do statistics
         mean = Tensor(scope + '/param:0').Constant(value=0.0)
@@ -396,15 +412,17 @@ class BatchRenormLayer(Layer):
     def __init__(self, LayerParameter):
         super(BatchRenormLayer, self).__init__(LayerParameter)
         param = LayerParameter.batch_renorm_param
-        self._param = {'use_stats': int(param.use_global_stats)
-                            if param.HasField('use_global_stats') else -1,
-                       'momentum': param.moving_average_fraction,
-                       'eps': param.eps,
-                       'r_max': float(param.r_max),
-                       'd_max': float(param.d_max),
-                       't_delta': float(param.t_delta),
-                       'axis': 1,
-                       'mode': 'CAFFE'}
+        self._param = {
+            'use_stats': int(param.use_global_stats)
+                if param.HasField('use_global_stats') else -1,
+            'momentum': param.moving_average_fraction,
+            'eps': param.eps,
+            'r_max': float(param.r_max),
+            'd_max': float(param.d_max),
+            't_delta': float(param.t_delta),
+            'axis': 1,
+            'mode': 'CAFFE',
+        }
         scope = LayerParameter.name
         mean = Tensor(scope + '/param:0').Constant(value=0.0)
         var  = Tensor(scope + '/param:1').Constant(value=0.0)
@@ -432,9 +450,11 @@ class GroupNormLayer(Layer):
     def __init__(self, LayerParameter):
         super(GroupNormLayer, self).__init__(LayerParameter)
         param = LayerParameter.group_norm_param
-        self._param = {'group': int(param.group),
-                       'eps': param.eps,
-                       'axis': 1}
+        self._param = {
+            'group': int(param.group),
+            'eps': param.eps,
+            'axis': 1,
+        }
 
     def Setup(self, bottom):
         super(GroupNormLayer, self).Setup(bottom)
@@ -451,8 +471,7 @@ class InstanceNormLayer(Layer):
     def __init__(self, LayerParameter):
         super(InstanceNormLayer, self).__init__(LayerParameter)
         param = LayerParameter.instance_norm_param
-        self._param = {'eps': param.eps,
-                       'axis': 1}
+        self._param = {'eps': param.eps, 'axis': 1}
 
     def Setup(self, bottom):
         super(InstanceNormLayer, self).Setup(bottom)
@@ -479,8 +498,10 @@ class ScaleLayer(Layer):
     def __init__(self, LayerParameter):
         super(ScaleLayer, self).__init__(LayerParameter)
         param = LayerParameter.scale_param
-        self._param = {'axis': param.axis,
-                       'num_axes': param.num_axes}
+        self._param = {
+            'axis': param.axis,
+            'num_axes': param.num_axes,
+        }
         scope = LayerParameter.name
         scale = Tensor(scope + '/param:0')
         scale_diff = Tensor(scope + '/param:0_grad')
@@ -521,11 +542,13 @@ class BNLayer(Layer):
         super(BNLayer, self).__init__(LayerParameter)
         bn_param = LayerParameter.batch_norm_param
         scale_param = LayerParameter.scale_param
-        self._param = {'use_stats': int(bn_param.use_global_stats)
-                                        if bn_param.HasField('use_global_stats') else -1,
-                       'momentum': bn_param.moving_average_fraction,
-                       'eps': bn_param.eps,
-                       'axis': 1}
+        self._param = {
+            'use_stats': int(bn_param.use_global_stats)
+                if bn_param.HasField('use_global_stats') else -1,
+            'momentum': bn_param.moving_average_fraction,
+            'eps': bn_param.eps,
+            'axis': 1,
+        }
         scope = LayerParameter.name
         mean = Tensor(scope + '/param:0').Constant(value=0.0)
         var = Tensor(scope + '/param:1').Constant(value=0.0)
@@ -569,9 +592,11 @@ class GNLayer(Layer):
         super(GNLayer, self).__init__(LayerParameter)
         gn_param = LayerParameter.group_norm_param
         scale_param = LayerParameter.scale_param
-        self._param = {'group': int(gn_param.group),
-                       'eps': gn_param.eps,
-                       'axis': 1}
+        self._param = {
+            'group': int(gn_param.group),
+            'eps': gn_param.eps,
+            'axis': 1,
+        }
         scope = LayerParameter.name
         scale = Tensor(scope + '/param:0')
         scale_diff = Tensor(scope + '/param:0_grad')
@@ -612,10 +637,12 @@ class NormalizeLayer(Layer):
         self._l2norm_param = {
             'axis': 1,
             'num_axes': -1 if param.across_spatial else 1,
-            'eps': param.eps}
+            'eps': param.eps,
+        }
         self._scale_param = {
             'axis': 1,
-            'num_axes': 0 if param.channel_shared else 1}
+            'num_axes': 0 if param.channel_shared else 1,
+        }
         scope = LayerParameter.name
         scale = Tensor(scope + '/param:0')
         if param.HasField('scale_filler'):
@@ -645,7 +672,9 @@ class TileLayer(Layer):
         super(TileLayer, self).__init__(LayerParameter)
         param = LayerParameter.tile_param
         multiples = param.multiples
-        self._param = {'multiples': [int(multiple) for multiple in multiples.dim]}
+        self._param = {
+            'multiples': [int(multiple) for multiple in multiples.dim],
+        }
 
     def Setup(self, bottom):
         super(TileLayer, self).Setup(bottom)
@@ -670,8 +699,10 @@ class ReductionLayer(Layer):
         if param.axis < 0:
             if param.axis != -1:
                 raise ValueError('The negative axis can only be -1(reduce all).')
-        self._param = {'operation': {1: 'SUM', 4: 'MEAN'}[param.operation],
-                       'axis': param.axis}
+        self._param = {
+            'operation': {1: 'SUM', 4: 'MEAN'}[param.operation],
+            'axis': param.axis,
+        }
 
     def Setup(self, bottom):
         super(ReductionLayer, self).Setup(bottom)
@@ -745,17 +776,19 @@ class ProposalLayer(Layer):
     def __init__(self, LayerParameter):
         super(ProposalLayer, self).__init__(LayerParameter)
         param = LayerParameter.proposal_param
-        self._param = {'strides': param.stride,
-                       'ratios': param.ratio,
-                       'scales': param.scale,
-                       'pre_nms_top_n': param.pre_nms_top_n,
-                       'post_nms_top_n': param.post_nms_top_n,
-                       'nms_thresh': param.nms_thresh,
-                       'min_size': param.min_size,
-                       'min_level': param.min_level,
-                       'max_level': param.max_level,
-                       'canonical_scale': param.canonical_scale,
-                       'canonical_level': param.canonical_level}
+        self._param = {
+            'strides': param.stride,
+            'ratios': param.ratio,
+            'scales': param.scale,
+            'pre_nms_top_n': param.pre_nms_top_n,
+            'post_nms_top_n': param.post_nms_top_n,
+            'nms_thresh': param.nms_thresh,
+            'min_size': param.min_size,
+            'min_level': param.min_level,
+            'max_level': param.max_level,
+            'canonical_scale': param.canonical_scale,
+            'canonical_level': param.canonical_level,
+        }
 
     def Setup(self, bottom):
         super(ProposalLayer, self).Setup(bottom)

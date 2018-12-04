@@ -23,7 +23,7 @@ void ScanOp<Context>::InitTemplate() {
     slice_def.add_arg()->CopyFrom(arg_nout);
     template_def.mutable_device_option()
         ->CopyFrom(def().device_option());
-    //  init for the first step
+    // Init for the first step
     for (int i = 0; i < nseqs; i++) {
         OperatorDef* op = template_def.add_op();
         op->CopyFrom(slice_def);
@@ -35,19 +35,19 @@ void ScanOp<Context>::InitTemplate() {
         OperatorDef* op = template_def.add_op();
         op->CopyFrom(func_def.op(i));
         op->set_name(name() + "(BodyOp." + std::to_string(i + nseqs) + ")@1");
-        //  replace inputs term
+        // Replace inputs term
         for (int j = 0; j < op->input_size(); j++) {
             string* input = op->mutable_input(j);
             if (terms.count(*input)) *input = terms[*input];
         }
-        //  replace outputs term
+        // Replace outputs term
         for (int j = 0; j < op->output_size(); j++) {
             string* output = op->mutable_output(j);
             terms[*output] = *output + "@1";
             *output = terms[*output];
         }
     }
-    //  handle pre outputs
+    // Handle pre outputs
     for (int i = 0; i < nout; i++) {
         if (default_outputs[i].empty()) continue;
         terms[default_outputs[i]] = func_def.target(i) + "@1";
@@ -57,15 +57,15 @@ void ScanOp<Context>::InitTemplate() {
 template <class Context>
 void ScanOp<Context>::UpdateTerms(int cur_step) {
     string prev, now;
-    //  update sequences term
+    // Update sequences term
     for (int i = 0; i < nseqs; i++) {
         prev = Input(i).name() + "@" + std::to_string(cur_step - 1);
         now = Input(i).name() + "@" + std::to_string(cur_step);
         terms[prev] = now;
     }
     if (cur_step < 3) return;
-    //  update recurrent term
-    //  only support the latest one-step (as Theano's done)
+    // Update recurrent term
+    // Only support the latest one-step (as Theano's done)
     for (int i = 0; i < nout; i++) {
         if (default_outputs[i].empty()) continue;
         prev = Output(i)->name() + "@" + std::to_string(cur_step - 2);
@@ -94,15 +94,15 @@ void ScanOp<Context>::UnrollTemplate() {
     for (int idx = 0; idx < nseqs; idx++) {
         OperatorDef *op = new_def.mutable_op(idx);
         int nslices = Input(idx).dim(axis);
-        //  alter the num of slices for all sequences
+        // Alter the num of slices for all sequences
         op->mutable_arg(1)->set_i(nslices);
-        //  add slices as outputs
+        // Add slices as outputs
         for (int t = 1; t <= nslices; t++) {
             string slice = op->input(0) + "@" + std::to_string(t);
             op->add_output(slice);
         }
     }
-    //  main loop
+    // Main loop
     for (int t = 2; t <= nsteps; t++) {
         UpdateTerms(t);
         int copy_r = new_def.op_size(), copy_l = copy_r - nrepeats;
@@ -111,12 +111,12 @@ void ScanOp<Context>::UnrollTemplate() {
             op->CopyFrom(new_def.op(idx));
             op->set_name(str::split(op->name(), "@")[0]
                 + "@" + std::to_string(t));
-            //  replace inputs
+            // Replace inputs
             for (int j = 0; j < op->input_size(); j++) {
                 string* input = op->mutable_input(j);
                 if (terms.count(*input)) *input = terms[*input];
             }
-            //  replace outputs
+            // Replace outputs
             for (int j = 0; j < op->output_size(); j++) {
                 string* output = op->mutable_output(j);
                 terms[*output] = str::split(*output, "@")[0]
@@ -126,9 +126,9 @@ void ScanOp<Context>::UnrollTemplate() {
         }
     }
     for (int i = 0; i < nout; i++) {
-        //  solve the last step only
+        // Solve the last step only
         new_def.add_target(func_def.target(i) + "@" + std::to_string(nsteps));
-        //  concat all steps if necessary
+        // Concat all steps if necessary
         if (Output(i)->name() == "ignore") continue;
         OperatorDef* op = new_def.add_op();
         op->set_name(name() + "(BodyOp." + std::to_string(nseqs + nrepeats + i) + ")");
@@ -141,10 +141,10 @@ void ScanOp<Context>::UnrollTemplate() {
         for (int t = 1; t <= nsteps; t++)
             op->add_input(Output(i)->name() + "@" + std::to_string(t));
         op->add_output(Output(i)->name());
-        //  solve all the all steps
+        // Solve all the all steps
         new_def.add_target(Output(i)->name());
     }
-    //  upload
+    // Upload
     Tensor* string_tensor = ws()->CreateTensor("/mnt/" + anchor() + "/raw_ops");
     string_tensor->Reshape({ 1 });
     string* data = string_tensor->mutable_data <string, CPUContext>();
@@ -176,12 +176,12 @@ void ScanGradientOp<Context>::MakeOps(const GraphDef& forward_def,
     else if (step_type == "Default") nsteps = Input(0).dim(axis);
     if (graphs.count(nsteps)) return;
 
-    //  determine the targets
+    // Determine the targets
     vector<string> targets;
     for (auto& t : forward_def.target())
         targets.emplace_back(t);
 
-    //  init maker
+    // Init maker
     GraphGradientMaker maker;
     maker.SetTerms(terms);
     maker.SetOperatorPrefix(name() + "(BodyOp.");
@@ -191,10 +191,10 @@ void ScanGradientOp<Context>::MakeOps(const GraphDef& forward_def,
             maker.AddExternalGrad(Input(i + (int)OutputSize()).name());
     }
 
-    //  make
+    // Make
     maker.Make(forward_def, targets, new_def);
 
-    //  post-process
+    // Post-process
     new_def.set_name(name() + "(ScanLen." + std::to_string(nsteps) + ")");
     for (auto& target : targets) {
         for (int i = 0; i < OutputSize(); i++) {
@@ -215,8 +215,8 @@ void ScanGradientOp<Context>::RunOnDevice() {
     forward_def.ParseFromString(ops->data<string, CPUContext>()[0]);
     new_def.CopyFrom(forward_def);
     MakeOps(forward_def, new_def);
-    
-    //  persist for different scan steps
+
+    // Persist for different scan steps
     if (!graphs.count(nsteps)) 
         graphs[nsteps].reset(new Graph(new_def, ws()));
     cur_graph = graphs[nsteps].get();
@@ -246,4 +246,4 @@ class GetScanGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Scan, GetScanGradient);
 
-}    // namespace dragon
+}  // namespace dragon

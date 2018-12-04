@@ -8,7 +8,7 @@ template <class Context> template <typename T>
 void ArgReduceOp<Context>::RunWithType() {
     if (OutputSize() == 2) Output(1)->ReshapeLike(*Output(0));
     if (top_k != 1) {
-        //  it's difficult to implement device code when top_k > 1
+        // It's difficult to implement device code when top_k > 1
         auto* Xdata = Input(0).template data<T, CPUContext>();
         auto* Idata = Output(0)->template mutable_data<int64_t, CPUContext>();
         auto* Vdata = OutputSize() == 2 ?
@@ -77,4 +77,4 @@ OPERATOR_SCHEMA(ArgReduce).NumInputs(1).NumOutputs(1, 2);
 
 NO_GRADIENT(ArgReduce);
 
-}    // namespace dragon
+}  // namespace dragon

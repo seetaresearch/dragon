@@ -20,7 +20,7 @@ void DropBlock2dOp<Context>::RunWithType() {
         auto* norm = ws()->CreateTensor(
             "/mnt/" + anchor() + "/drop_block/norm");
         mask->ReshapeLike(Input(0));
-        norm->Reshape(vector<TIndex>({ 1 }));
+        norm->Reshape(vector<TIndex>({ (TIndex)1 }));
 
         auto WSdata = ws()->template caches<Context>({
             n * c * seed_h * seed_w * sizeof(uint32_t),
@@ -30,24 +30,24 @@ void DropBlock2dOp<Context>::RunWithType() {
         auto* Mdata = mask->template mutable_data<uint8_t, Context>();
         auto* Ndata = norm->template mutable_data<float, CPUContext>();
 
-        //  fill the mask with ones
+        // Fill the mask with ones
         math::Set<int, Context>(mask->count(),
             1, (int*)WSdata[1], ctx());
 
-        //  generate 2d mask from seed region
+        // Generate 2d mask from seed region
         kernel::DropBlock2d<Context>(n, c, h, w,
             seed_h, seed_w, block_size, gamma, data_format,
                 (uint32_t*)WSdata[0], (int*)WSdata[1], ctx());
 
-        //  convert to float mask for counting
+        // Convert to float mask for counting
         kernel::TypeA2B<int, float, Context>(mask->count(),
             (int*)WSdata[1], (float*)WSdata[2], ctx());
 
-        //  convert to uint8 mask for applying
+        // Convert to uint8 mask for applying
         kernel::TypeA2B<int, uint8_t, Context>(mask->count(),
             (int*)WSdata[1], Mdata, ctx());
 
-        //  count && apply
+        // Count && Apply
         float normalizer = math::ASum<float, Context>(
             mask->count(), (float*)WSdata[2]);
         normalizer = std::max(normalizer, 1.f);
@@ -61,7 +61,7 @@ void DropBlock2dOp<Context>::RunWithType() {
 
 template <class Context>
 void DropBlock2dOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  //  enforce default stream
+    ctx()->set_stream_id(0);  // Enforce SyncStream
 
     if (data_format == "NCHW") {
         n = Input(0).dim(0), c = Input(0).dim(1);

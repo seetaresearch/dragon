@@ -22,7 +22,7 @@ void TransposeOp<Context>::RunOnDevice() {
     auto given_n_perms = std::max(
         perms_desc.size(), perms_value.size());
     if (given_n_perms == 0) {
-        //  reverse dimensions directly if missing perms
+        // Reverse dimensions directly if missing perms
         perms_value.clear(); given_n_perms = Input(0).ndim();
         for (int i = (int)given_n_perms - 1; i >= 0; i--)
             perms_value.push_back(i);
@@ -107,4 +107,4 @@ class GetTransposeGradient final : public GradientMakerBase{
 };
 REGISTER_GRADIENT(Transpose, GetTransposeGradient);
 
-}    // namespace dragon
+}  // namespace dragon

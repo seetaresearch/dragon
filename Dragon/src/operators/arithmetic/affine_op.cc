@@ -63,8 +63,8 @@ void AffineGradientOp<Context>::BiasRunWithType() {
     for (int n = 0; n < outer_dim; n++) {
         math::Gemv<T, Context>(
             CblasNoTrans, scale_dim, inner_dim,
-                1.0, dYdata, multiplier,
-                    1.0, dBias, ctx());
+                1.f, dYdata, multiplier,
+                    1.f, dBias, ctx());
         dYdata += dim;
     }
 }
@@ -87,7 +87,7 @@ void AffineGradientOp<Context>::ScaleRunWithType() {
 
     if (!is_eltwise) {
         T* SRes_data = nullptr;
-        //  reduce inner dimensions
+        // Reduce inner dimensions
         if (inner_dim == 1) {
             SRes_data = dYxX;
         } else {
@@ -95,16 +95,16 @@ void AffineGradientOp<Context>::ScaleRunWithType() {
                 dScale : sum_result.template mutable_data<T, Context>();
             math::Gemv<T, Context>(
                 CblasNoTrans, sum_result.count(), inner_dim,
-                    1.0, dYxX, multiplier,
-                        SRes_data == dScale ? 1.0 : 0.0,
+                    1.f, dYxX, multiplier,
+                        SRes_data == dScale ? 1.f : 0.f,
                             SRes_data, ctx());
         } 
-        //  reduce outer dimensions
+        // Reduce outer dimensions
         if (outer_dim != 1) {
             math::Gemv<T, Context>(
                 CblasTrans, outer_dim, scale_dim,
-                    1.0, SRes_data, multiplier,
-                        1.0, dScale, ctx());
+                    1.f, SRes_data, multiplier,
+                        1.f, dScale, ctx());
         }
     } else {
         math::Axpy<T, Context>(Output(1)->count(),
@@ -167,4 +167,4 @@ class GetAffineGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Affine, GetAffineGradient);
 
-}    // namespace dragon
+}  // namespace dragon

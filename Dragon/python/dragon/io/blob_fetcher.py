@@ -20,7 +20,7 @@ from multiprocessing import Process
 class BlobFetcher(Process):
     """BlobFetcher is deployed to queue blobs from `DataTransformer`_.
 
-    It is supported to form ``NCHW`` image blobs and ``1D`` label blobs.
+    It is supported to form ``NHWC`` image blobs and ``1D`` label blobs.
 
     """
     def __init__(self, **kwargs):
@@ -30,26 +30,17 @@ class BlobFetcher(Process):
         ----------
         batch_size : int
             The size of a training batch.
-        dtype : str
-            The data type of batch. Default is ``float32``.
         partition : boolean
             Whether to partition batch. Default is ``False``.
         prefetch : int
             The prefetch count. Default is ``5``.
-        mean_values : list
-            The mean value of each image channel.
-        scale : float
-            The scale performed after mean subtraction. Default is ``1.0``.
 
         """
         super(BlobFetcher, self).__init__()
         self._batch_size = kwargs.get('batch_size', 100)
-        self._dtype = kwargs.get('dtype', 'float32')
         self._partition  = kwargs.get('partition', False)
-        self._mean_values = kwargs.get('mean_values', [])
-        self._scale = kwargs.get('scale', 1.0)
         if self._partition:
-            self._batch_size = int(self._batch_size / kwargs['group_size'])
+            self._batch_size = self._batch_size // kwargs['group_size']
         self.Q_in = self.Q_out = None
         self.daemon = True
 
@@ -69,15 +60,7 @@ class BlobFetcher(Process):
         for ix in range(0, self._batch_size):
             im_blob[ix, :, :, :], label_blob[ix, :] = im, labels
             if ix != self._batch_size - 1: im, labels = self.Q_in.get()
-
-        # mean subtraction & numerical scale
-        im_blob = im_blob.astype(self._dtype)
-        if len(self._mean_values) > 0:
-            im_blob -= self._mean_values
-        if self._scale != 1.0:
-            im_blob *= self._scale
-
-        return im_blob.transpose((0, 3, 1, 2)), label_blob
+        return im_blob, label_blob
 
     def run(self):
         """Start the process.
@@ -87,5 +70,4 @@ class BlobFetcher(Process):
         None
 
         """
-        while True:
-            self.Q_out.put(self.get())
+        while True: self.Q_out.put(self.get())

@@ -71,8 +71,8 @@ class GetLSTMCellGradient final : public GradientMakerBase {
             vector<string> {GI(0), GI(1)});
     }
     //  fill zero for dc_{T+1}
-    vector<float> DefaultValues() override{ return{ 0.0, 1.0 }; }
+    vector<float> DefaultValues() override{ return { 0.f, 1.f }; }
 };
 REGISTER_GRADIENT(LSTMCell, GetLSTMCellGradient);
 
-}    // namespace dragon
+}  // namespace dragon

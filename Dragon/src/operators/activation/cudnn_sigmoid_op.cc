@@ -69,6 +69,6 @@ void CuDNNSigmoidGradientOp<Context>::RunOnDevice() {
 
 DEPLOY_CUDNN(SigmoidGradient);
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // WITH_CUDNN
+#endif  // WITH_CUDNN

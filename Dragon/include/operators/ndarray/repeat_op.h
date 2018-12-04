@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// -------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_OPERATORS_NDARRAY_REPEAT_OP_H_
 #define DRAGON_OPERATORS_NDARRAY_REPEAT_OP_H_
@@ -55,6 +56,6 @@ class RepeatGradientOp final : public Operator<Context> {
 DEFINE_ARGUMENT_WITH_DESC(int, RepeatOp, repeats);
 DEFINE_ARGUMENT_WITH_DESC(int, RepeatGradientOp, repeats);
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_OPERATORS_NDARRAY_REPEAT_OP_H_
+#endif  // DRAGON_OPERATORS_NDARRAY_REPEAT_OP_H_

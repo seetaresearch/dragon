@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_OPERATORS_ARITHMETIC_AFFINE_OP_H_
 #define DRAGON_OPERATORS_ARITHMETIC_AFFINE_OP_H_
@@ -81,7 +82,7 @@ class CuDNNAffineOpBase : public Operator<Context> {
 
     template <typename T>
     void ResetDesc(const Tensor& X) {
-        //  determine the range of affine
+        // Determine the range of affine
         start_axis = axis;
         if (start_axis < 0) start_axis += (int)X.ndim();
         if (num_axes == -1) num_axes = (int)X.ndim() - start_axis;
@@ -89,14 +90,14 @@ class CuDNNAffineOpBase : public Operator<Context> {
         end_axis = start_axis + num_axes;
         CHECK_LT(start_axis, (int)X.ndim());
         CHECK_LE(start_axis + num_axes, (int)X.ndim());
-        //  determine the input desc
+        // Determine the input desc
         vector<TIndex> input_dims = X.dims();
-        //  cudnn requires ndimensions range from [4, 5]
+        // CuDNN requires ndimensions range from [4, 5]
         if (input_dims.size() < 4) input_dims.resize(4, 1);
         else if (input_dims.size() > 5) 
             LOG(FATAL) << "CuDNN Affine the dimensions up to 5.";
         cudnnSetTensorDesc<T>(&input_desc, input_dims);
-        //  determine the scale desc
+        // Determine the scale desc
         vector<TIndex> param_dims(input_dims.size(), 1);
         for (int i = start_axis; i < end_axis; i++)
             param_dims[i] = input_dims[i];
@@ -127,24 +128,32 @@ class CuDNNAffineOp final : public CuDNNAffineOpBase<Context> {
          : CuDNNAffineOpBase<Context>(def, ws) {}
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename DT, typename CT> void RunWithType();
 
  protected:
      USE_CUDNN_AFFINE_FUCNTIONS;
 };
 
 template <class Context>
-class CuDNNAffineGradientOp final : public CuDNNAffineOpBase<Context> {
+class CuDNNAffineGradientOp final
+    : public CuDNNAffineOpBase<Context> {
 public:
-    CuDNNAffineGradientOp(const OperatorDef& def, Workspace* ws)
+    CuDNNAffineGradientOp(
+        const OperatorDef&          def,
+        Workspace*                  ws)
         : CuDNNAffineOpBase<Context>(def, ws) {}
 
     void RunOnDevice() override;
-    template <typename T> void ComputeScaleGradient(T* dYxX, T* dA);
+
+    template <typename DT, typename CT>
+    void ComputeScaleGradient(DT* dYxX, DT* dA);
+    template <typename DT, typename CT>
+    void ComputeBiasGradient(const DT* dY, DT* dB);
+
     template <typename T> void ComputeScaleGradient_v2(T* dYxX, T* dA);
-    template <typename T> void ComputeBiasGradient(const T* dY, T* dB);
     template <typename T> void ComputeBiasGradient_v2(const T* dY, T* dB);
-    template <typename T> void RunWithType();
+
+    template <typename DT, typename CT> void RunWithType();
 
 protected:
     USE_CUDNN_AFFINE_FUCNTIONS;
@@ -154,8 +163,8 @@ protected:
 
 #endif
 
-#endif    // WITH_CUDNN
+#endif  // WITH_CUDNN
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_OPERATORS_ARITHMETIC_AFFINE_OP_H_
+#endif  // DRAGON_OPERATORS_ARITHMETIC_AFFINE_OP_H_

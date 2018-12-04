@@ -62,7 +62,7 @@ class _ConvNd(Module):
                 'pad': _pair(self.padding),
                 'dilation': _pair(self.dilation),
                 'group': self.groups,
-                'data_format': 'NCHW'
+                'data_format': 'NCHW',
             }
         }
 

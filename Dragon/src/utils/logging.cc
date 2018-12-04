@@ -88,4 +88,4 @@ void MessageLogger::StripBasename(
     } else  { *filename = full_path; }
 }
 
-}    // namespace dragon
+}  // namespace dragon

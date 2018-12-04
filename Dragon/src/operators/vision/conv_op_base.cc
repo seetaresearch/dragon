@@ -63,11 +63,14 @@ void ConvOpBase<Context>::Wx(
     T*                      y,
     bool                    skip_im2col) {
     auto* col_buffer = x;
+
     if (!is_1x1) {
-        auto* workspace = ws()->template caches<T, Context>({ col_dim })[0];
-        if (!skip_im2col) Im2Col(x, workspace);
-        col_buffer = workspace;
+        auto* WSdata = ws()->template
+            caches<T, Context>({ col_dim })[0];
+        if (!skip_im2col) Im2Col(x, WSdata);
+        col_buffer = WSdata;
     }
+
     for (int g = 0; g < group; g++) {
         if (data_format == "NCHW") {
             math::Gemm<T, Context>(
@@ -75,18 +78,15 @@ void ConvOpBase<Context>::Wx(
                     conv_out_channels / group,
                          conv_out_spatial_dim,
                                    kernel_dim,
-                1.0, weights + weight_offset * g,
+                1.f, weights + weight_offset * g,
                      col_buffer + col_offset * g,
-                0.0, y + output_offset * g, ctx());
+                0.f, y + output_offset * g, ctx());
         } else if (data_format == "NHWC") {
             math::Gemm<T, Context>(
-                CblasNoTrans, CblasNoTrans,
-                         conv_out_spatial_dim,
-                    conv_out_channels / group,
-                                   kernel_dim,
-                1.0, col_buffer + col_offset * g,
-                     weights + weight_offset * g,
-                0.0, y + output_offset * g, ctx());
+                CblasNoTrans, CblasTrans,
+                    conv_out_spatial_dim, conv_out_channels,
+                        kernel_dim,
+                1.f, col_buffer, weights, 0.f, y, ctx());
         }
     }
 }
@@ -109,17 +109,15 @@ void ConvOpBase<Context>::Dx(const T* dy, const T* weights, T* dx) {
                 CblasTrans, CblasNoTrans,
                     kernel_dim, conv_out_spatial_dim,
                         conv_out_channels / group,
-                1.0, weights + weight_offset * g,
+                1.f, weights + weight_offset * g,
                           dy + output_offset * g,
-                0.0, col_buffer + col_offset * g, ctx());
+                0.f, col_buffer + col_offset * g, ctx());
         } else if (data_format == "NHWC") {
              math::Gemm<T, Context>(
-                 CblasNoTrans, CblasTrans,
+                 CblasNoTrans, CblasNoTrans,
                      conv_out_spatial_dim, kernel_dim,
-                         conv_out_channels / group,
-                 1.0, dy + output_offset * g,
-                     weights + weight_offset * g,
-                 0.0, col_buffer + col_offset * g, ctx());
+                         conv_out_channels,
+                 1.f, dy, weights, 0.f, col_buffer, ctx());
         }
     }
     if (!is_1x1) Col2Im(col_buffer, dx);
@@ -128,11 +126,14 @@ void ConvOpBase<Context>::Dx(const T* dy, const T* weights, T* dx) {
 template <class Context> template <typename T>
 void ConvOpBase<Context>::Dw(const T* dy, const T* x, T *dw) {
     auto* col_buffer = x;
+
     if (!is_1x1) {
-        auto* workspace = ws()->template caches<T, Context>({ col_dim })[0];
-        Im2Col(x, workspace);
-        col_buffer = workspace;
+        auto* WSdata = ws()->template
+            caches<T, Context>({ col_dim })[0];
+        Im2Col(x, WSdata);
+        col_buffer = WSdata;
     }
+
     for (int g = 0; g < group; g++) {
         if (data_format == "NCHW") {
             math::Gemm<T, Context>(
@@ -140,18 +141,15 @@ void ConvOpBase<Context>::Dw(const T* dy, const T* x, T *dw) {
                     conv_out_channels / group,
                                    kernel_dim,
                          conv_out_spatial_dim,
-                1.0, dy + output_offset * g,
+                1.f, dy + output_offset * g,
                     col_buffer + col_offset * g,
-                1.0, dw + weight_offset * g, ctx());
+                1.f, dw + weight_offset * g, ctx());
         } else if (data_format == "NHWC") {
             math::Gemm<T, Context>(
                 CblasTrans, CblasNoTrans,
-                                   kernel_dim,
-                    conv_out_channels / group,
-                         conv_out_spatial_dim,
-                1.0, col_buffer + col_offset * g,
-                          dy + output_offset * g,
-                1.0, dw + weight_offset * g, ctx());
+                    conv_out_channels, kernel_dim,
+                        conv_out_spatial_dim,
+                1.f, dy, col_buffer, 1.f, dw, ctx());
         }
     }
 }
@@ -162,13 +160,13 @@ void ConvOpBase<Context>::Db(const T* dy, T* db) {
     if (data_format == "NCHW") {
         math::Gemv<T, Context>(
             CblasNoTrans, num_output, out_spatial_dim,
-                1.0, dy, multiplier,
-                    1.0, db, ctx());
+                1.f, dy, multiplier,
+                    1.f, db, ctx());
     } else if (data_format == "NHWC") {
         math::Gemv<T, Context>(
             CblasTrans, out_spatial_dim, num_output,
-                1.0, dy, multiplier,
-                    1.0, db, ctx());
+                1.f, dy, multiplier,
+                    1.f, db, ctx());
     }
 }
 
@@ -192,7 +190,7 @@ void ConvOpBase<Context>::Setup() {
 
     is_1x1 = true;
     for (int i = 0; i < num_spatial_axes; i++) {
-        is_1x1 &= (kernel_size[i] == 1 && 
+        is_1x1 &= (kernel_size[i] == 1 &&
                    stride[i] == 1 &&
                    pad[i] == 0);
         if (!is_1x1) break;
@@ -201,6 +199,7 @@ void ConvOpBase<Context>::Setup() {
 
 template <class Context>
 void ConvOpBase<Context>::Reshape() {
+    // Determine the in/out channels
     channels = data_format == "NCHW" ?
         Input(0).dim(1) : Input(0).dim(-1);
     if (ReverseDimensions()) {
@@ -210,22 +209,22 @@ void ConvOpBase<Context>::Reshape() {
         conv_out_channels = num_output;
         conv_in_channels = channels;
     }
-    //  determine the weight and bias shape
+
+    // Determine the weight and bias shape
     if (data_format == "NCHW") {
         weight_shape.assign({ conv_out_channels,
                               conv_in_channels / group });
         for (int i = 0; i < num_spatial_axes; i++)
             weight_shape.push_back(kernel_size[i]);
     } else if (data_format == "NHWC") {
-        weight_shape.clear();
+        weight_shape.assign({ conv_out_channels });
         for (int i = 0; i < num_spatial_axes; i++)
             weight_shape.push_back(kernel_size[i]);
         weight_shape.push_back(conv_in_channels / group);
-        weight_shape.push_back(conv_out_channels);
     }
     bias_shape = { num_output };
 
-    //  determine the bottom and top shape
+    // Determine the bottom and top shape
     bottom_shape = Input(0).dims();
     ComputeOutputShape();
     if (data_format == "NCHW") {
@@ -240,7 +239,7 @@ void ConvOpBase<Context>::Reshape() {
     }
     Output(0)->Reshape(top_shape);
 
-    //  determine the input shape for im2col/col2im
+    // Determine the input shape for im2col/col2im
     input_shape.clear();
     for (int i = 0; i < num_spatial_axes; i++) {
         if (ReverseDimensions()) {
@@ -250,7 +249,7 @@ void ConvOpBase<Context>::Reshape() {
         }
     }
 
-    //  determine the out spatial dim
+    // Determine the out spatial dim
     if (data_format == "NCHW") {
         if (ReverseDimensions()) {
             conv_out_spatial_dim = Input(0).count(spatial_axis);
@@ -270,7 +269,7 @@ void ConvOpBase<Context>::Reshape() {
             spatial_axis, (int)Output(0)->ndim() - 1);
     }
 
-    //  determine the misc
+    // Determine the misc
     x_offset = Input(0).count(1);
     y_offset = Output(0)->count(1);
     kernel_dim = conv_in_channels / group * kernel_size[0] * kernel_size[1];
@@ -278,7 +277,7 @@ void ConvOpBase<Context>::Reshape() {
     col_offset = kernel_dim * conv_out_spatial_dim;
     output_offset = conv_out_channels * conv_out_spatial_dim / group;
 
-    //  determine the workspace size for col buffer
+    // Determine the workspace size for col buffer
     col_dim = kernel_dim * group;
     for (int i = 0; i < num_spatial_axes; i++) {
         if (ReverseDimensions()) 
@@ -289,6 +288,7 @@ void ConvOpBase<Context>::Reshape() {
 
 template <class Context>
 void ConvOpBase<Context>::GradientReshape() {
+    // Determine the in/out channels
     channels = data_format == "NCHW" ?
         Input(0).dim(1) : Input(0).dim(-1);
     if (ReverseDimensions()) {
@@ -298,14 +298,15 @@ void ConvOpBase<Context>::GradientReshape() {
         conv_out_channels = num_output;
         conv_in_channels = channels;
     }
-    //  determine the bottom and top shape
+
+    // Determine the bottom and top shape
     bottom_shape = Input(0).dims();
     ComputeOutputShape();
     Output(0)->Reshape(bottom_shape);
     Output(1)->ReshapeLike(Input(1));
     Output(2)->Reshape({ num_output });
 
-    //  determine the input shape for im2col/col2im
+    // Determine the input shape for im2col/col2im
     input_shape.clear();
     for (int i = 0; i < num_spatial_axes; i++) {
         if (ReverseDimensions()) {
@@ -315,7 +316,7 @@ void ConvOpBase<Context>::GradientReshape() {
         }
     }
 
-    //  determine the out spatial dim
+    // Determine the out spatial dim
     if (data_format == "NCHW") {
         if (ReverseDimensions()) {
             conv_out_spatial_dim = Input(0).count(spatial_axis);
@@ -335,7 +336,7 @@ void ConvOpBase<Context>::GradientReshape() {
             spatial_axis, (int)Input(-1).ndim() - 1);
     }
 
-    //  determine the misc
+    // Determine the misc
     x_offset = Input(0).count(1);
     y_offset = Input(-1).count(1);
     kernel_dim = conv_in_channels / group * kernel_size[0] * kernel_size[1];
@@ -343,7 +344,7 @@ void ConvOpBase<Context>::GradientReshape() {
     col_offset = kernel_dim * conv_out_spatial_dim;
     output_offset = conv_out_channels * conv_out_spatial_dim / group;
 
-    //  determine the workspace size for col buffer
+    // Determine the workspace size for col buffer
     col_dim = kernel_dim * group;
     for (int i = 0; i < num_spatial_axes; i++) {
         if (ReverseDimensions())
@@ -352,7 +353,7 @@ void ConvOpBase<Context>::GradientReshape() {
     }
 }
 
-template class ConvOpBase<CPUContext>;;
+template class ConvOpBase<CPUContext>;
 template void ConvOpBase<CPUContext>::Wx(const float*, const float*, float*, bool);
 template void ConvOpBase<CPUContext>::Pb(const float*, float*);
 template void ConvOpBase<CPUContext>::Dx(const float*, const float*, float*);
@@ -368,4 +369,4 @@ template void ConvOpBase<CUDAContext>::Dw(const float*, const float*, float*);
 template void ConvOpBase<CUDAContext>::Db(const float*, float*);
 #endif
 
-}    // namespace dragon
+}  // namespace dragon

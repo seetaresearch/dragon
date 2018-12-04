@@ -14,11 +14,11 @@ template <class Context>
 void InitializeOp<Context>::RunOnDevice() {
     vector<TIndex> output_shape;
     if (shape_desc.empty()) {
-        //  determine the shape from dimensions
+        // Determine the shape from dimensions
         int ndims = (int)std::max(dims_value.size(), dims_desc.size());
         for (int i = 0; i < ndims; i++) output_shape.push_back(dims(i));
     } else {
-        //  determine the shape from given shape
+        // Determine the shape from given shape
         Tensor* shape = ws()->GetTensor(shape_desc);
         CHECK(shape->IsType<int>()) << "\nThe type of shape should be int32.";
         auto* shape_data = shape->template data<int, CPUContext>();
@@ -39,11 +39,11 @@ template <class Context>
 void FillOp<Context>::RunOnDevice() {
     vector<TIndex> output_shape;
     if (shape_desc.empty()) {
-        //  determine the shape from dimensions
+        // Determine the shape from dimensions
         int ndims = (int)std::max(dims_value.size(), dims_desc.size());
         for (int i = 0; i < ndims; i++) output_shape.push_back(dims(i));
     } else {
-        //  determine the shape from given shape
+        // Determine the shape from given shape
         Tensor* shape = ws()->GetTensor(shape_desc);
         CHECK(shape->IsType<int>()) << "\nThe type of shape should be int32.";
         auto* shape_data = shape->template data<int, CPUContext>();
@@ -107,4 +107,4 @@ DEPLOY_CUDA(GlorotNormal);
 OPERATOR_SCHEMA(GlorotNormal).NumInputs(0).NumOutputs(1);
 NO_GRADIENT(GlorotNormal);
 
-}    // namespace dragon
+}  // namespace dragon

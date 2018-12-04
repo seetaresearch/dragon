@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// -------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_OPERATORS_MPI_BASE_MPI_OP_H_
 #define DRAGON_OPERATORS_MPI_BASE_MPI_OP_H_
@@ -56,16 +57,16 @@ class ModelMPIBase : public Operator<Context> {
     string dtype;
 };
 
-#define USE_MPIMODEL_FUNCTIONS(context) \
-    using ModelMPIBase<context>::comm; \
-    using ModelMPIBase<context>::mpi_dtype; \
-    using ModelMPIBase<context>::comm_size; \
-    using ModelMPIBase<context>::comm_rank; \
-    using ModelMPIBase<context>::comm_root; \
-    using ModelMPIBase<context>::dtype
+#define USE_MODEL_MPI_FUNCTIONS \
+    using ModelMPIBase<Context>::comm; \
+    using ModelMPIBase<Context>::mpi_dtype; \
+    using ModelMPIBase<Context>::comm_size; \
+    using ModelMPIBase<Context>::comm_rank; \
+    using ModelMPIBase<Context>::comm_root; \
+    using ModelMPIBase<Context>::dtype
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif // WITH_MPI
+#endif  // WITH_MPI
 
-#endif // DRAGON_OPERATORS_MPI_BASE_MPI_OP_H_
+#endif  // DRAGON_OPERATORS_MPI_BASE_MPI_OP_H_

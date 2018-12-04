@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// -------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_OPERATORS_UPDATE_UPDATE_OP_BASE_H_
 #define DRAGON_OPERATORS_UPDATE_UPDATE_OP_BASE_H_
@@ -21,8 +22,8 @@ class UpdateOpBase : public Operator<Context> {
  public:
     UpdateOpBase(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          lr_mult(OperatorBase::Arg<float>("lr_mult", 1.0)),
-          decay_mult(OperatorBase::Arg<float>("decay_mult", 1.0)),
+          lr_mult(OperatorBase::Arg<float>("lr_mult", 1.f)),
+          decay_mult(OperatorBase::Arg<float>("decay_mult", 1.f)),
           slot(OperatorBase::Arg<string>("slot", "")),
           zero_grad(OperatorBase::Arg<bool>("zero_grad", true)) {
         CHECK(!slot.empty()) << "\nRequired a non-empty slot";
@@ -52,6 +53,6 @@ class UpdateOpBase : public Operator<Context> {
     using UpdateOpBase<context>::Param; \
     using UpdateOpBase<context>::Slot
 
-}    // namespace dragon 
+}  // namespace dragon
 
-#endif    // DRAGON_OPERATORS_UPDATE_UPDATE_OP_BASE_H_
+#endif  // DRAGON_OPERATORS_UPDATE_UPDATE_OP_BASE_H_

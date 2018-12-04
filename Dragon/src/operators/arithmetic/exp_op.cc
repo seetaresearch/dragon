@@ -59,4 +59,4 @@ class GetExpGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Exp, GetExpGradient);
 
-}    // namespace dragon
+}  // namespace dragon

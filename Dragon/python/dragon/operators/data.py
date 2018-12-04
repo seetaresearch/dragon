@@ -83,8 +83,10 @@ def LMDBData(**kwargs):
     return Run([], param_str=str(kwargs), nout=2, **arguments)
 
 
-def ImageData(inputs, mean_values=None, std_values=None,
-              dtype='FLOAT32', data_format='NCHW', **kwargs):
+def ImageData(
+    inputs, mean_values=None, std_values=None,
+        dtype='FLOAT32', data_format='NCHW', **kwargs
+):
     """Process the images from 4D raw data.
 
     Note that we assume the data format of raw data is **NHWC**.

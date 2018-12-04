@@ -9,6 +9,7 @@
 #
 # ------------------------------------------------------------
 
+import os
 import copy
 import numpy as np
 
@@ -101,7 +102,7 @@ def GraphDef_Update(meta_graph, updater):
     """
     if updater is None: return
 
-    # use graph name if missing slot
+    # Use graph name if missing slot
     if updater._slot is None:
         updater._slot= meta_graph.name
     extra_arguments = updater._extra_kwargs
@@ -110,7 +111,7 @@ def GraphDef_Update(meta_graph, updater):
 
     updater.register_in_workspace()
 
-    # check data parallel if necessary
+    # Check data parallel if necessary
     if mpi.Is_Init():
         idx, group = mpi.AllowParallel()
         if idx != -1:
@@ -193,6 +194,145 @@ def GraphDef_Device(meta_graph):
         meta_graph.device_option.CopyFrom(device_option)
 
 
+class Function(object):
+    """The ``Function`` wraps the meta graph and a defined callback.
+
+    We recommend this way to avoid a explicit ``GraphDef`` exposed.
+
+    """
+    def __init__(self, name=None):
+        self.callback = None
+        self.meta_graph = pb.GraphDef()
+        if name is None:
+            # Assign a auto name
+            self.meta_graph.name = self.graph_name = \
+                'Graph_' + str(ws.CURRENT_GRAPH_IDX)
+            ws.CURRENT_GRAPH_IDX += 1
+        else:
+            # Assign the specific name
+            self.meta_graph.name = self.graph_name = name
+
+    def define(self, inputs=None, outputs=None, givens=None, updater=None):
+        if not isinstance(inputs, list):
+            if inputs is None:
+                inputs = []
+            else:
+                inputs = [inputs]
+        if not isinstance(outputs, list):
+            if outputs is None:
+                outputs = []
+            else:
+                outputs = [outputs]
+
+        if len(outputs) > 0 and updater is not None:
+            raise RuntimeError('You can specific either outputs or updater, not both.')
+
+        all_expressions = dict()
+        all_extra_targets = set()
+        if not isinstance(outputs, list): outputs = [outputs]
+
+        meta_graph = self.meta_graph
+
+        # Extract operators and targets from expressions
+        existing_grads = False
+        for output in outputs:
+            meta_graph.target.extend([output.name])
+            all_expressions.update(output.expressions)
+            all_extra_targets = all_extra_targets.union(output.extra_targets)
+            if len(output.grad_wrts) > 0: existing_grads = True
+
+        # We should sort out the topology of these operators before using
+        all_exprs = sorted(all_expressions.items(), key=lambda d: d[0])
+        forward_ops = copy.deepcopy([v for k, v in all_exprs])
+
+        # Handle givens
+        if givens is not None:
+            name_dict = {}
+            external_input_expressions = {}
+            # Extract new ops
+            for old_tensor, new_tensor in givens.items():
+                if isinstance(new_tensor, Tensor):
+                    name_dict[old_tensor.name] = new_tensor.name
+                    external_input_expressions.update(new_tensor.expressions)
+                elif isinstance(new_tensor, np.ndarray):
+                    ws.FeedTensor(new_tensor, GetTensorName())
+                all_extra_targets = all_extra_targets.union(new_tensor.extra_targets)
+            external_input_expressions = sorted(external_input_expressions.items(), key=lambda d: d[0])
+            external_input_ops = [v for k, v in external_input_expressions]
+            # Update original ops
+            for op in forward_ops:
+                op.input.extend([name_dict[input] if input in name_dict
+                                 else input for input in op.input])
+                del op.input[:int(len(op.input) / 2)]
+            # Concat them together
+            forward_ops = external_input_ops + forward_ops
+
+        # Handle grads
+        if existing_grads:
+            targets = [output.name for output in outputs]
+            targets.extend(all_extra_targets)
+            forward_ops, grad_ops, _ = \
+                GraphGradientMaker.Make(forward_ops, targets)
+        else:
+            grad_ops = []
+
+        # Write Ops
+        meta_graph.op.extend(forward_ops + grad_ops)
+
+        # Write Extra Targets
+        for extra_target in all_extra_targets:
+            meta_graph.target.extend([extra_target])
+
+        # Write Misc
+        if len(outputs) > 0:
+            GraphDef_Device(meta_graph)
+            GraphDef_Opt(meta_graph)
+            GraphDef_Grad(meta_graph, outputs)
+            GraphDef_Phase(meta_graph, outputs)
+
+        elif updater is not None:
+            GraphDef_Device(meta_graph)
+            GraphDef_Opt(meta_graph)
+            GraphDef_Update(meta_graph, updater)
+
+        # Call c api to create graph
+        ws.CreateGraph(meta_graph)
+
+        # Bind a lambda callback to run this graph
+        self.callback = lambda *args, **kwargs: \
+            ws.RunGraph(meta_graph.name, (inputs, args), outputs, **kwargs)
+
+        # Self return
+        return self
+
+    def export(self, name=None, export_dir='./'):
+        """Export the meta graph of this defined function.
+
+        Parameters
+        ----------
+        export_dir : str
+            The directory to export the meta text file.
+
+        """
+        from dragon.config import logger
+        if not os.path.exists(export_dir):
+            try:
+                os.makedirs(export_dir)
+            except Exception:
+                raise ValueError('The given directory can not be created.')
+        meta_graph_copy = copy.deepcopy(self.meta_graph)
+        meta_graph_copy.name = self.meta_graph.name if name is None else name
+        file = os.path.join(export_dir, meta_graph_copy.name + '.metatxt')
+        with open(file, 'w') as f: f.write(str(meta_graph_copy))
+        logger.info('Export meta graph into: {}'.format(file))
+
+    def __call__(self, *args, **kwargs):
+        """Call the defined function.
+
+        """
+        return self.callback(args, kwargs)
+
+
 def function(inputs=None, outputs=None, givens=None, updater=None):
     """Return a callable function that will compute ``outputs`` or apply ``updater``.
 
@@ -234,97 +374,7 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
          [ 2.  2.  2.]]
 
     """
-    if not isinstance(inputs, list):
-        if inputs is None:
-            inputs = []
-        else:
-            inputs = [inputs]
-    if not isinstance(outputs, list):
-        if outputs is None:
-            outputs = []
-        else:
-            outputs = [outputs]
-
-    if len(outputs) > 0 and updater is not None:
-        raise RuntimeError('You can specific either outputs or updater, not both.')
-
-    all_exprs = dict()
-    all_extra_targets = set()
-    if not isinstance(outputs, list): outputs = [outputs]
-
-    meta_graph = pb.GraphDef()
-
-    meta_graph.name = 'Graph_' + str(ws.CURRENT_GRAPH_IDX)
-    ws.CURRENT_GRAPH_IDX += 1
-
-    # extract operators and targets from expressions
-    existing_grads = False
-    for output in outputs:
-        meta_graph.target.extend([output.name])
-        all_exprs.update(output.expressions)
-        all_extra_targets = all_extra_targets.union(output.extra_targets)
-        if len(output.grad_wrts) > 0: existing_grads = True
-
-    # we should sort out the topology of these operators before using
-    all_exprs = sorted(all_exprs.items(), key=lambda d: d[0])
-    forward_ops = copy.deepcopy([v for k, v in all_exprs])
-
-    # handle givens
-    if givens is not None:
-        name_dict = {}
-        external_input_exprs = {}
-        # extract new ops
-        for old_tensor, new_tensor in givens.items():
-            if isinstance(new_tensor, Tensor):
-                name_dict[old_tensor.name] = new_tensor.name
-                external_input_exprs.update(new_tensor.expressions)
-            elif isinstance(new_tensor, np.ndarray):
-                ws.FeedTensor(new_tensor, GetTensorName())
-            all_extra_targets = all_extra_targets.union(new_tensor.extra_targets)
-        external_input_exprs = sorted(external_input_exprs.items(), key=lambda d: d[0])
-        external_input_ops = [v for k, v in external_input_exprs]
-        # update original ops
-        for op in forward_ops:
-            op.input.extend([name_dict[input] if input in name_dict
-                             else input for input in op.input])
-            del op.input[:int(len(op.input) / 2)]
-        # concat them together
-        forward_ops = external_input_ops + forward_ops
-
-    # handle grads
-    if existing_grads:
-        targets = [output.name for output in outputs]
-        targets.extend(all_extra_targets)
-        forward_ops, grad_ops, _ = \
-            GraphGradientMaker.Make(forward_ops, targets)
-    else:
-        grad_ops = []
-
-    # Write Ops
-    meta_graph.op.extend(forward_ops + grad_ops)
-
-    # Write Extra Targets
-    for extra_target in all_extra_targets:
-        meta_graph.target.extend([extra_target])
-
-    # Write Misc
-    if len(outputs) > 0:
-        GraphDef_Device(meta_graph)
-        GraphDef_Opt(meta_graph)
-        GraphDef_Grad(meta_graph, outputs)
-        GraphDef_Phase(meta_graph, outputs)
-
-    elif updater is not None:
-        GraphDef_Device(meta_graph)
-        GraphDef_Opt(meta_graph)
-        GraphDef_Update(meta_graph, updater)
-
-    # call c api to create graph
-    ws.CreateGraph(meta_graph)
-
-    # return a lambda point to run this graph
-    return lambda *args, **kwargs: \
-        ws.RunGraph(meta_graph.name, (inputs, args), outputs, **kwargs)
+    return Function().define(inputs, outputs, givens, updater)
 
 
 def eval(self, feed_dict=None):
@@ -334,9 +384,9 @@ def eval(self, feed_dict=None):
         else:
             self._eval_func = function(outputs=self)
 
-    # cond.1: run by feeding
+    # Cond.1: Run by Feeding
     if feed_dict is not None:
-        # checking
+        # Checking
         for key, value in feed_dict.items():
             if not isinstance(key, Tensor):
                 raise TypeError('The key of feed_dict key should be a Tensor.')
@@ -355,7 +405,7 @@ def eval(self, feed_dict=None):
                             'while feed a value with (' + ','.join([str(dim) for dim in value.shape]) + ').')
         return self._eval_func(*feed_dict.values())
     else:
-        # cond.2: run without feeding
+        # Cond.2: Run without Feeding
         return self._eval_func()
 
 Tensor.eval = eval

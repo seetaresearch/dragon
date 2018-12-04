@@ -115,7 +115,7 @@ class GraphGradientMaker(object):
                     gen_grads.append((output, idx))
                     inputs_to_grads[output] = output + '_grad'
 
-        #  Check
+        # Check
         for output in forward_op.output:
             if inputs_to_grads.get(output, None) is None:
                 # check failed: skip backward

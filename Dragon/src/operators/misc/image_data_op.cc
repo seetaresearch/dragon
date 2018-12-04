@@ -49,4 +49,4 @@ OPERATOR_SCHEMA(ImageData).NumInputs(1).NumOutputs(1);
 
 NO_GRADIENT(ImageData);
 
-}    // namespace dragon
+}  // namespace dragon

@@ -1,18 +1,19 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_CORE_CONTEXT_CUDA_H_
 #define DRAGON_CORE_CONTEXT_CUDA_H_
 
-/* NVIDIA's CUDA Environment */
+/*! NVIDIA's CUDA Environment */
 
 #include "core/common.h"
 #include "utils/cuda_device.h"
@@ -38,9 +39,10 @@ class CUDAObject {
         for (int i = 0; i < CUDA_MAX_DEVICES; i++) {
             for (int j = 0; j < cuda_streams[i].size(); j++) {
                 auto& stream = cuda_streams[i][j];
-                //  follow the caffe2, do not check the stream destroying
-                //  Error code 29 (driver shutting down) is inevitable
-                //  TODO(PhyscalX): Can someone solve this issue?
+                /*!
+                 * Do not check the stream destroying,
+                 * error code 29 (driver shutting down) is inevitable.
+                 */
                 if (stream) cudaStreamDestroy(stream);
             }
             for (auto& handle : cublas_handles[i])
@@ -52,14 +54,20 @@ class CUDAObject {
         }
     }
 
-    //  follow the caffe2,
-    //  each device takes a group of non-blocking streams
-    //  the stream 0 is reserved for default stream,
-    //  as some computations really require it,
-    //  e.g. cublas.asum() and mixed cpu/cuda operations
-    //  besides, somes calls, such as cudnn.conv() and cudnn.rnn(),
-    //  produce wrong results if running them on non-blocking streams
-    //  note that caffe2 also uses default streams (within CuDNNState)
+    /*!
+     * Follow the caffe2,
+     * Each device takes a group of non-blocking streams.
+     *
+     * The stream 0 is reserved for default stream,
+     * as some computations really require it,
+     * e.g. cublas.asum() and mixed cpu/cuda operations.
+     *
+     * Besides, somes calls, such as cudnn.conv() and cudnn.rnn(),
+     * and even the simple fp16 conversion, produce wrong results
+     * if running them on non-blocking streams.
+     *
+     * Note that caffe2 also uses default streams (within CuDNNState).
+     */
     cudaStream_t GetStream(int device_id, int stream_id) {
         vector<cudaStream_t>& dev_streams = cuda_streams[device_id];
         if (dev_streams.size() <= (unsigned)stream_id)
@@ -333,8 +341,8 @@ class CUDAContext {
     inline void set_stream_id(int stream_id) {}
 };
 
-#endif // WITH_CUDA
+#endif  // WITH_CUDA
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_CORE_CONTEXT_CUDA_H_
+#endif  // DRAGON_CORE_CONTEXT_CUDA_H_

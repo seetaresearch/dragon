@@ -14,18 +14,18 @@ GraphBase::GraphBase(const GraphDef& meta_graph, Workspace* ws)
     }
     Set<string> known_tensors;
 
-    //  topo-check for a graph
+    // Topo-check for a graph
     for (const OperatorDef& op : meta_graph.op()) {
-        //  check inputs
+        // Check inputs
         for (auto& in : op.input())
             CHECK(known_tensors.count(in) || ws_->HasTensor(in))
                 << "\nInput: " << in << " for op: "
                 << op.name() << " is unknown.";
-        //  add outputs
+        // Add outputs
         for (auto& out : op.output()) known_tensors.insert(out);
     }
 
-    //  check for all objective targets
+    // Check for all objective targets
     Set<string> objective_targets;
     for (auto& target : meta_graph.target()) {
         CHECK(known_tensors.count(target) ||
@@ -35,7 +35,7 @@ GraphBase::GraphBase(const GraphDef& meta_graph, Workspace* ws)
         objective_targets.insert(target);
     }
 
-    //  check for all gradient targets
+    // Check for all gradient targets
     for (auto& g_target : meta_graph.g_target()) {
         string cost = g_target.cost();
         string wrt = g_target.wrt();
@@ -99,7 +99,7 @@ void Graph::BackwardPruneDyeing(string v) {
 
 GraphDef Graph::Prune(const GraphDef& meta_graph) {
     dag_.clear(); colored_.clear();
-    //  build DAG
+    // Build DAG
     for (int i = 0; i < meta_graph.op_size(); i++) {
         const OperatorDef& op = meta_graph.op(i);
         for (auto& v : op.output()) {
@@ -116,14 +116,14 @@ GraphDef Graph::Prune(const GraphDef& meta_graph) {
         }
     }
 
-    //  backward dyeing for all objective targets (e.g. loss)
+    // Backward dyeing for all objective targets (e.g. loss)
     for (int i = 0; i < meta_graph.target_size(); i++) {
         targets_.insert(meta_graph.target(i));
         if (colored_[meta_graph.target(i)]) continue;
         BackwardPruneDyeing(meta_graph.target(i));
     }
 
-    //  forward dyeing through connected path for all gradient targets
+    // Forward dyeing through connected path for all gradient targets
     for (int i = 0; i < meta_graph.g_target_size(); i++) {
         targets_.insert(meta_graph.g_target(i).wrt() + "_grad");
         string u = meta_graph.g_target(i).cost() + "_grad";
@@ -134,46 +134,46 @@ GraphDef Graph::Prune(const GraphDef& meta_graph) {
         ForwardPruneDyeing(u, v, vector<string>({ u }));
     }
 
-    //  select all colored operators
-    //  note that we use set to keep topo-order
+    // Select all colored operators
+    // Note that we use set to keep topo-order
     set<int> selected_op_indices;
     for (auto it : colored_) {
         if (dag_[it.first].op_idx == -1) continue;
         selected_op_indices.insert(dag_[it.first].op_idx);
     }
 
-    //  ensure that the update target will not be removed(color it)
+    // Ensure that the update target will not be removed(color it)
     for (int i = 0; i < meta_graph.u_target_size(); i++) {
         UpdateTarget target = meta_graph.u_target(i);
         for (auto& tensor : target.tensor())
             colored_[tensor] = true;
     }
 
-    //  remove the tensors that can not be produced(redundant)
+    // Remove the tensors that can not be produced(redundant)
     Set<string> outputs;
-    //  check if having feeded tensors
+    // Check if having feeded tensors
     for (auto& tensor : ws()->GetTensors()) outputs.insert(tensor);
-    //  note that we use map to keep topo-order
+    // Note that we use map to keep topo-order
     map<int, OperatorDef> final_sequence;
 
     for (auto it : selected_op_indices) {
         OperatorDef op_def;
         op_def.CopyFrom(meta_graph.op(it));
-        //  handle inputs
+        // Handle inputs
         for (int i = 0; i < meta_graph.op(it).input_size(); i++) {
             string input = meta_graph.op(it).input(i);
             if (!colored_[input] || !outputs.count(input))
                 *op_def.mutable_input(i) = "ignore";
         }
-        //  handle outputs
+        // Handle outputs
         for (int i = 0; i < meta_graph.op(it).output_size(); i++) {
             string output = meta_graph.op(it).output(i);
             if (!colored_[output]) *op_def.mutable_output(i) = "ignore";
             else outputs.insert(op_def.output(i));
         }
-        //  handle handcraft cases
+        // Handle handcraft cases
         if (op_def.type() == "AffineGradient") {
-            //  trigger in-place if not solving dAlpha
+            // Trigger in-place if not solving dAlpha
             if (op_def.output(1) == "ignore")
                 *op_def.mutable_input(0) = "ignore";
         } else if (op_def.type() == "MulGradient" ||
@@ -184,18 +184,18 @@ GraphDef Graph::Prune(const GraphDef& meta_graph) {
                 *op_def.mutable_input(0) = "ignore";
         } else if (op_def.type() == "DivGradient" ||
                    op_def.type() == "RDivGradient") {
-            //  dX2 requires both X1 and X2
+            // dX2 requires both X1 and X2
             if (op_def.output(1) == "ignore") {
                 *op_def.mutable_input(0) = "ignore";
                 if (op_def.output(0) == "ignore")
                     *op_def.mutable_input(1) = "ignore";
             }
         }
-        //  push into the final sequence
+        // Push into the final sequence
         final_sequence[it].CopyFrom(op_def);
     }
 
-    //  done!
+    // Done!
     GraphDef g;
     g.CopyFrom(meta_graph); g.clear_op();
     for (auto it : final_sequence)
@@ -205,7 +205,7 @@ GraphDef Graph::Prune(const GraphDef& meta_graph) {
 
 GraphDef Graph::Share(const GraphDef& optimized_graph) {
     dag_.clear(); renamed_.clear();
-    //  build DAG
+    // Build DAG
     for (int i = 0; i < optimized_graph.op_size(); i++) {
         const OperatorDef& op = optimized_graph.op(i);
         for (auto& v : op.output()) {
@@ -222,7 +222,7 @@ GraphDef Graph::Share(const GraphDef& optimized_graph) {
         }
     }
 
-    //  forward dyeing to search available tensors that be shared
+    // Forward dyeing to search available tensors that be shared
     for (int i = 0; i < optimized_graph.op_size(); i++) {
         const OperatorDef& op = optimized_graph.op(i);
         for (auto& u : op.input()) ForwardShareDyeing(u, u);
@@ -231,12 +231,12 @@ GraphDef Graph::Share(const GraphDef& optimized_graph) {
 
     GraphDef g; g.CopyFrom(optimized_graph);
 
-    //  actually we need a white list
+    // Actually we need a white list
     Set<string> whitelist;
     for (auto& target : optimized_graph.target())
         whitelist.insert(target);
 
-    //  rename to create in-place
+    // Rename to create in-place
     for (int i = 0; i < optimized_graph.op_size(); i++) {
         const OperatorDef& op = optimized_graph.op(i);
         for (int j = 0; j < op.input_size(); j++) {
@@ -246,7 +246,7 @@ GraphDef Graph::Share(const GraphDef& optimized_graph) {
                     *g.mutable_op(i)->mutable_input(j)
                         = renamed_[op.input(j)];
         }
-        //  handle handcraft cases
+        // Handle handcraft cases
         if (op.type() == "BiasAddGradient")
             renamed_[op.output(0)] = g.op(i).input(2);
         for (int j = 0; j < op.output_size(); j++) {
@@ -258,7 +258,7 @@ GraphDef Graph::Share(const GraphDef& optimized_graph) {
         }
     }
 
-    //  done!
+    // Done!
     return g;
 }
 
@@ -279,7 +279,7 @@ GraphDef Graph::MakeUpdate(const GraphDef& meta_graph) {
     OperatorDef collective_op;
     collective_op.set_type("CollectiveUpdate");
 
-    //  make update ops
+    // Make update ops
     vector<OperatorDef> update_ops;
     for (int i = 0; i < meta_graph.u_target_size(); i++) {
         UpdateTarget target = meta_graph.u_target(i);
@@ -295,8 +295,8 @@ GraphDef Graph::MakeUpdate(const GraphDef& meta_graph) {
             for (auto& arg : target.arg()) args.push_back(arg);
             OperatorDef op_def = MakeOperatorDef(target.type(),
                                                  target.name(),
-                          vector<string>({ target.tensor(1) }),  // dx
-                          vector<string>({ target.tensor(0) })); // x
+                          vector<string>({ target.tensor(1) }),  // dX
+                          vector<string>({ target.tensor(0) })); // X
             collective_op.add_input(target.tensor(1));
             collective_op.add_output(target.tensor(1));
             op_def.mutable_arg()->CopyFrom(target.arg());
@@ -307,7 +307,7 @@ GraphDef Graph::MakeUpdate(const GraphDef& meta_graph) {
         }
     }
 
-    //  make collective ops if necessary
+    // Make collective ops if necessary
     vector<OperatorDef> collective_ops;
     if (this->args_.count("parallel_mode")) {
         if (this->args_["parallel_mode"].s() == "MPI" ||
@@ -338,7 +338,7 @@ GraphDef Graph::MakeUpdate(const GraphDef& meta_graph) {
         }
     }
 
-    //  generate graph
+    // Generate graph
     GraphDef update_graph;
     update_graph.CopyFrom(meta_graph);
     update_graph.clear_u_target();
@@ -353,11 +353,11 @@ bool Graph::Create(const GraphDef& optimized_graph, Workspace* ws) {
         OperatorDef op_def(optimized_graph.op(i));
         LOG(DEBUG) << "Create Operator " << op_def.name()
                    << ": " << op_def.type();
-        //  inherit device option if necessary
+        // Inherit device option if necessary
         if (!op_def.has_device_option() && has_device_option)
             op_def.mutable_device_option()->CopyFrom(
                 optimized_graph.device_option());
-        //  for the static graph, do recomputing-aware
+        // For the static graph, do recomputing-aware
         Argument arg; arg.set_name("recomputing_aware");
         arg.set_b(true); op_def.add_arg()->CopyFrom(arg);
         OperatorBase* op = CreateOperator(op_def, ws);
@@ -373,7 +373,7 @@ void Graph::RecomputingAware(const GraphDef& optimized_graph, Workspace* ws) {
     Map<string, Set<string> > hash_map;
     Map<string, int> multi_use_count;
 
-    //  check mirror stage
+    // Check mirror stage
     for (int i = 0; i < ops_.size(); i++) {
         if (ops_[i]->type().find("Gradient") != string::npos) continue;
         bool mirror_stage = ops_[i]->OperatorBase::Arg<bool>("mirror_stage", false);
@@ -385,17 +385,17 @@ void Graph::RecomputingAware(const GraphDef& optimized_graph, Workspace* ws) {
             if (!inplace_flag) multi_use_count[u]++;
         }
         if (mirror_stage) {
-            //  TODO(PhyscalX):  we assume Input(0)->Output(0) as a in-place currently
+            // We assume Input(0)->Output(0) as a in-place currently
             OperatorDef* op = fake_graph.mutable_op(i);
             if (rename_map.count(op->input(0)))
                 *op->mutable_input(0) = rename_map[op->input(0)];
             rename_map[op->output(0)] = op->input(0);
             *op->mutable_output(0) = op->input(0);
-            ops_[i]->Input(0).Corrupt();    //  mark as a flag
+            ops_[i]->Input(0).Corrupt();  // Mark as a flag
         }
     }
 
-    //  sub-graph aware
+    // Sub-graph aware
     for (int i = 0; i < ops_.size(); i++) {
         if (ops_[i]->type().find("Gradient") != string::npos) continue;
         OperatorDef fake_op = fake_graph.op(i);
@@ -423,7 +423,7 @@ void Graph::RecomputingAware(const GraphDef& optimized_graph, Workspace* ws) {
         }
     }
 
-    //  apply map
+    // Apply map
     for (auto& ops : ops_) ops->set_recompute_map(recompute_map);
 }
 
@@ -431,9 +431,12 @@ Graph::Graph(const GraphDef& meta_graph, Workspace* ws)
     : GraphBase(meta_graph, ws) {
     GraphDef optimized_graph;
     if (meta_graph.u_target_size() > 0) {
-        //  check if existing any update requests
-        //  note that graph with update ops is not a dag
-        //  we handle them independently
+        /*!
+         * Check if existing any update requests.
+         *
+         * Note that graph with update ops is not a dag,
+         * we should handle them independently.
+         */
         optimized_graph = MakeUpdate(meta_graph);
     } else {
         int OX = 3;  // defaults: O3
@@ -445,17 +448,17 @@ Graph::Graph(const GraphDef& meta_graph, Workspace* ws)
         if (OX >= 3) ShareGrads(optimized_graph);
     }
 
-    //  store the final graph as a tensor for visualization
+    // Store the final graph as a tensor for visualization
     Tensor* graphT = ws_->CreateTensor(
         "GraphDef_" + optimized_graph.name());
     graphT->Reshape({ 1 });
     auto* data = graphT->mutable_data<string, CPUContext>();
     data[0] = optimized_graph.SerializeAsString();
 
-    //  create
+    // Create
     Create(optimized_graph, ws);
 
-    //  recomputing-aware
+    // Recomputing-aware
     RecomputingAware(optimized_graph, ws);
 }
 
@@ -495,4 +498,4 @@ DEFINE_REGISTRY(
     Workspace*
 );
 
-}    // namespace dragon
+}  // namespace dragon

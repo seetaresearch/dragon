@@ -13,6 +13,7 @@ from .data import DataLayer, \
                   MemoryDataLayer
 
 from .vision import ConvolutionLayer, \
+                    DepthwiseConvolutionLayer, \
                     DeconvolutionLayer, \
                     PoolingLayer, \
                     LRNLayer, \

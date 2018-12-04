@@ -1,11 +1,8 @@
 #ifdef WITH_CUDA
 
-#include <cmath>
-
 #include "core/context_cuda.h"
-#include "utils/cuda_device.h"
-#include "utils/math_functions.h"
 #include "utils/cast.h"
+#include "utils/math_functions.h"
 
 namespace dragon {
 
@@ -500,8 +497,8 @@ template <> void Gemv<float, CUDAContext>(
             &_alpha_, A, N, x, 1, &_beta_, y, 1));
 }
 
-}    // namespace math
+}  // namespace math
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif // WITH_CUDA
+#endif  // WITH_CUDA

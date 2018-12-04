@@ -11,8 +11,8 @@ void GramMatrixOp<Context>::RunWithType() {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasTrans,
                 dim, dim, inner_dim,
-                    1.0, Xdata, Xdata,
-                        0.0, Ydata, ctx());
+                    1.f, Xdata, Xdata,
+                        0.f, Ydata, ctx());
         Xdata += x_offset;
         Ydata += y_offset;
     }
@@ -46,8 +46,8 @@ void GramMatrixGradientOp<Context>::RunWithType() {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 dim, inner_dim, dim,
-                    2.0, dYdata, Xdata,
-                        0.0, dXdata, ctx());
+                    2.f, dYdata, Xdata,
+                        0.f, dXdata, ctx());
         dYdata += y_offset;
         dXdata += x_offset;
     }
@@ -83,4 +83,4 @@ class GetGramMatrixGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(GramMatrix, GetGramMatrixGradient);
 
-}    // namespace dragon
+}  // namespace dragon

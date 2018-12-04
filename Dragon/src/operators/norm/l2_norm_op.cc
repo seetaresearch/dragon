@@ -8,12 +8,12 @@ template <class Context> template <typename T>
 void L2NormOp<Context>::RunWithType() {
     DECLARE_MULTIPLIER(Dmult, dim);
 
-    //  normalize by outer dim independently
+    // Normalize by outer dim independently
     vector<TIndex> dims = Input(0).dims();
     for (int i = 0; i < axis; i++) dims[i] = 1;
     buffer.Reshape(dims);
 
-    //  normalize by inner_dim independently if not across it
+    // Normalize by inner_dim independently if not across it
     norm = ws()->CreateTensor(
         "/mnt/" + anchor() + "/l2norm/normalizer");
     dims = Input(0).dims();
@@ -30,19 +30,19 @@ void L2NormOp<Context>::RunWithType() {
     for (int n = 0; n < outer_dim; n++) {
         math::Square<T, Context>(buffer.count(),
             Xdata, Bdata, ctx());
-        //  compute T1 = \sum_{i} x_{i,j}^{2}
+        // Compute T1 = \sum_{i} x_{i,j}^{2}
         math::Gemv<T, Context>(
             CblasTrans, dim, inner_dim,
-                mode == "MEAN" ? 1.0 / dim : 1.0, Bdata, Dmult,
-                    1.0, Ndata, ctx());
-        //  compute T2 = \sqrt{T1}
+                mode == "MEAN" ? 1.f / dim : 1.f, Bdata, Dmult,
+                    1.f, Ndata, ctx());
+        // Compute T2 = \sqrt{T1}
         math::Sqrt<T, Context>(inner_dim, Ndata, Ndata, ctx());
-        //  compute T3 = x / [(T2)]_{dim} 
+        // Compute T3 = x / [(T2)]_{dim}
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 dim, inner_dim, 1,
-                    1.0, Dmult, Ndata,
-                        0.0, Bdata, ctx());
+                    1.f, Dmult, Ndata,
+                        0.f, Bdata, ctx());
         math::Div<T, Context>(buffer.count(),
             Xdata, Bdata, Ydata, ctx());
         Ndata += inner_dim;
@@ -59,7 +59,7 @@ void L2NormOp<Context>::RunOnDevice() {
     end_axis = axis + num_axes;
     CHECK_LE(end_axis, int(Input(0).ndim()));
 
-    //  do statistics through [axis, end_axis)
+    // Do statistics through [axis, end_axis)
     outer_dim = Input(0).count(0, axis);
     dim = Input(0).count(axis, axis + num_axes);
     inner_dim = Input(0).count(axis + num_axes);
@@ -81,7 +81,7 @@ template <class Context> template <typename T>
 void L2NormGradientOp<Context>::RunWithType() {
     DECLARE_MULTIPLIER(Dmult, dim);
 
-    //  normalize by inner_dim independently if not across it
+    // Normalize by inner_dim independently if not across it
     norm = ws()->GetTensor("/mnt/" + anchor() + "/l2norm/normalizer");
     vector<TIndex> dims = Input(0).dims();
     for (int i = 0; i < axis; i++) dims[i] = 1;
@@ -97,39 +97,39 @@ void L2NormGradientOp<Context>::RunWithType() {
     auto* Bdata = BSdata[0], *BInnerdata = BSdata[1];
 
     for (int n = 0; n < outer_dim; n++) {
-        //  compute \sum_{i} x_{i, j}dy_{i, j}
+        // Compute \sum_{i} x_{i, j}dy_{i, j}
         math::Mul<T, Context>(buffer.count(),
             Xdata, dYdata, Bdata, ctx());
         math::Gemv<T, Context>(
             CblasTrans, dim, inner_dim,
-                mode == "MEAN" ? 1.0 / dim : 1.0, Bdata, Dmult,
-                    0.0, BInnerdata, ctx());
-        //  compute T1 = x[(\sum_{i} x_{i, j}dy_{i, j})]_{dim}
+                mode == "MEAN" ? 1.f / dim : 1.f, Bdata, Dmult,
+                    0.f, BInnerdata, ctx());
+        // Compute T1 = x[(\sum_{i} x_{i, j}dy_{i, j})]_{dim}
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 dim, inner_dim, 1,
-                    1.0, Dmult, BInnerdata,
-                        0.0, Bdata, ctx());
+                    1.f, Dmult, BInnerdata,
+                        0.f, Bdata, ctx());
         math::Mul<T, Context>(buffer.count(),
             Xdata, Bdata, dXdata, ctx());
-        //  compute T2 = T1 / Normalizer^{2}
+        // Compute T2 = T1 / Normalizer^{2}
         math::Pow<T, Context>(inner_dim,
-            2.0, Ndata, BInnerdata, ctx());
+            2.f, Ndata, BInnerdata, ctx());
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 dim, inner_dim, 1,
-                    1.0, Dmult, BInnerdata,
-                        0.0, Bdata, ctx());
+                    1.f, Dmult, BInnerdata,
+                        0.f, Bdata, ctx());
         math::Div<T, Context>(buffer.count(),
             dXdata, Bdata, dXdata, ctx());
-        //  compute T3 = (dy - T2) / Normalizer
+        // Compute T3 = (dy - T2) / Normalizer
         math::Sub<T, Context>(buffer.count(),
             dYdata, dXdata, dXdata, ctx());
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 dim, inner_dim, 1,
-                    1.0, Dmult, Ndata,
-                        0.0, Bdata, ctx());
+                    1.f, Dmult, Ndata,
+                        0.f, Bdata, ctx());
         math::Div<T, Context>(buffer.count(),
             dXdata, Bdata, dXdata, ctx());
         Ndata += inner_dim;
@@ -147,7 +147,7 @@ void L2NormGradientOp<Context>::RunOnDevice() {
     end_axis = axis + num_axes;
     CHECK_LE(end_axis, int(Input(0).ndim()));
 
-    //  do statistics through [axis, end_axis)
+    // Do statistics through [axis, end_axis)
     outer_dim = Input(0).count(0, axis);
     dim = Input(0).count(axis, axis + num_axes);
     inner_dim = Input(0).count(axis + num_axes);
@@ -175,4 +175,4 @@ class GetL2NormGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(L2Norm, GetL2NormGradient);
 
-}    // namespace dragon
+}  // namespace dragon

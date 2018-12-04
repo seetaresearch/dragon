@@ -1,6 +1,44 @@
 ------------------------------------------------------------------------
 The list of most significant changes made over time in Dragon.
 
+Dragon 0.2.2.13 (20181204)
+DRAGON_VERSION == 2213
+
+Changes (w.r.t. Dragon 0.2.2.12):
+
+Preview Features:
+
+- Dismantled op kernels.
+
+- Added FP16 support for ``NNResizeOp``, ``ProposalOp``,
+
+  ``ROIPoolingOp``, ``ROIAlignOp``, (R-CNN components).
+
+- Added ``DepthwiseConv2dOp``.
+
+- [PyTorch] Added ``nn.DepthwiseConv2d``
+
+- [PyCaffe] Added ``DepthwiseConvolutionLayer``.
+
+
+Bugs fixed:
+
+- Fixed the cuda issue that incorrect results in ``AsTypeOp``
+
+  under ``float32 -> float16``.
+
+- Removed the support for group convolution implemented with im2col-nhwc.
+
+- Changed the default ``NHWC`` pack format of filter from
+
+  ``[filter_height, filter_width, in_channels, out_channels]``(TensorFlow) to
+
+  ``[out_channels, filter_height, filter_width, in_channels]``(CuDNN).
+
+- Changed the VC Runtime from ``MD`` to ``MT``.
+
+------------------------------------------------------------------------
+
 Dragon 0.2.2.12 (20181120)
 DRAGON_VERSION == 2212
 
@@ -59,6 +97,7 @@ Preview Features:
 - [PyTorch] ``torch.save`` can save both ``torch.Tensor`` and other pickle values.
 
 - [PyCaffe] Added ``DropBlockLayer``.
+
 
 Bugs fixed:
 

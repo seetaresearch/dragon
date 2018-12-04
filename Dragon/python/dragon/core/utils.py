@@ -103,7 +103,7 @@ def MakeDeviceOption(device_type, device_id, engine=None, rng_seed=None):
     return option
 
 
-#  fix the python stdout
+# Fix the python stdout
 class Unbuffered(object):
    def __init__(self, stream):
        self.stream = stream
@@ -114,6 +114,6 @@ class Unbuffered(object):
        return getattr(self.stream, attr)
 
 
-# clear the stdout buffer for mpi(c++ & python)
+# Clear the stdout buffer for mpi(C++ && Python)
 import sys
 sys.stdout = Unbuffered(sys.stdout)

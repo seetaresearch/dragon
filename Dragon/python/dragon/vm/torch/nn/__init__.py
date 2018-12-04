@@ -19,6 +19,7 @@ from dragon.vm.torch.module import Module
 from dragon.vm.torch.tensor import Parameter
 
 from .modules.conv import Conv2d, ConvTranspose2d
+from .modules.depthwise_conv import DepthwiseConv2d
 from .modules.pooling import MaxPool2d, AvgPool2d
 
 from .modules.activation import (

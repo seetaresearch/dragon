@@ -18,7 +18,7 @@ from . import *
 
 def BatchNorm(
     inputs, axis=-1, momentum=0.9, eps=1e-5,
-    use_stats=-1, mode='DEFAULT', **kwargs
+        use_stats=-1, mode='DEFAULT', **kwargs
 ):
     """Batch Normalization. `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
@@ -74,8 +74,8 @@ def BatchNorm(
 
 def BatchRenorm(
     inputs, axis=-1, momentum=0.9, eps=1e-5,
-    r_max=3.0, d_max=5.0, t_delta=0.001,
-    use_stats=-1, mode='DEFAULT', **kwargs
+        r_max=3.0, d_max=5.0, t_delta=0.001,
+            use_stats=-1, mode='DEFAULT', **kwargs
 ):
     """Batch Renormalization. `[Ioffe, 2017] <https://arxiv.org/abs/1702.03275>`_.
 
@@ -137,7 +137,7 @@ def BatchRenorm(
 
 def FusedBatchNorm(
     inputs, axis=-1, momentum=0.9, eps=1e-5,
-    use_stats=-1, **kwargs
+        use_stats=-1, **kwargs
 ):
     """Batch Normalization, with scale procedure after normalization.
 

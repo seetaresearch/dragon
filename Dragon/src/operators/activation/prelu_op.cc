@@ -101,4 +101,4 @@ class GetPReluGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(PRelu, GetPReluGradient);
 
-}    // namespace dragon
+}  // namespace dragon

@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_CORE_TYPEID_H_
 #define DRAGON_CORE_TYPEID_H_
@@ -37,7 +38,7 @@ class TypeMeta {
         : id_(0), itemsize_(0),
           ctor_(nullptr), copy_(nullptr), dtor_(nullptr) {}
 
-    TypeMeta(const TypeMeta& src) 
+    TypeMeta(const TypeMeta& src)
         : id_(src.id_), itemsize_(src.itemsize_),
         ctor_(src.ctor_), copy_(src.copy_), dtor_(src.dtor_) {}
 
@@ -102,7 +103,7 @@ class TypeMeta {
     }
 
 #define FundMeta std::enable_if<std::is_fundamental<T>::value,TypeMeta>::type
-#define StructMeta std::enable_if<!std::is_fundamental<T>::value && std::is_copy_assignable<T>::value, TypeMeta>::type 
+#define StructMeta std::enable_if<!std::is_fundamental<T>::value && std::is_copy_assignable<T>::value, TypeMeta>::type
 
     template <typename T>
     static typename FundMeta Make() {
@@ -134,6 +135,6 @@ class TypeMeta {
     TypedDestructor dtor_;
 };
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_CORE_TYPEID_H_
+#endif  // DRAGON_CORE_TYPEID_H_

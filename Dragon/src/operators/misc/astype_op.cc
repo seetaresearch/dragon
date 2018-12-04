@@ -20,6 +20,7 @@ namespace dragon {
             auto* Xdata = Output(0)->template data<type_a, Context>(); \
             auto* Cdata = ws()->template caches<type_b, Context>({ count })[0]; \
             kernel::TypeA2B<type_a, type_b, Context>(count, Xdata, Cdata, ctx()); \
+            ctx()->FinishDeviceCompution(); \
             auto* Ydata = Output(0)->template mutable_data<type_b, Context>(); \
             ctx()->template Copy<type_b, Context, Context>(count, Ydata, Cdata); \
         } \
@@ -37,6 +38,8 @@ namespace dragon {
 
 template <class Context>
 void AsTypeOp<Context>::RunOnDevice() {
+    ctx()->set_stream_id(0);  // Enforce SyncStream
+
     if (inplace && InputSize() != 0)
         LOG(FATAL) << "Excepted 0 inputs, got " << InputSize() << ".";
     if (InputSize() != 0) {
@@ -66,4 +69,4 @@ OPERATOR_SCHEMA(AsType).NumInputs(0, 1).NumOutputs(1);
 
 NO_GRADIENT(AsType);
 
-}    // namespace dragon
+}  // namespace dragon

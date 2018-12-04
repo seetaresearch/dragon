@@ -32,14 +32,14 @@ void TileOp<Context>::RunOnDevice() {
         if (multiples(i) > 1) process_axes.push_back({ multiples(i), i });
     std::sort(process_axes.begin(), process_axes.end());
 
-    //  do nothing 
+    // Do nothing
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(0));
         Output(0)->template CopyFrom<Context>(Input(0), ctx());
         return;
     }
 
-    //  select source & dest
+    // Select source & dest
     source = &Input(0);
     if (process_axes.size() % 2 == 1) dest = Output(0);
     else dest = &navigator;
@@ -49,7 +49,7 @@ void TileOp<Context>::RunOnDevice() {
         if (XIsType(Input(0), float)) TileRunWithType<float>();
         else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
         ctx()->FinishDeviceCompution();
-        //  allow buffer to protect X if the num of tasks >= 2
+        // Allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
             if (dest == &Input(0)) dest = &navigator;
@@ -94,14 +94,14 @@ void TileGradientOp<Context>::RunOnDevice() {
     std::sort(process_axes.begin(), process_axes.end());
     std::reverse(process_axes.begin(), process_axes.end());
 
-    //  do nothing 
+    // Do nothing
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(-1));
         Output(0)->template CopyFrom<Context>(Input(-1), ctx());
         return;
     }
 
-    //  select source & buffer
+    // Select source & buffer
     source = &Input(-1);
     if (process_axes.size() % 2 == 1) dest = Output(0);
     else dest = &navigator;
@@ -111,7 +111,7 @@ void TileGradientOp<Context>::RunOnDevice() {
         if (XIsType(Input(0), float)) TileRunWithType<float>();
         else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
         ctx()->FinishDeviceCompution();
-        //  allow buffer to protect X if the num of tasks >= 2
+        // Allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
             if (dest == &Input(-1)) dest = &navigator;
@@ -138,4 +138,4 @@ class GetTileGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Tile, GetTileGradient);
 
-}    // namespace dragon
+}  // namespace dragon

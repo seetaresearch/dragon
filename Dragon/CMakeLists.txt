@@ -7,39 +7,48 @@ cmake_minimum_required(VERSION 3.0.0)
 
 # ---------------- User Config ----------------
 
+# Set optional buildings
+option(BUILD_PYTHON_API        "Set ON to build PYTHON API"    ON)
+option(BUILD_CXX_API           "Set ON to build CXX API"       OFF)
+
 # Set optional libraries
-option(WITH_PYTHON                 "Set ON to use PYTHON"  ON)
-option(WITH_CUDA                   "Set ON to use CUDA"  ON)
-option(WITH_CUDNN                  "Set ON to use CUDNN" ON)
-option(WITH_BLAS                   "Set ON to use BLAS"  ON)
-option(WITH_OMP                    "Set ON to use OpenMP"  ON)
-option(WITH_SSE                    "Set ON to use SSE 4.1"  ON)
-option(WITH_MPI                    "Set ON to use MPI"  OFF)
-option(WITH_MPI_CUDA               "Set ON to use MPI-CUDA"  OFF)
-option(WITH_MPI_NCCL               "Set ON to use MPI-NCCL"  OFF)
+option(WITH_CUDA               "Set ON to use CUDA"            ON)
+option(WITH_CUDNN              "Set ON to use CUDNN"           ON)
+option(WITH_BLAS               "Set ON to use BLAS"            ON)
+option(WITH_OMP                "Set ON to use OpenMP"          ON)
+option(WITH_SSE                "Set ON to use SSE 4.1"         ON)
+option(WITH_MPI                "Set ON to use MPI"             OFF)
+option(WITH_MPI_CUDA           "Set ON to use MPI-CUDA"        OFF)
+option(WITH_MPI_NCCL           "Set ON to use MPI-NCCL"        OFF)
 
 # Set your 3rdparty
-set(3RDPARTY_DIR  ${PROJECT_SOURCE_DIR}/../3rdparty)
+if (NOT 3RDPARTY_DIR)
+    set(3RDPARTY_DIR  ${PROJECT_SOURCE_DIR}/../3rdparty)
+endif()
 
 # Set your python "interpreter" if necessary
 # if not, a default interpreter will be used
 # here, provide several examples:
-# set(PYTHON_EXECUTABLE /usr/bin/python) # Linux & OSX, Builtin Python
-# set(PYTHON_EXECUTABLE /X/anaconda/bin/python) # Linux & OSX, Anaconda
-# set(PYTHON_EXECUTABLE X:/Anaconda/python) # Win, Anaconda
+if (NOT PYTHON_EXECUTABLE)
+    # set(PYTHON_EXECUTABLE  /usr/bin/python) # Linux && OSX, Builtin Python
+    # set(PYTHON_EXECUTABLE  /X/anaconda/bin/python) # Linux && OSX, Anaconda
+    # set(PYTHON_EXECUTABLE  X:/Anaconda/python) # Win, Anaconda
+endif()
 
 # Set CUDA compiling architecture
 # Remove "compute_70/sm_70" if using CUDA 8.0
-set(CUDA_ARCH    -gencode arch=compute_30,code=sm_30
-                 -gencode arch=compute_35,code=sm_35
-                 -gencode arch=compute_50,code=sm_50
-                 -gencode arch=compute_60,code=sm_60
-                 -gencode arch=compute_70,code=sm_70)
+set(CUDA_ARCH  -gencode arch=compute_30,code=sm_30
+               -gencode arch=compute_35,code=sm_35
+               -gencode arch=compute_50,code=sm_50
+               -gencode arch=compute_60,code=sm_60
+               -gencode arch=compute_70,code=sm_70)
 
 # Set CUDNN Library Dir if necessary (Linux/OSX Only)
 # For Win, Recommend to use ``3RDPARTY_DIR/lib``
-set(CUDNN_LIBRARY_DIR /usr/local/cuda/lib64) # Linux
-# set(CUDNN_LIBRARY_DIR /usr/local/cuda/lib) # OSX
+if (NOT CUDNN_LIBRARY_DIR)
+    set(CUDNN_LIBRARY_DIR  /usr/local/cuda/lib64) # Linux
+    # set(CUDNN_LIBRARY_DIR  /usr/local/cuda/lib) # OSX
+endif()
 
 # ---------------- User Config ----------------
 
@@ -68,7 +77,7 @@ set(CUDNN_LIBRARY_DIR /usr/local/cuda/lib64) # Linux
 
 
 # ---[ Dependencies
-if (WITH_PYTHON)
+if (BUILD_PYTHON_API)
     include(${PROJECT_SOURCE_DIR}/../CMake/FindPythonLibs.cmake)
     include(${PROJECT_SOURCE_DIR}/../CMake/FindNumPy.cmake)
 endif()
@@ -88,7 +97,7 @@ set(CMAKE_CONFIGURATION_TYPES  Release CACHE STRING "set build type to release" 
 include_directories(${3RDPARTY_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/src)
-if (WITH_PYTHON)
+if (BUILD_PYTHON_API)
     include_directories(${PYTHON_INCLUDE_DIRS})
     include_directories(${NUMPY_INCLUDE_DIR})
 endif()
@@ -111,7 +120,7 @@ set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR} CACHE STRING "set install prefix"
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH} ${3RDPARTY_LIBS})
 
 # ---[ Defines
-if (WITH_PYTHON)
+if (BUILD_PYTHON_API)
     ADD_DEFINITIONS(-DWITH_PYTHON)
     if (${PYTHON_VERSION_MAJOR} STREQUAL "2")
         message(STATUS "Use Python2 [Optional]")
@@ -166,7 +175,10 @@ endif()
 # ---[ Flags
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")
 if(WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /O2")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /wd4819 /wd4244")
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -Xcompiler \"/wd 4819\"")
+    string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+    string(REPLACE "/O2" "/Ox" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
     if (WITH_OMP)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp")
     endif()
@@ -189,8 +201,12 @@ execute_process(COMMAND protoc -I=${PROTOS_DIR} --cpp_out=${PROTOS_DIR} ${PROTOS
 execute_process(COMMAND protoc -I=${PROTOS_DIR} --cpp_out=${PROTOS_DIR} ${PROTOS_DIR}/dragon.proto)
 
 # ---[ Subdirectories
-add_subdirectory(modules/python)
-#add_subdirectory(modules/cxx)    # Compile CXX module if necessary
+if (BUILD_PYTHON_API)
+    add_subdirectory(modules/python)
+endif()
+if (BUILD_CXX_API)
+    add_subdirectory(modules/cxx)
+endif()
 
 # ---[ Utils
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/../lib)

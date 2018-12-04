@@ -19,7 +19,10 @@ from . import *
 from .activation import Softmax
 
 
-def NLLLoss(inputs, axis=1, normalization='VALID', ignore_labels=(), **kwargs):
+def NLLLoss(
+    inputs, axis=1, normalization='VALID',
+        ignore_labels=(), **kwargs
+):
     """Negative likelihood loss with sparse labels.
 
     Parameters
@@ -59,7 +62,10 @@ def NLLLoss(inputs, axis=1, normalization='VALID', ignore_labels=(), **kwargs):
     return output
 
 
-def SparseSoftmaxCrossEntropy(inputs, axis=1, normalization='VALID', ignore_labels=(), **kwargs):
+def SparseSoftmaxCrossEntropy(
+    inputs, axis=1, normalization='VALID',
+        ignore_labels=(), **kwargs
+):
     """SoftmaxCrossEntropy with sparse labels.
 
     Parameters
@@ -257,8 +263,10 @@ def L2Loss(inputs, normalization='BATCH_SIZE', **kwargs):
     return output
 
 
-def SigmoidFocalLoss(inputs, axis=1, normalization='VALID',
-                     alpha=0.25, gamma=2.0, neg_id=0, **kwargs):
+def SigmoidFocalLoss(
+    inputs, axis=1, normalization='VALID',
+        alpha=0.25, gamma=2.0, neg_id=0, **kwargs
+):
     """SigmoidFocalLoss with sparse labels. `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`_.
 
     Parameters
@@ -302,8 +310,10 @@ def SigmoidFocalLoss(inputs, axis=1, normalization='VALID',
     return output
 
 
-def SoftmaxFocalLoss(inputs, axis=1, normalization='VALID', ignore_labels=(),
-                     alpha=0.25, gamma=2.0, neg_id=0, **kwargs):
+def SoftmaxFocalLoss(
+    inputs, axis=1, normalization='VALID', ignore_labels=(),
+        alpha=0.25, gamma=2.0, neg_id=0, **kwargs
+):
     """SoftmaxFocalLoss with sparse labels. `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`_.
 
     Parameters
@@ -349,8 +359,10 @@ def SoftmaxFocalLoss(inputs, axis=1, normalization='VALID', ignore_labels=(),
     return output
 
 
-def CTCLoss(inputs, blank_first=True, padding_mask=-1,
-            use_softmax=True, **kwargs):
+def CTCLoss(
+    inputs, blank_first=True, padding_mask=-1,
+        use_softmax=True, **kwargs
+):
     """CTCLoss with batched variable length of labels. `[Graves & Gomez, 2006] <http://www.cs.utoronto.ca/~graves/icml_2006.pdf>`_.
 
     The data format of inputs should be ``[T, N, C]``.

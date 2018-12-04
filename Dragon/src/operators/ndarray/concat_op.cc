@@ -104,4 +104,4 @@ class GetConcatGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Concat, GetConcatGradient);
 
-}    // namespace dragon
+}  // namespace dragon

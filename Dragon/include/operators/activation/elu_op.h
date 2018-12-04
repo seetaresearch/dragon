@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_OPERATORS_ACTIVATION_ELU_OP_H_
 #define DRAGON_OPERATORS_ACTIVATION_ELU_OP_H_
@@ -21,7 +22,7 @@ class EluOp : public Operator<Context> {
  public:
     EluOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          alpha(OperatorBase::Arg<float>("alpha", 1.0)) {}
+          alpha(OperatorBase::Arg<float>("alpha", 1.f)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -36,7 +37,7 @@ class EluGradientOp : public Operator<Context> {
  public:
     EluGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          alpha(OperatorBase::Arg<float>("alpha", 1.0)) {}
+          alpha(OperatorBase::Arg<float>("alpha", 1.f)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -106,8 +107,8 @@ class CuDNNEluGradientOp final : public EluGradientOp<Context> {
 
 #endif
 
-#endif // WITH_CUDNN
+#endif  // WITH_CUDNN
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_OPERATORS_ACTIVATION_ELU_OP_H_
+#endif  // DRAGON_OPERATORS_ACTIVATION_ELU_OP_H_

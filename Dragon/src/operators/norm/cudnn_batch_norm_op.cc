@@ -12,7 +12,7 @@ template <class Context> template <typename T>
 void CuDNNBatchNormOp<Context>::RunWithType() {
     typedef typename CUDNNType<T>::BNParamType BNParamType;
 
-    //  determine the bn desc
+    // Determine the bn desc
     if (Input(0).ndim() == 2) {
         bn_mode = CUDNN_BATCHNORM_PER_ACTIVATION;
         Tensor x_reshape;
@@ -53,7 +53,7 @@ void CuDNNBatchNormOp<Context>::RunWithType() {
             }
         }
     }
-    //  derive the bn desc
+    // Derive the bn desc
     CUDNN_CHECK(cudnnDeriveBNTensorDescriptor(bn_desc, input_desc, bn_mode));
 
     TENSOR_FILL_WITH_TYPE(Input(1), vector<TIndex>(1, C), BNParamType);  //  history_mean
@@ -79,7 +79,7 @@ void CuDNNBatchNormOp<Context>::RunWithType() {
     } else {
         auto* Tmean = mean->template mutable_data<BNParamType, Context>();
         auto* Tvar = var->template mutable_data<BNParamType, Context>();
-        auto mt = this->is_recomputing ? 0.0 : 1.0 - this->momentum;
+        auto mt = this->is_recomputing ? 0.f : 1.f - this->momentum;
         CUDNN_CHECK(cudnnBatchNormalizationForwardTraining(
             ctx()->cudnn_handle(), bn_mode,
                 CUDNNType<T>::one, CUDNNType<T>::zero,
@@ -92,7 +92,7 @@ void CuDNNBatchNormOp<Context>::RunWithType() {
 
 template <class Context>
 void CuDNNBatchNormOp<Context>::Setup() {
-    //  determine the mode
+    // Determine the mode
     if (this->use_stats == -1) {
         this->use_global_stats = phase() == "TEST" ? true : false;
     } else {
@@ -101,7 +101,7 @@ void CuDNNBatchNormOp<Context>::Setup() {
     this->is_recomputing = ws()->GetTensor("/opt/mirror_stage/recompute_flag")
                                ->template data<bool, CPUContext>()[0];
 
-    //  determine the data format
+    // Determine the data format
     TIndex channel_axis = this->axis;
     data_format = "NCHW";
     if (channel_axis == -1) channel_axis += (int)Input(0).ndim();
@@ -109,11 +109,11 @@ void CuDNNBatchNormOp<Context>::Setup() {
     N = Input(0).dim(0);
     C = Input(0).dim(channel_axis);
 
-    //  make resource
+    // Make resource
     mean = ws()->CreateTensor("/mnt/" + anchor() + "/bn/mean");
     var = ws()->CreateTensor("/mnt/" + anchor() + "/bn/var");
 
-    //  reshape
+    // Reshape
     mean->Reshape({ C });
     var->Reshape({ C });
     Output(0)->ReshapeLike(Input(0));
@@ -136,14 +136,14 @@ INSTANTIATE_CUDNN_OPERATOR(BatchNorm);
 
 template <class Context>
 void CuDNNBatchNormGradientOp<Context>::Setup() {
-    //  determine the mode
+    // Determine the mode
     if (this->use_stats == -1) {
         this->use_global_stats = phase() == "TEST" ? true : false;
     } else {
         this->use_global_stats = this->use_stats == 1 ? true : false;
     }
 
-    //  determine the data format
+    // Determine the data format
     TIndex channel_axis = this->axis;
     data_format = "NCHW";
     if (channel_axis == -1) channel_axis += (int)Input(0).ndim();
@@ -154,11 +154,11 @@ void CuDNNBatchNormGradientOp<Context>::Setup() {
     S = Input(0).count() / NC;
     NS = N * S;
 
-    //  make resource
+    // Make resource
     mean = ws()->GetTensor("/mnt/" + anchor() + "/bn/mean");
     var = ws()->GetTensor("/mnt/" + anchor() + "/bn/var");
 
-    //  reshape
+    // Reshape
     mean->Reshape({ C });
     var->Reshape({ C });
     nc.Reshape({ NC });
@@ -171,7 +171,7 @@ template <class Context> template <typename T>
 void CuDNNBatchNormGradientOp<Context>::TrainingRunWithType() {
     typedef typename CUDNNType<T>::BNParamType BNParamType;
 
-    //  determine the bn desc
+    // Determine the bn desc
     if (Input(0).ndim() == 2) {
         bn_mode = CUDNN_BATCHNORM_PER_ACTIVATION;
         Tensor x_reshape;
@@ -211,7 +211,7 @@ void CuDNNBatchNormGradientOp<Context>::TrainingRunWithType() {
             }
         }
     }
-    //  derive the bn desc
+    // Derive the bn desc
     CUDNN_CHECK(cudnnDeriveBNTensorDescriptor(bn_desc, input_desc, bn_mode));
 
     if (Output(0)->name() != "ignore" ||
@@ -247,61 +247,61 @@ void CuDNNBatchNormGradientOp<Context>::InferenceRunWithType() {
     auto* Tvar = var->template mutable_data<T, Context>();
     auto* NCdata = nc.template mutable_data<T, Context>();
 
-    //  gradient w.r.t. scale
+    // Gradient w.r.t. scale
     if (Output(1)->name() != "ignore") 
         LOG(FATAL) << "The gamma should be fixed if using global stats.";
        
-    //  gradient w.r.t. bias
+    // Gradient w.r.t. bias
     if (Output(2)->name() != "ignore") {
         auto* dBdata = Output(2)->template mutable_data<T, Context>();
         if (data_format == "NCHW") {
             math::Gemv<T, Context>(
                 CblasNoTrans, NC, S,
-                    1.0, dYdata, MXmult,
-                        0.0, NCdata, ctx());
+                    1.f, dYdata, MXmult,
+                        0.f, NCdata, ctx());
             math::Gemv<T, Context>(
                 CblasTrans, N, C,
-                    1.0, NCdata, MXmult,
-                        1.0, dBdata, ctx());
+                    1.f, NCdata, MXmult,
+                        1.f, dBdata, ctx());
         } else if (data_format == "NHWC") {
             math::Gemv<T, Context>(
                 CblasTrans, NS, C,
-                    1.0, dYdata, MXmult,
-                        1.0, dBdata, ctx());
+                    1.f, dYdata, MXmult,
+                        1.f, dBdata, ctx());
         }
     }
 
-    //  gradient w.r.t. x
+    // Gradient w.r.t. x
     if (Output(0)->name() != "ignore") {
         auto* dXdata = Output(0)->template mutable_data<T, Context>();
         auto* WSdata = ws()->template caches<T, Context>({ Input(0).count() })[0];
 
-        //  compute stddev
+        // Compute stddev
         ctx()->template Copy<T, Context, Context>(var->count(), Tvar, Hvar);
         math::AddScalar<T, Context>(var->count(), this->eps, Tvar, ctx());
         math::Sqrt<T, Context>(var->count(), Tvar, Tvar, ctx());
 
-        //  divide scale by stddev
+        // Divide scale by stddev
         math::Div<T, Context>(var->count(), Sdata, Tvar, Tvar, ctx());
 
-        //  compute dE/dY \cot (scale / std(X))
+        // Compute dE/dY \cot (scale / std(X))
         if (data_format == "NCHW") {
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
                     N, C, 1,
-                        1.0, MXmult, Tvar,
-                            0.0, NCdata, ctx());
+                        1.f, MXmult, Tvar,
+                            0.f, NCdata, ctx());
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
                     NC, S, 1,
-                        1.0, NCdata, MXmult,
-                            0.0, WSdata, ctx());
+                        1.f, NCdata, MXmult,
+                            0.f, WSdata, ctx());
         } else if (data_format == "NHWC") {
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
                     NS, C, 1,
-                        1.0, MXmult, Tvar,
-                            0.0, WSdata, ctx());
+                        1.f, MXmult, Tvar,
+                            0.f, WSdata, ctx());
         }
         math::Mul<T, Context>(Output(0)->count(),
             dYdata, WSdata, dXdata, ctx());
@@ -317,7 +317,7 @@ void CuDNNBatchNormGradientOp<Context>::RunOnDevice() {
         else TrainingRunWithType<float>();
     } else if (XIsType(Input(0), float16)) {
         if (this->use_global_stats) {
-            //  fp16 is disabled during inference
+            // FP16 is disabled during inference
             LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
         } else TrainingRunWithType<float16>();
     } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
@@ -329,7 +329,7 @@ REGISTER_CUDNN_OPERATOR(
 );
 INSTANTIATE_CUDNN_OPERATOR(BatchNormGradient);
 
-}    // namespace dragon
+}  // namespace dragon
 
 #endif
 

@@ -101,4 +101,4 @@ class GetL2LossGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(L2Loss, GetL2LossGradient);
 
-}    // namespace dragon
+}  // namespace dragon

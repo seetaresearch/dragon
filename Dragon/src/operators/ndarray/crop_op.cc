@@ -15,24 +15,24 @@ void CropOp<Context>::RunWithType() {
         Ydata = ws()->template caches<T, Context>({ dest->count() })[0];
     } else { Ydata = dest->template mutable_data<T, Context>(); }
 
-    kernel::Crop1D<T, Context>(dest->count(),
+    kernel::Crop1d<T, Context>(dest->count(),
         dim, ed[axis] - st[axis], inner_dim,
             st[axis], Xdata, Ydata, ctx());
 }
 
 template <class Context>
 void CropOp<Context>::Setup() {
-    //  make starts
+    // Make starts
     st.assign(Input(0).ndim(), 0);
     if (start_axis == -1) {
-        //  static crop
+        // Static crop
         int n_given = (int)GET_ARGUMENTS_SIZE(starts);
         for (int i = 0; i < st.size(); i++) {
             if (i < n_given) st[i] = starts(i);
             else st[i] = 0;
         }
     } else {
-        //  dynamic crop
+        // Dynamic crop
         for (int i = 0; i < st.size(); i++) {
             if (i < start_axis || offsets.size() == 0) {
                 st[i] = 0;
@@ -44,26 +44,26 @@ void CropOp<Context>::Setup() {
         }
     }
 
-    // make ends
+    // Make ends
     ed.assign(Input(0).ndim(), 0);
     keep_dims.assign(Input(0).ndim(), 1);
     if (shape.size() + shape_like.size() != 0) {
         CHECK(shape.size() * shape_like.size() == 0)
             << "\nCan not set shape and shape_like both.";
         for (int i = 0; i < ed.size(); i++) {
-            //  dynamic crop 1: keep unchanged
+            // Dynamic crop 1: keep unchanged
             if (start_axis != -1 && i < start_axis) {
                 ed[i] = Input(0).dim(i);
                 continue;
             }
-            //  dynamic crop 2: use shape
+            // Dynamic crop 2: use shape
             if (shape.size() > 0) {
                 CHECK_EQ(shape.size(), Input(0).ndim())
                     << "\nThe cropping is performed on " << shape.size() << " dimensions, "
                     << "while the num of dimensions of input is " << Input(0).ndim() << ".";
                 ed[i] = st[i] + shape[i];
             } else {
-                //  dynamic crop 3: use shape_like
+                // Dynamic crop 3: use shape_like
                 Tensor* like = ws()->GetTensor(shape_like);
                 CHECK_EQ(like->ndim(), Input(0).ndim())
                     << "\nThe cropping is performed on " << like->ndim() << " dimensions, "
@@ -72,7 +72,7 @@ void CropOp<Context>::Setup() {
             }
         }
     } else {
-        //  static crop
+        // Static crop
         int n_given = (int)GET_ARGUMENTS_SIZE(ends);
         for (int i = 0; i < ed.size(); i++) {
             if (i < n_given) ed[i] = ends(i);
@@ -81,7 +81,7 @@ void CropOp<Context>::Setup() {
         }
     }
 
-    //  check starts and ends
+    // Check starts and ends
     for (int i = 0; i < st.size(); i++) {
         CHECK(st[i] >= 0 && st[i] < (int)Input(0).dim(i))
             << "\nThe cropping starts at the pos " << st[i] << " of axis " << i << ", "
@@ -91,7 +91,7 @@ void CropOp<Context>::Setup() {
             << "while the dimension of this axis is " << Input(0).dim(i) << ".";
     }
 
-    //  store st & ed & kd
+    // Store st & ed & kd
     Tensor* tst = ws()->CreateTensor("/mnt/" + anchor() + "/crop/starts");
     Tensor* ted = ws()->CreateTensor("/mnt/" + anchor() + "/crop/ends");
     Tensor* tkd = ws()->CreateTensor("/mnt/" + anchor() + "/crop/keep_dims");
@@ -105,7 +105,7 @@ void CropOp<Context>::Setup() {
     for (int i = 0; i < ed.size(); i++) Edata[i] = ed[i];
     for (int i = 0; i < keep_dims.size(); i++) Kdata[i] = keep_dims[i];
 
-    //  make tasks
+    // Make tasks
     process_axes.clear();
     for (int i = 0; i < st.size(); i++) {
         int cropping_size = ed[i] - st[i];
@@ -121,11 +121,11 @@ template <class Context>
 void CropOp<Context>::RunOnDevice() {
     Setup();
 
-    //  do nothing
+    // Do nothing
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(0));
         Output(0)->template CopyFrom<Context>(Input(0), ctx());
-        //  squeeze dimensions
+        // Squeeze dimensions
         vector<TIndex> squeeze_shape;
         for (int i = 0; i < keep_dims.size(); i++)
             if (keep_dims[i]) squeeze_shape.push_back(Output(0)->dim(i));
@@ -133,7 +133,7 @@ void CropOp<Context>::RunOnDevice() {
         return;
     }
 
-     //  select source & dest
+     // Select source & dest
     source = &Input(0);
     if (process_axes.size() % 2 == 1) dest = Output(0);
     else dest = &navigator;
@@ -149,7 +149,7 @@ void CropOp<Context>::RunOnDevice() {
         else if (XIsType(Input(0), int)) RunWithType<int>();
         else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "int32" });
         ctx()->FinishDeviceCompution();
-        //  allow buffer to protect X if the num of tasks >= 2
+        // Allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
             if (dest == &Input(0)) dest = &navigator;
@@ -158,7 +158,7 @@ void CropOp<Context>::RunOnDevice() {
         }
     }
 
-    //  squeeze dimensions
+    // Squeeze dimensions
     vector<TIndex> squeeze_shape;
     for (int i = 0; i < keep_dims.size(); i++)
         if (keep_dims[i]) squeeze_shape.push_back(Output(0)->dim(i));
@@ -185,7 +185,7 @@ void CropGradientOp<Context>::Setup() {
     for (int i = 0; i < tst->count(); i++) st[i] = Sdata[i];
     for (int i = 0; i < ted->count(); i++) ed[i] = Edata[i];
     for (int i = 0; i < tkd->count(); i++) keep_dims[i] = Kdata[i];
-    //  make tasks
+    // Make tasks
     process_axes.clear();
     for (int i = 0; i < st.size(); i++) {
         int cropping_size = ed[i] - st[i];
@@ -207,7 +207,7 @@ void CropGradientOp<Context>::RunWithType() {
         dXdata = ws()->template caches<T, Context>({ dest->count() })[0];
     } else { dXdata = dest->template mutable_data<T, Context>(); }
 
-    kernel::Crop1DGrad<T, Context>(dest->count(),
+    kernel::Crop1dGrad<T, Context>(dest->count(),
         Input(0).dim(axis), dim, inner_dim,
             st[axis], ed[axis], dYdata, dXdata, ctx());
 }
@@ -216,7 +216,7 @@ template <class Context>
 void CropGradientOp<Context>::RunOnDevice() {
     Setup();
 
-    //  expand dimensions
+    // Expand dimensions
     vector<TIndex> expand_shape(keep_dims.size(), 1);
     vector<TIndex> keep_axes;
     for (int i = 0; i < keep_dims.size(); i++)
@@ -226,14 +226,14 @@ void CropGradientOp<Context>::RunOnDevice() {
         expand_shape[keep_axes[i]] = Input(-1).dim(i);
     Input(-1).Reshape(expand_shape);
 
-    //  do nothing
+    // Do nothing
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(-1));
         Output(0)->template CopyFrom<Context>(Input(-1), ctx());
         return;
     }
 
-    //  select source & buffer
+    // Select source & buffer
     source = &Input(-1);
     if (process_axes.size() % 2 == 1) dest = Output(0);
     else dest = &navigator;
@@ -249,7 +249,7 @@ void CropGradientOp<Context>::RunOnDevice() {
         else if (XIsType(Input(0), int)) RunWithType<int>();
         else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "int32" });
         ctx()->FinishDeviceCompution();
-        //  allow buffer to protect X if the num of tasks >= 2
+        // Allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
             if (dest == &Input(-1)) dest = &navigator;
@@ -276,4 +276,4 @@ class GetCropGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Crop, GetCropGradient);
 
-}    // namespace dragon
+}  // namespace dragon

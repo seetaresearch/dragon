@@ -46,7 +46,7 @@ void NLLLossOp<Context>::RunWithType() {
 
 template <class Context>
 void NLLLossOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  //  enforce default stream
+    ctx()->set_stream_id(0);  // Enforce SyncStream
 
     outer_dim = Input(0).count(0, axis);
     inner_dim = Input(0).count(axis + 1);
@@ -98,7 +98,7 @@ void NLLLossGradientOp<Context>::RunWithType() {
         kernel::SumGrad<float, Context>(
             Input(0).count() / Input(0).dim(axis),
                 Input(0).dim(axis), inner_dim,
-                    1.0, dYdata, (float*)WSdata[0], ctx());
+                    1.f, dYdata, (float*)WSdata[0], ctx());
         kernel::TypeA2B<float, Tx, Context>(Input(0).count(),
             (const float*)WSdata[0], (Tx*)WSdata[1], ctx());
         math::Mul<Tx, Context>(Output(0)->count(),
@@ -112,21 +112,22 @@ void NLLLossGradientOp<Context>::RunWithType() {
             math::ASum<float, Context>(
                 flags.count(), Fdata), 1.f);
     } else if (normalization == "BATCH_SIZE") {
-        normalizer = Input(0).dim(0);
+        normalizer = (float)Input(0).dim(0);
     } else if (normalization == "FULL") {
-        normalizer = outer_dim * inner_dim;
+        normalizer = (float)(outer_dim * inner_dim);
     }
 
     auto* dYdata = Input(-1).template data<float, Context>();
-    float dYdata_host; ctx()->template Copy<float, CPUContext, Context>(
-        1, &dYdata_host, dYdata);
+    float dYdata_host; ctx()->template Copy
+        <float, CPUContext, Context>(
+            1, &dYdata_host, dYdata);
     math::Scal<Tx, Context>(Output(0)->count(),
         dYdata_host / normalizer, dXdata, ctx());
 }
 
 template <class Context>
 void NLLLossGradientOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  //  enforce default stream
+    ctx()->set_stream_id(0);  // Enforce SyncStream
 
     outer_dim = Input(0).count(0, axis);
     inner_dim = Input(0).count(axis + 1);
@@ -161,4 +162,4 @@ class GetNLLLossGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(NLLLoss, GetNLLLossGradient);
 
-}    // namespace dragon
+}  // namespace dragon

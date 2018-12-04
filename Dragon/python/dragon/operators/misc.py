@@ -204,5 +204,5 @@ def MovingAverage(inputs, decay, **kwargs):
     del arguments['inputs'][0]
 
     output = Tensor.CreateOperator(op_type='MovingAverage',
-                                   existing_outputs=variable, **arguments)
+        existing_outputs=variable, **arguments)
     return output

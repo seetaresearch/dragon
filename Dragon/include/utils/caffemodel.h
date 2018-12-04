@@ -1,19 +1,19 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_UTILS_CAFFEMODEL_H_
 #define DRAGON_UTILS_CAFFEMODEL_H_
 
 #include <fcntl.h>
-#include <unistd.h>
 #include <fstream>
 
 #include <google/protobuf/message.h>
@@ -101,7 +101,7 @@ inline void LoadCaffeModel(
                 LOG(INFO) << "Tensor(" << tensor_name << ") "
                           << "loaded, shape: " << DimString.str()
                           << ", size: " << blob.data_size();
-            }    
+            }
         }
     }
 }
@@ -136,6 +136,6 @@ inline void SavaCaffeModel(
     LOG(INFO) << "Model format: caffemodel";
 }
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_UTILS_CAFFEMODEL_H_
+#endif  // DRAGON_UTILS_CAFFEMODEL_H_

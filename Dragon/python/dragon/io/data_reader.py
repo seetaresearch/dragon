@@ -169,12 +169,12 @@ class DataReader(Process):
 
         if self._use_shuffle:
             if self._chunk_size == 1:
-                # each chunk has at most 1 record [For Fully Shuffle]
+                # Each chunk has at most 1 record [For Fully Shuffle]
                 self._chunk_size, self._num_shuffle_parts = \
                     1, int(self._num_entries / self._num_parts) + 1
             else:
                 if self._use_shuffle and self._chunk_size == -1:
-                    # search a optimal chunk size by chunks [For Chunk Shuffle]
+                    # Search a optimal chunk size by chunks [For Chunk Shuffle]
                     max_chunk_size = self._db._total_size / ((self._num_chunks * (1 << 20)))
                     min_chunk_size = 1
                     while min_chunk_size * 2 < max_chunk_size: min_chunk_size *= 2
@@ -184,22 +184,22 @@ class DataReader(Process):
                     self._chunk_size = int(self._num_entries / self._num_shuffle_parts / self._num_parts + 1)
                     limit = (self._num_parts - 0.5) * self._num_shuffle_parts * self._chunk_size
                     if self._num_entries <= limit:
-                        # roll back to fully shuffle
+                        # Roll back to fully shuffle
                         self._chunk_size, self._num_shuffle_parts = \
                             1, int(self._num_entries / self._num_parts) + 1
         else:
-            # each chunk has at most K records [For Multiple Nodes]
-            # note that if ``shuffle`` and ``multiple_nodes`` are all ``False``,
+            # Each chunk has at most K records [For Multiple Nodes]
+            # Note that if ``shuffle`` and ``multiple_nodes`` are all ``False``,
             # ``chunk_size`` and ``num_shuffle_parts`` are meaningless
             self._chunk_size = int(self._num_entries / self._num_parts) + 1
             self._num_shuffle_parts = 1
 
         self._perm = np.arange(self._num_shuffle_parts)
 
-        # init env
+        # Init env
         self.reset()
 
-        # run
+        # Run!
         while True:
             self.Q_out.put(self.element())
             self.next_record()

@@ -54,7 +54,7 @@ def scan(fn, sequences, outputs_info, n_steps=None, axis=0):
     if not isinstance(sequences, list): sequences = [sequences]
     if not isinstance(outputs_info, list): outputs_info = [outputs_info]
 
-    # 1. exact default outputs
+    # Extract default outputs
     fn_nargs = len(inspect.getargspec(fn)[0])
     default_outputs = []
     for output in outputs_info:
@@ -65,10 +65,10 @@ def scan(fn, sequences, outputs_info, n_steps=None, axis=0):
                            format(fn_nargs, len(sequences) + len(default_outputs),
                                   len(sequences), len(default_outputs)))
 
-    # 2. simulate specific function
+    # Simulate specific function
     fn_inputs = [x for x in sequences] + default_outputs
     fn_inputs = copy.deepcopy(fn_inputs)
-    # clear to avoid importing external expressions into template function
+    # Clear to avoid importing external expressions into template function
     for input in fn_inputs: input.expressions = {}
     outputs = fn(*fn_inputs)
     if not isinstance(outputs, tuple): outputs = [outputs]
@@ -77,7 +77,7 @@ def scan(fn, sequences, outputs_info, n_steps=None, axis=0):
         raise RuntimeError('Expect {} outputs of fn, but len of outputs_info is {}.'
                             .format(len(outputs), len(outputs_info)))
 
-    # 3. make GraphDef
+    # Make GraphDef
     graph_def = pb.GraphDef(); all_exprs = {}
     for output in outputs:
         graph_def.target.extend([output._name])
@@ -90,7 +90,7 @@ def scan(fn, sequences, outputs_info, n_steps=None, axis=0):
     forward_ops = copy.deepcopy([v for k,v in all_exprs])
     graph_def.op.extend(forward_ops)
 
-    # 4. exact external inputs
+    # Extract external inputs
     external_inputs = []; internal_outputs = []
     internal_inputs = [tensor.name for tensor in fn_inputs]
     for op in graph_def.op:
@@ -101,7 +101,7 @@ def scan(fn, sequences, outputs_info, n_steps=None, axis=0):
         for output in op.output:
             internal_outputs.append(output)
 
-    # 5. collect inputs (sequences + default + external)
+    # Collect inputs (sequences + default + external)
     default_outputs = [elem.name if elem is not None else '' for elem in outputs_info]
     inputs = fn_inputs + [Tensor(name) for name in external_inputs]
 

@@ -34,8 +34,8 @@ void MulOp<Context>::BroadcastRunWithType(int type) {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 outer_dim, inner_dim, 1,
-                    1.0, multiplier, x2,
-                        0.0, c, ctx());
+                    1.f, multiplier, x2,
+                        0.f, c, ctx());
         math::Mul<T, Context>(
             Output(0)->count(), x1, c, y, ctx());
     } else if (type == 2) {
@@ -47,8 +47,8 @@ void MulOp<Context>::BroadcastRunWithType(int type) {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 outer_dim, inner_dim, 1,
-                    1.0, x2, multiplier,
-                        0.0, c, ctx());
+                    1.f, x2, multiplier,
+                        0.f, c, ctx());
         math::Mul<T, Context>(
             Output(0)->count(), x1, c, y, ctx());
     }
@@ -120,14 +120,14 @@ void MulGradientOp<Context>::BroadcastRunWithType(int type) {
             DECLARE_MULTIPLIER(multiplier, outer_dim);
             math::Gemv<T, Context>(
                 CblasTrans, outer_dim, inner_dim,
-                    1.0, c, multiplier,
-                        0.0, dx2, ctx());
+                    1.f, c, multiplier,
+                        0.f, dx2, ctx());
         } else if (type == 2) {
             DECLARE_MULTIPLIER(multiplier, inner_dim);
             math::Gemv<T, Context>(
                 CblasNoTrans, outer_dim, inner_dim,
-                    1.0, c, multiplier,
-                        0.0, dx2, ctx());
+                    1.f, c, multiplier,
+                        0.f, dx2, ctx());
         }
     }
 
@@ -140,15 +140,15 @@ void MulGradientOp<Context>::BroadcastRunWithType(int type) {
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
                     outer_dim, inner_dim, 1,
-                        1.0, multiplier, x2,
-                            0.0, dx1, ctx());
+                        1.f, multiplier, x2,
+                            0.f, dx1, ctx());
         } else if (type == 2) {
             DECLARE_MULTIPLIER(multiplier, inner_dim);
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
                     outer_dim, inner_dim, 1,
-                        1.0, x2, multiplier,
-                            0.0, dx1, ctx());
+                        1.f, x2, multiplier,
+                            0.f, dx1, ctx());
         }
         math::Mul<T, Context>(X1->count(), dy, dx1, dx1, ctx());
     }
@@ -189,4 +189,4 @@ class GetMulGradient : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Mul, GetMulGradient);
 
-}    // namespace dragon
+}  // namespace dragon

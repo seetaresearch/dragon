@@ -15,3 +15,6 @@
 
 .. autoclass:: dragon.core.scope.DeviceScope
     :members:
+
+.. autoclass:: dragon.core.scope.WorkspaceScope
+    :members:

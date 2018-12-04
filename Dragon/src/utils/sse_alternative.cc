@@ -224,8 +224,8 @@ template <> float Dot(
     return ret;
 }
 
-}    // namespace sse
+}  // namespace sse
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // WITH_SSE
+#endif  // WITH_SSE

@@ -23,7 +23,10 @@ void OneHotOp<Context>::RunOnDevice() {
     Output(0)->Reshape(dims);
    
     if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    else if (XIsType(Input(0), int)) RunWithType<int>();
+    else if (XIsType(Input(0), int64_t)) RunWithType<int64_t>();
+    else LOG(FATAL) << DTypeHelper(Input(0),
+        { "float32", "int32", "int64" });
 }
 
 DEPLOY_CPU(OneHot);
@@ -34,4 +37,4 @@ OPERATOR_SCHEMA(OneHot).NumInputs(1).NumOutputs(1);
 
 NO_GRADIENT(OneHot);
 
-}    // namespace dragon
+}  // namespace dragon

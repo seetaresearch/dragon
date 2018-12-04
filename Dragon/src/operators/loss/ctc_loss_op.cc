@@ -49,4 +49,4 @@ class GetCTCLossGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(CTCLoss, GetCTCLossGradient);
 
-}    // namespace dragon
+}  // namespace dragon

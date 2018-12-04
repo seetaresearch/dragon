@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_CORE_GRAPH_H_
 #define DRAGON_CORE_GRAPH_H_
@@ -101,6 +102,6 @@ DECLARE_REGISTRY(
 #define REGISTER_GRAPH(name, ...) \
     REGISTER_CLASS(GraphRegistry, name, __VA_ARGS__)
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_CORE_GRAPH_H_
+#endif  // DRAGON_CORE_GRAPH_H_

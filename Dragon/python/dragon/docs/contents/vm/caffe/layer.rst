@@ -21,19 +21,20 @@ List                    Brief
 Vision
 ######
 
-======================     =============================================================================
-List                       Brief
-======================     =============================================================================
-`ConvolutionLayer`_        The implementation of ``ConvolutionLayer``.
-`DeconvolutionLayer`_      The implementation of ``DeconvolutionLayer``.
-`PoolingLayer`_            The implementation of ``PoolingLayer``.
-`ROIPoolingLayer`_         The implementation of ``ROIPoolingLayer``.
-`ROIAlignLayer`_           The implementation of ``ROIAlignLayer``.
-`LRNLayer`_                The implementation of ``LRNLayer``.
-`NNResizeLayer`_           The implementation of ``NNResizeLayer``.
-`BilinearResizeLayer`_     The implementation of ``BilinearResizeLayer``.
-`DropBlockLayer`_          The implementation of ``DropBlockLayer``.
-======================     =============================================================================
+==============================      =============================================================================
+List                                Brief
+==============================      =============================================================================
+`ConvolutionLayer`_                 The implementation of ``ConvolutionLayer``.
+`DepthwiseConvolutionLayer`_        The implementation of ``DepthwiseConvolutionLayer``.
+`DeconvolutionLayer`_               The implementation of ``DeconvolutionLayer``.
+`PoolingLayer`_                     The implementation of ``PoolingLayer``.
+`ROIPoolingLayer`_                  The implementation of ``ROIPoolingLayer``.
+`ROIAlignLayer`_                    The implementation of ``ROIAlignLayer``.
+`LRNLayer`_                         The implementation of ``LRNLayer``.
+`NNResizeLayer`_                    The implementation of ``NNResizeLayer``.
+`BilinearResizeLayer`_              The implementation of ``BilinearResizeLayer``.
+`DropBlockLayer`_                   The implementation of ``DropBlockLayer``.
+==============================      =============================================================================
 
 
 Neuron
@@ -154,6 +155,7 @@ API Reference
 .. _MemoryDataLayer: #dragon.vm.caffe.layers.data.MemoryDataLayer
 
 .. _ConvolutionLayer: #dragon.vm.caffe.layers.vision.ConvolutionLayer
+.. _DepthwiseConvolutionLayer: #dragon.vm.caffe.layers.vision.DepthwiseConvolutionLayer
 .. _DeconvolutionLayer: #dragon.vm.caffe.layers.vision.DeconvolutionLayer
 .. _PoolingLayer: #dragon.vm.caffe.layers.vision.PoolingLayer
 .. _ROIPoolingLayer: #dragon.vm.caffe.layers.vision.ROIPoolingLayer

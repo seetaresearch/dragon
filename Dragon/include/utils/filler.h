@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_UTILS_FILLER_H_
 #define DRAGON_UTILS_FILLER_H_
@@ -70,7 +71,7 @@ class TruncatedNormalFiller final : public Filler<T, Context> {
         : Filler<T, Context>(filler) {}
 
     void Fill(Tensor* tensor, Context* ctx) override {
-        //  implement it on gpu is difficult
+        // It's difficult to implement it on gpu
         static CPUContext cctx;
         math::RandomTruncatedNormal<T, CPUContext>(tensor->count(),
             filler().mean(), filler().std(),
@@ -105,16 +106,16 @@ class XavierFiller final : public Filler<T, Context> {
         : Filler<T, Context>(filler) {}
 
     void Fill(Tensor* tensor, Context* ctx) override {
-        int fan_in = tensor->count() / tensor->dim(0);
-        int fan_out = tensor->count() / tensor->dim(1);
-        float n = fan_in, scale = 3.0;
+        auto fan_in = tensor->count() / tensor->dim(0);
+        auto fan_out = tensor->count() / tensor->dim(1);
+        float n = (float)fan_in, scale = 3.f;
         if (filler().has_scale()) scale = filler().scale();
         if (filler().variance_norm() ==
             TensorFiller_VarianceNorm_FAN_AVG) {
-            n = (fan_in + fan_out) / float(2);
+            n = (fan_in + fan_out) / 2.f;
         } else if (filler().variance_norm() ==
             TensorFiller_VarianceNorm_FAN_OUT) {
-            n = fan_out;
+            n = (float)fan_out;
         }
         float limit = std::sqrt(scale / n);
         math::RandomUniform<T, Context>(tensor->count(),
@@ -132,16 +133,16 @@ class MSRAFiller final : public Filler <T, Context> {
         : Filler<T, Context>(filler) {}
 
     void Fill(Tensor* tensor, Context* ctx) override {
-        int fan_in = tensor->count() / tensor->dim(0);
-        int fan_out = tensor->count() / tensor->dim(1);
-        float n = fan_in, scale = 2.0;
+        auto fan_in = tensor->count() / tensor->dim(0);
+        auto fan_out = tensor->count() / tensor->dim(1);
+        float n = (float)fan_in, scale = 2.f;
         if (filler().has_scale()) scale = filler().scale();
         if (filler().variance_norm() ==
             TensorFiller_VarianceNorm_FAN_AVG) {
-            n = (fan_in + fan_out) / float(2);
+            n = (fan_in + fan_out) / 2.f;
         } else if (filler().variance_norm() == 
             TensorFiller_VarianceNorm_FAN_OUT) {
-            n = fan_out;
+            n = (float)fan_out;
         }
         float std = std::sqrt(scale / n);
         math::RandomNormal<T, Context>(tensor->count(),
@@ -172,6 +173,6 @@ Filler<T, Context>* CreateFiller(const TensorFiller& filler) {
     return new ConstantFiller<T, Context>(filler);
 }
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_UTILS_FILLER_H_
+#endif  // DRAGON_UTILS_FILLER_H_

@@ -33,6 +33,7 @@ from dragon.vm.theano.tensor import grad as grad
 from dragon.core.scope import TensorScope as name_scope
 from dragon.core.scope import PhaseScope as phase_scope
 from dragon.core.scope import DeviceScope as device_scope
+from dragon.core.scope import WorkspaceScope as workspace_scope
 
 # version
 from dragon.version import version

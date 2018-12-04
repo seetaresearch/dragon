@@ -58,4 +58,4 @@ class GetLogGradient : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Log, GetLogGradient);
 
-}    // namespace dragon
+}  // namespace dragon

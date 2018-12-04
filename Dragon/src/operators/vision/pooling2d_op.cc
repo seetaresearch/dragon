@@ -76,7 +76,7 @@ void Pooling2dOp<Context>::Reshape() {
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 
     if (padding != "SAME") {
-        //  case 1: infer output shape with symmetry pad size
+        // Case 1: infer output shape with symmetry pad size
         if (ceil_mode) {
             pool_h = ceil((h + 2 * pad[0] - kernel_size[0]) / (float)stride[0]) + 1;
             pool_w = ceil((w + 2 * pad[1] - kernel_size[1]) / (float)stride[1]) + 1;
@@ -87,7 +87,7 @@ void Pooling2dOp<Context>::Reshape() {
         if ((pool_h - 1) * stride[0] >= (h + pad[0])) pool_h--;
         if ((pool_w - 1) * stride[1] >= (w + pad[1])) pool_w--;
     } else {
-        //  case 2: infer output shape with adaptive pad size
+        // Case 2: infer output shape with adaptive pad size
         pool_h = (h + stride[0] - 1) / (float)stride[0];
         pool_w = (w + stride[1] - 1) / (float)stride[1];
     }
@@ -188,7 +188,7 @@ void Pooling2dGradientOp<Context>::Reshape() {
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 
     if (padding != "SAME") {
-        //  case 1: infer output shape with symmetry pad size
+        // Case 1: infer output shape with symmetry pad size
         if (ceil_mode) {
             pool_h = ceil((h + 2 * pad[0] - kernel_size[0]) / (float)stride[0]) + 1;
             pool_w = ceil((w + 2 * pad[1] - kernel_size[1]) / (float)stride[1]) + 1;
@@ -199,7 +199,7 @@ void Pooling2dGradientOp<Context>::Reshape() {
         if ((pool_h - 1) * stride[0] >= (h + pad[0])) pool_h--;
         if ((pool_w - 1) * stride[1] >= (w + pad[1])) pool_w--;
     } else {
-        //  case 2: infer output shape with adaptive pad size
+        // Case 2: infer output shape with adaptive pad size
         pool_h = (h + stride[0] - 1) / (float)stride[0];
         pool_w = (w + stride[1] - 1) / (float)stride[1];
     }
@@ -234,4 +234,4 @@ class GetPooling2dGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Pooling2d, GetPooling2dGradient);
 
-}    // namespace dragon
+}  // namespace dragon

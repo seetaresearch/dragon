@@ -40,7 +40,7 @@ void BilinearResizeOp<Context>::RunOnDevice() {
         for (int i = 0; i < 2; i++)
             dims[spatial_axis + i] = shape_like_tensor->dim(spatial_axis + i);
     } else {
-        CHECK(fy != -1.0 && fx != -1.0)
+        CHECK(fy != -1.f && fx != -1.f)
             << "\nThe fx and fy should be set.";
         dims[spatial_axis] = int(dims[spatial_axis] * fy);
         dims[spatial_axis + 1] = int(dims[spatial_axis + 1] * fx);
@@ -108,4 +108,4 @@ class GetBilinearResizeGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(BilinearResize, GetBilinearResizeGradient);
 
-}    // namespace dragon
+}  // namespace dragon

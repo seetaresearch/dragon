@@ -27,8 +27,10 @@ class RNNBase(object):
     """A simple class wrapping general RNN ops.
 
     """
-    def __init__(self, mode, input_size, hidden_size,
-                 num_layers=1, bidirectional=False, dropout=0, name=None):
+    def __init__(self,
+        mode, input_size, hidden_size, num_layers=1,
+            bidirectional=False, dropout=0, name=None
+    ):
         eligible_rnn_modes = ('rnn_tanh', 'rnn_relu', 'lstm', 'gru')
         if mode.lower() not in eligible_rnn_modes:
             raise ValueError('Unknown rnn mode: {}.'
@@ -51,7 +53,7 @@ class RNNBase(object):
         if self.mode == 'lstm': gate_size = 4 * self.hidden_size
         elif self.mode == 'gru': gate_size = 3 * self.hidden_size
         else: gate_size = self.hidden_size
-        # 1. plan weights
+        # 1. Plan weights
         self._matrix_weights = []; self._bias_weights = []
         for layer in range(self.num_layers):
             for direction in range(self.num_directions):
@@ -68,16 +70,16 @@ class RNNBase(object):
                 # Bw (0 ~ 3), Br (4 ~ 7)
                 self._bias_weights.extend([b_ih, b_hh])
 
-        # 2. compute total number of parameters
+        # 2. Compute total number of parameters
         self._weights_count = 0
         for w in self._matrix_weights + self._bias_weights:
             self._weights_count += np.prod(w.shape)
 
-        # 3. register the packed weights
+        # 3. Register the packed weights
         self.weights = FromShape(shape=[self._weights_count],
             name=self.name + '/weights' if self.name else None)
 
-        # 4. create the initialization grids
+        # 4. Create the initialization grids
         if self.mode == 'lstm': num_params_per_layer = 8
         elif self.mode == 'gru': num_params_per_layer = 6
         else: num_params_per_layer = 2
@@ -141,7 +143,7 @@ class RNNBase(object):
                 paramT.set_value(param)
                 param = paramT
             else: raise ValueError('Excepted a tensor or numpy array.')
-        self.weights.expressions = dict() # clear cached expressions
+        self.weights.expressions = dict() # Clear cached expressions
         outputs = RNNParamSet([self.weights, param], layer_id, param_id, param_type,
             rnn_mode=self.mode, input_size=self.input_size, hidden_size=self.hidden_size,
             num_layers=self.num_layers, num_directions=self.num_directions)
@@ -175,7 +177,7 @@ class RNNBase(object):
         self._init_params = True
 
     def create(self, x, hx=None, cx=None,
-               required_hidden=True, required_cell=False):
+            required_hidden=True, required_cell=False):
         """Return outputs of this rnn.
 
         Parameters

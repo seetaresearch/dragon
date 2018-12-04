@@ -89,7 +89,7 @@ void MinimumGradientOp<Context>::BroadcastRunWithType() {
             Xdata, min_val, dYdata, dX1data, ctx());
     } else { LOG(FATAL) << "Either Input(0) or Input(1) should be a scalar."; }
     
-    //  we simply zero the grad of scalar
+    // We simply zero the grad of scalar
     math::Set<float, Context>(1, 0, dX2data, ctx());
 }
 

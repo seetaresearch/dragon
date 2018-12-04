@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_CORE_WORKSPACE_H_
 #define DRAGON_CORE_WORKSPACE_H_
@@ -62,7 +63,7 @@ class Workspace {
     }
 
     inline void ClearWorkspace() {
-        //  clear tensors & buffers & re-initialization 
+        // Clear tensors, then re-initialization
         for (auto& kv : tensor_map_) kv.second->Reset();
         InitWorkspace();
     }
@@ -79,11 +80,11 @@ class Workspace {
         const string&           name,
         bool                    use_remote = true) {
         string query = GetTensorName(name);
-        //  search local workspace
+        // Search local workspace
         if (tensor_map_.count(query) > 0)
             return tensor_map_[query].get();
         if (use_remote) {
-            //  search remote workspace
+            // Search remote workspace
             for (auto& it : ws_map_) {
                 if (it.second->HasTensor(query))
                     return it.second->GetTensor(query);
@@ -125,10 +126,10 @@ class Workspace {
 
     vector<string> GetTensors() {
         vector<string> names;
-        //  search local workspace
+        // Search local workspace
         for (auto& it : tensor_map_)
             names.push_back(it.first);
-        //  serach remote workspace
+        // Serach remote workspace
         for (auto& it : ws_map_) {
             vector<string> sub_names = it.second->GetTensors();
             names.insert(names.end(),
@@ -142,11 +143,11 @@ class Workspace {
     inline bool HasFiller(
         const string&           name,
         bool                    use_remote = true) {
-        //  search local workspace
+        // Search local workspace
         bool result = filler_map_.count(name) > 0;
         if (!use_remote) return result;
 
-        //  search remote workspace
+        // Search remote workspace
         for (auto& it : ws_map_)
             result |= it.second->HasFiller(name);
         return result;
@@ -162,11 +163,11 @@ class Workspace {
 
     inline const TensorFiller* GetFiller(
         const string&           name) {
-        //  search local workspace
+        // Search local workspace
         if (filler_map_.count(name) > 0)
             return &filler_map_[name];
 
-        //  search remote workspace
+        // Search remote workspace
         for (auto& it : ws_map_) {
             if (it.second->HasFiller(name))
                 return it.second->GetFiller(name);
@@ -238,11 +239,11 @@ class Workspace {
                 persistent_key = arg.s();
         }
         if (persistent_key.empty()) {
-            //  run op in the "ONCE" mode
+            // Run op in the "ONCE" mode
             unique_ptr<OperatorBase> op(CreateOperator(meta_op, this));
             op->Run();
         } else {
-            //  run op in the "PERSISTENT" mode
+            // Run op in the "PERSISTENT" mode
             if (!op_map_.count(persistent_key))
                 op_map_[persistent_key] = unique_ptr<OperatorBase>(
                     CreateOperator(meta_op, this));
@@ -294,6 +295,6 @@ class Workspace {
     ProxyMap proxy_map_;
 };
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_CORE_WORKSPACE_H_
+#endif  // DRAGON_CORE_WORKSPACE_H_

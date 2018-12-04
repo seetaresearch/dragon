@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// -------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_OPERATORS_NDARRAY_PAD_OP_H_
 #define DRAGON_OPERATORS_NDARRAY_PAD_OP_H_
@@ -24,7 +25,7 @@ class PadOp final : public Operator<Context> {
           pad_l(OperatorBase::Args<int>("pad_l")),
           pad_r(OperatorBase::Args<int>("pad_r")),
           mode(OperatorBase::Arg<string>("mode", "CONSTANT")),
-          value(OperatorBase::Arg<float>("value", 0.0f)) {
+          value(OperatorBase::Arg<float>("value", 0.f)) {
         if (pad_r.size() == 0) pad_r = pad_l;
         else CHECK_EQ(pad_l.size(), pad_r.size())
             << "The pad_l and pad_r should have the same length.";
@@ -85,6 +86,6 @@ class PadGradientOp final : public Operator<Context> {
     Tensor* dest, *source, navigator;
 };
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_OPERATORS_NDARRAY_PAD_OP_H_
+#endif  // DRAGON_OPERATORS_NDARRAY_PAD_OP_H_

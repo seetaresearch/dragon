@@ -40,7 +40,7 @@ void NNResizeOp<Context>::RunOnDevice() {
         for (int i = 0; i < 2; i++)
             dims[spatial_axis + i] = shape_like_tensor->dim(spatial_axis + i);
     } else {
-        CHECK(fy != -1.0 && fx != -1.0)
+        CHECK(fy != -1.f && fx != -1.f)
             << "\nThe fx and fy should be set.";
         dims[spatial_axis] = int(dims[spatial_axis] * fy);
         dims[spatial_axis + 1] = int(dims[spatial_axis + 1] * fx);
@@ -48,7 +48,8 @@ void NNResizeOp<Context>::RunOnDevice() {
     Output(0)->Reshape(dims);
 
     if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(NNResize);
@@ -108,4 +109,4 @@ class GetNNResizeGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(NNResize, GetNNResizeGradient);
 
-}    // namespace dragon
+}  // namespace dragon

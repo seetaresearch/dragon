@@ -35,8 +35,8 @@ void DivOp<Context>::BroadcastRunWithType(int type) {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 outer_dim, inner_dim, 1,
-                    1.0, multiplier, x2,
-                        0.0, c, ctx());
+                    1.f, multiplier, x2,
+                        0.f, c, ctx());
         math::Div<T, Context>(
             Output(0)->count(), x1, c, y, ctx());
     } else if (type == 2) {
@@ -48,8 +48,8 @@ void DivOp<Context>::BroadcastRunWithType(int type) {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 outer_dim, inner_dim, 1,
-                    1.0, x2, multiplier,
-                        0.0, c, ctx());
+                    1.f, x2, multiplier,
+                        0.f, c, ctx());
         math::Div<T, Context>(
             Output(0)->count(), x1, c, y, ctx());
     }
@@ -88,9 +88,9 @@ void DivGradientOp<Context>::EltwiseRunWithType() {
         auto* x2 = Input(1).template data<T, Context>();
         auto* dx2 = Output(1)->template mutable_data<T, Context>();
         auto* c = ws()->template caches<T, Context>({ X1->count() })[0];
-        math::Mul<T,Context>(X1->count(), dy, x1, c, ctx()); // dY * X1
-        math::Square<T, Context>(X2->count(), x2, dx2, ctx()); // X2^{2}
-        math::Inv<T, Context>(X2->count(), -1, dx2, dx2, ctx()); // -1 / X2^{2}
+        math::Mul<T,Context>(X1->count(), dy, x1, c, ctx());  // dY * X1
+        math::Square<T, Context>(X2->count(), x2, dx2, ctx());  // X2^{2}
+        math::Inv<T, Context>(X2->count(), -1, dx2, dx2, ctx());  // -1 / X2^{2}
         math::Mul<T, Context>(X2->count(), c, dx2, dx2, ctx());
     }
 
@@ -124,21 +124,21 @@ void DivGradientOp<Context>::BroadcastRunWithType(int type) {
         auto* dx2 = Output(1)->template mutable_data<T, Context>();
         auto cs = ws()->template caches<T, Context>(
             { X1->count(), X2->count() });
-        math::Mul<T, Context>(X1->count(), dy, x1, cs[0], ctx()); // dY * X1
-        math::Square<T, Context>(X2->count(), x2, dx2, ctx()); // X2^{2}
-        math::Inv<T, Context>(X2->count(), -1, dx2, dx2, ctx()); // -1 / X2^{2}
+        math::Mul<T, Context>(X1->count(), dy, x1, cs[0], ctx());  // dY * X1
+        math::Square<T, Context>(X2->count(), x2, dx2, ctx());  // X2^{2}
+        math::Inv<T, Context>(X2->count(), -1, dx2, dx2, ctx());  // -1 / X2^{2}
         if (type == 0 || type == 1) {
             DECLARE_MULTIPLIER(multiplier, outer_dim);
             math::Gemv<T, Context>(
                 CblasTrans, outer_dim, inner_dim,
-                    1.0, cs[0], multiplier,
-                        0.0, cs[1], ctx());
+                    1.f, cs[0], multiplier,
+                        0.f, cs[1], ctx());
         } else if (type == 2) {
             DECLARE_MULTIPLIER(multiplier, inner_dim);
             math::Gemv<T, Context>(
                 CblasNoTrans, outer_dim, inner_dim,
-                    1.0, cs[0], multiplier,
-                        0.0, cs[1], ctx());
+                    1.f, cs[0], multiplier,
+                        0.f, cs[1], ctx());
         }
         math::Mul<T, Context>(X2->count(), cs[1], dx2, dx2, ctx());
     }
@@ -152,15 +152,15 @@ void DivGradientOp<Context>::BroadcastRunWithType(int type) {
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
                     outer_dim, inner_dim, 1,
-                        1.0, multiplier, x2,
-                            0.0, dx1, ctx());
+                        1.f, multiplier, x2,
+                            0.f, dx1, ctx());
         } else if (type == 2) {
             DECLARE_MULTIPLIER(multiplier, inner_dim);
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
                     outer_dim, inner_dim, 1,
-                        1.0, x2, multiplier,
-                            0.0, dx1, ctx());
+                        1.f, x2, multiplier,
+                            0.f, dx1, ctx());
         }
         math::Div<T, Context>(X1->count(), dy, dx1, dx1, ctx());
     }
@@ -201,4 +201,4 @@ class GetDivGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Div, GetDivGradient);
 
-}    // namespace dragon
+}  // namespace dragon

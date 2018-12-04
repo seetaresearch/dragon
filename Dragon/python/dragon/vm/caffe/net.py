@@ -20,18 +20,19 @@ import dragon.vm.theano.tensor as T
 from .proto import caffe_pb2 as pb
 from . import layers
 
+
 class Blob(object):
     def __init__(self, tuple):
         self.data = tuple[0]; self.diff = tuple[1]
 
 
 class Net(object):
-    """
-    Net supports the most exporting interfaces of ``caffe.Net``.
+    """Net supports the most exporting interfaces of ``caffe.Net``.
 
     We implement it completely in the python environment, which provides conveniences,
 
     especially when extending the modern architectures of `ConvNets`.
+    
     """
     def __init__(self, *args):
         """Construct a Net by the ``proto_txt`` file.
@@ -101,8 +102,10 @@ class Net(object):
         if len(self._net.input) > 0:
             for input in self._net.input:
                 if not input in self._blobs:
-                    self._blobs[input] = {'data':Tensor(input).Variable(),
-                                          'diff': Tensor(input + '_grad')}
+                    self._blobs[input] = {
+                        'data':Tensor(input).Variable(),
+                        'diff': Tensor(input + '_grad'),
+                    }
                 self._inputs_to_tensors[input] =  self._blobs[input]['data']
 
         for layer in self._net.layer:
@@ -192,14 +195,17 @@ class Net(object):
                     self._net_outputs.remove(bottom_name)
 
             outputs = layer.Setup([blob['data'] for blob in bottom])
-            if not isinstance(outputs, list): outputs = [outputs]
+            if not isinstance(outputs, (list, tuple)): outputs = [outputs]
 
             for idx, top in enumerate(layer._top):
-                self._blobs[top] = {'data':outputs[idx], 'diff': Tensor(outputs[idx].name + '_grad')}
+                self._blobs[top] = {
+                    'data':outputs[idx],
+                    'diff': Tensor(outputs[idx].name + '_grad'),
+                }
                 self._net_outputs.add(top)
 
     def CheckBackward(self, LayerParameter):
-        """Generate losses and learnable blobs.
+        """Generate losses and trainable blobs.
 
         Parameters
         ----------
@@ -215,7 +221,7 @@ class Net(object):
         The implementation of `Init(net.cpp, L44)`_.
 
         """
-        # append loss
+        # Append loss
         if LayerParameter.type.find('Loss') != -1:
             if len(LayerParameter.loss_weight) == 0:
                 LayerParameter.loss_weight.extend([1.0])
@@ -230,7 +236,7 @@ class Net(object):
 
         if self._phase != 'TRAIN': return
 
-        # append param
+        # Append param
         if len(LayerParameter.param) > 0:
             for idx, param in enumerate(LayerParameter.param):
                 self._lr_mults.append(param.lr_mult if param.HasField('lr_mult') else 1.0)
@@ -238,7 +244,7 @@ class Net(object):
                 if self._lr_mults[-1] > 0:
                      self._wrts.append(self.params[LayerParameter.name][idx].data)
 
-        # default ParamSpec
+        # Default ParamSpec
         elif len(self.params[LayerParameter.name]) > 0:
             for blob in self.params[LayerParameter.name]:
                 self._wrts.append(blob.data)
@@ -283,7 +289,7 @@ class Net(object):
 
         self._function = \
             theano.function(outputs=[self._blobs[name]['data']
-                        for name in self._net_outputs], givens=self._swap_tensors)
+                for name in self._net_outputs], givens=self._swap_tensors)
 
         if hasattr(self, '_model'): ws.Restore(self._model, format='caffe')
         return self._function
@@ -312,7 +318,8 @@ class Net(object):
         for name, blobs in self.params.items():
              if name in other_params:
                 for idx, blob in enumerate(blobs):
-                    self._swap_tensors[blob.data] = other_params[name][idx].data
+                    self._swap_tensors[blob.data] = \
+                        other_params[name][idx].data
 
     def copy_from(self, model):
         """Copy the parameters from the binary proto file. [**PyCaffe Style**]
@@ -356,11 +363,13 @@ class Net(object):
             for output in net_outputs:
                 ret[output] = ws.FetchTensor(net.blobs[output].data)
             return ret
+
         if kwargs:
             for name, blob in kwargs.items():
                 ws.FeedTensor(self._inputs_to_tensors[name], blob)
 
         self.function()(return_outputs=False, stage='forward')
+
         return lambda net = self, net_outputs = self.outputs \
             : GetOutputs(net, net_outputs)
 
@@ -380,7 +389,9 @@ class Net(object):
         if kwargs:
             for name, blob in kwargs.items():
                 ws.FeedTensor(self._inputs_to_tensors[name], blob)
+
         self.function()(return_outputs=False, stage='forward')
+
         return None
 
     def backward(self, **kwargs):
@@ -478,11 +489,11 @@ class Net(object):
 
         """
         return OrderedDict([(layer._name, [Blob((blob['data'],blob['diff']))
-                                    for blob in layer._blobs]) for layer in self._layers])
+            for blob in layer._blobs]) for layer in self._layers])
 
     @property
     def lr_params(self):
-        """Return the learnable parameters. [**PyCaffe Style**]
+        """Return the trainable parameters. [**PyCaffe Style**]
 
         Returns
         -------

@@ -98,6 +98,6 @@ void CuDNNBiasAddGradientOp<Context>::RunOnDevice() {
 
 DEPLOY_CUDNN(BiasAddGradient);
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // WITH_CUDNN
+#endif  // WITH_CUDNN

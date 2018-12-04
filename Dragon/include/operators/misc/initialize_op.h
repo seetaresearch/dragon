@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// -------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_OPERATORS_MISC_INITIALIZE_OP_H_
 #define DRAGON_OPERATORS_MISC_INITIALIZE_OP_H_
@@ -44,7 +45,7 @@ class FillOp final : public Operator<Context> {
         : Operator<Context>(def, ws),
           shape_desc(OperatorBase::Arg<string>("shape", "")),
           dtype(OperatorBase::Arg<string>("dtype", "float32")),
-          value(OperatorBase::Arg<float>("value", 0.0)) {
+          value(OperatorBase::Arg<float>("value", 0.f)) {
         GET_ARGUMENTS_WITH_DESC(int, dims);
     }
     USE_OPERATOR_FUNCTIONS;
@@ -64,8 +65,8 @@ public:
     RandomUniformOp(const OperatorDef& def, Workspace* ws)
         : InitializeOp<Context>(def, ws) {
         this->filler.set_type("uniform");
-        this->filler.set_low(OperatorBase::Arg<float>("low", -1.0));
-        this->filler.set_high(OperatorBase::Arg<float>("high", 1.0));
+        this->filler.set_low(OperatorBase::Arg<float>("low", -1.f));
+        this->filler.set_high(OperatorBase::Arg<float>("high", 1.f));
     }
     USE_OPERATOR_FUNCTIONS;
 };
@@ -76,8 +77,8 @@ public:
     RandomNormalOp(const OperatorDef& def, Workspace* ws)
         : InitializeOp<Context>(def, ws) {
         this->filler.set_type("normal");
-        this->filler.set_mean(OperatorBase::Arg<float>("mean", 0.0));
-        this->filler.set_std(OperatorBase::Arg<float>("std", 1.0));
+        this->filler.set_mean(OperatorBase::Arg<float>("mean", 0.f));
+        this->filler.set_std(OperatorBase::Arg<float>("std", 1.f));
     }
     USE_OPERATOR_FUNCTIONS;
 };
@@ -88,8 +89,8 @@ public:
     TruncatedNormalOp(const OperatorDef& def, Workspace* ws)
         : InitializeOp<Context>(def, ws) {
         this->filler.set_type("truncated_normal");
-        float mu = OperatorBase::Arg<float>("mean", 0.0);
-        float sigma = OperatorBase::Arg<float>("std", 1.0);
+        float mu = OperatorBase::Arg<float>("mean", 0.f);
+        float sigma = OperatorBase::Arg<float>("std", 1.f);
         this->filler.set_mean(mu);
         this->filler.set_std(sigma);
         this->filler.set_low(mu - 2 * sigma);
@@ -104,7 +105,7 @@ public:
     GlorotUniformOp(const OperatorDef& def, Workspace* ws)
         : InitializeOp<Context>(def, ws) {
         string mode = OperatorBase::Arg<string>("mode", "fan_in");
-        float scale = OperatorBase::Arg<float>("scale", 3.0);
+        float scale = OperatorBase::Arg<float>("scale", 3.f);
 
         this->filler.set_type("xavier");
         if (mode == "fan_avg") {
@@ -125,7 +126,7 @@ public:
     GlorotNormalOp(const OperatorDef& def, Workspace* ws)
         : InitializeOp<Context>(def, ws) {
         string mode = OperatorBase::Arg<string>("mode", "fan_in");
-        float scale = OperatorBase::Arg<float>("scale", 2.0);
+        float scale = OperatorBase::Arg<float>("scale", 2.f);
 
         this->filler.set_type("msra");
         if (mode == "fan_avg") {
@@ -143,6 +144,6 @@ public:
 DEFINE_ARGUMENTS_WITH_DESC(int, InitializeOp, dims);
 DEFINE_ARGUMENTS_WITH_DESC(int, FillOp, dims);
 
-}    // namespace
+}  // namespace
 
-#endif    // DRAGON_OPERATORS_MISC_INITIALIZE_OP_H_
+#endif  // DRAGON_OPERATORS_MISC_INITIALIZE_OP_H_

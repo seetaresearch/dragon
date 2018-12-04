@@ -20,10 +20,10 @@ RunOp<Context>::RunOp(const OperatorDef& def, Workspace* ws)
       module(OperatorBase::Arg<string>("module", "")),
       op(OperatorBase::Arg<string>("op", "")),
       param_str((OperatorBase::Arg<string>("param_str", ""))) {
-    //  optimization for all python ops
+    // Optimization for all python ops
     if (!AllowRun()) return; this->do_sync_ = false;
 
-    //  init interpreter & load module
+    // Init interpreter & load module
     Py_Initialize();
     PyObject* py_module = PyImport_ImportModule(module.c_str());
     CHECK(py_module) << "\nFailed to Import Module: " << module;
@@ -33,7 +33,7 @@ RunOp<Context>::RunOp(const OperatorDef& def, Workspace* ws)
                  << " from Module: " << module;
     self = PyObject_CallObject(py_op, NULL);
 
-    //  wrap inputs and outputs
+    // Wrap inputs and outputs
     inputs = PyList_New(InputSize());
     for (int i = 0; i < InputSize(); i++)
         PyList_SetItem(inputs, i, CS2Bytes(Input(i).name()));
@@ -41,11 +41,11 @@ RunOp<Context>::RunOp(const OperatorDef& def, Workspace* ws)
     for (int i = 0; i < OutputSize(); i++)
         PyList_SetItem(outputs, i, CS2Bytes(Output(i)->name()));
 
-    //  backward compatibility: param_str
+    // Backward compatibility: param_str
     PyObject_SetAttr(self, Bytes("param_str"), CS2Bytes(param_str));
     PyObject_SetAttr(self, Bytes("param_str_"), CS2Bytes(param_str));
 
-    //  backward compatibility: self.setup(inputs, outputs)
+    // Backward compatibility: self.setup(inputs, outputs)
     if (PyObject_HasAttr(self, Bytes("setup")))
         CHECK(PyObject_CallMethod(
             self, "setup", "OO", inputs, outputs))
@@ -66,17 +66,17 @@ string RunOp<Context>::CallMethodHelper(
 
 template <class Context>
 void RunOp<Context>::RunOnDevice() {
-    //  reset phase
+    // Reset phase
     PyObject_SetAttr(self, Bytes("phase"), CS2Bytes(phase()));
 
-    //  backward compatibility: reshape(inputs, outputs)
+    // Backward compatibility: reshape(inputs, outputs)
     if (PyObject_HasAttr(self, Bytes("reshape"))) {
         CHECK(PyObject_CallMethod(
             self, "reshape", "OO", inputs, outputs))
                 << CallMethodHelper("reshape");
     }
 
-    //  overloaded run inferfaces
+    // Overloaded run inferfaces
     if (PyObject_HasAttr(self, Bytes("forward"))) {
         CHECK(PyObject_CallMethod(
             self, "forward", "OO", inputs, outputs))
@@ -98,18 +98,18 @@ NO_GRADIENT(Run);
 
 template <class Context>
 void TemplateGradientOp<Context>::RunOnDevice() {
-    //  reset phase
+    // Reset phase
     PyObject_SetAttr(this->self,
         Bytes("phase"), CS2Bytes(phase()));
 
-    //  backward compatibility: reshape(inputs, outputs)
+    // Backward compatibility: reshape(inputs, outputs)
     if (PyObject_HasAttr(this->self, Bytes("reshape"))) {
         CHECK(PyObject_CallMethod(this->self, "reshape",
             "OO", this->inputs, this->outputs))
                 << this->CallMethodHelper("reshape");
     }
 
-    //  overloaded run inferfaces
+    // Overloaded run inferfaces
     if (PyObject_HasAttr(this->self, Bytes("backward"))) {
         CHECK(PyObject_CallMethod(this->self, "backward",
             "OO", this->inputs, this->outputs))
@@ -146,6 +146,6 @@ class GetTemplateGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Template, GetTemplateGradient);
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // WITH_PYTHON
+#endif  // WITH_PYTHON

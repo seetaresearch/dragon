@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_CORE_OPERATOR_H_
 #define DRAGON_CORE_OPERATOR_H_
@@ -188,7 +189,7 @@ DECLARE_REGISTRY(
     const OperatorDef&,
     Workspace*);
 
-/* NVIDIA's Accelerated Library - CUDNN */
+/*! NVIDIA's Accelerated Library - CUDNN */
 
 DECLARE_REGISTRY(
     CUDNNOperatorRegistry,
@@ -196,7 +197,7 @@ DECLARE_REGISTRY(
     const OperatorDef&,
     Workspace*);
 
-/* CAMBRICON's Accelerated Library - CNML */
+/*! CAMBRICON's Accelerated Library - CNML */
 
 DECLARE_REGISTRY(
     CNMLOperatorRegistry,
@@ -247,7 +248,8 @@ DECLARE_REGISTRY(
     }
 
 #define INIT_MULTIPLIER(ptr_tensor, size) { \
-    ptr_tensor = ws()->CreateTensor("/share/multiplier"); \
+    ptr_tensor = ws()->CreateTensor("/share/multiplier/" \
+        + TypeMetaToString(TypeMeta::Make<T>())); \
     if (size > ptr_tensor->count()) { \
         ptr_tensor->Reshape({ size }); \
         math::Set<T, Context>(size, dragon_cast<T, float>(1.f), \
@@ -358,6 +360,6 @@ DECLARE_REGISTRY(
     REGISTER_CNML_OPERATOR(name, CnML##name##Op<CNMLContext>); \
     INSTANTIATE_CNML_OPERATOR(name);
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_CORE_OPERATOR_H_
+#endif  // DRAGON_CORE_OPERATOR_H_

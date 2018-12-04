@@ -15,10 +15,10 @@ from .utils import ToFillerArgs
 
 
 class Layer(object):
-    """
-    Layer is the basic structure for parsing text format definition.
+    """Layer is the basic structure for parsing text format definition.
 
     We further extent it with MPI and memory optimization utilities.
+
     """
     def __init__(self, LayerParameter):
         """Construct a Layer.

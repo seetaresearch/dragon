@@ -23,15 +23,17 @@ void CuDNNConv2dOp<Context>::ResetDesc() {
                 kernel_size[0], kernel_size[1]));
 #endif
 
-    //  determine the input & output shape
+    // Determine the input & output shape
     input_dims = Input(0).dims();
     cudnnSetTensor4dDescWithGroup<T>(
         &input_desc, data_format, Input(0).dims(), cudnn_group);
     cudnnSetTensor4dDescWithGroup<T>(
         &output_desc, data_format, Output(0)->dims(), cudnn_group);
 
-    //  determine the bias shape
+    // Determine the bias shape
     if (HasBias()) {
+        cudnnSetTensor4dDesc<T>(
+            &output2b_desc, data_format, Output(0)->dims());
         if (data_format == "NCHW") {
             cudnnSetTensor4dDesc<T>(&bias_desc, data_format,
                 vector<TIndex>({ 1, num_output, 1, 1 }));
@@ -41,7 +43,7 @@ void CuDNNConv2dOp<Context>::ResetDesc() {
         }
     }
 
-    //  determine the misc
+    // Determine the misc
     if (data_format == "NCHW") {
         x_offset = Input(0).count(1) / cudnn_group;
         y_offset = Output(0)->count(1) / cudnn_group;
@@ -89,7 +91,7 @@ void CuDNNConv2dOp<Context>::RunWithType() {
         auto* Bdata = Input(2).template data<T, Context>();
         CUDNN_CHECK(cudnnAddTensor(cudnn_handle,
             CUDNNType<T>::one, bias_desc, Bdata,
-                CUDNNType<T>::one, output_desc, Ydata));
+                CUDNNType<T>::one, output2b_desc, Ydata));
     }
 }
 
@@ -102,7 +104,7 @@ void CuDNNConv2dOp<Context>::RunOnDevice() {
 #endif
     Conv2dOp<Context>::Reshape();
 
-    ctx()->set_stream_id(0);  //  enforce default stream
+    ctx()->set_stream_id(0);  // Enforce SyncStream
 
     if (XIsType(Input(0), float)) {
 #if CUDNN_VERSION_MIN(6, 0, 0)
@@ -166,15 +168,17 @@ void CuDNNConv2dGradientOp<Context>::ResetDesc() {
                 kernel_size[0], kernel_size[1]));
 #endif
 
-    //  determine the input & output shape
+    // Determine the input & output shape
     input_dims = Input(0).dims();
     cudnnSetTensor4dDescWithGroup<T>(
         &input_desc, data_format, Input(-1).dims(), cudnn_group);
     cudnnSetTensor4dDescWithGroup<T>(
         &output_desc, data_format, Input(0).dims(), cudnn_group);
 
-    //  determine the bias shape
+    // Determine the bias shape
     if (HasBias()) {
+        cudnnSetTensor4dDesc<T>(
+            &input2b_desc, data_format, Input(-1).dims());
         if (data_format == "NCHW") {
             cudnnSetTensor4dDesc<T>(&bias_desc, data_format,
                 vector<TIndex>({ 1, num_output, 1, 1 }));
@@ -184,7 +188,7 @@ void CuDNNConv2dGradientOp<Context>::ResetDesc() {
         }
     }
 
-    // determine the misc
+    // Determine the misc
     if (data_format == "NCHW") {
         x_offset = Input(0).count(1) / cudnn_group;
         y_offset = Input(-1).count(1) / cudnn_group;
@@ -230,7 +234,7 @@ void CuDNNConv2dGradientOp<Context>::RunWithType() {
     if (Output(2)->name() != "ignore") {
         T* dBdata = Output(2)->template mutable_data<T, Context>(ctx());
         CUDNN_CHECK(cudnnConvolutionBackwardBias(cudnn_handle,
-            CUDNNType<T>::one, input_desc, dYdata,
+            CUDNNType<T>::one, input2b_desc, dYdata,
                 CUDNNType<T>::one, bias_desc, dBdata));
     }
 
@@ -265,7 +269,7 @@ void CuDNNConv2dGradientOp<Context>::RunOnDevice() {
 #endif
     Conv2dGradientOp<Context>::GradientReshape();
 
-    ctx()->set_stream_id(0);  //  enforce default stream
+    ctx()->set_stream_id(0);  // Enforce SyncStream
 
     if (XIsType(Input(0), float)) {
 #if CUDNN_VERSION_MIN(6, 0, 0)
@@ -315,6 +319,6 @@ void CuDNNConv2dGradientOp<Context>::RunOnDevice() {
 
 DEPLOY_CUDNN(Conv2dGradient);
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // WITH_CUDNN
+#endif  // WITH_CUDNN

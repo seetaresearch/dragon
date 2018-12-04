@@ -35,4 +35,4 @@ class GetRecurrentGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Recurrent, GetRecurrentGradient);
 
-}    // namespace dragon
+}  // namespace dragon

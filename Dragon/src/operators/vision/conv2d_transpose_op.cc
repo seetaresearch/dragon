@@ -25,7 +25,12 @@ void Conv2dTransposeOp<Context>::RunWithType() {
 template <class Context>
 void Conv2dTransposeOp<Context>::RunOnDevice() {
     Reshape();
-    //  fix the output shape for im2col/col2im
+
+    // You really need the CuDNN to help you -:)
+    if (data_format == "NHWC" && group != 1)
+        LOG(FATAL) << "GroupConv(NHWC) is not supported.";
+
+    // Fix the output shape for im2col/col2im
     for (int i = 0; i < this->num_spatial_axes; i++) 
         this->output_shape[i] = Input(0).dim(this->spatial_axis + i);
 
@@ -67,7 +72,12 @@ void Conv2dTransposeGradientOp<Context>::RunWithType() {
 template <class Context>
 void Conv2dTransposeGradientOp<Context>::RunOnDevice() {
     GradientReshape();
-    //  fix the output shape for im2col/col2im
+
+    // You really need the CuDNN to help you -:)
+    if (data_format == "NHWC" && group != 1)
+        LOG(FATAL) << "GroupConv(NHWC) is not supported.";
+
+    // Fix the output shape for im2col/col2im
     for (int i = 0; i < this->num_spatial_axes; i++)
         this->output_shape[i] = Input(0).dim(this->spatial_axis + i);
 
@@ -92,4 +102,4 @@ class GetConv2dTransposeGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Conv2dTranspose, GetConv2dTransposeGradient);
 
-}    // namespace dragon
+}  // namespace dragon

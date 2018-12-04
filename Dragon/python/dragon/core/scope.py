@@ -19,7 +19,6 @@ _TENSOR_SCOPE = ''
 _PHASE_SCOPE = ''
 _DEVICE_SCOPE = ''
 _ENGINE_SCOPE = ''
-_WORKSPACE_SCOPE = ''
 
 SEPARATOR = '/'
 
@@ -33,7 +32,8 @@ __all__ = [
     'GetOperatorName',
     'TensorScope',
     'PhaseScope',
-    'DeviceScope'
+    'DeviceScope',
+    'WorkspaceScope',
 ]
 
 def GetOperatorIdx():
@@ -101,14 +101,14 @@ class TensorScope(object):
 
     Examples
     --------
-    >>> with TensorScope('conv1'): a = Tensor('weights')
+    >>> import dragon as dg
+    >>> with TensorScope('conv1'): a = dg.Tensor('weights')
     >>> a.name
-    >>> conv1/weight
+    >>> "conv1/weights"
 
-    >>> import dragon
-    >>> with dragon.name_scope('conv1'): a = Tensor('weights')
+    >>> with dg.name_scope('conv2'): a = dg.Tensor('weights')
     >>> a.name
-    >>> conv1/weight
+    >>> "conv2/weights"
 
     """
     def __init__(self, prefix):
@@ -117,7 +117,7 @@ class TensorScope(object):
         if prefix != '':
             self.prefix = prefix + SEPARATOR
         else:
-            # avoid duplicated separators
+            # Avoid duplicated separators
             self.prefix = ''
 
     def __enter__(self):
@@ -147,12 +147,10 @@ class PhaseScope(object):
 
     Examples
     --------
-    >>> import dragon.vm.theano as theano
-    >>> a = ops.RandomUniform([2, 3])
-    >>> with PhaseScope(phase='train'): f = theano.function(outputs=a)
-
-    >>> import dragon
-    >>> with dragon.phase_scope(phase='test'): f = theano.function(outputs=a)
+    >>> import dragon as dg
+    >>> a = dg.ops.RandomUniform([2, 3])
+    >>> with PhaseScope(phase='train'): f_train = dg.function(outputs=a)
+    >>> with dg.phase_scope(phase='test'): f_eval = dg.function(outputs=a)
 
     """
     def __init__(self, phase):
@@ -175,10 +173,9 @@ class DeviceScope(object):
 
     Examples
     --------
-    >>> with DeviceScope(device='cpu'): a = ops.RandomUniform([2, 3])
-
-    >>> import dragon
-    >>> with dragon.device_scope(device='gpu', id=0, use_cudnn=True):  a = ops.RandomUniform([2, 3])
+    >>> import dragon as dg
+    >>> with DeviceScope(device='cpu'): a = dg.ops.RandomUniform([2, 3])
+    >>> with dg.device_scope(device='gpu', id=0, use_cudnn=True): b = dg.ops.RandomUniform([2, 3])
 
     """
     def __init__(self, device, id=0, use_cudnn=True):
@@ -198,28 +195,28 @@ class DeviceScope(object):
         _DEVICE_SCOPE = ''
         _ENGINE_SCOPE = ''
 
-# class WorkspaceScope(object):
-#     """WorkspaceScope is a auxiliary to assign the specific workspace.
-#
-#     Examples
-#     --------
-#     >>> import dragon
-#     >>> with dragon.ws_scope(ws_name='session'): pass
-#
-#     """
-#     def __init__(self, ws_name):
-#         assert isinstance(ws_name, type('str')), \
-#             "WorkspaceScope takes in a string as its argument."
-#         self.ws = ws_name
-#         self.prev = 'default'
-#
-#     def __enter__(self):
-#
-#         SwitchWorkspaceCC(self.ws)
-#         global _PHASE_SCOPE
-#         _PHASE_SCOPE = self.phase
-#
-#     def __exit__(self, type, value, traceback):
-#         global _PHASE_SCOPE
-#         assert _PHASE_SCOPE == self.phase
-#         _PHASE_SCOPE = ''
+
+class WorkspaceScope(object):
+    """WorkspaceScope is a auxiliary to assign the specific workspace.
+
+    Examples
+    --------
+    >>> import dragon as dg
+    >>> with WorkspaceScope('session1'): pass
+    >>> with dg.workspace_scope('session2'): pass
+
+    """
+    def __init__(self, ws_name):
+        assert isinstance(ws_name, type('str')), \
+            'WorkspaceScope takes in a string as its argument.'
+        assert ws_name != '', \
+            'The workspace name should not be empty.'
+        self.ws = ws_name
+        self.prev = 'default'
+
+    def __enter__(self):
+        self.prev = CurrentWorkspaceCC()
+        SwitchWorkspaceCC(self.ws, True)
+
+    def __exit__(self, type, value, traceback):
+        SwitchWorkspaceCC(self.prev, False)

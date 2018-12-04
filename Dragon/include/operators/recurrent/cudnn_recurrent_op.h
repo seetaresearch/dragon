@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// -------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_OPERATORS_RECURRENT_CUDNN_RECURRENT_OP_H_
 #define DRAGON_OPERATORS_RECURRENT_CUDNN_RECURRENT_OP_H_
@@ -52,7 +53,7 @@ class CuDNNRecurrentOpBase : public Operator<Context> {
           hidden_size(OperatorBase::Arg<int>("hidden_size", 0)),
           num_layers(OperatorBase::Arg<int>("num_layers", 1)),
           bidirectional(OperatorBase::Arg<bool>("bidirectional", false)),
-          dropout_ratio(OperatorBase::Arg<float>("dropout_ratio", 1.0)),
+          dropout_ratio(OperatorBase::Arg<float>("dropout_ratio", 1.f)),
           random_seed(def.device_option().random_seed()) {
         //  determine the rnn direction
         rnn_direction = bidirectional ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL;
@@ -154,8 +155,8 @@ class CuDNNRecurrentGradientOp final : public CuDNNRecurrentOpBase<Context> {
 
 #endif
 
-#endif    // WITH_CUDNN
+#endif  // WITH_CUDNN
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_OPERATORS_RECURRENT_CUDNN_RECURRENT_OP_H_
+#endif  // DRAGON_OPERATORS_RECURRENT_CUDNN_RECURRENT_OP_H_

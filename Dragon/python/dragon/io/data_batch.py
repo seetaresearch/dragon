@@ -46,10 +46,6 @@ class DataBatch(object):
             The number of chunks to split. Default is ``2048``.
         chunk_size : int
             The size(MB) of each chunk. Default is -1 (Refer ``num_chunks``).
-        mean_values : list
-            The mean value of each image channel.
-        scale : float
-            The scale performed after mean subtraction. Default is ``1.0``.
         padding : int
             The zero-padding size. Default is ``0`` (Disabled).
         fill_value : int
@@ -70,8 +66,6 @@ class DataBatch(object):
             The phase of this operator, ``TRAIN`` or ``TEST``. Default is ``TRAIN``.
         batch_size : int
             The size of a training batch.
-        dtype : str
-            The data type of batch. Default is ``float32``.
         partition : boolean
             Whether to partition batch. Default is ``False``.
         prefetch : int
@@ -79,35 +73,35 @@ class DataBatch(object):
 
         """
         super(DataBatch, self).__init__()
-        # init mpi
+        # Init mpi
         global_rank = 0; local_rank = 0; group_size = 1
         if mpi.Is_Init():
             idx, group = mpi.AllowParallel()
-            if idx != -1:  # data parallel
+            if idx != -1:  # DataParallel
                 global_rank = mpi.Rank()
                 group_size = len(group)
                 for i, node in enumerate(group):
                     if global_rank == node: local_rank = i
         kwargs['group_size'] = group_size
 
-        # configuration
+        # Configuration
         self._prefetch = kwargs.get('prefetch', 5)
         self._num_readers = kwargs.get('num_readers', 1)
         self._num_transformers = kwargs.get('num_transformers', -1)
         self._max_transformers = kwargs.get('max_transformers', 3)
         self._num_fetchers = kwargs.get('num_fetchers', 1)
 
-        # io-aware policy
+        # Io-Aware Policy
         if self._num_transformers == -1:
             self._num_transformers = 1
-            # add 1 transformer for color augmentation
+            # Add 1 transformer for color augmentation
             if kwargs.get('color_augmentation', False):
                 self._num_transformers += 1
-            # add 1 transformer for random scale
+            # Add 1 transformer for random scale
             if kwargs.get('max_random_scale', 1.0) - \
                 kwargs.get('min_random_scale', 1.0) != 0:
                     self._num_transformers += 1
-            # add 1 transformer for random crop
+            # Add 1 transformer for random crop
             if kwargs.get('crop_size', 0) > 0 and \
                 kwargs.get('phase', 'TEST') == 'TRAIN':
                     self._num_transformers += 1
@@ -118,12 +112,12 @@ class DataBatch(object):
         if self._partition:
             self._batch_size = int(self._batch_size / kwargs['group_size'])
 
-        # init queues
+        # Init queues
         self.Q_level_1 = Queue(self._prefetch * self._num_readers * self._batch_size)
         self.Q_level_2 = Queue(self._prefetch * self._num_readers * self._batch_size)
         self.Q_level_3 = Queue(self._prefetch * self._num_readers)
 
-        # init readers
+        # Init readers
         self._readers = []
         for i in range(self._num_readers):
             self._readers.append(DataReader(**kwargs))
@@ -144,7 +138,7 @@ class DataBatch(object):
             self._readers[i].start()
             time.sleep(0.1)
 
-        # init transformers
+        # Init transformers
         self._transformers = []
         for i in range(self._num_transformers):
             transformer = DataTransformer(**kwargs)
@@ -155,7 +149,7 @@ class DataBatch(object):
             self._transformers.append(transformer)
             time.sleep(0.1)
 
-        # init blob fetchers
+        # Init blob fetchers
         self._fetchers = []
         for i in range(self._num_fetchers):
             fetcher = BlobFetcher(**kwargs)
@@ -165,7 +159,7 @@ class DataBatch(object):
             self._fetchers.append(fetcher)
             time.sleep(0.1)
 
-        # prevent to echo multiple nodes
+        # Prevent to echo multiple nodes
         if local_rank == 0: self.echo()
         def cleanup():
             def terminate(processes):

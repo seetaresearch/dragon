@@ -20,7 +20,8 @@ void GradientGenerateOp<Context>::RunOnDevice() {
     if (XIsType(Input(0), float)) RunWithType<float>();
     else if (XIsType(Input(0), float16)) RunWithType<float16>();
     else if (XIsType(Input(0), int)) RunWithType<int>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16", "int32" });
+    else LOG(FATAL) << DTypeHelper(Input(0),
+        { "float32", "float16", "int32" });
 }
 
 DEPLOY_CPU(GradientGenerate);
@@ -77,7 +78,10 @@ DEPLOY_CPU(StopGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(StopGradient);
 #endif
-OPERATOR_SCHEMA(StopGradient).NumInputs(1).NumOutputs(1).Inplace({ { 0, 0 } });;
+OPERATOR_SCHEMA(StopGradient)
+    .NumInputs(1).NumOutputs(1)
+    .Inplace({ { 0, 0 } });;
+
 NO_GRADIENT(StopGradient);
 
-}    // namespace dragon
+}  // namespace dragon

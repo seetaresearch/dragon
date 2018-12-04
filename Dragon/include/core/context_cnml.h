@@ -1,18 +1,19 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_CORE_CONTEXT_CNML_H_
 #define DRAGON_CORE_CONTEXT_CNML_H_
 
-/* CAMBRICON's CNRT && CNML Environment */
+/*! CAMBRICON's CNRT && CNML Environment */
 
 #include "core/common.h"
 
@@ -90,13 +91,13 @@ class CNMLContext {
 
     static std::mutex& mutex() { static std::mutex m; return m; }
 
-    static thread_local CNRTObject cnrt_object_;
+    static CNRTObject* cuda_object();
 
  private:
     int device_id_, stream_id_ = 1, random_seed_;
     unique_ptr<std::mt19937> rand_generator_;
 };
 
-}    // namepsace dragon
+}  // namepsace dragon
 
-#endif    // DRAGON_CORE_CONTEXT_CNML_H_
+#endif  // DRAGON_CORE_CONTEXT_CNML_H_

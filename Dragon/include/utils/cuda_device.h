@@ -1,22 +1,24 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_UTILS_CUDA_DEVICE_H_
 #define DRAGON_UTILS_CUDA_DEVICE_H_
 
 #ifdef WITH_CUDA
-#include <cuda_runtime.h>
+#include <cuda.h>
 #include <cublas.h>
 #include <curand.h>
-#include <cuda.h>
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 #endif
 
 #ifdef WITH_MPI_NCCL
@@ -29,16 +31,24 @@ namespace dragon {
 
 #ifdef WITH_CUDA
 
-//  The number of cuda threads to use. We set it to
-//  1024 which would work for compute capability 2.x
-//  Set it to 512 if using compute capability 1.x
+/*!
+ * The number of cuda threads to use.
+ * 
+ * We set it to 1024 which would work for compute capability 2.x.
+ *
+ * Set it to 512 if using compute capability 1.x.
+ */
 const int CUDA_THREADS = 1024;
 
-//  The maximum number of blocks to use in the default kernel call. We set it to
-//  65535 which would work for compute capability 2.x (where 65536 is the limit)
+/*!
+ * The maximum number of blocks to use in the default kernel call.
+ *
+ * We set it to 65535 which would work for compute capability 2.x,
+ * where 65536 is the limit.
+ */
 const int CUDA_MAX_BLOCKS = 65535;
 
-//  You really need a NVIDIA DGX-2 !!! :-)
+// You really need a NVIDIA DGX-2 !!! :-)
 #define CUDA_MAX_DEVICES 16
 
 #define CUDA_VERSION_MIN(major, minor, patch) \
@@ -158,8 +168,8 @@ class DeviceGuard {
 #define CUDA_NOT_COMPILED \
     LOG(FATAL) << "CUDA was not compiled."
 
-#endif // WITH_CUDA
+#endif  // WITH_CUDA
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_UTILS_CUDA_DEVICE_H_
+#endif  // DRAGON_UTILS_CUDA_DEVICE_H_

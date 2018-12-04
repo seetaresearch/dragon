@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_CORE_TENSOR_H_
 #define DRAGON_CORE_TENSOR_H_
@@ -40,9 +41,8 @@ class Tensor {
                 capacity_ = 0;
             }
         } else {
-            if (ex_memory_ && !is_shared_ && 
-                    TIndex(ex_memory_->nbytes()) <
-                        TIndex(new_size * meta_.itemsize())) {
+            if (ex_memory_ && !is_shared_ &&
+                capacity_ < TIndex(new_size * meta_.itemsize())) {
                 delete ex_memory_;
                 ex_memory_ = nullptr;
                 capacity_ = 0;
@@ -194,22 +194,24 @@ class Tensor {
     void* raw_mutable_data(const TypeMeta& meta) {
         void* data_ptr;
         mutable_data_ptr<Context>(&data_ptr);
+        // Return the memory directly
         if (meta_ == meta && data_ptr) return data_ptr;
-        if (meta_ != meta && data_ptr && !own_mem_) delete ex_memory_;
+        // Return the new memory
         meta_ = meta;
         CHECK_GT(size_, 0);
         if (own_mem_) {
             memory_.reset(new MixedMemory(
-                meta, size_* meta_.itemsize()));
+                meta_, size_* meta_.itemsize()));
         } else {
+            if (data_ptr) delete ex_memory_;
             ex_memory_ = new MixedMemory(
-                meta, size_* meta_.itemsize());
+                meta_, size_* meta_.itemsize());
         }
-        //  malloc memory
+        // Malloc
         mutable_data_ptr<Context>(&data_ptr);
-        //  call the constructors
-        if (meta.ctor()) meta_.ctor()(data_ptr, size_);
-        capacity_ = size_ * meta.itemsize(), require_init_ = true;
+        // Call the constructors
+        if (meta_.ctor()) meta_.ctor()(data_ptr, size_);
+        capacity_ = size_ * meta_.itemsize(), require_init_ = true;
         return data_ptr;
     }
 
@@ -274,6 +276,7 @@ class Tensor {
                 TypeMeta::Make<float>(), 4);
             require_init_ = true;
         } own_mem_ = false;
+        capacity_ = (TIndex)ex_memory_->nbytes();
     }
 
     inline void Share(MixedMemory* mem) {
@@ -290,7 +293,7 @@ class Tensor {
     }
 
     std::function<void()> DECREFPyArray;
-    ~Tensor() { /* DO NOT CALL DECREFARRAY */ }
+    ~Tensor() { /*! DO NOT CALL DECREFARRAY */ }
 
  private:
     vector<TIndex> dims_;
@@ -303,6 +306,6 @@ class Tensor {
     bool own_mem_ = true, require_init_ = true;
 };
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_CORE_TENSOR_H_
+#endif  // DRAGON_CORE_TENSOR_H_

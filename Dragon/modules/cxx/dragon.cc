@@ -361,4 +361,4 @@ template DRAGON_API void FeedTensor<uint8_t>(
     const Device&,
     Workspace*);
 
-}    // namespace dragon
+}  // namespace dragon

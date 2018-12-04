@@ -59,4 +59,4 @@ class GetSigmoidGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Sigmoid, GetSigmoidGradient);
 
-}    // namespace dragon
+}  // namespace dragon

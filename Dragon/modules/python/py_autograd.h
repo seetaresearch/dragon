@@ -1,19 +1,23 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_PYTHON_PY_AUTOGRAD_H_
 #define DRAGON_PYTHON_PY_AUTOGRAD_H_
 
-#include "dragon.h"
-#include "core/graph_gradient.h"
+#include "py_dragon.h"
+
+namespace dragon {
+
+namespace python {
 
 PyObject* CreateGradientDefsCC(PyObject* self, PyObject* args) {
     PyObject* def_string = nullptr;
@@ -74,7 +78,7 @@ PyObject* RunGradientFlowCC(PyObject* self, PyObject* args) {
             "input grads, ignore grads and whehter to share grads or log graph.");
         return nullptr;
     }
-    //  make & optm & run
+    // Make -> Optm -> Run
     vector<string> targets, input_grads, ignore_grads;
     PyList_AsVecString(py_targets, targets, "");
     PyList_AsVecString(py_input_grads, input_grads, "");
@@ -106,4 +110,8 @@ PyObject* RunGradientFlowCC(PyObject* self, PyObject* args) {
     Py_RETURN_TRUE;
 }
 
-#endif    // DRAGON_PYTHON_PY_AUTOGRAD_H_
+}  // namespace python
+
+}  // namespace dragon
+
+#endif  // DRAGON_PYTHON_PY_AUTOGRAD_H_

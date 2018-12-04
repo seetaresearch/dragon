@@ -8,7 +8,7 @@ namespace dragon {
 template <class Context> template <typename T>
 void ROIAlignOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
-    auto* Rdata = Input(1).template data<T, Context>();
+    auto* Rdata = Input(1).template data<float , Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
     kernel::ROIAlign<T, Context>(
@@ -24,7 +24,8 @@ void ROIAlignOp<Context>::RunOnDevice() {
         { Input(1).dim(0), Input(0).dim(1), pool_h, pool_w }));
 
     if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(ROIAlign);
@@ -73,4 +74,4 @@ class GetROIAlignGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(ROIAlign, GetROIAlignGradient);
 
-}    // namespace dragon
+}  // namespace dragon

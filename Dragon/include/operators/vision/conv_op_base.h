@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// -------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_OPERATORS_VISION_CONV_OP_BASE_H_
 #define DRAGON_OPERATORS_VISION_CONV_OP_BASE_H_
@@ -32,7 +33,7 @@ class ConvOpBase : public Operator<Context> {
         if (data_format == "NCHW") spatial_axis = 2;
         else if (data_format == "NHWC") spatial_axis = 1;
         else LOG(FATAL) << "Unknown data format: " << data_format;
-        num_spatial_axes = -1;  // unknown
+        num_spatial_axes = -1;  // Unknown
     }
     USE_OPERATOR_FUNCTIONS;
 
@@ -104,32 +105,34 @@ class ConvOpBase : public Operator<Context> {
 
 DEFINE_ARGUMENTS_WITH_DESC(int, ConvOpBase, output_dims);
 
-#define USE_CONVOLUTION_FUNCTIONS(context) \
-    using ConvOpBase<context>::Setup; \
-    using ConvOpBase<context>::Reshape; \
-    using ConvOpBase<context>::GradientReshape; \
-    using ConvOpBase<context>::ComputeOutputShape; \
+#define USE_CONVOLUTION_FUNCTIONS \
+    using ConvOpBase<Context>::Setup; \
+    using ConvOpBase<Context>::Reshape; \
+    using ConvOpBase<Context>::GradientReshape; \
+    using ConvOpBase<Context>::ComputeOutputShape; \
     using ConvOpBase<Context>::ReverseDimensions; \
     using ConvOpBase<Context>::HasBias; \
-    using ConvOpBase<context>::Wx; \
-    using ConvOpBase<context>::Pb; \
-    using ConvOpBase<context>::Dx; \
-    using ConvOpBase<context>::Dw; \
-    using ConvOpBase<context>::Db; \
-    using ConvOpBase<context>::kernel_size; \
-    using ConvOpBase<context>::stride; \
-    using ConvOpBase<context>::pad; \
-    using ConvOpBase<context>::dilation; \
-    using ConvOpBase<context>::group; \
-    using ConvOpBase<context>::channels; \
-    using ConvOpBase<context>::num_output; \
-    using ConvOpBase<context>::data_format; \
-    using ConvOpBase<context>::x_offset; \
-    using ConvOpBase<context>::y_offset; \
-    using ConvOpBase<context>::weight_offset; \
-    using ConvOpBase<context>::weight_shape; \
-    using ConvOpBase<context>::bias_shape
+    using ConvOpBase<Context>::Wx; \
+    using ConvOpBase<Context>::Pb; \
+    using ConvOpBase<Context>::Dx; \
+    using ConvOpBase<Context>::Dw; \
+    using ConvOpBase<Context>::Db; \
+    using ConvOpBase<Context>::kernel_size; \
+    using ConvOpBase<Context>::stride; \
+    using ConvOpBase<Context>::pad; \
+    using ConvOpBase<Context>::dilation; \
+    using ConvOpBase<Context>::group; \
+    using ConvOpBase<Context>::channels; \
+    using ConvOpBase<Context>::num_output; \
+    using ConvOpBase<Context>::data_format; \
+    using ConvOpBase<Context>::x_offset; \
+    using ConvOpBase<Context>::y_offset; \
+    using ConvOpBase<Context>::weight_offset; \
+    using ConvOpBase<Context>::weight_shape; \
+    using ConvOpBase<Context>::bias_shape; \
+    using ConvOpBase<Context>::input_shape; \
+    using ConvOpBase<Context>::output_shape
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_OPERATORS_VISION_CONV_OP_BASE_H_
+#endif  // DRAGON_OPERATORS_VISION_CONV_OP_BASE_H_

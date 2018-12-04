@@ -47,7 +47,7 @@ void SoftmaxFocalLossOp<Context>::RunWithType() {
 
 template <class Context>
 void SoftmaxFocalLossOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  //  enforce default stream
+    ctx()->set_stream_id(0);  // Enforce SyncStream
 
     outer_dim = Input(0).count(0, axis);
     inner_dim = Input(0).count(axis + 1);
@@ -89,7 +89,7 @@ void SoftmaxFocalLossGradientOp<Context>::RunWithType() {
         kernel::SumGrad<T, Context>(
             Input(0).count() / Input(0).dim(axis),
                 Input(0).dim(axis), inner_dim,
-                    1.0, dYdata, Pdata, ctx());
+                    1.f, dYdata, Pdata, ctx());
         math::Mul<T, Context>(Output(0)->count(),
             Pdata, dXdata, dXdata, ctx()); return;
     }
@@ -106,15 +106,16 @@ void SoftmaxFocalLossGradientOp<Context>::RunWithType() {
     }
 
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; ctx()->template Copy<T, CPUContext, Context>(
-        1, &dYdata_host, dYdata);
+    T dYdata_host; ctx()->template Copy
+        <T, CPUContext, Context>(
+            1, &dYdata_host, dYdata);
     math::Scal<T, Context>(Output(0)->count(),
         dYdata_host / normalizer, dXdata, ctx());
 }
 
 template <class Context>
 void SoftmaxFocalLossGradientOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  //  enforce default stream
+    ctx()->set_stream_id(0);  // Enforce SyncStream
 
     this->prob = ws()->GetTensor("/mnt/" + anchor() + "/softmax/prob");
     outer_dim = this->prob->count(0, axis);
@@ -147,4 +148,4 @@ REGISTER_GRADIENT(
     GetSoftmaxFocalLossGradient
 );
 
-}    // namespace dragon
+}  // namespace dragon

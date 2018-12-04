@@ -6,8 +6,8 @@
 
 namespace dragon {
 
-float CUDNNType<float>::oneval = 1.0;
-float CUDNNType<float>::zeroval = 0.0;
+float CUDNNType<float>::oneval = 1.f;
+float CUDNNType<float>::zeroval = 0.f;
 const void* CUDNNType<float>::one =
 static_cast<void *>(&CUDNNType<float>::oneval);
 const void* CUDNNType<float>::zero =
@@ -20,8 +20,8 @@ static_cast<void *>(&CUDNNType<double>::oneval);
 const void* CUDNNType<double>::zero =
 static_cast<void *>(&CUDNNType<double>::zeroval);
 
-float CUDNNType<float16>::oneval = 1.0;
-float CUDNNType<float16>::zeroval = 0.0;
+float CUDNNType<float16>::oneval = 1.f;
+float CUDNNType<float16>::zeroval = 0.f;
 const void* CUDNNType<float16>::one =
 static_cast<void*>(&CUDNNType<float16>::oneval);
 const void* CUDNNType<float16>::zero =
@@ -36,8 +36,8 @@ void cudnnSetTensorDesc(
     int* strideA = new int[ndim];
     TIndex stride = 1;
     for (int i = ndim - 1; i >= 0; i--) {
-        strideA[i] = stride;
-        dimA[i] = dims[i];
+        strideA[i] = (int)stride;
+        dimA[i] = (int)dims[i];
         stride *= dimA[i];
     }
     CUDNN_CHECK(cudnnSetTensorNdDescriptor(*desc,
@@ -115,11 +115,11 @@ void cudnnSetTensor3dDesc(
     const vector<TIndex>&           dims) {
     vector<TIndex> fake_dims = dims;
     if (data_format == "NCHW") {
-        //  NCH -> NCHXX
+        // NCH -> NCHXX
         fake_dims.push_back(1);
         fake_dims.push_back(1);
     } else if (data_format == "NHWC") {
-        //  NHC -> NHXXC
+        // NHC -> NHXXC
         fake_dims.insert(fake_dims.begin() + 2, 1);
         fake_dims.insert(fake_dims.begin() + 2, 1);
     } else LOG(FATAL) << "Unknown data format: " << data_format;
@@ -150,8 +150,8 @@ template <typename T>
 void cudnnSetTensorDesc(
     cudnnTensorDescriptor_t*        desc,
     Tensor*                         tensor) {
-    //  cudnn requires ndimensions from 3 to 8
-    //  exapnd or squeeze dimensions to pass check
+    // CuDNN requires ndimensions from 3 to 8
+    // Exapnd or Squeeze dimensions to pass check
     vector<TIndex> fake_dims(tensor->dims());
     if (fake_dims.size() < 3) {
         fake_dims.resize(3, 1);
@@ -343,6 +343,6 @@ template void cudnnSetTensorDesc<float16>(
     const vector<TIndex>&,
     const vector<TIndex>&);
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // WITH_CUDNN
+#endif  // WITH_CUDNN

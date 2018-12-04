@@ -34,8 +34,8 @@ void RSubOp<Context>::BroadcastRunWithType(int type) {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 outer_dim, inner_dim, 1,
-                    1.0, multiplier, x1,
-                        -1.0, y, ctx());
+                    1.f, multiplier, x1,
+                        -1.f, y, ctx());
     } else if (type == 2) {
         outer_dim = Input(1).dim(0);
         inner_dim = Input(1).count(1);
@@ -43,8 +43,8 @@ void RSubOp<Context>::BroadcastRunWithType(int type) {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 outer_dim, inner_dim, 1,
-                    1.0, x1, multiplier,
-                        -1.0, y, ctx());
+                    1.f, x1, multiplier,
+                        -1.f, y, ctx());
     }
 }
 
@@ -107,16 +107,16 @@ void RSubGradientOp<Context>::BroadcastRunWithType(int type) {
             DECLARE_MULTIPLIER(multiplier, outer_dim);
             math::Gemv<T, Context>(
                 CblasTrans, outer_dim, inner_dim,
-                    1.0, dy, multiplier,
-                        0.0, dx1, ctx());
+                    1.f, dy, multiplier,
+                        0.f, dx1, ctx());
         } else if (type == 2) {
             outer_dim = X2->dim(0);
             inner_dim = X2->count(1);
             DECLARE_MULTIPLIER(multiplier, inner_dim);
             math::Gemv<T, Context>(
                 CblasNoTrans, outer_dim, inner_dim,
-                    1.0, dy, multiplier,
-                        0.0, dx1, ctx());
+                    1.f, dy, multiplier,
+                        0.f, dx1, ctx());
         }
     }
 
@@ -160,4 +160,4 @@ class GetRSubGradient : public GradientMakerBase {
 };
 REGISTER_GRADIENT(RSub, GetRSubGradient);
 
-}    // namespace dragon
+}  // namespace dragon

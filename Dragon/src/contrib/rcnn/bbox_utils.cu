@@ -101,13 +101,13 @@ template <> void GenerateProposals<float, CUDAContext>(
     const float*            anchors,
     float*                  proposals,
     CUDAContext*            ctx) {
-    const int num_proposals = A * feat_h * feat_w;
+    const auto num_proposals = A * feat_h * feat_w;
     _GenerateProposals<float>
         << < CUDA_BLOCKS(num_proposals), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(num_proposals,
-                 A, feat_h, feat_w, stride,
-                     im_h, im_w, min_box_h, min_box_w,
-                         scores, bbox_deltas, anchors, proposals);
+             0, ctx->cuda_stream() >> >
+        (num_proposals, A, feat_h, feat_w, stride,
+            im_h, im_w, min_box_h, min_box_w,
+                scores, bbox_deltas, anchors, proposals);
 }
 
 template <typename T>
@@ -145,9 +145,9 @@ template <> void GenerateProposals_v2<float, CUDAContext>(
     CUDAContext*            ctx) {
     _GenerateProposals_v2<float>
         << < CUDA_BLOCKS(total_anchors), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(total_anchors,
-                 im_h, im_w, min_box_h, min_box_w,
-                     scores, bbox_deltas, proposals);
+             0, ctx->cuda_stream() >> >
+        (total_anchors, im_h, im_w, min_box_h, min_box_w,
+            scores, bbox_deltas, proposals);
 }
 
 /******************** NMS ********************/
@@ -266,8 +266,8 @@ template <> void ApplyNMS<float, CUDAContext>(
         boxes, keep_indices, num_keep, ctx);
 }
 
-}    // namespace rcnn
+}  // namespace rcnn
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif // WITH_CUDA
+#endif  // WITH_CUDA

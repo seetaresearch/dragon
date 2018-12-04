@@ -57,4 +57,4 @@ class GetFlattenGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Flatten, GetFlattenGradient);
 
-} // namespace dragon
+}  // namespace dragon

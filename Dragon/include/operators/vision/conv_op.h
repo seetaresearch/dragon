@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// -------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_OPERATORS_VISION_CONV_OP_H_
 #define DRAGON_OPERATORS_VISION_CONV_OP_H_
@@ -25,7 +26,7 @@ class Conv2dOp : public ConvOpBase<Context> {
         Setup();
     }
     USE_OPERATOR_FUNCTIONS;
-    USE_CONVOLUTION_FUNCTIONS(Context);
+    USE_CONVOLUTION_FUNCTIONS;
 
     bool ReverseDimensions() override { return false; }
     bool HasBias() override { return InputSize() > 2; }
@@ -40,7 +41,7 @@ class Conv2dGradientOp : public Conv2dOp<Context> {
     Conv2dGradientOp(const OperatorDef& def, Workspace* ws)
         : Conv2dOp<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
-    USE_CONVOLUTION_FUNCTIONS(Context);
+    USE_CONVOLUTION_FUNCTIONS;
 
     bool HasBias() override { return Output(2)->name() != "ignore"; }
 
@@ -67,20 +68,23 @@ class CuDNNConv2dOp final : public Conv2dOp<Context> {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
-        if (HasBias()) CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
+        CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
+        CUDNN_CHECK(cudnnCreateTensorDescriptor(&output2b_desc));
+
         if (data_format == "NCHW") format = CUDNN_TENSOR_NCHW;
         else if (data_format == "NHWC") format = CUDNN_TENSOR_NHWC;
         else LOG(FATAL) << "Unknown data format: " << data_format;
     }
     USE_OPERATOR_FUNCTIONS;
-    USE_CONVOLUTION_FUNCTIONS(Context);
+    USE_CONVOLUTION_FUNCTIONS;
 
     ~CuDNNConv2dOp() {
         CUDNN_CHECK(cudnnDestroyFilterDescriptor(filter_desc));
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
         CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc));
-        if (HasBias()) CUDNN_CHECK(cudnnDestroyTensorDescriptor(bias_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(bias_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output2b_desc));
     }
 
     void RunOnDevice() override;
@@ -91,7 +95,8 @@ class CuDNNConv2dOp final : public Conv2dOp<Context> {
     cudnnDataType_t compute_type;
     cudnnTensorFormat_t format;
     cudnnConvolutionFwdAlgo_t fwd_algo;
-    cudnnTensorDescriptor_t input_desc, output_desc, bias_desc;
+    cudnnTensorDescriptor_t input_desc, output_desc;
+    cudnnTensorDescriptor_t bias_desc, output2b_desc;
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;
     size_t fwd_data_size;
@@ -117,20 +122,23 @@ class CuDNNConv2dGradientOp final : public Conv2dGradientOp<Context> {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
-        if (HasBias()) CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
+        CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
+        CUDNN_CHECK(cudnnCreateTensorDescriptor(&input2b_desc));
+
         if (data_format == "NCHW") format = CUDNN_TENSOR_NCHW;
         else if (data_format == "NHWC") format = CUDNN_TENSOR_NHWC;
         else LOG(FATAL) << "Unknown data format: " << data_format;
     }
     USE_OPERATOR_FUNCTIONS;
-    USE_CONVOLUTION_FUNCTIONS(Context);
+    USE_CONVOLUTION_FUNCTIONS;
 
     ~CuDNNConv2dGradientOp() {
         CUDNN_CHECK(cudnnDestroyFilterDescriptor(filter_desc));
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
         CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc));
-        if (HasBias()) CUDNN_CHECK(cudnnDestroyTensorDescriptor(bias_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(bias_desc));
+        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input2b_desc));
     }
 
     void RunOnDevice() override;
@@ -142,7 +150,8 @@ class CuDNNConv2dGradientOp final : public Conv2dGradientOp<Context> {
     cudnnTensorFormat_t format;
     cudnnConvolutionBwdFilterAlgo_t bwd_filter_algo;
     cudnnConvolutionBwdDataAlgo_t bwd_data_algo;
-    cudnnTensorDescriptor_t input_desc, output_desc, bias_desc;
+    cudnnTensorDescriptor_t input_desc, output_desc;
+    cudnnTensorDescriptor_t bias_desc, input2b_desc;
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;
     size_t bwd_filter_size, bwd_data_size;
@@ -151,8 +160,8 @@ class CuDNNConv2dGradientOp final : public Conv2dGradientOp<Context> {
     bool enable_tensor_core;
 };
 
-#endif    // WITH_CUDNN
+#endif  // WITH_CUDNN
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_OPERATORS_VISION_CONV_OP_H_
+#endif  // DRAGON_OPERATORS_VISION_CONV_OP_H_

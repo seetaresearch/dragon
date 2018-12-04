@@ -12,7 +12,7 @@ void ROIPoolingOp<Context>::RunWithType() {
     mask->ReshapeLike(*Output(0));
 
     auto* Xdata = Input(0).template data<T, Context>();
-    auto* Rdata = Input(1).template data<T, Context>();
+    auto* Rdata = Input(1).template data<float, Context>();
     auto* Mdata = mask->template mutable_data<int, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
@@ -29,7 +29,8 @@ void ROIPoolingOp<Context>::RunOnDevice() {
         { Input(1).dim(0), Input(0).dim(1), pool_h, pool_w }));
 
     if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(ROIPooling);
@@ -80,4 +81,4 @@ class GetROIPoolingGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(ROIPooling, GetROIPoolingGradient);
 
-}    // namespace dragon
+}  // namespace dragon

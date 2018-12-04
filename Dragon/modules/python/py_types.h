@@ -1,20 +1,25 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_PYTHON_PY_TYPES_H_
 #define DRAGON_PYTHON_PY_TYPES_H_
 
 #include <numpy/arrayobject.h>
+
 #include "core/types.h"
-using namespace dragon;
+
+namespace dragon {
+
+namespace python {
 
 inline const int TypeMetaToNPY(const TypeMeta& meta) {
     static std::unordered_map<TypeId, int> m2npy_type_map {
@@ -44,4 +49,8 @@ inline const TypeMeta& TypeNPYToMeta(int npy_type) {
         npy2m_type_map[npy_type] : unknown_type;
 }
 
-#endif    // DRAGON_PYTHON_PY_TYPES_H_
+}  // namespace python
+
+}  // namespace dragon
+
+#endif  // DRAGON_PYTHON_PY_TYPES_H_

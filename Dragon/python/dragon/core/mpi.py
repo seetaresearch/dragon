@@ -33,7 +33,7 @@ __all__ = [
     'AllowParallel',
     'SetParallelMode',
     'GetParallelMode',
-    'Finalize'
+    'Finalize',
 ]
 
 def _check_init():

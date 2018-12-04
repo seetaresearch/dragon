@@ -29,7 +29,7 @@ void LRNOp<Context>::SquareRunWithType() {
     sqr_out = ws()->CreateTensor("/mnt/" + anchor() + "/sqr/out");
     if (!sqr_op) {
         Argument power;
-        power.set_name("power"); power.set_f(2.0);
+        power.set_name("power"); power.set_f(2.f);
         OperatorDef sqr_op_def = MakeOperatorDef("Pow", "",
             vector<string>({ sqr_in->name() }),
                 vector<string>({ sqr_out->name() }),
@@ -70,7 +70,7 @@ void LRNOp<Context>::PowRunWithType() {
     if (!pow_op) {
         Argument scale, shift, power;
         scale.set_name("scale"); scale.set_f(alpha);
-        shift.set_name("shift"); shift.set_f(1.0);
+        shift.set_name("shift"); shift.set_f(1.f);
         power.set_name("power"); power.set_f(-beta);
         OperatorDef pow_op_def = MakeOperatorDef("Pow", "",
             vector<string>({ pool_out->name() }),
@@ -160,7 +160,7 @@ void LRNGradientOp<Context>::PowRunWithType() {
     if (!pow_op) {
         Argument scale, shift, power;
         scale.set_name("scale"); scale.set_f(alpha);
-        shift.set_name("shift"); shift.set_f(1.0);
+        shift.set_name("shift"); shift.set_f(1.f);
         power.set_name("power"); power.set_f(-beta);
         OperatorDef pow_op_def = MakeOperatorDef("PowGradient", "",
             vector<string>({ pool_out->name(),
@@ -205,7 +205,7 @@ void LRNGradientOp<Context>::SquareRunWithType() {
     sqr_in = ws()->GetTensor("/mnt/" + anchor() + "/sqr/in");
     if (!sqr_op) {
         Argument power;
-        power.set_name("power"); power.set_f(2.0);
+        power.set_name("power"); power.set_f(2.f);
         OperatorDef sqr_op_def = MakeOperatorDef("PowGradient", "",
             vector<string>({ sqr_in->name(),
                                  sqr_out->name(),
@@ -267,4 +267,4 @@ class GetLRNGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(LRN, GetLRNGradient);
 
-}    // namespace dragon
+}  // namespace dragon

@@ -15,7 +15,7 @@ void PadOp<Context>::ConstRunWithType() {
         Ydata = ws()->template caches<T, Context>({ dest->count() })[0];
     } else { Ydata = dest->template mutable_data<T, Context>(); }
 
-    kernel::ConstPad1D<T, Context>(dest->count(),
+    kernel::ConstPad1d<T, Context>(dest->count(),
         dim, dim + pad_l[axis] + pad_r[axis], inner_dim,
             pad_l[axis], value, Xdata, Ydata, ctx());
 }
@@ -30,7 +30,7 @@ void PadOp<Context>::ReflectRunWithType() {
         Ydata = ws()->template caches<T, Context>({ dest->count() })[0];
     } else { Ydata = dest->template mutable_data<T, Context>(); }
 
-    kernel::ReflectPad1D<T, Context>(dest->count(),
+    kernel::ReflectPad1d<T, Context>(dest->count(),
         dim, dim + pad_l[axis] + pad_r[axis], inner_dim,
             pad_l[axis], Xdata, Ydata, ctx());
 }
@@ -45,7 +45,7 @@ void PadOp<Context>::EdgeRunWithType() {
         Ydata = ws()->template caches<T, Context>({ dest->count() })[0];
     } else { Ydata = dest->template mutable_data<T, Context>(); }
 
-    kernel::EdgePad1D<T, Context>(dest->count(),
+    kernel::EdgePad1d<T, Context>(dest->count(),
         dim, dim + pad_l[axis] + pad_r[axis], inner_dim,
             pad_l[axis], Xdata, Ydata, ctx());
 }
@@ -58,14 +58,14 @@ void PadOp<Context>::RunOnDevice() {
         << "but the num of dimensions of input is "
         << Input(0).ndim() << ".";
 
-    //  do nothing
+    // Do nothing
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(0));
         Output(0)->template CopyFrom<Context>(Input(0), ctx());
         return;
     }
 
-    //  select source & dest
+    // Select source & dest
     source = &Input(0);
     if (process_axes.size() % 2 == 1) dest = Output(0);
     else dest = &navigator;
@@ -100,7 +100,7 @@ void PadOp<Context>::RunOnDevice() {
             LOG(FATAL) << "Unsupported padding mode: " << mode << ".";
         }
         ctx()->FinishDeviceCompution();
-        //  allow buffer to protect X if the num of tasks >= 2
+        // Allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
             if (dest == &Input(0)) dest = &navigator;
@@ -126,7 +126,7 @@ void PadGradientOp<Context>::ConstRunWithType() {
         dXdata = ws()->template caches<T, Context>({ dest->count() })[0];
     } else { dXdata = dest->template mutable_data<T, Context>(); }
 
-    kernel::ConstPad1DGrad<T, Context>(dest->count(),
+    kernel::ConstPad1dGrad<T, Context>(dest->count(),
         dim - pad_l[axis] - pad_r[axis], dim, inner_dim,
             pad_l[axis], dYdata, dXdata, ctx());
 }
@@ -143,7 +143,7 @@ void PadGradientOp<Context>::ReflectRunWithType() {
 
     math::Set<T, Context>(dest->count(), 0, dXdata, ctx());
 
-    kernel::ReflectPad1DGrad<T, Context>(source->count(),
+    kernel::ReflectPad1dGrad<T, Context>(source->count(),
         dim - pad_l[axis] - pad_r[axis], dim, inner_dim,
             pad_l[axis], dYdata, dXdata, ctx());
 }
@@ -160,7 +160,7 @@ void PadGradientOp<Context>::EdgeRunWithType() {
 
     math::Set<T, Context>(dest->count(), 0, dXdata, ctx());
 
-    kernel::EdgePad1DGrad<T, Context>(source->count(),
+    kernel::EdgePad1dGrad<T, Context>(source->count(),
         dim - pad_l[axis] - pad_r[axis], dim, inner_dim,
             pad_l[axis], dYdata, dXdata, ctx());
 }
@@ -173,14 +173,14 @@ void PadGradientOp<Context>::RunOnDevice() {
         << "but the number of dimensions of input is "
         << Input(0).ndim() << ".";
 
-    //  do nothing 
+    // Do nothing
     if (process_axes.size() == 0) {
         Output(0)->ReshapeLike(Input(-1));
         Output(0)->template CopyFrom<Context>(Input(-1), ctx());
         return;
     }
 
-    //  select source & buffer
+    // Select source & buffer
     source = &Input(-1);
     if (process_axes.size() % 2 == 1) dest = Output(0);
     else dest = &navigator;
@@ -215,7 +215,7 @@ void PadGradientOp<Context>::RunOnDevice() {
             LOG(FATAL) << "Unsupported padding mode: " << mode << ".";
         }
         ctx()->FinishDeviceCompution();
-        //  allow buffer to protect X if the num of tasks >= 2
+        // Allow buffer to protect X if the num of tasks >= 2
         std::swap(source, dest);
         if (process_axes.size() % 2 == 1) {
             if (dest == &Input(-1)) dest = &navigator;
@@ -231,7 +231,7 @@ DEPLOY_CUDA(PadGradient);
 #endif
 OPERATOR_SCHEMA(PadGradient).NumInputs(1).NumOutputs(1);
 
-class GetPadGradient final : public GradientMakerBase { 
+class GetPadGradient final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetPadGradient);
     vector<OperatorDef> MakeDefs() override {
@@ -242,4 +242,4 @@ class GetPadGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Pad, GetPadGradient);
 
-}    // namespace dragon
+}  // namespace dragon

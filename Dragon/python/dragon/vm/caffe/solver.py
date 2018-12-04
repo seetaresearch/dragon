@@ -95,7 +95,7 @@ class Solver(object):
         """
         if mpi.Is_Init():
             idx, group = mpi.AllowParallel()
-            # only the root in a parallel group can test
+            # Only the root in a parallel group can test
             if idx != -1 and mpi.Rank() != group[0]: return
 
         num_test_net = len(self._param.test_iter)
@@ -108,11 +108,11 @@ class Solver(object):
                  self._test_nets.append(Net(test_net, "TEST"))
             num_test_net -= len(self._param.test_net)
 
-        # consider generic_net
+        # Consider generic_net
         if num_test_net > 0:
             self._test_nets.append(Net(self._param.net, "TEST"))
 
-        # share with training net
+        # Share with training net
         for test_net in self._test_nets: test_net.share_with(self._net)
 
     def BuildNets(self):
@@ -138,10 +138,12 @@ class Solver(object):
         None
 
         """
-        self._update_param = {'scale_gradient': float(1.0 / self._param.iter_size),
-                              'clip_gradient': float(self._param.clip_gradients),
-                              'l2_decay': float(self._param.weight_decay) \
-                                  if str(self._param.regularization_type) == 'L2' else -1.0}
+        self._update_param = {
+            'scale_gradient': float(1.0 / self._param.iter_size),
+            'clip_gradient': float(self._param.clip_gradients),
+            'l2_decay': float(self._param.weight_decay) \
+                if str(self._param.regularization_type) == 'L2' else -1.0,
+        }
 
     def BuildOptimizer(self):
         """Build the optimizer.
@@ -151,16 +153,20 @@ class Solver(object):
         None
 
         """
-        # collect
+        # Collect
         for layer, blobs in self._net.params.items():
             self._layer_blobs.extend(blobs)
-        # push
+
+        # Push
         for idx, blob in enumerate(self._layer_blobs):
             if self._net._lr_mults[idx] > 0:
                 if blob.diff is None: continue
-                self.optimizer.append((blob.data, blob.diff),
-                                       self._net._lr_mults[idx],
-                                       self._net._decay_mults[idx])
+                self.optimizer.append(
+                    (blob.data, blob.diff),
+                        self._net._lr_mults[idx],
+                            self._net._decay_mults[idx])
+
+        # Compile
         self.update = theano.function(updater=self.optimizer)
 
     def GetLearningRate(self):
@@ -211,13 +217,13 @@ class Solver(object):
             power = self._param.power
             gamma = self._param.gamma
             self.optimizer.base_lr = self._param.base_lr * \
-                               pow(1.0 + gamma * self._iter, -power)
+                pow(1.0 + gamma * self._iter, -power)
 
         if policy == 'poly':
             power = self._param.power
             max_iter = self._param.max_iter
             self.optimizer.base_lr = self._param.base_lr * \
-                        pow(1.0 - float(self.iter) / max_iter, power)
+                pow(1.0 - float(self.iter) / max_iter, power)
 
     def Test(self, test_idx):
         """Test the specific net.
@@ -247,16 +253,16 @@ class Solver(object):
             if not root_solver(): continue
             if iter == 0:
                 for net_output in net._net_outputs:
-                    vals = ws.FetchTensor(net.blobs[net_output].data)
-                    for idx, val in enumerate(vals):
-                        test_score.append(val)
+                    values = ws.FetchTensor(net.blobs[net_output].data)
+                    for idx, value in enumerate(values):
+                        test_score.append(value)
                         output_id.append(net_output)
             else:
                 i = 0
                 for net_output in net._net_outputs:
-                    vals = ws.FetchTensor(net.blobs[net_output].data)
-                    for idx, val in enumerate(vals):
-                        test_score[i] += val
+                    values = ws.FetchTensor(net.blobs[net_output].data)
+                    for idx, value in enumerate(values):
+                        test_score[i] += value
                         i += 1
 
         if not root_solver(): return
@@ -284,18 +290,20 @@ class Solver(object):
 
         """
         from dragon.config import logger
-        start_iter = self._iter; stop_iter = self._iter + iters
-        loss_vec = []; smoothed_loss = 0
+        start_iter, stop_iter = self._iter, self._iter + iters
+        loss_vec, smoothed_loss = [], 0.
+
         tic = time.time()
+
         while self._iter < stop_iter:
-            # test if necessary
+            # Test if necessary
             if self._param.test_interval and \
                  self._iter % self._param.test_interval == 0:
                 if (self._iter == 0 and
                         self._param.test_initialization) or self._iter != 0:
                     for test_id in range(len(self.tests)): self.Test(test_id)
 
-            # forward & backward & compute_loss
+            # Forward && Backward && Compute Loss
             loss = 0.0
             for i in range(self._param.iter_size):
                 self.train(return_outputs=False)
@@ -315,11 +323,11 @@ class Solver(object):
                     smoothed_loss += ((loss - loss_vec[idx]) / self._param.average_loss)
                     loss_vec[idx] = loss
 
-            # apply update
+            # Apply Update
             self.GetLearningRate()
             self.update()
 
-            # display
+            # Display
             if root_solver() and self._param.display:
                 if self._iter % self._param.display == 0:
                     base_lr = self.optimizer.base_lr
@@ -327,13 +335,15 @@ class Solver(object):
                           (self._iter, str(base_lr), smoothed_loss, time.time() - tic))
                     tic = time.time()
                     for idx, net_output in enumerate(self._net.outputs):
-                        vals = ws.FetchTensor(self._net.blobs[net_output].data)
-                        for val in vals:
-                            logger.info('		Train net output #{}({}): {}'.format(idx, net_output, val))
-                            self.scalar_writer.add_summary((net_output, val), self._iter)
+                        values = ws.FetchTensor(self._net.blobs[net_output].data)
+                        for v in values:
+                            logger.info('		Train net output #{}({}): {}'.format(idx, net_output, v))
+                            self.scalar_writer.add_summary((net_output, v), self._iter)
+
+            # Inc Iterations
             self._iter = self._iter + 1
 
-            # snapshot
+            # Snapshot
             if self._param.snapshot:
                 if self._iter % self._param.snapshot == 0: self.snapshot()
 
@@ -352,41 +362,42 @@ class Solver(object):
                     self._param.test_initialization) or self._iter != 0:
                 for test_id in range(len(self.tests)): self.Test(test_id)
 
-        # forward & backward & compute_loss
-        run_time = 0.; stats = {'loss': {'total': 0.}, 'iter': self.iter}
+        # Forward && Backward && Compute_loss
+        run_time, stats = 0., {'loss': {'total': 0.}, 'iter': self.iter}
         for i in range(self._param.iter_size):
             tic = time.time()
             self.train(return_outputs=False)
             run_time += (time.time() - tic)
-            # total loss
+
+            # Total loss
             for cost in self._net._costs:
                 cost_value = ws.FetchTensor(cost)
                 if cost_value.size == 1:
                     stats['loss']['total'] += cost_value[0]
 
-            # partial loss
+            # Partial loss
             for idx, net_output in enumerate(self._net.outputs):
-                vals = ws.FetchTensor(self._net.blobs[net_output].data)
-                if vals.size != 1: continue
+                values = ws.FetchTensor(self._net.blobs[net_output].data)
+                if values.size != 1: continue
                 if net_output not in stats['loss']: stats['loss'][net_output] = 0.
-                stats['loss'][net_output] += vals[0]
+                stats['loss'][net_output] += values[0]
 
-        # apply update
+        # Apply Update
         self.GetLearningRate()
         tic = time.time()
         self.update()
         run_time += (time.time() - tic)
         self._iter = self._iter + 1
 
-        # snapshot?
+        # Snapshot
         if self._param.snapshot:
             if self._iter % self._param.snapshot == 0: self.snapshot()
 
-        # average loss by the iter size
+        # Average loss by the iter size
         for k in stats['loss'].keys():
             stats['loss'][k] /= self._param.iter_size
 
-        # misc stats
+        # Misc stats
         stats['lr'] = self.optimizer.base_lr
         stats['time'] = run_time
         return stats
@@ -410,8 +421,8 @@ class Solver(object):
         tensors = [blob.data for blob in self._layer_blobs]
         filename = "_iter_" + str(self._iter)
         ws.Snapshot(tensors, filename,
-                    prefix=self._param.snapshot_prefix,
-                    suffix='.caffemodel', format='caffe')
+            prefix=self._param.snapshot_prefix,
+                suffix='.caffemodel', format='caffe')
 
     @property
     def net(self):

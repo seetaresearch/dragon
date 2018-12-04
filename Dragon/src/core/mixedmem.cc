@@ -103,7 +103,7 @@ void MixedMemory::set_cpu_data(void* cpu_ptr, size_t nbytes) {
     if (own_cpu_ptr_ && cpu_ptr_ &&
             use_cudahost_mem) cudaFreeHost(cpu_ptr_);
     if (cuda_ptr_ && nbytes > nbytes_) {
-        //  maintain the cuda ptr as regular mems
+        // Maintain the cuda ptr as regular mems
         CUDAContext::Delete(cuda_ptr_);
         cuda_ptr_ = nullptr;
     }
@@ -180,4 +180,4 @@ const Map<string, string> MixedMemory::info() const {
     return s2s;
 }
 
-}    // namespace dragon
+}  // namespace dragon

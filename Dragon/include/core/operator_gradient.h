@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_CORE_OPERATOR_GRADIENT_H_
 #define DRAGON_CORE_OPERATOR_GRADIENT_H_
@@ -58,7 +59,7 @@ class GradientMakerBase {
     }
 
     virtual inline vector<float> DefaultValues() {
-        return vector<float>(g_outputs_.size(), 1.0);
+        return vector<float>(g_outputs_.size(), 1.f);
     }
 
     template <class... Args>
@@ -82,7 +83,7 @@ class GradientMakerBase {
     const vector<string>& g_outputs_;
 };
 
-//  implemented in operator.cc
+// Implemented in operator.cc
 Gradient MakeGradientForOp(
     const OperatorDef&              op_def,
     const vector<string>&           g_outputs);
@@ -111,7 +112,7 @@ DECLARE_REGISTRY(
     const OperatorDef&,
     const vector<string>&);
 
-//  define in the operator.cc
+// Defined in the operator.cc
 #define REGISTER_GRADIENT(name, ...) \
     REGISTER_CLASS(GradientRegistry, name, __VA_ARGS__)
 
@@ -119,6 +120,6 @@ DECLARE_REGISTRY(
     REGISTER_GRADIENT(name, NoGradient); \
     REGISTER_CLASS(NoGradientRegistry, name, NoGradient)
 
-}    //  namespace dragon
+}  // namespace dragon
 
-#endif    //  DRAGON_CORE_OPERATOR_GRADIENT_H_
+#endif  // DRAGON_CORE_OPERATOR_GRADIENT_H_

@@ -43,7 +43,7 @@ from collections import defaultdict, deque
 class TensorPool(object):
     def __init__(self):
         self._scope2handle = defaultdict(int)
-        # deque provide much higher performance that Queue
+        # deque provide much higher performance than Queue
         self._scope2keys = defaultdict(deque)
 
     def get_handle(self, scope):

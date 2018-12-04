@@ -125,6 +125,6 @@ class GetMPIGatherGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(MPIGather, GetMPIGatherGradient);
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif // WITH_MPI
+#endif  // WITH_MPI

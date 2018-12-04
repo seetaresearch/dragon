@@ -41,7 +41,7 @@ void SmoothL1LossOp<Context>::RunWithType() {
 
 template <class Context>
 void SmoothL1LossOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  //  enforce default stream
+    ctx()->set_stream_id(0);  // Enforce SyncStream
 
     CHECK(Input(0).count() == Input(1).count());
     if (InputSize() > 2) CHECK(Input(0).count() == Input(2).count());
@@ -134,4 +134,4 @@ REGISTER_GRADIENT(
     GetSmoothL1LossGradient
 );
 
-}    // namespace dragon
+}  // namespace dragon

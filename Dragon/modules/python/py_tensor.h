@@ -1,18 +1,23 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_PYTHON_PY_TENSOR_H_
 #define DRAGON_PYTHON_PY_TENOSR_H_
 
-#include "dragon.h"
+#include "py_dragon.h"
+
+namespace dragon {
+
+namespace python {
 
 inline string ParseName(PyObject* self, PyObject* args) {
     char* cname;
@@ -94,7 +99,7 @@ PyObject* TensorFromShapeCC(PyObject* self, PyObject* args) {
     if (meta.id() != tensor->meta().id() && tensor->meta().id() != 0)
         LOG(WARNING) << "Set Tensor(" << tensor->name() << ")"
         << " with different data type from original one.";
-    int ndim = PyList_Size(shape);
+    int ndim = (int)PyList_Size(shape);
     CHECK_GT(ndim, 0)
         << "\nThe len of shape should be greater than 1. Got " << ndim << ".";
     vector<TIndex> dims;
@@ -238,7 +243,7 @@ inline PyObject* TensorToPyArrayExCC(PyObject* self, PyObject* args) {
     }
     auto* data = const_cast<void*>(tensor->raw_data<CPUContext>());
     PyObject* array = PyArray_SimpleNewFromData(
-        tensor->ndim(), dims.data(), npy_type, data);
+        (int)tensor->ndim(), dims.data(), npy_type, data);
     Py_XINCREF(array);
     return array;
 }
@@ -272,11 +277,14 @@ inline PyObject* ToCUDATensorCC(PyObject* self, PyObject* args) {
 }
 
 inline PyObject* GetTensorInfoCC(PyObject* self, PyObject* args) {
-    //  return shape will degrade performance remarkablely
-    //  here we generalize info into 3 streams
-    //  stream #1: dtype, from_numpy, memory_info
-    //  stream #2: shape
-    //  stream #3: #1 + #2
+    /*!
+     * Return shape will degrade performance remarkablely,
+     * here we generalize info into 3 streams.
+     * 
+     * Stream #1: dtype, from_numpy, memory_info
+     * Stream #2: shape
+     * Stream #3: #1 + #2
+     */
     char* cname; int stream;
     if (!PyArg_ParseTuple(args, "si", &cname, &stream))
         LOG(FATAL) << "Excepted a tensor name and a stream id.";
@@ -297,7 +305,8 @@ inline PyObject* GetTensorInfoCC(PyObject* self, PyObject* args) {
             PyTuple_SetItem(py_shape, 0, PyInt_FromLong(0));
         } else {
             for (int i = 0; i < tensor->ndim(); i++)
-                PyTuple_SetItem(py_shape, i, PyInt_FromLong(tensor->dim(i)));
+                PyTuple_SetItem(py_shape, i,
+                    PyInt_FromLong((long)tensor->dim(i)));
         }
         PyDict_SetItemString(py_info, "shape", py_shape);
         Py_XDECREF(py_shape);
@@ -318,4 +327,8 @@ inline PyObject* TensorsCC(PyObject* self, PyObject* args) {
     return list;
 }
 
-#endif    // DRAGON_PYTHON_PY_TENSOR_H_
+}  // namespace python
+
+}  // namespace dragon
+
+#endif  // DRAGON_PYTHON_PY_TENSOR_H_

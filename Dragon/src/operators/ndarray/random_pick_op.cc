@@ -94,4 +94,4 @@ class GetRandomPickGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(RandomPick, GetRandomPickGradient);
 
-}   // namespace dragon
+}  // namespace dragon

@@ -32,4 +32,4 @@ DEPLOY_CUDA(Copy);
 OPERATOR_SCHEMA(Copy).NumInputs(1).NumOutputs(1);
 NO_GRADIENT(Copy);
 
-}    // namespace dragon
+}  // namespace dragon

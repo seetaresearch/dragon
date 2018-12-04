@@ -103,4 +103,4 @@ class GetStackGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Stack, GetStackGradient);
 
-}    // namespace dragon
+}  // namespace dragon

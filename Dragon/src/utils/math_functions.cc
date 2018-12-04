@@ -1,5 +1,3 @@
-#include <random>
-
 #include "core/context.h"
 #include "utils/omp_alternative.h"
 #include "utils/sse_alternative.h"
@@ -64,14 +62,6 @@ template <> void Set<int64_t, CPUContext>(
     for (int i = 0; i < n; ++i) x[i] = alpha;
 }
 
-template <> void Set<float16, CPUContext>(
-    const int               n,
-    const float16           alpha,
-    float16*                x,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
-}
-
 template <> void RandomUniform<float, CPUContext>(
     const int               n,
     const float             low,
@@ -84,15 +74,6 @@ template <> void RandomUniform<float, CPUContext>(
     #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
 #endif
     for (int i = 0; i < n; ++i) x[i] = distribution(*rng);
-}
-
-template <> void RandomUniform<float16, CPUContext>(
-    const int               n,
-    const float             low,
-    const float             high,
-    float16*                x,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
 }
 
 template <> void RandomUniform<uint32_t, CPUContext>(
@@ -123,15 +104,6 @@ template <> void RandomNormal<float, CPUContext>(
     for (int i = 0; i < n; ++i) x[i] = distribution(*rng);
 }
 
-template <> void RandomNormal<float16, CPUContext>(
-    const int               n,
-    const float             mu,
-    const float             sigma,
-    float16*                x,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
-}
-
 template <> void RandomTruncatedNormal<float, CPUContext>(
     const int               n,
     const float             mu,
@@ -150,17 +122,6 @@ template <> void RandomTruncatedNormal<float, CPUContext>(
         x[cur_pos++] = gen_value;
         if (cur_pos >= n) break;
     }
-}
-
-template <> void RandomTruncatedNormal<float16, CPUContext>(
-    const int               n,
-    const float             mu,
-    const float             sigma,
-    const float             low,
-    const float             high,
-    float16*                x,
-    CPUContext*             ctx) {
-    NOT_IMPLEMENTED;
 }
 
 template <typename T>
@@ -223,15 +184,6 @@ template <> void Add<int, CPUContext>(
     for (int i = 0; i < n; ++i) y[i] = a[i] + b[i];
 }
 
-template <> void Add<float16, CPUContext>(
-    const int               n,
-    const float16*          a,
-    const float16*          b,
-    float16*                y,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
-}
-
 template <> void Sub<float, CPUContext>(
     const int               n,
     const float*            a,
@@ -246,15 +198,6 @@ template <> void Sub<float, CPUContext>(
 #endif
     for (int i = 0; i < n; ++i) y[i] = a[i] - b[i];
 #endif  // WITH_SSE
-}
-
-template <> void Sub<float16, CPUContext>(
-    const int               n,
-    const float16*          a,
-    const float16*          b,
-    float16*                y,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
 }
 
 template <> void Mul<float, CPUContext>(
@@ -273,15 +216,6 @@ template <> void Mul<float, CPUContext>(
 #endif  // WITH_SSE
 }
 
-template <> void Mul<float16, CPUContext>(
-    const int               n,
-    const float16*          a,
-    const float16*          b,
-    float16*                y,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
-}
-
 template <> void Div<float, CPUContext>(
     const int               n,
     const float*            a,
@@ -296,15 +230,6 @@ template <> void Div<float, CPUContext>(
 #endif
     for (int i = 0; i < n; ++i) y[i] = a[i] / b[i];
 #endif  // WITH_SSE
-}
-
-template <> void Div<float16, CPUContext>(
-    const int               n,
-    const float16*          a,
-    const float16*          b,
-    float16*                y,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
 }
 
 template <> void Clip<float, CPUContext>(
@@ -343,14 +268,6 @@ template <> void Log<float, CPUContext>(
     for (int i = 0; i < n; ++i) y[i] = std::log(x[i]);
 }
 
-template <> void Log<float16, CPUContext>(
-    int                     n,
-    const float16*          x,
-    float16*                y,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
-}
-
 template <> void Square<float, CPUContext>(
     int                     n,
     const float*            x,
@@ -362,14 +279,6 @@ template <> void Square<float, CPUContext>(
     for (int i = 0; i < n; ++i) y[i] = x[i] * x[i];
 }
 
-template <> void Square<float16, CPUContext>(
-    int                     n,
-    const float16*          x,
-    float16*                y,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
-}
-
 template <> void Sqrt<float, CPUContext>(
     int                     n,
     const float*            x,
@@ -379,14 +288,6 @@ template <> void Sqrt<float, CPUContext>(
     #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
 #endif
     for (int i = 0; i < n; ++i) y[i] = std::sqrt(x[i]);
-}
-
-template <> void Sqrt<float16, CPUContext>(
-    int                     n,
-    const float16*          x,
-    float16*                y,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
 }
 
 template <> void Pow<float, CPUContext>(
@@ -401,15 +302,6 @@ template <> void Pow<float, CPUContext>(
     for (int i = 0; i < n; ++i) y[i] = std::pow(x[i], alpha);
 }
 
-template <> void Pow<float16, CPUContext>(
-    int                     n,
-    const float             alpha,
-    const float16*          x,
-    float16*                y,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
-}
-
 template <> void Inv<float, CPUContext>(
     const int               n,
     const float             numerator,
@@ -420,15 +312,6 @@ template <> void Inv<float, CPUContext>(
     #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
 #endif
     for (int i = 0; i < n; ++i) y[i] = numerator / x[i];
-}
-
-template <> void Inv<float16, CPUContext>(
-    const int               n,
-    const float             numerator,
-    const float16*          x,
-    float16*                y,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
 }
 
 /******************** Level-2 ********************/
@@ -448,23 +331,6 @@ template <> void Scal<float, CPUContext>(
 #endif
     for (int i = 0; i < n; ++i) y[i] = y[i] * alpha;
 #endif  // WITH_BLAS
-}
-
-template <> void Scal<float16, CPUContext>(
-    const int               n,
-    const float             alpha,
-    float16*                y,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
-}
-
-template <> void Scale<float16, CPUContext>(
-    const int               n,
-    const float             alpha,
-    const float16*          x,
-    float16*                y,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
 }
 
 template <> void Scale<float, CPUContext>(
@@ -503,7 +369,7 @@ template <> void StridedDot<float, CPUContext>(
         result += a[cx] * b[cy];
         cx += incx; cy += incy;
     }
-#endif  //  WITH_BLAS
+#endif  // WITH_BLAS
     *y = result;
 }
 
@@ -522,15 +388,6 @@ template <> void Dot<float, CPUContext>(
     for (int i = 0; i < n; ++i) result += a[i] * b[i];
     *y = result;
 #endif  // WITH_BLAS
-}
-
-template <> void Dot<float16, CPUContext>(
-    int                     n,
-    const float16*          a,
-    const float16*          b,
-    float16*                y,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
 }
 
 template <> float ASum<float, CPUContext>(
@@ -561,14 +418,6 @@ template <> void AddScalar<float, CPUContext>(
 #endif  // WITH_SSE
 }
 
-template <> void AddScalar<float16, CPUContext>(
-    const int               n,
-    const float             alpha,
-    float16*                y,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
-}
-
 template <> void MulScalar<float, CPUContext>(
     const int               n,
     const float             alpha,
@@ -582,14 +431,6 @@ template <> void MulScalar<float, CPUContext>(
 #endif
     for (int i = 0; i < n; ++i) y[i] *= alpha;
 #endif  // WITH_SSE
-}
-
-template <> void MulScalar<float16, CPUContext>(
-    const int               n,
-    const float             alpha,
-    float16*                y,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
 }
 
 template <> void Axpy<float, CPUContext>(
@@ -610,15 +451,6 @@ template <> void Axpy<float, CPUContext>(
 #endif  // WITH_BLAS
 }
 
-template <> void Axpy<float16, CPUContext>(
-    const int               n,
-    float                   alpha,
-    const float16*          x,
-    float16*                y,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
-}
-
 template <> void Axpby<float, CPUContext>(
     const int               n,
     float                   alpha,
@@ -637,16 +469,6 @@ template <> void Axpby<float, CPUContext>(
 #endif
     for (int i = 0; i < n; ++i) y[i] = alpha * x[i] + beta* y[i];
 #endif  // WITH_BLAS
-}
-
-template <> void Axpby<float16, CPUContext>(
-    const int               n,
-    float                   alpha,
-    const float16*          x,
-    float                   beta,
-    float16*                y,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
 }
 
 /******************** Level-3 ********************/
@@ -670,25 +492,9 @@ template <> void Gemm<float, CPUContext>(
     cblas_sgemm(
         CblasRowMajor, TransA, TransB,
             M, N, K, alpha, A, lda, B, ldb, beta, C, N);
-#else    // WITH_BLAS
+#else  // WITH_BLAS
     LOG(FATAL) << "GEMM for CPUContext requires BLAS Library.";
 #endif
-}
-
-template <> void Gemm<float16, CPUContext>(
-    const CBLAS_TRANSPOSE   TransA,
-    const CBLAS_TRANSPOSE   TransB,
-    const int               M,
-    const int               N,
-    const int               K,
-    const float             alpha,
-    const float16*          A,
-    const float16*          B,
-    const float             beta,
-    float16*                C,
-    CPUContext*             ctx,
-    TensorProto_DataType    math_type) {
-    CPU_FP16_NOT_SUPPORTED;
 }
 
 template <> void Gemv<float, CPUContext>(
@@ -707,25 +513,11 @@ template <> void Gemv<float, CPUContext>(
     cblas_sgemv(
         CblasRowMajor, TransA,
             M, N, alpha, A, N, x, 1, beta, y, 1);
-#else    // WITH_BLAS
+#else  // WITH_BLAS
     LOG(FATAL) << "GEMV for CPUContext requires BLAS Library.";
 #endif
 }
-
-template <> void Gemv<float16, CPUContext>(
-    const CBLAS_TRANSPOSE   TransA,
-    const int               M,
-    const int               N,
-    const float             alpha,
-    const float16*          A,
-    const float16*          x,
-    const float             beta,
-    float16*                y,
-    CPUContext*             ctx,
-    TensorProto_DataType    math_type) {
-    CPU_FP16_NOT_SUPPORTED;
-}
  
-}    // namespace math
+}  // namespace math
 
-}    // namespace dragon
+}  // namespace dragon

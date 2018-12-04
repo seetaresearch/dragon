@@ -59,4 +59,4 @@ class GetTanhGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Tanh, GetTanhGradient);
 
-}    // namespace dragon
+}  // namespace dragon

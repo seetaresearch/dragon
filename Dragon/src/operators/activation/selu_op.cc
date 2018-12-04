@@ -63,4 +63,4 @@ class GetSEluGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(SElu, GetSEluGradient);
 
-}    // namespace dragon
+}  // namespace dragon

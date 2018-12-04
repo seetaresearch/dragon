@@ -48,4 +48,4 @@ OPERATOR_SCHEMA(RNNParamSet).NumInputs(1).NumOutputs(1);
 
 NO_GRADIENT(RNNParamSet);
 
-}    // namespace dragon
+}  // namespace dragon

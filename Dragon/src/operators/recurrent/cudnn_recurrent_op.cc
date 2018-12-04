@@ -18,7 +18,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
     const auto output_dim = hidden_size * num_directions;
 
     //  setup dropout
-    if (dropout_ratio < 1.0) {
+    if (dropout_ratio < 1.f) {
 #if CUDNN_VERSION_MIN(7, 0, 0)
         if (!states_initialized) {
             states_initialized = true;
@@ -157,7 +157,7 @@ void CuDNNRecurrentOp<Context>::RunWithType() {
 
 template <class Context>
 void CuDNNRecurrentOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  //  enforce default stream
+    ctx()->set_stream_id(0);  // Enforce SyncStream
 
     if (XIsType(Input(0), float)) RunWithType<float>();
     else if (XIsType(Input(0), float16)) RunWithType<float16>();
@@ -230,7 +230,7 @@ void CuDNNRecurrentGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void CuDNNRecurrentGradientOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  //  enforce default stream
+    ctx()->set_stream_id(0);  // Enforce SyncStream
 
     Output(0)->ReshapeLike(Input(0));  // dX
     Output(1)->ReshapeLike(Input(1));  // dW
@@ -244,8 +244,8 @@ void CuDNNRecurrentGradientOp<Context>::RunOnDevice() {
 
 DEPLOY_CUDNN(RecurrentGradient);
 
-}    // namespace dragon
+}  // namespace dragon
 
 #endif
 
-#endif    // WITH_CUDNN
+#endif  // WITH_CUDNN

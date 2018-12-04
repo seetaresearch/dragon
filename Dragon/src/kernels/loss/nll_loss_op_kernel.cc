@@ -1,0 +1,213 @@
+#include "utils/op_kernel.h"
+#include "utils/omp_alternative.h"
+
+namespace dragon {
+
+namespace kernel {
+
+/*! NLLLoss <Tx = ?, Ty = ?, Device = CPU> */
+
+template <typename Tx, typename Ty>
+void _NLLLoss(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const Tx*               log_prob,
+    const Ty*               labels,
+    const int*              ignores,
+    const int               num_ignores,
+    Tx*                     losses,
+    Tx*                     flags) {
+    for (int oix = 0; oix < outer_dim; ++oix) {
+        for (int iix = 0; iix < inner_dim; ++iix) {
+            const int idx = oix * inner_dim + iix;
+            const int label = (int)labels[idx];
+            int k;
+            for (k = 0; k < num_ignores; ++k) {
+                if (label == ignores[k]) {
+                    losses[idx] = flags[idx] = 0;
+                    break;
+                }
+            }
+            if (k == num_ignores) {
+                losses[idx] = -log_prob[
+                    (oix * axis_dim + label) * inner_dim + iix];
+                flags[idx] = 1;
+            }
+        }
+    }
+}
+
+/*! NLLLoss <Tx = float32, Ty = float32, Device = CPU> */
+
+template <> void NLLLoss<float, float, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float*            log_prob,
+    const float*            labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    CPUContext*             ctx) {
+    _NLLLoss<float, float>(
+        outer_dim, axis_dim, inner_dim,
+            log_prob, labels, ignores,
+                num_ignores, losses, flags);
+}
+
+/*! NLLLoss <Tx = float32, Ty = int64, Device = CPU> */
+
+template <> void NLLLoss<float, int64_t, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float*            log_prob,
+    const int64_t*          labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    CPUContext*             ctx) {
+    _NLLLoss<float, int64_t>(
+        outer_dim, axis_dim, inner_dim,
+            log_prob, labels, ignores,
+                num_ignores, losses, flags);
+}
+
+/*! NLLLoss <Tx = float16, Ty = float32, Device = CPU> */
+
+template <> void NLLLoss<float16, float, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float16*          log_prob,
+    const float*            labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    CPUContext*             ctx) {
+    CPU_FP16_NOT_SUPPORTED;
+}
+
+/*! NLLLoss <Tx = float16, Ty = int64, Device = CPU> */
+
+template <> void NLLLoss<float16, int64_t, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float16*          log_prob,
+    const int64_t*          labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  losses,
+    float*                  flags,
+    CPUContext*             ctx) {
+    CPU_FP16_NOT_SUPPORTED;
+}
+
+/*! NLLLossGrad <Tx = ?, Ty = ?, Device = CPU> */
+
+template <typename Tx, typename Ty>
+void _NLLLossGrad(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const Tx*               log_prob,
+    const Ty*               labels,
+    const int*              ignores,
+    const int               num_ignores,
+    Tx*                     dx,
+    Tx*                     flags) {
+    for (int oix = 0; oix < outer_dim; ++oix) {
+        for (int iix = 0; iix < inner_dim; ++iix) {
+            const int idx = oix * inner_dim + iix;
+            const int label = (int)labels[idx];
+            int k;
+            for (k = 0; k < num_ignores; ++k)
+                if (label == ignores[k]) break;
+            if (k != num_ignores) {
+                flags[idx] = 0;
+            } else {
+                dx[(oix * axis_dim + label) * inner_dim + iix] = -1;
+                flags[idx] = 1;
+            } 
+        }
+    }
+}
+
+/*! NLLLossGrad <Tx = float32, Ty = float32, Device = CPU> */
+
+template<> void NLLLossGrad<float, float, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float*            log_prob,
+    const float*            labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  dx,
+    float*                  flags,
+    CPUContext*             ctx) {
+    _NLLLossGrad<float, float>(
+        outer_dim, axis_dim, inner_dim,
+            log_prob, labels, ignores,
+                num_ignores, dx, flags);
+}
+
+/*! NLLLossGrad <Tx = float32, Ty = int64, Device = CPU> */
+
+template<> void NLLLossGrad<float, int64_t, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float*            log_prob,
+    const int64_t*          labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float*                  dx,
+    float*                  flags,
+    CPUContext*             ctx) {
+    _NLLLossGrad<float, int64_t>(
+        outer_dim, axis_dim, inner_dim,
+            log_prob, labels, ignores,
+                num_ignores, dx, flags);
+}
+
+/*! NLLLossGrad <Tx = float16, Ty = float32, Device = CPU> */
+
+template<> void NLLLossGrad<float16, float, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float16*          log_prob,
+    const float*            labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float16*                dx,
+    float*                  flags,
+    CPUContext*             ctx) {
+    CPU_FP16_NOT_SUPPORTED;
+}
+
+/*! NLLLossGrad <Tx = float16, Ty = int64, Device = CPU> */
+
+template<> void NLLLossGrad<float16, int64_t, CPUContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float16*          log_prob,
+    const int64_t*          labels,
+    const int*              ignores,
+    const int               num_ignores,
+    float16*                dx,
+    float*                  flags,
+    CPUContext*             ctx) {
+    CPU_FP16_NOT_SUPPORTED;
+}
+
+}  // namespace kernel
+
+}  // namepsace dragon

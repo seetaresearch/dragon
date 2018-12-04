@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_CORE_MIXEDMEM_H_
 #define DRAGON_CORE_MIXEDMEM_H_
@@ -86,11 +87,11 @@ class MixedMemory {
     void* cpu_ptr_, *cuda_ptr_, *cnml_ptr_;
     int own_cpu_ptr_ = 1, ptr_device_ = 0;
 
-    /* For CAMBRICON's CNML Environment */
+    /*! For CAMBRICON's CNML Environment */
     cnmlCpuTensor_t cnml_cpu_tensor_ = nullptr;
     cnmlTensor_t cnml_mlu_tensor_ = nullptr;
 };
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_CORE_MIXEDMEM_H_
+#endif  // DRAGON_CORE_MIXEDMEM_H_

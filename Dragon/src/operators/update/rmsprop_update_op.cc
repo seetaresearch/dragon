@@ -47,4 +47,4 @@ OPERATOR_SCHEMA(RMSPropUpdate).NumInputs(1).NumOutputs(1);
 
 NO_GRADIENT(RMSPropUpdate);
 
-}    // namespace dragon
+}  // namespace dragon

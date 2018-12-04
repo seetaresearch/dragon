@@ -81,6 +81,6 @@ void CuDNNPooling2dGradientOp<Context>::RunOnDevice() {
 
 DEPLOY_CUDNN(Pooling2dGradient);
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // WITH_CUDNN
+#endif  // WITH_CUDNN

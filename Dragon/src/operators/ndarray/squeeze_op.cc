@@ -44,4 +44,4 @@ class GetSqueezeGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Squeeze, GetSqueezeGradient);
 
-}    // namespace dragon
+}  // namespace dragon

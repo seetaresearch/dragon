@@ -25,8 +25,8 @@ void DotOp<Context>::GemmRunWithType() {
         TransA ? CblasTrans : CblasNoTrans,
             TransB ? CblasTrans : CblasNoTrans,
                 M, N1, K1,
-                    1.0, X1data, X2data,
-                        0.0, Ydata, ctx());
+                    1.f, X1data, X2data,
+                        0.f, Ydata, ctx());
 }
 
 template <class Context> template <typename T>
@@ -36,8 +36,8 @@ void DotOp<Context>::GemvRunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
     math::Gemv<T, Context>(
         TransA ? CblasTrans : CblasNoTrans, M, N1,
-            1.0, X1data, X2data,
-                0.0, Ydata, ctx());
+            1.f, X1data, X2data,
+                0.f, Ydata, ctx());
 }
 
 template <class Context>
@@ -123,14 +123,14 @@ void DotGradientOp<Context>::GemmRunWithType() {
         CblasNoTrans,
             TransB ? CblasNoTrans : CblasTrans,
                 M, K1, N1,
-                    1.0, dYdata, X2data,
-                        0.0, dX1data, ctx());
+                    1.f, dYdata, X2data,
+                        0.f, dX1data, ctx());
     math::Gemm<T, Context>(
         TransA ? CblasNoTrans : CblasTrans,
             CblasNoTrans,
                 K1, N1, M,
-                    1.0, X1data, dYdata,
-                        0.0, dX2data, ctx());
+                    1.f, X1data, dYdata,
+                        0.f, dX2data, ctx());
 }
 
 template <class Context> template <typename T>
@@ -143,12 +143,12 @@ void DotGradientOp<Context>::GemvRunWithType() {
     math::Gemm<T, Context>(
         CblasNoTrans, CblasNoTrans,
             M, N1, 1,
-                1.0, dYdata, X2data,
-                    0.0, dX1data, ctx());
+                1.f, dYdata, X2data,
+                    0.f, dX1data, ctx());
     math::Gemv<T, Context>(
         TransA ? CblasNoTrans : CblasTrans, M, N1,
-            1.0, X1data, dYdata,
-                0.0, dX2data, ctx());
+            1.f, X1data, dYdata,
+                0.f, dX2data, ctx());
 }
 
 template <class Context>
@@ -213,4 +213,4 @@ class GetDotGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Dot, GetDotGradient);
 
-}    // namespace dragon
+}  // namespace dragon

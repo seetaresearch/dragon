@@ -76,6 +76,6 @@ void CuDNNLRNGradientOp<Context>::RunOnDevice() {
 
 DEPLOY_CUDNN(LRNGradient);
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // WITH_CUDNN
+#endif  // WITH_CUDNN

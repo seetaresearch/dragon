@@ -26,7 +26,7 @@ void CuDNNReluOp<Context>::RunWithType() {
 
 template <class Context>
 void CuDNNReluOp<Context>::RunOnDevice() {
-    //  cudnn does not support LeakyRelu
+    // CuDNN does not support LeakyRelu
     if (this->slope != 0) return ReluOp<Context>::RunOnDevice();
     Output(0)->ReshapeLike(Input(0));
 
@@ -62,7 +62,7 @@ void CuDNNReluGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void CuDNNReluGradientOp<Context>::RunOnDevice() {
-    //  cudnn does not support LeakyRelu
+    // CuDNN does not support LeakyRelu
     if (this->slope != 0) return ReluGradientOp<Context>::RunOnDevice();
     Output(0)->ReshapeLike(Input(0));
 
@@ -73,6 +73,6 @@ void CuDNNReluGradientOp<Context>::RunOnDevice() {
 
 DEPLOY_CUDNN(ReluGradient);
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // WITH_CUDNN
+#endif  // WITH_CUDNN

@@ -22,8 +22,8 @@ void InnerProductOp<Context>::TransRunWithType() {
     math::Gemm<T, Context>(
         CblasNoTrans, CblasTrans,
             M, num_output, K,
-                1.0, Xdata, Wdata,
-                    0.0, Ydata, ctx());
+                1.f, Xdata, Wdata,
+                    0.f, Ydata, ctx());
 
     if (InputSize() > 2) {
         DECLARE_MULTIPLIER(multiplier, M);
@@ -31,8 +31,8 @@ void InnerProductOp<Context>::TransRunWithType() {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 M, num_output, 1,
-                    1.0, multiplier, Bdata,
-                        1.0, Ydata, ctx());
+                    1.f, multiplier, Bdata,
+                        1.f, Ydata, ctx());
     }
 }
 
@@ -54,8 +54,8 @@ void InnerProductOp<Context>::NoTransRunWithType() {
     math::Gemm<T, Context>(
         CblasNoTrans, CblasNoTrans,
             M, num_output, K,
-                1.0, Xdata, Wdata,
-                    0.0, Ydata, ctx());
+                1.f, Xdata, Wdata,
+                    0.f, Ydata, ctx());
 
     if (InputSize() > 2) {
         DECLARE_MULTIPLIER(multiplier, M);
@@ -63,8 +63,8 @@ void InnerProductOp<Context>::NoTransRunWithType() {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 M, num_output, 1,
-                    1.0, multiplier, Bdata,
-                        1.0, Ydata, ctx());
+                    1.f, multiplier, Bdata,
+                        1.f, Ydata, ctx());
     }
 }
 
@@ -107,14 +107,14 @@ void InnerProductGradientOp<Context>::RunWithType() {
             math::Gemm<T, Context>(
                 CblasTrans, CblasNoTrans,
                     num_output, K, M,
-                        1.0, dYdata, Xdata,
-                            1.0, dWdata, ctx());
+                        1.f, dYdata, Xdata,
+                            1.f, dWdata, ctx());
         } else {
             math::Gemm<T, Context>(
                 CblasTrans, CblasNoTrans,
                     K, num_output, M,
-                        1.0, Xdata, dYdata,
-                            1.0, dWdata, ctx());
+                        1.f, Xdata, dYdata,
+                            1.f, dWdata, ctx());
         }
     }
 
@@ -124,8 +124,8 @@ void InnerProductGradientOp<Context>::RunWithType() {
         auto* dBdata = Output(2)->template mutable_data<T, Context>(ctx());
         math::Gemv<T, Context>(
             CblasTrans, M, num_output,
-                1.0, dYdata, multiplier,
-                    1.0, dBdata, ctx());
+                1.f, dYdata, multiplier,
+                    1.f, dBdata, ctx());
     }
 
     if (Output(0)->name() != "ignore") {
@@ -135,14 +135,14 @@ void InnerProductGradientOp<Context>::RunWithType() {
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
                     M, K, num_output,
-                        1.0, dYdata, Wdata,
-                            0.0, dXdata, ctx());
+                        1.f, dYdata, Wdata,
+                            0.f, dXdata, ctx());
         } else {
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasTrans,
                     M, K, num_output,
-                        1.0, dYdata, Wdata,
-                            0.0, dXdata, ctx());
+                        1.f, dYdata, Wdata,
+                            0.f, dXdata, ctx());
         }
     }
 }
@@ -174,4 +174,4 @@ class GetInnerProductGradient : public GradientMakerBase {
 };
 REGISTER_GRADIENT(InnerProduct, GetInnerProductGradient);
 
-}    // namespace dragon
+}  // namespace dragon

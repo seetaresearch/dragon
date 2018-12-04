@@ -27,4 +27,4 @@ template<> void CPUContext::Memcpy<CUDAContext, CPUContext>(
 #endif
 }
 
-}    // namespace dragon
+}  // namespace dragon

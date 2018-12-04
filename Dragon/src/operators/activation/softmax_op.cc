@@ -88,4 +88,4 @@ class GetSoftmaxGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Softmax, GetSoftmaxGradient);
 
-}    // namespace dragon
+}  // namespace dragon

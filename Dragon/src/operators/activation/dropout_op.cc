@@ -16,7 +16,7 @@ void DropoutOp<Context>::RunWithType() {
         }
         if (!use_scale) {
             math::Scal<T, Context>(Output(0)->count(),
-                1.0 - prob(), Ydata, ctx());
+                1.f - prob(), Ydata, ctx());
         }
     } else if (phase() == "TRAIN") {
         Tensor* mask = ws()->CreateTensor(

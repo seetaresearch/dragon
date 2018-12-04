@@ -42,4 +42,4 @@ class GetExpandDimsGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(ExpandDims, GetExpandDimsGradient);
 
-}    // namespace dragon
+}  // namespace dragon

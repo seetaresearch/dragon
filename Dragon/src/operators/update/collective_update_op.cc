@@ -59,11 +59,11 @@ void CollectiveUpdateOp<Context>::MPIAllReduce(
 #else
     auto* WSdata = ws()->template caches<T, CPUContext>({ segment_sizes[0] })[0];
     auto* dXdata = tensor->template mutable_data<T, CPUContext>();
-#endif // WITH_MPI_CUDA
+#endif  // WITH_MPI_CUDA
     int recv_from = (comm_rank - 1 + comm_size) % comm_size;
     int send_to = (comm_rank + 1) % comm_size;
 
-    //  scatter-reduce
+    // Scatter-Reduce
     for (int i = 0; i < comm_size - 1; i++) {
         int recv_chunk = (comm_rank - i - 1 + comm_size) % comm_size;
         int send_chunk = (comm_rank - i + comm_size) % comm_size;
@@ -78,15 +78,15 @@ void CollectiveUpdateOp<Context>::MPIAllReduce(
         MPI_Wait(&recv_req, MPI_STATUS_IGNORE);
 #ifdef WITH_MPI_CUDA
         math::Axpy<T, Context>(segment_sizes[recv_chunk],
-            1.0, WSdata, segment_update, ctx());
+            1.f, WSdata, segment_update, ctx());
         ctx()->FinishDeviceCompution();
 #else 
         math::Axpy<T, CPUContext>(segment_sizes[recv_chunk],
-            1.0, WSdata, segment_update, ctx());
-#endif // WITH_MPI_CUDA
+            1.f, WSdata, segment_update, ctx());
+#endif  // WITH_MPI_CUDA
     }
 
-    //  allgather
+    // Allgather
     for (int i = 0; i < comm_size - 1; i++) {
         int send_chunk = (comm_rank - i + 1 + comm_size) % comm_size;
         int recv_chunk = (comm_rank - i + comm_size) % comm_size;
@@ -99,7 +99,7 @@ void CollectiveUpdateOp<Context>::MPIAllReduce(
             dtype, recv_from, 0, comm, MPI_STATUS_IGNORE);
     }
 
-    //  normalization
+    // Normalization
     if (comm_size > 1) {
 #ifdef WITH_MPI_CUDA
         math::Scal<T, Context>(count, 1.f / comm_size, dXdata, ctx());
@@ -210,6 +210,6 @@ DEPLOY_CUDA(CollectiveUpdate);
 #endif
 OPERATOR_SCHEMA(CollectiveUpdate).IgnoreVerify();
 
-#endif    // WITH_MPI
+#endif  // WITH_MPI
 
-}    // namespace dragon
+}  // namespace dragon

@@ -34,7 +34,7 @@ void L1LossOp<Context>::RunWithType() {
 
 template <class Context>
 void L1LossOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  //  enforce default stream
+    ctx()->set_stream_id(0);  // Enforce SyncStream
 
     CHECK_EQ(Input(0).count(), Input(1).count());
     Output(0)->Reshape({ 1 });
@@ -104,4 +104,4 @@ class GetL1LossGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(L1Loss, GetL1LossGradient);
 
-}    // namespace dragon
+}  // namespace dragon

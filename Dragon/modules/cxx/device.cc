@@ -24,4 +24,4 @@ Device::Device(std::string device_type, int device_id)
 Device::Device(std::string device_type)
     : device_type_(type_from_string(device_type)), device_id_(0) {}
 
-}    // namespace dragon
+}  // namespace dragon

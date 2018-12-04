@@ -18,9 +18,11 @@ import math
 from . import *
 
 
-def Conv2d(inputs, num_output, kernel_size,
-           stride=1, pad=0, dilation=1, group=1,
-           padding='VALID', data_format='NCHW', **kwargs):
+def Conv2d(
+    inputs, num_output, kernel_size,
+        stride=1, pad=0, dilation=1, group=1,
+            padding='VALID', data_format='NCHW', **kwargs
+):
     """2D Convolution.
 
     The number of inputs vary from ``2`` to ``3`` (Without or With ``bias``).
@@ -59,10 +61,10 @@ def Conv2d(inputs, num_output, kernel_size,
 
     Examples
     --------
-    >>> input = Tensor().Variable()
+    >>> x = Tensor().Variable()
     >>> weights = Tensor().Normal(std=0.001)
     >>> biases = Tensor().Constant(value=0)
-    >>> conv1 = Conv2d([input, weights, biases], num_output=64, kernel_size=3)
+    >>> conv1 = Conv2d([x, weights, biases], num_output=64, kernel_size=3)
 
     >>> weights = Tensor().Gaussian(std=0.001)
     >>> conv2 = Conv2d([conv1, weights], num_output=128, kernel_size=3, stride=1)
@@ -112,9 +114,85 @@ def Conv2d(inputs, num_output, kernel_size,
     return output
 
 
-def Conv2dTranspose(inputs, num_output, kernel_size,
-                    stride=1, pad=0, dilation=1, group=1, output_shape=None,
-                    padding='VALID', data_format='NCHW', **kwargs):
+def DepthwiseConv2d(
+    inputs, num_output, kernel_size=3, stride=1, pad=0,
+        padding='VALID', data_format='NCHW', **kwargs
+):
+    """Depthwise 2D Convolution. `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
+
+    The number of inputs vary from ``2`` to ``3`` (Without or With ``bias``).
+
+    Set ``padding`` to  **VALID** will use the value of ``pad``.
+
+    Parameters
+    ----------
+    inputs : list of Tensor
+        The inputs, represent [input, weights, bias].
+    num_output : int
+        The output channels of convolution.
+    kernel_size : int, tuple or list
+        The kernel size(s) of convolution. Default is ``3``.
+    stride : int, tuple or list
+        The stride(s) of convolution. Default is ``1``.
+    pad : int, tuple or list
+        The zero padding size(s) of convolution. Default is ``0``.
+    padding : str
+        The padding algorithm. ``VALID`` or ``SAME``.
+    data_format : str
+        The data format. ``NCHW`` or ``NHWC``.
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
+    """
+    CheckInputs(inputs, 2, 3)
+    arguments = ParseArguments(locals())
+
+    if padding not in ('VALID', 'SAME'):
+        raise ValueError('Unsupported padding algorithm: {}'.format(padding))
+    if data_format not in ('NCHW', 'NHWC'):
+        raise ValueError('Unsupported data format: {}'.format(data_format))
+
+    if not isinstance(arguments['kernel_size'], (list, tuple)):
+        arguments['kernel_size'] = [arguments['kernel_size']]
+    if not isinstance(arguments['stride'], (list, tuple)):
+        arguments['stride'] = [arguments['stride']]
+    if not isinstance(arguments['pad'], (list, tuple)):
+        arguments['pad'] = [arguments['pad']]
+    arguments['dilation'] = [1, 1]
+
+    output = Tensor.CreateOperator(nout=1, op_type='DepthwiseConv2d', **arguments)
+
+    if inputs[0].shape is not None:
+        output.shape = inputs[0].shape[:]
+        channel_axis = 1 if data_format == 'NCHW' else -1
+        spatial_axis = 2 if data_format == 'NCHW' else 1
+        output.shape[channel_axis] = num_output
+        for i in range(2):
+            input_size = output.shape[i + spatial_axis]
+            k = arguments['kernel_size'][i] if i < len(arguments['kernel_size']) \
+                                            else arguments['kernel_size'][-1]
+            s = arguments['stride'][i]      if i < len(arguments['stride']) \
+                                            else arguments['stride'][-1]
+            p = arguments['pad'][i]         if i < len(arguments['pad']) \
+                                            else arguments['pad'][-1]
+            dk = (k - 1) + 1
+            dp = 2 * p
+            if padding == 'SAME':
+                output.shape[i + spatial_axis] = int((input_size + s - 1) / s)
+            else:
+                output.shape[i + spatial_axis] = int((input_size + dp - dk) / s) + 1
+
+    return output
+
+
+def Conv2dTranspose(
+    inputs, num_output, kernel_size,
+        stride=1, pad=0, dilation=1, group=1, output_shape=None,
+            padding='VALID', data_format='NCHW', **kwargs
+):
     """2D Deconvolution.
 
     The number of inputs vary from ``2`` to ``3`` (Without or With ``bias``).
@@ -219,8 +297,10 @@ def Conv2dTranspose(inputs, num_output, kernel_size,
     return output
 
 
-def Pool2d(inputs, kernel_size, stride, pad=0, padding='VALID', ceil=True,
-           mode='MAX', data_format='NCHW', global_pooling=False, **kwargs):
+def Pool2d(
+    inputs, kernel_size, stride, pad=0, padding='VALID', ceil=True,
+        mode='MAX', data_format='NCHW', global_pooling=False, **kwargs
+):
     """2D Pooling, MAX or AVG.
 
     The spatial output dimension of pooling can be computed as follows:
@@ -359,8 +439,10 @@ def ROIAlign(inputs, pool_h=0, pool_w=0, spatial_scale=1.0, sampling_ratio=2, **
     return Tensor.CreateOperator(nout=1, op_type='ROIAlign', **arguments)
 
 
-def LRN(inputs, local_size=5, alpha=0.0001, beta=0.75, k=2.0,
-        mode='ACROSS_CHANNELS', data_format='NCHW', **kwargs):
+def LRN(
+    inputs, local_size=5, alpha=0.0001, beta=0.75, k=2.0,
+        mode='ACROSS_CHANNELS', data_format='NCHW', **kwargs
+):
     """Local Response Normalization. `[Krizhevsky et.al, 2012] <http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks>`_.
 
     Parameters
@@ -402,8 +484,10 @@ def LRN(inputs, local_size=5, alpha=0.0001, beta=0.75, k=2.0,
     return output
 
 
-def NNResize(inputs, dsize, shape_like=None,
-             fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
+def NNResize(
+    inputs, dsize, shape_like=None,
+        fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs
+):
     """Resize the image with Nearest-Neighbor method.
 
     Set ``dsize`` to None if you want to use ``shape_like`` or ``fy/fx``.
@@ -475,8 +559,10 @@ def NNResize(inputs, dsize, shape_like=None,
     return output
 
 
-def BilinearResize(inputs, dsize, shape_like=None,
-                   fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
+def BilinearResize(
+    inputs, dsize, shape_like=None,
+        fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs
+):
     """Resize the image with Bi-linear method.
 
     Set ``dsize`` to None if you want to use ``shape_like`` or ``fy/fx``.
@@ -632,8 +718,10 @@ def DenseConcat(inputs, growth_rate=0, axis=1, **kwargs):
     return output
 
 
-def DropBlock2d(inputs, block_size=7, keep_prob=0.9,
-                alpha=1., decrement=0., data_format='NCHW', **kwargs):
+def DropBlock2d(
+    inputs, block_size=7, keep_prob=0.9,
+        alpha=1., decrement=0., data_format='NCHW', **kwargs
+):
     """Randomly drop the outputs according to the spatial blocks. `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
 
     Set the ``decrement`` to schedule ``keep_prob`` for each iteration.

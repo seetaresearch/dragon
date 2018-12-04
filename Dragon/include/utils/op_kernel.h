@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_UTILS_OP_KERNEL_H_
 #define DRAGON_UTILS_OP_KERNEL_H_
@@ -20,7 +21,7 @@ namespace kernel {
 
 typedef int64_t TIndex;
 
-/******************** activation.dropout ********************/
+/*! activation.dropout */
 
 template <typename T, class Context>
 void Dropout(
@@ -42,7 +43,7 @@ void ApplyMask(
     Tx*                     y,
     Context*                ctx);
 
-/******************** activation.elu ********************/
+/*! activation.elu */
 
 template <typename T, class Context>
 void Elu(
@@ -61,7 +62,7 @@ void EluGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** activation.prelu ********************/
+/*! activation.prelu */
 
 template <typename T, class Context>
 void PRelu(
@@ -103,7 +104,7 @@ void PReluWGrad(
     T*                      dw,
     Context*                ctx);
 
-/******************** activation.relu ********************/
+/*! activation.relu */
 
 template <typename T, class Context>
 void Relu(
@@ -122,7 +123,7 @@ void ReluGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** activation.selu ********************/
+/*! activation.selu */
 
 template <typename T, class Context>
 void SElu(
@@ -139,7 +140,7 @@ void SEluGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** activation.sigmoid ********************/
+/*! activation.sigmoid */
 
 template <typename T, class Context>
 void Sigmoid(
@@ -156,7 +157,7 @@ void SigmoidGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** activation.softmax ********************/
+/*! activation.softmax */
 
 template <typename T, class Context>
 void Softmax(
@@ -183,7 +184,7 @@ void SoftmaxGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** activation.tanh ********************/
+/*! activation.tanh */
 
 template <typename T, class Context>
 void Tanh(
@@ -200,7 +201,7 @@ void TanhGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** arithmetic.affine ********************/
+/*! arithmetic.affine */
 
 template <typename T, class Context>
 void Affine(
@@ -226,7 +227,7 @@ void AffineGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** arithmetic.clip ********************/
+/*! arithmetic.clip */
 
 template <typename T, class Context>
 void Clip(
@@ -247,7 +248,7 @@ void ClipGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** arithmetic.maximum ********************/
+/*! arithmetic.maximum */
 
 template <typename T, class Context>
 void MaximumE(
@@ -285,7 +286,7 @@ void MaximumBGrad(
  /* T*                      dx2, */
     Context*                ctx);
 
-/******************** arithmetic.minimum ********************/
+/*! arithmetic.minimum */
 
 template <typename T, class Context>
 void MinimumE(
@@ -323,7 +324,7 @@ void MinimumBGrad(
  /* T*                      dx2, */
     Context*                ctx);
 
-/******************** control_flow.compare ********************/
+/*! control_flow.compare */
 
 template <typename T, class Context>
 void Equal(
@@ -333,7 +334,7 @@ void Equal(
     T*                      y,
     Context*                ctx);
 
-/******************** loss.l1_loss ********************/
+/*! loss.l1_loss */
 
 template <typename T, class Context>
 void AbsGrad(
@@ -342,7 +343,7 @@ void AbsGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** loss.nll_loss ********************/
+/*! loss.nll_loss */
 
 template <typename Tx, typename Ty, class Context>
 void NLLLoss(
@@ -370,7 +371,7 @@ void NLLLossGrad(
     float*                  flags,
     Context*                ctx);
 
-/******************** loss.sigmoid_cross_entropy ********************/
+/*! loss.sigmoid_ce_loss */
 
 template <typename T, class Context>
 void SigmoidCrossEntropy(
@@ -390,7 +391,7 @@ void SigmoidCrossEntropyGrad(
     T*                      flags,
     Context*                ctx);
 
-/******************** loss.sigmoid_focal_loss ********************/
+/*! loss.sigmoid_focal_loss */
 
 template <typename T, class Context>
 void SigmoidFocalLoss(
@@ -408,7 +409,7 @@ void SigmoidFocalLoss(
     Context*                ctx);
 
 template <typename T, class Context>
-void SigmoidFocalLossGradient(
+void SigmoidFocalLossGrad(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
@@ -422,7 +423,7 @@ void SigmoidFocalLossGradient(
     float*                  flags,
     Context*                ctx);
 
-/******************** loss.smooth_l1_loss ********************/
+/*! loss.smooth_l1_loss */
 
 template <typename T, class Context>
 void SmoothL1(
@@ -440,7 +441,7 @@ void SmoothL1Grad(
     T*                      dx,
     Context*                ctx);
 
-/******************** loss.softmax_cross_entropy ********************/
+/*! loss.softmax_ce_loss */
 
 template <typename T, class Context>
 void SoftmaxCrossEntropy(
@@ -450,7 +451,7 @@ void SoftmaxCrossEntropy(
     T*                      loss,
     Context*                ctx);
 
-/******************** loss.softmax_focal_loss ********************/
+/*! loss.softmax_focal_loss */
 
 template <typename T, class Context>
 void SoftmaxFocalLoss(
@@ -486,7 +487,7 @@ void SoftmaxFocalLossGrad(
     T*                      flags,
     Context*                ctx);
 
-/******************** loss.sparse_softmax_cross_entropy ********************/
+/*! loss.sparse_softmax_cross_entropy */
 
 template <typename Tx, typename Ty, class Context>
 void SparseSoftmaxCrossEntropy(
@@ -514,7 +515,7 @@ void SparseSoftmaxCrossEntropyGrad(
     float*                  flags,
     Context*                ctx);
 
-/******************** misc.astype ********************/
+/*! misc.astype */
 
 template <typename Ta, typename Tb, class Context>
 void TypeA2B(
@@ -523,7 +524,7 @@ void TypeA2B(
     Tb*                     b,
     Context*                ctx);
 
-/******************** misc.image_data ********************/
+/*! misc.image_data */
 
 template <typename Tx, typename Ty, class Context>
 void ImageData(
@@ -539,7 +540,7 @@ void ImageData(
     Ty*                     y,
     Context*                ctx);
 
-/******************** ndarray.arange ********************/
+/*! ndarray.arange */
 
 template <typename T, class Context>
 void Arange(
@@ -549,7 +550,7 @@ void Arange(
     T*                      y,
     Context*                ctx);
 
-/******************** ndarray.argreduce ********************/
+/*! ndarray.argreduce */
 
 template <typename T, class Context>
 void Argmax(
@@ -573,7 +574,7 @@ void Argmin(
     T*                      values,
     Context*                ctx);
 
-/******************** ndarray.gather ********************/
+/*! ndarray.gather */
 
 template <typename T, class Context>
 void CanonicalAxis(
@@ -606,7 +607,7 @@ void GatherGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** ndarray.concat ********************/
+/*! ndarray.concat */
 
 template <typename T, class Context>
 void Concat(
@@ -632,10 +633,10 @@ void ConcatGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** ndarray.crop ********************/
+/*! ndarray.crop */
 
 template <typename T, class Context>
-void Crop1D(
+void Crop1d(
     const int               count,
     const int               dim,
     const int               ex_dim,
@@ -646,7 +647,7 @@ void Crop1D(
     Context*                ctx);
 
 template <typename T, class Context>
-void Crop1DGrad(
+void Crop1dGrad(
     const int               count,
     const int               dim,
     const int               ex_dim,
@@ -657,10 +658,10 @@ void Crop1DGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** ndarray.pad ********************/
+/*! ndarray.pad */
 
 template <typename T, class Context>
-void ConstPad1D(
+void ConstPad1d(
     const int               count,
     const int               dim,
     const int               ex_dim,
@@ -672,7 +673,7 @@ void ConstPad1D(
     Context*                ctx);
 
 template <typename T, class Context>
-void ReflectPad1D(
+void ReflectPad1d(
     const int               count,
     const int               dim,
     const int               ex_dim,
@@ -683,7 +684,7 @@ void ReflectPad1D(
     Context*                ctx);
 
 template <typename T, class Context>
-void EdgePad1D(
+void EdgePad1d(
     const int               count,
     const int               dim,
     const int               ex_dim,
@@ -694,7 +695,7 @@ void EdgePad1D(
     Context*                ctx);
 
 template <typename T, class Context>
-void ConstPad1DGrad(
+void ConstPad1dGrad(
     const int               count,
     const int               dim,
     const int               ex_dim,
@@ -705,7 +706,7 @@ void ConstPad1DGrad(
     Context*                ctx);
 
 template <typename T, class Context>
-void ReflectPad1DGrad(
+void ReflectPad1dGrad(
     const int               count,
     const int               dim,
     const int               ex_dim,
@@ -716,7 +717,7 @@ void ReflectPad1DGrad(
     Context*                ctx);
 
 template <typename T, class Context>
-void EdgePad1DGrad(
+void EdgePad1dGrad(
     const int               count,
     const int               dim,
     const int               ex_dim,
@@ -726,7 +727,7 @@ void EdgePad1DGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** ndarray.one_hot ********************/
+/*! ndarray.one_hot */
 
 template <typename T, class Context>
 void OneHot(
@@ -737,7 +738,7 @@ void OneHot(
     T*                      y,
     Context*                ctx);
 
-/******************** ndarray.reduce ********************/
+/*! ndarray.reduce */
 
 template <typename T, class Context>
 void Sum(
@@ -758,7 +759,7 @@ void SumGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** ndarray.repeat ********************/
+/*! ndarray.repeat */
 
 template <typename T, class Context>
 void Repeat(
@@ -782,7 +783,7 @@ void RepeatGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** ndarray.slice ********************/
+/*! ndarray.slice */
 
 template <typename T, class Context>
 void Slice(
@@ -808,7 +809,7 @@ void SliceGrad(
     T*                      x,
     Context*                ctx);
 
-/******************** ndarray.tile ********************/
+/*! ndarray.tile */
 
 template <typename T, class Context>
 void Tile(
@@ -830,7 +831,7 @@ void TileGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** ndarray.transpose ********************/
+/*! ndarray.transpose */
 
 template <typename T, class Context>
 void Transpose(
@@ -854,7 +855,7 @@ void TransposeGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** recurrent.lstm_cell ********************/
+/*! recurrent.lstm_cell */
 
 template <typename T, class Context>
 void LSTMCell(
@@ -881,7 +882,7 @@ void LSTMCellGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** update.adam_update ********************/
+/*! update.adam_update */
 
 template <typename T, class Context>
 void AdamUpdate(
@@ -895,7 +896,7 @@ void AdamUpdate(
     T*                      v,
     Context*                ctx);
 
-/******************** update.nesterov_update ********************/
+/*! update.nesterov_update */
 
 template <typename T, class Context>
 void NesterovUpdate(
@@ -906,7 +907,7 @@ void NesterovUpdate(
     T*                      h,
     Context*                ctx);
 
-/******************** update.rmsprop_update ********************/
+/*! update.rmsprop_update */
 
 template <typename T, class Context>
 void RMSPropUpdate(
@@ -918,7 +919,7 @@ void RMSPropUpdate(
     T*                      h,
     Context*                ctx);
 
-/******************** update.sgd_update ********************/
+/*! update.sgd_update */
 
 template <typename T, class Context>
 void SGDUpdate(
@@ -929,7 +930,17 @@ void SGDUpdate(
     T*                      h,
     Context*                ctx);
 
-/******************** vision.bias_add ********************/
+/*! update.op_base */
+
+template <typename T, class Context>
+void MixedPrecisionUpdate(
+    const int               count,
+    const float*            updates,
+    T*                      w,
+    T*                      g,
+    Context*                ctx);
+
+/*! vision.bias_add */
 
 template <typename T, class Context>
 void BiasAdd(
@@ -943,7 +954,7 @@ void BiasAdd(
     T*                      y,
     Context*                ctx);
 
-/******************** vision.bilinear_resize ********************/
+/*! vision.bilinear_resize */
 
 template <typename T, class Context>
 void BilinearResize(
@@ -973,7 +984,7 @@ void BilinearResizeGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** vision.conv ********************/
+/*! vision.conv */
 
 template <typename T, class Context>
 void Im2Col2d(
@@ -1015,7 +1026,66 @@ void Col2Im2d(
     T*                      im,
     Context*                ctx);
 
-/******************** vision.drop_block ********************/
+/*! vision.depthwise_conv */
+
+template <typename T, class Context>
+void DepthwiseConv2d(
+    const int               N,
+    const int               C,
+    const int               H,
+    const int               W,
+    const int               out_h,
+    const int               out_w,
+    const int               kernel_h,
+    const int               kernel_w,
+    const int               stride,
+    const int               pad_h,
+    const int               pad_w,
+    const string&           data_format,
+    const T*                x,
+    const T*                w,
+    T*                      y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void DepthwiseConv2dGrad(
+    const int               N,
+    const int               C,
+    const int               H,
+    const int               W,
+    const int               out_h,
+    const int               out_w,
+    const int               kernel_h,
+    const int               kernel_w,
+    const int               stride,
+    const int               pad_h,
+    const int               pad_w,
+    const string&           data_format,
+    const T*                dy,
+    const T*                d,
+    T*                      dx,
+    Context*                ctx);
+
+template <typename T, class Context>
+void DepthwiseConv2dWGrad(
+    const int               N,
+    const int               C,
+    const int               H,
+    const int               W,
+    const int               out_h,
+    const int               out_w,
+    const int               kernel_h,
+    const int               kernel_w,
+    const int               stride,
+    const int               pad_h,
+    const int               pad_w,
+    const string&           data_format,
+    const T*                dy,
+    const T*                x,
+    T*                      dw,
+    Context*                ctx);
+
+/*! vision.drop_block */
 
 template <class Context>
 void DropBlock2d(
@@ -1032,7 +1102,7 @@ void DropBlock2d(
     int*                    mask,
     Context*                ctx);
 
-/******************** vision.nn_resize ********************/
+/*! vision.nn_resize */
 
 template <typename T, class Context>
 void NNResize(
@@ -1062,7 +1132,7 @@ void NNResizeGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** vision.pooling ********************/
+/*! vision.pooling */
 
 template <typename T, class Context>
 void MAXPooling2d(
@@ -1146,7 +1216,7 @@ void AVGPooling2dGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** vision.roi_pooling ********************/
+/*! vision.roi_pooling */
 
 template <typename T, class Context>
 void ROIPooling(
@@ -1160,7 +1230,7 @@ void ROIPooling(
     const int               num_rois,
     const float             spatial_scale,
     const T*                x,
-    const T*                rois,
+    const float*            rois,
     int*                    mask,
     T*                      y,
     Context*                ctx);
@@ -1182,7 +1252,7 @@ void ROIPoolingGrad(
     T*                      dx,
     Context*                ctx);
 
-/******************** vision.roi_align ********************/
+/*! vision.roi_align */
 
 template <typename T, class Context>
 void ROIAlign(
@@ -1197,7 +1267,7 @@ void ROIAlign(
     const float             spatial_scale,
     const int               sampling_ratio,
     const T*                x,
-    const T*                rois,
+    const float*            rois,
     T*                      y,
     Context*                ctx);
 
@@ -1218,8 +1288,8 @@ void ROIAlignGrad(
     float*                  dx,
     Context*                ctx);
 
-}    // namespace kernel
+}  // namespace kernel
 
 }    // namepsace dragon
 
-#endif    // DRAGON_UTILS_OP_KERNEL_H_
+#endif  // DRAGON_UTILS_OP_KERNEL_H_

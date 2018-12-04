@@ -119,6 +119,6 @@ class GetMPIBroadcastGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(MPIBroadcast, GetMPIBroadcastGradient);
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif // WITH_MPI
+#endif  // WITH_MPI

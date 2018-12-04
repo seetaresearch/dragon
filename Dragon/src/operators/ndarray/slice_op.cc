@@ -86,4 +86,4 @@ class GetSliceGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Slice, GetSliceGradient);
 
-}    // namespace dragon
+}  // namespace dragon

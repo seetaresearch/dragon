@@ -60,4 +60,4 @@ class GetEluGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Elu, GetEluGradient);
 
-}    // namespace dragon
+}  // namespace dragon

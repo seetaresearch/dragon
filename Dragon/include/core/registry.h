@@ -1,13 +1,14 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_CORE_REGISTRY_H_
 #define DRAGON_CORE_REGISTRY_H_
@@ -66,12 +67,12 @@ class Registerer {
     }
 };
 
-//  use in *.h files
+// Used in *.h files
 #define DECLARE_TYPED_REGISTRY(RegistryName, SrcType, ObjType,...) \
     dragon::Registry<SrcType, ObjType,##__VA_ARGS__>* RegistryName(); \
     typedef dragon::Registerer<SrcType,ObjType,##__VA_ARGS__> Registerer##RegistryName;
 
-//  use in *.cc files
+// Used in *.cc files
 #define DEFINE_TYPED_REGISTRY(RegistryName,SrcType, ObjType,...) \
     Registry<SrcType,ObjType,##__VA_ARGS__>* RegistryName() {  \
         static Registry<SrcType,ObjType,##__VA_ARGS__>* registry = \
@@ -94,4 +95,4 @@ class Registerer {
 
 }    // namepsace dragon
 
-#endif    //DRAGON_CORE_REGISTRY_H_
+#endif  //DRAGON_CORE_REGISTRY_H_

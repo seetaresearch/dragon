@@ -43,14 +43,16 @@ class ConvolutionLayer(Layer):
     def __init__(self, LayerParameter):
         super(ConvolutionLayer, self).__init__(LayerParameter)
         param = LayerParameter.convolution_param
-        self._param = {'num_output': param.num_output,
-                       'kernel_size': [int(element) for element in param.kernel_size],
-                       'stride': [int(element) for element in param.stride] if len(param.stride) > 0 else [1],
-                       'pad': [int(element) for element in param.pad] if len(param.pad) > 0 else [0],
-                       'dilation': [int(element) for element in param.dilation] if len(param.dilation) > 0 else [1],
-                       'group': int(param.group),
-                       'padding': 'VALID',
-                       'data_format': 'NCHW'}
+        self._param = {
+            'num_output': param.num_output,
+            'kernel_size': [int(element) for element in param.kernel_size],
+            'stride': [int(element) for element in param.stride] if len(param.stride) > 0 else [1],
+            'pad': [int(element) for element in param.pad] if len(param.pad) > 0 else [0],
+            'dilation': [int(element) for element in param.dilation] if len(param.dilation) > 0 else [1],
+            'group': int(param.group),
+            'padding': 'VALID',
+            'data_format': 'NCHW',
+        }
         if param.HasField('kernel_h'):
             assert param.HasField('kernel_w')
             self._param['kernel_size'] = [param.kernel_h, param.kernel_w]
@@ -79,6 +81,68 @@ class ConvolutionLayer(Layer):
     def Setup(self, bottom):
         super(ConvolutionLayer, self).Setup(bottom)
         return ops.Conv2d(bottom + [blob['data'] for blob in self._blobs], **self._param)
+
+
+class DepthwiseConvolutionLayer(Layer):
+    """The implementation of ``DepthwiseConvolutionLayer``.
+
+    Parameters
+    ----------
+    num_output : int
+        The output channels. Refer `ConvolutionParameter.num_output`_.
+    bias_term : boolean
+        Whether to use bias. Refer `ConvolutionParameter.bias_term`_.
+    pad : list of int
+        The zero padding size(s). Refer `ConvolutionParameter.pad`_.
+    kernel_size : list of int
+        The kernel size(s). Refer `ConvolutionParameter.kernel_size`_.
+    stride : list of int
+        The stride(s). Refer `ConvolutionParameter.stride`_.
+    weight_filler : FillerParameter
+        The filler of weights. Refer `ConvolutionParameter.weight_filler`_.
+    bias_filler : FillerParameters
+        The filler of bias. Refer `ConvolutionParameter.bias_filler`_.
+
+    """
+    def __init__(self, LayerParameter):
+        super(DepthwiseConvolutionLayer, self).__init__(LayerParameter)
+        param = LayerParameter.convolution_param
+        self._param = {
+            'num_output': param.num_output,
+            'kernel_size': [int(element) for element in param.kernel_size],
+            'stride': [int(element) for element in param.stride] if len(param.stride) > 0 else [1],
+            'pad': [int(element) for element in param.pad] if len(param.pad) > 0 else [0],
+            'padding': 'VALID',
+            'data_format': 'NCHW',
+        }
+        if param.HasField('kernel_h'):
+            assert param.HasField('kernel_w')
+            self._param['kernel_size'] = [param.kernel_h, param.kernel_w]
+        if param.HasField('stride_h'):
+            assert param.HasField('stride_w')
+            self._param['stride'] = [param.stride_h, param.stride_w]
+        if param.HasField('pad_h'):
+            assert param.HasField('pad_w')
+            self._param['pad'] = [param.pad_h, param.pad_w]
+        scope = LayerParameter.name
+        weight = Tensor(scope + '/param:0')
+        weight_diff = Tensor(scope + '/param:0_grad')
+        if len(LayerParameter.param) > 0:
+            if LayerParameter.param[0].lr_mult <= 0: weight_diff = None
+        self.Fill(weight, param, 'weight_filler')
+        self._blobs.append({'data': weight, 'diff': weight_diff})
+
+        if param.bias_term:
+            bias = Tensor(scope + '/param:1')
+            bias_diff = Tensor(scope + '/param:1_grad')
+            self.Fill(bias, param, 'bias_filler')
+            if len(LayerParameter.param) > 1:
+                if LayerParameter.param[1].lr_mult <= 0: bias_diff = None
+            self._blobs.append({'data': bias, 'diff': bias_diff})
+
+    def Setup(self, bottom):
+        super(DepthwiseConvolutionLayer, self).Setup(bottom)
+        return ops.DepthwiseConv2d(bottom + [blob['data'] for blob in self._blobs], **self._param)
 
 
 class DeconvolutionLayer(ConvolutionLayer):
@@ -144,10 +208,11 @@ class PoolingLayer(Layer):
     def __init__(self, LayerParameter):
         super(PoolingLayer, self).__init__(LayerParameter)
         param = LayerParameter.pooling_param
-        self._param = {'mode': {0: 'MAX', 1: 'AVG'}[param.pool],
-                       'data_format': 'NCHW',
-                       'global_pooling': param.global_pooling}
-
+        self._param = {
+            'mode': {0: 'MAX', 1: 'AVG'}[param.pool],
+            'data_format': 'NCHW',
+            'global_pooling': param.global_pooling,
+        }
         if not param.HasField('kernel_h'): self._param['kernel_size'] = [param.kernel_size]
         else: self._param['kernel_size'] = [param.kernel_h, param.kernel_w]
 
@@ -179,9 +244,11 @@ class ROIPoolingLayer(Layer):
     def __init__(self, LayerParameter):
         super(ROIPoolingLayer, self).__init__(LayerParameter)
         param = LayerParameter.roi_pooling_param
-        self._param = {'pool_h': int(param.pooled_h),
-                       'pool_w': int(param.pooled_w),
-                       'spatial_scale': param.spatial_scale}
+        self._param = {
+            'pool_h': int(param.pooled_h),
+            'pool_w': int(param.pooled_w),
+            'spatial_scale': param.spatial_scale,
+        }
 
     def Setup(self, bottom):
         super(ROIPoolingLayer, self).Setup(bottom)
@@ -204,9 +271,11 @@ class ROIAlignLayer(Layer):
     def __init__(self, LayerParameter):
         super(ROIAlignLayer, self).__init__(LayerParameter)
         param = LayerParameter.roi_pooling_param
-        self._param = {'pool_h': int(param.pooled_h),
-                       'pool_w': int(param.pooled_w),
-                       'spatial_scale': param.spatial_scale}
+        self._param = {
+            'pool_h': int(param.pooled_h),
+            'pool_w': int(param.pooled_w),
+            'spatial_scale': param.spatial_scale,
+        }
 
     def Setup(self, bottom):
         super(ROIAlignLayer, self).Setup(bottom)
@@ -233,11 +302,13 @@ class LRNLayer(Layer):
     def __init__(self, LayerParameter):
         super(LRNLayer, self).__init__(LayerParameter)
         param = LayerParameter.lrn_param
-        self._param = {'local_size': param.local_size,
-                       'alpha': param.alpha,
-                       'beta': param.beta,
-                       'mode': {0: 'ACROSS_CHANNELS', 1: 'WITHIN_CHANNEL'}[param.norm_region],
-                       'data_format': 'NCHW'}
+        self._param = {
+            'local_size': param.local_size,
+            'alpha': param.alpha,
+            'beta': param.beta,
+            'mode': {0: 'ACROSS_CHANNELS', 1: 'WITHIN_CHANNEL'}[param.norm_region],
+            'data_format': 'NCHW',
+        }
 
     def Setup(self, bottom):
         super(LRNLayer, self).Setup(bottom)
@@ -263,10 +334,12 @@ class NNResizeLayer(Layer):
         param = LayerParameter.resize_param
         dsize = [int(dim) for dim in param.shape.dim] \
             if param.HasField('shape') else None
-        self._param = {'dsize': dsize,
-                       'fx': float(param.fx),
-                       'fy': float(param.fy),
-                       'data_format': 'NCHW'}
+        self._param = {
+            'dsize': dsize,
+            'fx': float(param.fx),
+            'fy': float(param.fy),
+            'data_format': 'NCHW',
+        }
 
     def Setup(self, bottom):
         super(NNResizeLayer, self).Setup(bottom)
@@ -296,10 +369,12 @@ class BilinearResizeLayer(Layer):
         param = LayerParameter.resize_param
         dsize = [int(dim) for dim in param.shape.dim] \
             if param.HasField('shape') else None
-        self._param = {'dsize': dsize,
-                       'fx': float(param.fx),
-                       'fy': float(param.fy),
-                       'data_format': 'NCHW'}
+        self._param = {
+            'dsize': dsize,
+            'fx': float(param.fx),
+            'fy': float(param.fy),
+            'data_format': 'NCHW',
+        }
 
     def Setup(self, bottom):
         super(BilinearResizeLayer, self).Setup(bottom)
@@ -329,11 +404,13 @@ class DropBlockLayer(Layer):
     def __init__(self, LayerParameter):
         super(DropBlockLayer, self).__init__(LayerParameter)
         param = LayerParameter.drop_block_param
-        self._param = {'block_size': param.block_size,
-                       'keep_prob': param.keep_prob,
-                       'alpha': param.alpha,
-                       'decrement': param.decrement,
-                       'data_format': 'NCHW'}
+        self._param = {
+            'block_size': param.block_size,
+            'keep_prob': param.keep_prob,
+            'alpha': param.alpha,
+            'decrement': param.decrement,
+            'data_format': 'NCHW',
+        }
 
     def Setup(self, bottom):
         super(DropBlockLayer, self).Setup(bottom)

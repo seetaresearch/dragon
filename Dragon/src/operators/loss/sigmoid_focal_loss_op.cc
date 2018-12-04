@@ -31,9 +31,9 @@ void SigmoidFocalLossOp<Context>::RunWithType() {
             math::ASum<T, Context>(
                 flags.count(), Fdata), 1.f);
     } else if (normalization == "BATCH_SIZE") {
-        normalizer = Input(0).dim(0);
+        normalizer = (float)Input(0).dim(0);
     } else if (normalization == "FULL") {
-        normalizer = outer_dim * inner_dim;
+        normalizer = (float)(outer_dim * inner_dim);
     }
 
     T loss = math::ASum<T, Context>(losses.count(), Ldata);
@@ -44,7 +44,7 @@ void SigmoidFocalLossOp<Context>::RunWithType() {
 
 template <class Context>
 void SigmoidFocalLossOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  //  enforce default stream
+    ctx()->set_stream_id(0);  // Enforce SyncStream
 
     outer_dim = Input(0).count(0, axis);
     axis_dim = Input(0).dim(axis);
@@ -72,7 +72,7 @@ void SigmoidFocalLossGradientOp<Context>::RunWithType() {
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* Fdata = flags.template mutable_data<T, Context>();
 
-    kernel::SigmoidFocalLossGradient<T, Context>(
+    kernel::SigmoidFocalLossGrad<T, Context>(
         outer_dim, axis_dim, inner_dim,
             pos_alpha, neg_alpha, gamma, neg_id,
                 Xdata, Tdata, dXdata, Fdata, ctx());
@@ -95,15 +95,16 @@ void SigmoidFocalLossGradientOp<Context>::RunWithType() {
     }
 
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; ctx()->template Copy<T, CPUContext, Context>(
-        1, &dYdata_host, dYdata);
+    T dYdata_host; ctx()->template Copy
+        <T, CPUContext, Context>(
+            1, &dYdata_host, dYdata);
     math::Scal<T, Context>(Output(0)->count(),
         dYdata_host / normalizer, dXdata, ctx());
 }
 
 template <class Context>
 void SigmoidFocalLossGradientOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  //  enforce default stream
+    ctx()->set_stream_id(0);  // Enforce SyncStream
 
     outer_dim = Input(0).count(0, axis);
     axis_dim = Input(0).dim(axis);
@@ -137,4 +138,4 @@ REGISTER_GRADIENT(
     GetSigmoidFocalLossGradient
 );
 
-}    // namespace dragon
+}  // namespace dragon

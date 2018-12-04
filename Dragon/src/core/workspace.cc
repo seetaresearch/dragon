@@ -10,7 +10,8 @@ GraphBase* Workspace::CreateGraph(const GraphDef& meta_graph) {
     if (graph_map_.count(meta_graph.name()))
         return graph_map_[meta_graph.name()].get();
     LOG(DEBUG) << "Create Graph: " << meta_graph.name();
-    graph_map_[meta_graph.name()] = unique_ptr<GraphBase>(NewGraph(meta_graph, this));
+    graph_map_[meta_graph.name()] = unique_ptr<GraphBase>(
+        NewGraph(meta_graph, this));
     return graph_map_[meta_graph.name()].get();
 }
 
@@ -25,4 +26,4 @@ Workspace::~Workspace() {
     }
 }
 
-}    // namespace dragon
+}  // namespace dragon

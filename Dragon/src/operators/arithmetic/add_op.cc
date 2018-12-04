@@ -34,8 +34,8 @@ void AddOp<Context>::BroadcastRunWithType(int type) {
             math::Gemm<T, Context>(
                 CblasNoTrans, CblasNoTrans,
                     outer_dim, inner_dim, 1,
-                        1.0, multiplier, x2,
-                            1.0, y, ctx());
+                        1.f, multiplier, x2,
+                            1.f, y, ctx());
         }
     } else if (type == 2) {
         outer_dim = Input(0).dim(0);
@@ -44,8 +44,8 @@ void AddOp<Context>::BroadcastRunWithType(int type) {
         math::Gemm<T, Context>(
             CblasNoTrans, CblasNoTrans,
                 outer_dim, inner_dim, 1,
-                    1.0, x2, multiplier,
-                        1.0, y, ctx());
+                    1.f, x2, multiplier,
+                        1.f, y, ctx());
     }
 }
 
@@ -108,16 +108,16 @@ void AddGradientOp<Context>::BroadcastRunWithType(int type) {
             DECLARE_MULTIPLIER(multiplier, outer_dim);
             math::Gemv<T, Context>(
                 CblasTrans, outer_dim, inner_dim,
-                    1.0, dy, multiplier,
-                        0.0, dx2, ctx());
+                    1.f, dy, multiplier,
+                        0.f, dx2, ctx());
         } else if (type == 2) {
             outer_dim = X1->dim(0);
             inner_dim = X1->count(1);
             DECLARE_MULTIPLIER(multiplier, inner_dim);
             math::Gemv<T, Context>(
                 CblasNoTrans, outer_dim, inner_dim,
-                    1.0, dy, multiplier,
-                        0.0, dx2, ctx());
+                    1.f, dy, multiplier,
+                        0.f, dx2, ctx());
         }
     }
 
@@ -163,4 +163,4 @@ class GetAddGradient : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Add, GetAddGradient);
 
-}    // namespace dragon
+}  // namespace dragon

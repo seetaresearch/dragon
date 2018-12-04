@@ -46,4 +46,4 @@ OPERATOR_SCHEMA(NesterovUpdate).NumInputs(1).NumOutputs(1);
 
 NO_GRADIENT(NesterovUpdate);
 
-}    // namespace dragon
+}  // namespace dragon

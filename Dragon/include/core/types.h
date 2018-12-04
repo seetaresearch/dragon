@@ -1,17 +1,19 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_CORE_TYPES_H_
 #define DRAGON_CORE_TYPES_H_
 
+#include <cstdint>
 #include <unordered_map>
 
 #include "core/typeid.h"
@@ -76,6 +78,6 @@ inline const std::string TypeMetaToString(
         m2s_type_map[meta.id()] : "unknown";
 }
 
-}    // namespace dragon
+}  // namespace dragon
 
 #endif  // DRAGON_CORE_TYPES_H_

@@ -102,4 +102,4 @@ class GetPowGradient final : public GradientMakerBase {
 };
 REGISTER_GRADIENT(Pow, GetPowGradient);
 
-}    // namespace dragon
+}  // namespace dragon

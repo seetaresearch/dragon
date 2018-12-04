@@ -1,18 +1,18 @@
-// ------------------------------------------------------------
-// Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-//
-// Licensed under the BSD 2-Clause License.
-// You should have received a copy of the BSD 2-Clause License
-// along with the software. If not, See,
-//
-//      <https://opensource.org/licenses/BSD-2-Clause>
-//
-// ------------------------------------------------------------
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
 
 #ifndef DRAGON_UTILS_MATH_FUNCTIONS_H_
 #define DRAGON_UTILS_MATH_FUNCTIONS_H_
 
-#include <float.h>
 #include <cstdint>
 #include <climits>
 
@@ -20,7 +20,7 @@
 extern "C" {
 #include <cblas.h>
 }
-#else    // WITH_BLAS
+#else  // WITH_BLAS
 typedef enum CBLAS_TRANSPOSE {CblasNoTrans=111, CblasTrans=112} CBLAS_TRANSPOSE;
 #endif
 
@@ -259,8 +259,8 @@ void Gemv(
     Context*                ctx,
     TensorProto_DataType    math_type = TensorProto_DataType_FLOAT);
 
-}    // namespace math
+}  // namespace math
 
-}    // namespace dragon
+}  // namespace dragon
 
-#endif    // DRAGON_UTILS_MATH_FUNCTIONS_H_
+#endif  // DRAGON_UTILS_MATH_FUNCTIONS_H_
