@@ -75,9 +75,9 @@ template <> void RMSPropUpdate<float16, CUDAContext>(
     _RMSPropUpdateHalf
         << < CUDA_BLOCKS(count), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (count, dragon_cast<half, float>(lr),
-            dragon_cast<half, float>(decay),
-                dragon_cast<half, float>(eps),
+        (count, cast::to<half>(lr),
+            cast::to<half>(decay),
+                cast::to<half>(eps),
                     reinterpret_cast<half*>(g),
                         reinterpret_cast<half*>(h));
 }

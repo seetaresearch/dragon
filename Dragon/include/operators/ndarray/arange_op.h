@@ -22,10 +22,10 @@ class ArangeOp final : public Operator<Context> {
  public:
     ArangeOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          dtype(OperatorBase::Arg<string>("dtype", "FLOAT32")) {
-        GET_ARGUMENT_WITH_DESC(int, start, 0);
-        GET_ARGUMENT_WITH_DESC(int, stop, 0);
-        GET_ARGUMENT_WITH_DESC(int, step, 1);
+          dtype(OperatorBase::Arg<string>("dtype", "float32")) {
+        GET_ARGUMENT_WITH_DESC(int64_t, start, 0);
+        GET_ARGUMENT_WITH_DESC(int64_t, stop, 0);
+        GET_ARGUMENT_WITH_DESC(int64_t, step, 1);
     }
     USE_OPERATOR_FUNCTIONS;
 
@@ -33,15 +33,16 @@ class ArangeOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    DECLARE_ARGUMENT_WITH_DESC(int, start);
-    DECLARE_ARGUMENT_WITH_DESC(int, stop);
-    DECLARE_ARGUMENT_WITH_DESC(int, step);
     string dtype;
+    int64_t astart, astop, astep, dim;
+    DECLARE_ARGUMENT_WITH_DESC(int64_t, start);
+    DECLARE_ARGUMENT_WITH_DESC(int64_t, stop);
+    DECLARE_ARGUMENT_WITH_DESC(int64_t, step);
 };
 
-DEFINE_ARGUMENT_WITH_DESC(int, ArangeOp, start);
-DEFINE_ARGUMENT_WITH_DESC(int, ArangeOp, stop);
-DEFINE_ARGUMENT_WITH_DESC(int, ArangeOp, step);
+DEFINE_ARGUMENT_WITH_DESC(int64_t, ArangeOp, start);
+DEFINE_ARGUMENT_WITH_DESC(int64_t, ArangeOp, stop);
+DEFINE_ARGUMENT_WITH_DESC(int64_t, ArangeOp, step);
 
 }  // namespace dragon
 

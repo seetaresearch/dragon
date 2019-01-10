@@ -8,30 +8,24 @@ namespace dragon {
 template <class Context> template <typename T>
 void NNResizeOp<Context>::RunWithType() {
     if (data_format == "NCHW") {
-        n = Input(0).dim(0);
-        c = Input(0).dim(1);
-        h = Input(0).dim(2);
-        w = Input(0).dim(3);
-        out_h = Output(0)->dim(2);
-        out_w = Output(0)->dim(3);
+        n = Input(0).dim(0), c = Input(0).dim(1);
+        h = Input(0).dim(2), w = Input(0).dim(3);
+        out_h = Output(0)->dim(2), out_w = Output(0)->dim(3);
     } else if (data_format == "NHWC") {
-        n = Input(0).dim(0);
-        h = Input(0).dim(1);
-        w = Input(0).dim(2);
-        c = Input(0).dim(3);
-        out_h = Output(0)->dim(1);
-        out_w = Output(0)->dim(2);
+        n = Input(0).dim(0), h = Input(0).dim(1);
+        w = Input(0).dim(2), c = Input(0).dim(3);
+        out_h = Output(0)->dim(1), out_w = Output(0)->dim(2);
     }
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
-    kernel::NNResize<T, Context>(Output(0)->count(),
-        n, c, h, w, out_h, out_w, data_format, Xdata, Ydata, ctx());
+    kernel::NNResize(n, c, h, w, out_h, out_w,
+        data_format, Xdata, Ydata, ctx());
 }
 
 template <class Context>
 void NNResizeOp<Context>::RunOnDevice() {
-    vector<TIndex> dims = Input(0).dims();
+    vector<int64_t> dims = Input(0).dims();
     if (dsize_desc.size() > 0 || dsize_value.size() > 0) {
         for (int i = 0; i < 2; i++)
             dims[spatial_axis + i] = dsize(i);
@@ -41,7 +35,7 @@ void NNResizeOp<Context>::RunOnDevice() {
             dims[spatial_axis + i] = shape_like_tensor->dim(spatial_axis + i);
     } else {
         CHECK(fy != -1.f && fx != -1.f)
-            << "\nThe fx and fy should be set.";
+                << "\nThe fx and fy should be set.";
         dims[spatial_axis] = int(dims[spatial_axis] * fy);
         dims[spatial_axis + 1] = int(dims[spatial_axis + 1] * fx);
     }
@@ -61,27 +55,21 @@ OPERATOR_SCHEMA(NNResize).NumInputs(1).NumOutputs(1);
 template <class Context> template <typename T>
 void NNResizeGradientOp<Context>::RunWithType() {
     if (data_format == "NCHW") {
-        n = Input(0).dim(0);
-        c = Input(0).dim(1);
-        h = Input(0).dim(2);
-        w = Input(0).dim(3);
-        out_h = Input(-1).dim(2);
-        out_w = Input(-1).dim(3);
+        n = Input(0).dim(0), c = Input(0).dim(1);
+        h = Input(0).dim(2), w = Input(0).dim(3);
+        out_h = Input(-1).dim(2), out_w = Input(-1).dim(3);
     } else if (data_format == "NHWC") {
-        n = Input(0).dim(0);
-        h = Input(0).dim(1);
-        w = Input(0).dim(2);
-        c = Input(0).dim(3);
-        out_h = Input(-1).dim(1);
-        out_w = Input(-1).dim(2);
+        n = Input(0).dim(0), h = Input(0).dim(1);
+        w = Input(0).dim(2), c = Input(0).dim(3);
+        out_h = Input(-1).dim(1), out_w = Input(-1).dim(2);
     }
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
     math::Set<T, Context>(Output(0)->count(), 0, dXdata, ctx());
 
-    kernel::NNResizeGrad<T, Context>(Input(-1).count(),
-        n, c, h, w, out_h, out_w, data_format, dYdata, dXdata, ctx());
+    kernel::NNResizeGrad(n, c, h, w, out_h, out_w,
+        data_format, dYdata, dXdata, ctx());
 }
 
 template <class Context>
@@ -96,17 +84,10 @@ DEPLOY_CPU(NNResizeGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(NNResizeGradient);
 #endif
-OPERATOR_SCHEMA(NNResizeGradient).NumInputs(2).NumOutputs(1);
 
-class GetNNResizeGradient final : public GradientMakerBase {
- public:
-    GRADIENT_MAKER_CTOR(GetNNResizeGradient);
-    vector<OperatorDef> MakeDefs() override {
-        return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), GO(0)},
-            vector<string> {GI(0)});
-    }
-};
-REGISTER_GRADIENT(NNResize, GetNNResizeGradient);
+OPERATOR_SCHEMA(NNResizeGradient)
+    .NumInputs(2).NumOutputs(1);
+
+REGISTER_GRADIENT(NNResize, SimpleGradientMaker);
 
 }  // namespace dragon

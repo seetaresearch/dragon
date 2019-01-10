@@ -23,22 +23,20 @@ void UpdateOpBase<Context>::PreprocessRunWithType() {
     scale_factor = Param("scale_gradient");
     if (scale_factor != 1.f) {
         auto* dXdata = Input(0).template mutable_data<T, Context>();
-        math::Scal<T, Context>(Input(0).count(),
-            scale_factor, dXdata, ctx());
+        math::Scale(Input(0).count(),
+            scale_factor, dXdata, dXdata, ctx());
     }
     // Clip
     clip_thresh = Param("clip_gradient");
     if (clip_thresh > 0) {
         auto* dXdata = Input(0).template mutable_data<T, Context>();
         T sumsq_grad;
-        math::Dot<T, Context>(Input(0).count(),
-            dXdata, dXdata, &sumsq_grad, ctx());
-        const float l2norm = sqrt(
-            dragon_cast<float, T>(sumsq_grad));
+        math::Dot(Input(0).count(), dXdata, dXdata, &sumsq_grad, ctx());
+        const float l2norm = sqrt(cast::to<float>(sumsq_grad));
         if (l2norm > clip_thresh) {
             float norm_factor = clip_thresh / l2norm;
-            math::Scal<T, Context>(Input(0).count(),
-                norm_factor, dXdata, ctx());
+            math::Scale(Input(0).count(),
+                norm_factor, dXdata, dXdata, ctx());
         }
     }
     // L2 Decay
@@ -46,8 +44,7 @@ void UpdateOpBase<Context>::PreprocessRunWithType() {
     if (l2_decay > 0) {
         auto* dXdata = Input(0).template mutable_data<T, Context>();
         auto* Xdata = Output(0)->template data<T, Context>();
-        math::Axpy<T, Context>(Input(0).count(),
-            l2_decay, Xdata, dXdata, ctx());
+        math::Axpy(Input(0).count(), l2_decay, Xdata, dXdata, ctx());
     }
 }
 
@@ -56,10 +53,8 @@ void UpdateOpBase<Context>::UpdateRunWithFloat32() {
     auto* dXdata = Input(0).template mutable_data<float, Context>();
     auto* Xdata = Output(0)->template mutable_data<float, Context>();
     // Weights Update & Zero Grads
-    math::Axpy<float, Context>(Output(0)->count(),
-        -1, dXdata, Xdata, ctx());
-    if (zero_grad) math::Set<float, Context>(
-        Input(0).count(), 0.f, dXdata, ctx());
+    math::Axpy(Output(0)->count(), -1, dXdata, Xdata, ctx());
+    if (zero_grad) math::Set(Input(0).count(), 0.f, dXdata, ctx());
 }
 
 template <class Context>
@@ -84,8 +79,7 @@ void UpdateOpBase<Context>::UpdateRunWithFloat16() {
     auto* dX16 = Input(0).template mutable_data<float16, Context>();
 
     // Apply Update
-    kernel::MixedPrecisionUpdate<float16, Context>(
-        Output(0)->count(), dX32, X16, dX16, ctx());
+    kernel::MixedPrecisionUpdate(Output(0)->count(), dX32, X16, dX16, ctx());
 }
 
 template <class Context>

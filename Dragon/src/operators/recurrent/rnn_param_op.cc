@@ -9,10 +9,10 @@ template <class Context> template <typename T>
 void RNNParamSetOp<Context>::RunWithType() {
     auto* Pdata = Input(0).template data<T, Context>();
     auto* Wdata = Output(0)->template mutable_data<T, Context>();
-    TIndex matrix_count = 0, bias_count = 0, offset = 0, size = -1;
+    int64_t matrix_count = 0, bias_count = 0, offset = 0, size = -1;
     for (int i = 0; i < num_layers; ++i) {
         for (int j = 0; j < num_directions; ++j) {
-            TIndex pseudo_layer_id = i * num_directions + j;
+            int64_t pseudo_layer_id = i * num_directions + j;
             for (int k = 0; k < num_params; ++k) {
                 if (layer_id == pseudo_layer_id && param_id == k)
                     size = offset = (param_type == "matrix" ? matrix_count : bias_count);

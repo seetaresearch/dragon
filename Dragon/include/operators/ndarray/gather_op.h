@@ -22,15 +22,15 @@ class GatherOp final : public Operator<Context> {
  public:
     GatherOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", 0)) {}
+          axis(OperatorBase::Arg<int64_t>("axis", 0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    TIndex axis, outer_dim, inner_dim, x_slice_dim, y_slice_dim;
-    vector<TIndex> output_dims;
+    int64_t axis, outer_dim, inner_dim, x_slice_dim, y_slice_dim;
+    vector<int64_t> output_dims;
 };
 
 template <class Context>
@@ -38,7 +38,7 @@ class GatherGradientOp final : public Operator<Context> {
  public:
     GatherGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", 0)),
+          axis(OperatorBase::Arg<int64_t>("axis", 0)),
           acc_grad(OperatorBase::Arg<bool>("acc_gradient", false)) {}
     USE_OPERATOR_FUNCTIONS;
 
@@ -46,7 +46,7 @@ class GatherGradientOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    TIndex axis, outer_dim, inner_dim, x_slice_dim, y_slice_dim;
+    int64_t axis, outer_dim, inner_dim, x_slice_dim, y_slice_dim;
     bool acc_grad;
 };
 

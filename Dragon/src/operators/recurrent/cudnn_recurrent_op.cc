@@ -33,7 +33,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
                     dropout_desc, ctx()->cudnn_handle(), dropout_ratio,
                         Sdata, states_size, random_seed));
             } else {
-                states->Reshape({ (TIndex)states_size });
+                states->Reshape({ (int64_t)states_size });
                 auto* Sdata = states->template mutable_data<uint8_t, Context>();
                 CUDNN_CHECK(cudnnSetDropoutDescriptor(
                     dropout_desc, ctx()->cudnn_handle(), dropout_ratio,
@@ -80,11 +80,11 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
     cudnnSetTensorDesc<T>(&cy_desc, hidden_dims);
 
     //  setup packed weights
-    size_t weights_size; TIndex weights_count;
+    size_t weights_size; int64_t weights_count;
     CUDNN_CHECK(cudnnGetRNNParamsSize(
         ctx()->cudnn_handle(), rnn_desc, xs_desc->descs()[0],
             &weights_size, CUDNNType<T>::type));
-    weights_count = (TIndex)weights_size / sizeof(T);
+    weights_count = (int64_t)weights_size / sizeof(T);
     CHECK_EQ(weights_count, Input(1).count())
         << "\nModel request " << "Tensor(" << Input(1).name() << ")'s "
         << "size is " << weights_count << ", \n"
@@ -127,8 +127,8 @@ void CuDNNRecurrentOp<Context>::RunWithType() {
     if (phase() == "TRAIN") {
         CUDNN_CHECK(cudnnGetRNNTrainingReserveSize(handle,
             rnn_desc, seq_length, xs_desc->descs(), &reserve_size));
-        auto* reserveT = ws()->CreateTensor("/mnt/" + anchor() + "/rnn/reserve");
-        reserveT->Reshape({ (TIndex)reserve_size });
+        auto* reserveT = ws()->CreateTensor(mount_name(
+            "rnn/reserve"))->Reshape({ (int64_t)reserve_size });
         auto* RSdata = reserveT->template mutable_data<uint8_t, Context>();
         CUDNN_CHECK(cudnnRNNForwardTraining(handle, rnn_desc,
                                                   seq_length,
@@ -157,8 +157,6 @@ void CuDNNRecurrentOp<Context>::RunWithType() {
 
 template <class Context>
 void CuDNNRecurrentOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  // Enforce SyncStream
-
     if (XIsType(Input(0), float)) RunWithType<float>();
     else if (XIsType(Input(0), float16)) RunWithType<float16>();
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
@@ -186,7 +184,7 @@ void CuDNNRecurrentGradientOp<Context>::RunWithType() {
     //  check the reserve space
     CUDNN_CHECK(cudnnGetRNNTrainingReserveSize(ctx()->cudnn_handle(),
         rnn_desc, seq_length, xs_desc->descs(), &reserve_size));
-    auto* reserveT = ws()->GetTensor("/mnt/" + anchor() + "/rnn/reserve");
+    auto* reserveT = ws()->GetTensor(mount_name("rnn/reserve"));
     CHECK_EQ(reserve_size, reserveT->nbytes());
 #if CUDNN_VERSION_MIN(6,0,0)
     auto* RSdata = reserveT->template mutable_data<uint8_t, Context>();
@@ -230,8 +228,6 @@ void CuDNNRecurrentGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void CuDNNRecurrentGradientOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  // Enforce SyncStream
-
     Output(0)->ReshapeLike(Input(0));  // dX
     Output(1)->ReshapeLike(Input(1));  // dW
     Output(2)->ReshapeLike(Input(2));  // dHx

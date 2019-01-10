@@ -13,7 +13,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.utils.data.io.data_batch import DataBatch as _DataBatch
+from .data_batch import DataBatch as _Batch
 
 
 class _DataLoaderIter(object):
@@ -33,13 +33,15 @@ class _DataLoaderIter(object):
 
 
 class DataLoader(object):
-    def __init__(self, dataset, batch_size=1, shuffle=False,
-                 partition=False, multiple_nodes=False, num_chunks=2048, chunk_size=-1):
-        """A MPI-Aware DataLoader. Forked from ``dragon.io``.
+    def __init__(self,
+        dataset, batch_size=1, shuffle=False,
+            partition=False, multiple_nodes=False,
+                 num_chunks=2048, chunk_size=-1):
+        """A MPI-Aware DataLoader. Forked from ``dragon.utils.vision``.
 
         Parameters
         ----------
-        dataset : vm.torch.utils.data.dataset.Dataset
+        dataset : torch.utils.data.dataset.Dataset
             The dataset.
         batch_size : int
             The batch size. Divided by n mpi-nodes if ``partition`` is True.
@@ -61,7 +63,7 @@ class DataLoader(object):
         if dataset.transform and \
             hasattr(dataset.transform, 'n_transformers'):
                 n_transformers = dataset.transform.n_transformers
-        self.batch = _DataBatch(**{
+        self.batch = _Batch(**{
             'source': dataset.database,
             'multiple_nodes': multiple_nodes,
             'shuffle': shuffle,

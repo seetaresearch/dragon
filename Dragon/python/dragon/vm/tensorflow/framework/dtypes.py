@@ -7,17 +7,23 @@
 #
 #      <https://opensource.org/licenses/BSD-2-Clause>
 #
+# Codes are based on:
+#
+#      <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/framework/dtypes.py>
+#
 # ------------------------------------------------------------
 
-import numpy as np
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
+import numpy as np
 from dragon.vm.tensorflow.protobuf import types_pb2
 
 
 class DType(object):
-    """
-    The basic data type.
-    """
+    """The basic data type."""
+
     def __init__(self, type_enum):
         type_enum = int(type_enum)
         if (type_enum not in types_pb2.DataType.values()
@@ -60,12 +66,12 @@ class DType(object):
     @property
     def is_integer(self):
         return (self.is_numpy_compatible and not self.is_quantized and
-                issubclass(self.as_numpy_dtype, np.integer))
+            issubclass(self.as_numpy_dtype, np.integer))
 
     @property
     def is_floating(self):
-        return self.is_numpy_compatible and issubclass(self.as_numpy_dtype,
-                                                       np.floating)
+        return self.is_numpy_compatible and \
+            issubclass(self.as_numpy_dtype, np.floating)
 
     @property
     def is_complex(self):

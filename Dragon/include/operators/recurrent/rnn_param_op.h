@@ -24,12 +24,12 @@ class RNNParamSetOp final : public Operator<Context> {
         : Operator<Context>(def, ws),
           param_type(OperatorBase::Arg<string>("param_type", "matrix")),
           rnn_mode(OperatorBase::Arg<string>("rnn_mode", "rnn_tanh")),
-          num_layers(OperatorBase::Arg<int>("num_layers", 1)),
-          num_directions(OperatorBase::Arg<int>("num_directions", 1)),
-          input_size(OperatorBase::Arg<int>("input_size", 0)),
-          hidden_size(OperatorBase::Arg<int>("hidden_size", 0)),
-          layer_id(OperatorBase::Arg<int>("layer_id", 0)),
-          param_id(OperatorBase::Arg<int>("param_id", 0)) {
+          num_layers(OperatorBase::Arg<int64_t>("num_layers", 1)),
+          num_directions(OperatorBase::Arg<int64_t>("num_directions", 1)),
+          input_size(OperatorBase::Arg<int64_t>("input_size", 0)),
+          hidden_size(OperatorBase::Arg<int64_t>("hidden_size", 0)),
+          layer_id(OperatorBase::Arg<int64_t>("layer_id", 0)),
+          param_id(OperatorBase::Arg<int64_t>("param_id", 0)) {
         if (rnn_mode == "rnn_tanh") { num_params = 2; spliter = 1; }
         else if (rnn_mode == "rnn_relu") { num_params = 2; spliter = 1; }
         else if (rnn_mode == "lstm") { num_params = 8; spliter = 4; }
@@ -44,9 +44,9 @@ class RNNParamSetOp final : public Operator<Context> {
 
  protected:
     string param_type, rnn_mode;
-    TIndex num_layers, num_directions, num_params, spliter;
-    TIndex input_size, input_ex_size, hidden_size;
-    TIndex layer_id, param_id;
+    int64_t num_layers, num_directions, num_params, spliter;
+    int64_t input_size, input_ex_size, hidden_size;
+    int64_t layer_id, param_id;
 };
 
 }  // namespace dragon

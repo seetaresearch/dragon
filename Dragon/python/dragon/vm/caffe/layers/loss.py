@@ -9,8 +9,13 @@
 #
 # ------------------------------------------------------------
 
-import dragon.ops as ops
+"""The Implementation of the data layers."""
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import dragon
 from ..layer import Layer
 
 
@@ -37,17 +42,17 @@ class SoftmaxWithLossLayer(Layer):
         normalization = 'VALID'
         if param.HasField('normalize'):
             if not param.normalize: normalization = 'BATCH_SIZE'
-        else: normalization = norm_mode[param.normalization]
-        self._param = {
+        else:
+            normalization = norm_mode[param.normalization]
+        self.arguments = {
             'axis': softmax_param.axis,
             'normalization': normalization,
             'ignore_labels': [param.ignore_label]
                 if param.HasField('ignore_label') else [],
         }
 
-    def Setup(self, bottom):
-        super(SoftmaxWithLossLayer, self).Setup(bottom)
-        loss = ops.SparseSoftmaxCrossEntropy(bottom, **self._param)
+    def LayerSetup(self, bottom):
+        loss = dragon.ops.SparseSoftmaxCrossEntropy(bottom, **self.arguments)
         if self._loss_weight is not None: loss *= self._loss_weight
         return loss
 
@@ -71,11 +76,10 @@ class SigmoidCrossEntropyLossLayer(Layer):
         if param.HasField('normalize'):
             if not param.normalize: normalization = 'BATCH_SIZE'
         else: normalization = norm_mode[param.normalization]
-        self._param = {'normalization': normalization}
+        self.arguments = {'normalization': normalization}
 
-    def Setup(self, bottom):
-        super(SigmoidCrossEntropyLossLayer, self).Setup(bottom)
-        loss = ops.SigmoidCrossEntropy(bottom, **self._param)
+    def LayerSetup(self, bottom):
+        loss = dragon.ops.SigmoidCrossEntropy(bottom, **self.arguments)
         if self._loss_weight is not None: loss *= self._loss_weight
         return loss
 
@@ -99,11 +103,10 @@ class L2LossLayer(Layer):
         if param.HasField('normalize'):
             if param.normalize: normalization = 'FULL'
         else: normalization = norm_mode[param.normalization]
-        self._param = {'normalization': normalization}
+        self.arguments = {'normalization': normalization}
 
-    def Setup(self, bottom):
-        super(L2LossLayer, self).Setup(bottom)
-        loss = ops.L2Loss(bottom, **self._param)
+    def LayerSetup(self, bottom):
+        loss = dragon.ops.L2Loss(bottom, **self.arguments)
         if self._loss_weight is not None: loss *= self._loss_weight
         return loss
 
@@ -131,14 +134,13 @@ class SmoothL1LossLayer(Layer):
             if param.normalize: normalization = 'FULL'
         else: normalization = norm_mode[param.normalization]
         sigma2 = smooth_l1_param.sigma * smooth_l1_param.sigma
-        self._param = {
+        self.arguments = {
             'beta': float(1. / sigma2),
             'normalization': normalization,
         }
 
-    def Setup(self, bottom):
-        super(SmoothL1LossLayer, self).Setup(bottom)
-        loss = ops.SmoothL1Loss(bottom, **self._param)
+    def LayerSetup(self, bottom):
+        loss = dragon.ops.SmoothL1Loss(bottom, **self.arguments)
         if self._loss_weight is not None: loss *= self._loss_weight
         return loss
 
@@ -172,7 +174,7 @@ class SigmoidWithFocalLossLayer(Layer):
         if param.HasField('normalize'):
             if not param.normalize: normalization = 'BATCH_SIZE'
         else: normalization = norm_mode[param.normalization]
-        self._param = {
+        self.arguments = {
             'axis': softmax_param.axis,
             'normalization': normalization,
             'alpha': float(focal_loss_param.alpha),
@@ -180,9 +182,8 @@ class SigmoidWithFocalLossLayer(Layer):
             'neg_id': focal_loss_param.neg_id,
         }
 
-    def Setup(self, bottom):
-        super(SigmoidWithFocalLossLayer, self).Setup(bottom)
-        loss = ops.SigmoidFocalLoss(bottom, **self._param)
+    def LayerSetup(self, bottom):
+        loss = dragon.ops.SigmoidFocalLoss(bottom, **self.arguments)
         if self._loss_weight is not None: loss *= self._loss_weight
         return loss
 
@@ -216,7 +217,7 @@ class SoftmaxWithFocalLossLayer(Layer):
         if param.HasField('normalize'):
             if not param.normalize: normalization = 'BATCH_SIZE'
         else: normalization = norm_mode[param.normalization]
-        self._param = {
+        self.arguments = {
             'axis': softmax_param.axis,
             'normalization': normalization,
             'ignore_labels': [param.ignore_label] if param.HasField('ignore_label') else [],
@@ -225,8 +226,7 @@ class SoftmaxWithFocalLossLayer(Layer):
             'neg_id': focal_loss_param.neg_id,
         }
 
-    def Setup(self, bottom):
-        super(SoftmaxWithFocalLossLayer, self).Setup(bottom)
-        loss = ops.SoftmaxFocalLoss(bottom, **self._param)
+    def LayerSetup(self, bottom):
+        loss = dragon.ops.SoftmaxFocalLoss(bottom, **self.arguments)
         if self._loss_weight is not None: loss *= self._loss_weight
         return loss

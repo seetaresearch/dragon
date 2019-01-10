@@ -9,6 +9,15 @@
 #
 # ------------------------------------------------------------
 
+"""Center of the Virtual Stack.
+
+We will reuse this ``Tensor`` structure across all frameworks,
+whose computation graph is static.
+
+For the dynamic computation graph case, see ``vm.torch.Tensor``.
+
+"""
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -16,20 +25,22 @@ from __future__ import print_function
 import numpy as np
 
 import dragon.core.workspace as ws
-import dragon.protos.dragon_pb2 as pb
-from dragon.core.utils import MakeOperatorDef
-from dragon.core.scope import GetOperatorName, GetTensorName
+import dragon.proto.dragon_pb2 as pb
+
+from dragon.core.proto_utils import MakeOperatorDef, GetDefaultDeviceOption
+from dragon.core.scope import get_default_name_scope
+from dragon.core.helper import OperatorHelper, GradientHelper
 
 
 class Tensor(object):
-    """
-    Tensor is generally used to represent a n-dim array,
-    across all virtual frontends, with a optional name and shape.
+    """Tensor is generally used to represent a n-dimension array,
+    across all virtual frameworks, with a optional name and shape.
 
     It does not have any storage, i.e., just provided to be a navigation
     to the real tensor in the C++ backend.
+
     """
-    def __init__(self, name=None, shape=None, dtype=None, _name=None):
+    def __init__(self, name=None, shape=None, dtype=None):
         """Construct a Tensor instance.
 
         Parameters
@@ -40,8 +51,6 @@ class Tensor(object):
             The shape of Tensor.
         dtype : None or str
             The type of Tensor.
-        _name : None or str
-            The name that ignores name scope.
 
         Returns
         -------
@@ -49,159 +58,156 @@ class Tensor(object):
             An unregistered Tensor.
 
         """
-        if _name is not None: self._name = _name
-        else: self.name = name
-        self.shape = shape
-        self.dtype = dtype
+        self.name, self.shape, self.dtype = name, shape, dtype
+        self.gradient = GradientHelper(self)
 
     ##############################################
     #                                            #
-    #                 REGISTERS                  #
+    #                 Registers                  #
     #                                            #
     ##############################################
-
-    def _no_parameter_filler(self, type):
-        filler = pb.TensorFiller()
-        filler.tensor = self.name
-        filler.type = type
-        ws.CreateFiller(filler)
-        return self
 
     def Variable(self):
+        """Register as an empty variable.
+
+        Returns
+        -------
+        Tensor
+            The self.
+
         """
-        Register as an empty variable.
-        """
-        ws.CreateTensor(self.name)
-        return self
+        return self.Fill('variable')
 
     def Placeholder(self):
+        """Register as a placeholder.
+
+        Returns
+        -------
+        Tensor
+            The self.
+
         """
-        Register as a placeholder.
-        """
-        ws.CreateTensor(self.name)
-        return self
+        return self.Fill('placeholder')
 
     def Constant(self, value=0):
         """Register as a variable with constant initializer.
 
         Parameters
         ----------
-        value : basic numerical type
+        value : number
             The constant value.
 
+        Returns
+        -------
+        Tensor
+            The self.
+
         """
-        filler = pb.TensorFiller()
-        filler.tensor = self.name
-        filler.type = 'constant'
-        filler.value = value
-        ws.CreateFiller(filler)
-        return self
+        return self.Fill('constant', value=value)
 
     def Uniform(self, low=-1, high=1):
         """Register as a variable with uniform initializer.
 
         Parameters
         ----------
-        low : basic numerical type
+        low : number
              The lower bound of uniform distribution.
-        high : basic numerical type
+        high : number
             The higher bound of uniform distribution.
 
+        Returns
+        -------
+        Tensor
+            The self.
+
         """
-        filler = pb.TensorFiller()
-        filler.tensor = self.name
-        filler.type = 'uniform'
-        filler.low = low
-        filler.high = high
-        ws.CreateFiller(filler)
-        return self
+        return self.Fill('uniform', low=low, high=high)
 
     def Normal(self, mu=0, sigma=1):
         """Register as a variable with normal initializer.
 
         Parameters
         ----------
-        mu : basic numerical type
+        mu : number
             The mu of normal distribution.
-        sigma : basic numerical type
+        sigma : number
             The sigma of normal distribution.
 
+        Returns
+        -------
+        Tensor
+            The self.
+
         """
-        filler = pb.TensorFiller()
-        filler.tensor = self.name
-        filler.type = 'normal'
-        filler.mean= mu
-        filler.std = sigma
-        ws.CreateFiller(filler)
-        return self
+        return self.Fill('normal', mean=mu, std=sigma)
 
     def TruncatedNormal(self, mu=0, sigma=1):
         """Register as a variable with truncated normal initializer.
 
         Parameters
         ----------
-        mu : basic numerical type
+        mu : number
             The mu of normal distribution.
-        sigma : basic numerical type
+        sigma : number
             The sigma of normal distribution.
 
+        Returns
+        -------
+        Tensor
+            The self.
+
         """
-        filler = pb.TensorFiller()
-        filler.tensor = self.name
-        filler.type = 'truncated_normal'
-        filler.mean = mu
-        filler.std = sigma
-        filler.low = mu - 2.0 * sigma
-        filler.high = mu + 2.0 * sigma
-        ws.CreateFiller(filler)
-        return self
+        return self.Fill('truncated_normal', mean=mu, std=sigma)
 
     def Gaussian(self, mean=0, std=1):
         """Register as a variable with gaussian initializer.
 
         Parameters
         ----------
-        mean : basic numerical type
+        mean : number
             The mean(mu) of normal distribution.
-        std : basic numerical type
+        std : number
             The std(sigma) of normal distribution.
+
+        Returns
+        -------
+        Tensor
+            The self.
 
         """
         return self.Normal(mu=mean, sigma=std)
 
-    def Xavier(self, scale=3.0):
-        """
-        Register as a variable with xavier initializer.
-        """
-        filler = pb.TensorFiller()
-        filler.tensor = self.name
-        filler.type = 'xavier'
-        filler.scale = scale
-        ws.CreateFiller(filler)
-        return self
-
-    def MSRA(self, scale=2.0):
-        """
-        Register as a variable with msra initializer.
-        """
-        filler = pb.TensorFiller()
-        filler.tensor = self.name
-        filler.type = 'msra'
-        filler.scale = scale
-        ws.CreateFiller(filler)
-        return self
-
     def GlorotUniform(self, scale=3.0):
+        """Register as a variable with glorot uniform initializer.
+
+        Parameters
+        ----------
+        scale : number
+            The scale factor.
+
+        Returns
+        -------
+        Tensor
+            The self.
+
         """
-        Register as a variable with glorot uniform initializer.
-        """
-        return self.Xavier(scale)
+        return self.Fill('glorot_uniform', scale=scale)
 
     def GlorotNormal(self, scale=2.0):
+        """Register as a variable with glorot normal initializer.
+
+        Parameters
+        ----------
+        scale : number
+            The scale factor.
+
+        Returns
+        -------
+        Tensor
+            The self.
+
         """
-        Register as a variable with glorot normal initializer.
-        """
-        return self.MSRA(scale)
+        return self.Fill('glorot_normal', scale=scale)
 
     ##############################################
     #                                            #
@@ -251,38 +257,28 @@ class Tensor(object):
 
     @name.setter
     def name(self, value):
-        from .scope import _TENSOR_SCOPE
-        if value is None:
-            # ignore the scope for the name generated by uid
-            self._name = GetTensorName()
+        if value != '':
+            self._name = ws.GetDummyName(
+                get_default_name_scope() + value
+                    if value else 'Tensor', domain='Tensor')
         else:
-            self._name = _TENSOR_SCOPE + value
+            # Set it manually for same cases
+            self._name = value
 
-    @property
-    def grad_wrts(self):
-        """Return or Set the gradients w.r.t.
+    def set_name(self, name):
+        """Set the name while getting rid of name scope.
 
-        Returns
-        -------
-        list
-            The list of names represents gradients w.r.t.
-
-        """
-        if not hasattr(self,'_grad_wrts'): self._grad_wrts = []
-        return self._grad_wrts
-
-    @property
-    def grad_objs(self):
-        """Return or Set the gradients objectives.
+        Parameters
+        ----------
+        str
+            The name.
 
         Returns
         -------
-        list
-             The list of names represents objectives.
+        None
 
         """
-        if not hasattr(self, '_grad_objs'): self._grad_objs = []
-        return self._grad_objs
+        self._name = name
 
     @property
     def shape(self):
@@ -290,7 +286,7 @@ class Tensor(object):
 
         Returns
         -------
-        list or None
+        sequence of int
             The shape of this tensor.
 
         """
@@ -326,12 +322,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        value : str or None
+        value : str
             The data type to set.
 
         Returns
         -------
-        str or None
+        str
             The data type.
 
         """
@@ -358,16 +354,11 @@ class Tensor(object):
 
         """
         if inplace:
-            output = Tensor.CreateOperator(inputs=[], existing_outputs=[self],
-                op_type='AsType', dtype=dtype)
+            return Tensor.CreateOperator(
+                'AsType', [], existing_outputs=[self], dtype=dtype)
         else:
-            output = Tensor.CreateOperator(inputs=self, nout=1,
-                op_type='AsType', dtype=dtype)
-
-        if self.shape is not None:
-            output.shape = self.shape[:]
-
-        return output
+            return Tensor.CreateOperator(
+                'AsType', self, dtype=dtype)
 
     @property
     def extra_targets(self):
@@ -411,7 +402,7 @@ class Tensor(object):
 
     #################################################
     #                                               #
-    #                   OVERRIDES                   #
+    #                   Overrides                   #
     #                                               #
     #################################################
 
@@ -424,14 +415,11 @@ class Tensor(object):
             The format str.
 
         """
-        def_name = self.name
-        real_name = ws.GetTensorName(def_name)
-        shape = ', '.join(str(dim) for dim in self.shape) if self.shape else None
-        if shape:
-            return '[dragon.Tensor({} -> {}) of shape {}]'\
-                .format(def_name, real_name, '(' + shape + ')')
-        else:
-            return '[dragon.Tensor({} -> {})]'.format(def_name, real_name)
+        shape_str = ('(' + ', '.join(['?' if str(dim) == 'None' else str(dim)
+            for dim in self.shape]) + (',)' if len(self.shape) == 1 else ')')) \
+                if self.shape is not None else 'None'
+        return 'Tensor("{}", shape={}, dtype={})' \
+            .format(self.name, shape_str, self.dtype)
 
     def __getitem__(self, item):
         """Return a Tensor with specific indices.
@@ -452,53 +440,65 @@ class Tensor(object):
                 raise ValueError('The index should be a integer.')
             item = (item,)
         if not isinstance(item, tuple): item = tuple([item])
-        starts = []; ends = []; output_dims = []
+        starts = []; sizes = []
         for ix, it in enumerate(item):
             if isinstance(it, slice):
-                # handle start
+                # Handle start
                 if it.start is None: starts.append(0)
                 else: starts.append(it.start)
-                # handle stop
+                # Handle stop
                 if it.stop is None:
-                    ends.append(0)
-                    output_dims.append(None)
+                    sizes.append(-1)
                 else:
-                    ends.append(it.stop)
-                    output_dims.append(ends[-1] - starts[-1])
-                    if starts[-1] == ends[-1]:
-                        raise ValueError('The cropping starts and ends of axis {} '
-                                         'can not be equal, got {}:{}.'
-                                         .format(ix, starts[-1], ends[-1]))
-                # handle step
+                    sizes.append(it.stop - starts[-1])
+                    if sizes[-1] == 0:
+                        raise ValueError(
+                            'The cropping starts and ends of axis {} '
+                                'can not be equal, got {}:{}.'
+                                    .format(ix, starts[-1], it.stop))
+                # Handle step
                 if it.step is not None:
                     raise NotImplementedError('Cropping with step has not been implemented yet. ')
             elif isinstance(it, int):
                 starts.append(it)
-                ends.append(-1)
-                output_dims.append(-1)
+                sizes.append(0)
             else:
                 raise TypeError('Unsupported type of indices: {}'.format(type(type(it))))
 
-        output = self.CreateOperator(inputs=self, nout=1, op_type='Crop', starts=starts, ends=ends)
+        output = self.CreateOperator('Crop', self, starts=starts, sizes=sizes)
 
         if self.shape is not None:
-            output_shape = self.shape[:]
-            squeeze_shape = []
-            for ix in range(len(output_dims)):
-                output_shape[ix] = output_dims[ix]
+            output_shape, squeeze_shape = self.shape[:], []
+            for ix in range(len(sizes)):
+                output_shape[ix] = sizes[ix]
             for dim in output_shape:
                 if dim != -1: squeeze_shape.append(dim)
-            if len(squeeze_shape) == 0: output.shape = None
+            if len(squeeze_shape) == 0: output.shape = []
             else: output.shape = squeeze_shape[:]
 
         return output
+
+    def _from_constants(self, value):
+        if not isinstance(value, np.ndarray):
+            try:
+                value = np.array(value, dtype=self.dtype
+                    if self.dtype else 'float32')
+            except:
+                raise TypeError(
+                    'Can not convert the value to Tensor or numpy array.')
+        ref_tensor =  Tensor.Ref(
+            name=ws.GetDummyName('Constant',
+                domain='Tensor', zero_based=False),
+                    shape=list(value.shape), dtype=str(value.dtype))
+        ref_tensor.set_value(value)
+        return ref_tensor
 
     def __add__(self, other):
         """Calculate x + y.
 
         Parameters
         ----------
-        other : Tensor
+        other : Tensor or number
             The y.
 
         Returns
@@ -508,23 +508,15 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            if not isinstance(other, np.ndarray):
-                if not isinstance(other, list): other = [other]
-            other = np.array(other, dtype=np.float32)
-            tensor = Tensor(GetTensorName())
-            ws.FeedTensor(tensor, other)
-            other = tensor
-        output = self.CreateOperator(inputs=[self, other], nout=1, op_type= 'Add')
-        if self.shape is not None:
-            output.shape = self.shape[:]
-        return output
+            other = self._from_constants(other)
+        return self.CreateOperator('Add', [self, other])
 
     def __radd__(self, other):
         """Calculate y + x.
 
         Parameters
         ----------
-        other : Tensor
+        other : Tensor or number
             The y.
 
         Returns
@@ -534,23 +526,15 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            if not isinstance(other, np.ndarray):
-                if not isinstance(other, list): other = [other]
-            other = np.array(other, dtype=np.float32)
-            tensor = Tensor(GetTensorName())
-            ws.FeedTensor(tensor, other)
-            other = tensor
-        output = self.CreateOperator(inputs=[other, self], nout=1, op_type= 'RAdd')
-        if self.shape is not None:
-            output.shape = self.shape[:]
-        return output
+            other = self._from_constants(other)
+        return self.CreateOperator('RAdd', [other, self])
 
     def __sub__(self, other):
         """Calculate x - y.
 
         Parameters
         ----------
-        other : Tensor
+        other : Tensor or number
             The y.
 
         Returns
@@ -560,23 +544,15 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            if not isinstance(other, np.ndarray):
-                if not isinstance(other, list): other = [other]
-            other = np.array(other, dtype=np.float32)
-            tensor = Tensor(GetTensorName())
-            ws.FeedTensor(tensor, other)
-            other = tensor
-        output = self.CreateOperator(inputs=[self, other], nout=1, op_type='Sub')
-        if self.shape is not None:
-            output.shape = self.shape[:]
-        return output
+            other = self._from_constants(other)
+        return self.CreateOperator('Sub', [self, other])
 
     def __rsub__(self, other):
         """Calculate y - x.
 
         Parameters
         ----------
-        other : Tensor
+        other : Tensor or number
             The y.
 
         Returns
@@ -586,23 +562,15 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            if not isinstance(other, np.ndarray):
-                if not isinstance(other, list): other = [other]
-            other = np.array(other, dtype=np.float32)
-            tensor = Tensor(GetTensorName())
-            ws.FeedTensor(tensor, other)
-            other = tensor
-        output = self.CreateOperator(inputs=[other, self], nout=1, op_type='RSub')
-        if self.shape is not None:
-            output.shape = self.shape[:]
-        return output
+            other = self._from_constants(other)
+        return self.CreateOperator('RSub', [other, self])
 
     def __mul__(self, other):
         """Calculate x * y.
 
         Parameters
         ----------
-        other : Tensor
+        other : Tensor or number
             The y.
 
         Returns
@@ -612,23 +580,15 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            if not isinstance(other, np.ndarray):
-                if not isinstance(other, list): other = [other]
-            other = np.array(other, dtype=np.float32)
-            tensor = Tensor(GetTensorName())
-            ws.FeedTensor(tensor, other)
-            other = tensor
-        output = self.CreateOperator(inputs=[self, other], nout=1, op_type='Mul')
-        if self.shape is not None:
-            output.shape = self.shape[:]
-        return output
+            other = self._from_constants(other)
+        return self.CreateOperator('Mul', [self, other])
 
     def __rmul__(self, other):
         """Calculate y * x.
 
         Parameters
         ----------
-        other : Tensor
+        other : Tensor or number
             The y.
 
         Returns
@@ -638,23 +598,15 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            if not isinstance(other, np.ndarray):
-                if not isinstance(other, list): other = [other]
-            other = np.array(other, dtype=np.float32)
-            tensor = Tensor(GetTensorName())
-            ws.FeedTensor(tensor, other)
-            other = tensor
-        output = self.CreateOperator(inputs=[other, self], nout=1, op_type='RMul')
-        if self.shape is not None:
-            output.shape = self.shape[:]
-        return output
+            other = self._from_constants(other)
+        return self.CreateOperator('RMul', [other, self])
 
     def __div__(self, other):
         """Calculate x / y.
 
         Parameters
         ----------
-        other : Tensor
+        other : Tensor or number
             The y.
 
         Returns
@@ -664,16 +616,8 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            if not isinstance(other, np.ndarray):
-                if not isinstance(other, list): other = [other]
-            other = np.array(other, dtype=np.float32)
-            tensor = Tensor(GetTensorName())
-            ws.FeedTensor(tensor, other)
-            other = tensor
-        output = self.CreateOperator(inputs=[self, other], nout=1, op_type='Div')
-        if self.shape is not None:
-            output.shape = self.shape[:]
-        return output
+            other = self._from_constants(other)
+        return self.CreateOperator('Div', [self, other])
 
     __truediv__ = __div__
 
@@ -682,7 +626,7 @@ class Tensor(object):
 
         Parameters
         ----------
-        other : Tensor
+        other : Tensor or number
             The y.
 
         Returns
@@ -692,16 +636,8 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            if not isinstance(other, np.ndarray):
-                if not isinstance(other, list): other = [other]
-            other = np.array(other, dtype=np.float32)
-            tensor = Tensor(GetTensorName())
-            ws.FeedTensor(tensor, other)
-            other = tensor
-        output = self.CreateOperator(inputs=[other, self], nout=1, op_type='RDiv')
-        if self.shape is not None:
-            output.shape = self.shape[:]
-        return output
+            other = self._from_constants(other)
+        return self.CreateOperator('RDiv', [other, self])
 
     __rtruediv__ = __rdiv__
 
@@ -728,7 +664,7 @@ class Tensor(object):
 
     ###############################################
     #                                             #
-    #                 THEANO-APIS                 #
+    #                 Theano API                  #
     #                                             #
     ###############################################
 
@@ -756,7 +692,7 @@ class Tensor(object):
 
         Returns
         -------
-        numpy.ndarray
+        numpy.ndarray or number
             The values of this tensor in the backend.
 
         See Also
@@ -780,14 +716,8 @@ class Tensor(object):
 
         """
         new_tensor = Tensor(self.name + '_copy')
-        arguments = {'inputs': self,
-                     'existing_outputs': new_tensor}
-        self.CreateOperator(nout=1, op_type='Copy', **arguments)
-
-        if self.shape is not None:
-            new_tensor.shape = self.shape[:]
-
-        return new_tensor
+        arguments = {'inputs': self, 'existing_outputs': new_tensor}
+        return self.CreateOperator('Copy', **arguments)
 
     def reshape(self, shape, **kwargs):
         """Reshape the dimensions of input. [**Theano Style**]
@@ -803,13 +733,9 @@ class Tensor(object):
             The reshaped output.
 
         """
-        if not isinstance(shape, tuple) \
-                and not isinstance(shape, list): shape = [shape]
-        output = Tensor.CreateOperator(inputs=self, nout=1, op_type='Reshape',
-                                       shape=shape, **kwargs)
-        if self.shape is not None:
-            output.shape = list(shape)
-        return output
+        if not isinstance(shape, (tuple, list)): shape = [shape]
+        return Tensor.CreateOperator(
+            'Reshape', inputs=self, shape=shape, **kwargs)
 
     def dimshuffle(self, *args, **kwargs):
         """Shuffle the dimensions. [**Theano Style**]
@@ -833,18 +759,11 @@ class Tensor(object):
                     raise ValueError('The type of dimension should be int.')
                 perms.append(dim)
 
-        # transpose
-        output = Tensor.CreateOperator(inputs=self, nout=1,
-                                       op_type='Transpose', perms=perms, **kwargs)
-        if self.shape is not None:
-            if len(self.shape) != len(perms):
-                raise ValueError('The ndim of inputs is {}, but perms provide {}'. \
-                                 format(len(self.shape), len(perms)))
-            output.shape = self.shape[:]
-            for i, axis in enumerate(perms):
-                output.shape[i] = self.shape[axis]
+        # Transpose
+        output = Tensor.CreateOperator(
+            'Transpose', self, perms=perms, **kwargs)
 
-        # expand dims
+        # Expand dims
         for i in range(len(dimensions) - len(perms)):
             flag = False
             input_shape = output.shape
@@ -854,15 +773,15 @@ class Tensor(object):
                 cur_dim = perms[idx]; exp_dim = dimensions[idx]
                 if cur_dim != exp_dim:
                     axis = idx
-                    output = Tensor.CreateOperator(inputs=output, nout=1,
-                                    op_type='ExpandDims', axis=axis)
+                    output = Tensor.CreateOperator(
+                        'ExpandDims', output, axis=axis)
                     perms.insert(axis, 'x')
                     flag = True
                     break
             if not flag:
                 axis = len(perms)
-                output = Tensor.CreateOperator(inputs=output, nout=1,
-                                    op_type='ExpandDims', axis=len(perms))
+                output = Tensor.CreateOperator(
+                    'ExpandDims', output, axis=len(perms))
                 perms.append('x')
 
             if self.shape is not None:
@@ -873,7 +792,7 @@ class Tensor(object):
 
     ########################################################
     #                                                      #
-    #                   TENSORFLOW-APIS                    #
+    #                   TensorFlow API                     #
     #                                                      #
     ########################################################
 
@@ -882,7 +801,7 @@ class Tensor(object):
 
         Returns
         -------
-        TensorShape or None
+        TensorShape
             The shape description.
 
         Examples
@@ -909,19 +828,45 @@ class Tensor(object):
         -------
         numpy.ndarray
             The values of this tensor in the backend.
+
         """
-        raise NotImplementedError('Implemented in <vm.theano.compile.function>')
+        raise NotImplementedError('Try "import dragon.vm.tensorflow" to load this dynamic methods.')
 
     ############################################
     #                                          #
-    #                   MISC                   #
+    #                   Misc                   #
     #                                          #
     ############################################
 
     @classmethod
-    def CreateOperator(cls, inputs, op_type,
-                       nout=None, existing_outputs=None, output_shapes=None,
-                       extra_inputs=None, name=None, **kwargs):
+    def Ref(cls, name, shape=None, dtype=None):
+        """Create a reference tensor from a unknown name.
+
+        It is useful to get named Tensor navigator anywhere.
+
+        Parameters
+        ----------
+        name : str
+            The name of Tensor.
+        shape : None or list
+            The shape of Tensor.
+        dtype : None or str
+            The type of Tensor.
+
+        Returns
+        -------
+        Tensor
+            The ref tensor
+
+        """
+        ref_tensor = Tensor('', shape=shape, dtype=dtype)
+        ref_tensor._name = name
+        return ref_tensor
+
+    @classmethod
+    def CreateOperator(cls, op_type, inputs,
+            num_outputs=1, existing_outputs=None,
+                extra_inputs=None, name=None, **kwargs):
         """Construct a new Tensor with specific operator descriptor.
 
         Parameters
@@ -930,19 +875,19 @@ class Tensor(object):
             The inputs for this operator.
         op_type : str
             The operator type.
-        nout : int
+        num_outputs : int, optional
             The number of outputs to return.
-            It will be discarded if ``existing_outputs`` is not None.
-        existing_outputs : list of Tensor, Tensor or None
+            Discarded if ``existing_outputs`` is not None.
+        existing_outputs : sequence of Tensor, optional
             The existing outputs for this operator.
-        extra_inputs : list of Tensor, Tensor or None
+        extra_inputs : sequence of Tensor, optional
             The inputs that should be attached to solving targets, e.g. dynamic shape.
-        name : str or None
+        name : str, optional
             The optional name to use. ``Op_xxx`` will be used automatically if it is None.
 
         Returns
         -------
-        list of Tensor, Tensor, or None
+        sequence of Tensor
             The outputs of this operator.
 
         Examples
@@ -950,7 +895,7 @@ class Tensor(object):
         >>> import dragon as dg
         >>> a = Tensor().Variable()
         >>> b = Tensor().Variable()
-        >>> c = Tensor.CreateOperator(inputs=[a, b], op_type='Add', nout=1)
+        >>> c = Tensor.CreateOperator(inputs=[a, b], op_type='Add')
 
         >>> a = Tensor().Variable()
         >>> b = Tensor().Variable()
@@ -967,7 +912,7 @@ class Tensor(object):
         """
         expressions = dict()
 
-        # 1. collect inputs
+        # 1. Collect inputs
         if not isinstance(inputs, list): inputs = [inputs]
         for input in inputs:
             for op_idx, expr in input.expressions.items():
@@ -981,37 +926,41 @@ class Tensor(object):
                     if not op_idx in expressions:
                         expressions[op_idx] = expr
 
-        # 2. generate outputs
+        # 2. Generate outputs
         outputs = []
         if existing_outputs is None:
-            for idx in range(nout): outputs.append(Tensor())
+            name_scope = get_default_name_scope()
+            for idx in range(num_outputs):
+                outputs.append(Tensor.Ref(
+                    ws.GetDummyName(name_scope +
+                        (name if name else op_type),
+                            suffix=':{}'.format(idx),
+                                domain='Tensor')))
         else:
-            if not isinstance(existing_outputs, list): existing_outputs = [existing_outputs]
+            if not isinstance(existing_outputs, list):
+                existing_outputs = [existing_outputs]
             outputs = existing_outputs
-            nout = len(outputs)
+            num_outputs = len(outputs)
             if not isinstance(outputs, list): outputs = [outputs]
 
-        # 3. make def, then push expressions
+        # 3. Construct OperatorDef
         inputs_name = [input.name for input in inputs]
         outputs_name = [output.name for output in outputs]
-        op_idx, op_name = GetOperatorName(name)
-        device_option = None
-        from dragon.core.scope import _DEVICE_SCOPE, _ENGINE_SCOPE
-        if _DEVICE_SCOPE != '':
-            supports = {'/cpu': 0, '/gpu': 1}
-            device_option = pb.DeviceOption()
-            device_option.device_type = supports[_DEVICE_SCOPE.split(':')[0]]
-            device_option.device_id = int(_DEVICE_SCOPE.split(':')[1])
-            device_option.engine = _ENGINE_SCOPE
-        op_def = MakeOperatorDef(op_type, inputs_name, outputs_name, op_name,
-                                 device_option=device_option, **kwargs)
+        op_idx, op_name = OperatorHelper.get_index_and_name()
+
+        device_option = GetDefaultDeviceOption()
+
+        op_def = MakeOperatorDef(op_type,
+            inputs_name, outputs_name, op_name,
+                device_option=device_option, **kwargs)
+
         expressions[op_idx] = op_def
 
-        # 4. make outputs
+        # 4. Add outputs
         for idx, output in enumerate(outputs):
-            # deliver expressions
+            # Deliver expressions
             output.expressions = expressions
-            # deliver extra targets
+            # Deliver extra targets
             for input in inputs:
                 output.extra_targets = \
                     output.extra_targets.union(input.extra_targets)
@@ -1019,13 +968,13 @@ class Tensor(object):
                 for input in extra_inputs:
                     output.extra_targets.add(input.name)
 
-        # 5. utils
-        if 'static_shape' in kwargs:
-            outputs[0].tf_shape = kwargs['static_shape']
+        # 5. Refine the shape and data type
+        outputs = OperatorHelper.apply(op_type,
+            arguments=kwargs, inputs=inputs, outputs=outputs)
 
-        # 6. returns
-        if nout > 1: return outputs
-        elif nout == 1: return outputs[0]
+        # 6. Returns
+        if num_outputs > 1: return outputs
+        elif num_outputs == 1: return outputs[0]
         else: return None
 
     @classmethod
@@ -1034,9 +983,9 @@ class Tensor(object):
 
         Parameters
         ----------
-        value : numerical type
+        value : number or Tensor
             The value to convert.
-        dtype : str
+        dtype : str, optional
             The data type of the tensor.
 
         Returns
@@ -1045,21 +994,24 @@ class Tensor(object):
             The tensor converted with given value.
 
         """
-        if isinstance(value, Tensor):
-            return value
+        if isinstance(value, Tensor): return value
         else:
-            if isinstance(value, (list, tuple)):
-                np_value = np.array(value, dtype=dtype)
-            elif isinstance(value, np.ndarray):
-                np_value = value.astype(dtype=dtype)
-            else:
+            if not isinstance(value, np.ndarray):
                 try:
-                    np_value = np.array(value, dtype=dtype)
+                    if dtype:
+                        value = np.array(value, dtype=dtype)
+                    else:
+                        value = np.array(value)
                 except:
-                    raise TypeError('{} value can not be converted to tensor.'.format(type(value)))
-            tensor = Tensor(shape=list(np_value.shape), dtype=dtype)
-            tensor.set_value(np_value)
-            return tensor
+                    raise TypeError('{} value can not be '
+                        'converted to Tensor.'.format(
+                            type(value).__name__))
+            ref_tensor = Tensor.Ref(
+                name=ws.GetDummyName('Constant',
+                    domain='Tensor', zero_based=False),
+                        shape=list(value.shape), dtype=str(value.dtype))
+            ref_tensor.set_value(value)
+            return ref_tensor
 
     def Fill(self, type, **kwargs):
         """Fill self with the specific type of filler.
@@ -1075,13 +1027,14 @@ class Tensor(object):
             Self, with filler registered implicitly in the backend.
 
         """
-        filler = pb.TensorFiller()
+        filler = pb.TensorFillerProto()
         filler.tensor = self.name
         filler.type = type.lower()
 
-        if filler.type == 'constant':
+        if filler.type in ['placeholder', 'variable']: pass
+        elif filler.type == 'constant':
             filler.value = kwargs['value'] if 'value' in kwargs else 0
-        elif filler.type == 'normal' or filler.type == 'gaussian':
+        elif filler.type in ['normal', 'gaussian']:
             filler.mean = kwargs['mean'] if 'mean' in kwargs else 0
             filler.std = kwargs['std'] if 'std' in kwargs else 1
             filler.type = 'normal'
@@ -1089,7 +1042,7 @@ class Tensor(object):
             filler.low = kwargs['low'] if 'low' in kwargs else 0
             filler.high = kwargs['high'] if 'high' in kwargs else 1
             filler.type = 'uniform'
-        elif filler.type == 'truncated_normal' or filler.type == 'truncatednormal':
+        elif filler.type in ['truncated_normal', 'truncatednormal']:
             filler.mean = kwargs['mean'] if 'mean' in kwargs else 0
             filler.std = kwargs['std'] if 'std' in kwargs else 1
             filler.low = filler.mean - 2.0 * filler.std
@@ -1100,6 +1053,13 @@ class Tensor(object):
             filler.std = kwargs['std'] if 'std' in kwargs else 1
             filler.low = kwargs['low'] if 'low' in kwargs else -2.0
             filler.high = kwargs['high'] if 'high' in kwargs else 2.0
+        elif filler.type in ['glorot_uniform', 'xavier']:
+            filler.scale = kwargs['scale'] if 'scale' in kwargs else 3.0
+        elif filler.type in ['glorot_normal', 'msra']:
+            filler.scale = kwargs['scale'] if 'scale' in kwargs else 2.0
+        else:
+            raise ValueError('Unknown filler type: {}'.format(filler.type))
+
         ws.CreateFiller(filler)
         return self
 

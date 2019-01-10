@@ -43,7 +43,7 @@ class DataProcessOp(object):
     Examples
     --------
     >>> import dragon as dg
-    >>> y = dg.ops.Run([], module=__name__, op='DataProcessOp', nout=1)
+    >>> y = dg.ops.Run([], module=__name__, op='DataProcessOp', num_outputs=1)
     >>> foo = dg.function(outputs=y)
     >>> foo()
     >>> print(y.get_value())
@@ -94,7 +94,7 @@ class DataProcessOp(object):
 
 if __name__ == '__main__':
     # Def
-    y = dg.ops.Run([], module=__name__, op='DataProcessOp', nout=1)
+    y = dg.ops.Run([], module=__name__, op='DataProcessOp', num_outputs=1)
     foo = dg.function(outputs=y)
 
     # Run

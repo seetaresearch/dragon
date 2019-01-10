@@ -2,22 +2,28 @@
 #include "utils/op_kernel.h"
 #include "utils/math_functions.h"
 #include "utils/proto_utils.h"
-#include "operators/activation/softmax_op.h"
 #include "operators/loss/sparse_softmax_ce_loss_op.h"
 
 namespace dragon {
 
+#define DETERMINE_RUNTIME_ARGUMENTS(X) \
+    axis = OperatorBase::Arg<int64_t>("axis", 1); \
+    axis = axis < 0 ? axis + X.ndim() : axis; \
+    CHECK(axis >= 0 && axis < X.ndim()) \
+       << "\nExcepted the axis in [-" << X.ndim() << ", " << X.ndim() \
+       << "), got " << OperatorBase::Arg<int64_t>("axis", 1) << ".";
+
 template <class Context>
 void SparseSoftmaxCrossEntropyOp<Context>::SoftmaxRun() {
-    OperatorDef softmax_def = MakeOperatorDef("Softmax", "",
+    auto softmax_def = MakeOperatorDef("Softmax", "",
         vector<string>({ Input(0).name() }),
-        vector<string>({ "/mnt/" + anchor() + "/softmax/prob" }));
+        vector<string>({ mount_name("softmax/prob") }));
     softmax_def.add_arg()->CopyFrom(this->arg("axis"));
     if (def().has_device_option())
         softmax_def.mutable_device_option()->CopyFrom(
             def().device_option());
-    if (!softmax_op) softmax_op.reset(CreateOperator(softmax_def, ws()));
-    else softmax_op->MutableOp(softmax_def);
+    if (softmax_op) { softmax_op->MutableOp(softmax_def); }
+    else { softmax_op.reset(CreateOperator(softmax_def, ws())); }
     softmax_op->Run();
 }
 
@@ -30,39 +36,37 @@ void SparseSoftmaxCrossEntropyOp<Context>::RunWithType() {
     auto* Ldata = losses.template mutable_data<float, Context>();
     auto* Fdata = flags.template mutable_data<float, Context>();
 
-    kernel::SparseSoftmaxCrossEntropy<Tx, Ty, Context>(
-        outer_dim, Input(0).dim(axis), inner_dim,
-            Pdata, Tdata, Idata, ignores.count(),
-                Ldata, Fdata, ctx());
+    kernel::SparseSoftmaxCrossEntropy(
+        outer_dim, Input(0).dim(axis), inner_dim, ignores.count(),
+            Pdata, Tdata, Idata, Ldata, Fdata, ctx());
 
     if (normalization == "UNIT") {
-        vector<TIndex> output_dims = Input(0).dims();
+        vector<int64_t> output_dims = Input(0).dims();
         output_dims.erase(output_dims.begin() + axis);
         Output(0)->Reshape(output_dims);
-        Output(0)->template CopyFrom<Context>(losses, ctx());
-        return;
+        Output(0)->template CopyFrom<Context>(
+            losses, ctx()); return;
     }
 
     float normalizer = 1;
     if (normalization == "VALID") {
         normalizer = std::max(
-            math::ASum<float, Context>(
-                flags.count(), Fdata), 1.f);
+            math::Sum(flags.count(),
+                1.f, Fdata, ctx()), 1.f);
     } else if (normalization == "BATCH_SIZE") {
         normalizer = Input(0).dim(0);
     } else if (normalization == "FULL") {
         normalizer = outer_dim * inner_dim;
     }
 
-    float loss = math::ASum<float, Context>(losses.count(), Ldata);
-    Output(0)->Reshape({ 1 });
+    Output(0)->Reshape(vector<int64_t>());
     auto* Ydata = Output(0)->template mutable_data<float, Context>();
-    math::Set<float, Context>(1, loss / normalizer, Ydata, ctx());
+    math::Sum(losses.count(), 1.f / normalizer, Ldata, Ydata, ctx());
 }
 
 template <class Context>
 void SparseSoftmaxCrossEntropyOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  // Enforce SyncStream
+    DETERMINE_RUNTIME_ARGUMENTS(Input(0));
 
     outer_dim = Input(0).count(0, axis);
     inner_dim = Input(0).count(axis + 1);
@@ -70,8 +74,8 @@ void SparseSoftmaxCrossEntropyOp<Context>::RunOnDevice() {
         << "\nNumber of predictions must match the number of labels.";
     losses.Reshape({ outer_dim * inner_dim });
     flags.Reshape({ outer_dim * inner_dim });
+    prob = ws()->CreateTensor(mount_name("softmax/prob"));
 
-    prob = ws()->CreateTensor("/mnt/" + anchor() + "/softmax/prob");
     SoftmaxRun();
 
     if (XIsType(Input(0), float)) {
@@ -102,32 +106,26 @@ void SparseSoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
     ctx()->template Copy<Tx, Context, Context>(
         prob->count(), dXdata, Pdata);
 
-
-    kernel::SparseSoftmaxCrossEntropyGrad<Tx, Ty, Context>(
-        outer_dim, Output(0)->dim(axis), inner_dim,
-            Pdata, Tdata, Idata, ignores.count(),
-                dXdata, Fdata, ctx());
+    kernel::SparseSoftmaxCrossEntropyGrad(
+        outer_dim, Output(0)->dim(axis), inner_dim, ignores.count(),
+            Pdata, Tdata, Idata, dXdata, Fdata, ctx());
 
     if (normalization == "UNIT") {
         auto* dYdata = Input(-1).template data<float, Context>();
-        auto* WSdata = ws()->template caches<float, Context>(
-            { Input(0).count() })[0];
-        kernel::SumGrad<float, Context>(
-            Input(0).count() / Input(0).dim(axis),
-                Input(0).dim(axis), inner_dim,
-                    1.f, dYdata, WSdata, ctx());
-        kernel::TypeA2B<float, Tx, Context>(
-            Input(0).count(), WSdata, Pdata, ctx());
-        math::Mul<Tx, Context>(Output(0)->count(),
-            Pdata, dXdata, dXdata, ctx());
+        auto* WSdata = ws()->template caches
+            <float, Context>({ Input(0).count() })[0];
+        kernel::Repeat(outer_dim, 1, inner_dim,
+            Input(0).dim(axis), dYdata, WSdata, ctx());
+        kernel::TypeA2B(Input(0).count(), WSdata, Pdata, ctx());
+        math::Mul(Output(0)->count(), Pdata, dXdata, dXdata, ctx());
         return;
     }
 
     float normalizer = 1;
     if (normalization == "VALID") {
         normalizer = std::max(
-            math::ASum<float, Context>(
-                flags.count(), Fdata), 1.f);
+            math::Sum(flags.count(),
+                1.f, Fdata, ctx()), 1.f);
     } else if (normalization == "BATCH_SIZE") {
         normalizer = Input(0).dim(0);
     } else if (normalization == "FULL") {
@@ -135,22 +133,22 @@ void SparseSoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
     }
 
     auto* dYdata = Input(-1).template data<float, Context>();
-    float dYdata_host; ctx()->template Copy<
-        float, CPUContext, Context>(
-            1, &dYdata_host, dYdata);
-    math::Scal<Tx, Context>(Output(0)->count(),
-        dYdata_host / normalizer, dXdata, ctx());
+    float dYHost; ctx()->template Copy<
+        float, CPUContext, Context>(1, &dYHost, dYdata);
+    math::Scale(Output(0)->count(),
+        dYHost / normalizer, dXdata, dXdata, ctx());
 }
 
 template <class Context>
 void SparseSoftmaxCrossEntropyGradientOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  // Enforce SyncStream
+    DETERMINE_RUNTIME_ARGUMENTS(Input(0));
 
-    prob = ws()->GetTensor("/mnt/" + anchor() + "/softmax/prob");
-    outer_dim = prob->count(0, axis);
-    inner_dim = prob->count(axis + 1);
+    outer_dim = Input(0).count(0, axis);
+    inner_dim = Input(0).count(axis + 1);
     Output(0)->ReshapeLike(Input(0));
     flags.Reshape({ outer_dim * inner_dim });
+
+    prob = ws()->GetTensor(mount_name("softmax/prob"));
 
     if (XIsType(Input(0), float)) {
         if (XIsType(Input(1), float)) RunWithType<float, float>();
@@ -167,7 +165,9 @@ DEPLOY_CPU(SparseSoftmaxCrossEntropyGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(SparseSoftmaxCrossEntropyGradient);
 #endif
-OPERATOR_SCHEMA(SparseSoftmaxCrossEntropyGradient).NumInputs(3).NumOutputs(1);
+
+OPERATOR_SCHEMA(SparseSoftmaxCrossEntropyGradient)
+    .NumInputs(3).NumOutputs(1);
 
 class GetSparseSoftmaxCrossEntropyGradient
     final : public GradientMakerBase {
@@ -175,13 +175,16 @@ class GetSparseSoftmaxCrossEntropyGradient
     GRADIENT_MAKER_CTOR(GetSparseSoftmaxCrossEntropyGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), I(1), GO(0)},
-            vector<string> {GI(0)});
+            vector<string>({ I(0), I(1), GO(0) }),
+            vector<string>({ GI(0) }));
     }
 };
+
 REGISTER_GRADIENT(
     SparseSoftmaxCrossEntropy,
     GetSparseSoftmaxCrossEntropyGradient
 );
+
+#undef DETERMINE_RUNTIME_ARGUMENTS
 
 }  // namespace dragon

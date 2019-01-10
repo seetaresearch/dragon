@@ -83,16 +83,16 @@ template <> void SGDUpdate<float16, CUDAContext>(
         _SGDUpdateHalf2
             << < CUDA_BLOCKS(count >> 1), CUDA_THREADS,
                  0, ctx->cuda_stream() >> >
-            (count >> 1, dragon_cast<half2, float>(lr),
-                dragon_cast<half2, float>(momentum),
+            (count >> 1, cast::to<half2>(lr),
+                cast::to<half2>(momentum),
                     reinterpret_cast<half2*>(g),
                         reinterpret_cast<half2*>(h));
     } else {
         _SGDUpdateHalf
             << < CUDA_BLOCKS(count), CUDA_THREADS,
                  0, ctx->cuda_stream() >> >
-            (count, dragon_cast<half, float>(lr),
-                dragon_cast<half, float>(momentum),
+            (count, cast::to<half>(lr),
+                cast::to<half>(momentum),
                     reinterpret_cast<half*>(g),
                         reinterpret_cast<half*>(h));
     }

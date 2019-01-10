@@ -36,7 +36,7 @@ void CuDNNCTCLossOp<Context>::WrapIO() {
             std::back_inserter(packed_labels));
         label_lengths[n] = len;
     }
-    Output(0)->Reshape(vector<TIndex>({ (TIndex)1 }));
+    Output(0)->Reshape({ 1 });
 }
 
 template <class Context> template <typename T>
@@ -52,11 +52,11 @@ void CuDNNCTCLossOp<Context>::RunWithType() {
 
     auto* Pdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    auto* gradT = ws()->CreateTensor("/mnt/" + anchor() + "/ctc/grads");
+    auto* gradT = ws()->CreateTensor(mount_name("ctc/grads"));
     gradT->ReshapeLike(Input(0));
     auto* Gdata = gradT->template mutable_data<T, Context>();
-    auto* WSdata = (uint8_t*)ws()->template caches<Context>({
-        workspace_size })[0];
+    auto* WSdata = (uint8_t*)ws()->template
+        caches<Context>({ workspace_size })[0];
 
     CUDNN_CHECK(cudnnCTCLoss(ctx()->cudnn_handle(),
         prob_desc, Pdata, packed_labels.data(),
@@ -81,6 +81,6 @@ DEPLOY_CUDNN(CTCLoss);
 
 }  // namespace dragon
 
-#endif
+#endif  // CUDNN_VERSION_MIN(7, 0, 0)
 
 #endif  // WITH_CUDNN

@@ -22,11 +22,11 @@ class AccuracyOp final : public Operator<Context> {
  public:
     AccuracyOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          top_k(OperatorBase::Arg<int>("top_k", 1)),
-          axis(OperatorBase::Arg<int>("axis", 1)) {
-        vector<int> ignores = OperatorBase::Args<int>("ignore_labels");
+          top_k(OperatorBase::Arg<int64_t>("top_k", 1)),
+          axis(OperatorBase::Arg<int64_t>("axis", 1)) {
+        auto ignores = OperatorBase::Args<int>("ignore_labels");
         if (ignores.size()) {
-            ignore.Reshape({ (TIndex)ignores.size() });
+            ignore.Reshape({ (int64_t)ignores.size() });
             auto* Idata = ignore.mutable_data<int, CPUContext>();
             for (int i = 0; i < ignores.size(); i++) Idata[i] = ignores[i];
         }
@@ -37,7 +37,7 @@ class AccuracyOp final : public Operator<Context> {
     template <typename Tx, typename Ty> void RunWithType();
 
  protected:
-    TIndex top_k, axis, outer_dim, inner_dim, num_classes;
+    int64_t top_k, axis, outer_dim, inner_dim, num_classes;
     Tensor ignore;
 };
 

@@ -66,7 +66,7 @@ class RoIPool(BaseModule):
 
     def register_op(self):
         self.op_meta = {
-            'op_type': 'ROIPooling',
+            'op_type': 'ROIPool',
             'n_inputs': 2, 'n_outputs': 1,
             'arguments': {
                 'pool_h': self.pool_h, 'pool_w': self.pool_w,

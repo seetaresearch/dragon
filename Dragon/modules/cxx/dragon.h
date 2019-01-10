@@ -34,18 +34,18 @@
  * * * * * * * * * * * * * * * * * * * * */
 
 #ifdef DRAGON_CXX_EXPORTS
-#include "core/types.h"
 #else
 namespace dragon {
-    struct float16;
+
+typedef struct float16* float16_t;
+
 }
-#endif
+#endif  // DRAGON_CXX_EXPORTS
 
 namespace dragon {
 
-typedef int64_t TIndex;
-
-class Workspace;
+typedef struct GraphDef* GraphDef_t;
+typedef struct Workspace* Workspace_t;
 
 class DRAGON_API Device {
  public:
@@ -66,13 +66,17 @@ class DRAGON_API Device {
  *                                       *
  * * * * * * * * * * * * * * * * * * * * */
 
-DRAGON_API Workspace* CreateWorkspace(const std::string& name);
+DRAGON_API Workspace_t CreateWorkspace(const std::string& name);
 
-DRAGON_API Workspace* ResetWorkspace(const std::string& name);
+DRAGON_API Workspace_t ResetWorkspace(Workspace_t ws);
 
-DRAGON_API void ReleaseWorkspace(const std::string& name);
+DRAGON_API Workspace_t ResetWorkspace(const std::string& name);
 
-DRAGON_API void MoveWorkspace(Workspace* main, Workspace* sub);
+DRAGON_API void MoveWorkspace(Workspace_t dst, Workspace_t src);
+
+DRAGON_API void DestroyWorkspace(Workspace_t ws);
+
+DRAGON_API void DestroyWorkspace(const std::string& name);
 
 /* * * * * * * * * * * * * * * * * * * * *
  *                                       *
@@ -81,18 +85,19 @@ DRAGON_API void MoveWorkspace(Workspace* main, Workspace* sub);
  * * * * * * * * * * * * * * * * * * * * */
 
 DRAGON_API std::string CreateGraph(
-    const std::string&          graph_file,
-    Workspace*                  ws);
+    const GraphDef_t                graph_def,
+    const Device&                   device,
+    Workspace_t                     ws);
 
 DRAGON_API std::string CreateGraph(
-    const std::string&          graph_file,
-    const Device&               device,
-    Workspace*                  ws);
+    const std::string&              graph_file,
+    const Device&                   device,
+    Workspace_t                     ws);
 
 DRAGON_API void RunGraph(
-    const std::string&          graph_name,
-    Workspace*                  ws,
-    const int                   stream_id = 1);
+    const std::string&              graph_name,
+    Workspace_t                     ws,
+    const int                       stream_id = 1);
 
 /* * * * * * * * * * * * * * * * * * * * *
  *                                       *
@@ -101,22 +106,32 @@ DRAGON_API void RunGraph(
  * * * * * * * * * * * * * * * * * * * * */
 
 DRAGON_API void CreateTensor(
-    const std::string&          name,
-    Workspace*                  ws);
+    const std::string&              name,
+    Workspace_t                     ws);
 
 template <typename T>
 DRAGON_API T* FetchTensor(
-    const std::string&          name,
-    std::vector<TIndex>&        shape,
-    Workspace*                  ws);
+    const std::string&              name,
+    std::vector<int64_t>&           shape,
+    Workspace_t                     ws,
+    const bool                      copy = false);
 
 template <typename T>
 DRAGON_API void FeedTensor(
-    const std::string&          name,
-    const std::vector<TIndex>&  shape,
-    const T*                    data,
-    const Device&               device,
-    Workspace*                  ws);
+    const std::string&              name,
+    const std::vector<int64_t>&     shape,
+    const T*                        data,
+    const Device&                   device,
+    Workspace_t                     ws);
+
+/* * * * * * * * * * * * * * * * * * * * *
+*                                        *
+*                 Proto                  *
+*                                        *
+* * * * * * * * * * * * * * * * * * * * */
+
+DRAGON_API void CreateGraphDef(GraphDef_t* graph_def);
+DRAGON_API void DestroyGraphDef(GraphDef_t graph_def);
 
 /* * * * * * * * * * * * * * * * * * * * *
  *                                       *
@@ -124,17 +139,16 @@ DRAGON_API void FeedTensor(
  *                                       *
  * * * * * * * * * * * * * * * * * * * * */
 
-DRAGON_API void LoadCaffemodel(
-    const std::string&          model_file,
-    Workspace*                  ws);
+DRAGON_API void LoadCaffeModel(
+    const std::string&              model_file,
+    Workspace_t                     ws);
 
-DRAGON_API void TransplantCaffeModel(
-    const std::string&          input_model,
-    const std::string&          output_model);
-
-DRAGON_API void LoadDragonmodel(
-    const std::string&          model_file,
-    Workspace*                  ws);
+DRAGON_API void LoadONNXModel(
+    const std::string&              model_file,
+    GraphDef_t                      init_graph,
+    GraphDef_t                      pred_graph,
+    std::vector<std::string>&       inputs,
+    std::vector<std::string>&       outputs);
 
 /* * * * * * * * * * * * * * * * * * * * *
  *                                       *

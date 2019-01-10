@@ -9,39 +9,38 @@
 #
 # ------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import dragon
+
+from dragon.vm.tensorflow.framework import dtypes
+
+
 __all__ = [
     'random_normal',
     'truncated_normal',
     'random_uniform'
 ]
 
-import dragon.ops as ops
 
-from dragon.vm.tensorflow.framework import dtypes
-
-
-def random_normal(shape,
-                  mean=0.0,
-                  stddev=1.0,
-                  dtype=dtypes.float32,
-                  seed=None,
-                  name=None):
-    return ops.RandomNormal(shape, mean, stddev)
+def random_normal(
+    shape, mean=0.0, stddev=1.0,
+        dtype=dtypes.float32,
+            seed=None, name=None):
+    return dragon.ops.RandomNormal(shape, mean, stddev, name=name)
 
 
-def truncated_normal(shape,
-                     mean=0.0,
-                     stddev=1.0,
-                     dtype=dtypes.float32,
-                     seed=None,
-                     name=None):
-    return ops.TruncatedNormal(shape, mean, stddev)
+def truncated_normal(
+    shape, mean=0.0, stddev=1.0,
+        dtype=dtypes.float32,
+            seed=None, name=None):
+    return dragon.ops.TruncatedNormal(shape, mean, stddev, name=name)
 
 
-def random_uniform(shape,
-                   minval=0,
-                   maxval=None,
-                   dtype=dtypes.float32,
-                   seed=None,
-                   name=None):
-    return ops.RandomUniform(shape, minval, maxval)
+def random_uniform(
+    shape, minval=0, maxval=None,
+        dtype=dtypes.float32,
+            seed=None, name=None):
+    return dragon.ops.RandomUniform(shape, minval, maxval, name=name)

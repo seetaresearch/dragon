@@ -20,47 +20,53 @@ __global__ void _Arange(
     }
 }
 
-/*! Arange <T = float32, Device = CUDA> */
+#define DEFINE_ARANGE_KERNEL_LAUNCHER(T) \
+    template <> void Arange<T, CUDAContext>( \
+        const int               count, \
+        const int               start, \
+        const int               step, \
+        T*                      y, \
+        CUDAContext*            ctx) { \
+        _Arange<T> \
+            << < CUDA_BLOCKS(count), CUDA_THREADS, \
+                 0, ctx->cuda_stream() >> > \
+            (count, start, step, y); \
+    }
 
-template<> void Arange<float, CUDAContext>(
+DEFINE_ARANGE_KERNEL_LAUNCHER(int8_t);
+DEFINE_ARANGE_KERNEL_LAUNCHER(uint8_t);
+DEFINE_ARANGE_KERNEL_LAUNCHER(int);
+DEFINE_ARANGE_KERNEL_LAUNCHER(int64_t);
+DEFINE_ARANGE_KERNEL_LAUNCHER(float);
+DEFINE_ARANGE_KERNEL_LAUNCHER(double);
+
+/*! Arange <T = float16, Device = CUDA> */
+
+__global__ void _ArangeHalf(
     const int               count,
     const int               start,
     const int               step,
-    float*                  y,
-    CUDAContext*            ctx) {
-    _Arange<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, start, step, y);
+    half*                   y) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+#if __CUDA_ARCH__ >= 530
+        y[idx] = __float2half((float)(start + idx * step));
+#endif
+    }
 }
 
-/*! Arange <T = int32, Device = CUDA> */
-
-template<> void Arange<int, CUDAContext>(
+template <> void Arange<float16, CUDAContext>(
     const int               count,
     const int               start,
     const int               step,
-    int*                    y,
+    float16*                y,
     CUDAContext*            ctx) {
-    _Arange<int>
+    _ArangeHalf
         << < CUDA_BLOCKS(count), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (count, start, step, y);
+        (count, start, step, reinterpret_cast<half*>(y));
 }
 
-/*! Arange <T = int64, Device = CUDA> */
-
-template<> void Arange<int64_t, CUDAContext>(
-    const int               count,
-    const int               start,
-    const int               step,
-    int64_t*                y,
-    CUDAContext*            ctx) {
-    _Arange<int64_t>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, start, step, y);
-}
+#undef DEFINE_ARANGE_KERNEL_LAUNCHER
 
 }  // namespace kernel
 

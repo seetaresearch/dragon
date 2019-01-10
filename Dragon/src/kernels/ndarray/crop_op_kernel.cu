@@ -7,115 +7,107 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Crop1d <T = ?, Device = CUDA> */
+#define FIXED_DIVISOR_DIV_MOD(d, n, q, r) \
+  do {                                    \
+    const auto n_copy = n;                \
+    *q = n_copy / d;                      \
+    *r = n_copy % d;                      \
+  } while (0)
+
+/*! Crop <T = ?, Device = CUDA> */
 
 template<typename T>
-__global__ void _Crop1d(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               start,
+__global__ void _Crop(
+    const int               nthreads,
+    const int               ndims,
+    const int*              x_strides,
+    const int*              y_dims,
+    const int*              starts,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        const int i = idx % inner_dim;
-        const int ex_d = (idx / inner_dim) % ex_dim;
-        const int o = idx / inner_dim / ex_dim;
-        y[idx] = x[(o * dim + ex_d + start) * inner_dim + i];
+    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
+        int x_idx = 0, tmp = y_idx;
+#pragma unroll
+        for (int d = ndims - 1; d >= 0; --d) {
+            int r;
+#if __CUDA_ARCH__ >= 350
+            FIXED_DIVISOR_DIV_MOD(__ldg(y_dims + d), tmp, &tmp, &r);
+            x_idx += (r + __ldg(starts + d)) * __ldg(x_strides + d);
+#else
+            FIXED_DIVISOR_DIV_MOD(y_dims[d], tmp, &tmp, &r);
+            x_idx += (r + starts[d]) * x_strides[d];
+#endif
+        }
+        y[y_idx] = x[x_idx];
     }
 }
 
-/*! Crop1d <T = float32, Device = CUDA> */
-
-template<> void Crop1d<float, CUDAContext>(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               start,
-    const float*            x,
-    float*                  y,
-    CUDAContext*            ctx) {
-    _Crop1d<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, dim, ex_dim, inner_dim, start, x, y);
-}
-
-/*! Crop1d <T = int32, Device = CUDA> */
-
-template<> void Crop1d<int, CUDAContext>(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               start,
-    const int*              x,
-    int*                    y,
-    CUDAContext*            ctx) {
-    _Crop1d<int>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, dim, ex_dim, inner_dim, start, x, y);
-}
-
-/*! Crop1dGrad <T = ?, Device = CUDA> */
+/*! CropGrad <T = ?, Device = CUDA> */
 
 template<typename T>
-__global__ void _Crop1dGrad(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               start,
-    const int               end,
+__global__ void _CropGrad(
+    const int               nthreads,
+    const int               ndims,
+    const int*              x_strides,
+    const int*              y_dims,
+    const int*              starts,
     const T*                dy,
     T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        const int i = idx % inner_dim;
-        const int d = (idx / inner_dim) % dim;
-        const int o = idx / inner_dim / dim;
-        dx[idx] = (d < start || d >= end) ? 0 :
-            dy[(o * ex_dim + d - start) * inner_dim + i];
+    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
+        int x_idx = 0, tmp = y_idx;
+#pragma unroll
+        for (int d = ndims - 1; d >= 0; --d) {
+            int r;
+#if __CUDA_ARCH__ >= 350
+            FIXED_DIVISOR_DIV_MOD(__ldg(y_dims + d), tmp, &tmp, &r);
+            x_idx += (r + __ldg(starts + d)) * __ldg(x_strides + d);
+#else
+            FIXED_DIVISOR_DIV_MOD(y_dims[d], tmp, &tmp, &r);
+            x_idx += (r + starts[d]) * x_strides[d];
+#endif
+        }
+        dx[x_idx] = dy[y_idx];
     }
 }
 
-/*! Crop1dGrad <T = float32, Device = CUDA> */
+/*! Kernel Launchers */
 
-template<> void Crop1dGrad<float, CUDAContext>(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               start,
-    const int               end,
-    const float*            dy,
-    float*                  dx,
-    CUDAContext*            ctx) {
-    _Crop1dGrad<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, dim, ex_dim, inner_dim, start, end, dy, dx);
-}
+#define DEFINE_CROP_KERNEL_LAUNCHER(name, T) \
+    template<> void name<T, CUDAContext>( \
+        const int               count, \
+        const int               ndims, \
+        const int*              x_strides, \
+        const int*              y_dims, \
+        const int*              starts, \
+        const T*                x, \
+        T*                      y, \
+        CUDAContext*            ctx) { \
+        _##name<T> \
+            << < CUDA_BLOCKS(count), CUDA_THREADS, \
+                 0, ctx->cuda_stream() >> > \
+            (count, ndims, x_strides, y_dims, starts, x, y); \
+    }
 
-/*! Crop1dGrad <T = int32, Device = CUDA> */
+DEFINE_CROP_KERNEL_LAUNCHER(Crop, bool);
+DEFINE_CROP_KERNEL_LAUNCHER(Crop, int8_t);
+DEFINE_CROP_KERNEL_LAUNCHER(Crop, uint8_t);
+DEFINE_CROP_KERNEL_LAUNCHER(Crop, int);
+DEFINE_CROP_KERNEL_LAUNCHER(Crop, int64_t);
+DEFINE_CROP_KERNEL_LAUNCHER(Crop, float16);
+DEFINE_CROP_KERNEL_LAUNCHER(Crop, float);
+DEFINE_CROP_KERNEL_LAUNCHER(Crop, double);
 
-template<> void Crop1dGrad<int, CUDAContext>(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               start,
-    const int               end,
-    const int*              dy,
-    int*                    dx,
-    CUDAContext*            ctx) {
-    _Crop1dGrad<int>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, dim, ex_dim, inner_dim, start, end, dy, dx);
-}
+DEFINE_CROP_KERNEL_LAUNCHER(CropGrad, bool);
+DEFINE_CROP_KERNEL_LAUNCHER(CropGrad, int8_t);
+DEFINE_CROP_KERNEL_LAUNCHER(CropGrad, uint8_t);
+DEFINE_CROP_KERNEL_LAUNCHER(CropGrad, int);
+DEFINE_CROP_KERNEL_LAUNCHER(CropGrad, int64_t);
+DEFINE_CROP_KERNEL_LAUNCHER(CropGrad, float16);
+DEFINE_CROP_KERNEL_LAUNCHER(CropGrad, float);
+DEFINE_CROP_KERNEL_LAUNCHER(CropGrad, double);
+
+#undef FIXED_DIVISOR_DIV_MOD
+#undef DEFINE_CROP_KERNEL_LAUNCHER
 
 }  // namespace kernel
 

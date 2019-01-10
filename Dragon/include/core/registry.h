@@ -13,8 +13,6 @@
 #ifndef DRAGON_CORE_REGISTRY_H_
 #define DRAGON_CORE_REGISTRY_H_
 
-#include <functional>
-
 #include "core/common.h"
 
 namespace dragon {
@@ -69,14 +67,14 @@ class Registerer {
 
 // Used in *.h files
 #define DECLARE_TYPED_REGISTRY(RegistryName, SrcType, ObjType,...) \
-    dragon::Registry<SrcType, ObjType,##__VA_ARGS__>* RegistryName(); \
-    typedef dragon::Registerer<SrcType,ObjType,##__VA_ARGS__> Registerer##RegistryName;
+    Registry<SrcType, ObjType, ##__VA_ARGS__>* RegistryName(); \
+    typedef Registerer<SrcType, ObjType, ##__VA_ARGS__> Registerer##RegistryName;
 
 // Used in *.cc files
 #define DEFINE_TYPED_REGISTRY(RegistryName,SrcType, ObjType,...) \
-    Registry<SrcType,ObjType,##__VA_ARGS__>* RegistryName() {  \
-        static Registry<SrcType,ObjType,##__VA_ARGS__>* registry = \
-            new Registry<SrcType,ObjType,##__VA_ARGS__>(); \
+    Registry<SrcType,ObjType, ##__VA_ARGS__>* RegistryName() {  \
+        static Registry<SrcType, ObjType, ##__VA_ARGS__>* registry = \
+            new Registry<SrcType, ObjType, ##__VA_ARGS__>(); \
         return registry; \
     }
 
@@ -93,6 +91,6 @@ class Registerer {
 #define REGISTER_CLASS(RegistryName, key, ...) \
     REGISTER_TYPED_CLASS(RegistryName, #key, __VA_ARGS__)
 
-}    // namepsace dragon
+}  // namepsace dragon
 
 #endif  //DRAGON_CORE_REGISTRY_H_

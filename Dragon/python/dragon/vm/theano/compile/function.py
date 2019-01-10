@@ -15,11 +15,13 @@ import numpy as np
 
 import dragon.core.mpi as mpi
 import dragon.core.workspace as ws
-import dragon.protos.dragon_pb2 as pb
+import dragon.core.logging as logging
+import dragon.proto.dragon_pb2 as pb
 
-from dragon.core.utils import MakeArgument
+from dragon.core.proto_utils import MakeArgument
+from dragon.core.helper import OperatorHelper
 from dragon.core.gradient_maker import GraphGradientMaker
-from dragon.core.scope import GetOperatorName, GetTensorName
+from dragon.core.scope import get_default_phase
 from dragon.core.tensor import Tensor
 
 
@@ -44,14 +46,12 @@ def GraphDef_Grad(meta_graph, targets):
     """
     all_pairs = set()
     for target in targets:
-        for wrt in target.grad_wrts:
-            all_pairs.add((target.name, wrt))
+        all_pairs.update(target.gradient.make_pairs())
 
     for pair in all_pairs:
-        g_target = pb.GradientTarget()
-        g_target.cost = str(pair[0])
-        g_target.wrt = str(pair[1])
-        meta_graph.g_target.extend([g_target])
+        gradient = pb.GradientProto()
+        gradient.cost, gradient.wrt = str(pair[0]), str(pair[1])
+        meta_graph.gradient.extend([gradient])
 
 
 def GraphDef_Phase(meta_graph, targets):
@@ -71,13 +71,11 @@ def GraphDef_Phase(meta_graph, targets):
     None
 
     """
-    phase = 'TEST'
-    from dragon.core.scope import _PHASE_SCOPE
-    if _PHASE_SCOPE != '':
-        phase = _PHASE_SCOPE.upper()
-    else:
+    phase = get_default_phase()
+    if phase is None:
+        phase = 'TEST'
         for target in targets:
-            if len(target.grad_wrts) > 0:
+            if target.gradient.required():
                 phase = 'TRAIN'
                 break
     meta_graph.arg.extend([MakeArgument('phase', phase)])
@@ -102,9 +100,6 @@ def GraphDef_Update(meta_graph, updater):
     """
     if updater is None: return
 
-    # Use graph name if missing slot
-    if updater._slot is None:
-        updater._slot= meta_graph.name
     extra_arguments = updater._extra_kwargs
     extra_arguments['slot'] = updater._slot
     parallel_arguments = {}
@@ -125,13 +120,13 @@ def GraphDef_Update(meta_graph, updater):
     for e in updater._param_group:
         pair, arguments = e
         kwargs = dict(arguments, **extra_arguments)
-        u_target = pb.UpdateTarget()
+        u_target = pb.UpdaterProto()
         u_target.type = updater.type()
-        _, u_target.name = GetOperatorName()
+        u_target.name = OperatorHelper.get_name()
         for t in pair: u_target.tensor.append(t)
         for k, v in kwargs.items():
             u_target.arg.add().CopyFrom(MakeArgument(k, v))
-        meta_graph.u_target.extend([u_target])
+        meta_graph.updater.extend([u_target])
 
 
 def GraphDef_Opt(meta_graph):
@@ -203,14 +198,8 @@ class Function(object):
     def __init__(self, name=None):
         self.callback = None
         self.meta_graph = pb.GraphDef()
-        if name is None:
-            # Assign a auto name
-            self.meta_graph.name = self.graph_name = \
-                'Graph_' + str(ws.CURRENT_GRAPH_IDX)
-            ws.CURRENT_GRAPH_IDX += 1
-        else:
-            # Assign the specific name
-            self.meta_graph.name = self.graph_name = name
+        self.meta_graph.name = name if name else 'Graph'
+        self.graph_name = None # Determined after creating
 
     def define(self, inputs=None, outputs=None, givens=None, updater=None):
         if not isinstance(inputs, list):
@@ -236,14 +225,14 @@ class Function(object):
         # Extract operators and targets from expressions
         existing_grads = False
         for output in outputs:
-            meta_graph.target.extend([output.name])
+            meta_graph.output.extend([output.name])
             all_expressions.update(output.expressions)
             all_extra_targets = all_extra_targets.union(output.extra_targets)
-            if len(output.grad_wrts) > 0: existing_grads = True
+            if output.gradient.required(): existing_grads = True
 
         # We should sort out the topology of these operators before using
-        all_exprs = sorted(all_expressions.items(), key=lambda d: d[0])
-        forward_ops = copy.deepcopy([v for k, v in all_exprs])
+        all_expressions = sorted(all_expressions.items(), key=lambda d: d[0])
+        forward_ops = copy.deepcopy([v for k, v in all_expressions])
 
         # Handle givens
         if givens is not None:
@@ -254,8 +243,9 @@ class Function(object):
                 if isinstance(new_tensor, Tensor):
                     name_dict[old_tensor.name] = new_tensor.name
                     external_input_expressions.update(new_tensor.expressions)
-                elif isinstance(new_tensor, np.ndarray):
-                    ws.FeedTensor(new_tensor, GetTensorName())
+                else:
+                    raise ValueError('Excepted a Tensor, '
+                        'while got {}.'.format(type(new_tensor).__name__))
                 all_extra_targets = all_extra_targets.union(new_tensor.extra_targets)
             external_input_expressions = sorted(external_input_expressions.items(), key=lambda d: d[0])
             external_input_ops = [v for k, v in external_input_expressions]
@@ -281,7 +271,13 @@ class Function(object):
 
         # Write Extra Targets
         for extra_target in all_extra_targets:
-            meta_graph.target.extend([extra_target])
+            meta_graph.output.extend([extra_target])
+
+        # Write External Inputs
+        for input in inputs:
+            meta_graph.input.extend([input.name])
+
+        self.inputs, self.outputs = inputs, outputs
 
         # Write Misc
         if len(outputs) > 0:
@@ -296,16 +292,16 @@ class Function(object):
             GraphDef_Update(meta_graph, updater)
 
         # Call c api to create graph
-        ws.CreateGraph(meta_graph)
+        self.graph_name = ws.CreateGraph(meta_graph)
 
         # Bind a lambda callback to run this graph
         self.callback = lambda *args, **kwargs: \
-            ws.RunGraph(meta_graph.name, (inputs, args), outputs, **kwargs)
+            ws.RunGraph(self.graph_name, (inputs, args), outputs, **kwargs)
 
         # Self return
         return self
 
-    def export(self, name=None, export_dir='./'):
+    def export_to(self, name=None, export_dir='./'):
         """Export the meta graph of this defined function.
 
         Parameters
@@ -313,8 +309,11 @@ class Function(object):
         export_dir : str
             The directory to export the meta text file.
 
+        Returns
+        -------
+        None
+
         """
-        from dragon.config import logger
         if not os.path.exists(export_dir):
             try:
                 os.makedirs(export_dir)
@@ -324,13 +323,54 @@ class Function(object):
         meta_graph_copy.name = self.meta_graph.name if name is None else name
         file = os.path.join(export_dir, meta_graph_copy.name + '.metatxt')
         with open(file, 'w') as f: f.write(str(meta_graph_copy))
-        logger.info('Export meta graph into: {}'.format(file))
+        logging.info('Export meta graph into: {}'.format(file))
 
-    def __call__(self, *args, **kwargs):
-        """Call the defined function.
+    def import_from(self, meta_graph, explicit_inputs=False):
+        """Import the defined function from a meta graph.
+
+        Set ``explicit_inputs`` to ``False``,
+
+        if you want to feed the inputs as ``workspace.FeedTensor(self.inputs)``
+
+        Parameters
+        ----------
+        meta_graph : dragon_pb2.GraphDef
+            The definition of meta graph.
+        explicit_inputs : boolean
+            Whether to enforce feeding on executing.
+
+        Returns
+        -------
+        Function
+            The self.
 
         """
-        return self.callback(args, kwargs)
+        self.inputs = [Tensor(name=input).Variable() for input in meta_graph.input]
+        self.outputs = [Tensor(name=output) for output in meta_graph.output]
+
+        GraphDef_Device(meta_graph)
+        GraphDef_Opt(meta_graph)
+        GraphDef_Phase(meta_graph, self.outputs)
+
+        # Store for future development
+        self.meta_graph = meta_graph
+        self.graph_name = meta_graph.name
+
+        # Call c api to create graph
+        ws.CreateGraph(meta_graph)
+
+        # Bind a lambda callback to run this graph
+        callback_inputs = self.inputs if explicit_inputs else []
+        self.callback = lambda *args, **kwargs: \
+            ws.RunGraph(meta_graph.name, (callback_inputs, args), self.outputs, **kwargs)
+
+        # Self return
+        return self
+
+    def __call__(self, *args, **kwargs):
+        """Call the defined function."""
+        return self.callback(*args, **kwargs) \
+            if len(kwargs) > 0 else self.callback(*args)
 
 
 def function(inputs=None, outputs=None, givens=None, updater=None):
@@ -344,18 +384,18 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
 
     Parameters
     ----------
-    inputs : Tensor, list of Tensor or None
+    inputs : sequence of Tensor, optional
         The inputs to feed.
-    outputs : Tensor, list of Tensor or None
-        The outputs to solve.
-    givens : dict or None
+    inputs : sequence of Tensor, optional
+        The outputs to fetch.
+    givens : dict of Tensor, optional
         The substitutions to use.
-    updater : BaseUpdater
+    updater : Updater, optional
         The updater to use.
 
     Returns
     -------
-    function
+    Function
         The callable function.
 
     Examples
@@ -375,37 +415,3 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
 
     """
     return Function().define(inputs, outputs, givens, updater)
-
-
-def eval(self, feed_dict=None):
-    if not hasattr(self, '_eval_func'):
-        if feed_dict is not None:
-            self._eval_func = function(inputs=feed_dict.keys(), outputs=self)
-        else:
-            self._eval_func = function(outputs=self)
-
-    # Cond.1: Run by Feeding
-    if feed_dict is not None:
-        # Checking
-        for key, value in feed_dict.items():
-            if not isinstance(key, Tensor):
-                raise TypeError('The key of feed_dict key should be a Tensor.')
-            if key.shape is not None:
-                if len(key.shape) != len(value.shape):
-                    raise RuntimeError(
-                        'The Tensor({}) was limited to {} dimensions, \
-                         while feed a value with {} dimensions.'.format(
-                            key.name, len(key.shape), len(value.shape)))
-                for i in range(len(key.shape)):
-                    if key.shape[i] is None: continue
-                    if key.shape[i] != value.shape[i]:
-                        raise RuntimeError(
-                            'The shape of Tensor({}) was limited as ('.format(key.name) +
-                            ','.join([str(dim) for dim in key.shape]) + '), ' +
-                            'while feed a value with (' + ','.join([str(dim) for dim in value.shape]) + ').')
-        return self._eval_func(*feed_dict.values())
-    else:
-        # Cond.2: Run without Feeding
-        return self._eval_func()
-
-Tensor.eval = eval

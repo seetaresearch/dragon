@@ -10,9 +10,7 @@
 # ------------------------------------------------------------
 
 import numpy as np
-
-import dragon.core.workspace as ws
-from dragon.core.tensor import Tensor, GetTensorName
+import dragon as dg
 
 
 def shared(value, name=None, **kwargs):
@@ -33,8 +31,6 @@ def shared(value, name=None, **kwargs):
     """
     if not isinstance(value, (int, float, list, np.ndarray)):
         raise TypeError("Unsupported type of value: {}".format(type(value)))
-    if name is None: name = GetTensorName()
-
-    tensor = Tensor(name).Variable()
-    ws.FeedTensor(tensor, value)
+    tensor = dg.Tensor(name).Variable()
+    dg.workspace.FeedTensor(tensor, value)
     return tensor

@@ -19,8 +19,7 @@ import dragon.core.tensor_utils as tensor_utils
 import dragon.core.workspace as ws
 
 from dragon.vm.torch.tensor import Tensor
-from dragon.vm.torch.tensor_pool import TPool
-from dragon.vm.torch.autograd.anchor_pool import APool
+from dragon.vm.torch.dummy_pool import TensorPool, OperatorPool
 
 
 def Variable(tensor, requires_grad=False, volatile=False):
@@ -47,7 +46,7 @@ def backward(self, gradient=None):
 
     # 1. Expressions -> Forward-Ops
     # We should sort out the topology of these operators before using
-    all_expressions = sorted(self._expr._ops.items(), key=lambda d: d[0])
+    all_expressions = sorted(self.__jit_recorder__._ops.items(), key=lambda d: d[0])
     forward_ops = [v for k, v in all_expressions]
 
     # 2. Forward-Ops + Targets + InputGrads + IgnoredGrads -> Backward-Ops
@@ -64,12 +63,12 @@ def backward(self, gradient=None):
     ws.RunGradientFlow(forward_ops, targets, input_grads, ignored_grads)
 
     # 4. Release resources
-    # We should release both the anchors and tensors
+    # We should release both the operator handles and tensors
     for forward_op in forward_ops:
-        APool.put(forward_op.name)
+        OperatorPool.put(forward_op.name)
         for output in forward_op.output:
             if output not in forward_op.input:
-                TPool.put(output)
+                TensorPool.put(output)
 
 
 Tensor.backward = backward

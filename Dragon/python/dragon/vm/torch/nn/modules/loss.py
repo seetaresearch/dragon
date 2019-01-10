@@ -158,6 +158,7 @@ class MSELoss(_Loss):
             'n_inputs': 2, 'n_outputs': 1,
             'arguments': {
                 'normalization': self.normalization,
+                'scale': 2., # We computes the 0.5 * (x - t) ** 2
             }
         }
 

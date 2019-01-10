@@ -18,93 +18,103 @@
 
 namespace dragon {
 
-typedef int64_t TIndex;
-typedef size_t TSize;
-
 class Tensor {
  public:
-    Tensor() {}
-    Tensor(const vector<TIndex>& dims) { Reshape(dims); }
+     /*! \brief Default Constructor */
+    Tensor() : name_("") {}
+
+    /*! \brief Constructor with the known name */
     Tensor(const string& name) : name_(name) {}
 
-    void Reshape(const vector<TIndex>& dims) {
-        dims_ = dims;
-        TIndex new_size = 1;
-        for (auto d : dims_) {
+    /*! \brief Constructor with the known int64 dimensions */
+    Tensor(const vector<int64_t>& dims) { Reshape(dims); }
+
+    /*! \brief Constructor with the known int32 dimensions */
+    Tensor(const vector<int>& dims) {
+        Reshape(vector<int64_t>(dims.begin(), dims.end()));
+    }
+
+    /*! \brief Reshape to the given dimensions */
+    Tensor* Reshape(const vector<int64_t>& dims) {
+        dims_ = dims; strides_.resize(dims.size());
+        size_t new_size = 1; int64_t d;
+        for (int i = (int)dims.size() - 1; i >= 0; i--) {
+            d = dims[i]; strides_[i] = (int64_t)new_size;
             CHECK_GE(d, 0);
             if (d > 0) new_size *= d;
-        }
-        if (own_mem_) {
+        } if (own_mem_) {
             if (size_ != new_size &&
-                capacity_ < TIndex(new_size * meta_.itemsize())) {
+                capacity_ < new_size * meta_.itemsize()) {
                 memory_.reset();
                 capacity_ = 0;
             }
         } else {
             if (ex_memory_ && !is_shared_ &&
-                capacity_ < TIndex(new_size * meta_.itemsize())) {
+                capacity_ < new_size * meta_.itemsize()) {
                 delete ex_memory_;
                 ex_memory_ = nullptr;
                 capacity_ = 0;
             }
         }
         size_ = new_size;
+        return this;
     }
 
-    void ReshapeLike(const Tensor& other) { Reshape(other.dims_); }
+    /*! \brief Reshape the dimensions like the given tensor */
+    Tensor* ReshapeLike(const Tensor& other) { return Reshape(other.dims_); }
 
-    inline const string& name() const { return name_; }
+    /*! \brief Return the tensor name */
+    const string& name() const { return name_; }
 
-    inline TIndex axis(const TIndex i) const {
-        CHECK_GE(i, -(TIndex)ndim());
-        CHECK_LT(i, (TIndex)ndim());
-        if (i < 0) return i + ndim();
-        else return i;
+    /*! \brief Return a canonical axis  */
+    int64_t axis(const int64_t i) const {
+        CHECK(i >= -ndim() && i < ndim())
+            << "\nTensor(" << name() << ") "
+            << "tried to get the dimension of axis "
+            << (i < 0 ? i + ndim() : i) << ", "
+            << "while the num of dimensions is " << ndim() << ".";
+        return i < 0 ? i + ndim() : i;
     }
 
-    inline TSize ndim() const { return dims_.size(); }
-    inline TIndex dim(const TIndex i) const{ return dims_[axis(i)];}
-    inline const vector<TIndex>& dims() const { return dims_; }
+    /*! \brief Return the number of dimensions */
+    int ndim() const { return (int)dims_.size(); }
 
-    inline TSize nbytes() const { return size_ * meta_.itemsize(); }
-    inline TSize capacity() const { return capacity_; }
+    /*! \brief Return the dimension of given axis */
+    int64_t dim(const int64_t i) const{ return dims_[axis(i)]; }
 
-    inline TIndex count(const TIndex start, const TIndex end) const {
-        TIndex ret = 1;
-        for (TIndex i = start; i < end; i++) ret *= dim(i);
-        return ret;
+    /*! \brief Return all the dimensions */
+    const vector<int64_t>& dims() const { return dims_; }
+
+    /*! \brief Return the total number of elements of this tensor */
+    size_t size() const { return size_; }
+
+    /*! \brief Return the total number bytes of this tensor */
+    size_t nbytes() const { return size_ * meta_.itemsize(); }
+
+    /*! \brief Return the capacity of the internal memory */
+    size_t capacity() const { return capacity_; }
+
+    /*! \brief Return the number of elements along the [start, end) axes */
+    int64_t count(const int64_t start, const int64_t end) const {
+        int64_t nelements = 1;
+        for (int64_t i = start; i < end; i++) nelements *= dim(i);
+        return nelements;
     }
 
-    inline TIndex count() const { return size_; }
+    /*! \brief Return the total number of elements of this tensor */
+    int64_t count() const { return (int64_t)size_; }
 
-    inline TIndex count(const TIndex start) const {
-        return count(start, ndim());
-    }
+    /*! \brief Return the number of elements from the start axis */
+    int64_t count(const int64_t start) const { return count(start, ndim()); }
 
-    inline TIndex offset(
-        const TIndex            n,
-        const TIndex            c = 0,
-        const TIndex            h = 0,
-        const TIndex            w = 0) {
-        CHECK_LE(n, dim(0));
-        CHECK_LE(c, dim(1));
-        CHECK_LE(h, dim(2));
-        CHECK_LE(w, dim(3));
-        return ((n * dim(1) + c) * dim(2) + h) * dim(3) + w;
-    }
+    /*! \brief Return the stride of given axis */
+    int64_t stride(const int64_t i) const { return strides_[axis(i)]; }
 
-    inline TIndex offset(const vector<TIndex>& vec) {
-        CHECK_LE(vec.size(), ndim());
-        TIndex offset = 0;
-        for (int i = 0; i < ndim(); i++) {
-            offset = offset * dim(i);
-            if (vec.size() > i) offset += vec[i];
-        }
-        return offset;
-    }
+    /*! \brief Return all the strides */
+    const vector<int64_t>& strides() const { return strides_; }
 
-    static inline string DimString(
-        const vector<TIndex>&   dims) {
+    /*! \brief Return a string to describe the given dimensions */
+    static string DimString(const vector<int64_t>& dims) {
         if (dims.size() == 0) return "(0,)";
         std::stringstream ss;
         ss << "(";
@@ -115,39 +125,50 @@ class Tensor {
         return ss.str();
     }
 
-    inline string DimString() const { return DimString(dims_); }
+    /*! \brief Return a string to describe the dimensions of this tensor */
+    string DimString() const { return DimString(dims_); }
 
-    inline bool is_corrupted() const { return is_corrupted_; }
-    inline void Corrupt() { is_corrupted_ = true; }
+    /*! \brief Whether the memory of this tensor is unstable */
+    bool is_corrupted() const { return is_corrupted_; }
 
-    inline bool has_memory() const {
-        return memory_ || ex_memory_ != nullptr;
-    }
+    /*! \brief Mark the internal memory to be unstable */
+    void Corrupt() { is_corrupted_ = true; }
 
-    MixedMemory* memory() const {
-        return own_mem_ ? memory_.get() : ex_memory_;
-    }
+    /*! \brief Whether this tensor holds a valid memory */
+    bool has_memory() const { return memory_ || ex_memory_ != nullptr; }
 
+    /*! \brief Return the pointer of internal memory */
+    MixedMemory* memory() const { return own_mem_ ? memory_.get() : ex_memory_; }
+
+    /*! \brief Set the memory from a external pointer */
     void set_memory(MixedMemory* mem) {
         memory_.reset(mem); capacity_ = mem->nbytes();
     }
 
+    /*! \brief Return the state of the internal memory */
     MixedMemory::State memory_state() const {
         MixedMemory* mem = memory();
         CHECK(mem) << "\nMemory access before allowcating.";
         return memory()->state();
     }
 
+    /*! \brief Switch the memory to device set by Context before */
     void SwitchToDevice() {
-        MixedMemory* mem = own_mem_ ? memory_.get() : ex_memory_;
+        MixedMemory* mem = memory();
         if (mem) mem->SwitchToDevice();
     }
 
+    /*! \brief Return the type meta of this tensor */
     const TypeMeta& meta() const { return meta_; }
-    void SetMeta(const TypeMeta& meta) { meta_ = meta; }
-    template <typename T>
-    inline bool IsType() { return meta_.Match<T>(); }
 
+    /*! \brief Set the type meta */
+    void SetMeta(const TypeMeta& meta) { meta_ = meta; }
+
+    /*! \brief Whether the data type of this tensor is <T> */
+    template <typename T>
+    bool IsType() { return meta_.Match<T>(); }
+
+    /*! \brief Try to get the raw mutable data pointer */
     template <class Context>
     void mutable_data_ptr(void** data_ptr) {
         MixedMemory* mem = memory();
@@ -155,41 +176,43 @@ class Tensor {
             *data_ptr = nullptr;
         } else {
             if (TypeMeta::Id<Context>() ==
-                    TypeMeta::Id<CPUContext>()) {
+                TypeMeta::Id<CPUContext>()) {
                 *data_ptr = mem->mutable_cpu_data();
             } else if (TypeMeta::Id<Context>() ==
-                    TypeMeta::Id<CUDAContext>()) {
+                TypeMeta::Id<CUDAContext>()) {
                 *data_ptr = mem->mutable_cuda_data();
-            } else if (TypeMeta::Id<Context>() == 
-                    TypeMeta::Id<CNMLContext>()) {
+            } else if (TypeMeta::Id<Context>() ==
+                TypeMeta::Id<CNMLContext>()) {
                 *data_ptr = mem->mutable_cnml_data();
             } else {
                 LOG(FATAL) << "Unknown memory type.\n"
-                           << "Only CPU, CUDA and CNML are supported.";
+                    << "Only CPU, CUDA and CNML are supported.";
             }
         }
     }
 
+    /*! \brief Try to get the raw const data pointer */
     template <class Context>
     const void* const_data_ptr() const {
         MixedMemory* mem = memory();
         CHECK(mem) << "\nMemory access before allowcating.";
         if (TypeMeta::Id<Context>() ==
-                TypeMeta::Id<CPUContext>()) {
-             return mem->cpu_data();
+            TypeMeta::Id<CPUContext>()) {
+            return mem->cpu_data();
         } else if (TypeMeta::Id<Context>() ==
-                TypeMeta::Id<CUDAContext>()) {
-             return mem->cuda_data();
-        } else if (TypeMeta::Id<Context>() == 
-                TypeMeta::Id<CNMLContext>()) {
+            TypeMeta::Id<CUDAContext>()) {
+            return mem->cuda_data();
+        } else if (TypeMeta::Id<Context>() ==
+            TypeMeta::Id<CNMLContext>()) {
             return mem->cnml_data();
         } else {
-             LOG(FATAL) << "Unknown memory type.\n"
-                        << "Only CPU, CUDA, and CNML are supported.";
-             return nullptr;
+            LOG(FATAL) << "Unknown memory type.\n"
+                << "Only CPU, CUDA, and CNML are supported.";
+            return nullptr;
         }
     }
 
+    /*! \brief Try to allocate the raw data memory */
     template <class Context>
     void* raw_mutable_data(const TypeMeta& meta) {
         void* data_ptr;
@@ -211,10 +234,11 @@ class Tensor {
         mutable_data_ptr<Context>(&data_ptr);
         // Call the constructors
         if (meta_.ctor()) meta_.ctor()(data_ptr, size_);
-        capacity_ = size_ * meta_.itemsize(), require_init_ = true;
+        capacity_ = size_ * meta_.itemsize();
         return data_ptr;
     }
 
+    /*! \brief Get the raw mutable data pointer */
     template <class Context>
     void* raw_mutable_data() {
         CHECK_NE(meta_.id(), 0)
@@ -223,11 +247,13 @@ class Tensor {
         return raw_mutable_data<Context>(meta_);
     }
 
+    /*! \brief Get the raw const data pointer */
     template <class Context>
     const void* raw_data() const {
         return const_data_ptr<Context>();
     }
 
+    /*! \brief Get the typed mutable data pointer */
     template <typename T, class Context>
     T* mutable_data() {
         void* data_ptr;
@@ -238,72 +264,78 @@ class Tensor {
             raw_mutable_data<Context>(TypeMeta::Make<T>()));
     }
 
-    template <typename T, class Context>
-    T* mutable_data(Context* ctx) {
-        auto* data = mutable_data<T, Context>();
-        if (!require_init_) return data;
-        ctx->MemsetAsync(nbytes(), (void*)data);
-        require_init_ = false;
-        return data;
-    }
-
+    /*! \brief Get the typed const data pointer */
     template <typename T, class Context>
     const T* data() const {
         CHECK(meta_ == TypeMeta::Make<T>())
             << "\nThe DType of Tensor(" << name() << ") is "
             << TypeMetaToString(meta_) << ", while required "
-            << TypeMetaToString(TypeMeta::Make<T>());
+            << TypeMetaToString(TypeMeta::Make<T>()) << ".";
         return static_cast<const T*>(raw_data<Context>());
     }
 
+    /*! \brief Copy the contents from the given tensor */
     template <class Context>
-    inline void CopyFrom(const Tensor& other, Context* ctx) {
+    void CopyFrom(const Tensor& other, Context* ctx) {
         if ((void*)&other == (void*)this) return;
         CHECK_EQ(size_, other.size_);
         auto* src = other.template raw_data<Context>();
         auto* dst = raw_mutable_data<Context>(other.meta_);
         ctx->template MemcpyAsync<Context, Context>(
             nbytes(), dst, src);
-        require_init_ = false;
     }
 
-    inline void Move(MixedMemory* mem) {
+    /*! \brief Move the external memory */
+    void Move(MixedMemory* mem) {
         if (mem != nullptr) {
             ex_memory_ = mem;
-            require_init_ = false;
         } else {
             ex_memory_ = new MixedMemory(
                 TypeMeta::Make<float>(), 4);
-            require_init_ = true;
-        } own_mem_ = false;
-        capacity_ = (TIndex)ex_memory_->nbytes();
+        }
+        own_mem_ = false;
+        capacity_ = ex_memory_->nbytes();
     }
 
-    inline void Share(MixedMemory* mem) {
+    /*! \brief Share the external memory */
+    void Share(MixedMemory* mem) {
         Move(mem); is_shared_ = true;
-        require_init_ = false;
     }
 
-    inline void Reset() {
-        size_ = capacity_ = 0;
-        meta_ = TypeMeta();
-        dims_.clear();
-        memory_.reset();
+    /*! \brief Reset the memory */
+    void Reset() {
+        size_ = capacity_ = 0; meta_ = TypeMeta();
+        dims_.clear(); strides_.clear(); memory_.reset();
         if (DECREFPyArray) DECREFPyArray();
     }
 
+    /*! \brief Reset the owned PyArray memory */
     std::function<void()> DECREFPyArray;
+
+    /*! \brief Deconstructor */
     ~Tensor() { /*! DO NOT CALL DECREFARRAY */ }
 
  private:
-    vector<TIndex> dims_;
-    TIndex size_ = 0, capacity_ = 0;
-    TypeMeta meta_;
+    /*! \brief The name of this tensor */
     string name_;
+
+    /*! \brief The type meta of this tensor */
+    TypeMeta meta_;
+
+    /*! \brief Store the size and capacity */
+    size_t size_ = 0, capacity_ = 0;
+
+    /*! \brief Store the dimensions and strides */
+    vector<int64_t> dims_, strides_;
+
+    /*! \brief The internal memory */
     shared_ptr<MixedMemory> memory_;
+
+    /*! \brief Store the external memory pointer */
     MixedMemory* ex_memory_ = nullptr;
-    bool is_corrupted_ = false, is_shared_ = false;
-    bool own_mem_ = true, require_init_ = true;
+
+    /*! \brief External memory indicators */
+    bool is_corrupted_ = false, is_shared_ = false, own_mem_ = true;
 };
 
 }  // namespace dragon

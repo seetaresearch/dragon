@@ -57,9 +57,9 @@ class Maximum(BaseModule):
             'arguments': {}
         }
 
-    def forward(self, x1, x2, y, dtype):
+    def forward(self, x1, x2, y):
         inputs = [x1, x2]; self.unify_devices(inputs)
-        outputs = [y] if y else [self.register_output(dtype)]
+        outputs = [y] if y else [self.register_output(x1.dtype)]
         return self.run(inputs, outputs)
 
 
@@ -80,9 +80,9 @@ class Minimum(BaseModule):
             'arguments': {}
         }
 
-    def forward(self, x1, x2, y, dtype):
+    def forward(self, x1, x2, y):
         inputs = [x1, x2]; self.unify_devices(inputs)
-        outputs = [y] if y else [self.register_output(dtype)]
+        outputs = [y] if y else [self.register_output(x1.dtype)]
         return self.run(inputs, outputs)
 
 

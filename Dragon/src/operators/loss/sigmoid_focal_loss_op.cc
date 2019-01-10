@@ -5,6 +5,13 @@
 
 namespace dragon {
 
+#define DETERMINE_RUNTIME_ARGUMENTS(X) \
+    axis = OperatorBase::Arg<int64_t>("axis", 1); \
+    axis = axis < 0 ? axis + X.ndim() : axis; \
+    CHECK(axis >= 0 && axis < X.ndim()) \
+       << "\nExcepted the axis in [-" << X.ndim() << ", " << X.ndim() \
+       << "), got " << OperatorBase::Arg<int64_t>("axis", 1) << ".";
+
 template <class Context> template <typename T>
 void SigmoidFocalLossOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
@@ -18,33 +25,33 @@ void SigmoidFocalLossOp<Context>::RunWithType() {
                 Xdata, Tdata, Ldata, Fdata, ctx());
 
     if (normalization == "UNIT") {
-        vector<TIndex> output_dims = Input(0).dims();
+        vector<int64_t> output_dims = Input(0).dims();
         output_dims.erase(output_dims.begin() + axis);
         Output(0)->Reshape(output_dims);
-        Output(0)->template CopyFrom<Context>(losses, ctx());
-        return;
+        Output(0)->template CopyFrom<Context>(
+            losses, ctx()); return;
     }
 
     T normalizer = 1;
     if (normalization == "VALID") {
         normalizer = std::max(
-            math::ASum<T, Context>(
-                flags.count(), Fdata), 1.f);
+            math::Sum<T, Context>(flags.count(), 
+                1.f, Fdata, ctx()), 1.f);
     } else if (normalization == "BATCH_SIZE") {
         normalizer = (float)Input(0).dim(0);
     } else if (normalization == "FULL") {
         normalizer = (float)(outer_dim * inner_dim);
     }
 
-    T loss = math::ASum<T, Context>(losses.count(), Ldata);
-    Output(0)->Reshape({ 1 });
+    Output(0)->Reshape(vector<int64_t>());
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Set<T, Context>(1, loss / normalizer, Ydata, ctx());
+    math::Sum<T, Context>(losses.count(),
+        1.f / normalizer, Ldata, Ydata, ctx());
 }
 
 template <class Context>
 void SigmoidFocalLossOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  // Enforce SyncStream
+    DETERMINE_RUNTIME_ARGUMENTS(Input(0));
 
     outer_dim = Input(0).count(0, axis);
     axis_dim = Input(0).dim(axis);
@@ -86,8 +93,8 @@ void SigmoidFocalLossGradientOp<Context>::RunWithType() {
     T normalizer = 1;
     if (normalization == "VALID") {
         normalizer = std::max(
-            math::ASum<T, Context>(
-                flags.count(), Fdata), 1.f);
+            math::Sum<T, Context>(flags.count(), 
+                1.f, Fdata, ctx()), 1.f);
     } else if (normalization == "BATCH_SIZE") {
         normalizer = Input(0).dim(0);
     } else if (normalization == "FULL") {
@@ -98,13 +105,13 @@ void SigmoidFocalLossGradientOp<Context>::RunWithType() {
     T dYdata_host; ctx()->template Copy
         <T, CPUContext, Context>(
             1, &dYdata_host, dYdata);
-    math::Scal<T, Context>(Output(0)->count(),
-        dYdata_host / normalizer, dXdata, ctx());
+    math::Scale<T, Context>(Output(0)->count(),
+        dYdata_host / normalizer, dXdata, dXdata, ctx());
 }
 
 template <class Context>
 void SigmoidFocalLossGradientOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  // Enforce SyncStream
+    DETERMINE_RUNTIME_ARGUMENTS(Input(0));
 
     outer_dim = Input(0).count(0, axis);
     axis_dim = Input(0).dim(axis);
@@ -121,7 +128,9 @@ DEPLOY_CPU(SigmoidFocalLossGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(SigmoidFocalLossGradient);
 #endif
-OPERATOR_SCHEMA(SigmoidFocalLossGradient).NumInputs(3).NumOutputs(1);
+
+OPERATOR_SCHEMA(SigmoidFocalLossGradient)
+    .NumInputs(3).NumOutputs(1);
 
 class GetSigmoidFocalLossGradient
     final : public GradientMakerBase {
@@ -129,13 +138,16 @@ class GetSigmoidFocalLossGradient
     GRADIENT_MAKER_CTOR(GetSigmoidFocalLossGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), I(1), GO(0)},
-            vector<string> {GI(0)});
+            vector<string>({ I(0), I(1), GO(0) }),
+            vector<string>({ GI(0) }));
     }
 };
+
 REGISTER_GRADIENT(
     SigmoidFocalLoss,
     GetSigmoidFocalLossGradient
 );
+
+#undef DETERMINE_RUNTIME_ARGUMENTS
 
 }  // namespace dragon

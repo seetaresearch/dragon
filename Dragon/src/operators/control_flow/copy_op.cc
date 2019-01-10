@@ -14,14 +14,18 @@ void CopyOp<Context>::RunWithType() {
 template <class Context>
 void CopyOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else if (XIsType(Input(0), double)) RunWithType<double>();
+
+    if (XIsType(Input(0), bool)) RunWithType<bool>();
+    else if (XIsType(Input(0), int8_t)) RunWithType<int8_t>();
+    else if (XIsType(Input(0), uint8_t)) RunWithType<uint8_t>();
     else if (XIsType(Input(0), int)) RunWithType<int>();
     else if (XIsType(Input(0), int64_t)) RunWithType<int64_t>();
-    else if (XIsType(Input(0), uint8_t)) RunWithType<uint8_t>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), double)) RunWithType<double>();
     else LOG(FATAL) << DTypeHelper(Input(0), { 
-        "float32", "float16", "float64", "int32", "int64", "uint8",
+        "bool", "int8", "uint8", "int32", "int64",
+            "float16", "float32", "float64",
     });
 }
 

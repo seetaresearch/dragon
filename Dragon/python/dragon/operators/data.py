@@ -25,9 +25,9 @@ def LMDBData(**kwargs):
     ----------
     source : str
         The path of database.
-    shuffle : boolean
+    shuffle : bool
         Whether to shuffle the data.
-    node_step: boolean
+    node_step: bool
         Whether to split data for multiple parallel nodes.
     num_chunks : int
         The number of chunks to split. Default is ``2048``.
@@ -41,29 +41,29 @@ def LMDBData(**kwargs):
         The zero-padding size. Default is ``0``.
     crop_size : int
         The crop size. Default is ``0`` (Disabled).
-    mirror : boolean
+    mirror : bool
         Whether to mirror(flip horizontally) images. Default is ``False``.
-    color_augmentation : boolean
+    color_augmentation : bool
         Whether to use color distortion. Default is ``False``.
     min_random_scale : float
         The min scale of the input images. Default is ``1.0``.
     max_random_scale : float
         The max scale of the input images. Default is ``1.0``.
-    force_gray : boolean
+    force_gray : bool
         Set not to duplicate channel for gray. Default is ``False``.
     phase : str
         The phase of this operator, ``TRAIN`` or ``TEST``.
     batch_size : int
         The size of a mini-batch.
-    partition : boolean
+    partition : bool
         Whether to partition batch for parallelism. Default is ``False``.
     prefetch : int
         The prefetch count. Default is ``5``.
 
     Returns
     -------
-    list of Tensor.
-        Two tensors, representing data and labels respectively.
+    sequence of Tensor
+        The data and labels respectively.
 
     References
     ----------
@@ -76,16 +76,16 @@ def LMDBData(**kwargs):
     `BlobFetcher`_ - How to form blobs.
 
     """
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
     arguments['module'] = 'dragon.operators.custom.minibatch'
     arguments['op'] = 'MiniBatchOp'
+    return Run([], param_str=str(kwargs), num_outputs=2, **arguments)
 
-    return Run([], param_str=str(kwargs), nout=2, **arguments)
 
-
+@OpSchema.Inputs(1)
 def ImageData(
     inputs, mean_values=None, std_values=None,
-        dtype='FLOAT32', data_format='NCHW', **kwargs
+        dtype='float32', data_format='NCHW', **kwargs
 ):
     """Process the images from 4D raw data.
 
@@ -95,12 +95,12 @@ def ImageData(
     ----------
     inputs : Tensor
         The input tensor, with type of **uint8** or **float32**.
-    mean_values : list of float or None
+    mean_values : sequence of float, optional
         The optional mean values to subtract.
-    std_values : list of float or None
+    std_values : sequence of float, optional
         The optional std values to divide.
     dtype : str
-        The type of output. ``FLOAT32`` or ``FLOAT16``.
+        The type of output. ``float32`` or ``float16``.
     data_format : str
         The data format of output. ``NCHW`` or ``NHWC``.
 
@@ -110,14 +110,18 @@ def ImageData(
         The output tensor.
 
     """
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
+
     if mean_values is not None:
         if len(mean_values) != 3:
             raise ValueError('The length of mean values should be 3.')
         arguments['mean_values'] = [float(v) for v in mean_values]
+
     if std_values is not None:
         if len(std_values) != 3:
             raise ValueError('The length of std values should be 3.')
         arguments['std_values'] = [float(v) for v in std_values]
 
-    return Tensor.CreateOperator(nout=1, op_type='ImageData', **arguments)
+    arguments['dtype'] = arguments['dtype'].lower()
+
+    return Tensor.CreateOperator('ImageData', **arguments)

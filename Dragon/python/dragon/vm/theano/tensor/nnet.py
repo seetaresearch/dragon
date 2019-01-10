@@ -35,7 +35,7 @@ def batch_normalization(inputs, gamma, beta, mean, var, **kwargs):
         The output tensor.
 
     """
-    return ops.BN([inputs, mean, var, gamma, beta])
+    return ops.BatchNorm([inputs, mean, var, gamma, beta])
 
 
 def relu(x, alpha=0):

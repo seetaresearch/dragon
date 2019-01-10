@@ -7,167 +7,57 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Concat <T = float32, Device = CUDA> */
+/*! Concat <T = ?, Device = CUDA> */
 
 template <typename T>
 __global__ void _Concat(
-    const int               count,
-    const int               outer_dim,
+    const int               nthreads,
     const int               inner_dim,
-    const int               x_concat_dim,
+    const int               x_cols,
     const int               y_concat_dim,
     const int               concat_offset,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        const int tmp = x_concat_dim * inner_dim;
-        const int outer_idx = idx / tmp;
-        const int concat_idx = idx % tmp;
-        const int y_idx = (outer_idx * y_concat_dim + concat_offset)
-                                     * inner_dim + concat_idx;
-        y[y_idx] = x[idx];
-    }
-}
-
-template <> void Concat<float, CUDAContext>(
-    const int               count,
-    const int               outer_dim,
-    const int               inner_dim,
-    const int               x_concat_dim,
-    const int               y_concat_dim,
-    const int               concat_offset,
-    const float*            x,
-    float*                  y,
-    CUDAContext*            ctx) {
-    _Concat<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, outer_dim, inner_dim,
-            x_concat_dim, y_concat_dim,
-                concat_offset, x, y);
-}
-
-/*! Concat <T = float16, Device = CUDA> */
-
-template <typename T>
-__global__ void _ConcatHalf(
-    const int               count,
-    const int               outer_dim,
-    const int               inner_dim,
-    const int               x_concat_dim,
-    const int               y_concat_dim,
-    const int               concat_offset,
-    const T*                x,
-    T*                      y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        const int tmp = x_concat_dim * inner_dim;
-        const int outer_idx = idx / tmp;
-        const int concat_idx = idx % tmp;
+    CUDA_1D_KERNEL_LOOP(x_idx, nthreads) {
+        const int outer_idx = x_idx / x_cols;
+        const int concat_idx = x_idx % x_cols;
         const int y_idx = (outer_idx * y_concat_dim + concat_offset)
                                 * inner_dim + concat_idx;
-        y[y_idx] = x[idx];
+        y[y_idx] = x[x_idx];
     }
 }
 
-template <> void Concat<float16, CUDAContext>(
-    const int               count,
-    const int               outer_dim,
-    const int               inner_dim,
-    const int               x_concat_dim,
-    const int               y_concat_dim,
-    const int               concat_offset,
-    const float16*          x,
-    float16*                y,
-    CUDAContext*            ctx) {
-    _ConcatHalf<half>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, outer_dim, inner_dim,
-            x_concat_dim, y_concat_dim, concat_offset,
-                reinterpret_cast<const half*>(x),
-                    reinterpret_cast<half*>(y));
-}
+/*! Kernel Launchers */
 
-/*! ConcatGrad <T = float32, Device = CUDA> */
-
-template <typename T>
-__global__ void _ConcatGrad(
-    const int               count,
-    const int               outer_dim,
-    const int               inner_dim,
-    const int               x_concat_dim,
-    const int               y_concat_dim,
-    const int               concat_offset,
-    const T*                dy,
-    T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        const int tmp = x_concat_dim * inner_dim;
-        const int outer_idx = idx / tmp;
-        const int concat_idx = idx % tmp;
-        const int y_idx = (outer_idx * y_concat_dim + concat_offset)
-                                     * inner_dim + concat_idx;
-        dx[idx] = dy[y_idx];
+#define DEFINE_CONCAT_KERNEL_LAUNCHER(name, T) \
+    template <> void name<T, CUDAContext>( \
+        const int               outer_dim, \
+        const int               inner_dim, \
+        const int               x_concat_dim, \
+        const int               y_concat_dim, \
+        const int               concat_offset, \
+        const T*                x, \
+        T*                      y, \
+        CUDAContext*            ctx) { \
+        auto x_cols = x_concat_dim * inner_dim; \
+        auto nthreads = outer_dim * x_concat_dim * inner_dim; \
+        _##name<T> \
+            << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
+                 0, ctx->cuda_stream() >> > \
+            (nthreads, inner_dim, x_cols, \
+                y_concat_dim, concat_offset, x, y); \
     }
-}
 
-template <> void ConcatGrad<float, CUDAContext>(
-    const int               count,
-    const int               outer_dim,
-    const int               inner_dim,
-    const int               x_concat_dim,
-    const int               y_concat_dim,
-    const int               concat_offset,
-    const float*            dy,
-    float*                  dx,
-    CUDAContext*            ctx) {
-    _ConcatGrad<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, outer_dim, inner_dim,
-            x_concat_dim, y_concat_dim,
-                concat_offset, dy, dx);
-}
+DEFINE_CONCAT_KERNEL_LAUNCHER(Concat, bool);
+DEFINE_CONCAT_KERNEL_LAUNCHER(Concat, int8_t);
+DEFINE_CONCAT_KERNEL_LAUNCHER(Concat, uint8_t);
+DEFINE_CONCAT_KERNEL_LAUNCHER(Concat, int);
+DEFINE_CONCAT_KERNEL_LAUNCHER(Concat, int64_t);
+DEFINE_CONCAT_KERNEL_LAUNCHER(Concat, float16);
+DEFINE_CONCAT_KERNEL_LAUNCHER(Concat, float);
+DEFINE_CONCAT_KERNEL_LAUNCHER(Concat, double);
 
-/*! ConcatGrad <T = float16, Device = CUDA> */
-
-template <typename T>
-__global__ void _ConcatGradHalf(
-    const int               count,
-    const int               outer_dim,
-    const int               inner_dim,
-    const int               x_concat_dim,
-    const int               y_concat_dim,
-    const int               concat_offset,
-    const T*                dy,
-    T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        const int tmp = x_concat_dim * inner_dim;
-        const int outer_idx = idx / tmp;
-        const int concat_idx = idx % tmp;
-        const int y_idx = (outer_idx * y_concat_dim + concat_offset)
-                                * inner_dim + concat_idx;
-        dx[idx] = dy[y_idx];
-    }
-}
-
-template <> void ConcatGrad<float16, CUDAContext>(
-    const int               count,
-    const int               outer_dim,
-    const int               inner_dim,
-    const int               x_concat_dim,
-    const int               y_concat_dim,
-    const int               concat_offset,
-    const float16*          dy,
-    float16*                dx,
-    CUDAContext*            ctx) {
-    _ConcatGradHalf<half>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, outer_dim, inner_dim,
-            x_concat_dim, y_concat_dim, concat_offset,
-                reinterpret_cast<const half*>(dy),
-                    reinterpret_cast<half*>(dx));
-}
+#undef DEFINE_CONCAT_KERNEL_LAUNCHER
 
 }  // namespace kernel
 

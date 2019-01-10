@@ -14,289 +14,90 @@
 #define DRAGON_OPERATORS_ARITHMETIC_FUNDAMENTAL_OP_H_
 
 #include "core/operator.h"
+#include "utils/math_utils.h"
 
 namespace dragon {
 
-/*********************************************
-*                                            *
-*                    Add                     *
-*                                            *
-**********************************************/
+#define DECLARE_FUNDAMENTAL_OP(type) \
+    template <class Context> \
+    class type##Op final : public Operator<Context> { \
+     public: \
+         USE_SIMPLE_CTOR_DTOR(type##Op); \
+         USE_OPERATOR_FUNCTIONS; \
+         void RunOnDevice() override; \
+         template <typename T> void EltwiseRunWithType(); \
+         template <typename T> void BroadcastRunWithType(int type); \
+     protected: \
+        int rows, cols; \
+    };
 
-template <class Context>
-class AddOp final : public Operator<Context> {
- public:
-    USE_SIMPLE_CTOR_DTOR(AddOp);
-    USE_OPERATOR_FUNCTIONS;
+DECLARE_FUNDAMENTAL_OP(Add);
+DECLARE_FUNDAMENTAL_OP(Sub);
+DECLARE_FUNDAMENTAL_OP(Mul);
+DECLARE_FUNDAMENTAL_OP(Div);
 
-    void RunOnDevice() override;
-    template <typename T> void EltwiseRunWithType();
-    template <typename T> void BroadcastRunWithType(int type);
-};
+DECLARE_FUNDAMENTAL_OP(RAdd);
+DECLARE_FUNDAMENTAL_OP(RSub);
+DECLARE_FUNDAMENTAL_OP(RMul);
+DECLARE_FUNDAMENTAL_OP(RDiv);
 
-template <class Context>
-class AddGradientOp final : public Operator<Context> {
- public:
-    USE_SIMPLE_CTOR_DTOR(AddGradientOp);
-    USE_OPERATOR_FUNCTIONS;
+DECLARE_FUNDAMENTAL_OP(AddGradient);
+DECLARE_FUNDAMENTAL_OP(SubGradient);
+DECLARE_FUNDAMENTAL_OP(MulGradient);
+DECLARE_FUNDAMENTAL_OP(DivGradient);
 
-    void RunOnDevice() override;
-    template <typename T> void EltwiseRunWithType();
-    template <typename T> void BroadcastRunWithType(int type);
+DECLARE_FUNDAMENTAL_OP(RAddGradient);
+DECLARE_FUNDAMENTAL_OP(RSubGradient);
+DECLARE_FUNDAMENTAL_OP(RMulGradient);
+DECLARE_FUNDAMENTAL_OP(RDivGradient);
 
- protected:
-    Tensor *X1, *X2;
-};
+#define DECLARE_FUNDAMENTAL_OP_X1X2 \
+    ws()->CreateTensor(mount_name( \
+        "fundamental/X1"))->ReshapeLike(Input(0)); \
+    ws()->CreateTensor(mount_name( \
+        "fundamental/X2"))->ReshapeLike(Input(1));
 
-/*********************************************
-*                                            *
-*                    RAdd                    *
-*                                            *
-**********************************************/
+#define DEFINE_FUNDAMENTAL_OP_X1X2 \
+    Tensor* X1 = ws()->GetTensor(mount_name("fundamental/X1")); \
+    Tensor* X2 = ws()->GetTensor(mount_name("fundamental/X2"));
 
-template <class Context>
-class RAddOp final : public Operator<Context> {
- public:
-    USE_SIMPLE_CTOR_DTOR(RAddOp);
-    USE_OPERATOR_FUNCTIONS;
-
-    void RunOnDevice() override;
-    template <typename T> void EltwiseRunWithType();
-    template <typename T> void BroadcastRunWithType(int type);
-};
-
-template <class Context>
-class RAddGradientOp final : public Operator<Context> {
- public:
-    USE_SIMPLE_CTOR_DTOR(RAddGradientOp);
-    USE_OPERATOR_FUNCTIONS;
-
-    void RunOnDevice() override;
-    template <typename T> void EltwiseRunWithType();
-    template <typename T> void BroadcastRunWithType(int type);
-};
-
-/*********************************************
-*                                            *
-*                     Sub                    *
-*                                            *
-**********************************************/
-
-template <class Context>
-class SubOp final : public Operator<Context> {
- public:
-    USE_SIMPLE_CTOR_DTOR(SubOp);
-    USE_OPERATOR_FUNCTIONS;
-
-    void RunOnDevice() override;
-    template <typename T> void EltwiseRunWithType();
-    template <typename T> void BroadcastRunWithType(int type);
-};
-
-template <class Context>
-class SubGradientOp final : public Operator<Context> {
- public:
-    USE_SIMPLE_CTOR_DTOR(SubGradientOp);
-    USE_OPERATOR_FUNCTIONS;
-
-    void RunOnDevice() override;
-    template <typename T> void EltwiseRunWithType();
-    template <typename T> void BroadcastRunWithType(int type);
-};
-
-/*********************************************
-*                                            *
-*                    RSub                    *
-*                                            *
-**********************************************/
-
-template <class Context>
-class RSubOp final : public Operator<Context> {
- public:
-    USE_SIMPLE_CTOR_DTOR(RSubOp);
-    USE_OPERATOR_FUNCTIONS;
-
-    void RunOnDevice() override;
-    template <typename T> void EltwiseRunWithType();
-    template <typename T> void BroadcastRunWithType(int type);
-};
-
-template <class Context>
-class RSubGradientOp final : public Operator<Context> {
- public:
-    USE_SIMPLE_CTOR_DTOR(RSubGradientOp);
-    USE_OPERATOR_FUNCTIONS;
-
-    void RunOnDevice() override;
-    template <typename T> void EltwiseRunWithType();
-    template <typename T> void BroadcastRunWithType(int type);
-};
-
-/*********************************************
-*                                            *
-*                     Mul                    *
-*                                            *
-**********************************************/
-
-template <class Context>
-class MulOp final : public Operator<Context> {
- public:
-    USE_SIMPLE_CTOR_DTOR(MulOp);
-    USE_OPERATOR_FUNCTIONS;
-
-    void RunOnDevice() override;
-    template <typename T> void EltwiseRunWithType();
-    template <typename T> void BroadcastRunWithType(int type);
-};
-
-template <class Context>
-class MulGradientOp final : public Operator<Context> {
- public:
-    USE_SIMPLE_CTOR_DTOR(MulGradientOp);
-    USE_OPERATOR_FUNCTIONS;
-
-    void RunOnDevice() override;
-    template <typename T> void EltwiseRunWithType();
-    template <typename T> void BroadcastRunWithType(int type);
-};
-
-/*********************************************
-*                                            *
-*                     RMul                   *
-*                                            *
-**********************************************/
-
-template <class Context>
-class RMulOp final : public Operator<Context> {
- public:
-    USE_SIMPLE_CTOR_DTOR(RMulOp);
-    USE_OPERATOR_FUNCTIONS;
-
-    void RunOnDevice() override;
-    template <typename T> void EltwiseRunWithType();
-    template <typename T> void BroadcastRunWithType(int type);
-};
-
-template <class Context>
-class RMulGradientOp final : public Operator<Context> {
- public:
-    USE_SIMPLE_CTOR_DTOR(RMulGradientOp);
-    USE_OPERATOR_FUNCTIONS;
-
-    void RunOnDevice() override;
-    template <typename T> void EltwiseRunWithType();
-    template <typename T> void BroadcastRunWithType(int type);
-};
-
-/*********************************************
-*                                            *
-*                    Div                     *
-*                                            *
-**********************************************/
-
-template <class Context>
-class DivOp final : public Operator<Context> {
- public:
-    USE_SIMPLE_CTOR_DTOR(DivOp);
-    USE_OPERATOR_FUNCTIONS;
-
-    void RunOnDevice() override;
-    template <typename T> void EltwiseRunWithType();
-    template <typename T> void BroadcastRunWithType(int type);
-};
-
-template <class Context>
-class DivGradientOp final : public Operator<Context> {
- public:
-    USE_SIMPLE_CTOR_DTOR(DivGradientOp);
-    USE_OPERATOR_FUNCTIONS;
-
-    void RunOnDevice() override;
-    template <typename T> void EltwiseRunWithType();
-    template <typename T> void BroadcastRunWithType(int type);
-};
-
-/*********************************************
-*                                            *
-*                    RDiv                    *
-*                                            *
-**********************************************/
-
-template <class Context>
-class RDivOp final : public Operator<Context> {
- public:
-    USE_SIMPLE_CTOR_DTOR(RDivOp);
-    USE_OPERATOR_FUNCTIONS;
-
-    void RunOnDevice() override;
-    template <typename T> void EltwiseRunWithType();
-    template <typename T> void BroadcastRunWithType(int type);
-};
-
-template <class Context>
-class RDivGradientOp final : public Operator<Context> {
- public:
-    USE_SIMPLE_CTOR_DTOR(RDivGradientOp);
-    USE_OPERATOR_FUNCTIONS;
-
-    void RunOnDevice() override;
-    template <typename T> void EltwiseRunWithType();
-    template <typename T> void BroadcastRunWithType(int type);
-};
-
-#define DeclareX1X2 \
-    ws()->CreateTensor( \
-        "/mnt/" + anchor() + "/fundamental/X1") \
-        ->ReshapeLike(Input(0)); \
-    ws()->CreateTensor( \
-        "/mnt/" + anchor() + "/fundamental/X2") \
-        ->ReshapeLike(Input(1))
-
-#define DefineX1X2 \
-    Tensor* X1 = ws()->GetTensor( \
-        "/mnt/" + anchor() + "/fundamental/X1"); \
-    Tensor* X2 = ws()->GetTensor( \
-        "/mnt/" + anchor() + "/fundamental/X2")
-
-#define RunByX1X2(dtype) \
-    DefineX1X2; \
-    if (X2->ndim() == 0) { \
+#define DEFINE_FUNDAMENTAL_TYPED_CALLER(dtype) \
+    DEFINE_FUNDAMENTAL_OP_X1X2; \
+    if (X2->count() < X1->count() && \
+        utils::IsRowwiseBroadcast( \
+            X1->dims(), X2->dims(), &rows, &cols)) { \
         BroadcastRunWithType<dtype>(0); \
-    } else if (X2->ndim() == 1 && X2->dim(0) == 1) { \
-        BroadcastRunWithType<dtype>(0); \
-    } else if (X1->dim(-1) == X2->dim(-1) && \
-        X2->count(0, X2->axis(-1)) == 1) { \
+    } else if (X2->count() < X1->count() && \
+       utils::IsColwiseBroadcast( \
+           X1->dims(), X2->dims(), &rows, &cols)) { \
         BroadcastRunWithType<dtype>(1); \
-    } else if (X1->dim(0) == X2->dim(0) && \
-               X2->count(1) == 1) { \
-        BroadcastRunWithType<dtype>(2); \
-    } else if (X1->dims() == X2->dims()) { \
+    } else if (X1->count() == X2->count()) { \
         EltwiseRunWithType<dtype>(); \
     } else { \
-        LOG(FATAL) << "Could not broadcast with shapes " \
-                   << X1->DimString() << "  " \
+        LOG(FATAL) << "Could not broadcast with shapes: " \
+                   << X1->DimString() << " and " \
                    << X2->DimString(); \
     }
 
-#define RRunByX1X2(dtype) \
-    DefineX1X2; \
-    if (X1->ndim() == 0) { \
-        BroadcastRunWithType<dtype>(0); \
-    } else if (X1->ndim() == 1 && X1->dim(0) == 1) { \
-        BroadcastRunWithType<dtype>(0); \
-    } else if (X1->dim(-1) == X2->dim(-1) && \
-        X1->count(0, X1->axis(-1)) == 1) { \
-        BroadcastRunWithType<dtype>(1); \
-    } else if (X1->dim(0) == X2->dim(0) && \
-        X1->count(1) == 1) { \
+#define DEFINE_FUNDAMENTAL_TYPED_RCALLER(dtype) \
+    DEFINE_FUNDAMENTAL_OP_X1X2; \
+    if (X2->count() > X1->count() && \
+        utils::IsRowwiseBroadcast( \
+            X1->dims(), X2->dims(), &rows, &cols)) { \
         BroadcastRunWithType<dtype>(2); \
-    } else if (X1->dims() == X2->dims()) { \
+    } else if (X2->count() > X1->count() && \
+       utils::IsColwiseBroadcast( \
+           X1->dims(), X2->dims(), &rows, &cols)) { \
+        BroadcastRunWithType<dtype>(3); \
+    } else if (X1->count() == X2->count()) { \
         EltwiseRunWithType<dtype>(); \
     } else { \
-        LOG(FATAL) << "Could not broadcast with shapes " \
-                   << X1->DimString() << "  " \
+        LOG(FATAL) << "Could not broadcast with shapes: " \
+                   << X1->DimString() << " and " \
                    << X2->DimString(); \
     }
+
+#undef DECLARE_FUNDAMENTAL_OP
 
 }  // namespace dragon
 

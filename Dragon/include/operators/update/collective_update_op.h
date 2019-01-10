@@ -33,7 +33,7 @@ class CollectiveUpdateOp final : public Operator<Context> {
     ~CollectiveUpdateOp() {
         /*  TODO(PhyscalX): Temporarily disable it,
                             to avoid a unhandled error. */
-#ifdef WITH_MPI_NCCL
+#ifdef WITH_NCCL
         if (mode.find("NCCL") != string::npos) {
             /* ncclCommDestroy(nccl_comm); */
         }
@@ -53,7 +53,7 @@ class CollectiveUpdateOp final : public Operator<Context> {
         Tensor*                 tensor,
         MPI_Datatype            dtype);
 
-#ifdef WITH_MPI_NCCL
+#ifdef WITH_NCCL
     template <typename T> void NCCLAllReduce(
         Tensor*                 tensor,
         ncclDataType_t          dtype,
@@ -73,7 +73,7 @@ class CollectiveUpdateOp final : public Operator<Context> {
     MPI_Comm comm;
     MPI_Group group;
 
-#ifdef WITH_MPI_NCCL
+#ifdef WITH_NCCL
     ncclComm_t nccl_comm;
     CUDAClosure<Context> closure;
 #endif

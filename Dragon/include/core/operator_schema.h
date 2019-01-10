@@ -37,14 +37,14 @@ class OpSchema {
 
     bool Verify(const OperatorDef& def) const;
 
-    inline OpSchema& IgnoreVerify() {
+    OpSchema& IgnoreVerify() {
         ignore_verify_ = true; 
         return *this; 
     }
 
     OpSchema& Inplace(set<pair<int, int> > inplace);
     std::function<bool(int, int)> CheckInplace;
-    inline bool AllowInplace() const { return allow_inplace_; }
+    bool AllowInplace() const { return allow_inplace_; }
 
     OpSchema& NumInputs(int n);
     OpSchema& NumInputs(int min_num, int max_num);
@@ -86,8 +86,8 @@ class OpSchemaRegistry {
     static const OpSchema* Schema(const string& op_type) {
         auto& m = schema_map();
         if (m.count(op_type)) return &m[op_type];
-        else LOG(FATAL) << "OpSchema(" << op_type
-                        << ") has not registered yet.";
+        LOG(WARNING) << "OpSchema(" << op_type
+                     << ") has not registered yet.";
         return nullptr;
     }
 

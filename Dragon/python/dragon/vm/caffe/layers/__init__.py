@@ -9,64 +9,87 @@
 #
 # ------------------------------------------------------------
 
-from .data import DataLayer, \
-                  MemoryDataLayer
+"""Import all the implemented caffe layers."""
 
-from .vision import ConvolutionLayer, \
-                    DepthwiseConvolutionLayer, \
-                    DeconvolutionLayer, \
-                    PoolingLayer, \
-                    LRNLayer, \
-                    ROIPoolingLayer, \
-                    ROIAlignLayer, \
-                    NNResizeLayer, \
-                    BilinearResizeLayer, \
-                    DropBlockLayer
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-from .neuron import ReLULayer, \
-                    PReLULayer, \
-                    ELULayer, \
-                    SELULayer, \
-                    DropoutLayer, \
-                    SigmoidLayer, \
-                    TanHLayer, \
-                    PowerLayer
+# Data Layers
+from .data import (
+    DataLayer,
+    MemoryDataLayer,
+)
 
-from .loss import SoftmaxWithLossLayer, \
-                  SigmoidCrossEntropyLossLayer, \
-                  L2LossLayer, \
-                  SmoothL1LossLayer, \
-                  SigmoidWithFocalLossLayer, \
-                  SoftmaxWithFocalLossLayer
+# Vision Layers
+from .vision import (
+    ConvolutionLayer,
+    DepthwiseConvolutionLayer,
+    DeconvolutionLayer,
+    PoolingLayer,
+    LRNLayer,
+    ROIPoolingLayer,
+    ROIAlignLayer,
+    NNResizeLayer,
+    BilinearResizeLayer,
+    DropBlockLayer,
+)
 
-from .mpi import MPIBroadcastLayer,\
-                 MPIGatherLayer
+# Neuron Layers
+from .neuron import (
+    ReLULayer,
+    PReLULayer,
+    ELULayer,
+    SELULayer,
+    DropoutLayer,
+    SigmoidLayer,
+    TanHLayer,
+    PowerLayer,
+)
 
-from .common import InnerProductLayer, \
-                    AccuracyLayer, \
-                    BatchNormLayer, \
-                    BatchRenormLayer,\
-                    BNLayer, \
-                    GroupNormLayer, \
-                    GNLayer, \
-                    ConcatLayer, \
-                    CropLayer, \
-                    PythonLayer, \
-                    AddLayer, \
-                    ReshapeLayer, \
-                    EltwiseLayer, \
-                    ScaleLayer, \
-                    SoftmaxLayer, \
-                    ArgMaxLayer, \
-                    PermuteLayer, \
-                    FlattenLayer, \
-                    GatherLayer, \
-                    ConcatLayer, \
-                    NormalizeLayer, \
-                    InstanceNormLayer, \
-                    TileLayer, \
-                    ReductionLayer, \
-                    ExpandDimsLayer, \
-                    StopGradientLayer, \
-                    ProposalLayer, \
-                    DenseConcatLayer
+# Loss Layers
+from .loss import (
+    SoftmaxWithLossLayer,
+    SigmoidCrossEntropyLossLayer,
+    L2LossLayer,
+    SmoothL1LossLayer,
+    SigmoidWithFocalLossLayer,
+    SoftmaxWithFocalLossLayer,
+)
+
+# MPI Layers
+from .mpi import (
+    MPIBroadcastLayer,
+    MPIGatherLayer,
+)
+
+# Common Layers
+from .common import (
+    InnerProductLayer,
+    AccuracyLayer,
+    BatchNormLayer,
+    GroupNormLayer,
+    BNLayer,
+    GNLayer,
+    ConcatLayer,
+    CropLayer,
+    PythonLayer,
+    AddLayer,
+    ReshapeLayer,
+    EltwiseLayer,
+    ScaleLayer,
+    SoftmaxLayer,
+    ArgMaxLayer,
+    PermuteLayer,
+    FlattenLayer,
+    GatherLayer,
+    ConcatLayer,
+    NormalizeLayer,
+    InstanceNormLayer,
+    TileLayer,
+    ReductionLayer,
+    ExpandDimsLayer,
+    StopGradientLayer,
+    ProposalLayer,
+    DenseConcatLayer,
+)

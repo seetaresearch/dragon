@@ -7,39 +7,53 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void L1LossOp<Context>::RunWithType() {
-    auto* X0data = Input(0).template data<T, Context>();
-    auto* X1data = Input(1).template data<T, Context>();
-    auto* diff_data = diff->template mutable_data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<float, Context>();
 
-    math::Sub<T, Context>(Input(0).count(),
-        X0data, X1data, diff_data, ctx());
+    auto* Ddata = diff->template mutable_data<T, Context>();
+
+    if (InputSize() > 1) {
+        // Compute Diff = X1 - X2
+        auto* Tdata = Input(1).template data<T, Context>();
+        math::Sub<T, Context>(Input(0).count(),
+            Xdata, Tdata, Ddata, ctx());
+    } else {
+        // Let Diff = X1
+        ctx()->template Copy<T, Context, Context>(
+            Input(0).count(), Ddata, Xdata);
+    }
+
     if (InputSize() > 2) {
-        CHECK_EQ(Input(0).count(), Input(2).count());
-        auto* Wdata = Input(2).template data<T, Context>();
-        math::Mul<T, Context>(diff->count(),
-            Wdata, diff_data, diff_data, ctx());
+        // Compute Diff *= Mask
+        auto* mask = Input(2).template data<T, Context>();
+        math::Mul(Input(0).count(), mask, Ddata, Ddata, ctx());
     }
 
-    T normalizer = 1;
+    float normalizer = 1.f / scale;
     if (normalization == "BATCH_SIZE") {
-        normalizer = Input(0).dim(0);
+        normalizer *= Input(0).dim(0);
     } else if (normalization == "FULL") {
-        normalizer = Input(0).count();
+        normalizer *= Input(0).count();
     }
 
-    T loss = math::ASum<T, Context>(diff->count(), diff_data);
-    math::Set<T, Context>(1, loss / normalizer, Ydata, ctx());
+    T loss = math::ASum(Input(0).count(), Ddata, ctx());
+    math::Set(1, loss / normalizer, Ydata, ctx());
 }
 
 template <class Context>
 void L1LossOp<Context>::RunOnDevice() {
     ctx()->set_stream_id(0);  // Enforce SyncStream
 
-    CHECK_EQ(Input(0).count(), Input(1).count());
-    Output(0)->Reshape({ 1 });
-    diff = ws()->CreateTensor("/mnt/" + anchor() + "/l1_loss/diff");
-    diff->ReshapeLike(Input(0));
+    for (int i = 1; i < InputSize(); i++) {
+        CHECK_EQ(Input(0).count(), Input(i).count())
+            << "\nTensor(" << Input(i).name() << ") takes the "
+            << "dimensions of " << Input(i).DimString() << ", "
+            << "while " << Input(0).DimString() << " is required.";
+    }
+
+    Output(0)->Reshape(vector<int64_t>());
+    diff = ws()->CreateTensor("/mnt/" + anchor() +
+        "/l1_loss/diff")->ReshapeLike(Input(0));
 
     if (XIsType(Input(0), float)) RunWithType<float>();
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
@@ -49,39 +63,41 @@ DEPLOY_CPU(L1Loss);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(L1Loss);
 #endif
-OPERATOR_SCHEMA(L1Loss).NumInputs(2, 3).NumOutputs(1);
+OPERATOR_SCHEMA(L1Loss).NumInputs(1, 3).NumOutputs(1);
 
 template <class Context> template <typename T>
 void L1LossGradientOp<Context>::RunWithType() {
-    auto* diff_data = diff->template mutable_data<T, Context>();
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; ctx()->template Copy<T, CPUContext, Context>(
-        1, &dYdata_host, dYdata);
+    float dYHost; ctx()->template Copy
+        <float, CPUContext, Context>(1, &dYHost, dYdata);
     ctx()->FinishDeviceCompution();
-    kernel::AbsGrad<T, Context>(diff->count(),
-        diff_data, diff_data, ctx());
 
-    T alpha = dYdata_host, normalizer = 1;
+    auto* Ddata = diff->template mutable_data<T, Context>();
+    kernel::AbsGrad(diff->count(), Ddata, Ddata, ctx());
+
     if (normalization == "BATCH_SIZE") {
-        normalizer = Input(0).dim(0);
+        dYHost /= (Input(0).dim(0) / scale);
     } else if (normalization == "FULL") {
-        normalizer = Input(0).count();
-    } alpha = alpha / normalizer;
+        dYHost /= (Input(0).count() / scale);
+    } else { dYHost *= scale; }
 
     for (int i = 0; i < 2; i++) {
         if (Output(i)->name() == "ignore") continue;
         Output(i)->ReshapeLike(Input(i));
         auto* dXdata = Output(i)->template mutable_data<T, Context>();
-        const T sign = (i == 0) ? 1 : -1;
-        alpha *= sign;
-        math::Axpby<T, Context>(Output(i)->count(),
-            alpha, diff_data, 0, dXdata, ctx());
+        math::Scale(Output(i)->count(),
+            dYHost * (i == 0 ? 1.f : -1.f),
+                Ddata, dXdata, ctx());
+        if (Input(2).name() != "ignore") {
+            auto* mask = Input(2).template data<T, Context>();
+            math::Mul(Output(i)->count(), mask, dXdata, dXdata, ctx());
+        }
     }
 }
 
 template <class Context>
 void L1LossGradientOp<Context>::RunOnDevice() {
-    diff = ws()->GetTensor("/mnt/" + anchor() + "/l1_loss/diff");
+    diff = ws()->GetTensor(mount_name("l1_loss/diff"));
 
     if (XIsType(Input(0), float)) RunWithType<float>();
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
@@ -91,17 +107,20 @@ DEPLOY_CPU(L1LossGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(L1LossGradient);
 #endif
-OPERATOR_SCHEMA(L1LossGradient).NumInputs(3).NumOutputs(2);
+
+OPERATOR_SCHEMA(L1LossGradient)
+    .NumInputs(4).NumOutputs(2);
 
 class GetL1LossGradient final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetL1LossGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), I(1), GO(0)},
-            vector<string> {GI(0), GI(1)});
+            vector<string>({ I(0), I(1), I(2), GO(0) }),
+            vector<string>({ GI(0), GI(1) }));
     }
 };
+
 REGISTER_GRADIENT(L1Loss, GetL1LossGradient);
 
 }  // namespace dragon

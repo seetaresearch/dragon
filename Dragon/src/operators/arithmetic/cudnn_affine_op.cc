@@ -9,12 +9,38 @@
 
 namespace dragon {
 
+#define DETERMINE_RUNTIME_ARGUMENTS(X) \
+    axis = OperatorBase::Arg<int64_t>("axis", 1); \
+    num_axes = OperatorBase::Arg<int64_t>("num_axes", 1); \
+    if (axis < 0) axis += X.ndim(); \
+    if (num_axes < 0) num_axes = X.ndim() - axis; \
+    else if (num_axes == 0) num_axes = 1; \
+    CHECK(axis >= 0 && axis + num_axes <= X.ndim())
+
+template <class Context> template <typename T>
+void CuDNNAffineOpBase<Context>::ResetDesc(const Tensor& X) {
+    // Determine the runtime arguments
+    DETERMINE_RUNTIME_ARGUMENTS(X);
+    // Determine the input desc
+    vector<int64_t> input_dims = X.dims();
+    // CuDNN requires ndimensions range from [4, 5]
+    if (input_dims.size() < 4) input_dims.resize(4, 1);
+    else if (input_dims.size() > 5) 
+        LOG(FATAL) << "CuDNN Affine the dimensions up to 5.";
+    cudnnSetTensorDesc<T>(&input_desc, input_dims);
+    // Determine the scale desc
+    vector<int64_t> param_dims(input_dims.size(), 1);
+    for (int i = axis; i < axis + num_axes; i++)
+        param_dims[i] = input_dims[i];
+    cudnnSetTensorDesc<T>(&param_desc, param_dims);
+}
+
 template <class Context> template <typename DT, typename CT>
 void CuDNNAffineOp<Context>::RunWithType() {
     this->template ResetDesc<DT>(Input(0));
-    const auto& dim_start = Input(0).dims().begin() + start_axis;
+    const auto& dim_start = Input(0).dims().begin() + axis;
     const auto& dim_end = dim_start + num_axes;
-    vector<TIndex> param_dims(dim_start, dim_end);
+    vector<int64_t> param_dims(dim_start, dim_end);
     TENSOR_FILL_WITH_TYPE(Input(1), param_dims, DT);
     auto* Xdata = Input(0).template data<DT, Context>();
     auto* Adata = Input(1).template data<DT, Context>();
@@ -59,11 +85,11 @@ DEPLOY_CUDNN(Affine);
 template <class Context> template <typename DT, typename CT>
 void CuDNNAffineGradientOp<Context>::RunWithType() {
     this->template ResetDesc<DT>(Input(-1));
-    outer_dim = Input(-1).count(0, start_axis);
-    inner_dim = Input(-1).count(start_axis + num_axes);
+    outer_dim = Input(-1).count(0, axis);
+    inner_dim = Input(-1).count(axis + num_axes);
     scale_dim = Input(1).count();
-    sum_dim = std::max(outer_dim, inner_dim);
     dim = scale_dim * inner_dim;
+    sum_dim = std::max(outer_dim, inner_dim);
     Output(0)->ReshapeLike(Input(-1));
 
     auto* dYdata = Input(-1).template data<DT, Context>();
@@ -78,7 +104,7 @@ void CuDNNAffineGradientOp<Context>::RunWithType() {
     if (Output(1)->name() != "ignore") {
         Output(1)->ReshapeLike(Input(1));
         auto* Xdata = Input(0).template data<DT, Context>();
-        auto* dAdata = Output(1)->template mutable_data<DT, Context>(ctx());
+        auto* dAdata = Output(1)->template mutable_data<DT, Context>();
         // Eltwise
         if (Input(0).count() == Input(1).count()) {
             CUDNN_CHECK(cudnnOpTensor(
@@ -92,20 +118,28 @@ void CuDNNAffineGradientOp<Context>::RunWithType() {
                     CUDNNType<DT>::one, input_desc, Xdata,
                         CUDNNType<DT>::one, input_desc, dYdata,
                             CUDNNType<DT>::zero, input_desc, dXdata));
+#if CUDNN_VERSION_MIN(6, 0, 0)
+            ComputeScaleGradient<DT, CT>(dXdata, dAdata);
+#else
             ComputeScaleGradient_v2<DT>(dXdata, dAdata);
+#endif
         }
     }
 
     // dB = dY
     if (Output(2)->name() != "ignore") {
         Output(2)->ReshapeLike(Input(1));
-        auto* dBdata = Output(2)->template mutable_data<DT, Context>(ctx());
+        auto* dBdata = Output(2)->template mutable_data<DT, Context>();
         // Eltwise
         if (Input(-1).count() == Input(1).count()) {
             math::Axpy<DT, Context>(Output(2)->count(),
                 1.f, dYdata, dBdata, ctx());
         } else {
+#if CUDNN_VERSION_MIN(6, 0, 0)
+            ComputeBiasGradient<DT, CT>(dYdata, dBdata);
+#else
             ComputeBiasGradient_v2<DT>(dYdata, dBdata);
+#endif
         }
     }
 
@@ -153,14 +187,14 @@ void CuDNNAffineGradientOp<Context>::ComputeScaleGradient_v2(
     } else {
         SRes_data = (outer_dim == 1) ?
             dA : sum_result.template mutable_data<T, Context>();
-        math::Gemv<T, Context>(
+        math::Gemv(
             CblasNoTrans, sum_result.count(), inner_dim,
                 1.f, dYxX, multiplier,
                     SRes_data == dA ? 1.f : 0.f, SRes_data, ctx());
     }
     // Reduce outer dimensions
     if (outer_dim != 1) {
-        math::Gemv<T, Context>(
+        math::Gemv(
             CblasTrans, outer_dim, scale_dim,
                 1.f, SRes_data, multiplier,
                     1.f, dA, ctx());
@@ -195,7 +229,7 @@ void CuDNNAffineGradientOp<Context>::ComputeBiasGradient_v2(
     T*              dB) {
     DECLARE_MULTIPLIER(multiplier, inner_dim);
     for (int n = 0; n < outer_dim; n++) {
-        math::Gemv<T, Context>(
+        math::Gemv(
             CblasNoTrans, scale_dim, inner_dim,
                 1.f, dY, multiplier,
                     1.f, dB, ctx());
@@ -212,8 +246,10 @@ void CuDNNAffineGradientOp<Context>::RunOnDevice() {
 
 DEPLOY_CUDNN(AffineGradient);
 
+#undef DETERMINE_RUNTIME_ARGUMENTS
+
 }  // namespace dragon
 
-#endif
+#endif  // CUDNN_VERSION_MIN(6, 0, 0)
 
 #endif  // WITH_CUDNN

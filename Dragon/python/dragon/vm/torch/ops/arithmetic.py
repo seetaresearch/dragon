@@ -25,68 +25,62 @@ from dragon.vm.torch.ops.modules.arithmetic import (
 
 def _fundamental(input, value, op='Add', out=None):
     if not isinstance(value, Tensor):
-        value = WrapScalar(value, input._dtype, input._ctx)
+        value = WrapScalar(value, input.dtype, input._ctx)
     ctx = MakeContext(inputs=[input, value])
-    key = 'torch/ops/{}/{}:{}'.format(op.lower(), ctx[0].lower(), ctx[1])
+    key = 'torch.ops.{}/{}:{}'.format(op.lower(), ctx[0], ctx[1])
     module = get_module(Fundamental, key, ctx, op_type=op)
     return module.forward(input, value, out)
 
 
 def _rfundamental(input, value, op='RAdd', out=None):
     if not isinstance(value, Tensor):
-        value = WrapScalar(value, input._dtype, input._ctx)
+        value = WrapScalar(value, input.dtype, input._ctx)
     ctx = MakeContext(inputs=[input, value])
-    key = 'torch/ops/{}/{}:{}'.format(op.lower(), ctx[0].lower(), ctx[1])
+    key = 'torch.ops.{}/{}:{}'.format(op.lower(), ctx[0], ctx[1])
     module = get_module(Fundamental, key, ctx, op_type=op)
     return module.forward(value, input, out)
 
 
 def _maximum(input, other, out=None):
     if not isinstance(input, Tensor):
-        input = WrapScalar(input, 'float32', other._ctx)
-        dtype = other._dtype
+        input = WrapScalar(input, other.dtype, other._ctx)
     elif not isinstance(other, Tensor):
-        other = WrapScalar(other, 'float32', input._ctx)
-        dtype = input._dtype
-    else: dtype = input._dtype
+        other = WrapScalar(other, input.dtype, input._ctx)
     ctx = MakeContext(inputs=[input])
-    key = 'torch/ops/maximum/{}:{}'.format(ctx[0].lower(), ctx[1])
+    key = 'torch.ops.maximum/{}:{}'.format(ctx[0], ctx[1])
     module = get_module(Maximum, key, ctx)
-    return module.forward(input, other, out, dtype)
+    return module.forward(input, other, out)
 
 
 def _minimum(input, other, out=None):
     if not isinstance(input, Tensor):
-        input = WrapScalar(input, 'float32', other._ctx)
-        dtype = other._dtype
+        input = WrapScalar(input, other.dtype, other._ctx)
     elif not isinstance(other, Tensor):
-        other = WrapScalar(other, 'float32', input._ctx)
-        dtype = input._dtype
-    else: dtype = input._dtype
+        other = WrapScalar(other, input.dtype, input._ctx)
     ctx = MakeContext(inputs=[input])
-    key = 'torch/ops/minimum/{}:{}'.format(ctx[0].lower(), ctx[1])
+    key = 'torch.ops.minimum/{}:{}'.format(ctx[0], ctx[1])
     module = get_module(Minimum, key, ctx)
-    return module.forward(input, other, out, dtype)
+    return module.forward(input, other, out)
 
 
 def _clamp(input, min=None, max=None, out=None):
     ctx = MakeContext(inputs=[input])
-    key = 'torch/ops/clamp/{}:{}/min:{}/max:{}'.format(
-        ctx[0].lower(), ctx[1], min, max)
+    key = 'torch.ops.clamp/{}:{}/min:{}/max:{}'.format(
+        ctx[0], ctx[1], min, max)
     module = get_module(Clamp, key, ctx, min=min, max=max)
     return module.forward(input, out)
 
 
 def _exp(input, out=None):
     ctx = MakeContext(inputs=[input])
-    key = 'torch/ops/exp/{}:{}'.format(ctx[0].lower(), ctx[1])
+    key = 'torch.ops.exp/{}:{}'.format(ctx[0], ctx[1])
     module = get_module(Exp, key, ctx)
     return module.forward(input, out)
 
 
 def _log(input, out=None):
     ctx = MakeContext(inputs=[input])
-    key = 'torch/ops/log/{}:{}'.format(ctx[0].lower(), ctx[1])
+    key = 'torch.ops.log/{}:{}'.format(ctx[0], ctx[1])
     module = get_module(Log, key, ctx)
     return module.forward(input, out)
 
@@ -96,16 +90,16 @@ def add(input, value, out=None):
 
     Parameters
     ----------
-    input : vm.torch.Tensor
+    input : dragon.vm.torch.Tensor
         The input tensor.
-    value : vm.torch Tensor, int or float
+    value : dragon.vm.torch.Tensor, number
         The value tensor.
-    out : vm.torch.Tensor or None
+    out : dragon.vm.torch.Tensor, optional
         The output tensor.
 
     Returns
     -------
-    vm.torch.Tensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
@@ -117,16 +111,16 @@ def sub(input, value, out=None):
 
     Parameters
     ----------
-    input : vm.torch.Tensor
+    input : dragon.vm.torch.Tensor
         The input tensor.
-    value : vm.torch Tensor, int or float
+    value : dragon.vm.torch.Tensor or number
         The value tensor.
-    out : vm.torch.Tensor or None
+    out : dragon.vm.torch.Tensor, optional
         The output tensor.
 
     Returns
     -------
-    vm.torch.Tensor
+    torch.Tensor
         The output tensor.
 
     """
@@ -138,16 +132,16 @@ def mul(input, value, out=None):
 
     Parameters
     ----------
-    input : vm.torch.Tensor
+    input : dragon.vm.torch.Tensor
         The input tensor.
-    value : vm.torch Tensor, int or float
+    value : dragon.vm.torch.Tensor or number
         The value tensor.
-    out : vm.torch.Tensor or None
+    out : dragon.vm.torch.Tensor, optional
         The output tensor.
 
     Returns
     -------
-    vm.torch.Tensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
@@ -159,16 +153,16 @@ def div(input, value, out=None):
 
     Parameters
     ----------
-    input : vm.torch.Tensor
+    input : dragon.vm.torch.Tensor
         The input tensor.
-    value : vm.torch Tensor, int or float
+    value : dragon.vm.torch.Tensor or number
         The value tensor.
-    out : vm.torch.Tensor or None
+    out : dragon.vm.torch.Tensor, optional
         The output tensor.
 
     Returns
     -------
-    vm.torch.Tensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
@@ -180,16 +174,16 @@ def maximum(input, other, out=None):
 
     Parameters
     ----------
-    input : vm.torch.Tensor
+    input : dragon.vm.torch.Tensor or number
         The input tensor.
-    other : vm.torch.Tensor
+    other : dragon.vm.torch.Tensor or number
         The input tensor.
-    out : vm.torch.Tensor or None
+    out : dragon.vm.torch.Tensor, optional
         The output tensor.
 
     Returns
     -------
-    vm.torch.Tensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
@@ -201,16 +195,16 @@ def minimum(input, other, out=None):
 
     Parameters
     ----------
-    input : vm.torch.Tensor
+    input : dragon.vm.torch.Tensor or number
         The input tensor.
-    other : vm.torch.Tensor
+    other : dragon.vm.torch.Tensor or number
         The input tensor.
-    out : vm.torch.Tensor or None
+    out : dragon.vm.torch.Tensor, optional
         The output tensor.
 
     Returns
     -------
-    vm.torch.Tensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
@@ -222,18 +216,18 @@ def clamp(input, min=None, max=None, out=None):
 
     Parameters
     ----------
-    input : vm.torch.Tensor
+    input : dragon.vm.torch.Tensor
         The input tensor.
-    min : numerical or None
+    min : number, optional
         The min value.
-    max : numerical or None
+    max : number, optional
         The max value.
-    out : vm.torch.Tensor or None
+    out : dragon.vm.torch.Tensor, optional
         The output tensor.
 
     Returns
     -------
-    vm.torch.Tensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
@@ -245,14 +239,14 @@ def log(input, out=None):
 
     Parameters
     ----------
-    input : vm.torch.Tensor
+    input : dragon.vm.torch.Tensor
         The input tensor.
-    out : vm.torch.Tensor or None
+    out : dragon.vm.torch.Tensor, optional
         The output tensor.
 
     Returns
     -------
-    vm.torch.Tensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
@@ -264,14 +258,14 @@ def exp(input, out=None):
 
     Parameters
     ----------
-    input : vm.torch.Tensor
+    input : dragon.vm.torch.Tensor
         The input tensor.
-    out : vm.torch.Tensor or None
+    out : dragon.vm.torch.Tensor, optional
         The output tensor.
 
     Returns
     -------
-    vm.torch.Tensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """

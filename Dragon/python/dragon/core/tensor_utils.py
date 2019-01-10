@@ -17,9 +17,11 @@ import numpy as np
 import dragon as dg
 from google.protobuf.message import Message
 
-from dragon.import_c_apis import *
+import dragon.import_c_api as C
+
 from dragon.core.tensor import Tensor
-from dragon.core.utils import MakeDeviceOption
+from dragon.core.proto_utils import GetDeviceOption
+
 
 __all__ = [
     'FromShape',
@@ -35,30 +37,11 @@ __all__ = [
 ]
 
 
-def _stringify_proto(obj):
-    """Try to stringify a proto-buffer structure.
-
-    """
-    if obj is str: return obj
-    elif isinstance(obj, Message): return obj.SerializeToString()
-    else: raise TypeError('Object can not be serialized as a string.')
-
-
-def _stringify_tensor(obj):
-    """Try to stringify a tensor.
-
-    """
-    if hasattr(obj, 'name'): return obj.name
-    else:
-        try:
-            obj = str(obj)
-        except Exception as e:
-            raise TypeError('Object can bot be used as a tensor. Error: {0}'.format(str(e)))
-        return obj
-
-
 def FromShape(shape, dtype='float32', ctx=None, name=None):
     """Create a Tensor from the shape.
+
+    If specifying a existed tensor with larger shape,
+    the original tensor will be reset.
 
     Parameters
     ----------
@@ -68,7 +51,7 @@ def FromShape(shape, dtype='float32', ctx=None, name=None):
         The data type.
     ctx : dragon_pb2.DeviceOption
         The context info.
-    name : str
+    name : str, optional
         The optional tensor name.
 
     Returns
@@ -81,12 +64,14 @@ def FromShape(shape, dtype='float32', ctx=None, name=None):
     The wrapper of ``TensorFromShapeCC``.
 
     """
-    if name is None: tensor = Tensor(name=name)
-    else: tensor = Tensor(_name=name)
+    tensor = _try_get_tensor(name)
     if not isinstance(shape, (tuple, list)):
         raise TypeError('The shape should be a tuple or list.')
-    if ctx is None: ctx = MakeDeviceOption(0, 0) # CPUContext
-    TensorFromShapeCC(_stringify_tensor(tensor), list(shape), dtype, _stringify_proto(ctx))
+    if ctx is None: ctx = GetDeviceOption('CPU')
+    C.TensorFromShapeCC(
+        _stringify_tensor(tensor),
+        list(shape), dtype,
+        _stringify_proto(ctx))
     return tensor
 
 
@@ -95,11 +80,11 @@ def SetShape(tensor, shape, dtype='float32'):
 
     Parameters
     ----------
-    tensor : Tensor, str or None
+    tensor : Tensor or str, optional
         The specific tensor to use.
-    shape : tuple or list
+    shape : sequence of int
         The shape info.
-    dtype : str
+    dtype : str, optional
         The data type.
 
     Returns
@@ -111,11 +96,14 @@ def SetShape(tensor, shape, dtype='float32'):
     The wrapper of ``TensorFromShapeCC``.
 
     """
-    TensorFromShapeCC(_stringify_tensor(tensor), shape, dtype)
+    C.TensorFromShapeCC(_stringify_tensor(tensor), shape, dtype)
 
 
 def FromTensor(src, src_ctx=None, name=None, ctx=None):
     """Create a Tensor from a existing tensor.
+
+    If specifying a existed tensor with larger shape,
+    the original tensor will be reset.
 
     Parameters
     ----------
@@ -138,11 +126,10 @@ def FromTensor(src, src_ctx=None, name=None, ctx=None):
     The wrapper of ``TensorFromTensorCC``.
 
     """
-    if name is None: tensor = Tensor(name=name)
-    else: tensor = Tensor(_name=name)
-    if src_ctx is None: src_ctx = MakeDeviceOption(0, 0) # CPUContext
-    if ctx is None: ctx = MakeDeviceOption(0, 0)  # CPUContext
-    TensorFromTensorCC(
+    tensor = _try_get_tensor(name)
+    if src_ctx is None: src_ctx = GetDeviceOption('CPU')
+    if ctx is None: ctx = GetDeviceOption('CPU')
+    C.TensorFromTensorCC(
         _stringify_tensor(tensor), _stringify_tensor(src),
         _stringify_proto(ctx), _stringify_proto(src_ctx))
     return tensor
@@ -153,9 +140,12 @@ def FromPyArray(array, name=None):
 
     Note that memory of Tensor are ``zero-copied``.
 
+    If specifying a existed tensor with larger shape,
+    the original tensor will be reset.
+
     Parameters
     ----------
-    array : ndarray
+    array : numpy.ndarray
         The array for creating the tensor.
     name : str
         The optional tensor name.
@@ -170,11 +160,10 @@ def FromPyArray(array, name=None):
     The wrapper of ``TensorFromPyArrayCC``.
 
     """
-    if name is None: tensor = Tensor(name=name)
-    else: tensor = Tensor(_name=name)
+    tensor = _try_get_tensor(name)
     if not isinstance(array, np.ndarray):
         raise TypeError('The given nd-array should be numpy.ndarray.')
-    TensorFromPyArrayCC(_stringify_tensor(tensor), array)
+    C.TensorFromPyArrayCC(_stringify_tensor(tensor), array)
     return tensor
 
 
@@ -185,9 +174,9 @@ def SetPyArray(tensor, array):
 
     Parameters
     ----------
-    tensor : Tensor, str or None
+    tensor : Tensor or str, required
         The specific tensor to use.
-    array : ndarray
+    array : numpy.ndarray
         The array for creating the tensor.
 
     Returns
@@ -199,7 +188,7 @@ def SetPyArray(tensor, array):
     The wrapper of ``TensorFromPyArrayCC``.
 
     """
-    TensorFromPyArrayCC(_stringify_tensor(tensor), array)
+    C.TensorFromPyArrayCC(_stringify_tensor(tensor), array)
 
 
 def ToPyArray(tensor):
@@ -214,7 +203,7 @@ def ToPyArray(tensor):
 
     Returns
     -------
-    ndarray
+    numpy.ndarray
         The array sharing the memory with original tensor.
 
     References
@@ -222,7 +211,7 @@ def ToPyArray(tensor):
     The wrapper of ``TensorToPyArrayCC``.
 
     """
-    return TensorToPyArrayCC(_stringify_tensor(tensor))
+    return C.TensorToPyArrayCC(_stringify_tensor(tensor))
 
 
 def ToPyArrayEx(tensor):
@@ -237,7 +226,7 @@ def ToPyArrayEx(tensor):
 
     Returns
     -------
-    ndarray
+    numpy.ndarray
         The array sharing the memory with original tensor.
 
     References
@@ -245,7 +234,7 @@ def ToPyArrayEx(tensor):
     The wrapper of ``TensorToPyArrayExCC``.
 
     """
-    return TensorToPyArrayExCC(_stringify_tensor(tensor))
+    return C.TensorToPyArrayExCC(_stringify_tensor(tensor))
 
 
 def ToCPUTensor(tensor):
@@ -265,7 +254,7 @@ def ToCPUTensor(tensor):
     The wrapper of ``ToCPUTensorCC``.
 
     """
-    return ToCPUTensorCC(_stringify_tensor(tensor))
+    return C.ToCPUTensorCC(_stringify_tensor(tensor))
 
 
 def ToCUDATensor(tensor, device=0):
@@ -287,7 +276,7 @@ def ToCUDATensor(tensor, device=0):
     The wrapper of ``ToCUDATensorCC``.
 
     """
-    return ToCUDATensorCC(_stringify_tensor(tensor), device)
+    return C.ToCUDATensorCC(_stringify_tensor(tensor), device)
 
 
 def GetTensorInfo(tensor, stream=1):
@@ -319,7 +308,7 @@ def GetTensorInfo(tensor, stream=1):
 
     """
     if not dg.workspace.HasTensor(_stringify_tensor(tensor)): return None
-    info = GetTensorInfoCC(_stringify_tensor(tensor), stream)
+    info = C.GetTensorInfoCC(_stringify_tensor(tensor), stream)
     info['mem'] = []
     if 'CPU' in info:
         info['mem'].append('CPU'); info['device_id'] = 0
@@ -329,3 +318,31 @@ def GetTensorInfo(tensor, stream=1):
         info['mem'].append('CNML'); info['device_id'] = int(info['CNML'])
     info['init'] = len(info['mem']) > 0
     return info
+
+
+def _stringify_proto(obj):
+    """Try to stringify a proto-buffer structure."""
+    if obj is str: return obj
+    elif isinstance(obj, Message): return obj.SerializeToString()
+    else: raise TypeError('Object can not be serialized as a string.')
+
+
+def _stringify_tensor(obj):
+    """Try to stringify a tensor."""
+    if hasattr(obj, 'name'): return obj.name
+    else:
+        try:
+            obj = str(obj)
+        except Exception as e:
+            raise TypeError('Object can bot be used as a tensor. Error: {0}'.format(str(e)))
+        return obj
+
+
+def _try_get_tensor(name=None):
+    """Try to create or get a tensor"""
+    if name is None or name == '':
+        return Tensor()
+    else:
+        tensor = Tensor('')
+        tensor.set_name(name)
+        return tensor

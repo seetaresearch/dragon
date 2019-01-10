@@ -16,8 +16,8 @@ from __future__ import print_function
 import dragon as dg
 import numpy as np
 
+import dragon.core.proto_utils as pb_utils
 from dragon.vm.torch.module import Module
-from dragon.vm.torch.constants import CTX_TO_DEVICE_OPTION
 
 
 class BaseModule(Module):
@@ -25,11 +25,11 @@ class BaseModule(Module):
         super(BaseModule, self).__init__()
         self._persistent_key = key
         self._ctx = ctx
-        self._args_dev = CTX_TO_DEVICE_OPTION[('CPU', 0)].SerializeToString()
+        self._args_dev = pb_utils.GetDeviceOption('CPU').SerializeToString()
 
     def register_argument(self, name):
         with dg.name_scope(self.persistent_key):
             return dg.Tensor(name).Variable().name
 
     def set_argument_i(self, name, value):
-        dg.FeedTensorCC(name, np.array([value], dtype=np.int32), self._args_dev)
+        dg.C.FeedTensorCC(name, np.array([value], dtype=np.int64), self._args_dev)

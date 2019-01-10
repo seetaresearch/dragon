@@ -21,7 +21,7 @@
 #include <device_launch_parameters.h>
 #endif
 
-#ifdef WITH_MPI_NCCL
+#ifdef WITH_NCCL
 #include <nccl.h>
 #endif
 
@@ -76,18 +76,24 @@ const int CUDA_MAX_BLOCKS = 65535;
     CHECK_EQ(status, CURAND_STATUS_SUCCESS); \
   } while (0)
 
-#ifdef WITH_MPI_NCCL
+#ifdef WITH_NCCL
 #define NCCL_CHECK(condition) \
   do { \
     ncclResult_t status = condition; \
     CHECK_EQ(status, ncclSuccess) \
         << "\n" << ncclGetErrorString(status); \
   } while (0)
-#endif  // WITH_MPI_NCCL
+#endif  // WITH_NCCL
 
 #define CUDA_1D_KERNEL_LOOP(i, n) \
   for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; \
        i < n; i += blockDim.x * gridDim.x)
+
+#define CUDA_2D_KERNEL_LOOP1(i, n) \
+    for (size_t i = blockIdx.x; i < n; i += gridDim.x)
+
+#define CUDA_2D_KERNEL_LOOP2(j, m) \
+    for (size_t j = threadIdx.x; j < m; j += blockDim.x)
 
 inline int CUDA_BLOCKS(const int N) {
     return std::max(
@@ -95,6 +101,10 @@ inline int CUDA_BLOCKS(const int N) {
             (N + CUDA_THREADS - 1) / CUDA_THREADS,
             CUDA_MAX_BLOCKS
         ), 1);
+}
+
+inline int CUDA_2D_BLOCKS(const int N) {
+    return std::max(std::min(N, CUDA_MAX_BLOCKS), 1);
 }
 
 #if CUDA_VERSION_MAX(9, 0, 0)

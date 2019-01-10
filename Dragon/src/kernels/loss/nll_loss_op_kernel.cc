@@ -12,10 +12,10 @@ void _NLLLoss(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const Tx*               log_prob,
     const Ty*               labels,
     const int*              ignores,
-    const int               num_ignores,
     Tx*                     losses,
     Tx*                     flags) {
     for (int oix = 0; oix < outer_dim; ++oix) {
@@ -44,17 +44,16 @@ template <> void NLLLoss<float, float, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float*            log_prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     CPUContext*             ctx) {
     _NLLLoss<float, float>(
-        outer_dim, axis_dim, inner_dim,
-            log_prob, labels, ignores,
-                num_ignores, losses, flags);
+        outer_dim, axis_dim, inner_dim, num_ignores,
+            log_prob, labels, ignores, losses, flags);
 }
 
 /*! NLLLoss <Tx = float32, Ty = int64, Device = CPU> */
@@ -63,17 +62,16 @@ template <> void NLLLoss<float, int64_t, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float*            log_prob,
     const int64_t*          labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     CPUContext*             ctx) {
     _NLLLoss<float, int64_t>(
-        outer_dim, axis_dim, inner_dim,
-            log_prob, labels, ignores,
-                num_ignores, losses, flags);
+        outer_dim, axis_dim, inner_dim, num_ignores,
+            log_prob, labels, ignores, losses, flags);
 }
 
 /*! NLLLoss <Tx = float16, Ty = float32, Device = CPU> */
@@ -82,10 +80,10 @@ template <> void NLLLoss<float16, float, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float16*          log_prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     CPUContext*             ctx) {
@@ -98,10 +96,10 @@ template <> void NLLLoss<float16, int64_t, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float16*          log_prob,
     const int64_t*          labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     CPUContext*             ctx) {
@@ -115,10 +113,10 @@ void _NLLLossGrad(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const Tx*               log_prob,
     const Ty*               labels,
     const int*              ignores,
-    const int               num_ignores,
     Tx*                     dx,
     Tx*                     flags) {
     for (int oix = 0; oix < outer_dim; ++oix) {
@@ -144,17 +142,16 @@ template<> void NLLLossGrad<float, float, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float*            log_prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  dx,
     float*                  flags,
     CPUContext*             ctx) {
     _NLLLossGrad<float, float>(
-        outer_dim, axis_dim, inner_dim,
-            log_prob, labels, ignores,
-                num_ignores, dx, flags);
+        outer_dim, axis_dim, inner_dim, num_ignores,
+            log_prob, labels, ignores, dx, flags);
 }
 
 /*! NLLLossGrad <Tx = float32, Ty = int64, Device = CPU> */
@@ -163,17 +160,16 @@ template<> void NLLLossGrad<float, int64_t, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float*            log_prob,
     const int64_t*          labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  dx,
     float*                  flags,
     CPUContext*             ctx) {
     _NLLLossGrad<float, int64_t>(
-        outer_dim, axis_dim, inner_dim,
-            log_prob, labels, ignores,
-                num_ignores, dx, flags);
+        outer_dim, axis_dim, inner_dim, num_ignores,
+            log_prob, labels, ignores, dx, flags);
 }
 
 /*! NLLLossGrad <Tx = float16, Ty = float32, Device = CPU> */
@@ -182,10 +178,10 @@ template<> void NLLLossGrad<float16, float, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float16*          log_prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float16*                dx,
     float*                  flags,
     CPUContext*             ctx) {
@@ -198,10 +194,10 @@ template<> void NLLLossGrad<float16, int64_t, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float16*          log_prob,
     const int64_t*          labels,
     const int*              ignores,
-    const int               num_ignores,
     float16*                dx,
     float*                  flags,
     CPUContext*             ctx) {

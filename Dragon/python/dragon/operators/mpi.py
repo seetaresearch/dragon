@@ -18,6 +18,7 @@ import dragon.core.mpi as mpi
 from . import *
 
 
+@OpSchema.Inputs(1)
 def MPIBroadcast(inputs, root, mpi_ranks=None, **kwargs):
     """Broadcast a tensor to all nodes in the ``MPIGroup``.
 
@@ -27,7 +28,7 @@ def MPIBroadcast(inputs, root, mpi_ranks=None, **kwargs):
         The tensor to broadcast.
     root : int
         The world rank of root node.
-    mpi_ranks: int, list of int or None
+    mpi_ranks: sequence of int, optional
         The world rank of nodes in group. Default is ``None`` (Use All).
 
     Returns
@@ -42,8 +43,7 @@ def MPIBroadcast(inputs, root, mpi_ranks=None, **kwargs):
     For others, the input is **inaccessible**.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
     if mpi_ranks is None:
         num_nodes = mpi.Size()
         mpi_ranks = [i for i in range(0, num_nodes)]
@@ -51,15 +51,10 @@ def MPIBroadcast(inputs, root, mpi_ranks=None, **kwargs):
 
     comm, group = mpi.CreateGroup(root, incl=mpi_ranks)
     arguments = {'inputs': arguments['inputs'], 'comm': comm, 'group': group}
-
-    output = Tensor.CreateOperator(nout=1, op_type='MPIBroadcast', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator('MPIBroadcast', **arguments)
 
 
+@OpSchema.Inputs(1)
 def MPIGather(inputs, root, mpi_ranks=None, **kwargs):
     """Gather a tensor from all nodes to root in the ``MPIGroup``.
 
@@ -69,12 +64,12 @@ def MPIGather(inputs, root, mpi_ranks=None, **kwargs):
         The tensor to gather.
     root : int
         The world rank of root node.
-    mpi_ranks: int, list of int or None
+    mpi_ranks: sequence of int, optional
         The world rank of nodes in group. Default is ``None`` (Use All).
 
     Returns
     -------
-    Tensor or list of Tensor
+    sequence of Tensor
         The gathered outputs.
 
     Notes
@@ -84,8 +79,7 @@ def MPIGather(inputs, root, mpi_ranks=None, **kwargs):
     The outputs are **accessible** only for root and vice versa.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
 
     if mpi_ranks is None:
         num_nodes = mpi.Size()
@@ -93,14 +87,12 @@ def MPIGather(inputs, root, mpi_ranks=None, **kwargs):
     if not isinstance(mpi_ranks, list): mpi_ranks = [mpi_ranks]
 
     comm, group = mpi.CreateGroup(root, incl=mpi_ranks)
-    arguments = {'inputs': arguments['inputs'], 'comm': comm, 'group': group}
 
-    outputs = Tensor.CreateOperator(nout=len(mpi_ranks), op_type='MPIGather', **arguments)
+    arguments = {
+        'inputs': arguments['inputs'],
+        'comm': comm,
+        'group': group,
+        'num_outputs': len(mpi_ranks)
+    }
 
-    if inputs.shape is not None:
-        if isinstance(outputs, list):
-            for output in outputs:
-                output.shape = inputs.shape[:]
-        else: outputs.shape = inputs.shape[:]
-
-    return outputs
+    return Tensor.CreateOperator('MPIGather', **arguments)

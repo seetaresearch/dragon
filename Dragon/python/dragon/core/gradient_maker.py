@@ -30,23 +30,15 @@ from __future__ import print_function
 
 from collections import defaultdict
 
-from dragon.import_c_apis import *
-import dragon.config as config
-import dragon.protos.dragon_pb2 as pb
-from dragon.core.utils import MakeOperatorDef
+import dragon.proto.dragon_pb2 as pb
+import dragon.import_c_api as C
 
-from .scope import GetOperatorName
-
-
-def _op_name(given=None):
-    if given: return given
-    _, name = GetOperatorName()
-    return name
+from dragon.core.helper import OperatorHelper
+from dragon.core.proto_utils import MakeOperatorDef
 
 
 class GraphGradientMaker(object):
-    """
-    GraphGradientMaker is deigned to generate gradient operators automatically.
+    """``GraphGradientMaker`` is deigned to generate gradient operators automatically.
 
     It relies on the generating rules defined in the C++ backend.
 
@@ -61,7 +53,7 @@ class GraphGradientMaker(object):
             The OperatorDef of ``ForwardOp``.
         g_outputs : list of str or list of None
             The inputs of ``BackwardOp`` (Precomputed grads).
-        name : str or None
+        name : str, optional
             The optional operator name.
 
         Returns
@@ -75,7 +67,7 @@ class GraphGradientMaker(object):
 
         """
         g_ops, g_inputs, defaults = \
-            CreateGradientDefsCC(forward_op.SerializeToString(), g_outputs)
+            C.CreateGradientDefsCC(forward_op.SerializeToString(), g_outputs)
         for idx, g_op in enumerate(g_ops):
             new_def = pb.OperatorDef()
             new_def.ParseFromString(g_op)
@@ -103,7 +95,7 @@ class GraphGradientMaker(object):
             The result of checking and generated filling grads.
 
         """
-        if forward_op.type in config.NO_GRADIENT_OPERATORS:
+        if forward_op.type in C.NO_GRADIENT_OPERATORS:
             for input in forward_op.input: blacklist.add(input)
             return (True, None)
 
@@ -133,9 +125,9 @@ class GraphGradientMaker(object):
         ----------
         forward_ops : list of dragon_pb2.OperatorDef
             The operators of ``ForwardOp``.
-        targets : list of str
+        targets : sequence of str
             The solving targets.
-        input_grads : dict or None
+        input_grads : dict, optional
             The input grads.
         auto_names : boolean
             Whether to use auto names for backward ops.
@@ -161,7 +153,7 @@ class GraphGradientMaker(object):
 
         # PLAY for the forward
         for forward_op in forward_ops:
-            if forward_op.type in config.NO_GRADIENT_OPERATORS: continue
+            if forward_op.type in C.NO_GRADIENT_OPERATORS: continue
             outputs = [o for o in forward_op.output]
             for input in forward_op.input:
                 if input not in outputs:
@@ -188,14 +180,14 @@ class GraphGradientMaker(object):
                         op_inputs.append(item[0])
                         op_outputs.append(item[0] + '_grad')
                         values.append(defaults[item[1]])
-                    gen_op = MakeOperatorDef('GradientGenerate', op_inputs, op_outputs,
-                        name=_op_name(None if auto_names else 'runtime'), defaults=values)
+                    gen_op = MakeOperatorDef('GradientGenerate', op_inputs, op_outputs, defaults=values)
+                    gen_op.name = OperatorHelper.get_name() if auto_names else 'runtime'
                     if forward_op.HasField('device_option'):
                         gen_op.device_option.CopyFrom(forward_op.device_option)
                     backward_ops.append(gen_op)
                 # --> GradOp
                 for g_op in g_ops:
-                    g_op.name = _op_name(None if auto_names else 'runtime')
+                    g_op.name = OperatorHelper.get_name() if auto_names else 'runtime'
                     backward_ops.append(g_op)
 
             # Split & Gather grads for multi-used input
@@ -223,7 +215,7 @@ class GraphGradientMaker(object):
                             gather_op = MakeOperatorDef('GradientGather', split_inputs, [g_output])
                             if g_op.HasField('device_option'):
                                 gather_op.device_option.CopyFrom(g_op.device_option)
-                            gather_op.name = _op_name(None if auto_names else 'runtime')
+                            gather_op.name = OperatorHelper.get_name() if auto_names else 'runtime'
                             backward_ops.append(gather_op)
                         g_op.output[g_output_idx] = split_name
 

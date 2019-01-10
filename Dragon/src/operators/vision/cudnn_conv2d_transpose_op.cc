@@ -10,17 +10,17 @@ namespace dragon {
 #define WORKSPACE_LIMIT_BYTES 64 * 1024 * 1024 // 64MB
 
 template <class Context> template <typename T>
-void CuDNNConv2dTransposeOp<Context>::ResetDesc() {
+void CuDNNConvTranspose2dOp<Context>::ResetDesc() {
 #if CUDNN_VERSION_MIN(5, 0, 0)
     CUDNN_CHECK(cudnnSetFilter4dDescriptor(
         filter_desc, CUDNNType<T>::type, format,
             channels / cudnn_group, num_output / group,
-                kernel_size[0], kernel_size[1]));
+                kernel_shape[0], kernel_shape[1]));
 #else
     CUDNN_CHECK(cudnnSetFilter4dDescriptor_v4(
         filter_desc, CUDNNType<T>::type, format,
             channels / cudnn_group, num_output / group,
-                kernel_size[0], kernel_size[1]));
+                kernel_shape[0], kernel_shape[1]));
 #endif
 
     // Determine the input & output shape
@@ -36,10 +36,10 @@ void CuDNNConv2dTransposeOp<Context>::ResetDesc() {
             &output2b_desc, data_format, Output(0)->dims());
         if (data_format == "NCHW") {
             cudnnSetTensor4dDesc<T>(&bias_desc, data_format,
-                vector<TIndex>({ 1, num_output, 1, 1 }));
+                vector<int64_t>({ 1, num_output, 1, 1 }));
         } else if (data_format == "NHWC") {
             cudnnSetTensor4dDesc<T>(&bias_desc, data_format,
-                vector<TIndex>({ 1, 1, 1, num_output }));
+                vector<int64_t>({ 1, 1, 1, num_output }));
         }
     }
 
@@ -65,7 +65,7 @@ void CuDNNConv2dTransposeOp<Context>::ResetDesc() {
 }
 
 template <class Context> template <typename T>
-void CuDNNConv2dTransposeOp<Context>::RunWithType() {
+void CuDNNConvTranspose2dOp<Context>::RunWithType() {
     if (Input(0).dims() != input_dims) ResetDesc<T>();
 
     auto* Xdata = Input(0).template data<T, Context>();
@@ -96,27 +96,25 @@ void CuDNNConv2dTransposeOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void CuDNNConv2dTransposeOp<Context>::RunOnDevice() {
+void CuDNNConvTranspose2dOp<Context>::RunOnDevice() {
 #if CUDNN_VERSION_MAX(6, 0, 0)
     for (int i = 0; i < dilation.size(); i++)
         if (dilation[i] != 1) 
             return Conv2dTransposeOp<Context>::RunOnDevice();
 #endif
-    Conv2dTransposeOp<Context>::Reshape();
-
-    ctx()->set_stream_id(0);  // Enforce SyncStream
+    ConvTranspose2dOp<Context>::Reshape();
 
     if (XIsType(Input(0), float)) {
 #if CUDNN_VERSION_MIN(6, 0, 0)
         CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
-            pad[0], pad[1],
+            pad_l[0], pad_l[1],
                 stride[0], stride[1],
                     dilation[0], dilation[1],
                         CUDNN_CROSS_CORRELATION,
                             CUDNN_DATA_FLOAT));
 #else
         CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
-            pad[0], pad[1],
+            pad_l[0], pad_l[1],
                 stride[0], stride[1], 1, 1,
                     CUDNN_CROSS_CORRELATION));
 #endif
@@ -131,14 +129,14 @@ void CuDNNConv2dTransposeOp<Context>::RunOnDevice() {
 #if CUDNN_VERSION_MIN(6, 0, 0)
         compute_type = CUDNN_DATA_FLOAT;
         CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
-            pad[0], pad[1],
+            pad_l[0], pad_l[1],
                 stride[0], stride[1],
                     dilation[0], dilation[1],
                         CUDNN_CROSS_CORRELATION,
                             compute_type));
 #else
         CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
-            pad[0], pad[1],
+            pad_l[0], pad_l[1],
                 stride[0], stride[1], 1, 1,
                     CUDNN_CROSS_CORRELATION));
 #endif
@@ -152,20 +150,20 @@ void CuDNNConv2dTransposeOp<Context>::RunOnDevice() {
     } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
-DEPLOY_CUDNN(Conv2dTranspose);
+DEPLOY_CUDNN(ConvTranspose2d);
 
 template <class Context> template <typename T>
-void CuDNNConv2dTransposeGradientOp<Context>::ResetDesc() {
+void CuDNNConvTranspose2dGradientOp<Context>::ResetDesc() {
 #if CUDNN_VERSION_MIN(5, 0, 0)
     CUDNN_CHECK(cudnnSetFilter4dDescriptor(
         filter_desc, CUDNNType<T>::type, format,
             channels / cudnn_group, num_output / group,
-                kernel_size[0], kernel_size[1]));
+                kernel_shape[0], kernel_shape[1]));
 #else
     CUDNN_CHECK(cudnnSetFilter4dDescriptor_v4(
         filter_desc, CUDNNType<T>::type, format,
             channels / cudnn_group, num_output / group,
-                kernel_size[0], kernel_size[1]));
+                kernel_shape[0], kernel_shape[1]));
 #endif
 
     // Determine the input & output shape
@@ -181,10 +179,10 @@ void CuDNNConv2dTransposeGradientOp<Context>::ResetDesc() {
             &input2b_desc, data_format, Input(-1).dims());
         if (data_format == "NCHW") {
             cudnnSetTensor4dDesc<T>(&bias_desc, data_format,
-                vector<TIndex>({ 1, num_output, 1, 1 }));
+                vector<int64_t>({ 1, num_output, 1, 1 }));
         } else if (data_format == "NHWC") {
             cudnnSetTensor4dDesc<T>(&bias_desc, data_format,
-                vector<TIndex>({ 1, 1, 1, num_output }));
+                vector<int64_t>({ 1, 1, 1, num_output }));
         }
     }
 
@@ -221,7 +219,7 @@ void CuDNNConv2dTransposeGradientOp<Context>::ResetDesc() {
 }
 
 template <class Context> template <typename T>
-void CuDNNConv2dTransposeGradientOp<Context>::RunWithType() {
+void CuDNNConvTranspose2dGradientOp<Context>::RunWithType() {
     if (Input(0).dims() != input_dims) ResetDesc<T>();
 
     const T* dYdata = Input(2).template data<T, Context>();
@@ -232,7 +230,7 @@ void CuDNNConv2dTransposeGradientOp<Context>::RunWithType() {
     auto cudnn_handle = ctx()->cudnn_handle();
 
     if (Output(2)->name() != "ignore") {
-        T* dBdata = Output(2)->template mutable_data<T, Context>(ctx());
+        T* dBdata = Output(2)->template mutable_data<T, Context>();
         CUDNN_CHECK(cudnnConvolutionBackwardBias(cudnn_handle,
             CUDNNType<T>::one, input2b_desc, dYdata,
                 CUDNNType<T>::one, bias_desc, dBdata));
@@ -241,7 +239,7 @@ void CuDNNConv2dTransposeGradientOp<Context>::RunWithType() {
     for (int g = 0; g < cudnn_group; g++) {
         if (Output(1)->name() != "ignore") {
             auto* Xdata = Input(0).template data<T, Context>();
-            auto* dWdata = Output(1)->template mutable_data<T, Context>(ctx());
+            auto* dWdata = Output(1)->template mutable_data<T, Context>();
             CUDNN_CHECK(cudnnConvolutionBackwardFilter(cudnn_handle,
                 CUDNNType<T>::one, input_desc, dYdata + y_offset * g,
                     output_desc, Xdata + x_offset * g,
@@ -261,27 +259,25 @@ void CuDNNConv2dTransposeGradientOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void CuDNNConv2dTransposeGradientOp<Context>::RunOnDevice() {
+void CuDNNConvTranspose2dGradientOp<Context>::RunOnDevice() {
 #if CUDNN_VERSION_MAX(6, 0, 0)
     for (int i = 0; i < dilation.size(); i++)
         if (dilation[i] != 1)
             return Conv2dTransposeGradientOp<Context>::RunOnDevice();
 #endif
-    Conv2dTransposeGradientOp<Context>::GradientReshape();
-
-    ctx()->set_stream_id(0);  // Enforce SyncStream
+    ConvTranspose2dGradientOp<Context>::GradientReshape();
 
     if (XIsType(Input(0), float)) {
 #if CUDNN_VERSION_MIN(6, 0, 0)
         CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
-            pad[0], pad[1],
+            pad_l[0], pad_l[1],
                 stride[0], stride[1],
                     dilation[0], dilation[1],
                         CUDNN_CROSS_CORRELATION,
                             CUDNN_DATA_FLOAT));
 #else
         CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
-            pad[0], pad[1],
+            pad_l[0], pad_l[1],
                 stride[0], stride[1], 1, 1,
                     CUDNN_CROSS_CORRELATION));
 #endif
@@ -296,14 +292,14 @@ void CuDNNConv2dTransposeGradientOp<Context>::RunOnDevice() {
 #if CUDNN_VERSION_MIN(6, 0, 0)
         compute_type = CUDNN_DATA_FLOAT;
         CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
-            pad[0], pad[1],
+            pad_l[0], pad_l[1],
                 stride[0], stride[1],
                     dilation[0], dilation[1],
                         CUDNN_CROSS_CORRELATION,
                             compute_type));
 #else
         CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
-            pad[0], pad[1],
+            pad_l[0], pad_l[1],
                 stride[0], stride[1], 1, 1,
                     CUDNN_CROSS_CORRELATION));
 #endif
@@ -317,7 +313,7 @@ void CuDNNConv2dTransposeGradientOp<Context>::RunOnDevice() {
     } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
-DEPLOY_CUDNN(Conv2dTransposeGradient);
+DEPLOY_CUDNN(ConvTranspose2dGradient);
 
 }  // namespace dragon
 

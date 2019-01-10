@@ -13,57 +13,14 @@
 #ifndef DRAGON_UTILS_CAFFEMODEL_H_
 #define DRAGON_UTILS_CAFFEMODEL_H_
 
-#include <fcntl.h>
-#include <fstream>
-
-#include <google/protobuf/message.h>
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/io/zero_copy_stream_impl.h>
-#include <google/protobuf/text_format.h>
-
-#include "protos/caffemodel.pb.h"
 #include "core/workspace.h"
-#include "utils/string.h"
-#include "utils/logging.h"
+#include "proto/caffemodel.pb.h"
 
 namespace dragon {
 
-using google::protobuf::Message;
-using google::protobuf::io::ZeroCopyInputStream;
-using google::protobuf::io::CodedInputStream;
-using google::protobuf::io::FileInputStream;
-
-inline void WriteProtoToBinaryFile(
-    const Message&              proto,
-    const char*                 filename) {
-    std::fstream output(filename,
-        std::ios::out |
-            std::ios::trunc |
-                std::ios::binary);
-    proto.SerializeToOstream(&output);
-}
-
-inline bool ReadProtoFromBinaryFile(
-    const char*                 filename,
-    Message*                    proto) {
-#ifdef _MSC_VER
-    int fd = _open(filename, O_RDONLY | O_BINARY);
-#else
-    int fd = open(filename, O_RDONLY);
-#endif
-    ZeroCopyInputStream* raw_input = new FileInputStream(fd);
-    CodedInputStream* coded_input = new CodedInputStream(raw_input);
-    coded_input->SetTotalBytesLimit(INT_MAX, -1);
-    bool success = proto->ParseFromCodedStream(coded_input);
-    delete raw_input;
-    delete coded_input;
-    close(fd);
-    return success;
-}
-
 inline void LoadCaffeModel(
-    string                      file,
-    Workspace*                  ws) {
+    string                          file,
+    Workspace*                      ws) {
     NetParameter net_param;
     ReadProtoFromBinaryFile(file.c_str(), &net_param);
     LOG(INFO) << "Restore From Model @: " << file << "......";
@@ -79,7 +36,7 @@ inline void LoadCaffeModel(
                 << "does not exist in any Graphs, skip.";
             else{
                 BlobProto blob = layer.blobs(j);
-                vector<TIndex> dims;
+                vector<int64_t> dims;
                 for (auto dim : blob.shape().dim()) dims.push_back(dim);
                 Tensor* tensor = ws->GetTensor(tensor_name);
                 std::stringstream DimString;
@@ -107,8 +64,8 @@ inline void LoadCaffeModel(
 }
 
 inline void SavaCaffeModel(
-    string                      file,
-    const vector<Tensor*>&      tensors) {
+    string                          file,
+    const vector<Tensor*>&          tensors) {
     NetParameter net_param;
     Map<string, int> layer_hash;
     int layer_idx = -1;
@@ -123,17 +80,20 @@ inline void SavaCaffeModel(
         }
         BlobProto* blob = net_param.mutable_layer(layer_idx)->add_blobs();
         for (auto dim : tensors[i]->dims()) blob->mutable_shape()->add_dim(dim);
-        const float* Xdata = tensors[i]->data<float, CPUContext>();
-        for (int id = 0; id < tensors[i]->count(); id++)
-            blob->mutable_data()->Add(Xdata[id]);
+        if (XIsType((*tensors[i]), float)) {
+            auto* Xdata = tensors[i]->data<float, CPUContext>();
+            for (int id = 0; id < tensors[i]->count(); id++)
+                blob->mutable_data()->Add(Xdata[id]);
+        } else if (XIsType((*tensors[i]), float16)) {
+            auto* Xdata = tensors[i]->data<float16, CPUContext>();
+            for (int id = 0; id < tensors[i]->count(); id++)
+                blob->mutable_data()->Add(
+                    cast::to<float>(Xdata[id]));
+        }
     }
-    std::fstream output(file,
-        std::ios::out |
-            std::ios::trunc |
-                std::ios::binary);
-    CHECK(net_param.SerializeToOstream(&output));
+    WriteProtoToBinaryFile(net_param, file.c_str());
     LOG(INFO) << "Save the model @: " << file << "......";
-    LOG(INFO) << "Model format: caffemodel";
+    LOG(INFO) << "Model format: Caffe";
 }
 
 }  // namespace dragon

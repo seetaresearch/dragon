@@ -30,7 +30,7 @@ class ClipOp final : public Operator<Context> {
     template <typename T> void RunWithType();
     
  protected:
-    float low, high;
+    float low, high, lowT, highT;
 };
 
 template <class Context>
@@ -46,7 +46,7 @@ class ClipGradientOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    float low, high;
+    float low, high, lowT, highT;
 };
 
 }  // namespace dragon

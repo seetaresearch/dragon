@@ -15,13 +15,15 @@
 
 #include <ctime>
 #include <cmath>
-#include <random>
 #include <climits>
 #include <float.h>
+#include <random>
+#include <numeric>
 #include <memory>
 #include <string>
 #include <queue>
 #include <stack>
+#include <array>
 #include <vector>
 #include <set>
 #include <map>
@@ -32,7 +34,7 @@
 #include <functional>
 
 #include "core/types.h"
-#include "protos/dragon.pb.h"
+#include "proto/dragon.pb.h"
 #include "utils/logging.h"
 
 namespace dragon {
@@ -57,11 +59,11 @@ using Set = std::unordered_set<Value>;
  *                                       *
  *            Kernel Version             *
  *                                       *
- *     Major(2) | Minor(2) | Patch(13)   *
+ *     Major(3) | Minor(0) | Patch(00)   *
  *                                       *
  * * * * * * * * * * * * * * * * * * * * */
 
-#define DRAGON_VERSION 2213
+#define DRAGON_VERSION 3000
 
 /* * * * * * * * * * * * * * * * * * * * *
  *                                       *

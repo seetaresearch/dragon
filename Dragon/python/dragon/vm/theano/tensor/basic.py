@@ -33,9 +33,9 @@ def scalar(name=None, dtype=None):
 
     Parameters
     ----------
-    name : str or None
+    name : str, optional
         The name of Tensor.
-    dtype : str or None
+    dtype : str, optional
         The data type of Tensor.
 
     Return
@@ -53,7 +53,7 @@ def iscalar(name=None):
 
     Parameters
     ----------
-    name : str or None
+    name : str, optional
         The name of Tensor.
 
     Return
@@ -74,11 +74,11 @@ def constant(x, name=None, shape=None, dtype=None):
     ----------
     x : basic numerical type
         The constant value.
-    name : str or None
+    name : str, optional
         The name of Tensor.
-    shape : list, tuple or None
+    shape : sequence of int, optional
         The shape of Tensor.
-    dtype : str or None
+    dtype : str, optional
         The data type of Tensor.
 
     Returns
@@ -105,9 +105,9 @@ def zeros(shape, dtype=None):
 
     Parameters
     ----------
-    shape : tuple or list
+    shape : sequence of int
         The shape of Tensor.
-    dtype : str or None
+    dtype : str, optional
         The data type of Tensor.
 
     Returns
@@ -159,9 +159,9 @@ def ones(shape, dtype=None):
 
     Parameters
     ----------
-    shape : tuple or list
+    shape : sequence of int
         The shape of Tensor.
-    dtype : str or None
+    dtype : str, optional
         The data type of Tensor.
 
     Returns
@@ -215,7 +215,7 @@ def cast(x, dtype):
     ----------
     x : Tensor
         The input tensor.
-    dtype : str or None
+    dtype : str
         The data type.
 
     Returns
@@ -260,7 +260,7 @@ def transpose(x, axes=None):
     ----------
     x : Tensor
         The input tensor.
-    axes : tuple, list or None
+    axes : sequence of int, optional
         The permutations. Default is ``None`` (Reverse Dimensions).
 
     Returns
@@ -269,15 +269,51 @@ def transpose(x, axes=None):
         The output tensor.
 
     """
-    return ops.Transpose(x, perms=axes)
+    return ops.Transpose(x, perm=axes)
 
 
 def max(x, axis=None, keepdims=False):
-    raise NotImplementedError()
+    """Compute the values of maximum elements along the given axis.
+
+    Parameters
+    ----------
+    x : Tensor
+        The input tensor.
+    axis : int
+        The axis to compute. Default is ``None`` (Along all axes).
+    keep_dims : boolean
+        Whether to keep dims after computing.
+
+    Returns
+    -------
+    Tensor
+        The values.
+
+    """
+    if axis is None: axis = -1
+    return ops.Max(x, axis=axis, keep_dims=keepdims)
 
 
 def min(x, axis=None, keepdims=False):
-    raise NotImplementedError()
+    """Compute the values of minimum elements along the given axis.
+
+    Parameters
+    ----------
+    x : Tensor
+        The input tensor.
+    axis : int
+        The axis to compute. Default is ``None`` (Along all axes).
+    keep_dims : boolean
+        Whether to keep dims after computing.
+
+    Returns
+    -------
+    Tensor
+        The values.
+
+    """
+    if axis is None: axis = -1
+    return ops.Min(x, axis=axis, keep_dims=keepdims)
 
 
 def sum(input, axis=None, keepdims=False, **kwargs):
@@ -365,7 +401,7 @@ def argmax(x, axis=None, keepdims=False):
 
     """
     if axis is None: axis = -1
-    return ops.Argmax(x, axis=axis, keep_dims=keepdims)
+    return ops.ArgMax(x, axis=axis, keep_dims=keepdims)
 
 
 def argmin(x, axis=None, keepdims=False):
@@ -387,7 +423,7 @@ def argmin(x, axis=None, keepdims=False):
 
     """
     if axis is None: axis = -1
-    return ops.Argmin(x, axis=axis, keep_dims=keepdims)
+    return ops.ArgMin(x, axis=axis, keep_dims=keepdims)
 
 
 def square(a):
@@ -424,7 +460,7 @@ def sqrt(a):
     return ops.Sqrt(a)
 
 
-def pow(a):
+def pow(a, power):
     """Calculate the power of input.
 
     Parameters
@@ -435,10 +471,10 @@ def pow(a):
     Returns
     -------
     Tensor
-        The sqrt result.
+        The pow result.
 
     """
-    return ops.Pow(a)
+    return ops.Pow(a, power)
 
 
 def exp(a):
@@ -482,9 +518,9 @@ def clip(x, min=None, max=None):
     ----------
     x : Tensor
         The input tensor.
-    min : basic numerical type or None
+    min : number, optional
         The min bound. Default is ``None`` (Ignore).
-    max : basic numerical type or None
+    max : number, optional
         The max bound. Default is ``None`` (Ignore).
 
     Returns

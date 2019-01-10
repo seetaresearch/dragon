@@ -16,7 +16,6 @@ from __future__ import print_function
 from dragon.vm.torch.tensor import Tensor
 from dragon.vm.torch.nn import Module, Parameter
 from dragon.vm.torch.ops.creation import zeros, ones
-from dragon.vm.torch.module import RunOperator
 
 
 class _GroupNorm(Module):
@@ -31,8 +30,9 @@ class _GroupNorm(Module):
             self.weight = Parameter(Tensor(num_features))
             self.bias = Parameter(Tensor(num_features))
         else:
-            self.weight = self.bias = None
-        self.inputs = [self.weight, self.bias] if self.affine else []
+            self.register_buffer('weight', ones(num_features))
+            self.register_buffer('bias', zeros(num_features))
+        self.inputs = [self.weight, self.bias]
         self.reset_parameters()
         self.register_op()
 
@@ -43,8 +43,8 @@ class _GroupNorm(Module):
 
     def register_op(self):
         self.op_meta = {
-            'op_type': 'FusedGroupNorm' if self.affine else 'GroupNorm',
-            'n_inputs': 3 if self.affine else 1, 'n_outputs': 1,
+            'op_type': 'GroupNorm',
+            'n_inputs': 3, 'n_outputs': 1,
             'arguments': {
                 'group': self.group,
                 'axis': 1, # Data format: NCHW

@@ -9,7 +9,12 @@
 #
 # ------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from dragon.core.tensor import Tensor
+
 
 class Dimension(object):
     def __init__(self, value):
@@ -98,8 +103,7 @@ class TensorShape(object):
 
 
 def get_shape(self):
-    """
-    Construct the shape descriptor.
+    """Construct the shape descriptor.
 
     Returns
     -------
@@ -108,5 +112,6 @@ def get_shape(self):
 
     """
     return TensorShape(self.shape)
+
 
 Tensor.get_shape = get_shape

@@ -35,15 +35,14 @@ class DimOpBase : public Operator<Context> {
 
 template <class Context>
 class DimGradientOpBase : public Operator<Context> {
-public:
+ public:
     USE_SIMPLE_CTOR_DTOR(DimGradientOpBase);
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override {
-        //  simply copy the dY to dX
+        // Simply copy the dY to dX
         Output(0)->ReshapeLike(Input(0));
-        if (Output(0)->name() != Input(-1).name())
-            Output(0)->template CopyFrom<Context>(Input(-1), ctx());
+        Output(0)->template CopyFrom<Context>(Input(-1), ctx());
     }
 };
 
@@ -67,20 +66,20 @@ class ReshapeOp final : public DimOpBase<Context> {
     ReshapeOp(const OperatorDef& def, Workspace* ws)
         : DimOpBase<Context>(def, ws),
           shape_like_desc(OperatorBase::Arg<string>("shape_like", "")) {
-        GET_ARGUMENTS_WITH_DESC(int, shape);
+        GET_ARGUMENTS_WITH_DESC(int64_t, dims);
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
 
  protected:
-    DECLARE_ARGUMENTS_WITH_DESC(int, shape);
     string shape_like_desc;
-    vector<TIndex> require_shape, new_shape;
+    vector<int64_t> require_shape, new_shape;
+    DECLARE_ARGUMENTS_WITH_DESC(int64_t, dims);
 };
 
-DEFINE_ARGUMENTS_WITH_DESC(int, ReshapeOp, shape);
 DEFINE_DIMENSION_GRADIENT_OP(Reshape);
+DEFINE_ARGUMENTS_WITH_DESC(int64_t, ReshapeOp, dims);
 
 /*********************************************
 *                                            *
@@ -93,15 +92,15 @@ class FlattenOp final : public DimOpBase<Context> {
  public:
     FlattenOp(const OperatorDef& def, Workspace* ws)
         : DimOpBase<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", 0)),
-          num_axes(OperatorBase::Arg<int>("num_axes", -1)),
-          keep_axes(OperatorBase::Arg<int>("keep_axes", INT_MAX)) {}
+          axis(OperatorBase::Arg<int64_t>("axis", 0)),
+          num_axes(OperatorBase::Arg<int64_t>("num_axes", -1)),
+          keep_axes(OperatorBase::Arg<int64_t>("keep_axes", INT_MAX)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
 
  protected:
-    TIndex axis, num_axes, keep_axes;
+    int64_t axis, num_axes, keep_axes;
 };
 
 DEFINE_DIMENSION_GRADIENT_OP(Flatten);
@@ -117,16 +116,13 @@ class ExpandDimsOp final : public DimOpBase<Context> {
  public:
     ExpandDimsOp(const OperatorDef& def, Workspace* ws)
         : DimOpBase<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", INT_MAX)) {
-        if (axis == INT_MAX)
-            LOG(FATAL) << "Excepted a axis to insert the new dim.";
-    }
+          axis(OperatorBase::Arg<int64_t>("axis", 0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
 
  protected:
-    TIndex axis;
+    int64_t axis;
 };
 
 DEFINE_DIMENSION_GRADIENT_OP(ExpandDims);
@@ -142,13 +138,13 @@ class SqueezeOp final : public DimOpBase<Context> {
 public:
     SqueezeOp(const OperatorDef& def, Workspace* ws)
         : DimOpBase<Context>(def, ws),
-        axis(OperatorBase::Arg<int>("axis", INT_MAX)) {}
+        axis(OperatorBase::Arg<int64_t>("axis", INT_MAX)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
 
  protected:
-    TIndex axis;
+    int64_t axis;
 };
 
 DEFINE_DIMENSION_GRADIENT_OP(Squeeze);

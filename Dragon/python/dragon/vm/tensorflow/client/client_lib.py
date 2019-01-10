@@ -9,5 +9,10 @@
 #
 # ------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+from dragon.vm.tensorflow.client.session import InteractiveSession
 from dragon.vm.tensorflow.client.session import Session
-from dragon.vm.tensorflow.client.session import get_default_session
+from dragon.vm.tensorflow.framework.ops import get_default_session

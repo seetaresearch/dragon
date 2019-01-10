@@ -13,8 +13,9 @@ import inspect
 import copy
 import sys
 from collections import OrderedDict
+
 from dragon.core.tensor import Tensor
-import dragon.protos.dragon_pb2 as pb
+import dragon.proto.dragon_pb2 as pb
 
 
 def scan(fn, sequences, outputs_info, n_steps=None, axis=0):
@@ -40,12 +41,13 @@ def scan(fn, sequences, outputs_info, n_steps=None, axis=0):
 
     Examples
     --------
-    >>> x = Tensor('x', dtype='float32')
+    >>> import dragon as dg
+    >>> import dragon.vm.theano as theano
+    >>> x = dg.Tensor('x', dtype='float32')
     >>> x.set_value([1, 2, 3, 4, 5])
-    >>> zero = Tensor('zero', dtype='float32').Variable()
+    >>> zero = dg.Tensor('zero', dtype='float32').Variable()
     >>> zero.set_value(0)
-    >>> prefix_sum = scan(fn=lambda x_i, y_i : x_i + y_i, sequences=x,
-                          outputs_info=zero, n_steps=x.shape[0], axis=0)
+    >>> prefix_sum = theano.scan(fn=lambda x_i, y_i : x_i + y_i, sequences=x, outputs_info=zero, n_steps=5, axis=0)
     >>> f = theano.function(outputs=prefix_sum)
     >>> print(f())
     >>> [  1.   3.   6.  10.  15.]
@@ -78,16 +80,15 @@ def scan(fn, sequences, outputs_info, n_steps=None, axis=0):
                             .format(len(outputs), len(outputs_info)))
 
     # Make GraphDef
-    graph_def = pb.GraphDef(); all_exprs = {}
+    graph_def = pb.GraphDef(); all_expressions = {}
     for output in outputs:
-        graph_def.target.extend([output._name])
+        graph_def.output.extend([output._name])
         if sys.version_info >= (3, 0):
-            all_exprs = OrderedDict(all_exprs, **output.expressions)
+            all_expressions = OrderedDict(all_expressions, **output.expressions)
         else:
-            all_exprs = dict(all_exprs, **output.expressions)
-
-    all_exprs = sorted(all_exprs.items(), key=lambda d:d[0])
-    forward_ops = copy.deepcopy([v for k,v in all_exprs])
+            all_expressions = dict(all_expressions, **output.expressions)
+        all_expressions = sorted(all_expressions.items(), key=lambda d:d[0])
+    forward_ops = copy.deepcopy([v for k,v in all_expressions])
     graph_def.op.extend(forward_ops)
 
     # Extract external inputs

@@ -21,9 +21,9 @@ template <> void SigmoidFocalLoss<float, CPUContext>(
     CPUContext*             ctx) {
     for (int oix = 0; oix < outer_dim; ++oix) {
         for (int aix = 0; aix < axis_dim; ++aix) {
-            TIndex offset = oix * axis_dim + aix;
+            int64_t offset = oix * axis_dim + aix;
             for (int iix = 0; iix < inner_dim; ++iix) {
-                const TIndex i = offset * inner_dim + iix;
+                const int64_t i = offset * inner_dim + iix;
                 const int t = (int)targets[oix * inner_dim + iix];
                 // ``0`` is reserved for targets if neg id is zero
                 // Use ``aix + 1`` to match the targets
@@ -68,9 +68,9 @@ template <> void SigmoidFocalLossGrad<float, CPUContext>(
     CPUContext*             ctx) {
     for (int oix = 0; oix < outer_dim; ++oix) {
         for (int aix = 0; aix < axis_dim; ++aix) {
-            TIndex offset = oix * axis_dim + aix;
+            int64_t offset = oix * axis_dim + aix;
             for (int iix = 0; iix < inner_dim; ++iix) {
-                const TIndex i = offset * inner_dim + iix;
+                const int64_t i = offset * inner_dim + iix;
                 const int t = (int)targets[oix * inner_dim + iix];
                 // ``0`` is reserved for targets if neg id is zero
                 // Use ``aix + 1`` to match the targets

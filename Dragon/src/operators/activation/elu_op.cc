@@ -8,8 +8,7 @@ template <class Context> template <typename T>
 void EluOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    kernel::Elu<T, Context>(Output(0)->count(),
-        alpha, Xdata, Ydata, ctx());
+    kernel::Elu(Output(0)->count(), alpha, Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -31,7 +30,8 @@ void EluGradientOp<Context>::RunWithType() {
     auto* Ydata = Input(0).template data<T, Context>();
     auto* dYdata = Input(1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    kernel::EluGrad<T, Context>(Output(0)->count(),
+
+    kernel::EluGrad(Output(0)->count(),
         alpha, dYdata, Ydata, dXdata, ctx());
 }
 
@@ -47,17 +47,11 @@ DEPLOY_CPU(EluGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(EluGradient);
 #endif
-OPERATOR_SCHEMA(EluGradient).NumInputs(2).NumOutputs(1).Inplace({ { 1, 0 }});
 
-class GetEluGradient final : public GradientMakerBase {
- public:
-    GRADIENT_MAKER_CTOR(GetEluGradient);
-    vector<OperatorDef> MakeDefs() override {
-        return SingleDef(def.type() + "Gradient", "",
-            vector<string> {O(0), GO(0)},
-            vector<string> {GI(0)});
-    }
-};
-REGISTER_GRADIENT(Elu, GetEluGradient);
+OPERATOR_SCHEMA(EluGradient)
+    .NumInputs(2).NumOutputs(1)
+    .Inplace({ { 1, 0 }});
+
+REGISTER_GRADIENT(Elu, InplaceGradientMaker);
 
 }  // namespace dragon

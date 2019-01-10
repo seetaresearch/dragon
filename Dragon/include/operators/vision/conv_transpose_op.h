@@ -18,9 +18,9 @@
 namespace dragon {
 
 template <class Context>
-class Conv2dTransposeOp : public ConvOpBase<Context> {
+class ConvTranspose2dOp : public ConvOpBase<Context> {
  public:
-    Conv2dTransposeOp(const OperatorDef& def, Workspace* ws) 
+    ConvTranspose2dOp(const OperatorDef& def, Workspace* ws) 
         : ConvOpBase<Context>(def, ws) {
         this->num_spatial_axes = 2;
         Setup(); 
@@ -40,10 +40,10 @@ class Conv2dTransposeOp : public ConvOpBase<Context> {
 };
 
 template <class Context>
-class Conv2dTransposeGradientOp : public Conv2dTransposeOp<Context> {
+class ConvTranspose2dGradientOp : public ConvTranspose2dOp<Context> {
  public:
-    Conv2dTransposeGradientOp(const OperatorDef& def, Workspace* ws)
-        : Conv2dTransposeOp<Context>(def, ws) {}
+    ConvTranspose2dGradientOp(const OperatorDef& def, Workspace* ws)
+        : ConvTranspose2dOp<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
     USE_CONVOLUTION_FUNCTIONS;
 
@@ -56,13 +56,13 @@ class Conv2dTransposeGradientOp : public Conv2dTransposeOp<Context> {
 #ifdef WITH_CUDNN
 
 template <class Context>
-class CuDNNConv2dTransposeOp final
-    : public Conv2dTransposeOp<Context> {
+class CuDNNConvTranspose2dOp final
+    : public ConvTranspose2dOp<Context> {
  public:
-    CuDNNConv2dTransposeOp(
+    CuDNNConvTranspose2dOp(
         const OperatorDef&          def,
         Workspace*                  ws)
-        : Conv2dTransposeOp<Context>(def, ws),
+        : ConvTranspose2dOp<Context>(def, ws),
           enable_tensor_core(true) {
 #if CUDNN_VERSION_MIN(7, 0, 0)
         cudnn_group = 1;
@@ -85,7 +85,7 @@ class CuDNNConv2dTransposeOp final
     USE_OPERATOR_FUNCTIONS;
     USE_CONVOLUTION_FUNCTIONS;
 
-    ~CuDNNConv2dTransposeOp() {
+    ~CuDNNConvTranspose2dOp() {
         CUDNN_CHECK(cudnnDestroyFilterDescriptor(filter_desc));
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
@@ -107,19 +107,19 @@ class CuDNNConv2dTransposeOp final
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;
     size_t fwd_data_size;
-    TIndex cudnn_group;
-    vector<TIndex> input_dims;
+    int64_t cudnn_group;
+    vector<int64_t> input_dims;
     bool enable_tensor_core;
 };
 
 template <class Context>
-class CuDNNConv2dTransposeGradientOp final
-    : public Conv2dTransposeGradientOp<Context> {
+class CuDNNConvTranspose2dGradientOp final
+    : public ConvTranspose2dGradientOp<Context> {
 public:
-    CuDNNConv2dTransposeGradientOp(
+    CuDNNConvTranspose2dGradientOp(
         const OperatorDef&          def,
         Workspace*                  ws)
-        : Conv2dTransposeGradientOp<Context>(def, ws),
+        : ConvTranspose2dGradientOp<Context>(def, ws),
           enable_tensor_core(true) {
 #if CUDNN_VERSION_MIN(7, 0, 0)
         cudnn_group = 1;
@@ -142,7 +142,7 @@ public:
     USE_OPERATOR_FUNCTIONS;
     USE_CONVOLUTION_FUNCTIONS;
 
-    ~CuDNNConv2dTransposeGradientOp() {
+    ~CuDNNConvTranspose2dGradientOp() {
         CUDNN_CHECK(cudnnDestroyFilterDescriptor(filter_desc));
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
         CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
@@ -165,8 +165,8 @@ public:
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;
     size_t bwd_filter_size, bwd_data_size;
-    TIndex cudnn_group;
-    vector<TIndex> input_dims;
+    int64_t cudnn_group;
+    vector<int64_t> input_dims;
     bool enable_tensor_core;
 };
 

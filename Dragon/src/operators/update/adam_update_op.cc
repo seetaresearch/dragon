@@ -16,10 +16,10 @@ void AdamUpdateOp<Context>::ComputeRunWithFloat32() {
     float coeff = sqrt(1. - pow(beta2, t)) / (1. - pow(beta1, t));
     lr = Param("base_lr") * coeff * this->lr_mult;
     auto* dXdata = Input(0).template mutable_data<float, Context>();
-    auto* Mdata = m->mutable_data<float, Context>(ctx());
-    auto* Vdata = v->mutable_data<float, Context>(ctx());
+    auto* Mdata = m->mutable_data<float, Context>();
+    auto* Vdata = v->mutable_data<float, Context>();
 
-    kernel::AdamUpdate<float, Context>(Input(0).count(),
+    kernel::AdamUpdate(Input(0).count(),
         lr, beta1, beta2, eps, dXdata, Mdata, Vdata, ctx());
 }
 
@@ -40,12 +40,11 @@ void AdamUpdateOp<Context>::ComputeRunWithFloat16() {
 
     auto* dX32 = dX32T->template mutable_data<float, Context>();
     auto* dX16 = Input(0).template mutable_data<float16, Context>();
-    auto* M32 = m->mutable_data<float, Context>(ctx());
-    auto* V32 = v->mutable_data<float, Context>(ctx());
+    auto* M32 = m->mutable_data<float, Context>();
+    auto* V32 = v->mutable_data<float, Context>();
 
-    kernel::TypeA2B<float16, float, Context>(
-        Input(0).count(), dX16, dX32, ctx());
-    kernel::AdamUpdate<float, Context>(Input(0).count(),
+    kernel::TypeA2B(Input(0).count(), dX16, dX32, ctx());
+    kernel::AdamUpdate(Input(0).count(),
         lr, beta1, beta2, eps, dX32, M32, V32, ctx());
 }
 

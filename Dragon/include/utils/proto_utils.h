@@ -14,26 +14,22 @@
 #define DRAGON_UTILS_PROTO_UTILS_H_
 
 #include <google/protobuf/message.h>
-#include <google/protobuf/text_format.h>
 
-#include "protos/dragon.pb.h"
 #include "core/common.h"
 
 namespace dragon {
 
-using google::protobuf::Message;
-
 template <class IterableInputs,
-              class IterableOutputs,
-                  class IterableArgs>
+          class IterableOutputs,
+          class IterableArgs>
 inline OperatorDef MakeOperatorDef(
-    const string&               type,
-    const string&               name,
-    const IterableInputs&       inputs,
-    const IterableOutputs&      outputs,
-    const IterableArgs&         args,
-    const DeviceOption&         device_option,
-    const string&               engine) {
+    const string&                       type,
+    const string&                       name,
+    const IterableInputs&               inputs,
+    const IterableOutputs&              outputs,
+    const IterableArgs&                 args,
+    const DeviceOption&                 device_option,
+    const string&                       engine) {
     OperatorDef def;
     def.set_type(type);
     def.set_name(name);
@@ -46,37 +42,46 @@ inline OperatorDef MakeOperatorDef(
 }
 
 template <class IterableInputs,
-              class IterableOutputs,
-                  class IterableArgs>
+          class IterableOutputs,
+          class IterableArgs>
 inline OperatorDef MakeOperatorDef(
-    const string&               type,
-    const string&               name,
-    const IterableInputs&       inputs,
-    const IterableOutputs&      outputs,
-    const IterableArgs&         args) {
+    const string&                       type,
+    const string&                       name,
+    const IterableInputs&               inputs,
+    const IterableOutputs&              outputs,
+    const IterableArgs&                 args) {
     return MakeOperatorDef(
         type, name, inputs, outputs, args,
             DeviceOption(), "");
 }
 
 template <class IterableInputs,
-              class IterableOutputs>
+          class IterableOutputs>
 inline OperatorDef MakeOperatorDef(
-    const string&               type,
-    const string&               name,
-    const IterableInputs&       inputs,
-    const IterableOutputs&      outputs) {
+    const string&                       type,
+    const string&                       name,
+    const IterableInputs&               inputs,
+    const IterableOutputs&              outputs) {
     return MakeOperatorDef(
         type, name, inputs, outputs,
             vector<Argument>(), DeviceOption(), "");
 }
 
-inline void ParseProtoFromText(
-    string                      text,
-    Message*                    proto) {
-    google::protobuf::TextFormat
-        ::ParseFromString(text, proto);
-}
+bool ParseProtoFromText(
+    string                              text,
+    google::protobuf::Message*          proto);
+
+bool ParseProtoFromLargeString(
+    const string&                       str,
+    google::protobuf::Message*          proto);
+
+bool ReadProtoFromBinaryFile(
+    const char*                         filename,
+    google::protobuf::Message*          proto);
+
+void WriteProtoToBinaryFile(
+    const google::protobuf::Message&    proto,
+    const char*                         filename);
 
 }  // namespace dragon
 

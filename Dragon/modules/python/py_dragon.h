@@ -71,7 +71,7 @@ class NumpyFetcher : public TensorFetcherBase {
         }
         // Create a empty array with the same shape
         PyObject* array = PyArray_SimpleNew(
-            (int)tensor.ndim(), npy_dims.data(), npy_type);
+            tensor.ndim(), npy_dims.data(), npy_type);
         // Copy the tensor data to the numpy array
         if (tensor.memory_state() == MixedMemory::STATE_AT_CUDA) {
             CUDAContext::Memcpy<CPUContext, CUDAContext>(tensor.nbytes(),
@@ -111,10 +111,10 @@ class NumpyFeeder : public TensorFeederBase {
                          << " with different data type from original one.";
         int ndim = PyArray_NDIM(array);
         npy_intp* npy_dims = PyArray_DIMS(array);
-        vector<TIndex> dims;
+        vector<int64_t> dims;
         for (int i = 0; i < ndim; i++) dims.push_back(npy_dims[i]);
         tensor->Reshape(dims);
-        if (option.device_type() == CUDA) {
+        if (option.device_type() == PROTO_CUDA) {
 #ifdef WITH_CUDA
             CUDAContext context(option);
             context.SwitchToDevice();

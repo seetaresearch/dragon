@@ -13,6 +13,10 @@
 #
 # ------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 
 def convert_data_format(data_format, ndim):
     if data_format == 'channels_last':

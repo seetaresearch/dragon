@@ -23,21 +23,26 @@ class EltwiseOp final : public Operator<Context> {
     EltwiseOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
           operation(OperatorBase::Arg<string>("operation", "SUM")),
-          coeffs(OperatorBase::Args<float>("coeffs")) {
+          coeffs(OperatorBase::Args<float>("coefficients")) {
+        // Check the number of coeffients
         if (coeffs.size() > 0) {
             CHECK_EQ(coeffs.size(), InputSize())
                 << "\nOp has " << InputSize() << " inputs, "
                 << "but provided " << coeffs.size() << " coeffs.";
-        } else coeffs.resize(InputSize(), float(1));
+        } else coeffs.resize(InputSize(), 1.f);
+        // Compute the alpha for product operation
+        for (auto e : coeffs) { if (e != 1.f) alpha *= e; }
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
+    template <typename T> void RunWithType();
     template <typename T> void SumRunWithType();
     template <typename T> void ProdRunWithType();
 
  protected:
     string operation;
+    float alpha = 1.f;
     vector<float> coeffs;
 };
 
@@ -47,21 +52,25 @@ class EltwiseGradientOp final : public Operator<Context> {
     EltwiseGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
           operation(OperatorBase::Arg<string>("operation", "SUM")),
-          coeffs(OperatorBase::Args<float>("coeff")) {
+          coeffs(OperatorBase::Args<float>("coefficients")) {
         if (coeffs.size() > 0) {
-            CHECK_EQ(coeffs.size(), InputSize())
-                << "\nop has " << InputSize() << " inputs, "
+            CHECK_EQ(coeffs.size(), OutputSize())
+                << "\nOp has " << OutputSize() << " inputs, "
                 << "but provided " << coeffs.size() << " coeffs.";
-        } else coeffs.resize(InputSize(), float(1));
+        } else coeffs.resize(InputSize(), 1.f);
+        // Compute the alpha for product operation
+        for (auto e : coeffs) { if (e != 1.f) alpha *= e; }
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
+    template <typename T> void RunWithType();
     template <typename T> void SumRunWithType();
     template <typename T> void ProdRunWithType();
 
  protected:
     string operation;
+    float alpha = 1.f;
     vector<float> coeffs;
 };
 

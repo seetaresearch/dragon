@@ -52,15 +52,16 @@ class _ConvNd(Module):
 
     def register_op(self):
         self.op_meta = {
-            'op_type': 'Conv{}d{}'.format(len(self.kernel_size),
-                       'Transpose' if self.transposed else ''),
+            'op_type': 'Conv{}{}d'.format(
+                'Transpose' if self.transposed else '',
+                len(self.kernel_size)),
             'n_inputs': 3 if self.bias else 2, 'n_outputs': 1,
             'arguments': {
                 'num_output': self.weight.shape[0],
-                'kernel_size': self.weight.shape[2:],
-                'stride': _pair(self.stride),
-                'pad': _pair(self.padding),
-                'dilation': _pair(self.dilation),
+                'kernel_shape': self.weight.shape[2:],
+                'strides': _pair(self.stride),
+                'pads': _pair(self.padding),
+                'dilations': _pair(self.dilation),
                 'group': self.groups,
                 'data_format': 'NCHW',
             }

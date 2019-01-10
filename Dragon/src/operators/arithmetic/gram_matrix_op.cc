@@ -8,7 +8,7 @@ void GramMatrixOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
     for (int i = 0; i < outer_dim; i++) {
-        math::Gemm<T, Context>(
+        math::Gemm(
             CblasNoTrans, CblasTrans,
                 dim, dim, inner_dim,
                     1.f, Xdata, Xdata,
@@ -24,7 +24,7 @@ void GramMatrixOp<Context>::RunOnDevice() {
     dim = Input(0).dim(axis);
     inner_dim = Input(0).count(axis + 1);
     x_offset = dim * inner_dim, y_offset = dim * dim;
-    Output(0)->Reshape(vector<TIndex>({ outer_dim, dim, dim }));
+    Output(0)->Reshape(vector<int64_t>({ outer_dim, dim, dim }));
 
     if (XIsType(Input(0), float)) RunWithType<float>();
     else if (XIsType(Input(0), float16)) RunWithType<float16>();
@@ -43,7 +43,7 @@ void GramMatrixGradientOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     for (int i = 0; i < outer_dim; i++) {
-        math::Gemm<T, Context>(
+        math::Gemm(
             CblasNoTrans, CblasNoTrans,
                 dim, inner_dim, dim,
                     2.f, dYdata, Xdata,
@@ -70,17 +70,10 @@ DEPLOY_CPU(GramMatrixGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(GramMatrixGradient);
 #endif
-OPERATOR_SCHEMA(GramMatrixGradient).NumInputs(2).NumOutputs(1);
 
-class GetGramMatrixGradient final : public GradientMakerBase {
- public:
-    GRADIENT_MAKER_CTOR(GetGramMatrixGradient);
-    vector<OperatorDef> MakeDefs() override{
-        return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), GO(0)},
-            vector<string> {GI(0)});
-    }
-};
-REGISTER_GRADIENT(GramMatrix, GetGramMatrixGradient);
+OPERATOR_SCHEMA(GramMatrixGradient)
+    .NumInputs(2).NumOutputs(1);
+
+REGISTER_GRADIENT(GramMatrix, SimpleGradientMaker);
 
 }  // namespace dragon

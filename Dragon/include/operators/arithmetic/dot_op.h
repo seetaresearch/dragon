@@ -22,8 +22,8 @@ class DotOp final : public Operator<Context> {
  public:
     DotOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          TransA(OperatorBase::Arg<bool>("TransA", false)),
-          TransB(OperatorBase::Arg<bool>("TransB", false)) {}
+          transA(OperatorBase::Arg<bool>("transA", false)),
+          transB(OperatorBase::Arg<bool>("transB", false)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -32,7 +32,8 @@ class DotOp final : public Operator<Context> {
     template <typename T> void GemvRunWithType();
 
  protected:
-    TIndex TransA, TransB, M, K1, K2, N1, N2;
+    int64_t M1, N1, M2, N2;
+    int64_t transA, transB, M, K1, K2, N;
 };
 
 template <class Context>
@@ -40,8 +41,8 @@ class DotGradientOp final : public Operator<Context> {
  public:
     DotGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          TransA(OperatorBase::Arg<bool>("TransA", false)),
-          TransB(OperatorBase::Arg<bool>("TransB", false)) {}
+          transA(OperatorBase::Arg<bool>("transA", false)),
+          transB(OperatorBase::Arg<bool>("transB", false)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -50,9 +51,10 @@ class DotGradientOp final : public Operator<Context> {
     template <typename T> void GemvRunWithType();
 
  protected:
-    TIndex TransA, TransB, M, K1, K2, N1, N2;
+    int64_t M1, N1, M2, N2;
+    int64_t transA, transB, M, K1, K2, N;
 };
-    
+
 }  // namespace dragon
 
 #endif  // DRAGON_OPERATORS_ARITHMETIC_DOT_OP_H_

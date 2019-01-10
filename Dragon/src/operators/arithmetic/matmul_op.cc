@@ -5,54 +5,55 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void MatmulOp<Context>::RunWithType() {
-    n = Input(0).count() / M / K1;
-    x1_offset = M * K1, x2_offset = K2 * N, y_offset = M * N;
-    auto* X1data = Input(0).template data<T, Context>();
-    auto* X2data = Input(1).template data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    for (int i = 0; i < n; i++) {
-        math::Gemm<T, Context>(
-            TransA ? CblasTrans : CblasNoTrans,
-                TransB ? CblasTrans : CblasNoTrans,
-                    M, N, K1,
-                        1.f, X1data, X2data,
-                            0.f, Ydata, ctx());
-        X1data += x1_offset;
-        X2data += x2_offset;
-        Ydata += y_offset;
+    auto* Adata = Input(0).template data<T, Context>();
+    auto* Bdata = Input(1).template data<T, Context>();
+    auto* Cdata = Output(0)->template mutable_data<T, Context>();
+
+    for (int i = 0; i < batch_size; ++i) {
+        math::Gemm(
+            transA ? CblasTrans : CblasNoTrans,
+            transB ? CblasTrans : CblasNoTrans,
+            M, N, K1,
+            1.f, Adata + i * A_stride, Bdata + i * B_stride,
+            0.f, Cdata + i * C_stride, ctx());
     }
 }
 
 template <class Context>
 void MatmulOp<Context>::RunOnDevice() {
-    CHECK(Input(0).ndim() == Input(1).ndim())
-        << "Both matrices must have the same number of dimensions.";
     CHECK_GE(Input(0).ndim(), 2)
-        << "Tensor(" << Input(0).name() + ") must be a matrix"
+        << "\nTensor(" << Input(0).name() + ") must be a matrix"
         << "(or rank > 2, representing batches of matrices).";
     CHECK_GE(Input(1).ndim(), 2)
-        << "Tensor(" << Input(1).name() + ") must be a matrix"
+        << "\nTensor(" << Input(1).name() + ") must be a matrix"
         << "(or rank > 2, representing batches of matrices).";
-    TIndex m = Input(0).dim(-2), k = Input(0).dim(-1);
-    M = TransA ? k : m;
-    K1 = TransA ? m : k;
-    K2 = TransB ? Input(1).dim(-1) : Input(1).dim(-2);
-    N = TransB ? Input(1).dim(-2) : Input(1).dim(-1);
+
+    M1 = Input(0).dim(-2), N1 = Input(0).dim(-1);
+    M2 = Input(1).dim(-2), N2 = Input(1).dim(-1);
+
+    M = transA ? N1 : M1, N = transB ? M2 : N2;
+    K1 = transA ? M1 : N1, K2 = transB ? N2 : M2;
+    A_stride = M1 * N1, B_stride = M2 * N2, C_stride = M * N;
+    batch_size = Input(0).count() / A_stride;
+
     CHECK_EQ(K1, K2) << "\nTensor(" << Input(0).name() << "): "
-                     << Input(0).DimString() << " can not mul with Tensor"
-                     << "(" << Input(1).name() << "): " << Input(1).DimString();
-    CHECK_EQ(Input(0).count() / M / K1, Input(1).count() / K2 / N)
-                     << "\nTensor(" << Input(0).name() << "): "
-                     << Input(0).DimString() << " can not mul with Tensor"
-                     << "(" << Input(1).name() << "): " << Input(1).DimString();
-    vector<TIndex> dims = Input(0).dims();
-    dims[dims.size() - 2] = M;
-    dims[dims.size() - 1] = N;
+        << Input(0).DimString() << " can not mul with Tensor"
+        << "(" << Input(1).name() << "): " << Input(1).DimString();
+
+    CHECK_EQ(batch_size, Input(1).count() / B_stride)
+        << "\nTensor(" << Input(0).name() << "): "
+        << Input(0).DimString() << " can not mul with Tensor"
+        << "(" << Input(1).name() << "): " << Input(1).DimString();
+
+    vector<int64_t> dims = Input(0).dims();
+    dims[dims.size() - 2] = M; dims[dims.size() - 1] = N;
     Output(0)->Reshape(dims);
 
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+    if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), double)) RunWithType<double>();
+    else LOG(FATAL) << DTypeHelper(Input(0), {
+        "float16", "float32", "float64" });
 }
 
 DEPLOY_CPU(Matmul);
@@ -63,79 +64,100 @@ OPERATOR_SCHEMA(Matmul).NumInputs(2).NumOutputs(1);
 
 template <class Context> template <typename T>
 void MatmulGradientOp<Context>::RunWithType() {
-    n = Input(0).count() / M / K1;
-    x1_offset = M * K1, x2_offset = K2 * N, y_offset = M * N;
-    auto* X1data = Input(0).template data<T, Context>();
-    auto* X2data = Input(1).template data<T, Context>();
-    auto* dYdata = Input(2).template data<T, Context>();
-    auto* dX1data = Output(0)->template mutable_data<T, Context>();
-    auto* dX2data = Output(1)->template mutable_data<T, Context>();
-    for (int i = 0; i < n; i++) {
-        math::Gemm<T, Context>(
-            CblasNoTrans,
-                TransB ? CblasNoTrans : CblasTrans,
+    auto* Adata = Input(0).template data<T, Context>();
+    auto* Bdata = Input(1).template data<T, Context>();
+    auto* dCdata = Input(-1).template data<T, Context>();
+
+    T* dAdata = nullptr, *dBdata = nullptr;
+
+    if (Output(0)->name() != "ignore") {
+        dAdata = Output(0)->template mutable_data<T, Context>();
+    } if (Output(1)->name() != "ignore") {
+        dBdata = Output(1)->template mutable_data<T, Context>();
+    }
+
+    for (int i = 0; i < batch_size; ++i) {
+        if (Output(0)->name() != "ignore") {
+            if (transA) {
+                math::Gemm(
+                    transB ? CblasTrans : CblasNoTrans,
+                    CblasTrans,
+                    K1, M, N,
+                    1.f, Bdata + i * B_stride, dCdata + i * C_stride,
+                    0.f, dAdata + i * A_stride, ctx());
+            } else {
+                math::Gemm(
+                    CblasNoTrans,
+                    transB ? CblasNoTrans : CblasTrans,
                     M, K1, N,
-                        1.f, dYdata, X2data,
-                            0.f, dX1data, ctx());
-        math::Gemm<T, Context>(
-            TransA ? CblasNoTrans : CblasTrans,
-                CblasNoTrans,
+                    1.f, dCdata + i * C_stride, Bdata + i * B_stride,
+                    0.f, dAdata + i * A_stride, ctx());
+            }
+        }
+        if (Output(1)->name() != "ignore") {
+            if (transB) {
+                math::Gemm(
+                    CblasTrans,
+                    transA ? CblasTrans : CblasNoTrans,
+                    N, K1, M,
+                    1.f, dCdata + i * C_stride, Adata + i * A_stride,
+                    0.f, dBdata + i * B_stride, ctx());
+            } else {
+                math::Gemm(
+                    transA ? CblasNoTrans : CblasTrans,
+                    CblasNoTrans,
                     K1, N, M,
-                        1.f, X1data, dYdata,
-                            0.f, dX2data, ctx());
-        X1data += x1_offset;
-        X2data += x2_offset;
-        dX1data += x1_offset;
-        dX2data += x2_offset;
-        dYdata += y_offset;
+                    1.f, Adata + i * A_stride, dCdata + i * C_stride,
+                    0.f, dBdata + i * B_stride, ctx());
+            }
+        }
     }
 }
 
 template <class Context>
 void MatmulGradientOp<Context>::RunOnDevice() {
-    CHECK(Input(0).ndim() == Input(1).ndim())
-        << "Both matrices must have the same number of dimensions.";
     CHECK_GE(Input(0).ndim(), 2)
-        << "Tensor(" << Input(0).name() + ") must be a matrix"
+        << "\nTensor(" << Input(0).name() + ") must be a matrix"
         << "(or rank > 2, representing batches of matrices).";
     CHECK_GE(Input(1).ndim(), 2)
-        << "Tensor(" << Input(1).name() + ") must be a matrix"
+        << "\nTensor(" << Input(1).name() + ") must be a matrix"
         << "(or rank > 2, representing batches of matrices).";
-    TIndex m = Input(0).dim(-2), k = Input(0).dim(-1);
-    M = TransA ? k : m;
-    K1 = TransA ? m : k;
-    K2 = TransB ? Input(1).dim(-1) : Input(1).dim(-2);
-    N = TransB ? Input(1).dim(-2) : Input(1).dim(-1);
+
+    M1 = Input(0).dim(-2), N1 = Input(0).dim(-1);
+    M2 = Input(1).dim(-2), N2 = Input(1).dim(-1);
+
+    M = transA ? N1 : M1, N = transB ? M2 : N2;
+    K1 = transA ? M1 : N1, K2 = transB ? N2 : M2;
+    A_stride = M1 * N1, B_stride = M2 * N2, C_stride = M * N;
+    batch_size = Input(0).count() / A_stride;
+
     CHECK_EQ(K1, K2) << "\nTensor(" << Input(0).name() << "): "
         << Input(0).DimString() << " can not mul with Tensor"
         << "(" << Input(1).name() << "): " << Input(1).DimString();
-    CHECK_EQ(Input(0).count() / M / K1, Input(1).count() / K2 / N)
+
+    CHECK_EQ(batch_size, Input(1).count() / B_stride)
         << "\nTensor(" << Input(0).name() << "): "
         << Input(0).DimString() << " can not mul with Tensor"
         << "(" << Input(1).name() << "): " << Input(1).DimString();
+
     Output(0)->ReshapeLike(Input(0));
     Output(1)->ReshapeLike(Input(1));
 
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+    if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), double)) RunWithType<double>();
+    else LOG(FATAL) << DTypeHelper(Input(0), {
+        "float16", "float32", "float64" });
 }
 
 DEPLOY_CPU(MatmulGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(MatmulGradient);
 #endif
-OPERATOR_SCHEMA(MatmulGradient).NumInputs(3).NumOutputs(2);
 
-class GetMatmulGradient final : public GradientMakerBase {
- public:
-    GRADIENT_MAKER_CTOR(GetMatmulGradient);
-    vector<OperatorDef> MakeDefs() override {
-        return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), I(1), GO(0)},
-            vector<string> {GI(0), GI(1)});
-    }
-};
-REGISTER_GRADIENT(Matmul, GetMatmulGradient);
+OPERATOR_SCHEMA(MatmulGradient)
+    .NumInputs(3).NumOutputs(2);
 
-}   // namespace dragon
+REGISTER_GRADIENT(Matmul, SimpleGradientMaker);
+
+}  // namespace dragon

@@ -9,6 +9,10 @@
 #
 # ------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from dragon.vm.tensorflow.ops.variables import *
 from dragon.vm.tensorflow.ops.var_scope import *
 

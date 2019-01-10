@@ -9,6 +9,10 @@
 #
 # ------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from dragon.vm.tensorflow.framework import tensor_shape
 from dragon.vm.tensorflow.layers import base, utils
 from dragon.vm.tensorflow.ops import init_ops
@@ -16,7 +20,8 @@ from dragon.vm.tensorflow.ops import nn
 
 
 class _Conv(base.Layer):
-    def __init__(self, rank,
+    def __init__(self,
+                 rank,
                  filters,
                  kernel_size,
                  strides=1,
@@ -52,13 +57,17 @@ class _Conv(base.Layer):
 
     def build(self, input_shape):
         input_shape = tensor_shape.TensorShape(input_shape)
+
         if self.data_format == 'channels_first':
             channel_axis = 1
         else:
             channel_axis = -1
+
         if input_shape[channel_axis].value is None:
-            raise ValueError('The channel dimension of the inputs '
-                             'should be defined. Found `None`.')
+            raise ValueError(
+                'The channel dimension of the inputs '
+                    'should be defined. Found `None`.')
+
         input_dim = input_shape[channel_axis].value
 
         if self.data_format == 'channels_first':
@@ -68,28 +77,31 @@ class _Conv(base.Layer):
             # For channels last: (k_h, k_w, n_in, n_out)
             kernel_shape = self.kernel_size + (input_dim, self.filters)
 
-        self.kernel = self.add_variable(name='kernel',
-                                        shape=kernel_shape,
-                                        initializer=self.kernel_initializer,
-                                        regularizer=self.kernel_regularizer,
-                                        trainable=True,
-                                        dtype=self.dtype)
+        self.kernel = self.add_variable(
+            name='kernel',
+            shape=kernel_shape,
+            initializer=self.kernel_initializer,
+            regularizer=self.kernel_regularizer,
+            dtype=self.dtype)
+
         if self.use_bias:
-            self.bias = self.add_variable(name='bias',
-                                          shape=(self.filters,),
-                                          initializer=self.bias_initializer,
-                                          regularizer=self.bias_regularizer,
-                                          trainable=True,
-                                          dtype=self.dtype)
+            self.bias = self.add_variable(
+                name='bias',
+                shape=(self.filters,),
+                initializer=self.bias_initializer,
+                regularizer=self.bias_regularizer,
+                dtype=self.dtype)
         else:
             self.bias = None
-        self.input_spec = base.InputSpec(ndim=self.rank + 2,
-                                         axes={channel_axis: input_dim})
+
+        self.input_spec = base.InputSpec(
+            ndim=self.rank + 2, axes={channel_axis: input_dim})
         self.built = True
 
-    def call(self, inputs):
+    def call(self, inputs, *args, **kwargs):
         tf_data_format = \
             utils.convert_data_format(self.data_format, self.rank + 2)
+
         outputs = nn.convolution(
             input=inputs,
             filter=self.kernel,
@@ -159,7 +171,7 @@ def conv2d(inputs,
            trainable=True,
            name=None,
            reuse=None):
-    layer = Conv2D(
+    return Conv2D(
         filters=filters,
         kernel_size=kernel_size,
         strides=strides,
@@ -176,5 +188,4 @@ def conv2d(inputs,
         trainable=trainable,
         name=name,
         _reuse=reuse,
-        _scope=name)
-    return layer.apply(inputs)
+        _scope=name).apply(inputs)

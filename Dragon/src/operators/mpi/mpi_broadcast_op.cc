@@ -3,25 +3,19 @@
 
 #ifdef WITH_MPI
 
+#define DTYPE this->template mpi_dtype<T>()
+
 namespace dragon {
 
 template <class Context> template <typename T>
 void MPIBroadcastOp<Context>::RunWithType() {
     if (comm_rank == comm_root) {
-#ifdef WITH_MPI_CUDA
         auto* Xdata = Input(0).template mutable_data<T, Context>();
-#else
-        auto* Xdata = Input(0).template mutable_data<T, CPUContext>();
-#endif
-        MPI_Bcast(Xdata, Input(0).count(), mpi_dtype(), comm_root, comm);
+        MPI_Bcast(Xdata, Input(0).count(), DTYPE, comm_root, comm);
         Output(0)->template CopyFrom<Context>(Input(0), ctx());
-    } else { 
-#ifdef WITH_MPI_CUDA
+    } else {
         auto* Ydata = Output(0)->template mutable_data<T, Context>();
-#else
-        auto* Ydata = Output(0)->template mutable_data<T, CPUContext>();
-#endif
-        MPI_Bcast(Ydata, Output(0)->count(), mpi_dtype(), comm_root, comm);
+        MPI_Bcast(Ydata, Output(0)->count(), DTYPE, comm_root, comm);
     }
 }
 
@@ -31,23 +25,27 @@ void MPIBroadcastOp<Context>::RunOnDevice() {
         << "\nMPIBroadcastOp, name: " << name()
         << ", does not belong to any group, can't run.";
 
-    size_t ndim[1];
-    TIndex* dims = nullptr;
+    int ndim;
+    vector<int64_t> dims;
     if (comm_rank == comm_root) {
-        ndim[0] = Input(0).ndim();
-        dims = new TIndex[ndim[0]];
+        ndim = Input(0).ndim();
         for (int i = 0; i < Input(0).ndim(); i++)
-            dims[i] = Input(0).dim(i);
+            dims.emplace_back(Input(0).dim(i));
     }
-    MPI_Bcast(ndim, 1, MPI_UNSIGNED_LONG_LONG, comm_root, comm);
-    if (dims == nullptr) dims = new TIndex[ndim[0]];
-    MPI_Bcast(dims, (int)ndim[0], MPI_LONG_LONG, comm_root, comm);
-    vector<TIndex> _dims;
-    for (int i = 0; i < (int)ndim[0]; i++)  _dims.push_back(dims[i]);
-    Output(0)->Reshape(_dims);
+    MPI_Bcast(&ndim, 1, MPI_INT, comm_root, comm);
+    if (dims.empty()) dims.resize((size_t)ndim, 0);
+    MPI_Bcast(dims.data(), ndim, MPI_LONG_LONG, comm_root, comm);
+    Output(0)->Reshape(dims);
 
-    if (dtype == "FLOAT32") RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input type: " << dtype;
+    if (XIsType(Input(0), int8_t)) RunWithType<int8_t>();
+    else if (XIsType(Input(0), int)) RunWithType<int>();
+    else if (XIsType(Input(0), int64_t)) RunWithType<int64_t>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { 
+        "int8", "int32", "int64",
+            "float16", "float32",
+    });
 }
 
 DEPLOY_CPU(MPIBroadcast);
@@ -59,38 +57,21 @@ OPERATOR_SCHEMA(MPIBroadcast).NumInputs(1).NumOutputs(1);
 template <class Context> template <typename T>
 void MPIBroadcastGradientOp<Context>::RunWithType() {
     if (comm_rank == comm_root) {
-#ifdef WITH_MPI_CUDA
         auto* dYdata = Input(-1).template mutable_data<T, Context>();
         auto* dXdata = Output(0)->template mutable_data<T, Context>();
         ctx()->template Copy<T, Context, Context>(
             Output(0)->count(), dXdata, dYdata);
-#else
-        auto* dYdata = Input(-1).template mutable_data<T, CPUContext>();
-        auto* dXdata = Output(0)->template mutable_data<T, CPUContext>();
-        static CPUContext cctx;
-        cctx.template Copy<T, CPUContext, CPUContext>(
-            Output(0)->count(), dXdata, dYdata);
-#endif
         for (int i = 0; i < comm_size; i++) {
             if (i == comm_root) continue;
-            MPI_Recv(dYdata, Output(0)->count(), mpi_dtype(),
+            MPI_Recv(dYdata, Output(0)->count(), DTYPE,
                 i, 0, comm, MPI_STATUS_IGNORE);
-#ifdef WITH_MPI_CUDA
-            math::Add<T, Context>(Output(0)->count(),
+            math::Add(Output(0)->count(),
                 dYdata, dXdata, dXdata, ctx());
-#else
-            math::Add<T, CPUContext>(Output(0)->count(),
-                dYdata, dXdata, dXdata, &cctx);
-#endif
         }
     }
     else {
-#ifdef WITH_MPI_CUDA
         auto* dYdata = Input(-1).template data<T, Context>();
-#else
-        auto* dYdata = Input(-1).template data<T, CPUContext>();
-#endif
-        MPI_Send(dYdata, Input(-1).count(), mpi_dtype(), comm_root, 0, comm);
+        MPI_Send(dYdata, Input(-1).count(), DTYPE, comm_root, 0, comm);
     }
 }
 
@@ -98,27 +79,33 @@ template <class Context>
 void MPIBroadcastGradientOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(-1));
 
-    if (dtype == "FLOAT32") RunWithType<float>();
-    else LOG(FATAL) << "Unsupported input type: " << dtype;
+    if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else if (XIsType(Input(0), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float16", "float32" });
 }
 
 DEPLOY_CPU(MPIBroadcastGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(MPIBroadcastGradient);
 #endif
-OPERATOR_SCHEMA(MPIBroadcastGradient).NumInputs(1).NumOutputs(1);
+
+OPERATOR_SCHEMA(MPIBroadcastGradient)
+    .NumInputs(1).NumOutputs(1);
 
 class GetMPIBroadcastGradient final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetMPIBroadcastGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
-            vector<string> {GO(0)},
-            vector<string> {GI(0)});
+            vector<string>({ GO(0) }),
+            vector<string>({ GI(0) }));
     }
 };
+
 REGISTER_GRADIENT(MPIBroadcast, GetMPIBroadcastGradient);
 
 }  // namespace dragon
+
+#undef DTYPE
 
 #endif  // WITH_MPI

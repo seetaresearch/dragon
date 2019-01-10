@@ -9,5 +9,9 @@
 #
 # ------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from dragon.vm.tensorflow.ops.nn_ops import *
 from dragon.vm.tensorflow.ops.nn_impl import *

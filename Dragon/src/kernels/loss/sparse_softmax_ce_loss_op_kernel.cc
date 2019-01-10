@@ -11,10 +11,10 @@ void _SparseSoftmaxCrossEntropy(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const Tx*               prob,
     const Ty*               labels,
     const int*              ignores,
-    const int               num_ignores,
     Tx*                     losses,
     Tx*                     flags) {
     for (int oix = 0; oix < outer_dim; ++oix) {
@@ -43,17 +43,16 @@ template <> void SparseSoftmaxCrossEntropy<float, float, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float*            prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     CPUContext*             ctx) {
     _SparseSoftmaxCrossEntropy<float, float>(
-        outer_dim, axis_dim, inner_dim,
-            prob, labels, ignores, num_ignores,
-                losses, flags);
+        outer_dim, axis_dim, inner_dim, num_ignores,
+            prob, labels, ignores, losses, flags);
 }
 
 /*! SparseSoftmaxCrossEntropy <Tx = float32, Ty = int64, Device = CPU> */
@@ -62,17 +61,16 @@ template <> void SparseSoftmaxCrossEntropy<float, int64_t, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float*            prob,
     const int64_t*          labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     CPUContext*             ctx) {
     _SparseSoftmaxCrossEntropy<float, int64_t>(
-        outer_dim, axis_dim, inner_dim,
-            prob, labels, ignores, num_ignores,
-                losses, flags);
+        outer_dim, axis_dim, inner_dim, num_ignores,
+            prob, labels, ignores, losses, flags);
 }
 
 /*! SparseSoftmaxCrossEntropy <Tx = float16, Ty = float32, Device = CPU> */
@@ -81,10 +79,10 @@ template <> void SparseSoftmaxCrossEntropy<float16, float, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float16*          prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     CPUContext*             ctx) {
@@ -97,10 +95,10 @@ template <> void SparseSoftmaxCrossEntropy<float16, int64_t, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float16*          prob,
     const int64_t*          labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     CPUContext*             ctx) {
@@ -114,10 +112,10 @@ void _SparseSoftmaxCrossEntropyGrad(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const Tx*               prob,
     const Ty*               labels,
     const int*              ignores,
-    const int               num_ignores,
     Tx*                     dx,
     Tx*                     flags) {
     for (int oix = 0; oix < outer_dim; ++oix) {
@@ -145,17 +143,16 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, float, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float*            prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  dx,
     float*                  flags,
     CPUContext*             ctx) {
     _SparseSoftmaxCrossEntropyGrad<float, float>(
-        outer_dim, axis_dim, inner_dim,
-            prob, labels, ignores,
-                num_ignores, dx, flags);
+        outer_dim, axis_dim, inner_dim, num_ignores,
+            prob, labels, ignores, dx, flags);
 }
 
 /*! SparseSoftmaxCrossEntropyGrad <Tx = float32, Ty = int64, Device = CPU> */
@@ -164,17 +161,16 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, int64_t, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float*            prob,
     const int64_t*          labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  dx,
     float*                  flags,
     CPUContext*             ctx) {
     _SparseSoftmaxCrossEntropyGrad<float, int64_t>(
-        outer_dim, axis_dim, inner_dim,
-            prob, labels, ignores,
-                num_ignores, dx, flags);
+        outer_dim, axis_dim, inner_dim, num_ignores,
+            prob, labels, ignores, dx, flags);
 }
 
 /*! SparseSoftmaxCrossEntropyGrad <Tx = float16, Ty = float32, Device = CPU> */
@@ -183,10 +179,10 @@ template<> void SparseSoftmaxCrossEntropyGrad<float16, float, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float16*          prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float16*                dx,
     float*                  flags,
     CPUContext*             ctx) {
@@ -199,10 +195,10 @@ template<> void SparseSoftmaxCrossEntropyGrad<float16, int64_t, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float16*          prob,
     const int64_t*          labels,
     const int*              ignores,
-    const int               num_ignores,
     float16*                dx,
     float*                  flags,
     CPUContext*             ctx) {

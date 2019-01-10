@@ -21,7 +21,7 @@ namespace python {
 
 inline string ParseName(PyObject* self, PyObject* args) {
     char* cname;
-    if (!PyArg_ParseTuple(args, "s", &cname)) 
+    if (!PyArg_ParseTuple(args, "s", &cname))
         LOG(FATAL) << "Excepted a tensor name.";
     return cname;
 }
@@ -48,14 +48,14 @@ inline PyObject* CreateFillerCC(PyObject* self, PyObject* args) {
             "Excepted a serialized string of TensorFiller.");
         return nullptr;
     }
-    TensorFiller filler_def;
-    if (!filler_def.ParseFromString(PyBytes_AsStringEx(filler_string))) {
+    TensorFillerProto filler_proto;
+    if (!filler_proto.ParseFromString(PyBytes_AsStringEx(filler_string))) {
         PyErr_SetString(PyExc_RuntimeError,
             "Failed to parse the TensorFiller.");
         return nullptr;
     }
-    ws()->CreateFiller(filler_def);
-    ws()->CreateTensor(filler_def.tensor());
+    ws()->CreateFiller(filler_proto);
+    ws()->CreateTensor(filler_proto.tensor());
     Py_RETURN_TRUE;
 }
 
@@ -77,7 +77,7 @@ inline PyObject* RenameTensorCC(PyObject* self, PyObject* args) {
         PyErr_SetString(PyExc_ValueError, err_msg.c_str());
         return nullptr;
     }
-    ws()->SetProxy(ori_name, tar_name);
+    ws()->SetTensorProxy(ori_name, tar_name);
     Py_RETURN_TRUE;
 }
 
@@ -102,9 +102,9 @@ PyObject* TensorFromShapeCC(PyObject* self, PyObject* args) {
     int ndim = (int)PyList_Size(shape);
     CHECK_GT(ndim, 0)
         << "\nThe len of shape should be greater than 1. Got " << ndim << ".";
-    vector<TIndex> dims;
+    vector<int64_t> dims;
     for (int i = 0; i < ndim; i++)
-        dims.push_back((TIndex)_PyInt_AsInt(PyList_GetItem(shape, i)));
+        dims.push_back((int64_t)_PyInt_AsInt(PyList_GetItem(shape, i)));
     tensor->Reshape(dims);
     DeviceOption dev_opt;
     if (device_option != nullptr) {
@@ -113,7 +113,7 @@ PyObject* TensorFromShapeCC(PyObject* self, PyObject* args) {
             return nullptr;
         }
     }
-    if (dev_opt.device_type() == CUDA) {
+    if (dev_opt.device_type() == PROTO_CUDA) {
         CUDAContext ctx(dev_opt);
         ctx.SwitchToDevice();
         tensor->raw_mutable_data<CUDAContext>(meta);
@@ -142,7 +142,7 @@ PyObject* TensorFromPyArrayCC(PyObject* self, PyObject* args) {
     tensor->SetMeta(meta);
     int ndim = PyArray_NDIM(array);
     npy_intp* npy_dims = PyArray_DIMS(array);
-    vector<TIndex> dims;
+    vector<int64_t> dims;
     for (int i = 0; i < ndim; i++) dims.push_back(npy_dims[i]);
     tensor->Reshape(dims);
     auto* data = static_cast<void*>(PyArray_DATA(array));
@@ -178,8 +178,8 @@ PyObject* TensorFromTensorCC(PyObject* self, PyObject* args) {
     Tensor* dstT = ws()->CreateTensor(dst_name);
     dstT->ReshapeLike(*srcT);
     const TypeMeta& meta = srcT->meta();
-    if (dst_ctx.device_type() == DeviceType::CUDA) {
-        if (src_ctx.device_type() == DeviceType::CUDA) {
+    if (dst_ctx.device_type() == PROTO_CUDA) {
+        if (src_ctx.device_type() == PROTO_CUDA) {
             //  CUDA <- CUDA
             CUDAContext::Memcpy<CUDAContext, CUDAContext>(
                 srcT->nbytes(),
@@ -193,7 +193,7 @@ PyObject* TensorFromTensorCC(PyObject* self, PyObject* args) {
                         srcT->raw_data<CPUContext>());
         }
     } else {
-        if (src_ctx.device_type() == DeviceType::CUDA) {
+        if (src_ctx.device_type() == PROTO_CUDA) {
             //  CPU <- CUDA
             CUDAContext::Memcpy<CUDAContext, CUDAContext>(
                 srcT->nbytes(),
@@ -224,7 +224,7 @@ inline PyObject* TensorToPyArrayCC(PyObject* self, PyObject* args) {
     }
     auto* data = tensor->raw_mutable_data<CPUContext>();
     PyObject* array = PyArray_SimpleNewFromData(
-        (int)tensor->ndim(), dims.data(), npy_type, data);
+        tensor->ndim(), dims.data(), npy_type, data);
     Py_XINCREF(array);
     return array;
 }
@@ -243,7 +243,7 @@ inline PyObject* TensorToPyArrayExCC(PyObject* self, PyObject* args) {
     }
     auto* data = const_cast<void*>(tensor->raw_data<CPUContext>());
     PyObject* array = PyArray_SimpleNewFromData(
-        (int)tensor->ndim(), dims.data(), npy_type, data);
+        tensor->ndim(), dims.data(), npy_type, data);
     Py_XINCREF(array);
     return array;
 }
@@ -300,14 +300,10 @@ inline PyObject* GetTensorInfoCC(PyObject* self, PyObject* args) {
         }
     }
     if (stream >= 2) {
-        PyObject* py_shape = PyTuple_New(std::max((int)tensor->ndim(), 1));
-        if (tensor->ndim() == 0) {
-            PyTuple_SetItem(py_shape, 0, PyInt_FromLong(0));
-        } else {
-            for (int i = 0; i < tensor->ndim(); i++)
-                PyTuple_SetItem(py_shape, i,
-                    PyInt_FromLong((long)tensor->dim(i)));
-        }
+        PyObject* py_shape = PyTuple_New(tensor->ndim());
+        for (int i = 0; i < tensor->ndim(); i++)
+            PyTuple_SetItem(py_shape, i,
+                PyInt_FromLong((long)tensor->dim(i)));
         PyDict_SetItemString(py_info, "shape", py_shape);
         Py_XDECREF(py_shape);
     }

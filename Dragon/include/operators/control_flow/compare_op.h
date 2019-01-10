@@ -22,14 +22,19 @@ class CompareOp final : public Operator<Context> {
  public:
     CompareOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          operation(OperatorBase::Arg<string>("operation", "NONE")) {}
+          operation(OperatorBase::Arg<string>("operation", "NONE")),
+          to_uint8(OperatorBase::Arg<bool>("to_uint8", false)) {}
+
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void EqualRunWithType();
-
+    template <typename T> void LessRunWithType();
+    template <typename T> void GreaterRunWithType();
+   
  protected:
     string operation;
+    bool to_uint8;
 };
 
 }  // namespace dragon

@@ -46,10 +46,10 @@ class _DepthwiseConvNd(Module):
             'n_inputs': 3 if self.bias else 2, 'n_outputs': 1,
             'arguments': {
                 'num_output': self.weight.shape[0],
-                'kernel_size': self.weight.shape[2:],
-                'stride': _pair(self.stride),
-                'pad': _pair(self.padding),
-                'dilation': _pair(1),
+                'kernel_shape': self.weight.shape[2:],
+                'strides': _pair(self.stride),
+                'pads': _pair(self.padding),
+                'dilations': _pair(1),
                 'data_format': 'NCHW',
             }
         }

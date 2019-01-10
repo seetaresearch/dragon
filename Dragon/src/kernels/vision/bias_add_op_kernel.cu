@@ -17,7 +17,11 @@ __global__ void _BiasAdd_NCHW(
     const T*                bias,
     T*                      y) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
+#if __CUDA_ARCH__ >= 350
+        y[idx] += __ldg(bias + ((idx / inner_dim) % dim));
+#else
         y[idx] += bias[(idx / inner_dim) % dim];
+#endif
     }
 }
 
@@ -29,7 +33,11 @@ __global__ void _BiasAdd_NHWC(
     const T*                bias,
     T*                      y) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
+#if __CUDA_ARCH__ >= 350
+        y[idx] += __ldg(bias + (idx % dim));
+#else
         y[idx] += bias[idx % dim];
+#endif
     }
 }
 

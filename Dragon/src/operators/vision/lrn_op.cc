@@ -3,7 +3,7 @@
 #include "operators/arithmetic/pow_op.h"
 #include "operators/arithmetic/eltwise_op.h"
 #include "operators/vision/lrn_op.h"
-#include "operators/vision/pooling_op.h"
+#include "operators/vision/pool_op.h"
 
 namespace dragon {
 
@@ -15,18 +15,18 @@ void LRNOp<Context>::AcrossRunWithType() {
 
 template <class Context> template <typename T>
 void LRNOp<Context>::SplitRunWithType() {
-    sqr_in = ws()->CreateTensor("/mnt/" + anchor() + "/sqr/in");
-    sqr_in->ReshapeLike(Input(0));
+    sqr_in = ws()->CreateTensor(mount_name(
+        "sqr/in"))->ReshapeLike(Input(0));
     sqr_in->template CopyFrom<Context>(Input(0), ctx());
 
-    prod_in = ws()->CreateTensor("/mnt/" + anchor() + "/prod/in");
-    prod_in->ReshapeLike(Input(0));
+    prod_in = ws()->CreateTensor(mount_name(
+        "prod/in"))->ReshapeLike(Input(0));
     prod_in->template CopyFrom<Context>(Input(0), ctx());
 }
 
 template <class Context> template <typename T>
 void LRNOp<Context>::SquareRunWithType() {
-    sqr_out = ws()->CreateTensor("/mnt/" + anchor() + "/sqr/out");
+    sqr_out = ws()->CreateTensor(mount_name("sqr/out"));
     if (!sqr_op) {
         Argument power;
         power.set_name("power"); power.set_f(2.f);
@@ -44,7 +44,7 @@ void LRNOp<Context>::SquareRunWithType() {
 
 template <class Context> template <typename T>
 void LRNOp<Context>::PoolRunWithType() {
-    pool_out = ws()->CreateTensor("/mnt/" + anchor() + "/pool/out");
+    pool_out = ws()->CreateTensor(mount_name("pool/out"));
     if (!pool_op) {
         Argument ks, s, p, m, df;
         ks.set_name("kernel_size"); ks.add_ints(local_size);
@@ -52,7 +52,7 @@ void LRNOp<Context>::PoolRunWithType() {
         p.set_name("pad"); p.add_ints((local_size - 1) / 2);
         m.set_name("mode"); m.set_s("AVG");
         df.set_name("data_format"); df.set_s(data_format);
-        OperatorDef pool_op_def = MakeOperatorDef("Pooling2d", "",
+        OperatorDef pool_op_def = MakeOperatorDef("Pool2d", "",
             vector<string>({ sqr_out->name() }),
                 vector<string>({ pool_out->name() }),
                     vector<Argument>({ ks, s, p, m, df }));
@@ -66,7 +66,7 @@ void LRNOp<Context>::PoolRunWithType() {
 
 template <class Context> template <typename T>
 void LRNOp<Context>::PowRunWithType() {
-    pow_out = ws()->CreateTensor("/mnt/" + anchor() + "/pow/out");
+    pow_out = ws()->CreateTensor(mount_name("pow/out"));
     if (!pow_op) {
         Argument scale, shift, power;
         scale.set_name("scale"); scale.set_f(alpha);
@@ -134,8 +134,8 @@ void LRNGradientOp<Context>::AcrossRunWithType() {
 
 template <class Context> template <typename T>
 void LRNGradientOp<Context>::ProdRunWithType() {
-    prod_in = ws()->GetTensor("/mnt/" + anchor() + "/prod/in");
-    pow_out = ws()->GetTensor("/mnt/" + anchor() + "/pow/out");
+    prod_in = ws()->GetTensor(mount_name("prod/in"));
+    pow_out = ws()->GetTensor(mount_name("pow/out"));
     if (!prod_op) {
         Argument operation;
         operation.set_name("operation"); operation.set_s("PROD");
@@ -156,7 +156,7 @@ void LRNGradientOp<Context>::ProdRunWithType() {
 
 template <class Context> template <typename T>
 void LRNGradientOp<Context>::PowRunWithType() {
-    pool_out = ws()->GetTensor("/mnt/" + anchor() + "/pool/out");
+    pool_out = ws()->GetTensor(mount_name("pool/out"));
     if (!pow_op) {
         Argument scale, shift, power;
         scale.set_name("scale"); scale.set_f(alpha);
@@ -178,7 +178,7 @@ void LRNGradientOp<Context>::PowRunWithType() {
 
 template <class Context> template <typename T>
 void LRNGradientOp<Context>::PoolRunWithType() {
-    sqr_out = ws()->GetTensor("/mnt/" + anchor() + "/sqr/out");
+    sqr_out = ws()->GetTensor(mount_name("sqr/out"));
     if (!pool_op) {
         Argument ks, s, p, m, df;
         ks.set_name("kernel_size"); ks.add_ints(local_size);
@@ -186,7 +186,7 @@ void LRNGradientOp<Context>::PoolRunWithType() {
         p.set_name("pad"); p.add_ints((local_size - 1) / 2);
         m.set_name("mode"); m.set_s("AVG");
         df.set_name("data_format"); df.set_s(data_format);
-        OperatorDef pool_op_def = MakeOperatorDef("Pooling2dGradient", "",
+        OperatorDef pool_op_def = MakeOperatorDef("Pool2dGradient", "",
             vector<string>({ sqr_out->name(),
                                  pool_out->name(),
                                      pool_out->name() + "_grad" }),
@@ -202,7 +202,7 @@ void LRNGradientOp<Context>::PoolRunWithType() {
 
 template <class Context> template <typename T>
 void LRNGradientOp<Context>::SquareRunWithType() {
-    sqr_in = ws()->GetTensor("/mnt/" + anchor() + "/sqr/in");
+    sqr_in = ws()->GetTensor(mount_name("sqr/in"));
     if (!sqr_op) {
         Argument power;
         power.set_name("power"); power.set_f(2.f);
@@ -254,17 +254,20 @@ DEPLOY_CPU(LRNGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(LRNGradient);
 #endif
-OPERATOR_SCHEMA(LRNGradient).NumInputs(3).NumOutputs(1);
+
+OPERATOR_SCHEMA(LRNGradient)
+    .NumInputs(3).NumOutputs(1);
 
 class GetLRNGradient final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetLRNGradient);
     vector<OperatorDef> MakeDefs() override{
         return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), O(0), GO(0)},
-            vector<string> {GI(0)});
+            vector<string>({ I(0), O(0), GO(0) }),
+            vector<string>({ GI(0) }));
     }
 };
+
 REGISTER_GRADIENT(LRN, GetLRNGradient);
 
 }  // namespace dragon

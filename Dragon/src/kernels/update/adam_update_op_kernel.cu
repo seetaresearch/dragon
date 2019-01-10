@@ -88,10 +88,10 @@ template <> void AdamUpdate<float16, CUDAContext>(
     _AdamUpdateHalf
         << < CUDA_BLOCKS(count), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (count, dragon_cast<half, float>(lr),
-            dragon_cast<half, float>(beta1),
-                dragon_cast<half, float>(beta2),
-                    dragon_cast<half, float>(eps),
+        (count, cast::to<half>(lr),
+            cast::to<half>(beta1),
+                cast::to<half>(beta2),
+                    cast::to<half>(eps),
                         reinterpret_cast<half*>(g),
                             reinterpret_cast<half*>(m),
                                 reinterpret_cast<half*>(v));

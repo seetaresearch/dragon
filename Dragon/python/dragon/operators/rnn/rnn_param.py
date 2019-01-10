@@ -16,13 +16,13 @@ from __future__ import print_function
 from .. import *
 
 
+@OpSchema.Inputs(2)
 def RNNParamSet(
     inputs, layer_id, param_id, param_type,
         rnn_mode, input_size, hidden_size,
             num_layers=1, num_directions=1, **kwargs
 ):
-    CheckInputs(inputs, 2)
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
     arguments['inputs'] = inputs[1]
     arguments['existing_outputs'] = inputs[0]
     return Tensor.CreateOperator(op_type='RNNParamSet', **arguments)

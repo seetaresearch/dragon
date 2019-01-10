@@ -1,3 +1,4 @@
+#include "utils/cast.h"
 #include "utils/op_kernel.h"
 #include "utils/omp_alternative.h"
 
@@ -21,38 +22,41 @@ void _Arange(
     }
 }
 
-/*! Arange <T = float32, Device = CPU> */
+#define DEFINE_ARANGE_KERNEL_LAUNCHER(T) \
+    template <> void Arange<T, CPUContext>( \
+        const int               count, \
+        const int               start, \
+        const int               step, \
+        T*                      y, \
+        CPUContext*             ctx) { \
+        _Arange<T>(count, start, step, y); \
+    }
 
-template<> void Arange<float, CPUContext>(
+DEFINE_ARANGE_KERNEL_LAUNCHER(int8_t);
+DEFINE_ARANGE_KERNEL_LAUNCHER(uint8_t);
+DEFINE_ARANGE_KERNEL_LAUNCHER(int);
+DEFINE_ARANGE_KERNEL_LAUNCHER(int64_t);
+DEFINE_ARANGE_KERNEL_LAUNCHER(float);
+DEFINE_ARANGE_KERNEL_LAUNCHER(double);
+
+/*! Arange <T = float16, Device = CPU> */
+
+template <> void Arange<float16, CPUContext>(
     const int               count,
     const int               start,
     const int               step,
-    float*                  y,
+    float16*                y,
     CPUContext*             ctx) {
-    _Arange<float>(count, start, step, y);
+#ifdef WITH_OMP
+    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        y[i] = cast::to<float16>(
+            cast::to<float>(start + i * step));
+    }
 }
 
-/*! Arange <T = int32, Device = CPU> */
-
-template<> void Arange<int, CPUContext>(
-    const int               count,
-    const int               start,
-    const int               step,
-    int*                    y,
-    CPUContext*             ctx) {
-    _Arange<int>(count, start, step, y);
-}
-
-/*! Arange <T = int64, Device = CPU> */
-
-template<> void Arange<int64_t, CPUContext>(
-    const int               count,
-    const int               start,
-    const int               step,
-    int64_t*                y,
-    CPUContext*             ctx) {
-    _Arange<int64_t>(count, start, step, y);
-}
+#undef DEFINE_ARANGE_KERNEL_LAUNCHER
 
 }  // namespace kernel
 

@@ -8,30 +8,24 @@ namespace dragon {
 template <class Context> template <typename T>
 void BilinearResizeOp<Context>::RunWithType() {
     if (data_format == "NCHW") {
-        n = Input(0).dim(0);
-        c = Input(0).dim(1);
-        h = Input(0).dim(2);
-        w = Input(0).dim(3);
-        out_h = Output(0)->dim(2);
-        out_w = Output(0)->dim(3);
+        n = Input(0).dim(0), c = Input(0).dim(1);
+        h = Input(0).dim(2), w = Input(0).dim(3);
+        out_h = Output(0)->dim(2), out_w = Output(0)->dim(3);
     } else if (data_format == "NHWC") {
-        n = Input(0).dim(0);
-        h = Input(0).dim(1);
-        w = Input(0).dim(2);
-        c = Input(0).dim(3);
-        out_h = Output(0)->dim(1);
-        out_w = Output(0)->dim(2);
+        n = Input(0).dim(0), h = Input(0).dim(1);
+        w = Input(0).dim(2), c = Input(0).dim(3);
+        out_h = Output(0)->dim(1), out_w = Output(0)->dim(2);
     }
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
-    kernel::BilinearResize<T, Context>(Output(0)->count(),
-        n, c, h, w, out_h, out_w, data_format, Xdata, Ydata, ctx());
+    kernel::BilinearResize(n, c, h, w, out_h, out_w,
+        data_format, Xdata, Ydata, ctx());
 }
 
 template <class Context>
 void BilinearResizeOp<Context>::RunOnDevice() {
-    vector<TIndex> dims = Input(0).dims();
+    vector<int64_t> dims = Input(0).dims();
     if (dsize_desc.size() > 0 || dsize_value.size() > 0) {
         for (int i = 0; i < 2; i++)
             dims[spatial_axis + i] = dsize(i);
@@ -60,27 +54,21 @@ OPERATOR_SCHEMA(BilinearResize).NumInputs(1).NumOutputs(1);
 template <class Context> template <typename T>
 void BilinearResizeGradientOp<Context>::RunWithType() {
     if (data_format == "NCHW") {
-        n = Input(0).dim(0);
-        c = Input(0).dim(1);
-        h = Input(0).dim(2);
-        w = Input(0).dim(3);
-        out_h = Input(-1).dim(2);
-        out_w = Input(-1).dim(3);
+        n = Input(0).dim(0), c = Input(0).dim(1);
+        h = Input(0).dim(2), w = Input(0).dim(3);
+        out_h = Input(-1).dim(2), out_w = Input(-1).dim(3);
     } else if (data_format == "NHWC") {
-        n = Input(0).dim(0);
-        h = Input(0).dim(1);
-        w = Input(0).dim(2);
-        c = Input(0).dim(3);
-        out_h = Input(-1).dim(1);
-        out_w = Input(-1).dim(2);
+        n = Input(0).dim(0), h = Input(0).dim(1);
+        w = Input(0).dim(2), c = Input(0).dim(3);
+        out_h = Input(-1).dim(1), out_w = Input(-1).dim(2);
     }
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
     math::Set<T, Context>(Output(0)->count(), 0, dXdata, ctx());
 
-    kernel::BilinearResizeGrad<T, Context>(Input(-1).count(),
-        n, c, h, w, out_h, out_w, data_format, dYdata, dXdata, ctx());
+    kernel::BilinearResizeGrad(n, c, h, w, out_h, out_w,
+        data_format, dYdata, dXdata, ctx());
 }
 
 template <class Context>
@@ -95,17 +83,10 @@ DEPLOY_CPU(BilinearResizeGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(BilinearResizeGradient);
 #endif
-OPERATOR_SCHEMA(BilinearResizeGradient).NumInputs(2).NumOutputs(1);
 
-class GetBilinearResizeGradient final : public GradientMakerBase {
- public:
-    GRADIENT_MAKER_CTOR(GetBilinearResizeGradient);
-    vector<OperatorDef> MakeDefs() override {
-        return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), GO(0)},
-            vector<string> {GI(0)});
-    }
-};
-REGISTER_GRADIENT(BilinearResize, GetBilinearResizeGradient);
+OPERATOR_SCHEMA(BilinearResizeGradient)
+    .NumInputs(2).NumOutputs(1);
+
+REGISTER_GRADIENT(BilinearResize, SimpleGradientMaker);
 
 }  // namespace dragon

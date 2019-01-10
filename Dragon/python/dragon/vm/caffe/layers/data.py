@@ -9,8 +9,13 @@
 #
 # ------------------------------------------------------------
 
-import dragon.ops as ops
+"""The Implementation of the data layers."""
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import dragon
 from ..layer import Layer
 
 
@@ -60,7 +65,7 @@ class DataLayer(Layer):
         transform_param = LayerParameter.transform_param
         parallel_param = LayerParameter.parallel_param
 
-        self._param = {
+        self.arguments = {
             'source': param.source,
             'prefetch': param.prefetch,
             'batch_size': param.batch_size,
@@ -75,22 +80,21 @@ class DataLayer(Layer):
             'shuffle': parallel_param.shuffle,
             'multiple_nodes': parallel_param.multiple_nodes,
             'partition': parallel_param.partition,
-            'dtype': {0: 'FLOAT32', 1: 'FLOAT16'}[memory_param.dtype],
+            'dtype': {0: 'float32', 1: 'float16'}[memory_param.dtype],
             'data_format': 'NCHW',
         }
 
         if len(transform_param.mean_value) > 0:
-            self._param['mean_values'] = [float(element)
+            self.arguments['mean_values'] = [float(element)
                 for element in transform_param.mean_value]
 
         if transform_param.scale != 1:
-            self._param['mean_values'] = \
+            self.arguments['mean_values'] = \
                 [1. / transform_param.scale] * 3
 
-    def Setup(self, bottom):
-        super(DataLayer, self).Setup(bottom)
-        data, label = ops.LMDBData(**self._param)
-        return ops.ImageData(data, **self._param), label
+    def LayerSetup(self, bottom):
+        data, label = dragon.ops.LMDBData(**self.arguments)
+        return dragon.ops.ImageData(data, **self.arguments), label
 
 
 class MemoryDataLayer(Layer):
@@ -113,19 +117,18 @@ class MemoryDataLayer(Layer):
         param = LayerParameter.memory_data_param
         transform_param = LayerParameter.transform_param
 
-        self._param = {
-            'dtype': {0: 'FLOAT32', 1: 'FLOAT16'}[param.dtype],
+        self.arguments = {
+            'dtype': {0: 'float32', 1: 'float16'}[param.dtype],
             'data_format': 'NCHW',
         }
 
         if len(transform_param.mean_value) > 0:
-            self._param['mean_values'] = \
+            self.arguments['mean_values'] = \
                 [float(element) for element in transform_param.mean_value]
 
         if transform_param.scale != 1:
-            self._param['mean_values'] = \
+            self.arguments['mean_values'] = \
                 [1. / transform_param.scale] * 3
 
-    def Setup(self, bottom):
-        super(MemoryDataLayer, self).Setup(bottom)
-        return ops.ImageData(bottom[0], **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.ImageData(bottom, **self.arguments)

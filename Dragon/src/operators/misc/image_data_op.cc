@@ -12,31 +12,28 @@ void ImageDataOp<Context>::RunWithType() {
         std.template data<float, Context>() : nullptr;
     auto* Ydata = Output(0)->template mutable_data<Ty, Context>();
 
-    kernel::ImageData<Tx, Ty, Context>(
-        Output(0)->count(), n, c, h, w, Mdata, Sdata,
-            data_format, Xdata, Ydata, ctx());
+    kernel::ImageData(Output(0)->count(), n, c, h, w,
+        Mdata, Sdata, data_format, Xdata, Ydata, ctx());
 }
 
 template <class Context>
 void ImageDataOp<Context>::RunOnDevice() {
-    n = Input(0).dim(0);
-    c = Input(0).dim(3);
-    h = Input(0).dim(1);
-    w = Input(0).dim(2);
+    n = Input(0).dim(0), c = Input(0).dim(3);
+    h = Input(0).dim(1), w = Input(0).dim(2);
 
     if (data_format == "NCHW") {
-        Output(0)->Reshape(vector<TIndex>({ n, c, h, w }));
+        Output(0)->Reshape(vector<int64_t>({ n, c, h, w }));
     } else if (data_format == "NHWC") {
         Output(0)->ReshapeLike(Input(0));
     } else LOG(FATAL) << "Unknown data format: " << data_format;
 
     if (XIsType(Input(0), float)) {
-        if (dtype == "FLOAT32") RunWithType<float, float>();
-        else if (dtype == "FLOAT16") RunWithType<float, float16>();
+        if (dtype == "float32") RunWithType<float, float>();
+        else if (dtype == "float16") RunWithType<float, float16>();
         else LOG(FATAL) << "Unsupported output type: " << dtype;
     } else if (XIsType(Input(0), uint8_t)) {
-        if (dtype == "FLOAT32") RunWithType<uint8_t, float>();
-        else if (dtype == "FLOAT16") RunWithType<uint8_t, float16>();
+        if (dtype == "float32") RunWithType<uint8_t, float>();
+        else if (dtype == "float16") RunWithType<uint8_t, float16>();
         else LOG(FATAL) << "Unsupported output type: " << dtype;
     } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "uint8" });
 }

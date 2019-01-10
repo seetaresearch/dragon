@@ -9,22 +9,16 @@
 #
 # ------------------------------------------------------------
 
+"""Define the global options and useful device helpers."""
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import sys
-import logging
-logger = logging.getLogger('dragon')
-logger.setLevel(logging.INFO)
-logger.addHandler(logging.StreamHandler(sys.stdout))
-
-from dragon.import_c_apis import *
+import dragon.import_c_api as C
+import dragon.core.logging as logging
 
 option = {}
-
-REGISTERED_OPERATORS = set(s for s in RegisteredOperatorsCC())
-NO_GRADIENT_OPERATORS = set(s for s in NoGradientOperatorsCC())
 
 # The current device, 'CPU', 'CUDA' or 'CNML'
 option['device'] = 'CPU'
@@ -58,6 +52,18 @@ option['export_meta_graph'] = ''
 option['log_optimized_graph'] = False
 
 
+def GetGlobalOptions():
+    """Return all the global options.
+
+    Returns
+    -------
+    dict
+        The global option dict.
+
+    """
+    return option
+
+
 def EnableCPU():
     """Enable CPU mode globally.
 
@@ -83,7 +89,7 @@ def IsCUDADriverSufficient():
     The wrapper of ``IsCUDADriverSufficientCC``.
 
     """
-    return IsCUDADriverSufficientCC()
+    return C.IsCUDADriverSufficientCC()
 
 
 def EnableCUDA(gpu_id=0, use_cudnn=True):
@@ -295,33 +301,12 @@ def SetLoggingLevel(level):
     The default level is ``INFO``.
 
     """
-    SetLogLevelCC(level)
-    global logger
-    logger.setLevel({
+    C.SetLogLevelCC(level)
+    logging.set_verbosity({
         'DEBUG': logging.DEBUG,
         'INFO': logging.INFO,
-        'WARNING': logging.WARNING,
+        'WARNING': logging.WARN,
         'ERROR': logging.ERROR,
-        'FATAL': logging.CRITICAL
-    }[level])
-
-
-def SetLoggingFile(log_file):
-    """Redirect the logging into the specific file.
-
-    Parameters
-    ----------
-    log_file : str
-        The file for logging.
-
-    Notes
-    -----
-    The function will disable all possible logging at the terminal.
-
-    """
-    global logger
-    new_logger = logging.getLogger('dragon_filehandler')
-    new_logger.setLevel(logger.level)
-    file_handler = logging.FileHandler(log_file, mode="w", encoding="UTF-8")
-    new_logger.addHandler(file_handler)
-    logger = new_logger
+        'FATAL': logging.FATAL,
+        }[level]
+    )

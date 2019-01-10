@@ -7,157 +7,104 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Transpose <T = float32, Device = CUDA> */
+#define FIXED_DIVISOR_DIV_MOD(d, n, q, r) \
+  do {                                    \
+    const auto n_copy = n;                \
+    *q = n_copy / d;                      \
+    *r = n_copy % d;                      \
+  } while (0)
+
+/*! Transpose <T = ?, Device = CUDA> */
 
 template <typename T>
 __global__ void _Transpose(
-    const int               count,
-    const int               ndim,
-    const int*              order,
-    const int*              old_steps,
-    const int*              new_steps,
+    const int               nthreads,
+    const int               ndims,
+    const int*              x_strides,
+    const int*              y_dims,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-       int x_idx = 0, y_idx = idx;
-       for (int j = 0; j < ndim; ++j) {
-           int k = order[j];
-           x_idx += (y_idx / new_steps[j]) * old_steps[k];
-           y_idx %= new_steps[j];
+    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
+       int x_idx = 0, tmp = y_idx;
+#pragma unroll
+       for (int d = ndims - 1; d >= 0; --d) {
+           int r;
+#if __CUDA_ARCH__ >= 350
+           FIXED_DIVISOR_DIV_MOD(__ldg(y_dims + d), tmp, &tmp, &r);
+           x_idx += r * __ldg(x_strides + d);
+#else
+           FIXED_DIVISOR_DIV_MOD(y_dims[d], tmp, &tmp, &r);
+           x_idx += r * x_strides[d];
+#endif
        }
-       y[idx] = x[x_idx];
+       y[y_idx] = x[x_idx];
    }
 }
 
-template <> void Transpose<float, CUDAContext>(
-    const int               count,
-    const int               ndim,
-    const int*              order,
-    const int*              old_steps,
-    const int*              new_steps,
-    const float*            x,
-    float*                  y,
-    CUDAContext*            ctx) {
-    _Transpose<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, ndim, order, old_steps, new_steps, x, y);
-}
-
-/*! Transpose <T = float16, Device = CUDA> */
-
-template <typename T>
-__global__ void _TransposeHalf(
-    const int               count,
-    const int               ndim,
-    const int*              order,
-    const int*              old_steps,
-    const int*              new_steps,
-    const T*                x,
-    T*                      y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-       int x_idx = 0, y_idx = idx;
-       for (int j = 0; j < ndim; ++j) {
-           int k = order[j];
-           x_idx += (y_idx / new_steps[j]) * old_steps[k];
-           y_idx %= new_steps[j];
-       }
-       y[idx] = x[x_idx];
-   }
-}
-
-template <> void Transpose<float16, CUDAContext>(
-    const int               count,
-    const int               ndim,
-    const int*              order,
-    const int*              old_steps,
-    const int*              new_steps,
-    const float16*          x,
-    float16*                y,
-    CUDAContext*            ctx) {
-    _TransposeHalf<half>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, ndim, order, old_steps, new_steps,
-            reinterpret_cast<const half*>(x),
-                reinterpret_cast<half*>(y));
-}
-
-/*! TransposeGrad <T = float32, Device = CUDA> */
+/*! TransposeGrad <T = ?, Device = CUDA> */
 
 template <typename T>
 __global__ void _TransposeGrad(
-    const int               count,
-    const int               ndim,
-    const int*              order,
-    const int*              old_steps,
-    const int*              new_steps,
+    const int               nthreads,
+    const int               ndims,
+    const int*              x_strides,
+    const int*              y_dims,
     const T*                dy,
     T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        int x_idx = 0, y_idx = idx;
-        for (int j = 0; j < ndim; ++j) {
-            int k = order[j];
-            x_idx += (y_idx / new_steps[j]) * old_steps[k];
-            y_idx %= new_steps[j];
+    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
+        int x_idx = 0, tmp = y_idx;
+#pragma unroll
+        for (int d = ndims - 1; d >= 0; --d) {
+            int r;
+#if __CUDA_ARCH__ >= 350
+            FIXED_DIVISOR_DIV_MOD(__ldg(y_dims + d), tmp, &tmp, &r);
+            x_idx += r * __ldg(x_strides + d);
+#else
+            FIXED_DIVISOR_DIV_MOD(y_dims[d], tmp, &tmp, &r);
+            x_idx += r * x_strides[d];
+#endif
         }
-        dx[x_idx] = dy[idx];
+        dx[x_idx] = dy[y_idx];
     }
 }
 
-template <> void TransposeGrad<float, CUDAContext>(
-    const int               count,
-    const int               ndim,
-    const int*              order,
-    const int*              old_steps,
-    const int*              new_steps,
-    const float*            dy,
-    float*                  dx,
-    CUDAContext*            ctx) {
-    _TransposeGrad<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, ndim, order, old_steps, new_steps, dy, dx);
-}
+/*! Kernel Launchers */
 
-/*! TransposeGrad <T = float16, Device = CUDA> */
-
-template <typename T>
-__global__ void _TransposeGradHalf(
-    const int               count,
-    const int               ndim,
-    const int*              order,
-    const int*              old_steps,
-    const int*              new_steps,
-    const T*                dy,
-    T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        int x_idx = 0, y_idx = idx;
-        for (int j = 0; j < ndim; ++j) {
-            int k = order[j];
-            x_idx += (y_idx / new_steps[j]) * old_steps[k];
-            y_idx %= new_steps[j];
-        }
-        dx[x_idx] = dy[idx];
+#define DEFINE_TRANSPOSE_KERNEL_LAUNCHER(name, T) \
+    template <> void name<T, CUDAContext>( \
+        const int               count, \
+        const int               ndims, \
+        const int*              x_strides, \
+        const int*              y_dims, \
+        const T*                x, \
+        T*                      y, \
+        CUDAContext*            ctx) { \
+        _##name<T> \
+            << < CUDA_BLOCKS(count), CUDA_THREADS, \
+                 0, ctx->cuda_stream() >> > \
+            (count, ndims, x_strides, y_dims, x, y); \
     }
-}
 
-template <> void TransposeGrad<float16, CUDAContext>(
-    const int               count,
-    const int               ndim,
-    const int*              order,
-    const int*              old_steps,
-    const int*              new_steps,
-    const float16*          dy,
-    float16*                dx,
-    CUDAContext*            ctx) {
-    _TransposeGradHalf<half>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, ndim, order, old_steps, new_steps,
-            reinterpret_cast<const half*>(dy),
-                reinterpret_cast<half*>(dx));
-}
+DEFINE_TRANSPOSE_KERNEL_LAUNCHER(Transpose, bool);
+DEFINE_TRANSPOSE_KERNEL_LAUNCHER(Transpose, int8_t);
+DEFINE_TRANSPOSE_KERNEL_LAUNCHER(Transpose, uint8_t);
+DEFINE_TRANSPOSE_KERNEL_LAUNCHER(Transpose, int);
+DEFINE_TRANSPOSE_KERNEL_LAUNCHER(Transpose, int64_t);
+DEFINE_TRANSPOSE_KERNEL_LAUNCHER(Transpose, float16);
+DEFINE_TRANSPOSE_KERNEL_LAUNCHER(Transpose, float);
+DEFINE_TRANSPOSE_KERNEL_LAUNCHER(Transpose, double);
+
+DEFINE_TRANSPOSE_KERNEL_LAUNCHER(TransposeGrad, bool);
+DEFINE_TRANSPOSE_KERNEL_LAUNCHER(TransposeGrad, int8_t);
+DEFINE_TRANSPOSE_KERNEL_LAUNCHER(TransposeGrad, uint8_t);
+DEFINE_TRANSPOSE_KERNEL_LAUNCHER(TransposeGrad, int);
+DEFINE_TRANSPOSE_KERNEL_LAUNCHER(TransposeGrad, int64_t);
+DEFINE_TRANSPOSE_KERNEL_LAUNCHER(TransposeGrad, float16);
+DEFINE_TRANSPOSE_KERNEL_LAUNCHER(TransposeGrad, float);
+DEFINE_TRANSPOSE_KERNEL_LAUNCHER(TransposeGrad, double);
+
+#undef FIXED_DIVISOR_DIV_MOD
+#undef DEFINE_TRANSPOSE_KERNEL_LAUNCHER
 
 }  // namespace kernel
 

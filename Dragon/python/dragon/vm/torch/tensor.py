@@ -16,19 +16,22 @@ from __future__ import print_function
 import six
 import numpy as np
 import dragon as dg
+
+import dragon.core.mapping as mapping
+import dragon.core.proto_utils as pb_utils
 import dragon.core.tensor_utils as tensor_utils
 
 from dragon.vm.torch.tensor_uitls import from_dragon
-from dragon.vm.torch.tensor_pool import TPool
-from dragon.vm.torch.constants import CTX_TO_DEVICE_OPTION
+from dragon.vm.torch.dummy_pool import TensorPool
+
+
 from .c_apis import *
 
 
 __all__ = [
     'Tensor', 'Parameter',
-    'FloatTensor', 'DoubleTensor',
-    'IntTensor', 'LongTensor',
-    'ByteTensor', 'CharTensor',
+    'CharTensor', 'ByteTensor', 'IntTensor', 'LongTensor',
+    'HalfTensor', 'FloatTensor', 'DoubleTensor',
 ]
 
 
@@ -57,7 +60,7 @@ class Tensor(object):
         # Owned by the leaf variables(i.e. Can not be Reshaped)
         self._static_shape = None
         # Owned by the grad required variables
-        self._expr = self._ignored_grads = None
+        self.__jit_recorder__ = self._ignored_grads = None
 
         # Constructor
         if len(args) == 0:
@@ -85,15 +88,19 @@ class Tensor(object):
         self._static_shape = Size(array.shape)
         # We use the scope of ``numpy`` instead of ``leaf``
         # As it is costly to switch memory between ``copy`` and ``zero-copy``
-        self._dg_tensor = tensor_utils.FromPyArray(array, name=TPool.get('numpy'))
-        self._ignored_grads = {self.name + '_grad'} if not self._requires_grad else None
+        self._dg_tensor = tensor_utils.FromPyArray(
+            array, TensorPool.get('${NUMPY}'))
+        self._ignored_grads = {self.name + '_grad'} \
+            if not self._requires_grad else None
 
     def _init_from_shape(self, shape):
         if isinstance(shape, six.integer_types): shape = [shape]
         self._static_shape = Size(shape)
-        self._dg_tensor = tensor_utils.FromShape(shape, self._dtype,
-                ctx=CTX_TO_DEVICE_OPTION[tuple(self._ctx)], name=TPool.get('leaf'))
-        self._ignored_grads = {self.name + '_grad'} if not self._requires_grad else None
+        self._dg_tensor = tensor_utils.FromShape(
+            shape, self._dtype, pb_utils.GetDeviceOption(
+                self._ctx[0], self._ctx[1]), TensorPool.get('${LEAF}'))
+        self._ignored_grads = {self.name + '_grad'} \
+            if not self._requires_grad else None
 
     @property
     def name(self):
@@ -113,7 +120,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The self.
 
         """
@@ -126,7 +133,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The self.
 
         """
@@ -141,7 +148,7 @@ class Tensor(object):
         Returns
         -------
         numpy.ndarray
-            The numpy nd-array.
+            The numpy array.
 
         """
         if self._ctx[0] != 'CPU':
@@ -156,7 +163,7 @@ class Tensor(object):
         Returns
         -------
         numpy.ndarray
-            The numpy nd-array.
+            The numpy array.
 
         """
         return tensor_utils.ToPyArrayEx(self._dg_tensor)
@@ -166,12 +173,13 @@ class Tensor(object):
 
         Returns
         -------
-        Tensor
+        dragon.Tensor
             The dragon tensor.
 
         """
         if isinstance(self._dg_tensor, str):
-            return dg.Tensor(_name=self._dg_tensor)
+            return dg.Tensor.Ref(self._dg_tensor,
+                shape=self.shape, dtype=self.dtype)
         else: return self._dg_tensor
 
     def __add__(self, other):
@@ -179,12 +187,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        other : vm.torch.Tensor, int or float
+        other : dragon.vm.torch.Tensor, int or float
             The y.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         """
@@ -195,12 +203,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        other : vm.torch.Tensor, int or float
+        other : dragon.vm.torch.Tensor, int or float
             The y.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The self.
 
         """
@@ -211,12 +219,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        other : vm.torch.Tensor, int or float.
+        other : dragon.vm.torch.Tensor, int or float.
             The y.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         """
@@ -227,12 +235,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        other : vm.torch.Tensor, int or float
+        other : dragon.vm.torch.Tensor, int or float
             The y.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The self.
 
         """
@@ -243,12 +251,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        other : vm.torch.Tensor, int or float.
+        other : dragon.vm.torch.Tensor, int or float.
             The y.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         """
@@ -259,12 +267,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        other : vm.torch.Tensor, int or float.
+        other : dragon.vm.torch.Tensor, int or float.
             The y.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The self.
 
         """
@@ -275,12 +283,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        other : vm.torch.Tensor, int or float.
+        other : dragon.vm.torch.Tensor, int or float.
             The y.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         """
@@ -291,12 +299,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        other : vm.torch.Tensor, int or float.
+        other : dragon.vm.torch.Tensor, int or float.
             The y.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The self.
 
         """
@@ -307,12 +315,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        other : vm.torch.Tensor, int or float.
+        other : dragon.vm.torch.Tensor, int or float.
             The y.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         """
@@ -323,12 +331,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        other : vm.torch.Tensor, int or float.
+        other : dragon.vm.torch.Tensor, int or float.
             The y.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         """
@@ -339,7 +347,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         """
@@ -371,7 +379,7 @@ class Tensor(object):
                 # Always reuse the leaf variables or
                 # tensors that do not require grad
                 # PyGC will detect them automatically
-                TPool.put(self.name)
+                TensorPool.put(self.name)
 
     def __getitem__(self, item):
         """Return a Tensor with specific indices.
@@ -396,46 +404,31 @@ class Tensor(object):
             # + value[?:?]
             item = tuple([item])
         # + value[?:?, ?:?, ...]
-        starts = []; ends = []
-        input_shape = self.shape
+        starts = []; sizes = []
         for ix, it in enumerate(item):
-            keep_dims = True
             if isinstance(it, slice):
-                # handle start
+                # Handle start
                 if it.start is None: starts.append(0)
                 else: starts.append(it.start)
-                # handle stop
-                if it.stop is None: ends.append(input_shape[ix])
-                else: ends.append(it.stop)
+                # Handle stop
+                if it.stop is None:
+                    sizes.append(-1)
+                else:
+                    sizes.append(it.stop - starts[-1])
+                    if sizes[-1] == 0:
+                        raise ValueError(
+                            'The cropping starts and ends of axis {} '
+                                'can not be equal, got {}:{}.'
+                                    .format(ix, starts[-1], it.stop))
                 # handle step
                 if it.step is not None:
                     raise NotImplementedError('Indexing with step has not been implemented yet. ')
             elif isinstance(it, int):
                 starts.append(it)
-                ends.append(it + 1)
-                keep_dims = False
+                sizes.append(0)
             else:
                 raise TypeError('Unsupported type of indices: {}'.format(type(type(it))))
-            # check boundaries
-            if starts[-1] < 0 or starts[-1] >= input_shape[ix]:
-                raise ValueError('The cropping starts at the pos {} of axis {},'
-                                '\nwhile the dimension of this axis is {}.'
-                                 .format(starts[-1], ix, input_shape[ix]))
-            if ends[-1] < 0 or ends[-1] > input_shape[ix]:
-                raise ValueError('The cropping ends at the pos {} of axis {},'
-                                '\nwhile the dimension of this axis is {}.'
-                                 .format(ends[-1], ix, input_shape[ix]))
-            if starts[-1] == ends[-1]:
-                raise ValueError('The cropping starts and ends of axis {} '
-                                 'can not be equal, got {}:{}.'
-                                 .format(ix, starts[-1], ends[-1]))
-            # fake ends for squeezing dimensions
-            # TODO(PhyscalX): Can we have a better solution to be compatible with the backend?
-            if not keep_dims: ends[-1] = -1
-        return self._crop(starts, ends)
-
-    def __setitem__(self, key, value):
-        print(key, value.name)
+        return self._indexing(starts, sizes)
 
     def device(self):
         return self._ctx[1]
@@ -451,12 +444,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        axis : int or None
+        axis : int, optional
             The optional axis.
 
         Returns
         -------
-        vm.torch.Size or int
+        number or dragon.vm.torch.Size
             The size.
 
         """
@@ -534,7 +527,7 @@ class Tensor(object):
 
         Returns
         -------
-        str or vm.torch.Tensor
+        str or dragon.vm.torch.Tensor
             The data type or the new tensor.
 
         """
@@ -558,7 +551,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The new tensor.
 
         """
@@ -574,7 +567,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The self.
 
         """
@@ -590,7 +583,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The new tensor.
 
         """
@@ -606,7 +599,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The self.
 
         """
@@ -622,7 +615,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         """
@@ -633,12 +626,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        other : vm.torch.Tensor
+        other : dragon.vm.torch.Tensor
             The tensor to guide the new size.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         """
@@ -654,11 +647,31 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         """
         raise NotImplementedError('Refer torch.ops.builtin.permute')
+
+    def narrow(self, dimension, start, length):
+        """Return a new tensor that is a narrowed version of input tensor.
+
+        Parameters
+        ----------
+        dimension : int
+            The dimension to narrow.
+        start : int
+            The starting position.
+        length : int
+            The distance to the ending postion.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.builtin.narrow')
 
     def repeat(self, *sizes):
         """Repeat this tensor along the specified dimensions.
@@ -670,7 +683,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         """
@@ -681,14 +694,14 @@ class Tensor(object):
 
         Parameters
         ----------
-        src : vm.torch.Tensor
+        src : dragon.vm.torch.Tensor
             The source tensor.
         non_blocking : boolean
             Whether to copy asynchronously between CPU and GPU.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The ``self`` tensor.
 
         """
@@ -703,7 +716,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The self.
 
         """
@@ -718,7 +731,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The self.
 
         """
@@ -733,7 +746,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The self.
 
         """
@@ -751,7 +764,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The self.
 
         """
@@ -769,7 +782,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The self.
 
         """
@@ -780,12 +793,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        value : vm.torch.Tensor, int or float
+        value : dragon.vm.torch.Tensor, int or float
             The value tensor.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         """
@@ -796,12 +809,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        value : vm.torch.Tensor, int or float
+        value : dragon.vm.torch.Tensor, int or float
             The value tensor.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The self.
 
         """
@@ -812,12 +825,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        value : vm.torch.Tensor, int or float
+        value : dragon.vm.torch.Tensor, int or float
             The value tensor.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         """
@@ -828,12 +841,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        value : vm.torch.Tensor, int or float
+        value : dragon.vm.torch.Tensor, int or float
             The value tensor.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The self.
 
         """
@@ -844,12 +857,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        value : vm.torch.Tensor, int or float
+        value : dragon.vm.torch.Tensor, int or float
             The value tensor.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         """
@@ -860,12 +873,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        value : vm.torch.Tensor, int or float
+        value : dragon.vm.torch.Tensor, int or float
             The value tensor.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The self.
 
         """
@@ -876,12 +889,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        value : vm.torch.Tensor, int or float
+        value : dragon.vm.torch.Tensor, int or float
             The value tensor.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         """
@@ -892,12 +905,12 @@ class Tensor(object):
 
         Parameters
         ----------
-        value : vm.torch.Tensor, int or float
+        value : dragon.vm.torch.Tensor, int or float
             The value tensor.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The self.
 
         """
@@ -908,14 +921,14 @@ class Tensor(object):
 
         Parameters
         ----------
-        min : numerical or None
+        min : number, optional
             The min value.
-        max : numerical or None
+        max : number, optional
             The max value.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         """
@@ -926,14 +939,14 @@ class Tensor(object):
 
         Parameters
         ----------
-        min : numerical or None
+        min : number, optional
             The min value.
-        max : numerical or None
+        max : number, optional
             The max value.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The output tensor.
 
         """
@@ -948,7 +961,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The log tensor.
 
         """
@@ -963,7 +976,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The exp tensor.
 
         """
@@ -974,14 +987,14 @@ class Tensor(object):
 
         Parameters
         ----------
-        dim : int or None
+        dim : int, optional
             The axis of tensor to compute mean value.
-        keepdim : boolean
+        keepdim : bool, optional
             Whether the output tensor has dim retained or not.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The mean-reduced tensor.
 
         """
@@ -992,14 +1005,14 @@ class Tensor(object):
 
         Parameters
         ----------
-        dim : int or None
+        dim : int, optional
             The axis of tensor to compute sum value.
-        keepdim : boolean
+        keepdim : bool, optional
             Whether the output tensor has dim retained or not.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The sum-reduced tensor.
 
         """
@@ -1010,14 +1023,14 @@ class Tensor(object):
 
         Parameters
         ----------
-        dim : int or None
+        dim : int, optional
             The axis of tensor to compute sum value.
-        keepdim : boolean
+        keepdim : bool, optional
             Whether the output tensor has dim retained or not.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The maximum values and indices.
 
         """
@@ -1028,14 +1041,14 @@ class Tensor(object):
 
         Parameters
         ----------
-        dim : int or None
+        dim : int, optional
             The axis of tensor to compute sum value.
-        keepdim : boolean
+        keepdim : bool, optional
             Whether the output tensor has dim retained or not.
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The minimum values and indices.
 
         """
@@ -1046,7 +1059,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The half tensor.
 
         """
@@ -1057,7 +1070,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The half tensor.
 
         """
@@ -1068,7 +1081,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The float tensor.
 
         """
@@ -1079,7 +1092,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The float tensor.
 
         """
@@ -1090,7 +1103,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The double tensor.
 
         """
@@ -1101,7 +1114,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The double tensor.
 
         """
@@ -1112,7 +1125,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The int tensor.
 
         """
@@ -1123,7 +1136,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The int tensor.
 
         """
@@ -1134,7 +1147,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The long tensor.
 
         """
@@ -1145,7 +1158,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The long tensor.
 
         """
@@ -1156,7 +1169,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The byte tensor.
 
         """
@@ -1167,7 +1180,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The byte tensor.
 
         """
@@ -1178,7 +1191,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The byte tensor.
 
         """
@@ -1189,7 +1202,7 @@ class Tensor(object):
 
         Returns
         -------
-        vm.torch.Tensor
+        dragon.vm.torch.Tensor
             The byte tensor.
 
         """
@@ -1226,7 +1239,8 @@ class Tensor(object):
 
     @property
     def grad_fn(self):
-        return True if self._expr and len(self._expr._ops) > 0 else None
+        return True if self.__jit_recorder__ \
+            and len(self.__jit_recorder__._ops) > 0 else None
 
     def backward(self, gradient=None):
         raise NotImplementedError('Refer torch.autograd.variable.backward().')
@@ -1238,7 +1252,7 @@ class Tensor(object):
     ##############################################
 
     def DebugExpression(self):
-        return self._expr.debug_str(self.name)
+        return self.__jit_recorder__.debug_str(self.name)
 
     ##############################################
     #                                            #
@@ -1247,14 +1261,27 @@ class Tensor(object):
     ##############################################
 
     def _type2str(self):
-        return {
-            'float16': 'HalfTensor',
-            'float32': 'FloatTensor',
-            'float64': 'DoubleTensor',
-            'int32': 'IntTensor',
-            'int64': 'LongTensor',
-            'uint8': 'ByteTensor'
-        }[self._dtype]
+        return mapping.TENSOR_TYPE_TO_TORCH_TENSOR[self._dtype]
+
+
+def CharTensor(*args, **kwargs):
+    kwargs['dtype'] = 'int8'
+    return Tensor(*args, **kwargs)
+
+
+def ByteTensor(*args, **kwargs):
+    kwargs['dtype'] = 'uint8'
+    return Tensor(*args, **kwargs)
+
+
+def IntTensor(*args, **kwargs):
+    kwargs['dtype'] = 'int32'
+    return Tensor(*args, **kwargs)
+
+
+def LongTensor(*args, **kwargs):
+    kwargs['dtype'] = 'int64'
+    return Tensor(*args, **kwargs)
 
 
 def HalfTensor(*args, **kwargs):
@@ -1272,44 +1299,13 @@ def DoubleTensor(*args, **kwargs):
     return Tensor(*args, **kwargs)
 
 
-def IntTensor(*args, **kwargs):
-    kwargs['dtype'] = 'int32'
-    return Tensor(*args, **kwargs)
-
-
-def LongTensor(*args, **kwargs):
-    kwargs['dtype'] = 'int64'
-    return Tensor(*args, **kwargs)
-
-
-def ByteTensor(*args, **kwargs):
-    kwargs['dtype'] = 'uint8'
-    return Tensor(*args, **kwargs)
-
-
-def CharTensor(*args, **kwargs):
-    kwargs['dtype'] = 'int8'
-    return Tensor(*args, **kwargs)
-
-
-_DTYPE_TO_TENSOR = {
-    'float16': HalfTensor,
-    'float32': FloatTensor,
-    'float64': DoubleTensor,
-    'int32': IntTensor,
-    'int64': LongTensor,
-    'uint8': ByteTensor,
-    'int8': CharTensor,
-}
-
-
 def LeafTensor(shape, dtype='float32', ctx=None, requires_grad=False):
     """Create a torch tensor according to shape, dtype and ctx.
 
     Commonly used to create leaf variables, i.e., the parameters or placeholders.
 
     """
-    constructor = _DTYPE_TO_TENSOR[dtype]
+    constructor = globals()[mapping.TENSOR_TYPE_TO_TORCH_TENSOR[dtype]]
     return constructor(*shape, ctx=ctx, requires_grad=requires_grad)
 
 
@@ -1320,33 +1316,28 @@ def RuntimeTensor(name, dtype='float32', ctx=None):
     i.e., the shape is computed by the backend automatically.
 
     """
-    constructor = _DTYPE_TO_TENSOR[dtype]
+    constructor = globals()[mapping.TENSOR_TYPE_TO_TORCH_TENSOR[dtype]]
     dg.workspace.CreateTensor(name)
     return constructor(dg_tensor=name, ctx=ctx)
 
 
-def ReferneceTensor(src):
+def ReferenceTensor(src):
     """Create a reference from source tensor.
 
     Commonly used to hold the same storage but takes different sizes,
     i.e., view, squeeze, and unsqueeze.
 
     """
-    constructor = _DTYPE_TO_TENSOR[src._dtype]
+    constructor = globals()[mapping.TENSOR_TYPE_TO_TORCH_TENSOR[src._dtype]]
     ref = constructor(dg_tensor=src.name, ctx=src._ctx)
     name = '{}/id:{}'.format(
-        src.name.replace('[TPool]', '[Ref]'), id(ref))
+        src.name.replace(
+            '${TORCH_TENSOR_POOL}',
+                '${TORCH_TENSOR_REFERENCE}'), id(ref))
     dg.workspace.CreateTensor(name)
     ref._dg_tensor, ref._own_storage = name, False
     ref._ref_objects.append(src)
     return ref
-
-
-##############################################
-#                                            #
-#               Tensor-Extension             #
-#                                            #
-##############################################
 
 
 class Parameter(Tensor):
@@ -1358,4 +1349,4 @@ class Parameter(Tensor):
 
     def __repr__(self):
         return 'Parameter containing:\n' + \
-               super(Parameter, self).__repr__()
+            super(Parameter, self).__repr__()

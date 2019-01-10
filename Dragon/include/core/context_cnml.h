@@ -36,7 +36,7 @@ class CNMLContext {
         : device_id_(option.device_id()),
         random_seed_(option.has_random_seed() ?
             option.random_seed() : DEFAULT_RNG_SEED) {
-        CHECK_EQ(option.device_type(), CNML);
+        CHECK_EQ(option.device_type(), PROTO_CNML);
     }
 
     CNMLContext(const int device_id = 0)

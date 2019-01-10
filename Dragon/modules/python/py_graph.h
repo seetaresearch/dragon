@@ -20,24 +20,41 @@ namespace dragon {
 namespace python {
 
 inline PyObject* CreateGraphCC(PyObject* self, PyObject* args) {
-    PyObject* graph_str;
-    if (!PyArg_ParseTuple(args, "S", &graph_str)) {
+    PyObject* graph_str, *verbose;
+    if (!PyArg_ParseTuple(args, "S|O", &graph_str, &verbose)) {
         PyErr_SetString(PyExc_ValueError,
             "Excepted a serialized string of GraphDef.");
         return nullptr;
-    }
+    } 
+    if (verbose == nullptr) verbose = Py_False;
+
     GraphDef graph_def;
     if (!graph_def.ParseFromString(PyBytes_AsStringEx(graph_str))) {
         PyErr_SetString(PyExc_RuntimeError,
             "Failed to parse the GraphDef.");
         return nullptr;
     } 
-    if (!ws()->CreateGraph(graph_def)) {
+
+    auto* graph = ws()->CreateGraph(graph_def);
+
+    if (!graph) {
         PyErr_SetString(PyExc_RuntimeError,
             "Failed to create the Graph.");
         return nullptr;
+    } else {
+        // It is not a good design to print the debug string
+        if (PyObject_IsTrue(verbose) ? true : false) {
+            auto* graph_tensor = ws()->CreateTensor(
+                "/graph_def/optimized/" + graph->name());
+            if (graph_tensor->count() > 0) {
+                auto* data = graph_tensor->mutable_data<string, CPUContext>();
+                std::cout << data[0] << std::endl;
+            }
+        }
     }
-    Py_RETURN_TRUE;
+    // Return the graph name may be different from the def
+    // We will make a unique dummy name on creating the graph
+    return String_AsPyUnicode(graph->name());
 }
 
 inline PyObject* RunGraphCC(PyObject* self, PyObject* args) {

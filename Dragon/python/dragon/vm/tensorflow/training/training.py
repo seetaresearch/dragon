@@ -9,7 +9,22 @@
 #
 # ------------------------------------------------------------
 
-from dragon.vm.tensorflow.training.optimizer import GradientDescentOptimizer, \
-                                                    MomentumOptimizer, \
-                                                    RMSPropOptimizer, \
-                                                    AdamOptimizer
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+from dragon.vm.tensorflow.training.optimizer import (
+    GradientDescentOptimizer,
+    MomentumOptimizer,
+    RMSPropOptimizer,
+    AdamOptimizer,
+)
+
+from dragon.vm.tensorflow.training.learning_rate_decay import (
+    piecewise_constant,
+    piecewise_constant_decay,
+    exponential_decay,
+    natural_exp_decay,
+    cosine_decay,
+    cosine_decay_restarts,
+)

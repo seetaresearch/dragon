@@ -30,11 +30,11 @@ static_cast<void*>(&CUDNNType<float16>::zeroval);
 template <typename T>
 void cudnnSetTensorDesc(
     cudnnTensorDescriptor_t*        desc,
-    const vector<TIndex>&           dims) {
+    const vector<int64_t>&          dims) {
     int ndim = (int)dims.size();
     int* dimA = new int[ndim];
     int* strideA = new int[ndim];
-    TIndex stride = 1;
+    int64_t stride = 1;
     for (int i = ndim - 1; i >= 0; i--) {
         strideA[i] = (int)stride;
         dimA[i] = (int)dims[i];
@@ -50,7 +50,7 @@ template <typename T>
 void cudnnSetTensor4dDesc(
     cudnnTensorDescriptor_t*        desc,
     const string&                   data_format,
-    const vector<TIndex>&           dims) {
+    const vector<int64_t>&          dims) {
     if (data_format == "NCHW") {
         CUDNN_CHECK(cudnnSetTensor4dDescriptor(
             *desc, CUDNN_TENSOR_NCHW, CUDNNType<T>::type,
@@ -66,8 +66,8 @@ template <typename T>
 void cudnnSetTensor4dDescWithGroup(
     cudnnTensorDescriptor_t*        desc,
     const string&                   data_format,
-    const vector<TIndex>&           dims,
-    const TIndex                    group) {
+    const vector<int64_t>&          dims,
+    const int64_t                   group) {
     if (data_format == "NCHW") {
         CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(
             *desc, CUDNNType<T>::type,
@@ -87,7 +87,7 @@ template <typename T>
 void cudnnSetTensor5dDesc(
     cudnnTensorDescriptor_t*        desc,
     const string&                   data_format,
-    const vector<TIndex>&           dims) {
+    const vector<int64_t>&          dims) {
     if (data_format == "NCHW") {
         cudnnSetTensorDesc<T>(desc, dims);
     } else if (data_format == "NHWC") {
@@ -112,8 +112,8 @@ template <typename T>
 void cudnnSetTensor3dDesc(
     cudnnTensorDescriptor_t*        desc,
     const string&                   data_format,
-    const vector<TIndex>&           dims) {
-    vector<TIndex> fake_dims = dims;
+    const vector<int64_t>&          dims) {
+    vector<int64_t> fake_dims = dims;
     if (data_format == "NCHW") {
         // NCH -> NCHXX
         fake_dims.push_back(1);
@@ -129,21 +129,15 @@ void cudnnSetTensor3dDesc(
 template <typename T>
 void cudnnSetTensorDesc(
     cudnnTensorDescriptor_t*        desc,
-    const vector<TIndex>&           dims,
-    const vector<TIndex>&           strides) {
+    const vector<int64_t>&          dims,
+    const vector<int64_t>&          strides) {
     CHECK_EQ(dims.size(), strides.size());
     CHECK(dims.size() >= 3 && dims.size() <= 8);
-    int ndim = (int)dims.size();
-    int* dimA = new int[ndim];
-    int* strideA = new int[ndim];
-    for (int i = ndim - 1; i >= 0; i--) {
-        strideA[i] = strides[i];
-        dimA[i] = dims[i];
-    }
+    vector<int> dimA(dims.begin(), dims.end());
+    vector<int> strideA(strides.begin(), strides.end());
     CUDNN_CHECK(cudnnSetTensorNdDescriptor(
-        *desc, CUDNNType<T>::type, ndim, dimA, strideA));
-    delete[] dimA;
-    delete[] strideA;
+        *desc, CUDNNType<T>::type, (int)dimA.size(),
+            dimA.data(), strideA.data()));
 }
 
 template <typename T>
@@ -152,7 +146,7 @@ void cudnnSetTensorDesc(
     Tensor*                         tensor) {
     // CuDNN requires ndimensions from 3 to 8
     // Exapnd or Squeeze dimensions to pass check
-    vector<TIndex> fake_dims(tensor->dims());
+    vector<int64_t> fake_dims(tensor->dims());
     if (fake_dims.size() < 3) {
         fake_dims.resize(3, 1);
     } else if (fake_dims.size() > 8) {
@@ -165,7 +159,7 @@ void cudnnSetTensor4dDesc(
     cudnnTensorDescriptor_t*        desc,
     const string&                   data_format,
     Tensor*                         tensor) {
-    CHECK_EQ((int)tensor->ndim(), 4)
+    CHECK_EQ(tensor->ndim(), 4)
         << "\nThe num of dimensions of Tensor("
         << tensor->name() << ") "
         << "should be 4, but got " << tensor->ndim() << ".";
@@ -177,7 +171,7 @@ void cudnnSetTensor5dDesc(
     cudnnTensorDescriptor_t*        desc,
     const string&                   data_format,
     Tensor*                         tensor) {
-    CHECK_EQ((int)tensor->ndim(), 5)
+    CHECK_EQ(tensor->ndim(), 5)
         << "\nThe num of dimensions of Tensor("
         << tensor->name() << ") "
         << "should be 5, but got " << tensor->ndim() << ".";
@@ -189,7 +183,7 @@ void cudnnSetTensor3dDesc(
     cudnnTensorDescriptor_t*        desc,
     const string&                   data_format,
     Tensor*                         tensor) {
-    CHECK_EQ((int)tensor->ndim(), 3)
+    CHECK_EQ(tensor->ndim(), 3)
         << "\nThe num of dimensions of Tensor("
         << tensor->name() << ") "
         << "should be 3, but got " << tensor->ndim() << ".";
@@ -217,33 +211,33 @@ template void cudnnSetTensor3dDesc<float>(
 
 template void cudnnSetTensorDesc<float>(
     cudnnTensorDescriptor_t*,
-    const vector<TIndex>&);
+    const vector<int64_t>&);
 
 template void cudnnSetTensor4dDesc<float>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<TIndex>&);
+    const vector<int64_t>&);
 
 template void cudnnSetTensor5dDesc<float>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<TIndex>&);
+    const vector<int64_t>&);
 
 template void cudnnSetTensor3dDesc<float>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<TIndex>&);
+    const vector<int64_t>&);
 
 template void cudnnSetTensor4dDescWithGroup<float>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<TIndex>&,
-    const TIndex);
+    const vector<int64_t>&,
+    const int64_t);
 
 template void cudnnSetTensorDesc<float>(
     cudnnTensorDescriptor_t*,
-    const vector<TIndex>&,
-    const vector<TIndex>&);
+    const vector<int64_t>&,
+    const vector<int64_t>&);
 
 template void cudnnSetTensorDesc<double>(
     cudnnTensorDescriptor_t*,
@@ -266,33 +260,33 @@ template void cudnnSetTensor3dDesc<double>(
 
 template void cudnnSetTensorDesc<double>(
     cudnnTensorDescriptor_t*,
-    const vector<TIndex>&);
+    const vector<int64_t>&);
 
 template void cudnnSetTensor4dDesc<double>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<TIndex>&);
+    const vector<int64_t>&);
 
 template void cudnnSetTensor5dDesc<double>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<TIndex>&);
+    const vector<int64_t>&);
 
 template void cudnnSetTensor3dDesc<double>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<TIndex>&);
+    const vector<int64_t>&);
 
 template void cudnnSetTensor4dDescWithGroup<double>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<TIndex>&,
-    const TIndex);
+    const vector<int64_t>&,
+    const int64_t);
 
 template void cudnnSetTensorDesc<double>(
     cudnnTensorDescriptor_t*,
-    const vector<TIndex>&,
-    const vector<TIndex>&);
+    const vector<int64_t>&,
+    const vector<int64_t>&);
 
 template void cudnnSetTensorDesc<float16>(
     cudnnTensorDescriptor_t*,
@@ -315,33 +309,33 @@ template void cudnnSetTensor3dDesc<float16>(
 
 template void cudnnSetTensorDesc<float16>(
     cudnnTensorDescriptor_t*,
-    const vector<TIndex>&);
+    const vector<int64_t>&);
 
 template void cudnnSetTensor4dDesc<float16>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<TIndex>&);
+    const vector<int64_t>&);
 
 template void cudnnSetTensor5dDesc<float16>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<TIndex>&);
+    const vector<int64_t>&);
 
 template void cudnnSetTensor3dDesc<float16>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<TIndex>&);
+    const vector<int64_t>&);
 
 template void cudnnSetTensor4dDescWithGroup<float16>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<TIndex>&,
-    const TIndex);
+    const vector<int64_t>&,
+    const int64_t);
 
 template void cudnnSetTensorDesc<float16>(
     cudnnTensorDescriptor_t*,
-    const vector<TIndex>&,
-    const vector<TIndex>&);
+    const vector<int64_t>&,
+    const vector<int64_t>&);
 
 }  // namespace dragon
 

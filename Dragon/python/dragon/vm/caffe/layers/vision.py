@@ -9,9 +9,13 @@
 #
 # ------------------------------------------------------------
 
-import dragon.ops as ops
-from dragon.core.tensor import Tensor
+"""The Implementation of the vision layers."""
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import dragon
 from ..layer import Layer
 
 
@@ -43,44 +47,36 @@ class ConvolutionLayer(Layer):
     def __init__(self, LayerParameter):
         super(ConvolutionLayer, self).__init__(LayerParameter)
         param = LayerParameter.convolution_param
-        self._param = {
+        self.arguments = {
             'num_output': param.num_output,
-            'kernel_size': [int(element) for element in param.kernel_size],
-            'stride': [int(element) for element in param.stride] if len(param.stride) > 0 else [1],
-            'pad': [int(element) for element in param.pad] if len(param.pad) > 0 else [0],
-            'dilation': [int(element) for element in param.dilation] if len(param.dilation) > 0 else [1],
+            'kernel_shape': [int(element) for element in param.kernel_size],
+            'strides': [int(element) for element in param.stride] if len(param.stride) > 0 else [1],
+            'pads': [int(element) for element in param.pad] if len(param.pad) > 0 else [0],
+            'dilations': [int(element) for element in param.dilation] if len(param.dilation) > 0 else [1],
             'group': int(param.group),
             'padding': 'VALID',
             'data_format': 'NCHW',
         }
         if param.HasField('kernel_h'):
             assert param.HasField('kernel_w')
-            self._param['kernel_size'] = [param.kernel_h, param.kernel_w]
+            self.arguments['kernel_shape'] = [param.kernel_h, param.kernel_w]
+
         if param.HasField('stride_h'):
             assert param.HasField('stride_w')
-            self._param['stride'] = [param.stride_h, param.stride_w]
+            self.arguments['strides'] = [param.stride_h, param.stride_w]
+
         if param.HasField('pad_h'):
             assert param.HasField('pad_w')
-            self._param['pad'] = [param.pad_h, param.pad_w]
-        scope = LayerParameter.name
-        weight = Tensor(scope + '/param:0')
-        weight_diff = Tensor(scope + '/param:0_grad')
-        if len(LayerParameter.param) > 0:
-            if LayerParameter.param[0].lr_mult <= 0: weight_diff = None
-        self.Fill(weight, param, 'weight_filler')
-        self._blobs.append({'data': weight, 'diff': weight_diff})
+            self.arguments['pads'] = [param.pad_h, param.pad_w]
 
+        # Add weights and biases
+        self.AddBlob(filler=self.GetFiller(param, 'weight_filler'))
         if param.bias_term:
-            bias = Tensor(scope + '/param:1')
-            bias_diff = Tensor(scope + '/param:1_grad')
-            self.Fill(bias, param, 'bias_filler')
-            if len(LayerParameter.param) > 1:
-                if LayerParameter.param[1].lr_mult <= 0: bias_diff = None
-            self._blobs.append({'data': bias, 'diff': bias_diff})
+            self.AddBlob(filler=self.GetFiller(param, 'bias_filler'))
 
-    def Setup(self, bottom):
-        super(ConvolutionLayer, self).Setup(bottom)
-        return ops.Conv2d(bottom + [blob['data'] for blob in self._blobs], **self._param)
+    def LayerSetup(self, bottom):
+        inputs = [bottom] + [blob['data'] for blob in self._blobs]
+        return dragon.ops.Conv2d(inputs, **self.arguments)
 
 
 class DepthwiseConvolutionLayer(Layer):
@@ -107,42 +103,34 @@ class DepthwiseConvolutionLayer(Layer):
     def __init__(self, LayerParameter):
         super(DepthwiseConvolutionLayer, self).__init__(LayerParameter)
         param = LayerParameter.convolution_param
-        self._param = {
+        self.arguments = {
             'num_output': param.num_output,
-            'kernel_size': [int(element) for element in param.kernel_size],
-            'stride': [int(element) for element in param.stride] if len(param.stride) > 0 else [1],
-            'pad': [int(element) for element in param.pad] if len(param.pad) > 0 else [0],
+            'kernel_shape': [int(element) for element in param.kernel_size],
+            'strides': [int(element) for element in param.stride] if len(param.stride) > 0 else [1],
+            'pads': [int(element) for element in param.pad] if len(param.pad) > 0 else [0],
             'padding': 'VALID',
             'data_format': 'NCHW',
         }
         if param.HasField('kernel_h'):
             assert param.HasField('kernel_w')
-            self._param['kernel_size'] = [param.kernel_h, param.kernel_w]
+            self.arguments['kernel_shape'] = [param.kernel_h, param.kernel_w]
+
         if param.HasField('stride_h'):
             assert param.HasField('stride_w')
-            self._param['stride'] = [param.stride_h, param.stride_w]
+            self.arguments['strides'] = [param.stride_h, param.stride_w]
+
         if param.HasField('pad_h'):
             assert param.HasField('pad_w')
-            self._param['pad'] = [param.pad_h, param.pad_w]
-        scope = LayerParameter.name
-        weight = Tensor(scope + '/param:0')
-        weight_diff = Tensor(scope + '/param:0_grad')
-        if len(LayerParameter.param) > 0:
-            if LayerParameter.param[0].lr_mult <= 0: weight_diff = None
-        self.Fill(weight, param, 'weight_filler')
-        self._blobs.append({'data': weight, 'diff': weight_diff})
+            self.arguments['pads'] = [param.pad_h, param.pad_w]
 
+        # Add weights and biases
+        self.AddBlob(filler=self.GetFiller(param, 'weight_filler'))
         if param.bias_term:
-            bias = Tensor(scope + '/param:1')
-            bias_diff = Tensor(scope + '/param:1_grad')
-            self.Fill(bias, param, 'bias_filler')
-            if len(LayerParameter.param) > 1:
-                if LayerParameter.param[1].lr_mult <= 0: bias_diff = None
-            self._blobs.append({'data': bias, 'diff': bias_diff})
+            self.AddBlob(filler=self.GetFiller(param, 'bias_filler'))
 
-    def Setup(self, bottom):
-        super(DepthwiseConvolutionLayer, self).Setup(bottom)
-        return ops.DepthwiseConv2d(bottom + [blob['data'] for blob in self._blobs], **self._param)
+    def LayerSetup(self, bottom):
+        inputs = [bottom] + [blob['data'] for blob in self._blobs]
+        return dragon.ops.DepthwiseConv2d(inputs, **self.arguments)
 
 
 class DeconvolutionLayer(ConvolutionLayer):
@@ -173,9 +161,9 @@ class DeconvolutionLayer(ConvolutionLayer):
     def __init__(self, LayerParameter):
         super(DeconvolutionLayer, self).__init__(LayerParameter)
 
-    def Setup(self, bottom):
-        super(DeconvolutionLayer, self).Setup(bottom)
-        return ops.Deconv2d(bottom + [blob['data'] for blob in self._blobs], **self._param)
+    def LayerSetup(self, bottom):
+        inputs = [bottom] + [blob['data'] for blob in self._blobs]
+        return dragon.ops.ConvTranspose2d(inputs, **self.arguments)
 
 
 class PoolingLayer(Layer):
@@ -208,24 +196,22 @@ class PoolingLayer(Layer):
     def __init__(self, LayerParameter):
         super(PoolingLayer, self).__init__(LayerParameter)
         param = LayerParameter.pooling_param
-        self._param = {
+        self.arguments = {
             'mode': {0: 'MAX', 1: 'AVG'}[param.pool],
             'data_format': 'NCHW',
             'global_pooling': param.global_pooling,
         }
-        if not param.HasField('kernel_h'): self._param['kernel_size'] = [param.kernel_size]
-        else: self._param['kernel_size'] = [param.kernel_h, param.kernel_w]
+        if not param.HasField('kernel_h'): self.arguments['kernel_shape'] = [param.kernel_size]
+        else: self.arguments['kernel_shape'] = [param.kernel_h, param.kernel_w]
 
-        if not param.HasField('pad_h'): self._param['pad'] = [param.pad]
-        else: self._param['pad'] = [param.pad_h, param.pad_w]
+        if not param.HasField('pad_h'): self.arguments['pads'] = [param.pad]
+        else: self.arguments['pads'] = [param.pad_h, param.pad_w]
 
-        if not param.HasField('stride_h'): self._param['stride'] = [param.stride]
-        else: self._param['stride'] = [param.stride_h, param.stride_w]
+        if not param.HasField('stride_h'): self.arguments['strides'] = [param.stride]
+        else: self.arguments['strides'] = [param.stride_h, param.stride_w]
 
-    def Setup(self, bottom):
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        super(PoolingLayer, self).Setup(bottom)
-        return ops.Pool2d(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Pool2d(bottom, **self.arguments)
 
 
 class ROIPoolingLayer(Layer):
@@ -244,15 +230,14 @@ class ROIPoolingLayer(Layer):
     def __init__(self, LayerParameter):
         super(ROIPoolingLayer, self).__init__(LayerParameter)
         param = LayerParameter.roi_pooling_param
-        self._param = {
+        self.arguments = {
             'pool_h': int(param.pooled_h),
             'pool_w': int(param.pooled_w),
             'spatial_scale': param.spatial_scale,
         }
 
-    def Setup(self, bottom):
-        super(ROIPoolingLayer, self).Setup(bottom)
-        return ops.ROIPooling(bottom, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.ROIPool(bottom, **self.arguments)
 
 
 class ROIAlignLayer(Layer):
@@ -271,15 +256,14 @@ class ROIAlignLayer(Layer):
     def __init__(self, LayerParameter):
         super(ROIAlignLayer, self).__init__(LayerParameter)
         param = LayerParameter.roi_pooling_param
-        self._param = {
+        self.arguments = {
             'pool_h': int(param.pooled_h),
             'pool_w': int(param.pooled_w),
             'spatial_scale': param.spatial_scale,
         }
 
-    def Setup(self, bottom):
-        super(ROIAlignLayer, self).Setup(bottom)
-        return ops.ROIAlign(bottom, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.ROIAlign(bottom, **self.arguments)
 
 
 class LRNLayer(Layer):
@@ -302,7 +286,7 @@ class LRNLayer(Layer):
     def __init__(self, LayerParameter):
         super(LRNLayer, self).__init__(LayerParameter)
         param = LayerParameter.lrn_param
-        self._param = {
+        self.arguments = {
             'local_size': param.local_size,
             'alpha': param.alpha,
             'beta': param.beta,
@@ -310,10 +294,8 @@ class LRNLayer(Layer):
             'data_format': 'NCHW',
         }
 
-    def Setup(self, bottom):
-        super(LRNLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return ops.LRN(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.LRN(bottom, **self.arguments)
 
 
 class NNResizeLayer(Layer):
@@ -334,21 +316,20 @@ class NNResizeLayer(Layer):
         param = LayerParameter.resize_param
         dsize = [int(dim) for dim in param.shape.dim] \
             if param.HasField('shape') else None
-        self._param = {
+        self.arguments = {
             'dsize': dsize,
             'fx': float(param.fx),
             'fy': float(param.fy),
             'data_format': 'NCHW',
         }
 
-    def Setup(self, bottom):
-        super(NNResizeLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        if self._param['dsize'] is None:
-            if len(bottom) != 2:
+    def LayerSetup(self, bottom):
+        if self.arguments['dsize'] is None:
+            if not isinstance(bottom, (tuple, list)) or len(bottom) != 2:
                 raise ValueError('The second bottom should be provided to determine the shape.')
-            self._param['shape_like'] = bottom[1]
-        return ops.NNResize(input, **self._param)
+            self.arguments['shape_like'] = bottom[1]
+            bottom = bottom[0]
+        return dragon.ops.NNResize(bottom, **self.arguments)
 
 
 class BilinearResizeLayer(Layer):
@@ -369,21 +350,20 @@ class BilinearResizeLayer(Layer):
         param = LayerParameter.resize_param
         dsize = [int(dim) for dim in param.shape.dim] \
             if param.HasField('shape') else None
-        self._param = {
+        self.arguments = {
             'dsize': dsize,
             'fx': float(param.fx),
             'fy': float(param.fy),
             'data_format': 'NCHW',
         }
 
-    def Setup(self, bottom):
-        super(BilinearResizeLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        if self._param['dsize'] is None:
-            if len(bottom) != 2:
+    def LayerSetup(self, bottom):
+        if self.arguments['dsize'] is None:
+            if not isinstance(bottom, (tuple, list)) or len(bottom) != 2:
                 raise ValueError('The second bottom should be provided to determine the shape.')
-            self._param['shape_like'] = bottom[1]
-        return ops.BilinearResize(input, **self._param)
+            self.arguments['shape_like'] = bottom[1]
+            bottom = bottom[0]
+        return dragon.ops.BilinearResize(bottom, **self.arguments)
 
 
 class DropBlockLayer(Layer):
@@ -404,7 +384,7 @@ class DropBlockLayer(Layer):
     def __init__(self, LayerParameter):
         super(DropBlockLayer, self).__init__(LayerParameter)
         param = LayerParameter.drop_block_param
-        self._param = {
+        self.arguments = {
             'block_size': param.block_size,
             'keep_prob': param.keep_prob,
             'alpha': param.alpha,
@@ -412,7 +392,5 @@ class DropBlockLayer(Layer):
             'data_format': 'NCHW',
         }
 
-    def Setup(self, bottom):
-        super(DropBlockLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return ops.DropBlock2d(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.DropBlock2d(bottom, **self.arguments)

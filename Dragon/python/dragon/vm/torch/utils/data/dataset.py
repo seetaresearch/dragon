@@ -13,8 +13,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.io.data_reader import DataReader
-from dragon.vm.torch.utils.data.io.data_transformer import DataTransformer
+from dragon.utils.vision import DataReader as _Reader
+from dragon.utils.vision import DataTransformer as _Transformer
 
 
 class _LMDBStream(object):
@@ -22,12 +22,14 @@ class _LMDBStream(object):
         from multiprocessing import Queue
         self.Q = Queue(1)
         # Create a DataReader
-        self._data_reader = DataReader(**{'source': database})
+        self._data_reader = _Reader(**{'source': database})
         self._data_reader.Q_out = Queue(1)
         self._data_reader.start()
         # Create a DataTransformer
-        self._data_transformer = DataTransformer(transform=transform,
-                color_space=color_space, pack=True)
+        self._data_transformer = \
+            _Transformer(transform=transform,
+                         color_space=color_space,
+                         pack=True)
         self._data_transformer.Q_in = self._data_reader.Q_out
         self._data_transformer.Q_out = self.Q
         self._data_transformer.start()
@@ -36,7 +38,6 @@ class _LMDBStream(object):
             def terminate(process):
                 process.terminate()
                 process.join()
-
             terminate(self._data_transformer)
             terminate(self._data_reader)
 

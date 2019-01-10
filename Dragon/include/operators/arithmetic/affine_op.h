@@ -22,16 +22,16 @@ class AffineOp final : public Operator<Context> {
  public:
     AffineOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", 1)),
-          num_axes(OperatorBase::Arg<int>("num_axes", 1)) {}
+          axis(OperatorBase::Arg<int64_t>("axis", 1)),
+          num_axes(OperatorBase::Arg<int64_t>("num_axes", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    TIndex axis, start_axis, num_axes;
-    TIndex outer_dim, scale_dim, inner_dim;
+    int64_t axis, num_axes;
+    int64_t outer_dim, scale_dim, inner_dim;
 };
 
 template <class Context>
@@ -39,8 +39,8 @@ class AffineGradientOp final : public Operator<Context> {
  public:
     AffineGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", 1)),
-          num_axes(OperatorBase::Arg<int>("num_axes", -1)) {}
+          axis(OperatorBase::Arg<int64_t>("axis", 1)),
+          num_axes(OperatorBase::Arg<int64_t>("num_axes", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -49,8 +49,8 @@ class AffineGradientOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    TIndex axis, start_axis, num_axes;
-    TIndex outer_dim, inner_dim, scale_dim, sum_dim, dim;
+    int64_t axis, num_axes;
+    int64_t outer_dim, inner_dim, scale_dim, sum_dim, dim;
     Tensor sum_result;
 };
 
@@ -63,8 +63,8 @@ class CuDNNAffineOpBase : public Operator<Context> {
  public:
     CuDNNAffineOpBase(const OperatorDef& def, Workspace* ws)
          : Operator<Context>(def, ws),
-           axis(OperatorBase::Arg<int>("axis", 1)),
-           num_axes(OperatorBase::Arg<int>("num_axes", -1)) {
+           axis(OperatorBase::Arg<int64_t>("axis", 1)),
+           num_axes(OperatorBase::Arg<int64_t>("num_axes", 1)) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&param_desc));
         CUDNN_CHECK(cudnnCreateOpTensorDescriptor(&mul_desc));
@@ -81,31 +81,9 @@ class CuDNNAffineOpBase : public Operator<Context> {
     }
 
     template <typename T>
-    void ResetDesc(const Tensor& X) {
-        // Determine the range of affine
-        start_axis = axis;
-        if (start_axis < 0) start_axis += (int)X.ndim();
-        if (num_axes == -1) num_axes = (int)X.ndim() - start_axis;
-        else if (num_axes == 0) num_axes = 1;
-        end_axis = start_axis + num_axes;
-        CHECK_LT(start_axis, (int)X.ndim());
-        CHECK_LE(start_axis + num_axes, (int)X.ndim());
-        // Determine the input desc
-        vector<TIndex> input_dims = X.dims();
-        // CuDNN requires ndimensions range from [4, 5]
-        if (input_dims.size() < 4) input_dims.resize(4, 1);
-        else if (input_dims.size() > 5) 
-            LOG(FATAL) << "CuDNN Affine the dimensions up to 5.";
-        cudnnSetTensorDesc<T>(&input_desc, input_dims);
-        // Determine the scale desc
-        vector<TIndex> param_dims(input_dims.size(), 1);
-        for (int i = start_axis; i < end_axis; i++)
-            param_dims[i] = input_dims[i];
-        cudnnSetTensorDesc<T>(&param_desc, param_dims);
-    }
+    void ResetDesc(const Tensor& X);
 
-    TIndex axis, start_axis, end_axis, num_axes;
-
+    int64_t axis, num_axes;
     cudnnTensorDescriptor_t input_desc, param_desc;
     cudnnOpTensorDescriptor_t mul_desc, add_desc;
     cudnnReduceTensorDescriptor_t reduce_desc;
@@ -113,7 +91,7 @@ class CuDNNAffineOpBase : public Operator<Context> {
 
 #define USE_CUDNN_AFFINE_FUCNTIONS \
     USE_OPERATOR_FUNCTIONS; \
-    using CuDNNAffineOpBase<Context>::start_axis; \
+    using CuDNNAffineOpBase<Context>::axis; \
     using CuDNNAffineOpBase<Context>::num_axes; \
     using CuDNNAffineOpBase<Context>::input_desc; \
     using CuDNNAffineOpBase<Context>::param_desc; \
@@ -131,7 +109,7 @@ class CuDNNAffineOp final : public CuDNNAffineOpBase<Context> {
     template <typename DT, typename CT> void RunWithType();
 
  protected:
-     USE_CUDNN_AFFINE_FUCNTIONS;
+    USE_CUDNN_AFFINE_FUCNTIONS;
 };
 
 template <class Context>
@@ -155,9 +133,9 @@ public:
 
     template <typename DT, typename CT> void RunWithType();
 
-protected:
+ protected:
     USE_CUDNN_AFFINE_FUCNTIONS;
-    TIndex outer_dim, inner_dim, scale_dim, sum_dim, dim;
+    int64_t outer_dim, inner_dim, scale_dim, dim, sum_dim;
     Tensor sum_result;
 };
 

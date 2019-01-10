@@ -5,6 +5,13 @@
 
 namespace dragon {
 
+#define DETERMINE_RUNTIME_ARGUMENTS(X) \
+    axis = OperatorBase::Arg<int64_t>("axis", 1); \
+    axis = axis < 0 ? axis + X.ndim() : axis; \
+    CHECK(axis >= 0 && axis < X.ndim()) \
+       << "\nExcepted the axis in [-" << X.ndim() << ", " << X.ndim() \
+       << "), got " << OperatorBase::Arg<int64_t>("axis", 1) << ".";
+
 template <class Context> template <typename Tx, typename Ty>
 void NLLLossOp<Context>::RunWithType() {
     auto* LPdata = Input(0).template data<Tx, Context>();
@@ -14,45 +21,41 @@ void NLLLossOp<Context>::RunWithType() {
     auto* Ldata = losses.template mutable_data<float, Context>();
     auto* Fdata = flags.template mutable_data<float, Context>();
 
-    kernel::NLLLoss<Tx, Ty, Context>(
-        outer_dim, Input(0).dim(axis), inner_dim,
-            LPdata, Tdata, Idata, ignores.count(),
-                Ldata, Fdata, ctx());
+    kernel::NLLLoss(
+        outer_dim, Input(0).dim(axis), inner_dim, ignores.count(),
+            LPdata, Tdata, Idata, Ldata, Fdata, ctx());
 
     if (normalization == "UNIT") {
-        vector<TIndex> output_dims = Input(0).dims();
+        auto output_dims = Input(0).dims();
         output_dims.erase(output_dims.begin() + axis);
         Output(0)->Reshape(output_dims);
-        Output(0)->template CopyFrom<Context>(losses, ctx());
-        return;
+        Output(0)->template CopyFrom<Context>(
+            losses, ctx()); return;
     }
 
     float normalizer = 1;
     if (normalization == "VALID") {
         normalizer = std::max(
-            math::ASum<float, Context>(
-                flags.count(), Fdata), 1.f);
+            math::Sum(flags.count(),
+                1.f, Fdata, ctx()), 1.f);
     } else if (normalization == "BATCH_SIZE") {
         normalizer = Input(0).dim(0);
     } else if (normalization == "FULL") {
         normalizer = outer_dim * inner_dim;
     }
 
-    float loss = math::ASum<float, Context>(losses.count(), Ldata);
-    Output(0)->Reshape({ 1 });
+    Output(0)->Reshape(vector<int64_t>());
     auto* Ydata = Output(0)->template mutable_data<float, Context>();
-    math::Set<float, Context>(1, loss / normalizer, Ydata, ctx());
+    math::Sum(losses.count(), 1.f / normalizer, Ldata, Ydata, ctx());
 }
-
 template <class Context>
 void NLLLossOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  // Enforce SyncStream
+    DETERMINE_RUNTIME_ARGUMENTS(Input(0));
 
     outer_dim = Input(0).count(0, axis);
     inner_dim = Input(0).count(axis + 1);
     CHECK_EQ(outer_dim * inner_dim, Input(1).count())
         << "\nNumber of predictions must match the number of labels.";
-
     losses.Reshape({ outer_dim * inner_dim });
     flags.Reshape({ outer_dim * inner_dim });
 
@@ -82,35 +85,30 @@ void NLLLossGradientOp<Context>::RunWithType() {
     auto* dXdata = Output(0)->template mutable_data<Tx, Context>();
     auto* Fdata = flags.template mutable_data<float, Context>();
 
-    math::Set<Tx, Context>(Output(0)->count(),
-        dragon_cast<Tx, float>(0.) , dXdata, ctx());
+    math::Set(Output(0)->count(), cast::to<Tx>(0.f) , dXdata, ctx());
    
-    kernel::NLLLossGrad<Tx, Ty, Context>(
-        outer_dim, Output(0)->dim(axis), inner_dim,
-            LPdata, Tdata, Idata, ignores.count(),
-                dXdata, Fdata, ctx());
+    kernel::NLLLossGrad(outer_dim, Output(0)->dim(axis), inner_dim,
+        ignores.count(), LPdata, Tdata, Idata, dXdata, Fdata, ctx());
 
     if (normalization == "UNIT") {
         auto* dYdata = Input(-1).template data<float, Context>();
-        vector<void*> WSdata = ws()->template caches<Context>(
+        vector<void*> WS = ws()->template caches<Context>(
             { Input(0).count() * sizeof(float),
-              Input(0).count() * sizeof(Tx) });
-        kernel::SumGrad<float, Context>(
-            Input(0).count() / Input(0).dim(axis),
-                Input(0).dim(axis), inner_dim,
-                    1.f, dYdata, (float*)WSdata[0], ctx());
-        kernel::TypeA2B<float, Tx, Context>(Input(0).count(),
-            (const float*)WSdata[0], (Tx*)WSdata[1], ctx());
-        math::Mul<Tx, Context>(Output(0)->count(),
-            (Tx*)WSdata[1], dXdata, dXdata, ctx());
+                  Input(0).count() * sizeof(Tx) });
+        kernel::Repeat(outer_dim, 1, inner_dim,
+            Input(0).dim(axis), dYdata, (float*)WS[0], ctx());
+        kernel::TypeA2B(Input(0).count(),
+            (const float*)WS[0], (Tx*)WS[1], ctx());
+        math::Mul(Output(0)->count(),
+            (Tx*)WS[1], dXdata, dXdata, ctx());
         return;
     }
 
     float normalizer = 1;
     if (normalization == "VALID") {
         normalizer = std::max(
-            math::ASum<float, Context>(
-                flags.count(), Fdata), 1.f);
+            math::Sum<float, Context>(flags.count(),
+                1.f, Fdata, ctx()), 1.f);
     } else if (normalization == "BATCH_SIZE") {
         normalizer = (float)Input(0).dim(0);
     } else if (normalization == "FULL") {
@@ -118,16 +116,15 @@ void NLLLossGradientOp<Context>::RunWithType() {
     }
 
     auto* dYdata = Input(-1).template data<float, Context>();
-    float dYdata_host; ctx()->template Copy
-        <float, CPUContext, Context>(
-            1, &dYdata_host, dYdata);
-    math::Scal<Tx, Context>(Output(0)->count(),
-        dYdata_host / normalizer, dXdata, ctx());
+    float dYHost; ctx()->template Copy
+        <float, CPUContext, Context>(1, &dYHost, dYdata);
+    math::Scale(Output(0)->count(),
+        dYHost / normalizer, dXdata, dXdata, ctx());
 }
 
 template <class Context>
 void NLLLossGradientOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  // Enforce SyncStream
+    DETERMINE_RUNTIME_ARGUMENTS(Input(0));
 
     outer_dim = Input(0).count(0, axis);
     inner_dim = Input(0).count(axis + 1);
@@ -149,17 +146,22 @@ DEPLOY_CPU(NLLLossGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(NLLLossGradient);
 #endif
-OPERATOR_SCHEMA(NLLLossGradient).NumInputs(3).NumOutputs(1);
+
+OPERATOR_SCHEMA(NLLLossGradient)
+    .NumInputs(3).NumOutputs(1);
 
 class GetNLLLossGradient final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetNLLLossGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), I(1), GO(0)},
-            vector<string> {GI(0)});
+            vector<string>({ I(0), I(1), GO(0) }),
+            vector<string>({ GI(0) }));
     }
 };
+
 REGISTER_GRADIENT(NLLLoss, GetNLLLossGradient);
+
+#undef DETERMINE_RUNTIME_ARGUMENTS
 
 }  // namespace dragon

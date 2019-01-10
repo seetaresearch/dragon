@@ -9,13 +9,47 @@
 #
 # ------------------------------------------------------------
 
-from .solver import SGDSolver, NesterovSolver, RMSPropSolver, AdamSolver
-from .net import Net, PartialNet
-from .misc import set_mode_cpu, set_mode_gpu, set_device, set_random_seed, \
-    root_solver, set_root_solver
+"""Import extended PyCaffe modules."""
 
-Layer = object
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+# Solver
+from dragon.vm.caffe.solver import (
+    SGDSolver,
+    NesterovSolver,
+    RMSPropSolver,
+    AdamSolver,
+)
+
+# Net
+from dragon.vm.caffe.net import (
+    Net,
+    PartialNet,
+)
+
+# Singleton
+from dragon.vm.caffe.misc import (
+    set_mode_cpu,
+    set_mode_gpu,
+    set_device,
+    set_random_seed,
+    root_solver,
+    set_root_solver,
+)
+
+# NetSpec
+from dragon.vm.caffe.net_spec import (
+    layers,
+    params,
+    NetSpec,
+    to_proto,
+)
+
+# Phase
 TRAIN = "TRAIN"
 TEST = "TEST"
 
-from .net_spec import layers, params, NetSpec, to_proto
+# Alias
+Layer = object

@@ -12,10 +12,10 @@ void RMSPropUpdateOp<Context>::ComputeRunWithFloat32() {
     lr = Param("base_lr") * this->lr_mult;
     decay = Param("decay"), eps = Param("eps");
     auto* dXdata = Input(0).template mutable_data<float, Context>();
-    auto* Hdata = h->template mutable_data<float, Context>(ctx());
+    auto* Hdata = h->template mutable_data<float, Context>();
 
-    kernel::RMSPropUpdate<float, Context>(
-        Input(0).count(), lr, decay, eps, dXdata, Hdata, ctx());
+    kernel::RMSPropUpdate(Input(0).count(),
+        lr, decay, eps, dXdata, Hdata, ctx());
 }
 
 template <class Context>
@@ -31,12 +31,11 @@ void RMSPropUpdateOp<Context>::ComputeRunWithFloat16() {
 
     auto* dX32 = dX32T->template mutable_data<float, Context>();
     auto* dX16 = Input(0).template mutable_data<float16, Context>();
-    auto* H32 = h->template mutable_data<float, Context>(ctx());
+    auto* H32 = h->template mutable_data<float, Context>();
 
-    kernel::TypeA2B<float16, float, Context>(
-        Input(0).count(), dX16, dX32, ctx());
-    kernel::RMSPropUpdate<float, Context>(
-        Input(0).count(), lr, decay, eps, dX32, H32, ctx());
+    kernel::TypeA2B(Input(0).count(), dX16, dX32, ctx());
+    kernel::RMSPropUpdate(Input(0).count(),
+        lr, decay, eps, dX32, H32, ctx());
 }
 
 DEPLOY_CPU(RMSPropUpdate);

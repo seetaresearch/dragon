@@ -14,13 +14,13 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.vm.torch.ops.modules.base import BaseModule
-from dragon.vm.torch.tensor import ReferneceTensor
+from dragon.vm.torch.tensor import ReferenceTensor
 
 
 class Fill(BaseModule):
     def __init__(self, key, ctx, **kwargs):
         super(Fill, self).__init__(key, ctx, **kwargs)
-        self.len_shape = kwargs.get('len_shape', 0)
+        self.n_dim = kwargs.get('n_dim', 0)
         self.value = kwargs.get('value', 0.0)
         self.dtype = kwargs.get('dtype', 'float32')
         self.register_arguments()
@@ -28,7 +28,7 @@ class Fill(BaseModule):
 
     def register_arguments(self):
          self.shape = [self.register_argument('shape[{}]'.format(i))
-                for i in range(self.len_shape)]
+                for i in range(self.n_dim)]
 
     def register_op(self):
         self.op_meta = {
@@ -37,7 +37,7 @@ class Fill(BaseModule):
             'arguments': {
                 'dtype': self.dtype,
                 'value': float(self.value),
-                'dims_desc': [d for d in self.shape] if len(self.shape) > 0 else None,
+                'dims_desc': [d for d in self.shape] if self.n_dim > 0 else None,
             }
         }
 
@@ -52,30 +52,30 @@ class Fill(BaseModule):
 class Reshape(BaseModule):
     def __init__(self, key, ctx, **kwargs):
         super(Reshape, self).__init__(key, ctx, **kwargs)
-        self.len_shape = kwargs.get('len_shape', 0)
+        self.n_dim = kwargs.get('n_dim', 0)
         self.register_arguments()
         self.register_op()
 
     def register_arguments(self):
-         self.shape = [self.register_argument('shape[{}]'.format(i))
-                for i in range(self.len_shape)]
+         self.dims = [self.register_argument('dims[{}]'.format(i))
+                for i in range(self.n_dim)]
 
     def register_op(self):
         self.op_meta = {
             'op_type': 'Reshape',
             'n_inputs': 1, 'n_outputs': 1,
             'arguments': {
-                'shape_desc': [d for d in self.shape]
-                    if len(self.shape) > 0 else None,
+                'dims_desc': [d for d in self.dims]
+                    if self.n_dim > 0 else None,
             }
         }
 
     def forward(self, x, shape):
         inputs = [x]; self.unify_devices(inputs)
-        outputs = [ReferneceTensor(x)]
+        outputs = [ReferenceTensor(x)]
         if shape is not None:
             for ix, d in enumerate(shape):
-                self.set_argument_i(self.shape[ix], d)
+                self.set_argument_i(self.dims[ix], d)
         return self.run(inputs, outputs)
 
 
@@ -99,7 +99,7 @@ class Squeeze(BaseModule):
 
     def forward(self, x, out=None):
         inputs = [x]; self.unify_devices(inputs)
-        outputs = [out] if out else [ReferneceTensor(x)]
+        outputs = [out] if out else [ReferenceTensor(x)]
         return self.run(inputs, outputs)
 
 
@@ -123,58 +123,58 @@ class UnSqueeze(BaseModule):
 
     def forward(self, x, out=None):
         inputs = [x]; self.unify_devices(inputs)
-        outputs = [out] if out else [ReferneceTensor(x)]
+        outputs = [out] if out else [ReferenceTensor(x)]
         return self.run(inputs, outputs)
 
 
 class Permute(BaseModule):
     def __init__(self, key, ctx, **kwargs):
         super(Permute, self).__init__(key, ctx, **kwargs)
-        self.len_perms = kwargs.get('len_perms', 0)
+        self.n_perm = kwargs.get('n_perm', 0)
         self.register_arguments()
         self.register_op()
 
     def register_arguments(self):
-         self.perms = [self.register_argument('perms[{}]'.format(i))
-                for i in range(self.len_perms)]
+         self.perm = [self.register_argument('perm[{}]'.format(i))
+                for i in range(self.n_perm)]
 
     def register_op(self):
         self.op_meta = {
             'op_type': 'Transpose',
             'n_inputs': 1, 'n_outputs': 1,
             'arguments': {
-                'perms_desc': [d for d in self.perms]
-                    if len(self.perms) > 0 else None,
+                'perm_desc': [axis for axis in self.perm]
+                    if self.n_perm > 0 else None,
             }
         }
 
-    def forward(self, x, perms):
+    def forward(self, x, perm):
         inputs = [x]; self.unify_devices(inputs)
         outputs = [self.register_output(x.dtype)]
-        if perms is not None:
-            for ix, d in enumerate(perms):
-                self.set_argument_i(self.perms[ix], d)
+        if perm is not None:
+            for ix, d in enumerate(perm):
+                self.set_argument_i(self.perm[ix], d)
         return self.run(inputs, outputs)
 
 
 class Repeat(BaseModule):
     def __init__(self, key, ctx, **kwargs):
         super(Repeat, self).__init__(key, ctx, **kwargs)
-        self.len_times = kwargs.get('len_times', 0)
+        self.n_times = kwargs.get('n_times', 0)
         self.register_arguments()
         self.register_op()
 
     def register_arguments(self):
          self.times = [self.register_argument('times[{}]'.format(i))
-                for i in range(self.len_times)]
+                for i in range(self.n_times)]
 
     def register_op(self):
         self.op_meta = {
             'op_type': 'Tile',
             'n_inputs': 1, 'n_outputs': 1,
             'arguments': {
-                'multiples_desc': [d for d in self.times]
-                    if len(self.times) > 0 else None,
+                'multiples_desc': [n for n in self.times]
+                    if self.n_times > 0 else None,
             }
         }
 

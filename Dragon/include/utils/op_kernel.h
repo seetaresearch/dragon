@@ -19,8 +19,6 @@ namespace dragon {
 
 namespace kernel {
 
-typedef int64_t TIndex;
-
 /*! activation.dropout */
 
 template <typename T, class Context>
@@ -205,23 +203,20 @@ void TanhGrad(
 
 template <typename T, class Context>
 void Affine(
-    const int               count,
     const int               outer_dim,
-    const int               scale_dim,
     const int               inner_dim,
+    const int               scale_dim,
     const T*                x,
     const T*                alpha,
     const T*                beta,
-    const T*                beta_multiplier,
     T*                      y,
     Context*                ctx);
 
 template <typename T, class Context>
 void AffineGrad(
-    const int               count,
     const int               outer_dim,
-    const int               scale_dim,
     const int               inner_dim,
+    const int               scale_dim,
     const T*                dy,
     const T*                alpha,
     T*                      dx,
@@ -251,7 +246,7 @@ void ClipGrad(
 /*! arithmetic.maximum */
 
 template <typename T, class Context>
-void MaximumE(
+void Maximum(
     const int               count,
     const T*                x1,
     const T*                x2,
@@ -259,7 +254,7 @@ void MaximumE(
     Context*                ctx);
 
 template <typename T, class Context>
-void MaximumB(
+void BroadcastMaximum(
     const int               count,
     const T*                x1,
     const T                 x2,
@@ -267,7 +262,7 @@ void MaximumB(
     Context*                ctx);
 
 template <typename T, class Context>
-void MaximumEGrad(
+void MaximumGrad(
     const int               count,
     const T*                x1,
     const T*                x2,
@@ -277,19 +272,19 @@ void MaximumEGrad(
     Context*                ctx);
 
 template <typename T, class Context>
-void MaximumBGrad(
+void BroadcastMaximumGrad(
     const int               count,
     const T*                x1,
     const T                 x2,
     const T*                dy,
     T*                      dx1,
- /* T*                      dx2, */
+    T*                      dx2,
     Context*                ctx);
 
 /*! arithmetic.minimum */
 
 template <typename T, class Context>
-void MinimumE(
+void Minimum(
     const int               count,
     const T*                x1,
     const T*                x2,
@@ -297,7 +292,7 @@ void MinimumE(
     Context*                ctx);
 
 template <typename T, class Context>
-void MinimumB(
+void BroadcastMinimum(
     const int               count,
     const T*                x1,
     const T                 x2,
@@ -305,7 +300,7 @@ void MinimumB(
     Context*                ctx);
 
 template <typename T, class Context>
-void MinimumEGrad(
+void MinimumGrad(
     const int               count,
     const T*                x1,
     const T*                x2,
@@ -315,13 +310,26 @@ void MinimumEGrad(
     Context*                ctx);
 
 template <typename T, class Context>
-void MinimumBGrad(
+void BroadcastMinimumGrad(
     const int               count,
     const T*                x1,
     const T                 x2,
     const T*                dy,
     T*                      dx1,
- /* T*                      dx2, */
+    T*                      dx2,
+    Context*                ctx);
+
+/*! arithmetic.moments */
+
+template <typename Tx, typename Ty, class Context>
+void Moments(
+    const int               ndims,
+    const int*              dims,
+    const int               naxes,
+    const int*              axes,
+    const Tx*               x,
+    Ty*                     mean,
+    Ty*                     var,
     Context*                ctx);
 
 /*! control_flow.compare */
@@ -331,7 +339,23 @@ void Equal(
     const int               count,
     const T*                a,
     const T*                b,
-    T*                      y,
+    bool*                   y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void Less(
+    const int               count,
+    const T*                a,
+    const T*                b,
+    bool*                   y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void Greater(
+    const int               count,
+    const T*                a,
+    const T*                b,
+    bool*                   y,
     Context*                ctx);
 
 /*! loss.l1_loss */
@@ -350,10 +374,10 @@ void NLLLoss(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const Tx*               log_prob,
     const Ty*               labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     Context*                ctx);
@@ -363,10 +387,10 @@ void NLLLossGrad(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const Tx*               prob,
     const Ty*               labels,
     const int*              ignores,
-    const int               num_ignores,
     Tx*                     dx,
     float*                  flags,
     Context*                ctx);
@@ -458,6 +482,7 @@ void SoftmaxFocalLoss(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float             pos_alpha,
     const float             neg_alpha,
     const float             gamma,
@@ -465,7 +490,6 @@ void SoftmaxFocalLoss(
     const T*                prob,
     const T*                labels,
     const int*              ignores,
-    const int               num_ignores,
     T*                      losses,
     T*                      flags,
     Context*                ctx);
@@ -475,6 +499,7 @@ void SoftmaxFocalLossGrad(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float             pos_alpha,
     const float             neg_alpha,
     const float             gamma,
@@ -482,7 +507,6 @@ void SoftmaxFocalLossGrad(
     const T*                prob,
     const T*                labels,
     const int*              ignores,
-    const int               num_ignores,
     T*                      dx,
     T*                      flags,
     Context*                ctx);
@@ -494,10 +518,10 @@ void SparseSoftmaxCrossEntropy(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const Tx*               prob,
     const Ty*               labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     Context*                ctx);
@@ -507,10 +531,10 @@ void SparseSoftmaxCrossEntropyGrad(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const Tx*               prob,
     const Ty*               labels,
     const int*              ignores,
-    const int               num_ignores,
     Tx*                     dx,
     float*                  flags,
     Context*                ctx);
@@ -553,10 +577,10 @@ void Arange(
 /*! ndarray.argreduce */
 
 template <typename T, class Context>
-void Argmax(
-    const int               count,
-    const int               axis_dim,
+void ArgMax(
+    const int               outer_dim,
     const int               inner_dim,
+    const int               axis_dim,
     const int               top_k,
     const T*                x,
     int64_t*                indices,
@@ -564,10 +588,10 @@ void Argmax(
     Context*                ctx);
 
 template <typename T, class Context>
-void Argmin(
-    const int               count,
-    const int               axis_dim,
+void ArgMin(
+    const int               outer_dim,
     const int               inner_dim,
+    const int               axis_dim,
     const int               top_k,
     const T*                x,
     int64_t*                indices,
@@ -611,7 +635,6 @@ void GatherGrad(
 
 template <typename T, class Context>
 void Concat(
-    const int               count,
     const int               outer_dim,
     const int               inner_dim,
     const int               x_concat_dim,
@@ -619,41 +642,28 @@ void Concat(
     const int               concat_offset,
     const T*                x,
     T*                      y,
-    Context*                ctx);
-
-template <typename T, class Context>
-void ConcatGrad(
-    const int               count,
-    const int               outer_dim,
-    const int               inner_dim,
-    const int               x_concat_dim,
-    const int               y_concat_dim,
-    const int               concat_offset,
-    const T*                dy,
-    T*                      dx,
     Context*                ctx);
 
 /*! ndarray.crop */
 
 template <typename T, class Context>
-void Crop1d(
+void Crop(
     const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               start,
+    const int               ndims,
+    const int*              x_strides,
+    const int*              y_dims,
+    const int*              starts,
     const T*                x,
     T*                      y,
     Context*                ctx);
 
 template <typename T, class Context>
-void Crop1dGrad(
+void CropGrad(
     const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               start,
-    const int               end,
+    const int               ndims,
+    const int*              x_strides,
+    const int*              y_dims,
+    const int*              starts,
     const T*                dy,
     T*                      dx,
     Context*                ctx);
@@ -661,70 +671,40 @@ void Crop1dGrad(
 /*! ndarray.pad */
 
 template <typename T, class Context>
-void ConstPad1d(
+void ConstPad(
     const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
+    const int               ndims,
+    const int*              x_dims,
+    const int*              x_strides,
+    const int*              y_dims,
+    const int*              l_pads,
     const float             value,
     const T*                x,
     T*                      y,
     Context*                ctx);
 
 template <typename T, class Context>
-void ReflectPad1d(
+void ReflectPad(
     const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
+    const int               ndims,
+    const int*              x_dims,
+    const int*              x_strides,
+    const int*              y_dims,
+    const int*              l_pads,
     const T*                x,
     T*                      y,
     Context*                ctx);
 
 template <typename T, class Context>
-void EdgePad1d(
+void EdgePad(
     const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
+    const int               ndims,
+    const int*              x_dims,
+    const int*              x_strides,
+    const int*              y_dims,
+    const int*              l_pads,
     const T*                x,
     T*                      y,
-    Context*                ctx);
-
-template <typename T, class Context>
-void ConstPad1dGrad(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
-    const T*                dy,
-    T*                      dx,
-    Context*                ctx);
-
-template <typename T, class Context>
-void ReflectPad1dGrad(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
-    const T*                dy,
-    T*                      dx,
-    Context*                ctx);
-
-template <typename T, class Context>
-void EdgePad1dGrad(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
-    const T*                dy,
-    T*                      dx,
     Context*                ctx);
 
 /*! ndarray.one_hot */
@@ -741,20 +721,24 @@ void OneHot(
 /*! ndarray.reduce */
 
 template <typename T, class Context>
-void Sum(
-    const int               count,
-    const int               axis_dim,
-    const int               inner_dim,
+void ReduceSum(
+    const int               ndims,
+    const int*              dims,
+    const int               naxes,
+    const int*              axes,
+    const float             scale,
     const T*                x,
     T*                      y,
     Context*                ctx);
 
 template <typename T, class Context>
-void SumGrad(
+void ReduceSumGrad(
     const int               count,
-    const int               axis_dim,
-    const int               inner_dim,
-    const T                 coeff,
+    const int               ndims,
+    const int*              x_dims,
+    const int*              y_dims,
+    const int*              y_strides,
+    const float             scale,
     const T*                dy,
     T*                      dx,
     Context*                ctx);
@@ -763,9 +747,8 @@ void SumGrad(
 
 template <typename T, class Context>
 void Repeat(
-    const int               count,
     const int               outer_dim,
-    const int               dim,
+    const int               repeat_dim,
     const int               inner_dim,
     const int               repeats,
     const T*                x,
@@ -774,9 +757,8 @@ void Repeat(
 
 template <typename T, class Context>
 void RepeatGrad(
-    const int               count,
     const int               outer_dim,
-    const int               dim,
+    const int               repeat_dim,
     const int               inner_dim,
     const int               repeats,
     const T*                dy,
@@ -787,7 +769,6 @@ void RepeatGrad(
 
 template <typename T, class Context>
 void Slice(
-    const int               count,
     const int               outer_dim,
     const int               inner_dim,
     const int               x_slice_dim,
@@ -799,7 +780,6 @@ void Slice(
 
 template <typename T, class Context>
 void SliceGrad(
-    const int               count,
     const int               outer_dim,
     const int               inner_dim,
     const int               x_slice_dim,
@@ -814,18 +794,18 @@ void SliceGrad(
 template <typename T, class Context>
 void Tile(
     const int               count,
-    const int               outer_dim,
-    const int               ex_inner_dim,
-    const int               multiple,
+    const int               ndims,
+    const int*              x_dims,
+    const int*              x_strides,
+    const int*              y_dims,
     const T*                x,
     T*                      y,
     Context*                ctx);
 
 template <typename T, class Context>
 void TileGrad(
-    const int               count,
-    const int               outer_dim,
-    const int               ex_inner_dim,
+    const int               rows,
+    const int               cols,
     const int               multiple,
     const T*                dy,
     T*                      dx,
@@ -836,10 +816,9 @@ void TileGrad(
 template <typename T, class Context>
 void Transpose(
     const int               count,
-    const int               ndim,
-    const int*              order,
-    const int*              old_steps,
-    const int*              new_steps,
+    const int               ndims,
+    const int*              x_strides,
+    const int*              y_dims,
     const T*                x,
     T*                      y,
     Context*                ctx);
@@ -847,12 +826,85 @@ void Transpose(
 template <typename T, class Context>
 void TransposeGrad(
     const int               count,
-    const int               ndim,
-    const int*              order,
-    const int*              old_steps,
-    const int*              new_steps,
+    const int               ndims,
+    const int*              x_strides,
+    const int*              y_dims,
     const T*                dy,
     T*                      dx,
+    Context*                ctx);
+
+/*! norm.batch_norm */
+
+template <typename Tx, typename Tp, class Context>
+void BatchNormBackwardTraining(
+    const int               N,
+    const int               C,
+    const int               S,
+    const string&           data_format,
+    const Tx*               x,
+    const Tp*               mu,
+    const Tp*               rsig,
+    const Tp*               gamma,
+    const Tx*               dy,
+    Tp*                     ds,
+    Tp*                     db,
+    Tx*                     dx,
+    Tp*                     dgamma,
+    Tp*                     dbeta,
+    Context*                ctx);
+
+template <typename Tx, typename Tp, class Context>
+void BatchNormBackwardInference(
+    const int               N,
+    const int               C,
+    const int               S,
+    const string&           data_format,
+    const Tx*               x,
+    const Tp*               mu,
+    const Tp*               rsig,
+    const Tp*               gamma,
+    const Tx*               dy,
+    Tx*                     dx,
+    Tp*                     dgamma,
+    Tp*                     dbeta,
+    Context*                ctx);
+
+/*! norm.group_norm */
+
+template <typename Tx, typename Tp, class Context>
+void GroupNormForward(
+    const int               N,
+    const int               G,
+    const int               D,
+    const int               S,
+    const string&           data_format,
+    const Tx*               x,
+    const Tp*               mu,
+    const Tp*               rsig,
+    const Tp*               gamma,
+    const Tp*               beta,
+    Tp*                     scale,
+    Tp*                     bias,
+    Tx*                     y,
+    Context*                ctx);
+
+template <typename Tx, typename Tp, class Context>
+void GroupNormBackward(
+    const int               N,
+    const int               G,
+    const int               D,
+    const int               S,
+    const string&           data_format,
+    const Tx*               x,
+    const Tp*               mu,
+    const Tp*               rsig,
+    const Tp*               gamma,
+    const Tx*               dy,
+    Tp*                     ds,
+    Tp*                     db,
+    Tx*                     dx,
+    Tp*                     dgamma,
+    Tp*                     dbeta,
     Context*                ctx);
 
 /*! recurrent.lstm_cell */
@@ -958,7 +1010,6 @@ void BiasAdd(
 
 template <typename T, class Context>
 void BilinearResize(
-    const int               count,
     const int               N,
     const int               C,
     const int               H,
@@ -972,7 +1023,6 @@ void BilinearResize(
 
 template <typename T, class Context>
 void BilinearResizeGrad(
-    const int               count,
     const int               N,
     const int               C,
     const int               H,
@@ -1106,7 +1156,6 @@ void DropBlock2d(
 
 template <typename T, class Context>
 void NNResize(
-    const int               count,
     const int               N,
     const int               C,
     const int               H,
@@ -1120,7 +1169,6 @@ void NNResize(
 
 template <typename T, class Context>
 void NNResizeGrad(
-    const int               count,
     const int               N,
     const int               C,
     const int               H,
@@ -1135,8 +1183,7 @@ void NNResizeGrad(
 /*! vision.pooling */
 
 template <typename T, class Context>
-void MAXPooling2d(
-    const int               count,
+void MAXPool2d(
     const int               N,
     const int               C,
     const int               H,
@@ -1156,8 +1203,7 @@ void MAXPooling2d(
     Context*                ctx);
 
 template <typename T, class Context>
-void AVGPooling2d(
-    const int               count,
+void AVGPool2d(
     const int               N,
     const int               C,
     const int               H,
@@ -1176,8 +1222,7 @@ void AVGPooling2d(
     Context*                ctx);
 
 template <typename T, class Context>
-void MAXPooling2dGrad(
-    const int               count,
+void MAXPool2dGrad(
     const int               N,
     const int               C,
     const int               H,
@@ -1197,8 +1242,7 @@ void MAXPooling2dGrad(
     Context*                ctx);
 
 template <typename T, class Context>
-void AVGPooling2dGrad(
-    const int               count,
+void AVGPool2dGrad(
     const int               N,
     const int               C,
     const int               H,
@@ -1219,9 +1263,7 @@ void AVGPooling2dGrad(
 /*! vision.roi_pooling */
 
 template <typename T, class Context>
-void ROIPooling(
-    const int               count,
-    const int               N,
+void ROIPool(
     const int               C,
     const int               H,
     const int               W,
@@ -1236,8 +1278,7 @@ void ROIPooling(
     Context*                ctx);
 
 template <typename T, class Context>
-void ROIPoolingGrad(
-    const int               count,
+void ROIPoolGrad(
     const int               N,
     const int               C,
     const int               H,
@@ -1256,8 +1297,6 @@ void ROIPoolingGrad(
 
 template <typename T, class Context>
 void ROIAlign(
-    const int               count,
-    const int               N,
     const int               C,
     const int               H,
     const int               W,
@@ -1273,8 +1312,6 @@ void ROIAlign(
 
 template <typename T, class Context>
 void ROIAlignGrad(
-    const int               count,
-    const int               N,
     const int               C,
     const int               H,
     const int               W,
@@ -1283,9 +1320,9 @@ void ROIAlignGrad(
     const int               num_rois,
     const float             spatial_scale,
     const int               sampling_ratio,
-    const float*            dy,
+    const T*                dy,
     const float*            rois,
-    float*                  dx,
+    T*                      dx,
     Context*                ctx);
 
 }  // namespace kernel

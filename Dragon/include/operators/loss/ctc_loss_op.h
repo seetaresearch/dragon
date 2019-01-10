@@ -50,7 +50,7 @@ class CuDNNCTCLossOp final : public Operator<Context> {
     CuDNNCTCLossOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
           blank_first(OperatorBase::Arg<bool>("blank_first", true)),
-          padding_mask(OperatorBase::Arg<int>("padding_mask", -1)) {
+          padding_mask(OperatorBase::Arg<int64_t>("padding_mask", -1)) {
          CUDNN_CHECK(cudnnCreateCTCLossDescriptor(&ctc_desc));
          CUDNN_CHECK(cudnnCreateTensorDescriptor(&prob_desc));
          CUDNN_CHECK(cudnnCreateTensorDescriptor(&grad_desc));
@@ -71,7 +71,7 @@ class CuDNNCTCLossOp final : public Operator<Context> {
 
  protected:
     bool blank_first;
-    TIndex padding_mask;
+    int64_t padding_mask;
 
     cudnnCTCLossAlgo_t ctc_algo;
     cudnnCTCLossDescriptor_t ctc_desc;

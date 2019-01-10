@@ -23,165 +23,68 @@ namespace dragon {
 
 class Workspace {
  public:
-    typedef Map<string, Workspace*> WorkspaceMap;
+    typedef Map<string, Map<string, int64_t> > DummyNameMap;
+
     typedef Map<string, unique_ptr<Tensor> > TensorMap;
+    typedef Map<string, string> TensorProxyMap;
+    typedef Map<string, TensorFillerProto> TensorFillerMap;
+
     typedef Map<string, unique_ptr<OperatorBase> > OperatorMap;
     typedef Map<string, unique_ptr<GraphBase> > GraphMap;
-    typedef Map<string, TensorFiller> FillerMap;
-    typedef Map<string, string> ProxyMap;
+    typedef Map<string, Workspace*> WorkspaceMap;
 
+    /*! \brief Constructor */
     Workspace(const string& name) : name_(name) { InitWorkspace(); }
 
-    ~Workspace();
+    /*! \brief Return the name of this workspace */
+    const string& name() { return name_; }
 
-    inline const string& name() { return name_; }
+    /*! \brief Create some internal tensors */
+    void InitWorkspace();
 
-    /******************** Workspace ********************/
+    /*! \brief Move a external workspace into this workspace */
+    Workspace* Move(Workspace* ws);
 
-    inline void InitWorkspace() {
-        CreateTensor("ignore");
-        Tensor* head = CreateTensor(
-            "/opt/mirror_stage/head");
-        head->Reshape({ WORKSPACE_MAX_CORRUPTED_SIZE });
-        Tensor* recompute_flag = CreateTensor(
-            "/opt/mirror_stage/recompute_flag");
-        recompute_flag->Reshape({ 1 });
-        recompute_flag->mutable_data<bool, CPUContext>()[0] = false;
-        for (int i = 0; i < WORKSPACE_MAX_CORRUPTED_SIZE; i++) {
-            string name = "/opt/mirror_stage/buffer_"
-                + std::to_string(i);
-            Tensor* buffer = CreateTensor(name);
-            head->mutable_data<string, CPUContext>()[i] = "";
-        }
-    }
+    /*! \brief Destory all the tensors */
+    void Clear();
 
-    inline Workspace* MoveWorkspace(Workspace* ws) {
-        CHECK(ws) << "The given Workspace is invalid.";
-        if (ws_map_.count(ws->name()))
-            return ws_map_[ws->name()];
-        return ws_map_[ws->name()] = ws;
-    }
+    /*! \brief Query the real name of specified tensor */
+    string GetTensorName(const string& name) const;
 
-    inline void ClearWorkspace() {
-        // Clear tensors, then re-initialization
-        for (auto& kv : tensor_map_) kv.second->Reset();
-        InitWorkspace();
-    }
+    /*! \brief Try to serach the specified tensor in this workspace */
+    Tensor* TryGetTensor(const string& name, bool use_remote = true) const;
 
-    /******************** Tensor ********************/
-
-    inline string GetTensorName(const string& name) {
-        if (proxy_map_.count(name) > 0) {
-            return proxy_map_[name];
-        } else { return name; }
-    }
-
-    inline Tensor* TryGetTensor(
-        const string&           name,
-        bool                    use_remote = true) {
-        string query = GetTensorName(name);
-        // Search local workspace
-        if (tensor_map_.count(query) > 0)
-            return tensor_map_[query].get();
-        if (use_remote) {
-            // Search remote workspace
-            for (auto& it : ws_map_) {
-                if (it.second->HasTensor(query))
-                    return it.second->GetTensor(query);
-            }
-        }
-        return nullptr;
-    }
-
-    inline bool HasTensor(
-        const string&           name,
-        bool                    use_remote = true) {
+    /*! \brief Whether the specified tensor is in this workspace */
+    bool HasTensor(const string& name, bool use_remote = true) const {
         return TryGetTensor(name, use_remote) ? true : false;
     }
 
-    inline Tensor* CreateTensor(const string& name) {
-        Tensor* tensor = TryGetTensor(name);
-        if (!tensor) {
-            tensor_map_[name] = unique_ptr<Tensor>(new Tensor(name));
-            return tensor_map_[name].get();
-        }
-        return tensor;
-    }
+    /*! \brief Create the specified tensor */
+    Tensor* CreateTensor(const string& name);
 
-    inline Tensor* GetTensor(
-        const string&           name,
-        bool                    use_remote = true) {
-        Tensor* tensor = TryGetTensor(name, use_remote);
-        CHECK(tensor) << "\nTensor(" << name << ") does not exist "
-                      << "in current workspace or sub-workspace.";
-        return tensor;
-    }
+    /*! \brief Return the specified tensor */
+    Tensor* GetTensor(const string& name, bool use_remote = true) const;
 
-    inline void ResetTensor(const string& name) {
-        Tensor* tensor = TryGetTensor(name, false);
-        CHECK(tensor) << "\nTensor(" << name << ") does not "
-                      << "belong to current workspace, could not be reset.";
-        tensor->Reset();
-    }
+    /*! \brief Reset the specified tensor */
+    void ResetTensor(const string& name);
 
-    vector<string> GetTensors() {
-        vector<string> names;
-        // Search local workspace
-        for (auto& it : tensor_map_)
-            names.push_back(it.first);
-        // Serach remote workspace
-        for (auto& it : ws_map_) {
-            vector<string> sub_names = it.second->GetTensors();
-            names.insert(names.end(),
-                sub_names.begin(), sub_names.end());
-        }
-        return names;
-    }
+    /*! \brief Return all the stored tensor names */
+    vector<string> GetTensors() const;
 
-    /******************** Filler ********************/
+    /* \brief Whether the specified filler is in this workspace */
+    bool HasFiller(const string& name, bool use_remote = true) const;
+    
+    /*! \brief Create the specified filler */
+    void CreateFiller(const TensorFillerProto filler);
 
-    inline bool HasFiller(
-        const string&           name,
-        bool                    use_remote = true) {
-        // Search local workspace
-        bool result = filler_map_.count(name) > 0;
-        if (!use_remote) return result;
+    /*! \brief Return the specified filler */
+    const TensorFillerProto* GetFiller(const string& name) const;
 
-        // Search remote workspace
-        for (auto& it : ws_map_)
-            result |= it.second->HasFiller(name);
-        return result;
-    }
-
-    inline void CreateFiller(
-        const TensorFiller      filler) {
-        CHECK_GT(filler.tensor().size(), 0)
-            << "Tensor without a valid name can not be filled.";
-        if (HasFiller(filler.tensor())) return;
-        filler_map_[filler.tensor()] = filler;
-    }
-
-    inline const TensorFiller* GetFiller(
-        const string&           name) {
-        // Search local workspace
-        if (filler_map_.count(name) > 0)
-            return &filler_map_[name];
-
-        // Search remote workspace
-        for (auto& it : ws_map_) {
-            if (it.second->HasFiller(name))
-                return it.second->GetFiller(name);
-        }
-        return nullptr;
-    }
-
-    /******************** Cache ********************/
-
+    /*! \brief Create temporal cache segments */
     template <class Context>
-    inline vector<void*> caches(
-        const vector<size_t>&   segments) {
-        TIndex nbytes = 0;
-        for (auto& segment : segments) nbytes += (TIndex)segment;
+    vector<void*> caches(const vector<size_t>& segments) {
+        int64_t nbytes = 0;
+        for (auto& segment : segments) nbytes += (int64_t)segment;
         Tensor* cache_t = CreateTensor("/share/cache");
         cache_t->Reshape({ nbytes });
         vector<void*> Bcaches(segments.size());
@@ -191,9 +94,9 @@ class Workspace {
         return Bcaches;
     }
 
+    /*! \brief Create temporal cache segments with the specified type */
     template <typename T, class Context>
-    inline vector<T*> caches(
-        const vector<TIndex>&   segments) {
+    vector<T*> caches(const vector<int64_t>& segments) {
         vector<size_t> Tsegments;
         for (auto& segment : segments)
             Tsegments.emplace_back(segment * sizeof(T));
@@ -204,95 +107,66 @@ class Workspace {
         return Tcaches;
     }
 
-    /******************** Operator ********************/
+    /*! \brief Creathe a persistent operator in this workspace */
+    void CreatePersistentOp(const OperatorDef& def);
 
-    inline void CreatePersistentOp(
-        const OperatorDef& meta_op) {
-        string persistent_key;
-        for (auto& arg : meta_op.arg())
-            if (arg.name() == "persistent_key")
-                persistent_key = arg.s();
-        CHECK(persistent_key.size() > 0)
-            << "\nGot empty persistent key.";
-        if (!op_map_.count(persistent_key)) {
-            for (auto& input : meta_op.input()) CreateTensor(input);
-            op_map_[persistent_key] = unique_ptr<OperatorBase>(
-                CreateOperator(meta_op, this));
-        }
-    }
+    /*! \brief Run the specified persistent operator */
+    void RunPersistentOp(
+        const string&               key,
+        const string&               anchor,
+        const vector<string>&       inputs,
+        const vector<string>&       outputs);
+    
+    /*! \brief Try to run the operator in a adaptive mode */
+    void RunOperator(const OperatorDef& def);
 
-    inline void RunPersistentOp(
-        const string&           key,
-        const string&           anchor,
-        const vector<string>&   inputs,
-        const vector<string>&   outputs) {
-        CHECK(op_map_.count(key) > 0)
-            << "\nPersistentOp(" << key << ") does not exist.";
-       op_map_[key]->MutableOp(inputs, outputs, anchor);
-       op_map_[key]->Run();
-    }
+    /*! \brief Create a Graph in this workspace */
+    GraphBase* CreateGraph(const GraphDef& def);
 
-    void RunOperator(const OperatorDef& meta_op) {
-        string persistent_key;
-        for (auto& arg : meta_op.arg()) {
-            if (arg.name() == "persistent_key")
-                persistent_key = arg.s();
-        }
-        if (persistent_key.empty()) {
-            // Run op in the "ONCE" mode
-            unique_ptr<OperatorBase> op(CreateOperator(meta_op, this));
-            op->Run();
-        } else {
-            // Run op in the "PERSISTENT" mode
-            if (!op_map_.count(persistent_key))
-                op_map_[persistent_key] = unique_ptr<OperatorBase>(
-                    CreateOperator(meta_op, this));
-            else op_map_[persistent_key]->MutableOp(meta_op);
-            op_map_[persistent_key]->Run();
-        }
-    }
-
-    /******************** Graph ********************/
-
-    GraphBase* CreateGraph(const GraphDef& meta_graph);
-
+    /*! \brief Run the specifed graph by name and rules */
     void RunGraph(
-        const string&           graph_name,
-        const string&           include,
-        const string&           exclude,
-        const int               stream_id = 1) {
-        if (!graph_map_.count(graph_name))
-            LOG(FATAL) << "Graph(" << graph_name
-                       << ") does not exist.";
-        graph_map_[graph_name]->Run(include, exclude, stream_id);
-    }
+        const string&               graph_name,
+        const string&               include,
+        const string&               exclude,
+        const int                   stream_id = 1);
 
-    vector<string> GetGraphs() {
-        vector<string> names;
-        for (auto& it : graph_map_) names.push_back(it.first);
-        return names;
-    }
+    /*! \brief Return all the stored graph names */
+    vector<string> GetGraphs() const;
 
-    /******************** Utility ********************/
+    /* \brief Set a proxy name for the tensor */
+    bool SetTensorProxy(const string& key, const string& proxy);
 
-    inline bool SetProxy(
-        const string&           key,
-        const string&           proxy) {
-        if (key == proxy) return false;
-        if (proxy_map_.count(key) > 0)
-            return proxy_map_[key] == proxy;
-        proxy_map_[key] = proxy;
-        return true;
-    }
+    /* \brief Return a unique dummy name within this workspace */
+    string GetDummyName(
+        const string&               base_name,
+        const string&               suffix,
+        const string&               domain = "",
+        const bool                  zero_based = true);
 
  private:
+    /*! \brief The unique workspace name */
     string name_;
-    WorkspaceMap ws_map_;
+
+    /*! \brief The dummy name indices */
+    DummyNameMap dummy_name_map_;
+
+    /*! \brief Store the created tensors */
     TensorMap tensor_map_;
-    OperatorMap op_map_;
+
+    /*! \brief Store the registered tensor fillers */
+    TensorFillerMap tensor_filler_map_;
+
+    /*! \brief Store the proxy name of tensors */
+    TensorProxyMap tensor_proxy_map_;
+
+    /*! \brief Store the registered operators for dynamic graph */
+    OperatorMap operator_map_;
+
+    /*! \brief Store the registered graphs for static graph */
     GraphMap graph_map_;
-    FillerMap filler_map_;
-    ProxyMap proxy_map_;
+
+    /*! \brief Store the remote workspaces */
+    WorkspaceMap workspace_map_;
 };
 
 }  // namespace dragon

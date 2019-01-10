@@ -16,6 +16,7 @@ from __future__ import print_function
 from dragon.operators import *
 
 
+@OpSchema.Inputs(3, INT_MAX)
 def Proposal(inputs, strides, ratios, scales,
              pre_nms_top_n=6000, post_nms_top_n=300,
              nms_thresh=0.7, min_size=16,
@@ -62,9 +63,7 @@ def Proposal(inputs, strides, ratios, scales,
         The proposals.
 
     """
-    CheckInputs(inputs, 3, INT_MAX)
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
     num_levels = (max_level - min_level) + 1
     num_levels = 1 if len(inputs) == 3 else num_levels
-    outputs = Tensor.CreateOperator(nout=num_levels, op_type='Proposal', **arguments)
-    return outputs
+    return Tensor.CreateOperator('Proposal', num_outputs=num_levels, **arguments)

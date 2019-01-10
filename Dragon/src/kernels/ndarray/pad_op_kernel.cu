@@ -1,227 +1,187 @@
 #ifdef WITH_CUDA
 
 #include "core/context_cuda.h"
+#include "utils/cast.h"
 #include "utils/op_kernel.h"
 
 namespace dragon {
 
 namespace kernel {
 
-/*! ConstPad1d <T = float32, Device = CUDA> */
+#define FIXED_DIVISOR_DIV_MOD(d, n, q, r) \
+  do {                                    \
+    const auto n_copy = n;                \
+    *q = n_copy / d;                      \
+    *r = n_copy % d;                      \
+  } while (0)
 
-template <typename T>
-__global__ void _ConstPad1d(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
+/*! ConstPad <T = ?, Device = CUDA> */
+
+template<typename T>
+__global__ void _ConstPad(
+    const int               nthreads,
+    const int               ndims,
+    const int*              x_dims,
+    const int*              x_strides,
+    const int*              y_dims,
+    const int*              l_pads,
     const T                 value,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        const int i = idx % inner_dim;
-        const int ex_d = (idx / inner_dim) % ex_dim;
-        const int o = idx / inner_dim / ex_dim;
-        const int d = ex_d - pad_l;
-        y[idx] = (d < 0 || d >= dim) ? value :
-            x[(o * dim + d) * inner_dim + i];
+    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
+        int x_idx = 0, tmp = y_idx, d;
+#pragma unroll
+        for (d = ndims - 1; d >= 0; --d) {
+            int r;
+#if __CUDA_ARCH__ >= 350
+            FIXED_DIVISOR_DIV_MOD(__ldg(y_dims + d), tmp, &tmp, &r);
+            r -= __ldg(l_pads + d); if (r < 0 || r >= __ldg(x_dims + d)) break;
+            x_idx += r * __ldg(x_strides + d);
+#else
+            FIXED_DIVISOR_DIV_MOD(y_dims[d], tmp, &tmp, &r);
+            r -= l_pads[d]; if (r < 0 || r >= x_dims[d]) break;
+            x_idx += r * x_strides[d];
+#endif
+        }
+        y[y_idx] = d >= 0 ? value : x[x_idx];
     }
 }
 
-template <> void ConstPad1d<float, CUDAContext>(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
-    const float             value,
-    const float*            x,
-    float*                  y,
-    CUDAContext*            ctx) {
-    _ConstPad1d<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, dim, ex_dim, inner_dim, pad_l, value, x, y);
-}
+/*! ReflectPad <T = ?, Device = CUDA> */
 
-/*! ReflectPad1d <T = float32, Device = CUDA> */
-
-template <typename T>
-__global__ void _ReflectPad1d(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
+template<typename T>
+__global__ void _ReflectPad(
+    const int               nthreads,
+    const int               ndims,
+    const int*              x_dims,
+    const int*              x_strides,
+    const int*              y_dims,
+    const int*              l_pads,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        const int i = idx % inner_dim;
-        const int ex_d = (idx / inner_dim) % ex_dim;
-        const int o = idx / inner_dim / ex_dim;
-        int d = ex_d - pad_l;
-        d = max(d, -d);
-        d = min(d, 2 * dim - d - 2);
-        y[idx] = x[(o * dim + d) * inner_dim + i];
+    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
+        int x_idx = 0, tmp = y_idx;
+#pragma unroll
+        for (int d = ndims - 1; d >= 0; --d) {
+            int r;
+#if __CUDA_ARCH__ >= 350
+            FIXED_DIVISOR_DIV_MOD(__ldg(y_dims + d), tmp, &tmp, &r);
+            r -= __ldg(l_pads + d);
+            r = max(r, -r);
+            r = min(r, 2 * __ldg(x_dims + d) - r - 2);
+            x_idx += r * __ldg(x_strides + d);
+#else
+            FIXED_DIVISOR_DIV_MOD(y_dims[d], tmp, &tmp, &r);
+            r -= l_pads[d];
+            r = max(r, -r);
+            r = min(r, 2 * x_dims[d] - r - 2);
+            x_idx += r * x_strides[d];
+#endif
+        }
+        y[y_idx] = x[x_idx];
     }
 }
 
-template <> void ReflectPad1d<float, CUDAContext>(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
-    const float*            x,
-    float*                  y,
-    CUDAContext*            ctx) {
-    _ReflectPad1d<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, dim, ex_dim, inner_dim, pad_l, x, y);
-}
+/*! EdgePad <T = ?, Device = CUDA> */
 
-/*! EdgePad1d <T = float32, Device = CUDA> */
-
-template <typename T>
-__global__ void _EdgePad1d(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
+template<typename T>
+__global__ void _EdgePad(
+    const int               nthreads,
+    const int               ndims,
+    const int*              x_dims,
+    const int*              x_strides,
+    const int*              y_dims,
+    const int*              l_pads,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        const int i = idx % inner_dim;
-        const int ex_d = (idx / inner_dim) % ex_dim;
-        const int o = idx / inner_dim / ex_dim;
-        const int d = min(dim - 1, max(ex_d - pad_l, 0));
-        y[idx] = x[(o * dim + d) * inner_dim + i];
+    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
+        int x_idx = 0, tmp = y_idx;
+#pragma unroll
+        for (int d = ndims - 1; d >= 0; --d) {
+            int r;
+#if __CUDA_ARCH__ >= 350
+            FIXED_DIVISOR_DIV_MOD(__ldg(y_dims + d), tmp, &tmp, &r);
+            r = min(__ldg(x_dims + d) - 1, max(r - __ldg(l_pads + d), 0));
+            x_idx += r * __ldg(x_strides + d);
+#else
+            FIXED_DIVISOR_DIV_MOD(y_dims[d], tmp, &tmp, &r);
+            r = min(x_dims[d] - 1, max(r - l_pads[d], 0));
+            x_idx += r * x_strides[d];
+#endif
+        }
+        y[y_idx] = x[x_idx];
     }
 }
 
-template <> void EdgePad1d<float, CUDAContext>(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
-    const float*            x,
-    float*                  y,
-    CUDAContext*            ctx) {
-    _EdgePad1d<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, dim, ex_dim, inner_dim, pad_l, x, y);
-}
+/*! Kernel Launchers */
 
-/*! ConstPad1dGrad <T = float32, Device = CUDA> */
-
-template <typename T>
-__global__ void _ConstPad1dGrad(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
-    const T*                dy,
-    T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        const int i = idx % inner_dim;
-        const int ex_d = (idx / inner_dim) % dim + pad_l;
-        const int o = idx / inner_dim / dim;
-        dx[idx] = dy[(o * ex_dim + ex_d) * inner_dim + i];
+#define DEFINE_CONST_PAD_KERNEL_LAUNCHER(T) \
+    template<> void ConstPad<T, CUDAContext>( \
+        const int               count, \
+        const int               ndims, \
+        const int*              x_dims, \
+        const int*              x_strides, \
+        const int*              y_dims, \
+        const int*              l_pads, \
+        const float             value, \
+        const T*                x, \
+        T*                      y, \
+        CUDAContext*            ctx) { \
+        _ConstPad<T> \
+            << < CUDA_BLOCKS(count), CUDA_THREADS, \
+                 0, ctx->cuda_stream() >> > \
+            (count, ndims, x_dims, x_strides, y_dims, l_pads, \
+                cast::to<T>(value), x, y); \
     }
-}
 
-template <> void ConstPad1dGrad<float, CUDAContext>(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
-    const float*            dy,
-    float*                  dx,
-    CUDAContext*            ctx) {
-    _ConstPad1dGrad<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, dim, ex_dim, inner_dim, pad_l, dy, dx);
-}
-
-/*! ReflectPad1dGrad <T = float32, Device = CUDA> */
-
-template <typename T>
-__global__ void _ReflectPad1dGrad(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
-    const T*                dy,
-    T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        const int i = idx % inner_dim;
-        const int ex_d = (idx / inner_dim) % ex_dim;
-        const int o = idx / inner_dim / ex_dim;
-        int d = ex_d - pad_l;
-        d = max(d, -d);
-        d = min(d, 2 * dim - d - 2);
-        atomicAdd(&dx[(o * dim + d) * inner_dim + i], dy[idx]);
+#define DEFINE_PAD_KERNEL_LAUNCHER(name, T) \
+    template<> void name<T, CUDAContext>( \
+        const int               count, \
+        const int               ndims, \
+        const int*              x_dims, \
+        const int*              x_strides, \
+        const int*              y_dims, \
+        const int*              l_pads, \
+        const T*                x, \
+        T*                      y, \
+        CUDAContext*            ctx) { \
+        _##name<T> \
+            << < CUDA_BLOCKS(count), CUDA_THREADS, \
+                 0, ctx->cuda_stream() >> > \
+            (count, ndims, x_dims, x_strides, \
+                y_dims, l_pads, x, y); \
     }
-}
 
-template <> void ReflectPad1dGrad<float, CUDAContext>(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
-    const float*            dy,
-    float*                  dx,
-    CUDAContext*            ctx) {
-    _ReflectPad1dGrad<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, dim, ex_dim, inner_dim, pad_l, dy, dx);
-}
+DEFINE_CONST_PAD_KERNEL_LAUNCHER(bool);
+DEFINE_CONST_PAD_KERNEL_LAUNCHER(int8_t);
+DEFINE_CONST_PAD_KERNEL_LAUNCHER(uint8_t);
+DEFINE_CONST_PAD_KERNEL_LAUNCHER(int);
+DEFINE_CONST_PAD_KERNEL_LAUNCHER(int64_t);
+DEFINE_CONST_PAD_KERNEL_LAUNCHER(float16);
+DEFINE_CONST_PAD_KERNEL_LAUNCHER(float);
+DEFINE_CONST_PAD_KERNEL_LAUNCHER(double);
 
-/*! EdgePad1dGrad <T = float32, Device = CUDA> */
+DEFINE_PAD_KERNEL_LAUNCHER(ReflectPad, bool);
+DEFINE_PAD_KERNEL_LAUNCHER(ReflectPad, int8_t);
+DEFINE_PAD_KERNEL_LAUNCHER(ReflectPad, uint8_t);
+DEFINE_PAD_KERNEL_LAUNCHER(ReflectPad, int);
+DEFINE_PAD_KERNEL_LAUNCHER(ReflectPad, int64_t);
+DEFINE_PAD_KERNEL_LAUNCHER(ReflectPad, float16);
+DEFINE_PAD_KERNEL_LAUNCHER(ReflectPad, float);
+DEFINE_PAD_KERNEL_LAUNCHER(ReflectPad, double);
 
-template <typename T>
-__global__ void _EdgePad1dGrad(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
-    const T*                dy,
-    T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        const int i = idx % inner_dim;
-        const int ex_d = (idx / inner_dim) % ex_dim;
-        const int o = idx / inner_dim / ex_dim;
-        const int d = min(dim - 1, max(ex_d - pad_l, 0));
-        atomicAdd(&dx[(o * dim + d) * inner_dim + i], dy[idx]);
-    }
-}
+DEFINE_PAD_KERNEL_LAUNCHER(EdgePad, bool);
+DEFINE_PAD_KERNEL_LAUNCHER(EdgePad, int8_t);
+DEFINE_PAD_KERNEL_LAUNCHER(EdgePad, uint8_t);
+DEFINE_PAD_KERNEL_LAUNCHER(EdgePad, int);
+DEFINE_PAD_KERNEL_LAUNCHER(EdgePad, int64_t);
+DEFINE_PAD_KERNEL_LAUNCHER(EdgePad, float16);
+DEFINE_PAD_KERNEL_LAUNCHER(EdgePad, float);
+DEFINE_PAD_KERNEL_LAUNCHER(EdgePad, double);
 
-template <> void EdgePad1dGrad<float, CUDAContext>(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
-    const float*            dy,
-    float*                  dx,
-    CUDAContext*            ctx) {
-    _EdgePad1dGrad<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, dim, ex_dim, inner_dim, pad_l, dy, dx);
-}
+#undef FIXED_DIVISOR_DIV_MOD
+#undef DEFINE_PAD_KERNEL_LAUNCHER
+#undef DEFINE_CONST_PAD_KERNEL_LAUNCHER
 
 }  // namespace kernel
 

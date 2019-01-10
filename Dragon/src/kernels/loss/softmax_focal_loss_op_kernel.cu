@@ -14,6 +14,7 @@ __global__ void _SoftmaxFocalLoss(
     const int               count,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float             pos_alpha,
     const float             neg_alpha,
     const float             gamma,
@@ -21,7 +22,6 @@ __global__ void _SoftmaxFocalLoss(
     const T*                prob,
     const T*                labels,
     const int*              ignores,
-    const int               num_ignores,
     T*                      losses,
     T*                      flags) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
@@ -50,6 +50,7 @@ template <> void SoftmaxFocalLoss<float, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float             pos_alpha,
     const float             neg_alpha,
     const float             gamma,
@@ -57,18 +58,16 @@ template <> void SoftmaxFocalLoss<float, CUDAContext>(
     const float*            prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     CUDAContext*            ctx) {
-    const int num_preds = outer_dim * inner_dim;
+    const auto num_preds = outer_dim * inner_dim;
     _SoftmaxFocalLoss<float>
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (num_preds, axis_dim, inner_dim,
+        (num_preds, axis_dim, inner_dim, num_ignores,
             pos_alpha, neg_alpha, gamma, neg_id,
-                prob, labels, ignores, num_ignores,
-                    losses, flags);
+                prob, labels, ignores, losses, flags);
 }
 
 /*! SoftmaxFocalLossGrad <T = float32, Device = CUDA> */
@@ -78,6 +77,7 @@ __global__ void _SoftmaxFocalLossGrad(
     const int               count,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float             pos_alpha,
     const float             neg_alpha,
     const float             gamma,
@@ -85,7 +85,6 @@ __global__ void _SoftmaxFocalLossGrad(
     const T*                prob,
     const T*                labels,
     const int*              ignores,
-    const int               num_ignores,
     T*                      dx,
     T*                      flags) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
@@ -125,6 +124,7 @@ template<> void SoftmaxFocalLossGrad<float, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float             pos_alpha,
     const float             neg_alpha,
     const float             gamma,
@@ -132,7 +132,6 @@ template<> void SoftmaxFocalLossGrad<float, CUDAContext>(
     const float*            prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  dx,
     float*                  flags,
     CUDAContext*            ctx) {
@@ -140,10 +139,9 @@ template<> void SoftmaxFocalLossGrad<float, CUDAContext>(
     _SoftmaxFocalLossGrad<float>
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (num_preds, axis_dim, inner_dim,
+        (num_preds, axis_dim, inner_dim, num_ignores,
             pos_alpha, neg_alpha, gamma, neg_id,
-                prob, labels, ignores, num_ignores,
-                    dx, flags);
+                prob, labels, ignores, dx, flags);
 }
 
 }  // namespace kernel

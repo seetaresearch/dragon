@@ -13,23 +13,23 @@
 #
 # ------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import re
 import collections
 import weakref
 
-from dragon.core.scope import get_tensor_scope
-
 from dragon.vm.tensorflow.framework import ops
 from dragon.vm.tensorflow.framework import dtypes
 from dragon.vm.tensorflow.ops import var_scope as vs
-from dragon.vm.tensorflow.ops import variables as tf_variables
 from dragon.vm.tensorflow.util import nest
 
 
 class Layer(object):
     def __init__(self, trainable=True, name=None, dtype=dtypes.float32, **kwargs):
-        allowed_kwargs = {'_scope',
-                          '_reuse'}
+        allowed_kwargs = {'_scope', '_reuse'}
         for kwarg in kwargs:
             if kwarg not in allowed_kwargs:
                 raise TypeError('Keyword argument not understood:', kwarg)
@@ -57,9 +57,6 @@ class Layer(object):
 
         self._base_name = base_name
 
-        # Determine variable scope.
-        self._scope = None
-
     def build(self, _):
         self.built = True
 
@@ -71,55 +68,32 @@ class Layer(object):
         return self._updates
 
     def __call__(self, inputs, *args, **kwargs):
-        with vs.variable_scope(self._scope,
-                               reuse=self.built or self._reuse) as scope:
-            with ops.name_scope(scope.original_name_scope):
-                if not self.built:
-                    input_shapes = [x.get_shape()
-                                    for x in nest.flatten(inputs)]
-                    if len(input_shapes) == 1:
-                        self.build(input_shapes[0])
-                    else:
-                        self.build(input_shapes)
-                outputs = self.call(inputs, *args, **kwargs)
-                # # Apply activity regularization.
-                # # Note that it should be applied every time the layer creates a new
-                # # output, since it is output-specific.
-                # if hasattr(self, 'activity_regularizer') and self.activity_regularizer:
-                #     output_list = _to_list(outputs)
-                #     for output in output_list:
-                #         with ops.name_scope('ActivityRegularizer'):
-                #             activity_regularization = self.activity_regularizer(output)
-                #         self.add_loss(activity_regularization)
-                #         _add_elements_to_collection(
-                #             activity_regularization, ops.GraphKeys.REGULARIZATION_LOSSES)
-        # Update global default collections.
-        _add_elements_to_collection(self.updates, ops.GraphKeys.UPDATE_OPS)
-        self.built = True
-        return outputs
+        with vs.variable_scope(self.name,
+            reuse=self.built or self._reuse) as scope:
+            if not self.built:
+                input_shapes = [x.get_shape() for x in nest.flatten(inputs)]
+                if len(input_shapes) == 1: self.build(input_shapes[0])
+                else: self.build(input_shapes)
+            outputs = self.call(inputs, *args, **kwargs)
+            # Update global default collections.
+            _add_elements_to_collection(self.updates, ops.GraphKeys.UPDATE_OPS)
+            return outputs
 
-    def add_variable(self, name, shape, dtype=None, trainable=True,
-                     initializer=None, regularizer=None):
-        if dtype is None:
-            dtype = self.dtype
-        existing_variables = set(tf_variables.global_variables())
-
-        with vs.variable_scope(self._scope,
-                               reuse=self.built or self._reuse) as scope:
-            with ops.name_scope(scope.original_name_scope):
-
-                full_name = get_tensor_scope() + name
-                variable = vs.get_variable(name,
-                                           shape=shape,
-                                           initializer=initializer,
-                                           dtype=dtypes.as_dtype(dtype),
-                                           trainable=trainable and self.trainable)
-                if variable in existing_variables:
-                    # Work only if the layer is built
-                    return variable
-                if regularizer:
-                    raise NotImplementedError()
-
+    def add_variable(self,
+                     name,
+                     shape,
+                     dtype=None,
+                     trainable=True,
+                     initializer=None,
+                     regularizer=None):
+        if dtype is None: dtype = self.dtype
+        variable = vs.get_variable(
+            name,
+            shape=shape,
+            initializer=initializer,
+            regularizer=regularizer,
+            dtype=dtypes.as_dtype(dtype),
+            trainable=trainable and self.trainable)
         if trainable:
             self._trainable_weights.append(variable)
         else:
@@ -131,14 +105,14 @@ class Layer(object):
 
 
 class InputSpec(object):
-    def __init__(self, dtype=None, shape=None,
-                 ndim=None, max_ndim=None, min_ndim=None, axes=None):
+    def __init__(self,
+        dtype=None, shape=None, ndim=None,
+            max_ndim=None, min_ndim=None, axes=None
+    ):
         self.dtype = dtype
         self.shape = shape
-        if shape is not None:
-            self.ndim = len(shape)
-        else:
-            self.ndim = ndim
+        if shape is not None: self.ndim = len(shape)
+        else: self.ndim = ndim
         self.max_ndim = max_ndim
         self.min_ndim = min_ndim
         self.axes = axes or {}
@@ -155,11 +129,13 @@ PER_GRAPH_LAYER_NAME_UIDS = weakref.WeakKeyDictionary()
 
 
 def _unique_layer_name(name):
+    global PER_GRAPH_LAYER_NAME_UIDS
     graph = ops.get_default_graph()
     if graph not in PER_GRAPH_LAYER_NAME_UIDS:
         PER_GRAPH_LAYER_NAME_UIDS[graph] = collections.defaultdict(int)
     layer_name_uids = PER_GRAPH_LAYER_NAME_UIDS[graph]
     layer_name_uids[name] += 1
+    return name + '_' + str(layer_name_uids[name])
 
 
 def _to_list(x):

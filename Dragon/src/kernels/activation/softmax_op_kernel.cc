@@ -44,6 +44,32 @@ template<> void Softmax<float, CPUContext>(
     }
 }
 
+
+template <typename T>
+void _SoftmaxGrad(
+    const int           outer_dim,
+    const int           inner_dim,
+    const int           axis_dim,
+    const T*            dy,
+    const T*            y,
+    T*                  dx) {
+    int row_stride, axis_offset, idx;
+    for (int i = 0; i < outer_dim; ++i) {
+        row_stride = i * axis_dim * inner_dim;
+        for (int j = 0; j < inner_dim; ++j) {
+            T dYxY = 0; axis_offset = row_stride + j;
+            for (int k = 0; k < axis_dim; ++k) {
+                idx = axis_offset + k * inner_dim;
+                dYxY += (dy[idx] * y[idx]);
+            }
+            for (int k = 0; k < axis_dim; ++k) {
+                idx = axis_offset + k * inner_dim;
+                dx[idx] = (dx[idx] - dYxY) * y[idx];
+            }
+        }
+    }
+}
+
 /*! SoftmaxGrad <T = float32, Device = CPU> */
 
 template<> void SoftmaxGrad<float, CPUContext>(
@@ -57,19 +83,8 @@ template<> void SoftmaxGrad<float, CPUContext>(
     float*                  scale,
     float*                  dx,
     CPUContext*             ctx) {
-    const int dim = count / outer_dim;
-    for (int i = 0; i < outer_dim; ++i) {
-        for (int k = 0; k < inner_dim; ++k)
-            math::StridedDot<float, CPUContext>(classes,
-                dx + i * dim + k, inner_dim,
-                    y + i * dim + k, inner_dim, scale + k, ctx);
-         math::Gemm<float, CPUContext>(
-             CblasNoTrans, CblasNoTrans,
-                classes, inner_dim, 1,
-                    -1.f, sum_multiplier, scale,
-                        1.f, dx + i * dim, ctx);
-    }
-    math::Mul<float, CPUContext>(count, dx, y, dx, ctx);
+    _SoftmaxGrad<float>(outer_dim,
+        inner_dim, classes, dy, y, dx);
 }
 
 }  // namespace kernel

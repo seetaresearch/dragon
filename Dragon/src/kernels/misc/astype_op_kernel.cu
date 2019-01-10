@@ -19,7 +19,7 @@ __global__ void _TypeA2B(
     }
 }
 
-#define DEFINE_TYPE_A2B(type_a, type_b) \
+#define DEFINE_TYPE_A_TO_B(type_a, type_b) \
     template <> void TypeA2B<type_a, type_b, CUDAContext>( \
         const int           count, \
         const               type_a* a, \
@@ -31,20 +31,24 @@ __global__ void _TypeA2B(
             (count, a, b); \
     }
 
-#define DEFINE_TYPE_A2ALL(type_a) \
-    DEFINE_TYPE_A2B(type_a, float); \
-    DEFINE_TYPE_A2B(type_a, double); \
-    DEFINE_TYPE_A2B(type_a, int); \
-    DEFINE_TYPE_A2B(type_a, int64_t); \
-    DEFINE_TYPE_A2B(type_a, uint8_t)
+#define DEFINE_TYPE_A_TO_ALL(type_a) \
+    DEFINE_TYPE_A_TO_B(type_a, bool); \
+    DEFINE_TYPE_A_TO_B(type_a, int8_t); \
+    DEFINE_TYPE_A_TO_B(type_a, uint8_t); \
+    DEFINE_TYPE_A_TO_B(type_a, int); \
+    DEFINE_TYPE_A_TO_B(type_a, int64_t); \
+    DEFINE_TYPE_A_TO_B(type_a, float); \
+    DEFINE_TYPE_A_TO_B(type_a, double);
 
-DEFINE_TYPE_A2ALL(float);
-DEFINE_TYPE_A2ALL(double);
-DEFINE_TYPE_A2ALL(int);
-DEFINE_TYPE_A2ALL(int64_t);
-DEFINE_TYPE_A2ALL(uint8_t);
+DEFINE_TYPE_A_TO_ALL(bool);
+DEFINE_TYPE_A_TO_ALL(int8_t);
+DEFINE_TYPE_A_TO_ALL(uint8_t);
+DEFINE_TYPE_A_TO_ALL(int);
+DEFINE_TYPE_A_TO_ALL(int64_t);
+DEFINE_TYPE_A_TO_ALL(float);
+DEFINE_TYPE_A_TO_ALL(double);
 
-/*! Astype <Ta = float16, Tb = ?, Device = CUDA> */
+/*! Astype <Ta = float16, Tb = float32, Device = CUDA> */
 
 __global__ void _TypeHalf2Float(
     const int               count,
@@ -55,6 +59,19 @@ __global__ void _TypeHalf2Float(
     }
 }
 
+template <> void TypeA2B<float16, float, CUDAContext>(
+    const int               count,
+    const float16*          a,
+    float*                  b, 
+    CUDAContext*            ctx) {
+    _TypeHalf2Float
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> > 
+        (count, reinterpret_cast<const half*>(a), b);
+}
+
+/*! Astype <Ta = float32, Tb = float16, Device = CUDA> */
+
 __global__ void _TypeFloat2Half(
     const int               count,
     const float*            a,
@@ -64,6 +81,19 @@ __global__ void _TypeFloat2Half(
     }
 }
 
+template <> void TypeA2B<float, float16, CUDAContext>(
+    const int           count,
+    const float*        a,
+    float16*            b,
+    CUDAContext*        ctx) {
+    _TypeFloat2Half
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >
+        (count, a, reinterpret_cast<half*>(b));
+}
+
+/*! Astype <Ta = float16, Tb = float16, Device = CUDA> */
+
 __global__ void _TypeHalf2Half(
     const int               count,
     const half*             a,
@@ -72,46 +102,6 @@ __global__ void _TypeHalf2Half(
         b[idx] = a[idx];
     }
 }
-
-#define DEFINE_TYPE_DISABLE_FP16(type) \
-    template <> void TypeA2B<float16, type, CUDAContext>( \
-        const int           count, \
-        const float16*      a, \
-        type*               b, \
-        CUDAContext*        ctx) { \
-        LOG(FATAL) << "CUDAContext has not implemented: float16 -> " \
-                   << TypeMetaToString(TypeMeta::Make<type>()); \
-    } \
-    template <> void TypeA2B<type, float16, CUDAContext>( \
-        const int           count, \
-        const type*         a, \
-        float16*            b, \
-        CUDAContext*        ctx) { \
-        LOG(FATAL) << "CUDAContext has not implemented: " \
-                   << TypeMetaToString(TypeMeta::Make<type>()) << " -> float16"; \
-    }
-
-#define DEFINE_TYPE_ENABLE_FP16_FP32 \
-    template <> void TypeA2B<float16, float, CUDAContext>( \
-        const int           count, \
-        const float16*      a, \
-        float*              b, \
-        CUDAContext*        ctx) { \
-        _TypeHalf2Float \
-            << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> > \
-            (count, reinterpret_cast<const half*>(a), b); \
-    } \
-    template <> void TypeA2B<float, float16, CUDAContext>( \
-        const int           count, \
-        const float*        a, \
-        float16*            b, \
-        CUDAContext*        ctx) { \
-        _TypeFloat2Half \
-            << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> > \
-            (count, a, reinterpret_cast<half*>(b)); \
-    }
 
 template <> void TypeA2B<float16, float16, CUDAContext>(
     const int               count,
@@ -125,11 +115,35 @@ template <> void TypeA2B<float16, float16, CUDAContext>(
             reinterpret_cast<half*>(b));
 }
 
-DEFINE_TYPE_ENABLE_FP16_FP32;
-DEFINE_TYPE_DISABLE_FP16(double);
-DEFINE_TYPE_DISABLE_FP16(int);
-DEFINE_TYPE_DISABLE_FP16(int64_t);
-DEFINE_TYPE_DISABLE_FP16(uint8_t);
+#define DEFINE_TYPE_FP16_DISABLED(type) \
+    template <> void TypeA2B<float16, type, CUDAContext>( \
+        const int           count, \
+        const float16*      a, \
+        type*               b, \
+        CUDAContext*        ctx) { \
+        LOG(FATAL) << "Not Implemented: float16 -> " \
+                   << TypeMetaToString(TypeMeta::Make<type>()); \
+    } \
+    template <> void TypeA2B<type, float16, CUDAContext>( \
+        const int           count, \
+        const type*         a, \
+        float16*            b, \
+        CUDAContext*        ctx) { \
+        LOG(FATAL) << "Not Implemented: " \
+                   << TypeMetaToString(TypeMeta::Make<type>()) \
+                   << " -> float16"; \
+    }
+
+DEFINE_TYPE_FP16_DISABLED(bool);
+DEFINE_TYPE_FP16_DISABLED(int8_t);
+DEFINE_TYPE_FP16_DISABLED(uint8_t);
+DEFINE_TYPE_FP16_DISABLED(int);
+DEFINE_TYPE_FP16_DISABLED(int64_t);
+DEFINE_TYPE_FP16_DISABLED(double);
+
+#undef DEFINE_TYPE_A_TO_B
+#undef DEFINE_TYPE_A_TO_ALL
+#undef DEFINE_TYPE_FP16_DISABLED
 
 }  // namespace kernel
 

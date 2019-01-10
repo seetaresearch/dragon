@@ -23,16 +23,15 @@ from collections import OrderedDict
 
 import numpy as np
 import dragon as dg
-from dragon.core.scope import get_tensor_scope
-import dragon.core.utils as pb_utils
-from dragon.config import logger
+from dragon.core.scope import get_default_name_scope
+import dragon.core.proto_utils as pb_utils
+import dragon.core.logging as logging
 
 from dragon.vm.torch.environ import \
     add_submodule, get_module_name
 
 from dragon.vm.torch.tensor import Tensor, Parameter
-from dragon.vm.torch.tensor_pool import TPool
-from dragon.vm.torch.execute_engine import RunOperator
+from dragon.vm.torch.execution import RunOperator
 
 
 class Module(object):
@@ -117,7 +116,7 @@ class Module(object):
         pass
 
     def load_state_dict(self, state_dict, strict=True, verbose=True):
-        if verbose: logger.info('Load the state dict.')
+        if verbose: logging.info('Load the state dict.')
         def submodule_key_mismatch(full_name, is_missing):
             module = self
             names = full_name.split(".")
@@ -149,9 +148,9 @@ class Module(object):
                     dg.tensor_utils.SetPyArray(own_state[name], param)
                 else:
                     raise ValueError('Excepted the type of source state is either '
-                        'torch.Tensor or numpy.ndarray, got {}.'.format(type(param)))
+                        'dragon.vm.torch.Tensor or numpy.ndarray, got {}.'.format(type(param)))
                 if verbose:
-                    logger.info('* Tensor({}) loaded, Size: ({})'.format(name,
+                    logging.info('Tensor({}) loaded, Size: ({})'.format(name,
                             ', '.join([str(d) for d in param_shape])))
         if strict:
             missing = set(own_state.keys()) - set(state_dict.keys())
@@ -224,22 +223,9 @@ class Module(object):
         raise NotImplementedError('The base module can not be called.')
 
     def name_scope(self, remove_separator=True):
-        scope = get_tensor_scope()
+        scope = get_default_name_scope()
         if remove_separator and scope[-1] == '/': scope = scope[:-1]
         return scope
-
-    def register_buffers(self, n_buffers):
-        """Apply for n buffers from TensorPool.
-
-        Buffers will be released after backward pass.
-
-        Parameters
-        ----------
-        n_buffers : int
-            The number of buffers.
-
-        """
-        return [TPool.get() for i in range(n_buffers)]
 
     def children(self):
         for name, module in self.named_children():
@@ -323,7 +309,7 @@ class Module(object):
 
     def _gen_persistent_key(self):
         self._persistent_key = '{}{}:{}'.format(
-            self.name_scope(False), self._ctx[0].lower(), self._ctx[1])
+            self.name_scope(False), self._ctx[0], self._ctx[1])
 
     @property
     def persistent_key(self):

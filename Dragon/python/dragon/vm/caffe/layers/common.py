@@ -9,9 +9,13 @@
 #
 # ------------------------------------------------------------
 
-import dragon.ops as ops
-from dragon.core.tensor import Tensor
+"""The Implementation of the common layers."""
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import dragon
 from ..layer import Layer
 
 
@@ -37,26 +41,19 @@ class InnerProductLayer(Layer):
     def __init__(self, LayerParameter):
         super(InnerProductLayer, self).__init__(LayerParameter)
         param = LayerParameter.inner_product_param
-        self._param = {
+        self.arguments = {
             'axis': param.axis,
             'num_output': param.num_output,
-            'TransW': not param.transpose,
+            'transW': not param.transpose,
         }
-        scope = LayerParameter.name
-        weight = Tensor(scope + '/param:0')
-        weight_diff = Tensor(scope + '/param:0_grad')
-        self.Fill(weight, param, 'weight_filler')
-        self._blobs.append({'data': weight, 'diff': weight_diff})
-
+        # Add weights and biases
+        self.AddBlob(filler=self.GetFiller(param, 'weight_filler'))
         if param.bias_term:
-            bias = Tensor(scope + '/param:1')
-            bias_diff = Tensor(scope + '/param:1_grad')
-            self.Fill(bias, param, 'bias_filler')
-            self._blobs.append({'data': bias, 'diff': bias_diff})
+            self.AddBlob(filler=self.GetFiller(param, 'bias_filler'))
 
-    def Setup(self, bottom):
-        super(InnerProductLayer, self).Setup(bottom)
-        return ops.InnerProduct(bottom + [blob['data'] for blob in self._blobs], **self._param)
+    def LayerSetup(self, bottom):
+        inputs = [bottom] + [blob['data'] for blob in self._blobs]
+        return dragon.ops.FullyConnected(inputs, **self.arguments)
 
 
 class AccuracyLayer(Layer):
@@ -75,15 +72,14 @@ class AccuracyLayer(Layer):
     def __init__(self, LayerParameter):
         super(AccuracyLayer, self).__init__(LayerParameter)
         param = LayerParameter.accuracy_param
-        self._param = {
+        self.arguments = {
             'top_k': param.top_k,
             'ignore_labels': [param.ignore_label]
                 if param.HasField('ignore_label') else [],
         }
 
-    def Setup(self, bottom):
-        super(AccuracyLayer, self).Setup(bottom)
-        return ops.Accuracy(bottom, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Accuracy(bottom, **self.arguments)
 
 
 class PythonLayer(Layer):
@@ -102,15 +98,15 @@ class PythonLayer(Layer):
     def __init__(self, LayerParameter):
         super(PythonLayer, self).__init__(LayerParameter)
         param = LayerParameter.python_param
-        self._param = {
+        self.arguments = {
             'module': param.module,
             'op': param.layer,
             'param_str': param.param_str,
+            'num_outputs': len(self._top),
         }
 
-    def Setup(self, bottom):
-        super(PythonLayer, self).Setup(bottom)
-        return ops.Run(bottom, nout=len(self._top), **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Run(bottom, **self.arguments)
 
 
 class EltwiseLayer(Layer):
@@ -127,27 +123,24 @@ class EltwiseLayer(Layer):
     def __init__(self, LayerParameter):
         super(EltwiseLayer, self).__init__(LayerParameter)
         param = LayerParameter.eltwise_param
-        self._param = {
+        self.arguments = {
             'operation': {0: 'PROD', 1: 'SUM', 2: 'MAX'}[param.operation],
-            'coeffs': [element for element in param.coeff]
+            'coefficients': [element for element in param.coeff]
                 if len(param.coeff) > 0 else None,
         }
 
-    def Setup(self, bottom):
-        super(EltwiseLayer, self).Setup(bottom)
-        return ops.Eltwise(bottom, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Eltwise(bottom, **self.arguments)
 
 
 class AddLayer(Layer):
-    """
-    The extended implementation of ``EltwiseLayer``.
-    """
+    """The extended implementation of ``EltwiseLayer``."""
+
     def __init__(self, LayerParameter):
         super(AddLayer, self).__init__(LayerParameter)
 
-    def Setup(self, bottom):
-        super(AddLayer, self).Setup(bottom)
-        return ops.Add(bottom, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Add(bottom, **self.arguments)
 
 
 class ConcatLayer(Layer):
@@ -161,12 +154,34 @@ class ConcatLayer(Layer):
     """
     def __init__(self, LayerParameter):
         super(ConcatLayer, self).__init__(LayerParameter)
-        param = LayerParameter.concat_param
-        self._param = {'axis': param.axis}
+        self.arguments = {'axis': LayerParameter.concat_param.axis}
 
-    def Setup(self, bottom):
-        super(ConcatLayer, self).Setup(bottom)
-        return ops.Concat(bottom, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Concat(bottom, **self.arguments)
+
+
+class SliceLayer(Layer):
+    """The implementation of ``SliceLayer``.
+
+    Parameters
+    ----------
+    axis : int
+        The axis to concatenate. Refer ``SliceParameter.axis``.
+    slice_point : sequence of int
+        The optional slice points. Refer ``SliceParameter.slice_point``.
+
+    """
+    def __init__(self, LayerParameter):
+        super(SliceLayer, self).__init__(LayerParameter)
+        slice_param = LayerParameter.slice_param
+        self.arguments = {
+            'axis': slice_param.axis,
+            'slice_point': [int(e) for e in slice_param.slice_point],
+            'num_outputs': len(self._top),
+        }
+
+    def LayerSetup(self, bottom):
+        return dragon.ops.Slice(bottom, **self.arguments)
 
 
 class DenseConcatLayer(Layer):
@@ -183,14 +198,13 @@ class DenseConcatLayer(Layer):
     def __init__(self, LayerParameter):
         super(DenseConcatLayer, self).__init__(LayerParameter)
         param = LayerParameter.dense_concat_param
-        self._param = {
+        self.arguments = {
             'axis': param.axis,
             'growth_rate': param.growth_rate,
         }
 
-    def Setup(self, bottom):
-        super(DenseConcatLayer, self).Setup(bottom)
-        return ops.DenseConcat(bottom, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.DenseConcat(bottom, **self.arguments)
 
 
 class CropLayer(Layer):
@@ -207,16 +221,17 @@ class CropLayer(Layer):
     def __init__(self, LayerParameter):
         super(CropLayer, self).__init__(LayerParameter)
         param = LayerParameter.crop_param
-        self._param = {
+        self.arguments = {
             'start_axis': param.axis,
             'offsets': [int(element) for element in param.offset],
         }
 
-    def Setup(self, bottom):
-        super(CropLayer, self).Setup(bottom)
-        self._param['shape_like'] = bottom[1]
-        self._param['starts'] = self._param['ends'] = None
-        return ops.Crop(bottom[0], **self._param)
+    def LayerSetup(self, bottom):
+        if not isinstance(bottom, (tuple, list)) or len(bottom) != 2:
+            raise ValueError('Excepted two bottom blobs.')
+        self.arguments['shape_like'] = bottom[1]
+        self.arguments['starts'] = self.arguments['sizes'] = None
+        return dragon.ops.Crop(bottom[0], **self.arguments)
 
 
 class ReshapeLayer(Layer):
@@ -230,14 +245,11 @@ class ReshapeLayer(Layer):
     """
     def __init__(self, LayerParameter):
         super(ReshapeLayer, self).__init__(LayerParameter)
-        param = LayerParameter.reshape_param
-        shape = param.shape
-        self._param = {'shape': [int(element) for element in shape.dim]}
+        self.arguments = {'shape': [int(element) for element
+            in LayerParameter.reshape_param.shape.dim]}
 
-    def Setup(self, bottom):
-        super(ReshapeLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return ops.Reshape(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Reshape(bottom, **self.arguments)
 
 
 class PermuteLayer(Layer):
@@ -251,13 +263,11 @@ class PermuteLayer(Layer):
     """
     def __init__(self, LayerParameter):
         super(PermuteLayer, self).__init__(LayerParameter)
-        param = LayerParameter.permute_param
-        self._param = {'perms': [int(element) for element in param.order]}
+        self.arguments = {'perm': [int(element) for element
+            in LayerParameter.permute_param.order]}
 
-    def Setup(self, bottom):
-        super(PermuteLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return ops.Transpose(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Transpose(bottom, **self.arguments)
 
 
 class FlattenLayer(Layer):
@@ -275,14 +285,11 @@ class FlattenLayer(Layer):
         super(FlattenLayer, self).__init__(LayerParameter)
         param = LayerParameter.flatten_param
         axis = param.axis; end_axis = param.end_axis
-        num_axes =  end_axis - axis + 1 if end_axis != -1 else -1
-        self._param = {'axis': axis, 'num_axes': num_axes}
+        num_axes = end_axis - axis + 1 if end_axis != -1 else -1
+        self.arguments = {'axis': axis, 'num_axes': num_axes}
 
-
-    def Setup(self, bottom):
-        super(FlattenLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return ops.Flatten(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Flatten(bottom, **self.arguments)
 
 
 class GatherLayer(Layer):
@@ -296,12 +303,12 @@ class GatherLayer(Layer):
     """
     def __init__(self, LayerParameter):
         super(GatherLayer, self).__init__(LayerParameter)
-        param = LayerParameter.gather_param
-        self._param = {'axis': param.axis}
+        self.arguments = {'axis': LayerParameter.gather_param.axis}
 
-    def Setup(self, bottom):
-        super(GatherLayer, self).Setup(bottom)
-        return ops.Gather(bottom[0], indices=bottom[1], **self._param)
+    def LayerSetup(self, bottom):
+        if not isinstance(bottom, (tuple, list)) or len(bottom) != 2:
+            raise ValueError('Excepted two bottom blobs.')
+        return dragon.ops.Gather(bottom[0], indices=bottom[1], **self.arguments)
 
 
 class SoftmaxLayer(Layer):
@@ -315,13 +322,10 @@ class SoftmaxLayer(Layer):
     """
     def __init__(self, LayerParameter):
         super(SoftmaxLayer, self).__init__(LayerParameter)
-        param = LayerParameter.softmax_param
-        self._param = {'axis': param.axis}
+        self.arguments = {'axis': LayerParameter.softmax_param.axis}
 
-    def Setup(self, bottom):
-        super(SoftmaxLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return ops.Softmax(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Softmax(bottom, **self.arguments)
 
 
 class ArgMaxLayer(Layer):
@@ -338,16 +342,14 @@ class ArgMaxLayer(Layer):
     def __init__(self, LayerParameter):
         super(ArgMaxLayer, self).__init__(LayerParameter)
         param = LayerParameter.argmax_param
-        self._param = {
+        self.arguments = {
             'top_k': param.top_k,
             'axis': param.axis,
             'keep_dims': True,
         }
 
-    def Setup(self, bottom):
-        super(ArgMaxLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return ops.Argmax(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.ArgMax(bottom, **self.arguments)
 
 
 class BatchNormLayer(Layer):
@@ -366,74 +368,21 @@ class BatchNormLayer(Layer):
     def __init__(self, LayerParameter):
         super(BatchNormLayer, self).__init__(LayerParameter)
         param = LayerParameter.batch_norm_param
-        self._param = {
+        self.arguments = {
             'use_stats': int(param.use_global_stats)
                 if param.HasField('use_global_stats') else -1,
             'momentum': param.moving_average_fraction,
             'eps': param.eps,
             'axis': 1,
-            'mode': 'CAFFE',
         }
-        scope = LayerParameter.name
-        # mean, var, factor are set to 0 in order to do statistics
-        mean = Tensor(scope + '/param:0').Constant(value=0.0)
-        var  = Tensor(scope + '/param:1').Constant(value=0.0)
-        factor = Tensor(scope + '/param:2').Constant(value=0.0)
-        # in dragon, set diff as None will ignore computing grad automatically
-        # but in bvlc-caffe, you must set lr_mult = 0 manually
-        self._blobs.append({'data': mean, 'diff': None})
-        self._blobs.append({'data': var, 'diff': None})
-        self._blobs.append({'data': factor, 'diff': None})
+        self.AddBlob(value=0, enforce_no_grad=True) # mean
+        self.AddBlob(value=0, enforce_no_grad=True) # var
+        self.AddBlob(value=1, enforce_no_grad=True) # gamma
+        self.AddBlob(value=0, enforce_no_grad=True) # beta
 
-    def Setup(self, bottom):
-        super(BatchNormLayer, self).Setup(bottom)
-        return ops.BatchNorm(bottom + [blob['data'] for blob in self._blobs], **self._param)
-
-
-class BatchRenormLayer(Layer):
-    """The implementation of ``BatchRenormLayer``.
-
-    Parameters
-    ----------
-    use_global_stats : boolean
-        Refer ``BatchRenormParameter.use_global_stats``.
-    moving_average_fraction : float
-        Refer ``BatchRenormParameter.moving_average_fraction``.
-    eps : float
-        Refer ``BatchRenormParameter.eps``.
-    r_max : float
-        Refer ``BatchRenormParameter.r_max``.
-    d_max : float
-        Refer ``BatchRenormParameter.d_max``.
-    t_delta : float
-        Refer ``BatchRenormParameter.t_delta``.
-
-    """
-    def __init__(self, LayerParameter):
-        super(BatchRenormLayer, self).__init__(LayerParameter)
-        param = LayerParameter.batch_renorm_param
-        self._param = {
-            'use_stats': int(param.use_global_stats)
-                if param.HasField('use_global_stats') else -1,
-            'momentum': param.moving_average_fraction,
-            'eps': param.eps,
-            'r_max': float(param.r_max),
-            'd_max': float(param.d_max),
-            't_delta': float(param.t_delta),
-            'axis': 1,
-            'mode': 'CAFFE',
-        }
-        scope = LayerParameter.name
-        mean = Tensor(scope + '/param:0').Constant(value=0.0)
-        var  = Tensor(scope + '/param:1').Constant(value=0.0)
-        factor = Tensor(scope + '/param:2').Constant(value=0.0)
-        self._blobs.append({'data': mean, 'diff': None})
-        self._blobs.append({'data': var, 'diff': None})
-        self._blobs.append({'data': factor, 'diff': None})
-
-    def Setup(self, bottom):
-        super(BatchRenormLayer, self).Setup(bottom)
-        return ops.BatchRenorm(bottom + [blob['data'] for blob in self._blobs], **self._param)
+    def LayerSetup(self, bottom):
+        inputs = [bottom] + [blob['data'] for blob in self._blobs]
+        return dragon.ops.BatchNorm(inputs, **self.arguments)
 
 
 class GroupNormLayer(Layer):
@@ -450,32 +399,36 @@ class GroupNormLayer(Layer):
     def __init__(self, LayerParameter):
         super(GroupNormLayer, self).__init__(LayerParameter)
         param = LayerParameter.group_norm_param
-        self._param = {
+        self.arguments = {
+            'axis': 1,
             'group': int(param.group),
             'eps': param.eps,
-            'axis': 1,
         }
+        self.AddBlob(value=1, enforce_no_grad=True) # gamma
+        self.AddBlob(value=0, enforce_no_grad=True) # beta
 
-    def Setup(self, bottom):
-        super(GroupNormLayer, self).Setup(bottom)
-        return ops.GroupNorm(bottom[0], **self._param)
+    def LayerSetup(self, bottom):
+        inputs = [bottom] + [blob['data'] for blob in self._blobs]
+        return dragon.ops.GroupNorm(inputs, **self.arguments)
 
 
 class InstanceNormLayer(Layer):
-    """
-    The implementation of ``InstanceNormLayer``.
+    """The implementation of ``InstanceNormLayer``.
 
     Introduced by `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_
+
+    Parameters
+    ----------
+    eps : float
+        Refer ``InstanceNormParameter.eps``.
 
     """
     def __init__(self, LayerParameter):
         super(InstanceNormLayer, self).__init__(LayerParameter)
-        param = LayerParameter.instance_norm_param
-        self._param = {'eps': param.eps, 'axis': 1}
+        self.arguments = {'eps': LayerParameter.instance_norm_param.eps, 'axis': 1}
 
-    def Setup(self, bottom):
-        super(InstanceNormLayer, self).Setup(bottom)
-        return ops.InstanceNorm(bottom[0], **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.InstanceNorm(bottom, **self.arguments)
 
 
 class ScaleLayer(Layer):
@@ -498,27 +451,18 @@ class ScaleLayer(Layer):
     def __init__(self, LayerParameter):
         super(ScaleLayer, self).__init__(LayerParameter)
         param = LayerParameter.scale_param
-        self._param = {
+        self.arguments = {
             'axis': param.axis,
             'num_axes': param.num_axes,
         }
-        scope = LayerParameter.name
-        scale = Tensor(scope + '/param:0')
-        scale_diff = Tensor(scope + '/param:0_grad')
-        if param.HasField('filler'):
-            self.Fill(scale, param, 'filler')
-        else: scale.Constant(value=1.0)
-        self._blobs.append({'data': scale, 'diff': scale_diff})
+        # Add weights and biases
+        self.AddBlob(filler=self.GetFiller(param, 'filler'), value=1)
         if param.bias_term:
-            bias = Tensor(scope + '/param:1')
-            bias_diff = Tensor(scope + '/param:1_grad')
-            # auto fill 0 if not specficed bias_filler
-            self.Fill(bias, param, 'bias_filler')
-            self._blobs.append({'data': bias, 'diff': bias_diff})
+            self.AddBlob(filler=self.GetFiller(param, 'bias_filler'))
 
-    def Setup(self, bottom):
-        super(ScaleLayer, self).Setup(bottom)
-        return ops.Affine(bottom + [blob['data'] for blob in self._blobs], **self._param)
+    def LayerSetup(self, bottom):
+        inputs = [bottom]+ [blob['data'] for blob in self._blobs]
+        return dragon.ops.Affine(inputs, **self.arguments)
 
 
 class BNLayer(Layer):
@@ -542,35 +486,21 @@ class BNLayer(Layer):
         super(BNLayer, self).__init__(LayerParameter)
         bn_param = LayerParameter.batch_norm_param
         scale_param = LayerParameter.scale_param
-        self._param = {
-            'use_stats': int(bn_param.use_global_stats)
-                if bn_param.HasField('use_global_stats') else -1,
+        self.arguments = {
+            'axis': 1,
             'momentum': bn_param.moving_average_fraction,
             'eps': bn_param.eps,
-            'axis': 1,
+            'use_stats': int(bn_param.use_global_stats)
+                if bn_param.HasField('use_global_stats') else -1,
         }
-        scope = LayerParameter.name
-        mean = Tensor(scope + '/param:0').Constant(value=0.0)
-        var = Tensor(scope + '/param:1').Constant(value=0.0)
-        scale = Tensor(scope + '/param:2')
-        scale_diff = Tensor(scope + '/param:2_grad')
-        bias = Tensor(scope + '/param:3')
-        bias_diff = Tensor(scope + '/param:3_grad')
+        self.AddBlob(value=0, enforce_no_grad=True) # mean
+        self.AddBlob(value=0, enforce_no_grad=True) # var
+        self.AddBlob(filler=self.GetFiller(scale_param, 'filler'), value=1) # gamma
+        self.AddBlob(filler=self.GetFiller(scale_param, 'bias_filler')) # beta
 
-        if scale_param.HasField('filler'):
-            self.Fill(scale, scale_param, 'filler')
-        else: scale.Constant(value=1.0)
-        self.Fill(bias, scale_param, 'bias_filler')
-        self.norm_blobs = [{'data': mean, 'diff': None},
-                           {'data': var, 'diff': None}]
-        self.scale_blobs = [{'data': scale, 'diff': scale_diff},
-                            {'data': bias, 'diff': bias_diff}]
-        self._blobs.extend(self.norm_blobs)
-        self._blobs.extend(self.scale_blobs)
-
-    def Setup(self, bottom):
-        super(BNLayer, self).Setup(bottom)
-        return ops.FusedBatchNorm(bottom + [blob['data'] for blob in self._blobs], **self._param)
+    def LayerSetup(self, bottom):
+        inputs = [bottom] + [blob['data'] for blob in self._blobs]
+        return dragon.ops.BatchNorm(inputs, **self.arguments)
 
 
 class GNLayer(Layer):
@@ -592,28 +522,17 @@ class GNLayer(Layer):
         super(GNLayer, self).__init__(LayerParameter)
         gn_param = LayerParameter.group_norm_param
         scale_param = LayerParameter.scale_param
-        self._param = {
+        self.arguments = {
+            'axis': 1,
             'group': int(gn_param.group),
             'eps': gn_param.eps,
-            'axis': 1,
         }
-        scope = LayerParameter.name
-        scale = Tensor(scope + '/param:0')
-        scale_diff = Tensor(scope + '/param:0_grad')
-        bias = Tensor(scope + '/param:1')
-        bias_diff = Tensor(scope + '/param:1_grad')
+        self.AddBlob(filler=self.GetFiller(scale_param, 'filler'), value=1) # scale
+        self.AddBlob(filler=self.GetFiller(scale_param, 'bias_filler')) # bias
 
-        if scale_param.HasField('filler'):
-            self.Fill(scale, scale_param, 'filler')
-        else: scale.Constant(value=1.0)
-        self.Fill(bias, scale_param, 'bias_filler')
-        self.scale_blobs = [{'data': scale, 'diff': scale_diff},
-                            {'data': bias, 'diff': bias_diff}]
-        self._blobs.extend(self.scale_blobs)
-
-    def Setup(self, bottom):
-        super(GNLayer, self).Setup(bottom)
-        return ops.FusedGroupNorm(bottom + [blob['data'] for blob in self._blobs], **self._param)
+    def LayerSetup(self, bottom):
+        inputs = [bottom] + [blob['data'] for blob in self._blobs]
+        return dragon.ops.GroupNorm(inputs, **self.arguments)
 
 
 class NormalizeLayer(Layer):
@@ -634,29 +553,22 @@ class NormalizeLayer(Layer):
     def __init__(self, LayerParameter):
         super(NormalizeLayer, self).__init__(LayerParameter)
         param = LayerParameter.normalize_param
-        self._l2norm_param = {
+        self.l2norm_arguments = {
             'axis': 1,
             'num_axes': -1 if param.across_spatial else 1,
             'eps': param.eps,
         }
-        self._scale_param = {
+        self.affine_arguments = {
             'axis': 1,
             'num_axes': 0 if param.channel_shared else 1,
         }
-        scope = LayerParameter.name
-        scale = Tensor(scope + '/param:0')
-        if param.HasField('scale_filler'):
-            self.Fill(scale, param, 'scale_filler')
-        else: scale.Constant(value=1.0)
-        self.scale_blobs = [{'data': scale, 'diff': Tensor(scale.name + '_grad')}]
-        self._blobs.extend(self.scale_blobs)
+        self.AddBlob(filler=self.GetFiller(param, 'scale_filler'), value=1) # scale
 
-    def Setup(self, bottom):
-        super(NormalizeLayer, self).Setup(bottom)
-        norm_out = [ops.L2Norm(bottom[0], **self._l2norm_param)]
-        scale_out = ops.Affine(norm_out + [blob['data'] for blob in self.scale_blobs],
-                               **self._scale_param)
-        return scale_out
+    def LayerSetup(self, bottom):
+        norm_out = [dragon.ops.L2Norm(bottom, **self.l2norm_arguments)]
+        return dragon.ops.Affine(
+            norm_out + [blob['data'] for blob in self._blobs],
+                **self.affine_arguments)
 
 
 class TileLayer(Layer):
@@ -670,16 +582,13 @@ class TileLayer(Layer):
     """
     def __init__(self, LayerParameter):
         super(TileLayer, self).__init__(LayerParameter)
-        param = LayerParameter.tile_param
-        multiples = param.multiples
-        self._param = {
-            'multiples': [int(multiple) for multiple in multiples.dim],
+        self.arguments = {
+            'multiples': [int(multiple) for multiple
+                in LayerParameter.tile_param.multiples.dim],
         }
 
-    def Setup(self, bottom):
-        super(TileLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return ops.Tile(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Tile(bottom, **self.arguments)
 
 
 class ReductionLayer(Layer):
@@ -699,15 +608,13 @@ class ReductionLayer(Layer):
         if param.axis < 0:
             if param.axis != -1:
                 raise ValueError('The negative axis can only be -1(reduce all).')
-        self._param = {
+        self.arguments = {
             'operation': {1: 'SUM', 4: 'MEAN'}[param.operation],
             'axis': param.axis,
         }
 
-    def Setup(self, bottom):
-        super(ReductionLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return ops.Reduce(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Reduce(bottom, **self.arguments)
 
 
 class ExpandDimsLayer(Layer):
@@ -721,27 +628,20 @@ class ExpandDimsLayer(Layer):
     """
     def __init__(self, LayerParameter):
         super(ExpandDimsLayer, self).__init__(LayerParameter)
-        param = LayerParameter.expand_dims_param
-        self._param = {'axis': param.axis}
+        self.arguments = {'axis': LayerParameter.expand_dims_param.axis}
 
-    def Setup(self, bottom):
-        super(ExpandDimsLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return ops.ExpandDims(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.ExpandDims(bottom, **self.arguments)
 
 
 class StopGradientLayer(Layer):
-    """
-    The implementation of ``StopGradientLayer``.
+    """The implementation of ``StopGradientLayer``."""
 
-    """
     def __init__(self, LayerParameter):
         super(StopGradientLayer, self).__init__(LayerParameter)
 
-    def Setup(self, bottom):
-        super(StopGradientLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return ops.StopGradient(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.StopGradient(bottom, **self.arguments)
 
 
 class ProposalLayer(Layer):
@@ -776,7 +676,7 @@ class ProposalLayer(Layer):
     def __init__(self, LayerParameter):
         super(ProposalLayer, self).__init__(LayerParameter)
         param = LayerParameter.proposal_param
-        self._param = {
+        self.arguments = {
             'strides': param.stride,
             'ratios': param.ratio,
             'scales': param.scale,
@@ -790,6 +690,5 @@ class ProposalLayer(Layer):
             'canonical_level': param.canonical_level,
         }
 
-    def Setup(self, bottom):
-        super(ProposalLayer, self).Setup(bottom)
-        return ops.Proposal(bottom, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Proposal(bottom, **self.arguments)

@@ -14,12 +14,9 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-from dragon.import_c_apis import *
 
-_is_init = False
-_snapshot_ranks = []
-_parallel_groups = []
-_parallel_mode = 'MPI'
+import dragon.import_c_api as C
+
 
 __all__ = [
     'Init',
@@ -36,9 +33,15 @@ __all__ = [
     'Finalize',
 ]
 
+
+_GLOBAL_MPI_IS_INIT = False
+_GLOBAL_MPI_SNAPSHOT_RANKS = []
+_GLOBAL_MPI_PARALLEL_GROUPS = []
+_GLOBAL_MPI_PARALLEL_MODE = 'MPI'
+
+
 def _check_init():
-    global _is_init
-    if _is_init is False: Init()
+    if _GLOBAL_MPI_IS_INIT is False: Init()
 
 
 def Init():
@@ -57,11 +60,11 @@ def Init():
     The wrapper of ``MPIInitCC``
 
     """
-    MPIInitCC()
-    global _is_init
-    global _snapshot_ranks
-    _is_init = True
-    _snapshot_ranks = [i for i in range(Size())]
+    C.MPIInitCC()
+    global _GLOBAL_MPI_IS_INIT
+    global _GLOBAL_MPI_SNAPSHOT_RANKS
+    _GLOBAL_MPI_IS_INIT = True
+    _GLOBAL_MPI_SNAPSHOT_RANKS = [i for i in range(Size())]
 
 
 def Is_Init():
@@ -72,7 +75,7 @@ def Is_Init():
     boolean
 
     """
-    return _is_init
+    return _GLOBAL_MPI_IS_INIT
 
 
 def Rank():
@@ -89,7 +92,7 @@ def Rank():
 
     """
     _check_init()
-    return MPIRankCC()
+    return C.MPIRankCC()
 
 
 def Size():
@@ -106,7 +109,7 @@ def Size():
 
     """
     _check_init()
-    return MPISizeCC()
+    return C.MPISizeCC()
 
 
 def CreateGroup(root=0, incl=[], excl=[]):
@@ -132,7 +135,7 @@ def CreateGroup(root=0, incl=[], excl=[]):
 
     """
     _check_init()
-    comm, group = MPICreateGroupCC(root, incl, excl)
+    comm, group = C.MPICreateGroupCC(root, incl, excl)
     return np.int64(comm), np.int64(group)
 
 
@@ -152,8 +155,8 @@ def Snapshot(incl):
     """
     _check_init()
     if not isinstance(incl, list): incl = [incl]
-    global _snapshot_ranks
-    _snapshot_ranks = incl
+    global _GLOBAL_MPI_SNAPSHOT_RANKS
+    _GLOBAL_MPI_SNAPSHOT_RANKS = incl
 
 
 def Parallel(conf):
@@ -170,9 +173,9 @@ def Parallel(conf):
 
     Examples
     --------
-    >>> mpi.parallel([0, 1]) # rank(0, 1) will be into a parallel group.
-
-    >>> mpi.parallel([0, 1], [2, 3]) # rank(0, 1), rank(2, 3) will be into two parallel groups.
+    >>> import dragon.core.mpi as mpi
+    >>> mpi.Parallel([0, 1]) # rank(0, 1) will be into a parallel group.
+    >>> mpi.Parallel([0, 1], [2, 3]) # rank(0, 1), rank(2, 3) will be into two parallel groups.
 
     """
     _check_init()
@@ -180,8 +183,8 @@ def Parallel(conf):
     for ele in conf:
         if not isinstance(ele, list):
             raise TypeError('parallel groups must be a list')
-    global _parallel_groups
-    _parallel_groups = conf
+    global _GLOBAL_MPI_PARALLEL_GROUPS
+    _GLOBAL_MPI_PARALLEL_GROUPS = conf
 
 
 def AllowSnapshot():
@@ -191,8 +194,7 @@ def AllowSnapshot():
     -------
     boolean
     """
-    global _snapshot_ranks
-    return Rank() in _snapshot_ranks
+    return Rank() in _GLOBAL_MPI_SNAPSHOT_RANKS
 
 
 def AllowParallel():
@@ -203,9 +205,8 @@ def AllowParallel():
     boolean
 
     """
-    global _parallel_groups
     world_rank = Rank()
-    for idx, g in enumerate(_parallel_groups):
+    for idx, g in enumerate(_GLOBAL_MPI_PARALLEL_GROUPS):
         if world_rank in g: return idx, g
     return -1, []
 
@@ -228,10 +229,10 @@ def SetParallelMode(mode):
 
     """
     assert mode == 'MPI' or \
-           mode == 'NCCL' \
-           or mode == 'MIXED'
-    global _parallel_mode
-    _parallel_mode = mode
+           mode == 'NCCL' or \
+           mode == 'MIXED'
+    global _GLOBAL_MPI_PARALLEL_MODE
+    _GLOBAL_MPI_PARALLEL_MODE = mode
 
 
 def GetParallelMode():
@@ -243,8 +244,7 @@ def GetParallelMode():
         The mode, ``MPI``, ``NCCL`` or ``MIXED``.
 
     """
-    global _parallel_mode
-    return _parallel_mode
+    return _GLOBAL_MPI_PARALLEL_MODE
 
 
 def Finalize():
@@ -260,4 +260,4 @@ def Finalize():
 
     """
     _check_init()
-    MPIFinalizeCC()
+    C.MPIFinalizeCC()

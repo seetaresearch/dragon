@@ -22,90 +22,40 @@ class GroupNormOp final : public Operator<Context> {
  public:
     GroupNormOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          group(OperatorBase::Arg<int>("group", 32)),
-          axis(OperatorBase::Arg<int>("axis", -1)),
-          eps(OperatorBase::Arg<float>("eps", 1e-5f)) {
-        if (axis != -1) 
-            CHECK_EQ(axis, 1) 
-                << "\nThe axis can only be set to 1.";
-    }
+          axis(OperatorBase::Arg<int64_t>("axis", -1)),
+          group(OperatorBase::Arg<int64_t>("group", 0)),
+          eps(OperatorBase::Arg<float>("eps", 1e-5f)) {}
     USE_OPERATOR_FUNCTIONS;
 
-    void Setup();
+    void Reshape();
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename Tx, typename Tp> void RunWithType();
 
  protected:
     float eps;
-    TIndex group, axis, N, C, S, NG, NC, NS, CGS;
-    Tensor nc, mean, *var;
     string data_format;
+    int64_t group, axis, N, C, G, D, S;
+    Tensor *mean, *var, scale, bias;
 };
 
 template <class Context>
 class GroupNormGradientOp final : public Operator<Context> {
  public:
-    GroupNormGradientOp(const OperatorDef& def, Workspace *ws)
+    GroupNormGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          group(OperatorBase::Arg<int>("group", 32)),
-          axis(OperatorBase::Arg<int>("axis", -1)) {
-        if (axis != -1)
-            CHECK_EQ(axis, 1)
-                << "\nThe axis can only be set to 1.";
-    }
+          axis(OperatorBase::Arg<int64_t>("axis", -1)),
+          group(OperatorBase::Arg<int64_t>("group", 0)) {}
     USE_OPERATOR_FUNCTIONS;
 
-    void Setup();
+    void Reshape();
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename Tx, typename Tp> void RunWithType();
 
  protected:
-    TIndex group, axis, N, C, S, NG, NC, NS, CGS;
-    Tensor nc, *var;
-    string data_format;
-};
-
-template <class Context>
-class FusedGroupNormOp final : public Operator<Context> {
- public:
-    FusedGroupNormOp(const OperatorDef& def, Workspace* ws)
-        : Operator<Context>(def, ws),
-          group(OperatorBase::Arg<int>("group", 32)),
-          axis(OperatorBase::Arg<int>("axis", -1)),
-          eps(OperatorBase::Arg<float>("eps", 1e-5f)) {}
-    USE_OPERATOR_FUNCTIONS;
-
-    void Setup();
-
-    void RunOnDevice() override;
-    template <typename T> void RunWithType();
-
- protected:
-    TIndex group, axis, N, C, S, NG, NC, NS, CGS;
-    float eps;
-    Tensor nc, *mean, *var, *x_norm;
-    string data_format;
-};
-
-template <class Context>
-class FusedGroupNormGradientOp final : public Operator<Context> {
- public:
-    FusedGroupNormGradientOp(const OperatorDef& def, Workspace* ws)
-        : Operator<Context>(def, ws),
-          group(OperatorBase::Arg<int>("group", 32)),
-          axis(OperatorBase::Arg<int>("axis", -1)) {}
-    USE_OPERATOR_FUNCTIONS;
-
-    void Setup();
-
-    void RunOnDevice() override;
-    template <typename T> void RunWithType();
-
- protected:
-    TIndex group, axis, N, C, S, NG, NC, NS, CGS;
-    Tensor nc, *mean, *var, *x_norm;
+    int64_t group, axis, N, C, G, D, S;
+    Tensor *mean, *var, dscale, dbias;
     string data_format;
 };
 

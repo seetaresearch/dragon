@@ -78,7 +78,7 @@ template<> void Dropout<float16, CUDAContext>(
     _DropoutHalf
         << < CUDA_BLOCKS(count), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (count, thresh, dragon_cast<half, float>(scale),
+        (count, thresh, cast::to<half>(scale),
             reinterpret_cast<const half*>(x),
                 mask32, mask8, reinterpret_cast<half*>(y));
 }
@@ -137,7 +137,7 @@ template <> void ApplyMask<float16, uint8_t, CUDAContext>(
     _ApplyMaskHalf<uint8_t>
         << < CUDA_BLOCKS(count), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (count, dragon_cast<half, float>(scale),
+        (count, cast::to<half>(scale),
             reinterpret_cast<const half*>(x),
                  mask, reinterpret_cast<half*>(y));
 }

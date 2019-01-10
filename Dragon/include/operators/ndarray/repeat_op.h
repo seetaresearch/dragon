@@ -22,8 +22,8 @@ class RepeatOp final : public Operator<Context> {
  public:
     RepeatOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", -1)) {
-        GET_ARGUMENT_WITH_DESC(int, repeats, 1);
+          axis(OperatorBase::Arg<int64_t>("axis", INT_MAX)) {
+        GET_ARGUMENT_WITH_DESC(int64_t, repeats, 1);
     }
     USE_OPERATOR_FUNCTIONS;
 
@@ -31,8 +31,8 @@ class RepeatOp final : public Operator<Context> {
     template<typename T> void RunWithType();
 
  protected:
-    DECLARE_ARGUMENT_WITH_DESC(int, repeats);
-    TIndex axis, outer_dim, dim, inner_dim;
+    int64_t axis, outer_dim, repeat_dim, inner_dim;
+    DECLARE_ARGUMENT_WITH_DESC(int64_t, repeats);
 };
 
 template <class Context>
@@ -40,8 +40,8 @@ class RepeatGradientOp final : public Operator<Context> {
  public:
     RepeatGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", -1)) {
-        GET_ARGUMENT_WITH_DESC(int, repeats, 1);
+          axis(OperatorBase::Arg<int64_t>("axis", INT_MAX)) {
+        GET_ARGUMENT_WITH_DESC(int64_t, repeats, 1);
     }
     USE_OPERATOR_FUNCTIONS;
 
@@ -49,12 +49,12 @@ class RepeatGradientOp final : public Operator<Context> {
     template<typename T> void RunWithType();
 
  protected:
-    DECLARE_ARGUMENT_WITH_DESC(int, repeats);
-    TIndex axis, outer_dim, dim, inner_dim, reps;
+    int64_t axis, outer_dim, repeat_dim, inner_dim;
+    DECLARE_ARGUMENT_WITH_DESC(int64_t, repeats);
 };
 
-DEFINE_ARGUMENT_WITH_DESC(int, RepeatOp, repeats);
-DEFINE_ARGUMENT_WITH_DESC(int, RepeatGradientOp, repeats);
+DEFINE_ARGUMENT_WITH_DESC(int64_t, RepeatOp, repeats);
+DEFINE_ARGUMENT_WITH_DESC(int64_t, RepeatGradientOp, repeats);
 
 }  // namespace dragon
 

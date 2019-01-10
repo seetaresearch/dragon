@@ -17,13 +17,12 @@ void AccuracyOp<Context>::RunWithType() {
         math::Set<float, CPUContext>(num_classes, 0, Y2data, &cctx);
     }
 
-    Map<int, TIndex> num_per_class;
-    TIndex acc = 0, count = 0;
+    Map<int, int64_t> num_per_class;
+    int64_t acc = 0, count = 0;
 
     const Tx* Xdata;
     if (XIsType(Input(0), float16)) {
-        Tensor* X32T = ws()->CreateTensor(
-            "/mnt/" + anchor() + "/accuracy/f32");
+        Tensor* X32T = ws()->CreateTensor(mount_name("accuracy/f32"));
         X32T->ReshapeLike(Input(0));
         auto* X16 = Input(0).template data<float16, CPUContext>();
         auto* X32 = X32T->template mutable_data<float, CPUContext>();
@@ -35,7 +34,7 @@ void AccuracyOp<Context>::RunWithType() {
     auto* labels = Input(1).template data<Ty, CPUContext>();
     auto* ignores = ignore.count() > 0 ?
         ignore.data<int, CPUContext>() : nullptr;
-    const TIndex dim = Input(0).count() / outer_dim;
+    const int64_t dim = Input(0).count() / outer_dim;
     for (int i = 0; i < outer_dim; i++) {
         for (int j = 0; j < inner_dim; j++) {
             const int label = labels[i * inner_dim + j];

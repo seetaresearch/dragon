@@ -9,9 +9,13 @@
 #
 # ------------------------------------------------------------
 
-from dragon.core.tensor import Tensor
+"""The implementation of the ``Layer`` C++ class."""
 
-from .utils import ToFillerArgs
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import dragon
 
 
 class Layer(object):
@@ -34,58 +38,69 @@ class Layer(object):
             The layer.
 
         """
-        self._bottom = []; self._top = []
-
-        for bottom in LayerParameter.bottom:
-            self._bottom.append(bottom)
-
-        for top in LayerParameter.top:
-            self._top.append(top)
-
+        self._proto = LayerParameter
         self._name = LayerParameter.name
-        self._blobs = []
-        self._param = {}
-        self._common_param = {}
+        self._arguments, self.arguments = {'name': self._name}, {}
 
-        self._loss_weight = None if len(LayerParameter.loss_weight) == 0 \
-                                 else LayerParameter.loss_weight
+        # Store the inputs, outputs and trainable parameters
+        self._bottom, self._top, self._blobs = [], [], []
+        for bottom in LayerParameter.bottom: self._bottom.append(bottom)
+        for top in LayerParameter.top: self._top.append(top)
 
+        # Store the loss weight to apply gradients
+        self._loss_weight = LayerParameter.loss_weight \
+            if len(LayerParameter.loss_weight) > 0 else None
+
+        # Optional include rule for MPI Layer
         for include in LayerParameter.include:
             mpi_rank = [int(rank) for rank in include.mpi_rank]
-            if len(mpi_rank) > 0: self._common_param['mpi_ranks'] = mpi_rank
+            if len(mpi_rank) > 0: self._arguments['mpi_ranks'] = mpi_rank
 
+        # Optional mirror stage argument for memory optimization
         if LayerParameter.HasField('mirror_stage'):
-            self._common_param['mirror_stage'] = LayerParameter.mirror_stage
+            self._arguments['mirror_stage'] = LayerParameter.mirror_stage
+
+    def LayerSetup(self, bottom):
+        # Implemented by the specific layer
+        raise NotImplementedError()
 
     def Setup(self, bottom):
-        self._param = dict(self._param, **self._common_param)
+        # Merge the arguments, then setup up the specific layer
+        self.arguments = dict(self.arguments, **self._arguments)
+        return self.LayerSetup(bottom[0] if len(bottom) == 1 else bottom)
 
-    def Fill(self, tensor, layer_param, filler):
-        """Register the fillers.
+    def AddBlob(self, value=None, filler=None, enforce_no_grad=None):
+        # Use a a fixed name in the current workspace
+        # Note that a non-empty tensor scope will make it
+        # impossible to load/save caffe models. You should use
+        # a new workspace instead of the terrible name scope
+        scoped_name = dragon.get_default_name_scope() + self._name
+        param_name = scoped_name + '/param:{}'.format(len(self._blobs))
 
-        Parameters
-        ----------
-        tensor : Tensor
-            The tensor to register.
-        layer_param : caffe_pb2.LayerParameter.XXXParameter
-            The parameter of specific ``XXXLayer``.
-        filler : str
-            The name of filler.
+        # Set the name explicitly
+        variable = dragon.Tensor.Ref(param_name)
+        variable_grad = dragon.Tensor.Ref(param_name + '_grad')
 
-        Returns
-        -------
-        None
+        if filler is not None:
+            variable.Fill(**filler)
+        else:
+            # Register a constant filler by default
+            value = value if value else 0
+            variable.Constant(value=value)
 
-        Examples
-        --------
-        >>> from dragon.core.tensor import Tensor
-        >>> weight = Tensor().Variable()
-        >>> conv_param = LayerParameter.convolution_param
-        >>> Fill(weight, conv_param, 'weight_filler')
-        >>> Fill(weight, conv_param, 'bias_filler')
+        # Determine whether we have disabled the gradients explicitly
+        if enforce_no_grad is not None:
+            variable_grad = None
 
-        """
-        if layer_param.HasField(filler):
-            filler = getattr(layer_param, filler)
-            tensor.Fill(filler.type, **ToFillerArgs(filler))
-        else: tensor.Fill('constant')
+        # Append to the blobs
+        self._blobs.append({'data': variable, 'diff': variable_grad})
+
+    def GetFiller(self, layer_param, filler_name):
+        if layer_param.HasField(filler_name):
+            filler = getattr(layer_param, filler_name)
+            return {
+                'type': filler.type.lower(), 'value': filler.value,
+                'low': filler.min, 'high': filler.max,
+                'mean': filler.mean, 'std': filler.std,
+            }
+        return None

@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 import dragon.core.workspace as ws
-from dragon.io.data_batch import DataBatch
+from dragon.utils.vision import DataBatch
 
 
 class MiniBatchOp(object):

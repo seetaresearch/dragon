@@ -22,17 +22,17 @@ class ProposalOp final : public Operator<Context> {
  public:
     ProposalOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          strides(OperatorBase::Args<int>("strides")),
+          strides(OperatorBase::Args<int64_t>("strides")),
           ratios(OperatorBase::Args<float>("ratios")),
           scales(OperatorBase::Args<float>("scales")),
-          pre_nms_top_n(OperatorBase::Arg<int>("pre_nms_top_n", 6000)),
-          post_nms_top_n(OperatorBase::Arg<int>("post_nms_top_n", 300)),
+          pre_nms_top_n(OperatorBase::Arg<int64_t>("pre_nms_top_n", 6000)),
+          post_nms_top_n(OperatorBase::Arg<int64_t>("post_nms_top_n", 300)),
           nms_thresh(OperatorBase::Arg<float>("nms_thresh", (float)0.7)),
-          min_size(OperatorBase::Arg<int>("min_size", 16)),
-          min_level(OperatorBase::Arg<int>("min_level", 2)),
-          max_level(OperatorBase::Arg<int>("max_level", 5)),
-          canonical_level(OperatorBase::Arg<int>("canonical_level", 4)),
-          canonical_scale(OperatorBase::Arg<int>("canonical_scale", 224)) {}
+          min_size(OperatorBase::Arg<int64_t>("min_size", 16)),
+          min_level(OperatorBase::Arg<int64_t>("min_level", 2)),
+          max_level(OperatorBase::Arg<int64_t>("max_level", 5)),
+          canonical_level(OperatorBase::Arg<int64_t>("canonical_level", 4)),
+          canonical_scale(OperatorBase::Arg<int64_t>("canonical_scale", 224)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
@@ -41,10 +41,10 @@ class ProposalOp final : public Operator<Context> {
         const T* scores, const T* bbox_deltas);
 
  protected:
-    vector<int> strides;
+    vector<int64_t> strides;
     vector<float> ratios, scales;
-    TIndex pre_nms_top_n, post_nms_top_n, min_size, num_images;
-    TIndex min_level, max_level, canonical_level, canonical_scale;
+    int64_t pre_nms_top_n, post_nms_top_n, min_size, num_images;
+    int64_t min_level, max_level, canonical_level, canonical_scale;
     float nms_thresh;
     Tensor anchors_, proposals_, roi_indices_, nms_mask_;
 };

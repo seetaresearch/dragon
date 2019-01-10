@@ -45,7 +45,7 @@ void Conv2dGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
 
     if (HasBias()) {
-        T* dBdata = Output(2)->template mutable_data<T, Context>(ctx());
+        T* dBdata = Output(2)->template mutable_data<T, Context>();
         for (int n = 0; n < Input(2).dim(0); n++)
             Db(dYdata + n * y_offset, dBdata);
     }
@@ -53,7 +53,7 @@ void Conv2dGradientOp<Context>::RunWithType() {
     for (int n = 0; n < Input(2).dim(0); n++) {
         if (Output(1)->name() != "ignore") {
             auto* Xdata = Input(0).template data<T, Context>();
-            auto* dWdata = Output(1)->template mutable_data<T, Context>(ctx());
+            auto* dWdata = Output(1)->template mutable_data<T, Context>();
             Dw(dYdata + n * y_offset, Xdata + n * x_offset, dWdata);
         }
         if (Output(0)->name() != "ignore") {
@@ -80,17 +80,20 @@ DEPLOY_CPU(Conv2dGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Conv2dGradient);
 #endif
-OPERATOR_SCHEMA(Conv2dGradient).NumInputs(3).NumOutputs(3);
+
+OPERATOR_SCHEMA(Conv2dGradient)
+    .NumInputs(3).NumOutputs(3);
 
 class GetConv2dGradient final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetConv2dGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), I(1), GO(0)},
-            vector<string> {GI(0), GI(1), GI(2)});
+            vector<string>({ I(0), I(1), GO(0) }),
+            vector<string>({ GI(0), GI(1), GI(2) }));
     }
 };
+
 REGISTER_GRADIENT(Conv2d, GetConv2dGradient);
 
 }  // namespace dragon

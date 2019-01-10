@@ -15,23 +15,20 @@ void DropoutOp<Context>::RunWithType() {
                 Output(0)->count(), Ydata, Xdata);
         }
         if (!use_scale) {
-            math::Scal<T, Context>(Output(0)->count(),
-                1.f - prob(), Ydata, ctx());
+            math::Scale(Output(0)->count(),
+                1.f - prob(), Ydata, Ydata, ctx());
         }
     } else if (phase() == "TRAIN") {
         Tensor* mask = ws()->CreateTensor(
-            "/mnt/" + anchor() + "/dropout/mask");
-        mask->ReshapeLike(Input(0));
+            mount_name("dropout/mask"))->ReshapeLike(Input(0));
 
         auto WSdata = ws()->template caches<Context>({
             mask->count() * sizeof(uint32_t) });
 
         auto* Mdata = mask->template mutable_data<uint8_t, Context>();
 
-        kernel::Dropout<T, Context>(
-            Output(0)->count(), prob(), scale,
-                Xdata, (uint32_t*)WSdata[0],
-                    Mdata, Ydata, ctx());
+        kernel::Dropout(Output(0)->count(), prob(), scale,
+            Xdata, (uint32_t*)WSdata[0], Mdata, Ydata, ctx());
 
     } else LOG(FATAL) << "Incorrect Op phase: " << phase();
 }
@@ -55,8 +52,7 @@ OPERATOR_SCHEMA(Dropout)
 
 template <class Context> template <typename T>
 void DropoutGradientOp<Context>::RunWithType() {
-    auto* mask = ws()->GetTensor(
-        "/mnt/" + anchor() + "/dropout/mask");
+    auto* mask = ws()->GetTensor(mount_name("dropout/mask"));
 
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
@@ -84,19 +80,11 @@ DEPLOY_CPU(DropoutGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(DropoutGradient);
 #endif
+
 OPERATOR_SCHEMA(DropoutGradient)
     .NumInputs(2).NumOutputs(1)
     .Inplace({ { 1, 0 } });
 
-class GetDropoutGradient final : public GradientMakerBase {
- public:
-    GRADIENT_MAKER_CTOR(GetDropoutGradient);
-    vector<OperatorDef> MakeDefs() override {
-        return SingleDef(def.type() + "Gradient", "",
-            vector<string> {O(0), GO(0)},
-            vector<string> {GI(0)});
-    }
-};
-REGISTER_GRADIENT(Dropout, GetDropoutGradient);
+REGISTER_GRADIENT(Dropout, InplaceGradientMaker);
 
 }    // namepsace dragon

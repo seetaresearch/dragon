@@ -20,28 +20,15 @@
 
 namespace dragon {
 
+#define HFLT_MAX 65504.F
 #define HFLT_MIN 6.10e-5F
 
-template <typename DestType, typename SrcType>
-DestType dragon_cast(SrcType val);
+namespace cast {
 
-template<> inline int dragon_cast<int, float>(float val) {
-    return static_cast<int>(val);
-}
+template <typename DType, typename SType>
+DType to(SType val) { return static_cast<DType>(val); }
 
-template<> inline int64_t dragon_cast<int64_t, float>(float val) {
-    return static_cast<int64_t>(val);
-}
-
-template<> inline float dragon_cast<float, float>(float val) {
-    return val; 
-}
-
-template<> inline float16 dragon_cast<float16, float16>(float16 val) {
-    return val; 
-}
-
-template<> inline float16 dragon_cast<float16, float>(float val) {
+template<> inline float16 to<float16, float>(float val) {
     float16 ret;
     unsigned* xp = reinterpret_cast<unsigned int*>(&val);
     unsigned x = *xp;
@@ -90,7 +77,7 @@ template<> inline float16 dragon_cast<float16, float>(float val) {
     return ret;
 }
 
-template<> inline float dragon_cast<float, float16>(float16 val) {
+template<> inline float to<float, float16>(float16 val) {
     unsigned sign = ((val.x >> 15) & 1);
     unsigned exponent = ((val.x >> 10) & 0x1f);
     unsigned mantissa = ((val.x & 0x3ff) << 13);
@@ -119,25 +106,12 @@ template<> inline float dragon_cast<float, float16>(float16 val) {
     return ret;
 }
 
-template<> inline float32 dragon_cast<float32, float16>(float16 val) {
-    float32 ret;
-    unsigned short* dst = reinterpret_cast<unsigned short*>(&ret);
-    unsigned short* src = reinterpret_cast<unsigned short*>(&val);
-    for (int i = 0; i < 2; ++i) dst[i] = src[0];
-    return ret;
-}
-
-template<> inline float32 dragon_cast<float32, float>(float val) {
-    float16 t = dragon_cast<float16, float>(val);
-    return dragon_cast<float32, float16>(t);
-}
-
 #ifdef WITH_CUDA
 
-template<> inline half dragon_cast<half, float>(float val) {
+template<> inline half to<half, float>(float val) {
 #if CUDA_VERSION_MIN(9, 0, 0)
     __half_raw fp16_raw;
-    fp16_raw.x = dragon_cast<float16, float>(val).x;
+    fp16_raw.x = cast::to<float16>(val).x;
     return half(fp16_raw);
 #else
     half fp16;
@@ -146,18 +120,18 @@ template<> inline half dragon_cast<half, float>(float val) {
 #endif
 }
 
-template<> inline half2 dragon_cast<half2, float>(float val) {
+template<> inline half2 to<half2, float>(float val) {
 #if CUDA_VERSION_MIN(9, 0, 0)
-    half fp16 = dragon_cast<half, float>(val);
+    half fp16 = cast::to<half>(val);
     return half2(fp16, fp16);
 #else
     half2 fp32;
-    fp32.x = dragon_cast<float32, float>(val).x;
+    fp32.x = cast::to<float32>(val).x;
     return fp32;
 #endif
 }
 
-template<> inline half2 dragon_cast<half2, float16>(float16 val) {
+template<> inline half2 to<half2, float16>(float16 val) {
 #if CUDA_VERSION_MIN(9, 0, 0)
         __half_raw fp16_raw;
         fp16_raw.x = val.x;
@@ -167,10 +141,23 @@ template<> inline half2 dragon_cast<half2, float16>(float16 val) {
         fp32.x = dragon_cast<float32, float16>(val).x;
         return fp32;
 #endif
+}
 
+template<> inline half to<half, float16>(float16 val) {
+#if CUDA_VERSION_MIN(9, 0, 0)
+    __half_raw fp16_raw;
+    fp16_raw.x = val.x;
+    return fp16_raw;
+#else
+    half fp16;
+    fp16.x = val.x;
+    return fp16;
+#endif
 }
 
 #endif  // WITH_CUDA
+
+}  // namespace cast
 
 }  // namespace dragon
 

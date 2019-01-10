@@ -1,3 +1,5 @@
+#ifdef WITH_CUDNN
+
 #include "core/workspace.h"
 #include "utils/filler.h"
 #include "utils/op_kernel.h"
@@ -12,10 +14,10 @@ void CuDNNDepthwiseConv2dOp<Context>::RunWithType() {
         TENSOR_FILL(Input(2), bias_shape);
         if (data_format == "NCHW") {
             cudnnSetTensor4dDesc<T>(&bias_desc, data_format,
-                vector<TIndex>({ 1, num_output, 1, 1 }));
+                vector<int64_t>({ 1, num_output, 1, 1 }));
         } else if (data_format == "NHWC") {
             cudnnSetTensor4dDesc<T>(&bias_desc, data_format,
-                vector<TIndex>({ 1, 1, 1, num_output }));
+                vector<int64_t>({ 1, 1, 1, num_output }));
         }
     }
 
@@ -26,9 +28,9 @@ void CuDNNDepthwiseConv2dOp<Context>::RunWithType() {
     auto* Wdata = Input(1).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
-    kernel::DepthwiseConv2d<T, Context>(Input(0).dim(0), channels,
+    kernel::DepthwiseConv2d(Input(0).dim(0), channels,
         input_shape[0], input_shape[1], output_shape[0], output_shape[1],
-            kernel_size[0], kernel_size[1], stride[0], pad[0], pad[1],
+            kernel_shape[0], kernel_shape[1], stride[0], pad_l[0], pad_l[1],
                 data_format, Xdata, Wdata, Ydata, ctx());
 
     if (HasBias()) {
@@ -60,17 +62,17 @@ void CuDNNDepthwiseConv2dGradientOp<Context>::RunWithType() {
             &input_desc, data_format, Input(-1).dims());
         if (data_format == "NCHW") {
             cudnnSetTensor4dDesc<T>(&bias_desc, data_format,
-                vector<TIndex>({ 1, num_output, 1, 1 }));
+                vector<int64_t>({ 1, num_output, 1, 1 }));
         } else if (data_format == "NHWC") {
             cudnnSetTensor4dDesc<T>(&bias_desc, data_format,
-                vector<TIndex>({ 1, 1, 1, num_output }));
+                vector<int64_t>({ 1, 1, 1, num_output }));
         }
     }
 
     auto* dYdata = Input(-1).template data<T, Context>();
 
     if (HasBias()) {
-        T* dBdata = Output(2)->template mutable_data<T, Context>(ctx());
+        T* dBdata = Output(2)->template mutable_data<T, Context>();
         CUDNN_CHECK(cudnnConvolutionBackwardBias(ctx()->cudnn_handle(),
             CUDNNType<T>::one, input_desc, dYdata,
                 CUDNNType<T>::one, bias_desc, dBdata));
@@ -79,18 +81,18 @@ void CuDNNDepthwiseConv2dGradientOp<Context>::RunWithType() {
     for (int n = 0; n < Input(2).dim(0); n++) {
         if (Output(1)->name() != "ignore") {
             auto* Xdata = Input(0).template data<T, Context>();
-            auto* dWdata = Output(1)->template mutable_data<T, Context>(ctx());
-            kernel::DepthwiseConv2dWGrad<T, Context>(Input(0).dim(0), channels,
+            auto* dWdata = Output(1)->template mutable_data<T, Context>();
+            kernel::DepthwiseConv2dWGrad(Input(0).dim(0), channels,
                 input_shape[0], input_shape[1], output_shape[0], output_shape[1],
-                    kernel_size[0], kernel_size[1], stride[0], pad[0], pad[1],
+                    kernel_shape[0], kernel_shape[1], stride[0], pad_l[0], pad_l[1],
                         data_format, dYdata, Xdata, dWdata, ctx());
         }
         if (Output(0)->name() != "ignore") {
             auto* Wdata = Input(1).template data<T, Context>();
             auto* dXdata = Output(0)->template mutable_data<T, Context>();
-            kernel::DepthwiseConv2dGrad<T, Context>(Input(0).dim(0), channels,
+            kernel::DepthwiseConv2dGrad(Input(0).dim(0), channels,
                 input_shape[0], input_shape[1], output_shape[0], output_shape[1],
-                    kernel_size[0], kernel_size[1], stride[0], pad[0], pad[1],
+                    kernel_shape[0], kernel_shape[1], stride[0], pad_l[0], pad_l[1],
                         data_format, dYdata, Wdata, dXdata, ctx());
         }
     }
@@ -109,3 +111,5 @@ void CuDNNDepthwiseConv2dGradientOp<Context>::RunOnDevice() {
 DEPLOY_CUDNN(DepthwiseConv2dGradient);
 
 }  // namespace dragon
+
+#endif  // WITH_CUDNN

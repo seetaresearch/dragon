@@ -58,6 +58,6 @@ DEPLOY_CUDNN(EluGradient);
 
 }  // namespace dragon
 
-#endif
+#endif  // CUDNN_VERSION_MIN(6, 0, 0)
 
 #endif  // WITH_CUDNN

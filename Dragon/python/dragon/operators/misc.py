@@ -16,10 +16,13 @@ from __future__ import print_function
 from . import *
 
 
+@OpSchema.Inputs(1)
 def AsType(inputs, dtype='float32', inplace=False, **kwargs):
     """Cast the data type of inputs to a specific one.
 
     If ``inplace`` is ``True``, cast ``self`` instead of returning a new one.
+
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
@@ -27,7 +30,7 @@ def AsType(inputs, dtype='float32', inplace=False, **kwargs):
         The input tensor.
     dtype : str
         The specific data type.
-    inplace : boolean
+    inplace : bool
         Whether to modify the inputs.
 
     Returns
@@ -44,27 +47,23 @@ def AsType(inputs, dtype='float32', inplace=False, **kwargs):
     >>> print(x.name, xx.name)
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
 
     if inplace:
         arguments['inputs'] = []
         arguments['existing_outputs'] = [inputs]
 
-    output = Tensor.CreateOperator(nout=1, op_type='AsType', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator('AsType', **arguments)
 
 
-def Run(inputs, module, op, param_str='', nout=1, **kwargs):
+def Run(inputs, module, op, param_str='', num_outputs=1, **kwargs):
     """Run a custom operator. (Without GradientFlow)
+
+    **Type Constraints**: *None*
 
     Parameters
     ----------
-    inputs : list of Tensor
+    inputs : sequence of Tensor
         The inputs.
     module : str
         The module.
@@ -72,12 +71,12 @@ def Run(inputs, module, op, param_str='', nout=1, **kwargs):
         The `class` under the module.
     param_str : str
         The str describing parameters.
-    nout : int
-        The number of output.
+    num_outputs : int
+        The number of num_outputs.
 
     Returns
     -------
-    Tensor or list of Tensor
+    sequence of Tensor
         The outputs.
 
     Notes
@@ -91,16 +90,17 @@ def Run(inputs, module, op, param_str='', nout=1, **kwargs):
     `DataProcessOp`_ - How to custom a RunOp in Dragon.
 
     """
-    arguments = ParseArguments(locals())
-    return Tensor.CreateOperator(op_type='Run', **arguments)
+    return Tensor.CreateOperator('Run', **ParseArgs(locals()))
 
 
-def Template(inputs, module, op, param_str='', nout=1, **kwargs):
+def Template(inputs, module, op, param_str='', num_outputs=1, **kwargs):
     """Run a custom operator. (With GradientFlow)
+
+    **Type Constraints**: *None*
 
     Parameters
     ----------
-    inputs : list of Tensor
+    inputs : sequence of Tensor
         The inputs.
     module : str
         The module.
@@ -108,12 +108,12 @@ def Template(inputs, module, op, param_str='', nout=1, **kwargs):
         The `class` under the module.
     param_str : str
         The str describing parameters.
-    nout : int
-        The number of output.
+    num_outputs : int
+        The number of num_outputs.
 
     Returns
     -------
-    Tensor or list of Tensor
+    sequence of Tensor
         The outputs.
 
     References
@@ -121,22 +121,28 @@ def Template(inputs, module, op, param_str='', nout=1, **kwargs):
     `VecMultOp`_ - How to custom a TemplateOp in Dragon.
 
     """
-    arguments = ParseArguments(locals())
-    return Tensor.CreateOperator(op_type='Template', **arguments)
+    return Tensor.CreateOperator('Template', **ParseArgs(locals()))
 
 
-def Accuracy(inputs, top_k=1, axis=1, ignore_labels=[], **kwargs):
+@OpSchema.Inputs(2)
+def Accuracy(inputs, top_k=1, axis=1, ignore_labels=(), **kwargs):
     """Calculate the Top-K accuracy.
+
+    **Type Constraints**:
+
+    * logits (*float16*, *float32*)
+
+    * labels (*float32*, *int64*)
 
     Parameters
     ----------
-    inputs : list of Tensor
-        The inputs, represent [input, labels].
+    inputs : sequence of Tensor
+        The inputs, represent [logits, labels].
     top_k : int
         The top-k accuracy to calculate.
     axis : int
         The axis of classes.
-    ignore_labels : list of int
+    ignore_labels : sequence of int
         The labels to ignore.
 
     Returns
@@ -145,18 +151,16 @@ def Accuracy(inputs, top_k=1, axis=1, ignore_labels=[], **kwargs):
         The top-k accuracy.
 
     """
-    CheckInputs(inputs, 2)
-    arguments = ParseArguments(locals())
-
-    output =  Tensor.CreateOperator(nout=1, op_type='Accuracy', **arguments)
-    output.shape = [1]
-    return output
+    return Tensor.CreateOperator('Accuracy', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(1)
 def StopGradient(inputs, **kwargs):
     """Return the identity of input with truncated gradient flow.
 
     The expression itself is unaffected, but gradient is stopped.
+
+    **Type Constraints**: *None*
 
     Parameters
     ----------
@@ -166,27 +170,22 @@ def StopGradient(inputs, **kwargs):
     Returns
     -------
     Tensor
-        The identity of input.
+        A identity of input.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    output =  Tensor.CreateOperator(nout=1, op_type='StopGradient', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator('StopGradient', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(1)
 def MovingAverage(inputs, decay, **kwargs):
     """Calculate the moving average.
 
+    **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
+
     Parameters
     ----------
-    inputs : list of Tensor
-        The inputs, represent [variable, value].
+    inputs : Tensor
+        The values to calculate moving average.
     decay : float
         The decay factor.
 
@@ -198,11 +197,4 @@ def MovingAverage(inputs, decay, **kwargs):
         |moving_average_function|
 
     """
-    CheckInputs(inputs, 2)
-    arguments = ParseArguments(locals())
-    variable = arguments['inputs'][0]
-    del arguments['inputs'][0]
-
-    output = Tensor.CreateOperator(op_type='MovingAverage',
-        existing_outputs=variable, **arguments)
-    return output
+    return Tensor.CreateOperator('MovingAverage', **ParseArgs(locals()))

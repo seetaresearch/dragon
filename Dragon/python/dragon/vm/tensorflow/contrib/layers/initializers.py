@@ -13,10 +13,15 @@
 #
 # ------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import math
 
 from dragon.vm.tensorflow.framework import dtypes
 from dragon.vm.tensorflow.ops import random_ops
+
 
 __all__ = ['xavier_initializer',
            'xavier_initializer_conv2d',

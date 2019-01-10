@@ -22,7 +22,7 @@ class ImageDataOp final : public Operator<Context> {
  public:
     ImageDataOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          dtype(OperatorBase::Arg<string>("dtype", "FLOAT32")),
+          dtype(OperatorBase::Arg<string>("dtype", "float32")),
           mean_values(OperatorBase::Args<float>("mean_values")),
           std_values(OperatorBase::Args<float>("std_values")),
           data_format(OperatorBase::Arg<string>("data_format", "NCHW")) {
@@ -49,7 +49,7 @@ class ImageDataOp final : public Operator<Context> {
  protected:
     string dtype, data_format;
     vector<float> mean_values, std_values;
-    TIndex n, c, h, w;
+    int64_t n, c, h, w;
     Tensor mean, std;
 };
 

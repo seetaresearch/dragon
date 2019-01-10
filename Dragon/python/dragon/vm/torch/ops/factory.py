@@ -14,19 +14,20 @@ from __future__ import division
 from __future__ import print_function
 
 
-__BUILTIN_MODULES = {}
+_GLOBAL_TORCH_BUILTIN_MODULES = {}
 
 
 def has_module(key):
-    return key in __BUILTIN_MODULES
+    return key in _GLOBAL_TORCH_BUILTIN_MODULES
 
 
 def register_module(cls, key, ctx, **kwargs):
-    global __BUILTIN_MODULES
-    __BUILTIN_MODULES[key] = cls(key, ctx, **kwargs)
+    global _GLOBAL_TORCH_BUILTIN_MODULES
+    module = cls(key, ctx, **kwargs)
+    _GLOBAL_TORCH_BUILTIN_MODULES[key] = module
+    return module
 
 
 def get_module(cls, key, ctx, **kwargs):
-    if has_module(key): return __BUILTIN_MODULES[key]
-    register_module(cls, key, ctx, **kwargs)
-    return __BUILTIN_MODULES[key]
+    if has_module(key): return _GLOBAL_TORCH_BUILTIN_MODULES[key]
+    return register_module(cls, key, ctx, **kwargs)

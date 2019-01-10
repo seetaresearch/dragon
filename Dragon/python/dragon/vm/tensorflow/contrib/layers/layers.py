@@ -13,6 +13,10 @@
 #
 # ------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from collections import defaultdict
 
 import dragon.ops as op_lib
@@ -23,7 +27,6 @@ from dragon.vm.tensorflow.ops import init_ops
 from dragon.vm.tensorflow.ops import nn
 from dragon.vm.tensorflow.ops import var_scope as vs
 from dragon.vm.tensorflow.layers import layers
-from dragon.vm.tensorflow.layers import normalization as normalization_layers
 
 __all__ = ['flatten']
 

@@ -19,8 +19,9 @@ namespace dragon {
 
 namespace python {
 
-#ifdef WITH_MPI 
-#include <mpi/mpi.h>
+#ifdef WITH_MPI
+
+#include <mpi.h>
 
 inline PyObject* MPIInitCC(PyObject* self, PyObject* args) {
     int thread_type;
@@ -104,7 +105,7 @@ inline PyObject* MPICreateGroupCC(PyObject* self, PyObject* args) {
             MPI_Comm_size(local_comm, &local_size);
             std::stringstream ss;
             ss << "Rank[" << world_rank << "]: "
-               << "create mpi group of " << local_size << " members";
+               << "Create a mpi group of " << local_size << " members";
             ss << "\nGroup: [";
             for (auto rank : all_ranks) {
                 if (rank != local_root) ss << rank << ", ";

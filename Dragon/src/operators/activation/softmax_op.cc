@@ -5,6 +5,13 @@
 
 namespace dragon {
 
+#define DETERMINE_RUNTIME_ARGUMENTS(X) \
+    axis = OperatorBase::Arg<int64_t>("axis", 0); \
+    axis = axis < 0 ? axis + X.ndim() : axis; \
+    CHECK(axis >= 0 && axis < X.ndim()) \
+       << "\nExcepted the axis in [-" << X.ndim() << ", " << X.ndim() \
+       << "), got " << OperatorBase::Arg<int64_t>("axis", 0) << ".";
+
 template <class Context> template <typename T>
 void SoftmaxOp<Context>::RunWithType() {
     DECLARE_MULTIPLIER(multiplier, Input(0).dim(axis));
@@ -15,7 +22,7 @@ void SoftmaxOp<Context>::RunWithType() {
     ctx()->template Copy<T, Context, Context>(
         Input(0).count(), Ydata, Xdata);
 
-    kernel::Softmax<T, Context>(
+    kernel::Softmax(
         Output(0)->count(), Input(0).dim(axis),
             outer_dim, inner_dim, multiplier,
                 Xdata, WSdata, Ydata, ctx());
@@ -23,7 +30,8 @@ void SoftmaxOp<Context>::RunWithType() {
 
 template <class Context>
 void SoftmaxOp<Context>::RunOnDevice() {
-    if (axis == -1) axis = (int)Input(0).ndim() - 1;
+    DETERMINE_RUNTIME_ARGUMENTS(Input(0));
+
     outer_dim = Input(0).count(0, axis);
     inner_dim = Input(0).count(axis + 1);
     Output(0)->ReshapeLike(Input(0));
@@ -52,7 +60,7 @@ void SoftmaxGradientOp<Context>::RunWithType() {
     ctx()->template Copy<T, Context, Context>(
         Input(0).count(), dXdata, dYdata);
 
-    kernel::SoftmaxGrad<T, Context>(
+    kernel::SoftmaxGrad(
         Output(0)->count(), Input(0).dim(axis),
             outer_dim, inner_dim, multiplier,
                 dYdata, Ydata, WSdata, dXdata, ctx());
@@ -60,7 +68,8 @@ void SoftmaxGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void SoftmaxGradientOp<Context>::RunOnDevice() {
-    if (axis == -1) axis = (int)Input(0).ndim() - 1;
+    DETERMINE_RUNTIME_ARGUMENTS(Input(0));
+
     outer_dim = Input(0).count(0, axis);
     inner_dim = Input(0).count(axis + 1);
     Output(0)->ReshapeLike(Input(0));
@@ -73,19 +82,13 @@ DEPLOY_CPU(SoftmaxGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(SoftmaxGradient);
 #endif
+
 OPERATOR_SCHEMA(SoftmaxGradient)
     .NumInputs(2).NumOutputs(1)
     .Inplace({ { 1, 0 } });
 
-class GetSoftmaxGradient final : public GradientMakerBase {
- public:
-    GRADIENT_MAKER_CTOR(GetSoftmaxGradient);
-    vector<OperatorDef> MakeDefs() override {
-        return SingleDef(def.type() + "Gradient", "",
-            vector<string> {O(0), GO(0)},
-            vector<string> {GI(0)});
-    }
-};
-REGISTER_GRADIENT(Softmax, GetSoftmaxGradient);
+REGISTER_GRADIENT(Softmax, InplaceGradientMaker);
+
+#undef DETERMINE_RUNTIME_ARGUMENTS
 
 }  // namespace dragon

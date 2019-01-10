@@ -22,7 +22,7 @@ class TransposeOp final: public Operator<Context> {
  public:
     TransposeOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws) {
-        GET_ARGUMENTS_WITH_DESC(int, perms);
+        GET_ARGUMENTS_WITH_DESC(int64_t, perm);
     }
     USE_OPERATOR_FUNCTIONS;
 
@@ -30,25 +30,29 @@ class TransposeOp final: public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    DECLARE_ARGUMENTS_WITH_DESC(int, perms);
-    Tensor* order, *old_steps, *new_steps;
+    Tensor x_strides, y_dims;
+    DECLARE_ARGUMENTS_WITH_DESC(int64_t, perm);
 };
-
-DEFINE_ARGUMENTS_WITH_DESC(int, TransposeOp, perms);
 
 template <class Context>
 class TransposeGradientOp final : public Operator<Context> {
  public:
     TransposeGradientOp(const OperatorDef& def, Workspace* ws)
-        : Operator<Context>(def, ws) {}
+        : Operator<Context>(def, ws) {
+        GET_ARGUMENTS_WITH_DESC(int64_t, perm);
+    }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    Tensor* order, *old_steps, *new_steps;
+    Tensor x_strides, y_dims;
+    DECLARE_ARGUMENTS_WITH_DESC(int64_t, perm);
 };
+
+DEFINE_ARGUMENTS_WITH_DESC(int64_t, TransposeOp, perm);
+DEFINE_ARGUMENTS_WITH_DESC(int64_t, TransposeGradientOp, perm);
 
 }  // namespace dragon
 

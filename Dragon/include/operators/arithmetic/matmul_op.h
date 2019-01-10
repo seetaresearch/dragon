@@ -22,16 +22,17 @@ class MatmulOp final : public Operator<Context> {
  public:
     MatmulOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          TransA(OperatorBase::Arg<bool>("TransA", false)),
-          TransB(OperatorBase::Arg<bool>("TransB", false)) {}
+          transA(OperatorBase::Arg<bool>("transA", false)),
+          transB(OperatorBase::Arg<bool>("transB", false)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    TIndex TransA, TransB, M, K1, K2, N;
-    TIndex n, x1_offset, x2_offset, y_offset;
+    int64_t M1, N1, M2, N2;
+    int64_t transA, transB, M, K1, K2, N;
+    int64_t batch_size, A_stride, B_stride, C_stride;
 };
 
 template <class Context>
@@ -39,18 +40,19 @@ class MatmulGradientOp final : public Operator<Context> {
  public:
     MatmulGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          TransA(OperatorBase::Arg<bool>("TransA", false)),
-          TransB(OperatorBase::Arg<bool>("TransB", false)) {}
+          transA(OperatorBase::Arg<bool>("transA", false)),
+          transB(OperatorBase::Arg<bool>("transB", false)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    TIndex TransA, TransB, M, K1, K2, N;
-    TIndex n, x1_offset, x2_offset, y_offset;
+    int64_t M1, N1, M2, N2;
+    int64_t transA, transB, M, K1, K2, N;
+    int64_t batch_size, A_stride, B_stride, C_stride;
 };
-    
+
 }  // namespace dragon
 
 #endif  // DRAGON_OPERATORS_ARITHMETIC_MATMUL_OP_H_

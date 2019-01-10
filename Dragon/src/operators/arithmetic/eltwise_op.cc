@@ -5,56 +5,60 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void EltwiseOp<Context>::SumRunWithType() {
-    TIndex count = Output(0)->count();
+    auto nelements = Output(0)->count();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Set<T, Context>(count,
-        dragon_cast<T, float>(0), Ydata, ctx());
+    math::Set(nelements, cast::to<T>(0.f), Ydata, ctx());
     for (int i = 0; i < InputSize(); ++i) {
-        math::Axpy<T, Context>(count, coeffs[i],
+        math::Axpy(nelements, coeffs[i],
             Input(i).template data<T, Context>(), Ydata, ctx());
     }
 }
 
 template <class Context> template <typename T>
 void EltwiseOp<Context>::ProdRunWithType() {
-    TIndex count = Output(0)->count();
+    auto nelements = Output(0)->count();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Mul<T, Context>(count,
+    // Computet the first two inputs
+    math::Mul(nelements,
         Input(0).template data<T, Context>(),
             Input(1).template data<T, Context>(),
                 Ydata, ctx());
+    // Computet the remains
     for (int i = 2; i < InputSize(); i++) {
-        math::Mul<T, Context>(count,
-            Ydata,
-                Input(i).template data<T, Context>(),
-                    Ydata, ctx());
+        auto* Xdata = Input(i).template data<T, Context>();
+        math::Mul(nelements, Ydata, Xdata, Ydata, ctx());
     }
+    // Apply the coeffients
+    math::Scale(nelements, alpha, Ydata, Ydata, ctx());
 }
 
-template <class Context>
-void EltwiseOp<Context>::RunOnDevice() {
+template <class Context> template <typename T>
+void EltwiseOp<Context>::RunWithType() {
     for (int i = 1; i < InputSize(); i++) {
         CHECK(Input(i).dims() == Input(0).dims())
             << "\nExcepted Input(" << i << ")'s dims as "
             << Input(0).DimString() << ",\n but got "
-            << Input(1).DimString() << ".";
-    }
+            << Input(i).DimString() << ".";
+    } Output(0)->ReshapeLike(Input(0));
 
-    Output(0)->ReshapeLike(Input(0));
+    if (operation == "SUM") SumRunWithType<T>();
+    else if (operation == "PROD") ProdRunWithType<T>();
+    else LOG(FATAL) << "Unknwon operation: " << operation;
+}
 
-    if (operation == "SUM") {
-        if (XIsType(Input(0), float)) SumRunWithType<float>();
-        else if (XIsType(Input(0), float16)) SumRunWithType<float16>();
-        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
-    }
-    else if (operation == "PROD") {
-        if (XIsType(Input(0), float)) ProdRunWithType<float>();
-        else if (XIsType(Input(0), float16)) ProdRunWithType<float16>();
-        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
-    }
-    else {
-        LOG(FATAL) << "Unknwon operation: " << operation;
-    }
+template <class Context>
+void EltwiseOp<Context>::RunOnDevice() {
+    if (XIsType(Input(0), int8_t)) RunWithType<int8_t>();
+    else if (XIsType(Input(0), uint8_t)) RunWithType<uint8_t>();
+    else if (XIsType(Input(0), int)) RunWithType<int>();
+    else if (XIsType(Input(0), int64_t)) RunWithType<int64_t>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), double)) RunWithType<double>();
+    else LOG(FATAL) << DTypeHelper(Input(0), {
+        "int8", "uint8", "int32", "int64",
+            "float16", "float32", "float64",
+    });
 }
 
 DEPLOY_CPU(Eltwise);
@@ -65,80 +69,84 @@ OPERATOR_SCHEMA(Eltwise).NumInputs(2, INT_MAX).NumOutputs(1);
 
 template <class Context> template <typename T>
 void EltwiseGradientOp<Context>::SumRunWithType() {
+    auto nelements = Input(-1).count();
     auto* dYdata = Input(-1).template data<T, Context>();
-    TIndex count = Input(-1).count();
 
     for (int i = 0; i < OutputSize(); i++) {
         if (Output(i)->name() == "ignore") continue;
         auto* dXdata = Output(i)->template mutable_data<T, Context>();
-        if (coeffs[i] == 1.f) {
-            ctx()->template Copy<T, Context, Context>(
-                count, dXdata, dYdata);
-        } else {
-            math::Scale<T, Context>(count,
-                coeffs[i], dYdata, dXdata, ctx());
-        }
+        // Copy the dY to dX and Apply the coeffients
+        math::Scale(nelements, coeffs[i], dYdata, dXdata, ctx());
     }
 }
 
 template <class Context> template <typename T>
 void EltwiseGradientOp<Context>::ProdRunWithType() {
+    auto nelements = Input(-1).count();
     auto* dYdata = Input(-1).template data<T, Context>();
-    TIndex count = Input(-1).count();
 
     for (int i = 0; i < OutputSize(); i++) {
         if (Output(i)->name() == "ignore") continue;
         auto* dXdata = Output(i)->template mutable_data<T, Context>();
+        // Compute the first term of dX
         bool initialized = false;
         for (int j = 0; j < OutputSize(); j++) {
             if (i == j) continue;
             auto* Xdata = Input(j).template data<T, Context>();
             if (!initialized) {
-                ctx()->template Copy<T, Context, Context>(count, dXdata, Xdata);
+                ctx()->template Copy<T, Context, Context>(
+                    nelements, dXdata, Xdata);
                 initialized = true;
-            } else math::Mul<T, Context>(count, Xdata, dXdata, dXdata, ctx());
+            } else {
+                math::Mul(nelements, Xdata, dXdata, dXdata, ctx());
+            }
         }
-        math::Mul<T, Context>(count, dYdata, dXdata, dXdata, ctx());
+        // Compute the second term of dX, i.e., dY
+        math::Mul(nelements, dYdata, dXdata, dXdata, ctx());
+        // Apply the coeffients
+        math::Scale(nelements, alpha, dXdata, dXdata, ctx());
     }
+}
+
+template <class Context> template <typename T>
+void EltwiseGradientOp<Context>::RunWithType() {
+    for (int i = 0; i < OutputSize(); i++) {
+        CHECK(Input(i).dims() == Input(0).dims())
+            << "\nExcepted Input(" << i << ")'s dims as "
+            << Input(0).DimString() << ",\n but got "
+            << Input(i).DimString() << ".";
+        Output(i)->ReshapeLike(Input(i));
+    }
+
+    if (operation == "SUM") SumRunWithType<T>();
+    else if (operation == "PROD") ProdRunWithType<T>();
+    else LOG(FATAL) << "Unknwon operation: " << operation;
 }
 
 template <class Context>
 void EltwiseGradientOp<Context>::RunOnDevice() {
-    for (int i = 0; i < OutputSize(); i++)
-        Output(i)->ReshapeLike(Input(i));
-
-    if (operation == "SUM") {
-        if (XIsType(Input(0), float)) SumRunWithType<float>();
-        else if (XIsType(Input(0), float16)) SumRunWithType<float16>();
-        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
-    }
-    else if (operation == "PROD") {
-        if (XIsType(Input(0), float)) ProdRunWithType<float>();
-        else if (XIsType(Input(0), float16)) ProdRunWithType<float16>();
-        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
-    }
-    else {
-        LOG(FATAL) << "Unknwon operation: " << operation;
-    }
+    if (XIsType(Input(0), int8_t)) RunWithType<int8_t>();
+    else if (XIsType(Input(0), uint8_t)) RunWithType<uint8_t>();
+    else if (XIsType(Input(0), int)) RunWithType<int>();
+    else if (XIsType(Input(0), int64_t)) RunWithType<int64_t>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), double)) RunWithType<double>();
+    else LOG(FATAL) << DTypeHelper(Input(0), {
+        "int8", "uint8", "int32", "int64",
+            "float16", "float32", "float64",
+    });
 }
 
 DEPLOY_CPU(EltwiseGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(EltwiseGradient);
 #endif
-OPERATOR_SCHEMA(EltwiseGradient).NumInputs(3, INT_MAX).NumOutputs(2, INT_MAX);
 
-class GetEltwiseGradient final : public GradientMakerBase {
- public:
-    GRADIENT_MAKER_CTOR(GetEltwiseGradient);
-    vector<OperatorDef> MakeDefs() override {
-        vector<string> inputs, outputs;
-        for (auto input : def.input()) inputs.push_back(input);
-        for (int i = 0; i < def.input_size(); i++) outputs.push_back(GI(i));
-        inputs.push_back(GO(0));
-        return SingleDef(def.type() + "Gradient", "", inputs, outputs);
-    }
-};
-REGISTER_GRADIENT(Eltwise, GetEltwiseGradient);
+OPERATOR_SCHEMA(EltwiseGradient)
+    .NumInputs(3, INT_MAX)
+    .NumOutputs(2, INT_MAX);
+
+REGISTER_GRADIENT(Eltwise, SimpleGradientMaker);
 
 }  // namespace dragon

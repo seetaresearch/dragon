@@ -9,9 +9,13 @@
 #
 # ------------------------------------------------------------
 
-import dragon.ops as ops
-from dragon.core.tensor import Tensor
+"""The Implementation of the neuron layers."""
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import dragon
 from ..layer import Layer
 
 
@@ -28,12 +32,10 @@ class ReLULayer(Layer):
         super(ReLULayer, self).__init__(LayerParameter)
         param = LayerParameter.relu_param
         if param.HasField('negative_slope'):
-            self._param = {'slope': param.negative_slope}
+            self.arguments = {'slope': param.negative_slope}
 
-    def Setup(self, bottom):
-        super(ReLULayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return ops.Relu(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Relu(bottom, **self.arguments)
 
 
 class PReLULayer(Layer):
@@ -50,22 +52,16 @@ class PReLULayer(Layer):
     def __init__(self, LayerParameter):
         super(PReLULayer, self).__init__(LayerParameter)
         param = LayerParameter.prelu_param
-        self._param = {
+        self.arguments= {
             'channel_shared': param.channel_shared,
             'data_format': 'NCHW',
         }
-        scope = LayerParameter.name
-        slope = Tensor(scope + '/param:0')
-        slope_diff = Tensor(scope + '/param:0_grad')
-        if param.HasField('filler'):
-            self.Fill(slope, param, 'filler')
-        else:
-            slope.Constant(value=0.25)
-        self._blobs.append({'data': slope, 'diff': slope_diff})
+        # Trainable slope
+        self.AddBlob(filler=self.GetFiller(param, 'filler'), value=0.25)
 
-    def Setup(self, bottom):
-        super(PReLULayer, self).Setup(bottom)
-        return ops.PRelu(bottom + [blob['data'] for blob in self._blobs], **self._param)
+    def LayerSetup(self, bottom):
+        inputs = [bottom] + [blob['data'] for blob in self._blobs]
+        return dragon.ops.PRelu(inputs, **self.arguments)
 
 
 class ELULayer(Layer):
@@ -79,52 +75,40 @@ class ELULayer(Layer):
     """
     def __init__(self, LayerParameter):
         super(ELULayer, self).__init__(LayerParameter)
-        param = LayerParameter.elu_param
-        self._param = {'alpha': float(param.alpha)}
+        self.arguments = {'alpha': float(LayerParameter.elu_param.alpha)}
 
-    def Setup(self, bottom):
-        super(ELULayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return ops.Elu(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Elu(bottom, **self.arguments)
 
 
 class SELULayer(Layer):
-    """
-    The implementation of ``SELULayer``.
-    """
+    """The implementation of ``SELULayer``."""
+
     def __init__(self, LayerParameter):
         super(SELULayer, self).__init__(LayerParameter)
 
-    def Setup(self, bottom):
-        super(SELULayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return ops.SElu(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.SElu(bottom, **self.arguments)
 
 
 class SigmoidLayer(Layer):
-    """
-    The implementation of ``SigmoidLayer``.
-    """
+    """The implementation of ``SigmoidLayer``."""
+
     def __init__(self, LayerParameter):
         super(SigmoidLayer, self).__init__(LayerParameter)
 
-    def Setup(self, bottom):
-        super(SigmoidLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return ops.Sigmoid(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Sigmoid(bottom, **self.arguments)
 
 
 class TanHLayer(Layer):
-    """
-    The implementation of ``TanHLayer``.
-    """
+    """The implementation of ``TanHLayer``."""
+
     def __init__(self, LayerParameter):
         super(TanHLayer, self).__init__(LayerParameter)
 
-    def Setup(self, bottom):
-        super(TanHLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return ops.Tanh(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Tanh(bottom, **self.arguments)
 
 
 class DropoutLayer(Layer):
@@ -141,16 +125,14 @@ class DropoutLayer(Layer):
     def __init__(self, LayerParameter):
         super(DropoutLayer, self).__init__(LayerParameter)
         param = LayerParameter.dropout_param
-        self._param = {
+        self.arguments = {
             'prob': param.dropout_ratio,
             'scale': param.scale_train \
                 if hasattr(param, 'scale_train') else True,
         }
 
-    def Setup(self, bottom):
-        super(DropoutLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return ops.Dropout(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Dropout(bottom, **self.arguments)
 
 
 class PowerLayer(Layer):
@@ -169,13 +151,11 @@ class PowerLayer(Layer):
     def __init__(self, LayerParameter):
         super(PowerLayer, self).__init__(LayerParameter)
         param = LayerParameter.power_param
-        self._param = {
+        self.arguments = {
             'power': param.power,
             'scale': param.scale,
             'shift': param.shift,
         }
 
-    def Setup(self, bottom):
-        super(PowerLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return ops.Pow(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.Pow(bottom, **self.arguments)

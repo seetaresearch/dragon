@@ -20,7 +20,6 @@ from __future__ import print_function
 import warnings
 from collections import defaultdict
 
-import numpy as np
 import dragon as dg
 
 from dragon.vm.torch.tensor import Tensor
@@ -34,17 +33,19 @@ required = object()
 def _get_group_slot():
     global _OPTIMIZER_GROUP_UID
     _OPTIMIZER_GROUP_UID += 1
-    return 'optimizer_group:{}'.format(_OPTIMIZER_GROUP_UID - 1)
+    return 'Optimizer/Slot:{}'.format(_OPTIMIZER_GROUP_UID - 1)
 
 
 class Optimizer(object):
+    # Store the global unique slot index
+    _DEFAULT_UNIQUE_SLOT_ID = 0
+
     def __init__(self, params, defaults):
         self.defaults = defaults
         if isinstance(params, Tensor):
             raise TypeError("params argument given to the optimizer should be "
                             "an iterable of Variables or dicts, but got " +
                             str(type(params)))
-
         self.state = defaultdict(dict)
         self.param_groups = []
         param_groups = list(params)
@@ -149,29 +150,35 @@ class Optimizer(object):
         None
 
         """
-        assert isinstance(param_group, dict), "param group must be a dict"
+        assert isinstance(param_group, dict), "Param group must be a dict."
 
         params = param_group['params']
-        if isinstance(params, Tensor): param_group['params'] = [params]
+
+        if isinstance(params, Tensor):
+            param_group['params'] = [params]
         elif isinstance(params, set):
-            raise TypeError('optimizer parameters need to be organized in ordered collections, but '
-                            'the ordering of tensors in sets will change between runs. Please use a list instead.')
+            raise TypeError('Optimizer parameters need to be organized in ordered collections,'
+                            '\nbut the ordering of tensors in sets will change between runs.'
+                            '\nPlease use a list instead.')
         else:
             param_group['params'] = list(params)
 
         for param in param_group['params']:
             if not param.requires_grad:
-                print(param.name)
-                raise ValueError("optimizing a parameter that doesn't require gradients")
+                raise ValueError("Optimizing a Parameter({}) that "
+                                 "doesn't require gradients".format(param.name))
 
         for name, default in self.defaults.items():
             if default is required and name not in param_group:
-                raise ValueError("parameter group didn't specify a value of required optimization parameter " +
-                                 name)
+                raise ValueError("Parameter group didn't specify a value of "
+                                 "required optimization parameter: " + name)
             else:
                 param_group.setdefault(name, default)
 
-        param_group['slot'] = _get_group_slot()
+        if 'slot' not in param_group:
+            Optimizer._DEFAULT_UNIQUE_SLOT_ID += 1
+            param_group['slot'] = 'Optimizer/Slot:{}'.format(
+                Optimizer._DEFAULT_UNIQUE_SLOT_ID)
 
         param_set = set()
         for group in self.param_groups:

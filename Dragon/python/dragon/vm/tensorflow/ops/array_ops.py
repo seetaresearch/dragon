@@ -9,75 +9,65 @@
 #
 # ------------------------------------------------------------
 
-__all__ = [
-    'expand_dims',
-    'shape',
-    'zeros',
-    'ones',
-    'placeholder',
-    'concat',
-    'transpose',
-    'tile',
-    'reshape'
-]
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-
-import dragon.ops as ops
-from dragon.core.tensor import Tensor
+import dragon
 
 from dragon.vm.tensorflow.framework import dtypes
 
 
 def expand_dims(input, axis=None, name=None, dim=None):
-
     if dim is not None:
         if axis is not None:
             raise ValueError("cannot specify both 'axis' and 'dim'.")
         axis = dim
-
-    return ops.ExpandDims(input, axis=axis, name=name)
+    return dragon.ops.ExpandDims(input, axis=axis, name=name)
 
 
 def shape(input, name=None, out_type=dtypes.float32):
-
-    return ops.Shape(input, name=None)
+    return dragon.ops.Shape(input, name=name)
 
 
 def zeros(shape, dtype=dtypes.float32, name=None):
-
-    return ops.Fill(shape, value=0.0, name=name)
+    return dragon.ops.Fill(shape, value=0.0, dtype=dtype.name, name=name)
 
 
 def ones(shape, dtype=dtypes.float32, name=None):
-
-    return ops.Fill(shape, value=1.0, name=name)
+    return dragon.ops.Fill(shape, value=1.0, dtype=dtype.name, name=name)
 
 
 def placeholder(dtype, shape=None, name=None):
-    # check data type
+    # Check data type
     if dtype is not None:
         if not isinstance(dtype, dtypes.DType):
-            raise TypeError('The dtype should be a valid tf data type.')
-        dtype = dtype.name
+            raise TypeError('The dtype should be a valid tensorflow data type.')
 
-    return Tensor(name=name, shape=shape, dtype=dtype).Placeholder()
+    # Construct a tensor from the explicit name
+    return dragon.Tensor.Ref(
+        dragon.workspace.GetDummyName(
+            dragon.get_default_name_scope() + name
+                if name else 'Placeholder',
+                    suffix=':0', domain='Tensor'),
+        dtype=dtype.name, shape=shape).Placeholder()
 
 
 def concat(values, axis, name=None):
-
-    return ops.Concat(values, axis=axis, name=name)
+    return dragon.ops.Concat(values, axis=axis, name=name)
 
 
 def transpose(a, perm=None, name=None):
-
-    return ops.Transpose(a, perm=perm, name=name)
+    return dragon.ops.Transpose(a, perm=perm, name=name)
 
 
 def tile(input, multiples, name=None):
+    return dragon.ops.Tile(input, multiples=multiples, name=name)
 
-    return ops.Tile(input, multiples=multiples, name=name)
+
+def pad(tensor, paddings, mode="CONSTANT", name=None, constant_values=0):
+    return dragon.ops.Pad(tensor, paddings, mode=mode, name=name, value=constant_values)
 
 
 def reshape(tensor, shape, name=None):
-
-    return ops.Reshape(tensor, shape=shape, name=None)
+    return dragon.ops.Reshape(tensor, shape=shape, name=name)

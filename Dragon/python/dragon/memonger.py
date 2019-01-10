@@ -9,6 +9,13 @@
 #
 # ------------------------------------------------------------
 
+"""A simple wrapper for memory optimization tricks."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+
 def ShareGrads(enabled=True):
     """Enable gradients sharing globally.
 
@@ -51,15 +58,11 @@ def Drop(op_func, *args, **kwargs):
     ----------
     op_func : lambda
         The function of any operators.
-    args : list
-        The args of this operator.
-    kwargs : dict
-        The kwargs. The kwargs of this operator.
 
     Returns
     -------
-    Tensor or list of Tensor
-        As the ``op_func`` returns.
+    dragon.Tensor or list[dragon.Tensor]
+        The outputs of the given operator.
 
     Examples
     --------

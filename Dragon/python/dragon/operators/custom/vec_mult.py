@@ -25,7 +25,7 @@ class VecMultOp(object):
     >>> import dragon as dg
     >>> x1 = dg.Tensor('x1').Variable()
     >>> x2 = dg.Tensor('x2').Variable()
-    >>> y = dg.ops.Template([x1, x2], module=__name__, op='VecMultOp', nout=1)
+    >>> y = dg.ops.Template([x1, x2], module=__name__, op='VecMultOp', num_outputs=1)
     >>> dx1 = dg.grad(y, x1)
     >>> dx2 = dg.grad(y, x2)
     >>> foo = dg.function(outputs=y)
@@ -120,7 +120,7 @@ if __name__ == '__main__':
     # Def
     x1 = dg.Tensor('x1').Variable()
     x2 = dg.Tensor('x2').Variable()
-    y = dg.ops.Template([x1, x2], module=__name__, op='VecMultOp', nout=1)
+    y = dg.ops.Template([x1, x2], module=__name__, op='VecMultOp', num_outputs=1)
     dx1 = dg.grad(y, x1)
     dx2 = dg.grad(y, x2)
     foo = dg.function(outputs=y)

@@ -19,20 +19,32 @@ namespace dragon {
 
 class CPUContext {
  public:
+    /*! \brief Default Constructor */
     CPUContext(): random_seed_(3) {}
+
+    /*! \brief Constructor with the specified random seed */
     CPUContext(unsigned int random_seed)
-        : random_seed_(random_seed)  {}
+        : random_seed_(random_seed) {}
+
+    /*! \brief Constructor with the specified device option */
     CPUContext(const DeviceOption& option)
         : random_seed_(option.has_random_seed() ?
             option.random_seed() : DEFAULT_RNG_SEED) {}
+
+    /*! \brief Deconstructor */
     virtual ~CPUContext() {}
 
-    inline void SwitchToDevice() {}
-    inline void SwitchToDevice(int stream_id) {}
+    /*! \brief Switch to the device of this context */
+    void SwitchToDevice() {}
 
-    inline void FinishDeviceCompution() {}
+    /*! \brief Switch to the device with the given stream */
+    void SwitchToDevice(int stream_id) {}
 
-    inline static void* New(size_t nbytes) {
+    /*! \brief Synchronize the dispatched operations */
+    void FinishDeviceCompution() {}
+
+    /*! \brief Malloc the memory */
+    static void* New(size_t nbytes) {
         void* data;
 #ifdef WITH_CUDA_HOST_MEM
         CUDA_CHECK(cudaMallocHost(&data, nbytes));
@@ -43,60 +55,72 @@ class CPUContext {
         return data;
     }
 
-    inline static void Memset(
+    /*! \brief Zero-Reset the memory */
+    static void Memset(
         size_t              nbytes,
         void*               ptr) {
         memset(ptr, 0, nbytes);
     }
 
-    inline void MemsetAsync(
+    /*! \brief Zero-Reset the memory asynchronously */
+    void MemsetAsync(
         size_t              nbytes,
         void*               ptr) {
         memset(ptr, 0, nbytes);
     }
 
+    /*! \brief Copy the memory */
     template<class DstContext, class SrcContext>
-    inline static void Memcpy(
+    static void Memcpy(
         size_t              nbytes,
         void*               dst,
         const void*         src) {
         memcpy(dst, src, nbytes);
     }
 
+    /*! \brief Copy the memory asynchronously */
     template<class DstContext, class SrcContext>
-    inline void MemcpyAsync(
+    void MemcpyAsync(
         size_t              nbytes,
         void*               dst,
         const void*         src) {
         memcpy(dst, src, nbytes);
     }
 
+    /*! \brief Copy the memory with given type asynchronously */
     template<typename T, class DstContext, class SrcContext>
-    inline void Copy(
+    void Copy(
         int                 n,
         T*                  dst,
         const T*            src) {
         if (dst == src) return;
-        //  only the basic types(e.g. int/float) can memcpy correctly
         if (std::is_fundamental<T>::value)
             Memcpy<DstContext, SrcContext>(
                 n * sizeof(T), (void*)dst, (const void*)src);
         else for (int i = 0; i < n; i++) dst[i] = src[i];
     }
 
-    inline static void Delete(void* data) { free(data); }
+    /*! \brief Free the memory */
+    static void Delete(void* data) { free(data); }
 
-    inline int device_id() const { return 0; }
-    inline void set_stream_id(int stream_id) {}
+    /*! \brief Return the device id */
+    int device_id() const { return 0; }
 
-    inline std::mt19937* rand_generator() {
+    /*! \brief Set the stream id */
+    void set_stream_id(int stream_id) {}
+
+    /*! \brief Return the internal random generator */
+    std::mt19937* rand_generator() {
         if (!rand_generator_.get())
             rand_generator_.reset(new std::mt19937(random_seed_));
         return rand_generator_.get();
     }
 
  private:
+    /*! \brief Store the random seed */
     unsigned int random_seed_;
+
+    /*! \brief Store the internal random generator */
     unique_ptr<std::mt19937> rand_generator_;
 };
 

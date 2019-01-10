@@ -9,6 +9,13 @@
 #
 # ------------------------------------------------------------
 
+"""Define the update ops generator.
+
+We dubbed them as ``Updater``, because ``Optimizer``
+is used by so many Deep Learning frameworks.
+
+"""
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -20,9 +27,11 @@ from dragon.core.tensor import Tensor
 
 
 class BaseUpdater(object):
-    """BaseUpdater is designed to pre-process the gradients.
+    """BaseUpdater is designed to pre-process the gradients."""
 
-    """
+    # Store the global unique slot index
+    _DEFAULT_UNIQUE_SLOT_ID = 0
+
     def __init__(self, scale_gradient=1.0, clip_gradient=-1.0,
                  l2_decay=-1.0, slot=None, verbose=True):
         """Construct a Updater to optimize the objectives.
@@ -45,7 +54,11 @@ class BaseUpdater(object):
             'l2_decay': l2_decay,
         }
         self._param_group = []
-        self._slot = slot
+        if slot: self._slot = slot
+        else:
+            BaseUpdater._DEFAULT_UNIQUE_SLOT_ID += 1
+            self._slot = 'Updater/Slot:{}'.format(
+                BaseUpdater._DEFAULT_UNIQUE_SLOT_ID)
         self._verbose = verbose
         self._registered = False
         self._extra_kwargs = {}
@@ -68,9 +81,9 @@ class BaseUpdater(object):
 
         """
         pair = (tensor.name if isinstance(tensor, Tensor) \
-                        else tensor for tensor in pair)
-        self._param_group.append((pair, {
-            'lr_mult': lr_mult, 'decay_mult': decay_mult}))
+            else tensor for tensor in pair)
+        self._param_group.append((pair,
+            {'lr_mult': lr_mult, 'decay_mult': decay_mult}))
 
     def __getattr__(self, item):
         defaults = self.__dict__.get('_defaults')
@@ -98,11 +111,10 @@ class BaseUpdater(object):
                     dtype='float32', force_cpu=True)
             self._registered = True
             if self._verbose:
-                from dragon.config import logger
-                logger.info('---------------------------------------------------------')
-                logger.info('Optimizer: {}, Using config:'.format(self.type(True)))
+                print('---------------------------------------------------------')
+                print('Optimizer: {}, Using config:'.format(self.type(True)))
                 pprint.pprint(self._defaults)
-                logger.info('---------------------------------------------------------')
+                print('---------------------------------------------------------')
 
     def type(self, no_suffix=False):
         return self.__class__.__name__.split('Updater')[0] \

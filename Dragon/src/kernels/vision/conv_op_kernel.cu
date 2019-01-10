@@ -46,8 +46,13 @@ __global__ void _Im2Col2d_NCHW(
             for (int kw = 0; kw < kernel_w; kw++) {
                 const int im_h = kh * dilation_h + im_h_off;
                 const int im_w = kw * dilation_w + im_w_off;
+#if __CUDA_ARCH__ >= 350
+                *col_ptr = (im_h >= 0 && im_w >= 0 && im_h < H && im_w < W) ?
+                    __ldg(im_ptr + (kh * dilation_h * W + kw * dilation_w)) : 0;
+#else
                 *col_ptr = (im_h >= 0 && im_w >= 0 && im_h < H && im_w < W) ? 
                     im_ptr[kh * dilation_h * W + kw * dilation_w] : 0;
+#endif
                 col_ptr += (col_h * col_w);
             }
         }
@@ -88,8 +93,13 @@ __global__ void _Im2Col2d_NHWC(
                 const int col_idx = (
                     ((base_col_idx * kernel_h + kh) * kernel_w + kw) * C + c
                 );
+#if __CUDA_ARCH__ >= 350
+                col[col_idx] = (im_h >= 0 && im_w >= 0 &&
+                    im_h < H && im_w < W) ? __ldg(im + ((im_h * W + im_w) * C + c)) : 0;
+#else
                 col[col_idx] = (im_h >= 0 && im_w >= 0 &&
                     im_h < H && im_w < W) ? im[(im_h * W + im_w) * C + c] : 0;
+#endif
             }
         }
     }
@@ -180,7 +190,11 @@ __global__ void _Col2Im2d_NCHW(
                     const int col_idx = ((
                         (im_c * kernel_h + kh_off) * kernel_w + kw_off) * col_h + h
                     ) * col_w + w;
+#if __CUDA_ARCH__ >= 350
+                    val += __ldg(col + col_idx);
+#else
                     val += col[col_idx];
+#endif
                 }
             }
         }
@@ -235,7 +249,11 @@ __global__ void _Col2Im2d_NHWC(
                     const int col_idx = (
                         ((h * col_w + w) * kernel_h + kh_off) * kernel_w + kw_off
                     ) * C + im_c;
+#if __CUDA_ARCH__ >= 350
+                    val += __ldg(col + col_idx);
+#else
                     val += col[col_idx];
+#endif
                 }
             }
         }

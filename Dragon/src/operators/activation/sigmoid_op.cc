@@ -8,7 +8,7 @@ template <class Context> template <typename T>
 void SigmoidOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    kernel::Sigmoid<T, Context>(Output(0)->count(), Xdata, Ydata, ctx());
+    kernel::Sigmoid(Output(0)->count(), Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -30,8 +30,7 @@ void SigmoidGradientOp<Context>::RunWithType() {
     auto* Ydata = Input(0).template data<T, Context>();
     auto* dYdata = Input(1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    kernel::SigmoidGrad<T, Context>(Output(0)->count(),
-        dYdata, Ydata, dXdata, ctx());
+    kernel::SigmoidGrad(Output(0)->count(), dYdata, Ydata, dXdata, ctx());
 }
 
 template <class Context>
@@ -46,17 +45,11 @@ DEPLOY_CPU(SigmoidGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(SigmoidGradient);
 #endif
-OPERATOR_SCHEMA(SigmoidGradient).NumInputs(2).NumOutputs(1).Inplace({ { 1, 0 } });
 
-class GetSigmoidGradient final : public GradientMakerBase {
- public:
-    GRADIENT_MAKER_CTOR(GetSigmoidGradient);
-    vector<OperatorDef> MakeDefs() override {
-        return SingleDef(def.type() + "Gradient", "",
-            vector<string> {O(0), GO(0)},
-            vector<string> {GI(0)});
-    }
-};
-REGISTER_GRADIENT(Sigmoid, GetSigmoidGradient);
+OPERATOR_SCHEMA(SigmoidGradient)
+    .NumInputs(2).NumOutputs(1)
+    .Inplace({ { 1, 0 } });
+
+REGISTER_GRADIENT(Sigmoid, InplaceGradientMaker);
 
 }  // namespace dragon

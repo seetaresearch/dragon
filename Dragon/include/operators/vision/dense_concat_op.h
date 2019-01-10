@@ -30,14 +30,14 @@ class DenseConcatGradientOp final : public ConcatGradientOp<Context> {
  public:
     DenseConcatGradientOp(const OperatorDef& def, Workspace* ws)
         : ConcatGradientOp<Context>(def, ws),
-          growth_rate(OperatorBase::Arg<int>("growth_rate", 0)) {}
+          growth_rate(OperatorBase::Arg<int64_t>("growth_rate", 0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void ElimateCorruption() override;
     template <typename T> void RestoreX1();
 
  protected:
-    TIndex growth_rate;
+    int64_t growth_rate;
 };
 
 }  // namespace dragon

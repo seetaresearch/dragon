@@ -6,20 +6,31 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void ArangeOp<Context>::RunWithType() {
-    TIndex start_ = start(), step_ = step(), stop_ = stop(), count;
-    if (stop_ == 0) { stop_ = start_; start_ = 0; }
-    count = (stop_ - start_ - 1) / step_ + 1;
-    Output(0)->Reshape({ count });
+    astart = start(), astop = stop(), astep = step();
+    if (astop == 0) { astop = astart; astart = 0; }
+    dim = (astop - astart - 1) / astep + 1;
+    CHECK_GT(dim, 0) << "\nInvalid arguments: \n"
+                     << "start = " << start() << ", "
+                     << "stop = " << stop() << ", "
+                     << "step = " << step() << ".";
+    Output(0)->Reshape({ dim });
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    kernel::Arange<T, Context>(count, start_, step_, Ydata, ctx());
+    kernel::Arange(dim, astart, astep, Ydata, ctx());
 }
 
 template <class Context>
 void ArangeOp<Context>::RunOnDevice() {
-    if (dtype == "FLOAT32") RunWithType<float>();
-    else if (dtype == "INT32") RunWithType<int>();
-    else if (dtype == "INT64") RunWithType<int64_t>();
-    else LOG(FATAL) << "Unsupported DType: " << dtype;
+    if (dtype == "int8") RunWithType<int8_t>();
+    else if (dtype == "uint8") RunWithType<uint8_t>();
+    else if (dtype == "int32") RunWithType<int>();
+    else if (dtype == "int64") RunWithType<int64_t>();
+    else if (dtype == "float16") RunWithType<float16>();
+    else if (dtype == "float32") RunWithType<float>();
+    else if (dtype == "float64") RunWithType<double>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { 
+        "int8", "uint8", "int32", "int64",
+            "float16", "float32", "float64",
+    });
 }
 
 DEPLOY_CPU(Arange);

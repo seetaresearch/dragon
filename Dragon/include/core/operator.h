@@ -21,7 +21,7 @@
 #include "utils/cast.h"
 
 #ifdef WITH_MPI
-#include <mpi/mpi.h>
+#include <mpi.h>
 #endif
 
 namespace dragon {
@@ -30,51 +30,98 @@ class Workspace;
 
 class OperatorBase {
  public:
+    /*! Default constructor */
     OperatorBase(const OperatorDef& def, Workspace* ws);
+
+    /*! Default deconstructor */
     virtual ~OperatorBase() {}
 
+    /*! \brief Return the specified input tensor */
     Tensor& Input(int idx);
+
+    /*! \brief Return the specified output tensor */
     Tensor* Output(int idx);
 
-    inline size_t InputSize() { return inputs_.size(); }
-    inline size_t OutputSize() { return outputs_.size(); }
+    /*! \brief Return the number of inputs */
+    int InputSize() { return (int)inputs_.size(); }
 
+    /*! \brief Return the number of outputs */
+    int OutputSize() { return (int)outputs_.size(); }
+
+    /*! \brief Modify this operator according to the given def  */
     void MutableOp(const OperatorDef& def);
-    void MutableOp(const vector<string>& inputs,
-                   const vector<string>& outputs,
-                   const string& anchor);
 
-    inline void SwitchToPhase(const string& phase) { phase_ = phase; }
+    /*! \brief Modify this operator according to the given properties */
+    void MutableOp(
+        const vector<string>&       inputs,
+        const vector<string>&       outputs,
+        const string&               anchor);
 
+    /*! \brief Switch the internal running phase */
+    void SwitchToPhase(const string& phase) { phase_ = phase; }
+
+    /*! \brief Run this operator on the specified stream */
     virtual void Run(int stream_id = 1) { NOT_IMPLEMENTED; }
+
+    /*! \brief Fusion this operator into the specified graph */
     virtual void Fusion(void* graph) { NOT_IMPLEMENTED; }
 
-    inline const string& name() const { return def_.name(); }
-    inline const string& type() const { return def_.type(); }
-    inline const string& phase() const { return phase_; }
-    inline const string& anchor() { return anchor_; }
-    inline Workspace* ws() const { return ws_; }
+    /*! \brief Return the operator name */
+    const string& name() const { return def_.name(); }
 
+    /*! \brief Return the operator type */
+    const string& type() const { return def_.type(); }
+
+    /*! \brief Return the current running phase */
+    const string& phase() const { return phase_; }
+
+    /*! \brief Return the anchor name of this operator */
+    const string& anchor() const { return anchor_; }
+
+    /*! \brief Return the mount name in this operator */
+    const string mount_name(const string& name) const {
+        return "/mnt/" + anchor_ + "/" + name;
+    }
+
+    /*! \brief Return the parent workspace */
+    Workspace* ws() const { return ws_; }
+
+    /*! \brief Return the value of the specified argument */
     template <typename T>
     T Arg(const string& name, const T& default_value);
 
+    /*! \brief Return the values of the specified argument */
     template <typename T>
     vector<T> Args(const string& name);
 
-    inline const Map<std::string, const Argument*>& args() { return args_; }
-    inline const Argument& arg(const string& name) { return *(args_[name]); }
+    /*! \brief Return the argument map of this operator */
+    const Map<std::string, const Argument*>& args() { return args_; }
+
+    /*! \brief Return the specified argument */
+    const Argument& arg(const string& name) { return *(args_[name]); }
 
     typedef Map<string, vector<OperatorBase*> > RecomputeMap;
-    inline RecomputeMap& recompute_map() { return recompute_map_; }
+
+    /*! \brief Return the recomputing map of this operator */
+    RecomputeMap& recompute_map() { return recompute_map_; }
+
+    /*! \brief Set the given recomputing map */
     void set_recompute_map(RecomputeMap recompute_map) {
         recompute_map_ = recompute_map; 
     }
 
-    inline const OperatorDef& def() const { return def_; }
-    inline string DebugString() const { return def_.DebugString(); }
+    /*! \brief Return the stored operator def */
+    const OperatorDef& def() const { return def_; }
+
+    /*! \brief Return the debug string of the stored operator def */
+    string DebugString() const { return def_.DebugString(); }
+
+    /*! \brief Return the debug DType string on given tensor */
     string DTypeHelper(
         const Tensor&           tensor,
         const Set<string>&      dtypes) const;
+
+    /* \brief Return the debug DType string on given type */
     string DTypeHelper(
         const string&           dtype,
         const Set<string>&      dtypes) const;
@@ -126,8 +173,8 @@ class Operator : public OperatorBase {
 
     virtual void RunOnDevice() = 0;
 
-    inline Context* ctx() { return &ctx_; }
-    inline bool AllowRun() { return allow_run_; }
+    Context* ctx() { return &ctx_; }
+    bool AllowRun() { return allow_run_; }
 
  protected:
     Context ctx_;
@@ -165,6 +212,7 @@ OperatorBase* CreateOperator(const OperatorDef& def, Workspace* ws);
     using OperatorBase::type; \
     using OperatorBase::phase; \
     using OperatorBase::anchor; \
+    using OperatorBase::mount_name; \
     using OperatorBase::def; \
     using OperatorBase::InputSize; \
     using OperatorBase::OutputSize; \
@@ -214,9 +262,8 @@ DECLARE_REGISTRY(
         unique_ptr< Filler<type, Context> > filler(  \
             CreateFiller<type, Context>(*ws()->GetFiller(tensor.name()))); \
         filler->Fill(&tensor, ctx()); \
-        ctx()->FinishDeviceCompution(); \
     } else { \
-         TIndex count = 1; \
+         int64_t count = 1; \
          for(int i = 0; i < shape.size(); i++) count *= shape[i]; \
          CHECK_EQ(count, tensor.count()) \
             << "\nModel request " << "Tensor(" << tensor.name() << ")'s " \
@@ -235,9 +282,8 @@ DECLARE_REGISTRY(
         unique_ptr< Filler<T, Context> > filler(  \
             CreateFiller<T, Context>(*ws()->GetFiller(tensor.name()))); \
         filler->Fill(&tensor, ctx()); \
-        ctx()->FinishDeviceCompution(); \
     } else { \
-         TIndex count = 1; \
+         int64_t count = 1; \
          for(int i = 0; i < shape.size(); i++) count *= shape[i]; \
          CHECK_EQ(count, tensor.count()) \
             << "\nModel request " << "Tensor(" << tensor.name() << ")'s " \
@@ -247,22 +293,17 @@ DECLARE_REGISTRY(
         tensor.Reshape(shape); \
     }
 
-#define INIT_MULTIPLIER(ptr_tensor, size) { \
-    ptr_tensor = ws()->CreateTensor("/share/multiplier/" \
-        + TypeMetaToString(TypeMeta::Make<T>())); \
-    if (size > ptr_tensor->count()) { \
-        ptr_tensor->Reshape({ size }); \
-        math::Set<T, Context>(size, dragon_cast<T, float>(1.f), \
-            ptr_tensor->template mutable_data<T, Context>(), ctx()); \
-    } \
-  }
-
 #define DECLARE_MULTIPLIER(name, size) \
     const T* name; \
     { \
-        Tensor* _auto_multiplier_; \
-        INIT_MULTIPLIER(_auto_multiplier_, size); \
-        name = _auto_multiplier_->template data<T, Context>(); \
+        auto* mp = ws()->CreateTensor("/share/multiplier/" \
+            + TypeMetaToString(TypeMeta::Make<T>())); \
+        if (size > mp->count()) { \
+            mp->Reshape({ size }); \
+            math::Set<T, Context>(size, cast::to<T>(1.f), \
+                mp->template mutable_data<T, Context>(), ctx()); \
+        } \
+        name = mp->template data<T, Context>(); \
     }
 
 #define DECLARE_ARGUMENT_WITH_DESC(type, argument) \
@@ -291,7 +332,7 @@ DECLARE_REGISTRY(
         CHECK(argument##_tensor->IsType<type>()) \
             << "\nThe type of " << #argument << " should be " << #type << "."; \
         CHECK_EQ(argument##_tensor->count(), 1) \
-            << "\nThe argument of " << #argument << " should be a scalar"; \
+            << "\nThe argument of " << #argument << " should be a scalar."; \
         return argument##_tensor->template data<type, CPUContext>()[0]; \
     }
 
@@ -299,13 +340,19 @@ DECLARE_REGISTRY(
     template <class Context> \
     type classname<Context>::argument(int idx) { \
         if (argument##_desc.empty()) { \
-            CHECK_LT(idx, argument##_value.size()); \
+            CHECK_LT(idx, argument##_value.size()) \
+                << "\nExcepted the size of " << #argument \
+                << " > " << idx << ". (Got " \
+                << argument##_value.size() << ")."; \
             return argument##_value[idx]; \
         } \
-        CHECK_LT(idx, argument##_desc.size()); \
+        CHECK_LT(idx, argument##_desc.size()) \
+            << "\nExcepted the size of " << #argument \
+            << " > " << idx << ". (Got " \
+            << argument##_desc.size() << ")."; \
         Tensor* argument##_tensor = ws()->GetTensor(argument##_desc[idx]); \
         CHECK(argument##_tensor->IsType<type>()) \
-            << "\nThe type of " << #argument << " should be " << #type; \
+            << "\nThe type of " << #argument << " should be " << #type << "."; \
         CHECK_EQ(argument##_tensor->count(), 1) \
             << "\nThe argument of " << #argument << " at pos(" \
             << idx << ") should be a scalar."; \
@@ -313,7 +360,7 @@ DECLARE_REGISTRY(
     }
 
 #define GET_ARGUMENTS_SIZE(argument) \
-    std::max(argument##_value.size(), argument##_desc.size())
+    (int)std::max(argument##_value.size(), argument##_desc.size())
 
 #define XIsType(x, dtype) \
     x.template IsType<dtype>()

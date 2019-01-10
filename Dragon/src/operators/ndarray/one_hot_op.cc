@@ -9,17 +9,18 @@ void OneHotOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
-    math::Set<T, Context>(Output(0)->count(),
-        dragon_cast<T, float>(float(off_value)), Ydata, ctx());
+    math::Set(Output(0)->count(),
+        cast::to<T>((float)off_value), Ydata, ctx());
 
-    kernel::OneHot<T, Context>(Input(0).count(),
+    kernel::OneHot(Input(0).count(),
         depth, on_value, Xdata, Ydata, ctx());
 }
 
 template <class Context>
 void OneHotOp<Context>::RunOnDevice() {
-    vector<TIndex> dims = Input(0).dims();
+    auto dims = Input(0).dims();
     dims.push_back(depth);
+
     Output(0)->Reshape(dims);
    
     if (XIsType(Input(0), float)) RunWithType<float>();

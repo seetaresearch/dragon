@@ -15,7 +15,9 @@ DEPLOY_CPU(RecurrentGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(RecurrentGradient);
 #endif
-OPERATOR_SCHEMA(RecurrentGradient).NumInputs(6, 8).NumOutputs(4);
+
+OPERATOR_SCHEMA(RecurrentGradient)
+    .NumInputs(6, 8).NumOutputs(4);
 
 class GetRecurrentGradient final : public GradientMakerBase {
  public:
@@ -33,6 +35,7 @@ class GetRecurrentGradient final : public GradientMakerBase {
         return SingleDef(def.type() + "Gradient", "", inputs, outputs);
     }
 };
+
 REGISTER_GRADIENT(Recurrent, GetRecurrentGradient);
 
 }  // namespace dragon

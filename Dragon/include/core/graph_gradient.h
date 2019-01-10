@@ -28,16 +28,11 @@ class GraphGradientMaker {
 
     void Share(const string& grads_prefix, GraphDef& graph);
 
-    inline void SetTerms(
-        const Map<string, string>& terms) { terms_ = terms; }
-    inline void SetOperatorPrefix(
-        const string& prefix) { op_prefix_ = prefix; }
-    inline void SetOperatorSuffix(
-        const string& suffix) { op_suffix_ = suffix; }
-    inline void AddExternalGrad(
-        const string& name) { external_grads_.insert(name); }
-    inline void AddIgnoreGrad(
-        const string& name) { ignore_grads_.insert(name); }
+    void SetTerms(const Map<string, string>& terms) { terms_ = terms; }
+    void SetOperatorPrefix(const string& prefix) { op_prefix_ = prefix; }
+    void SetOperatorSuffix(const string& suffix) { op_suffix_ = suffix; }
+    void AddExternalGrad(const string& name) { external_grads_.insert(name); }
+    void AddIgnoreGrad(const string& name) { ignore_grads_.insert(name); }
 
  private:
     bool CheckGrad(

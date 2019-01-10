@@ -22,12 +22,11 @@ class CropOp final : public Operator<Context> {
  public:
     CropOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          start_axis(OperatorBase::Arg<int>("start_axis", -1)),
-          offsets(OperatorBase::Args<int>("offsets")),
-          shape(OperatorBase::Args<int>("shape")),
+          start_axis(OperatorBase::Arg<int64_t>("start_axis", -1)),
+          offsets(OperatorBase::Args<int64_t>("offsets")),
           shape_like(OperatorBase::Arg<string>("shape_like", "")) {
-        GET_ARGUMENTS_WITH_DESC(int, starts);
-        GET_ARGUMENTS_WITH_DESC(int, ends);
+        GET_ARGUMENTS_WITH_DESC(int64_t, starts);
+        GET_ARGUMENTS_WITH_DESC(int64_t, sizes);
     }
     USE_OPERATOR_FUNCTIONS;
 
@@ -36,19 +35,17 @@ class CropOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    TIndex start_axis;
+    int64_t start_axis;
     string shape_like;
-    vector<int> offsets, shape;
-    vector<TIndex> st, ed, keep_dims;
-    DECLARE_ARGUMENTS_WITH_DESC(int, starts);
-    DECLARE_ARGUMENTS_WITH_DESC(int, ends);
-    vector< pair<int, int> > process_axes;
-    TIndex axis, inner_dim, dim;
-    Tensor* dest, *source, navigator;
+    vector<int64_t> offsets;
+    vector<int64_t> st, ed, keep_dims, y_dimsV;
+    Tensor startsT, x_stridesT, y_dimsT;
+    DECLARE_ARGUMENTS_WITH_DESC(int64_t, starts);
+    DECLARE_ARGUMENTS_WITH_DESC(int64_t, sizes);
 };
 
-DEFINE_ARGUMENTS_WITH_DESC(int, CropOp, starts);
-DEFINE_ARGUMENTS_WITH_DESC(int, CropOp, ends);
+DEFINE_ARGUMENTS_WITH_DESC(int64_t, CropOp, starts);
+DEFINE_ARGUMENTS_WITH_DESC(int64_t, CropOp, sizes);
 
 template <class Context>
 class CropGradientOp final : public Operator<Context> {
@@ -56,15 +53,12 @@ class CropGradientOp final : public Operator<Context> {
     USE_SIMPLE_CTOR_DTOR(CropGradientOp);
     USE_OPERATOR_FUNCTIONS;
 
-    void Setup();
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    vector<TIndex> st, ed, offsets, keep_dims;
-    vector< pair<int, int> > process_axes;
-    TIndex axis, inner_dim, dim;
-    Tensor* dest, *source, navigator;
+    vector<int64_t> st, ed, y_dimsV;
+    Tensor startsT, x_stridesT, y_dimsT;
 };
 
 }  // namespace dragon

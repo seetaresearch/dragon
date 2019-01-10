@@ -20,8 +20,8 @@ class Reduce(BaseModule):
     def __init__(self, key, ctx, **kwargs):
         super(Reduce, self).__init__(key, ctx, **kwargs)
         self.operation = kwargs.get('operation', 'SUM')
-        self.axis = kwargs.get('axis', -1)
-        self.keep_dims = kwargs.get('keep_dims', True)
+        self.dim = kwargs.get('dim', None)
+        self.keepdim = kwargs.get('keepdim', True)
         self.register_arguments()
         self.register_op()
 
@@ -40,8 +40,8 @@ class Reduce(BaseModule):
             'n_inputs': 1, 'n_outputs': 1,
             'arguments': {
                 'operation': self.operation,
-                'axis': self.axis,
-                'keep_dims': self.keep_dims
+                'axes': [self.dim] if self.dim is not None else None,
+                'keep_dims': self.keepdim,
             }
         }
 
@@ -55,8 +55,8 @@ class ArgReduce(BaseModule):
     def __init__(self, key, ctx, **kwargs):
         super(ArgReduce, self).__init__(key, ctx, **kwargs)
         self.operation = kwargs.get('operation', 'ARGMAX')
-        self.axis = kwargs.get('axis', -1)
-        self.keep_dims = kwargs.get('keep_dims', True)
+        self.axis = kwargs.get('axis', None)
+        self.keepdim = kwargs.get('keepdim', True)
         self.top_k = kwargs.get('top_k', 1)
         self.register_arguments()
         self.register_op()
@@ -73,12 +73,12 @@ class ArgReduce(BaseModule):
     def register_op(self):
         self.op_meta = {
             'op_type': 'ArgReduce',
-            'n_inputs': 1, 'n_outputs': 1,
+            'n_inputs': 1, 'n_outputs': 2,
             'arguments': {
                 'operation': self.operation if 'ARG' in self.operation \
                     else 'ARG' + self.operation,
-                'axis': self.axis,
-                'keep_dims': self.keep_dims,
+                'axis': self.axis if self.axis else 2147483647,
+                'keep_dims': self.keepdim,
                 'top_k': self.top_k,
             }
         }
@@ -88,7 +88,9 @@ class ArgReduce(BaseModule):
         if 'ARG' in self.operation:
             # Return indices only
             outputs = [y] if y else [self.register_output(dtype='int64')]
-            return self.run(inputs, outputs)
+            outputs += [self.register_output(x.dtype)]
+            returns = self.run(inputs, outputs)
+            return returns[0]
         else:
             if y:
                 if not isinstance(y, (tuple, list)):
@@ -99,6 +101,6 @@ class ArgReduce(BaseModule):
             else: outputs = [self.register_output('int64'), self.register_output(x.dtype)]
             returns = self.run(inputs, outputs)
             # Return values only
-            if self.axis == -1: return returns[1]
+            if self.axis is None: return returns[1]
             # Return values and indices
             return returns[1], returns[0]

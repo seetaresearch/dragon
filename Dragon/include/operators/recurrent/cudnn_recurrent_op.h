@@ -34,7 +34,7 @@ class cudnnTensorDescriptors {
     }
 
     template <typename T>
-    void Set(const vector<TIndex>& dims, const vector<TIndex>& strides) {
+    void Set(const vector<int64_t>& dims, const vector<int64_t>& strides) {
         CHECK_EQ(dims.size(), strides.size());
         for (auto desc : descs_) cudnnSetTensorDesc<T>(&desc, dims, strides);
     }
@@ -50,8 +50,8 @@ class CuDNNRecurrentOpBase : public Operator<Context> {
  public:
     CuDNNRecurrentOpBase(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws), states_initialized(false), 
-          hidden_size(OperatorBase::Arg<int>("hidden_size", 0)),
-          num_layers(OperatorBase::Arg<int>("num_layers", 1)),
+          hidden_size(OperatorBase::Arg<int64_t>("hidden_size", 0)),
+          num_layers(OperatorBase::Arg<int64_t>("num_layers", 1)),
           bidirectional(OperatorBase::Arg<bool>("bidirectional", false)),
           dropout_ratio(OperatorBase::Arg<float>("dropout_ratio", 1.f)),
           random_seed(def.device_option().random_seed()) {
@@ -94,7 +94,7 @@ class CuDNNRecurrentOpBase : public Operator<Context> {
     template <typename T> void ResetDesc();
 
  public:
-    TIndex hidden_size, num_layers;
+    int64_t hidden_size, num_layers;
     bool bidirectional, states_initialized;
     float dropout_ratio;
     unsigned long long random_seed;
@@ -107,7 +107,7 @@ class CuDNNRecurrentOpBase : public Operator<Context> {
     cudnnFilterDescriptor_t w_desc;
     cudnnTensorDescriptor_t hx_desc, cx_desc;
     cudnnTensorDescriptor_t hy_desc, cy_desc;
-    vector<TIndex> input_dims, output_dims, hidden_dims;
+    vector<int64_t> input_dims, output_dims, hidden_dims;
     size_t workspace_size, reserve_size, states_size;
 
     std::unique_ptr<cudnnTensorDescriptors> xs_desc;

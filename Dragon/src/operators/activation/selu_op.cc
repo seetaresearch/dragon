@@ -8,7 +8,7 @@ template <class Context> template <typename T>
 void SEluOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    kernel::SElu<T, Context>(Output(0)->count(), Xdata, Ydata, ctx());
+    kernel::SElu(Output(0)->count(), Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -32,8 +32,7 @@ void SEluGradientOp<Context>::RunWithType() {
     auto* Ydata = Input(0).template data<T, Context>();
     auto* dYdata = Input(1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    kernel::SEluGrad<T, Context>(Output(0)->count(),
-        dYdata, Ydata, dXdata, ctx());
+    kernel::SEluGrad(Output(0)->count(), dYdata, Ydata, dXdata, ctx());
 }
 
 template <class Context>
@@ -48,19 +47,11 @@ DEPLOY_CPU(SEluGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(SEluGradient);
 #endif
+
 OPERATOR_SCHEMA(SEluGradient)
     .NumInputs(2).NumOutputs(1)
     .Inplace({ { 1, 0 }});
 
-class GetSEluGradient final : public GradientMakerBase {
- public:
-    GRADIENT_MAKER_CTOR(GetSEluGradient);
-    vector<OperatorDef> MakeDefs() override {
-        return SingleDef(def.type() + "Gradient", "",
-            vector<string> {O(0), GO(0)},
-            vector<string> {GI(0)});
-    }
-};
-REGISTER_GRADIENT(SElu, GetSEluGradient);
+REGISTER_GRADIENT(SElu, InplaceGradientMaker);
 
 }  // namespace dragon

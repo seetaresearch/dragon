@@ -11,125 +11,128 @@ namespace kernel {
 /*! Affine <T = float32, Device = CUDA> */
 
 template <typename T>
-__global__ void _AffineWithOBias(
-    const int               count,
-    const int               scale_dim,
+__global__ void _AffineNoBias(
+    const int               nthreads,
     const int               inner_dim,
+    const int               scale_dim,
     const T*                x,
     const T*                alpha,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, nthreads) {
         const int scale_idx = (idx / inner_dim) % scale_dim;
-         y[idx] = alpha[scale_idx] * x[idx];
+#if __CUDA_ARCH__ >= 350
+        y[idx] = __ldg(alpha + scale_idx) * x[idx];
+#else
+        y[idx] = alpha[scale_idx] * x[idx];
+#endif
     }
 }
 
 template <typename T>
-__global__ void _AffineWithBias(
-    const int               count,
-    const int               scale_dim,
+__global__ void _Affine(
+    const int               nthreads,
     const int               inner_dim,
+    const int               scale_dim,
     const T*                x,
     const T*                alpha,
     const T*                beta,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, nthreads) {
         const int scale_idx = (idx / inner_dim) % scale_dim;
+#if __CUDA_ARCH__ >= 350
+        y[idx] = __ldg(alpha + scale_idx) * x[idx] +
+                      __ldg(beta + scale_idx);
+#else
         y[idx] = alpha[scale_idx] * x[idx] + beta[scale_idx];
+#endif
     }
 }
 
 template<> void Affine<float, CUDAContext>(
-    const int               count,
     const int               outer_dim,
-    const int               scale_dim,
     const int               inner_dim,
+    const int               scale_dim,
     const float*            x,
     const float*            alpha,
     const float*            beta,
-    const float*            beta_multiplier,
     float*                  y,
     CUDAContext*            ctx) {
+    auto nthreads = outer_dim * scale_dim * inner_dim;
     if (beta != nullptr) {
-        _AffineWithBias<float>
-            << < CUDA_BLOCKS(count), CUDA_THREADS,
+        _Affine<float>
+            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
                  0, ctx->cuda_stream() >> >
-            (count, scale_dim, inner_dim, x, alpha, beta, y);
+            (nthreads, inner_dim, scale_dim, x, alpha, beta, y);
     } else {
-        _AffineWithOBias<float>
-            << <CUDA_BLOCKS(count), CUDA_THREADS,
-                0, ctx->cuda_stream() >> >
-            (count, scale_dim, inner_dim, x, alpha, y);
+        _AffineNoBias<float>
+            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >
+            (nthreads, inner_dim, scale_dim, x, alpha, y);
     }
 }
 
 /*! Affine <T = float16, Device = CUDA> */
 
-template <typename T>
-__global__ void _AffineWithOBiasHalf(
-    const int               count,
-    const int               scale_dim,
+__global__ void _AffineNoBiasHalf(
+    const int               nthreads,
     const int               inner_dim,
+    const int               scale_dim,
     const half*             x,
     const half*             alpha,
     half*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, nthreads) {
 #if __CUDA_ARCH__ >= 530
         const int scale_idx = (idx / inner_dim) % scale_dim;
-        // ComputeType: float32
-        const float x_fp32 = __half2float(x[idx]);
-        const float alpha_fp32 = __half2float(alpha[scale_idx]);
-        y[idx] = __float2half(alpha_fp32 * x_fp32);
+        const float X32 = __half2float(x[idx]);
+        const float A32 = __half2float(__ldg(alpha + scale_idx));
+        y[idx] = __float2half(A32 * X32);
 #endif
     }
 }
 
-template <typename T>
-__global__ void _AffineWithBiasHalf(
-    const int               count,
-    const int               scale_dim,
+__global__ void _AffineHalf(
+    const int               nthreads,
     const int               inner_dim,
+    const int               scale_dim,
     const half*             x,
     const half*             alpha,
     const half*             beta,
     half*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, nthreads) {
 #if __CUDA_ARCH__ >= 530
         const int scale_idx = (idx / inner_dim) % scale_dim;
-        // ComputeType: float32
-        const float x_fp32 = __half2float(x[idx]);
-        const float alpha_fp32 = __half2float(alpha[scale_idx]);
-        const float beta_fp32 = __half2float(beta[scale_idx]);
-        y[idx] = __float2half(alpha_fp32 * x_fp32 + beta_fp32);
+        const float X32 = __half2float(x[idx]);
+        const float A32 = __half2float(__ldg(alpha + scale_idx));
+        const float B32 = __half2float(__ldg(beta + scale_idx));
+        y[idx] = __float2half(A32 * X32 + B32);
 #endif
     }
 }
 
 template<> void Affine<float16, CUDAContext>(
-    const int               count,
     const int               outer_dim,
-    const int               scale_dim,
     const int               inner_dim,
+    const int               scale_dim,
     const float16*          x,
     const float16*          alpha,
     const float16*          beta,
-    const float16*          beta_multiplier,
     float16*                y,
     CUDAContext*            ctx) {
+    auto nthreads = outer_dim * scale_dim * inner_dim;
     if (beta != nullptr) {
-        _AffineWithBiasHalf<float>
-            << < CUDA_BLOCKS(count), CUDA_THREADS,
+        _AffineHalf
+            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
                  0, ctx->cuda_stream() >> >
-            (count, scale_dim, inner_dim,
+            (nthreads, inner_dim, scale_dim,
                 reinterpret_cast<const half*>(x),
                     reinterpret_cast<const half*>(alpha),
                         reinterpret_cast<const half*>(beta),
                             reinterpret_cast<half*>(y));
     } else {
-        _AffineWithOBiasHalf<float>
-            << < CUDA_BLOCKS(count), CUDA_THREADS,
+        _AffineNoBiasHalf
+            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
                  0, ctx->cuda_stream() >> >
-            (count, scale_dim, inner_dim,
+            (nthreads, inner_dim, scale_dim,
                 reinterpret_cast<const half*>(x),
                     reinterpret_cast<const half*>(alpha),
                         reinterpret_cast<half*>(y));
@@ -139,18 +142,38 @@ template<> void Affine<float16, CUDAContext>(
 /*! AffineGrad <T = float32, Device = CUDA> */
 
 template <> void AffineGrad<float, CUDAContext>(
-    const int               count,
     const int               outer_dim,
-    const int               scale_dim,
     const int               inner_dim,
+    const int               scale_dim,
     const float*            dy,
     const float*            alpha,
     float*                  dx,
     CUDAContext*            ctx) {
-    _AffineWithOBias<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
+    auto nthreads = outer_dim * scale_dim * inner_dim;
+    _AffineNoBias<float>
+        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (count, scale_dim, inner_dim, dy, alpha, dx);
+        (nthreads, inner_dim, scale_dim, dy, alpha, dx);
+}
+
+/*! AffineGrad <T = float16, Device = CUDA> */
+
+template <> void AffineGrad<float16, CUDAContext>(
+    const int               outer_dim,
+    const int               inner_dim,
+    const int               scale_dim,
+    const float16*          dy,
+    const float16*          alpha,
+    float16*                dx,
+    CUDAContext*            ctx) {
+    auto nthreads = outer_dim * scale_dim * inner_dim;
+    _AffineNoBiasHalf
+        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >
+        (nthreads, inner_dim, scale_dim,
+            reinterpret_cast<const half*>(dy),
+                reinterpret_cast<const half*>(alpha),
+                    reinterpret_cast<half*>(dx));
 }
 
 }  // namespace kernel

@@ -65,18 +65,12 @@ def MakeContext(inputs=(), outputs=(), meta=None):
 def WrapScalar(scalar, dtype, ctx):
     # We use (DType + Value) to hash different scalars
     # Setting a Tensor with same DType and shape will not deconstruct it
-    value = np.array([scalar], dtype=dtype)
+    value = np.array(scalar, dtype=dtype)
     if 'float' in dtype: scalar = float(scalar)
     if 'int' in dtype: scalar = int(scalar)
-    t = dg.Tensor('/share/scalar/{}/{}'.format(
+    t = dg.Tensor.Ref('/share/scalar/{}/{}'.format(
         dtype, str(scalar))).Variable()
     t.set_value(value)
     t = Tensor(dg_tensor=t.name, dtype=dtype, ctx=ctx, own_storage=False)
     t.requires_grad = False
     return t
-
-
-def CanonicalAxis(input, dim):
-    ndim = input.ndimension()
-    while dim < 0: dim += ndim
-    return dim

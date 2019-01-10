@@ -13,8 +13,15 @@
 #
 # ------------------------------------------------------------
 
-import functools
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import re
+import functools
+
+from dragon.vm.tensorflow.platform import tf_logging as logging
+
 
 _PRINT_DEPRECATION_WARNINGS = True
 
@@ -53,9 +60,8 @@ def deprecated(date, instructions):
        _validate_callable(func, 'deprecated')
        @functools.wraps(func)
        def new_func(*args, **kwargs):
-           from dragon.config import logger
            if _PRINT_DEPRECATION_WARNINGS:
-               logger.warning(
+               logging.warning(
                    '{} (from {}) is deprecated and will be removed {}.\n'
                    'Instructions for updating:\n{}'.
                        format(_get_qualified_name(func),

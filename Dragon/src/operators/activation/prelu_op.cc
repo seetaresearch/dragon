@@ -8,17 +8,16 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void PReluOp<Context>::RunWithType() {
-    if (channel_shared) { TENSOR_FILL(Input(1), vector<TIndex>(1, 1)); }
-    else { TENSOR_FILL(Input(1), vector<TIndex>(1, Input(0).dim(1))); }
+    if (channel_shared) { TENSOR_FILL(Input(1), vector<int64_t>(1, 1)); }
+    else { TENSOR_FILL(Input(1), vector<int64_t>(1, Input(0).dim(1))); }
 
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Wdata = Input(1).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
-    kernel::PRelu<T, Context>(
-        Output(0)->count(), channels, dim,
-            channel_shared ? true : false, data_format,
-                Xdata, Wdata, Ydata, ctx());
+    kernel::PRelu(Output(0)->count(), channels, dim,
+        channel_shared ? true : false, data_format,
+            Xdata, Wdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -49,21 +48,19 @@ void PReluGradientOp<Context>::RunWithType() {
 
     if (Output(1)->name() != "ignore") {
         DECLARE_MULTIPLIER(multiplier, channels * dim);
-        auto* dWdata = Output(1)->template mutable_data<T, Context>(ctx());
+        auto* dWdata = Output(1)->template mutable_data<T, Context>();
         auto* dWBdata = ws()->template caches<T, Context>({ channels * dim })[0];
-        kernel::PReluWGrad<T, Context>(
-            Input(0).dim(0), Input(0).count(1), channels, dim,
-                channel_shared ? true : false, data_format,
-                    dYdata, Xdata, multiplier, dWBdata, dWdata, ctx());
+        kernel::PReluWGrad(Input(0).dim(0), Input(0).count(1),
+            channels, dim, channel_shared ? true : false, data_format,
+                dYdata, Xdata, multiplier, dWBdata, dWdata, ctx());
     }
 
     if (Output(0)->name() != "ignore") {
         auto* Wdata = Input(1).template data<T, Context>();
         auto* dXdata = Output(0)->template mutable_data<T, Context>();
-        kernel::PReluGrad<T, Context>(
-            Output(0)->count(), channels, dim,
-                channel_shared ? true : false, data_format,
-                    dYdata, Xdata, Wdata, dXdata, ctx());
+        kernel::PReluGrad(Output(0)->count(), channels, dim,
+            channel_shared ? true : false, data_format,
+                dYdata, Xdata, Wdata, dXdata, ctx());
     }
 }
 
@@ -88,17 +85,20 @@ DEPLOY_CPU(PReluGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(PReluGradient);
 #endif
-OPERATOR_SCHEMA(PReluGradient).NumInputs(3).NumOutputs(2);
+
+OPERATOR_SCHEMA(PReluGradient)
+    .NumInputs(3).NumOutputs(2);
 
 class GetPReluGradient final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetPReluGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), I(1), GO(0)},
-            vector<string> {GI(0), GI(1)});
+            vector<string>({ I(0), I(1), GO(0) }),
+            vector<string>({ GI(0), GI(1)} ));
     }
 };
+
 REGISTER_GRADIENT(PRelu, GetPReluGradient);
 
 }  // namespace dragon

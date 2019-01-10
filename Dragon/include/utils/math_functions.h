@@ -16,21 +16,87 @@
 #include <cstdint>
 #include <climits>
 
-#ifdef WITH_BLAS
-extern "C" {
-#include <cblas.h>
-}
-#else  // WITH_BLAS
-typedef enum CBLAS_TRANSPOSE {CblasNoTrans=111, CblasTrans=112} CBLAS_TRANSPOSE;
-#endif
-
-#include "protos/dragon.pb.h"
+#include "proto/dragon.pb.h"
 
 namespace dragon {
 
+// We still follow the CBLAS Transpose custom
+typedef enum CBLAS_TRANSPOSE {
+    CblasNoTrans,
+    CblasTrans,
+} CBLAS_TRANSPOSE;
+
 namespace math {
 
-/******************** Level-0 ********************/
+/*!
+ * ----------------------------------------------
+ *
+ *
+ *            Simple Unary Functions
+ *
+ *
+ * ----------------------------------------------
+ */
+
+template <typename T, class Context>
+void Exp(
+    const int               n,
+    const T*                x,
+    T*                      y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void Log(
+    const int               n,
+    const T*                x,
+    T*                      y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void Inv(
+    const int               n,
+    const T*                x,
+    T*                      y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void Sqrt(
+    const int               n,
+    const T*                x,
+    T*                      y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void RSqrt(
+    const int               n,
+    const T*                x,
+    T*                      y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void Square(
+    const int               n,
+    const T*                x,
+    T*                      y,
+    Context*                ctx);
+
+/*!
+ * ----------------------------------------------
+ *
+ *
+ *             Scale Unary Functions
+ *
+ *
+ * ----------------------------------------------
+ */
+
+template <typename T, class Context>
+void Pow(
+    const int               n,
+    const float             exp,
+    const T*                x,
+    T*                      y,
+    Context*                ctx);
 
 template <typename T, class Context>
 void Set(
@@ -40,39 +106,85 @@ void Set(
     Context*                ctx);
 
 template <typename T, class Context>
-void RandomUniform(
+void Scale(
     const int               n,
-    const float             low,
-    const float             high,
-    T*                      x,
+    const float             alpha,
+    const T*                x,
+    T*                      y,
     Context*                ctx);
 
-template <typename T, class Context>
-void RandomNormal(
+template<typename T, class Context>
+void Axpy(
     const int               n,
-    const float             mu,
-    const float             sigma,
-    T*                      x,
+    const float             alpha,
+    const T*                x,
+    T*                      y,
     Context*                ctx);
 
-template <typename T, class Context>
-void RandomTruncatedNormal(
+template<typename T, class Context>
+void AddScalar(
     const int               n,
-    const float             mu,
-    const float             sigma,
-    const float             low,
-    const float             high,
-    T*                      x,
+    const float             alpha,
+    T*                      y,
     Context*                ctx);
 
-template <typename T, class Context>
-void RandomBernoulli(
+/*!
+ * ----------------------------------------------
+ *
+ *
+ *             Extended Unary Functions
+ *
+ *
+ * ----------------------------------------------
+ */
+
+template<typename T, class Context>
+void InvStd(
     const int               n,
-    const float             p,
-    T*                      x,
+    float                   eps,
+    const T*                x,
+    T*                      y,
     Context*                ctx);
 
-/******************** Level-1 ********************/
+template<typename T, class Context>
+void Axpby(
+    const int               n,
+    float                   alpha,
+    const T*                x,
+    float                   beta,
+    T*                      y,
+    Context*                ctx);
+
+template<typename T, class Context>
+void Sum(
+    const int               n,
+    const float             alpha,
+    const T*                x,
+    T*                      y,
+    Context*                ctx);
+
+template<typename T, class Context>
+T Sum(
+    const int               n,
+    const float             alpha,
+    const T*                x,
+    Context*                ctx);
+
+template<typename T, class Context>
+T ASum(
+    const int               n,
+    const T*                x,
+    Context*                ctx);
+
+/*!
+ * ----------------------------------------------
+ *
+ *
+ *            Simply Binary Functions
+ *
+ *
+ * ----------------------------------------------
+ */
 
 template <typename T, class Context>
 void Add(
@@ -107,85 +219,6 @@ void Div(
     Context*                ctx);
 
 template <typename T, class Context>
-void Clip(
-    const int               n,
-    const float             low,
-    const float             high,
-    T*                      x,
-    Context*                ctx);
-
-template <typename T, class Context>
-void Exp(
-    const int               n,
-    const T*                x,
-    T*                      y,
-    Context*                ctx);
-
-template <typename T, class Context>
-void Log(
-    const int               n,
-    const T*                x,
-    T*                      y,
-    Context*                ctx);
-
-template <typename T, class Context>
-void Square(
-    const int               n,
-    const T*                x,
-    T*                      y,
-    Context*                ctx);
-
-template <typename T, class Context>
-void Sqrt(
-    const int               n,
-    const T*                x,
-    T*                      y,
-    Context*                ctx);
-
-template <typename T, class Context>
-void Pow(
-    const int               n,
-    const float             alpha,
-    const T*                x,
-    T*                      y,
-    Context*                ctx);
-
-template <typename T, class Context>
-void Inv(
-    const int               n,
-    const float             numerator,
-    const T*                x,
-    T*                      y,
-    Context*                ctx);
-
-/******************** Level-2 ********************/
-
-template <typename T, class Context>
-void Scal(
-    const int               n,
-    const float             alpha,
-    T*                      y,
-    Context*                ctx);
-
-template <typename T, class Context>
-void Scale(
-    const int               n,
-    const float             alpha,
-    const T*                x,
-    T*                      y,
-    Context*                ctx);
-
-template <typename T, class Context>
-void StridedDot(
-    const int               n,
-    const T*                a,
-    const int               incx,
-    const T*                b,
-    const int               incy,
-    T*                      y,
-    Context*                ctx);
-
-template <typename T, class Context>
 void Dot(
     const int               n,
     const T*                a,
@@ -193,43 +226,65 @@ void Dot(
     T*                      y,
     Context*                ctx);
 
-template<typename T, class Context>
-float ASum(
-    const int               n,
-    const T*                x);
+/*!
+ * ----------------------------------------------
+ *
+ *
+ *          Broadcast Binary Functions
+ *
+ *
+ * ----------------------------------------------
+ */
 
-template<typename T, class Context>
-void AddScalar(
-    const int               n,
-    const float             alpha,
+template <typename T, class Context>
+void BroadcastAdd(
+    const int               rows,
+    const int               cols,
+    const int               type,
+    const T*                a,
+    const T*                b,
     T*                      y,
     Context*                ctx);
 
-template<typename T, class Context>
-void MulScalar(
-    const int               n,
-    const float             alpha,
+template <typename T, class Context>
+void BroadcastSub(
+    const int               rows,
+    const int               cols,
+    const int               type,
+    const T*                a,
+    const T*                b,
     T*                      y,
     Context*                ctx);
 
-template<typename T, class Context>
-void Axpy(
-    const int               n,
-    float                   alpha,
-    const T*                x,
+template <typename T, class Context>
+void BroadcastMul(
+    const int               rows,
+    const int               cols,
+    const int               type,
+    const T*                a,
+    const T*                b,
     T*                      y,
     Context*                ctx);
 
-template<typename T, class Context>
-void Axpby(
-    const int               n,
-    float                   alpha,
-    const T*                x,
-    float                   beta,
+template <typename T, class Context>
+void BroadcastDiv(
+    const int               rows,
+    const int               cols,
+    const int               type,
+    const T*                a,
+    const T*                b,
     T*                      y,
     Context*                ctx);
 
-/******************** Level-3 ********************/
+/*!
+ * ----------------------------------------------
+ *
+ *
+ *        Linear Algebra Binary Functions
+ *
+ *
+ * ----------------------------------------------
+ */
 
 template <typename T, class Context>
 void Gemm(
@@ -258,6 +313,49 @@ void Gemv(
     T*                      y,
     Context*                ctx,
     TensorProto_DataType    math_type = TensorProto_DataType_FLOAT);
+
+/*!
+ * ----------------------------------------------
+ *
+ *
+ *               Random Functions
+ *
+ *
+ * ----------------------------------------------
+ */
+
+template <typename T, class Context>
+void RandomUniform(
+    const int               n,
+    const float             low,
+    const float             high,
+    T*                      y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void RandomNormal(
+    const int               n,
+    const float             mu,
+    const float             sigma,
+    T*                      y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void RandomTruncatedNormal(
+    const int               n,
+    const float             mu,
+    const float             sigma,
+    const float             low,
+    const float             high,
+    T*                      y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void RandomBernoulli(
+    const int               n,
+    const float             p,
+    T*                      y,
+    Context*                ctx);
 
 }  // namespace math
 

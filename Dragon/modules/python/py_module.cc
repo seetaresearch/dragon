@@ -5,6 +5,7 @@
 #include "py_cuda.h"
 #include "py_mpi.h"
 #include "py_io.h"
+#include "py_onnx.h"
 #include "py_config.h"
 
 namespace dragon {
@@ -23,13 +24,14 @@ Workspace* ws() { return g_workspace; }
 
 TypeId CTypeToFetcher(TypeId type) {
     static Map<TypeId,TypeId> c_type_map {
-        { TypeMeta::Id<int8>(), TypeMeta::Id<NumpyFetcher>() },
-        { TypeMeta::Id<uint8>(), TypeMeta::Id<NumpyFetcher>() },
+        { TypeMeta::Id<bool>(), TypeMeta::Id<NumpyFetcher>() },
+        { TypeMeta::Id<int8_t>(), TypeMeta::Id<NumpyFetcher>() },
+        { TypeMeta::Id<uint8_t>(), TypeMeta::Id<NumpyFetcher>() },
         { TypeMeta::Id<int>(), TypeMeta::Id<NumpyFetcher>() },
         { TypeMeta::Id<int64_t>(), TypeMeta::Id<NumpyFetcher>() },
+        { TypeMeta::Id<float16>(), TypeMeta::Id<NumpyFetcher>() },
         { TypeMeta::Id<float>(), TypeMeta::Id<NumpyFetcher>() },
         { TypeMeta::Id<double>(), TypeMeta::Id<NumpyFetcher>() },
-        { TypeMeta::Id<float16>(), TypeMeta::Id<NumpyFetcher>() },
         { TypeMeta::Id<string>(), TypeMeta::Id<StringFetcher>() }};
     return c_type_map.count(type) ? c_type_map[type] : 0;
 }
@@ -91,7 +93,7 @@ inline PyObject* MoveWorkspaceCC(PyObject* self, PyObject *args) {
         << "\nSource Workspace(" << src_ws << ") does not exist.";
     CHECK(g_workspaces.count(target_ws))
         << "\nTarget Workspace(" << target_ws << ") does not exist.";
-    g_workspaces[target_ws]->MoveWorkspace(g_workspaces[src_ws].get());
+    g_workspaces[target_ws]->Move(g_workspaces[src_ws].get());
     sub_workspaces[target_ws].push_back(string(src_ws));
     LOG(INFO) << "Move the Workspace(" << src_ws << ") into the "
               << "Workspace(" << target_ws << ").";
@@ -127,7 +129,7 @@ inline PyObject* ResetWorkspaceCC(PyObject* self, PyObject* args) {
     g_workspace = g_workspaces[target_workspace].get();
     for (auto& sub_workspace : sub_workspaces[target_workspace]) {
         if (g_workspaces.count(sub_workspace) > 0)
-            g_workspace->MoveWorkspace(g_workspaces[sub_workspace].get());
+            g_workspace->Move(g_workspaces[sub_workspace].get());
     }
     Py_RETURN_TRUE;
 }
@@ -145,7 +147,7 @@ inline PyObject* ClearWorkspaceCC(PyObject* self, PyObject* args) {
         << "\nWorkspace(" << target_workspace
         << ") does not exist, can not be reset.";
     LOG(INFO) << "Clear the Workspace(" << target_workspace << ")";
-    g_workspaces[target_workspace]->ClearWorkspace();
+    g_workspaces[target_workspace]->Clear();
     Py_RETURN_TRUE;
 }
 
@@ -156,8 +158,9 @@ inline PyObject* FetchTensorCC(PyObject* self, PyObject* args) {
         return nullptr;
     }
     if (!g_workspace->HasTensor(string(cname))) {
-        PyErr_SetString(PyExc_ValueError, 
-            "Tensor does not exist. Have you registered it?");
+        string debug_str = "Tensor(" + string(cname) +
+            ") does not exist. Have you registered it?";
+        PyErr_SetString(PyExc_ValueError, debug_str.c_str());
         return nullptr;
     }
     Tensor* tensor = g_workspace->GetTensor(string(cname));
@@ -203,6 +206,19 @@ inline PyObject* FeedTensorCC(PyObject* self, PyObject* args) {
     }
 }
 
+inline PyObject* GetDummyNameCC(PyObject* self, PyObject* args) {
+    char* basename, *suffix, *domain;
+    PyObject* zero_based = nullptr;
+    if (!PyArg_ParseTuple(args, "sss|O", &basename,
+            &suffix, &domain, &zero_based)) {
+        LOG(FATAL) << "Excepted the basename, suffix and domain.";
+    }
+    if (zero_based == nullptr) zero_based = Py_True;
+    return String_AsPyUnicode(ws()->GetDummyName(
+        basename, suffix, domain,
+            PyObject_IsTrue(zero_based) ? true : false));
+}
+
 inline PyObject* OnModuleExitCC(PyObject* self, PyObject* args) {
     g_workspaces.clear();
     Py_RETURN_TRUE;
@@ -213,28 +229,28 @@ inline PyObject* OnModuleExitCC(PyObject* self, PyObject* args) {
 
 PyMethodDef* GetAllMethods() {
     static PyMethodDef g_python_methods[] {
-        /****  Workspace  ****/
+        /*!          Workspace          */
         PYFUNC(SwitchWorkspaceCC),
         PYFUNC(MoveWorkspaceCC),
         PYFUNC(CurrentWorkspaceCC),
         PYFUNC(WorkspacesCC),
         PYFUNC(ResetWorkspaceCC),
         PYFUNC(ClearWorkspaceCC),
-        /****  Graph  ****/
+        /*!            Graph            */
         PYFUNC(CreateGraphCC),
         PYFUNC(RunGraphCC),
         PYFUNC(GraphsCC),
-        /****  AutoGrad  ****/
+        /*!           AutoGrad          */
         PYFUNC(CreateGradientDefsCC),
         PYFUNC(RunGradientFlowCC),
-        /****  Operator  ****/
+        /*!           Operator          */
         PYFUNC(RegisteredOperatorsCC),
         PYFUNC(NoGradientOperatorsCC),
         PYFUNC(RunOperatorCC),
         PYFUNC(RunOperatorsCC),
         PYFUNC(CreatePersistentOpCC),
         PYFUNC(RunPersistentOpCC),
-        /****  Tensor  ****/
+        /*!            Tensor           */
         PYFUNC(HasTensorCC),
         PYFUNC(CreateTensorCC),
         PYFUNC(CreateFillerCC),
@@ -253,18 +269,22 @@ PyMethodDef* GetAllMethods() {
         PYFUNC(TensorToPyArrayExCC),
         PYFUNC(ResetTensorCC),
         PYFUNC(TensorsCC),
-        /****  MPI  ****/
+        /*!             MPI             */
         PYFUNC(MPIInitCC),
         PYFUNC(MPIRankCC),
         PYFUNC(MPISizeCC),
         PYFUNC(MPICreateGroupCC),
         PYFUNC(MPIFinalizeCC),
-        /****  CUDA  ****/
+        /*!            CUDA             */
         PYFUNC(IsCUDADriverSufficientCC),
-        /****  I/O  ****/
+        /*!            I/O              */
         PYFUNC(RestoreCC),
         PYFUNC(SnapshotCC),
-        /****  Config ****/
+        /*!            ONNX             */
+        PYFUNC(ImportONNXModelCC),
+        /*!            Misc             */
+        PYFUNC(GetDummyNameCC),
+        /*!           Config            */
         PYFUNC(SetLogLevelCC),
         PYFUNC(OnModuleExitCC),
         PYENDFUNC,

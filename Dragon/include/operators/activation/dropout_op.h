@@ -33,8 +33,8 @@ class DropoutOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    DECLARE_ARGUMENT_WITH_DESC(float, prob);
     bool use_scale;
+    DECLARE_ARGUMENT_WITH_DESC(float, prob);
 };
 
 template <class Context>
@@ -52,8 +52,8 @@ class DropoutGradientOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-     DECLARE_ARGUMENT_WITH_DESC(float, prob);
      bool use_scale;
+     DECLARE_ARGUMENT_WITH_DESC(float, prob);
 };
 
 DEFINE_ARGUMENT_WITH_DESC(float, DropoutOp, prob);
@@ -86,12 +86,12 @@ public:
     template <typename T> void RunWithType(); 
 
  protected:
-    DECLARE_ARGUMENT_WITH_DESC(float, prob);
     bool use_scale, states_initialized;
     cudnnTensorDescriptor_t input_desc;
     cudnnDropoutDescriptor_t dropout_desc;
     size_t states_size, reserve_space_size;
     unsigned long long random_seed;
+    DECLARE_ARGUMENT_WITH_DESC(float, prob);
 };
 
 template <class Context>
@@ -117,12 +117,12 @@ public:
     template <typename T> void RunWithType(); 
 
  protected:
-    DECLARE_ARGUMENT_WITH_DESC(float, prob);
     bool use_scale, states_initialized;
     cudnnTensorDescriptor_t input_desc;
     cudnnDropoutDescriptor_t dropout_desc;
     size_t states_size, reserve_space_size;
     unsigned long long random_seed;
+    DECLARE_ARGUMENT_WITH_DESC(float, prob);
 };
 
 DEFINE_ARGUMENT_WITH_DESC(float, CuDNNDropoutOp, prob);

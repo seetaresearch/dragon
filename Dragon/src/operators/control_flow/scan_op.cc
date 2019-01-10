@@ -50,7 +50,7 @@ void ScanOp<Context>::InitTemplate() {
     // Handle pre outputs
     for (int i = 0; i < nout; i++) {
         if (default_outputs[i].empty()) continue;
-        terms[default_outputs[i]] = func_def.target(i) + "@1";
+        terms[default_outputs[i]] = func_def.output(i) + "@1";
     }
 }
 
@@ -127,11 +127,14 @@ void ScanOp<Context>::UnrollTemplate() {
     }
     for (int i = 0; i < nout; i++) {
         // Solve the last step only
-        new_def.add_target(func_def.target(i) + "@" + std::to_string(nsteps));
+        new_def.add_output(
+            func_def.output(i) +
+                "@" + std::to_string(nsteps));
         // Concat all steps if necessary
         if (Output(i)->name() == "ignore") continue;
         OperatorDef* op = new_def.add_op();
-        op->set_name(name() + "(BodyOp." + std::to_string(nseqs + nrepeats + i) + ")");
+        op->set_name(name() + "(BodyOp." + std::to_string(
+            nseqs + nrepeats + i) + ")");
         op->set_type("Concat");
         Argument arg_axis, arg_nin;
         arg_axis.set_name("axis"); arg_axis.set_i(axis);
@@ -142,12 +145,12 @@ void ScanOp<Context>::UnrollTemplate() {
             op->add_input(Output(i)->name() + "@" + std::to_string(t));
         op->add_output(Output(i)->name());
         // Solve all the all steps
-        new_def.add_target(Output(i)->name());
+        new_def.add_output(Output(i)->name());
     }
     // Upload
-    Tensor* string_tensor = ws()->CreateTensor("/mnt/" + anchor() + "/raw_ops");
-    string_tensor->Reshape({ 1 });
-    string* data = string_tensor->mutable_data <string, CPUContext>();
+    auto* ops_tensor = ws()->CreateTensor(
+        mount_name("raw_ops"))->Reshape({ 1 });
+    auto* data = ops_tensor->template mutable_data<string, CPUContext>();
     data[0] = new_def.SerializeAsString();
 }
 
@@ -178,8 +181,7 @@ void ScanGradientOp<Context>::MakeOps(const GraphDef& forward_def,
 
     // Determine the targets
     vector<string> targets;
-    for (auto& t : forward_def.target())
-        targets.emplace_back(t);
+    for (const auto& e : forward_def.output()) targets.emplace_back(e);
 
     // Init maker
     GraphGradientMaker maker;
@@ -196,21 +198,21 @@ void ScanGradientOp<Context>::MakeOps(const GraphDef& forward_def,
 
     // Post-process
     new_def.set_name(name() + "(ScanLen." + std::to_string(nsteps) + ")");
-    for (auto& target : targets) {
+    for (const auto& target : targets) {
         for (int i = 0; i < OutputSize(); i++) {
             if (Output(i)->name() == "ignore") continue;
             if (Input(i).name() == "ignore") continue;
-            GradientTarget* g_target = new_def.add_g_target();
-            g_target->set_cost(target);
-            g_target->set_wrt(Input(i).name());
-            g_target->set_external(Output(i)->name());
+            auto* gradient = new_def.add_gradient();
+            gradient->set_cost(target);
+            gradient->set_wrt(Input(i).name());
+            gradient->set_external(Output(i)->name());
         }
     }
 }
 
 template <class Context>
 void ScanGradientOp<Context>::RunOnDevice() {
-    Tensor* ops = ws()->GetTensor("/mnt/" + anchor() + "/raw_ops");
+    Tensor* ops = ws()->GetTensor(mount_name("raw_ops"));
     GraphDef forward_def, new_def;
     forward_def.ParseFromString(ops->data<string, CPUContext>()[0]);
     new_def.CopyFrom(forward_def);
@@ -244,6 +246,7 @@ class GetScanGradient final : public GradientMakerBase {
         return SingleDef(def.type() + "Gradient", "", inputs, outputs);
     }
 };
+
 REGISTER_GRADIENT(Scan, GetScanGradient);
 
 }  // namespace dragon

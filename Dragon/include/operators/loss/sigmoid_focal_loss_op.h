@@ -25,12 +25,12 @@ class SigmoidFocalLossOp
         const OperatorDef&          def,
         Workspace*                  ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", 1)),
+          axis(OperatorBase::Arg<int64_t>("axis", 1)),
           normalization(OperatorBase::Arg<string>(
               "normalization", "VALID")),
           alpha(OperatorBase::Arg<float>("alpha", 0.25f)),
           gamma(OperatorBase::Arg<float>("gamma", 2.f)),
-          neg_id(OperatorBase::Arg<int>("neg_id", 0)) {
+          neg_id(OperatorBase::Arg<int64_t>("neg_id", 0)) {
         pos_alpha = alpha;
         neg_alpha = 1.f - alpha;
     }
@@ -41,7 +41,7 @@ class SigmoidFocalLossOp
 
  protected:
     float alpha, gamma, pos_alpha, neg_alpha;
-    TIndex axis, neg_id, outer_dim, axis_dim, inner_dim;
+    int64_t axis, neg_id, outer_dim, axis_dim, inner_dim;
     Tensor losses, flags;
     string normalization;
 };
@@ -54,12 +54,12 @@ class SigmoidFocalLossGradientOp
          const OperatorDef&         def,
          Workspace*                 ws)
          : Operator<Context>(def, ws),
-           axis(OperatorBase::Arg<int>("axis", 1)),
+           axis(OperatorBase::Arg<int64_t>("axis", 1)),
            normalization(OperatorBase::Arg<string>(
                "normalization", "VALID")),
            alpha(OperatorBase::Arg<float>("alpha", 0.25f)),
            gamma(OperatorBase::Arg<float>("gamma", 2.f)),
-           neg_id(OperatorBase::Arg<int>("neg_id", 0)) {
+           neg_id(OperatorBase::Arg<int64_t>("neg_id", 0)) {
          pos_alpha = alpha;
          neg_alpha = 1.f - alpha;
     }
@@ -70,7 +70,7 @@ class SigmoidFocalLossGradientOp
 
  protected:
     float alpha, gamma, pos_alpha, neg_alpha;
-    TIndex axis, neg_id, outer_dim, axis_dim, inner_dim;
+    int64_t axis, neg_id, outer_dim, axis_dim, inner_dim;
     Tensor flags;
     string normalization;
 };

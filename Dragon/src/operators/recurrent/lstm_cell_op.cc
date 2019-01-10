@@ -12,7 +12,7 @@ void LSTMCellOp<Context>::RunWithType() {
     auto* Hdata = Output(0)->template mutable_data<T, Context>();
     auto* Cdata = Output(1)->template mutable_data<T, Context>();
 
-    kernel::LSTMCell<T, Context>(Input(1).count(), Input(1).dim(0),
+    kernel::LSTMCell(Input(1).count(), Input(1).dim(0),
         Input(1).ndim() == 2 ? Input(1).dim(1) : Input(1).dim(2),
             CXdata, XAdata, Cdata, Hdata, ctx());
 }
@@ -42,7 +42,7 @@ void LSTMCellGradientOp<Context>::RunWithType() {
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* dCXdata = Output(1)->template mutable_data<T, Context>();
 
-    kernel::LSTMCellGrad<T, Context>(Input(1).count(), Input(1).dim(0),
+    kernel::LSTMCellGrad(Input(1).count(), Input(1).dim(0),
         Input(1).ndim() == 2 ? Input(1).dim(1) : Input(1).dim(2),
             CXdata, XAdata, Cdata, dCdata, dHdata, dCXdata, dXdata, ctx());
 }
@@ -60,19 +60,22 @@ DEPLOY_CPU(LSTMCellGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(LSTMCellGradient);
 #endif
-OPERATOR_SCHEMA(LSTMCellGradient).NumInputs(5).NumOutputs(2);
+
+OPERATOR_SCHEMA(LSTMCellGradient)
+    .NumInputs(5).NumOutputs(2);
 
 class GetLSTMCellGradient final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetLSTMCellGradient);
     vector<OperatorDef> MakeDefs() override{
         return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), I(1), O(0), GO(0), GO(1)},
-            vector<string> {GI(0), GI(1)});
+            vector<string>({ I(0), I(1), O(0), GO(0), GO(1) }),
+            vector<string>({ GI(0), GI(1) }));
     }
     //  fill zero for dc_{T+1}
     vector<float> DefaultValues() override{ return { 0.f, 1.f }; }
 };
+
 REGISTER_GRADIENT(LSTMCell, GetLSTMCellGradient);
 
 }  // namespace dragon

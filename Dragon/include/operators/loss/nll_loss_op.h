@@ -24,12 +24,12 @@ class NLLLossOp : public Operator<Context> {
         const OperatorDef&          def,
         Workspace*                  ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", 1)),
+          axis(OperatorBase::Arg<int64_t>("axis", 1)),
           normalization(OperatorBase::Arg<string>(
               "normalization", "VALID")) {
-        auto xs = OperatorBase::Args<int>("ignore_labels");
+        auto xs = OperatorBase::Args<int64_t>("ignore_labels");
         if (xs.size()) {
-            ignores.Reshape({ (TIndex)xs.size() });
+            ignores.Reshape({ (int64_t)xs.size() });
             auto* Idata = ignores.mutable_data<int, CPUContext>();
             for (int i = 0; i < xs.size(); i++) Idata[i] = xs[i];
         }
@@ -40,7 +40,7 @@ class NLLLossOp : public Operator<Context> {
     template <typename Tx, typename Ty> void RunWithType();
 
  protected:
-    TIndex axis, outer_dim, inner_dim;
+    int64_t axis, outer_dim, inner_dim;
     Tensor losses, flags, ignores;
     string normalization;
 };
@@ -52,12 +52,12 @@ class NLLLossGradientOp : public Operator<Context> {
         const OperatorDef&          def,
         Workspace*                  ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", 1)),
+          axis(OperatorBase::Arg<int64_t>("axis", 1)),
           normalization(OperatorBase::Arg<string>(
               "normalization", "VALID")) {
-        auto xs = OperatorBase::Args<int>("ignore_labels");
+        auto xs = OperatorBase::Args<int64_t>("ignore_labels");
         if (xs.size()) {
-            ignores.Reshape({ (TIndex)xs.size() });
+            ignores.Reshape({ (int64_t)xs.size() });
             auto* Idata = ignores.mutable_data<int, CPUContext>();
             for (int i = 0; i < xs.size(); i++) Idata[i] = xs[i];
         }
@@ -68,7 +68,7 @@ class NLLLossGradientOp : public Operator<Context> {
     template <typename Tx, typename Ty> void RunWithType();
 
  protected:
-    TIndex axis, outer_dim, inner_dim;
+    int64_t axis, outer_dim, inner_dim;
     Tensor ignores, flags;
     string normalization;
 };

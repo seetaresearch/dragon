@@ -1,6 +1,46 @@
 ------------------------------------------------------------------------
 The list of most significant changes made over time in Dragon.
 
+Dragon 0.3.0.0 (20190110)
+DRAGON_VERSION == 3000
+
+Changes (w.r.t. Dragon 0.2.2.13):
+
+Preview Features:
+
+- New V.M framework: ONNX
+
+  We have extended the exporting and importing(Runtime) for ONNX.
+
+- Operators Refactor:
+
+  * <NDArray> Faster implementation for following multiple axes operators:
+
+      ``Crop``, ``Pad``, ``Tile``, ``Reduce`` and ``Transpose``.
+
+  * <Norm> Faster implementation for fused norm operators:
+
+      ``BatchNorm``, ``GroupNorm``, ``LayerNorm``, ``InstanceNorm``.
+
+- Use ``Eigen`` as the default cpu math library instead of ``OpenBLAS``.
+
+- Integer data types support for common operators,
+
+  see the documentation for more detail information.
+
+- A new workspace-local dummy name interface has been introduced,
+
+  which unifies the naming of static and dynamic computation graph.
+
+
+Bugs fixed:
+
+- Repair the basic TensorFlow API, following the master branch.
+
+- More reliable shape inference for static computation graph.
+
+------------------------------------------------------------------------
+
 Dragon 0.2.2.13 (20181204)
 DRAGON_VERSION == 2213
 

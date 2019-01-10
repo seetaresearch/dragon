@@ -40,11 +40,11 @@ class GradientMakerBase {
           g_inputs_(def.input_size()) {}
     virtual ~GradientMakerBase() {}
 
-    inline virtual bool CopyDeviceOption() const { return true; }
-    inline virtual bool CopyEngine() const { return true; }
-    inline virtual bool CopyArguments() const { return true; }
+    virtual bool CopyDeviceOption() const { return true; }
+    virtual bool CopyEngine() const { return true; }
+    virtual bool CopyArguments() const { return true; }
 
-    inline virtual Gradient Make() {
+    virtual Gradient Make() {
         vector<OperatorDef> new_defs = MakeDefs();
         Argument anchor;
         anchor.set_name("anchor"); anchor.set_s(def.name());
@@ -53,29 +53,40 @@ class GradientMakerBase {
         return Gradient(new_defs, g_inputs_, DefaultValues());
     };
 
-    virtual inline vector<OperatorDef> MakeDefs() {
+    virtual vector<OperatorDef> MakeDefs() {
         NOT_IMPLEMENTED;
         return vector<OperatorDef>();
     }
 
-    virtual inline vector<float> DefaultValues() {
+    virtual vector<float> DefaultValues() {
         return vector<float>(g_outputs_.size(), 1.f);
     }
 
     template <class... Args>
-    inline static vector<OperatorDef> SingleDef(const Args& ... args) {
+    static vector<OperatorDef> SingleDef(const Args& ... args) {
         return vector<OperatorDef> { MakeOperatorDef(args...) };
     }
 
-    inline string I(const int i) { return def.input(i); }
-    inline string O(const int i) { return def.output(i); }
+    const string I(const int i) const {
+        return i < def.input_size() ?
+            def.input(i) : "ignore";
+    }
 
-    inline string GI(const int i) {
+    const string O(const int i) const {
+        return i < def.output_size() ?
+            def.output(i) : "ignore";
+    }
+
+    string GI(const int i) {
         if (i >= g_inputs_.size()) return "ignore";
         g_inputs_[i] = def.input(i) + "_grad";
         return g_inputs_[i];
     }
-    inline string GO(const int i) { return g_outputs_[i]; }
+
+    const string GO(const int i) const {
+        return i < g_outputs_.size() ?
+            g_outputs_[i] : "ignore";
+    }
 
  protected:
     const OperatorDef& def;
@@ -97,6 +108,52 @@ class NoGradient : public GradientMakerBase {
     GRADIENT_MAKER_CTOR(NoGradient);
     vector<OperatorDef> MakeDefs() override {
         return vector<OperatorDef>();
+    }
+};
+
+// Here we define some common gradient makers
+// Reuse them to make the codes cleaner
+
+class SimpleGradientMaker final : public GradientMakerBase {
+ public:
+    /*!
+     *        <SimpleMaker>
+     *
+     * Inputs: X1, X2, ..., Xn, dY
+     * Outputs: dX1, dX2, ..., dXn
+     *
+     */
+    GRADIENT_MAKER_CTOR(SimpleGradientMaker);
+    vector<OperatorDef> MakeDefs() override {
+        vector<string> inputs, outputs;
+        for (const auto& input : def.input()) {
+            inputs.push_back(input);
+        }
+        inputs.push_back(GO(0));
+        for (int i = 0; i < def.input_size(); i++) {
+            outputs.push_back(GI(i));
+        }
+        return SingleDef(def.type() +
+            "Gradient", "", inputs, outputs);
+    }
+};
+
+class InplaceGradientMaker final : public GradientMakerBase {
+ public:
+    /*!
+    *               <InplaceMaker>
+    *
+    * Inputs:           Y, dY
+    * Outputs:           dX
+    *
+    */
+    GRADIENT_MAKER_CTOR(InplaceGradientMaker);
+    vector<OperatorDef> MakeDefs() override {
+        return SingleDef(
+            def.type() + "Gradient",          /*!   OpType   */
+            "",                               /*!   OpName   */
+            vector<string>({ O(0), GO(0) }),  /*!   Inputs   */
+            vector<string>({ GI(0) }));       /*!   Outputs  */
     }
 };
 

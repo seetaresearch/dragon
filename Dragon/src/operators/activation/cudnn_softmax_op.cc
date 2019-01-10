@@ -4,9 +4,16 @@
 
 namespace dragon {
 
+#define DETERMINE_RUNTIME_ARGUMENTS(X) \
+    axis = OperatorBase::Arg<int64_t>("axis", 0); \
+    axis = axis < 0 ? axis + X.ndim() : axis; \
+    CHECK(axis >= 0 && axis < X.ndim()) \
+       << "\nExcepted the axis in [-" << X.ndim() << ", " << X.ndim() \
+       << "), got " << OperatorBase::Arg<int64_t>("axis", 0) << ".";
+
 template <class Context> template <typename T>
 void CuDNNSoftmaxOp<Context>::RunWithType() {
-    Tensor fake_tensor(vector<TIndex>(
+    Tensor fake_tensor(vector<int64_t>(
         { outer_dim, Input(0).dim(axis), inner_dim }));
     cudnnSetTensorDesc<T>(&input_desc, &fake_tensor);
     cudnnSetTensorDesc<T>(&output_desc, &fake_tensor);
@@ -22,7 +29,8 @@ void CuDNNSoftmaxOp<Context>::RunWithType() {
 
 template <class Context>
 void CuDNNSoftmaxOp<Context>::RunOnDevice() {
-    if (axis == -1) axis = (TIndex)Input(0).ndim() - 1;
+    DETERMINE_RUNTIME_ARGUMENTS(Input(0));
+
     outer_dim = Input(0).count(0, axis);
     inner_dim = Input(0).count(axis + 1);
     Output(0)->ReshapeLike(Input(0));
@@ -36,7 +44,7 @@ DEPLOY_CUDNN(Softmax);
 
 template <class Context> template <typename T>
 void CuDNNSoftmaxGradientOp<Context>::RunWithType() {
-    Tensor fake_tensor(vector<TIndex>(
+    Tensor fake_tensor(vector<int64_t>(
         { outer_dim, Input(0).dim(axis), inner_dim }));
     cudnnSetTensorDesc<T>(&input_desc, &fake_tensor);
     cudnnSetTensorDesc<T>(&output_desc, &fake_tensor);
@@ -52,7 +60,8 @@ void CuDNNSoftmaxGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void CuDNNSoftmaxGradientOp<Context>::RunOnDevice() {
-    if (axis == -1) axis = (TIndex)Input(0).ndim() - 1;
+    DETERMINE_RUNTIME_ARGUMENTS(Input(0));
+
     outer_dim = Input(0).count(0, axis);
     inner_dim = Input(0).count(axis + 1);
     Output(0)->ReshapeLike(Input(0));
@@ -63,6 +72,8 @@ void CuDNNSoftmaxGradientOp<Context>::RunOnDevice() {
 }
 
 DEPLOY_CUDNN(SoftmaxGradient);
+
+#undef DETERMINE_RUNTIME_ARGUMENTS
 
 }  // namespace dragon
 

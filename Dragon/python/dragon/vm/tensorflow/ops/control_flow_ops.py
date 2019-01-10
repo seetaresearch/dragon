@@ -9,11 +9,12 @@
 #
 # ------------------------------------------------------------
 
-__all__ = ['equal']
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-import dragon.ops as ops
+import dragon
 
 
 def equal(a, b, name=None):
-
-    return ops.Equal([a, b])
+    return dragon.ops.Equal([a, b], name=name)

@@ -3,11 +3,20 @@
 
 namespace dragon {
 
+#define DETERMINE_RUNTIME_ARGUMENTS(X) \
+    axis = OperatorBase::Arg<int64_t>("axis", 0); \
+    axis = axis < 0 ? axis + X.ndim() : axis; \
+    CHECK(axis >= 0 && axis < X.ndim()) \
+       << "\nExcepted the axis in [-" << X.ndim() << ", " << X.ndim() \
+       << "), got " << OperatorBase::Arg<int64_t>("axis", 0) << ".";
+
 template <class Context>
 void FlattenOp<Context>::RunOnDevice() {
-    vector<TIndex> output_dims;
+    DETERMINE_RUNTIME_ARGUMENTS(Input(0));
+
+    vector<int64_t> output_dims;
     if (keep_axes != INT_MAX) {
-        CHECK_LE(keep_axes, (int)Input(0).ndim())
+        CHECK_LE(keep_axes, Input(0).ndim())
             << "\nThe total number of axes is " + Input(0).ndim()
             << ", can not keep " + keep_axes << " .";
         int i = 0;
@@ -21,7 +30,7 @@ void FlattenOp<Context>::RunOnDevice() {
         if (num_axes < 1) {
             output_dims.push_back(Input(0).count(axis));
         } else {
-            TIndex count = Input(0).count(axis, axis + num_axes);
+            int64_t count = Input(0).count(axis, axis + num_axes);
             output_dims.push_back(count);
             for (int i = axis + num_axes; i < Input(0).ndim(); i++)
                 output_dims.push_back(Input(0).dim(i));
@@ -43,18 +52,13 @@ DEPLOY_CPU(FlattenGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(FlattenGradient);
 #endif
-OPERATOR_SCHEMA(FlattenGradient)
-    .NumInputs(2).NumOutputs(1).Inplace({ { 1, 0 } });
 
-class GetFlattenGradient final : public GradientMakerBase {
- public:
-    GRADIENT_MAKER_CTOR(GetFlattenGradient);
-    vector<OperatorDef> MakeDefs() override {
-        return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), GO(0)},
-            vector<string> {GI(0)});
-    }
-};
-REGISTER_GRADIENT(Flatten, GetFlattenGradient);
+OPERATOR_SCHEMA(FlattenGradient)
+    .NumInputs(2).NumOutputs(1)
+    .Inplace({ { 1, 0 } });
+
+REGISTER_GRADIENT(Flatten, SimpleGradientMaker);
+
+#undef DETERMINE_RUNTIME_ARGUMENTS
 
 }  // namespace dragon

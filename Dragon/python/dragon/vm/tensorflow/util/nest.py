@@ -13,8 +13,12 @@
 #
 # ------------------------------------------------------------
 
-import collections as _collections
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import six as _six
+import collections as _collections
 
 
 def is_sequence(seq):

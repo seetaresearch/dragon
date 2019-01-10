@@ -75,14 +75,14 @@ template<> void Relu<float16, CUDAContext>(
         _ReluHalf2<half2>
             << < CUDA_BLOCKS(count >> 1), CUDA_THREADS,
                  0, ctx->cuda_stream() >> >
-            (count >> 1, dragon_cast<half2, float>(slope),
+            (count >> 1, cast::to<half2>(slope),
                 reinterpret_cast<const half2*>(x),
                     reinterpret_cast<half2*>(y));
     } else {
         _ReluHalf<half>
             << < CUDA_BLOCKS(count), CUDA_THREADS,
                  0, ctx->cuda_stream() >> >
-            (count, dragon_cast<half, float>(slope),
+            (count, cast::to<half>(slope),
                 reinterpret_cast<const half*>(x),
                     reinterpret_cast<half*>(y));
     }

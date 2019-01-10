@@ -12,6 +12,9 @@
 import os
 import time
 from multiprocessing import Process
+
+import dragon.core.logging as logging
+
 try:
     from flask import Flask, render_template, make_response, jsonify, request
 except ImportError as e: pass
@@ -32,8 +35,7 @@ class DragonBoard(Process):
                        'port': port,
                        'max_display': max_display}
         def cleanup():
-            from dragon.config import logger
-            logger.info('Terminating DragonBoard......')
+            logging.info('Terminating DragonBoard......')
             self.terminate()
             self.join()
         import atexit

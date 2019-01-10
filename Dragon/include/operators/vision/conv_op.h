@@ -100,8 +100,8 @@ class CuDNNConv2dOp final : public Conv2dOp<Context> {
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;
     size_t fwd_data_size;
-    TIndex cudnn_group;
-    vector<TIndex> input_dims;
+    int64_t cudnn_group;
+    vector<int64_t> input_dims;
     bool enable_tensor_core;
 };
 
@@ -155,8 +155,8 @@ class CuDNNConv2dGradientOp final : public Conv2dGradientOp<Context> {
     cudnnConvolutionDescriptor_t conv_desc;
     cudnnFilterDescriptor_t filter_desc;
     size_t bwd_filter_size, bwd_data_size;
-    TIndex cudnn_group;
-    vector<TIndex> input_dims;
+    int64_t cudnn_group;
+    vector<int64_t> input_dims;
     bool enable_tensor_core;
 };
 

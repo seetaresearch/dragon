@@ -13,11 +13,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.ops.primitive import MakeContext, CanonicalAxis
-from dragon.vm.torch.ops.factory import get_module
-
 from dragon.vm.torch.tensor import LeafTensor
-from dragon.vm.torch.execute_engine import RunOperator
+from dragon.vm.torch.execution import RunOperator
 from dragon.vm.torch.ops.primitive import MakeContext
 from dragon.vm.torch.ops.factory import get_module
 
@@ -37,7 +34,7 @@ def zeros(*sizes, **kwargs):
     ----------
     sizes : tuple, list or int
         The sizes indicating the shape of the output tensor.
-    out : vm.torch.Tensor
+    out : dragon.vm.torch.Tensor
         The optional output tensor.
 
     Returns
@@ -61,9 +58,9 @@ def zeros_like(input, out=None, **kwargs):
 
     Parameters
     ----------
-    input : vm.torch.Tensor
+    input : dragon.vm.torch.Tensor
         The tensor for indicating shape.
-    out : vm.torch.Tensor
+    out : dragon.vm.torch.Tensor
         The optional output tensor.
 
     Returns
@@ -90,7 +87,7 @@ def ones(*sizes, **kwargs):
     ----------
     sizes : tuple, list or int
         The sizes indicating the shape of the output tensor.
-    out : vm.torch.Tensor
+    out : dragon.vm.torch.Tensor
         The optional output tensor.
 
     Returns
@@ -114,9 +111,9 @@ def ones_like(input, out=None, **kwargs):
 
     Parameters
     ----------
-    input : vm.torch.Tensor
+    input : dragon.vm.torch.Tensor
         The tensor for indicating shape.
-    out : vm.torch.Tensor
+    out : dragon.vm.torch.Tensor
         The optional output tensor.
 
     Returns
@@ -143,7 +140,7 @@ def rand(*sizes, **kwargs):
     ----------
     sizes : tuple, list or int
         The sizes indicating the shape of the output tensor.
-    out : vm.torch.Tensor
+    out : dragon.vm.torch.Tensor
         The optional output tensor.
 
     Returns
@@ -169,7 +166,7 @@ def randn(*sizes, **kwargs):
     ----------
     sizes : tuple, list or int
         The sizes indicating the shape of the output tensor.
-    out : vm.torch.Tensor
+    out : dragon.vm.torch.Tensor
         The optional output tensor.
 
     Returns
@@ -193,7 +190,7 @@ def one_hot(input, depth):
 
     Parameters
     ----------
-    input : vm.torch.Tensor
+    input : dragon.vm.torch.Tensor
         The input tensor.
     depth : int
         The depth of channels.
@@ -205,7 +202,7 @@ def one_hot(input, depth):
 
     """
     ctx = MakeContext(inputs=[input])
-    key = 'torch/ops/one_hot/{}:{}/depth:{}'.format(
-        ctx[0].lower(), ctx[1], depth)
+    key = 'torch.ops.one_hot/{}:{}/depth:{}'.format(
+        ctx[0], ctx[1], depth)
     module = get_module(OneHot, key, ctx, depth=depth)
     return module.forward(input)

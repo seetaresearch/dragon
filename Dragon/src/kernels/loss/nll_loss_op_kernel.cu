@@ -14,10 +14,10 @@ __global__ void _NLLLoss(
     const int               count,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const Tx*               log_prob,
     const Ty*               labels,
     const int*              ignores,
-    const int               num_ignores,
     Tx*                     losses,
     Tx*                     flags) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
@@ -45,20 +45,19 @@ template <> void NLLLoss<float, float, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float*            log_prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     CUDAContext*            ctx) {
-    const int num_preds = outer_dim * inner_dim;
+    const auto num_preds = outer_dim * inner_dim;
     _NLLLoss<float, float>
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (num_preds, axis_dim, inner_dim,
-            log_prob, labels, ignores,
-                num_ignores, losses, flags);
+        (num_preds, axis_dim, inner_dim, num_ignores,
+            log_prob, labels, ignores, losses, flags);
 }
 
 /*! NLLLoss <Tx = float32, Ty = int64, Device = CUDA> */
@@ -67,20 +66,19 @@ template <> void NLLLoss<float, int64_t, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float*            log_prob,
     const int64_t*          labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     CUDAContext*            ctx) {
-    const int num_preds = outer_dim * inner_dim;
+    const auto num_preds = outer_dim * inner_dim;
     _NLLLoss<float, int64_t>
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (num_preds, axis_dim, inner_dim,
-            log_prob, labels, ignores,
-                num_ignores, losses, flags);
+        (num_preds, axis_dim, inner_dim, num_ignores,
+            log_prob, labels, ignores, losses, flags);
 }
 
 /*! NLLLoss <Tx = float16, Ty = ?, Device = CUDA> */
@@ -90,10 +88,10 @@ __global__ void _NLLLossHalf(
     const int               count,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const half*             log_prob,
     const Ty*               labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
@@ -123,20 +121,20 @@ template <> void NLLLoss<float16, float, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float16*          log_prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     CUDAContext*            ctx) {
-    const int num_preds = outer_dim * inner_dim;
+    const auto num_preds = outer_dim * inner_dim;
     _NLLLossHalf<float>
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (num_preds, axis_dim, inner_dim,
-            reinterpret_cast<const half*>(log_prob), labels,
-                ignores, num_ignores, losses, flags);
+        (num_preds, axis_dim, inner_dim, num_ignores,
+            reinterpret_cast<const half*>(log_prob),
+                labels, ignores, losses, flags);
 }
 
 /*! NLLLoss <Tx = float16, Ty = int64, Device = CUDA> */
@@ -145,20 +143,20 @@ template <> void NLLLoss<float16, int64_t, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float16*          log_prob,
     const int64_t*          labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     CUDAContext*            ctx) {
-    const int num_preds = outer_dim * inner_dim;
+    const auto num_preds = outer_dim * inner_dim;
     _NLLLossHalf<int64_t>
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (num_preds, axis_dim, inner_dim,
-            reinterpret_cast<const half*>(log_prob), labels,
-                ignores, num_ignores, losses, flags);
+        (num_preds, axis_dim, inner_dim, num_ignores,
+            reinterpret_cast<const half*>(log_prob),
+                labels, ignores, losses, flags);
 }
 
 /*! NLLLossGrad <Tx = float32, Ty = ?, Device = CUDA> */
@@ -168,10 +166,10 @@ __global__ void _NLLLossGrad(
     const int               count,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const Tx*               log_prob,
     const Ty*               labels,
     const int*              ignores,
-    const int               num_ignores,
     Tx*                     dx,
     Tx*                     flags) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
@@ -196,20 +194,19 @@ template<> void NLLLossGrad<float, float, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float*            log_prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  dx,
     float*                  flags,
     CUDAContext*            ctx) {
-    const int num_preds = outer_dim * inner_dim;
+    const auto num_preds = outer_dim * inner_dim;
     _NLLLossGrad<float, float>
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (num_preds, axis_dim, inner_dim,
-            log_prob, labels, ignores,
-                num_ignores, dx, flags);
+        (num_preds, axis_dim, inner_dim, num_ignores,
+            log_prob, labels, ignores, dx, flags);
 }
 
 /*! NLLLossGrad <Tx = float32, Ty = int64, Device = CUDA> */
@@ -218,20 +215,19 @@ template<> void NLLLossGrad<float, int64_t, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float*            log_prob,
     const int64_t*          labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  dx,
     float*                  flags,
     CUDAContext*            ctx) {
-    const int num_preds = outer_dim * inner_dim;
+    const auto num_preds = outer_dim * inner_dim;
     _NLLLossGrad<float, int64_t>
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (num_preds, axis_dim, inner_dim,
-            log_prob, labels, ignores,
-                num_ignores, dx, flags);
+        (num_preds, axis_dim, inner_dim, num_ignores,
+            log_prob, labels, ignores, dx, flags);
 }
 
 /*! NLLLossGrad <Tx = float16, Ty = ?, Device = CUDA> */
@@ -241,10 +237,10 @@ __global__ void _NLLLossGradHalf(
     const int               count,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const half*             log_prob,
     const Ty*               labels,
     const int*              ignores,
-    const int               num_ignores,
     half*                   dx,
     float*                  flags) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
@@ -271,21 +267,20 @@ template<> void NLLLossGrad<float16, float, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float16*          log_prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float16*                dx,
     float*                  flags,
     CUDAContext*            ctx) {
-    const int num_preds = outer_dim * inner_dim;
+    const auto num_preds = outer_dim * inner_dim;
     _NLLLossGradHalf<float>
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (num_preds, axis_dim, inner_dim,
+        (num_preds, axis_dim, inner_dim, num_ignores,
             reinterpret_cast<const half*>(log_prob), labels,
-                ignores, num_ignores,
-                    reinterpret_cast<half*>(dx), flags);
+                ignores, reinterpret_cast<half*>(dx), flags);
 }
 
 /*! NLLLossGrad <Tx = float16, Ty = int64, Device = CUDA> */
@@ -294,10 +289,10 @@ template<> void NLLLossGrad<float16, int64_t, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float16*          log_prob,
     const int64_t*          labels,
     const int*              ignores,
-    const int               num_ignores,
     float16*                dx,
     float*                  flags,
     CUDAContext*            ctx) {
@@ -305,10 +300,9 @@ template<> void NLLLossGrad<float16, int64_t, CUDAContext>(
     _NLLLossGradHalf<int64_t>
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (num_preds, axis_dim, inner_dim,
+        (num_preds, axis_dim, inner_dim, num_ignores,
             reinterpret_cast<const half*>(log_prob), labels,
-                ignores, num_ignores,
-                    reinterpret_cast<half*>(dx), flags);
+                ignores, reinterpret_cast<half*>(dx), flags);
 }
 
 }  // namespace kernel

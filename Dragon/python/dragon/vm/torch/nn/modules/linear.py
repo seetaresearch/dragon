@@ -34,7 +34,7 @@ class Linear(Module):
 
     def register_op(self):
         self.op_meta = {
-            'op_type': 'InnerProduct',
+            'op_type': 'FullyConnected',
             'n_inputs': 3 if self.bias else 2, 'n_outputs': 1,
             'arguments': {
                 'num_output': self.weight.shape[0],

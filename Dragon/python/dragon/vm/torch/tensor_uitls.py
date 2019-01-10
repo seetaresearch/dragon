@@ -15,29 +15,31 @@ from __future__ import print_function
 
 import importlib
 import numpy as np
-import dragon.core.tensor_utils as dg_tensor_utils
+
+import dragon.core.mapping as mapping
+from dragon.core.tensor_utils import GetTensorInfo
 
 
 def from_numpy(data):
-    """Create a tensor from the given numpy data.
+    """Create a tensor from the given numpy array.
 
     Parameters
     ----------
     data : ndarray
-        The nd-array with various data type.
+        The array with various data type.
 
     Return
     ------
-    vm.torch.Tensor
-        The torch-based tensor.
+    dragon.vm.torch.Tensor
+        The torch tensor.
 
     """
     if not isinstance(data, np.ndarray):
         raise TypeError('The data should be a numpy.ndarray.')
-    if str(data.dtype) not in __NUMPY_TYPE_TO_TORCH:
+    if str(data.dtype) not in mapping.TENSOR_TYPE_TO_TORCH_TENSOR:
         raise ValueError('Unsupported type({}) to torch tensor.'.format(data.dtype))
     module = importlib.import_module('dragon.vm.torch.tensor')
-    return getattr(module, type_np2torch(str(data.dtype)))(data)
+    return getattr(module, mapping.TENSOR_TYPE_TO_TORCH_TENSOR[str(data.dtype)])(data)
 
 
 def to_numpy(tensor):
@@ -45,13 +47,13 @@ def to_numpy(tensor):
 
     Parameters
     ----------
-    tensor : vm.torch.Tensor
+    tensor : dragon.vm.torch.Tensor
         The tensor with various data type.
 
     Returns
     -------
     numpy.ndarray
-        The numpy nd-array.
+        The numpy array.
 
     """
     return tensor.numpy()
@@ -71,14 +73,14 @@ def from_dragon(tensor, own_storage=False):
 
     Returns
     -------
-    vm.torch.Tensor
+    dragon.vm.torch.Tensor
         The torch tensor.
 
     """
-    info = dg_tensor_utils.GetTensorInfo(tensor)
+    info = GetTensorInfo(tensor)
     if not info or not info['init']: return None
     module = importlib.import_module('dragon.vm.torch.tensor')
-    th_tensor = getattr(module, type_np2torch(info['dtype']))()
+    th_tensor = getattr(module, mapping.TENSOR_TYPE_TO_TORCH_TENSOR[info['dtype']])()
     th_tensor._ctx = (info['mem_at'], info['device_id'])
     th_tensor._from_numpy = info['from_numpy']
     th_tensor._dg_tensor = tensor
@@ -91,7 +93,7 @@ def to_str(tensor):
 
     Parameters
     ----------
-    tensor : vm.torch.Tensor
+    tensor : dragon.vm.torch.Tensor
         The tensor with various data type.
 
     Returns
@@ -101,17 +103,3 @@ def to_str(tensor):
 
     """
     return str(tensor)
-
-
-def type_np2torch(type):
-    return __NUMPY_TYPE_TO_TORCH[type]
-
-
-__NUMPY_TYPE_TO_TORCH = {
-    'float32': 'FloatTensor',
-    'float64': 'DoubleTensor',
-    'int32': 'IntTensor',
-    'int64': 'LongTensor',
-    'uint8': 'ByteTensor',
-    'int8': 'CharTensor',
-}

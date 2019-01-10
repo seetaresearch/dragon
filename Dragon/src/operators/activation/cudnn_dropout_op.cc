@@ -12,19 +12,13 @@ template <class Context> template <typename T>
 void CuDNNDropoutOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    float scale = use_scale ? 1.f / (1.f - prob()) : 1.f;
+    CHECK(use_scale) << "\nCuDNN only supports the scale-dropout";
     if (phase() == "TEST") {
         if (Output(0) != &Input(0)) {
             ctx()->template Copy<T, Context, Context>(
                 Output(0)->count(), Ydata, Xdata);
-            if (scale == 1.f)
-                math::Scal<T, Context>(Output(0)->count(),
-                    1.f - prob(), Ydata, ctx());
         }
     } else if (phase() == "TRAIN") {
-        CHECK(use_scale) << "\nCuDNN only supports scale-dropout";
-        Tensor* mask = ws()->CreateTensor(
-            "/mnt/" + anchor() + "/dropout/mask");
         // Determine the dropout states
         if (!states_initialized) {
             states_initialized = true;
@@ -40,7 +34,7 @@ void CuDNNDropoutOp<Context>::RunWithType() {
                     dropout_desc, ctx()->cudnn_handle(), prob(),
                         Sdata, states_size, random_seed));
             } else {
-                states->Reshape({ (TIndex)states_size });
+                states->Reshape({ (int64_t)states_size });
                 auto* Sdata = states->template mutable_data<uint8_t, Context>();
                 CUDNN_CHECK(cudnnSetDropoutDescriptor(
                     dropout_desc, ctx()->cudnn_handle(), prob(),
@@ -48,11 +42,12 @@ void CuDNNDropoutOp<Context>::RunWithType() {
             }
         }
         // Determine the faked input desc
-        cudnnSetTensor4dDesc<T>(&input_desc, "NCHW", 
-            vector<TIndex>({ Input(0).count(), 1, 1, 1 }));
+        cudnnSetTensor4dDesc<T>(&input_desc, "NCHW",
+            vector<int64_t>({ Input(0).count(), 1, 1, 1 }));
         CUDNN_CHECK(cudnnDropoutGetReserveSpaceSize(
             input_desc, &reserve_space_size));
-        mask->Reshape({ (TIndex)reserve_space_size });
+        Tensor* mask = ws()->CreateTensor(mount_name(
+            "dropout/mask"))->Reshape({ (int64_t)reserve_space_size });
         auto* Rdata = mask->template mutable_data<uint8_t, Context>();
         CUDNN_CHECK(cudnnDropoutForward(
             ctx()->cudnn_handle(), dropout_desc,
@@ -78,8 +73,7 @@ void CuDNNDropoutGradientOp<Context>::RunWithType() {
     if (phase() == "TEST") { NOT_IMPLEMENTED; }
     else if (phase() == "TRAIN") {
         CHECK(use_scale) << "\nCuDNN only supports scale-dropout";
-        Tensor* mask = ws()->GetTensor(
-            "/mnt/" + anchor() + "/dropout/mask");
+        Tensor* mask = ws()->GetTensor(mount_name("dropout/mask"));
         // Determine the dropout states
         if (!states_initialized) {
             states_initialized = true;
@@ -102,7 +96,7 @@ void CuDNNDropoutGradientOp<Context>::RunWithType() {
         auto* dXdata = Output(0)->template mutable_data<T, Context>();
         // Determine the faked input desc
         cudnnSetTensor4dDesc<T>(&input_desc, "NCHW",
-            vector<TIndex>({ Input(-1).count(), 1, 1, 1 }));
+            vector<int64_t>({ Input(-1).count(), 1, 1, 1 }));
         CUDNN_CHECK(cudnnDropoutGetReserveSpaceSize(
             input_desc, &reserve_space_size));
         auto* Rdata = mask->template mutable_data<uint8_t, Context>();
@@ -125,8 +119,8 @@ void CuDNNDropoutGradientOp<Context>::RunOnDevice() {
 
 DEPLOY_CUDNN(DropoutGradient);
 
-}    // namepsace dragon
+}  // namepsace dragon
 
-#endif
+#endif  // CUDNN_VERSION_MIN(7, 0, 0)
 
 #endif  // WITH_CUDNN

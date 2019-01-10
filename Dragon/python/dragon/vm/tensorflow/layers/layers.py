@@ -9,12 +9,24 @@
 #
 # ------------------------------------------------------------
 
-from dragon.vm.tensorflow.layers.convolutional import conv2d
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-from dragon.vm.tensorflow.layers.core import dense
+from dragon.vm.tensorflow.layers.convolutional import (
+    conv2d, Conv2D,
+)
 
-from dragon.vm.tensorflow.layers.normalization import \
-    batch_normalization, batch_norm, BatchNorm
+from dragon.vm.tensorflow.layers.core import (
+    dense, Dense,
+)
 
-from dragon.vm.tensorflow.layers.pooling import \
-    average_pooling2d, max_pooling2d
+from dragon.vm.tensorflow.layers.normalization import (
+    batch_normalization, BatchNormalization,
+    batch_norm, BatchNorm,
+)
+
+from dragon.vm.tensorflow.layers.pooling import (
+    average_pooling2d, AveragePooling2D,
+    max_pooling2d, MaxPooling2D,
+)

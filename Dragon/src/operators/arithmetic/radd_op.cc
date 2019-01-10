@@ -1,4 +1,5 @@
 #include "core/workspace.h"
+#include "utils/op_kernel.h"
 #include "utils/math_functions.h"
 #include "operators/arithmetic/fundamental_op.h"
 
@@ -9,58 +10,41 @@ void RAddOp<Context>::EltwiseRunWithType() {
     auto* x1 = Input(0).template data<T, Context>();
     auto* x2 = Input(1).template data<T, Context>();
     auto* y = Output(0)->template mutable_data<T, Context>();
-    math::Add<T, Context>(Output(0)->count(), x1, x2, y, ctx());
+    math::Add(Output(0)->count(), x1, x2, y, ctx());
 }
 
 template <class Context> template <typename T>
 void RAddOp<Context>::BroadcastRunWithType(int type) {
-    TIndex outer_dim, inner_dim;
     auto* x1 = Input(0).template data<T, Context>();
     auto* x2 = Input(1).template data<T, Context>();
     auto* y = Output(0)->template mutable_data<T, Context>();
-
-    ctx()->template Copy<T, Context, Context>(
-        Output(0)->count(), y, x2);
-
-    if (type == 0 || type == 1) {
-        if (type == 0) {
-            x1 = Input(0).template data<T, CPUContext>();
-            math::AddScalar<T, Context>(Output(0)->count(),
-                dragon_cast<float, T>(x1[0]), y, ctx());
-        } else {
-            outer_dim = Input(1).count(0, Input(1).axis(-1));
-            inner_dim = Input(1).dim(-1);
-            DECLARE_MULTIPLIER(multiplier, outer_dim);
-            math::Gemm<T, Context>(
-                CblasNoTrans, CblasNoTrans,
-                    outer_dim, inner_dim, 1,
-                        1.f, multiplier, x1,
-                            1.f, y, ctx());
-        }
-    } else if (type == 2) {
-        outer_dim = Input(1).dim(0);
-        inner_dim = Input(1).count(1);
-        DECLARE_MULTIPLIER(multiplier, inner_dim);
-        math::Gemm<T, Context>(
-            CblasNoTrans, CblasNoTrans,
-                outer_dim, inner_dim, 1,
-                    1.f, x1, multiplier,
-                        1.f, y, ctx());
-    }
+    math::BroadcastAdd(rows, cols, type, x1, x2, y, ctx());
 }
 
 template <class Context>
 void RAddOp<Context>::RunOnDevice() {
-    DeclareX1X2;
+    DECLARE_FUNDAMENTAL_OP_X1X2;
     Output(0)->ReshapeLike(Input(1));
 
-    if (XIsType(Input(0), float)) {
-        RRunByX1X2(float);
+    if (XIsType(Input(0), int8_t)) {
+        DEFINE_FUNDAMENTAL_TYPED_RCALLER(int8_t);
+    } else if (XIsType(Input(0), uint8_t)) {
+        DEFINE_FUNDAMENTAL_TYPED_RCALLER(uint8_t);
+    } else if (XIsType(Input(0), int)) {
+        DEFINE_FUNDAMENTAL_TYPED_RCALLER(int);
+    } else if (XIsType(Input(0), int64_t)) {
+        DEFINE_FUNDAMENTAL_TYPED_RCALLER(int64_t);
     } else if (XIsType(Input(0), float16)) {
-        RRunByX1X2(float16);
+        DEFINE_FUNDAMENTAL_TYPED_RCALLER(float16);
+    } else if (XIsType(Input(0), float)) {
+        DEFINE_FUNDAMENTAL_TYPED_RCALLER(float);
+    } else if (XIsType(Input(0), double)) {
+        DEFINE_FUNDAMENTAL_TYPED_RCALLER(double);
     } else {
-        LOG(FATAL) << DTypeHelper(Input(0),
-            { "float32", "float16" });
+        LOG(FATAL) << DTypeHelper(Input(0), {
+            "int8", "uint8", "int32", "int64",
+                "float16", "float32", "float64",
+        });
     }
 }
 
@@ -91,34 +75,14 @@ void RAddGradientOp<Context>::EltwiseRunWithType() {
 
 template <class Context> template <typename T>
 void RAddGradientOp<Context>::BroadcastRunWithType(int type) {
-    DefineX1X2;
-    TIndex outer_dim, inner_dim;
+    DEFINE_FUNDAMENTAL_OP_X1X2;
     auto* dy = Input(-1).template data<T, Context>();
 
     if (Output(0)->name() != "ignore") {
         auto* dx1 = Output(0)->template mutable_data<T, Context>();
-        if (type == 0 || type == 1) {
-            if (type == 0) {
-                outer_dim = X2->count();
-                inner_dim = 1;
-            } else {
-                outer_dim = X2->count(0, X2->axis(-1));
-                inner_dim = X2->dim(-1);
-            }
-            DECLARE_MULTIPLIER(multiplier, outer_dim);
-            math::Gemv<T, Context>(
-                CblasTrans, outer_dim, inner_dim,
-                    1.f, dy, multiplier,
-                        0.f, dx1, ctx());
-        } else if (type == 2) {
-            outer_dim = X2->dim(0);
-            inner_dim = X2->count(1);
-            DECLARE_MULTIPLIER(multiplier, inner_dim);
-            math::Gemv<T, Context>(
-                CblasNoTrans, outer_dim, inner_dim,
-                    1.f, dy, multiplier,
-                        0.f, dx1, ctx());
-        }
+        vector<int> dims = { rows, cols }, axes = { type - 2 };
+        kernel::ReduceSum(2, dims.data(),
+            1, axes.data(), 1.f, dy, dx1, ctx());
     }
 
     if (Output(1)->name() != "ignore") {
@@ -130,17 +94,29 @@ void RAddGradientOp<Context>::BroadcastRunWithType(int type) {
 
 template <class Context>
 void RAddGradientOp<Context>::RunOnDevice() {
-    DefineX1X2;
+    DEFINE_FUNDAMENTAL_OP_X1X2;
     Output(0)->ReshapeLike(*X1);
     Output(1)->ReshapeLike(*X2);
 
-    if (XIsType(Input(-1), float)) {
-        RRunByX1X2(float);
+    if (XIsType(Input(-1), int8_t)) {
+        DEFINE_FUNDAMENTAL_TYPED_CALLER(int8_t);
+    } else if (XIsType(Input(-1), uint8_t)) {
+        DEFINE_FUNDAMENTAL_TYPED_CALLER(uint8_t);
+    } else if (XIsType(Input(-1), int)) {
+        DEFINE_FUNDAMENTAL_TYPED_CALLER(int);
+    } else if (XIsType(Input(-1), int64_t)) {
+        DEFINE_FUNDAMENTAL_TYPED_CALLER(int64_t);
     } else if (XIsType(Input(-1), float16)) {
-        RRunByX1X2(float16);
+        DEFINE_FUNDAMENTAL_TYPED_CALLER(float16);
+    } else if (XIsType(Input(-1), float)) {
+        DEFINE_FUNDAMENTAL_TYPED_CALLER(float);
+    } else if (XIsType(Input(-1), double)) {
+        DEFINE_FUNDAMENTAL_TYPED_CALLER(double);
     } else {
-        LOG(FATAL) << DTypeHelper(Input(-1),
-            { "float32", "float16" });
+        LOG(FATAL) << DTypeHelper(Input(0), {
+            "int8", "uint8", "int32", "int64",
+                  "float16", "float32", "float64",
+        });
     }
 }
 
@@ -148,17 +124,20 @@ DEPLOY_CPU(RAddGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(RAddGradient);
 #endif
-OPERATOR_SCHEMA(RAddGradient).NumInputs(1).NumOutputs(2);
+
+OPERATOR_SCHEMA(RAddGradient)
+    .NumInputs(1).NumOutputs(2);
 
 class GetRAddGradient : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetRAddGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
-            vector<string> {GO(0)},
-            vector<string> {GI(0), GI(1)});
+            vector<string>({ GO(0) }),
+            vector<string>({ GI(0), GI(1) }));
     }
 };
+
 REGISTER_GRADIENT(RAdd, GetRAddGradient);
 
 }  // namespace dragon

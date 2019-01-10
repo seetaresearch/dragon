@@ -22,8 +22,8 @@ class L2NormOp final : public Operator<Context> {
  public:
     L2NormOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", 0)),
-          num_axes(OperatorBase::Arg<int>("num_axes", -1)),
+          axis(OperatorBase::Arg<int64_t>("axis", 0)),
+          num_axes(OperatorBase::Arg<int64_t>("num_axes", -1)),
           eps(OperatorBase::Arg<float>("eps", 1e-5f)),
           mode(OperatorBase::Arg<string>("mode", "SUM")) {}
     USE_OPERATOR_FUNCTIONS;
@@ -32,11 +32,10 @@ class L2NormOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    TIndex axis, num_axes, end_axis;
-    float eps;
-    string mode;
+    float eps; string mode;
+    int64_t axis, num_axes, end_axis;
+    int64_t outer_dim, dim, inner_dim, spatial_dim;
     Tensor* norm, buffer;
-    TIndex outer_dim, dim, inner_dim, spatial_dim;
 };
 
 template <class Context>
@@ -44,8 +43,8 @@ class L2NormGradientOp final : public Operator<Context> {
  public:
     L2NormGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", 0)),
-          num_axes(OperatorBase::Arg<int>("num_axes", -1)),
+          axis(OperatorBase::Arg<int64_t>("axis", 0)),
+          num_axes(OperatorBase::Arg<int64_t>("num_axes", -1)),
           mode(OperatorBase::Arg<string>("mode", "SUM")) {}
     USE_OPERATOR_FUNCTIONS;
 
@@ -53,10 +52,10 @@ class L2NormGradientOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    TIndex axis, num_axes, end_axis;
     string mode;
+    int64_t axis, num_axes, end_axis;
+    int64_t outer_dim, dim, inner_dim;
     Tensor* norm, buffer, buffer_inner;
-    TIndex outer_dim, dim, inner_dim;
 };
 
 }  // namespace dragon

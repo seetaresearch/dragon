@@ -30,7 +30,7 @@ class PReluOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    TIndex channel_shared, channels, dim;
+    int64_t channel_shared, channels, dim;
     string data_format;
 };
 
@@ -47,7 +47,7 @@ class PReluGradientOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    TIndex channel_shared, channels, dim;
+    int64_t channel_shared, channels, dim;
     string data_format;
 };
 

@@ -9,8 +9,13 @@
 #
 # ------------------------------------------------------------
 
-from dragon.ops import MPIBroadcast, MPIGather
+"""The Implementation of the mpi layers."""
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import dragon
 from ..layer import Layer
 
 
@@ -25,13 +30,10 @@ class MPIBroadcastLayer(Layer):
     """
     def __init__(self, LayerParameter):
         super(MPIBroadcastLayer, self).__init__(LayerParameter)
-        param = LayerParameter.mpi_param
-        self._param = {'root': param.root}
+        self.arguments = {'root': LayerParameter.mpi_param.root}
 
-    def Setup(self, bottom):
-        super(MPIBroadcastLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return MPIBroadcast(input, **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.MPIBroadcast(bottom, **self.arguments)
 
 
 class MPIGatherLayer(Layer):
@@ -45,10 +47,10 @@ class MPIGatherLayer(Layer):
     """
     def __init__(self, LayerParameter):
         super(MPIGatherLayer, self).__init__(LayerParameter)
-        param = LayerParameter.mpi_param
-        self._param = {'root': param.root}
+        self.arguments = {
+            'root': LayerParameter.mpi_param.root,
+            'num_outputs': len(self._top),
+        }
 
-    def Setup(self, bottom):
-        super(MPIGatherLayer, self).Setup(bottom)
-        input = bottom[0] if isinstance(bottom, list) else bottom
-        return MPIGather(input, nout=len(self._top), **self._param)
+    def LayerSetup(self, bottom):
+        return dragon.ops.MPIGather(bottom, **self.arguments)

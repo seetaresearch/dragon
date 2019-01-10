@@ -32,11 +32,11 @@ class _BatchNorm(Module):
             self.weight = Parameter(Tensor(num_features))
             self.bias = Parameter(Tensor(num_features))
         else:
-            self.weight = self.bias = None
+            self.register_buffer('weight', ones(num_features))
+            self.register_buffer('bias', zeros(num_features))
         self.register_buffer('running_mean', zeros(num_features))
         self.register_buffer('running_var', ones(num_features))
-        self.inputs = [self.running_mean, self.running_var] + \
-                            [self.weight, self.bias] if self.affine else []
+        self.inputs = [self.running_mean, self.running_var, self.weight, self.bias]
         self.reset_parameters()
         self.register_op()
         self.meta_in_phase = {'TRAIN': [None, None], 'TEST': [None, None]}
@@ -48,8 +48,8 @@ class _BatchNorm(Module):
 
     def register_op(self):
         self.op_meta = {
-            'op_type': 'FusedBatchNorm' if self.affine else 'BatchNorm',
-            'n_inputs': 5 if self.affine else 3, 'n_outputs': 1,
+            'op_type': 'BatchNorm',
+            'n_inputs': 5, 'n_outputs': 1,
             'arguments': {
                 'axis': 1, # Data format: NCHW
                 'momentum': 1. - self.momentum,

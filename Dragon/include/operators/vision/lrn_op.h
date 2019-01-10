@@ -27,7 +27,7 @@ class LRNOp : public Operator<Context> {
  public:
     LRNOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          local_size(OperatorBase::Arg<int>("local_size", 5)),
+          local_size(OperatorBase::Arg<int64_t>("local_size", 5)),
           alpha(OperatorBase::Arg<float>("alpha", 0.0001f)),
           beta(OperatorBase::Arg<float>("beta", 0.75f)),
           k(OperatorBase::Arg<float>("k", 2.f)),
@@ -58,7 +58,7 @@ class LRNGradientOp : public Operator<Context> {
  public:
     LRNGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          local_size(OperatorBase::Arg<int>("local_size", 5)),
+          local_size(OperatorBase::Arg<int64_t>("local_size", 5)),
           alpha(OperatorBase::Arg<float>("alpha", 0.0001f)),
           beta(OperatorBase::Arg<float>("beta", 0.75f)),
           k(OperatorBase::Arg<float>("k", 2.f)),

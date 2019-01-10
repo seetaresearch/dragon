@@ -9,8 +9,11 @@
 #
 # ------------------------------------------------------------
 
-from dragon.core.tensor import Tensor
-import dragon.vm.theano.tensor as T
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import dragon
 
 
 def gradients(ys, xs, **kwargs):
@@ -18,19 +21,18 @@ def gradients(ys, xs, **kwargs):
 
     Parameters
     ----------
-    ys : Tensor or list of Tensor
+    ys : sequence of Tensor
         The tensor(s) to be differentiated.
-    xs : Tensor or list of Tensor
+    xs : sequence of Tensor
         The tensor(s to be used for differentiation.
 
     Returns
     -------
-    Tensor or list of Tensor
+    sequence of Tensor
         The gradients of variables.
 
     """
-    if not isinstance(ys, list):
-        ys = [ys]
-    for y in ys:
-        dxs = T.grad(y, xs)
-    return dxs
+    dxs = []
+    if not isinstance(ys, list): ys = [ys]
+    for y in ys: dxs.append(dragon.grad(y, xs))
+    if len(dxs) == 1: return dxs[0]

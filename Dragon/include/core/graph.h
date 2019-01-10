@@ -41,7 +41,7 @@ class GraphBase {
         const string&           exclude,
         const int               stream_id = 1) = 0;
 
-    inline string name() const { return name_; }
+    string name() const { return name_; }
 
  protected:
     string name_, phase_;
@@ -64,22 +64,27 @@ class Graph : public GraphBase {
         const int               stream_id = 1) override;
 
     GraphDef Prune(const GraphDef& meta_graph);
-    GraphDef MakeUpdate(const GraphDef& meta_graph);
     GraphDef Share(const GraphDef& optimized_graph);
     void ShareGrads(GraphDef& optimized_graph);
+
+    GraphDef BuildUpdateOps(const GraphDef& meta_graph);
 
     void RecomputingAware(
         const GraphDef&         optimized_graph,
         Workspace*              ws);
 
-    inline Workspace* ws() const { return ws_; }
+    Workspace* ws() const { return ws_; }
 
  protected:
-    void ForwardShareDyeing(string u, string ancestor);
+    void ForwardShareDyeing(
+        const string&               u,
+        const string&               ancestor);
+
     void ForwardPruneDyeing(
-        string                  u,
-        string                  leaf,
-        vector<string>          path);
+        const string&               u,
+        const string&               leaf,
+        const vector<string>&       path);
+
     void BackwardPruneDyeing(string v);
 
     vector<OperatorBase*> ops_;

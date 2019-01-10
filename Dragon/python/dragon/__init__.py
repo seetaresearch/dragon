@@ -9,33 +9,43 @@
 #
 # ------------------------------------------------------------
 
-# config
+"""General Importing Portal."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+# Config
 from dragon.config import *
 import dragon.config as config
 
-# core
+# Core
 from dragon.core.tensor import Tensor
 import dragon.core.workspace as workspace
 import dragon.core.tensor_utils as tensor_utils
 import dragon.core.mpi as mpi
+import dragon.memonger as memonger
 
-# ops
+# Operators
 from dragon.ops import *
 
-# updaters
+# Updaters
 from dragon.updaters import *
 
-# theano utils
+# Graph Primitives
 from dragon.vm.theano.compile.function import function as function
 from dragon.vm.theano.tensor import grad as grad
 
-# scope
-from dragon.core.scope import TensorScope as name_scope
-from dragon.core.scope import PhaseScope as phase_scope
-from dragon.core.scope import DeviceScope as device_scope
+# Scopes
+from dragon.core.scope import name_scope, get_default_name_scope
+from dragon.core.scope import phase_scope, get_default_phase
+from dragon.core.scope import device_scope, get_default_device
 from dragon.core.scope import WorkspaceScope as workspace_scope
 
-# version
+# Version
 from dragon.version import version
 __version__ = version
+
+# Logging
+import dragon.core.logging as logging
 

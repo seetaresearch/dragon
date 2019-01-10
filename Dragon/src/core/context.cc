@@ -3,7 +3,7 @@
 
 namespace dragon {
 
-//  cpu <- gpu
+// CPU <- CUDA
 template<> void CPUContext::Memcpy<CPUContext, CUDAContext>(
     size_t                  nbytes,
     void*                   dst,
@@ -15,7 +15,7 @@ template<> void CPUContext::Memcpy<CPUContext, CUDAContext>(
 #endif
 }
 
-//  gpu <- cpu
+// CUDA <- CPU
 template<> void CPUContext::Memcpy<CUDAContext, CPUContext>(
     size_t                  nbytes,
     void*                   dst,

@@ -30,7 +30,7 @@ class BiasAddOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    TIndex outer_dim, dim, inner_dim;
+    int64_t outer_dim, dim, inner_dim;
     string data_format;
 };
 
@@ -47,7 +47,7 @@ class BiasAddGradientOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    TIndex outer_dim, dim, inner_dim;
+    int64_t outer_dim, dim, inner_dim;
     string data_format;
 };
 
@@ -74,7 +74,7 @@ class CuDNNBiasAddOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    TIndex outer_dim, dim, inner_dim;
+    int64_t outer_dim, dim, inner_dim;
     string data_format;
     cudnnTensorDescriptor_t bias_desc, output_desc;
 };
@@ -100,7 +100,7 @@ public:
     template <typename T> void RunWithType();
 
 protected:
-    TIndex outer_dim, dim, inner_dim;
+    int64_t outer_dim, dim, inner_dim;
     string data_format;
     cudnnTensorDescriptor_t input_desc, bias_desc;
 };

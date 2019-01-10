@@ -22,15 +22,15 @@ class GramMatrixOp final : public Operator<Context> {
  public:
     GramMatrixOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", 1)) {}
+          axis(OperatorBase::Arg<int64_t>("axis", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    TIndex axis, outer_dim, dim, inner_dim;
-    TIndex x_offset, y_offset;
+    int64_t axis, outer_dim, dim, inner_dim;
+    int64_t x_offset, y_offset;
 };
 
 template <class Context>
@@ -38,15 +38,15 @@ class GramMatrixGradientOp final : public Operator<Context> {
  public:
     GramMatrixGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", 1)) {}
+          axis(OperatorBase::Arg<int64_t>("axis", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    TIndex axis, outer_dim, dim, inner_dim;
-    TIndex x_offset, y_offset;
+    int64_t axis, outer_dim, dim, inner_dim;
+    int64_t x_offset, y_offset;
 };
 
 }  // namespace dragon

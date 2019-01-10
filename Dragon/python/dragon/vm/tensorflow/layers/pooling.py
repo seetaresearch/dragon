@@ -13,6 +13,10 @@
 #
 # ------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from dragon.vm.tensorflow.ops import nn
 from dragon.vm.tensorflow.layers import base, utils
 
@@ -29,7 +33,7 @@ class _Pooling2D(base.Layer):
         self.data_format = utils.normalize_data_format(data_format)
         self.input_spec = base.InputSpec(ndim=4)
 
-    def call(self, inputs):
+    def call(self, inputs, *args, **kwargs):
         if self.data_format == 'channels_last':
             pool_shape = (1,) + self.pool_size + (1,)
             strides = (1,) + self.strides + (1,)
@@ -45,41 +49,49 @@ class _Pooling2D(base.Layer):
         return outputs
 
 
-class AveragePooling2D(_Pooling2D):
-    def __init__(self, pool_size, strides,
-                 padding='valid', data_format='channels_last',
-                 name=None, **kwargs):
-        super(AveragePooling2D, self).__init__(
-            nn.avg_pool,
-            pool_size=pool_size, strides=strides, padding=padding,
-            data_format=data_format, name=name, **kwargs)
-
-
-def average_pooling2d(inputs,
-                      pool_size, strides,
-                      padding='valid', data_format='channels_last',
-                      name=None):
-    layer = AveragePooling2D(pool_size=pool_size, strides=strides,
-                             padding=padding, data_format=data_format,
-                             name=name)
-    return layer.apply(inputs)
-
-
 class MaxPooling2D(_Pooling2D):
     def __init__(self, pool_size, strides,
                  padding='valid', data_format='channels_last',
                  name=None, **kwargs):
         super(MaxPooling2D, self).__init__(
             nn.max_pool,
-            pool_size=pool_size, strides=strides, padding=padding,
-            data_format=data_format, name=name, **kwargs)
+            pool_size=pool_size,
+            strides=strides,
+            padding=padding,
+            data_format=data_format,
+            name=name, **kwargs)
 
 
-def max_pooling2d(inputs,
-                      pool_size, strides,
-                      padding='valid', data_format='channels_last',
-                      name=None):
-    layer = MaxPooling2D(pool_size=pool_size, strides=strides,
-                         padding=padding, data_format=data_format,
-                         name=name)
-    return layer.apply(inputs)
+class AveragePooling2D(_Pooling2D):
+    def __init__(self, pool_size, strides,
+                 padding='valid', data_format='channels_last',
+                 name=None, **kwargs):
+        super(AveragePooling2D, self).__init__(
+            nn.avg_pool,
+            pool_size=pool_size,
+            strides=strides,
+            padding=padding,
+            data_format=data_format,
+            name=name, **kwargs)
+
+
+def max_pooling2d(
+    inputs, pool_size, strides, padding='valid',
+        data_format='channels_last', name=None):
+    return MaxPooling2D(
+        pool_size=pool_size,
+        strides=strides,
+        padding=padding,
+        data_format=data_format,
+        name=name).apply(inputs)
+
+
+def average_pooling2d(
+    inputs, pool_size, strides, padding='valid',
+        data_format='channels_last', name=None):
+    return AveragePooling2D(
+        pool_size=pool_size,
+        strides=strides,
+        padding=padding,
+        data_format=data_format,
+        name=name).apply(inputs)

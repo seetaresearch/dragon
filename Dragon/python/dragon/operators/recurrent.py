@@ -43,11 +43,11 @@ class RNN(RNNBase):
             The nonlinearity. ``tanh`` or ``relu``.
         num_layers : int
             The number of recurrent layers.
-        bidirectional : boolean
+        bidirectional : bool
             Whether to use bidirectional rnn.
         dropout : number
             The dropout ratio. ``0`` means ``Disabled``.
-        name : str or None
+        name : str, optional
             The optional name for weights.
 
         Returns
@@ -85,11 +85,11 @@ class LSTM(RNNBase):
             The dimension of hidden/outputs.
         num_layers : int
             The number of recurrent layers.
-        bidirectional : boolean
+        bidirectional : bool
             Whether to use bidirectional rnn.
         dropout : number
             The dropout ratio. ``0`` means ``Disabled``.
-        name : str or None
+        name : str, optional
             The optional name for weights.
 
         Returns
@@ -126,11 +126,11 @@ class GRU(RNNBase):
             The dimension of hidden/outputs.
         num_layers : int
             The number of recurrent layers.
-        bidirectional : boolean
+        bidirectional : bool
             Whether to use bidirectional rnn.
         dropout : number
             The dropout ratio. ``0`` means ``Disabled``.
-        name : str or None
+        name : str, optional
             The optional name for weights.
 
         Returns
@@ -143,6 +143,7 @@ class GRU(RNNBase):
             num_layers, bidirectional, dropout, name)
 
 
+@OpSchema.Inputs(2)
 def LSTMCell(inputs, **kwargs):
     """Single-layer Long Short-Term Memory(LSTM) Cell. `[Hochreiter & Schmidhuber, 1997] <https://doi.org/10.1162>`_.
 
@@ -150,16 +151,13 @@ def LSTMCell(inputs, **kwargs):
 
     Parameters
     ----------
-    inputs : list of Tensor
+    inputs : sequence of Tensor
         The inputs, represent x(4-concatenated) and cx respectively.
 
     Returns
     -------
-    tuple
+    sequence of Tensor
         The outputs, ``h`` and ``c`` respectively.
 
     """
-    CheckInputs(inputs, 2)
-    arguments = ParseArguments(locals())
-
-    return Tensor.CreateOperator(nout=2, op_type='LSTMCell', **arguments)
+    return Tensor.CreateOperator('LSTMCell', num_outputs=2, **ParseArgs(locals()))

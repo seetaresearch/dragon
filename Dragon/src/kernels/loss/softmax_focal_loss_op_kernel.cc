@@ -10,6 +10,7 @@ template <> void SoftmaxFocalLoss<float, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float             pos_alpha,
     const float             neg_alpha,
     const float             gamma,
@@ -17,7 +18,6 @@ template <> void SoftmaxFocalLoss<float, CPUContext>(
     const float*            prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     CPUContext*             ctx) {
@@ -51,6 +51,7 @@ template<> void SoftmaxFocalLossGrad<float, CPUContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float             pos_alpha,
     const float             neg_alpha,
     const float             gamma,
@@ -58,7 +59,6 @@ template<> void SoftmaxFocalLossGrad<float, CPUContext>(
     const float*            prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  dx,
     float*                  flags,
     CPUContext*             ctx) {

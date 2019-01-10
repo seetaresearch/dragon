@@ -16,8 +16,11 @@ from __future__ import print_function
 from . import *
 
 
+@OpSchema.Inputs(1)
 def Relu(inputs, **kwargs):
     """Rectified Linear Unit function. `[Nair & Hinton, 2010] <http://www.csri.utoronto.ca/~hinton/absps/reluICML.pdf>`_.
+
+    **Type Constraints**: (*float16*, *float32*)
 
     Parameters
     ----------
@@ -30,19 +33,14 @@ def Relu(inputs, **kwargs):
         The output tensor, calculated as: |relu_function|.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Relu', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator('Relu', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(1)
 def LRelu(inputs, slope=0.2, **kwargs):
     """Leaky Rectified Linear Unit function.
+
+    **Type Constraints**: (*float16*, *float32*)
 
     Parameters
     ----------
@@ -57,25 +55,20 @@ def LRelu(inputs, slope=0.2, **kwargs):
         The output tensor, calculated as: |lrelu_function|.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Relu', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator('Relu', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(2)
 def PRelu(inputs, channel_shared=False, data_format='NCHW', **kwargs):
     """Parametric Rectified Linear Unit function. `[He et.al, 2015] <https://arxiv.org/abs/1502.01852>`_.
 
+    **Type Constraints**: *float32*
+
     Parameters
     ----------
-    inputs : list of Tensor
+    inputs : sequence of Tensor
         The input and trainable parameter(slope).
-    channel_shared : boolean
+    channel_shared : bool
         Whether to share the parameter(slope) across channels.
     data_format : str
         The data format, ``NCHW`` or ``NHWC``.
@@ -86,19 +79,14 @@ def PRelu(inputs, channel_shared=False, data_format='NCHW', **kwargs):
         The output tensor, calculated as: |prelu_function|
 
     """
-    CheckInputs(inputs, 2)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='PRelu', **arguments)
-
-    if inputs[0].shape is not None:
-        output.shape = inputs[0].shape[:]
-
-    return output
+    return Tensor.CreateOperator('PRelu', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(1)
 def Elu(inputs, alpha=1.0, **kwargs):
     """Exponential Linear Unit function. `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
+
+    **Type Constraints**: (*float16*, *float32*)
 
     Parameters
     ----------
@@ -113,19 +101,14 @@ def Elu(inputs, alpha=1.0, **kwargs):
         The output tensor, calculated as: |elu_function|
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Elu', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator('Elu', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(1)
 def SElu(inputs, **kwargs):
     """Scaled Exponential Linear Unit function. `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
+
+    **Type Constraints**: *float32*
 
     Parameters
     ----------
@@ -138,19 +121,14 @@ def SElu(inputs, **kwargs):
         The output tensor, calculated as: |selu_function|
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='SElu', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator('SElu', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(1)
 def Sigmoid(inputs, **kwargs):
     """Sigmoid function.
+
+    **Type Constraints**: (*float16*, *float32*)
 
     Parameters
     ----------
@@ -163,19 +141,14 @@ def Sigmoid(inputs, **kwargs):
         The output tensor, calculated as: |sigmoid_function|.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Sigmoid', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator('Sigmoid', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(1)
 def Tanh(inputs, **kwargs):
     """Tanh function.
+
+    **Type Constraints**: (*float16*, *float32*)
 
     Parameters
     ----------
@@ -188,19 +161,15 @@ def Tanh(inputs, **kwargs):
         The output tensor, calculated as: |tanh_function|.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Tanh', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator('Tanh', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(1)
+@ArgumentHelper.Desc('prob', as_target=False)
 def Dropout(inputs, prob=0.5, scale=True, **kwargs):
     """Randomly set a unit into zero. `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
+
+    **Type Constraints**: (*float16*, *float32*)
 
     Parameters
     ----------
@@ -208,7 +177,7 @@ def Dropout(inputs, prob=0.5, scale=True, **kwargs):
         The input tensor.
     prob : float or Tensor
         The prob of dropping. Default is ``0.5``.
-    scale : boolean
+    scale : bool
         Whether to scale the output during training.
 
     Returns
@@ -217,27 +186,21 @@ def Dropout(inputs, prob=0.5, scale=True, **kwargs):
         The output tensor, calculated as: |dropout_function|.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-    arguments = AddArgumentWithDesc(arguments, prob, 'prob', as_target=False)
-
-    output = Tensor.CreateOperator(nout=1, op_type='Dropout', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator('Dropout', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(1)
 def Softmax(inputs, axis=1, **kwargs):
     """Softmax function.
+
+    **Type Constraints**: (*float16*, *float32*)
 
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
     axis : int
-        The axis to perform softmax.
+        The axis to apply softmax, can be negative.
 
     Returns
     -------
@@ -245,12 +208,4 @@ def Softmax(inputs, axis=1, **kwargs):
         The output tensor, calculated as: |softmax_function|.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Softmax', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator('Softmax', **ParseArgs(locals()))

@@ -16,13 +16,16 @@ from __future__ import print_function
 from . import *
 
 
+@OpSchema.Inputs(2)
 def Add(inputs, **kwargs):
-    """Calculate A + B.
+    """Calculate *A + B*.
+
+    **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
-    inputs : list of Tensor
-        The inputs, represent A and B respectively.
+    inputs : sequence of Tensor
+        The inputs, A and B.
 
     Returns
     -------
@@ -30,24 +33,19 @@ def Add(inputs, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 2)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Add', **arguments)
-
-    if inputs[0].shape is not None:
-        output.shape = inputs[0].shape[:]
-
-    return output
+    return Tensor.CreateOperator('Add', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(2)
 def Sub(inputs, **kwargs):
-    """Calculate A - B.
+    """Calculate *A - B*.
+
+    **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
-    inputs : list of Tensor
-        The inputs, represent A and B respectively.
+    inputs : sequence of Tensor
+        The inputs, A and B.
 
     Returns
     -------
@@ -55,23 +53,19 @@ def Sub(inputs, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 2)
-    arguments = ParseArguments(locals())
+    return Tensor.CreateOperator('Sub', **ParseArgs(locals()))
 
-    output = Tensor.CreateOperator(nout=1, op_type='Add', **arguments)
 
-    if inputs[0].shape is not None:
-        output.shape = inputs[0].shape[:]
-
-    return output
-
+@OpSchema.Inputs(2)
 def Mul(inputs, **kwargs):
-    """Calculate A * B.
+    """Calculate *A * B*.
+
+    **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
-    inputs : list of Tensor
-        The inputs, represent A and B respectively.
+    inputs : sequence of Tensor
+        The inputs, A and B.
 
     Returns
     -------
@@ -79,24 +73,19 @@ def Mul(inputs, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 2)
-    arguments = ParseArguments(locals())
-
-    output =  Tensor.CreateOperator(nout=1, op_type='Mul', **arguments)
-
-    if inputs[0].shape is not None:
-        output.shape = inputs[0].shape[:]
-
-    return output
+    return Tensor.CreateOperator('Mul', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(2)
 def Div(inputs, **kwargs):
-    """Calculate A / B.
+    """Calculate *A / B*.
+
+    **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
-    inputs : list of Tensor
-        The inputs, represent A and B respectively.
+    inputs : sequence of Tensor
+        The inputs, A and B.
 
     Returns
     -------
@@ -104,24 +93,20 @@ def Div(inputs, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 2)
-    arguments = ParseArguments(locals())
-
-    output =  Tensor.CreateOperator(nout=1, op_type='Div', **arguments)
-
-    if inputs[0].shape is not None:
-        output.shape = inputs[0].shape[:]
-
-    return output
+    return Tensor.CreateOperator('Div', **ParseArgs(locals()))
 
 
+@OpSchema.ConvertConstantInputs()
+@OpSchema.Inputs(2)
 def Maximum(inputs, **kwargs):
     """Return the max value of given two inputs.
 
+    **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
+
     Parameters
     ----------
-    inputs : list
-        The input tensors, A and B.
+    inputs : sequence
+        The inputs, can be either Tensor or number.
 
     Returns
     -------
@@ -129,31 +114,20 @@ def Maximum(inputs, **kwargs):
         The output tensor.
 
     """
-    inputs[0] = WrapConstants(inputs[0], dtype='float32')
-    inputs[1] = WrapConstants(inputs[1], dtype='float32')
-
-    CheckInputs(inputs, 2)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Maximum', **arguments)
-
-    if inputs[0].shape is not None and \
-        inputs[1].shape is not None:
-            output.shape = inputs[0].shape[:]
-            if output.shape != inputs[1].shape and \
-                len(output.shape) < len(inputs[1].shape):
-                    output.shape = inputs[1].shape
-
-    return output
+    return Tensor.CreateOperator('Maximum', **ParseArgs(locals()))
 
 
+@OpSchema.ConvertConstantInputs()
+@OpSchema.Inputs(2)
 def Minimum(inputs, **kwargs):
     """Return the min value of given two inputs.
 
+    **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
+
     Parameters
     ----------
-    inputs : list
-        The input tensors, A and B.
+    inputs : sequence
+        The inputs, can be either Tensor or number.
 
     Returns
     -------
@@ -161,35 +135,52 @@ def Minimum(inputs, **kwargs):
         The output tensor.
 
     """
-    inputs[0] = WrapConstants(inputs[0], dtype='float32')
-    inputs[1] = WrapConstants(inputs[1], dtype='float32')
-
-    CheckInputs(inputs, 2)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Minimum', **arguments)
-
-    if inputs[0].shape is not None and \
-        inputs[1].shape is not None:
-            output.shape = inputs[0].shape[:]
-            if output.shape != inputs[1].shape and \
-                len(output.shape) < len(inputs[1].shape):
-                    output.shape = inputs[1].shape
-
-    return output
+    return Tensor.CreateOperator('Minimum', **ParseArgs(locals()))
 
 
-def Clip(inputs, low=None, high=None, **kwargs):
-    """Clip the input to be between lower and higher bounds.
+@OpSchema.Inputs(1)
+def Moments(inputs, axes=None, keep_dims=False, **kwargs):
+    """Compute the mean and variance of inputs along the given axes.
+
+    The data type of moments will be *float32* typically,
+    except the *float64* inputs (*float64* moments instead).
+
+    **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    low : basic numerical type or None
-        The lower bound. Default is ``None`` (Ignore).
-    high : basic numerical type or None
-        The higher bound. Default is ``None`` (Ignore).
+    axes : int or sequence of int, optional
+        The axes to compute the moments.
+    keep_dims : bool, optional
+        Whether to keep the reduced dimensions of moments.
+
+    Returns
+    -------
+    sequence of Tensor
+        The mean and variance.
+
+    """
+    arguments = ParseArgs(locals())
+    if axes and not isinstance(axes, (tuple, list)): arguments['axes'] = [axes]
+    return Tensor.CreateOperator('Moments', num_outputs=2, **arguments)
+
+
+@OpSchema.Inputs(1)
+def Clip(inputs, low=None, high=None, **kwargs):
+    """Clip the input to be between lower and higher bounds.
+
+    **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
+
+    Parameters
+    ----------
+    inputs : Tensor
+        The input tensor.
+    low : number, optional
+        The lower bound.
+    high : number, optional
+        The higher bound.
 
     Returns
     -------
@@ -197,33 +188,27 @@ def Clip(inputs, low=None, high=None, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
     if low is not None: arguments['low'] = float(arguments['low'])
     if high is not None: arguments['high'] = float(arguments['high'])
-
-    output = Tensor.CreateOperator(nout=1, op_type='Clip', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator(op_type='Clip', **arguments)
 
 
-def Matmul(inputs, TransA=False, TransB=False, **kwargs):
+@OpSchema.Inputs(2)
+def Matmul(inputs, transA=False, transB=False, **kwargs):
     """Matrix Multiplication.
 
     This operator can calculate a batch of matrix multiplication.
 
-    To trigger ``Batch Matrix Multiplication``, the ``ndim`` of A must greater than ``2``.
+    **Type Constraints**: (*float16*, *float32*, *float64*)
 
     Parameters
     ----------
-    inputs : list of Tensor
-        The inputs, represent A and B respectively.
-    TransA : boolean
+    inputs : sequence of Tensor
+        The inputs, A and B.
+    transA : bool
         Whether to transpose A.
-    TransB : boolean
+    transB : bool
         Whether to transpose B.
 
     Returns
@@ -232,43 +217,26 @@ def Matmul(inputs, TransA=False, TransB=False, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 2)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Matmul', **arguments)
-
-    if inputs[0].shape is not None and \
-            inputs[1].shape is not None:
-        if len(inputs[0].shape) < 2 or \
-            len(inputs[1].shape) < 2:
-                raise ValueError('The rank of A and B should be at least 2.')
-        if len(inputs[0].shape) != len(inputs[1].shape):
-            raise ValueError('Both A and B should have the same number of dimensions.')
-        M = inputs[0].shape[-1] if TransA else inputs[0].shape[-2]
-        K1 = inputs[0].shape[-2] if TransA else inputs[0].shape[-1]
-        K2 = inputs[1].shape[-1] if TransB else inputs[1].shape[-2]
-        N = inputs[1].shape[-2] if TransB else inputs[1].shape[-1]
-        if K1 != K2:
-            raise ValueError('Can not multiply A: ({}, {}} with B: ({}, {})'.format(M, K1, K2, N))
-        output.shape = inputs[0].shape[:]
-        output.shape[-2] = M
-        output.shape[-1] = N
-
-    return output
+    return Tensor.CreateOperator('Matmul', **ParseArgs(locals()))
 
 
-def Dot(inputs, TransA=False, TransB=False, **kwargs):
-    """DotProduct Function.
+@OpSchema.Inputs(2)
+def Dot(inputs, transA=False, transB=False, **kwargs):
+    """Calculate the Vector dot.
 
-    This operator can trigger ``Matrix Multiplication`` or ``Matrix Vector Multiplication`` also.
+    This operator can trigger *Matrix Multiplication (Right Alignment)* or
+
+    *Matrix Vector Multiplication (Right Alignment)* also.
+
+    **Type Constraints**: (*float16*, *float32*, *float64*)
 
     Parameters
     ----------
-    inputs : list of Tensor
-        The inputs, represent A and B respectively.
-    TransA : boolean
+    inputs : sequence of Tensor
+        The inputs, A and B.
+    transA : bool
         Whether to transpose A.
-    TransB : boolean
+    transB : bool
         Whether to transpose B.
 
     Returns
@@ -277,35 +245,27 @@ def Dot(inputs, TransA=False, TransB=False, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 2)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Dot', **arguments)
-
-    if inputs[0].shape is not None and inputs[1].shape is not None:
-        a_shape = inputs[0].shape[:] if not TransA else inputs[0].shape[::-1]
-        b_shape = inputs[1].shape[:] if not TransB else inputs[1].shape[::-1]
-        output.shape = a_shape
-        output.shape[-1] = b_shape[-1]
-
-    return output
+    return Tensor.CreateOperator('Dot', **ParseArgs(locals()))
 
 
-def InnerProduct(inputs, num_output, axis=1, TransW=True, **kwargs):
-    """InnerProduct Function.
+@OpSchema.Inputs(2, 3)
+def FullyConnected(inputs, num_output, axis=1, transW=True, **kwargs):
+    """Calculate *Y = X * W' + b*.
 
-    The number of inputs vary from ``2`` to ``3`` (Without or With ``bias``).
+    Where *W'* = *Transpose(W)* if ``transW`` else *W*.
+
+    **Type Constraints**: (*float16*, *float32*, *float64*)
 
     Parameters
     ----------
-    inputs : list of Tensor
-        The inputs, represent [input, weights, bias].
+    inputs : sequence of Tensor
+        The inputs, represent [X, W] + [b].
     num_output : int
         The output dim.
-    axis : int
+    axis : int, optional
         The start axis to calculate, can be negative.
-    TransW : boolean
-        Whether to transpose the weights.
+    transW : bool, optional
+        Whether to transpose the W.
 
     Returns
     -------
@@ -313,29 +273,25 @@ def InnerProduct(inputs, num_output, axis=1, TransW=True, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 2, 3)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='InnerProduct', **arguments)
-
-    if inputs[0].shape is not None:
-        output.shape = inputs[0].shape[: axis + 1]
-        output.shape[axis] = num_output
-
-    return output
+    return Tensor.CreateOperator('FullyConnected', **ParseArgs(locals()))
 
 
-def Eltwise(inputs, operation='SUM', coeffs=None, **kwargs):
-    """Eltwise Sum/Product Function.
+@OpSchema.Inputs(2, INT_MAX)
+def Eltwise(inputs, operation='SUM', coefficients=None, **kwargs):
+    """Element-wise Sum or Product the arbitrary number of inputs.
+
+    If ``coefficients`` is *None*, *1.0* will be used instead.
+
+    **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
-    inputs : list of Tensor
+    inputs : sequence of Tensor
         The inputs.
-    operation : str
-        The operation, ``SUM`` or ``PROD``.
-    coeffs : list of float or None
-        The coefficients on inputs. Default is ``None`` (All are ``1.0``) .
+    operation : {*SUM*, *PROD*}, optional
+        The operation to apply.
+    coefficients : sequence of number, optional
+        The coefficients on inputs.
 
     Returns
     -------
@@ -343,21 +299,17 @@ def Eltwise(inputs, operation='SUM', coeffs=None, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 2, INT_MAX)
-    arguments = ParseArguments(locals())
-    if arguments['coeffs'] is not None:
-        arguments['coeffs'] = [float(ele) for ele in arguments['coeffs']]
-
-    output = Tensor.CreateOperator(nout=1, op_type='Eltwise', **arguments)
-
-    if all(input.shape is not None for input in inputs):
-        output.shape = inputs[0].shape[:]
-
-    return output
+    arguments = ParseArgs(locals())
+    if arguments['coefficients'] is not None:
+        arguments['coefficients'] = [float(e) for e in arguments['coefficients']]
+    return Tensor.CreateOperator('Eltwise', **arguments)
 
 
+@OpSchema.Inputs(1)
 def Log(inputs, **kwargs):
     """Calculate the logarithm of input.
+
+    **Type Constraints**: (*float16*, *float32*, *float64*)
 
     Parameters
     ----------
@@ -370,19 +322,14 @@ def Log(inputs, **kwargs):
         The logarithm tensor.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Log', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator('Log', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(1)
 def Exp(inputs, **kwargs):
     """Calculate the exponential of input.
+
+    **Type Constraints**: (*float16*, *float32*, *float64*)
 
     Parameters
     ----------
@@ -395,19 +342,16 @@ def Exp(inputs, **kwargs):
         The exponential result.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Exp', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator('Exp', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(1)
 def Pow(inputs, power, shift=None, scale=None, **kwargs):
     """Calculate the power of input.
+
+    Formulation: |power_function|
+
+    **Type Constraints**: (*float16*, *float32*, *float64*)
 
     Parameters
     ----------
@@ -415,34 +359,29 @@ def Pow(inputs, power, shift=None, scale=None, **kwargs):
         The input tensor.
     power : float
         The power factor.
-    shift : float or None
-        The shift magnitude. Default is ``None`` (Ignore).
-    scale : float or None
-        The scale factor. Default is ``None`` (Ignore).
+    shift : float, optional
+        The shift magnitude.
+    scale : float, optional
+        The scale factor.
 
     Returns
     -------
     Tensor
-        The power result, calculated as: |power_function|
+        The powered result.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
+    arguments = ParseArgs(locals())
     arguments['power']= float(power)
     if arguments['scale'] is not None: arguments['scale'] = float(scale)
     if arguments['shift'] is not None: arguments['shift'] = float(shift)
-
-    output =  Tensor.CreateOperator(nout=1, op_type='Pow', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator('Pow', **arguments)
 
 
+@OpSchema.Inputs(1)
 def Square(inputs, **kwargs):
     """Calculate the square of input.
+
+    **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
@@ -455,19 +394,14 @@ def Square(inputs, **kwargs):
         The square result.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Square', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator('Square', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(1)
 def Sqrt(inputs, **kwargs):
     """Calculate the sqrt of input.
+
+    **Type Constraints**: (*float16*, *float32*, *float64*)
 
     Parameters
     ----------
@@ -480,36 +414,28 @@ def Sqrt(inputs, **kwargs):
         The sqrt result.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-    arguments['power'] = 0.5
-
-    output = Tensor.CreateOperator(nout=1, op_type='Pow', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator('Pow', power=0.5, **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(2, 3)
 def Affine(inputs, axis=1, num_axes=1, **kwargs):
-    """Calculate ``y = Ax + b`` along the given range of axes.
-
-    The number of inputs vary from ``2`` to ``3`` (Without or With ``bias``).
+    """Calculate *Y = Ax + b* along the given range of axes.
 
     The scale ranges are: |scale_function|
 
-    Set ``axis`` to specific the start axis(can be negative).
+    Set ``axis`` to specific the start axis.
 
     Set ``num_axes`` to -1 will scale all remained axes.
 
+    **Type Constraints**: (*float16*, *float32*)
+
     Parameters
     ----------
-    inputs : list of Tensor
-        The inputs, represent [input, scale, bias].
-    axis : int
-        The start axis to scale.
-    num_axes : int
+    inputs : sequence of Tensor
+        The inputs, represent [x, A] + [b].
+    axis : int, optional
+        The start axis to scale, can be negative.
+    num_axes : int, optional
         The number of axes to scale.
 
     Returns
@@ -518,40 +444,28 @@ def Affine(inputs, axis=1, num_axes=1, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 2, 3)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Affine', **arguments)
-
-    if inputs[0].shape is not None:
-        output.shape = inputs[0].shape[:]
-
-    return output
+    return Tensor.CreateOperator('Affine', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(1)
 def GramMatrix(inputs, axis=1, **kwargs):
     """Calculate the gram matrix. `[Gatys et.al, 2016] <https://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Gatys_Image_Style_Transfer_CVPR_2016_paper.pdf>`_.
+
+    Formulation: |gram_matrix_function|
+
+    **Type Constraints**: *float32*
 
     Parameters
     ---------=
     inputs : Tensor
         The input tensor.
-    axis : int
+    axis : int, optional
         The start axis to calculate.
 
     Returns
     -------
     Tensor
-        The output tensor, calculated as: |gram_matrix_function|
+        The gram matrix.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='GramMatrix', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[: axis + 2]
-        output.shape[axis + 1] = output.shape[axis]
-
-    return output
+    return Tensor.CreateOperator('GramMatrix', **ParseArgs(locals()))

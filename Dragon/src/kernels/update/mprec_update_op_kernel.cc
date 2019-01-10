@@ -18,10 +18,9 @@ template <> void MixedPrecisionUpdate<float16, CPUContext>(
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
-        const float master_wi = dragon_cast
-            <float, float16>(w[i]) - updates[i];
-        w[i] = dragon_cast<float16, float>(master_wi);
-        g[i] = dragon_cast<float16, float>(0.f);
+        const float master_wi = cast::to<float>(w[i]) - updates[i];
+        w[i] = cast::to<float16>(master_wi);
+        g[i] = cast::to<float16>(0.f);
     }
 }
 

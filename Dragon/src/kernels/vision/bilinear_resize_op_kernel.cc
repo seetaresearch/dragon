@@ -88,7 +88,6 @@ void _BilinearResize_NHWC(
 }
 
 template <> void BilinearResize<float, CPUContext>(
-    const int               count,
     const int               N,
     const int               C,
     const int               H,
@@ -200,7 +199,6 @@ void _BilinearResizeGrad_NHWC(
 }
 
 template <> void BilinearResizeGrad<float, CPUContext>(
-    const int               count,
     const int               N,
     const int               C,
     const int               H,

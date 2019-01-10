@@ -8,17 +8,22 @@ setlocal
 SET ORIGINAL_DIR=%cd%
 SET REPO_ROOT=%~dp0%..
 SET DRAGON_ROOT=%REPO_ROOT%\Dragon
-SET THIRD_PARTY_DIR=%REPO_ROOT%\3rdparty
+SET THIRD_PARTY_DIR=%REPO_ROOT%\ThirdParty
 SET CMAKE_GENERATOR="Visual Studio 12 2013 Win64"
 
 :: Build options
-SET BUILD_CXX_API=ON
+SET BUILD_CXX_API=OFF
 SET BUILD_PYTHON_API=ON
+
+:: Protobuf options
+:: Set your protobuf compiler "protoc"
+:: Download or use your specified binary executable file
+SET PROTOC_EXECUTABLE=%REPO_ROOT%\ThirdParty\protobuf\bin\protoc
 
 :: Python options
 :: Set your python "interpreter" if necessary
 :: If not, a default interpreter will be used
-:: SET PYTHON_EXECUTABLE=C:/Anaconda3/python
+:: SET PYTHON_EXECUTABLE=X:/Anaconda3/python
 
 if %BUILD_PYTHON_API% == ON (
   if NOT DEFINED PYTHON_EXECUTABLE (
@@ -40,7 +45,8 @@ cmake .. ^
   -G%CMAKE_GENERATOR% ^
   -DBUILD_PYTHON_API=%BUILD_PYTHON_API% ^
   -DBUILD_CXX_API=%BUILD_CXX_API% ^
-  -D3RDPARTY_DIR=%THIRD_PARTY_DIR% ^
+  -DTHIRD_PARTY_DIR=%THIRD_PARTY_DIR% ^
+  -DPROTOC_EXECUTABLE=%PROTOC_EXECUTABLE% ^
   -DPYTHON_EXECUTABLE=%PYTHON_EXECUTABLE% ^
   || goto :label_error
 

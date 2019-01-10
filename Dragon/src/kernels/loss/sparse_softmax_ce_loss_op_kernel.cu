@@ -15,10 +15,10 @@ __global__ void _SparseSoftmaxCrossEntropy(
     const int               count,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const Tx*               prob,
     const Ty*               labels,
     const int*              ignores,
-    const int               num_ignores,
     Tx*                     losses,
     Tx*                     flags) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
@@ -48,20 +48,19 @@ template <> void SparseSoftmaxCrossEntropy<float, float, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float*            prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     CUDAContext*            ctx) {
-    const int num_preds = outer_dim * inner_dim;
+    const auto num_preds = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropy<float, float>
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (num_preds, axis_dim, inner_dim,
-            prob, labels, ignores, num_ignores,
-                losses, flags);
+        (num_preds, axis_dim, inner_dim, num_ignores,
+            prob, labels, ignores, losses, flags);
 }
 
 /*! SparseSoftmaxCrossEntropy <Tx = float32, Ty = int64, Device = CUDA> */
@@ -70,20 +69,19 @@ template <> void SparseSoftmaxCrossEntropy<float, int64_t, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float*            prob,
     const int64_t*          labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     CUDAContext*            ctx) {
-    const int num_preds = outer_dim * inner_dim;
+    const auto num_preds = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropy<float, int64_t>
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (num_preds, axis_dim, inner_dim,
-            prob, labels, ignores, num_ignores,
-                losses, flags);
+        (num_preds, axis_dim, inner_dim, num_ignores,
+            prob, labels, ignores, losses, flags);
 }
 
 /*! SparseSoftmaxCrossEntropy <Tx = float16, Ty = ?, Device = CUDA> */
@@ -93,10 +91,10 @@ __global__ void _SparseSoftmaxCrossEntropyHalf(
     const int               count,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const half*             prob,
     const Ty*               labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
@@ -134,20 +132,20 @@ template <> void SparseSoftmaxCrossEntropy<float16, float, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float16*          prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     CUDAContext*            ctx) {
-    const int num_preds = outer_dim * inner_dim;
+    const auto num_preds = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropyHalf<float>
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (num_preds, axis_dim, inner_dim,
-            reinterpret_cast<const half*>(prob), labels,
-                ignores, num_ignores, losses, flags);
+        (num_preds, axis_dim, inner_dim, num_ignores,
+            reinterpret_cast<const half*>(prob),
+                labels, ignores, losses, flags);
 }
 
 /*! SparseSoftmaxCrossEntropy <Tx = float16, Ty = int64, Device = CUDA> */
@@ -156,20 +154,20 @@ template <> void SparseSoftmaxCrossEntropy<float16, int64_t, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float16*          prob,
     const int64_t*          labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  losses,
     float*                  flags,
     CUDAContext*            ctx) {
-    const int num_preds = outer_dim * inner_dim;
+    const auto num_preds = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropyHalf<int64_t>
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (num_preds, axis_dim, inner_dim,
-            reinterpret_cast<const half*>(prob), labels,
-                ignores, num_ignores, losses, flags);
+        (num_preds, axis_dim, inner_dim, num_ignores,
+            reinterpret_cast<const half*>(prob),
+                labels, ignores, losses, flags);
 }
 
 /*! SparseSoftmaxCrossEntropyGrad <Tx = float32, Ty = ?, Device = CUDA> */
@@ -179,10 +177,10 @@ __global__ void _SparseSoftmaxCrossEntropyGrad(
     const int               count,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const Tx*               prob,
     const Ty*               labels,
     const int*              ignores,
-    const int               num_ignores,
     Tx*                     dx,
     Tx*                     flags) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
@@ -209,20 +207,19 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, float, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float*            prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  dx,
     float*                  flags,
     CUDAContext*            ctx) {
-    const int num_preds = outer_dim * inner_dim;
+    const auto num_preds = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropyGrad<float, float>
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (num_preds, axis_dim, inner_dim,
-            prob, labels, ignores, num_ignores,
-                dx, flags);
+        (num_preds, axis_dim, inner_dim, num_ignores,
+            prob, labels, ignores, dx, flags);
 }
 
 /*! SparseSoftmaxCrossEntropyGrad <Tx = float32, Ty = int64, Device = CUDA> */
@@ -231,20 +228,19 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, int64_t, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float*            prob,
     const int64_t*          labels,
     const int*              ignores,
-    const int               num_ignores,
     float*                  dx,
     float*                  flags,
     CUDAContext*            ctx) {
-    const int num_preds = outer_dim * inner_dim;
+    const auto num_preds = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropyGrad<float, int64_t>
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (num_preds, axis_dim, inner_dim,
-            prob, labels, ignores, num_ignores,
-                dx, flags);
+        (num_preds, axis_dim, inner_dim, num_ignores,
+            prob, labels, ignores, dx, flags);
 }
 
 /*! SparseSoftmaxCrossEntropyGrad <Tx = float16, Ty = ?, Device = CUDA> */
@@ -254,10 +250,10 @@ __global__ void _SparseSoftmaxCrossEntropyGradHalf(
     const int               count,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const half*             prob,
     const Ty*               labels,
     const int*              ignores,
-    const int               num_ignores,
     half*                   dx,
     float*                  flags) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
@@ -288,10 +284,10 @@ template<> void SparseSoftmaxCrossEntropyGrad<float16, float, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float16*          prob,
     const float*            labels,
     const int*              ignores,
-    const int               num_ignores,
     float16*                dx,
     float*                  flags,
     CUDAContext*            ctx) {
@@ -299,10 +295,9 @@ template<> void SparseSoftmaxCrossEntropyGrad<float16, float, CUDAContext>(
     _SparseSoftmaxCrossEntropyGradHalf<float>
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (num_preds, axis_dim, inner_dim,
+        (num_preds, axis_dim, inner_dim, num_ignores,
             reinterpret_cast<const half*>(prob), labels,
-                ignores, num_ignores,
-                    reinterpret_cast<half*>(dx), flags);
+                ignores, reinterpret_cast<half*>(dx), flags);
 }
 
 /*! SparseSoftmaxCrossEntropyGrad <Tx = float16, Ty = int64, Device = CUDA> */
@@ -311,10 +306,10 @@ template<> void SparseSoftmaxCrossEntropyGrad<float16, int64_t, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
+    const int               num_ignores,
     const float16*          prob,
     const int64_t*          labels,
     const int*              ignores,
-    const int               num_ignores,
     float16*                dx,
     float*                  flags,
     CUDAContext*            ctx) {
@@ -322,11 +317,9 @@ template<> void SparseSoftmaxCrossEntropyGrad<float16, int64_t, CUDAContext>(
     _SparseSoftmaxCrossEntropyGradHalf<int64_t>
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (num_preds, axis_dim, inner_dim,
+        (num_preds, axis_dim, inner_dim, num_ignores,
             reinterpret_cast<const half*>(prob), labels,
-                ignores, num_ignores,
-                    reinterpret_cast<half*>(dx), flags);
-
+                ignores, reinterpret_cast<half*>(dx), flags);
 }
 
 }  // namespace kernel

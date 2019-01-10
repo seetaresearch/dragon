@@ -32,11 +32,11 @@ def state_dict_v2(m, destination=None, prefix=''):
 
     Parameters
     ----------
-    m : torch.nn.Module
+    m : dragon.vm.torch.nn.Module
         The fb.pytorch module.
-    destination : OrderedDict or None
+    destination : OrderedDict, optional
         The output dict.
-    prefix : str
+    prefix : str, optional
         The prefix to the key of dict.
 
     Returns

@@ -20,20 +20,19 @@ namespace dragon {
 template <class Context>
 class SliceOp final : public Operator<Context> {
  public:
-    SliceOp(const OperatorDef& def, Workspace* ws)
-        : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", 1)),
-          nout(OperatorBase::Arg<int>("num_output", 1)) {}
+     SliceOp(const OperatorDef& def, Workspace* ws)
+         : Operator<Context>(def, ws),
+           axis(OperatorBase::Arg<int64_t>("axis", 0)),
+           slice_points(OperatorBase::Args<int64_t>("slice_points")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    TIndex axis, nout, steps;
-    TIndex outer_dim, inner_dim, x_slice_dim, y_slice_dim;
-    TIndex slice_offset;
-    vector<TIndex> slice_dims;
+    int64_t axis, N, steps, slice_offset;
+    int64_t outer_dim, inner_dim, x_slice_dim, y_slice_dim;
+    vector<int64_t> slice_dims, slice_points;
 };
 
 template <class Context>
@@ -41,18 +40,17 @@ class SliceGradientOp final : public Operator<Context> {
  public:
     SliceGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", 1)),
-          nout(OperatorBase::Arg<int>("num_output", 1)) {}
+          axis(OperatorBase::Arg<int64_t>("axis", 0)),
+          slice_points(OperatorBase::Args<int64_t>("slice_points")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
-    TIndex axis, nout;
-    TIndex outer_dim, inner_dim, x_slice_dim, y_slice_dim;
-    TIndex x_offset, y_offset, slice_offset;
-    vector<TIndex> slice_dims;
+    int64_t axis, N, x_offset, y_offset, slice_offset;
+    int64_t outer_dim, inner_dim, x_slice_dim, y_slice_dim;
+    vector<int64_t> slice_dims, slice_points;
 };
 
 }  // namespace dragon

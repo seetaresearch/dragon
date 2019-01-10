@@ -10,7 +10,7 @@ template <class Context>
 void CollectiveUpdateOp<Context>::InitMPI() {
     comm = (MPI_Comm)OperatorBase::Arg<int64_t>("comm", 0);
     group = (MPI_Group)OperatorBase::Arg<int64_t>("group", 0);
-    int world_root = OperatorBase::Arg<int>("root", 0);
+    int world_root = OperatorBase::Arg<int64_t>("root", 0);
     CHECK(comm != MPI_COMM_NULL) << "\nMPI is not initialized.";
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -27,7 +27,7 @@ void CollectiveUpdateOp<Context>::InitMPI() {
 
 template <class Context>
 void CollectiveUpdateOp<Context>::InitNCCL() {
-#ifdef WITH_MPI_NCCL
+#ifdef WITH_NCCL
     ncclUniqueId id;
     if (comm_rank == comm_root) NCCL_CHECK(ncclGetUniqueId(&id));
     MPI_Bcast((void *)&id, sizeof(id), MPI_BYTE, comm_root, comm);
@@ -43,23 +43,18 @@ template <class Context> template <typename T>
 void CollectiveUpdateOp<Context>::MPIAllReduce(
     Tensor*                 tensor,
     MPI_Datatype            dtype) {
-    TIndex count = tensor->count();
+    int64_t count = tensor->count();
     MPI_Request recv_req;
-    TIndex segment_size = count / comm_size;
-    TIndex residual = count % comm_size;
-    vector<TIndex> segment_sizes(comm_size, segment_size);
+    int64_t segment_size = count / comm_size;
+    int64_t residual = count % comm_size;
+    vector<int64_t> segment_sizes(comm_size, segment_size);
     for (int i = 0; i < residual; i++) segment_sizes[i]++;
-    vector<TIndex> segment_ends(comm_size);
+    vector<int64_t> segment_ends(comm_size);
     segment_ends[0] = segment_sizes[0];
     for (int i = 1; i < segment_ends.size(); i++)
         segment_ends[i] = segment_sizes[i] + segment_ends[i - 1];
-#ifdef WITH_MPI_CUDA
     auto* WSdata = ws()->template caches<T, Context>({ segment_sizes[0] })[0];
     auto* dXdata = tensor->template mutable_data<T, Context>();
-#else
-    auto* WSdata = ws()->template caches<T, CPUContext>({ segment_sizes[0] })[0];
-    auto* dXdata = tensor->template mutable_data<T, CPUContext>();
-#endif  // WITH_MPI_CUDA
     int recv_from = (comm_rank - 1 + comm_size) % comm_size;
     int send_to = (comm_rank + 1) % comm_size;
 
@@ -76,14 +71,9 @@ void CollectiveUpdateOp<Context>::MPIAllReduce(
         auto* segment_update = &(dXdata[
             segment_ends[recv_chunk] - segment_sizes[recv_chunk]]);
         MPI_Wait(&recv_req, MPI_STATUS_IGNORE);
-#ifdef WITH_MPI_CUDA
-        math::Axpy<T, Context>(segment_sizes[recv_chunk],
+        math::Axpy(segment_sizes[recv_chunk],
             1.f, WSdata, segment_update, ctx());
         ctx()->FinishDeviceCompution();
-#else 
-        math::Axpy<T, CPUContext>(segment_sizes[recv_chunk],
-            1.f, WSdata, segment_update, ctx());
-#endif  // WITH_MPI_CUDA
     }
 
     // Allgather
@@ -101,11 +91,7 @@ void CollectiveUpdateOp<Context>::MPIAllReduce(
 
     // Normalization
     if (comm_size > 1) {
-#ifdef WITH_MPI_CUDA
-        math::Scal<T, Context>(count, 1.f / comm_size, dXdata, ctx());
-#else
-        math::Scal<T, CPUContext>(count, 1.f / comm_size, dXdata, ctx());
-#endif  // WITH_MPI_CUDA
+        math::Scale(count, 1.f / comm_size, dXdata, dXdata, ctx());
     }
 }
 
@@ -113,23 +99,18 @@ template <class Context> template <typename T>
 void CollectiveUpdateOp<Context>::MPIBcast(
     Tensor*                 tensor,
     MPI_Datatype            dtype) {
-    TIndex count = tensor->count();
-#ifdef WITH_MPI_CUDA
-    auto* dXdata = tensor->template mutable_data<float, Context>();
-#else
-    auto* dXdata = tensor->template mutable_data<float, CPUContext>();
-#endif
-    MPI_Bcast(dXdata, count, dtype, comm_root, comm);
+    auto* dXdata = tensor->template mutable_data<T, Context>();
+    MPI_Bcast(dXdata, tensor->count(), dtype, comm_root, comm);
 }
 
-#ifdef WITH_MPI_NCCL
+#ifdef WITH_NCCL
 
 template <class Context> template <typename T>
 void CollectiveUpdateOp<Context>::NCCLAllReduce(
     Tensor*                 tensor,
     ncclDataType_t          dtype,
     cudaStream_t&           stream) {
-    TIndex count = tensor->count();
+    int64_t count = tensor->count();
     auto* dXdata = tensor->template mutable_data<T, Context>();
     NCCL_CHECK(ncclAllReduce((const void*)dXdata, (void*)dXdata,
         count, dtype, ncclSum, nccl_comm, stream));
@@ -140,7 +121,7 @@ void CollectiveUpdateOp<Context>::NCCLBcast(
     Tensor*                 tensor,
     ncclDataType_t          dtype,
     cudaStream_t&           stream) {
-    TIndex count = tensor->count();
+    int64_t count = tensor->count();
     auto* dXdata = tensor->template mutable_data<T, Context>();
     NCCL_CHECK(ncclBcast((void*)dXdata,
         count, dtype, comm_root, nccl_comm, stream));
@@ -167,7 +148,7 @@ void CollectiveUpdateOp<Context>::RunOnDevice() {
             else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
         }
     }
-#ifdef WITH_MPI_NCCL
+#ifdef WITH_NCCL
     else if (mode == "NCCL_ALLREDUCE") {
         auto stream = closure.cuda_stream(1);
         for (int i = 0; i < InputSize(); i++) {
@@ -179,14 +160,14 @@ void CollectiveUpdateOp<Context>::RunOnDevice() {
         }
         closure.Sync();
         for (int i = 0; i < InputSize(); i++) {
-            TIndex count = Input(i).count();
+            int64_t count = Input(i).count();
             if (XIsType(Input(i), float)) {
                 auto* dXdata = Input(i).template mutable_data<float, Context>();
-                math::Scal<float, Context>(count, 1.f / comm_size, dXdata, ctx());
+                math::Scale(count, 1.f / comm_size, dXdata, dXdata, ctx());
             }
             else if (XIsType(Input(i), float16)) {
                 auto* dXdata = Input(i).template mutable_data<float16, Context>();
-                math::Scal<float16, Context>(count, 1.f / comm_size, dXdata, ctx());
+                math::Scale(count, 1.f / comm_size, dXdata, dXdata, ctx());
             }
         }
     } else if (mode == "NCCL_BCAST") {

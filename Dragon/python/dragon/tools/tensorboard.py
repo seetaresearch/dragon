@@ -51,7 +51,7 @@ class TensorBoard(object):
 
         Parameters
         ----------
-        log_dir : str or None
+        log_dir : str, optional
             The root dir for monitoring.
 
         Returns

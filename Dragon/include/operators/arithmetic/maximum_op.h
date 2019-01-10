@@ -24,6 +24,7 @@ class MaximumOp final : public Operator<Context> {
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
+    template <typename T> void RunWithType();
     template <typename T> void EltwiseRunWithType();
     template <typename T> void BroadcastRunWithType();
 };
@@ -35,6 +36,7 @@ class MaximumGradientOp final : public Operator<Context> {
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
+    template <typename T> void RunWithType();
     template <typename T> void EltwiseRunWithType();
     template <typename T> void BroadcastRunWithType();
 };

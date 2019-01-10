@@ -10,7 +10,7 @@ void ProposalOp<Context>::RunWithType(
     const T*                scores,
     const T*                bbox_deltas) {
     using BT = float;
-    TIndex total_rois = 0;
+    int64_t total_rois = 0;
     auto* im_info = Input(-1).template data<BT, CPUContext>();
     auto* Ydata = Output(0)->template mutable_data<BT, CPUContext>();
     for (int n = 0; n < num_images; ++n) {
@@ -22,12 +22,12 @@ void ProposalOp<Context>::RunWithType(
         int num_rois = 0;
         if (strides.size() == 1) {
             // Case 1: single stride (Faster R-CNN)
-            const TIndex feat_height = Input(0).dim(2);
-            const TIndex feat_width = Input(0).dim(3);
-            const TIndex K = feat_height * feat_width;
-            const TIndex A = ratios.size() * scales.size();
-            const TIndex num_proposals = K * A;
-            const TIndex pre_nms_topn = std::min(num_proposals, pre_nms_top_n);
+            const int64_t feat_height = Input(0).dim(2);
+            const int64_t feat_width = Input(0).dim(3);
+            const int64_t K = feat_height * feat_width;
+            const int64_t A = ratios.size() * scales.size();
+            const int64_t num_proposals = K * A;
+            const int64_t pre_nms_topn = std::min(num_proposals, pre_nms_top_n);
             anchors_.Reshape({ A, 4 });
             proposals_.Reshape({ num_proposals, 5 });
 
@@ -66,17 +66,17 @@ void ProposalOp<Context>::RunWithType(
                 << scales.size() << " scales";
             // CLS_probs: [1, total_proposals]
             // BBOX_deltas: [1, 4, total_proposals]
-            TIndex total_proposals = Input(-3).dim(1), acc_proposals = 0;
-            const TIndex pre_nms_topn = std::min(total_proposals, pre_nms_top_n);;
+            int64_t total_proposals = Input(-3).dim(1), acc_proposals = 0;
+            const int64_t pre_nms_topn = std::min(total_proposals, pre_nms_top_n);;
             proposals_.Reshape({ total_proposals, 5 });
             auto* proposals = proposals_.template mutable_data<BT, CPUContext>();
 
             for (int i = 0; i < strides.size(); i++) {
-                const TIndex feat_height = Input(i).dim(2);
-                const TIndex feat_width = Input(i).dim(3);
-                const TIndex K = feat_height * feat_width;
-                const TIndex A = ratios.size();
-                const TIndex num_proposals = K * A;
+                const int64_t feat_height = Input(i).dim(2);
+                const int64_t feat_width = Input(i).dim(3);
+                const int64_t K = feat_height * feat_width;
+                const int64_t A = ratios.size();
+                const int64_t num_proposals = K * A;
                 anchors_.Reshape({ A, 4 });
 
                 rcnn::GenerateAnchors<BT>(strides[i],
@@ -120,14 +120,14 @@ void ProposalOp<Context>::RunWithType(
         Ydata += (num_rois * 5);
         im_info += Input(-1).dim(1);
     }
-    Output(0)->Reshape(vector<TIndex>({ total_rois, 5 }));
+    Output(0)->Reshape(vector<int64_t>({ total_rois, 5 }));
 
     // Distribute rois into K bins
     if (OutputSize() > 1) {
         CHECK_EQ(max_level - min_level + 1, (int)OutputSize())
             << "\nExcepted " << OutputSize() << " outputs for levels between "
             << "[" << min_level << ", " << max_level << "].";
-        vector< vector<TIndex> > roi_bins(OutputSize(), vector<TIndex>());
+        vector< vector<int64_t> > roi_bins(OutputSize(), vector<int64_t>());
         vector<BT*> outputs;
         Tensor collective_rois;
         collective_rois.ReshapeLike(*Output(0));

@@ -184,13 +184,13 @@ class RNNBase(object):
         ----------
         x : Tensor
             The input tensor.
-        hx : Tensor or None
+        hx : Tensor, optional
             The h(0) state.
-        cx : Tensor or None
+        cx : Tensor, optional
             The c(0) state.
-        required_hidden : boolean
+        required_hidden : bool, optional
             Return ``y`` and ``hidden`` if ``True``.
-        required_hidden : boolean
+        required_hidden : bool, optional
             Return ``y``, ``hidden``, ``cell`` if ``True``.
 
         """
@@ -217,7 +217,7 @@ class RNNBase(object):
         elif required_hidden: n_out = 2
         else: n_out = 1
 
-        return Tensor.CreateOperator(nout=n_out, op_type='Recurrent', **arguments)
+        return Tensor.CreateOperator(num_outputs=n_out, op_type='Recurrent', **arguments)
 
     def __call__(self, *args, **kwargs):
         return self.create(*args, **kwargs)

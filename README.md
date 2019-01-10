@@ -44,12 +44,6 @@ import dragon.vm.torch as torch
 
 WOW, I could use ALL above DL Frameworks all together!
 
-## News
-
-Dragon 0.2.2 Released -  Cleaner, Faster, Stronger and now we have DYNAMIC GRAPH >>> (VM.PyTorch :-) <<<
-
-<div align=center><img width="373" height="214" src="http://dragon.seetatech.com/static/images/dragon-0.2.2.png"/></div>
-
 ## License and Citation
 Dragon is released under the [BSD 2-Clause license](https://github.com/neopenx/Dragon/blob/master/LICENSE).
 

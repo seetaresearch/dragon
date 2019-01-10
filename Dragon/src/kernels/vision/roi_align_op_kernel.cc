@@ -50,8 +50,6 @@ T _ROIAlignInterpolate(
 }
 
 template<> void ROIAlign<float, CPUContext>(
-    const int               count,
-    const int               N,
     const int               C,
     const int               H,
     const int               W,
@@ -64,8 +62,8 @@ template<> void ROIAlign<float, CPUContext>(
     const float*            rois,
     float*                  y,
     CPUContext*             ctx) {
-    const TIndex X_offset = H * W, Y_offset = pool_h * pool_w;
-    const TIndex x_offset = C * X_offset, y_offset = C * Y_offset;
+    const int64_t X_offset = H * W, Y_offset = pool_h * pool_w;
+    const int64_t x_offset = C * X_offset, y_offset = C * Y_offset;
 
     for (int n = 0; n < num_rois; ++n) {
         auto* R = rois + n * 5;
@@ -125,8 +123,6 @@ template<> void ROIAlign<float, CPUContext>(
 /*! ROIAlign <T = float16, Device = CPU> */
 
 template<> void ROIAlign<float16, CPUContext>(
-    const int               count,
-    const int               N,
     const int               C,
     const int               H,
     const int               W,
@@ -145,8 +141,6 @@ template<> void ROIAlign<float16, CPUContext>(
 /*! ROIAlignGrad <T = float32, Device = CPU> */
 
 template<> void ROIAlignGrad<float, CPUContext>(
-    const int               count,
-    const int               N,
     const int               C,
     const int               H,
     const int               W,

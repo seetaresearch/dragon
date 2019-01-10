@@ -9,23 +9,29 @@
 #
 # ------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import copy
+import dragon
 
-from dragon.core.tensor import Tensor
-import dragon.vm.theano as theano
-
-from dragon.vm.tensorflow.framework import ops
-from dragon.vm.tensorflow.framework import dtypes
+from dragon.vm.tensorflow.framework import ops, constant_op
 from dragon.vm.tensorflow.util.deprecation import deprecated
 
 
-class Variable(Tensor):
-    """
-    Construct a Variable.
-    """
-    def __init__(self, initial_value=None, trainable=True,
-                 collections=None, validate_shape=True,
-                 name=None, dtype=None, **kwargs):
+class Variable(dragon.Tensor):
+    """Construct a Variable."""
+
+    def __init__(self,
+                 initial_value=None,
+                 trainable=True,
+                 collections=None,
+                 validate_shape=True,
+                 name=None,
+                 dtype=None,
+                 regularizer=None,
+                 **kwargs):
         super(Variable, self).__init__()
 
         if initial_value is None:
@@ -33,31 +39,51 @@ class Variable(Tensor):
 
         if collections is None:
             collections = [ops.GraphKeys.GLOBAL_VARIABLES]
+
         if not isinstance(collections, (list, tuple, set)):
-            raise ValueError('collections argument to Variable constructor must be a list, tuple, '
-                             'or set. Got the type {}'.format(type(collections)))
+            raise ValueError(
+                'collections argument to Variable constructor must be a list, tuple, '
+                    'or set. Got the type {}'.format(type(collections)))
+
         if trainable and ops.GraphKeys.TRAINABLE_VARIABLES not in collections:
             collections = list(collections) + [ops.GraphKeys.TRAINABLE_VARIABLES]
 
-        # initialization
-        if isinstance(initial_value, Tensor):
-            self.clone(initial_value)
-            if name is not None:
-                self.name = name
-                self.expressions.values()[0].output[0] = self.name
+        if name is not None:
+            # Get a known name from the name scope
+            defined_name = dragon.get_default_name_scope() + name
         else:
-            # from ..ops.constant_op import constant
-            # initial_value = constant(initial_value, name=name)
-            # self.clone(initial_value)
-            pass
+            if 'name_from_variable_scope' in kwargs:
+                # Has a name from the variable scope
+                defined_name = kwargs['name_from_variable_scope']
+            else:
+                # Get a auto name from the name scope
+                defined_name = dragon.get_default_name_scope() + 'Variable'
 
-        # check data type
-        if dtype is not None:
-            if not isinstance(dtype, dtypes.DType):
-                raise TypeError('The dtype should be a valid tf data type.')
-            self.dtype = dtype.name
+        # Set the name explicitly
+        self.set_name(dragon.workspace.GetDummyName(
+            defined_name, suffix=':0', domain='Tensor'))
 
-        # registration
+        # Initializer
+        if isinstance(initial_value, dragon.Tensor) and \
+            len(initial_value.expressions) == 1:
+                # From a initializing ops
+                self.shape, self.dtype = initial_value.shape[:], initial_value.dtype
+                init_expr = copy.deepcopy(initial_value.expressions)
+                for k, v in init_expr.items():
+                    init_expr[k].output[0] = self.name
+                self.__init_expr__ = init_expr
+        else:
+            # From a const tensor
+            if not isinstance(initial_value, dragon.Tensor):
+                initial_value = constant_op.constant(
+                    initial_value, name=name, dtype=dtype)
+            self.set_value(initial_value.get_value())
+            self.shape, self.dtype = initial_value.shape, initial_value.dtype
+
+        # Regularizer
+        self.__regularizer__ = regularizer
+
+        # Registration
         self.Variable()
 
         if validate_shape:
@@ -65,8 +91,7 @@ class Variable(Tensor):
             if initial_value_shape is None:
                 raise ValueError('initial_value must have a shape specified.')
 
-        ops.add_to_collections(collections, copy.deepcopy(self))
-        self.expressions = {}
+        ops.add_to_collections(collections, self)
 
 
 def global_variables():
@@ -87,12 +112,18 @@ def trainable_variables():
 
 class VariablesInitializer(object):
     def __init__(self, var_list):
-        self.var_list = var_list
+        self.var_list = []
+        for var in var_list:
+            if hasattr(var, '__init_expr__'):
+                var_copy = copy.deepcopy(var)
+                var_copy.expressions = var.__init_expr__
+                self.var_list.append(var_copy)
 
     def run(self):
         if not hasattr(self, '_init_func'):
-            self._init_func = theano.function(outputs=self.var_list)
-        self._init_func()
+            self._init_func = dragon.function(outputs=self.var_list) \
+                if len(self.var_list) > 0 else None
+        if self._init_func: self._init_func()
 
 
 def variables_initializer(var_list, name="init"):
@@ -105,7 +136,5 @@ def global_variables_initializer():
 
 @deprecated("2017-03-02", "Use `tf.global_variables_initializer` instead.")
 def initialize_all_variables():
-    """
-    See ``tf.global_variables_initializer``.
-    """
+    """See ``tf.global_variables_initializer``."""
     return global_variables_initializer()

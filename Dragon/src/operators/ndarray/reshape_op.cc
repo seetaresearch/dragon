@@ -5,21 +5,21 @@ namespace dragon {
 
 template <class Context>
 void ReshapeOp<Context>::RunOnDevice() {
-    if (shape_desc.size() > 0 || shape_value.size() > 0) {
-        require_shape.resize(std::max(shape_desc.size(), shape_value.size()));
+    if (dims_desc.size() > 0 || dims_value.size() > 0) {
+        require_shape.resize(std::max(dims_desc.size(), dims_value.size()));
         for (int i = 0; i < require_shape.size(); i++)
-            require_shape[i] = shape(i);
+            require_shape[i] = dims(i);
     } else if (shape_like_desc.size() > 0) {
         Tensor* shape_like_tensor = ws()->GetTensor(shape_like_desc);
         require_shape.resize(shape_like_tensor->ndim());
         for (int i = 0; i < require_shape.size(); i++)
             require_shape[i] = shape_like_tensor->dim(i);
-    } else { LOG(FATAL) << "Missing the require shape."; }
+    } else { LOG(FATAL) << "Missing the required shape."; }
 
-    vector<TIndex> Xdims = Input(0).dims();
+    vector<int64_t> Xdims = Input(0).dims();
     new_shape.resize(require_shape.size());
     int infer_dim = -1;
-    TIndex total_count = 1;
+    int64_t total_count = 1;
     for (int i = 0; i < require_shape.size(); i++) {
         if (require_shape[i] == 0) {
             // Handle unchanged dim
@@ -70,23 +70,15 @@ DEPLOY_CUDA(Reshape);
 #endif
 OPERATOR_SCHEMA(Reshape).NumInputs(1).NumOutputs(1);
 
-
 DEPLOY_CPU(ReshapeGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(ReshapeGradient);
 #endif
-OPERATOR_SCHEMA(ReshapeGradient)
-    .NumInputs(2).NumOutputs(1).Inplace({ { 1, 0 } });
 
-class GetReshapeGradient final : public GradientMakerBase {
- public:
-    GRADIENT_MAKER_CTOR(GetReshapeGradient);
-    vector<OperatorDef> MakeDefs() override {
-        return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), GO(0)},
-            vector<string> {GI(0)});
-    }
-};
-REGISTER_GRADIENT(Reshape, GetReshapeGradient);
+OPERATOR_SCHEMA(ReshapeGradient)
+    .NumInputs(2).NumOutputs(1)
+    .Inplace({ { 1, 0 } });
+
+REGISTER_GRADIENT(Reshape, SimpleGradientMaker);
 
 }  // namespace dragon

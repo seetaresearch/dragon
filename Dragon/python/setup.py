@@ -16,9 +16,9 @@ def find_packages(root_dir):
 
 
 def find_modules():
-    dragon_c_lib_win32 = '../lib/dragon.dll'
-    dragon_c_lib_linux = '../lib/libdragon.so'
-    dragon_c_lib_darwin = '../lib/libdragon.dylib'
+    dragon_c_lib_win32 = 'build/dragon.dll'
+    dragon_c_lib_linux = 'build/libdragon.so'
+    dragon_c_lib_darwin = 'build/libdragon.dylib'
     if os.path.exists(dragon_c_lib_win32):
         shutil.copy(dragon_c_lib_win32, 'dragon/libdragon.pyd')
     elif os.path.exists(dragon_c_lib_linux):
@@ -42,7 +42,7 @@ find_modules()
 
 
 setup(name = 'dragon',
-      version='0.2.2.13',
+      version='0.3.0.0',
       description = 'Dragon: A Computation Graph Virtual Machine Based Deep Learning Framework',
       url='https://github.com/seetaresearch/Dragon',
       author='Ting Pan',

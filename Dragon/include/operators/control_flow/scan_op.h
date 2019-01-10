@@ -22,11 +22,11 @@ class ScanOp final: public Operator<Context> {
  public:
     ScanOp(const OperatorDef& def, Workspace *ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", 0)),
-          nsteps(OperatorBase::Arg<int>("nsteps", 0)),
+          axis(OperatorBase::Arg<int64_t>("axis", 0)),
+          nsteps(OperatorBase::Arg<int64_t>("nsteps", 0)),
           step_type(OperatorBase::Arg<string>("step_type", "Static")),
           step_tensor(OperatorBase::Arg<string>("step_tensor", "")),
-          nseqs(OperatorBase::Arg<int>("nseqs", 0)),
+          nseqs(OperatorBase::Arg<int64_t>("nseqs", 0)),
           default_outputs(OperatorBase::Args<string>("default_outputs")),
           nout((int)default_outputs.size()),
           debug_mode(OperatorBase::Arg<bool>("debug_mode", false)) {
@@ -45,7 +45,7 @@ class ScanOp final: public Operator<Context> {
     Graph* cur_graph;
     Map<string, string> terms;
     vector<string> default_outputs;
-    TIndex axis, nseqs, nsteps, nrepeats, nout;
+    int64_t axis, nseqs, nsteps, nrepeats, nout;
     string step_type, step_tensor;
     bool debug_mode;
 };
@@ -55,8 +55,8 @@ class ScanGradientOp final: public Operator<Context> {
  public:
     ScanGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", 0)),
-          nsteps(OperatorBase::Arg<int>("nsteps", 0)),
+          axis(OperatorBase::Arg<int64_t>("axis", 0)),
+          nsteps(OperatorBase::Arg<int64_t>("nsteps", 0)),
           step_type(OperatorBase::Arg<string>("step_type", "Static")),
           step_tensor(OperatorBase::Arg<string>("step_tensor", "")),
           forward_inputs(OperatorBase::Args<string>("inputs_name")),
@@ -79,7 +79,7 @@ class ScanGradientOp final: public Operator<Context> {
     Map<int, unique_ptr<Graph>> graphs;
     vector<string> forward_inputs, forward_outputs;
     Graph* cur_graph;
-    TIndex axis, nsteps;
+    int64_t axis, nsteps;
     string step_type, step_tensor;
 };
 

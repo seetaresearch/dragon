@@ -66,7 +66,7 @@ PyObject* CreateGradientDefsCC(PyObject* self, PyObject* args) {
 }
 
 PyObject* RunGradientFlowCC(PyObject* self, PyObject* args) {
-    PyObject* py_fp_ops, *py_targets;   
+    PyObject* py_fp_ops, *py_targets;
     PyObject* py_input_grads, *py_ignore_grads;
     PyObject* py_share_grads, *py_export_graph;
     if (!PyArg_ParseTuple(args, "OOOOOO",
@@ -97,13 +97,13 @@ PyObject* RunGradientFlowCC(PyObject* self, PyObject* args) {
     bool export_graph = PyObject_IsTrue(py_export_graph) ? true : false;
     if (share_grads) maker.Share("/share/buffer/grads", bp_ops);
     if (export_graph) {
-        Tensor* t = ws()->CreateTensor("/export/dynamic_graph/gradient_flow");
-        t->Reshape({ 1 });
-        string* data = t->mutable_data<string, CPUContext>();
+        Tensor* tensor = ws()->CreateTensor(
+            "/graph_def/dynamic/gradient_flow")->Reshape({ 1 });
+        string* data = tensor->mutable_data<string, CPUContext>();
         data[0] = bp_ops.SerializeAsString();
-        t = ws()->CreateTensor("/export/dynamic_graph/forward_flow");
-        t->Reshape({ 1 });
-        data = t->mutable_data<string, CPUContext>();
+        tensor = ws()->CreateTensor(
+            "/graph_def/dynamic/forward_flow")->Reshape({ 1 });
+        data = tensor->mutable_data<string, CPUContext>();
         data[0] = fp_ops.SerializeAsString();
     }
     for (auto& op : bp_ops.op()) ws()->RunOperator(op);

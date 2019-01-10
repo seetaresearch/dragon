@@ -12,11 +12,11 @@ namespace kernel {
 template <typename T>
 __device__ T _ROIAlignInterpolate(
     const T*                Xdata,
-    const int               height,
-    const int               width,
+    const int               H,
+    const int               W,
     T                       y,
     T                       x) {
-    if (y < -1.0 || y > height || x < -1.0 || x > width) return 0;
+    if (y < -1.0 || y > H || x < -1.0 || x > W) return 0;
     if (y <= 0) y = 0;
     if (x <= 0) x = 0;
 
@@ -25,15 +25,15 @@ __device__ T _ROIAlignInterpolate(
     int y_high;
     int x_high;
 
-    if (y_low >= height - 1) {
-        y_high = y_low = height - 1;
+    if (y_low >= H - 1) {
+        y_high = y_low = H - 1;
         y = (T)y_low;
     } else {
         y_high = y_low + 1;
     }
 
-    if (x_low >= width - 1) {
-        x_high = x_low = width - 1;
+    if (x_low >= W - 1) {
+        x_high = x_low = W - 1;
         x = (T)x_low;
     } else {
         x_high = x_low + 1;
@@ -42,39 +42,45 @@ __device__ T _ROIAlignInterpolate(
     T ly = y - y_low;
     T lx = x - x_low;
     T hy = 1. - ly, hx = 1. - lx;
-    T v1 = Xdata[y_low * width + x_low];
-    T v2 = Xdata[y_low * width + x_high];
-    T v3 = Xdata[y_high * width + x_low];
-    T v4 = Xdata[y_high * width + x_high];
+#if __CUDA_ARCH__ >= 350
+    T v1 = __ldg(Xdata + (y_low * W + x_low));
+    T v2 = __ldg(Xdata + (y_low * W + x_high));
+    T v3 = __ldg(Xdata + (y_high * W + x_low));
+    T v4 = __ldg(Xdata + (y_high * W + x_high));
+#else
+    T v1 = Xdata[y_low * W + x_low];
+    T v2 = Xdata[y_low * W + x_high];
+    T v3 = Xdata[y_high * W + x_low];
+    T v4 = Xdata[y_high * W + x_high];
+#endif
     T w1 = hy * hx, w2 = hy * lx, w3 = ly * hx, w4 = ly * lx;
     return w1 * v1 + w2 * v2 + w3 * v3 + w4 * v4;
 }
 
 template <typename T>
 __global__ void _ROIAlign(
-    const int               count,
-    const float             spatial_scale,
-    const int               channels,
-    const int               height,
-    const int               width,
+    const int               nthreads,
+    const int               C,
+    const int               H,
+    const int               W,
     const int               pool_h,
     const int               pool_w,
     const int               sampling_ratio,
+    const float             spatial_scale,
     const T*                Xdata,
     const float*            rois,
     T*                      Ydata) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        int pw = idx % pool_w;
-        int ph = (idx / pool_w) % pool_h;
-        int c = (idx / pool_w / pool_h) % channels;
-        int n = idx / pool_w / pool_h / channels;
+    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
+        int pw = y_idx % pool_w;
+        int ph = (y_idx / pool_w) % pool_h;
+        int c = (y_idx / pool_w / pool_h) % C;
+        int n = y_idx / pool_w / pool_h / C;
 
         const T* offset_rois = rois + n * 5;
         int roi_batch_ind = offset_rois[0];
 
         if (roi_batch_ind < 0) {
-            Ydata[idx] = 0;
-            continue;
+            Ydata[y_idx] = 0; continue;
         }
 
         T roi_start_w = offset_rois[1] * spatial_scale;
@@ -87,7 +93,7 @@ __global__ void _ROIAlign(
         T bin_size_h = (T)roi_height / (T)pool_h;
         T bin_size_w = (T)roi_width / (T)pool_w;
 
-        const T* offset_Xdata = Xdata +(roi_batch_ind * channels + c) * height * width;
+        const T* offset_Xdata = Xdata +(roi_batch_ind * C + c) * H * W;
 
         int roi_bin_grid_h = (sampling_ratio > 0) ?
             sampling_ratio : ceil(roi_height / pool_h);
@@ -106,17 +112,15 @@ __global__ void _ROIAlign(
                     static_cast<T>(ix + .5f) * bin_size_w /
                         static_cast<T>(roi_bin_grid_w);
                 output_val += _ROIAlignInterpolate(
-                    offset_Xdata, height, width, y, x);
+                    offset_Xdata, H, W, y, x);
             }
         }
         output_val /= num_bin_grids;
-        Ydata[idx] = output_val;
+        Ydata[y_idx] = output_val;
     }
 }
 
 template<> void ROIAlign<float, CUDAContext>(
-    const int               count,
-    const int               N,
     const int               C,
     const int               H,
     const int               W,
@@ -129,19 +133,20 @@ template<> void ROIAlign<float, CUDAContext>(
     const float*            rois,
     float*                  y,
     CUDAContext*            ctx) {
+    auto nthreads = num_rois * C  * pool_h * pool_w;
     _ROIAlign<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
+        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (count, spatial_scale, C, H, W, pool_h, pool_w,
-            sampling_ratio, x, rois, y);
+        (nthreads, C, H, W, pool_h, pool_w,
+            sampling_ratio, spatial_scale, x, rois, y);
 }
 
 /*! ROIAlignGrad <T = float32, Device = CUDA> */
 
 template <typename T>
 __device__ void _ROIAlignInterpolateGrad(
-    const int               height,
-    const int               width,
+    const int               H,
+    const int               W,
     T                       y,
     T                       x,
     T&                      w1,
@@ -152,8 +157,7 @@ __device__ void _ROIAlignInterpolateGrad(
     int&                    x_high,
     int&                    y_low,
     int&                    y_high) {
-    if (y < -1.0 || y > height ||
-            x < -1.0 || x > width) {
+    if (y < -1.0 || y > H || x < -1.0 || x > W) {
         w1 = w2 = w3 = w4 = 0.;
         x_low = x_high = y_low = y_high = -1;
         return;
@@ -165,15 +169,15 @@ __device__ void _ROIAlignInterpolateGrad(
     y_low = (int)y;
     x_low = (int)x;
 
-    if (y_low >= height - 1) {
-        y_high = y_low = height - 1;
+    if (y_low >= H - 1) {
+        y_high = y_low = H - 1;
         y = (T)y_low;
     } else {
         y_high = y_low + 1;
     }
 
-    if (x_low >= width - 1) {
-        x_high = x_low = width - 1;
+    if (x_low >= W - 1) {
+        x_high = x_low = W - 1;
         x = (T)x_low;
     } else {
         x_high = x_low + 1;
@@ -188,23 +192,22 @@ __device__ void _ROIAlignInterpolateGrad(
 
 template <typename T>
 __global__ void _ROIAlignGrad(
-    const int               count,
-    const int               num_rois,
-    const T                 spatial_scale,
-    const int               channels,
-    const int               height,
-    const int               width,
+    const int               nthreads,
+    const int               C,
+    const int               H,
+    const int               W,
     const int               pool_h,
     const int               pool_w,
     const int               sampling_ratio,
+    const T                 spatial_scale,
     const T*                dYdata,
     const T*                rois,
     T*                      dXdata) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        int pw = idx % pool_w;
-        int ph = (idx / pool_w) % pool_h;
-        int c = (idx / pool_w / pool_h) % channels;
-        int n = idx / pool_w / pool_h / channels;
+    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
+        int pw = y_idx % pool_w;
+        int ph = (y_idx / pool_w) % pool_h;
+        int c = (y_idx / pool_w / pool_h) % C;
+        int n = y_idx / pool_w / pool_h / C;
 
         const T* offset_rois = rois + n * 5;
         int roi_batch_ind = offset_rois[0];
@@ -221,10 +224,9 @@ __global__ void _ROIAlignGrad(
         T bin_size_h = (T)roi_height / (T)pool_h;
         T bin_size_w = (T)roi_width / (T)pool_w;
 
-        T* offset_dXdata = dXdata + 
-            (roi_batch_ind * channels + c) * height * width;
+        T* offset_dXdata = dXdata + (roi_batch_ind * C + c) * H * W;
 
-        int y_offset = (n * channels + c) * pool_h * pool_w;
+        int y_offset = (n * C + c) * pool_h * pool_w;
         const T* offset_dYdata = dYdata + y_offset;
         const T dYdata_this_bin = offset_dYdata[ph * pool_w + pw];
 
@@ -248,7 +250,7 @@ __global__ void _ROIAlignGrad(
                 int x_low, x_high, y_low, y_high;
 
                 _ROIAlignInterpolateGrad(
-                    height, width, y, x, w1, w2, w3, w4,
+                    H, W, y, x, w1, w2, w3, w4,
                         x_low, x_high, y_low, y_high);
 
                 T g1 = dYdata_this_bin * w1 / num_bin_grids;
@@ -259,16 +261,16 @@ __global__ void _ROIAlignGrad(
                 if (x_low >= 0 && x_high >= 0 
                         && y_low >= 0 && y_high >= 0) {
                     atomicAdd(
-                        offset_dXdata + y_low * width + x_low,
+                        offset_dXdata + y_low * W + x_low,
                         static_cast<T>(g1));
                     atomicAdd(
-                        offset_dXdata + y_low * width + x_high,
+                        offset_dXdata + y_low * W + x_high,
                         static_cast<T>(g2));
                     atomicAdd(
-                        offset_dXdata + y_high * width + x_low,
+                        offset_dXdata + y_high * W + x_low,
                         static_cast<T>(g3));
                     atomicAdd(
-                        offset_dXdata + y_high * width + x_high,
+                        offset_dXdata + y_high * W + x_high,
                         static_cast<T>(g4));
                 }
             }
@@ -277,8 +279,6 @@ __global__ void _ROIAlignGrad(
 }
 
 template<> void ROIAlignGrad<float, CUDAContext>(
-    const int               count,
-    const int               N,
     const int               C,
     const int               H,
     const int               W,
@@ -291,11 +291,12 @@ template<> void ROIAlignGrad<float, CUDAContext>(
     const float*            rois,
     float*                  dx,
     CUDAContext*            ctx) {
+    auto nthreads = num_rois * C  * pool_h * pool_w;
     _ROIAlignGrad<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
+        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
-        (count, num_rois, spatial_scale, C, H, W,
-            pool_h, pool_w, sampling_ratio, dy, rois, dx);
+        (nthreads, C, H, W, pool_h, pool_w,
+            sampling_ratio, spatial_scale, dy, rois, dx);
 }
 
 }  // namespace kernel

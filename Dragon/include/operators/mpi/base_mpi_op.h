@@ -15,8 +15,9 @@
 
 #ifdef WITH_MPI
 
+#include <mpi.h>
+
 #include "core/operator.h"
-#include "mpi/mpi.h"
 
 namespace dragon {
 
@@ -26,8 +27,7 @@ class ModelMPIBase : public Operator<Context> {
     ModelMPIBase(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
           comm((MPI_Comm)OperatorBase::Arg<int64_t>("comm", 0)),
-          group((MPI_Group)OperatorBase::Arg<int64_t>("group", 0)),
-          dtype(OperatorBase::Arg<string>("dtype", "FLOAT32")) {
+          group((MPI_Group)OperatorBase::Arg<int64_t>("group", 0)) {
 
         if (comm == MPI_COMM_NULL) return;
         MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -37,15 +37,23 @@ class ModelMPIBase : public Operator<Context> {
 
         MPI_Group world_group;
         MPI_Comm_group(MPI_COMM_WORLD, &world_group);
-        int world_root = OperatorBase::Arg<int>("root", 0);
+        int world_root = OperatorBase::Arg<int64_t>("root", 0);
         MPI_Group_translate_ranks(world_group, 1, &world_root, group, &comm_root);
 
-        CHECK(comm_root != MPI_UNDEFINED) << "MPI root is not included in layer group.";
+        CHECK(comm_root != MPI_UNDEFINED)
+            << "\nMPI root is not included in layer group.";
     }
 
+    template <typename T>
     MPI_Datatype mpi_dtype() {
-        if (dtype == "FLOAT32") return MPI_FLOAT;
-        else LOG(FATAL) << "Unsupported input type: " << dtype;
+        auto dtype = TypeMetaToString(TypeMeta::Make<T>());
+        if (dtype == "int8") return MPI_CHAR;
+        else if (dtype == "uint8") return MPI_UNSIGNED_CHAR;
+        else if (dtype == "int32") return MPI_INT;
+        else if (dtype == "int64") return MPI_LONG_LONG;
+        else if (dtype == "float16") return MPI_UNSIGNED_SHORT;
+        else if (dtype == "float32") return MPI_FLOAT;
+        else if (dtype == "float64") return MPI_DOUBLE;
         return MPI_DATATYPE_NULL;
     }
 
@@ -54,16 +62,13 @@ class ModelMPIBase : public Operator<Context> {
     MPI_Group group;
     int comm_size, comm_rank, comm_root;
     int world_size, world_rank;
-    string dtype;
 };
 
 #define USE_MODEL_MPI_FUNCTIONS \
     using ModelMPIBase<Context>::comm; \
-    using ModelMPIBase<Context>::mpi_dtype; \
     using ModelMPIBase<Context>::comm_size; \
     using ModelMPIBase<Context>::comm_rank; \
-    using ModelMPIBase<Context>::comm_root; \
-    using ModelMPIBase<Context>::dtype
+    using ModelMPIBase<Context>::comm_root;
 
 }  // namespace dragon
 

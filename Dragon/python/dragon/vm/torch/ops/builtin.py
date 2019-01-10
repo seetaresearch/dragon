@@ -13,11 +13,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.constants import CTX_TO_DEVICE_OPTION
+from dragon.core.proto_utils import GetDeviceOption
 from dragon.core.tensor_utils import FromTensor
 
 from dragon.vm.torch.tensor import Tensor, Size
-from dragon.vm.torch.execute_engine import RunOperator
+from dragon.vm.torch.execution import RunOperator
 from dragon.vm.torch.ops.factory import get_module
 from dragon.vm.torch.autograd.grad_mode import no_grad
 from dragon.vm.torch.ops.primitive import MakeContext
@@ -29,7 +29,7 @@ from dragon.vm.torch.ops.arithmetic import (
 
 from dragon.vm.torch.ops.ndarray import (
     reshape, squeeze, unsqueeze,
-    _permute, _repeat, _crop,
+    _permute, _repeat, _indexing, narrow,
     _fill, _reduce, _arg_reduce,
 )
 
@@ -48,21 +48,21 @@ def copy_(self, src, non_blocking=False):
 
     Parameters
     ----------
-    src : vm.torch.Tensor
+    src : dragon.vm.torch.Tensor
         The source tensor.
     non_blocking : boolean
         Whether to copy asynchronously between CPU and GPU.
 
     Returns
     -------
-    vm.torch.Tensor
+    dragon.vm.torch.Tensor
         The ``self`` tensor.
 
     """
     # Copy memory
     FromTensor(
-        src, CTX_TO_DEVICE_OPTION[tuple(src._ctx)],
-        self.name, CTX_TO_DEVICE_OPTION[tuple(self._ctx)])
+        src, GetDeviceOption(src._ctx[0], src._ctx[1]),
+        self.name, GetDeviceOption(self._ctx[0], self._ctx[1]))
     self._dtype = src._dtype
     # Transfer the static shape if necessary
     self._static_shape = src.size() \
@@ -89,7 +89,7 @@ def fill_(self, value):
 
     Returns
     -------
-    vm.torch.Tensor
+    dragon.vm.torch.Tensor
         The self.
 
     """
@@ -108,7 +108,7 @@ def uniform_(self, low=0, high=1):
 
     Returns
     -------
-    vm.torch.Tensor
+    dragon.vm.torch.Tensor
         The self.
 
     """
@@ -131,7 +131,7 @@ def normal_(self, mean=0, std=1):
 
     Returns
     -------
-    vm.torch.Tensor
+    dragon.vm.torch.Tensor
         The self.
 
     """
@@ -159,12 +159,12 @@ def add(self, value):
 
     Parameters
     ----------
-    value : vm.torch.Tensor, int or float
+    value : dragon.vm.torch.Tensor, int or float
         The value tensor.
 
     Returns
     -------
-    vm.torch.Tensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
@@ -176,12 +176,12 @@ def add_(self, value):
 
     Parameters
     ----------
-    value : vm.torch.Tensor, int or float
+    value : dragon.vm.torch.Tensor, int or float
         The value tensor.
 
     Returns
     -------
-    vm.torch.Tensor
+    dragon.vm.torch.Tensor
         The self.
 
     """
@@ -197,12 +197,12 @@ def sub(self, value):
 
     Parameters
     ----------
-    value : vm.torch.Tensor, int or float
+    value : dragon.vm.torch.Tensor, int or float
         The value tensor.
 
     Returns
     -------
-    vm.torch.Tensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
@@ -214,12 +214,12 @@ def sub_(self, value):
 
     Parameters
     ----------
-    value : vm.torch.Tensor, int or float
+    value : torch.Tensor, int or float
         The value tensor.
 
     Returns
     -------
-    vm.torch.Tensor
+    torch.Tensor
         The self.
 
     """
@@ -235,12 +235,12 @@ def mul(self, value):
 
     Parameters
     ----------
-    value : vm.torch.Tensor, int or float
+    value : torch.Tensor, int or float
         The value tensor.
 
     Returns
     -------
-    vm.torch.Tensor
+    torch.Tensor
         The output tensor.
 
     """
@@ -252,12 +252,12 @@ def mul_(self, value):
 
     Parameters
     ----------
-    value : vm.torch.Tensor, int or float
+    value : torch.Tensor, int or float
         The value tensor.
 
     Returns
     -------
-    vm.torch.Tensor
+    torch.Tensor
         The self.
 
     """
@@ -273,12 +273,12 @@ def div(self, value):
 
     Parameters
     ----------
-    value : vm.torch.Tensor, int or float
+    value : torch.Tensor, int or float
         The value tensor.
 
     Returns
     -------
-    vm.torch.Tensor
+    torch.Tensor
         The output tensor.
 
     """
@@ -290,12 +290,12 @@ def div_(self, value):
 
     Parameters
     ----------
-    value : vm.torch.Tensor, int or float
+    value : torch.Tensor, int or float
         The value tensor.
 
     Returns
     -------
-    vm.torch.Tensor
+    torch.Tensor
         The self.
 
     """
@@ -311,14 +311,14 @@ def clamp(self, min=None, max=None):
 
     Parameters
     ----------
-    min : numerical or None
+    min : number, optional
         The min value.
-    max : numerical or None
+    max : number, optional
         The max value.
 
     Returns
     -------
-    vm.torch.Tensor
+    torch.Tensor
         The output tensor.
 
     """
@@ -330,14 +330,14 @@ def clamp_(self, min=None, max=None):
 
     Parameters
     ----------
-    min : numerical or None
+    min : number, optional
         The min value.
-    max : numerical or None
+    max : number, optional
         The max value.
 
     Returns
     -------
-    vm.torch.Tensor
+    torch.Tensor
         The output tensor.
 
     """
@@ -353,7 +353,7 @@ def log(self):
 
     Returns
     -------
-    vm.torch.Tensor
+    torch.Tensor
         The log tensor.
 
     """
@@ -369,7 +369,7 @@ def exp(self):
 
     Returns
     -------
-    vm.torch.Tensor
+    torch.Tensor
         The exp tensor.
 
     """
@@ -413,7 +413,7 @@ def _squeeze(self, dim=None):
 
     Returns
     -------
-    vm.torch.Tensor
+    torch.Tensor
         The new tensor.
 
     """
@@ -430,7 +430,7 @@ def _squeeze_(self, dim=None):
 
     Returns
     -------
-    vm.torch.Tensor
+    torch.Tensor
         The self.
 
     """
@@ -447,7 +447,7 @@ def _unsqueeze(self, dim):
 
     Returns
     -------
-    vm.torch.Tensor
+    torch.Tensor
         The new tensor.
 
     """
@@ -464,7 +464,7 @@ def _unsqueeze_(self, dim=None):
 
     Returns
     -------
-    vm.torch.Tensor
+    torch.Tensor
         The self.
 
     """
@@ -492,8 +492,12 @@ def repeat(self, *sizes):
     return _repeat(self, sizes)
 
 
-def crop(self, starts, ends):
-    return _crop(self, starts, ends)
+def indexing(self, starts, ends):
+    return _indexing(self, starts, ends)
+
+
+def _narrow(self, dimension, start, length):
+    return narrow(self, dimension, start, length)
 
 
 def mean(self, dim=None, keepdim=False):
@@ -524,7 +528,8 @@ Tensor.mean = mean
 Tensor.sum = sum
 Tensor.max = max
 Tensor.min = min
-Tensor._crop = crop
+Tensor.narrow = _narrow
+Tensor._indexing = indexing
 
 
 ##############################################
@@ -537,8 +542,8 @@ Tensor._crop = crop
 def _type_to(input, dtype='float32', inplace=False):
     if dtype == input._dtype: return input
     ctx = MakeContext(inputs=[input])
-    key = 'torch/ops/astype/{}:{}/dtype:{}/inplace:{}'.format(
-        ctx[0].lower(), ctx[1], dtype, 'true' if inplace else 'false')
+    key = 'torch.ops.astype/{}:{}/dtype:{}/inplace:{}'.format(
+        ctx[0], ctx[1], dtype, 'true' if inplace else 'false')
     module = get_module(AsType, key, ctx, dtype=dtype, inplace=inplace)
     with no_grad():
         return module.forward(input)
@@ -556,7 +561,7 @@ def _type(self, dtype=None):
 
     Returns
     -------
-    str or vm.torch.Tensor
+    str or torch.Tensor
         The data type or the new tensor.
 
     """

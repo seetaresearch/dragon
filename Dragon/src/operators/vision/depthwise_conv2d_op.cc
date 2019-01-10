@@ -14,9 +14,9 @@ void DepthwiseConv2dOp<Context>::RunWithType() {
     auto* Wdata = Input(1).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
-    kernel::DepthwiseConv2d<T, Context>(Input(0).dim(0), channels,
+    kernel::DepthwiseConv2d(Input(0).dim(0), channels,
         input_shape[0], input_shape[1], output_shape[0], output_shape[1],
-            kernel_size[0], kernel_size[1], stride[0], pad[0], pad[1],
+            kernel_shape[0], kernel_shape[1], stride[0], pad_l[0], pad_l[1],
                 data_format, Xdata, Wdata, Ydata, ctx());
 
     if (HasBias()) {
@@ -48,7 +48,7 @@ void DepthwiseConv2dGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
 
     if (HasBias()) {
-        T* dBdata = Output(2)->template mutable_data<T, Context>(ctx());
+        T* dBdata = Output(2)->template mutable_data<T, Context>();
         for (int n = 0; n < Input(2).dim(0); n++)
             Db(dYdata + n * y_offset, dBdata);
     }
@@ -56,18 +56,18 @@ void DepthwiseConv2dGradientOp<Context>::RunWithType() {
     for (int n = 0; n < Input(2).dim(0); n++) {
         if (Output(1)->name() != "ignore") {
             auto* Xdata = Input(0).template data<T, Context>();
-            auto* dWdata = Output(1)->template mutable_data<T, Context>(ctx());
-            kernel::DepthwiseConv2dWGrad<T, Context>(Input(0).dim(0), channels,
+            auto* dWdata = Output(1)->template mutable_data<T, Context>();
+            kernel::DepthwiseConv2dWGrad(Input(0).dim(0), channels,
                 input_shape[0], input_shape[1], output_shape[0], output_shape[1],
-                    kernel_size[0], kernel_size[1], stride[0], pad[0], pad[1],
+                    kernel_shape[0], kernel_shape[1], stride[0], pad_l[0], pad_l[1],
                         data_format, dYdata, Xdata, dWdata, ctx());
         }
         if (Output(0)->name() != "ignore") {
             auto* Wdata = Input(1).template data<T, Context>();
             auto* dXdata = Output(0)->template mutable_data<T, Context>();
-            kernel::DepthwiseConv2dGrad<T, Context>(Input(0).dim(0), channels,
+            kernel::DepthwiseConv2dGrad(Input(0).dim(0), channels,
                 input_shape[0], input_shape[1], output_shape[0], output_shape[1],
-                    kernel_size[0], kernel_size[1], stride[0], pad[0], pad[1],
+                    kernel_shape[0], kernel_shape[1], stride[0], pad_l[0], pad_l[1],
                         data_format, dYdata, Wdata, dXdata, ctx());
         }
     }
@@ -87,17 +87,21 @@ DEPLOY_CPU(DepthwiseConv2dGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(DepthwiseConv2dGradient);
 #endif
-OPERATOR_SCHEMA(DepthwiseConv2dGradient).NumInputs(3).NumOutputs(3);
 
-class GetDepthwiseConv2dGradient final : public GradientMakerBase {
+OPERATOR_SCHEMA(DepthwiseConv2dGradient)
+    .NumInputs(3).NumOutputs(3);
+
+class GetDepthwiseConv2dGradient
+    final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetDepthwiseConv2dGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), I(1), GO(0)},
-            vector<string> {GI(0), GI(1), GI(2)});
+            vector<string>({ I(0), I(1), GO(0) }),
+            vector<string>({ GI(0), GI(1), GI(2) }));
     }
 };
+
 REGISTER_GRADIENT(DepthwiseConv2d, GetDepthwiseConv2dGradient);
 
 }  // namespace dragon

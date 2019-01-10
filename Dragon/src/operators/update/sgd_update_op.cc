@@ -14,9 +14,9 @@ void SGDUpdateOp<Context>::ComputeRunWithFloat32() {
     // Momentum Correction, See arXiv:1706.02677
     if (old_lr > 0) { correction = lr / old_lr; } old_lr = lr;
     auto* dXdata = Input(0).template mutable_data<float, Context>();
-    auto* Hdata = h->template mutable_data<float, Context>(ctx());
+    auto* Hdata = h->template mutable_data<float, Context>();
 
-    kernel::SGDUpdate<float, Context>(Input(0).count(),
+    kernel::SGDUpdate(Input(0).count(),
         lr, momentum * correction, dXdata, Hdata, ctx());
 }
 
@@ -33,11 +33,10 @@ void SGDUpdateOp<Context>::ComputeRunWithFloat16() {
 
     auto* dX32 = dX32T->template mutable_data<float, Context>();
     auto* dX16 = Input(0).template mutable_data<float16, Context>();
-    auto* H32 = h->template mutable_data<float, Context>(ctx());
+    auto* H32 = h->template mutable_data<float, Context>();
 
-    kernel::TypeA2B<float16, float, Context>(
-        Input(0).count(), dX16, dX32, ctx());
-    kernel::SGDUpdate<float, Context>(Input(0).count(),
+    kernel::TypeA2B(Input(0).count(), dX16, dX32, ctx());
+    kernel::SGDUpdate(Input(0).count(),
         lr, momentum * correction, dX32, H32, ctx());
 }
 

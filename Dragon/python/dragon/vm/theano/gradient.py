@@ -9,8 +9,7 @@
 #
 # ------------------------------------------------------------
 
-from dragon.core.tensor import Tensor
-import dragon.ops as ops
+import dragon as dg
 
 
 def grad(cost, wrt, **kwargs):
@@ -30,11 +29,12 @@ def grad(cost, wrt, **kwargs):
 
     Examples
     --------
-    >>> x = Tensor('x').Variable()
+    >>> import dragon as dg
+    >>> x = dg.Tensor('x').Variable()
     >>> y = x * 2
     >>> dx = grad(y, x)
 
-    >>> z = Tensor('z').Variable()
+    >>> z = dg.Tensor('z').Variable()
     >>> y = x + z
     >>> dx, dz = grad(y, [x, z])
 
@@ -42,13 +42,11 @@ def grad(cost, wrt, **kwargs):
     grads = []
     if not isinstance(wrt, list): wrt = [wrt]
     for w in wrt:
-        cost.grad_wrts.append(w.name)
-        w.grad_objs.append(cost)
-        w_grad = Tensor(w.name + '_grad')
-        w_grad.extra_targets.add(cost.name)
-        w_grad.expressions = cost.expressions
-        w_grad.grad_wrts.append(w.name)
-        grads.append(w_grad)
+        cost.gradient.add_wrt(w.name)
+        w.gradient.add_cost(cost)
+        grads.append(dg.Tensor.Ref(
+            name=w.name + '_grad',
+                shape=w.shape, dtype=w.dtype))
     if len(grads) == 1: return grads[0]
     return grads
 
@@ -69,4 +67,4 @@ def disconnected_grad(x):
         The identity of input.
 
     """
-    return ops.StopGradient(x)
+    return dg.ops.StopGradient(x)

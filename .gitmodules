@@ -4,3 +4,9 @@
 [submodule "DragonLair"]
 	path = DragonLair
 	url = https://github.com/seetaresearch/DragonLair.git
+[submodule "ThirdParty/eigen"]
+	path = ThirdParty/eigen
+	url = https://github.com/eigenteam/eigen-git-mirror.git
+[submodule "ThirdParty/cub"]
+	path = ThirdParty/cub
+	url = https://github.com/NVlabs/cub

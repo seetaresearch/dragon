@@ -23,7 +23,7 @@ class DropBlock2dOp final : public Operator<Context> {
  public:
     DropBlock2dOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          block_size(OperatorBase::Arg<int>("block_size", 7)),
+          block_size(OperatorBase::Arg<int64_t>("block_size", 7)),
           alpha(OperatorBase::Arg<float>("alpha", 1.f)),
           decrement(OperatorBase::Arg<float>("decrement", 0.f)),
           data_format(OperatorBase::Arg<string>("data_format", "NCHW")) {
@@ -36,12 +36,12 @@ class DropBlock2dOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    DECLARE_ARGUMENT_WITH_DESC(float, keep_prob);
-    TIndex block_size, seed_h, seed_w;
-    TIndex n, c, h, w;
+    int64_t block_size, seed_h, seed_w;
+    int64_t n, c, h, w;
     float alpha, decrement, apply_prob = 1., gamma;
     string data_format;
-    vector<TIndex> seed_dims;
+    vector<int64_t> seed_dims;
+    DECLARE_ARGUMENT_WITH_DESC(float, keep_prob);
 };
 
 template <class Context>

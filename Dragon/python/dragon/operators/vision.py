@@ -13,46 +13,59 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import math
-
 from . import *
 
 
-def Conv2d(
-    inputs, num_output, kernel_size,
-        stride=1, pad=0, dilation=1, group=1,
-            padding='VALID', data_format='NCHW', **kwargs
-):
-    """2D Convolution.
+def _normalize_tuple(value, rank):
+    if not isinstance(value, (list, tuple)): value = [value]
+    if len(value) > rank:
+        return [value[i] for i in range(rank)]
+    else:
+        return [value[i] for i in range(len(value))] + \
+            [value[-1] for i in range(len(value), rank)]
 
-    The number of inputs vary from ``2`` to ``3`` (Without or With ``bias``).
+
+def _normalize_pads(value, rank):
+    if not isinstance(value, (list, tuple)): value = [value]
+    if len(value) == (rank * 2): return value
+    return _normalize_tuple(value, rank) * 2
+
+
+@OpSchema.Inputs(2, 3)
+def Conv2d(
+    inputs, num_output, kernel_shape,
+        strides=1, pads=0, dilations=1, group=1,
+            padding='VALID', data_format='NCHW', **kwargs):
+    """2D Convolution.
 
     The spatial output dimension of convolution can be computed as follows:
 
     |conv_output_dim|
 
-    Set ``padding`` to  **VALID** will use the value of ``pad``.
+    Set ``padding`` to *VALID* will use the value of ``pads``.
+
+    **Type Constraints**: (*float16*, *float32*)
 
     Parameters
     ----------
-    inputs : list of Tensor
-        The inputs, represent [input, weights, bias].
+    inputs : sequence of Tensor
+        The inputs, represent [input, weights] + [bias].
     num_output : int
         The output channels of convolution.
-    kernel_size : int, tuple or list
-        The kernel size(s) of convolution.
-    stride : int, tuple or list
-        The stride(s) of convolution. Default is ``1``.
-    pad : int, tuple or list
-        The zero padding size(s) of convolution. Default is ``0``.
-    dilation : int, tuple or list
-        The dilation multiple(s) of convolution. Default is ``1``.
-    group : int
-        The group size of convolution. Default is ``1``.
-    padding : str
-        The padding algorithm. ``VALID`` or ``SAME``.
-    data_format : str
-        The data format. ``NCHW`` or ``NHWC``.
+    kernel_shape : sequence of int.
+        The shape of convolution kernel.
+    strides : sequence of int, optional, default=1
+        The stride(s) of convolution.
+    pads : sequence of int, optional, default=0
+        The zero padding size(s) of convolution.
+    dilations : sequence of int, optional, default=0
+        The dilation multiple(s) of convolution.
+    group : int, optional, default=1
+        The group size of convolution.
+    padding : {'VALID', 'SAME, 'SAME_UPPER', 'SAME_LOWER'}, optional
+        The padding algorithm.
+    data_format : {'NCHW', 'NHWC'}, optional
+        The data_format.
 
     Returns
     -------
@@ -64,82 +77,52 @@ def Conv2d(
     >>> x = Tensor().Variable()
     >>> weights = Tensor().Normal(std=0.001)
     >>> biases = Tensor().Constant(value=0)
-    >>> conv1 = Conv2d([x, weights, biases], num_output=64, kernel_size=3)
+    >>> conv1 = Conv2d([x, weights, biases], num_output=64, kernel_shape=3)
 
     >>> weights = Tensor().Gaussian(std=0.001)
-    >>> conv2 = Conv2d([conv1, weights], num_output=128, kernel_size=3, stride=1)
+    >>> conv2 = Conv2d([conv1, weights], num_output=128, kernel_shape=3, strides=1)
 
     """
-    CheckInputs(inputs, 2, 3)
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
 
-    if padding not in ('VALID', 'SAME'):
+    if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
         raise ValueError('Unsupported padding algorithm: {}'.format(padding))
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: {}'.format(data_format))
 
-    if not isinstance(arguments['kernel_size'], (list, tuple)):
-        arguments['kernel_size'] = [arguments['kernel_size']]
-    if not isinstance(arguments['stride'], (list, tuple)):
-        arguments['stride'] = [arguments['stride']]
-    if not isinstance(arguments['pad'], (list, tuple)):
-        arguments['pad'] = [arguments['pad']]
-    if not isinstance(arguments['dilation'], (list, tuple)):
-        arguments['dilation'] = [arguments['dilation']]
+    for key in ('kernel_shape', 'strides', 'pads', 'dilations'):
+        if key == 'pads': arguments[key] = _normalize_pads(arguments[key], 2)
+        else: arguments[key] = _normalize_tuple(arguments[key], 2)
 
-    output = Tensor.CreateOperator(nout=1, op_type='Conv2d', **arguments)
-
-    if inputs[0].shape is not None:
-        output.shape = inputs[0].shape[:]
-        channel_axis = 1 if data_format == 'NCHW' else -1
-        spatial_axis = 2 if data_format == 'NCHW' else 1
-        output.shape[channel_axis] = num_output
-        for i in range(2):
-            input_size = output.shape[i + spatial_axis]
-            k = arguments['kernel_size'][i] if i < len(arguments['kernel_size']) \
-                                            else arguments['kernel_size'][-1]
-            s = arguments['stride'][i]      if i < len(arguments['stride']) \
-                                            else arguments['stride'][-1]
-            p = arguments['pad'][i]         if i < len(arguments['pad']) \
-                                            else arguments['pad'][-1]
-            d = arguments['dilation'][i]    if i < len(arguments['dilation']) \
-                                            else arguments['dilation'][-1]
-            dk = d * (k - 1) + 1
-            dp = 2 * p
-            if padding == 'SAME':
-                output.shape[i + spatial_axis] = int((input_size + s - 1) / s)
-            else:
-                output.shape[i + spatial_axis] = int((input_size + dp - dk) / s) + 1
-
-    return output
+    return Tensor.CreateOperator('Conv2d', **arguments)
 
 
+@OpSchema.Inputs(2, 3)
 def DepthwiseConv2d(
-    inputs, num_output, kernel_size=3, stride=1, pad=0,
-        padding='VALID', data_format='NCHW', **kwargs
-):
+    inputs, num_output, kernel_shape=3, strides=1, pads=0,
+        padding='VALID', data_format='NCHW', **kwargs):
     """Depthwise 2D Convolution. `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
 
-    The number of inputs vary from ``2`` to ``3`` (Without or With ``bias``).
+    Set ``padding`` to *VALID* will use the value of ``pads``.
 
-    Set ``padding`` to  **VALID** will use the value of ``pad``.
+    **Type Constraints**: *float32*
 
     Parameters
     ----------
-    inputs : list of Tensor
-        The inputs, represent [input, weights, bias].
+    inputs : sequence of Tensor
+        The inputs, represent [input, weights] + [bias].
     num_output : int
         The output channels of convolution.
-    kernel_size : int, tuple or list
-        The kernel size(s) of convolution. Default is ``3``.
-    stride : int, tuple or list
-        The stride(s) of convolution. Default is ``1``.
-    pad : int, tuple or list
-        The zero padding size(s) of convolution. Default is ``0``.
-    padding : str
-        The padding algorithm. ``VALID`` or ``SAME``.
-    data_format : str
-        The data format. ``NCHW`` or ``NHWC``.
+    kernel_shape : sequence of int, optional, default=3
+        The shape of convolution kernel.
+    strides : sequence of int, optional, default=1
+        The stride(s) of convolution.
+    pads : sequence of int, optional, default=0
+        The zero padding size(s) of convolution.
+    padding : {'VALID', 'SAME, 'SAME_UPPER', 'SAME_LOWER'}, optional
+        The padding algorithm.
+    data_format : {'NCHW', 'NHWC'}, optional
+        The data_format.
 
     Returns
     -------
@@ -147,86 +130,63 @@ def DepthwiseConv2d(
         The output tensor.
 
     """
-    CheckInputs(inputs, 2, 3)
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
 
-    if padding not in ('VALID', 'SAME'):
+    if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
         raise ValueError('Unsupported padding algorithm: {}'.format(padding))
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: {}'.format(data_format))
 
-    if not isinstance(arguments['kernel_size'], (list, tuple)):
-        arguments['kernel_size'] = [arguments['kernel_size']]
-    if not isinstance(arguments['stride'], (list, tuple)):
-        arguments['stride'] = [arguments['stride']]
-    if not isinstance(arguments['pad'], (list, tuple)):
-        arguments['pad'] = [arguments['pad']]
-    arguments['dilation'] = [1, 1]
+    for key in ('kernel_shape', 'strides', 'pads', 'dilations'):
+        if key == 'pads': arguments[key] = _normalize_pads(arguments[key], 2)
+        elif key == 'dilations': arguments[key] = _normalize_tuple([1], 2)
+        else: arguments[key] = _normalize_tuple(arguments[key], 2)
 
-    output = Tensor.CreateOperator(nout=1, op_type='DepthwiseConv2d', **arguments)
-
-    if inputs[0].shape is not None:
-        output.shape = inputs[0].shape[:]
-        channel_axis = 1 if data_format == 'NCHW' else -1
-        spatial_axis = 2 if data_format == 'NCHW' else 1
-        output.shape[channel_axis] = num_output
-        for i in range(2):
-            input_size = output.shape[i + spatial_axis]
-            k = arguments['kernel_size'][i] if i < len(arguments['kernel_size']) \
-                                            else arguments['kernel_size'][-1]
-            s = arguments['stride'][i]      if i < len(arguments['stride']) \
-                                            else arguments['stride'][-1]
-            p = arguments['pad'][i]         if i < len(arguments['pad']) \
-                                            else arguments['pad'][-1]
-            dk = (k - 1) + 1
-            dp = 2 * p
-            if padding == 'SAME':
-                output.shape[i + spatial_axis] = int((input_size + s - 1) / s)
-            else:
-                output.shape[i + spatial_axis] = int((input_size + dp - dk) / s) + 1
-
-    return output
+    return Tensor.CreateOperator('DepthwiseConv2d', **arguments)
 
 
-def Conv2dTranspose(
-    inputs, num_output, kernel_size,
-        stride=1, pad=0, dilation=1, group=1, output_shape=None,
-            padding='VALID', data_format='NCHW', **kwargs
-):
+@OpSchema.Inputs(2, 3)
+@ArgumentHelper.RepeatedDesc('output_padding')
+@ArgumentHelper.RepeatedDesc('output_shape')
+def ConvTranspose2d(
+    inputs, num_output, kernel_shape,
+        strides=1, pads=0, dilations=1, group=1,
+            output_padding=None, output_shape=None,
+                padding='VALID', data_format='NCHW', **kwargs):
     """2D Deconvolution.
-
-    The number of inputs vary from ``2`` to ``3`` (Without or With ``bias``).
 
     The spatial output dimension of deconvolution can be computed as follows:
 
     |deconv_output_dim|
 
-    Set ``padding`` to  **VALID** will use the value of ``pad``.
+    Set ``padding`` to *VALID* will use the value of ``pads``.
 
-    Provide ``output_shape`` if using **SAME** padding.
+    **Type Constraints**: (*float16*, *float32*)
 
     Parameters
     ----------
-    inputs : list of Tensor
-        The inputs of deconvolution, represent [input, weights, bias].
+    inputs : sequence of Tensor
+        The inputs, represent [input, weights] + [bias].
     num_output : int
         The output channels of deconvolution.
-    kernel_size : int, tuple or list
-        The kernel size(s) of deconvolution.
-    stride : int, tuple or list
-        The stride(s) of deconvolution. Default is ``1``.
-    pad : int, tuple or list
-        The zero padding size(s) of deconvolution. Default is ``0``.
-    dilation : int, tuple or list
-        The dilation multiple(s) of deconvolution. Default is ``1``.
-    group : int
-        The group size of deconvolution. Default is ``1``.
-    output_shape : list or None
+    kernel_shape : sequence of int
+        The shape of convolution kernel.
+    strides : sequence of int, optional, default=1
+        The stride(s) of deconvolution.
+    pads : sequence of int, optional, default=0
+        The zero padding size(s) of deconvolution.
+    dilations : sequence of int, optional, default=1
+        The dilation multiple(s) of deconvolution.
+    group : int, optional, default=1
+        The group size of deconvolution.
+    output_padding : sequence of (int, Tensor), optional
+        The padding value add to one side(right) of the output.
+    output_shape : sequence of (int, Tensor), optional
         The deterministic output shape for **SAME** padding.
-    padding : str
-        The padding algorithm. ``VALID`` or ``SAME``.
-    data_format : str
-        The data format. ``NCHW`` or ``NHWC``.
+    padding : {'VALID', 'SAME, 'SAME_UPPER', 'SAME_LOWER'}, optional
+        The padding algorithm.
+    data_format : {'NCHW', 'NHWC'}, optional
+        The data_format.
 
     Returns
     -------
@@ -238,98 +198,65 @@ def Conv2dTranspose(
     >>> input = Tensor().Variable()
     >>> weights = Tensor().Normal(std=0.001)
     >>> biases = Tensor().Constant(value=0)
-    >>> deconv1 = Conv2dTranspose([input, weights, biases], num_output=64, kernel_size=3)
+    >>> deconv1 = ConvTranspose2d([input, weights, biases], num_output=64, kernel_shape=3)
 
     >>> weights = Tensor().Gaussian(std=0.001)
-    >>> deconv2 = Conv2dTranspose([deconv1, weights], num_output=128, kernel_size=3, stride=1)
+    >>> deconv2 = ConvTranspose2d([deconv1, weights], num_output=128, kernel_shape=3, strides=1)
 
     """
-    CheckInputs(inputs, 2, 3)
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
 
-    if padding not in ('VALID', 'SAME'):
+    if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
         raise ValueError('Unsupported padding algorithm: {}'.format(padding))
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: {}'.format(data_format))
 
-    if output_shape is not None:
-        AddArgumentsWithDesc(arguments, output_shape, 'output_shape', 'int32', as_target=True)
+    if output_padding is not None or output_shape is not None:
+        if 'SAME' not in arguments['padding']:
+            arguments['padding'] = 'SAME_LOWER' # Enforce the auto padding
 
-    if not isinstance(arguments['kernel_size'], (list, tuple)):
-        arguments['kernel_size'] = [arguments['kernel_size']]
-    if not isinstance(arguments['stride'], (list, tuple)):
-        arguments['stride'] = [arguments['stride']]
-    if not isinstance(arguments['pad'], (list, tuple)):
-        arguments['pad'] = [arguments['pad']]
-    if not isinstance(arguments['dilation'], (list, tuple)):
-        arguments['dilation'] = [arguments['dilation']]
+    for key in ('kernel_shape', 'strides', 'pads', 'dilations'):
+        if key == 'pads': arguments[key] = _normalize_pads(arguments[key], 2)
+        else: arguments[key] = _normalize_tuple(arguments[key], 2)
 
-    output =  Tensor.CreateOperator(nout=1, op_type='Conv2dTranspose', **arguments)
-
-    if inputs[0].shape is not None:
-        output.shape = inputs[0].shape[:]
-        channel_axis = 1 if data_format == 'NCHW' else -1
-        spatial_axis = 2 if data_format == 'NCHW' else 1
-        output.shape[channel_axis] = num_output
-        for i in range(2):
-            k = arguments['kernel_size'][i] if i < len(arguments['kernel_size']) \
-                else arguments['kernel_size'][-1]
-            s = arguments['stride'][i] if i < len(arguments['stride']) \
-                else arguments['stride'][-1]
-            p = arguments['pad'][i] if i < len(arguments['pad']) \
-                else arguments['pad'][-1]
-            d = arguments['dilation'][i] if i < len(arguments['dilation']) \
-                else arguments['dilation'][-1]
-            dk = d * (k - 1) + 1
-            dp = 2 * p
-            input_size = output.shape[i + spatial_axis]
-            if padding != 'SAME':
-                output.shape[i + spatial_axis] = s * (input_size - 1) + dk - dp
-            else:
-                if output_shape is None:
-                    raise ValueError('The output shape must be specified if using SAME padding algorithm.')
-                if isinstance(output_shape[i + spatial_axis], Tensor):
-                    output.shape = None
-                    return output
-                else:
-                    output.shape[i + spatial_axis] = output_shape[i + spatial_axis]
-
-    return output
+    return Tensor.CreateOperator('ConvTranspose2d', **arguments)
 
 
+@OpSchema.Inputs(1)
 def Pool2d(
-    inputs, kernel_size, stride, pad=0, padding='VALID', ceil=True,
-        mode='MAX', data_format='NCHW', global_pooling=False, **kwargs
-):
+    inputs, kernel_shape, strides, pads=0, padding='VALID', ceil=True,
+        mode='MAX', data_format='NCHW', global_pooling=False, **kwargs):
     """2D Pooling, MAX or AVG.
 
     The spatial output dimension of pooling can be computed as follows:
 
     |pooling_output_dim|
 
-    Set ``padding`` to  **VALID** will use the value of ``pad``.
+    Set ``padding`` to *VALID* will use the value of ``pads``.
 
-    If use ``global_pooling``, the stride and pad will be set to ``1`` and ``0`` automatically.
+    If ``global_pooling`` is *True*, ``strides`` and ``pads`` will be set to *1* and *0* respectively.
+
+    **Type Constraints**: (*float16*, *float32*)
 
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    kernel_size : int, tuple or list
-        The kernel size(s) of pooling.
-    stride : int, tuple or list
+    kernel_shape : int, tuple or list
+        The shape of pooling kernel.
+    strides : sequence of int
         The stride(s) of of pooling,
-    pad :  int, tuple or list
-        The zero padding size(s) of pooling. Default is ``0``.
-    padding : str
-        The padding algorithm. ``VALID`` or ``SAME``.
-    ceil : boolean
+    pads : sequence of int, optional, default=0
+        The zero padding size(s) of pooling.
+    padding : {'VALID', 'SAME, 'SAME_UPPER', 'SAME_LOWER'}, optional
+        The padding algorithm.
+    ceil : bool, optional
         Whether to ceil the boundary.
-    mode : str
-        The mode, ``MAX`` or ``AVG``.
-    data_format : str
-        The data format, ``NCHW`` or ``NHWC``.
-    global_pooling : boolean
+    mode : {'MAX', 'AVG'}, optional
+        The pooling mode.
+    data_format : {'NCHW', 'NHWC'}, optional
+        The data_format.
+    global_pooling : bool, optional
         Whether to use global pooling.
 
     Returns
@@ -338,65 +265,39 @@ def Pool2d(
         The output tensor.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
 
     if mode not in ('MAX', 'AVG'):
         raise ValueError('Unsupported lrn mode: {}'.format(mode))
-    if padding not in ('VALID', 'SAME'):
+    if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
         raise ValueError('Unsupported padding algorithm: {}'.format(padding))
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: {}'.format(data_format))
 
-    if not isinstance(arguments['kernel_size'], (list, tuple)):
-        arguments['kernel_size'] = [arguments['kernel_size']]
-    if not isinstance(arguments['stride'], (list, tuple)):
-        arguments['stride'] = [arguments['stride']]
-    if not isinstance(arguments['pad'], (list, tuple)):
-        arguments['pad'] = [arguments['pad']]
+    for key in ('kernel_shape', 'strides', 'pads'):
+        if key == 'pads': arguments[key] = _normalize_pads(arguments[key], 2)
+        else: arguments[key] = _normalize_tuple(arguments[key], 2)
 
-    output = Tensor.CreateOperator(nout=1, op_type='Pooling2d', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-        spatial_axis = 2 if data_format == 'NCHW' else 1
-        for i in range(2):
-            k = arguments['kernel_size'][i] if i < len(arguments['kernel_size']) \
-                                            else arguments['kernel_size'][-1]
-            s = arguments['stride'][i]      if i < len(arguments['stride']) \
-                                            else arguments['stride'][-1]
-            p = arguments['pad'][i]         if i < len(arguments['pad']) \
-                                            else arguments['pad'][-1]
-            if not global_pooling:
-                if padding != 'SAME':
-                    input_size = output.shape[i + spatial_axis]
-                    output_size = int(math.ceil((output.shape[i + spatial_axis] + 2 * p - k) / s) + 1)
-                    if ((output_size - 1) * s >= input_size + p):
-                        output_size = output_size - 1
-                    output.shape[i + spatial_axis] = output_size
-                else:
-                    output.shape[i + spatial_axis] = \
-                        int((output.shape[i + spatial_axis] + s - 1) / s)
-            else:
-                output.shape[i + spatial_axis] = 1
-
-    return output
+    return Tensor.CreateOperator('Pool2d', **arguments)
 
 
-def ROIPooling(inputs, pool_h, pool_w, spatial_scale, **kwargs):
-    """Max ROIPooling. `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
+@OpSchema.Inputs(2)
+def ROIPool(inputs, pool_h, pool_w, spatial_scale=1.0, **kwargs):
+    """Max RoI Pooling. `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
 
     The first dimension of input must be ``1``.
 
+    **Type Constraints**: (*float16*, *float32*)
+
     Parameters
     ----------
-    inputs : list of Tensor
-        The inputs, represent input and RoIs respectively.
-    pool_h : int
+    inputs : sequence of Tensor
+        The inputs, represent the Feature and RoIs respectively.
+    pool_h : int, optional
         The height of pooled tensor.
-    pool_w : int
+    pool_w : int, optional
         The width of pooled tensor.
-    spatial_scale : float
+    spatial_scale : float, optional
         The ``inverse`` of total down-sampling multiples on input tensor.
 
     Returns
@@ -405,27 +306,28 @@ def ROIPooling(inputs, pool_h, pool_w, spatial_scale, **kwargs):
         The batch of pooled RoI regions.
 
     """
-    CheckInputs(inputs, 2)
-    arguments = ParseArguments(locals())
-    return Tensor.CreateOperator(nout=1, op_type='ROIPooling', **arguments)
+    return Tensor.CreateOperator('ROIPool', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(2)
 def ROIAlign(inputs, pool_h=0, pool_w=0, spatial_scale=1.0, sampling_ratio=2, **kwargs):
     """AVG ROIAlign. `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
 
     The first dimension of input must be ``1``.
 
+    **Type Constraints**: (*float16*, *float32*)
+
     Parameters
     ----------
-    inputs : list of Tensor
-        The inputs, represent input and RoIs respectively.
-    pool_h : int
+    inputs : sequence of Tensor
+        The inputs, represent the Feature and RoIs respectively.
+    pool_h : int, optional
         The height of pooled tensor.
-    pool_w : int
+    pool_w : int, optional
         The width of pooled tensor.
-    spatial_scale : float
+    spatial_scale : float, optional
         The ``inverse`` of total down-sampling multiples on input tensor.
-    sampling_ratio : int
+    sampling_ratio : int, optional
         The number of sampling grids for each RoI bin.
 
     Returns
@@ -434,33 +336,33 @@ def ROIAlign(inputs, pool_h=0, pool_w=0, spatial_scale=1.0, sampling_ratio=2, **
         The batch of pooled RoI regions.
 
     """
-    CheckInputs(inputs, 2)
-    arguments = ParseArguments(locals())
-    return Tensor.CreateOperator(nout=1, op_type='ROIAlign', **arguments)
+    return Tensor.CreateOperator('ROIAlign', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(1)
 def LRN(
     inputs, local_size=5, alpha=0.0001, beta=0.75, k=2.0,
-        mode='ACROSS_CHANNELS', data_format='NCHW', **kwargs
-):
+        mode='ACROSS_CHANNELS', data_format='NCHW', **kwargs):
     """Local Response Normalization. `[Krizhevsky et.al, 2012] <http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks>`_.
+
+    **Type Constraints**: (*float16*, *float32*)
 
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    local_size : int
+    local_size : int, optional
         The local size of LRN.
-    alpha : float
+    alpha : float, optional
         The alpha of LRN.
-    beta : float
+    beta : float, optional
         The beta of LRN.
-    k : float
+    k : float, optional
         The k of LRN.
-    mode : str
-        The mode, ``ACROSS_CHANNELS`` or ``WITHIN_CHANNEL``.
-    data_format : str
-        The data format. ``NCHW`` or ``NHWC``.
+    mode : {'ACROSS_CHANNELS', 'WITHIN_CHANNEL'}, optional
+        The lrn mode.
+    data_format : {'NCHW', 'NHWC'}, optional
+        The data_format.
 
     Returns
     -------
@@ -468,44 +370,41 @@ def LRN(
         The output tensor.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
 
     if mode not in ('ACROSS_CHANNELS', 'WITHIN_CHANNEL'):
         raise ValueError('Unsupported lrn mode: {}'.format(mode))
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: {}'.format(data_format))
 
-    output = Tensor.CreateOperator(nout=1, op_type='LRN', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator('LRN', **arguments)
 
 
+@OpSchema.Inputs(1)
+@ArgumentHelper.RepeatedDesc('dsize')
 def NNResize(
     inputs, dsize, shape_like=None,
-        fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs
-):
+        fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
     """Resize the image with Nearest-Neighbor method.
 
     Set ``dsize`` to None if you want to use ``shape_like`` or ``fy/fx``.
 
+    **Type Constraints**: (*float16*, *float32*)
+
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    dsize : tuple, list, Tensor or None
+    dsize : sequence of (int, Tensor)
         The output size, formats as (h, w).
-    shape_like : Tensor or None
+    shape_like : Tensor, optional
         The tensor for guiding the shape of resizing.
-    fy : float
-        The scale factor based on src height. Default is ``-1.0`` (Discarded).
-    fx : float
-        The scale factor based on src width. Default is ``-1.0`` (Discarded).
-    data_format : str
-        The data_format. ``NCHW`` or ``NHWC``.
+    fy : float, optional, default=-1.0
+        The scale factor based on src height.
+    fx : float, optional, default=-1.0
+        The scale factor based on src width.
+    data_format : {'NCHW', 'NHWC'}, optional
+        The data_format.
 
     Returns
     -------
@@ -513,16 +412,13 @@ def NNResize(
         The output tensor.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
 
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: {}'.format(data_format))
 
-    if dsize is not None:
-        if len(dsize) != 2:
-            raise ValueError('The dsize should be a list with 2 elements.')
-        AddArgumentsWithDesc(arguments, dsize, 'dsize', 'int32', as_target=True)
+    if dsize is not None and len(dsize) != 2:
+        raise ValueError('The dsize should be a list with 2 elements.')
 
     if shape_like is not None:
         if not isinstance(shape_like, Tensor):
@@ -532,55 +428,34 @@ def NNResize(
     if dsize is None and shape_like is None and (fy == -1.0 or fx == -1.0):
         raise RuntimeError('The dsize, shape_like or fy/fx should be specified either.')
 
-    output =  Tensor.CreateOperator(nout=1, op_type='NNResize', **arguments)
-
-    if inputs.shape is not None:
-        if len(inputs.shape) != 4:
-            raise ValueError('The inputs should be a 4d Tensor.')
-        possible_to_infer_shape = True
-        if dsize is not None:
-            for size in dsize:
-                if isinstance(size, Tensor):
-                    possible_to_infer_shape = False
-        if shape_like is not None:
-            possible_to_infer_shape = False
-
-        if possible_to_infer_shape:
-            output.shape = inputs.shape[:]
-            spatial_axis = 2 if data_format == 'NCHW' else 1
-            for i in range(2):
-                output_dim = output.shape[spatial_axis + i]
-                if dsize is not None:
-                    output_dim = dsize[i]
-                else:
-                    output_dim = int(float(output_dim) * ([fy, fx])[i])
-                output.shape[spatial_axis + i] = output_dim
-
-    return output
+    return Tensor.CreateOperator('NNResize', **arguments)
 
 
+@OpSchema.Inputs(1)
+@ArgumentHelper.RepeatedDesc('dsize')
 def BilinearResize(
     inputs, dsize, shape_like=None,
-        fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs
-):
+        fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
     """Resize the image with Bi-linear method.
 
     Set ``dsize`` to None if you want to use ``shape_like`` or ``fy/fx``.
 
+    **Type Constraints**: (*float16*, *float32*)
+
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    dsize : tuple, list, Tensor or None
+    dsize : sequence of (int, Tensor)
         The output size, formats as (h, w).
-    shape_like : Tensor or None
+    shape_like : Tensor, optional
         The tensor for guiding the shape of resizing.
-    fy : float
-        The scale factor based on src height. Default is ``-1.0`` (Discarded).
-    fx : float
-        The scale factor based on src width. Default is ``-1.0`` (Discarded).
-    data_format : str
-        The data_format. ``NCHW`` or ``NHWC``.
+    fy : float, optional, default=-1.0
+        The scale factor based on src height.
+    fx : float, optional, default=-1.0
+        The scale factor based on src width.
+    data_format : {'NCHW', 'NHWC'}, optional
+        The data_format.
 
     Returns
     -------
@@ -588,16 +463,13 @@ def BilinearResize(
         The output tensor.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
 
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: {}'.format(data_format))
 
-    if dsize is not None:
-        if len(dsize) != 2:
-            raise ValueError('The dsize should be a list with 2 elements.')
-        AddArgumentsWithDesc(arguments, dsize, 'dsize', 'int32', as_target=True)
+    if dsize is not None and len(dsize) != 2:
+        raise ValueError('The dsize should be a list with 2 elements.')
 
     if shape_like is not None:
         if not isinstance(shape_like, Tensor):
@@ -607,63 +479,37 @@ def BilinearResize(
     if dsize is None and shape_like is None and (fy == -1.0 or fx == -1.0):
         raise RuntimeError('The dsize, shape_like or fy/fx should be specified either.')
 
-    output =  Tensor.CreateOperator(nout=1, op_type='BilinearResize', **arguments)
-
-    if inputs.shape is not None:
-        if len(inputs.shape) != 4:
-            raise ValueError('The inputs should be a 4d Tensor.')
-        possible_to_infer_shape = True
-        if dsize is not None:
-            for size in dsize:
-                if isinstance(size, Tensor):
-                    possible_to_infer_shape = False
-        if shape_like is not None:
-            possible_to_infer_shape = False
-
-        if possible_to_infer_shape:
-            output.shape = inputs.shape[:]
-            spatial_axis = 2 if data_format == 'NCHW' else 1
-            for i in range(2):
-                output_dim = output.shape[spatial_axis + i]
-                if dsize is not None:
-                    output_dim = dsize[i]
-                else:
-                    output_dim = int(float(output_dim) * ([fy, fx])[i])
-                output.shape[spatial_axis + i] = output_dim
-
-    return output
+    return Tensor.CreateOperator('BilinearResize', **arguments)
 
 
+@OpSchema.Inputs(2)
 def BiasAdd(inputs, data_format='NCHW', **kwargs):
     """Add the bias across channels to a ``NCHW`` or ``NHWC`` input.
 
+    **Type Constraints**: (*float16*, *float32*)
+
     Parameters
     ----------
-    inputs : list of Tensor
+    inputs : sequence of Tensor
         The inputs, represent [input, bias].
-    data_format : str
-        The data format, ``NCHW`` or ``NHWC``.
+    data_format : {'NCHW', 'NHWC'}, optional
+        The data_format.
 
     Returns
     -------
     Tensor
-        The bias-added tensor.
+        A bias added tensor.
 
     """
-    CheckInputs(inputs, 2)
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
 
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: {}'.format(data_format))
 
-    output =  Tensor.CreateOperator(nout=1, op_type='BiasAdd', **arguments)
-
-    if inputs[0].shape is not None:
-        output.shape = inputs[0].shape[:]
-
-    return output
+    return Tensor.CreateOperator('BiasAdd', **arguments)
 
 
+@OpSchema.Inputs(2)
 def DenseConcat(inputs, growth_rate=0, axis=1, **kwargs):
     """Memory-efficient concatenation for DenseNet `[Huang et.al, 2017] <http://arxiv.org/abs/1608.06993>`_.
 
@@ -677,13 +523,13 @@ def DenseConcat(inputs, growth_rate=0, axis=1, **kwargs):
 
     Parameters
     ----------
-    inputs : list of Tensor
+    inputs : sequence of Tensor
         The inputs, represent A(old) and B(new) respectively.
-    growth_rate : int
-        The growth rate. Default is ``0`` (Without Memory Optimization).
-    axis : int
+    growth_rate : int, optional, default=0
+        The growth rate.
+    axis : int, optional
         The axis to concatenate.
-    mirror_stage : boolean(optional)
+    mirror_stage : bool, optional
         Whether to share input A for output C. Default is ``False``.
 
     Returns
@@ -695,53 +541,43 @@ def DenseConcat(inputs, growth_rate=0, axis=1, **kwargs):
     --------
     >>> A = Tensor().Variable()
     >>> B = Tensor().Variable()
-    >>> C = DenseConcat([A, B], axis=1) # normal concatenation
+    >>> C = DenseConcat([A, B], axis=1) # Simple concatenation
 
     >>> import dragon.memonger as opt
-    >>> C = opt.Drop(DenseConcat, [A, B], axis=1) #  memory-efficient concatenation
-
-    >>> C = DenseConcat([A, B], axis=1, mirror_stage=True) #  memory-efficient concatenation, equivalent
+    >>> C = opt.Drop(DenseConcat, [A, B], axis=1) # Memory-efficient concatenation
+    >>> D = DenseConcat([A, B], axis=1, mirror_stage=True) # Memory-efficient concatenation, equivalent
 
     """
-    CheckInputs(inputs, 2)
-    arguments = ParseArguments(locals())
-    arguments['num_input'] = len(inputs)
-
-    output = Tensor.CreateOperator(nout=1, op_type='DenseConcat', **arguments)
-
-    if all(input.shape is not None for input in inputs):
-        if all(input.shape[axis] is not None for input in inputs):
-            output.shape = inputs[0].shape[:]
-            for i in range(1, len(inputs)):
-                output.shape[axis] += inputs[i].shape[axis]
-
-    return output
+    return Tensor.CreateOperator('DenseConcat', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(1)
+@ArgumentHelper.Desc('keep_prob', as_target=False)
 def DropBlock2d(
-    inputs, block_size=7, keep_prob=0.9,
-        alpha=1., decrement=0., data_format='NCHW', **kwargs
-):
+    inputs, block_size=7, keep_prob=0.9, alpha=1.,
+        decrement=0., data_format='NCHW', **kwargs):
     """Randomly drop the outputs according to the spatial blocks. `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
 
     Set the ``decrement`` to schedule ``keep_prob`` for each iteration.
 
     Set the ``alpha`` to decrease ``gamma`` for different stages.
 
+    **Type Constraints**: (*float16*, *float32*)
+
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    block_size : int
+    block_size : int, optional
         The size of dropping block.
-    keep_prob : float or Tensor
-        The prob of keeping. Default is ``0.9``.
-    alpha : float
+    keep_prob : float or Tensor, optional, default=0.9
+        The prob of keeping.
+    alpha : float, optional, default=1.0
         The scale factor to gamma.
-    decrement : float
+    decrement : float, optional, default=0.0
         The decrement to keep prob.
-    data_format : str
-        The data format, ``NCHW`` or ``NHWC``.
+    data_format : {'NCHW', 'NHWC'}, optional
+        The data_format.
 
     Returns
     -------
@@ -749,13 +585,4 @@ def DropBlock2d(
         The output tensor.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-    arguments = AddArgumentWithDesc(arguments, keep_prob, 'keep_prob', as_target=False)
-
-    output = Tensor.CreateOperator(nout=1, op_type='DropBlock2d', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-
-    return output
+    return Tensor.CreateOperator('DropBlock2d', **ParseArgs(locals()))

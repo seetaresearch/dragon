@@ -13,24 +13,25 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import numpy as np
-
 from . import *
 
 
+@OpSchema.Inputs(1)
 def Gather(inputs, indices, axis=0, acc_gradient=False, **kwargs):
     """Gather the input according to the indices along the given axis.
+
+    **Type Constraints**: (*int32*, *float32*)
 
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    indices : int, list or Tensor
+    indices : int, sequence of (number, Tensor)
         The indices to form output tensor.
-    axis : int
-        The start axis.
-    acc_gradient : boolean
-        Whether to accumulate gradients.
+    axis : int, optional
+        The start axis, can be negative.
+    acc_gradient : bool, optional
+        Whether to accumulate the gradients.
 
     Returns
     -------
@@ -38,15 +39,14 @@ def Gather(inputs, indices, axis=0, acc_gradient=False, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-    arguments['inputs'] = [arguments['inputs'],
-                           Tensor.Convert(indices, dtype='int32')]
-    arguments['indices'] = None
+    arguments = ParseArgs(locals())
 
-    output = Tensor.CreateOperator(op_type='Gather', nout=1, **arguments)
+    arguments['inputs'], arguments['indices'] = [arguments['inputs'],
+        Tensor.Convert(indices, dtype='int32')], None
 
-    if inputs.shape is not None:
+    output = Tensor.CreateOperator('Gather', **arguments)
+
+    try:
         output.shape = inputs.shape[:]
         if not isinstance(indices, Tensor):
             if not isinstance(indices, (list, tuple)):
@@ -54,65 +54,36 @@ def Gather(inputs, indices, axis=0, acc_gradient=False, **kwargs):
             output.shape[axis] = len(indices)
         else:
             output.shape[axis] = None
+    except:
+        pass
 
     return output
 
 
-def RandomPick(inputs, max_samples=1, axis=0, **kwargs):
-    """Randomly pick the input along the given axis.
+@OpSchema.Inputs(1)
+@ArgumentHelper.RepeatedDesc('starts')
+@ArgumentHelper.RepeatedDesc('sizes')
+def Crop(inputs, starts, sizes, start_axis=None, offsets=None, shape_like=None, **kwargs):
+    """Crop the input according to the given starts and sizes.
+
+    Set ``starts`` and ``sizes`` to *None*, if using ``start_axis``, ``offsets`` and ``shape_like``.
+
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    max_samples : int
-        The max samples to pick.
-    axis : int
-        The start axis.
-
-    Returns
-    -------
-    Tensor
-        The output tensor, sampled randomly.
-
-    """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    outputs = Tensor.CreateOperator(op_type='RandomPick', nout=2, **arguments)
-
-    if inputs.shape is not None:
-        outputs[0].shape = inputs.shape[:]
-        outputs[0].shape[axis] = max_samples
-        outputs[1].shape = [max_samples]
-
-    return outputs
-
-
-def Crop(inputs, starts, ends, start_axis=None,
-         offsets=None, shape=None, shape_like=None, **kwargs):
-    """Crop the input according to the given starts and ends.
-
-    Set ``starts`` and ``ends`` to None, if want to use ``start_axis``, ``offsets`` and ``shape``.
-
-    Set ``shape`` to None, if you want to use ``shape_like``.
-
-    Parameters
-    ----------
-    inputs : Tensor
-        The input tensor.
-    starts : int/Tensor, list of int/Tensor, or None
+    starts : int, Tensor, sequence of (int, Tensor)
         The starts.
-    starts : int/Tensor, list of int/Tensor, or None
-        The ends.
-    start_axis : int or None
-        The axis to start. Default is ``None`` (Disabled).
-    offsets : int, list of int or None
+    sizes : int, Tensor, sequence of (int, Tensor)
+        The crop sizes.
+    start_axis : int, optional
+        The axis to start.
+    offsets : int, sequence of, optional
         The offsets. Ignore the axes before ``start_axis``.
-    shape : list, tuple or None
-        The referring shape. Use ``-1`` to represent the unknown dimensions.
-    shape_like : Tensor or None
-       The referring shape. Default is ``None`` (Disabled).
+    shape_like : Tensor, optional
+       The referring shape.
 
     Returns
     -------
@@ -121,79 +92,75 @@ def Crop(inputs, starts, ends, start_axis=None,
 
     Examples
     --------
+    >>> import numpy as np
     >>> x = Tensor('x', dtype='float32').Variable()
     >>> x.set_value(np.arange(1, 25).reshape((1, 2, 3, 4)))
-    >>> y = Crop(x, starts=[0, 1, 0, 2], ends=[1, 2, 0, 0])
-    >>> y = x[0:1, 1:2, :, 2:] # the same as above
-    >>> y = Crop(x, None, None, start_axis=1, offsets=(1, 0, 2), shape=(-1, 1, 3, 2)) # the same as above
+    >>> y = Crop(x, starts=[0, 1, 0, 2], sizes=[1, 1, 3, 2])
+    >>> a = x[0:1, 1:2, :, 2:] # the same as above
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-    if starts is not None:
-        AddArgumentsWithDesc(arguments, starts, 'starts', 'int32', as_target=True)
-    if ends is not None:
-        AddArgumentsWithDesc(arguments, ends, 'ends', 'int32', as_target=True)
+    arguments = ParseArgs(locals())
+
     if offsets is not None:
         if not isinstance(offsets, (list, tuple)):
             arguments['offsets'] = [offsets]
-    if shape is None: arguments['shape'] = []
     if shape_like is not None:
         if not isinstance(shape_like, Tensor):
             raise ValueError('The type of shape_like should be Tensor.')
         arguments['extra_inputs'] = shape_like
         arguments['shape_like'] = shape_like.name
 
-    return Tensor.CreateOperator(nout=1, op_type='Crop', **arguments)
+    return Tensor.CreateOperator('Crop', **arguments)
 
 
-def Slice(inputs, axis=1, num_output=1, **kwargs):
-    """Slice interface of NDArray.
+@OpSchema.Inputs(1)
+def Slice(inputs, axis=0, num_outputs=1, slice_points=None, **kwargs):
+    """Slice the inputs into several parts along the given axis.
 
-    The dimension of specific axis should be divided by ``num_output``.
+    All dimensions except the specified ``axis`` should be same.
+
+    The number of ``slice_points`` should be *len(X.shape) - 1*.
+
+    if ``slice_points`` is *None*, dimension of axis should be divided by ``num_outputs``.
+
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    axis : int
-        The axis to slice.
-    num_output : int
-        The number of slices.
+    axis : int, optional
+        The axis to slice, can be negative.
+    num_outputs : int, optional
+        The optional number number of slices.
+    slice_points : sequence of int, optional
+        The optional slice points.
 
     Returns
     -------
-    Tensor or list of Tensor
+    sequence of Tensor
         The outputs.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    outputs = Tensor.CreateOperator(op_type='Slice', nout=num_output, **arguments)
-
-    if inputs.shape is not None:
-        if inputs.shape[axis] is not None:
-            for i in range(len(outputs)):
-                outputs[i].shape = inputs.shape[:]
-                outputs[i].shape[axis] /= num_output
-
-    return outputs
+    if slice_points is not None and len(slice_points) > 0:
+        num_outputs = len(slice_points) + 1
+    return Tensor.CreateOperator('Slice', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(1, INT_MAX)
 def Stack(inputs, axis=0, **kwargs):
     """Stack the inputs along the given axis.
 
-    All dimensions of inputs should be same.
+    All the dimensions of inputs should be same.
 
-    The ``axis`` can be negative.
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
-    inputs : list of Tensor
+    inputs : sequence of Tensor
         The inputs.
     axis : int
-        The axis to stack.
+        The axis to stack, can be negative.
 
     Returns
     -------
@@ -201,30 +168,23 @@ def Stack(inputs, axis=0, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 1, INT_MAX)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Stack', **arguments)
-
-    if all(input.shape is not None for input in inputs):
-        while axis < 0: axis += (len(inputs[0].shape) + 1)
-        output.shape = inputs[0].shape
-        output.shape.insert(axis, np.long(len(inputs)))
-
-    return output
+    return Tensor.CreateOperator('Stack', **ParseArgs(locals()))
 
 
-def Concat(inputs, axis=1, **kwargs):
+@OpSchema.Inputs(1, INT_MAX)
+def Concat(inputs, axis=0, **kwargs):
     """Concatenate the inputs along the given axis.
 
-    All dimensions except specific ``axis`` should be same.
+    All the dimensions except the specified ``axis`` should be same.
+
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
-    inputs : list of Tensor
+    inputs : sequence of Tensor
         The inputs.
     axis : int
-        The axis to concatenate.
+        The axis to concatenate, can be negative.
 
     Returns
     -------
@@ -232,33 +192,27 @@ def Concat(inputs, axis=1, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 1, INT_MAX)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Concat', **arguments)
-
-    if all(input.shape is not None for input in inputs):
-        if all(input.shape[axis] is not None for input in inputs):
-            output.shape = inputs[0].shape[:]
-            for i in range(1, int(len(inputs))):
-                output.shape[axis] += inputs[i].shape[axis]
-
-    return output
+    return Tensor.CreateOperator('Concat', **ParseArgs(locals()))
 
 
-def Reduce(inputs, axis=-1, operation='NONE', keep_dims=False, **kwargs):
-    """Reduce interface of NDArray.
+@OpSchema.Inputs(1)
+def Reduce(inputs, axes=None, operation='SUM', keep_dims=False, **kwargs):
+    """Reduce the inputs along the axis in given axes.
+
+    If ``axes`` is *None*, a Scalar will be returned.
+
+    **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
     input : Tensor
         The input tensor.
-    axis : int
-        The axis to reduce. Default is ``-1`` (Compute along all axes).
-    operation : str
-        The operation, ``SUM`` or ``MEAN``. Default is ``NONE`` (Unknown).
-    keep_dims : boolean
-        Whether to keep dims after computing.
+    axes : int or sequence of int, optional
+        The axes to reduce.
+    operation : {'SUM', 'MEAN'}, optional
+        The operation.
+    keep_dims : bool, optional
+        Whether to keep dims after reducing.
 
     Returns
     -------
@@ -266,36 +220,27 @@ def Reduce(inputs, axis=-1, operation='NONE', keep_dims=False, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Reduce', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-        if axis == -1:
-            if keep_dims:
-                for i in range(len(output.shape)):
-                    output.shape[i] = 1
-            else: output.shape = [1]
-        else:
-            if keep_dims: output.shape[axis] = 1
-            else: del output.shape[axis]
-
-    return output
+    arguments = ParseArgs(locals())
+    if axes and not isinstance(axes, (tuple, list)): arguments['axes'] = [axes]
+    return Tensor.CreateOperator('Reduce', **arguments)
 
 
-def Sum(inputs, axis=-1, keep_dims=False, **kwargs):
-    """Compute the sum along the given axis.
+@OpSchema.Inputs(1)
+def Sum(inputs, axes=None, keep_dims=False, **kwargs):
+    """Compute the sum along the axis in given axes.
+
+    If ``axes`` is *None*, a Scalar will be returned.
+
+    **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
     input : Tensor
         The input tensor.
-    axis : int
-        The axis to compute. Default is ``-1`` (Along all axes).
-    keep_dims : boolean
-        Whether to keep dims after computing.
+    axes : int or sequence of int, optional
+        The axes to reduce.
+    keep_dims : bool, optional
+        Whether to keep dims after reducing.
 
     Returns
     -------
@@ -307,20 +252,25 @@ def Sum(inputs, axis=-1, keep_dims=False, **kwargs):
     `ops.Reduce(*args, **kwargs)`_ - The General Reduce Operator.
 
     """
-    return Reduce(inputs, axis, 'SUM', keep_dims, **kwargs)
+    return Reduce(inputs, axes, 'SUM', keep_dims, **kwargs)
 
 
-def Mean(inputs, axis=-1, keep_dims=False, **kwargs):
-    """Compute the mean along the given axis.
+@OpSchema.Inputs(1)
+def Mean(inputs, axes=None, keep_dims=False, **kwargs):
+    """Compute the mean along the axis in given axes.
+
+    If ``axes`` is *None*, a Scalar will be returned.
+
+    **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
     input : Tensor
         The input tensor.
-    axis : int
-        The axis to compute. Default is ``-1`` (Along all axes).
-    keep_dims : boolean
-        Whether to keep dims after computing.
+    axes : int or sequence of int, optional
+        The axes to reduce.
+    keep_dims : bool, optional
+        Whether to keep dims after reducing.
 
     Returns
     -------
@@ -332,41 +282,33 @@ def Mean(inputs, axis=-1, keep_dims=False, **kwargs):
     `ops.Reduce(*args, **kwargs)`_ - The general reduce operator.
 
     """
-    return Reduce(inputs, axis, 'MEAN', keep_dims, **kwargs)
+    return Reduce(inputs, axes, 'MEAN', keep_dims, **kwargs)
 
 
-def _ArgReduce(inputs, axis=-1, operation='NONE', top_k=1, keep_dims=False, **kwargs):
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    n_out = 1
-    if 'ARG' not in operation:
-        n_out = 2; arguments['operation'] = 'ARG' + operation
-
-    outputs = Tensor.CreateOperator(nout=n_out, op_type='ArgReduce', **arguments)
-    if 'ARG' not in operation: output = outputs[1]
-    else: output = outputs
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-        if top_k > 1: output.shape[axis] = top_k
-        else: del output.shape[axis]
-
-    return output
+@OpSchema.Inputs(1)
+def _ArgReduce(inputs, axis=None, operation='ARGMAX', top_k=1, keep_dims=False, **kwargs):
+    arguments = ParseArgs(locals())
+    arguments['axis'] = arguments['axis'] if arguments else INT_MAX
+    return Tensor.CreateOperator('ArgReduce', num_outputs=2, **arguments)
 
 
-def Argmax(inputs, axis=-1, top_k=1, keep_dims=False, **kwargs):
+@OpSchema.Inputs(1)
+def ArgMax(inputs, axis=None, top_k=1, keep_dims=False, **kwargs):
     """Compute the indices of maximum elements along the given axis.
 
+    If ``axis`` is *None*, a Scalar will be returned.
+
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
+
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    axis : int
-        The axis to compute. Default is ``-1`` (Along all axes).
-    top_k : int
+    axis : int, optional
+        The axis to compute, can be negative.
+    top_k : int, optional
         The top k results to keep.
-    keep_dims : boolean
+    keep_dims : bool, optional
         Whether to keep dims after computing.
 
     Returns
@@ -375,21 +317,26 @@ def Argmax(inputs, axis=-1, top_k=1, keep_dims=False, **kwargs):
         The indices.
 
     """
-    return _ArgReduce(inputs, axis, 'ARGMAX', top_k, keep_dims, **kwargs)
+    return _ArgReduce(inputs, axis, 'ARGMAX', top_k, keep_dims, **kwargs)[0]
 
 
-def Max(inputs, axis=-1, top_k=1, keep_dims=False, **kwargs):
+@OpSchema.Inputs(1)
+def Max(inputs, axis=None, top_k=1, keep_dims=False, **kwargs):
     """Compute the values of maximum elements along the given axis.
 
+    If ``axis`` is *None*, a Scalar will be returned.
+
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
+
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    axis : int
-        The axis to compute. Default is ``-1`` (Along all axes).
-    top_k : int
+    axis : int, optional
+        The axis to compute, can be negative.
+    top_k : int, optional
         The top k results to keep.
-    keep_dims : boolean
+    keep_dims : bool, optional
         Whether to keep dims after computing.
 
     Returns
@@ -398,21 +345,26 @@ def Max(inputs, axis=-1, top_k=1, keep_dims=False, **kwargs):
         The values.
 
     """
-    return _ArgReduce(inputs, axis, 'MAX', top_k, keep_dims, **kwargs)
+    return _ArgReduce(inputs, axis, 'ARGMAX', top_k, keep_dims, **kwargs)[1]
 
 
-def Argmin(inputs, axis=-1, top_k=1, keep_dims=False, **kwargs):
+@OpSchema.Inputs(1)
+def ArgMin(inputs, axis=None, top_k=1, keep_dims=False, **kwargs):
     """Compute the indices of minimum elements along the given axis.
+
+    If ``axis`` is *None*, a Scalar will be returned.
+
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    axis : int
-        The axis to compute. Default is ``-1`` (Along all axes).
-    top_k : int
+    axis : int, optional
+        The axis to compute, can be negative.
+    top_k : int, optional
         The top k results to keep.
-    keep_dims : boolean
+    keep_dims : bool, optional
         Whether to keep dims after computing.
 
     Returns
@@ -421,21 +373,26 @@ def Argmin(inputs, axis=-1, top_k=1, keep_dims=False, **kwargs):
         The indices.
 
     """
-    return _ArgReduce(inputs, axis, 'ARGMIN', top_k, keep_dims, **kwargs)
+    return _ArgReduce(inputs, axis, 'ARGMIN', top_k, keep_dims, **kwargs)[0]
 
 
-def Min(inputs, axis=-1, top_k=1, keep_dims=False, **kwargs):
+@OpSchema.Inputs(1)
+def Min(inputs, axis=None, top_k=1, keep_dims=False, **kwargs):
     """Compute the values of minimum elements along the given axis.
+
+    If ``axis`` is *None*, a Scalar will be returned.
+
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    axis : int
-        The axis to compute. Default is ``-1`` (Along all axes).
-    top_k : int
+    axis : int, optional
+        The axis to compute, can be negative.
+    top_k : int, optional
         The top k results to keep.
-    keep_dims : boolean
+    keep_dims : bool, optional
         Whether to keep dims after computing.
 
     Returns
@@ -444,18 +401,24 @@ def Min(inputs, axis=-1, top_k=1, keep_dims=False, **kwargs):
         The values.
 
     """
-    return _ArgReduce(inputs, axis, 'MIN', top_k, keep_dims, **kwargs)
+    return _ArgReduce(inputs, axis, 'ARGMIN', top_k, keep_dims, **kwargs)[1]
 
 
-def Transpose(inputs, perms=None, **kwargs):
+@OpSchema.Inputs(1)
+@ArgumentHelper.RepeatedDesc('perm')
+def Transpose(inputs, perm=None, **kwargs):
     """Transpose the input according to the given permutations.
+
+    If ``perm`` is *None*, all the dimensions are reversed.
+
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
     input : Tensor
         The input tensor.
-    perms : tuple, list or None
-        The permutation. Default is ``None`` (Reverse Dimensions).
+    perm : sequence of (int, Tensor), optional
+        The permutation.
 
     Returns
     -------
@@ -463,43 +426,26 @@ def Transpose(inputs, perms=None, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-    if perms is None:
-        arguments['perms'] = []
-    else:
-        AddArgumentsWithDesc(arguments, perms, 'perms', 'int32', as_target=True)
-
-    output = Tensor.CreateOperator(nout=1, op_type='Transpose', **arguments)
-
-    if inputs.shape is not None:
-        if perms is None: perms = list(range(((len(inputs.shape)) - 1), -1, -1))
-        else:
-            possible_to_infer_shape = True
-            for perm in perms:
-                if isinstance(perm, Tensor):
-                    possible_to_infer_shape = False
-            if possible_to_infer_shape:
-                if len(inputs.shape) != len(perms):
-                    raise ValueError('The ndim of inputs is {}, but perms provide {}'
-                            .format(len(inputs.shape), len(perms)))
-                output.shape = inputs.shape[:]
-                for i, axis in enumerate(perms):
-                    output.shape[i] = inputs.shape[axis]
-
-    return output
+    arguments = ParseArgs(locals())
+    return Tensor.CreateOperator('Transpose', **arguments)
 
 
-def Repeat(inputs, axis=-1, repeats=1, **kwargs):
+@OpSchema.Inputs(1)
+@ArgumentHelper.Desc('repeats')
+def Repeat(inputs, axis=None, repeats=1, **kwargs):
     """Repeat the input along the given axis.
+
+    If ``axis`` is *None*, flattened results will be returned.
+
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    axis : int
-        The axis to repeat. Defaults is ``-1`` (Repeat as Scalar).
-    repeats : int or Tensor
+    axis : int, optional
+        The axis to repeat.
+    repeats : int or Tensor, optional
         The magnitude of repeating.
 
     Returns
@@ -508,34 +454,23 @@ def Repeat(inputs, axis=-1, repeats=1, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-    arguments = AddArgumentWithDesc(arguments, repeats, 'repeats', as_target=True)
-
-    output = Tensor.CreateOperator(nout=1, op_type='Repeat', **arguments)
-
-    if inputs.shape is not None and \
-            not isinstance(repeats, Tensor):
-        if axis == -1:
-            fake_shape = inputs.shape[:]
-            fake_shape = [1 if dim is None else dim for dim in fake_shape]
-            total_count = np.prod(fake_shape)
-            output.shape = [total_count * repeats]
-        else:
-            output.shape = inputs.shape[:]
-            output.shape[axis] *= repeats
-
-    return output
+    arguments = ParseArgs(locals())
+    arguments['axis'] = arguments['axis'] if arguments else INT_MAX
+    return Tensor.CreateOperator('Repeat', **arguments)
 
 
+@OpSchema.Inputs(1)
+@ArgumentHelper.RepeatedDesc(name='multiples')
 def Tile(inputs, multiples, **kwargs):
     """Tile the input according to the given multiples.
+
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
     input : Tensor
         The input tensor.
-    multiples : list
+    multiples : sequence of (int, Tensor)
         The multiple of each axis.
 
     Returns
@@ -544,40 +479,25 @@ def Tile(inputs, multiples, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-    arguments = AddArgumentsWithDesc(arguments, multiples, 'multiples', 'int32', as_target=True)
-
-    output = Tensor.CreateOperator(nout=1, op_type='Tile', **arguments)
-
-    if inputs.shape is not None:
-        if len(inputs.shape) != len(multiples):
-            raise ValueError('The num of dimensions of input is {}, but provided {}.'
-                             .format(len(inputs.shape), len(multiples)))
-        output.shape = inputs.shape[:]
-        for i, multiple in enumerate(multiples):
-            if output.shape[i] is None or \
-                isinstance(output.shape[i], Tensor):
-                    output.shape[i] = None
-            else:
-                    output.shape[i] *= multiple
-
-    return output
+    return Tensor.CreateOperator('Tile', **ParseArgs(locals()))
 
 
-def Pad(inputs, paddings, mode='CONSTANT', value=0, **kwargs):
-    """Pad the input according to the given paddings.
+@OpSchema.Inputs(1)
+def Pad(inputs, pads, mode='CONSTANT', value=0, **kwargs):
+    """Pad the input according to the given pads.
+
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
     input : Tensor
         The input tensor.
-    paddings : list or tuple
-        The paddings, 1D/2D list or tuple.
-    mode : str
-        The padding mode, ``CONSTANT``, ``REFLECT`` or ``EDGE``.
-    value : basic numerical type
-        The value to use on the ``CONSTANT`` mode.
+    pads : sequence of number
+        The pads, list or tuple.
+    mode : {'CONSTANT', 'REFLECT', 'EDGE'}, optional
+        The padding mode.
+    value : number, optional
+        The value that used in the *CONSTANT* mode.
 
     Returns
     -------
@@ -585,31 +505,32 @@ def Pad(inputs, paddings, mode='CONSTANT', value=0, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
 
-    pad_l = []; pad_r = []
-    for padding in paddings:
-        if isinstance(padding, (list, tuple)):
-            if len(padding) != 2:
-                raise ValueError('The padding should be a list or tuple of length 2.')
-            pad_l.append(int(padding[0]))
-            pad_r.append(int(padding[1]))
+    pads_l, pads_r = [], []
+    for pad in pads:
+        if isinstance(pad, (list, tuple)):
+            if len(pad) != 2:
+                raise ValueError(
+                    'The pad should be a list or tuple of length 2.')
+            pads_l.append(int(pad[0]))
+            pads_r.append(int(pad[1]))
         else:
-            pad_l.append(int(padding))
-            pad_r.append(int(padding))
-    arguments['paddings'] = None
-    arguments['pad_l'] = pad_l
-    arguments['pad_r'] = pad_r
-    arguments['value'] = float(arguments['value'])
+            pads_l.append(int(pad))
+            pads_r.append(int(pad))
 
-    output = Tensor.CreateOperator(nout=1, op_type='Pad', **arguments)
+    arguments['pad_l'], arguments['pad_r'], \
+        arguments['pads'], arguments['value'] = \
+            pads_l, pads_r, None, float(arguments['value'])
 
-    return output
+    return Tensor.CreateOperator('Pad', **arguments)
 
 
+@OpSchema.Inputs(1)
 def OneHot(inputs, depth, on_value=1, off_value=0, **kwargs):
     """Generate the one-hot representation of inputs.
+
+    **Type Constraints**: (*int32*, *int64*, *float32*)
 
     Parameters
     ----------
@@ -617,9 +538,9 @@ def OneHot(inputs, depth, on_value=1, off_value=0, **kwargs):
         The input tensor.
     depth : int
         The depth of one-hot representation.
-    on_value : int
+    on_value : int, optional
         The value when ``indices[j] = i``.
-    off_value : int
+    off_value : int, optional
         The value when ``indices[j] != i``.
 
     Returns
@@ -628,32 +549,26 @@ def OneHot(inputs, depth, on_value=1, off_value=0, **kwargs):
         The output tensor.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='OneHot', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-        output.shape.append(np.long(depth))
-
-    return output
+    return Tensor.CreateOperator('OneHot', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(1)
 def Flatten(inputs, axis=0, num_axes=-1, keep_axes=None, **kwargs):
     """Flatten the input along the given axes.
 
     Set ``keep_axes`` to flatten if shape is dynamic.
 
+    **Type Constraints**: *None*
+
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    axis : int
-        The start axis to flatten.
-    num_axes : int
+    axis : int, optional
+        The start axis to flatten, can be negative.
+    num_axes : int, optional
         The number of axes to flatten. Default is ``-1`` (Along all axes).
-    keep_axes : int or None
+    keep_axes : int, optional
         The number of axes to keep. Default is ``None`` (Disabled).
 
     Returns
@@ -674,18 +589,18 @@ def Flatten(inputs, axis=0, num_axes=-1, keep_axes=None, **kwargs):
     >>> [24]
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
 
-    output = Tensor.CreateOperator(nout=1, op_type='Flatten', **arguments)
+    output = Tensor.CreateOperator(op_type='Flatten', **arguments)
 
     if inputs.shape is not None:
         fake_shape = inputs.shape[:]
         fake_shape = [1 if dim is None else dim for dim in fake_shape]
         if keep_axes is not None:
             if keep_axes > len(inputs.shape):
-                raise ValueError('The total number of axes is {}, can not keep {}.'
-                                 .format(len(inputs.shape), keep_axes))
+                raise ValueError(
+                    'The total number of axes is {}, can not keep {}.'
+                        .format(len(inputs.shape), keep_axes))
             total_count = np.prod(fake_shape)
             output.shape = []
             for i in range(keep_axes - 1):
@@ -703,20 +618,22 @@ def Flatten(inputs, axis=0, num_axes=-1, keep_axes=None, **kwargs):
     return output
 
 
+@OpSchema.Inputs(1)
+@ArgumentHelper.RepeatedDesc(name='shape', name_v2='dims')
 def Reshape(inputs, shape, shape_like=None, **kwargs):
     """Reshape the dimensions of input.
 
-    ``shape`` could be a list of numbers or Tensors.
+    Set ``shape`` to *None*, if you want to use ``shape_like``.
 
-    Set ``shape`` to ``None``, if you want to use ``shape_like``.
+    **Type Constraints**: *None*
 
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    shape : list, tuple or None
+    shape : sequence of (int, Tensor)
         The new shape.
-    shape_like: Tensor, str or None
+    shape_like: str or Tensor, optional
         The tensor for indicating the output shape.
 
     Returns
@@ -735,48 +652,29 @@ def Reshape(inputs, shape, shape_like=None, **kwargs):
     >>> [1, 4] # fake dimension at axis 0
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    if shape is not None:
-        AddArgumentsWithDesc(arguments, shape, 'shape', 'int32', as_target=True)
-    elif shape_like is not None:
+    arguments = ParseArgs(locals())
+    if shape_like is not None:
         if not isinstance(shape_like, (Tensor, str)):
             raise TypeError('The shape_like should be a Tensor or a name.')
         arguments['shape_like'] = shape_like \
             if isinstance(shape_like, str) else shape_like.name
-
-    output = Tensor.CreateOperator(nout=1, op_type='Reshape', **arguments)
-
-    if inputs.shape is not None:
-        possible_to_infer_shape = True
-        if shape is not None:
-            for dim in shape:
-                if isinstance(dim, Tensor):
-                    possible_to_infer_shape = False
-        if shape_like is not None:
-            possible_to_infer_shape = False
-        if possible_to_infer_shape:
-            output.shape = [1] * len(shape)
-            for i, s in enumerate(shape):
-                if s == -1: output.shape[i] = 1
-                elif s == 0: output.shape[i] = inputs.shape[i]
-                else: output.shape[i] = s
-
-    return output
+    return Tensor.CreateOperator('Reshape', **arguments)
 
 
+@OpSchema.Inputs(1)
 def Squeeze(inputs, axis=None, **kwargs):
     """Remove the dimensions with size 1.
 
     Set ``axis`` to remove the specific position.
 
+    **Type Constraints**: *None*
+
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    axis : int or None
-        The specific axis to remove.
+    axis : int, optional
+        The specific axis to remove, can be negative.
 
     Returns
     -------
@@ -790,10 +688,9 @@ def Squeeze(inputs, axis=None, **kwargs):
     >>> print(Squeeze(a, axis=0).shape)
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
 
-    output = Tensor.CreateOperator(nout=1, op_type='Squeeze', **arguments)
+    output = Tensor.CreateOperator(op_type='Squeeze', **arguments)
 
     if inputs.shape is not None:
         output_shape = []
@@ -807,17 +704,20 @@ def Squeeze(inputs, axis=None, **kwargs):
     return output
 
 
-def ExpandDims(inputs, axis, **kwargs):
+@OpSchema.Inputs(1)
+def ExpandDims(inputs, axis=0, **kwargs):
     """Expand the new dimension with size 1 to specific axis.
 
-    Negative ``axis`` is equal to ``axis = axis + num_axes + 1``.
+    Negative ``axis`` is equal to *axis = axis + num_axes + 1*.
+
+    **Type Constraints**: *None*
 
     Parameters
     ----------
     inputs : Tensor
         The input tensor.
-    axis : int
-        The insert axis of new dimension.
+    axis : int, optional
+        The insert axis of new dimension, can be negative.
 
     Returns
     -------
@@ -831,23 +731,14 @@ def ExpandDims(inputs, axis, **kwargs):
     >>> print(ExpandDims(a, axis=2).shape)
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='ExpandDims', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = inputs.shape[:]
-        axis += (0 if axis >= 0 else len(inputs.shape) + 1)
-        if axis < 0 or axis >= len(inputs.shape):
-            output.shape.append(np.long(1))
-        else: output.shape.insert(axis, np.long(1))
-
-    return output
+    return Tensor.CreateOperator('ExpandDims', **ParseArgs(locals()))
 
 
+@OpSchema.Inputs(1)
 def Shape(inputs, **kwargs):
     """Get the dynamic shape of a Tensor.
+
+    **Type Constraints**: *None*
 
     Parameters
     ----------
@@ -860,57 +751,37 @@ def Shape(inputs, **kwargs):
         The dynamic shape.
 
     """
-    CheckInputs(inputs, 1)
-    arguments = ParseArguments(locals())
-
-    output = Tensor.CreateOperator(nout=1, op_type='Shape', **arguments)
-
-    if inputs.shape is not None:
-        output.shape = [len(inputs.shape)]
-
-    return output
+    return Tensor.CreateOperator('Shape', **ParseArgs(locals()))
 
 
-def Arange(start, stop=None, step=1, dtype='FLOAT32', **kwargs):
-    """Return a vector of elements by arange.
+@OpSchema.Inputs(0)
+@ArgumentHelper.Desc('start')
+@ArgumentHelper.Desc('stop')
+@ArgumentHelper.Desc('step')
+def Arange(start, stop=None, step=1, dtype='float32', **kwargs):
+    """Return evenly spaced values within a given interval.
 
     If ``stop`` is None, use the range: [0, start).
+
+    **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
     start : int or Tensor
         The start of the range.
-    stop : int or Tensor
+    stop : int or Tensor, optional
         The stop of range.
-    step : int or Tensor
+    step : int or Tensor, optional
         The interval between two elements.
     dtype : str
-        The data type. ``float32`` or ``int32``.
+        The data type, optional
 
     Returns
     -------
     Tensor
-        The vector.
+        A vector with evenly spaced elements.
 
     """
-    arguments = ParseArguments(locals())
-    arguments['dtype'] = arguments['dtype'].upper()
-    arguments = AddArgumentWithDesc(arguments, start, 'start', as_target=True)
-    arguments = AddArgumentWithDesc(arguments, step, 'step', as_target=True)
-    if stop is not None:
-        arguments = AddArgumentWithDesc(arguments, stop, 'stop', as_target=True)
-
-    output = Tensor.CreateOperator([], nout=1, op_type='Arange', **arguments)
-
-    if not isinstance(start, Tensor) and \
-        not isinstance(step, Tensor):
-        if stop is not None:
-            if isinstance(stop, Tensor):
-                return output
-        else:
-            stop = start
-            start = 0
-        count = int((stop - start - 1) / step) + 1
-        output.shape = [count]
-
-    return output
+    arguments = ParseArgs(locals())
+    arguments['dtype'] = arguments['dtype'].lower()
+    return Tensor.CreateOperator('Arange', [], **arguments)

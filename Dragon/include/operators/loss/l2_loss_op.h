@@ -22,6 +22,7 @@ class L2LossOp final : public Operator<Context> {
  public:
     L2LossOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
+          scale(OperatorBase::Arg<float>("scale", 1.f)),
           normalization(OperatorBase::Arg<string>(
               "normalization", "BATCH_SIZE")) {}
     USE_OPERATOR_FUNCTIONS;
@@ -30,6 +31,7 @@ class L2LossOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
+    float scale;
     Tensor* diff;
     string normalization;
 };
@@ -39,6 +41,7 @@ class L2LossGradientOp final : public Operator<Context> {
  public:
     L2LossGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
+          scale(OperatorBase::Arg<float>("scale", 1.f)),
           normalization(OperatorBase::Arg<string>(
               "normalization", "BATCH_SIZE")) {}
     USE_OPERATOR_FUNCTIONS;
@@ -47,6 +50,7 @@ class L2LossGradientOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
+    float scale;
     Tensor* diff;
     string normalization;
 };

@@ -66,15 +66,15 @@ OperatorBase* TryCreateOperator(
     const OperatorDef&          def,
     Workspace*                  ws) {
     switch (def.device_option().device_type()) {
-        case CPU:
+        case PROTO_CPU:
             return CPUOperatorRegistry()->Create(key, def, ws);
-        case CUDA:
+        case PROTO_CUDA:
             if (def.device_option().has_engine() &&
                 def.device_option().engine() == "CUDNN" &&
                 CUDNNOperatorRegistry()->Has(key))
                 return CUDNNOperatorRegistry()->Create(key, def, ws);
             return CUDAOperatorRegistry()->Create(key, def, ws);
-        case CNML:
+        case PROTO_CNML:
             return CNMLOperatorRegistry()->Create(key, def, ws);
         default:
             LOG(FATAL) << "Unknown device type: "
@@ -112,8 +112,11 @@ OperatorBase* CreateOperator(
     const OperatorDef&          def,
     Workspace*                  ws) {
     auto* schema = OpSchemaRegistry::Schema(def.type());
-    CHECK(schema->Verify(def))
-        << "\nOperator failed to pass the schema checking.";
+    if (schema) {
+        // Check the Inputs and Outputs if necessary
+        CHECK(schema->Verify(def))
+            << "\nOperator failed to pass the schema checking.";
+    }
     OperatorDef mutable_def(def);
     // Heuristically makes each random seed slightly differnet
     static unsigned int op_seed_uuid = 0;
@@ -273,29 +276,34 @@ DEFINE_REGISTRY(
 template <> T OperatorBase::Arg( \
     const string& name, \
     const T& default_value) { \
-    if(args_.count(name) == 0) { \
+    if (args_.count(name) == 0) { \
         return default_value; \
     } \
     CHECK(args_[name]->has_##fieldname()); \
-    return args_[name]->fieldname(); \
+    return static_cast<T>(args_[name]->fieldname()); \
 }
 
 INSTANTIATE_GET_SINGLE_ARGUMENT(float, f)
 INSTANTIATE_GET_SINGLE_ARGUMENT(int, i)
+INSTANTIATE_GET_SINGLE_ARGUMENT(bool, i)
+INSTANTIATE_GET_SINGLE_ARGUMENT(int64_t, i)
 INSTANTIATE_GET_SINGLE_ARGUMENT(string, s)
-INSTANTIATE_GET_SINGLE_ARGUMENT(bool, b);
-INSTANTIATE_GET_SINGLE_ARGUMENT(int64_t, i64);
+#undef INSTANTIATE_GET_SINGLE_ARGUMENT
 
 #define INSTANTIATE_GET_REPEATED_ARGUMENT(T, fieldname) \
 template<> vector<T> OperatorBase::Args<T>(const string& name) { \
     if(args_.count(name) == 0) return vector<T>(); \
     vector<T> values; \
-    for(const auto& v : args_[name]->fieldname()) values.push_back(v); \
+    for(const auto& v : args_[name]->fieldname()) \
+        values.push_back(static_cast<T>(v)); \
     return values; \
 }
 
 INSTANTIATE_GET_REPEATED_ARGUMENT(float, floats)
+INSTANTIATE_GET_REPEATED_ARGUMENT(double, floats)
 INSTANTIATE_GET_REPEATED_ARGUMENT(int, ints)
+INSTANTIATE_GET_REPEATED_ARGUMENT(bool, ints)
+INSTANTIATE_GET_REPEATED_ARGUMENT(int64_t, ints)
 INSTANTIATE_GET_REPEATED_ARGUMENT(string, strings)
 #undef INSTANTIATE_GET_REPEATED_ARGUMENT
 

@@ -32,7 +32,7 @@ void _Gather(
     const T*                x,
     T*                      y,
     CPUContext*             ctx) {
-    TIndex x_offset, y_offset, x_idx_offset, y_idx_offset;
+    int64_t x_offset, y_offset, x_idx_offset, y_idx_offset;
     for (int i = 0; i < y_slice_dim; ++i) {
         y_idx_offset = i;
         x_idx_offset = indices[y_idx_offset];
@@ -90,7 +90,7 @@ void _GatherGrad(
     const T*                dy,
     T*                      dx,
     CPUContext*             ctx) {
-    TIndex x_offset, y_offset, x_idx_offset, y_idx_offset;
+    int64_t x_offset, y_offset, x_idx_offset, y_idx_offset;
     for (int i = 0; i < y_slice_dim; ++i) {
         y_idx_offset = i;
         x_idx_offset = indices[y_idx_offset];

@@ -19,7 +19,7 @@
 #include <vector>
 #include <cudnn.h>
 
-#include "core/typeid.h"
+#include "core/types.h"
 
 namespace dragon {
 

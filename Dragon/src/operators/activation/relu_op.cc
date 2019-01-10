@@ -8,8 +8,7 @@ template <class Context> template <typename T>
 void ReluOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    kernel::Relu<T, Context>(Output(0)->count(),
-        slope, Xdata, Ydata, ctx());
+    kernel::Relu(Output(0)->count(), slope, Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -25,6 +24,7 @@ DEPLOY_CPU(Relu);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Relu);
 #endif
+
 OPERATOR_SCHEMA(Relu)
     .NumInputs(1).NumOutputs(1)
     .Inplace({ { 0, 0 } });
@@ -34,7 +34,8 @@ void ReluGradientOp<Context>::RunWithType() {
     auto* Ydata = Input(0).template data<T, Context>();
     auto* dYdata = Input(1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    kernel::ReluGrad<T, Context>(Output(0)->count(),
+
+    kernel::ReluGrad(Output(0)->count(),
         slope, dYdata, Ydata, dXdata, ctx());
 }
 
@@ -50,19 +51,11 @@ DEPLOY_CPU(ReluGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(ReluGradient);
 #endif
+
 OPERATOR_SCHEMA(ReluGradient)
     .NumInputs(2).NumOutputs(1)
     .Inplace({ { 1, 0 }});
 
-class GetReluGradient final : public GradientMakerBase {
- public:
-    GRADIENT_MAKER_CTOR(GetReluGradient);
-    vector<OperatorDef> MakeDefs() override {
-        return SingleDef(def.type() + "Gradient", "",
-            vector<string> {O(0), GO(0)},
-            vector<string> {GI(0)});
-    }
-};
-REGISTER_GRADIENT(Relu, GetReluGradient);
+REGISTER_GRADIENT(Relu, InplaceGradientMaker);
 
 }  // namespace dragon

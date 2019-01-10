@@ -1,180 +1,150 @@
 #include "utils/op_kernel.h"
-#include "utils/omp_alternative.h"
+#include "utils/cast.h"
+#include "utils/math_utils.h"
 
 namespace dragon {
 
 namespace kernel {
 
-/*! ConstPad1d <T = float32, Device = CPU> */
+/*! ConstPad <T = ?, Device = CPU> */
 
-template <> void ConstPad1d<float, CPUContext>(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
-    const float             value,
-    const float*            x,
-    float*                  y,
-    CPUContext*             ctx) {
-    const int count_v2 = count / inner_dim;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
-#endif
-    for (int idx = 0; idx < count_v2; ++idx) {
-        const int ex_d = idx % ex_dim;
-        const int o = idx / ex_dim;
-        const int d = ex_d - pad_l;
-        float* y_ptr = y + (o * ex_dim + ex_d) * inner_dim;
-        if (d < 0 || d >= dim) {
-            for (int i = 0; i < inner_dim; ++i) y_ptr[i] = value;
-        } else {
-            const float* x_ptr = x + (o * dim + d) * inner_dim;
-            ctx->Copy<float, CPUContext, CPUContext>(
-                inner_dim, y_ptr, x_ptr);
+template <typename T>
+void _ConstPad(
+    const int               nthreads,
+    const int               ndims,
+    const int*              x_dims,
+    const int*              x_strides,
+    const int*              y_dims,
+    const int*              l_pads,
+    const T                 value,
+    const T*                x,
+    T*                      y) {
+    vector<int> index(ndims, 0); int x_idx, d, r;
+    for (int y_idx = 0; y_idx < nthreads; ++y_idx) {
+        x_idx = 0;
+        for (d = ndims - 1; d >= 0; --d) {
+            r = index[d] - l_pads[d];
+            if (r < 0 || r >= x_dims[d]) break;
+            x_idx += r * x_strides[d];
         }
+        y[y_idx] = d >= 0 ? value : x[x_idx];
+        utils::IncreaseIndexInDims(ndims, y_dims, index.data());
     }
 }
 
-/*! ReflectPad1d <T = float32, Device = CPU> */
+/*! ReflectPad <T = ?, Device = CPU> */
 
-template <> void ReflectPad1d<float, CPUContext>(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
-    const float*            x,
-    float*                  y,
-    CPUContext*             ctx) {
-    const int count_v2 = count / inner_dim;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
-#endif
-    for (int idx = 0; idx < count_v2; ++idx) {
-        const int ex_d = idx % ex_dim;
-        const int o = idx / ex_dim;
-        int d = ex_d - pad_l;
-        d = std::max(d, -d);
-        d = std::min(d, 2 * dim - d - 2);
-        float* y_ptr = y + (o * ex_dim + ex_d) * inner_dim;
-        if (d < 0 || d >= dim) {
-            for (int i = 0; i < inner_dim; ++i) 
-                y_ptr[i] = x[(o * dim + d) * inner_dim + i];
-        } else {
-            const float* x_ptr = x + (o * dim + d) * inner_dim;
-            ctx->Copy<float, CPUContext, CPUContext>(
-                inner_dim, y_ptr, x_ptr);
+template <typename T>
+void _ReflectPad(
+    const int               nthreads,
+    const int               ndims,
+    const int*              x_dims,
+    const int*              x_strides,
+    const int*              y_dims,
+    const int*              l_pads,
+    const T*                x,
+    T*                      y) {
+    vector<int> index(ndims, 0); int x_idx, d, r;
+    for (int y_idx = 0; y_idx < nthreads; ++y_idx) {
+        x_idx = 0;
+        for (d = ndims - 1; d >= 0; --d) {
+            r = index[d] - l_pads[d];
+            r = std::max(r, -r);
+            r = std::min(r, 2 * x_dims[d] - r - 2);
+            x_idx += r * x_strides[d];
         }
+        y[y_idx] = x[x_idx];
+        utils::IncreaseIndexInDims(ndims, y_dims, index.data());
     }
 }
 
-/*! EdgePad1d <T = float32, Device = CPU> */
+/*! EdgePad <T = ?, Device = CPU> */
 
-template <> void EdgePad1d<float, CPUContext>(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
-    const float*            x,
-    float*                  y,
-    CPUContext*             ctx) {
-    const int count_v2 = count / inner_dim;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
-#endif
-    for (int idx = 0; idx < count_v2; ++idx) {
-        const int ex_d = idx % ex_dim;
-        const int o = idx / ex_dim;
-        const int d = std::min(dim - 1, std::max(ex_d - pad_l, 0));
-        float* y_ptr = y + (o * ex_dim + ex_d) * inner_dim;
-        if (d < 0 || d >= dim) {
-            for (int i = 0; i < inner_dim; ++i) 
-                y_ptr[i] = x[(o * dim + d) * inner_dim + i];
-        } else {
-            const float* x_ptr = x + (o * dim + d) * inner_dim;
-            ctx->Copy<float, CPUContext, CPUContext>(
-                inner_dim, y_ptr, x_ptr);
+template <typename T>
+void _EdgePad(
+    const int               nthreads,
+    const int               ndims,
+    const int*              x_dims,
+    const int*              x_strides,
+    const int*              y_dims,
+    const int*              l_pads,
+    const T*                x,
+    T*                      y) {
+    vector<int> index(ndims, 0); int x_idx, d, r;
+    for (int y_idx = 0; y_idx < nthreads; ++y_idx) {
+        x_idx = 0;
+        for (d = ndims - 1; d >= 0; --d) {
+            r = std::min(x_dims[d] - 1, std::max(
+                index[d] - l_pads[d], 0));
+            x_idx += r * x_strides[d];
         }
+        y[y_idx] = x[x_idx];
+        utils::IncreaseIndexInDims(ndims, y_dims, index.data());
     }
 }
 
-/*! ConstPad1dGrad <T = float32, Device = CPU> */
+/*! Kernel Launchers */
 
-template <> void ConstPad1dGrad<float, CPUContext>(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
-    const float*            dy,
-    float*                  dx,
-    CPUContext*             ctx) {
-    const int count_v2 = count / inner_dim;
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count_v2))
-#endif
-    for (int idx = 0; idx < count_v2; ++idx) {
-        const int d = idx % dim;
-        const int o = idx / dim;
-        const int ex_d = d + pad_l;
-        const float* dy_ptr = dy + (o * ex_dim + ex_d) * inner_dim;
-        float* dx_ptr = dx + (o * dim + d) * inner_dim;
-        ctx->Copy<float, CPUContext, CPUContext>(
-            inner_dim, dx_ptr, dy_ptr);
+#define DEFINE_CONST_PAD_KERNEL_LAUNCHER(T) \
+    template<> void ConstPad<T, CPUContext>( \
+        const int               count, \
+        const int               ndims, \
+        const int*              x_dims, \
+        const int*              x_strides, \
+        const int*              y_dims, \
+        const int*              l_pads, \
+        const float             value, \
+        const T*                x, \
+        T*                      y, \
+        CPUContext*             ctx) { \
+        _ConstPad<T>(count, ndims, x_dims, x_strides, \
+            y_dims, l_pads, cast::to<T>(value), x, y); \
     }
-}
 
-/*! ReflectPad1dGrad <T = float32, Device = CPU> */
-
-template <> void ReflectPad1dGrad<float, CPUContext>(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
-    const float*            dy,
-    float*                  dx,
-    CPUContext*             ctx) {
-    for (int idx = 0; idx < count; ++idx) {
-        const int i = idx % inner_dim;
-        const int ex_d = (idx / inner_dim) % ex_dim;
-        const int o = idx / inner_dim / ex_dim;
-        int d = ex_d - pad_l;
-        d = std::max(d, -d);
-        d = std::min(d, 2 * dim - d - 2);
-        dx[(o * dim + d) * inner_dim + i] += dy[idx];
+#define DEFINE_PAD_KERNEL_LAUNCHER(name, T) \
+    template<> void name<T, CPUContext>( \
+        const int               count, \
+        const int               ndims, \
+        const int*              x_dims, \
+        const int*              x_strides, \
+        const int*              y_dims, \
+        const int*              l_pads, \
+        const T*                x, \
+        T*                      y, \
+        CPUContext*             ctx) { \
+        _##name<T>(count, ndims, x_dims, x_strides, \
+            y_dims, l_pads, x, y); \
     }
-}
 
-/*! EdgePad1dGrad <T = float32, Device = CPU> */
+DEFINE_CONST_PAD_KERNEL_LAUNCHER(bool);
+DEFINE_CONST_PAD_KERNEL_LAUNCHER(int8_t);
+DEFINE_CONST_PAD_KERNEL_LAUNCHER(uint8_t);
+DEFINE_CONST_PAD_KERNEL_LAUNCHER(int);
+DEFINE_CONST_PAD_KERNEL_LAUNCHER(int64_t);
+DEFINE_CONST_PAD_KERNEL_LAUNCHER(float16);
+DEFINE_CONST_PAD_KERNEL_LAUNCHER(float);
+DEFINE_CONST_PAD_KERNEL_LAUNCHER(double);
 
-template <> void EdgePad1dGrad<float, CPUContext>(
-    const int               count,
-    const int               dim,
-    const int               ex_dim,
-    const int               inner_dim,
-    const int               pad_l,
-    const float*            dy,
-    float*                  dx,
-    CPUContext*             ctx) {
-    const int count_v2 = count / inner_dim;
-    for (int idx = 0; idx < count_v2; ++idx) {
-        const int ex_d = idx % ex_dim;
-        const int o = idx / ex_dim;
-        const int d = std::min(dim - 1, std::max(ex_d - pad_l, 0));
-        const float* dy_ptr = dy + (o * ex_dim + ex_d) * inner_dim;
-        if (d == 0 || d == dim - 1) {
-            for (int i = 0; i < inner_dim; ++i)
-                dx[(o * dim + d) * inner_dim + i] += dy_ptr[i];
-        } else {
-            float* dx_ptr = dx + (o * dim + d) * inner_dim;
-            ctx->Copy<float, CPUContext, CPUContext>(
-                inner_dim, dx_ptr, dy_ptr);
-        }
-    }
-}
+DEFINE_PAD_KERNEL_LAUNCHER(ReflectPad, bool);
+DEFINE_PAD_KERNEL_LAUNCHER(ReflectPad, int8_t);
+DEFINE_PAD_KERNEL_LAUNCHER(ReflectPad, uint8_t);
+DEFINE_PAD_KERNEL_LAUNCHER(ReflectPad, int);
+DEFINE_PAD_KERNEL_LAUNCHER(ReflectPad, int64_t);
+DEFINE_PAD_KERNEL_LAUNCHER(ReflectPad, float16);
+DEFINE_PAD_KERNEL_LAUNCHER(ReflectPad, float);
+DEFINE_PAD_KERNEL_LAUNCHER(ReflectPad, double);
+
+DEFINE_PAD_KERNEL_LAUNCHER(EdgePad, bool);
+DEFINE_PAD_KERNEL_LAUNCHER(EdgePad, int8_t);
+DEFINE_PAD_KERNEL_LAUNCHER(EdgePad, uint8_t);
+DEFINE_PAD_KERNEL_LAUNCHER(EdgePad, int);
+DEFINE_PAD_KERNEL_LAUNCHER(EdgePad, int64_t);
+DEFINE_PAD_KERNEL_LAUNCHER(EdgePad, float16);
+DEFINE_PAD_KERNEL_LAUNCHER(EdgePad, float);
+DEFINE_PAD_KERNEL_LAUNCHER(EdgePad, double);
+
+#undef DEFINE_PAD_KERNEL_LAUNCHER
+#undef DEFINE_CONST_PAD_KERNEL_LAUNCHER
 
 }  // namespace kernel
 

@@ -5,34 +5,58 @@
 
 namespace dragon {
 
+#define TENSOR_FROM_VECTOR(tensor, vec, T) \
+    { \
+        tensor.Reshape({ (int64_t)vec.size() }); \
+        auto* data = tensor.template mutable_data<T, CPUContext>(); \
+        for (int i = 0; i < vec.size(); i++) data[i] = (T)vec[i]; \
+    }
+
+#define WSTENSOR_FROM_VECTOR(name, vec, T) \
+    { \
+        auto* t = ws()->CreateTensor(mount_name(name)) \
+            ->Reshape({ (int64_t)vec.size() }); \
+        auto* data = t->template mutable_data<T, CPUContext>(); \
+        for (int i = 0; i < vec.size(); i++) data[i] = vec[i]; \
+    }
+
+#define VECTOR_FROM_WSTENSOR(name, vec, T) \
+    { \
+        auto* t = ws()->GetTensor(mount_name(name)); \
+        vec.assign((size_t)t->count(), 0); \
+        auto* data = t->template data<T, CPUContext>(); \
+        for (int i = 0; i < t->count(); i++) vec[i] = data[i]; \
+    }
+
 template <class Context> template <typename T>
 void CropOp<Context>::RunWithType() {
-    const T* Xdata; T* Ydata;
-    if (source == &navigator) {
-        Xdata = ws()->template caches<T, Context>({ source->count() })[0];
-    } else { Xdata = source->template data<T, Context>(); }
-    if (dest == &navigator) {
-        Ydata = ws()->template caches<T, Context>({ dest->count() })[0];
-    } else { Ydata = dest->template mutable_data<T, Context>(); }
+    auto* XSS = x_stridesT.template data<int, Context>();
+    auto* YDS = y_dimsT.template data<int, Context>();
+    auto* STS = startsT.template data<int, Context>();
 
-    kernel::Crop1d<T, Context>(dest->count(),
-        dim, ed[axis] - st[axis], inner_dim,
-            st[axis], Xdata, Ydata, ctx());
+    auto* Xdata = Input(0).template data<T, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+
+    // Apply a simple Nd-Narrow solution
+    kernel::Crop(Output(0)->count(), y_dimsT.count(),
+        XSS, YDS, STS, Xdata, Ydata, ctx());
 }
 
 template <class Context>
 void CropOp<Context>::Setup() {
-    // Make starts
-    st.assign(Input(0).ndim(), 0);
-    if (start_axis == -1) {
-        // Static crop
-        int n_given = (int)GET_ARGUMENTS_SIZE(starts);
+    st.assign((size_t)Input(0).ndim(), 0);
+    ed.assign(st.size(), 0);
+    keep_dims.assign(st.size(), 1);
+
+    // Determine the starts
+    if (start_axis < 0) {
+        // Static solution
+        int n_starts = GET_ARGUMENTS_SIZE(starts);
         for (int i = 0; i < st.size(); i++) {
-            if (i < n_given) st[i] = starts(i);
-            else st[i] = 0;
+            if (i < n_starts) st[i] = starts(i);
         }
     } else {
-        // Dynamic crop
+        // Dynamic solution
         for (int i = 0; i < st.size(); i++) {
             if (i < start_axis || offsets.size() == 0) {
                 st[i] = 0;
@@ -44,26 +68,24 @@ void CropOp<Context>::Setup() {
         }
     }
 
-    // Make ends
-    ed.assign(Input(0).ndim(), 0);
-    keep_dims.assign(Input(0).ndim(), 1);
-    if (shape.size() + shape_like.size() != 0) {
-        CHECK(shape.size() * shape_like.size() == 0)
-            << "\nCan not set shape and shape_like both.";
+    // Determine the ends
+    if (start_axis < 0) {
+        // Static solution
+        int n_sizes = GET_ARGUMENTS_SIZE(sizes);
         for (int i = 0; i < ed.size(); i++) {
-            // Dynamic crop 1: keep unchanged
-            if (start_axis != -1 && i < start_axis) {
-                ed[i] = Input(0).dim(i);
-                continue;
+            ed[i] = Input(0).dim(i);
+            if (i < n_sizes) {
+                auto len = sizes(i);
+                if (len > 0) { ed[i] = st[i] + len; }
+                else if (len == 0) { ed[i] = st[i] + 1; keep_dims[i] = 0; }
             }
-            // Dynamic crop 2: use shape
-            if (shape.size() > 0) {
-                CHECK_EQ(shape.size(), Input(0).ndim())
-                    << "\nThe cropping is performed on " << shape.size() << " dimensions, "
-                    << "while the num of dimensions of input is " << Input(0).ndim() << ".";
-                ed[i] = st[i] + shape[i];
-            } else {
-                // Dynamic crop 3: use shape_like
+        }
+    } else {
+        // Dynamic solution
+        for (int i = 0; i < ed.size(); i++) {
+            ed[i] = Input(0).dim(i);
+            if (i >= start_axis) {
+                // From a known shape
                 Tensor* like = ws()->GetTensor(shape_like);
                 CHECK_EQ(like->ndim(), Input(0).ndim())
                     << "\nThe cropping is performed on " << like->ndim() << " dimensions, "
@@ -71,98 +93,60 @@ void CropOp<Context>::Setup() {
                 ed[i] = st[i] + like->dim(i);
             }
         }
-    } else {
-        // Static crop
-        int n_given = (int)GET_ARGUMENTS_SIZE(ends);
-        for (int i = 0; i < ed.size(); i++) {
-            if (i < n_given) ed[i] = ends(i);
-            if (ed[i] == 0) ed[i] = Input(0).dim(i);
-            if (ed[i] == -1) { ed[i] = st[i] + 1; keep_dims[i] = 0; }
-        }
     }
 
     // Check starts and ends
     for (int i = 0; i < st.size(); i++) {
-        CHECK(st[i] >= 0 && st[i] < (int)Input(0).dim(i))
+        CHECK(st[i] >= 0 && st[i] < Input(0).dim(i))
             << "\nThe cropping starts at the pos " << st[i] << " of axis " << i << ", "
             << "while the dimension of this axis is " << Input(0).dim(i) << ".";
-        CHECK(ed[i] > 0 && ed[i] <= (int)Input(0).dim(i))
+        CHECK(ed[i] > 0 && ed[i] <= Input(0).dim(i))
             << "\nThe cropping ends at the pos " << ed[i] << " of axis " << i << ", "
             << "while the dimension of this axis is " << Input(0).dim(i) << ".";
     }
 
-    // Store st & ed & kd
-    Tensor* tst = ws()->CreateTensor("/mnt/" + anchor() + "/crop/starts");
-    Tensor* ted = ws()->CreateTensor("/mnt/" + anchor() + "/crop/ends");
-    Tensor* tkd = ws()->CreateTensor("/mnt/" + anchor() + "/crop/keep_dims");
-    tst->Reshape({ (TIndex)st.size() });
-    ted->Reshape({ (TIndex)ed.size() });
-    tkd->Reshape({ (TIndex)keep_dims.size() });
-    auto* Sdata = tst->template mutable_data<int, CPUContext>();
-    auto* Edata = ted->template mutable_data<int, CPUContext>();
-    auto* Kdata = tkd->template mutable_data<int, CPUContext>();
-    for (int i = 0; i < st.size(); i++) Sdata[i] = st[i];
-    for (int i = 0; i < ed.size(); i++) Edata[i] = ed[i];
-    for (int i = 0; i < keep_dims.size(); i++) Kdata[i] = keep_dims[i];
+    // Store for the gradient op
+    WSTENSOR_FROM_VECTOR("crop/starts", st, int64_t);
+    WSTENSOR_FROM_VECTOR("crop/ends", ed, int64_t);
 
-    // Make tasks
-    process_axes.clear();
+    y_dimsV = Input(0).dims();
     for (int i = 0; i < st.size(); i++) {
-        int cropping_size = ed[i] - st[i];
-        int reducing_size = (int)Input(0).dim(i) - cropping_size;
-        if (reducing_size > 0)
-            process_axes.push_back({ reducing_size, i });
+        y_dimsV[i] = ed[i] - st[i];
     }
-    std::sort(process_axes.begin(), process_axes.end(),
-        std::greater< pair<int, int> >());
+
+    // Squeeze the dimensions
+    vector<int64_t> squeeze_shape;
+    for (int i = 0; i < keep_dims.size(); i++)
+        if (keep_dims[i]) squeeze_shape.push_back(y_dimsV[i]);
+    Output(0)->Reshape(squeeze_shape);
 }
 
 template <class Context>
 void CropOp<Context>::RunOnDevice() {
     Setup();
 
-    // Do nothing
-    if (process_axes.size() == 0) {
-        Output(0)->ReshapeLike(Input(0));
-        Output(0)->template CopyFrom<Context>(Input(0), ctx());
-        // Squeeze dimensions
-        vector<TIndex> squeeze_shape;
-        for (int i = 0; i < keep_dims.size(); i++)
-            if (keep_dims[i]) squeeze_shape.push_back(Output(0)->dim(i));
-        Output(0)->Reshape(squeeze_shape);
-        return;
+    // Just copy the contents
+    if (Input(0).dims() == y_dimsV) {
+        Output(0)->template CopyFrom<Context>(
+            Input(0), ctx()); return;
     }
 
-     // Select source & dest
-    source = &Input(0);
-    if (process_axes.size() % 2 == 1) dest = Output(0);
-    else dest = &navigator;
+    TENSOR_FROM_VECTOR(x_stridesT, Input(0).strides(), int);
+    TENSOR_FROM_VECTOR(y_dimsT, y_dimsV, int);
+    TENSOR_FROM_VECTOR(startsT, st, int);
 
-    for (auto& task : process_axes) {
-        axis = task.second;
-        vector<TIndex> dims = source->dims();
-        inner_dim = source->count(axis + 1);
-        dim = source->dim(axis);
-        dims[axis] = ed[axis] - st[axis];
-        dest->Reshape(dims);
-        if (XIsType(Input(0), float)) RunWithType<float>();
-        else if (XIsType(Input(0), int)) RunWithType<int>();
-        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "int32" });
-        ctx()->FinishDeviceCompution();
-        // Allow buffer to protect X if the num of tasks >= 2
-        std::swap(source, dest);
-        if (process_axes.size() % 2 == 1) {
-            if (dest == &Input(0)) dest = &navigator;
-        } else {
-            if (dest == &Input(0)) dest = Output(0);
-        }
-    }
-
-    // Squeeze dimensions
-    vector<TIndex> squeeze_shape;
-    for (int i = 0; i < keep_dims.size(); i++)
-        if (keep_dims[i]) squeeze_shape.push_back(Output(0)->dim(i));
-    Output(0)->Reshape(squeeze_shape);
+    if (XIsType(Input(0), bool)) RunWithType<bool>();
+    else if (XIsType(Input(0), int8_t)) RunWithType<int8_t>();
+    else if (XIsType(Input(0), uint8_t)) RunWithType<uint8_t>();
+    else if (XIsType(Input(0), int)) RunWithType<int>();
+    else if (XIsType(Input(0), int64_t)) RunWithType<int64_t>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), double)) RunWithType<double>();
+    else LOG(FATAL) << DTypeHelper(Input(0), {
+        "bool", "int8", "uint8", "int32", "int64",
+            "float16", "float32", "float64",
+    });
 }
 
 DEPLOY_CPU(Crop);
@@ -171,109 +155,69 @@ DEPLOY_CUDA(Crop);
 #endif
 OPERATOR_SCHEMA(Crop).NumInputs(1).NumOutputs(1);
 
-template <class Context>
-void CropGradientOp<Context>::Setup() {
-    st.assign(Input(0).ndim(), 0);
-    ed.assign(Input(0).ndim(), 0);
-    keep_dims.resize(Input(0).ndim(), 0);
-    Tensor* tst = ws()->GetTensor("/mnt/" + anchor() + "/crop/starts");
-    Tensor* ted = ws()->GetTensor("/mnt/" + anchor() + "/crop/ends");
-    Tensor* tkd = ws()->GetTensor("/mnt/" + anchor() + "/crop/keep_dims");;
-    auto* Sdata = tst->template mutable_data<int, CPUContext>();
-    auto* Edata = ted->template mutable_data<int, CPUContext>();
-    auto* Kdata = tkd->template mutable_data<int, CPUContext>();
-    for (int i = 0; i < tst->count(); i++) st[i] = Sdata[i];
-    for (int i = 0; i < ted->count(); i++) ed[i] = Edata[i];
-    for (int i = 0; i < tkd->count(); i++) keep_dims[i] = Kdata[i];
-    // Make tasks
-    process_axes.clear();
-    for (int i = 0; i < st.size(); i++) {
-        int cropping_size = ed[i] - st[i];
-        int reducing_size = (int)Input(0).dim(i) - cropping_size;
-        if (reducing_size > 0) process_axes.push_back({ reducing_size, i });
-    }
-    std::sort(process_axes.begin(), process_axes.end(),
-        std::greater< pair<int, int> >());
-    std::reverse(process_axes.begin(), process_axes.end());
-}
-
 template <class Context> template <typename T>
 void CropGradientOp<Context>::RunWithType() {
-    const T* dYdata; T* dXdata;
-    if (source == &navigator) {
-        dYdata = ws()->template caches<T, Context>({ source->count() })[0];
-    } else { dYdata = source->template data<T, Context>(); }
-    if (dest == &navigator) {
-        dXdata = ws()->template caches<T, Context>({ dest->count() })[0];
-    } else { dXdata = dest->template mutable_data<T, Context>(); }
+    auto* XSS = x_stridesT.template data<int, Context>();
+    auto* YDS = y_dimsT.template data<int, Context>();
+    auto* STS = startsT.template data<int, Context>();
 
-    kernel::Crop1dGrad<T, Context>(dest->count(),
-        Input(0).dim(axis), dim, inner_dim,
-            st[axis], ed[axis], dYdata, dXdata, ctx());
+    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<T, Context>();
+
+    // Zero the redundant gradients
+    math::Set(Output(0)->count(), cast::to<T>(0.f), dXdata, ctx());
+
+    // Copy the dY to the right positions
+    kernel::CropGrad(Input(-1).count(), y_dimsT.count(),
+        XSS, YDS, STS, dYdata, dXdata, ctx());
 }
 
 template <class Context>
 void CropGradientOp<Context>::RunOnDevice() {
-    Setup();
+    VECTOR_FROM_WSTENSOR("crop/starts", st, int64_t);
+    VECTOR_FROM_WSTENSOR("crop/ends", ed, int64_t);
 
-    // Expand dimensions
-    vector<TIndex> expand_shape(keep_dims.size(), 1);
-    vector<TIndex> keep_axes;
-    for (int i = 0; i < keep_dims.size(); i++)
-        if (keep_dims[i]) keep_axes.push_back(i);
-    CHECK_EQ(keep_axes.size(), Input(-1).ndim());
-    for (int i = 0; i < keep_axes.size(); i++)
-        expand_shape[keep_axes[i]] = Input(-1).dim(i);
-    Input(-1).Reshape(expand_shape);
+    y_dimsV = Input(0).dims();
+    for (int i = 0; i < st.size(); i++) {
+        y_dimsV[i] = ed[i] - st[i];
+    } Output(0)->ReshapeLike(Input(0));
 
-    // Do nothing
-    if (process_axes.size() == 0) {
-        Output(0)->ReshapeLike(Input(-1));
-        Output(0)->template CopyFrom<Context>(Input(-1), ctx());
-        return;
+    // Just copy the contents
+    if (Input(0).dims() == y_dimsV) {
+        Output(0)->template CopyFrom<Context>(
+            Input(-1), ctx()); return;
     }
 
-    // Select source & buffer
-    source = &Input(-1);
-    if (process_axes.size() % 2 == 1) dest = Output(0);
-    else dest = &navigator;
+    TENSOR_FROM_VECTOR(x_stridesT, Input(0).strides(), int);
+    TENSOR_FROM_VECTOR(y_dimsT, y_dimsV, int);
+    TENSOR_FROM_VECTOR(startsT, st, int);
 
-    for (auto& task : process_axes) {
-        axis = task.second;
-        vector<TIndex> dims = source->dims();
-        inner_dim = source->count(axis + 1);
-        dim = source->dim(axis);
-        dims[axis] = Input(0).dim(axis),
-        dest->Reshape(dims);
-        if (XIsType(Input(0), float)) RunWithType<float>();
-        else if (XIsType(Input(0), int)) RunWithType<int>();
-        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "int32" });
-        ctx()->FinishDeviceCompution();
-        // Allow buffer to protect X if the num of tasks >= 2
-        std::swap(source, dest);
-        if (process_axes.size() % 2 == 1) {
-            if (dest == &Input(-1)) dest = &navigator;
-        } else {
-            if (dest == &Input(-1)) dest = Output(0);
-        }
-    }
+    if (XIsType(Input(0), bool)) RunWithType<bool>();
+    else if (XIsType(Input(0), int8_t)) RunWithType<int8_t>();
+    else if (XIsType(Input(0), uint8_t)) RunWithType<uint8_t>();
+    else if (XIsType(Input(0), int)) RunWithType<int>();
+    else if (XIsType(Input(0), int64_t)) RunWithType<int64_t>();
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else if (XIsType(Input(0), float)) RunWithType<float>();
+    else if (XIsType(Input(0), double)) RunWithType<double>();
+    else LOG(FATAL) << DTypeHelper(Input(0), {
+        "bool", "int8", "uint8", "int32", "int64",
+            "float16", "float32", "float64",
+    });
 }
 
 DEPLOY_CPU(CropGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(CropGradient);
 #endif
-OPERATOR_SCHEMA(CropGradient).NumInputs(2).NumOutputs(1);
 
-class GetCropGradient final : public GradientMakerBase {
- public:
-    GRADIENT_MAKER_CTOR(GetCropGradient);
-    vector<OperatorDef> MakeDefs() override {
-        return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), GO(0)},
-            vector<string> {GI(0)});
-    }
-};
-REGISTER_GRADIENT(Crop, GetCropGradient);
+OPERATOR_SCHEMA(CropGradient)
+    .NumInputs(2).NumOutputs(1);
+
+REGISTER_GRADIENT(Crop, SimpleGradientMaker);
+
+#undef TENSOR_FROM_VECTOR
+#undef WSTENSOR_FROM_VECTOR
+#undef VECTOR_FROM_WSTENSOR
 
 }  // namespace dragon

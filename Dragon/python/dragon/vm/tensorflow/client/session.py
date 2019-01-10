@@ -9,10 +9,14 @@
 #
 # ------------------------------------------------------------
 
-import warnings
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-from dragon.core.tensor import Tensor
-import dragon.vm.theano as theano
+import warnings
+from collections import defaultdict
+
+import dragon
 
 from dragon.vm.tensorflow.protobuf import config_pb2
 from dragon.vm.tensorflow.training.optimizer import Optimizer
@@ -20,31 +24,47 @@ from dragon.vm.tensorflow.ops.variables import VariablesInitializer
 from dragon.vm.tensorflow.framework import ops
 
 
-_TRANSACTIONS = {}
+_GLOBAL_DATA_FLOW_KEYS = defaultdict(dict)
 
 
-class Transaction(object):
+class _DataFlow(object):
+    """DataFlow takes a group of expressions and
+    the specified output tensors.
+
+    We store the flows that requiring the same output names,
+    i.e., those flows can be reused and should not to create a new graph.
+
+    """
     def __init__(self, functions):
         self.functions = functions
 
-    def run(self, feed_values=None):
+    def run(self, feed_dict=None):
         for i, function in enumerate(self.functions):
-            if i == 0 and feed_values is not None:
-                function(*feed_values, return_outputs=False)
-            else: function(return_outputs=False)
+            if i == 0 and feed_dict is not None:
+                for tensor, value in feed_dict.items():
+                    dragon.workspace.FeedTensor(tensor, value)
+            function(return_outputs=False)
 
-_default_session = None
+    @classmethod
+    def try_get(cls, workspace, flow_key):
+        global _GLOBAL_DATA_FLOW_KEYS
+        if flow_key in _GLOBAL_DATA_FLOW_KEYS[workspace]:
+            return _GLOBAL_DATA_FLOW_KEYS[workspace][flow_key]
+
+    @classmethod
+    def try_add(cls, workspace, flow_key, flow):
+        global _GLOBAL_DATA_FLOW_KEYS
+        _GLOBAL_DATA_FLOW_KEYS[workspace][flow_key] = flow
 
 
 class BaseSession(object):
-    """
-    Construct a BaseSession.
-    """
+    """Construct a BaseSession."""
+
     def __init__(self, target='', graph=None, config=None):
         if graph is None:
             self._graph = ops.get_default_graph()
         else:
-            raise NotImplementedError('Session can only use the default graph yet.')
+            self._graph = graph
 
         self._opened = False
         self._closed = False
@@ -58,8 +78,6 @@ class BaseSession(object):
             self._config = None
             self._add_shapes = False
 
-        self._session = None
-
     def list_devices(self):
         pass
 
@@ -70,16 +88,8 @@ class BaseSession(object):
     def graph(self):
         return self._graph
 
-    @property
-    def graph_def(self):
-        return ''
-
-    @property
-    def sess_str(self):
-        return ''
-
     def as_default(self):
-        pass
+        return ops.default_session(self)
 
     def run(self, fetches, feed_dict=None, options=None, run_metadata=None):
         try:
@@ -92,100 +102,117 @@ class BaseSession(object):
 
         if not isinstance(fetches, list): fetches = [fetches]
         if len(fetches) < 1: return None
+
         return self._run(fetches, feed_dict)
 
     def _run(self, fetches, feed_dict):
         if self._closed:
             raise RuntimeError('Attempted to use a closed Session.')
 
-        # unpack opts and tensors
-        opts = []; tensors = []
-        for target in fetches:
-            if isinstance(target, Optimizer): opts.append(target)
-            elif isinstance(target, VariablesInitializer): tensors.extend(target.var_list)
-            elif isinstance(target, Tensor): tensors.append(target)
+        # Unpack opts and tensors
+        tensors, optimizers = [], []
 
-        # find minimum solving targets
+        for e in fetches:
+            if isinstance(e, Optimizer): optimizers.append(e)
+            elif isinstance(e, VariablesInitializer): tensors.extend(e.var_list)
+            elif isinstance(e, dragon.Tensor): tensors.append(e)
+
+        # Find minimum solving targets
         targets = set()
-        for t in tensors: targets.add(t)
-        for opt in opts:
-            for t in opt.objs: targets.add(t)
+        for e in tensors: targets.add(e)
+        for optimizer in optimizers:
+            for t in optimizer._targets: targets.add(t)
 
         targets = list(targets)
+        gen_flow_key = tuple(e.name for e in targets)
 
-        # if existing a transaction before?
-        global _TRANSACTIONS
-        t_key = tuple(fetches + feed_dict.keys()) \
-                if feed_dict is not None else tuple(fetches)
-        transaction = None if not t_key in _TRANSACTIONS else _TRANSACTIONS[t_key]
+        # Exist this data flow before?
+        data_flow = _DataFlow.try_get(
+            self._graph._workspace, gen_flow_key)
 
-        # cond.1: run by feeding
+        # Run by feeding
         if feed_dict is not None:
-            # checking
+            # Check the feed dict
             for key, value in feed_dict.items():
-                if not isinstance(key, Tensor):
+                if not isinstance(key, dragon.Tensor):
                     raise TypeError('The key of feed_dict key should be a Tensor.')
                 if key.shape is not None:
+                    # Align the number of dimensions
                     if len(key.shape) != len(value.shape):
-                        raise RuntimeError('The Tensor({}) was limited to {} dimensions, \
-                                            while feed a value with {} dimensions.'.
-                                                format(key.name, len(key.shape), len(value.shape)))
+                        raise RuntimeError(
+                            'The Tensor({}) was limited to {} dimensions, \
+                                while feed a value with {} dimensions.'
+                                    .format(key.name, len(key.shape), len(value.shape)))
+                    # Verify for the each dimension
                     for i in range(len(key.shape)):
                         if key.shape[i] is None: continue
                         if key.shape[i] != value.shape[i]:
-                            raise RuntimeError('The shape of Tensor({}) was limited as ('.format(key.name) +
-                                               ','.join([str(dim) for dim in key.shape]) + '), ' +
-                                               'while feed a value with (' + ','.join([str(dim) for dim in value.shape]) + ').')
-            # create a new transaction
-            if transaction is None:
-                functions = []
-                functions.append(theano.function(inputs=feed_dict.keys(), outputs=targets))
-                for opt in opts:
-                    functions.append(theano.function(updater=opt.updater))
-                _TRANSACTIONS[t_key] = transaction = Transaction(functions)
-            transaction.run(feed_dict.values())
+                            raise RuntimeError(
+                                'The shape of Tensor({}) was limited as ('.format(key.name) +
+                                    ','.join([str(dim) for dim in key.shape]) + '), ' +
+                                        'while feed a value with (' + ','.join([str(dim) for dim in value.shape]) + ').')
 
-        # cond.2: run without feeding
-        else:
-            # create a new transaction
-            if transaction is None:
-                functions = []
-                functions.append(theano.function(outputs=targets))
-                for opt in opts:
-                    functions.append(theano.function(updater=opt.updater))
-                _TRANSACTIONS[t_key] = transaction = Transaction(functions)
-            transaction.run(None)
+        # Create a new data flow if necessary
+        if data_flow is None:
+            functions = [dragon.function(outputs=targets)]
+            for optimizer in optimizers:
+                functions.append(dragon.function(
+                    updater=optimizer.updater))
+            data_flow = _DataFlow(functions)
+            _DataFlow.try_add(self.graph._workspace, gen_flow_key, data_flow)
 
-        # fetch after running
+        # Run this data flow
+        data_flow.run(feed_dict)
+
+        # Fetch after running
         returns = []
-        for target in fetches:
-            if isinstance(target, Optimizer): returns.append(None)
-            elif isinstance(target, VariablesInitializer): returns.append(None)
-            else:
-                np_target = target.get_value()
-                # unpack the scalar if necessary
-                if np_target.size == 1:
-                    returns.append(np_target.flatten()[0])
-                else:
-                    returns.append(np_target)
 
-        # unpack the returns if necessary
+        for e in fetches:
+            if isinstance(e, Optimizer):
+                e._inc_global_step()
+                returns.append(None)
+            elif isinstance(e, VariablesInitializer):
+                returns.append(None)
+            else:
+                np_target = e.get_value()
+                # Unpack the scalar if necessary
+                if np_target.size == 1: returns.append(np_target.flatten()[0])
+                else: returns.append(np_target)
+
+        # Unpack the returns if necessary
         if len(returns) == 1: return returns[0]
         else: return returns
 
 
 class Session(BaseSession):
-    """
-    Construct a Session.
-    """
+    """Construct a Session."""
+
     def __init__(self, target='', graph=None, config=None):
         super(Session, self).__init__(target, graph, config=config)
+        self._default_graph_context_manager = None
+        self._default_session_context_manager = None
 
     def __enter__(self):
-        return self
+        if self._default_graph_context_manager is None:
+            self._default_graph_context_manager = self.graph.as_default()
+        else:
+            raise RuntimeError('Session context managers are not re-entrant. '
+                               'Use `Session.as_default()` if you want to enter '
+                               'a session multiple times.')
+        if self._default_session_context_manager is None:
+            self._default_session_context_manager = self.as_default()
+        self._default_graph_context_manager.__enter__()
+        return self._default_session_context_manager.__enter__()
 
     def __exit__(self, exec_type, exec_value, exec_tb):
-        pass
+        try:
+            self._default_session_context_manager.__exit__(exec_type, exec_value, exec_tb)
+        except RuntimeError as error:
+            if error == exec_value:
+                pass
+            else:
+                raise
+        self._default_graph_context_manager.__exit__(exec_type, exec_value, exec_tb)
 
     @staticmethod
     def reset(target, containers=None, config=None):
@@ -193,9 +220,8 @@ class Session(BaseSession):
 
 
 class InteractiveSession(BaseSession):
-    """
-    Construct a InteractiveSession.
-    """
+    """Construct a InteractiveSession."""
+
     def __init__(self, target='', graph=None, config=None):
         super(InteractiveSession, self).__init__(target, graph, config=config)
 
@@ -208,10 +234,3 @@ class InteractiveSession(BaseSession):
     @staticmethod
     def reset(target, containers=None, config=None):
         pass
-
-
-def get_default_session():
-    global _default_session
-    if _default_session is None:
-        _default_session = Session()
-    return _default_session

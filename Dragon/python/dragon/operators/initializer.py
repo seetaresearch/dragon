@@ -16,186 +16,168 @@ from __future__ import print_function
 from . import *
 
 
-def _wrap_input_shape(arguments, shape):
-    if isinstance(shape, Tensor):
-        arguments['extra_inputs'] = shape
-        arguments['shape'] = shape.name
-    elif isinstance(shape, (list, tuple)):
-        arguments['dims'] = shape
-        arguments['shape'] = None
-        AddArgumentsWithDesc(arguments, shape, 'dims', 'int32', as_target=True)
-    else:
-        raise TypeError('Unsupported type of shape: {}'.format(type(shape)))
-    return arguments
-
-
-def _wrap_output_shape(output, shape):
-    if not isinstance(shape, Tensor):
-        if any(isinstance(dim, Tensor) for dim in shape): return output
-        output.shape = [dim for dim in shape]
-    return output
-
-
+@ArgumentHelper.RepeatedDesc(name='shape', name_v2='dims')
 def Fill(shape, value=0, dtype='float32', **kwargs):
     """Return a Tensor with specific value filled.
 
-    If ``dtype`` is None, tensor
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
-    shape : list, tuple or Tensor
+    shape : sequence of (int, Tensor)
         The output shape.
-    value : basic numerical type
+    value : number, optional
         The value to fill.
-    dtype : str
+    dtype : str, optional
         The optional data type.
 
     Returns
     -------
     Tensor
-        The constant-filled tensor.
+        A tensor filled with the constants.
 
     """
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
     arguments['value'] = float(value)
-    arguments = _wrap_input_shape(arguments, shape)
-    output =  Tensor.CreateOperator([], nout=1, op_type='Fill', **arguments)
-    return _wrap_output_shape(output, shape)
+    return Tensor.CreateOperator('Fill', [], **arguments)
 
 
+@ArgumentHelper.RepeatedDesc(name='shape', name_v2='dims')
 def RandomUniform(shape, low=-1.0, high=1.0, **kwargs):
-    """Return a Tensor randomly initialized with uniform distribution.
+    """Return a Tensor randomly initialized with *Uniform* distribution.
+
+    **Type Constraints**: *float32*
 
     Parameters
     ----------
-    shape : list, tuple or Tensor
+    shape : sequence of (int, Tensor)
         The shape of the new tensor.
-    low : basic numerical type
+    low : number, optional
         The lower bound of uniform distribution.
-    high : basic numerical type
+    high : number, optional
         The higher bound of uniform distribution.
 
     Returns
     -------
     Tensor
-        The random-initialized Tensor.
+        A randomly initialized tensor.
 
     """
-    arguments = ParseArguments(locals())
-    arguments['low'] = float(low)
-    arguments['high'] = float(high)
-    arguments = _wrap_input_shape(arguments, shape)
-    output =  Tensor.CreateOperator([], nout=1, op_type='RandomUniform', **arguments)
-    return _wrap_output_shape(output, shape)
+    arguments = ParseArgs(locals())
+    arguments['low'], arguments['high'] = float(low), float(high)
+    return Tensor.CreateOperator('RandomUniform', [], **arguments)
 
 
+@ArgumentHelper.RepeatedDesc(name='shape', name_v2='dims')
 def RandomNormal(shape, mean=0.0, std=1.0, **kwargs):
-    """Return a Tensor randomly initialized with normal distribution.
+    """Return a Tensor randomly initialized with *Normal* distribution.
+
+    **Type Constraints**: *float32*
 
     Parameters
     ----------
-    shape : list, tuple or Tensor
+    shape : sequence of (int, Tensor)
         The shape of the new tensor.
-    mean : basic numerical type
+    mean : number, optional
         The mean(mu) of normal distribution.
-    std : basic numerical type
+    std : number, optional
         The std(sigma) of normal distribution.
 
     Returns
     -------
     Tensor
-        The random-initialized Tensor.
+        A randomly initialized tensor.
 
     """
-    arguments = ParseArguments(locals())
-    arguments['mean'] = float(mean)
-    arguments['std'] = float(std)
-    arguments = _wrap_input_shape(arguments, shape)
-    output = Tensor.CreateOperator([], nout=1, op_type='RandomNormal', **arguments)
-    return _wrap_output_shape(output, shape)
+    arguments = ParseArgs(locals())
+    arguments['mean'], arguments['std'] = float(mean), float(std)
+    return Tensor.CreateOperator('RandomNormal', [], **arguments)
 
 
+@ArgumentHelper.RepeatedDesc(name='shape', name_v2='dims')
 def TruncatedNormal(shape, mean=0.0, std=1.0, **kwargs):
-    """Return a Tensor randomly initialized with truncated normal distribution.
+    """Return a Tensor randomly initialized with *Truncated Normal* distribution.
 
     The bounds of truncated distribution are |truncated_normal_bounds|.
 
+    **Type Constraints**: *float32*
+
     Parameters
     ----------
-    shape : list, tuple or Tensor
+    shape : sequence of (int, Tensor)
         The shape of the new tensor.
-    mean : basic numerical type
+    mean : number, optional
         The mean(mu) of normal distribution.
-    std : basic numerical type
+    std : number, optional
         The std(sigma) of normal distribution.
 
     Returns
     -------
     Tensor
-        The random-initialized Tensor.
+        A randomly initialized tensor.
 
     """
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
     arguments['mean'] = float(mean)
     arguments['std'] = float(std)
     arguments['low'] = float(mean - 2.0 * std)
     arguments['high'] = float(mean + 2.0 * std)
-    arguments = _wrap_input_shape(arguments, shape)
-    output =  Tensor.CreateOperator([], nout=1, op_type='TruncatedNormal', **arguments)
-    return _wrap_output_shape(output, shape)
+    return Tensor.CreateOperator('TruncatedNormal', [], **arguments)
 
 
+@ArgumentHelper.RepeatedDesc(name='shape', name_v2='dims')
 def GlorotUniform(shape, scale=3.0, mode='FAN_IN', **kwargs):
-    """Return a Tensor randomly initialized with Xavier uniform distribution.
+    """Return a Tensor randomly initialized with *Xavier Uniform* distribution.
 
     The bounds of uniform distribution are |glorot_uniform_bounds|.
 
+    **Type Constraints**: *float32*
+
     Parameters
     ----------
-    shape : list, tuple or Tensor
+    shape : sequence of (int, Tensor)
         The shape of the new tensor.
-    scale : basic numerical type
+    scale : number, optional
         The scale of xavier uniform distribution.
-    mode : str
-        The mode, ``FAN_IN``, ``FAN_OUT`` or ``FAN_AVG``.
+    mode : {'FAN_IN', 'FAN_OUT', 'FAN_AVG'}, optional
+        The mode to compute the normalizer.
 
     Returns
     -------
     Tensor
-        The random-initialized Tensor.
+        A randomly initialized tensor.
 
     """
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
     arguments['scale'] = float(scale)
     arguments['mode'] = mode.lower()
-    arguments = _wrap_input_shape(arguments, shape)
-    output = Tensor.CreateOperator([], nout=1, op_type='GlorotUniform', **arguments)
-    return _wrap_output_shape(output, shape)
+    return Tensor.CreateOperator('GlorotUniform', [], **arguments)
 
 
+@ArgumentHelper.RepeatedDesc(name='shape', name_v2='dims')
 def GlorotNormal(shape, scale=2.0, mode='FAN_IN', **kwargs):
-    """Return a Tensor randomly initialized with MSRA normal distribution.
+    """Return a Tensor randomly initialized with *Kaiming Normal* distribution.
 
     The parameters of normal distribution are |glorot_normal_parameters|.
 
+    **Type Constraints**: *float32*
+
     Parameters
     ----------
     shape : list, tuple or Tensor
         The shape of the new tensor.
-    scale : basic numerical type
+    scale : number, optional
         The scale of msra normal distribution.
-    mode : str
-        The mode, ``FAN_IN``, ``FAN_OUT`` or ``FAN_AVG``.
+    mode : {'FAN_IN', 'FAN_OUT', 'FAN_AVG'}, optional
+        The mode to compute the normalizer.
 
     Returns
     -------
     Tensor
-        The random-initialized Tensor.
+        A randomly initialized tensor.
 
     """
-    arguments = ParseArguments(locals())
+    arguments = ParseArgs(locals())
     arguments['scale'] = float(scale)
     arguments['mode'] = mode.lower()
-    arguments = _wrap_input_shape(arguments, shape)
-    output = Tensor.CreateOperator([], nout=1, op_type='GlorotNormal', **arguments)
-    return _wrap_output_shape(output, shape)
+    return Tensor.CreateOperator('GlorotNormal', [], **arguments)

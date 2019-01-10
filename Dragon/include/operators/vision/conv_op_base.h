@@ -26,30 +26,32 @@ class ConvOpBase : public Operator<Context> {
         : Operator<Context>(def, ws),
           data_format(OperatorBase::Arg<string>("data_format", "NCHW")),
           padding(OperatorBase::Arg<string>("padding", "VALID")),
-          num_output(OperatorBase::Arg<int>("num_output", 1)),
-          group(OperatorBase::Arg<int>("group", 1)) {
-        output_dims_value = OperatorBase::Args<int>("output_shape");
-        output_dims_desc = OperatorBase::Args<string>("output_shape_desc");
+          num_output(OperatorBase::Arg<int64_t>("num_output", 0)),
+          group(OperatorBase::Arg<int64_t>("group", 1)) {
         if (data_format == "NCHW") spatial_axis = 2;
         else if (data_format == "NHWC") spatial_axis = 1;
         else LOG(FATAL) << "Unknown data format: " << data_format;
         num_spatial_axes = -1;  // Unknown
+        output_shape_spec_value = OperatorBase::Args<int64_t>("output_shape");
+        output_shape_spec_desc = OperatorBase::Args<string>("output_shape_desc");
+        GET_ARGUMENTS_WITH_DESC(int64_t, output_padding);
     }
     USE_OPERATOR_FUNCTIONS;
 
  public:
-    vector<TIndex> kernel_size, stride, pad, dilation;
+    vector<int64_t> kernel_shape, stride, pad_l, pad_r, dilation;
     string data_format, padding;
-    vector<TIndex> input_shape, output_shape, bottom_shape, top_shape;
-    vector<TIndex> weight_shape, bias_shape;
-    TIndex num_output, group;
-    TIndex spatial_axis, num_spatial_axes;
-    TIndex channels, out_spatial_dim;
-    TIndex conv_in_channels, conv_out_channels;
-    TIndex conv_out_spatial_dim, kernel_dim, col_dim;
-    TIndex col_offset, output_offset, weight_offset, x_offset, y_offset;
-    DECLARE_ARGUMENTS_WITH_DESC(int, output_dims);
+    vector<int64_t> input_shape, output_shape, bottom_shape, top_shape;
+    vector<int64_t> weight_shape, bias_shape;
+    int64_t num_output, group;
+    int64_t spatial_axis, num_spatial_axes;
+    int64_t channels, out_spatial_dim;
+    int64_t conv_in_channels, conv_out_channels;
+    int64_t conv_out_spatial_dim, kernel_dim, col_dim;
+    int64_t col_offset, output_offset, weight_offset, x_offset, y_offset;
     bool is_1x1;
+    DECLARE_ARGUMENTS_WITH_DESC(int64_t, output_padding);  // Adjs
+    DECLARE_ARGUMENTS_WITH_DESC(int64_t, output_shape_spec);
 
     void Setup();
     void Reshape();
@@ -75,9 +77,9 @@ class ConvOpBase : public Operator<Context> {
              kernel::Im2Col2d<T, Context>(conv_in_channels,
                             input_shape[0], input_shape[1],
                           output_shape[0], output_shape[1],
-                            kernel_size[0], kernel_size[1],
+                          kernel_shape[0], kernel_shape[1],
                                       stride[0], stride[1],
-                                            pad[0], pad[1],
+                                        pad_l[0], pad_l[1],
                                   dilation[0], dilation[1],
                                                data_format,
                                                         im,
@@ -91,9 +93,9 @@ class ConvOpBase : public Operator<Context> {
              kernel::Col2Im2d<T, Context>(conv_in_channels,
                             input_shape[0], input_shape[1],
                           output_shape[0], output_shape[1],
-                            kernel_size[0], kernel_size[1],
+                          kernel_shape[0], kernel_shape[1],
                                       stride[0], stride[1],
-                                            pad[0], pad[1],
+                                        pad_l[0], pad_l[1],
                                   dilation[0], dilation[1],
                                                data_format,
                                                        col,
@@ -103,7 +105,8 @@ class ConvOpBase : public Operator<Context> {
     }
 };
 
-DEFINE_ARGUMENTS_WITH_DESC(int, ConvOpBase, output_dims);
+DEFINE_ARGUMENTS_WITH_DESC(int64_t, ConvOpBase, output_padding);
+DEFINE_ARGUMENTS_WITH_DESC(int64_t, ConvOpBase, output_shape_spec);
 
 #define USE_CONVOLUTION_FUNCTIONS \
     using ConvOpBase<Context>::Setup; \
@@ -117,9 +120,10 @@ DEFINE_ARGUMENTS_WITH_DESC(int, ConvOpBase, output_dims);
     using ConvOpBase<Context>::Dx; \
     using ConvOpBase<Context>::Dw; \
     using ConvOpBase<Context>::Db; \
-    using ConvOpBase<Context>::kernel_size; \
+    using ConvOpBase<Context>::kernel_shape; \
     using ConvOpBase<Context>::stride; \
-    using ConvOpBase<Context>::pad; \
+    using ConvOpBase<Context>::pad_l; \
+    using ConvOpBase<Context>::pad_r; \
     using ConvOpBase<Context>::dilation; \
     using ConvOpBase<Context>::group; \
     using ConvOpBase<Context>::channels; \

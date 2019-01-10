@@ -21,13 +21,13 @@ void DenseConcatGradientOp<Context>::RestoreX1() {
     this->concat_dims[this->axis] -= growth_rate;
     Input(0).Reshape(this->concat_dims);
     this->x_concat_dim = Input(0).dim(this->axis);
-    TIndex count = Input(0).count();
+    int64_t count = Input(0).count();
     auto* Ydata = Input(-2).template data<T, Context>();
     auto* Xdata = Input(0).template mutable_data<T, Context>();
 
-    kernel::ConcatGrad<T, Context>(
-        count, this->outer_dim, this->inner_dim,
-            this->x_concat_dim, this->y_concat_dim,
+    kernel::Slice(
+        this->outer_dim, this->inner_dim,
+            this->y_concat_dim, this->x_concat_dim,
                 0, Ydata, Xdata, ctx());
 }
 
@@ -99,17 +99,20 @@ DEPLOY_CPU(DenseConcatGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(DenseConcatGradient);
 #endif
-OPERATOR_SCHEMA(DenseConcatGradient).NumInputs(4).NumOutputs(2);
+
+OPERATOR_SCHEMA(DenseConcatGradient)
+    .NumInputs(4).NumOutputs(2);
 
 class GetDenseConcatGradient : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetDenseConcatGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), I(1), O(0), GO(0)},
-            vector<string> {GI(0), GI(1)});
+            vector<string>({ I(0), I(1), O(0), GO(0) }),
+            vector<string>({ GI(0), GI(1) }));
     }
 };
+
 REGISTER_GRADIENT(DenseConcat, GetDenseConcatGradient);
 
 }   // namespace dragon

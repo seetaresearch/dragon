@@ -9,107 +9,214 @@
 #
 # ------------------------------------------------------------
 
-from dragon.vm.tensorflow.framework import dtypes
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import dragon
+import threading
+
+from dragon.vm.tensorflow.framework import dtypes, ops
 from dragon.vm.tensorflow.ops.variables import Variable
+from dragon.vm.tensorflow.framework.ops import _DefaultStack
 from dragon.vm.tensorflow.ops import init_ops
 
-_VARSCOPE = None
-_VARSTORE = {}
 
 class VariableScope(object):
-    """
-    Construct a Variable.
-    """
+    """Construct a Variable."""
+
     def __init__(self, reuse, name='', name_scope='', **kwargs):
-        self._name = name
+        # Whether to reuse the existing variables
         self._reuse = reuse
-        self._name_scope = name_scope
-        if self._name_scope is None:
-            self._name_scope = ''
-        self._old_varscope = None
+        # Store the variable name scope till the current level
+        self._name = name
+        # Store the tensor name scope till the current level
+        self._name_scope = name_scope if name_scope else ''
+        # A dictionary of the stored TensorFlow variables.
+        self._vars = {}
+        # Store the previous variable scope object
+        self._old_scope = None
+        # Store the name scope context manager
+        self._name_scope_ctx = kwargs.get('name_scope_ctx', None)
 
     @property
     def reuse(self):
+        """Whether this variable scope can reuse the variables.
+
+        Returns
+        -------
+        boolean
+            ``True`` if variables can be reused.
+
+        """
         return self._reuse
 
     @property
     def name(self):
+        """Return the tensor name scope till the current level.
+
+        Returns
+        -------
+        str
+            The tensor name scope.
+
+        """
         return self._name
 
     @property
     def original_name_scope(self):
+        """Return the variable name scope till the current level.
+
+        Returns
+        -------
+        str
+            The variable name scope.
+
+        """
         return self._name_scope
 
-    def get_variable(self, name, shape=None, dtype=None, initializer=None,
-                     trainable=True, collections=None, validate_shape=True, **kwargs):
-        global _VARSTORE
+    @property
+    def vars(self):
+        """Return the variable dict of this scope.
 
-        # get full name
-        from dragon.core.scope import get_tensor_scope
-        full_name = get_tensor_scope() + name
+        Returns
+        -------
+        dict of Tensor
+            The variable dict.
 
-        # create a new variable
-        if not full_name in _VARSTORE:
+        """
+        return self._vars
+
+    def get_variable(self,
+        name,
+        shape=None,
+        dtype=None,
+        initializer=None,
+        regularizer=None,
+        trainable=True,
+        collections=None,
+        validate_shape=True):
+        excepted_name = self.name + name
+        if not excepted_name in self._vars:
+            # Create a new variable
             if shape is None:
-                raise ValueError('Must specific a shape for the Variable({}).'.format(full_name))
+                raise ValueError(
+                    'Must specific a shape to create a Variable.')
             if initializer is None:
-                initializer = self._get_default_initializer(name, shape=shape, dtype=dtype)
-            initial_value = initializer(shape, dtype=dtype)
-            new_var = Variable(initial_value, trainable=trainable, collections=collections,
-                            validate_shape=validate_shape, name=name, dtype=dtype)
-            _VARSTORE[full_name] = new_var
-            return new_var
+                initializer = self._get_default_initializer(
+                    name, shape=shape, dtype=dtype)
+            variable = Variable(
+                initial_value=initializer(shape, dtype=dtype),
+                regularizer=regularizer,
+                trainable=trainable,
+                collections=collections,
+                validate_shape=validate_shape,
+                name_from_variable_scope=excepted_name,
+                dtype=dtype)
+            self._vars[excepted_name] = variable
+            return variable
         else:
-            # existing ?
+            # Return a existing variable
             if self._reuse:
-                return _VARSTORE[full_name]
-            raise ValueError('The Variable({}) already exists.'.format(full_name))
+                return self._vars[excepted_name]
+            raise ValueError('Variable {} already exists, disallowed. '
+                'Did you mean to set reuse=True in VarScope?'.format(excepted_name))
 
     def __enter__(self):
-        global _VARSCOPE
-        self._old_varscope = _VARSCOPE
-        _VARSCOPE = self
-
-        from dragon.core.scope import get_tensor_scope, set_tensor_scope
-        prefix = self._name_scope + '/' if self._name_scope != '' else ''
-        set_tensor_scope(get_tensor_scope() + prefix)
+        # Variable scope will also affect the global name scope
+        self._name_scope_ctx.__enter__()
+        get_variable_scope_store().open(self)
         return self
 
     def __exit__(self, type, value, traceback):
-        global _VARSCOPE
-        _VARSCOPE = self._old_varscope
-
-        from dragon.core.scope import get_tensor_scope, set_tensor_scope
-        prefix = self._name_scope + '/' if self._name_scope != '' else ''
-        assert get_tensor_scope().endswith(prefix)
-        if self._name_scope != '':
-            set_tensor_scope(get_tensor_scope()[:-len(prefix)])
+        get_variable_scope_store().close()
+        self._name_scope_ctx.__exit__(type, value, traceback)
 
     def _get_default_initializer(self, name, shape=None, dtype=dtypes.float32):
-        if dtype is None: dtype = dtypes.float32
+        # Defaults: float32
+        if dtype is None:
+            dtype = dtypes.float32
+
+        # Xavier for float16, float32, float64
         if dtype.is_floating:
             initializer = init_ops.glorot_uniform_initializer()
-        elif dtype.is_integer or dtype.is_unsigned or dtype.is_bool:
-            initializer = init_ops.zeros_initializer()(shape=shape, dtype=dtype.base_dtype)
+
+        # Zeros for integers
+        elif dtype.is_integer or \
+                dtype.is_unsigned or \
+                    dtype.is_bool:
+            initializer = init_ops.zeros_initializer()(
+                shape=shape, dtype=dtype.base_dtype)
+
+        # Fail to match the DType
         else:
-            raise ValueError('An initializer for Variable({}) of %s is required.'.
-                             format(name, dtype.base_dtype))
+            raise ValueError(
+                'An initializer for Variable({}) of %s is required.'
+                    .format(name, dtype.base_dtype))
+
         return initializer
 
 
+def variable_scope(name_or_scope, reuse=None, **kwargs):
+    name_or_scope = name_or_scope if name_or_scope else ''
+    prefix = name_or_scope + '/' if name_or_scope != '' else ''
+    vs_store = get_variable_scope_store()
+    vs_name = vs_store.current_scope.name + prefix
+    original_name_scope = dragon.get_default_name_scope() + prefix
+    vs = VariableScope(reuse, name=vs_name, name_scope=original_name_scope)
+    # Store the ctx manager instead of returning
+    # As we should return a VariableScope
+    vs._name_scope_ctx = dragon.name_scope(name_or_scope)
+    return vs
+
+
+def get_variable(name,
+                 shape=None,
+                 dtype=None,
+                 initializer=None,
+                 regularizer=None,
+                 trainable=True,
+                 collections=None,
+                 validate_shape=True,
+                 **kwargs):
+    return get_variable_scope().get_variable(
+        name, shape=shape, dtype=dtype,
+            initializer=initializer, regularizer=regularizer,
+                trainable=trainable, collections=collections,
+                    validate_shape=validate_shape)
+
+
+_GLOBAL_VARIABLE_SCOPE_STORE_KEY = ("__varscope",)
+_GLOBAL_VARIABLE_SCOPE_STACK = _DefaultStack()
+
+
+class _VariableScopeStore(threading.local):
+    """A thread local store for the current variable scope."""
+
+    def __init__(self):
+        super(_VariableScopeStore, self).__init__()
+        self.name_scope = None
+        self.previous_scope = None
+        self.current_scope = VariableScope(False)
+
+    def open(self, var_scope):
+        self.previous_scope = self.current_scope
+        self.current_scope = var_scope
+
+    def close(self):
+        self.current_scope = self.previous_scope
+
+
+def get_variable_scope_store():
+    scope_store = ops.get_collection(_GLOBAL_VARIABLE_SCOPE_STORE_KEY)
+    if not scope_store:
+        scope_store = _VariableScopeStore()
+        ops.add_to_collection(_GLOBAL_VARIABLE_SCOPE_STORE_KEY, scope_store)
+    else:
+        scope_store = scope_store[0]
+    return scope_store
+
+
 def get_variable_scope():
-    global _VARSCOPE
-    if _VARSCOPE is None:
-        _VARSCOPE = VariableScope(False)
-    return _VARSCOPE
-
-
-def variable_scope(name_scope, reuse=None, **kwargs):
-    return VariableScope(reuse, name_scope=name_scope)
-
-
-def get_variable(name, shape=None, dtype=None, initializer=None,
-                 trainable=True, collections=None, validate_shape=True, **kwargs):
-    return get_variable_scope().get_variable(name, shape=shape, dtype=dtype,
-                                             initializer=initializer,trainable=trainable,
-                                             collections=collections, validate_shape=validate_shape)
+    """Returns the current variable scope."""
+    return get_variable_scope_store().current_scope

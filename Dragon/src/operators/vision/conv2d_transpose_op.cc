@@ -5,7 +5,7 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void Conv2dTransposeOp<Context>::RunWithType() {
+void ConvTranspose2dOp<Context>::RunWithType() {
     TENSOR_FILL(Input(1), weight_shape);
     if (InputSize() > 2) { TENSOR_FILL(Input(2), bias_shape); }
 
@@ -23,7 +23,7 @@ void Conv2dTransposeOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void Conv2dTransposeOp<Context>::RunOnDevice() {
+void ConvTranspose2dOp<Context>::RunOnDevice() {
     Reshape();
 
     // You really need the CuDNN to help you -:)
@@ -38,18 +38,18 @@ void Conv2dTransposeOp<Context>::RunOnDevice() {
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
-DEPLOY_CPU(Conv2dTranspose);
+DEPLOY_CPU(ConvTranspose2d);
 #ifdef WITH_CUDA
-DEPLOY_CUDA(Conv2dTranspose);
+DEPLOY_CUDA(ConvTranspose2d);
 #endif
-OPERATOR_SCHEMA(Conv2dTranspose).NumInputs(2, 3).NumOutputs(1);
+OPERATOR_SCHEMA(ConvTranspose2d).NumInputs(2, 3).NumOutputs(1);
 
 template <class Context> template <typename T>
-void Conv2dTransposeGradientOp<Context>::RunWithType() {
+void ConvTranspose2dGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
 
     if (Output(2)->name() != "ignore") {
-        auto* dBdata = Output(2)->template mutable_data<T, Context>(ctx());
+        auto* dBdata = Output(2)->template mutable_data<T, Context>();
         for (int n = 0; n < Input(2).dim(0); n++)
             Db(dYdata + n * y_offset, dBdata);
     }
@@ -57,7 +57,7 @@ void Conv2dTransposeGradientOp<Context>::RunWithType() {
     for (int n = 0; n < Input(2).dim(0); n++) {
         if (Output(1)->name() != "ignore") {
             auto* Xdata = Input(0).template data<T, Context>();
-            auto* dWdata = Output(1)->template mutable_data<T, Context>(ctx());
+            auto* dWdata = Output(1)->template mutable_data<T, Context>();
             Dw(Xdata + n * x_offset, dYdata + n * y_offset, dWdata);
         }
         if (Output(0)->name() != "ignore") {
@@ -70,7 +70,7 @@ void Conv2dTransposeGradientOp<Context>::RunWithType() {
 }
 
 template <class Context>
-void Conv2dTransposeGradientOp<Context>::RunOnDevice() {
+void ConvTranspose2dGradientOp<Context>::RunOnDevice() {
     GradientReshape();
 
     // You really need the CuDNN to help you -:)
@@ -85,21 +85,25 @@ void Conv2dTransposeGradientOp<Context>::RunOnDevice() {
     else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
-DEPLOY_CPU(Conv2dTransposeGradient);
+DEPLOY_CPU(ConvTranspose2dGradient);
 #ifdef WITH_CUDA
-DEPLOY_CUDA(Conv2dTransposeGradient);
+DEPLOY_CUDA(ConvTranspose2dGradient);
 #endif
-OPERATOR_SCHEMA(Conv2dTransposeGradient).NumInputs(3).NumOutputs(3);
 
-class GetConv2dTransposeGradient final : public GradientMakerBase {
+OPERATOR_SCHEMA(ConvTranspose2dGradient)
+    .NumInputs(3).NumOutputs(3);
+
+class GetConvTranspose2dGradient
+    final : public GradientMakerBase {
  public:
-    GRADIENT_MAKER_CTOR(GetConv2dTransposeGradient);
+    GRADIENT_MAKER_CTOR(GetConvTranspose2dGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), I(1), GO(0)},
-            vector<string> {GI(0), GI(1), GI(2)});
+            vector<string>({ I(0), I(1), GO(0) }),
+            vector<string>({ GI(0), GI(1), GI(2) }));
     }
 };
-REGISTER_GRADIENT(Conv2dTranspose, GetConv2dTransposeGradient);
+
+REGISTER_GRADIENT(ConvTranspose2d, GetConvTranspose2dGradient);
 
 }  // namespace dragon

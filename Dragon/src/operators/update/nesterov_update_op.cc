@@ -12,10 +12,10 @@ void NesterovUpdateOp<Context>::ComputeRunWithFloat32() {
 
     lr = Param("base_lr") * this->lr_mult, momentum = Param("momentum");
     auto* dXdata = Input(0).template mutable_data<float, Context>();
-    auto* Hdata = h->template mutable_data<float, Context>(ctx());
+    auto* Hdata = h->template mutable_data<float, Context>();
 
-    kernel::NesterovUpdate<float, Context>(
-        Input(0).count(), lr, momentum, dXdata, Hdata, ctx());
+    kernel::NesterovUpdate(Input(0).count(),
+        lr, momentum, dXdata, Hdata, ctx());
 }
 
 template <class Context>
@@ -30,12 +30,11 @@ void NesterovUpdateOp<Context>::ComputeRunWithFloat16() {
 
     auto* dX32 = dX32T->template mutable_data<float, Context>();
     auto* dX16 = Input(0).template mutable_data<float16, Context>();
-    auto* H32 = h->template mutable_data<float, Context>(ctx());
+    auto* H32 = h->template mutable_data<float, Context>();
 
-    kernel::TypeA2B<float16, float, Context>(
-        Input(0).count(), dX16, dX32, ctx());
-    kernel::NesterovUpdate<float, Context>(
-        Input(0).count(), lr, momentum, dX32, H32, ctx());
+    kernel::TypeA2B(Input(0).count(), dX16, dX32, ctx());
+    kernel::NesterovUpdate(Input(0).count(),
+        lr, momentum, dX32, H32, ctx());
 }
 
 DEPLOY_CPU(NesterovUpdate);

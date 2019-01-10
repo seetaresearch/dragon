@@ -15,7 +15,6 @@ RUN rm /etc/apt/sources.list.d/cuda.list && rm /etc/apt/sources.list.d/nvidia-ml
     libprotobuf-dev \
     protobuf-compiler \
     libopencv-dev \
-    libopenblas-dev \
     libboost-all-dev \
     libnccl2 \
     libnccl-dev \
@@ -38,14 +37,15 @@ RUN pip3 install --no-cache-dir --upgrade setuptools wheel -i https://pypi.tuna.
     pyyaml \
     cython
 
-RUN wget http://dragon.seetatech.com/download/docker/ubuntu-16.04-cuda9.0-cudnn7/3rdparty.zip && \
-    unzip 3rdparty.zip && rm 3rdparty.zip && cd 3rdparty && bash ./setup_mpi.sh && rm -f *.gz && \
-    cd openmpi && ls | grep -v install | xargs rm -r && cp install/bin/mpirun /usr/bin
+RUN git clone --recursive https://github.com/seetaresearch/Dragon.git && \
+    mv Dragon/ThirdParty ./ && rm -rf Dragon
+
+RUN cd ThirdParty/mpi && bash build.sh && rm -rf src *.gz && cp bin/mpirun /usr/bin
 
 RUN git clone https://github.com/seetaresearch/Dragon.git && \
-    cd Dragon/Dragon && rm CMakeLists.txt && \
-    wget http://dragon.seetatech.com/download/docker/ubuntu-16.04-cuda9.0-cudnn7/CMakeLists.txt && \
-    mkdir build && cd build && cmake .. && make install -j8 && cd .. && rm -rf build && \
+    cd Dragon/Dragon && mkdir build && cd build && cmake .. -DTHIRD_PARTY_DIR=/ThirdParty \
+    -DPYTHON_EXECUTABLE=/usr/bin/python3 -DWITH_MPI=ON -DWITH_NCCL=ON -DBUILD_CXX_API=ON && \
+    make install -j $(nproc) && cd .. && rm -rf build && \
     cd python && python3 setup.py install
 
 RUN rm /usr/bin/python && ln -s /usr/bin/python3 /usr/bin/python && ln -s /usr/bin/pip3 /usr/bin/pip

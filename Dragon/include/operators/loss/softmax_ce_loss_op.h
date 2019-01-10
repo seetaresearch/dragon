@@ -25,7 +25,7 @@ class SoftmaxCrossEntropyOp
         const OperatorDef&          def,
         Workspace*                  ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", 1)),
+          axis(OperatorBase::Arg<int64_t>("axis", 1)),
           normalization(OperatorBase::Arg<string>(
               "normalization", "FULL")) {}
     USE_OPERATOR_FUNCTIONS;
@@ -35,7 +35,7 @@ class SoftmaxCrossEntropyOp
     template <typename T> void RunWithType();
 
  protected:
-    TIndex axis, outer_dim, inner_dim;
+    int64_t axis, outer_dim, inner_dim;
     Tensor losses;
     Tensor* prob;
     unique_ptr<OperatorBase> softmax_op;
@@ -50,7 +50,7 @@ class SoftmaxCrossEntropyGradientOp
         const OperatorDef&          def,
         Workspace*                  ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int>("axis", 1)),
+          axis(OperatorBase::Arg<int64_t>("axis", 1)),
           normalization(OperatorBase::Arg<string>(
               "normalization", "FULL")) {}
     USE_OPERATOR_FUNCTIONS;
@@ -59,7 +59,7 @@ class SoftmaxCrossEntropyGradientOp
     template <typename T> void RunWithType();
 
  protected:
-    TIndex axis, outer_dim, inner_dim;
+    int64_t axis, outer_dim, inner_dim;
     Tensor* prob;
     string normalization;
 };

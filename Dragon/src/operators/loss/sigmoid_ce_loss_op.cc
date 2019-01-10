@@ -12,36 +12,33 @@ void SigmoidCrossEntropyOp<Context>::RunWithType() {
     auto* Ldata = losses.template mutable_data<T, Context>();
     auto* Fdata = flags.template mutable_data<T, Context>();
 
-    kernel::SigmoidCrossEntropy<T, Context>(
-        Input(0).count(), Xdata, Tdata, Ldata, Fdata, ctx());
+    kernel::SigmoidCrossEntropy(Input(0).count(),
+        Xdata, Tdata, Ldata, Fdata, ctx());
 
     if (normalization == "UNIT") {
         Output(0)->ReshapeLike(losses);
-        Output(0)->template CopyFrom<Context>(losses, ctx());
-        return;
+        Output(0)->template CopyFrom<Context>(
+            losses, ctx()); return;
     }
 
     T normalizer = 1;
     if (normalization == "VALID") {
         normalizer = std::max(
-            math::ASum<T, Context>(
-                flags.count(), Fdata), 1.f);
+            math::Sum(flags.count(), 
+                1.f, Fdata, ctx()), 1.f);
     } else if (normalization == "BATCH_SIZE") {
         normalizer = Input(0).dim(0);
     } else if (normalization == "FULL") {
         normalizer = Input(0).count();
     }
 
-    T loss = math::ASum<T, Context>(losses.count(), Ldata);
-    Output(0)->Reshape({ 1 });
+    Output(0)->Reshape(vector<int64_t>());
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Set<T, Context>(1, loss / normalizer, Ydata, ctx());
+    math::Sum(losses.count(), 1.f / normalizer, Ldata, Ydata, ctx());
 }
 
 template <class Context>
 void SigmoidCrossEntropyOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  // Enforce SyncStream
-
     CHECK_EQ(Input(0).count(), Input(1).count())
         << "\nNumber of predictions must match the number of labels.";
     losses.ReshapeLike(Input(0));
@@ -64,20 +61,20 @@ void SigmoidCrossEntropyGradientOp<Context>::RunWithType() {
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* Fdata = flags.template mutable_data<T, Context>();
 
-    kernel::SigmoidCrossEntropyGrad<T, Context>(
+    kernel::SigmoidCrossEntropyGrad(
         Input(0).count(), Xdata, Tdata, dXdata, Fdata, ctx());
 
     if (normalization == "UNIT") {
         auto* dYdata = Input(-1).template data<T, Context>();
-        math::Mul<T, Context>(Output(0)->count(),
+        math::Mul(Output(0)->count(),
             dYdata, dXdata, dXdata, ctx()); return;
     }
 
     T normalizer = 1;
     if (normalization == "VALID") {
         normalizer = std::max(
-            math::ASum<T, Context>(
-                flags.count(), Fdata), 1.f);
+            math::Sum(flags.count(), 
+                1.f, Fdata, ctx()), 1.f);
     } else if (normalization == "BATCH_SIZE") {
         normalizer = Input(0).dim(0);
     } else if (normalization == "FULL") {
@@ -85,17 +82,14 @@ void SigmoidCrossEntropyGradientOp<Context>::RunWithType() {
     }
 
     auto* dYdata = Input(-1).template data<T, Context>();
-    T dYdata_host; ctx()->template Copy
-        <T, CPUContext, Context>(
-            1, &dYdata_host, dYdata);
-    math::Scal<T, Context>(Output(0)->count(),
-        dYdata_host / normalizer, dXdata, ctx());
+    T dYHost; ctx()->template Copy
+        <T, CPUContext, Context>(1, &dYHost, dYdata);
+    math::Scale(Output(0)->count(),
+        dYHost / normalizer, dXdata, dXdata, ctx());
 }
 
 template <class Context>
 void SigmoidCrossEntropyGradientOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  // Enforce SyncStream
-
     Output(0)->ReshapeLike(Input(0));
     flags.ReshapeLike(Input(0));
 
@@ -107,7 +101,9 @@ DEPLOY_CPU(SigmoidCrossEntropyGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(SigmoidCrossEntropyGradient);
 #endif
-OPERATOR_SCHEMA(SigmoidCrossEntropyGradient).NumInputs(3).NumOutputs(1);
+
+OPERATOR_SCHEMA(SigmoidCrossEntropyGradient)
+    .NumInputs(3).NumOutputs(1);
 
 class GetSigmoidCrossEntropyGradient
     final : public GradientMakerBase {
@@ -115,10 +111,11 @@ class GetSigmoidCrossEntropyGradient
     GRADIENT_MAKER_CTOR(GetSigmoidCrossEntropyGradient);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(def.type() + "Gradient", "",
-            vector<string> {I(0), I(1), GO(0)},
-            vector<string> {GI(0)});
+            vector<string>({ I(0), I(1), GO(0) }),
+            vector<string>({ GI(0) }));
     }
 };
+
 REGISTER_GRADIENT(
     SigmoidCrossEntropy,
     GetSigmoidCrossEntropyGradient

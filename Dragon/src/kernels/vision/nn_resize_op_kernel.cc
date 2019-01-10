@@ -61,7 +61,6 @@ void _NNResize_NHWC(
 /*! NNResize <T = float32, Device = CPU> */
 
 template <> void NNResize<float, CPUContext>(
-    const int               count,
     const int               N,
     const int               C,
     const int               H,
@@ -88,7 +87,6 @@ template <> void NNResize<float, CPUContext>(
 /*! NNResize <T = float16, Device = CPU> */
 
 template <> void NNResize<float16, CPUContext>(
-    const int               count,
     const int               N,
     const int               C,
     const int               H,
@@ -167,7 +165,6 @@ void _NNResizeGrad_NHWC(
 }
 
 template <> void NNResizeGrad<float, CPUContext>(
-    const int               count,
     const int               N,
     const int               C,
     const int               H,
