@@ -354,15 +354,14 @@ class Function(object):
 
         # Store for future development
         self.meta_graph = meta_graph
-        self.graph_name = meta_graph.name
 
         # Call c api to create graph
-        ws.CreateGraph(meta_graph)
+        self.graph_name = ws.CreateGraph(meta_graph)
 
         # Bind a lambda callback to run this graph
         callback_inputs = self.inputs if explicit_inputs else []
         self.callback = lambda *args, **kwargs: \
-            ws.RunGraph(meta_graph.name, (callback_inputs, args), self.outputs, **kwargs)
+            ws.RunGraph(self.graph_name, (callback_inputs, args), self.outputs, **kwargs)
 
         # Self return
         return self
@@ -386,7 +385,7 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
     ----------
     inputs : sequence of Tensor, optional
         The inputs to feed.
-    inputs : sequence of Tensor, optional
+    outputs : sequence of Tensor, optional
         The outputs to fetch.
     givens : dict of Tensor, optional
         The substitutions to use.

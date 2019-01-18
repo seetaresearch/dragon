@@ -57,7 +57,7 @@ void MaximumOp<Context>::RunOnDevice() {
     else if (XIsType(Input(0), double)) RunWithType<double>();
     else LOG(FATAL) << DTypeHelper(Input(0), {
         "int8", "uint8", "int32", "int64",
-        "float16", "float32", "float64",
+            "float16", "float32", "float64",
     });
 }
 

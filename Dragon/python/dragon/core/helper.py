@@ -391,9 +391,12 @@ class OperatorHelper(object):
     @classmethod
     def _apply_Gather(cls, arguments, inputs, outputs):
         outputs[0].dtype = inputs[0].dtype
+        axis = arguments['axis']
         try:
-            outputs[0].shape = inputs[0].shape[:]
-            outputs[0].shape[arguments['axis']] = None
+            outputs[0].shape = \
+                inputs[0].shape[:axis] + \
+                    inputs[1].shape[:] + \
+                        inputs[0].shape[axis + 1:]
         except:
             pass
         return outputs

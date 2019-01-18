@@ -6,134 +6,93 @@ namespace dragon {
 
 namespace kernel {
 
-/*! CanonicalAxis <T = int32, Device = CPU> */
-
-template <> void CanonicalAxis<int, CPUContext>(
-    const int               count,
-    const int               dim,
-    int*                    y,
-    CPUContext*             ctx) {
-#ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
-#endif
-    for (int i = 0; i < count; ++i) if (y[i] < 0) y[i] += dim;
-}
-
 /*! Gather <T = ?, Device = CPU> */
 
 template <typename T>
 void _Gather(
-    const int               count,
     const int               outer_dim,
     const int               inner_dim,
     const int               x_slice_dim,
     const int               y_slice_dim,
-    const int*              indices,
+    const int64_t*          indices,
     const T*                x,
     T*                      y,
     CPUContext*             ctx) {
-    int64_t x_offset, y_offset, x_idx_offset, y_idx_offset;
-    for (int i = 0; i < y_slice_dim; ++i) {
-        y_idx_offset = i;
-        x_idx_offset = indices[y_idx_offset];
-        for (int n = 0; n < outer_dim; ++n) {
-            x_offset = (n * x_slice_dim + x_idx_offset) * inner_dim;
-            y_offset = (n * y_slice_dim + y_idx_offset) * inner_dim;
+    int64_t x_offset, select_idx;
+    for (int n = 0; n < outer_dim; ++n) {
+        for (int i = 0; i < y_slice_dim; ++i) {
+            select_idx = indices[i];
+            select_idx = select_idx >= 0 ?
+                select_idx : select_idx + x_slice_dim;
+            x_offset = (n * x_slice_dim + select_idx) * inner_dim;
             ctx->Copy<T, CPUContext, CPUContext>(
-                inner_dim, y + y_offset, x + x_offset);
+                inner_dim, y, x + x_offset);
+            y += inner_dim;
         }
     }
-}
-
-/*! Gather <T = float32, Device = CPU> */
-
-template <> void Gather<float, CPUContext>(
-    const int               count,
-    const int               outer_dim,
-    const int               inner_dim,
-    const int               x_slice_dim,
-    const int               y_slice_dim,
-    const int*              indices,
-    const float*            x,
-    float*                  y,
-    CPUContext*             ctx) {
-    _Gather<float>(count, outer_dim, inner_dim,
-        x_slice_dim, y_slice_dim, indices, x, y, ctx);
-}
-
-/*! Gather <T = int32, Device = CPU> */
-
-template <> void Gather<int, CPUContext>(
-    const int               count,
-    const int               outer_dim,
-    const int               inner_dim,
-    const int               x_slice_dim,
-    const int               y_slice_dim,
-    const int*              indices,
-    const int*              x,
-    int*                    y,
-    CPUContext*             ctx) {
-    _Gather<int>(count, outer_dim, inner_dim,
-        x_slice_dim, y_slice_dim, indices, x, y, ctx);
 }
 
 /*! GatherGrad <T = ?, Device = CPU> */
 
 template <typename T>
 void _GatherGrad(
-    const int               count,
     const int               outer_dim,
     const int               inner_dim,
     const int               x_slice_dim,
     const int               y_slice_dim,
-    const int*              indices,
+    const int64_t*          indices,
     const T*                dy,
     T*                      dx,
     CPUContext*             ctx) {
-    int64_t x_offset, y_offset, x_idx_offset, y_idx_offset;
-    for (int i = 0; i < y_slice_dim; ++i) {
-        y_idx_offset = i;
-        x_idx_offset = indices[y_idx_offset];
-        for (int n = 0; n < outer_dim; ++n) {
-            x_offset = (n * x_slice_dim + x_idx_offset) * inner_dim;
-            y_offset = (n * y_slice_dim + y_idx_offset) * inner_dim;
+    int64_t x_offset, select_idx;
+    for (int n = 0; n < outer_dim; ++n) {
+        for (int i = 0; i < y_slice_dim; ++i) {
+            select_idx = indices[i];
+            select_idx = select_idx >= 0 ?
+                select_idx : select_idx + x_slice_dim;
+            x_offset = (n * x_slice_dim + select_idx) * inner_dim;
             math::Add<T, CPUContext>(inner_dim,
-                dy + y_offset, dx + x_offset, dx + x_offset, ctx);
+                dy, dx + x_offset, dx + x_offset, ctx);
+            dy += inner_dim;
         }
     }
 }
 
-/*! GatherGrad <T = float32, Device = CPU> */
+/*! Kernel Launchers */
 
-template <> void GatherGrad<float, CPUContext>(
-    const int               count,
-    const int               outer_dim,
-    const int               inner_dim,
-    const int               x_slice_dim,
-    const int               y_slice_dim,
-    const int*              indices,
-    const float*            dy,
-    float*                  dx,
-    CPUContext*             ctx) {
-    _GatherGrad<float>(count, outer_dim, inner_dim,
-        x_slice_dim, y_slice_dim, indices, dy, dx, ctx);
-}
+#define DEFINE_GATHER_KERNEL_LAUNCHER(name, T) \
+    template <> void name<T, CPUContext>( \
+        const int               outer_dim, \
+        const int               inner_dim, \
+        const int               x_slice_dim, \
+        const int               y_slice_dim, \
+        const int64_t*          indices, \
+        const T*                x, \
+        T*                      y, \
+        CPUContext*             ctx) { \
+        _##name<T> \
+            (outer_dim, inner_dim, x_slice_dim, \
+                y_slice_dim, indices, x, y, ctx); \
+    }
 
-/*! GatherGrad <T = int32, Device = CPU> */
+DEFINE_GATHER_KERNEL_LAUNCHER(Gather, bool);
+DEFINE_GATHER_KERNEL_LAUNCHER(Gather, int8_t);
+DEFINE_GATHER_KERNEL_LAUNCHER(Gather, uint8_t);
+DEFINE_GATHER_KERNEL_LAUNCHER(Gather, int);
+DEFINE_GATHER_KERNEL_LAUNCHER(Gather, int64_t);
+DEFINE_GATHER_KERNEL_LAUNCHER(Gather, float16);
+DEFINE_GATHER_KERNEL_LAUNCHER(Gather, float);
+DEFINE_GATHER_KERNEL_LAUNCHER(Gather, double);
 
-template <> void GatherGrad<int, CPUContext>(
-    const int               count,
-    const int               outer_dim,
-    const int               inner_dim,
-    const int               x_slice_dim,
-    const int               y_slice_dim,
-    const int*              indices,
-    const int*              dy,
-    int*                    dx,
-    CPUContext*             ctx) {
-    _GatherGrad<int>(count, outer_dim, inner_dim,
-        x_slice_dim, y_slice_dim, indices, dy, dx, ctx);
-}
+DEFINE_GATHER_KERNEL_LAUNCHER(GatherGrad, int8_t);
+DEFINE_GATHER_KERNEL_LAUNCHER(GatherGrad, uint8_t);
+DEFINE_GATHER_KERNEL_LAUNCHER(GatherGrad, int);
+DEFINE_GATHER_KERNEL_LAUNCHER(GatherGrad, int64_t);
+DEFINE_GATHER_KERNEL_LAUNCHER(GatherGrad, float16);
+DEFINE_GATHER_KERNEL_LAUNCHER(GatherGrad, float);
+DEFINE_GATHER_KERNEL_LAUNCHER(GatherGrad, double);
+
+#undef DEFINE_GATHER_KERNEL_LAUNCHER
 
 }  // namespace kernel
 

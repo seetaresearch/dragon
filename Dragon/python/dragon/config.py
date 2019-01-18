@@ -270,7 +270,7 @@ def ExportMetaGraph(prefix=''):
 
     These text files will be saved as the following format:
 
-    ``prefix/Graph_xxx.metatxt``
+        *prefix/Graph.metatxt*
 
     Note that an empty prefix will leads to invalid exporting.
 
@@ -293,12 +293,12 @@ def SetLoggingLevel(level):
 
     Parameters
     ----------
-    level : str
-        The level, ``DEBUG``, ``INFO``, ``WARNING``, ``ERROR`` or ``FATAL``.
+    level : {'DEBUG', 'INFO, 'WARNING', 'ERROR', 'FATAL'}, required
+        The logging level.
 
     Notes
     -----
-    The default level is ``INFO``.
+    The default level is *INFO*.
 
     """
     C.SetLogLevelCC(level)

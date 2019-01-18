@@ -1,6 +1,6 @@
 #include "core/operator_schema.h"
 #include "utils/proto_utils.h"
-#include "contrib/onnx/onnx_backend.h"
+#include "onnx/onnx_backend.h"
 
 namespace dragon {
 

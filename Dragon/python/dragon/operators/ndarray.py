@@ -17,10 +17,10 @@ from . import *
 
 
 @OpSchema.Inputs(1)
-def Gather(inputs, indices, axis=0, acc_gradient=False, **kwargs):
+def Gather(inputs, indices, axis=0, zero_grad=True, **kwargs):
     """Gather the input according to the indices along the given axis.
 
-    **Type Constraints**: (*int32*, *float32*)
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
@@ -30,7 +30,7 @@ def Gather(inputs, indices, axis=0, acc_gradient=False, **kwargs):
         The indices to form output tensor.
     axis : int, optional
         The start axis, can be negative.
-    acc_gradient : bool, optional
+    zero_grad : bool, optional
         Whether to accumulate the gradients.
 
     Returns
@@ -40,24 +40,10 @@ def Gather(inputs, indices, axis=0, acc_gradient=False, **kwargs):
 
     """
     arguments = ParseArgs(locals())
-
-    arguments['inputs'], arguments['indices'] = [arguments['inputs'],
-        Tensor.Convert(indices, dtype='int32')], None
-
-    output = Tensor.CreateOperator('Gather', **arguments)
-
-    try:
-        output.shape = inputs.shape[:]
-        if not isinstance(indices, Tensor):
-            if not isinstance(indices, (list, tuple)):
-                indices = [indices]
-            output.shape[axis] = len(indices)
-        else:
-            output.shape[axis] = None
-    except:
-        pass
-
-    return output
+    arguments['inputs'], arguments['indices'] = \
+        [arguments['inputs'], Tensor.Convert(
+            indices, dtype='int64')], None
+    return Tensor.CreateOperator('Gather', **arguments)
 
 
 @OpSchema.Inputs(1)

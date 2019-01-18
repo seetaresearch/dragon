@@ -3,7 +3,7 @@
 #include "core/common.h"
 #include "utils/proto_utils.h"
 #include "utils/caffemodel.h"
-#include "contrib/onnx/onnx_backend.h"
+#include "onnx/onnx_backend.h"
 
 #include "dragon.h"
 

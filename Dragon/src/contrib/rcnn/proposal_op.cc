@@ -80,7 +80,7 @@ void ProposalOp<Context>::RunWithType(
                 anchors_.Reshape({ A, 4 });
 
                 rcnn::GenerateAnchors<BT>(strides[i],
-                    (int)ratios.size(), 1, &ratios[0], &scales[0],
+                    (int)ratios.size(), 1, &ratios[0], &scales[i],
                         anchors_.template mutable_data<BT, CPUContext>());
 
                 rcnn::GenerateGridAnchors<BT>(

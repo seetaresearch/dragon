@@ -283,14 +283,16 @@ code.docutils.literal:hover {
 
 dt {
     font-weight: 700;
-    background: #e7f2fa;
+    background: #f7f7f7;
     border-bottom: solid #0079b2;
-    border-radius: 1px;
+    border-radius: 8px;
     margin-bottom: 20px;
+    padding: 8px;
+    width: 75%;
 }
 
 dt:target, .highlighted {
-    background-color: #e7f2fa;
+    background-color: #f7f7f7;
     border-bottom: 3px solid #c7254e;
 }
 
@@ -299,7 +301,7 @@ dt:target:before {
     content: '';
     display: block;
     height: 65px;
-    margin: -20px 0 0;
+    margin: -20px -8px 8px;
 }
 
 dl.method dt {

@@ -60,6 +60,7 @@ class Gather(BaseModule):
             'n_inputs': 2, 'n_outputs': 1,
             'arguments': {
                 'axis': self.axis,
+                'zero_grad': True,
             }
         }
 

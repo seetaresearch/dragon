@@ -1,4 +1,4 @@
-#include "contrib/onnx/onnx_backend.h"
+#include "onnx/onnx_backend.h"
 
 namespace dragon {
 

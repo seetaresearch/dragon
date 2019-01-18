@@ -15,6 +15,27 @@ void DropBlock2dOp<Context>::RunWithType() {
                 Output(0)->count(), Ydata, Xdata);
         }
     } else if (phase() == "TRAIN") {
+        if (data_format == "NCHW") {
+            n = Input(0).dim(0), c = Input(0).dim(1);
+            h = Input(0).dim(2), w = Input(0).dim(3);
+        } else if (data_format == "NHWC") {
+            n = Input(0).dim(0), c = Input(0).dim(-1);
+            h = Input(0).dim(1), w = Input(0).dim(2);
+        }
+
+        seed_h = h - block_size + 1;
+        seed_w = w - block_size + 1;
+
+        CHECK(seed_h > 0 && seed_w > 0)
+            << "\nExcepted block_size <= feat_size.";
+
+        if (decrement > 0 && apply_prob > keep_prob()) {
+            apply_prob -= decrement;
+        } else { apply_prob = keep_prob(); }
+
+        gamma = (1.f - apply_prob) / (block_size * block_size);
+        gamma *= (alpha * (h * w) / (seed_h * seed_w));
+
         auto* mask = ws()->CreateTensor(mount_name(
             "drop_block/mask"))->ReshapeLike(Input(0));
         auto* norm = ws()->CreateTensor(mount_name(
@@ -58,28 +79,7 @@ void DropBlock2dOp<Context>::RunWithType() {
 
 template <class Context>
 void DropBlock2dOp<Context>::RunOnDevice() {
-    if (data_format == "NCHW") {
-        n = Input(0).dim(0), c = Input(0).dim(1);
-        h = Input(0).dim(2), w = Input(0).dim(3);
-    } else if (data_format == "NHWC") {
-        n = Input(0).dim(0), c = Input(0).dim(-1);
-        h = Input(0).dim(1), w = Input(0).dim(2);
-    }
-
-    seed_h = h - block_size + 1;
-    seed_w = w - block_size + 1;
-
-    CHECK(seed_h > 0 && seed_w > 0) 
-        << "\nExcepted block_size <= feat_size.";
-
     Output(0)->ReshapeLike(Input(0));
-
-    if (decrement > 0 && apply_prob > keep_prob()) {
-        apply_prob -= decrement;
-    } else { apply_prob = keep_prob(); }
-
-    gamma = (1.f - apply_prob) / (block_size * block_size);
-    gamma *= (alpha * (h * w) / (seed_h * seed_w));
 
     if (XIsType(Input(0), float)) RunWithType<float>();
     else if (XIsType(Input(0), float16)) RunWithType<float16>();

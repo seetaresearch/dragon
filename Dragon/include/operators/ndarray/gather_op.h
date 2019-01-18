@@ -39,15 +39,15 @@ class GatherGradientOp final : public Operator<Context> {
     GatherGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
           axis(OperatorBase::Arg<int64_t>("axis", 0)),
-          acc_grad(OperatorBase::Arg<bool>("acc_gradient", false)) {}
+          zero_grad(OperatorBase::Arg<bool>("zero_grad", true)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();
 
  protected:
+    bool zero_grad;
     int64_t axis, outer_dim, inner_dim, x_slice_dim, y_slice_dim;
-    bool acc_grad;
 };
 
 }  // namespace dragon

@@ -11,7 +11,7 @@
 #ifndef DRAGON_PYTHON_PY_ONNX_H_
 #define DRAGON_PYTHON_PY_ONNX_H_
 
-#include "contrib/onnx/onnx_backend.h"
+#include "onnx/onnx_backend.h"
 
 #include "py_dragon.h"
 

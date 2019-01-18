@@ -601,32 +601,23 @@ void ArgMin(
 /*! ndarray.gather */
 
 template <typename T, class Context>
-void CanonicalAxis(
-    const int               count,
-    const int               dim,
-    T*                      y,
-    Context*                ctx);
-
-template <typename T, class Context>
 void Gather(
-    const int               count,
     const int               outer_dim,
     const int               inner_dim,
     const int               x_slice_dim,
     const int               y_slice_dim,
-    const int*              indices,
+    const int64_t*          indices,
     const T*                x,
     T*                      y,
     Context*                ctx);
 
 template <typename T, class Context>
 void GatherGrad(
-    const int               count,
     const int               outer_dim,
     const int               inner_dim,
     const int               x_slice_dim,
     const int               y_slice_dim,
-    const int*              indices,
+    const int64_t*          indices,
     const T*                dy,
     T*                      dx,
     Context*                ctx);

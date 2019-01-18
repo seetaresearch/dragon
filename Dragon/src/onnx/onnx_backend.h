@@ -1,21 +1,21 @@
 /*!
-* Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
-*
-* Licensed under the BSD 2-Clause License.
-* You should have received a copy of the BSD 2-Clause License
-* along with the software. If not, See,
-*
-*      <https://opensource.org/licenses/BSD-2-Clause>
-*
-* Codes are based on:
-*
-*      <https://github.com/pytorch/pytorch/blob/master/caffe2/onnx/backend.h>
-*
-* ------------------------------------------------------------
-*/
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *      <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * Codes are based on:
+ *
+ *      <https://github.com/pytorch/pytorch/blob/master/caffe2/onnx/backend.h>
+ *
+ * ------------------------------------------------------------
+ */
 
-#ifndef DRAGON_CONTRIB_ONNX_ONNX_BACKEND_H_
-#define DRAGON_CONTRIB_ONNX_ONNX_BACKEND_H_
+#ifndef DRAGON_ONNX_ONNX_BACKEND_H_
+#define DRAGON_ONNX_ONNX_BACKEND_H_
 
 #include "core/common.h"
 #include "proto/onnx.pb.h"
@@ -228,4 +228,4 @@ class ONNXBackend {
 
 }  // namespace dragon
 
-#endif  // DRAGON_CONTRIB_ONNX_ONNX_BACKEND_H_
+#endif  // DRAGON_ONNX_ONNX_BACKEND_H_

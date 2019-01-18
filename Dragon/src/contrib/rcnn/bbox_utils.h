@@ -188,16 +188,16 @@ inline void RetrieveRoIs(
 
 template <typename T>
 inline int roi_level(
-    const int                       min_level,  //  e.g. 2
-    const int                       max_level,  //  e.g. 5
-    const int                       canonical_level,  //  e.g. 4
-    const int                       canonical_scale,  //  e.g. 224
+    const int                       min_level,
+    const int                       max_level,
+    const int                       canonical_level,
+    const int                       canonical_scale,
     T*                              roi) {
     T w = roi[3] - roi[1] + 1;
     T h = roi[4] - roi[2] + 1;
     // Refer the settings of paper
-    int level = canonical_level + (int)std::log(
-            std::max(std::sqrt(w * h), (T)1) / (T)canonical_scale);
+    int level = canonical_level + std::log2(
+        std::max(std::sqrt(w * h), (T)1) / (T)canonical_scale);
     return std::min(max_level, std::max(min_level, level));
 }
 

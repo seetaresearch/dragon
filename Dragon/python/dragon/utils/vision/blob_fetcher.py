@@ -20,7 +20,7 @@ from multiprocessing import Process
 class BlobFetcher(Process):
     """BlobFetcher is deployed to queue blobs from `DataTransformer`_.
 
-    It is supported to form ``NHWC`` image blobs and ``1D`` label blobs.
+    It is supported to form *NHWC* image blobs and *1d* label blobs.
 
     """
     def __init__(self, **kwargs):

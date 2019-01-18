@@ -283,9 +283,7 @@ def Pool2d(
 
 @OpSchema.Inputs(2)
 def ROIPool(inputs, pool_h, pool_w, spatial_scale=1.0, **kwargs):
-    """Max RoI Pooling. `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
-
-    The first dimension of input must be ``1``.
+    """Max RoIPooling. `[Girshick, 2015] <https://arxiv.org/abs/1504.08083>`_.
 
     **Type Constraints**: (*float16*, *float32*)
 
@@ -311,9 +309,7 @@ def ROIPool(inputs, pool_h, pool_w, spatial_scale=1.0, **kwargs):
 
 @OpSchema.Inputs(2)
 def ROIAlign(inputs, pool_h=0, pool_w=0, spatial_scale=1.0, sampling_ratio=2, **kwargs):
-    """AVG ROIAlign. `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
-
-    The first dimension of input must be ``1``.
+    """AVG RoIAlign. `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
 
     **Type Constraints**: (*float16*, *float32*)
 
