@@ -13,23 +13,21 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon as dg
 import numpy as np
+import dragon as dg
 
-import dragon.core.proto_utils as pb_utils
+from dragon.core import proto_utils as pb_utils
 from dragon.vm.torch.module import Module
 
 
 class BaseModule(Module):
     def __init__(self, key, ctx, **kwargs):
         super(BaseModule, self).__init__()
-        self._persistent_key = key
+        self._module_key = key
         self._ctx = ctx
-        self._args_dev = pb_utils.GetDeviceOption('CPU').SerializeToString()
+        self._args_dev = pb_utils.GetDeviceOption(
+            'CPU').SerializeToString()
 
-    def register_argument(self, name):
-        with dg.name_scope(self.persistent_key):
-            return dg.Tensor(name).Variable().name
-
-    def set_argument_i(self, name, value):
-        dg.C.FeedTensorCC(name, np.array([value], dtype=np.int64), self._args_dev)
+    def set_argument_i64(self, name, value):
+        dg.C.FeedTensor(name, np.array(
+            value, dtype=np.int64), self._args_dev)

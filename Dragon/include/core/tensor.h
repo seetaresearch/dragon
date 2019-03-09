@@ -80,7 +80,7 @@ class Tensor {
     int ndim() const { return (int)dims_.size(); }
 
     /*! \brief Return the dimension of given axis */
-    int64_t dim(const int64_t i) const{ return dims_[axis(i)]; }
+    int64_t dim(int64_t i) const{ return dims_[axis(i)]; }
 
     /*! \brief Return all the dimensions */
     const vector<int64_t>& dims() const { return dims_; }
@@ -95,7 +95,7 @@ class Tensor {
     size_t capacity() const { return capacity_; }
 
     /*! \brief Return the number of elements along the [start, end) axes */
-    int64_t count(const int64_t start, const int64_t end) const {
+    int64_t count(int64_t start, int64_t end) const {
         int64_t nelements = 1;
         for (int64_t i = start; i < end; i++) nelements *= dim(i);
         return nelements;
@@ -105,10 +105,10 @@ class Tensor {
     int64_t count() const { return (int64_t)size_; }
 
     /*! \brief Return the number of elements from the start axis */
-    int64_t count(const int64_t start) const { return count(start, ndim()); }
+    int64_t count(int64_t start) const { return count(start, ndim()); }
 
     /*! \brief Return the stride of given axis */
-    int64_t stride(const int64_t i) const { return strides_[axis(i)]; }
+    int64_t stride(int64_t i) const { return strides_[axis(i)]; }
 
     /*! \brief Return all the strides */
     const vector<int64_t>& strides() const { return strides_; }
@@ -128,11 +128,11 @@ class Tensor {
     /*! \brief Return a string to describe the dimensions of this tensor */
     string DimString() const { return DimString(dims_); }
 
-    /*! \brief Whether the memory of this tensor is unstable */
-    bool is_corrupted() const { return is_corrupted_; }
+    /*! \brief Return the version of this tensor */
+    int version() const { return version_; }
 
-    /*! \brief Mark the internal memory to be unstable */
-    void Corrupt() { is_corrupted_ = true; }
+    /*! \brief Set the version of this tensor */
+    void set_version(int version) { version_ = version; }
 
     /*! \brief Whether this tensor holds a valid memory */
     bool has_memory() const { return memory_ || ex_memory_ != nullptr; }
@@ -152,10 +152,10 @@ class Tensor {
         return memory()->state();
     }
 
-    /*! \brief Switch the memory to device set by Context before */
-    void SwitchToDevice() {
+    /*! \brief Switch the memory to the specific device */
+    void SwitchToDevice(int device_id) {
         MixedMemory* mem = memory();
-        if (mem) mem->SwitchToDevice();
+        if (mem) mem->SwitchToDevice(device_id);
     }
 
     /*! \brief Return the type meta of this tensor */
@@ -177,10 +177,10 @@ class Tensor {
         } else {
             if (TypeMeta::Id<Context>() ==
                 TypeMeta::Id<CPUContext>()) {
-                *data_ptr = mem->mutable_cpu_data();
+                *data_ptr = mem->mutable_cpu_data(nbytes());
             } else if (TypeMeta::Id<Context>() ==
                 TypeMeta::Id<CUDAContext>()) {
-                *data_ptr = mem->mutable_cuda_data();
+                *data_ptr = mem->mutable_cuda_data(nbytes());
             } else if (TypeMeta::Id<Context>() ==
                 TypeMeta::Id<CNMLContext>()) {
                 *data_ptr = mem->mutable_cnml_data();
@@ -198,10 +198,10 @@ class Tensor {
         CHECK(mem) << "\nMemory access before allowcating.";
         if (TypeMeta::Id<Context>() ==
             TypeMeta::Id<CPUContext>()) {
-            return mem->cpu_data();
+            return mem->cpu_data(nbytes());
         } else if (TypeMeta::Id<Context>() ==
             TypeMeta::Id<CUDAContext>()) {
-            return mem->cuda_data();
+            return mem->cuda_data(nbytes());
         } else if (TypeMeta::Id<Context>() ==
             TypeMeta::Id<CNMLContext>()) {
             return mem->cnml_data();
@@ -258,10 +258,18 @@ class Tensor {
     T* mutable_data() {
         void* data_ptr;
         mutable_data_ptr<Context>(&data_ptr);
-        if (data_ptr && meta_ == TypeMeta::Make<T>())
-            return static_cast<T*>(data_ptr);
-        return static_cast<T*>(
-            raw_mutable_data<Context>(TypeMeta::Make<T>()));
+        if (data_ptr) {
+            auto meta = TypeMeta::Make<T>();
+            if (meta_ == meta) {
+                return static_cast<T*>(data_ptr);
+            } else if (capacity_ >=
+                size_ * meta.itemsize()) {
+                meta_ = meta;
+                return static_cast<T*>(data_ptr);
+            }
+        }
+        return static_cast<T*>(raw_mutable_data
+            <Context>(TypeMeta::Make<T>()));
     }
 
     /*! \brief Get the typed const data pointer */
@@ -325,6 +333,9 @@ class Tensor {
     /*! \brief Store the size and capacity */
     size_t size_ = 0, capacity_ = 0;
 
+    /*! \brief Store the version for shared tensor */
+    int version_ = -1;
+
     /*! \brief Store the dimensions and strides */
     vector<int64_t> dims_, strides_;
 
@@ -335,7 +346,7 @@ class Tensor {
     MixedMemory* ex_memory_ = nullptr;
 
     /*! \brief External memory indicators */
-    bool is_corrupted_ = false, is_shared_ = false, own_mem_ = true;
+    bool is_shared_ = false, own_mem_ = true;
 };
 
 }  // namespace dragon

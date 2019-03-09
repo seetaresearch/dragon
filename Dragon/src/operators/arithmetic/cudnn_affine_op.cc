@@ -25,7 +25,7 @@ void CuDNNAffineOpBase<Context>::ResetDesc(const Tensor& X) {
     vector<int64_t> input_dims = X.dims();
     // CuDNN requires ndimensions range from [4, 5]
     if (input_dims.size() < 4) input_dims.resize(4, 1);
-    else if (input_dims.size() > 5) 
+    else if (input_dims.size() > 5)
         LOG(FATAL) << "CuDNN Affine the dimensions up to 5.";
     cudnnSetTensorDesc<T>(&input_desc, input_dims);
     // Determine the scale desc
@@ -92,7 +92,7 @@ void CuDNNAffineGradientOp<Context>::RunWithType() {
     sum_dim = std::max(outer_dim, inner_dim);
     Output(0)->ReshapeLike(Input(-1));
 
-    auto* dYdata = Input(-1).template data<DT, Context>();
+    auto* dYdata = Input(-1).template mutable_data<DT, Context>();
     auto* Adata = Input(1).template data<DT, Context>();
     auto* dXdata = Output(0)->template mutable_data<DT, Context>();
 
@@ -107,17 +107,9 @@ void CuDNNAffineGradientOp<Context>::RunWithType() {
         auto* dAdata = Output(1)->template mutable_data<DT, Context>();
         // Eltwise
         if (Input(0).count() == Input(1).count()) {
-            CUDNN_CHECK(cudnnOpTensor(
-                ctx()->cudnn_handle(), mul_desc,
-                    CUDNNType<DT>::one, input_desc, Xdata,
-                        CUDNNType<DT>::one, input_desc, dYdata,
-                            CUDNNType<DT>::one, param_desc, dAdata));
+            math::Mul(Output(0)->count(), dYdata, Xdata, dAdata, ctx());
         } else {
-            CUDNN_CHECK(cudnnOpTensor(
-                ctx()->cudnn_handle(), mul_desc,
-                    CUDNNType<DT>::one, input_desc, Xdata,
-                        CUDNNType<DT>::one, input_desc, dYdata,
-                            CUDNNType<DT>::zero, input_desc, dXdata));
+            math::Mul(Output(0)->count(), dYdata, Xdata, dXdata, ctx());
 #if CUDNN_VERSION_MIN(6, 0, 0)
             ComputeScaleGradient<DT, CT>(dXdata, dAdata);
 #else
@@ -132,23 +124,25 @@ void CuDNNAffineGradientOp<Context>::RunWithType() {
         auto* dBdata = Output(2)->template mutable_data<DT, Context>();
         // Eltwise
         if (Input(-1).count() == Input(1).count()) {
-            math::Axpy<DT, Context>(Output(2)->count(),
-                1.f, dYdata, dBdata, ctx());
+            ctx()->template Copy<DT, Context, Context>(
+                Output(2)->count(), dBdata, dYdata);
         } else {
 #if CUDNN_VERSION_MIN(6, 0, 0)
-            ComputeBiasGradient<DT, CT>(dYdata, dBdata);
+            ComputeScaleGradient<DT, CT>(dYdata, dBdata);
 #else
-            ComputeBiasGradient_v2<DT>(dYdata, dBdata);
+            ComputeScaleGradient_v2<DT>(dYdata, dBdata);
 #endif
         }
     }
 
     // dX = alpha * dY
-    CUDNN_CHECK(cudnnOpTensor(
-        ctx()->cudnn_handle(), mul_desc,
-            CUDNNType<DT>::one, input_desc, dYdata,
-                CUDNNType<DT>::one, param_desc, Adata,
-                    CUDNNType<DT>::zero, input_desc, dXdata));
+    if (Output(0)->name() != "ignore") {
+        CUDNN_CHECK(cudnnOpTensor(
+            ctx()->cudnn_handle(), mul_desc,
+                CUDNNType<DT>::one, input_desc, dYdata,
+                    CUDNNType<DT>::one, param_desc, Adata,
+                        CUDNNType<DT>::zero, input_desc, dXdata));
+    }
 }
 
 template <class Context> template <typename DT, typename CT>
@@ -169,7 +163,7 @@ void CuDNNAffineGradientOp<Context>::ComputeScaleGradient(
         ctx()->cudnn_handle(), reduce_desc,
             nullptr, 0, WSdata, workspace_size,
                 CUDNNType<DT>::one, input_desc, dYxX,
-                    CUDNNType<DT>::one, param_desc, dA));
+                    CUDNNType<DT>::zero, param_desc, dA));
 #endif
 }
 
@@ -178,62 +172,25 @@ void CuDNNAffineGradientOp<Context>::ComputeScaleGradient_v2(
     T*                      dYxX,
     T*                      dA) {
     DECLARE_MULTIPLIER(multiplier, sum_dim);
-    sum_result.Reshape({ outer_dim * scale_dim });
-
     T* SRes_data = nullptr;
     // Reduce inner dimensions
     if (inner_dim == 1) {
         SRes_data = dYxX;
     } else {
         SRes_data = (outer_dim == 1) ?
-            dA : sum_result.template mutable_data<T, Context>();
+            dA : ws()->template caches<T, Context>(
+                { outer_dim * scale_dim })[0];
         math::Gemv(
-            CblasNoTrans, sum_result.count(), inner_dim,
+            CblasNoTrans, outer_dim * scale_dim, inner_dim,
                 1.f, dYxX, multiplier,
-                    SRes_data == dA ? 1.f : 0.f, SRes_data, ctx());
+                    0.f, SRes_data, ctx());
     }
     // Reduce outer dimensions
     if (outer_dim != 1) {
         math::Gemv(
             CblasTrans, outer_dim, scale_dim,
                 1.f, SRes_data, multiplier,
-                    1.f, dA, ctx());
-    }
-}
-
-template <class Context> template <typename DT, typename CT>
-void CuDNNAffineGradientOp<Context>::ComputeBiasGradient(
-    const DT*               dY,
-    DT*                     dB) {
-#if CUDNN_VERSION_MIN(6, 0, 0)
-    CUDNN_CHECK(cudnnSetReduceTensorDescriptor(
-        reduce_desc, CUDNN_REDUCE_TENSOR_ADD,
-            CUDNNType<CT>::type, CUDNN_PROPAGATE_NAN,
-                CUDNN_REDUCE_TENSOR_NO_INDICES, CUDNN_32BIT_INDICES));
-    size_t workspace_size = 0;
-    CUDNN_CHECK(cudnnGetReductionWorkspaceSize(
-        ctx()->cudnn_handle(), reduce_desc,
-            input_desc, param_desc, &workspace_size));
-    auto* WSdata = ws()->template caches<Context>({ workspace_size })[0];
-    CUDNN_CHECK(cudnnReduceTensor(
-        ctx()->cudnn_handle(), reduce_desc,
-            nullptr, 0, WSdata, workspace_size,
-                CUDNNType<DT>::one, input_desc, dY,
-                    CUDNNType<DT>::one, param_desc, dB));
-#endif
-}
-
-template <class Context> template <typename T>
-void CuDNNAffineGradientOp<Context>::ComputeBiasGradient_v2(
-    const T*        dY,
-    T*              dB) {
-    DECLARE_MULTIPLIER(multiplier, inner_dim);
-    for (int n = 0; n < outer_dim; n++) {
-        math::Gemv(
-            CblasNoTrans, scale_dim, inner_dim,
-                1.f, dY, multiplier,
-                    1.f, dB, ctx());
-        dY += dim;
+                    0.f, dA, ctx());
     }
 }
 

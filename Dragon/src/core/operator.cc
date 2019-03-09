@@ -4,6 +4,8 @@
 
 namespace dragon {
 
+/*! Default constructor of <OperatorBase> */
+
 OperatorBase::OperatorBase(
     const OperatorDef&          def,
     Workspace*                  ws)
@@ -14,29 +16,42 @@ OperatorBase::OperatorBase(
         args_[arg.name()] = &arg;
         if (arg.name() == "anchor") anchor_ = arg.s();
     }
+    string tensor_name; size_t ver_pos;
     for (auto& input : def.input()) {
-        auto* tensor = ws->GetTensor(input);
+        tensor_name = input;
+        if ((ver_pos = input.find("/ver:")) != string::npos)
+            tensor_name = input.substr(0, ver_pos);
+        auto* tensor = ws->GetTensor(tensor_name);
         inputs_.push_back(tensor);
     }
     for (auto& output : def.output()) {
-        auto* tensor = ws->CreateTensor(output);
+        tensor_name = output;
+        if ((ver_pos = output.find("/ver:")) != string::npos)
+            tensor_name = output.substr(0, ver_pos);
+        auto* tensor = ws->CreateTensor(tensor_name);
         outputs_.push_back(tensor);
     }
 }
 
-inline Tensor& OperatorBase::Input(int idx) {
+/*! Return the specified input tensor */
+
+Tensor& OperatorBase::Input(int idx) {
     CHECK_LT(idx, (int)inputs_.size());
     CHECK_GE(idx, -(int)inputs_.size());
     if (idx >= 0) return *inputs_[idx];
     else return *inputs_[idx + inputs_.size()];
 }
 
-inline Tensor* OperatorBase::Output(int idx) {
+/*! Return the specified output tensor */
+
+Tensor* OperatorBase::Output(int idx) {
     CHECK_LT(idx, (int)outputs_.size());
     CHECK_GE(idx, -(int)outputs_.size());
     if (idx >= 0) return outputs_[idx];
     else return outputs_[idx + outputs_.size()];
 }
+
+/*! Return the debug DType string on given tensor */
 
 string OperatorBase::DTypeHelper(
     const Tensor&               tensor,
@@ -50,6 +65,8 @@ string OperatorBase::DTypeHelper(
     return ss.str();
 }
 
+/* Return the debug DType string on given type */
+
 string OperatorBase::DTypeHelper(
     const string&               dtype,
     const Set<string>&          dtypes) const {
@@ -60,6 +77,20 @@ string OperatorBase::DTypeHelper(
     ss << "}";
     return ss.str();
 }
+
+/*! Modify this operator according to the given def  */
+
+void OperatorBase::UpdateFrom(const OperatorDef& def) {
+    anchor_ = def.name();
+    inputs_.resize(def.input_size());
+    outputs_.resize(def.output_size());
+    for (int i = 0; i < inputs_.size(); i++)
+        inputs_[i] = ws()->GetTensor(def.input(i));
+    for (int i = 0; i < outputs_.size(); i++)
+        outputs_[i] = ws()->CreateTensor(def.output(i));
+}
+
+/*! Create a operator instance from the factory  */
 
 OperatorBase* TryCreateOperator(
     const string&               key,
@@ -83,32 +114,9 @@ OperatorBase* TryCreateOperator(
     }
 }
 
-void OperatorBase::MutableOp(
-    const vector<string>&       inputs,
-    const vector<string>&       outputs,
-    const string&               anchor) {
-    inputs_.resize(inputs.size());
-    outputs_.resize(outputs.size());
-    for (int i = 0; i < inputs_.size(); i++)
-        inputs_[i] = ws()->GetTensor(inputs[i]);
-    for (int i = 0; i < outputs_.size(); i++)
-        outputs_[i] = ws()->CreateTensor(outputs[i]);
-    anchor_ = anchor;
-}
+/*! New a operator from the raw def */
 
-void OperatorBase::MutableOp(const OperatorDef& def) {
-    inputs_.resize(def.input_size());
-    outputs_.resize(def.output_size());
-    for (int i = 0; i < inputs_.size(); i++)
-        inputs_[i] = ws()->GetTensor(def.input(i));
-    for (int i = 0; i < outputs_.size(); i++)
-        outputs_[i] = ws()->CreateTensor(def.output(i));
-    anchor_ = def.name();
-    for (auto& arg : def.arg())
-        if (arg.name() == "anchor") anchor_ = arg.s();
-}
-
-OperatorBase* CreateOperator(
+OperatorBase* NewOperator(
     const OperatorDef&          def,
     Workspace*                  ws) {
     auto* schema = OpSchemaRegistry::Schema(def.type());
@@ -126,6 +134,8 @@ OperatorBase* CreateOperator(
     return TryCreateOperator(def.type(), mutable_def, ws);
 }
 
+/*! Make the gradient for the given def */
+
 Gradient MakeGradientForOp(
     const OperatorDef&          def,
     const vector<string>&       g_outputs) {
@@ -136,12 +146,13 @@ Gradient MakeGradientForOp(
                    << def.type() << "not implemented.";
     Gradient grad = maker->Make();
     OperatorDef reference_def(def);
-    // Custom arguments
-    for (int i = 0; i < reference_def.arg_size(); i++) {
-        if (reference_def.arg(i).name() == "persistent_key") {
-            string s = reference_def.arg(i).s();
-            if (!s.empty()) *reference_def.mutable_arg(i)
-                ->mutable_s() = s + "/grad";
+    // Map the UID
+    if (reference_def.has_uid()) {
+        for (int i = 0; i < grad.ops.size(); ++i) {
+            grad.ops[i].set_uid(
+                reference_def.uid() + "/grad" +
+                    (i > 0 ? (":" + std::to_string(i)) : "")
+            );
         }
     }
     // Copy device option, engine, and arguments
@@ -157,84 +168,47 @@ Gradient MakeGradientForOp(
     return grad;
 }
 
+/*! Prepare the content of inputs */
+
 template <class Context>
-void Operator<Context>::ElimateCorruption() {
-    Set<string> all_heads;
-    queue<int> safe_heads;
-    Tensor* head = ws()->GetTensor("/opt/mirror_stage/head");
-    string* head_data = head->mutable_data<string, CPUContext>();
-    for (int i = 0; i < head->count(); i++)
-        all_heads.insert(head_data[i]);
-    // Sub-graph run
+void Operator<Context>::PrepareResource() {
+    string tensor_name;
+    size_t ver_pos; int version;
     for (int i = 0; i < InputSize(); i++) {
-        if (Input(i).is_corrupted())   {
-            if (all_heads.count(Input(i).name())) continue;
-            LOG(DEBUG) << "Tensor(" << Input(i).name()
-                       << ") is corrupted, recompute...  ";
-            Tensor* recompute_flag = ws()->GetTensor(
-                "/opt/mirror_stage/recompute_flag");
-            vector<OperatorBase*>& list = recompute_map()[Input(i).name()];
-            recompute_flag->mutable_data<bool, CPUContext>()[0] = true;
-            for (int j = 0; j < list.size(); j++) list[j]->Run();
-            recompute_flag->mutable_data<bool, CPUContext>()[0] = false;
-        }
-    }
-    // Check available head
-    all_heads.clear();
-    for (int i = 0; i < head->count(); i++) {
-        bool safe = true;
-        for (int j = 0; j < InputSize(); j++)
-            if (head_data[i] == Input(j).name()) safe = false;
-        if (safe) safe_heads.push(i);
-        all_heads.insert(head_data[i]);
-    }
-    // Pre-process
-    for (int i = 0; i < OutputSize(); i++) {
-        if (Output(i)->is_corrupted()) {
-            bool inplace_flag = false;
-            for (int j = 0; j < InputSize(); j++)
-                if (Output(i)->name() == Input(j).name()) inplace_flag = true;
-            // Skip to use new buffer
-            if (inplace_flag || all_heads.count(Output(i)->name())) continue;
-            CHECK(!safe_heads.empty())
-                << "\nAt most (" << safe_heads.size() << " [safe] / "
-                << all_heads.size() << " [total] can be used for corrupted output in "
-                << "(" << name() << ", " << type() << "), "
-                << "\nadd WORKSPACE_MAX_CORRUPTED_SIZE for more powerful mirror stage ?";
-            int idx = safe_heads.front();
-            safe_heads.pop();
-            Tensor* buffer = ws()->GetTensor(
-                "/opt/mirror_stage/buffer_" 
-                    + std::to_string(idx));
-            Output(i)->Move(buffer->memory());
-            head_data[idx] = Output(i)->name();
+        if (Input(i).version() >= 0) {
+            tensor_name = def().input(i);
+            ver_pos = tensor_name.find("/ver:");
+            version = std::atoi(tensor_name.substr(ver_pos + 5).c_str());
+            if (version == Input(i).version()) continue;
+            LOG(DEBUG) << "Excepted version of Tensor(" + Input(i).name() + ") "
+                       << "is " << version << ", got " << Input(i).version()
+                       << ". Recompute.";
+            Tensor* flag = ws()->GetTensor("/opt/recomputing_flag");
+            flag->mutable_data<bool, CPUContext>()[0] = true;
+            vector<OperatorBase*>& chain = subgraph()[tensor_name];
+            for (auto* op : chain) op->Run(ctx()->stream_id());
+            flag->mutable_data<bool, CPUContext>()[0] = false;
         }
     }
 }
 
-template <class Context>
-void Operator<Context>::MakeResource() {
-    ElimateCorruption();
-}
+/*! Release the ownership of inputs */
 
 template <class Context>
-void Operator<Context>::CleanResource() {
-    // Post-process for mirror stage
-    Map<string, int> head_to_idx;
-    Tensor* head = ws()->GetTensor("/opt/mirror_stage/head");
-    string* head_data = head->mutable_data<string, CPUContext>();
-    for (int i = 0; i < head->count(); i++) head_to_idx[head_data[i]] = i;
+void Operator<Context>::ReleaseResource() {
+    string tensor_name;
+    size_t ver_pos; int version;
     for (int i = 0; i < OutputSize(); i++) {
-        if (Output(i)->is_corrupted() &&
-                head_to_idx.count(Output(i)->name())) {
-            string used = "/opt/mirror_stage/buffer_" 
-                + std::to_string(head_to_idx[Output(i)->name()]);
-            Tensor* buffer = ws()->GetTensor(used);
-            if (Output(i)->memory() != buffer->memory())
-                buffer->Move(Output(i)->memory());
+        if (Output(i)->version() >= 0) {
+            tensor_name = def().output(i);
+            ver_pos = tensor_name.find("/ver:");
+            version = std::atoi(tensor_name.substr(ver_pos + 5).c_str());
+            Output(i)->set_version(version);
         }
     }
 }
+
+/*! Operator Registry */
 
 DEFINE_REGISTRY(
     CPUOperatorRegistry,
@@ -272,6 +246,8 @@ DEFINE_REGISTRY(
     const OperatorDef&,
     const vector<string>&);
 
+/*! Macros */
+
 #define INSTANTIATE_GET_SINGLE_ARGUMENT(T, fieldname) \
 template <> T OperatorBase::Arg( \
     const string& name, \
@@ -307,14 +283,11 @@ INSTANTIATE_GET_REPEATED_ARGUMENT(int64_t, ints)
 INSTANTIATE_GET_REPEATED_ARGUMENT(string, strings)
 #undef INSTANTIATE_GET_REPEATED_ARGUMENT
 
-template void Operator<CPUContext>::ElimateCorruption();
-template void Operator<CUDAContext>::ElimateCorruption();
-template void Operator<CNMLContext>::ElimateCorruption();
-template void Operator<CPUContext>::MakeResource();
-template void Operator<CUDAContext>::MakeResource();
-template void Operator<CNMLContext>::MakeResource();
-template void Operator<CPUContext>::CleanResource();
-template void Operator<CUDAContext>::CleanResource();
-template void Operator<CNMLContext>::CleanResource();
+template void Operator<CPUContext>::PrepareResource();
+template void Operator<CUDAContext>::PrepareResource();
+template void Operator<CNMLContext>::PrepareResource();
+template void Operator<CPUContext>::ReleaseResource();
+template void Operator<CUDAContext>::ReleaseResource();
+template void Operator<CNMLContext>::ReleaseResource();
 
 }  // namespace dragon

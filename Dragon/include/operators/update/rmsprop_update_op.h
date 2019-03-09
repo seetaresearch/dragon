@@ -25,8 +25,7 @@ class RMSPropUpdateOp final : public UpdateOpBase<Context> {
     USE_OPERATOR_FUNCTIONS;
     USE_UPDATER_FUNCTIONS(Context);
 
-    void ComputeRunWithFloat32() override;
-    void ComputeRunWithFloat16() override;
+    void ComputeUpdates(Tensor* dX) override;
 
  protected:
     float lr, decay, eps;

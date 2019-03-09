@@ -23,15 +23,15 @@ from collections import OrderedDict
 
 import numpy as np
 import dragon as dg
-from dragon.core.scope import get_default_name_scope
+
 import dragon.core.proto_utils as pb_utils
 import dragon.core.logging as logging
+from dragon.core.scope import get_default_name_scope
 
-from dragon.vm.torch.environ import \
-    add_submodule, get_module_name
-
+from dragon.vm.torch.c_api import Context
 from dragon.vm.torch.tensor import Tensor, Parameter
 from dragon.vm.torch.execution import RunOperator
+from dragon.vm.torch.environ import add_submodule, get_module_name
 
 
 class Module(object):
@@ -39,8 +39,8 @@ class Module(object):
         self._modules = OrderedDict()
         self._parameters = OrderedDict()
         self._buffers = OrderedDict()
-        self._persistent_key = self._op = None
-        self._ctx = ('CPU', 0)
+        self._module_key = self._def = None
+        self._ctx = Context()
         self.training = True
 
     def __getattr__(self, item):
@@ -60,13 +60,7 @@ class Module(object):
             type(self).__name__, item))
 
     def __setattr__(self, key, value):
-        """Override it for detecting modules.
-
-        Returns
-        -------
-        None
-
-        """
+        """Override it for detecting modules."""
         params = self.__dict__.get('_parameters')
         if isinstance(value, Parameter):
             if params is None:
@@ -112,8 +106,7 @@ class Module(object):
                 module.state_dict(destination, prefix + name + '.', to_numpy=to_numpy)
         return destination
 
-    def _load_state_dict_key_mismatch(self, full_name, name, is_missing):
-        pass
+    def _load_state_dict_key_mismatch(self, full_name, name, is_missing): pass
 
     def load_state_dict(self, state_dict, strict=True, verbose=True):
         if verbose: logging.info('Load the state dict.')
@@ -138,10 +131,6 @@ class Module(object):
                         'While load from Size of ({}).'.format(name,
                         ', '.join([str(d) for d in state_shape]),
                         ', '.join([str(d) for d in param_shape])))
-                if own_state[name].dtype != str(param.dtype):
-                    raise ValueError('DType of state({}) is {}, \n'
-                        'While load from a PyArray of {}.'.format(name,
-                        own_state[name].dtype, str(param.dtype)))
                 if isinstance(param, Tensor):
                     own_state[name].copy_(param)
                 elif isinstance(param, np.ndarray):
@@ -171,9 +160,7 @@ class Module(object):
                 raise KeyError(error_msg)
 
     def register_buffer(self, name, tensor):
-        """Adds a buffer to the module.
-
-        """
+        """Adds a buffer to the module."""
         if hasattr(self, name) and name not in self._buffers:
             raise KeyError("attribute '{}' already exists".format(name))
         elif tensor is not None and not isinstance(tensor, Tensor):
@@ -184,9 +171,7 @@ class Module(object):
             self._buffers[name] = tensor
 
     def register_parameter(self, name, param):
-        """Adds a parameter to the module.
-
-        """
+        """Adds a parameter to the module."""
         if '_parameters' not in self.__dict__:
             raise AttributeError(
                 "cannot assign parameter before Module.__init__() call")
@@ -260,25 +245,22 @@ class Module(object):
                     yield m
 
     def named_parameters(self, memo=None, prefix=''):
-        """Returns an iterator over module parameters.
-
-        """
+        """Returns an iterator over module parameters."""
         if memo is None: memo = set()
-        # this module
+        # This module
         for name, p in self._parameters.items():
             if p is not None and p not in memo:
                 memo.add(p)
                 yield prefix + ('.' if prefix else '') + name, p
-        # sub modules
+
+        # Sub modules
         for mname, module in self.named_children():
             submodule_prefix = prefix + ('.' if prefix else '') + mname
             for name, p in module.named_parameters(memo, submodule_prefix):
                 yield name, p
 
     def parameters(self):
-        """Returns an iterator over module parameters.
-
-        """
+        """Returns an iterator over module parameters."""
         for name, param in self.named_parameters():
             yield param
 
@@ -292,64 +274,87 @@ class Module(object):
                 self._buffers[key] = p_fn(buf)
         return self
 
+    def apply(self, fn):
+        for module in self.children():
+            module.apply(fn)
+        fn(self)
+        return self
+
     def cpu(self):
-        self._ctx = ('CPU', 0)
-        # Remove key & op to re-create a one with new ctx
-        self._persistent_key = self._op = None
+        self._ctx = Context()
+        # Remove key and op to re-create a one with new ctx
+        self._module_key = self._def = None
         return self._apply(lambda t: t.cpu(),
                            lambda m: m.cpu())
 
     def cuda(self, device=None):
         if device is None: device = dg.config.GetGPU()
-        self._ctx = ('CUDA', device)
-        # Remove key & op to re-create a one with new ctx
-        self._persistent_key = self._op = None
+        self._ctx = Context('CUDA', device)
+        # Remove key and op to re-create a one with new ctx
+        self._module_key = self._def = None
         return self._apply(lambda t: t.cuda(device),
                            lambda m: m.cuda(device))
 
-    def _gen_persistent_key(self):
-        self._persistent_key = '{}{}:{}'.format(
-            self.name_scope(False), self._ctx[0], self._ctx[1])
+    def float(self):
+        return self._apply(
+            lambda t: t.float_() if t.is_floating_point() else t,
+                lambda m: m.float())
+
+    def double(self):
+        return self._apply(
+            lambda t: t.double_() if t.is_floating_point() else t,
+                lambda m: m.double())
+
+    def half(self):
+        return self._apply(
+            lambda t: t.half_() if t.is_floating_point() else t,
+                lambda m: m.half())
+
+    def _gen_module_key(self):
+        self._module_key = '{}{}'.format(
+            self.name_scope(False), self._ctx)
 
     @property
-    def persistent_key(self):
-        if self._persistent_key is None:
-            self._gen_persistent_key()
-        return self._persistent_key
+    def module_key(self):
+        if self._module_key is None:
+            self._gen_module_key()
+        return self._module_key
 
-    def _gen_op(self):
-        self._op = pb_utils.MakeOperatorDef(op_type=self.op_meta['op_type'], name='runtime',
-            inputs=['I({})'.format(i) for i in range(self.op_meta['n_inputs'])],
-            outputs=['O({})'.format(i) for i in range(self.op_meta['n_outputs'])],
-            device_option=pb_utils.MakeDeviceOption({'CPU': 0, 'CUDA': 1}[self._ctx[0]],
-                                                     self._ctx[1], engine='CUDNN'),
-            persistent_key=self.persistent_key, **self.op_meta['arguments'])
-        dg.workspace.CreatePersistentOp(self._op)
-        return self._op
+    def _gen_def(self):
+        self._def = pb_utils.MakeCXXOperatorDef(
+            name='runtime',
+            uid=self.module_key,
+            op_type=self.op_meta['op_type'],
+            device_option=pb_utils.GetDeviceOption(
+                self._ctx.device_type,
+                    self._ctx.device_id,
+                        engine='CUDNN'),
+            **self.op_meta['arguments']
+        )
 
-    @property
-    def op(self):
-        if self._op is None: self._gen_op()
-        return self._op
+    def register_op(self): pass
 
-    def register_op(self):
-        raise NotImplementedError()
-
-    def register_output(self, dtype='float32'):
-        return (dtype, self._ctx)
+    def register_output(self):
+        return self._ctx.copy()
 
     def unify_devices(self, inputs):
         for ix, t in enumerate(inputs):
-            if t._ctx[0] != self._ctx[0] or \
-                t._ctx[1] != self._ctx[1]:
+            if t._ctx.device_type != self._ctx.device_type or \
+                t._ctx.device_id != self._ctx.device_id:
+                    print(self._ctx, self.module_key)
                     raise ValueError('Module({}) is defined at {}:{}, '
                         '\nFound Input({}) is at {}:{}.'.format(
-                            self.name_scope(True), self._ctx[0], self._ctx[1],
-                            ix, t._ctx[0], t._ctx[1]))
+                            self.name_scope(True),
+                                self._ctx.device_type, self._ctx.device_id,
+                                    ix, t._ctx.device_type, t._ctx.device_id))
 
-    def run(self, inputs, outputs, auto_grad=True):
-        meta = ('PERSISTENT', self.persistent_key, self.op)
-        return RunOperator(inputs, outputs, meta, auto_grad=auto_grad)
+    def run(self, inputs, outputs, auto_grad=True, callback=None):
+        if self._def is None: self._gen_def()
+        meta = (self.module_key, self._def)
+        return RunOperator(
+            inputs, outputs, meta,
+                auto_grad=auto_grad,
+                    callback_on_run=callback)
 
     def train(self, mode=True):
         self.training = mode
@@ -359,3 +364,56 @@ class Module(object):
 
     def eval(self):
         return self.train(False)
+
+    def zero_grad(self):
+        raise NotImplementedError('Deprecated. '
+            'Use ``torch.optim.Optimizer.zero_grad()`` instead.')
+
+    def extra_repr(self):
+        """Set the extra representation of the module
+        To print customized extra information, you should re-implement
+        this method in your own modules. Both single-line and multi-line
+        strings are acceptable.
+
+        """
+        return ''
+
+    def _get_name(self):
+        return self.__class__.__name__
+
+    def __repr__(self):
+        # We treat the extra repr like the sub-module, one item per line
+        extra_lines = []
+        extra_repr = self.extra_repr()
+        # empty string will be split into list ['']
+        if extra_repr:
+            extra_lines = extra_repr.split('\n')
+        child_lines = []
+        for key, module in self._modules.items():
+            mod_str = repr(module)
+            mod_str = _addindent(mod_str, 2)
+            child_lines.append('(' + key + '): ' + mod_str)
+        lines = extra_lines + child_lines
+
+        main_str = self._get_name() + '('
+        if lines:
+            # simple one-liner info, which most builtin Modules will use
+            if len(extra_lines) == 1 and not child_lines:
+                main_str += extra_lines[0]
+            else:
+                main_str += '\n  ' + '\n  '.join(lines) + '\n'
+
+        main_str += ')'
+        return main_str
+
+
+def _addindent(s_, numSpaces):
+    s = s_.split('\n')
+    # don't do anything for single-line stuff
+    if len(s) == 1:
+        return s_
+    first = s.pop(0)
+    s = [(numSpaces * ' ') + line for line in s]
+    s = '\n'.join(s)
+    s = first + '\n' + s
+    return s

@@ -29,6 +29,7 @@ class DataBatch(object):
     """DataBatch aims to prefetch data by *Triple-Buffering*.
 
     It takes full advantages of the Process/Thread of Python,
+
     which provides remarkable I/O speed up for scalable distributed training.
 
     """

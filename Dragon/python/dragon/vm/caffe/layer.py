@@ -29,7 +29,7 @@ class Layer(object):
 
         Parameters
         ----------
-        LayerParameter : caffe_pb2.LayerParameter
+        LayerParameter : LayerParameter
             The parameter of ``Layer``.
 
         Returns

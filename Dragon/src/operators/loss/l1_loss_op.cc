@@ -8,15 +8,14 @@ namespace dragon {
 template <class Context> template <typename T>
 void L1LossOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<float, Context>();
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
     auto* Ddata = diff->template mutable_data<T, Context>();
 
     if (InputSize() > 1) {
         // Compute Diff = X1 - X2
         auto* Tdata = Input(1).template data<T, Context>();
-        math::Sub<T, Context>(Input(0).count(),
-            Xdata, Tdata, Ddata, ctx());
+        math::Sub(Input(0).count(), Xdata, Tdata, Ddata, ctx());
     } else {
         // Let Diff = X1
         ctx()->template Copy<T, Context, Context>(
@@ -29,7 +28,7 @@ void L1LossOp<Context>::RunWithType() {
         math::Mul(Input(0).count(), mask, Ddata, Ddata, ctx());
     }
 
-    float normalizer = 1.f / scale;
+    double normalizer = 1. / scale;
     if (normalization == "BATCH_SIZE") {
         normalizer *= Input(0).dim(0);
     } else if (normalization == "FULL") {
@@ -37,7 +36,7 @@ void L1LossOp<Context>::RunWithType() {
     }
 
     T loss = math::ASum(Input(0).count(), Ddata, ctx());
-    math::Set(1, loss / normalizer, Ydata, ctx());
+    math::Set(1, T(loss / normalizer), Ydata, ctx());
 }
 
 template <class Context>
@@ -68,8 +67,10 @@ OPERATOR_SCHEMA(L1Loss).NumInputs(1, 3).NumOutputs(1);
 template <class Context> template <typename T>
 void L1LossGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
-    float dYHost; ctx()->template Copy
-        <float, CPUContext, Context>(1, &dYHost, dYdata);
+
+    T dYHost; ctx()->template Copy
+        <T, CPUContext, Context>(
+            1, &dYHost, dYdata);
     ctx()->FinishDeviceCompution();
 
     auto* Ddata = diff->template mutable_data<T, Context>();

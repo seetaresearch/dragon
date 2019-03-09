@@ -19,15 +19,10 @@ namespace dragon {
 
 namespace python {
 
-inline PyObject* SetLogLevelCC(PyObject* self, PyObject* args) {
-    char* cname;
-    if (!PyArg_ParseTuple(args, "s", &cname)) {
-        PyErr_SetString(PyExc_ValueError,
-            "Excepted the logging level.");
-        return nullptr;
-    }
-    SetLogDestination(StrToLogSeverity(string(cname)));
-    Py_RETURN_TRUE;
+void AddConfigMethods(pybind11::module& m) {
+    m.def("SetLoggingLevel", [](const string& level) {
+        SetLogDestination(StrToLogSeverity(level));
+    });
 }
 
 }  // namespace python

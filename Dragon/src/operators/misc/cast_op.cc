@@ -1,6 +1,6 @@
 #include "core/workspace.h"
 #include "utils/op_kernel.h"
-#include "operators/misc/astype_op.h"
+#include "operators/misc/cast_op.h"
 
 namespace dragon {
 
@@ -49,7 +49,7 @@ namespace dragon {
     else LOG(FATAL) << DTypeHelper(X, ELIGIBLE_DATA_TYPES)
 
 template <class Context>
-void AsTypeOp<Context>::RunOnDevice() {
+void CastOp<Context>::RunOnDevice() {
     if (inplace && InputSize() != 0)
         LOG(FATAL) << "Excepted 0 inputs, got " << InputSize() << ".";
 
@@ -57,13 +57,37 @@ void AsTypeOp<Context>::RunOnDevice() {
     else { DEFINE_TYPED_CALLER((*Output(0))); }
 }
 
-DEPLOY_CPU(AsType);
+DEPLOY_CPU(Cast);
 #ifdef WITH_CUDA
-DEPLOY_CUDA(AsType);
+DEPLOY_CUDA(Cast);
 #endif
-OPERATOR_SCHEMA(AsType).NumInputs(0, 1).NumOutputs(1);
+OPERATOR_SCHEMA(Cast).NumInputs(0, 1).NumOutputs(1);
 
-NO_GRADIENT(AsType);
+template <class Context>
+void CastGradientOp<Context>::RunOnDevice() {
+    dtype = TypeMetaToString(Input(1).meta());
+    DEFINE_TYPED_CALLER(Input(0));
+}
+
+DEPLOY_CPU(CastGradient);
+#ifdef WITH_CUDA
+DEPLOY_CUDA(CastGradient);
+#endif
+OPERATOR_SCHEMA(CastGradient)
+    .NumInputs(2).NumOutputs(1);
+
+class GetCastGradient final : public GradientMakerBase {
+ public:
+    GRADIENT_MAKER_CTOR(GetCastGradient);
+    vector<OperatorDef> MakeDefs() override {
+        return SingleDef(def.type() + "Gradient", "",
+            // Inversed inputs to reuse the macros
+            vector<string>({ GO(0), I(0) }),
+            vector<string>({ GI(0) }));
+    }
+};
+
+REGISTER_GRADIENT(Cast, GetCastGradient);
 
 #undef ELIGIBLE_DATA_TYPES
 #undef DEFINE_TYPE_A_TO_B

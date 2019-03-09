@@ -17,7 +17,8 @@ import importlib
 import numpy as np
 
 import dragon.core.mapping as mapping
-from dragon.core.tensor_utils import GetTensorInfo
+from dragon.core.tensor_utils import GetStorage
+from dragon.vm.torch.c_api import Context
 
 
 def from_numpy(data):
@@ -77,15 +78,13 @@ def from_dragon(tensor, own_storage=False):
         The torch tensor.
 
     """
-    info = GetTensorInfo(tensor)
-    if not info or not info['init']: return None
+    storage = GetStorage(tensor)
+    if storage is None: return None
     module = importlib.import_module('dragon.vm.torch.tensor')
-    th_tensor = getattr(module, mapping.TENSOR_TYPE_TO_TORCH_TENSOR[info['dtype']])()
-    th_tensor._ctx = (info['mem_at'], info['device_id'])
-    th_tensor._from_numpy = info['from_numpy']
-    th_tensor._dg_tensor = tensor
-    th_tensor._own_storage = own_storage
-    return th_tensor
+    T = getattr(module, mapping.TENSOR_TYPE_TO_TORCH_TENSOR[storage.dtype])()
+    T._storage, T._own_storage, T._tensor = storage, own_storage, tensor
+    T._ctx = Context(*storage.ctx)
+    return T
 
 
 def to_str(tensor):

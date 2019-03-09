@@ -23,7 +23,7 @@ def _assert_data_format(arg):
             raise ValueError('ONNX only support NCHW format.')
 
 
-def BatchNormONNXExporter(op_def, shape_dict):
+def BatchNormONNXExporter(op_def, shape_dict, ws):
     node_proto, const_tensors = CommonONNXExporter(op_def, shape_dict)
 
     # [x, mean, var, scale, bias] => [x, scale, bias, mean, var]
@@ -44,7 +44,7 @@ def BatchNormONNXExporter(op_def, shape_dict):
     return node_proto, const_tensors
 
 
-def L2NormONNXExporter(op_def, shape_dict):
+def L2NormONNXExporter(op_def, shape_dict, ws):
     node_proto, const_tensors = CommonONNXExporter(op_def, shape_dict)
 
     node_proto.attribute.extend([

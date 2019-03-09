@@ -38,7 +38,7 @@ class CPUContext {
     void SwitchToDevice() {}
 
     /*! \brief Switch to the device with the given stream */
-    void SwitchToDevice(int stream_id) {}
+    void SwitchToDevice(const int stream_id) {}
 
     /*! \brief Synchronize the dispatched operations */
     void FinishDeviceCompution() {}
@@ -105,6 +105,9 @@ class CPUContext {
 
     /*! \brief Return the device id */
     int device_id() const { return 0; }
+
+    /*! \brief Return the stream id */
+    int stream_id() const { return 0; }
 
     /*! \brief Set the stream id */
     void set_stream_id(int stream_id) {}

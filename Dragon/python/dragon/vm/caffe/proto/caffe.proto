@@ -427,6 +427,7 @@ message LayerParameter {
   optional InstanceNormParameter instance_norm_param = 166;
   optional GroupNormParameter group_norm_param = 167;
   optional DropBlockParameter drop_block_param = 168;
+  optional CastParameter cast_param = 169;
 }
 
 // Message that stores parameters used to apply transformation
@@ -597,7 +598,7 @@ message ConvolutionParameter {
   repeated uint32 stride = 6; // The stride; defaults to 1
   // Factor used to dilate the kernel, (implicitly) zero-filling the resulting
   // holes. (Kernel dilation is sometimes referred to by its use in the
-  // algorithme ¨¤ trous from Holschneider et al. 1987.)
+  // algorithme ï¿½ï¿½ trous from Holschneider et al. 1987.)
   repeated uint32 dilation = 18; // The dilation; defaults to 1
 
   // For 2D convolution only, the *_h and *_w versions may also be used to
@@ -1529,4 +1530,8 @@ message DropBlockParameter {
   optional float keep_prob = 2 [default = 0.9];
   optional float alpha = 3 [default = 1.0];
   optional float decrement = 4 [default = 0.0];
+}
+
+message CastParameter {
+  optional string dtype = 1;
 }

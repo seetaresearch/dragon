@@ -32,9 +32,11 @@ def export_from_graph_def(
     graph_def,
     f,
     init_func=None,
+    constants=None,
     value_info=None,
     graph_name=None,
-    verbose=True
+    verbose=True,
+    enforce_no_running=False,
 ):
     """Export a ONNX model from the ``GraphDef``.
 
@@ -44,18 +46,22 @@ def export_from_graph_def(
 
     Parameters
     ----------
-    graph_def : dragon_pb2.GraphDef
+    graph_def : GraphDef
         The specific graph def.
     f : str
         The exporting model path.
     init_func : lambda, optional
         The init function to execute before native running.
+    constants : dict, optional
+        The value of external const tensors.
     value_info : dict, optional
         The info external const tensors.
     graph_name : str, optional
         The optional graph name.
-    verbose : bool, optional
+    verbose : boolean, optional
         Whether to print the ONNX graph.
+    enforce_no_running : boolean, optional
+        Whether not to run this graph def.
 
     Returns
     -------
@@ -66,18 +72,22 @@ def export_from_graph_def(
     save_model(graph_def_to_onnx_model(
         graph_def=graph_def,
         init_func=init_func,
+        constants=constants,
         value_info=value_info,
         graph_name=graph_name,
-        verbose=verbose,), f)
+        verbose=verbose,
+        enforce_no_running=enforce_no_running,
+    ), f)
 
 
 def export_from_graph_text(
     text_file,
     f,
     init_func=None,
+    constants=None,
     value_info=None,
     graph_name=None,
-    verbose=True
+    verbose=True,
 ):
     """Export a ONNX model from the textified ``GraphDef``.
 
@@ -93,6 +103,8 @@ def export_from_graph_text(
         The file descriptor.
     init_func : lambda, optional
         The init function to execute before native running.
+    constants : dict, optional
+        The value of external const tensors.
     value_info : dict, optional
         The info external const tensors.
     graph_name : str, optional
@@ -110,8 +122,14 @@ def export_from_graph_text(
         graph_def = pb.GraphDef()
         parse_text_proto(rf.read(), graph_def)
 
-    export_from_graph_def(graph_def, f,
-        init_func, value_info, graph_name, verbose)
+    export_from_graph_def(
+        graph_def=graph_def,
+        f=f,
+        init_func=init_func,
+        constants=constants,
+        value_info=value_info,
+        graph_name=graph_name,
+        verbose=verbose)
 
 
 def import_to_graph_def(model_path):
@@ -124,14 +142,14 @@ def import_to_graph_def(model_path):
 
     Returns
     -------
-    dragon_pb2.GraphDef
+    GraphDef
         The translated graph def.
 
     """
     if not os.path.exists(model_path):
         raise ValueError('Given model({}) is not existed.'.format(model_path))
     graph_def = pb.GraphDef()
-    serialized_proto = C.ImportONNXModelCC(model_path)
+    serialized_proto = C.ImportONNXModel(model_path)
     graph_def.ParseFromString(serialized_proto)
     return graph_def
 
@@ -160,7 +178,7 @@ def surgery_on_graph_def(
     graph_def,
     renamed_tensors={},
     external_inputs=(),
-    external_outputs=()
+    external_outputs=(),
 ):
     """Perform a surgery on a graph def for easy exporting.
 
@@ -172,7 +190,7 @@ def surgery_on_graph_def(
 
     Parameters
     ----------
-    graph_def : dragon_pb2.GraphDef
+    graph_def : GraphDef
         The specific graph def.
     renamed_tensors : dict of (string, Tensor)
         The dict to store the renames.
@@ -183,7 +201,7 @@ def surgery_on_graph_def(
 
     Returns
     -------
-    graph_def : dragon_pb2.GraphDef
+    graph_def : GraphDef
         The modified graph def.
 
     """
@@ -220,4 +238,4 @@ def surgery_on_graph_def(
 
 
 def make_value_info(shape, dtype='float32'):
-    return (mapping.NP_TYPE_TO_TENSOR_TYPE[np.dtype(dtype)], shape)
+    return mapping.NP_TYPE_TO_TENSOR_TYPE[np.dtype(dtype)], shape

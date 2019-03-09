@@ -19,14 +19,12 @@
 
 namespace dragon {
 
-#define WORKSPACE_MAX_CORRUPTED_SIZE 2
-
 class Workspace {
  public:
     typedef Map<string, Map<string, int64_t> > DummyNameMap;
 
     typedef Map<string, unique_ptr<Tensor> > TensorMap;
-    typedef Map<string, string> TensorProxyMap;
+    typedef Map<string, string> TensorAliasMap;
     typedef Map<string, TensorFillerProto> TensorFillerMap;
 
     typedef Map<string, unique_ptr<OperatorBase> > OperatorMap;
@@ -73,7 +71,7 @@ class Workspace {
 
     /* \brief Whether the specified filler is in this workspace */
     bool HasFiller(const string& name, bool use_remote = true) const;
-    
+
     /*! \brief Create the specified filler */
     void CreateFiller(const TensorFillerProto filler);
 
@@ -107,18 +105,14 @@ class Workspace {
         return Tcaches;
     }
 
-    /*! \brief Creathe a persistent operator in this workspace */
-    void CreatePersistentOp(const OperatorDef& def);
+    /*! \brief Create a operator in this workspace */
+    OperatorBase* CreateOperator(const OperatorDef& def);
 
     /*! \brief Run the specified persistent operator */
-    void RunPersistentOp(
-        const string&               key,
-        const string&               anchor,
-        const vector<string>&       inputs,
-        const vector<string>&       outputs);
-    
-    /*! \brief Try to run the operator in a adaptive mode */
     void RunOperator(const OperatorDef& def);
+
+    /*! \brief Try to run the operator in a adaptive mode */
+    void RunOperatorOnce(const OperatorDef& def);
 
     /*! \brief Create a Graph in this workspace */
     GraphBase* CreateGraph(const GraphDef& def);
@@ -128,13 +122,13 @@ class Workspace {
         const string&               graph_name,
         const string&               include,
         const string&               exclude,
-        const int                   stream_id = 1);
+        int                         stream_id = 0);
 
     /*! \brief Return all the stored graph names */
     vector<string> GetGraphs() const;
 
-    /* \brief Set a proxy name for the tensor */
-    bool SetTensorProxy(const string& key, const string& proxy);
+    /* \brief Set an alias for the tensor */
+    bool SetTensorAlias(const string& name, const string& alias);
 
     /* \brief Return a unique dummy name within this workspace */
     string GetDummyName(
@@ -157,7 +151,7 @@ class Workspace {
     TensorFillerMap tensor_filler_map_;
 
     /*! \brief Store the proxy name of tensors */
-    TensorProxyMap tensor_proxy_map_;
+    TensorAliasMap tensor_alias_map_;
 
     /*! \brief Store the registered operators for dynamic graph */
     OperatorMap operator_map_;

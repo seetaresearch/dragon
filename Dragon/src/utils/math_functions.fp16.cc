@@ -79,12 +79,16 @@ template <> void Square<float16, CPUContext>(
 template <> void Set<float16, CPUContext>(
     const int               n,
     const float16           alpha,
-    float16*                x,
+    float16*                y,
     CPUContext*             ctx) {
+    if (alpha.x == (unsigned short)0) {
+        memset(y, 0, sizeof(float16) * n);
+        return;
+    }
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
 #endif
-    for (int i = 0; i < n; ++i) x[i] = alpha;
+    for (int i = 0; i < n; ++i) y[i] = alpha;
 }
 
 /*!                y = x^e                */

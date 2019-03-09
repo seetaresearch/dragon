@@ -25,7 +25,7 @@ class _TensorPool(object):
     Tensors with the same scope in the pool will be reused by turns,
     which speeds up the whole system by reducing the unnecessary deconstructing.
 
-    Heuristically, we have used 4 pools with different scopes:
+    Heuristically, we have used 5 pools with different scopes:
 
     * scope(Leaf): A Pool to reuse leaf tensors.
 
@@ -34,6 +34,8 @@ class _TensorPool(object):
     * scope(Join): A pool to reuse RT(runtime) tensors required by forward-backward.
 
     * scope(Detach): A pool to reuse RT(runtime) tensors required by forward only.
+
+    * scope(Reference): A pool to reuse reshaped tensors(sharing contents).
 
     """
     def __init__(self):
@@ -46,13 +48,13 @@ class _TensorPool(object):
         except:
             self._scope2keys[scope].append(
                 dragon.workspace.GetDummyName(
-                    '${TORCH_TENSOR_POOL}/%s/Tensor' % scope,
+                    '${POOL}/%s/Tensor' % scope,
                         domain='Tensor', zero_based=False))
             return self._scope2keys[scope].popleft()
 
     def put(self, name):
-        if '${TORCH_TENSOR_POOL}' in name:
-            scope, _ = name[21:].split('/')
+        if '${POOL}' in name:
+            scope, _ = name[8:].split('/')
             self._scope2keys[scope].append(name)
             return True
         else: return False
@@ -78,12 +80,12 @@ class _OperatorPool(object):
         except:
             self._type2keys[op_type].append(
                 dragon.workspace.GetDummyName(
-                    '${TORCH_OPS_POOL}/%s' % op_type,
+                    '${POOL}/%s' % op_type,
                         domain='Operator', zero_based=False))
             return self._type2keys[op_type].popleft()
 
     def put(self, op_name):
-        op_type, _ = op_name[18:].split('_')
+        op_type, _ = op_name[8:].split('_')
         self._type2keys[op_type].append(op_name)
 
 

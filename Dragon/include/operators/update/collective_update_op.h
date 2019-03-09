@@ -75,7 +75,6 @@ class CollectiveUpdateOp final : public Operator<Context> {
 
 #ifdef WITH_NCCL
     ncclComm_t nccl_comm;
-    CUDAClosure<Context> closure;
 #endif
 };
 

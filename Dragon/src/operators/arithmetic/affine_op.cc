@@ -54,72 +54,70 @@ OPERATOR_SCHEMA(Affine)
     .Inplace({ { 0, 0 } });
 
 template <class Context> template <typename T>
-void AffineGradientOp<Context>::BiasRunWithType() {
-    Output(2)->ReshapeLike(Input(1));
-    DECLARE_MULTIPLIER(multiplier, inner_dim);
-
-    auto* dYdata = Input(-1).template data<T, Context>();
-    auto* dBias = Output(2)->template mutable_data<T, Context>();
-
-    for (int n = 0; n < outer_dim; n++) {
-        math::Gemv(
-            CblasNoTrans, scale_dim, inner_dim,
-                1.f, dYdata, multiplier,
-                    1.f, dBias, ctx());
-        dYdata += dim;
-    }
-}
-
-template <class Context> template <typename T>
-void AffineGradientOp<Context>::ScaleRunWithType() {
-    Output(0)->ReshapeLike(Input(-1));
-    Output(1)->ReshapeLike(Input(1));
-    DECLARE_MULTIPLIER(multiplier, sum_dim);
-
-    sum_result.Reshape({ outer_dim * scale_dim });
-    bool is_eltwise = (Input(-1).count() == Input(1).count());
-    auto* dYdata = Input(-1).template data<T, Context>();
-    auto* Xdata = Input(0).template data<T, Context>();
-    auto* dScale = Output(1)->template mutable_data<T, Context>();
-    auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    auto* dYxX = dXdata;
-
-    math::Mul<T, Context>(Output(0)->count(), dYdata, Xdata, dYxX, ctx());
-
-    if (!is_eltwise) {
-        T* SRes_data = nullptr;
-        // Reduce inner dimensions
-        if (inner_dim == 1) {
-            SRes_data = dYxX;
-        } else {
-            SRes_data = (outer_dim == 1) ?
-                dScale : sum_result.template mutable_data<T, Context>();
-            math::Gemv(
-                CblasNoTrans, sum_result.count(), inner_dim,
-                    1.f, dYxX, multiplier,
-                        SRes_data == dScale ? 1.f : 0.f,
-                            SRes_data, ctx());
-        } 
-        // Reduce outer dimensions
-        if (outer_dim != 1) {
-            math::Gemv(
-                CblasTrans, outer_dim, scale_dim,
-                    1.f, SRes_data, multiplier,
-                        1.f, dScale, ctx());
-        }
-    } else {
-        math::Axpy(Output(1)->count(), 1.f, dYxX, dScale, ctx());
-    }
-}
-
-template <class Context> template <typename T>
 void AffineGradientOp<Context>::RunWithType() {
-    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* dYdata = Input(-1).template mutable_data<T, Context>();
     auto* Adata = Input(1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
-    kernel::AffineGrad(outer_dim, inner_dim, scale_dim,
-        dYdata, Adata, dXdata, ctx());
+    // dA = X * dY
+    if (Output(1)->name() != "ignore") {
+        Output(1)->ReshapeLike(Input(1));
+        auto* Xdata = Input(0).template data<T, Context>();
+        auto* dAdata = Output(1)->template mutable_data<T, Context>();
+        // Eltwise
+        if (Input(0).count() == Input(1).count()) {
+            math::Mul(Output(0)->count(), dYdata, Xdata, dAdata, ctx());
+        } else {
+            math::Mul(Output(0)->count(), dYdata, Xdata, dXdata, ctx());
+            ComputeScaleGradient<T>(dXdata, dAdata);
+        }
+    }
+
+    // dB = dY
+    if (Output(2)->name() != "ignore") {
+        Output(2)->ReshapeLike(Input(1));
+        auto* dBdata = Output(2)->template mutable_data<T, Context>();
+        // Eltwise
+        if (Input(-1).count() == Input(1).count()) {
+            ctx()->template Copy<T, Context, Context>(
+                Output(2)->count(), dBdata, dYdata);
+        } else {
+            ComputeScaleGradient<T>(dYdata, dBdata);
+        }
+    }
+
+    // dX = alpha * dY
+    if (Output(0)->name() != "ignore") {
+        kernel::AffineGrad(outer_dim, inner_dim, scale_dim,
+            dYdata, Adata, dXdata, ctx());
+    }
+}
+
+template <class Context> template <typename T>
+void AffineGradientOp<Context>::ComputeScaleGradient(
+    T*                      dYxX,
+    T*                      dA) {
+    DECLARE_MULTIPLIER(multiplier, sum_dim);
+    T* SRes_data = nullptr;
+    // Reduce inner dimensions
+    if (inner_dim == 1) {
+        SRes_data = dYxX;
+    } else {
+        SRes_data = (outer_dim == 1) ?
+            dA : ws()->template caches<T, Context>(
+                { outer_dim * scale_dim })[0];
+        math::Gemv(
+            CblasNoTrans, outer_dim * scale_dim, inner_dim,
+                1.f, dYxX, multiplier,
+                    0.f, SRes_data, ctx());
+    }
+    // Reduce outer dimensions
+    if (outer_dim != 1) {
+        math::Gemv(
+            CblasTrans, outer_dim, scale_dim,
+                1.f, SRes_data, multiplier,
+                    0.f, dA, ctx());
+    }
 }
 
 template <class Context>
@@ -133,17 +131,9 @@ void AffineGradientOp<Context>::RunOnDevice() {
     dim = scale_dim * inner_dim;
     sum_dim = std::max(outer_dim, inner_dim);
 
-    if (XIsType(Input(-1), float)) {
-        if (Output(2)->name() != "ignore") BiasRunWithType<float>();
-        if (Output(1)->name() != "ignore") ScaleRunWithType<float>();
-        if (Output(0)->name() != "ignore") RunWithType<float>();
-    } else if (XIsType(Input(-1), float16)) {
-        if (Output(2)->name() != "ignore") BiasRunWithType<float16>();
-        if (Output(1)->name() != "ignore") ScaleRunWithType<float16>();
-        if (Output(0)->name() != "ignore") RunWithType<float16>();
-    } else {
-        LOG(FATAL) << DTypeHelper(Input(-1), { "float32", "float16" });
-    }
+    if (XIsType(Input(-1), float)) RunWithType<float>();
+    else if (XIsType(Input(-1), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(-1), { "float32", "float16" });
 }
 
 DEPLOY_CPU(AffineGradient);
@@ -152,7 +142,8 @@ DEPLOY_CUDA(AffineGradient);
 #endif
 
 OPERATOR_SCHEMA(AffineGradient)
-    .NumInputs(3).NumOutputs(3);
+    .NumInputs(3).NumOutputs(3)
+    .Inplace({ { 2, 0 } });
 
 class GetAffineGradient final : public GradientMakerBase {
  public:

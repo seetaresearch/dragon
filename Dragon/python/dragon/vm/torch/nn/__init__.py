@@ -24,7 +24,7 @@ from .modules.pooling import MaxPool2d, AvgPool2d
 
 from .modules.activation import (
     ReLU, LeakyReLU, ELU, SELU,
-    Sigmoid, Softmax,
+    Tanh, Sigmoid, Softmax,
 )
 
 from .modules.linear import Linear
@@ -33,6 +33,7 @@ from .modules.loss import (
     BCEWithLogitsLoss,
     NLLLoss, CrossEntropyLoss,
     L1Loss, MSELoss, SmoothL1Loss,
+    SigmoidFocalLoss, SoftmaxFocalLoss,
 )
 
 from .modules.container import Container, Sequential, ModuleList

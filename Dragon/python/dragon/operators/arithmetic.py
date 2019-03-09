@@ -140,10 +140,12 @@ def Minimum(inputs, **kwargs):
 
 @OpSchema.Inputs(1)
 def Moments(inputs, axes=None, keep_dims=False, **kwargs):
-    """Compute the mean and variance of inputs along the given axes.
+    """Calculate the mean and variance of inputs along the given axes.
 
     The data type of moments will be *float32* typically,
     except the *float64* inputs (*float64* moments instead).
+
+    If ``axes`` is *None*, a Scalar will be returned.
 
     **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
@@ -206,9 +208,9 @@ def Matmul(inputs, transA=False, transB=False, **kwargs):
     ----------
     inputs : sequence of Tensor
         The inputs, A and B.
-    transA : bool
+    transA : bool, optional, default=False
         Whether to transpose A.
-    transB : bool
+    transB : bool, optional, default=False
         Whether to transpose B.
 
     Returns
@@ -234,9 +236,9 @@ def Dot(inputs, transA=False, transB=False, **kwargs):
     ----------
     inputs : sequence of Tensor
         The inputs, A and B.
-    transA : bool
+    transA : bool, optional, default=False
         Whether to transpose A.
-    transB : bool
+    transB : bool, optional, default=False
         Whether to transpose B.
 
     Returns
@@ -262,9 +264,9 @@ def FullyConnected(inputs, num_output, axis=1, transW=True, **kwargs):
         The inputs, represent [X, W] + [b].
     num_output : int
         The output dim.
-    axis : int, optional
+    axis : int, optional, default=1
         The start axis to calculate, can be negative.
-    transW : bool, optional
+    transW : bool, optional, default=True
         Whether to transpose the W.
 
     Returns
@@ -346,7 +348,7 @@ def Exp(inputs, **kwargs):
 
 
 @OpSchema.Inputs(1)
-def Pow(inputs, power, shift=None, scale=None, **kwargs):
+def Pow(inputs, power, shift=0., scale=1., **kwargs):
     """Calculate the power of input.
 
     Formulation: |power_function|
@@ -357,11 +359,11 @@ def Pow(inputs, power, shift=None, scale=None, **kwargs):
     ----------
     inputs : Tensor
         The input tensor.
-    power : float
+    power : float, required
         The power factor.
-    shift : float, optional
+    shift : float, optional, default=0.
         The shift magnitude.
-    scale : float, optional
+    scale : float, optional, default=1.
         The scale factor.
 
     Returns
@@ -414,7 +416,7 @@ def Sqrt(inputs, **kwargs):
         The sqrt result.
 
     """
-    return Tensor.CreateOperator('Pow', power=0.5, **ParseArgs(locals()))
+    return Tensor.CreateOperator('Sqrt', **ParseArgs(locals()))
 
 
 @OpSchema.Inputs(2, 3)
@@ -433,9 +435,9 @@ def Affine(inputs, axis=1, num_axes=1, **kwargs):
     ----------
     inputs : sequence of Tensor
         The inputs, represent [x, A] + [b].
-    axis : int, optional
+    axis : int, optional, default=1
         The start axis to scale, can be negative.
-    num_axes : int, optional
+    num_axes : int, optional, default=1
         The number of axes to scale.
 
     Returns
@@ -459,7 +461,7 @@ def GramMatrix(inputs, axis=1, **kwargs):
     ---------=
     inputs : Tensor
         The input tensor.
-    axis : int, optional
+    axis : int, optional, default=1
         The start axis to calculate.
 
     Returns
@@ -469,3 +471,48 @@ def GramMatrix(inputs, axis=1, **kwargs):
 
     """
     return Tensor.CreateOperator('GramMatrix', **ParseArgs(locals()))
+
+
+@OpSchema.Inputs(1, INT_MAX)
+def Accumulate(inputs, alpha=1., beta=1., **kwargs):
+    """Calculate *y = alpha * x + beta * y*
+
+    **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
+
+    Parameters
+    ----------
+    inputs : sequence of Tensor
+        The inputs, i.e., the *x*.
+    alpha : float, optional, default=1.
+        The alpha value.
+    beta : float, optional, default=1.
+
+    Returns
+    -------
+    sequence of Tensor
+        The outputs, i.e., the *y*.
+
+    """
+    return Tensor.CreateOperator('Accumulate', **ParseArgs(locals()))
+
+
+@OpSchema.Inputs(1, INT_MAX)
+def MovingAverage(inputs, decay, **kwargs):
+    """Calculate the *y = (1 - decay) * x + decay * y*
+
+    **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
+
+    Parameters
+    ----------
+    inputs : sequence of Tensor
+        The inputs, i.e., the *x*.
+    decay : float, required
+        The decay factor.
+
+    Returns
+    -------
+    sequence of Tensor
+        The outputs, i.e., the *y*.
+
+    """
+    return Accumulate(inputs, 1 - decay, decay, **kwargs)

@@ -184,29 +184,6 @@ class SliceLayer(Layer):
         return dragon.ops.Slice(bottom, **self.arguments)
 
 
-class DenseConcatLayer(Layer):
-    """The extended implementation for `DenseNet`_.
-
-    Parameters
-    ----------
-    axis : int
-        The axis to concatenate. Refer `ConcatParameter.axis`_.
-    growth_rate : int
-        The growth rate.
-
-    """
-    def __init__(self, LayerParameter):
-        super(DenseConcatLayer, self).__init__(LayerParameter)
-        param = LayerParameter.dense_concat_param
-        self.arguments = {
-            'axis': param.axis,
-            'growth_rate': param.growth_rate,
-        }
-
-    def LayerSetup(self, bottom):
-        return dragon.ops.DenseConcat(bottom, **self.arguments)
-
-
 class CropLayer(Layer):
     """The implementation of ``CropLayer``.
 
@@ -692,3 +669,21 @@ class ProposalLayer(Layer):
 
     def LayerSetup(self, bottom):
         return dragon.ops.Proposal(bottom, **self.arguments)
+
+
+class CastLayer(Layer):
+    """The implementation of ``CastLayer``.
+
+    Parameters
+    ----------
+    dtype : str
+        The stride of anchors. Refer ``CastParameter.dtype``.
+
+    """
+    def __init__(self, LayerParameter):
+        super(CastLayer, self).__init__(LayerParameter)
+        param = LayerParameter.cast_param
+        self.arguments = {'dtype': param.dtype.lower()}
+
+    def LayerSetup(self, bottom):
+        return dragon.ops.Cast(bottom, **self.arguments)

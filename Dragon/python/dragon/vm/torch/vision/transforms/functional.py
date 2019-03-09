@@ -94,7 +94,7 @@ def resize(img, size, interpolation=Image.BILINEAR):
         # Fuck Fuck Fuck opencv-python2, it always has a BUG
         # that leads to duplicate cuDA handles created at gpu:0
         img = Image.fromarray(img)
-        img.resize((ow, oh), interpolation)
+        img = img.resize((ow, oh), interpolation)
         return np.array(img)
 
 

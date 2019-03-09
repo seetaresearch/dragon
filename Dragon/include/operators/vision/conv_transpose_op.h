@@ -20,10 +20,10 @@ namespace dragon {
 template <class Context>
 class ConvTranspose2dOp : public ConvOpBase<Context> {
  public:
-    ConvTranspose2dOp(const OperatorDef& def, Workspace* ws) 
+    ConvTranspose2dOp(const OperatorDef& def, Workspace* ws)
         : ConvOpBase<Context>(def, ws) {
         this->num_spatial_axes = 2;
-        Setup(); 
+        Setup();
     }
     USE_OPERATOR_FUNCTIONS;
     USE_CONVOLUTION_FUNCTIONS;
@@ -95,6 +95,7 @@ class CuDNNConvTranspose2dOp final
     }
 
     void RunOnDevice() override;
+    void SetConvDescFromInputs();
     template <typename T> void ResetDesc();
     template <typename T> void RunWithType();
 
@@ -108,7 +109,7 @@ class CuDNNConvTranspose2dOp final
     cudnnFilterDescriptor_t filter_desc;
     size_t fwd_data_size;
     int64_t cudnn_group;
-    vector<int64_t> input_dims;
+    vector<int64_t> output_dims, filter_dims;
     bool enable_tensor_core;
 };
 
@@ -152,6 +153,7 @@ public:
     }
 
     void RunOnDevice() override;
+    void SetConvDescFromInputs();
     template <typename T> void ResetDesc();
     template <typename T> void RunWithType();
 
@@ -166,7 +168,7 @@ public:
     cudnnFilterDescriptor_t filter_desc;
     size_t bwd_filter_size, bwd_data_size;
     int64_t cudnn_group;
-    vector<int64_t> input_dims;
+    vector<int64_t> output_dims, filter_dims;
     bool enable_tensor_core;
 };
 

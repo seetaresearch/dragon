@@ -17,6 +17,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import sys
 from onnx.backend.base import namedtupledict
 from onnx import numpy_helper
 
@@ -58,6 +59,25 @@ def extract_initializer(graph_def):
                 if idx in INITIALIZER_TAG[op.type]:
                     collection.add(input)
     return collection
+
+
+def fetch_initializer(initializer):
+    # Fetch the initializer
+    return [
+        numpy_helper.from_array(
+            dg.workspace.FetchTensor(name), name=name)
+                for name in initializer
+    ]
+
+
+def fetch_argument(op_def, desc, ws):
+    if sys.version_info >= (3, 0):
+        desc = desc.decode('utf-8')
+    desc = desc.replace('${ANCHOR}', op_def.name)
+    argument_value = ws.FetchTensor(desc)
+    if argument_value.size == 1:
+        return argument_value.flatten()[0]
+    return argument_value
 
 
 def native_run_graph(graph_def, inputs, initializer, init_func=None):

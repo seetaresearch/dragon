@@ -6,11 +6,11 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void ProposalOp<Context>::RunWithType(
-    const T*                scores,
-    const T*                bbox_deltas) {
-    using BT = float;
+void ProposalOp<Context>::RunWithType() {
+    using BT = float;  // DType of BBOX
     int64_t total_rois = 0;
+    auto* scores = Input(-3).template data<T, Context>();
+    auto* bbox_deltas = Input(-2).template data<T, Context>();
     auto* im_info = Input(-1).template data<BT, CPUContext>();
     auto* Ydata = Output(0)->template mutable_data<BT, CPUContext>();
     for (int n = 0; n < num_images; ++n) {
@@ -57,7 +57,7 @@ void ProposalOp<Context>::RunWithType(
                     roi_indices_.template mutable_data<int, CPUContext>(), Ydata);
 
         } else if (strides.size() > 1) {
-            // Case 2: multiple stride (FPN / Mask R-CNN / RetinaNet)
+            // Case 2: multiple stride (FPN / Mask R-CNN)
             CHECK_EQ(strides.size(), (int)InputSize() - 3)
                 << "\nGiven " << strides.size() << " strides and "
                 << InputSize() - 3 << " feature inputs";
@@ -120,6 +120,7 @@ void ProposalOp<Context>::RunWithType(
         Ydata += (num_rois * 5);
         im_info += Input(-1).dim(1);
     }
+
     Output(0)->Reshape(vector<int64_t>({ total_rois, 5 }));
 
     // Distribute rois into K bins
@@ -146,6 +147,7 @@ void ProposalOp<Context>::RunWithType(
             Output(i)->Reshape({ std::max((int)roi_bins[i].size(), 1), 5 });
             outputs.push_back(Output(i)->template mutable_data<BT, CPUContext>());
         }
+
         rcnn::DistributeRoIs(roi_bins, rois, outputs);
     }
 }
@@ -161,22 +163,8 @@ void ProposalOp<Context>::RunOnDevice() {
     roi_indices_.Reshape({ post_nms_top_n });
     Output(0)->Reshape({ num_images * post_nms_top_n, 5 });
 
-    if (XIsType(Input(-3), float)) {
-        auto* scores = Input(-3).template data<float, Context>();
-        auto* bbox_deltas = Input(-2).template data<float, Context>();
-        RunWithType<float>(scores, bbox_deltas);
-    } else if (XIsType(Input(-3), float16)) {
-        auto* scores = Input(-3).template data<float16, Context>();
-        auto* bbox_deltas = Input(-2).template data<float16, Context>();
-        // Convert logits to float32
-        auto WSdata = ws()->template caches<float, Context>({
-           Input(-3).count(), Input(-2).count() });
-        kernel::TypeA2B<float16, float, Context>(
-            Input(-3).count(), scores, WSdata[0], ctx());
-        kernel::TypeA2B<float16, float, Context>(
-            Input(-2).count(), bbox_deltas, WSdata[1], ctx());
-        RunWithType<float>(WSdata[0], WSdata[1]);
-    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+    if (XIsType(Input(-3), float)) RunWithType<float>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(Proposal);

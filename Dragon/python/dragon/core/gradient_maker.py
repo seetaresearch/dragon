@@ -49,9 +49,9 @@ class GraphGradientMaker(object):
 
         Parameters
         ----------
-        forward_op : dragon_pb2.OperatorDef
+        forward_op : OperatorDef
             The OperatorDef of ``ForwardOp``.
-        g_outputs : list of str or list of None
+        g_outputs : list of str
             The inputs of ``BackwardOp`` (Precomputed grads).
         name : str, optional
             The optional operator name.
@@ -61,13 +61,9 @@ class GraphGradientMaker(object):
         tuple
             The OpDef, outputs and defaults of ``BackwardOp``.
 
-        References
-        ----------
-        The wrapper of ``CreateGradientDefsCC``.
-
         """
-        g_ops, g_inputs, defaults = \
-            C.CreateGradientDefsCC(forward_op.SerializeToString(), g_outputs)
+        g_ops, g_inputs, defaults = C.CreateGradientDefs(
+            forward_op.SerializeToString(), g_outputs)
         for idx, g_op in enumerate(g_ops):
             new_def = pb.OperatorDef()
             new_def.ParseFromString(g_op)
@@ -80,13 +76,13 @@ class GraphGradientMaker(object):
 
         Parameters
         ----------
-        forward_op : dragon_pb2.OperatorDef
+        forward_op : OperatorDef
             The OperatorDef of ``ForwardOp``.
         inputs_to_grads : dict
             The dict of <input, g_input>.
         blacklist : set of str
             The set of ``NoGradient`` tensors.
-        targets : list of str
+        targets : sequence of str
             The solving targets.
 
         Returns
@@ -123,7 +119,7 @@ class GraphGradientMaker(object):
 
         Parameters
         ----------
-        forward_ops : list of dragon_pb2.OperatorDef
+        forward_ops : sequence of OperatorDef
             The operators of ``ForwardOp``.
         targets : sequence of str
             The solving targets.
@@ -168,12 +164,12 @@ class GraphGradientMaker(object):
             is_skip, gen_grads = \
                 cls.CheckGrad(forward_op, inputs_to_grads, blacklist, targets)
             # Missing grads are represented as ``None``
-            g_outputs = list(inputs_to_grads.get(name, None) for name in forward_op.output)
+            g_outputs = list(inputs_to_grads.get(name, 'ignore') for name in forward_op.output)
             g_ops, g_inputs, defaults = cls.CreateGrad(forward_op, g_outputs)
 
             # Append ops
             if not is_skip:
-                # --> GenOp
+                # GradientGenerateOp
                 if len(gen_grads) > 0:
                     op_inputs = []; op_outputs = []; values = []
                     for item in gen_grads:
@@ -185,7 +181,7 @@ class GraphGradientMaker(object):
                     if forward_op.HasField('device_option'):
                         gen_op.device_option.CopyFrom(forward_op.device_option)
                     backward_ops.append(gen_op)
-                # --> GradOp
+                #  GradientOp
                 for g_op in g_ops:
                     g_op.name = OperatorHelper.get_name() if auto_names else 'runtime'
                     backward_ops.append(g_op)

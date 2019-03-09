@@ -200,6 +200,7 @@ class PoolingLayer(Layer):
             'mode': {0: 'MAX', 1: 'AVG'}[param.pool],
             'data_format': 'NCHW',
             'global_pooling': param.global_pooling,
+            'ceil_mode': True,
         }
         if not param.HasField('kernel_h'): self.arguments['kernel_shape'] = [param.kernel_size]
         else: self.arguments['kernel_shape'] = [param.kernel_h, param.kernel_w]

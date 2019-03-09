@@ -43,8 +43,9 @@ def get_logger():
 
         logger = _logging.getLogger('dragon')
         logger.setLevel(INFO)
+        logger.propagate = False
 
-        if not _logging.getLogger().handlers:
+        if True:
             # Determine whether we are in an interactive environment
             _interactive = False
             try:

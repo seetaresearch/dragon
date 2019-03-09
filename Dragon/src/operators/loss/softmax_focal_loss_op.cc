@@ -13,14 +13,14 @@ namespace dragon {
        << "\nExcepted the axis in [-" << X.ndim() << ", " << X.ndim() \
        << "), got " << OperatorBase::Arg<int64_t>("axis", 1) << ".";
 
-template <class Context> template <typename T>
+template <class Context> template <typename Tx, typename Ty>
 void SoftmaxFocalLossOp<Context>::RunWithType() {
-    auto* Pdata = this->prob->template data<T, Context>();
-    auto* Tdata = Input(1).template data<T, Context>();
+    auto* Pdata = this->prob->template data<Tx, Context>();
+    auto* Tdata = Input(1).template data<Ty, Context>();
     auto* Idata = !this->ignores.count() ? nullptr :
         this->ignores.template data<int, Context>();
-    auto* Ldata = losses.template mutable_data<T, Context>();
-    auto* Fdata = flags.template mutable_data<T, Context>();
+    auto* Ldata = losses.template mutable_data<Tx, Context>();
+    auto* Fdata = flags.template mutable_data<int, Context>();
 
     kernel::SoftmaxFocalLoss(
         outer_dim, Input(0).dim(axis), inner_dim, this->ignores.count(),
@@ -33,11 +33,11 @@ void SoftmaxFocalLossOp<Context>::RunWithType() {
             losses, ctx()); return;
     }
 
-    T normalizer = 1;
+    double normalizer = 1.;
     if (normalization == "VALID") {
         normalizer = std::max(
             math::Sum(flags.count(),
-                1.f, Fdata, ctx()), 1.f);
+                1.f, Fdata, ctx()), 1);
     } else if (normalization == "BATCH_SIZE") {
         normalizer = Input(0).dim(0);
     } else if (normalization == "FULL"){
@@ -45,8 +45,8 @@ void SoftmaxFocalLossOp<Context>::RunWithType() {
     }
 
     Output(0)->Reshape(vector<int64_t>());
-    auto* Ydata = Output(0)->template mutable_data<float, Context>();
-    math::Sum(losses.count(), 1.f / normalizer, Ldata, Ydata, ctx());
+    auto* Ydata = Output(0)->template mutable_data<Tx, Context>();
+    math::Sum(losses.count(), 1. / normalizer, Ldata, Ydata, ctx());
 }
 
 template <class Context>
@@ -59,12 +59,16 @@ void SoftmaxFocalLossOp<Context>::RunOnDevice() {
         << "\nNumber of predictions must match the number of labels.";
     flags.Reshape({ outer_dim * inner_dim });
     losses.Reshape({ outer_dim * inner_dim });
-    ws()->CreateTensor(mount_name("softmax/prob"));
 
+    this->prob = ws()->CreateTensor(
+        mount_name("softmax/prob"));
     this->SoftmaxRun();
 
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    if (XIsType(Input(0), float)) {
+        if (XIsType(Input(1), float)) RunWithType<float, float>();
+        else if (XIsType(Input(1), int64_t)) RunWithType<float, int64_t>();
+        else LOG(FATAL) << DTypeHelper(Input(1), { "float32", "int64" });
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(SoftmaxFocalLoss);
@@ -73,14 +77,14 @@ DEPLOY_CUDA(SoftmaxFocalLoss);
 #endif
 OPERATOR_SCHEMA(SoftmaxFocalLoss).NumInputs(2).NumOutputs(1);
 
-template <class Context> template <typename T>
+template <class Context> template <typename Tx, typename Ty>
 void SoftmaxFocalLossGradientOp<Context>::RunWithType() {
-    auto* Pdata = this->prob->template mutable_data<T, Context>();
-    auto* Tdata = Input(1).template data<T, Context>();
+    auto* Pdata = this->prob->template mutable_data<Tx, Context>();
+    auto* Tdata = Input(1).template data<Ty, Context>();
     auto* Idata = !this->ignores.count() ? nullptr :
         this->ignores.template data<int, Context>();
-    auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    auto* Fdata = flags.template mutable_data<T, Context>();
+    auto* dXdata = Output(0)->template mutable_data<Tx, Context>();
+    auto* Fdata = flags.template mutable_data<int, Context>();
 
     kernel::SoftmaxFocalLossGrad(
         outer_dim, Output(0)->dim(axis), inner_dim, this->ignores.count(),
@@ -88,29 +92,34 @@ void SoftmaxFocalLossGradientOp<Context>::RunWithType() {
                 Pdata, Tdata, Idata, dXdata, Fdata, ctx());
 
     if (normalization == "UNIT") {
-        auto* dYdata = Input(-1).template data<T, Context>();
+        auto* dYdata = Input(-1).template data<Tx, Context>();
         kernel::Repeat(outer_dim, 1, inner_dim,
             Input(0).dim(axis), dYdata, Pdata, ctx());
         math::Mul(Output(0)->count(),
             Pdata, dXdata, dXdata, ctx()); return;
     }
 
-    T normalizer = 1;
+    double normalizer = 1.;
     if (normalization == "VALID") {
         normalizer = std::max(
             math::Sum(flags.count(),
-                1.f, Fdata, ctx()), 1.f);
+                1.f, Fdata, ctx()), 1);
     } else if (normalization == "BATCH_SIZE") {
         normalizer = Input(0).dim(0);
     } else if (normalization == "FULL") {
         normalizer = outer_dim * inner_dim;
     }
 
-    auto* dYdata = Input(-1).template data<T, Context>();
-    T dYHost; ctx()->template Copy
-        <T, CPUContext, Context>(1, &dYHost, dYdata);
-    math::Scale(Output(0)->count(),
-        dYHost / normalizer, dXdata, dXdata, ctx());
+    auto* dYdata = Input(-1).template data<Tx, Context>();
+    Tx dYHost; ctx()->template Copy
+        <Tx, CPUContext, Context>(
+            1, &dYHost, dYdata);
+    ctx()->FinishDeviceCompution();
+
+    math::Scale(
+        Output(0)->count(),
+            dYHost / normalizer,
+                dXdata, dXdata, ctx());
 }
 
 template <class Context>
@@ -122,10 +131,14 @@ void SoftmaxFocalLossGradientOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
     flags.Reshape({ outer_dim * inner_dim });
 
-    this->prob = ws()->GetTensor(mount_name("softmax/prob"));
+    this->prob = ws()->GetTensor(
+        mount_name("softmax/prob"));
 
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    if (XIsType(Input(0), float)) {
+        if (XIsType(Input(1), float)) RunWithType<float, float>();
+        else if (XIsType(Input(1), int64_t)) RunWithType<float, int64_t>();
+        else LOG(FATAL) << DTypeHelper(Input(1), { "float32", "int64" });
+    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
 
 DEPLOY_CPU(SoftmaxFocalLossGradient);

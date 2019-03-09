@@ -23,7 +23,7 @@ option = {}
 # The current device, 'CPU', 'CUDA' or 'CNML'
 option['device'] = 'CPU'
 
-# The device id
+# The device index
 option['device_id'] = 0
 
 # Whether to use cuDNN if possible
@@ -32,8 +32,8 @@ option['use_cudnn'] = False
 # The global random seed
 option['random_seed'] = 3
 
-# Disable the memonger if true
-option['debug_mode'] = False
+# Set the level of graph optimization
+option['graph_optimization_level'] = 3
 
 # Whether to share grads
 option['share_grads'] = True
@@ -76,29 +76,13 @@ def EnableCPU():
     option['device'] = 'CPU'
 
 
-def IsCUDADriverSufficient():
-    """Is CUDADriver sufficient?
-
-    Returns
-    -------
-    boolean
-        ``True`` if your device(s) support CUDA otherwise ``False``.
-
-    References
-    ----------
-    The wrapper of ``IsCUDADriverSufficientCC``.
-
-    """
-    return C.IsCUDADriverSufficientCC()
-
-
 def EnableCUDA(gpu_id=0, use_cudnn=True):
     """Enable NVIDIA's CUDA mode globally.
 
     Parameters
     ----------
     gpu_id : int
-        The id of GPU to use.
+        The index of GPU to use.
     use_cudnn : boolean
         Whether to use cuDNN if available.
 
@@ -119,7 +103,7 @@ def EnableCNML(mlu_id=0):
     Parameters
     ----------
     device_id : int
-        The id of MLU to use.
+        The index of MLU to use.
 
     Returns
     -------
@@ -161,12 +145,12 @@ def GetRandomSeed():
 
 
 def SetGPU(id):
-    """Set the global id GPU.
+    """Set the global index GPU.
 
     Parameters
     ----------
     id : int
-        The id of GPU to use.
+        The index of GPU to use.
 
     Returns
     -------
@@ -178,34 +162,15 @@ def SetGPU(id):
 
 
 def GetGPU():
-    """Get the global id of GPU.
+    """Get the global index of GPU.
 
     Returns
     -------
     int
-        The global id of GPU.
+        The global index of GPU.
 
     """
     return option['device_id']
-
-
-def SetDebugMode(enabled=True):
-    """Enable Debug mode globally.
-
-    It will disable all memory sharing optimizations.
-
-    Parameters
-    ----------
-    enabled : boolean
-        Whether to enable debug mode.
-
-    Returns
-    -------
-    None
-
-    """
-    global option
-    option['debug_mode'] = enabled
 
 
 def SetGraphType(graph_type=''):
@@ -225,6 +190,35 @@ def SetGraphType(graph_type=''):
     """
     global option
     option['graph_type'] = graph_type
+
+
+def SetGraphOptimizationLevel(level=3):
+    """Set the default level of graph optimization.
+
+    We have predefined four levels:
+
+    -O0(level=0): Do nothing.
+
+    -O1(level=1): Prune the redundant nodes.
+
+    -O2(level=2): Add the inplace to outputs.
+    Note that the graph will no longer be a DAG.
+
+    -O3(level=3): Allocate the buffer for outputs.
+    This level is memory-efficient while debugging will be non-trivial.
+
+    Parameters
+    ----------
+    level : {0, 1, 2, 3}, optional, default=3
+        The level, see the documentation for details.
+
+    Returns
+    -------
+    None
+
+    """
+    global option
+    option['graph_optimization_level'] = level
 
 
 def LogMetaGraph(enabled=True):
@@ -301,7 +295,7 @@ def SetLoggingLevel(level):
     The default level is *INFO*.
 
     """
-    C.SetLogLevelCC(level)
+    C.SetLoggingLevel(level)
     logging.set_verbosity({
         'DEBUG': logging.DEBUG,
         'INFO': logging.INFO,

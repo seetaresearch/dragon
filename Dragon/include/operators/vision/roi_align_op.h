@@ -54,6 +54,7 @@ class ROIAlignGradientOp final : public Operator<Context> {
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
+    void RunWithFloat16();
     template <typename T> void RunWithType();
 
  protected:

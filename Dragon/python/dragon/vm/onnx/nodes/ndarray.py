@@ -16,7 +16,9 @@ from __future__ import print_function
 import numpy as np
 from onnx import numpy_helper
 from onnx.helper import make_attribute
+
 from dragon.vm.onnx.nodes.common import CommonONNXExporter
+from dragon.vm.onnx.helper import fetch_argument
 
 
 def _normalize_tuple(value, rank):
@@ -27,13 +29,23 @@ def _normalize_tuple(value, rank):
             [value[-1] for i in range(len(value), rank)]
 
 
-def ReshapeONNXExporter(op_def, shape_dict):
+def ReshapeONNXExporter(op_def, shape_dict, ws):
     output_shape = list(shape_dict[op_def.output[0]])
     node_proto, const_tensors = CommonONNXExporter(op_def, shape_dict)
 
     for arg in op_def.arg:
         if arg.name == 'dims':
             for axis, s in enumerate(arg.ints):
+                if s == -1 or s == 0:
+                    output_shape[axis] = s
+                else:
+                    if s != output_shape[axis]:
+                        raise ValueError('Expected shape[{}] to be {}, but go {}.\n'
+                            'Please follow the static data shape on exporting.'.format(
+                                axis, s, output_shape[axis]))
+        elif arg.name == 'dims_desc':
+            for axis, s in enumerate(arg.strings):
+                s = fetch_argument(op_def, s, ws)
                 if s == -1 or s == 0:
                     output_shape[axis] = s
                 else:
@@ -50,7 +62,7 @@ def ReshapeONNXExporter(op_def, shape_dict):
     return node_proto, [shape]
 
 
-def ConcatONNXExporter(op_def, shape_dict):
+def ConcatONNXExporter(op_def, shape_dict, ws):
     node_proto, const_tensors = CommonONNXExporter(op_def, shape_dict)
 
     for arg in op_def.arg:
@@ -61,7 +73,7 @@ def ConcatONNXExporter(op_def, shape_dict):
     return node_proto, None
 
 
-def FlattenONNXExporter(op_def, shape_dict):
+def FlattenONNXExporter(op_def, shape_dict, ws):
     node_proto, const_tensors = CommonONNXExporter(op_def, shape_dict)
 
     for arg in op_def.arg:
@@ -77,18 +89,23 @@ def FlattenONNXExporter(op_def, shape_dict):
     return node_proto, None
 
 
-def TransposeONNXExporter(op_def, shape_dict):
+def TransposeONNXExporter(op_def, shape_dict, ws):
     node_proto, const_tensors = CommonONNXExporter(op_def, shape_dict)
 
     for arg in op_def.arg:
         if arg.name == 'perm':
             node_proto.attribute.extend([
                 make_attribute('perm', arg.ints)])
+        elif arg.name == 'perm_desc':
+            node_proto.attribute.extend([
+                make_attribute('perm', [
+                    fetch_argument(op_def, desc, ws)
+                        for desc in arg.strings])])
 
     return node_proto, None
 
 
-def ArgReduceONNXExporter(op_def, shape_dict):
+def ArgReduceONNXExporter(op_def, shape_dict, ws):
     node_proto, const_tensors = CommonONNXExporter(op_def, shape_dict)
 
     # ONNX requires indices only, remove the values
@@ -115,7 +132,7 @@ def ArgReduceONNXExporter(op_def, shape_dict):
     return node_proto, None
 
 
-def CropONNXExporter(op_def, shape_dict):
+def CropONNXExporter(op_def, shape_dict, ws):
     node_proto, const_tensors = CommonONNXExporter(op_def, shape_dict)
     node_proto.op_type = 'ATen' # Template
     node_proto.attribute.extend([make_attribute('op_type', 'Crop')])
@@ -125,19 +142,28 @@ def CropONNXExporter(op_def, shape_dict):
             if len(arg.ints) > 0:
                 node_proto.attribute.extend([
                     make_attribute('starts', arg.ints)])
-        elif arg.name == 'ends':
+        elif arg.name == 'starts_desc':
+            if len(arg.strings) > 0:
+                node_proto.attribute.extend([
+                    make_attribute('starts', [
+                        fetch_argument(op_def, desc, ws)
+                            for desc in arg.strings])])
+        elif arg.name == 'sizes':
             if len(arg.ints) > 0:
                 node_proto.attribute.extend([
-                    make_attribute('ends', arg.ints)])
+                    make_attribute('sizes', arg.ints)])
+        elif arg.name == 'sizes_desc':
+            if len(arg.strings) > 0:
+                node_proto.attribute.extend([
+                    make_attribute('sizes', [
+                        fetch_argument(op_def, desc, ws)
+                            for desc in arg.strings])])
         elif arg.name == 'start_axis':
             node_proto.attribute.extend([
                 make_attribute('start_axis', arg.i)])
         elif arg.name == 'offsets':
             node_proto.attribute.extend([
                 make_attribute('offsets', arg.ints)])
-        elif arg.name == 'shape':
-            node_proto.attribute.extend([
-                make_attribute('shape', arg.ints)])
         elif arg.name == 'shape_like':
             node_proto.attribute.extend([
                 make_attribute('shape_like', arg.s)])

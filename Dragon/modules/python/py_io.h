@@ -19,48 +19,42 @@ namespace dragon {
 
 namespace python {
 
-inline PyObject* SnapshotCC(PyObject* self, PyObject* args) {
-    char* path; int format;
-    PyObject* names; vector<Tensor*> tensors;
-    if (!PyArg_ParseTuple(args, "sOi", &path, &names, &format)) {
-        PyErr_SetString(PyExc_ValueError,
-            "Excepted the model path, tensors, and data format.");
-        return nullptr;
-    }
-    switch (format) {
-        case 0:  // Pickle
-            PyErr_SetString(PyExc_NotImplementedError,
-                "Format depends on Pickle. Can't be used in C++.");
-            break;
-        case 1:  // CaffeModel
-            for (int i = 0; i < PyList_Size(names); i++)
-                tensors.push_back(ws()->GetTensor(
-                    PyString_AsString(PyList_GetItem(names, i))));
-            SavaCaffeModel(path, tensors);
-            break;
-        default: LOG(FATAL) << "Unknwon format, code: " << format;
-   }
-   Py_RETURN_TRUE;
-}
+void AddIOMethods(pybind11::module& m) {
+    m.def("Snapshot", [](
+        const string&       filename,
+        vector<string>&     names,
+        const int           format) {
+        vector<Tensor*> tensors;
+        switch (format) {
+            case 0:  // Pickle
+                LOG(FATAL) << "Format depends on Pickle. "
+                              "Can't be used in C++.";
+                break;
+            case 1:  // CaffeModel
+                for (const auto& e : names)
+                    tensors.emplace_back(ws()->GetTensor(e));
+                SavaCaffeModel(filename, tensors);
+                break;
+            default:
+                LOG(FATAL) << "Unknwon format, code: " << format;
+        }
+    });
 
-inline PyObject* RestoreCC(PyObject* self, PyObject* args) {
-    char* path; int format;
-    if (!PyArg_ParseTuple(args, "si", &path, &format)) {
-        PyErr_SetString(PyExc_ValueError,
-            "Excepted the model path and data format.");
-        return nullptr;
-    }
-    switch (format) {
-        case 0:  // Pickle
-            PyErr_SetString(PyExc_NotImplementedError,
-                "Format depends on Pickle. Can't be used in C++.");
-            break;
-        case 1:  // CaffeModel
-            LoadCaffeModel(path, ws());
-            break;
-        default: LOG(FATAL) << "Unknwon format, code: " << format;
-    }
-    Py_RETURN_TRUE;
+    m.def("Restore", [](
+        const string&       filename,
+        const int           format) {
+        switch (format) {
+            case 0:  // Pickle
+                LOG(FATAL) << "Format depends on Pickle. "
+                    "Can't be used in C++.";
+                break;
+            case 1:  // CaffeModel
+                LoadCaffeModel(filename, ws());
+                break;
+            default: 
+                LOG(FATAL) << "Unknwon format, code: " << format;
+        }
+    });
 }
 
 }  // namespace python

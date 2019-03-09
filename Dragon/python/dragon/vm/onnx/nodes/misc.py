@@ -19,7 +19,7 @@ from onnx.helper import make_attribute
 from dragon.vm.onnx.nodes.common import CommonONNXExporter
 
 
-def ImageDataONNXExporter(op_def, shape_dict):
+def ImageDataONNXExporter(op_def, shape_dict, ws):
     node_proto, const_tensors = CommonONNXExporter(op_def, shape_dict)
     node_proto.op_type = 'ATen' # Template
     node_proto.attribute.extend([make_attribute('op_type', 'ImageData')])
@@ -41,7 +41,7 @@ def ImageDataONNXExporter(op_def, shape_dict):
     return node_proto, const_tensors
 
 
-def AsTypeONNXExporter(op_def, shape_dict):
+def AsTypeONNXExporter(op_def, shape_dict, ws):
     node_proto, const_tensors = CommonONNXExporter(op_def, shape_dict)
     node_proto.op_type = 'Cast'
 
@@ -81,5 +81,5 @@ def AsTypeONNXExporter(op_def, shape_dict):
     return node_proto, const_tensors
 
 
-def PythonONNXExporter(op_def, shape_dict):
+def PythonONNXExporter(op_def, shape_dict, ws):
     return None, None

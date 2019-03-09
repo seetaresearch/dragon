@@ -61,12 +61,11 @@ class RNNBase(Module):
                           "num_layers={}".format(dropout, num_layers))
         self._plan_params()
         self.register_op()
-        self.meta_in_phase = {'TRAIN': [None, None], 'TEST': [None, None]}
+        self.op_metas = {'TRAIN': None, 'TEST': None}
 
     def register_op(self):
         self.op_meta = {
             'op_type': 'Recurrent',
-            'n_inputs': 4 , 'n_outputs': 2, # meaningless
             'arguments': {
                 'hidden_size': self.hidden_size,
                 'num_layers': self.num_layers,
@@ -80,25 +79,22 @@ class RNNBase(Module):
 
     def make_meta_from_phase(self, phase):
         def reset_meta(self, phase):
-            # Ren-Gen Key
-            self._persistent_key = None
-            _ = self.persistent_key
-            self._persistent_key += '/{}'.format(phase)
+            self._module_key = None
+            _ = self.module_key
+            self._module_key += '/{}'.format(phase)
             self.op_meta['arguments']['phase'] = phase
-            # Re-Gen Op
-            self._gen_op()
-            self.meta_in_phase[phase][0] = self._persistent_key
-            self.meta_in_phase[phase][1] = self._op
+            self._gen_def()
+            self.op_metas[phase] = (self._module_key, self._def)
 
-        if self._persistent_key is None:
-            # Init or CTX has changed
+        if self._module_key is None:
+            # Init or Context has changed
             reset_meta(self, phase)
         else:
-            # CTX unchanged & Run into a new phase
-            if self.meta_in_phase[phase][0] is None:
+            # Context unchanged
+            if self.op_metas[phase] is None:
                 reset_meta(self, phase)
 
-        return self.meta_in_phase[phase]
+        return self.op_metas[phase]
 
     def forward(self, input, hx=None):
         if hx and not isinstance(hx, Tensor):
@@ -108,13 +104,13 @@ class RNNBase(Module):
 
         inputs = [input, self.weights] + ([hx] if hx else [])
         self.unify_devices(inputs)
-        outputs = [self.register_output(input.dtype) for _ in range(2)]
+        outputs = [self.register_output() for _ in range(2)]
 
         requires_grad = False
         for input in inputs:
             if input.requires_grad: requires_grad = True
         requires_grad = requires_grad and is_grad_enabled()
-        meta = ['PERSISTENT',] + self.make_meta_from_phase(
+        meta =  self.make_meta_from_phase(
             'TRAIN' if requires_grad else 'TEST')
 
         return RunOperator(inputs, outputs, meta)

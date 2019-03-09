@@ -13,13 +13,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-
-class Size(tuple):
-    def __init__(self, sizes):
-        super(Size, self).__init__()
-
-    def __setitem__(self, key, value):
-        raise TypeError("'torch.Size' object does not support item assignment")
-
-    def __repr__(self):
-        return 'torch.Size([{}])'.format(', '.join([str(s) for s in self]))
+# ONNX is not forced to install
+# We will just try to import it
+try:
+    from dragon.vm.torch.onnx.utils import export
+except:
+    pass

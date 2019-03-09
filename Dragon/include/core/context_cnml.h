@@ -32,6 +32,7 @@ class CNRTObject;
 
 class CNMLContext {
  public:
+     /*! \brief Default Constructor */
      CNMLContext(const DeviceOption& option)
         : device_id_(option.device_id()),
         random_seed_(option.has_random_seed() ?
@@ -39,34 +40,43 @@ class CNMLContext {
         CHECK_EQ(option.device_type(), PROTO_CNML);
     }
 
+    /*! \brief Constructor with the specified device id */
     CNMLContext(const int device_id = 0)
         : device_id_(device_id),
           random_seed_(DEFAULT_RNG_SEED) {}
 
+    /*! \brief Switch to the device with the given stream */
     void SwitchToDevice(int stream_id);
 
-    inline void SwitchToDevice() { SwitchToDevice(1); }
+    /*! \brief Switch to the device of this context */
+    inline void SwitchToDevice() { SwitchToDevice(0); }
 
+    /*! \brief Synchronize the dispatched operations */
     void FinishDeviceCompution();
 
+    /*! \brief Malloc the memory */
     static void* New(size_t nbytes);
 
+    /*! \brief Zero-Reset the memory */
     static void Memset(
         size_t              nbytes,
         void*               ptr);
 
+    /*! \brief Zero-Reset the memory asynchronously */
     inline void MemsetAsync(
         size_t              nbytes,
         void*               ptr) {
         Memset(nbytes, ptr);
     }
 
+    /*! \brief Copy the memory */
     template<class DstContext, class SrcContext>
     static void Memcpy(
         size_t              nbytes,
         void*               dst,
         const void*         src);
 
+    /*! \brief Copy the memory with given type asynchronously */
     template<class DstContext, class SrcContext>
     inline void MemcpyAsync(
         size_t              nbytes,
@@ -75,23 +85,33 @@ class CNMLContext {
         Memcpy<DstContext, SrcContext>(dst, src, nbytes);
     }
 
+    /*! \brief Free the memory */
     static void Delete(void* data);
 
-    inline int device_id() const { return device_id_; }
+    /*! \brief Return the device id */
+    int device_id() const { return device_id_; }
 
-    inline void set_stream_id(int stream_id) { stream_id_ = stream_id; }
+    /*! \brief Return the stream id */
+    int stream_id() const { return stream_id_; }
+    
+    /*! \brief Set the stream id */
+    void set_stream_id(int stream_id) { stream_id_ = stream_id; }
 
-    inline cnrtStream_t cnrt_stream() {
+    /*! \brief Return the internal cnrt stream */
+    cnrtStream_t cnrt_stream() {
         return cnrt_stream(device_id_, stream_id_);
     }
 
+    /*! \brief Return the specified cnrt stream */
     static cnrtStream_t cnrt_stream(
         int                 device_id,
         int                 stream_id);
 
+    /*! \brief Return the global context locker */
     static std::mutex& mutex() { static std::mutex m; return m; }
 
-    static CNRTObject* cuda_object();
+    /*! \brief Return the thread local cnrt object */
+    static CNRTObject* cnrt_object();
 
  private:
     int device_id_, stream_id_ = 1, random_seed_;

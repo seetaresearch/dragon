@@ -19,14 +19,19 @@ namespace dragon {
 
 class GraphGradientMaker {
  public:
-    GraphGradientMaker(): cur_op_idx_(0) {}
+    GraphGradientMaker()
+        : cur_op_idx_(0) {}
 
     void Make(
-        const GraphDef&         forward_def,
-        const vector<string>&   targets,
-        GraphDef&               new_def);
+        const vector<OperatorDef*>&  forward_def,
+        const vector<string>&        targets,
+        GraphDef&                    new_def);
 
-    void Share(const string& grads_prefix, GraphDef& graph);
+    void Make(
+        const GraphDef&              forward_def,
+        GraphDef&                    backward_def);
+
+    void Share(GraphDef& graph);
 
     void SetTerms(const Map<string, string>& terms) { terms_ = terms; }
     void SetOperatorPrefix(const string& prefix) { op_prefix_ = prefix; }

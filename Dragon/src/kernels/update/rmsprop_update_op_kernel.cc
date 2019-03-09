@@ -25,19 +25,6 @@ template <> void RMSPropUpdate<float, CPUContext>(
     }
 }
 
-/*! RMSPropUpdate <T = float32, Device = CPU> */
-
-template <> void RMSPropUpdate<float16, CPUContext>(
-    const int               count,
-    const float             lr,
-    const float             decay,
-    const float             eps,
-    float16*                g,
-    float16*                h,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
-}
-
 }  // namespace kernel
 
 }  // namepsace dragon

@@ -19,7 +19,7 @@ namespace dragon {
 
 template <class Context>
 class SquareOp final : public Operator<Context> {
-public:
+ public:
     USE_SIMPLE_CTOR_DTOR(SquareOp);
     USE_OPERATOR_FUNCTIONS;
 
@@ -29,7 +29,7 @@ public:
 
 template <class Context>
 class SquareGradientOp final : public Operator<Context> {
-public:
+ public:
     USE_SIMPLE_CTOR_DTOR(SquareGradientOp);
     USE_OPERATOR_FUNCTIONS;
 

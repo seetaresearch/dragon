@@ -15,62 +15,43 @@ from __future__ import print_function
 
 import numpy as np
 import dragon as dg
+
 from dragon.vm.torch.tensor import *
-
-
-def CheckDataType(inputs, dtypes=None):
-    if isinstance(inputs, Tensor): inputs = [inputs]
-    if not isinstance(dtypes, (tuple, list)): dtypes = [dtypes]
-    request_type = inputs[0]._dtype
-    for ix, input in enumerate(inputs):
-        if dtypes is not None and \
-            input._dtype not in dtypes:
-                raise TypeError('Type of input({}) is {}, '
-                                'not in the support set: ({}).'
-                    .format(ix, input._dtype, ', '.join(dtypes)))
-        if input._dtype != request_type:
-            raise TypeError('Excepted the type of input({}) is {}, got {}.'
-                    .format(ix, request_type, input._dtype))
+from dragon.vm.torch.c_api import Context
 
 
 def UnifyDevices(tensors, key='Inputs'):
-    device_types = [t._ctx[0] for t in tensors]
-    devices = [0]
+    device_types = [t._ctx.device_type for t in tensors]
+    device_ids = [0]
     if len(set(device_types)) != 1:
         raise ValueError('{} from different device type: [{}].'
             .format(key, ', '.join(device_types)))
     if device_types[0] == 'CUDA':
-        devices = [t._ctx[1] for t in tensors]
-        if len(set(devices)) != 1:
+        device_ids = [t._ctx.device_id for t in tensors]
+        if len(set(device_ids)) != 1:
             raise ValueError('{} from different cuda device: [{}].'
-            .format(key, ', '.join([str(d) for d in devices])))
-    return device_types[0], devices[0]
+            .format(key, ', '.join([str(d) for d in device_ids])))
+    return Context(device_types[0], device_ids[0])
 
 
-def MakeContext(inputs=(), outputs=(), meta=None):
-    type = 'CPU'; device_id = 0
-    if len(inputs) > 0:
-        type, device_id = UnifyDevices(inputs, 'Inputs')
-    if len(outputs) > 0:
-        type, device_id = UnifyDevices(outputs, 'Outputs')
-    if meta is not None: type, device_id = meta
+def MakeContext(inputs=(), outputs=()):
     # Case #1: [], [] -> CPU
     # Case #2: [...], [] -> Refer Inputs
     # Case #3: [], [...] -> Refer Outputs
     # Case #4: [...], [...] -> Refer Outputs
-    # Case #5: meta -> CPU, CUDA:?
-    return type, device_id
+    if len(outputs) > 0: return UnifyDevices(outputs, 'Outputs')
+    if len(inputs) > 0: return UnifyDevices(inputs, 'Inputs')
+    return Context()
 
 
 def WrapScalar(scalar, dtype, ctx):
     # We use (DType + Value) to hash different scalars
     # Setting a Tensor with same DType and shape will not deconstruct it
-    value = np.array(scalar, dtype=dtype)
     if 'float' in dtype: scalar = float(scalar)
     if 'int' in dtype: scalar = int(scalar)
-    t = dg.Tensor.Ref('/share/scalar/{}/{}'.format(
-        dtype, str(scalar))).Variable()
-    t.set_value(value)
-    t = Tensor(dg_tensor=t.name, dtype=dtype, ctx=ctx, own_storage=False)
+    name = '/share/scalar/{}/{}'.format(dtype, str(scalar))
+    if not dg.workspace.HasTensor(name):
+        dg.workspace.FeedTensor(name, np.array(scalar, dtype=dtype))
+    t = Tensor(name=name, dtype=dtype, ctx=ctx, own_storage=False)
     t.requires_grad = False
     return t

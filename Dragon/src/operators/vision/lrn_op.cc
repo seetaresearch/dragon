@@ -10,7 +10,7 @@ namespace dragon {
 template <class Context> template <typename T>
 void LRNOp<Context>::AcrossRunWithType() {
     LOG(FATAL) << "Across Channels is not implemented."
-               << "\nCompile cuDNN for this module.";
+               << "\nCompile CuDNN for this module.";
 }
 
 template <class Context> template <typename T>
@@ -37,9 +37,9 @@ void LRNOp<Context>::SquareRunWithType() {
         if (def().has_device_option())
             sqr_op_def.mutable_device_option()
                 ->CopyFrom(def().device_option());
-        sqr_op.reset(CreateOperator(sqr_op_def, ws()));
+        sqr_op.reset(NewOperator(sqr_op_def, ws()));
     }
-    sqr_op->Run();
+    sqr_op->Run(ctx()->stream_id());
 }
 
 template <class Context> template <typename T>
@@ -59,9 +59,9 @@ void LRNOp<Context>::PoolRunWithType() {
         if (def().has_device_option())
             pool_op_def.mutable_device_option()
                 ->CopyFrom(def().device_option());
-        pool_op.reset(CreateOperator(pool_op_def, ws()));
+        pool_op.reset(NewOperator(pool_op_def, ws()));
     }
-    pool_op->Run();
+    pool_op->Run(ctx()->stream_id());
 }
 
 template <class Context> template <typename T>
@@ -79,9 +79,9 @@ void LRNOp<Context>::PowRunWithType() {
         if (def().has_device_option())
             pow_op_def.mutable_device_option()
                 ->CopyFrom(def().device_option());
-        pow_op.reset(CreateOperator(pow_op_def, ws()));
+        pow_op.reset(NewOperator(pow_op_def, ws()));
     }
-    pow_op->Run();
+    pow_op->Run(ctx()->stream_id());
 }
 
 template <class Context> template <typename T>
@@ -96,9 +96,9 @@ void LRNOp<Context>::ProdRunWithType() {
         if (def().has_device_option())
             prod_op_def.mutable_device_option()
                 ->CopyFrom(def().device_option());
-        prod_op.reset(CreateOperator(prod_op_def, ws()));
+        prod_op.reset(NewOperator(prod_op_def, ws()));
     }
-    prod_op->Run();
+    prod_op->Run(ctx()->stream_id());
 }
 
 template <class Context>
@@ -149,9 +149,9 @@ void LRNGradientOp<Context>::ProdRunWithType() {
         if (def().has_device_option())
             prod_op_def.mutable_device_option()
                 ->CopyFrom(def().device_option());
-        prod_op.reset(CreateOperator(prod_op_def, ws()));
+        prod_op.reset(NewOperator(prod_op_def, ws()));
     }
-    prod_op->Run();
+    prod_op->Run(ctx()->stream_id());
 }
 
 template <class Context> template <typename T>
@@ -171,9 +171,9 @@ void LRNGradientOp<Context>::PowRunWithType() {
         if (def().has_device_option())
             pow_op_def.mutable_device_option()
                 ->CopyFrom(def().device_option());
-        pow_op.reset(CreateOperator(pow_op_def, ws()));
+        pow_op.reset(NewOperator(pow_op_def, ws()));
     }
-    pow_op->Run();
+    pow_op->Run(ctx()->stream_id());
 }
 
 template <class Context> template <typename T>
@@ -195,9 +195,9 @@ void LRNGradientOp<Context>::PoolRunWithType() {
         if (def().has_device_option())
             pool_op_def.mutable_device_option()
                 ->CopyFrom(def().device_option());
-        pool_op.reset(CreateOperator(pool_op_def, ws()));
+        pool_op.reset(NewOperator(pool_op_def, ws()));
     }
-    pool_op->Run();
+    pool_op->Run(ctx()->stream_id());
 }
 
 template <class Context> template <typename T>
@@ -215,9 +215,9 @@ void LRNGradientOp<Context>::SquareRunWithType() {
         if (def().has_device_option())
             sqr_op_def.mutable_device_option()
                 ->CopyFrom(def().device_option());
-        sqr_op.reset(CreateOperator(sqr_op_def, ws()));
+        sqr_op.reset(NewOperator(sqr_op_def, ws()));
     }
-    sqr_op->Run();
+    sqr_op->Run(ctx()->stream_id());
 }
 
 template <class Context> template <typename T>
@@ -229,7 +229,7 @@ void LRNGradientOp<Context>::SplitRunWithType() {
     auto* data0 = g_sqr_in->template data<T, Context>();
     auto* data1 = g_prod_in->template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    math::Add<T, Context>(Output(0)->count(), data0, data1, dXdata, ctx());
+    math::Add(Output(0)->count(), data0, data1, dXdata, ctx());
 }
 
 template <class Context>

@@ -66,7 +66,6 @@ List                        Brief
 `AddLayer`_                 The extended implementation of ``EltwiseLayer``.
 `ConcatLayer`_              The implementation of ``ConcatLayer``.
 `SliceLayer`_               The implementation of ``SliceLayer``.
-`DenseConcatLayer`_         The implementation for `DenseNet`_.
 `CropLayer`_                The implementation of ``CropLayer``.
 `ReshapeLayer`_             The implementation of ``ReshapeLayer``.
 `PermuteLayer`_             The implementation of ``PermuteLayer``.
@@ -180,7 +179,6 @@ API Reference
 .. _AddLayer: #dragon.vm.caffe.layers.common.AddLayer
 .. _ConcatLayer: #dragon.vm.caffe.layers.common.ConcatLayer
 .. _SliceLayer: #dragon.vm.caffe.layers.common.SliceLayer
-.. _DenseConcatLayer: #dragon.vm.caffe.layers.common.DenseConcatLayer
 .. _CropLayer: #dragon.vm.caffe.layers.common.CropLayer
 .. _ReshapeLayer: #dragon.vm.caffe.layers.common.ReshapeLayer
 .. _PermuteLayer: #dragon.vm.caffe.layers.common.PermuteLayer
@@ -210,12 +208,10 @@ API Reference
 .. _MPIBroadcastLayer: #dragon.vm.caffe.layers.mpi.MPIBroadcastLayer
 .. _MPIGatherLayer: #dragon.vm.caffe.layers.mpi.MPIGatherLayer
 
-
 .. _Layer.Setup: #dragon.vm.caffe.layer.Layer.Setup
 .. _Layer.Fill: #dragon.vm.caffe.layer.Layer.Fill
 
 .. _LMDB: http://lmdb.readthedocs.io/en/release
-.. _DenseNet: http://arxiv.org/abs/1608.06993
 .. _LayerSetUp(layer.hpp, L91): https://github.com/BVLC/caffe/blob/effcdb0b62410b2a6a54f18f23cf90733a115673/include/caffe/layer.hpp#L91
 .. _DataParameter.source: https://github.com/BVLC/caffe/blob/effcdb0b62410b2a6a54f18f23cf90733a115673/src/caffe/proto/caffe.proto#L647
 .. _DataParameter.prefetch: https://github.com/BVLC/caffe/blob/effcdb0b62410b2a6a54f18f23cf90733a115673/src/caffe/proto/caffe.proto#L672

@@ -109,7 +109,7 @@ DEFINE_POWX_FUNC(double);
         CPUContext*             ctx) { \
         EigenVectorArrayMap<T>(y, n) = \
             ConstEigenVectorArrayMap<T>(x, n) * (T)alpha; \
-    } 
+    }
 
 DEFINE_SCALE_FUNC(int8_t);
 DEFINE_SCALE_FUNC(uint8_t);
@@ -140,6 +140,29 @@ DEFINE_AXPY_FUNC(float);
 DEFINE_AXPY_FUNC(double);
 #undef DEFINE_AXPY_FUNC
 
+/*!                 y = ax + by               */
+
+#define DEFINE_AXPBY_FUNC(T) \
+    template <> void Axpby<T, CPUContext>( \
+        const int               n, \
+        const float             alpha, \
+        const T*                x, \
+        const float             beta, \
+        T*                      y, \
+        CPUContext*            ctx) { \
+        Scale(n, beta, y, y, ctx); \
+        Axpy(n, alpha, x, y, ctx); \
+    }
+
+DEFINE_AXPBY_FUNC(int8_t);
+DEFINE_AXPBY_FUNC(uint8_t);
+DEFINE_AXPBY_FUNC(int);
+DEFINE_AXPBY_FUNC(int64_t);
+DEFINE_AXPBY_FUNC(float16);
+DEFINE_AXPBY_FUNC(float);
+DEFINE_AXPBY_FUNC(double);
+#undef DEFINE_AXPBY_FUNC
+
 /*!                 y += a                */
 
 #define DEFINE_ADD_SCALAR_FUNC(T) \
@@ -152,7 +175,7 @@ DEFINE_AXPY_FUNC(double);
         if (_alpha_ == T(0)) return; \
         EigenVectorArrayMap<T>(y, n) = \
             ConstEigenVectorArrayMap<T>(y, n) + _alpha_; \
-    } 
+    }
 
 DEFINE_ADD_SCALAR_FUNC(int8_t);
 DEFINE_ADD_SCALAR_FUNC(uint8_t);
@@ -176,7 +199,7 @@ DEFINE_ADD_SCALAR_FUNC(double);
 #define DEFINE_INVSTD_FUNC(T) \
     template <> void InvStd<T, CPUContext>( \
         const int               n, \
-        float                   eps, \
+        const float             eps, \
         const T*                x, \
         T*                      y, \
         CPUContext*             ctx) { \
@@ -187,29 +210,6 @@ DEFINE_ADD_SCALAR_FUNC(double);
 DEFINE_INVSTD_FUNC(float);
 DEFINE_INVSTD_FUNC(double);
 #undef DEFINE_INVSTD_FUNC
-
-/*!                 y = ax + by               */
-
-#define DEFINE_AXPBY_FUNC(T) \
-    template <> void Axpby<T, CPUContext>( \
-        const int               n, \
-        float                   alpha, \
-        const T*                x, \
-        float                   beta, \
-        T*                      y, \
-        CPUContext*            ctx) { \
-        Scale<T, CPUContext>(n, beta, y, y, ctx); \
-        Axpy<T, CPUContext>(n, alpha, x, y, ctx); \
-    }
-
-DEFINE_AXPBY_FUNC(int8_t);
-DEFINE_AXPBY_FUNC(uint8_t);
-DEFINE_AXPBY_FUNC(int);
-DEFINE_AXPBY_FUNC(int64_t);
-DEFINE_AXPBY_FUNC(float16);
-DEFINE_AXPBY_FUNC(float);
-DEFINE_AXPBY_FUNC(double);
-#undef DEFINE_AXPBY_FUNC
 
 /*!                y = sum(x)               */
 

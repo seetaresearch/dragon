@@ -91,5 +91,5 @@ from .common import (
     ExpandDimsLayer,
     StopGradientLayer,
     ProposalLayer,
-    DenseConcatLayer,
+    CastLayer,
 )

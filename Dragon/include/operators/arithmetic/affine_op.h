@@ -46,12 +46,12 @@ class AffineGradientOp final : public Operator<Context> {
     void RunOnDevice() override;
     template <typename T> void BiasRunWithType();
     template <typename T> void ScaleRunWithType();
+    template <typename T> void ComputeScaleGradient(T* dYxX, T* dA);
     template <typename T> void RunWithType();
 
  protected:
     int64_t axis, num_axes;
     int64_t outer_dim, inner_dim, scale_dim, sum_dim, dim;
-    Tensor sum_result;
 };
 
 #ifdef WITH_CUDNN
@@ -125,18 +125,12 @@ public:
 
     template <typename DT, typename CT>
     void ComputeScaleGradient(DT* dYxX, DT* dA);
-    template <typename DT, typename CT>
-    void ComputeBiasGradient(const DT* dY, DT* dB);
-
     template <typename T> void ComputeScaleGradient_v2(T* dYxX, T* dA);
-    template <typename T> void ComputeBiasGradient_v2(const T* dY, T* dB);
-
     template <typename DT, typename CT> void RunWithType();
 
  protected:
     USE_CUDNN_AFFINE_FUCNTIONS;
     int64_t outer_dim, inner_dim, scale_dim, dim, sum_dim;
-    Tensor sum_result;
 };
 
 #endif

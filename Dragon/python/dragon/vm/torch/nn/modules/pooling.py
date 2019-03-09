@@ -29,9 +29,13 @@ class _PoolNd(Module):
         self.ceil_mode = ceil_mode
         self.register_op()
 
+    def extra_repr(self):
+        return 'kernel_size={kernel_size}, stride={stride}, padding={padding}' \
+               ', dilation={dilation}, ceil_mode={ceil_mode}'.format(**self.__dict__)
+
     def forward(self, input):
         inputs = [input]; self.unify_devices(inputs)
-        outputs = [self.register_output(input.dtype)]
+        outputs = [self.register_output()]
         return self.run(inputs, outputs)
 
 
@@ -39,14 +43,13 @@ class MaxPool2d(_PoolNd):
     def register_op(self):
         self.op_meta = {
             'op_type': 'Pool2d',
-            'n_inputs': 1, 'n_outputs': 1,
             'arguments': {
                 'kernel_shape': _pair(self.kernel_size),
                 'strides': _pair(self.stride) if self.stride else _pair(self.kernel_size),
                 'pads': _pair(self.padding),
                 'mode': 'MAX',
                 'data_format': 'NCHW',
-                'ceil': self.ceil_mode
+                'ceil_mode': self.ceil_mode,
             }
         }
 
@@ -55,13 +58,12 @@ class AvgPool2d(_PoolNd):
     def register_op(self):
         self.op_meta = {
             'op_type': 'Pool2d',
-            'n_inputs': 1, 'n_outputs': 1,
             'arguments': {
                 'kernel_shape': _pair(self.kernel_size),
                 'strides': _pair(self.stride) if self.stride else _pair(self.kernel_size),
                 'pads': _pair(self.padding),
                 'mode': 'AVG',
                 'data_format': 'NCHW',
-                'ceil': self.ceil_mode
+                'ceil_mode': self.ceil_mode,
             }
         }

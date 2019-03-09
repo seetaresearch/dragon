@@ -10,7 +10,7 @@ void SigmoidCrossEntropyOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Tdata = Input(1).template data<T, Context>();
     auto* Ldata = losses.template mutable_data<T, Context>();
-    auto* Fdata = flags.template mutable_data<T, Context>();
+    auto* Fdata = flags.template mutable_data<int, Context>();
 
     kernel::SigmoidCrossEntropy(Input(0).count(),
         Xdata, Tdata, Ldata, Fdata, ctx());
@@ -21,11 +21,11 @@ void SigmoidCrossEntropyOp<Context>::RunWithType() {
             losses, ctx()); return;
     }
 
-    T normalizer = 1;
+    double normalizer = 1.;
     if (normalization == "VALID") {
         normalizer = std::max(
-            math::Sum(flags.count(), 
-                1.f, Fdata, ctx()), 1.f);
+            math::Sum(flags.count(),
+                1.f, Fdata, ctx()), 1);
     } else if (normalization == "BATCH_SIZE") {
         normalizer = Input(0).dim(0);
     } else if (normalization == "FULL") {
@@ -34,7 +34,7 @@ void SigmoidCrossEntropyOp<Context>::RunWithType() {
 
     Output(0)->Reshape(vector<int64_t>());
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Sum(losses.count(), 1.f / normalizer, Ldata, Ydata, ctx());
+    math::Sum(losses.count(), 1. / normalizer, Ldata, Ydata, ctx());
 }
 
 template <class Context>
@@ -59,7 +59,7 @@ void SigmoidCrossEntropyGradientOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Tdata = Input(1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    auto* Fdata = flags.template mutable_data<T, Context>();
+    auto* Fdata = flags.template mutable_data<int, Context>();
 
     kernel::SigmoidCrossEntropyGrad(
         Input(0).count(), Xdata, Tdata, dXdata, Fdata, ctx());
@@ -70,11 +70,11 @@ void SigmoidCrossEntropyGradientOp<Context>::RunWithType() {
             dYdata, dXdata, dXdata, ctx()); return;
     }
 
-    T normalizer = 1;
+    double normalizer = 1.;
     if (normalization == "VALID") {
         normalizer = std::max(
-            math::Sum(flags.count(), 
-                1.f, Fdata, ctx()), 1.f);
+            math::Sum(flags.count(),
+                1.f, Fdata, ctx()), 1);
     } else if (normalization == "BATCH_SIZE") {
         normalizer = Input(0).dim(0);
     } else if (normalization == "FULL") {
@@ -83,9 +83,14 @@ void SigmoidCrossEntropyGradientOp<Context>::RunWithType() {
 
     auto* dYdata = Input(-1).template data<T, Context>();
     T dYHost; ctx()->template Copy
-        <T, CPUContext, Context>(1, &dYHost, dYdata);
-    math::Scale(Output(0)->count(),
-        dYHost / normalizer, dXdata, dXdata, ctx());
+        <T, CPUContext, Context>(
+            1, &dYHost, dYdata);
+    ctx()->FinishDeviceCompution();
+
+    math::Scale(
+        Output(0)->count(),
+            dYHost / normalizer,
+                dXdata, dXdata, ctx());
 }
 
 template <class Context>

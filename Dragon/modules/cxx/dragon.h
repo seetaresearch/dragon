@@ -97,7 +97,7 @@ DRAGON_API std::string CreateGraph(
 DRAGON_API void RunGraph(
     const std::string&              graph_name,
     Workspace_t                     ws,
-    const int                       stream_id = 1);
+    int                             stream_id = 0);
 
 /* * * * * * * * * * * * * * * * * * * * *
  *                                       *
@@ -156,7 +156,7 @@ DRAGON_API void LoadONNXModel(
  *                                       *
  * * * * * * * * * * * * * * * * * * * * */
 
-DRAGON_API void SetLogLevel(const std::string& level);
+DRAGON_API void SetLoggingLevel(const std::string& level);
 
 }  // namespace dragon
 

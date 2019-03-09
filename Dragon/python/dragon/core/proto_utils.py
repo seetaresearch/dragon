@@ -21,6 +21,7 @@ import numpy as np
 from google.protobuf.message import Message
 
 import dragon.config as cfg
+import dragon.import_c_api as C
 from dragon.proto import dragon_pb2 as pb
 from dragon.core.scope import get_default_device
 
@@ -50,14 +51,15 @@ else:
         argument.name = key
         if type(value) is float: argument.f = value
         elif type(value) in (bool, int, long, np.int64) : argument.i = value
-        elif type(value) in (str, unicode): argument.s = value
+        elif type(value) is str: argument.s = value
+        elif type(value) is unicode: argument.s = str(value)
         elif isinstance(value, Message): argument.s = value.SerializeToString()
         elif all(type(v) is float for v in value): argument.floats.extend(value)
         elif all(type(v) is int for v in value): argument.ints.extend(value)
         elif all(type(v) is long for v in value): argument.ints.extend(value)
         elif all(type(v) is str for v in value): argument.strings.extend(value)
-        elif all(type(v) is unicode or type(v) is str for v in value):
-            argument.strings.extend(value)
+        elif all(type(v) is unicode for v in value):
+            argument.strings.extend([str(v) for v in value])
         elif all(isinstance(v, Message) for v in value):
             argument.strings.extend([v.SerializeToString() for v in value])
         else:
@@ -67,8 +69,10 @@ else:
         return argument
 
 
-def MakeOperatorDef(op_type, inputs, outputs, name='',
-                    device_option=None, arg=None, engine=None, **kwargs):
+def MakeOperatorDef(
+    op_type, inputs=(), outputs=(),
+        name='', uid=None, device_option=None,
+            arg=None, engine=None, **kwargs):
     operator = pb.OperatorDef()
     operator.type = op_type
     operator.name = name
@@ -81,22 +85,29 @@ def MakeOperatorDef(op_type, inputs, outputs, name='',
     if 'random_seed' in kwargs:
         operator.device_option.random_seed = kwargs['random_seed']
         del kwargs['random_seed']
-    if arg is not None:
-        operator.arg.extend(arg)
+    if uid is not None: operator.uid = uid
+    if arg is not None: operator.arg.extend(arg)
     for k,v in kwargs.items():
         if v is None: continue
         operator.arg.add().CopyFrom(MakeArgument(k,v))
     return operator
 
 
-def MutableOperatorDef(meta_def, inputs, outputs):
-    op = pb.OperatorDef(); op.CopyFrom(meta_def)
-    op.ClearField('input'); op.input.extend(inputs)
-    op.ClearField('output'); op.output.extend(outputs)
-    return op
+def MakeCXXOperatorDef(
+    op_type, inputs=(), outputs=(),
+        name='', uid=None, device_option=None,
+            arg=None, engine=None, **kwargs):
+    c_def = C.OperatorDef()
+    py_def = MakeOperatorDef(
+        op_type, inputs, outputs, name, uid,
+            device_option, arg, engine, **kwargs)
+    c_def.ParseFrom(py_def.SerializeToString())
+    return c_def
 
 
-def MakeDeviceOption(device_type, device_id, engine=None, rng_seed=None):
+def MakeDeviceOption(
+    device_type, device_id,
+        engine=None, rng_seed=None):
     option = pb.DeviceOption()
     option.device_type = device_type
     option.device_id = device_id
@@ -121,7 +132,9 @@ for i in range(_PREDEFINED_DEVICE_LIMITS):
                 MakeDeviceOption(identify, i, 'CUDNN')
 
 
-def GetDeviceOption(device_type, device_id=0, engine=None, rng_seed=None):
+def GetDeviceOption(
+    device_type, device_id=0,
+        engine=None, rng_seed=None):
     ctx = (device_type, device_id, engine if engine else '')
     option = _PREDEFINED_DEVICE_OPTION_DICT[ctx]
     if rng_seed is not None:

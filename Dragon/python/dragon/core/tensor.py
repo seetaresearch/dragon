@@ -355,10 +355,9 @@ class Tensor(object):
         """
         if inplace:
             return Tensor.CreateOperator(
-                'AsType', [], existing_outputs=[self], dtype=dtype)
+                'Cast', [], existing_outputs=[self], dtype=dtype)
         else:
-            return Tensor.CreateOperator(
-                'AsType', self, dtype=dtype)
+            return Tensor.CreateOperator('Cast', self, dtype=dtype)
 
     @property
     def extra_targets(self):

@@ -44,7 +44,6 @@ class _GroupNorm(Module):
     def register_op(self):
         self.op_meta = {
             'op_type': 'GroupNorm',
-            'n_inputs': 3, 'n_outputs': 1,
             'arguments': {
                 'group': self.group,
                 'axis': 1, # Data format: NCHW
@@ -55,7 +54,7 @@ class _GroupNorm(Module):
     def forward(self, input):
         inputs = [input] + self.inputs
         self.unify_devices(inputs)
-        outputs = [self.register_output(input.dtype)]
+        outputs = [self.register_output()]
         return self.run(inputs, outputs)
 
 

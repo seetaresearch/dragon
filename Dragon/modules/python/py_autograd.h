@@ -19,95 +19,45 @@ namespace dragon {
 
 namespace python {
 
-PyObject* CreateGradientDefsCC(PyObject* self, PyObject* args) {
-    PyObject* def_string = nullptr;
-    PyObject* py_g_outputs = nullptr;
-    if (!PyArg_ParseTuple(args, "SO!",
-            &def_string, &PyList_Type, &py_g_outputs)) {
-        PyErr_SetString(PyExc_ValueError,
-            "Excepted a serialized string of OperatorDef "
-            "and a list containing outputs of this GradientOp.");
-         return nullptr;
-    }
-    OperatorDef def;
-    if (!def.ParseFromString(PyBytes_AsStringEx(def_string))) {
-        PyErr_SetString(PyExc_ValueError,
-            "Failed to parse the OperatorDef.");
-        return nullptr;
-    }
-    if (!GradientRegistry()->Has(def.type())) {
-        PyErr_SetString(PyExc_KeyError,
-            "This Operator does not register GradientOp.");
-        return nullptr;
-    }
-    vector<string> g_outputs;
-    PyList_AsVecString(py_g_outputs, g_outputs, "ignore");
-    Gradient grad = MakeGradientForOp(def, g_outputs);
-    PyObject* g_ops = PyList_New(grad.ops.size());
-    PyObject* g_input = PyList_New(grad.g_inputs.size());
-    PyObject* g_defaults = PyList_New(grad.defaults.size());
-    for (int i = 0; i < grad.ops.size(); i++) {
-        PyObject* e = String_AsPyBytes(grad.ops[i].SerializeAsString());
-        SetPyList(g_ops, i, e);
-    }
-    for (int i = 0; i < grad.g_inputs.size(); i++) {
-        PyObject* e = String_AsPyUnicode(grad.g_inputs[i]);
-        SetPyList(g_input, i, e);
-    }
-    for (int i = 0; i < grad.defaults.size(); i++) {
-        PyObject* e = PyFloat_FromDouble(grad.defaults[i]);
-        SetPyList(g_defaults, i, e);
-    }
-    PyObject* pack = PyTuple_Pack(3, g_ops, g_input, g_defaults);
-    Py_XDECREF(g_ops);
-    Py_XDECREF(g_input);
-    Py_XDECREF(g_defaults);
-    return pack;
-}
+void AddGradientMethods(pybind11::module& m) {
+    m.def("CreateGradientDefs", [](
+        const string&               forward_def,
+        const vector<string>&       g_outputs) {
+        OperatorDef def;
+        if (!def.ParseFromString(forward_def))
+            LOG(FATAL) << "Failed to parse the OperatorDef.";
+        if (!GradientRegistry()->Has(def.type()))
+            LOG(FATAL) << def.type() << "Op has no gradients.";
+        Gradient grad = MakeGradientForOp(def, g_outputs);
+        vector<pybind11::bytes> grad_ops;
+        for (const auto& e : grad.ops)
+            grad_ops.push_back(e.SerializeAsString());
+        return std::tuple<
+            vector<pybind11::bytes>, vector<string>, vector<float>
+        >(grad_ops, grad.g_inputs, grad.defaults);
+    });
 
-PyObject* RunGradientFlowCC(PyObject* self, PyObject* args) {
-    PyObject* py_fp_ops, *py_targets;
-    PyObject* py_input_grads, *py_ignore_grads;
-    PyObject* py_share_grads, *py_export_graph;
-    if (!PyArg_ParseTuple(args, "OOOOOO",
-        &py_fp_ops, &py_targets,
-            &py_input_grads, &py_ignore_grads,
-                &py_share_grads, &py_export_graph)) {
-        PyErr_SetString(PyExc_ValueError,
-            "Excepted a list of serialized input ops, targets, "
-            "input grads, ignore grads and whehter to share grads or log graph.");
-        return nullptr;
-    }
-    // Make -> Optm -> Run
-    vector<string> targets, input_grads, ignore_grads;
-    PyList_AsVecString(py_targets, targets, "");
-    PyList_AsVecString(py_input_grads, input_grads, "");
-    PyList_AsVecString(py_ignore_grads, ignore_grads, "");
-    GraphDef fp_ops, bp_ops;
-    if (!fp_ops.ParseFromString(PyBytes_AsStringEx(py_fp_ops))) {
-        PyErr_SetString(PyExc_RuntimeError, 
-            "Failed to parse the GraphDef of forward ops.");
-        return nullptr;
-    }
-    GraphGradientMaker maker;
-    for (auto& grad : input_grads) maker.AddExternalGrad(grad);
-    for (auto& grad : ignore_grads) maker.AddIgnoreGrad(grad);
-    maker.Make(fp_ops, targets, bp_ops);
-    bool share_grads = PyObject_IsTrue(py_share_grads) ? true : false;
-    bool export_graph = PyObject_IsTrue(py_export_graph) ? true : false;
-    if (share_grads) maker.Share("/share/buffer/grads", bp_ops);
-    if (export_graph) {
-        Tensor* tensor = ws()->CreateTensor(
-            "/graph_def/dynamic/gradient_flow")->Reshape({ 1 });
-        string* data = tensor->mutable_data<string, CPUContext>();
-        data[0] = bp_ops.SerializeAsString();
-        tensor = ws()->CreateTensor(
-            "/graph_def/dynamic/forward_flow")->Reshape({ 1 });
-        data = tensor->mutable_data<string, CPUContext>();
-        data[0] = fp_ops.SerializeAsString();
-    }
-    for (auto& op : bp_ops.op()) ws()->RunOperator(op);
-    Py_RETURN_TRUE;
+    m.def("FlowGradients", [](
+        const vector<OperatorDef*>&   forward_ops,
+        const vector<string>&         targets,
+        const vector<string>&         input_grads,
+        const vector<string>&         ignore_grads,
+        const bool                    is_sharing,
+        const bool                    verbose) {
+        // Make => Optimize => Run
+        GraphDef backward_ops;
+        GraphGradientMaker maker;
+        for (auto& grad : input_grads) maker.AddExternalGrad(grad);
+        for (auto& grad : ignore_grads) maker.AddIgnoreGrad(grad);
+        maker.Make(forward_ops, targets, backward_ops);
+        if (is_sharing) maker.Share(backward_ops);
+        pybind11::gil_scoped_release g;
+        for (auto& op : backward_ops.op()) {
+            if (verbose) std::cout << op.DebugString() << std::endl;
+            if (op.has_uid()) ws()->RunOperator(op);
+            else ws()->RunOperatorOnce(op);
+        }
+    });
 }
 
 }  // namespace python

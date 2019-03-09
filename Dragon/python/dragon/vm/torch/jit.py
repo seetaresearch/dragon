@@ -15,7 +15,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.dummy_pool import OperatorPool
+from dragon.vm.torch.pool import OperatorPool
+
+
+_ENFORCE_JIT_TRACER = False
 
 
 def _Incrementer():
@@ -27,22 +30,22 @@ class JITRecorder(object):
     UID_GENERATOR = _Incrementer()
 
     def __init__(self):
-        self._ops = dict()
+        self.ops = dict()
 
     def merge(self, recorders):
         for e in recorders:
-            if e: self._ops.update(e._ops)
+            if e: self.ops.update(e.ops)
 
     def append(self, op):
         uid = next(self.UID_GENERATOR)
         op_name = OperatorPool.get(op.type)
-        self._ops[uid] = op
-        self._ops[uid].name = op_name
+        self.ops[uid] = op
+        self.ops[uid].name = op_name
         return op_name
 
     def debug_str(self, name=''):
         external_inputs = set()
-        ordered_ops = sorted(self._ops.items(), key=lambda d: d[0])
+        ordered_ops = sorted(self.ops.items(), key=lambda d: d[0])
         outputs = set()
         buffer0 = '-------------------Expressions-------------------\n'
         buffer1 = ''
@@ -65,3 +68,22 @@ class JITRecorder(object):
             buffer2 = buffer2 + ex_input + ', '
         buffer2 = buffer2 + ']\n'
         return buffer0 + buffer2 + buffer1 + buffer0
+
+
+class enforce_jit(object):
+    """Context-manager that enforce the jit tracer."""
+
+    def __init__(self):
+        self.prev = is_jit_enforced()
+
+    def __enter__(self):
+        global _ENFORCE_JIT_TRACER
+        _ENFORCE_JIT_TRACER = True
+
+    def __exit__(self, *args):
+        global _ENFORCE_JIT_TRACER
+        _ENFORCE_JIT_TRACER = self.prev
+
+
+def is_jit_enforced():
+    return _ENFORCE_JIT_TRACER

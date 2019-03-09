@@ -19,15 +19,34 @@ namespace python {
 
 #include "py_dragon.h"
 
-inline PyObject* IsCUDADriverSufficientCC(PyObject* self, PyObject* args) {
+void AddCUDAMethods(pybind11::module& m) {
+    m.def("IsCUDADriverSufficient", []() {
 #ifdef WITH_CUDA
-    int count;
-    cudaError_t err = cudaGetDeviceCount(&count);
-    if (err == cudaErrorInsufficientDriver) return PyBool_FromLong(0);
-    return PyBool_FromLong(1);
+        int count;
+        cudaError_t err = cudaGetDeviceCount(&count);
+        if (err == cudaErrorInsufficientDriver) false;
+        return true;
 #else
-    return PyBool_FromLong(0);
+        return false;
 #endif
+    });
+
+    m.def("cudaGetDevice", []() {
+        return CUDAContext::active_device_id();
+    });
+
+    m.def("cudaStreamSynchronize", [](
+        int device_id, int stream_id) {
+#ifdef WITH_CUDA
+        if (device_id < 0) device_id =
+            CUDAContext::active_device_id();
+        cudaStreamSynchronize(CUDAContext::cuda_object()
+            ->GetStream(device_id, stream_id));
+        cudaError_t error = cudaGetLastError();
+        CHECK_EQ(error, cudaSuccess)
+            << "\nCUDA Error: " << cudaGetErrorString(error);
+#endif
+    });
 }
 
 }  // namespace python

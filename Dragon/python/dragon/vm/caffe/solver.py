@@ -50,6 +50,8 @@ class Solver(object):
         """
         self._param = pb.SolverParameter()
         parse_text_proto(open(proto_txt, 'r').read(), self._param)
+        if self._param.iter_size > 1:
+            raise NotImplementedError('Gradients accumulating is deprecated.')
         self._net = None
         self._test_nets = []
         self._layer_blobs = []

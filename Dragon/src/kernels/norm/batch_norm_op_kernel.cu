@@ -64,8 +64,7 @@ __global__ void _BatchNormInternalGrad(
         dbe_val = BlockReduce<Tp>(dbe_storage).Reduce(dbe_val, cub::Sum());
         if (threadIdx.x == 0) {
             ds[i] = ds_val; db[i] = db_val;
-            // Accumulate the gradients of trainable parameters
-            dgamma[i] += dga_val; dbeta[i] += dbe_val;
+            dgamma[i] = dga_val; dbeta[i] = dbe_val;
         }
     }
 }
@@ -139,8 +138,7 @@ __global__ void _BatchNormWGrad(
         dg_val = BlockReduce<Tp>(dg_storage).Reduce(dg_val, cub::Sum());
         db_val = BlockReduce<Tp>(db_storage).Reduce(db_val, cub::Sum());
         if (threadIdx.x == 0) {
-            // Accumulate the gradients of trainable parameters
-            dgamma[i] += dg_val; dbeta[i] += db_val;
+            dgamma[i] = dg_val; dbeta[i] = db_val;
         }
     }
 }

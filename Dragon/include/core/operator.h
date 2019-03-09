@@ -30,10 +30,10 @@ class Workspace;
 
 class OperatorBase {
  public:
-    /*! Default constructor */
+    /*! \brief Default constructor */
     OperatorBase(const OperatorDef& def, Workspace* ws);
 
-    /*! Default deconstructor */
+    /*! \brief Default deconstructor */
     virtual ~OperatorBase() {}
 
     /*! \brief Return the specified input tensor */
@@ -49,19 +49,13 @@ class OperatorBase {
     int OutputSize() { return (int)outputs_.size(); }
 
     /*! \brief Modify this operator according to the given def  */
-    void MutableOp(const OperatorDef& def);
-
-    /*! \brief Modify this operator according to the given properties */
-    void MutableOp(
-        const vector<string>&       inputs,
-        const vector<string>&       outputs,
-        const string&               anchor);
+    void UpdateFrom(const OperatorDef& def);
 
     /*! \brief Switch the internal running phase */
     void SwitchToPhase(const string& phase) { phase_ = phase; }
 
     /*! \brief Run this operator on the specified stream */
-    virtual void Run(int stream_id = 1) { NOT_IMPLEMENTED; }
+    virtual void Run(int stream_id = 0) { NOT_IMPLEMENTED; }
 
     /*! \brief Fusion this operator into the specified graph */
     virtual void Fusion(void* graph) { NOT_IMPLEMENTED; }
@@ -100,14 +94,14 @@ class OperatorBase {
     /*! \brief Return the specified argument */
     const Argument& arg(const string& name) { return *(args_[name]); }
 
-    typedef Map<string, vector<OperatorBase*> > RecomputeMap;
+    typedef Map<string, vector<OperatorBase*> > SubGraph;
 
-    /*! \brief Return the recomputing map of this operator */
-    RecomputeMap& recompute_map() { return recompute_map_; }
+    /*! \brief Return the recomputing subgraph of this operator */
+    SubGraph& subgraph() { return subgraph_; }
 
-    /*! \brief Set the given recomputing map */
-    void set_recompute_map(RecomputeMap recompute_map) {
-        recompute_map_ = recompute_map; 
+    /*! \brief Set the given recomputing subgraph */
+    void set_subgraph(SubGraph subgraph) {
+        subgraph_ = subgraph;
     }
 
     /*! \brief Return the stored operator def */
@@ -129,7 +123,7 @@ class OperatorBase {
  protected:
     string phase_, anchor_;
     Map<std::string, const Argument*> args_;
-    Map<string, vector<OperatorBase*> > recompute_map_;
+    SubGraph subgraph_;
     vector<Tensor*> inputs_, outputs_;
     OperatorDef def_;
     Workspace* ws_;
@@ -138,50 +132,66 @@ class OperatorBase {
 template <class Context>
 class Operator : public OperatorBase {
  public:
+    /*! \brief Default constructor */
     Operator(const OperatorDef& def, Workspace* ws)
         : OperatorBase(def, ws), ctx_(def.device_option()),
-          allow_recompute_(OperatorBase::Arg<bool>(
-              "recomputing_aware", false)),
+          allow_recomputing_(OperatorBase::Arg<bool>(
+              "allow_recomputing", false)),
           do_sync_(OperatorBase::Arg<bool>(
-              "do_sync", true)) {
+              "do_sync", false)) {
         allow_run_ = true;
-        allow_run_ &= _MPICheck();
+        allow_run_ &= MPICheck();
         allow_run_ &= (!(OutputSize() == 1 &&
             Output(0)->name() == "ignore"));
     }
 
-    void Run(int stream_id = 1) final {
+    /*! \brief Run this operator on the specified stream */
+    void Run(int stream_id = 0) final {
         if (!allow_run_) return;
-        if (allow_recompute_) MakeResource();
+        if (allow_recomputing_) PrepareResource();
         ctx()->SwitchToDevice(stream_id);
         MemorySwitch();
         RunOnDevice();
-        if (do_sync_) ctx()->FinishDeviceCompution();
-        if (allow_recompute_) CleanResource();
+        if (do_sync_ || stream_id > 0) {
+            // We will sync the stream 0 at the specific time
+            ctx()->FinishDeviceCompution();
+        }
+        if (allow_recomputing_) ReleaseResource();
     }
 
-    virtual void ElimateCorruption();
-    virtual void MakeResource();
-    virtual void CleanResource();
+    /*! \brief Prepare the content of inputs */
+    virtual void PrepareResource();
 
+    /*! \brief Release the ownership of inputs */
+    virtual void ReleaseResource();
+
+    /*! \brief Coordinate the context of inputs and outputs */
     virtual void MemorySwitch() {
-        for (auto* I : inputs_)
-            if(I->name() != "ignore") I->SwitchToDevice();
-        for (auto* O : outputs_) 
-            if(O->name() != "ignore") O->SwitchToDevice();
+        for (auto* e : inputs_)
+            if(e->name() != "ignore")
+                e->SwitchToDevice(ctx()->device_id());
+        for (auto* e : outputs_)
+            if(e->name() != "ignore")
+                e->SwitchToDevice(ctx()->device_id());
     }
 
+    /*! \brief Implement the detailed execution */
     virtual void RunOnDevice() = 0;
 
+    /*! \brief Return the internal context */
     Context* ctx() { return &ctx_; }
+
+    /*! \brief Whether this operator can be ignored */
     bool AllowRun() { return allow_run_; }
 
  protected:
+    /*! \brief Store the internal context */
     Context ctx_;
-    bool allow_run_, allow_recompute_, do_sync_;
+    bool allow_run_, allow_recomputing_, do_sync_;
 
  private:
-    bool _MPICheck() {
+    /*! \brief Check the MPI conditions */
+    bool MPICheck() {
 #ifndef WITH_MPI
         return true;
 #else
@@ -197,7 +207,13 @@ class Operator : public OperatorBase {
     }
 };
 
-OperatorBase* CreateOperator(const OperatorDef& def, Workspace* ws);
+/*! \brief New a operator from the raw def */
+
+OperatorBase* NewOperator(
+    const OperatorDef&          def,
+    Workspace*                  ws);
+
+/*! Macros */
 
 #define USE_SIMPLE_CTOR_DTOR(name) \
     name(const OperatorDef& def, Workspace* ws) \
@@ -350,7 +366,9 @@ DECLARE_REGISTRY(
             << "\nExcepted the size of " << #argument \
             << " > " << idx << ". (Got " \
             << argument##_desc.size() << ")."; \
-        Tensor* argument##_tensor = ws()->GetTensor(argument##_desc[idx]); \
+        Tensor* argument##_tensor = ws()->GetTensor( \
+            str::replace_first(argument##_desc[idx], \
+                "${ANCHOR}", anchor())); \
         CHECK(argument##_tensor->IsType<type>()) \
             << "\nThe type of " << #argument << " should be " << #type << "."; \
         CHECK_EQ(argument##_tensor->count(), 1) \

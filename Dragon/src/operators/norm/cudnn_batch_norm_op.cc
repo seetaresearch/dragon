@@ -101,8 +101,8 @@ void CuDNNBatchNormOp<Context>::Reshape() {
 
     // Get the recomputing flag
     is_recomputing = ws()->GetTensor(
-        "/opt/mirror_stage/recompute_flag")->
-            template data<bool, CPUContext>()[0];
+        "/opt/recomputing_flag")->template
+            data<bool, CPUContext>()[0];
 
     // Determine the data format
     int64_t channel_axis = axis;
@@ -220,7 +220,7 @@ void CuDNNBatchNormGradientOp<Context>::TrainingRunWithType() {
     CUDNN_CHECK(cudnnBatchNormalizationBackward(
         ctx()->cudnn_handle(), bn_mode,
             CUDNNType<T>::one, CUDNNType<T>::zero,
-                CUDNNType<T>::one, CUDNNType<T>::one,
+                CUDNNType<T>::one, CUDNNType<T>::zero,
                     output_desc, x, input_desc, dy,
                         output_desc, dx, bn_desc,
                             gamma, dgamma, dbeta,

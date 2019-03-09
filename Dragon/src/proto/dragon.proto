@@ -65,12 +65,13 @@ message Argument {
 }
 
 message OperatorDef {
-    repeated string input = 1;
-    repeated string output = 2;
-    optional string name = 3;
-    optional string type = 4;
-    repeated Argument arg = 5;
-    optional DeviceOption device_option = 6;
+    optional string uid = 1;
+    repeated string input = 2;
+    repeated string output = 3;
+    optional string name = 4;
+    optional string type = 5;
+    repeated Argument arg = 6;
+    optional DeviceOption device_option = 7;
 }
 
 message GradientProto {

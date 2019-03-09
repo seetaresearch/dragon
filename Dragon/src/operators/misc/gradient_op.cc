@@ -1,4 +1,5 @@
 #include "core/workspace.h"
+#include "utils/op_kernel.h"
 #include "utils/math_functions.h"
 #include "operators/misc/gradient_op.h"
 
@@ -41,17 +42,30 @@ template <class Context> template <typename T>
 void GradientGatherOp<Context>::RunWithType() {
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     int64_t count = Output(0)->count();
-    for (int i = 0; i < indices.size(); i++) {
-        CHECK(Output(0)->dims() == Input(indices[i]).dims());
-        auto* dYdata = Input(indices[i]).template data<T, Context>();
-        if (i == 0) {
-            ctx()->template Copy<T, Context, Context>(
-                count, dXdata, dYdata);
-        } else {
-            math::Add(count, dXdata, dYdata, dXdata, ctx());
+    if (indices.size() == 1) {
+        auto* dYdata = Input(indices[0]).template data<T, Context>();
+        ctx()->template Copy<T, Context, Context>(count, dXdata, dYdata);
+    } else if(indices.size() == 2) {
+        CHECK_EQ(count, Input(indices[1]).count());
+        auto* dY1data = Input(indices[0]).template data<T, Context>();
+        auto* dY2data = Input(indices[1]).template data<T, Context>();
+        math::Add(count, dY1data, dY2data, dXdata, ctx());
+    } else {
+        size_t dy_idx = 1;
+        auto* dYdata = Input(indices[0]).template data<T, Context>();
+        ctx()->template Copy<T, Context, Context>(count, dXdata, dYdata);
+        while (dy_idx < indices.size()) {
+            if (indices.size() - dy_idx >= 2) {
+                auto* dY1data = Input(indices[dy_idx]).template data<T, Context>();
+                auto* dY2data = Input(indices[dy_idx + 1]).template data<T, Context>();
+                kernel::GradientTwoSum(count, dY1data, dY2data, dXdata, ctx());
+                dy_idx += 2;
+            } else {
+                dYdata = Input(indices[dy_idx]).template data<T, Context>();
+                math::Add(count, dXdata, dYdata, dXdata, ctx());
+                dy_idx += 1;
+            }
         }
-        ctx()->FinishDeviceCompution();
-        Input(indices[i]).Reset();
     }
 }
 

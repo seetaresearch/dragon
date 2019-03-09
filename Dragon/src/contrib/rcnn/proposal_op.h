@@ -37,8 +37,7 @@ class ProposalOp final : public Operator<Context> {
 
     void RunOnDevice() override;
 
-    template <typename T> void RunWithType(
-        const T* scores, const T* bbox_deltas);
+    template <typename T> void RunWithType();
 
  protected:
     vector<int64_t> strides;

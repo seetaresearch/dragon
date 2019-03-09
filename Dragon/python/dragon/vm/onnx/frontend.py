@@ -19,13 +19,14 @@ from __future__ import print_function
 
 import itertools
 import numpy as np
+from collections import defaultdict
 
 from onnx import (checker, mapping, numpy_helper, GraphProto, OperatorSetIdProto)
 from onnx.helper import make_tensor_value_info, make_model, printable_graph
 
 from dragon.vm.onnx.helper import \
     (extract_initializer, extract_leaf_tensors,
-     native_run_graph,)
+     native_run_graph, fetch_initializer,)
 
 from dragon.vm.onnx.nodes.factory import get_nodes_def
 
@@ -45,14 +46,33 @@ class DragonFrontend(object):
             elem_type=tensor.data_type,
             shape=tensor.dims)
 
+    @staticmethod
+    def _ssa_rewrite(op_def, shapes, ssa_names, ssa_outputs):
+        inputs, outputs = [], []
+        for e in op_def.input:
+            inputs.append(ssa_names[e] if e in ssa_names else e)
+        for e in op_def.output:
+            outputs.append(e + '/Version_{}'.format(
+                ssa_outputs[e]) if ssa_outputs[e] > 0 else e)
+            ssa_outputs[e] += 1
+            ssa_names[e] = outputs[-1]
+            shapes[outputs[-1]] = shapes[e][:]
+        op_def.ClearField('input')
+        op_def.ClearField('output')
+        op_def.input.extend(inputs)
+        op_def.output.extend(outputs)
+        return op_def, shapes, ssa_names, ssa_outputs
+
     @classmethod
     def graph_def_to_onnx_graph(
         cls,
         graph_def,
         init_func=None,
+        constants=None,
         value_info=None,
         graph_name=None,
-        verbose=True
+        verbose=True,
+        enforce_no_running=False,
     ):
         if value_info is None: value_info = {}
         if not isinstance(value_info, dict):
@@ -80,21 +100,22 @@ class DragonFrontend(object):
 
         ws = None
 
-        if run_native_graph:
+        # Get the value info of outputs and initializer
+        if run_native_graph and not enforce_no_running:
             inputs = {}
             for name, (elem_type, shape) in value_info.items():
                 inputs[name] = np.random.randn(*shape).astype(
                     mapping.TENSOR_TYPE_TO_NP_TYPE[elem_type])
-
             ws, outputs, initializer = native_run_graph(
                 graph_def, inputs, initializer, init_func)
 
-            for name in graph_def.output:
-                output = outputs[name]
-                elem_type = mapping.NP_TYPE_TO_TENSOR_TYPE[output.dtype]
-                shape = output.shape
-                value_info[name] = (elem_type, shape)
+        if enforce_no_running:
+            # In some cases(e.g. PyTorch), we had ran the graph
+            # outputs had been in ``value_info`` already
+            import dragon.core.workspace as ws
+            initializer = fetch_initializer(initializer)
 
+        # Prepare to make the graph
         onnx_graph = GraphProto()
         onnx_graph.name = graph_name if graph_name else graph_def.name
 
@@ -122,19 +143,31 @@ class DragonFrontend(object):
                 shape=value_info[name][1])
             for name in set(graph_def.output))
 
+        # Add constants
+        if constants is not None:
+            for k, v in constants.items():
+                onnx_graph.initializer.extend(
+                    [numpy_helper.from_array(v, name=k)])
+
         # Add nodes
+        shapes, ssa_names, ssa_outputs = {}, {}, defaultdict(int)
+
         for op in graph_def.op:
-            shapes = {}
+            # Get the shape of inputs and outputs
             for name in itertools.chain(op.input, op.output):
-                if ws:
+                if ws and ws.HasTensor(name):
                     blob = ws.FetchTensor(name)
                     if hasattr(blob, 'shape'):
                         shapes[name] = blob.shape
                 else:
                     shapes[name] = value_info[name][1]
 
+            # SSA rewritten
+            op, shapes, ssa_names, ssa_outputs = \
+                cls._ssa_rewrite(op, shapes, ssa_names, ssa_outputs)
+
             # Try to translate op => nodes
-            nodes, const_tensors = get_nodes_def(op, shape_dict=shapes)
+            nodes, const_tensors = get_nodes_def(op, shapes, ws)
 
             # Directly convert outputs as const tensors if necessary
             if None in nodes:
@@ -161,18 +194,27 @@ class DragonFrontend(object):
         cls,
         graph_def,
         init_func=None,
+        constants=None,
         value_info=None,
         graph_name=None,
-        verbose=True
+        verbose=True,
+        enforce_no_running=False,
     ):
         opset_id = OperatorSetIdProto()
-        opset_id.domain = ''  # ONNX default domain
+        opset_id.domain = '' # ONNX default domain
         opset_id.version = cls.target_opset_version
         model = make_model(
             cls.graph_def_to_onnx_graph(
-                graph_def, init_func, value_info, graph_name, verbose),
-            opset_imports=[opset_id],     # current supported opset version
-            producer_name='onnx-dragon',  # producer name
+                graph_def,
+                init_func,
+                constants,
+                value_info,
+                graph_name,
+                verbose,
+                enforce_no_running,
+            ),
+            opset_imports=[opset_id],    # current supported opset version
+            producer_name='onnx-dragon', # producer name
         )
         checker.check_model(model)
         return model

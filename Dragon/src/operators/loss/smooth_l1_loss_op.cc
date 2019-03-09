@@ -9,25 +9,24 @@ template <class Context> template <typename T>
 void SmoothL1LossOp<Context>::RunWithType() {
     auto* X0data = Input(0).template data<T, Context>();
     auto* X1data = Input(1).template data<T, Context>();
-    auto* diff_data = diff->template mutable_data<T, Context>();
-    auto* error_data = error->template mutable_data<T, Context>();
+    auto* Ddata = diff->template mutable_data<T, Context>();
+    auto* Edata = error->template mutable_data<T, Context>();
 
-    math::Sub<T, Context>(diff->count(),
-        X0data, X1data, diff_data, ctx());
+    math::Sub(diff->count(), X0data, X1data, Ddata, ctx());
+
     if (InputSize() > 2) {
-        auto* inside_w_data = Input(2).template data<T, Context>();
-        math::Mul<T, Context>(diff->count(),
-            inside_w_data, diff_data, diff_data, ctx());
-    }
-    kernel::SmoothL1<T, Context>(diff->count(),
-        beta, diff_data, error_data, ctx());
-    if (InputSize() > 3) {
-        auto* outside_w_data = Input(3).template data<T, Context>();
-        math::Mul<T, Context>(diff->count(),
-            outside_w_data, error_data, error_data, ctx());
+        auto* iWdata = Input(2).template data<T, Context>();
+        math::Mul(diff->count(), iWdata, Ddata, Ddata, ctx());
     }
 
-    T normalizer = 1;
+    kernel::SmoothL1(diff->count(), beta, Ddata, Edata, ctx());
+
+    if (InputSize() > 3) {
+        auto* oWdata = Input(3).template data<T, Context>();
+        math::Mul(diff->count(), oWdata, Edata, Edata, ctx());
+    }
+
+    double normalizer = 1.;
     if (normalization == "BATCH_SIZE") {
         normalizer = Input(0).dim(0);
     } else if (normalization == "FULL") {
@@ -36,8 +35,7 @@ void SmoothL1LossOp<Context>::RunWithType() {
 
     Output(0)->Reshape(vector<int64_t>());
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Sum<T, Context>(error->count(),
-        1.f / normalizer, error_data, Ydata, ctx());
+    math::Sum(error->count(), 1. / normalizer, Edata, Ydata, ctx());
 }
 
 template <class Context>
@@ -65,36 +63,37 @@ template <class Context> template <typename T>
 void SmoothL1LossGradientOp<Context>::RunWithType() {
     auto* Ddata = diff->template mutable_data<T, Context>();
     auto* dYdata = Input(-1).template data<T, Context>();
-    float dYdata_host; ctx()->template Copy
-        <float, CPUContext, Context>(
-            1, &dYdata_host, dYdata);
+
+    T dYHost; ctx()->template Copy
+        <T, CPUContext, Context>(
+            1, &dYHost, dYdata);
     ctx()->FinishDeviceCompution();
 
-    kernel::SmoothL1Grad<T, Context>(diff->count(),
+    kernel::SmoothL1Grad(diff->count(),
         beta, Ddata, Ddata, ctx());
 
     if (normalization == "BATCH_SIZE") {
-        dYdata_host /= Input(0).dim(0);
+        dYHost /= Input(0).dim(0);
     } else if (normalization == "FULL") {
-        dYdata_host /= Input(0).count();
+        dYHost /= Input(0).count();
     }
 
     for (int i = 0; i < 2; i++) {
         if (Output(i)->name() == "ignore") continue;
         Output(i)->ReshapeLike(Input(i));
         auto* dXdata = Output(i)->template mutable_data<T, Context>();
-        math::Scale<T, Context>(Output(i)->count(),
-            dYdata_host * (i == 0 ? 1.f : -1.f),
+        math::Scale(Output(i)->count(),
+            dYHost * (i == 0 ? 1.f : -1.f),
                 Ddata, dXdata, ctx());
         if (InputSize() > 3) {
-            auto* inside_w_data = Input(2).template data<T, Context>();
-            math::Mul<T, Context>(Output(i)->count(),
-                inside_w_data, dXdata, dXdata, ctx());
+            auto* iWdata = Input(2).template data<T, Context>();
+            math::Mul(Output(i)->count(),
+                iWdata, dXdata, dXdata, ctx());
         }
         if (InputSize() > 4) {
-            auto* outside_w_data = Input(3).template data<T, Context>();
-            math::Mul<T, Context>(Output(i)->count(),
-                outside_w_data, dXdata, dXdata, ctx());
+            auto* oWdata = Input(3).template data<T, Context>();
+            math::Mul(Output(i)->count(),
+                oWdata, dXdata, dXdata, ctx());
         }
     }
 }

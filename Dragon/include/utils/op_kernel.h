@@ -378,8 +378,8 @@ void NLLLoss(
     const Tx*               log_prob,
     const Ty*               labels,
     const int*              ignores,
-    float*                  losses,
-    float*                  flags,
+    Tx*                     losses,
+    int*                    flags,
     Context*                ctx);
 
 template <typename Tx, typename Ty, class Context>
@@ -392,7 +392,7 @@ void NLLLossGrad(
     const Ty*               labels,
     const int*              ignores,
     Tx*                     dx,
-    float*                  flags,
+    int*                    flags,
     Context*                ctx);
 
 /*! loss.sigmoid_ce_loss */
@@ -403,7 +403,7 @@ void SigmoidCrossEntropy(
     const T*                logits,
     const T*                targets,
     T*                      losses,
-    T*                      flags,
+    int*                    flags,
     Context*                ctx);
 
 template <typename T, class Context>
@@ -412,12 +412,12 @@ void SigmoidCrossEntropyGrad(
     const T*                logits,
     const T*                targets,
     T*                      dlogits,
-    T*                      flags,
+    int*                    flags,
     Context*                ctx);
 
 /*! loss.sigmoid_focal_loss */
 
-template <typename T, class Context>
+template <typename Tx, typename Ty, class Context>
 void SigmoidFocalLoss(
     const int               outer_dim,
     const int               axis_dim,
@@ -426,13 +426,13 @@ void SigmoidFocalLoss(
     const float             neg_alpha,
     const float             gamma,
     const int               neg_id,
-    const float*            logits,
-    const float*            targets,
-    float*                  losses,
-    float*                  flags,
+    const Tx*               logits,
+    const Ty*               targets,
+    Tx*                     losses,
+    int*                    flags,
     Context*                ctx);
 
-template <typename T, class Context>
+template <typename Tx, typename Ty, class Context>
 void SigmoidFocalLossGrad(
     const int               outer_dim,
     const int               axis_dim,
@@ -441,10 +441,10 @@ void SigmoidFocalLossGrad(
     const float             neg_alpha,
     const float             gamma,
     const int               neg_id,
-    const float*            logits,
-    const float*            targets,
-    float*                  dlogits,
-    float*                  flags,
+    const Tx*               logits,
+    const Ty*               targets,
+    Tx*                     dlogits,
+    int*                    flags,
     Context*                ctx);
 
 /*! loss.smooth_l1_loss */
@@ -477,7 +477,7 @@ void SoftmaxCrossEntropy(
 
 /*! loss.softmax_focal_loss */
 
-template <typename T, class Context>
+template <typename Tx, typename Ty, class Context>
 void SoftmaxFocalLoss(
     const int               outer_dim,
     const int               axis_dim,
@@ -487,14 +487,14 @@ void SoftmaxFocalLoss(
     const float             neg_alpha,
     const float             gamma,
     const int               neg_id,
-    const T*                prob,
-    const T*                labels,
+    const Tx*               prob,
+    const Ty*               labels,
     const int*              ignores,
-    T*                      losses,
-    T*                      flags,
+    Tx*                     losses,
+    int*                    flags,
     Context*                ctx);
 
-template <typename T, class Context>
+template <typename Tx, typename Ty, class Context>
 void SoftmaxFocalLossGrad(
     const int               outer_dim,
     const int               axis_dim,
@@ -504,11 +504,11 @@ void SoftmaxFocalLossGrad(
     const float             neg_alpha,
     const float             gamma,
     const int               neg_id,
-    const T*                prob,
-    const T*                labels,
+    const Tx*               prob,
+    const Ty*               labels,
     const int*              ignores,
-    T*                      dx,
-    T*                      flags,
+    Tx*                     dx,
+    int*                    flags,
     Context*                ctx);
 
 /*! loss.sparse_softmax_cross_entropy */
@@ -522,8 +522,8 @@ void SparseSoftmaxCrossEntropy(
     const Tx*               prob,
     const Ty*               labels,
     const int*              ignores,
-    float*                  losses,
-    float*                  flags,
+    Tx*                     losses,
+    int*                    flags,
     Context*                ctx);
 
 template <typename Tx, typename Ty, class Context>
@@ -536,7 +536,7 @@ void SparseSoftmaxCrossEntropyGrad(
     const Ty*               labels,
     const int*              ignores,
     Tx*                     dx,
-    float*                  flags,
+    int*                    flags,
     Context*                ctx);
 
 /*! misc.astype */
@@ -546,6 +546,16 @@ void TypeA2B(
     const int               count,
     const Ta*               a,
     Tb*                     b,
+    Context*                ctx);
+
+/*! misc.gradient */
+
+template <typename T, class Context>
+void GradientTwoSum(
+    const int               count,
+    const T*                dy1,
+    const T*                dy2,
+    T*                      dx,
     Context*                ctx);
 
 /*! misc.image_data */
@@ -976,11 +986,18 @@ void SGDUpdate(
 /*! update.op_base */
 
 template <typename T, class Context>
+void MixedPrecisionL2Decay(
+    const int               count,
+    const float             alpha,
+    const T*                w,
+    float*                  dx,
+    Context*                ctx);
+
+template <typename T, class Context>
 void MixedPrecisionUpdate(
     const int               count,
     const float*            updates,
     T*                      w,
-    T*                      g,
     Context*                ctx);
 
 /*! vision.bias_add */

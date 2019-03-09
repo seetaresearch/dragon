@@ -20,80 +20,69 @@ namespace dragon {
 
 class GraphBase {
  public:
-    struct Node {
-        vector<string> parents;
-        vector<string> childs;
-        int op_idx = -1;
-        OperatorDef op_def;
-    };
-
+    /*! \brief Default constructor */
     GraphBase(
         const GraphDef&         meta_graph,
         Workspace*              ws);
+
+    /*! \brief Default deconstructor */
     virtual ~GraphBase() {}
 
+    GraphDef BuildUpdateOps(const GraphDef& input_def);
+
+    /*! \brief Create a graph from the optimized def */
     virtual bool Create(
         const GraphDef&         optimized_graph,
         Workspace*              ws) = 0;
 
+    /*! \brief Run the graph once synchronously */
     virtual bool Run(
         const string&           include,
         const string&           exclude,
-        const int               stream_id = 1) = 0;
+        int                     stream_id = 0) = 0;
 
+    /*! \brief Return the name of this graph */
     string name() const { return name_; }
 
  protected:
+    /*! \brief Store the name and running phase */
     string name_, phase_;
+
+    /*! \brief Store the defined arguments */
     Map<string, Argument> args_;
+
+    /*! \brief Store the parent workspace */
     Workspace* ws_;
 };
 
 class Graph : public GraphBase {
  public:
+    /*! \brief Default constructor */
     Graph(const GraphDef& meta_graph, Workspace* ws);
+
+    /*! \brief Default deconstructor */
     virtual ~Graph() { for (auto* op : ops_) delete op; }
 
+    /*! \brief Create a graph from the optimized def */
     bool Create(
         const GraphDef&         optimized_graph,
         Workspace*              ws) override;
 
+    /*! \brief Run the graph once synchronously */
     bool Run(
         const string&           include,
         const string&           exclude,
-        const int               stream_id = 1) override;
+        int                     stream_id = 0) override;
 
-    GraphDef Prune(const GraphDef& meta_graph);
-    GraphDef Share(const GraphDef& optimized_graph);
-    void ShareGrads(GraphDef& optimized_graph);
-
-    GraphDef BuildUpdateOps(const GraphDef& meta_graph);
-
-    void RecomputingAware(
-        const GraphDef&         optimized_graph,
-        Workspace*              ws);
-
+    /*! \brief Return the parent workspace */
     Workspace* ws() const { return ws_; }
 
  protected:
-    void ForwardShareDyeing(
-        const string&               u,
-        const string&               ancestor);
-
-    void ForwardPruneDyeing(
-        const string&               u,
-        const string&               leaf,
-        const vector<string>&       path);
-
-    void BackwardPruneDyeing(string v);
-
+    /*! \brief Store the internal operators */
     vector<OperatorBase*> ops_;
-    Map<string, Node> dag_;
-    Map<string, bool> visited_, colored_;
-    Map<string, string> renamed_;
-    Set<string> targets_;
 };
 
+/*! \brief Create a graph from the raw def */
 GraphBase* NewGraph(
     const GraphDef&             meta_graph,
     Workspace*                  ws);

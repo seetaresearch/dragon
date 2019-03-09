@@ -19,19 +19,10 @@ from dragon.vm.torch.ops.modules.base import BaseModule
 class Copy(BaseModule):
     def __init__(self, key, ctx, **kwargs):
         super(Copy, self).__init__(key, ctx, **kwargs)
-        self.register_arguments()
         self.register_op()
 
-    def register_arguments(self):
-        """No Arguments for copy op."""
-        pass
-
     def register_op(self):
-        self.op_meta = {
-            'op_type': 'Copy',
-            'n_inputs': 1, 'n_outputs': 1,
-            'arguments': {}
-        }
+        self.op_meta = {'op_type': 'Copy', 'arguments': {}}
 
     def forward(self, dst, src):
         outputs = [dst]; self.unify_devices(outputs)

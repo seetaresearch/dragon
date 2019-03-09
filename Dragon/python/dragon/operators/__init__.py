@@ -100,8 +100,8 @@ class ArgumentHelper(object):
                         arguments[name] = None
                         arguments[name + '_desc'] = property.name
                     return arguments
-                extra_kwargs = {'gen_desc_{}'.format(name): Generator}
-                return op_func(*args, **kwargs, **extra_kwargs)
+                kwargs.update({'gen_desc_{}'.format(name): Generator})
+                return op_func(*args, **kwargs)
             return Impl
         return Decorator
 
@@ -138,8 +138,8 @@ class ArgumentHelper(object):
                     else:
                         arguments[desc_name] = properties
                     return arguments
-                extra_kwargs = {'gen_desc_{}'.format(name): Generator}
-                return op_func(*args, **kwargs, **extra_kwargs)
+                kwargs.update({'gen_desc_{}'.format(name): Generator})
+                return op_func(*args, **kwargs)
             return Impl
         return Decorator
 

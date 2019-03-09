@@ -43,7 +43,6 @@ class _DepthwiseConvNd(Module):
     def register_op(self):
         self.op_meta = {
             'op_type': 'DepthwiseConv{}d'.format(len(self.kernel_size)),
-            'n_inputs': 3 if self.bias else 2, 'n_outputs': 1,
             'arguments': {
                 'num_output': self.weight.shape[0],
                 'kernel_shape': self.weight.shape[2:],
@@ -88,5 +87,5 @@ class DepthwiseConv2d(_DepthwiseConvNd):
     def forward(self, input):
         inputs = [input, self.weight] + ([self.bias] if self.bias else [])
         self.unify_devices(inputs)
-        outputs = [self.register_output(input.dtype)]
+        outputs = [self.register_output()]
         return self.run(inputs, outputs)

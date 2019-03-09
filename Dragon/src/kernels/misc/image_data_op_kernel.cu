@@ -26,8 +26,13 @@ __global__ void _ImageData_NCHW(
         const int c = (idx / W / H) % C;
         const int n = idx / W / H / C;
         Ty raw_value = x[((n * H + h) * W + w) * C + c];
+#if __CUDA_ARCH__ >= 350
+        if (mean_values) raw_value -= __ldg(mean_values + c);
+        if (std_values) raw_value /= __ldg(std_values + c);
+#else
         if (mean_values) raw_value -= mean_values[c];
         if (std_values) raw_value /= std_values[c];
+#endif
         y[idx] = raw_value;
     }
 }
@@ -46,8 +51,13 @@ __global__ void _ImageData_NHWC(
     CUDA_1D_KERNEL_LOOP(idx, count) {
         const int c = idx % C;
         Ty raw_value = x[idx];
+#if __CUDA_ARCH__ >= 350
+        if (mean_values) raw_value -= __ldg(mean_values + c);
+        if (std_values) raw_value /= __ldg(std_values + c);
+#else
         if (mean_values) raw_value -= mean_values[c];
         if (std_values) raw_value /= std_values[c];
+#endif
         y[idx] = raw_value;
     }
 }
@@ -125,8 +135,13 @@ __global__ void _ImageDataHalf_NCHW(
         const int c = (idx / W / H) % C;
         const int n = idx / W / H / C;
         float raw_value = x[((n * H + h) * W + w) * C + c];
+#if __CUDA_ARCH__ >= 350
+        if (mean_values) raw_value -= __ldg(mean_values + c);
+        if (std_values) raw_value /= __ldg(std_values + c);
+#else
         if (mean_values) raw_value -= mean_values[c];
         if (std_values) raw_value /= std_values[c];
+#endif
         y[idx] = __float2half(raw_value);
     }
 }
@@ -145,8 +160,13 @@ __global__ void _ImageDataHalf_NHWC(
     CUDA_1D_KERNEL_LOOP(idx, count) {
         const int c = idx % C;
         float raw_value = x[idx];
+#if __CUDA_ARCH__ >= 350
+        if (mean_values) raw_value -= __ldg(mean_values + c);
+        if (std_values) raw_value /= __ldg(std_values + c);
+#else
         if (mean_values) raw_value -= mean_values[c];
         if (std_values) raw_value /= std_values[c];
+#endif
         y[idx] = __float2half(raw_value);
     }
 }
@@ -172,7 +192,7 @@ template <> void ImageData<float, float16, CUDAContext>(
             (count, N, C, H, W, mean_values, std_values,
                 x, reinterpret_cast<half*>(y));
     } else if (data_format == "NHWC") {
-        _ImageDataHalf_NHWC<float, half> 
+        _ImageDataHalf_NHWC<float, half>
             << < CUDA_BLOCKS(count), CUDA_THREADS,
                  0, ctx->cuda_stream() >> >
             (count, N, C, H, W, mean_values, std_values,

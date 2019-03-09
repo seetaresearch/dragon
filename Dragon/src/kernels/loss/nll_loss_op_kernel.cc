@@ -17,7 +17,7 @@ void _NLLLoss(
     const Ty*               labels,
     const int*              ignores,
     Tx*                     losses,
-    Tx*                     flags) {
+    int*                    flags) {
     for (int oix = 0; oix < outer_dim; ++oix) {
         for (int iix = 0; iix < inner_dim; ++iix) {
             const int idx = oix * inner_dim + iix;
@@ -49,7 +49,7 @@ template <> void NLLLoss<float, float, CPUContext>(
     const float*            labels,
     const int*              ignores,
     float*                  losses,
-    float*                  flags,
+    int*                    flags,
     CPUContext*             ctx) {
     _NLLLoss<float, float>(
         outer_dim, axis_dim, inner_dim, num_ignores,
@@ -67,43 +67,11 @@ template <> void NLLLoss<float, int64_t, CPUContext>(
     const int64_t*          labels,
     const int*              ignores,
     float*                  losses,
-    float*                  flags,
+    int*                    flags,
     CPUContext*             ctx) {
     _NLLLoss<float, int64_t>(
         outer_dim, axis_dim, inner_dim, num_ignores,
             log_prob, labels, ignores, losses, flags);
-}
-
-/*! NLLLoss <Tx = float16, Ty = float32, Device = CPU> */
-
-template <> void NLLLoss<float16, float, CPUContext>(
-    const int               outer_dim,
-    const int               axis_dim,
-    const int               inner_dim,
-    const int               num_ignores,
-    const float16*          log_prob,
-    const float*            labels,
-    const int*              ignores,
-    float*                  losses,
-    float*                  flags,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
-}
-
-/*! NLLLoss <Tx = float16, Ty = int64, Device = CPU> */
-
-template <> void NLLLoss<float16, int64_t, CPUContext>(
-    const int               outer_dim,
-    const int               axis_dim,
-    const int               inner_dim,
-    const int               num_ignores,
-    const float16*          log_prob,
-    const int64_t*          labels,
-    const int*              ignores,
-    float*                  losses,
-    float*                  flags,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
 }
 
 /*! NLLLossGrad <Tx = ?, Ty = ?, Device = CPU> */
@@ -118,7 +86,7 @@ void _NLLLossGrad(
     const Ty*               labels,
     const int*              ignores,
     Tx*                     dx,
-    Tx*                     flags) {
+    int*                    flags) {
     for (int oix = 0; oix < outer_dim; ++oix) {
         for (int iix = 0; iix < inner_dim; ++iix) {
             const int idx = oix * inner_dim + iix;
@@ -131,7 +99,7 @@ void _NLLLossGrad(
             } else {
                 dx[(oix * axis_dim + label) * inner_dim + iix] = -1;
                 flags[idx] = 1;
-            } 
+            }
         }
     }
 }
@@ -147,7 +115,7 @@ template<> void NLLLossGrad<float, float, CPUContext>(
     const float*            labels,
     const int*              ignores,
     float*                  dx,
-    float*                  flags,
+    int*                    flags,
     CPUContext*             ctx) {
     _NLLLossGrad<float, float>(
         outer_dim, axis_dim, inner_dim, num_ignores,
@@ -165,43 +133,11 @@ template<> void NLLLossGrad<float, int64_t, CPUContext>(
     const int64_t*          labels,
     const int*              ignores,
     float*                  dx,
-    float*                  flags,
+    int*                    flags,
     CPUContext*             ctx) {
     _NLLLossGrad<float, int64_t>(
         outer_dim, axis_dim, inner_dim, num_ignores,
             log_prob, labels, ignores, dx, flags);
-}
-
-/*! NLLLossGrad <Tx = float16, Ty = float32, Device = CPU> */
-
-template<> void NLLLossGrad<float16, float, CPUContext>(
-    const int               outer_dim,
-    const int               axis_dim,
-    const int               inner_dim,
-    const int               num_ignores,
-    const float16*          log_prob,
-    const float*            labels,
-    const int*              ignores,
-    float16*                dx,
-    float*                  flags,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
-}
-
-/*! NLLLossGrad <Tx = float16, Ty = int64, Device = CPU> */
-
-template<> void NLLLossGrad<float16, int64_t, CPUContext>(
-    const int               outer_dim,
-    const int               axis_dim,
-    const int               inner_dim,
-    const int               num_ignores,
-    const float16*          log_prob,
-    const int64_t*          labels,
-    const int*              ignores,
-    float16*                dx,
-    float*                  flags,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
 }
 
 }  // namespace kernel

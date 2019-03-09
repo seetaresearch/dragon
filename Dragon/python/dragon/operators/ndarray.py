@@ -740,7 +740,6 @@ def Shape(inputs, **kwargs):
     return Tensor.CreateOperator('Shape', **ParseArgs(locals()))
 
 
-@OpSchema.Inputs(0)
 @ArgumentHelper.Desc('start')
 @ArgumentHelper.Desc('stop')
 @ArgumentHelper.Desc('step')

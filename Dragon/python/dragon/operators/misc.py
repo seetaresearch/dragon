@@ -17,7 +17,7 @@ from . import *
 
 
 @OpSchema.Inputs(1)
-def AsType(inputs, dtype='float32', inplace=False, **kwargs):
+def Cast(inputs, dtype='float32', inplace=False, **kwargs):
     """Cast the data type of inputs to a specific one.
 
     If ``inplace`` is ``True``, cast ``self`` instead of returning a new one.
@@ -41,7 +41,7 @@ def AsType(inputs, dtype='float32', inplace=False, **kwargs):
     Examples
     --------
     >>> x = Tensor('x', dtype='float32').Variable()
-    >>> y = AsType(x, 'int32')
+    >>> y = Cast(x, 'int32')
     >>> z = x.astype('int64')
     >>> xx = x.astype('float64', inplace=True)
     >>> print(x.name, xx.name)
@@ -53,7 +53,7 @@ def AsType(inputs, dtype='float32', inplace=False, **kwargs):
         arguments['inputs'] = []
         arguments['existing_outputs'] = [inputs]
 
-    return Tensor.CreateOperator('AsType', **arguments)
+    return Tensor.CreateOperator('Cast', **arguments)
 
 
 def Run(inputs, module, op, param_str='', num_outputs=1, **kwargs):
@@ -174,27 +174,3 @@ def StopGradient(inputs, **kwargs):
 
     """
     return Tensor.CreateOperator('StopGradient', **ParseArgs(locals()))
-
-
-@OpSchema.Inputs(1)
-def MovingAverage(inputs, decay, **kwargs):
-    """Calculate the moving average.
-
-    **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
-
-    Parameters
-    ----------
-    inputs : Tensor
-        The values to calculate moving average.
-    decay : float
-        The decay factor.
-
-    Returns
-    -------
-    Tensor
-        The output tensor, i.e., ``variable``, calculated as:
-
-        |moving_average_function|
-
-    """
-    return Tensor.CreateOperator('MovingAverage', **ParseArgs(locals()))

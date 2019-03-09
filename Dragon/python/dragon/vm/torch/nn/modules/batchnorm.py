@@ -39,7 +39,7 @@ class _BatchNorm(Module):
         self.inputs = [self.running_mean, self.running_var, self.weight, self.bias]
         self.reset_parameters()
         self.register_op()
-        self.meta_in_phase = {'TRAIN': [None, None], 'TEST': [None, None]}
+        self.op_metas = {'TRAIN': None, 'TEST': None}
 
     def reset_parameters(self):
         if self.affine:
@@ -49,7 +49,6 @@ class _BatchNorm(Module):
     def register_op(self):
         self.op_meta = {
             'op_type': 'BatchNorm',
-            'n_inputs': 5, 'n_outputs': 1,
             'arguments': {
                 'axis': 1, # Data format: NCHW
                 'momentum': 1. - self.momentum,
@@ -58,6 +57,10 @@ class _BatchNorm(Module):
             }
         }
 
+    def extra_repr(self):
+        return '{num_features}, eps={eps}, momentum={momentum}, affine={affine}, ' \
+               'track_running_stats={track_running_stats}'.format(**self.__dict__)
+
     def make_meta_from_phase(self, phase):
         """Make the custom meta by referring the phase and ctx.
 
@@ -65,49 +68,36 @@ class _BatchNorm(Module):
         detect the mutation of ctx(i.e. cpu -> cuda),
         but not the (train -> test).
 
-        Parameters
-        ----------
-        phase : str
-            The phase. Either ``TRAIN`` or ``TEST``.
-
-        Returns
-        -------
-        list
-            The meta, persistent key and op.
-
         """
         def reset_meta(self, phase):
-            # Ren-Gen Key
-            self._persistent_key = None
-            _ = self.persistent_key
-            self._persistent_key += '/{}'.format(phase)
+            self._module_key = None
+            _ = self.module_key
+            self._module_key += '/{}'.format(phase)
             self.op_meta['arguments']['use_stats'] = 0 \
                 if phase == 'TRAIN' else 1
-            # Re-Gen Op
-            self._gen_op()
-            self.meta_in_phase[phase][0] = self._persistent_key
-            self.meta_in_phase[phase][1] = self._op
+            self._gen_def()
+            self.op_metas[phase] = (self._module_key, self._def)
 
-        if self._persistent_key is None:
-            # Init or CTX has changed
+        if self._module_key is None:
+            # Init or Context has changed
             reset_meta(self, phase)
         else:
-            # CTX unchanged & Run into a new phase
-            if self.meta_in_phase[phase][0] is None:
+            # Context unchanged
+            if self.op_metas[phase] is None:
                 reset_meta(self, phase)
 
-        return self.meta_in_phase[phase]
+        return self.op_metas[phase]
 
     def forward(self, input):
         inputs = [input] + self.inputs
         self.unify_devices(inputs)
-        outputs = [self.register_output(input.dtype)]
+        outputs = [self.register_output()]
         phase = 'TRAIN' if self.training else 'TEST'
         # Normalize the input by using batch stats ALWAYS
         # Note that the update of moving average is meaningless(
         # Because we can not remove it. Why? Ask nvidia and cuDNN -:)
         if not self.track_running_stats: phase = 'TRAIN'
-        meta = ['PERSISTENT',] + self.make_meta_from_phase(phase)
+        meta = self.make_meta_from_phase(phase)
         return RunOperator(inputs, outputs, meta)
 
 

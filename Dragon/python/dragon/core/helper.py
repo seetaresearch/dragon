@@ -33,7 +33,7 @@ class OperatorHelper(object):
         # Input(0) => Output(0), shape and data type unchanged.
         'Relu', 'PRelu', 'Elu', 'SElu', 'Sigmoid', 'Tanh', 'Dropout', 'Softmax',
         'Add', 'Sub', 'Mul', 'Div', 'Clip', 'Log', 'Exp', 'Pow', 'Square', 'Sqrt',
-        'Affine', 'Copy', 'Compare', 'StopGradient', 'MovingAverage', 'MPIBroadcast',
+        'Accumulate', 'Affine', 'Copy', 'Compare', 'StopGradient',  'MPIBroadcast',
         'BatchNorm', 'GroupNorm', 'L2Norm', 'LRN', 'BiasAdd', 'DropBlock2d',
     )
 
@@ -884,10 +884,6 @@ class OperatorHelper(object):
     @classmethod
     def _apply_BilinearResize(cls, arguments, inputs, outputs):
         return cls._apply_NNResize(arguments, inputs, outputs)
-
-    @classmethod
-    def _apply_DenseConcat(cls, arguments, inputs, outputs):
-        return cls._apply_Concat(arguments, inputs, outputs)
 
 
 class GradientHelper(object):

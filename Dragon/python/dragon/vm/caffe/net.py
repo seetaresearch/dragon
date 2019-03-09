@@ -147,7 +147,7 @@ class Net(object):
 
         Parameters
         ----------
-        LayerParameter : caffe_pb2.LayerParameter
+        LayerParameter : LayerParameter
             The parameter of ``Layer``.
 
         Returns
@@ -208,7 +208,7 @@ class Net(object):
 
         Parameters
         ----------
-        layer_param : caffe_pb2.LayerParameter
+        layer_param : LayerParameter
             The parameter of ``Layer``.
 
         Returns
@@ -311,7 +311,7 @@ class Net(object):
 
         Returns
         -------
-        Tensor or list of Tensor
+        sequence of Tensor
             The outputs of the net.
 
         References
@@ -359,7 +359,7 @@ class Net(object):
             The diffs to feed before.
 
         Returns
-        =------
+        -------
         None
 
         References

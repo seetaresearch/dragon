@@ -46,10 +46,17 @@ class GradientMakerBase {
 
     virtual Gradient Make() {
         vector<OperatorDef> new_defs = MakeDefs();
-        Argument anchor;
-        anchor.set_name("anchor"); anchor.set_s(def.name());
-        for (int i = 0; i < new_defs.size(); i++)
-            new_defs[i].add_arg()->CopyFrom(anchor);
+        if (def.has_uid()) {
+            // Attach the anchor to the name if having UID
+            for (int i = 0; i < new_defs.size(); i++)
+                new_defs[i].set_name(def.name());
+        } else {
+            // Otherwise, just put it into the arguments
+            Argument anchor;
+            anchor.set_name("anchor"); anchor.set_s(def.name());
+            for (int i = 0; i < new_defs.size(); i++)
+                new_defs[i].add_arg()->CopyFrom(anchor);
+        }
         return Gradient(new_defs, g_inputs_, DefaultValues());
     };
 
@@ -117,10 +124,10 @@ class NoGradient : public GradientMakerBase {
 class SimpleGradientMaker final : public GradientMakerBase {
  public:
     /*!
-     *        <SimpleMaker>
+     *              <SimpleMaker>
      *
-     * Inputs: X1, X2, ..., Xn, dY
-     * Outputs: dX1, dX2, ..., dXn
+     *    Inputs: X1, X2, ..., Xn, dY
+     *    Outputs: dX1, dX2, ..., dXn
      *
      */
     GRADIENT_MAKER_CTOR(SimpleGradientMaker);
@@ -141,12 +148,12 @@ class SimpleGradientMaker final : public GradientMakerBase {
 class InplaceGradientMaker final : public GradientMakerBase {
  public:
     /*!
-    *               <InplaceMaker>
-    *
-    * Inputs:           Y, dY
-    * Outputs:           dX
-    *
-    */
+     *               <InplaceMaker>
+     *
+     *    Inputs:           Y, dY
+     *    Outputs:           dX
+     *
+     */
     GRADIENT_MAKER_CTOR(InplaceGradientMaker);
     vector<OperatorDef> MakeDefs() override {
         return SingleDef(

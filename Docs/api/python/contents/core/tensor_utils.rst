@@ -16,10 +16,9 @@ List                              Brief
 `FromPyArray`_                    Create a Tensor from a existing Array.
 `SetPyArray`_                     Set a Tensor from a existing Array.
 `ToPyArray`_                      Create a Array from a existing Tensor.
-`ToPyArrayEx`_                    Create a const Array from a existing Tensor.
+`GetStorage`_                     Get the storage of a existing Tensor.
 `ToCPUTensor`_                    Switch the storage of a existing Tensor on cpu memory.
 `ToCUDATensor`_                   Switch the storage of a existing Tensor on cuda memory.
-`GetTensorInfo`_                  Get the info of a existing Tensor.
 ==============================    =============================================================================
 
 API Reference
@@ -33,7 +32,6 @@ API Reference
 .. _FromPyArray: #dragon.core.tensor_utils.FromPyArray
 .. _SetPyArray: #dragon.core.tensor_utils.SetPyArray
 .. _ToPyArray: #dragon.core.tensor_utils.ToPyArray
-.. _ToPyArrayEx: #dragon.core.tensor_utils.ToPyArrayEx
+.. _GetStorage: #dragon.core.tensor_utils.GetStorage
 .. _ToCPUTensor: #dragon.core.tensor_utils.ToCPUTensor
 .. _ToCUDATensor: #dragon.core.tensor_utils.ToCUDATensor
-.. _GetTensorInfo: #dragon.core.tensor_utils.GetTensorInfo

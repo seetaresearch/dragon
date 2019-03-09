@@ -88,6 +88,7 @@ class CuDNNConv2dOp final : public Conv2dOp<Context> {
     }
 
     void RunOnDevice() override;
+    void SetConvDescFromInputs();
     template <typename T> void ResetDesc();
     template <typename T> void RunWithType();
 
@@ -101,7 +102,7 @@ class CuDNNConv2dOp final : public Conv2dOp<Context> {
     cudnnFilterDescriptor_t filter_desc;
     size_t fwd_data_size;
     int64_t cudnn_group;
-    vector<int64_t> input_dims;
+    vector<int64_t> input_dims, filter_dims;
     bool enable_tensor_core;
 };
 
@@ -142,6 +143,7 @@ class CuDNNConv2dGradientOp final : public Conv2dGradientOp<Context> {
     }
 
     void RunOnDevice() override;
+    void SetConvDescFromInputs();
     template <typename T> void ResetDesc();
     template <typename T> void RunWithType();
 
@@ -156,7 +158,7 @@ class CuDNNConv2dGradientOp final : public Conv2dGradientOp<Context> {
     cudnnFilterDescriptor_t filter_desc;
     size_t bwd_filter_size, bwd_data_size;
     int64_t cudnn_group;
-    vector<int64_t> input_dims;
+    vector<int64_t> input_dims, filter_dims;
     bool enable_tensor_core;
 };
 

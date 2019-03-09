@@ -310,18 +310,23 @@ __global__ void _SetHalf(
 template <> void Set<float16, CUDAContext>(
     const int               n,
     const float16           alpha,
-    float16*                x,
+    float16*                y,
     CUDAContext*            ctx) {
+    if (alpha.x == (unsigned short)0) {
+        CUDA_CHECK(cudaMemsetAsync(y, 0,
+            sizeof(float16) * n, ctx->cuda_stream()));
+        return;
+    }
     if ((n & 1) == 0) {
         _SetHalf<half2>
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
                  0, ctx->cuda_stream() >> >(n >> 1,
                      cast::to<half2>(alpha),
-                         reinterpret_cast<half2*>(x));
+                         reinterpret_cast<half2*>(y));
     } else {
         _SetHalf<float16>
             << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n, alpha, x);
+                 0, ctx->cuda_stream() >> >(n, alpha, y);
     }
 }
 
@@ -400,7 +405,7 @@ template <> void Scale<float16, CUDAContext>(
 
 template <> void Axpy<float16, CUDAContext>(
     const int               n,
-    float                   alpha,
+    const float             alpha,
     const float16*          x,
     float16*                y,
     CUDAContext*            ctx) {
@@ -410,6 +415,19 @@ template <> void Axpy<float16, CUDAContext>(
                 x, CUDA_R_16F, 1,
                     y, CUDA_R_16F, 1,
                         CUDA_R_32F));
+}
+
+/*!                 y = ax + by               */
+
+template <> void Axpby<float16, CUDAContext>(
+    const int               n,
+    const float             alpha,
+    const float16*          x,
+    const float             beta,
+    float16*                y,
+    CUDAContext*            ctx) {
+    Scale(n, beta, y, y, ctx);
+    Axpy(n, alpha, x, y, ctx);
 }
 
 /*!                 y += a                */
@@ -446,15 +464,15 @@ template <> void AddScalar<float16, CUDAContext>(
     if ((n & 1) == 0) {
         _AddScalarHalf2<half2>
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n >> 1,
-                     cast::to<half2>(alpha),
-                         reinterpret_cast<half2*>(y));
+                 0, ctx->cuda_stream() >> >
+            (n >> 1, cast::to<half2>(alpha),
+                reinterpret_cast<half2*>(y));
     } else {
         _AddScalarHalf<half>
             << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n,
-                     cast::to<half>(alpha),
-                         reinterpret_cast<half*>(y));
+                 0, ctx->cuda_stream() >> >
+            (n, cast::to<half>(alpha),
+                reinterpret_cast<half*>(y));
     }
 }
 

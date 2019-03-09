@@ -12,7 +12,7 @@ namespace dragon {
 template <typename T>
 using BlockReduce = cub::BlockReduce<T, CUDA_THREADS>;
 
-}
+}  // namespace dragon
 
 #endif  // WITH_CUDA
 

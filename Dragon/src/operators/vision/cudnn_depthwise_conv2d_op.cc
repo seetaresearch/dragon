@@ -75,13 +75,14 @@ void CuDNNDepthwiseConv2dGradientOp<Context>::RunWithType() {
         T* dBdata = Output(2)->template mutable_data<T, Context>();
         CUDNN_CHECK(cudnnConvolutionBackwardBias(ctx()->cudnn_handle(),
             CUDNNType<T>::one, input_desc, dYdata,
-                CUDNNType<T>::one, bias_desc, dBdata));
+                CUDNNType<T>::zero, bias_desc, dBdata));
     }
 
     for (int n = 0; n < Input(2).dim(0); n++) {
         if (Output(1)->name() != "ignore") {
             auto* Xdata = Input(0).template data<T, Context>();
             auto* dWdata = Output(1)->template mutable_data<T, Context>();
+            math::Set(Output(1)->count(), cast::to<T>(0.f), dWdata, ctx());
             kernel::DepthwiseConv2dWGrad(Input(0).dim(0), channels,
                 input_shape[0], input_shape[1], output_shape[0], output_shape[1],
                     kernel_shape[0], kernel_shape[1], stride[0], pad_l[0], pad_l[1],

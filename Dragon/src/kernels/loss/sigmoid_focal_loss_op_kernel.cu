@@ -7,9 +7,9 @@ namespace dragon {
 
 namespace kernel {
 
-/*! SigmoidFocalLoss <T = float32, Device = CUDA> */
+/*! SigmoidFocalLoss <Tx = ?, Ty = ?, Device = CUDA> */
 
-template <typename T>
+template <typename Tx, typename Ty>
 __global__ void _SigmoidFocalLoss(
     const int               count,
     const int               axis_dim,
@@ -18,10 +18,10 @@ __global__ void _SigmoidFocalLoss(
     const float             neg_alpha,
     const float             gamma,
     const int               neg_id,
-    const T*                logits,
-    const T*                targets,
-    T*                      losses,
-    T*                      flags) {
+    const Tx*               logits,
+    const Ty*               targets,
+    Tx*                     losses,
+    int*                    flags) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
         const int iix = idx % inner_dim;
         const int aix = (idx / inner_dim) % axis_dim;
@@ -29,27 +29,29 @@ __global__ void _SigmoidFocalLoss(
         const int t = targets[oix * inner_dim + iix];
         //  ``0`` is reserved for targets if neg id is zero
         //  use ``aix + 1`` to match the targets
-        T c1 = (t == (aix + (neg_id ? 0 : 1)));
-        T c2 = (t != -1) & (t != (aix + (neg_id ? 0 : 1)));
-        T p = 1 / (1 + exp(-logits[idx]));  //  logit -> prob
+        Tx c1 = (t == (aix + (neg_id ? 0 : 1)));
+        Tx c2 = (t != -1) & (t != (aix + (neg_id ? 0 : 1)));
+        Tx p = 1 / (1 + exp(-logits[idx]));  //  logit -> prob
 
         // (1 - p)^{gamma} * log(p)
-        T pos_term = pow(1 - p, gamma) * log(max(p, FLT_MIN));
+        Tx pos_term = pow(1 - p, gamma) * log(max(p, FLT_MIN));
 
         // p^{gamma} * log(1 - p)
-        T neg_term = pow(p, gamma) * (
+        Tx neg_term = pow(p, gamma) * (
             -logits[idx] * (logits[idx] >= 0) - log(
                 1 + exp(logits[idx] - 2 * logits[idx] * (logits[idx] >= 0)))
        );
 
-        losses[idx] = (T)0;
+        losses[idx] = (Tx)0;
         losses[idx] += -c1 * pos_term * pos_alpha;
         losses[idx] += -c2 * neg_term * neg_alpha;
         flags[idx] = c1;
     }
 }
 
-template <> void SigmoidFocalLoss<float, CUDAContext>(
+/*! SigmoidFocalLoss <Tx = float32, Ty = float32, Device = CUDA> */
+
+template <> void SigmoidFocalLoss<float, float, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
@@ -60,10 +62,10 @@ template <> void SigmoidFocalLoss<float, CUDAContext>(
     const float*            logits,
     const float*            targets,
     float*                  losses,
-    float*                  flags,
+    int*                    flags,
     CUDAContext*            ctx) {
     const auto count = outer_dim * axis_dim * inner_dim;
-    _SigmoidFocalLoss<float>
+    _SigmoidFocalLoss<float, float>
         << < CUDA_BLOCKS(count), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
         (count, axis_dim, inner_dim,
@@ -71,9 +73,33 @@ template <> void SigmoidFocalLoss<float, CUDAContext>(
                 logits, targets, losses, flags);
 }
 
-/*! SigmoidFocalLossGrad <T = float32, Device = CUDA> */
+/*! SigmoidFocalLoss <Tx = float32, Ty = int64, Device = CUDA> */
 
-template <typename T>
+template <> void SigmoidFocalLoss<float, int64_t, CUDAContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
+    const float             gamma,
+    const int               neg_id,
+    const float*            logits,
+    const int64_t*          targets,
+    float*                  losses,
+    int*                    flags,
+    CUDAContext*            ctx) {
+    const auto count = outer_dim * axis_dim * inner_dim;
+    _SigmoidFocalLoss<float, int64_t>
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >
+        (count, axis_dim, inner_dim,
+            pos_alpha, neg_alpha, gamma, neg_id,
+                logits, targets, losses, flags);
+}
+
+/*! SigmoidFocalLossGrad <Tx = ?, Ty = ?, Device = CUDA> */
+
+template <typename Tx, typename Ty>
 __global__ void _SigmoidFocalLossGrad(
     const int               count,
     const int               axis_dim,
@@ -82,10 +108,10 @@ __global__ void _SigmoidFocalLossGrad(
     const float             neg_alpha,
     const float             gamma,
     const int               neg_id,
-    const T*                logits,
-    const T*                targets,
-    T*                      dlogits,
-    T*                      flags) {
+    const Tx*               logits,
+    const Ty*               targets,
+    Tx*                     dlogits,
+    int*                    flags) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
         const int iix = idx % inner_dim;
         const int aix = (idx / inner_dim) % axis_dim;
@@ -93,30 +119,32 @@ __global__ void _SigmoidFocalLossGrad(
         const int t = targets[oix * inner_dim + iix];
         //  ``0`` is reserved for targets if neg id is zero
         //  use ``aix + 1`` to match the targets
-        T c1 = (t == (aix + (neg_id ? 0 : 1)));
-        T c2 = (t != -1) & (t != (aix + (neg_id ? 0 : 1)));
-        T p = 1 / (1 + exp(-logits[idx]));  //  logit -> prob
+        Tx c1 = (t == (aix + (neg_id ? 0 : 1)));
+        Tx c2 = (t != -1) & (t != (aix + (neg_id ? 0 : 1)));
+        Tx p = 1 / (1 + exp(-logits[idx]));  //  logit -> prob
 
         // (1 - p)^{gamma} * (1 - p - gamma * p * log(p))
-        T pos_term = pow((1 - p), gamma) * (
+        Tx pos_term = pow((1 - p), gamma) * (
             1 - p - p * gamma * log(max(p, FLT_MIN))
         );
 
         // p^{gamma} * (gamma * (1 - p) * log(1-p) - p)
-        T neg_term = pow(p, gamma) * (
+        Tx neg_term = pow(p, gamma) * (
             (-logits[idx] * (logits[idx] >= 0) - log(
                 1 + exp(logits[idx] - 2 * logits[idx] * (logits[idx] >= 0)))
             ) * (1 - p) * gamma - p
         );
 
-        dlogits[idx] = (T)0;
+        dlogits[idx] = (Tx)0;
         dlogits[idx] += -c1 * pos_term * pos_alpha;
         dlogits[idx] += -c2 * neg_term * neg_alpha;
         flags[idx] = c1;
     }
 }
 
-template <> void SigmoidFocalLossGrad<float, CUDAContext>(
+/*! SigmoidFocalLossGrad <Tx = float32, Ty = float32, Device = CUDA> */
+
+template <> void SigmoidFocalLossGrad<float, float, CUDAContext>(
     const int               outer_dim,
     const int               axis_dim,
     const int               inner_dim,
@@ -127,10 +155,34 @@ template <> void SigmoidFocalLossGrad<float, CUDAContext>(
     const float*            logits,
     const float*            targets,
     float*                  dlogits,
-    float*                  flags,
+    int*                    flags,
     CUDAContext*            ctx) {
     const auto count = outer_dim * axis_dim * inner_dim;
-    _SigmoidFocalLossGrad<float>
+    _SigmoidFocalLossGrad<float, float>
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >
+        (count, axis_dim, inner_dim,
+            pos_alpha, neg_alpha, gamma, neg_id,
+                logits, targets, dlogits, flags);
+}
+
+/*! SigmoidFocalLossGrad <Tx = float32, Ty = int64, Device = CUDA> */
+
+template <> void SigmoidFocalLossGrad<float, int64_t, CUDAContext>(
+    const int               outer_dim,
+    const int               axis_dim,
+    const int               inner_dim,
+    const float             pos_alpha,
+    const float             neg_alpha,
+    const float             gamma,
+    const int               neg_id,
+    const float*            logits,
+    const int64_t*          targets,
+    float*                  dlogits,
+    int*                    flags,
+    CUDAContext*            ctx) {
+    const auto count = outer_dim * axis_dim * inner_dim;
+    _SigmoidFocalLossGrad<float, int64_t>
         << < CUDA_BLOCKS(count), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
         (count, axis_dim, inner_dim,

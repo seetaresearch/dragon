@@ -102,8 +102,8 @@ void BatchNormOp<Context>::Reshape() {
     }
 
     is_recomputing = ws()->GetTensor(
-        "/opt/mirror_stage/recompute_flag")
-            ->template data<bool, CPUContext>()[0];
+        "/opt/recomputing_flag")->template
+            data<bool, CPUContext>()[0];
 
     // Determine the data format
     int64_t channel_axis = axis;
@@ -129,7 +129,7 @@ void BatchNormOp<Context>::RunOnDevice() {
     Reshape();
 
     if (XIsType(Input(0), float)) {
-        if (is_training) TrainingRunWithType<float, float>(); 
+        if (is_training) TrainingRunWithType<float, float>();
         else InferenceRunWithType<float, float>();
     } else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }
@@ -170,7 +170,7 @@ void BatchNormGradientOp<Context>::InferenceRunWithType() {
     auto* dy = Input(-1).template data<Tx, Context>();
     auto* dx = Output(0)->template mutable_data<Tx, Context>();
     auto* rsig = var->template mutable_data<Tp, Context>();
-    
+
     Tp* dgamma = nullptr, *dbeta = nullptr;
 
     // Gradient w.r.t. gamma or beta if necessary
@@ -221,7 +221,7 @@ void BatchNormGradientOp<Context>::RunOnDevice() {
     Reshape();
 
     if (XIsType(Input(0), float)) {
-        if (is_training) TrainingRunWithType<float, float>(); 
+        if (is_training) TrainingRunWithType<float, float>();
         else InferenceRunWithType<float, float>();
     } else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
 }

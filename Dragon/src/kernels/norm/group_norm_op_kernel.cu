@@ -199,8 +199,7 @@ __global__ void _GroupNormWGrad(
         dg_val = BlockReduce<Tp>(dg_storage).Reduce(dg_val, cub::Sum());
         db_val = BlockReduce<Tp>(db_storage).Reduce(db_val, cub::Sum());
         if (threadIdx.x == 0) {
-            // Accumulate the gradients of trainable parameters
-            dgamma[i] += dg_val; dbeta[i] += db_val;
+            dgamma[i] = dg_val; dbeta[i] = db_val;
         }
     }
 }
@@ -238,8 +237,7 @@ __global__ void _GroupNormWGradHalf(
         dg_val = BlockReduce<float>(dg_storage).Reduce(dg_val, cub::Sum());
         db_val = BlockReduce<float>(db_storage).Reduce(db_val, cub::Sum());
         if (threadIdx.x == 0) {
-            // Accumulate the gradients of trainable parameters
-            dgamma[i] += dg_val; dbeta[i] += db_val;
+            dgamma[i] = dg_val; dbeta[i] = db_val;
         }
     }
 #endif
@@ -341,7 +339,7 @@ __global__ void _GroupNormGrad(
             (i / S) % C : i % C;
 #if __CUDA_ARCH__ >= 350
         const Tp u = (
-            L(db, i_mu) * L(mu, i_mu) - L(ds, i_mu)) 
+            L(db, i_mu) * L(mu, i_mu) - L(ds, i_mu))
                 * (L(x, i) - L(mu, i_mu))
                     * utils::math::Cube<Tp>(L(rsig, i_mu));
         const Tp v = L(db, i_mu) * L(rsig, i_mu);
@@ -349,7 +347,7 @@ __global__ void _GroupNormGrad(
             * L(rsig, i_mu) + (u - v) * denom;
 #else
         const Tp u = (
-            db[i_mu] * mu[i_mu] - ds[i_mu]) 
+            db[i_mu] * mu[i_mu] - ds[i_mu])
                 * (x[i] - mu[i_mu])
                     * utils::math::Cube<Tp>(rsig[i_mu]);
         const Tp v = db[i_mu] * rsig[i_mu];
@@ -534,7 +532,7 @@ template <> void GroupNormBackward<float16, float, CUDAContext>(
     float*                      dbeta,
     CUDAContext*                ctx) {
     auto nthreads = N * G * D * S;
-    if (data_format == "NCHW") { 
+    if (data_format == "NCHW") {
         _GroupNormWGradHalf<StorageOrder::NCHW>
             << < CUDA_2D_BLOCKS(G * D), CUDA_THREADS,
                  0, ctx->cuda_stream() >> >

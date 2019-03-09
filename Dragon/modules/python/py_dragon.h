@@ -13,8 +13,9 @@
 #ifndef DRAGON_PYTHON_PY_DRAGON_H_
 #define DRAGON_PYTHON_PY_DRAGON_H_
 
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+
 #include "py_types.h"
-#include "py_macros.h"
 #include "core/common.h"
 #include "core/registry.h"
 #include "core/context.h"
@@ -25,6 +26,9 @@
 #include "core/workspace.h"
 #include "utils/caffemodel.h"
 
+#include <pybind11/stl.h>
+#include <pybind11/pybind11.h>
+
 namespace dragon {
 
 namespace python {
@@ -32,83 +36,80 @@ namespace python {
 class TensorFetcherBase {
  public:
     virtual ~TensorFetcherBase() {}
-    virtual PyObject* Fetch(const Tensor& tensor) = 0;
+    virtual pybind11::object Fetch(const Tensor& tensor) = 0;
 };
 
 class TensorFeederBase {
  public:
     virtual ~TensorFeederBase() {}
-    virtual PyObject* Feed(
+    virtual void Feed(
         const DeviceOption&             option,
         PyArrayObject*                  array,
         Tensor*                         tensor) = 0;
 };
 
 DECLARE_TYPED_REGISTRY(TensorFetcherRegistry, TypeId, TensorFetcherBase);
+
 #define REGISTER_TENSOR_FETCHER(type, ...) \
     REGISTER_TYPED_CLASS(TensorFetcherRegistry, type, __VA_ARGS__)
 
 inline TensorFetcherBase* CreateFetcher(TypeId type) {
-    return TensorFetcherRegistry()->Create(type); 
+    return TensorFetcherRegistry()->Create(type);
 }
 
 DECLARE_TYPED_REGISTRY(TensorFeederRegistry, TypeId, TensorFeederBase);
+
 #define REGISTER_TENSOR_FEEDER(type, ...) \
     REGISTER_TYPED_CLASS(TensorFeederRegistry, type, __VA_ARGS__)
 
 class NumpyFetcher : public TensorFetcherBase {
  public:
-    PyObject* Fetch(const Tensor& tensor) override {
+    pybind11::object Fetch(const Tensor& tensor) override {
         CHECK_GT(tensor.count(), 0);
         vector<npy_intp> npy_dims;
         for (const auto dim : tensor.dims()) npy_dims.push_back(dim);
         int npy_type = TypeMetaToNPY(tensor.meta());
         if (npy_type == -1) {
-            string s = "The data type of Tensor(" +
+            LOG(FATAL) <<  "The data type of Tensor(" +
                 tensor.name() + ") is unknown. Have you solved it ?";
-            PyErr_SetString(PyExc_RuntimeError, s.c_str());
-            return nullptr;
         }
+        CHECK(tensor.memory()) << "\nIllegal memory access.";
         // Create a empty array with the same shape
         PyObject* array = PyArray_SimpleNew(
             tensor.ndim(), npy_dims.data(), npy_type);
         // Copy the tensor data to the numpy array
         if (tensor.memory_state() == MixedMemory::STATE_AT_CUDA) {
-            CUDAContext::Memcpy<CPUContext, CUDAContext>(tensor.nbytes(),
-                   PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)),
-                                         tensor.raw_data<CUDAContext>());
+            CUDAContext::MemcpyEx<CPUContext, CUDAContext>(tensor.nbytes(),
+                     PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)),
+                                            tensor.raw_data<CUDAContext>(),
+                                             tensor.memory()->device_id());
         } else {
             CPUContext::Memcpy<CPUContext, CPUContext>(tensor.nbytes(),
                  PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)),
                                         tensor.raw_data<CPUContext>());
         }
-        return array;
+        return pybind11::reinterpret_steal<pybind11::object>(array);
     }
 };
 
 class StringFetcher : public TensorFetcherBase {
  public:
-    PyObject* Fetch(const Tensor& tensor) override {
-        CHECK_GT(tensor.count(), 0);
-        return String_AsPyBytes(*tensor.data<string, CPUContext>());
+    pybind11::object Fetch(const Tensor& tensor) override {
+        CHECK_EQ(tensor.count(), 1);
+        return pybind11::bytes(tensor.data<string, CPUContext>()[0]);
     }
 };
 
 class NumpyFeeder : public TensorFeederBase {
  public:
-    PyObject* Feed(
+    void Feed(
         const DeviceOption&         option,
         PyArrayObject*              original_array,
         Tensor*                     tensor) override {
         PyArrayObject* array = PyArray_GETCONTIGUOUS(original_array);
         const TypeMeta& meta = TypeNPYToMeta(PyArray_TYPE(array));
-        if (meta.id() == 0) {
-            PyErr_SetString(PyExc_TypeError, "Unsupported data type.");
-            return nullptr;
-        }
-        if (meta.id() != tensor->meta().id() && tensor->meta().id() != 0)
-            LOG(WARNING) << "Feed Tensor(" << tensor->name() << ")"
-                         << " with different data type from original one.";
+        if (meta.id() == 0) LOG(FATAL) << "Unsupported data type.";
+        tensor->SetMeta(meta);
         int ndim = PyArray_NDIM(array);
         npy_intp* npy_dims = PyArray_DIMS(array);
         vector<int64_t> dims;
@@ -116,21 +117,22 @@ class NumpyFeeder : public TensorFeederBase {
         tensor->Reshape(dims);
         if (option.device_type() == PROTO_CUDA) {
 #ifdef WITH_CUDA
-            CUDAContext context(option);
-            context.SwitchToDevice();
-            auto* data = tensor->raw_mutable_data<CUDAContext>(meta);
-            context.Memcpy<CUDAContext, CPUContext>(tensor->nbytes(),
-                      data, static_cast<void*>(PyArray_DATA(array)));
-#else   
+            CUDAContext::MemcpyEx<CUDAContext, CPUContext>(
+                                          tensor->nbytes(),
+                   tensor->raw_mutable_data<CUDAContext>(),
+                   static_cast<void*>(PyArray_DATA(array)),
+                                       option.device_id());
+#else
             LOG(FATAL) << "CUDA was not compiled.";
 #endif
         } else {
-            auto* data = tensor->raw_mutable_data<CPUContext>(meta);
-            CPUContext::Memcpy<CPUContext, CPUContext>(tensor->nbytes(),
-                         data, static_cast<void*>(PyArray_DATA(array)));
+            auto* data = tensor->raw_mutable_data<CPUContext>();
+            CPUContext::Memcpy<CPUContext, CPUContext>(
+                                      tensor->nbytes(),
+                tensor->raw_mutable_data<CPUContext>(),
+              static_cast<void*>(PyArray_DATA(array)));
         }
         Py_XDECREF(array);
-        Py_RETURN_TRUE;
     }
 };
 

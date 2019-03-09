@@ -37,7 +37,7 @@ class Optimizer(object):
         if isinstance(learning_rate, dragon.Tensor):
             self._targets.append(learning_rate)
             internal_lr = self.updater._slot + '/base_lr'
-            dragon.workspace.RenameTensor(internal_lr, learning_rate.name)
+            dragon.workspace.SetTensorAlias(learning_rate.name, internal_lr)
             self.updater.base_lr = float(learning_rate.get_value())
 
     def _inc_global_step(self):

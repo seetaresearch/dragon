@@ -19,16 +19,12 @@ ToolBox
    :hidden:
 
    tools/db
-   tools/im2db
-   tools/summary_writer
    tools/tensorboard
 
 ====================    ====================================================================================
 List                    Brief
 ====================    ====================================================================================
 `LMDB`_                 A wrapper of LMDB package.
-`IM2DB`_                Make the sequential database for images.
-`SummaryWriter`_        Write summaries for DragonBoard.
 `TensorBoard`_          Write summaries for TensorBoard.
 ====================    ====================================================================================
 
@@ -38,8 +34,5 @@ List                    Brief
     <p style="text-indent:1.5em; font-size: 18px; max-width: 830px;">
 
 .. _pip: https://pypi.python.org/pypi/pip
-
 .. _LMDB: tools/db.html
-.. _IM2DB: tools/im2db.html
-.. _SummaryWriter: tools/summary_writer.html
 .. _TensorBoard: tools/tensorboard.html

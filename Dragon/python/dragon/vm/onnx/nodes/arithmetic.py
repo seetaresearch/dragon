@@ -17,7 +17,7 @@ from onnx.helper import make_attribute
 from dragon.vm.onnx.nodes.common import CommonONNXExporter
 
 
-def GemmONNXExporter(op_def, shape_dict):
+def GemmONNXExporter(op_def, shape_dict, ws):
     node_proto, const_tensors = CommonONNXExporter(op_def, shape_dict)
 
     node_proto.attribute.extend([
@@ -31,7 +31,7 @@ def GemmONNXExporter(op_def, shape_dict):
     return node_proto, const_tensors
 
 
-def AffineONNXExporter(op_def, shape_dict):
+def AffineONNXExporter(op_def, shape_dict, ws):
     node_proto, const_tensors = CommonONNXExporter(op_def, shape_dict)
     node_proto.op_type = 'ATen' # Template
     node_proto.attribute.extend([make_attribute('op_type', 'Affine')])

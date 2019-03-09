@@ -54,11 +54,33 @@ void ROIAlignGradientOp<Context>::RunWithType() {
 }
 
 template <class Context>
+void ROIAlignGradientOp<Context>::RunWithFloat16() {
+    auto* dYdata = Input(-1).template data<float16, Context>();
+    auto* Rdata = Input(1).template data<float, Context>();
+    auto* dXdata = Output(0)->template mutable_data<float16, Context>();
+
+    auto WSdata = ws()->template caches<float, Context>({
+        Input(-1).count(), Output(0)->count() });
+
+    math::Set(Output(0)->count(), 0.f, WSdata[1], ctx());
+    kernel::TypeA2B(Input(-1).count(), dYdata, WSdata[0], ctx());
+
+    kernel::ROIAlignGrad(
+        Output(0)->dim(1), Output(0)->dim(2), Output(0)->dim(3),
+            pool_h, pool_w, Input(1).dim(0),
+                spatial_scale, sampling_ratio,
+                    WSdata[0], Rdata, WSdata[1], ctx());
+
+    kernel::TypeA2B(Output(0)->count(), WSdata[1], dXdata, ctx());
+}
+
+template <class Context>
 void ROIAlignGradientOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
 
     if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    else if (XIsType(Input(0), float16)) RunWithFloat16();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(ROIAlignGradient);

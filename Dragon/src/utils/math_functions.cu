@@ -163,6 +163,18 @@ __global__ void _Axpy(
 }
 
 template <typename T>
+__global__ void _Axpby(
+    const int               n,
+    const T                 alpha,
+    const T*                x,
+    const T                 beta,
+    T*                      y) {
+    CUDA_1D_KERNEL_LOOP(i, n) {
+        y[i] = (alpha * x[i] + beta * y[i]);
+    }
+}
+
+template <typename T>
 __global__ void _AddScalar(
     const int               n,
     const T                 alpha,
@@ -178,16 +190,16 @@ __global__ void _AddScalar(
     template <> void Set<T, CUDAContext>( \
         const int               n, \
         const T                 alpha, \
-        T*                      x, \
+        T*                      y, \
         CUDAContext*            ctx) { \
         if (alpha == (T)0) { \
-            CUDA_CHECK(cudaMemsetAsync(x, 0, \
+            CUDA_CHECK(cudaMemsetAsync(y, 0, \
                 sizeof(T) * n, ctx->cuda_stream())); \
         } else { \
             _Set<T> \
                 << < CUDA_BLOCKS(n), CUDA_THREADS, \
                      0, ctx->cuda_stream() >> > \
-                (n, alpha, x); \
+                (n, alpha, y); \
         } \
     }
 
@@ -312,6 +324,31 @@ DEFINE_AXPY_FUNC(int);
 DEFINE_AXPY_FUNC(int64_t);
 #undef DEFINE_AXPY_FUNC
 
+/*!                 y = ax + by               */
+
+#define DEFINE_AXPBY_FUNC(T) \
+    template <> void Axpby<T, CUDAContext>( \
+        const int               n, \
+        const float             alpha, \
+        const T*                x, \
+        const float             beta, \
+        T*                      y, \
+        CUDAContext*            ctx) { \
+        _Axpby<T> \
+            << < CUDA_BLOCKS(n), CUDA_THREADS, \
+                 0, ctx->cuda_stream() >> > \
+            (n, cast::to<T>(alpha), x, \
+                cast::to<T>(beta), y); \
+    }
+
+DEFINE_AXPBY_FUNC(int8_t);
+DEFINE_AXPBY_FUNC(uint8_t);
+DEFINE_AXPBY_FUNC(int);
+DEFINE_AXPBY_FUNC(int64_t);
+DEFINE_AXPBY_FUNC(float);
+DEFINE_AXPBY_FUNC(double);
+#undef DEFINE_AXPBY_FUNC
+
 /*!                 y += a                */
 
 #define DEFINE_ADD_SCALAR_FUNC(T) \
@@ -362,7 +399,7 @@ __global__ void _InvStd(
 #define DEFINE_INVSTD_FUNC(T) \
     template <> void InvStd<T, CUDAContext>( \
         const int               n, \
-        float                   eps, \
+        const float             eps, \
         const T*                x, \
         T*                      y, \
         CUDAContext*            ctx) { \
@@ -375,29 +412,6 @@ __global__ void _InvStd(
 DEFINE_INVSTD_FUNC(float);
 DEFINE_INVSTD_FUNC(double);
 #undef DEFINE_INVSTD_FUNC
-
-/*!                 y = ax + by               */
-
-#define DEFINE_AXPBY_FUNC(T) \
-    template <> void Axpby<T, CUDAContext>( \
-        const int               n, \
-        float                   alpha, \
-        const T*                x, \
-        float                   beta, \
-        T*                      y, \
-        CUDAContext*            ctx) { \
-        Scale<T, CUDAContext>(n, beta, y, y, ctx); \
-        Axpy<T, CUDAContext>(n, alpha, x, y, ctx); \
-    }
-
-DEFINE_AXPBY_FUNC(int8_t);
-DEFINE_AXPBY_FUNC(uint8_t);
-DEFINE_AXPBY_FUNC(int);
-DEFINE_AXPBY_FUNC(int64_t);
-DEFINE_AXPBY_FUNC(float16);
-DEFINE_AXPBY_FUNC(float);
-DEFINE_AXPBY_FUNC(double);
-#undef DEFINE_AXPBY_FUNC
 
 /*!                y = sum(x)               */
 
@@ -421,7 +435,7 @@ DEFINE_AXPBY_FUNC(double);
         Sum<T, CUDAContext>(n, alpha, x, y, ctx); \
         CUDA_CHECK(cudaMemcpyAsync(&val, y, sizeof(T), \
             cudaMemcpyDeviceToHost, ctx->cuda_stream())); \
-        ctx->FinishDeviceCompution();  ctx->Delete(y); \
+        ctx->FinishDeviceCompution(); ctx->Delete(y); \
         return val; \
     }
 

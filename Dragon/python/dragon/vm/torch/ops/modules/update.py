@@ -24,22 +24,16 @@ class Update(BaseModule):
         self.lr_mult = kwargs.get('lr_mult', 1.0)
         self.decay_mult = kwargs.get('decay_mult', 1.0)
         self.slot = kwargs.get('slot', '')
-        self.register_arguments()
         self.register_op()
-
-    def register_arguments(self):
-        """No arguments for update ops."""
-        pass
 
     def register_op(self):
         self.op_meta = {
             'op_type': self.op_type,
-            'n_inputs': 1, 'n_outputs': 1,
             'arguments': {
                 'lr_mult': self.lr_mult,
                 'decay_mult': self.decay_mult,
                 'slot': self.slot,
-            }
+            },
         }
 
     def forward(self, param, grad):
@@ -53,12 +47,7 @@ class Collective(BaseModule):
         self.mode = kwargs.get('mode', None)
         if self.mode is None:
             raise ValueError('Got invalid collective mode: {}'.format(self.mode))
-        self.register_arguments()
         self.register_op()
-
-    def register_arguments(self):
-        """No arguments for update ops."""
-        pass
 
     def register_op(self):
         idx, group = mpi.AllowParallel()
@@ -68,15 +57,31 @@ class Collective(BaseModule):
         mpi_comm, mpi_group = mpi.CreateGroup(root=group[0], incl=group)
         self.op_meta = {
             'op_type': 'CollectiveUpdate',
-            'n_inputs': 1, 'n_outputs': 1, # Ignore
             'arguments': {
                 'mode': self.mode,
                 'comm': mpi_comm,
                 'group': mpi_group,
                 'root': group[0], # Assume the 1st node of group as root
-            }
+            },
         }
 
     def forward(self, grads):
         self.unify_devices(grads)
         return self.run(grads, grads, auto_grad=False)
+
+
+class Accumulate(BaseModule):
+    def __init__(self, key, ctx, **kwargs):
+        super(Accumulate, self).__init__(key, ctx, **kwargs)
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'Accumulate',
+            'arguments': {'alpha': 1., 'beta': 1.},
+        }
+
+    def forward(self, grads):
+        self.unify_devices(grads)
+        outputs = [grad.name + '[acc]' for grad in grads]
+        return self.run(grads, outputs, auto_grad=False)

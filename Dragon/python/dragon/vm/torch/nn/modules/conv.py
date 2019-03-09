@@ -55,9 +55,10 @@ class _ConvNd(Module):
             'op_type': 'Conv{}{}d'.format(
                 'Transpose' if self.transposed else '',
                 len(self.kernel_size)),
-            'n_inputs': 3 if self.bias else 2, 'n_outputs': 1,
             'arguments': {
-                'num_output': self.weight.shape[0],
+                'num_output':
+                    self.weight.shape[1] if self.transposed
+                    else self.weight.shape[0],
                 'kernel_shape': self.weight.shape[2:],
                 'strides': _pair(self.stride),
                 'pads': _pair(self.padding),
@@ -106,7 +107,7 @@ class Conv2d(_ConvNd):
     def forward(self, input):
         inputs = [input, self.weight] + ([self.bias] if self.bias else [])
         self.unify_devices(inputs)
-        outputs = [self.register_output(input.dtype)]
+        outputs = [self.register_output()]
         return self.run(inputs, outputs)
 
 
@@ -124,5 +125,5 @@ class ConvTranspose2d(_ConvNd):
     def forward(self, input):
         inputs = [input, self.weight] + ([self.bias] if self.bias else [])
         self.unify_devices(inputs)
-        outputs = [self.register_output(input.dtype)]
+        outputs = [self.register_output()]
         return self.run(inputs, outputs)

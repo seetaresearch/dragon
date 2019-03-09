@@ -7,6 +7,7 @@
 #include "py_io.h"
 #include "py_onnx.h"
 #include "py_config.h"
+#include "py_proto.h"
 
 namespace dragon {
 
@@ -40,293 +41,157 @@ REGISTER_TENSOR_FETCHER(TypeMeta::Id<NumpyFetcher>(), NumpyFetcher);
 REGISTER_TENSOR_FETCHER(TypeMeta::Id<StringFetcher>(), StringFetcher);
 REGISTER_TENSOR_FEEDER(TypeMeta::Id<NumpyFeeder>(), NumpyFeeder);
 
-extern "C" {
-
-bool SwitchWorkspaceInternal(
+void SwitchWorkspace(
     const string&           name,
-    const bool              create_if_missing) {
+    const bool              create_if_missing = true) {
     if (g_workspaces.count(name)) {
         g_current_workspace = name;
         g_workspace = g_workspaces[name].get();
-        return true;
     } else if (create_if_missing) {
         unique_ptr<Workspace> new_workspace(new Workspace(name));
         g_workspace = new_workspace.get();
         g_workspaces[name] = std::move(new_workspace);
         sub_workspaces[name] = vector<string>();
         g_current_workspace = name;
-        return true;
     } else {
-        return false;
+        LOG(FATAL) << "Workspace of the given name does not exist."
+           "\nAnd, it is not allowed to create. (Try to alllow?)";
     }
 }
 
-inline PyObject* SwitchWorkspaceCC(PyObject* self, PyObject *args) {
-    char* cname;
-    PyObject* create_if_missing = nullptr;
-    if (!PyArg_ParseTuple(args, "s|O", &cname, &create_if_missing)) {
-        PyErr_SetString(PyExc_ValueError, 
-            "Excepted a workspace name and a optional "
-            "boolean value that specific whether to create if missing.");
-        return nullptr;
-    }
-    if (create_if_missing == nullptr) create_if_missing = Py_True;
-    bool success = SwitchWorkspaceInternal(cname,
-        PyObject_IsTrue(create_if_missing) ? true : false);
-    if (!success) {
-        PyErr_SetString(PyExc_RuntimeError, 
-            "Workspace of the given name does not exist."
-            "\nAnd, it is not allowed to create. (Try alllow?)");
-        return nullptr;
-    }
-    Py_RETURN_TRUE;
-}
-
-inline PyObject* MoveWorkspaceCC(PyObject* self, PyObject *args) {
-    char* target_ws, *src_ws;
-    if (!PyArg_ParseTuple(args, "ss", &target_ws, &src_ws)) {
-        PyErr_SetString(PyExc_ValueError, 
-            "Excepted the target and source workspace.");
-        return nullptr;
-    }
-    CHECK(g_workspaces.count(src_ws))
-        << "\nSource Workspace(" << src_ws << ") does not exist.";
-    CHECK(g_workspaces.count(target_ws))
-        << "\nTarget Workspace(" << target_ws << ") does not exist.";
-    g_workspaces[target_ws]->Move(g_workspaces[src_ws].get());
-    sub_workspaces[target_ws].push_back(string(src_ws));
-    LOG(INFO) << "Move the Workspace(" << src_ws << ") into the "
-              << "Workspace(" << target_ws << ").";
-    Py_RETURN_TRUE;
-}
-
-inline PyObject* CurrentWorkspaceCC(PyObject* self, PyObject* args) {
-    return String_AsPyUnicode(g_current_workspace);
-}
-
-inline PyObject* WorkspacesCC(PyObject* self, PyObject* args) {
-    PyObject* list = PyList_New(g_workspaces.size());
-    int i = 0;
-    for (auto const& it : g_workspaces) 
-        CHECK_EQ(PyList_SetItem(list, i++, String_AsPyUnicode(it.first)), 0);
-    return list;
-}
-
-inline PyObject* ResetWorkspaceCC(PyObject* self, PyObject* args) {
-    char* cname;
-    if (!PyArg_ParseTuple(args, "s", &cname)) {
-        PyErr_SetString(PyExc_ValueError, 
-            "Excepted a name to locate the workspace.");
-        return nullptr;
-    }
-    string target_workspace = g_current_workspace;
-    if (!string(cname).empty()) target_workspace = string(cname);
-    CHECK(g_workspaces.count(target_workspace))
-        << "\nWorkspace(" << target_workspace
-        << ") does not exist, can not be reset.";
-    LOG(INFO) << "Reset the Workspace(" << target_workspace << ")";
-    g_workspaces[target_workspace].reset(new Workspace(target_workspace));
-    g_workspace = g_workspaces[target_workspace].get();
-    for (auto& sub_workspace : sub_workspaces[target_workspace]) {
-        if (g_workspaces.count(sub_workspace) > 0)
-            g_workspace->Move(g_workspaces[sub_workspace].get());
-    }
-    Py_RETURN_TRUE;
-}
-
-inline PyObject* ClearWorkspaceCC(PyObject* self, PyObject* args) {
-    char* cname;
-    if (!PyArg_ParseTuple(args, "s", &cname)) {
-        PyErr_SetString(PyExc_ValueError, 
-            "Excepted a name to locate the workspace.");
-        return nullptr;
-    }
-    string target_workspace = g_current_workspace;
-    if (!string(cname).empty()) target_workspace = string(cname);
-    CHECK(g_workspaces.count(target_workspace))
-        << "\nWorkspace(" << target_workspace
-        << ") does not exist, can not be reset.";
-    LOG(INFO) << "Clear the Workspace(" << target_workspace << ")";
-    g_workspaces[target_workspace]->Clear();
-    Py_RETURN_TRUE;
-}
-
-inline PyObject* FetchTensorCC(PyObject* self, PyObject* args) {
-    char* cname;
-    if (!PyArg_ParseTuple(args, "s", &cname)) {
-        PyErr_SetString(PyExc_ValueError, "Excepted a tensor name.");
-        return nullptr;
-    }
-    if (!g_workspace->HasTensor(string(cname))) {
-        string debug_str = "Tensor(" + string(cname) +
-            ") does not exist. Have you registered it?";
-        PyErr_SetString(PyExc_ValueError, debug_str.c_str());
-        return nullptr;
-    }
-    Tensor* tensor = g_workspace->GetTensor(string(cname));
-    TypeId type_id = CTypeToFetcher(tensor->meta().id());
-    CHECK(type_id != 0)
-        << "\nTensor(" << tensor->name()
-        << ") does not initialize or had been reset.";
-    unique_ptr<TensorFetcherBase> fetcher(CreateFetcher(type_id));
-    if (fetcher.get()) {
-        // Copy the tensor data to a numpy object
-        return fetcher->Fetch(*tensor);
-    } else {
-        LOG(INFO) << string(cname) << " is not a C++ native type.";
-        return nullptr;
-    }
-}
-
-inline PyObject* FeedTensorCC(PyObject* self, PyObject* args) {
-    char* cname;
-    PyArrayObject* array = nullptr;
-    PyObject *device_option = nullptr;
-    if (!PyArg_ParseTuple(args, "sO|O", &cname, &array, &device_option)) {
-        PyErr_SetString(PyExc_ValueError, 
-            "Excepted the name, values and serialized DeviceOption.");
-        return nullptr;
-    }
-    DeviceOption option;
-    if (device_option != nullptr) {
-        if (!option.ParseFromString(PyBytes_AsStringEx(device_option))) {
-            PyErr_SetString(PyExc_ValueError, 
-                "Failed to parse the DeviceOption.");
-            return nullptr;
-        }
-    }
-    Tensor* tensor = g_workspace->CreateTensor(string(cname));
-    unique_ptr<TensorFeederBase> feeder(TensorFeederRegistry()
-        ->Create(TypeMeta::Id<NumpyFeeder>()));
-    if (feeder.get()) {
-        return feeder->Feed(option, array, tensor);
-    } else {
-        PyErr_SetString(PyExc_TypeError, "Unknown device type.");
-        return nullptr;
-    }
-}
-
-inline PyObject* GetDummyNameCC(PyObject* self, PyObject* args) {
-    char* basename, *suffix, *domain;
-    PyObject* zero_based = nullptr;
-    if (!PyArg_ParseTuple(args, "sss|O", &basename,
-            &suffix, &domain, &zero_based)) {
-        LOG(FATAL) << "Excepted the basename, suffix and domain.";
-    }
-    if (zero_based == nullptr) zero_based = Py_True;
-    return String_AsPyUnicode(ws()->GetDummyName(
-        basename, suffix, domain,
-            PyObject_IsTrue(zero_based) ? true : false));
-}
-
-inline PyObject* OnModuleExitCC(PyObject* self, PyObject* args) {
-    g_workspaces.clear();
-    Py_RETURN_TRUE;
-}
-
-#define PYFUNC(name) {#name, name, METH_VARARGS, ""}
-#define PYENDFUNC {nullptr, nullptr, 0, nullptr}
-
-PyMethodDef* GetAllMethods() {
-    static PyMethodDef g_python_methods[] {
-        /*!          Workspace          */
-        PYFUNC(SwitchWorkspaceCC),
-        PYFUNC(MoveWorkspaceCC),
-        PYFUNC(CurrentWorkspaceCC),
-        PYFUNC(WorkspacesCC),
-        PYFUNC(ResetWorkspaceCC),
-        PYFUNC(ClearWorkspaceCC),
-        /*!            Graph            */
-        PYFUNC(CreateGraphCC),
-        PYFUNC(RunGraphCC),
-        PYFUNC(GraphsCC),
-        /*!           AutoGrad          */
-        PYFUNC(CreateGradientDefsCC),
-        PYFUNC(RunGradientFlowCC),
-        /*!           Operator          */
-        PYFUNC(RegisteredOperatorsCC),
-        PYFUNC(NoGradientOperatorsCC),
-        PYFUNC(RunOperatorCC),
-        PYFUNC(RunOperatorsCC),
-        PYFUNC(CreatePersistentOpCC),
-        PYFUNC(RunPersistentOpCC),
-        /*!            Tensor           */
-        PYFUNC(HasTensorCC),
-        PYFUNC(CreateTensorCC),
-        PYFUNC(CreateFillerCC),
-        PYFUNC(GetFillerTypeCC),
-        PYFUNC(RenameTensorCC),
-        PYFUNC(TensorFromShapeCC),
-        PYFUNC(TensorFromPyArrayCC),
-        PYFUNC(TensorFromTensorCC),
-        PYFUNC(GetTensorNameCC),
-        PYFUNC(GetTensorInfoCC),
-        PYFUNC(FeedTensorCC),
-        PYFUNC(FetchTensorCC),
-        PYFUNC(ToCPUTensorCC),
-        PYFUNC(ToCUDATensorCC),
-        PYFUNC(TensorToPyArrayCC),
-        PYFUNC(TensorToPyArrayExCC),
-        PYFUNC(ResetTensorCC),
-        PYFUNC(TensorsCC),
-        /*!             MPI             */
-        PYFUNC(MPIInitCC),
-        PYFUNC(MPIRankCC),
-        PYFUNC(MPISizeCC),
-        PYFUNC(MPICreateGroupCC),
-        PYFUNC(MPIFinalizeCC),
-        /*!            CUDA             */
-        PYFUNC(IsCUDADriverSufficientCC),
-        /*!            I/O              */
-        PYFUNC(RestoreCC),
-        PYFUNC(SnapshotCC),
-        /*!            ONNX             */
-        PYFUNC(ImportONNXModelCC),
-        /*!            Misc             */
-        PYFUNC(GetDummyNameCC),
-        /*!           Config            */
-        PYFUNC(SetLogLevelCC),
-        PYFUNC(OnModuleExitCC),
-        PYENDFUNC,
-    };
-    return g_python_methods;
-}
-
-static void import_array_wrapper() { import_array1(); }
-
-void common_init() {
-    import_array_wrapper();
+void OnImportModule() {
+    []() { import_array1(); }();
     static bool initialized = false;
     if (initialized) return;
-    SwitchWorkspaceInternal("default", true);
+    SwitchWorkspace("default", true);
     g_current_workspace = "default";
     initialized = true;
 }
 
-#ifdef WITH_PYTHON3
-static struct PyModuleDef libdragon = {
-    PyModuleDef_HEAD_INIT,
-    "libdragon", "", -1,
-    GetAllMethods() 
-};
+PYBIND11_MODULE(libdragon, m) {
 
-PyMODINIT_FUNC PyInit_libdragon(void) {
-    PyObject* module = PyModule_Create(&libdragon);
-    if (module == nullptr) return nullptr;
-    common_init();
-    return module;
+    /* ------------------------------------ *
+     *                                      *
+     *              Workspace               *
+     *                                      *
+     * ------------------------------------ */
+
+     /*! \brief Switch to the specific workspace */
+    m.def("SwitchWorkspace", &SwitchWorkspace);
+
+    /*! \brief Return the current active workspace */
+    m.def("CurrentWorkspace", []() {
+        return g_current_workspace;
+    });
+
+    /*! \brief List all of the existing workspace */
+    m.def("Workspaces", []() -> vector<string> {
+        vector<string> names;
+        for (auto const& it : g_workspaces)
+            names.emplace_back(it.first);
+        return names;
+    });
+
+    /*! \brief Move the source workspace into the target */
+    m.def("MoveWorkspace", [](
+        const string&           target,
+        const string&           source) {
+        CHECK(g_workspaces.count(source))
+            << "\nSource Workspace(" << source << ") does not exist.";
+        CHECK(g_workspaces.count(target))
+            << "\nTarget Workspace(" << target << ") does not exist.";
+        g_workspaces[target]->Move(g_workspaces[source].get());
+        sub_workspaces[target].push_back(source);
+        LOG(INFO) << "Move the Workspace(" << source << ") "
+            << "into the Workspace(" << target << ").";
+    });
+
+    /*! \brief Reset the specific workspace */
+    m.def("ResetWorkspace", [](const string& name) {
+        string target_workspace = g_current_workspace;
+        if (!name.empty()) target_workspace = name;
+        CHECK(g_workspaces.count(target_workspace))
+            << "\nWorkspace(" << target_workspace
+            << ") does not exist, can not be reset.";
+        LOG(INFO) << "Reset the Workspace(" << target_workspace << ")";
+        g_workspaces[target_workspace].reset(new Workspace(target_workspace));
+        g_workspace = g_workspaces[target_workspace].get();
+        for (auto& sub_workspace : sub_workspaces[target_workspace]) {
+            if (g_workspaces.count(sub_workspace) > 0)
+                g_workspace->Move(g_workspaces[sub_workspace].get());
+        }
+    });
+
+    /*! \brief Release the memory of tensors */
+    m.def("ClearWorkspace", [](const string& name) {
+        string target_workspace = g_current_workspace;
+        if (!name.empty()) target_workspace = name;
+        CHECK(g_workspaces.count(target_workspace))
+            << "\nWorkspace(" << target_workspace
+            << ") does not exist, can not be reset.";
+        LOG(INFO) << "Clear the Workspace(" << target_workspace << ")";
+        g_workspaces[target_workspace]->Clear();
+    });
+
+    m.def("FeedTensor", [](
+        const string&           name,
+        pybind11::object        value,
+        const string&           device_option) {
+        DeviceOption dev;
+        if (!device_option.empty()) {
+            if (!dev.ParseFromString(device_option)) {
+                LOG(FATAL) << "Failed to parse the DeviceOption.";
+            }
+        }
+        Tensor* tensor = g_workspace->CreateTensor(name);
+        unique_ptr<TensorFeederBase> feeder(TensorFeederRegistry()
+            ->Create(TypeMeta::Id<NumpyFeeder>()));
+        feeder->Feed(dev, reinterpret_cast<
+            PyArrayObject*>(value.ptr()), tensor);
+    });
+
+    m.def("FetchTensor", [](const string& name) {
+        if (!g_workspace->HasTensor(name))
+            LOG(FATAL) << "Tensor(" + name + ") "
+                "does not exist. Have you registered it?";
+        Tensor* tensor = g_workspace->GetTensor(name);
+        TypeId type_id = CTypeToFetcher(tensor->meta().id());
+        CHECK(type_id != 0)
+            << "\nTensor(" << tensor->name()
+            << ") does not initialize or had been reset.";
+        unique_ptr<TensorFetcherBase> fetcher(CreateFetcher(type_id));
+        if (fetcher.get()) {
+            // Copy the tensor data to a numpy object
+            return fetcher->Fetch(*tensor);
+        } else {
+            LOG(FATAL) << name << " is not a C++ native type.";
+            return pybind11::object();
+        }
+    });
+
+    /*!            Misc             */
+    m.def("GetDummyName", [](
+        const string&           basename,
+        const string&           suffix,
+        const string&           domain,
+        const bool              zero_based) {
+        return ws()->GetDummyName(
+            basename, suffix, domain, zero_based);
+    });
+
+    AddIOMethods(m);
+    AddMPIMethods(m);
+    AddCUDAMethods(m);
+    AddProtoMethods(m);
+    AddGraphMethods(m);
+    AddTensorMethods(m);
+    AddConfigMethods(m);
+    AddGradientMethods(m);
+    AddOperatorMethods(m);
+
+    OnImportModule();
+    m.def("OnModuleExit", []() { g_workspaces.clear(); });
 }
-
-#else  // WITH_PYTHON2
-PyMODINIT_FUNC initlibdragon(void) {
-    PyObject* moudle = Py_InitModule(
-        "libdragon", GetAllMethods());
-    if (moudle == nullptr) return;
-    common_init();
-}
-#endif
-
-}  // extern "C"
 
 }  // namespace python
 

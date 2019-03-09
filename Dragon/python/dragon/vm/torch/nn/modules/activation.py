@@ -19,39 +19,42 @@ from dragon.vm.torch.nn import Module
 class ReLU(Module):
     def __init__(self, inplace=False):
         super(ReLU, self).__init__()
-        self._inplace = inplace
+        self.inplace = inplace
         self.register_op()
 
     def register_op(self):
-        self.op_meta = {
-            'op_type': 'Relu',
-            'n_inputs': 1, 'n_outputs': 1,
-            'arguments': {}
-        }
+        self.op_meta = {'op_type': 'Relu', 'arguments':{}}
+
+    def extra_repr(self):
+        inplace_str = 'inplace' if self.inplace else ''
+        return inplace_str
 
     def forward(self, x):
         inputs = [x]; self.unify_devices(inputs)
-        outputs = [x if self._inplace else self.register_output(x.dtype)]
+        outputs = [x if self.inplace else self.register_output()]
         return self.run(inputs, outputs)
 
 
 class LeakyReLU(Module):
     def __init__(self, negative_slope=0.01, inplace=False):
         super(LeakyReLU, self).__init__()
-        self._negative_slope = negative_slope
-        self._inplace = inplace
+        self.negative_slope = negative_slope
+        self.inplace = inplace
         self.register_op()
 
     def register_op(self):
         self.op_meta = {
             'op_type': 'Relu',
-            'n_inputs': 1, 'n_outputs': 1,
-            'arguments': {'slope': self._negative_slope}
+            'arguments': {'slope': self.negative_slope}
         }
+
+    def extra_repr(self):
+        inplace_str = ', inplace' if self.inplace else ''
+        return 'negative_slope={}{}'.format(self.negative_slope, inplace_str)
 
     def forward(self, x):
         inputs = [x]; self.unify_devices(inputs)
-        outputs = [x if self._inplace else self.register_output(x.dtype)]
+        outputs = [x if self.inplace else self.register_output()]
         return self.run(inputs, outputs)
 
 
@@ -59,66 +62,87 @@ class ELU(Module):
     def __init__(self, alpha=1.0, inplace=False):
         super(ELU, self).__init__()
         self.alpha = alpha
-        self._inplace = inplace
+        self.inplace = inplace
         self.register_op()
 
     def register_op(self):
         self.op_meta = {
             'op_type': 'Elu',
-            'n_inputs': 1, 'n_outputs': 1,
-            'arguments': {
-                'alpha': self.alpha,
-            }
+            'arguments': {'alpha': self.alpha},
         }
+
+    def extra_repr(self):
+        inplace_str = ', inplace' if self.inplace else ''
+        return 'alpha={}{}'.format(self.alpha, inplace_str)
 
     def forward(self, x):
         inputs = [x]; self.unify_devices(inputs)
-        outputs = [x if self._inplace else self.register_output(x.dtype)]
+        outputs = [x if self.inplace else self.register_output()]
         return self.run(inputs, outputs)
 
 
 class SELU(Module):
     def __init__(self, inplace=False):
         super(SELU, self).__init__()
-        self._inplace = inplace
+        self.inplace = inplace
         self.register_op()
 
     def register_op(self):
-        self.op_meta = {
-            'op_type': 'SElu',
-            'n_inputs': 1, 'n_outputs': 1,
-            'arguments': {}
-        }
+        self.op_meta = {'op_type': 'SElu', 'arguments': {}}
+
+    def extra_repr(self):
+        inplace_str = 'inplace' if self.inplace else ''
+        return inplace_str
 
     def forward(self, x):
         inputs = [x]; self.unify_devices(inputs)
-        outputs = [x if self._inplace else self.register_output(x.dtype)]
+        outputs = [x if self.inplace else self.register_output()]
         return self.run(inputs, outputs)
 
 
 class Sigmoid(Module):
     def __init__(self, inplace=False):
         super(Sigmoid, self).__init__()
-        self._inplace = inplace
+        self.inplace = inplace
         self.register_op()
 
     def register_op(self):
-        self.op_meta = {
-            'op_type': 'Sigmoid',
-            'n_inputs': 1, 'n_outputs': 1,
-            'arguments': {}
-        }
+        self.op_meta = {'op_type': 'Sigmoid', 'arguments': {}}
+
+    def extra_repr(self):
+        inplace_str = 'inplace' if self.inplace else ''
+        return inplace_str
 
     def forward(self, x):
         inputs = [x]; self.unify_devices(inputs)
-        outputs = [x if self._inplace else self.register_output(x.dtype)]
+        outputs = [x if self.inplace else self.register_output()]
+        return self.run(inputs, outputs)
+
+
+class Tanh(Module):
+    def __init__(self, inplace=False):
+        super(Tanh, self).__init__()
+        self.inplace = inplace
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {'op_type': 'Tanh', 'arguments': {}}
+
+    def extra_repr(self):
+        inplace_str = 'inplace' if self.inplace else ''
+        return inplace_str
+
+    def forward(self, x):
+        inputs = [x]; self.unify_devices(inputs)
+        outputs = [x if self.inplace else self.register_output()]
         return self.run(inputs, outputs)
 
 
 class Softmax(Module):
-    def __init__(self, dim=None):
+    def __init__(self, dim=None, inplace=False):
         super(Softmax, self).__init__()
         self.dim = dim
+        self.inplace = inplace
         if dim is None:
             raise ValueError('Excepted a valid dim, got None.')
         self.register_op()
@@ -126,13 +150,14 @@ class Softmax(Module):
     def register_op(self):
         self.op_meta = {
             'op_type': 'Softmax',
-            'n_inputs': 1, 'n_outputs': 1,
-            'arguments': {
-                'axis': self.dim,
-            }
+            'arguments': {'axis': self.dim},
         }
+
+    def extra_repr(self):
+        inplace_str = ', inplace' if self.inplace else ''
+        return 'dim={}{}'.format(self.dim, inplace_str)
 
     def forward(self, x):
         inputs = [x]; self.unify_devices(inputs)
-        outputs = [self.register_output(x.dtype)]
+        outputs = [x if self.inplace else self.register_output()]
         return self.run(inputs, outputs)

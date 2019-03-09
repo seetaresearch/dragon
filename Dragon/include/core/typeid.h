@@ -52,12 +52,12 @@ class TypeMeta {
         return *this;
     }
 
-    bool operator == (const TypeMeta& other) const { 
-        return (id_ == other.id_); 
+    bool operator == (const TypeMeta& other) const {
+        return (id_ == other.id_);
     }
 
-    bool operator != (const TypeMeta& other) const { 
-        return (id_ != other.id_); 
+    bool operator != (const TypeMeta& other) const {
+        return (id_ != other.id_);
     }
 
     const TypeId& id() const { return id_; }
@@ -69,8 +69,8 @@ class TypeMeta {
 
     template <typename T>
     static TypeId Id() {
-        //  return T's id
-        //  using a intptr_t as hash key
+        // Return T's id
+        // Using a intptr_t as hash key
         return TypeRegister<T>::id();
     }
 
@@ -78,7 +78,7 @@ class TypeMeta {
     static size_t Itemsize() { return sizeof(T); }
 
     template <typename T>
-    bool Match() const { return (id_ == Id<T>()); } 
+    bool Match() const { return (id_ == Id<T>()); }
 
     template <typename T>
     static void Ctor(void* ptr, size_t n) {

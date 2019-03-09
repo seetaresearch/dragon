@@ -17,11 +17,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon as dg
+import dragon
 
 
 def is_available():
-    """Returns a bool indicating if CUDA is currently available.
+    """Return a bool indicating if CUDA is currently available.
 
     Returns
     -------
@@ -29,16 +29,27 @@ def is_available():
         ``True`` if your device(s) support CUDA otherwise ``False``.
 
     """
-    return dg.config.IsCUDADriverSufficient()
+    return dragon.cuda.IsCUDADriverSufficient()
 
 
-def set_device(device):
-    """Sets the current device.
-
-    Parameters
-    ----------
-    device : int
-        The id of device to use.
+def current_device():
+    """Return the index of the current active device.
+    
+    Returns
+    -------
+    int
+        The index of device.
 
     """
-    if device >= 0: dg.SetGPU(device)
+    return dragon.cuda.GetDevice()
+
+
+def synchronize():
+    """Waits for all kernels in the default stream on current device.
+
+    Returns
+    -------
+    None
+
+    """
+    return dragon.cuda.SynchronizeStream()

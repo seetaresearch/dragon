@@ -164,13 +164,13 @@ void ConvOpBase<Context>::Dw(const T* dy, const T* x, T *dw) {
                          conv_out_spatial_dim,
                 1.f, dy + output_offset * g,
                     col_buffer + col_offset * g,
-                1.f, dw + weight_offset * g, ctx());
+                0.f, dw + weight_offset * g, ctx());
         } else if (data_format == "NHWC") {
             math::Gemm(
                 CblasTrans, CblasNoTrans,
                     conv_out_channels, kernel_dim,
                         conv_out_spatial_dim,
-                1.f, dy, col_buffer, 1.f, dw, ctx());
+                1.f, dy, col_buffer, 0.f, dw, ctx());
         }
     }
 }
@@ -182,12 +182,12 @@ void ConvOpBase<Context>::Db(const T* dy, T* db) {
         math::Gemv(
             CblasNoTrans, num_output, out_spatial_dim,
                 1.f, dy, multiplier,
-                    1.f, db, ctx());
+                    0.f, db, ctx());
     } else if (data_format == "NHWC") {
         math::Gemv(
             CblasTrans, out_spatial_dim, num_output,
                 1.f, dy, multiplier,
-                    1.f, db, ctx());
+                    0.f, db, ctx());
     }
 }
 
@@ -317,7 +317,7 @@ void ConvOpBase<Context>::Reshape() {
     // Determine the workspace size for col buffer
     col_dim = kernel_dim * group;
     for (int i = 0; i < num_spatial_axes; i++) {
-        if (ReverseDimensions()) 
+        if (ReverseDimensions())
             col_dim *= bottom_shape[spatial_axis + i];
         else col_dim *= output_shape[i];
     }

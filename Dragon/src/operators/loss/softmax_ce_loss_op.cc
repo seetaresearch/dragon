@@ -22,9 +22,9 @@ void SoftmaxCrossEntropyOp<Context>::SoftmaxRun() {
     if (def().has_device_option())
         softmax_def.mutable_device_option()
             ->CopyFrom(def().device_option());
-    if (softmax_op) { softmax_op->MutableOp(softmax_def); }
-    else { softmax_op.reset(CreateOperator(softmax_def, ws())); }
-    softmax_op->Run();
+    if (softmax_op) { softmax_op->UpdateFrom(softmax_def); }
+    else { softmax_op.reset(NewOperator(softmax_def, ws())); }
+    softmax_op->Run(ctx()->stream_id());
 }
 
 template <class Context> template <typename T>
@@ -48,7 +48,7 @@ void SoftmaxCrossEntropyOp<Context>::RunWithType() {
             1.f, Ldata, Ydata, ctx()); return;
     }
 
-    T normalizer = 1;
+    double normalizer = 1.;
     if (normalization == "BATCH_SIZE") {
         normalizer = Input(0).dim(0);
     } else if (normalization == "FULL") {
@@ -56,8 +56,8 @@ void SoftmaxCrossEntropyOp<Context>::RunWithType() {
     }
 
     Output(0)->Reshape(vector<int64_t>());
-    auto* Ydata = Output(0)->template mutable_data<float, Context>();
-    math::Sum(losses.count(), 1.f / normalizer, Ldata, Ydata, ctx());
+    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    math::Sum(losses.count(), 1. / normalizer, Ldata, Ydata, ctx());
 }
 
 template <class Context>
@@ -88,9 +88,9 @@ void SoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
     auto* Tdata = Input(1).template data<T, Context>();
     auto* Pdata = prob->template mutable_data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
+
     ctx()->template Copy<T, Context, Context>(prob->count(), dXdata, Pdata);
-    math::Axpy<T, Context>(Output(0)->count(),
-        -1.f, Tdata, dXdata, ctx());
+    math::Axpy(Output(0)->count(), -1.f, Tdata, dXdata, ctx());
 
     if (normalization == "UNIT") {
         auto* dYdata = Input(-1).template data<T, Context>();
@@ -100,7 +100,7 @@ void SoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
             Pdata, dXdata, dXdata, ctx()); return;
     }
 
-    T normalizer = 1;
+    double normalizer = 1;
     if (normalization == "BATCH_SIZE") {
         normalizer = Input(0).dim(0);
     } else if (normalization == "FULL") {
@@ -109,9 +109,14 @@ void SoftmaxCrossEntropyGradientOp<Context>::RunWithType() {
 
     auto* dYdata = Input(-1).template data<T, Context>();
     T dYHost; ctx()->template Copy
-        <T, CPUContext, Context>(1, &dYHost, dYdata);
-    math::Scale<T, Context>(Output(0)->count(),
-        dYHost / normalizer, dXdata, dXdata, ctx());
+        <T, CPUContext, Context>(
+            1, &dYHost, dYdata);
+    ctx()->FinishDeviceCompution();
+
+    math::Scale(
+        Output(0)->count(),
+            dYHost / normalizer,
+                dXdata, dXdata, ctx());
 }
 
 template <class Context>

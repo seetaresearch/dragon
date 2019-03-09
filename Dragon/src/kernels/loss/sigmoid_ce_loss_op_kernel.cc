@@ -12,7 +12,7 @@ template <> void SigmoidCrossEntropy<float, CPUContext>(
     const float*            logits,
     const float*            targets,
     float*                  losses,
-    float*                  flags,
+    int*                    flags,
     CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
@@ -36,7 +36,7 @@ template <> void SigmoidCrossEntropyGrad<float, CPUContext>(
     const float*            logits,
     const float*            targets,
     float*                  dlogits,
-    float*                  flags,
+    int*                    flags,
     CPUContext*             ctx) {
 #ifdef WITH_OMP
     #pragma omp parallel for num_threads(GET_OMP_THREADS(count))

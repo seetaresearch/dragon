@@ -88,11 +88,11 @@ class WorkspaceScope(object):
         self.prev = 'default'
 
     def __enter__(self):
-        self.prev = C.CurrentWorkspaceCC()
-        C.SwitchWorkspaceCC(self.ws, True)
+        self.prev = C.CurrentWorkspace()
+        C.SwitchWorkspace(self.ws, True)
 
     def __exit__(self, type, value, traceback):
-        C.SwitchWorkspaceCC(self.prev, True)
+        C.SwitchWorkspace(self.prev, True)
 
 
 _GLOBAL_TENSOR_STACK = _ThreadLocalStack()

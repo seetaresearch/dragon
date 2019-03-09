@@ -35,8 +35,6 @@ class MixedMemory {
         STATE_AT_CUDA,
         /*! \brief Memory could be modified by CNMLContext last time */
         STATE_AT_CNML,
-        /*! \brief Memory should be copied to another device next time */
-        SWITCHED,
         /*! \brief Host and Device now hold the same contents */
         SYNCED,
     } State;
@@ -46,7 +44,7 @@ class MixedMemory {
           cuda_ptr_(nullptr), cnml_ptr_(nullptr) {}
 
     /*! \brief Constructor with the known meta and size */
-    MixedMemory(const TypeMeta& meta, const size_t nbytes)
+    MixedMemory(const TypeMeta& meta, size_t nbytes)
         : meta_(meta), nbytes_(nbytes), cpu_ptr_(nullptr),
           cuda_ptr_(nullptr), cnml_ptr_(nullptr) {}
 
@@ -54,19 +52,19 @@ class MixedMemory {
     ~MixedMemory();
 
     /*! \brief Return the const data pointer on CPUContext */
-    const void* cpu_data();
+    const void* cpu_data(size_t nbytes = 0);
 
     /*! \brief Return the const data pointer on CUDAContext */
-    const void* cuda_data();
+    const void* cuda_data(size_t nbytes = 0);
 
     /*! \brief Return the const data pointer on CNMLContext */
     const void* cnml_data();
 
     /*! \brief Return the mutable data pointer on CPUContext */
-    void* mutable_cpu_data();
+    void* mutable_cpu_data(size_t nbytes = 0);
 
     /*! \brief Return the mutable data pointer on CUDAContext */
-    void* mutable_cuda_data();
+    void* mutable_cuda_data(size_t nbytes = 0);
 
     /*! \brief Return the mutable data pointer on CNMLContext */
     void* mutable_cnml_data();
@@ -85,11 +83,11 @@ class MixedMemory {
 
     /*! \brief Set the cpu data pointer from external context */
     void set_cpu_data(void* cpu_ptr, size_t nbytes);
-    
-    /*! \brief Switch to the device set by Context before */
-    void SwitchToDevice();
 
     /*! \brief Switch to the specified device */
+    void SwitchToDevice(int device_id);
+
+    /*! \brief Switch to the specified cuda device */
     void SwitchToCUDADevice(int device_id);
 
     /*! \brief Return the total bytes of this memory */
@@ -110,14 +108,17 @@ class MixedMemory {
     /*! \brief Set the storage order */
     void set_order(StorageOrder order) { order_ = order; }
 
+    /*! \brief Return the device id of the memory on device */
+    int device_id() const { return ptr_device_; }
+
     /*! \brief Return a string to describe the internal structure */
     const Map<string, string> info() const;
 
     /*! \brief Control the state machine to CPUContext */
-    void ToCPU();
+    void ToCPU(size_t nbytes = 0);
 
     /*! \brief Control the state machine to CUDAContext */
-    void ToCUDA();
+    void ToCUDA(size_t nbytes = 0);
 
  private:
     /*! \brief The type meta to call the deconstructor */
@@ -137,7 +138,7 @@ class MixedMemory {
 
     /*! \brief Whether this memory owns the cpu data pointer */
     int own_cpu_ptr_ = 1;
-    
+
     /*! \brief Store the device id for some data pointers */
     int ptr_device_ = 0;
 

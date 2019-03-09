@@ -15,65 +15,86 @@ from __future__ import print_function
 
 from dragon.vm.torch.ops.primitive import MakeContext
 from dragon.vm.torch.ops.factory import get_module
-from dragon.vm.torch.ops.modules.shape import \
-    Reshape, Squeeze, UnSqueeze, Fill, Permute, Repeat
-from dragon.vm.torch.ops.modules.reduce import Reduce, ArgReduce
-from dragon.vm.torch.ops.modules.indexing import Indexing
-from dragon.vm.torch.ops.modules.axis import Concat, Gather
+
+from dragon.vm.torch.ops.modules.init import (
+    Fill, RandomUniform, RandomNormal,
+)
+
+from dragon.vm.torch.ops.modules.array import (
+    Reshape, Squeeze, UnSqueeze, Permute,
+    Indexing, Repeat, Concat, Gather,
+    Reduce, ArgReduce, OneHot,
+)
 
 
 def reshape(input, shape, shape_like=None):
     if shape_like is not None: shape = shape_like.shape
     ctx = MakeContext(inputs=[input]); n_dim = len(shape)
-    key = 'torch.ops.reshape/{}:{}/n_dim:{}'.format(ctx[0], ctx[1], n_dim)
+    key = 'Reshape/{}/n_dim:{}'.format(ctx, n_dim)
     module = get_module(Reshape, key, ctx, n_dim=n_dim)
     return module.forward(input, shape)
 
 
 def squeeze(input, dim=None, out=None):
     ctx = MakeContext(inputs=[input])
-    key = 'torch.ops.squeeze/{}:{}/dim:{}'.format(
-        ctx[0], ctx[1], dim if dim else 'None')
+    key = 'Squeeze/{}/dim:{}'.format(ctx, dim if dim else 'None')
     module = get_module(Squeeze, key, ctx, dim=dim)
     return module.forward(input, out=out)
 
 
 def unsqueeze(input, dim, out=None):
     ctx = MakeContext(inputs=[input])
-    key = 'torch.ops.unsqueeze/{}:{}/dim:{}'.format(
-        ctx[0], ctx[1], dim if dim else 'None')
+    key = 'Unsqueeze/{}/dim:{}'.format(ctx, dim if dim else 'None')
     module = get_module(UnSqueeze, key, ctx, dim=dim)
     return module.forward(input, out=out)
 
 
 def _permute(input, perm=None):
     ctx = MakeContext(inputs=[input]); n_perm = len(perm) if perm else 0
-    key = 'torch.ops.permute/{}:{}/n_perm:{}'.format(ctx[0], ctx[1], n_perm)
+    key = 'Permute/{}/n_perm:{}'.format(ctx, n_perm)
     module = get_module(Permute, key, ctx, n_perm=n_perm)
     return module.forward(input, perm)
 
 
 def _repeat(input, times):
     ctx = MakeContext(inputs=[input]); n_times = len(times)
-    key = 'torch.ops.repeat/{}:{}/n_times:{}'.format(ctx[0], ctx[1], n_times)
+    key = 'Repeat/{}/n_times:{}'.format(ctx, n_times)
     module = get_module(Repeat, key, ctx, n_times=n_times)
     return module.forward(input, times)
 
 
 def _fill(input, shape, value):
     ctx = MakeContext(inputs=[input]); n_dim = len(shape)
-    key = 'torch.ops.fill/{}:{}/dtype:{}/n_dim:{}/value:{}'.format(
-        ctx[0], ctx[1], input._dtype, n_dim, value)
+    key = 'Fill/{}/dtype:{}/n_dim:{}/value:{}'.format(
+        ctx, input.dtype, n_dim, value)
     module = get_module(Fill, key, ctx, n_dim=n_dim,
-        value=value, dtype=input._dtype)
+        value=value, dtype=input.dtype)
+    return module.forward(input, shape)
+
+
+def _uniform(input, shape, low, high):
+    ctx = MakeContext(inputs=[input]); n_dim = len(shape)
+    key = 'Uniform/{}/dtype:{}/n_dim:{}/low:{}/high:{}'.format(
+        ctx, input.dtype, n_dim, float(low), float(high))
+    module = get_module(RandomUniform, key, ctx, n_dim=n_dim,
+        low=low, high=high, dtype=input.dtype)
+    return module.forward(input, shape)
+
+
+def _normal(input, shape, mean, std):
+    ctx = MakeContext(inputs=[input]); n_dim = len(shape)
+    key = 'Normal/{}/dtype:{}/n_dim:{}/mean:{}/std:{}'.format(
+        ctx, input.dtype, n_dim, float(mean), float(std))
+    module = get_module(RandomNormal, key, ctx, n_dim=n_dim,
+        mean=mean, std=std, dtype=input.dtype)
     return module.forward(input, shape)
 
 
 def _reduce(input, operation, dim=None, keepdim=False, out=None):
     ctx = MakeContext(inputs=[input])
     if dim is None: keepdim = False
-    key = 'torch.ops.{}/{}:{}/dim:{}/keepdim:{}'.format(operation.lower(),
-        ctx[0], ctx[1], dim, int(keepdim))
+    key = '{}/{}/dim:{}/keepdim:{}'.format(
+        operation, ctx, dim, int(keepdim))
     module = get_module(Reduce, key, ctx,
         operation=operation, dim=dim, keepdim=keepdim)
     return module.forward(input, out)
@@ -82,8 +103,8 @@ def _reduce(input, operation, dim=None, keepdim=False, out=None):
 def _arg_reduce(input, operation, dim=None, keepdim=False, top_k=1, out=None):
     ctx = MakeContext(inputs=[input])
     if dim is None: keepdim = False
-    key = 'torch.ops.{}/{}:{}/dim:{}/keepdim:{}/top_k:{}'.format(operation.lower(),
-        ctx[0], ctx[1], dim, int(keepdim), top_k)
+    key = '{}/{}/dim:{}/keepdim:{}/top_k:{}'.format(
+        operation, ctx, dim, int(keepdim), top_k)
     module = get_module(ArgReduce, key, ctx, operation=operation,
         axis=dim, keepdim=keepdim, top_k=top_k)
     return module.forward(input, out)
@@ -279,8 +300,7 @@ def cat(seq, dim=0, out=None):
 
     """
     ctx = MakeContext(inputs=seq, outputs=[out] if out else [])
-    key = 'torch.ops.cat/{}:{}/dim:{}'.format(
-        ctx[0], ctx[1], dim)
+    key = 'Concat/{}/dim:{}'.format(ctx, dim)
     module = get_module(Concat, key, ctx, axis=dim)
     return module.forward(seq, out)
 
@@ -310,7 +330,7 @@ def gather(input, dim, index, out=None):
 
     """
     ctx = MakeContext(inputs=[input, index], outputs=[out] if out else [])
-    key = 'torch.ops.gather/{}:{}/dim:{}'.format(ctx[0], ctx[1], dim)
+    key = 'Gather/{}/dim:{}'.format(ctx, dim)
     module = get_module(Gather, key, ctx, axis=dim)
     return module.forward(input, index, out)
 
@@ -318,8 +338,7 @@ def gather(input, dim, index, out=None):
 def _indexing(input, starts, sizes):
     n_starts, n_sizes = len(starts), len(sizes)
     ctx = MakeContext(inputs=[input])
-    key = 'torch.ops.indexing/{}:{}/n_starts:{}/n_sizes:{}'.format(
-        ctx[0], ctx[1], n_starts, n_sizes)
+    key = 'Index/{}/n_starts:{}/n_sizes:{}'.format(ctx, n_starts, n_sizes)
     module = get_module(Indexing, key, ctx, n_starts=n_starts, n_sizes=n_sizes)
     return module.forward(input, starts, sizes)
 
@@ -346,3 +365,25 @@ def narrow(input, dimension, start, length):
     sizes = list(input.shape[:]); starts = [0] * len(sizes)
     starts[dimension], sizes[dimension] = start, length
     return _indexing(input, starts, sizes)
+
+
+def one_hot(input, depth):
+    """Return a ont hot tensor according to given input.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    depth : int
+        The depth of channels.
+
+    Returns
+    -------
+    dragon.vm.torch.FloatTensor
+        The output tensor.
+
+    """
+    ctx = MakeContext(inputs=[input])
+    key = 'OneHot/{}/depth:{}'.format(ctx, depth)
+    module = get_module(OneHot, key, ctx, depth=depth)
+    return module.forward(input)

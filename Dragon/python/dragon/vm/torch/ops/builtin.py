@@ -17,23 +17,21 @@ from dragon.core.proto_utils import GetDeviceOption
 from dragon.core.tensor_utils import FromTensor
 
 from dragon.vm.torch.tensor import Tensor, Size
-from dragon.vm.torch.execution import RunOperator
 from dragon.vm.torch.ops.factory import get_module
-from dragon.vm.torch.autograd.grad_mode import no_grad
 from dragon.vm.torch.ops.primitive import MakeContext
+from dragon.vm.torch.ops.modules.array import Cast
 
 from dragon.vm.torch.ops.arithmetic import (
-    _fundamental, _rfundamental, _log, _exp,
-    _clamp,
+    _fundamental, _rfundamental,
+    _log, _exp, _sqrt, _clamp,
 )
 
-from dragon.vm.torch.ops.ndarray import (
+from dragon.vm.torch.ops.array import (
     reshape, squeeze, unsqueeze,
     _permute, _repeat, _indexing, narrow,
-    _fill, _reduce, _arg_reduce,
+    _fill, _uniform, _normal,
+    _reduce, _arg_reduce,
 )
-
-from dragon.vm.torch.ops.modules.dtype import AsType
 
 
 ##############################################
@@ -61,9 +59,8 @@ def copy_(self, src, non_blocking=False):
     """
     # Copy memory
     FromTensor(
-        src, GetDeviceOption(src._ctx[0], src._ctx[1]),
-        self.name, GetDeviceOption(self._ctx[0], self._ctx[1]))
-    self._dtype = src._dtype
+        src, GetDeviceOption(src._ctx.device_type, src._ctx.device_id),
+        self.name, GetDeviceOption(self._ctx.device_type, self._ctx.device_id))
     # Transfer the static shape if necessary
     self._static_shape = src.size() \
         if self._static_shape else None
@@ -112,11 +109,7 @@ def uniform_(self, low=0, high=1):
         The self.
 
     """
-    # TODO(PhyscalX): To support various dtypes, not only float32.
-    arguments = {'low': float(low), 'high': float(high), 'dims': self.shape}
-    inputs = []; outputs = [self]; ctx = MakeContext(inputs, outputs)
-    meta = ('ONCE', 'RandomUniform', ctx)
-    return RunOperator(inputs, outputs, meta, **arguments)
+    return _uniform(self, self.shape, low, high)
 
 
 def normal_(self, mean=0, std=1):
@@ -135,11 +128,7 @@ def normal_(self, mean=0, std=1):
         The self.
 
     """
-    # TODO(PhyscalX): To support various dtypes, not only float32.
-    arguments = {'mean': float(mean), 'std': float(std), 'dims': self.shape}
-    inputs = []; outputs = [self]; ctx = MakeContext(inputs, outputs)
-    meta = ('ONCE', 'RandomNormal', ctx)
-    return RunOperator(inputs, outputs, meta, **arguments)
+    return _normal(self, self.shape, mean, std)
 
 
 Tensor.fill_ = fill_
@@ -376,6 +365,22 @@ def exp(self):
     return _exp(self)
 
 
+def sqrt(self):
+    """Compute the square-root of this tensor.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    torch.Tensor
+        The sqrt tensor.
+
+    """
+    return _sqrt(self)
+
+
 Tensor.add = add
 Tensor.add_ = add_
 Tensor.__radd__ = radd
@@ -393,6 +398,7 @@ Tensor.clamp = clamp
 Tensor.clamp_ = clamp_
 Tensor.log = log
 Tensor.exp = exp
+Tensor.sqrt = sqrt
 
 
 ##############################################
@@ -540,13 +546,12 @@ Tensor._indexing = indexing
 
 
 def _type_to(input, dtype='float32', inplace=False):
-    if dtype == input._dtype: return input
+    if dtype == input.dtype: return input
     ctx = MakeContext(inputs=[input])
-    key = 'torch.ops.astype/{}:{}/dtype:{}/inplace:{}'.format(
-        ctx[0], ctx[1], dtype, 'true' if inplace else 'false')
-    module = get_module(AsType, key, ctx, dtype=dtype, inplace=inplace)
-    with no_grad():
-        return module.forward(input)
+    key = 'Cast/{}/dtype:{}/inplace:{}'.format(
+        ctx, dtype, 'true' if inplace else 'false')
+    module = get_module(Cast, key, ctx, dtype=dtype, inplace=inplace)
+    return module.forward(input)
 
 
 def _type(self, dtype=None):

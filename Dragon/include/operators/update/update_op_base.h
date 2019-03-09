@@ -24,29 +24,29 @@ class UpdateOpBase : public Operator<Context> {
         : Operator<Context>(def, ws),
           lr_mult(OperatorBase::Arg<float>("lr_mult", 1.f)),
           decay_mult(OperatorBase::Arg<float>("decay_mult", 1.f)),
-          slot(OperatorBase::Arg<string>("slot", "")),
-          zero_grad(OperatorBase::Arg<bool>("zero_grad", true)) {
+          slot(OperatorBase::Arg<string>("slot", "")) {
         CHECK(!slot.empty()) << "\nRequired a non-empty slot";
     }
     USE_OPERATOR_FUNCTIONS;
 
+    string Slot() { return slot + "/" + Output(0)->name(); }
+
     float Param(const string& name) const;
-    string Slot();
+
+    template <typename T>
+    void ProcessGradients(Tensor* dX, Tensor* X);
+
+    virtual void ComputeUpdates(Tensor* dX) = 0;
+
+    template <typename T>
+    void ApplyUpdates(Tensor* dX, Tensor* X);
 
     void RunOnDevice() override;
-    template <typename T> void PreprocessRunWithType();
-
-    virtual void ComputeRunWithFloat32() = 0;
-    virtual void ComputeRunWithFloat16() = 0;
-
-    void UpdateRunWithFloat32();
-    void UpdateRunWithFloat16();
 
  protected:
     float lr_mult, decay_mult;
     float l2_decay, clip_thresh, scale_factor;
     string slot;
-    bool zero_grad;
 };
 
 #define USE_UPDATER_FUNCTIONS(context) \

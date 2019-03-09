@@ -62,7 +62,7 @@ def Conv2d(
         The dilation multiple(s) of convolution.
     group : int, optional, default=1
         The group size of convolution.
-    padding : {'VALID', 'SAME, 'SAME_UPPER', 'SAME_LOWER'}, optional
+    padding : {'VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'}, optional
         The padding algorithm.
     data_format : {'NCHW', 'NHWC'}, optional
         The data_format.
@@ -119,7 +119,7 @@ def DepthwiseConv2d(
         The stride(s) of convolution.
     pads : sequence of int, optional, default=0
         The zero padding size(s) of convolution.
-    padding : {'VALID', 'SAME, 'SAME_UPPER', 'SAME_LOWER'}, optional
+    padding : {'VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'}, optional
         The padding algorithm.
     data_format : {'NCHW', 'NHWC'}, optional
         The data_format.
@@ -183,7 +183,7 @@ def ConvTranspose2d(
         The padding value add to one side(right) of the output.
     output_shape : sequence of (int, Tensor), optional
         The deterministic output shape for **SAME** padding.
-    padding : {'VALID', 'SAME, 'SAME_UPPER', 'SAME_LOWER'}, optional
+    padding : {'VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'}, optional
         The padding algorithm.
     data_format : {'NCHW', 'NHWC'}, optional
         The data_format.
@@ -224,7 +224,7 @@ def ConvTranspose2d(
 
 @OpSchema.Inputs(1)
 def Pool2d(
-    inputs, kernel_shape, strides, pads=0, padding='VALID', ceil=True,
+    inputs, kernel_shape, strides, pads=0, padding='VALID', ceil_mode=True,
         mode='MAX', data_format='NCHW', global_pooling=False, **kwargs):
     """2D Pooling, MAX or AVG.
 
@@ -248,9 +248,9 @@ def Pool2d(
         The stride(s) of of pooling,
     pads : sequence of int, optional, default=0
         The zero padding size(s) of pooling.
-    padding : {'VALID', 'SAME, 'SAME_UPPER', 'SAME_LOWER'}, optional
+    padding : {'VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'}, optional
         The padding algorithm.
-    ceil : bool, optional
+    ceil_mode : bool, optional, default=True
         Whether to ceil the boundary.
     mode : {'MAX', 'AVG'}, optional
         The pooling mode.
@@ -503,48 +503,6 @@ def BiasAdd(inputs, data_format='NCHW', **kwargs):
         raise ValueError('Unsupported data format: {}'.format(data_format))
 
     return Tensor.CreateOperator('BiasAdd', **arguments)
-
-
-@OpSchema.Inputs(2)
-def DenseConcat(inputs, growth_rate=0, axis=1, **kwargs):
-    """Memory-efficient concatenation for DenseNet `[Huang et.al, 2017] <http://arxiv.org/abs/1608.06993>`_.
-
-    This operator is forked from ``Concat``.
-
-    The memory optimization requires the following settings:
-
-    1. Set the ``growth_rate``, the value must larger than ``0``.
-
-    2. Set the ``mirror_stage`` to True.
-
-    Parameters
-    ----------
-    inputs : sequence of Tensor
-        The inputs, represent A(old) and B(new) respectively.
-    growth_rate : int, optional, default=0
-        The growth rate.
-    axis : int, optional
-        The axis to concatenate.
-    mirror_stage : bool, optional
-        Whether to share input A for output C. Default is ``False``.
-
-    Returns
-    -------
-    Tensor
-        The concatenated tensor, represents C.
-
-    Examples
-    --------
-    >>> A = Tensor().Variable()
-    >>> B = Tensor().Variable()
-    >>> C = DenseConcat([A, B], axis=1) # Simple concatenation
-
-    >>> import dragon.memonger as opt
-    >>> C = opt.Drop(DenseConcat, [A, B], axis=1) # Memory-efficient concatenation
-    >>> D = DenseConcat([A, B], axis=1, mirror_stage=True) # Memory-efficient concatenation, equivalent
-
-    """
-    return Tensor.CreateOperator('DenseConcat', **ParseArgs(locals()))
 
 
 @OpSchema.Inputs(1)

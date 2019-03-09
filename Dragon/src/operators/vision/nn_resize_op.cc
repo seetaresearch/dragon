@@ -66,10 +66,36 @@ void NNResizeGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
-    math::Set<T, Context>(Output(0)->count(), 0, dXdata, ctx());
+    math::Set(Output(0)->count(), cast::to<T>(0.f), dXdata, ctx());
 
     kernel::NNResizeGrad(n, c, h, w, out_h, out_w,
         data_format, dYdata, dXdata, ctx());
+}
+
+template <class Context>
+void NNResizeGradientOp<Context>::RunWithFloat16() {
+    if (data_format == "NCHW") {
+        n = Input(0).dim(0), c = Input(0).dim(1);
+        h = Input(0).dim(2), w = Input(0).dim(3);
+        out_h = Input(-1).dim(2), out_w = Input(-1).dim(3);
+    } else if (data_format == "NHWC") {
+        n = Input(0).dim(0), h = Input(0).dim(1);
+        w = Input(0).dim(2), c = Input(0).dim(3);
+        out_h = Input(-1).dim(1), out_w = Input(-1).dim(2);
+    }
+    auto* dYdata = Input(-1).template data<float16, Context>();
+    auto* dXdata = Output(0)->template mutable_data<float16, Context>();
+
+    auto WSdata = ws()->template caches<float, Context>({
+        Input(-1).count(), Output(0)->count() });
+
+    math::Set(Output(0)->count(), 0.f, WSdata[1], ctx());
+    kernel::TypeA2B(Input(-1).count(), dYdata, WSdata[0], ctx());
+
+    kernel::NNResizeGrad(n, c, h, w, out_h, out_w,
+        data_format, WSdata[0], WSdata[1], ctx());
+
+    kernel::TypeA2B(Output(0)->count(), WSdata[1], dXdata, ctx());
 }
 
 template <class Context>
@@ -77,7 +103,8 @@ void NNResizeGradientOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
     
     if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    else if (XIsType(Input(0), float16)) RunWithFloat16();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(NNResizeGradient);

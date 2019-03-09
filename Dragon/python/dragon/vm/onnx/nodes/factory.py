@@ -74,10 +74,11 @@ _special_exporters = {
 }
 
 
-def get_nodes_def(op_def, shape_dict):
+def get_nodes_def(op_def, shape_dict, ws):
     if op_def.type in _special_exporters:
         nodes, const_tensors = \
-            _special_exporters[op_def.type](op_def, shape_dict)
+            _special_exporters[op_def.type](
+                op_def, shape_dict, ws)
     else:
         nodes, const_tensors = \
             CommonONNXExporter(op_def, shape_dict)

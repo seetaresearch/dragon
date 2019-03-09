@@ -33,8 +33,8 @@ except ImportError as e:
     sys.exit(1)
 
 
-REGISTERED_OPERATORS = set(s for s in RegisteredOperatorsCC())
-NO_GRADIENT_OPERATORS = set(s for s in NoGradientOperatorsCC())
+REGISTERED_OPERATORS = set(s for s in RegisteredOperators())
+NO_GRADIENT_OPERATORS = set(s for s in NoGradientOperators())
 
 
-atexit.register(OnModuleExitCC)
+atexit.register(OnModuleExit)

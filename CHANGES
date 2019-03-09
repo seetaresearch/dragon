@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------
 The list of most significant changes made over time in Dragon.
 
-Dragon 0.3.0.0 (20190110)
+Dragon 0.3.0.0 (20190309)
 DRAGON_VERSION == 3000
 
 Changes (w.r.t. Dragon 0.2.2.13):
@@ -24,6 +24,8 @@ Preview Features:
 
 - Use ``Eigen`` as the default cpu math library instead of ``OpenBLAS``.
 
+- Use ``PyBind11`` as the default python module exporter.
+
 - Integer data types support for common operators,
 
   see the documentation for more detail information.
@@ -31,6 +33,8 @@ Preview Features:
 - A new workspace-local dummy name interface has been introduced,
 
   which unifies the naming of static and dynamic computation graph.
+
+- The behavior of accumulating gradients have been canceled.
 
 
 Bugs fixed:

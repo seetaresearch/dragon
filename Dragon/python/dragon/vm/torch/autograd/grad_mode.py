@@ -26,9 +26,7 @@ __all__ = [
 ]
 
 
-grad_option = {}
-
-grad_option['enable_grad'] = True
+grad_option = {'enable_grad': True}
 
 
 def is_grad_enabled():

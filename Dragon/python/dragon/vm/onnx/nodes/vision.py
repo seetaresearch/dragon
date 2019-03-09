@@ -38,7 +38,7 @@ def _normalize_pads(value, rank):
     return _normalize_tuple(value, rank) * 2
 
 
-def ConvNdONNXExporter(op_def, shape_dict):
+def ConvNdONNXExporter(op_def, shape_dict, ws):
     rank = len(shape_dict[op_def.input[0]]) - 2
     node_proto, const_tensors = CommonONNXExporter(op_def, shape_dict)
 
@@ -72,7 +72,7 @@ def ConvNdONNXExporter(op_def, shape_dict):
     return node_proto, const_tensors
 
 
-def PoolNdONNXExporter(op_def, shape_dict):
+def PoolNdONNXExporter(op_def, shape_dict, ws):
     rank = len(shape_dict[op_def.input[0]]) - 2
     node_proto, const_tensors = CommonONNXExporter(op_def, shape_dict)
 
@@ -97,7 +97,7 @@ def PoolNdONNXExporter(op_def, shape_dict):
     return node_proto, const_tensors
 
 
-def ResizeNdONNXExporter(op_def, shape_dict):
+def ResizeNdONNXExporter(op_def, shape_dict, ws):
     input_shape = shape_dict[op_def.input[0]]
     output_shape = shape_dict[op_def.output[0]]
 
@@ -118,7 +118,7 @@ def ResizeNdONNXExporter(op_def, shape_dict):
     return node_proto, [scales]
 
 
-def ROIPoolONNXExporter(op_def, shape_dict):
+def ROIPoolONNXExporter(op_def, shape_dict, ws):
     node_proto, const_tensors = CommonONNXExporter(op_def, shape_dict)
     pooled_shape = [None, None]
 
@@ -137,7 +137,7 @@ def ROIPoolONNXExporter(op_def, shape_dict):
     return node_proto, const_tensors
 
 
-def ROIAlignONNXExporter(op_def, shape_dict):
+def ROIAlignONNXExporter(op_def, shape_dict, ws):
     node_proto, const_tensors = CommonONNXExporter(op_def, shape_dict)
     node_proto.op_type = 'ATen' # Template
     node_proto.attribute.extend([make_attribute('op_type', 'ROIAlign')])

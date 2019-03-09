@@ -120,7 +120,6 @@ void _GroupNormGrad(
             (x[i] - mu[i_mu]) * utils::math::Cube(rsig[i_mu]);
         const Tp v = db[i_mu] * rsig[i_mu];
         dx[i] = gamma[i_gamma] * dy[i] * rsig[i_mu] + (u - v) * denom;
-        // Accumulate the gradients of trainable parameters
         dgamma[i_gamma] += dy[i] * (x[i] - mu[i_mu]) * rsig[i_mu];
         dbeta[i_gamma] += dy[i];
         utils::IncreaseIndexInDims(4, dims.data(), idx.data());
@@ -177,6 +176,8 @@ void _GroupNormGrad(
         CPUContext*                 ctx) { \
         math::Set(N * G, (Tp)0, ds, ctx); \
         math::Set(N * G, (Tp)0, db, ctx); \
+        math::Set(G * D, (Tp)0, dgamma, ctx); \
+        math::Set(G * D, (Tp)0, dbeta, ctx); \
         if (data_format == "NCHW") { \
             _GroupNormInternalGrad<Tx, Tp, StorageOrder::NCHW>( \
                 { N, G, D, S }, x, gamma, dy, ds, db); \

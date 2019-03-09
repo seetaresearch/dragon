@@ -9,29 +9,13 @@
 #
 # ------------------------------------------------------------
 
+"""List some useful MPI C++ API."""
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import numpy as np
-
 import dragon.import_c_api as C
-
-
-__all__ = [
-    'Init',
-    'Is_Init',
-    'Rank',
-    'Size',
-    'CreateGroup',
-    'Snapshot',
-    'AllowSnapshot',
-    'Parallel',
-    'AllowParallel',
-    'SetParallelMode',
-    'GetParallelMode',
-    'Finalize',
-]
 
 
 _GLOBAL_MPI_IS_INIT = False
@@ -55,12 +39,8 @@ def Init():
     -----
     This function can only be called once.
 
-    References
-    ----------
-    The wrapper of ``MPIInitCC``
-
     """
-    C.MPIInitCC()
+    C.MPIInit()
     global _GLOBAL_MPI_IS_INIT
     global _GLOBAL_MPI_SNAPSHOT_RANKS
     _GLOBAL_MPI_IS_INIT = True
@@ -86,13 +66,9 @@ def Rank():
     int
         The world rank.
 
-    References
-    ----------
-    The wrapper of ``MPIRankCC``.
-
     """
     _check_init()
-    return C.MPIRankCC()
+    return C.MPIRank()
 
 
 def Size():
@@ -103,13 +79,9 @@ def Size():
     int
         The world size.
 
-    References
-    ----------
-    The wrapper of ``MPISizeCC``.
-
     """
     _check_init()
-    return C.MPISizeCC()
+    return C.MPISize()
 
 
 def CreateGroup(root=0, incl=[], excl=[]):
@@ -129,14 +101,9 @@ def CreateGroup(root=0, incl=[], excl=[]):
     tuple
         The local common and group id.
 
-    References
-    ----------
-    The wrapper of ``MPICreateGroupCC``.
-
     """
     _check_init()
-    comm, group = C.MPICreateGroupCC(root, incl, excl)
-    return np.int64(comm), np.int64(group)
+    return C.MPICreateGroup(root, incl, excl)
 
 
 def Snapshot(incl):
@@ -193,6 +160,7 @@ def AllowSnapshot():
     Returns
     -------
     boolean
+
     """
     return Rank() in _GLOBAL_MPI_SNAPSHOT_RANKS
 
@@ -212,12 +180,12 @@ def AllowParallel():
 
 
 def SetParallelMode(mode):
-    """Set the mode of data parallelism.
+    """Set the communication mode of data parallelism.
 
     Parameters
     ----------
-    mode : str
-        The mode, ``MPI``, ``NCCL`` or ``MIXED``.
+    mode : {'MPI', 'NCCL'}, optional
+        The communication mode.
 
     Returns
     -------
@@ -228,20 +196,18 @@ def SetParallelMode(mode):
     The default mode is ``MPI``.
 
     """
-    assert mode == 'MPI' or \
-           mode == 'NCCL' or \
-           mode == 'MIXED'
+    assert mode == 'MPI' or mode == 'NCCL'
     global _GLOBAL_MPI_PARALLEL_MODE
     _GLOBAL_MPI_PARALLEL_MODE = mode
 
 
 def GetParallelMode():
-    """Get the current mode of data parallelism.
+    """Get the current communication mode of data parallelism.
 
     Returns
     -------
-    str
-        The mode, ``MPI``, ``NCCL`` or ``MIXED``.
+    str : {'MPI', 'NCCL'}
+        The communication mode.
 
     """
     return _GLOBAL_MPI_PARALLEL_MODE
@@ -260,4 +226,4 @@ def Finalize():
 
     """
     _check_init()
-    C.MPIFinalizeCC()
+    C.MPIFinalize()

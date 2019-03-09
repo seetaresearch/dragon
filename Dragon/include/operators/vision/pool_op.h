@@ -26,7 +26,7 @@ class Pool2dOp : public Operator<Context> {
           data_format(OperatorBase::Arg<string>("data_format", "NCHW")),
           padding(OperatorBase::Arg<string>("padding", "VALID")),
           global_pooling(OperatorBase::Arg<bool>("global_pooling", false)),
-          ceil_mode(OperatorBase::Arg<bool>("ceil", true)) {
+          ceil_mode(OperatorBase::Arg<bool>("ceil_mode", true)) {
         auto ks = OperatorBase::Args<int64_t>("kernel_shape");
         auto s = OperatorBase::Args<int64_t>("strides");
         auto p = OperatorBase::Args<int64_t>("pads");
@@ -68,7 +68,7 @@ class Pool2dGradientOp : public Operator<Context> {
           data_format(OperatorBase::Arg<string>("data_format", "NCHW")),
           padding(OperatorBase::Arg<string>("padding", "VALID")),
           global_pooling(OperatorBase::Arg<bool>("global_pooling", false)),
-          ceil_mode(OperatorBase::Arg<bool>("ceil", true)) {
+          ceil_mode(OperatorBase::Arg<bool>("ceil_mode", true)) {
         auto ks = OperatorBase::Args<int64_t>("kernel_shape");
         auto s = OperatorBase::Args<int64_t>("strides");
         auto p = OperatorBase::Args<int64_t>("pads");

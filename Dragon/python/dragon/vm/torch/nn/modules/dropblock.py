@@ -30,7 +30,6 @@ class DropBlock2d(Module):
     def register_op(self):
         self.op_meta = {
             'op_type': 'DropBlock2d',
-            'n_inputs': 1, 'n_outputs': 1,
             'arguments': {
                 'block_size': self.block_size,
                 'keep_prob': self.kp,
@@ -45,5 +44,5 @@ class DropBlock2d(Module):
         if not self.training: return input
         inputs = [input]
         self.unify_devices(inputs)
-        outputs = [input if self.inplace else self.register_output(input.dtype)]
+        outputs = [input if self.inplace else self.register_output()]
         return self.run(inputs, outputs)

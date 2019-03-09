@@ -42,7 +42,6 @@ List                   Brief
 `NNResize`_            Resize the image with *Nearest-Neighbor* method.
 `BilinearResize`_      Resize the image with *Bi-Linear* method.
 `BiasAdd`_             Add the bias across channels to a *NCHW* or *NHWC* input.
-`DenseConcat`_         Memory-efficient concatenation for DenseNet. `[Huang et.al, 2017] <http://arxiv.org/abs/1608.06993>`_.
 `DropBlock2d`_         Randomly drop the outputs according to the spatial blocks. `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
 ===================    ======================================================================
 
@@ -113,7 +112,9 @@ List                  Brief
 `Eltwise`_            Element-wise Sum or Product the arbitrary number of inputs.
 `Affine`_             Calculate *Y = Ax + b* along the given range of axes.
 `GramMatrix`_         Calculate the gram matrix. `[Gatys et.al, 2016] <https://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Gatys_Image_Style_Transfer_CVPR_2016_paper.pdf>`_.
-`Moments`_            Compute the mean and variance of inputs along the given axes.
+`Moments`_            Calculate the mean and variance of inputs along the given axes.
+`Accumulate`_         Calculate *y = alpha * x + beta * y*
+`MovingAverage`_      Calculate the *y = (1 - decay) * x + decay * y*
 ==================    ======================================================================
 
 Normalization
@@ -174,12 +175,11 @@ Misc
 =================    ======================================================================
 List                 Brief
 =================    ======================================================================
-`AsType`_            Cast the data type of inputs to a specific one.
+`Cast`_              Cast the data type of inputs to a specific one.
 `Run`_               Run a custom operator. (Without GradientFlow)
 `Template`_          Run a custom operator. (With GradientFlow)
 `Accuracy`_          Calculate the Top-K accuracy.
 `StopGradient`_      Return the identity of input with truncated gradient flow.
-`MovingAverage`_     Calculate the moving average.
 =================    ======================================================================
 
 Contrib
@@ -268,6 +268,8 @@ List                 Brief
 .. _Affine: operators/arithmetic.html#dragon.operators.arithmetic.Affine
 .. _GramMatrix: operators/arithmetic.html#dragon.operators.arithmetic.GramMatrix
 .. _Moments: operators/arithmetic.html#dragon.operators.arithmetic.Moments
+.. _Accumulate: operators/arithmetic.html#dragon.operators.arithmetic.Accumulate
+.. _MovingAverage: operators/arithmetic.html#dragon.operators.arithmetic.MovingAverage
 
 .. _BatchNorm: operators/norm.html#dragon.operators.norm.BatchNorm
 .. _GroupNorm: operators/norm.html#dragon.operators.norm.GroupNorm
@@ -304,12 +306,11 @@ List                 Brief
 .. _Less: operators/control_flow.html#dragon.operators.control_flow.Less
 .. _Greater: operators/control_flow.html#dragon.operators.control_flow.Greater
 
-.. _AsType: operators/misc.html#dragon.operators.misc.AsType
+.. _Cast: operators/misc.html#dragon.operators.misc.Cast
 .. _Run: operators/misc.html#dragon.operators.misc.Run
 .. _Template: operators/misc.html#dragon.operators.misc.Template
 .. _Accuracy: operators/misc.html#dragon.operators.misc.Accuracy
 .. _StopGradient: operators/misc.html#dragon.operators.misc.StopGradient
-.. _MovingAverage: operators/misc.html#dragon.operators.misc.MovingAverage
 
 .. _Proposal: operators/contrib/rcnn.html#dragon.operators.contrib.rcnn.ops.Proposal
 

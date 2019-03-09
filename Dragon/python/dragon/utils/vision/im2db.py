@@ -115,10 +115,12 @@ def make_db(args):
 
     now_time = time.time()
     print('{0} / {1} in {2:.2f} sec'.format(count, total_line, now_time - start_time))
-    db.put('size', str(count))
-    db.put('zfill', str(args.zfill))
     db.commit()
     db.close()
+
+    # Compress the empty space
+    db.open(args.database, mode='w')
+    db.commit()
 
     shutil.copy(args.list, args.database + '/image_list.txt')
     end_time = time.time()

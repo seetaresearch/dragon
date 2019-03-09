@@ -17,7 +17,7 @@ from onnx.helper import make_attribute
 from dragon.vm.onnx.nodes.common import CommonONNXExporter
 
 
-def SoftmaxONNXExporter(op_def, shape_dict):
+def SoftmaxONNXExporter(op_def, shape_dict, ws):
     node_proto, const_tensors = CommonONNXExporter(op_def, shape_dict)
 
     for arg in op_def.arg:

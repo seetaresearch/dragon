@@ -58,11 +58,36 @@ void ROIPoolGradientOp<Context>::RunWithType() {
 }
 
 template <class Context>
+void ROIPoolGradientOp<Context>::RunWithFloat16() {
+    Tensor* mask = ws()->GetTensor(mount_name("roi_pool/mask"));
+
+    auto* dYdata = Input(-1).template data<float16, Context>();
+    auto* Rdata = Input(1).template data<float, Context>();
+    auto* Mdata = mask->template data<int, Context>();
+    auto* dXdata = Output(0)->template mutable_data<float16, Context>();
+
+    auto WSdata = ws()->template caches<float, Context>({
+        Input(-1).count(), Output(0)->count() });
+
+    math::Set(Output(0)->count(), 0.f, WSdata[1], ctx());
+    kernel::TypeA2B(Input(-1).count(), dYdata, WSdata[0], ctx());
+
+    kernel::ROIPoolGrad(
+        Output(0)->dim(0), Output(0)->dim(1),
+            Output(0)->dim(2), Output(0)->dim(3),
+                 pool_h, pool_w, Input(1).dim(0), spatial_scale,
+                    WSdata[0], Rdata, Mdata, WSdata[1], ctx());
+
+    kernel::TypeA2B(Output(0)->count(), WSdata[1], dXdata, ctx());
+}
+
+template <class Context>
 void ROIPoolGradientOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
 
     if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    else if (XIsType(Input(0), float16)) RunWithFloat16();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(ROIPoolGradient);

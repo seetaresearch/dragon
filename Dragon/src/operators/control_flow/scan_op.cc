@@ -171,17 +171,14 @@ DEPLOY_CUDA(Scan);
 OPERATOR_SCHEMA(Scan).NumInputs(1, INT_MAX).NumOutputs(1, INT_MAX);
 
 template <class Context>
-void ScanGradientOp<Context>::MakeOps(const GraphDef& forward_def, 
-                                      GraphDef& new_def) {
+void ScanGradientOp<Context>::MakeOps(
+    const GraphDef&         forward_def,
+    GraphDef&               new_def) {
     if (step_type == "Dynamic")
         nsteps = ws()->GetTensor(step_tensor)
                      ->template data<int, CPUContext>()[0];
     else if (step_type == "Default") nsteps = Input(0).dim(axis);
     if (graphs.count(nsteps)) return;
-
-    // Determine the targets
-    vector<string> targets;
-    for (const auto& e : forward_def.output()) targets.emplace_back(e);
 
     // Init maker
     GraphGradientMaker maker;
@@ -194,11 +191,11 @@ void ScanGradientOp<Context>::MakeOps(const GraphDef& forward_def,
     }
 
     // Make
-    maker.Make(forward_def, targets, new_def);
+    maker.Make(forward_def, new_def);
 
     // Post-process
     new_def.set_name(name() + "(ScanLen." + std::to_string(nsteps) + ")");
-    for (const auto& target : targets) {
+    for (const auto& target : forward_def.output()) {
         for (int i = 0; i < OutputSize(); i++) {
             if (Output(i)->name() == "ignore") continue;
             if (Input(i).name() == "ignore") continue;

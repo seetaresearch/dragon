@@ -52,7 +52,6 @@ LRN = vision_ops.LRN
 NNResize = vision_ops.NNResize
 BilinearResize = vision_ops.BilinearResize
 BiasAdd = vision_ops.BiasAdd
-DenseConcat = vision_ops.DenseConcat
 DropBlock2d = vision_ops.DropBlock2d
 
 # Recurrent
@@ -104,6 +103,8 @@ FullyConnected = math_ops.FullyConnected
 Eltwise = math_ops.Eltwise
 Affine = math_ops.Affine
 GramMatrix = math_ops.GramMatrix
+Accumulate = math_ops.Accumulate
+MovingAverage = math_ops.MovingAverage
 
 # Normalization
 BatchNorm = norm_ops.BatchNorm
@@ -137,19 +138,18 @@ Squeeze = array_ops.Squeeze
 Shape = array_ops.Shape
 Arange = array_ops.Arange
 
-# ControlFlow
+# Control Flow
 Copy = control_flow_ops.Copy
 Equal = control_flow_ops.Equal
 Less = control_flow_ops.Less
 Grater = control_flow_ops.Greater
 
 # Misc
-Cast = AsType = misc_ops.AsType
+Cast = AsType = misc_ops.Cast
 Run = misc_ops.Run
 Template = misc_ops.Template
 Accuracy = misc_ops.Accuracy
 StopGradient = misc_ops.StopGradient
-MovingAverage = misc_ops.MovingAverage
 
 # MPI
 MPIBroadcast = mpi_ops.MPIBroadcast

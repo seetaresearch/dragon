@@ -128,7 +128,7 @@ public:
 
 template <class Context>
 class TruncatedNormalOp final : public InitializeOp<Context> {
-public:
+ public:
     TruncatedNormalOp(const OperatorDef& def, Workspace* ws)
         : InitializeOp<Context>(def, ws) {
         this->filler_proto.set_type("truncated_normal");

@@ -9,18 +9,23 @@
 #
 # ------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 # Import Dynamic Methods
 import dragon.vm.torch.ops.builtin
 
 # Import Core Methods
 from dragon.vm.torch.tensor import *
-from dragon.vm.torch.tensor_uitls import *
-from dragon.vm.torch.c_apis import *
+from dragon.vm.torch.tensor_uitls import from_numpy
+from dragon.vm.torch.c_api import Size
 from dragon.vm.torch.serialization import save, load
 
 # Import Subpackages
 import dragon.vm.torch.cuda
 from dragon.vm.torch.ops import *
+from dragon.vm.torch.autograd import *
 import dragon.vm.torch.nn
 import dragon.vm.torch.optim
-from dragon.vm.torch.autograd import no_grad, enable_grad, set_grad_enabled
+import dragon.vm.torch.onnx

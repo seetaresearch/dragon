@@ -20,20 +20,23 @@ VirtualBox
 
    vm/caffe
    vm/theano
+   vm/torch
 
 ====================    ====================================================================================
 List                    Brief
 ====================    ====================================================================================
 `Theano`_               **Theano** is an inception of the modern deep learning frameworks.
 `Caffe`_                **Caffe** is one of the most famous deep learning framework for Computer Vision.
+`PyTorch`_              **PyTorch** provides straight-forward operations on research prototyping.
 ====================    ====================================================================================
 
 .. |para| raw:: html
 
     <p style="text-indent:1.5em; font-size: 18px; max-width: 830px;">
 
-
 .. _TinyDragon: ../index.html#tinydragon
 .. _Theano:  vm/theano.html
 .. _Caffe: vm/caffe.html
+.. _PyTorch: vm/torch.html
 .. _TensorFlow: ../index.html#tensorflow
+

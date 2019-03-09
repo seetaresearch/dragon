@@ -24,14 +24,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-try:
-    import cPickle
-except:
-    import pickle as cPickle
-
 import os
 import numpy as np
 import threading
+import six.moves.cPickle as pickle
 
 from google.protobuf.message import Message
 
@@ -45,35 +41,6 @@ import dragon.core.proto_utils as pb_utils
 import dragon.core.mapping as mapping
 
 
-__all__ = [
-    'CurrentWorkspace',
-    'SwitchWorkspace',
-    'MoveWorkspace',
-    'ResetWorkspace',
-    'ClearWorkspace',
-    'CreateGraph',
-    'RunGraph',
-    'RunGradientFlow',
-    'RunOperator',
-    'RunOperators',
-    'CreatePersistentOp',
-    'RunPersistentOp',
-    'HasTensor',
-    'CreateTensor',
-    'CreateFiller',
-    'GetFillerType',
-    'GetTensorName',
-    'RenameTensor',
-    'FeedTensor',
-    'FetchTensor',
-    'ResetTensor',
-    'Snapshot',
-    'Restore',
-    'LogMetaGraph',
-    'ExportMetaGraph',
-]
-
-
 def CurrentWorkspace():
     """Return the current active workspace.
 
@@ -83,7 +50,7 @@ def CurrentWorkspace():
         The workspace name.
 
     """
-    return C.CurrentWorkspaceCC()
+    return C.CurrentWorkspace()
 
 
 def SwitchWorkspace(workspace_name, create_if_missing=True):
@@ -100,14 +67,10 @@ def SwitchWorkspace(workspace_name, create_if_missing=True):
     -------
     None
 
-    References
-    ----------
-    The wrapper of ``SwitchWorkspaceCC``.
-
     """
     if workspace_name == '':
         raise ValueError('The workspace name should not be empty.')
-    C.SwitchWorkspaceCC(workspace_name, create_if_missing)
+    C.SwitchWorkspace(workspace_name, create_if_missing)
 
 
 def MoveWorkspace(target_ws, source_ws):
@@ -124,14 +87,10 @@ def MoveWorkspace(target_ws, source_ws):
     -------
     None
 
-    References
-    ----------
-    The wrapper of ``MoveWorkspaceCC``.
-
     """
     if target_ws == '' or source_ws == '':
         raise ValueError('The target or source name can not be empty.')
-    C.MoveWorkspaceCC(target_ws, source_ws)
+    C.MoveWorkspace(target_ws, source_ws)
 
 
 def ResetWorkspace(workspace_name=''):
@@ -150,12 +109,8 @@ def ResetWorkspace(workspace_name=''):
     -------
     None
 
-    References
-    ----------
-    The wrapper of ``ResetWorkspaceCC``.
-
     """
-    C.ResetWorkspaceCC(workspace_name)
+    C.ResetWorkspace(workspace_name)
 
 
 def ClearWorkspace(workspace_name=''):
@@ -174,20 +129,16 @@ def ClearWorkspace(workspace_name=''):
     -------
     None
 
-    References
-    ----------
-    The wrapper of ``ClearWorkspaceCC``.
-
     """
-    C.ClearWorkspaceCC(workspace_name)
+    C.ClearWorkspace(workspace_name)
 
 
-def CreateGraph(meta_graph):
+def CreateGraph(graph_def):
     """Create the graph in the VM backend.
 
     Parameters
     ----------
-    meta_graph : dragon_pb2.GraphDef
+    graph_def : GraphDef
         The definition of meta graph.
 
     Returns
@@ -195,103 +146,34 @@ def CreateGraph(meta_graph):
     str
         The graph name to run.
 
-    References
-    ----------
-    The wrapper of ``CreateGraphCC``.
-
     """
     option = GetGlobalOptions()
-    LogMetaGraph(meta_graph)
-    ExportMetaGraph(meta_graph)
-    return C.CreateGraphCC(
-        _stringify_proto(meta_graph),
-        option['log_optimized_graph'])
+    LogMetaGraph(graph_def)
+    ExportMetaGraph(graph_def)
+    return C.CreateGraph(
+        _stringify_proto(graph_def),
+            option['log_optimized_graph'],
+    )
 
 
-def RunOperator(op_def):
-    """Create and Run the operator in the VM backend.
+def RunOperator(op_def, verbose=False):
+    """Run the operator in the VM backend.
 
     Parameters
     ----------
-    op_def : dragon_pb2.OperatorDef
+    op_def : OperatorDef
         The definition of operator.
+    verbose : boolean
+        Whether to print the definition.
 
     Returns
     -------
     None
 
-    References
-    ----------
-    The wrapper of ``RunOperatorCC``.
-
     """
-    C.RunOperatorCC(_stringify_proto(op_def))
-
-
-def RunOperators(ops_def):
-    """Create and Run the operators in the VM backend.
-
-    Parameters
-    ----------
-    ops_def : list of dragon_pb2.OperatorDef
-        The definition of operators.
-
-    Returns
-    -------
-    None
-
-    References
-    ----------
-    The wrapper of ``RunOperatorsCC``.
-
-    """
-    C.RunOperatorsCC([_stringify_proto(op_def) for op_def in ops_def])
-
-
-def CreatePersistentOp(op_def):
-    """Create the persistent operator in the VM backend.
-
-    Parameters
-    ----------
-    op_def : dragon_pb2.OperatorDef
-        The definition of operator.
-
-    Returns
-    -------
-    None
-
-    References
-    ----------
-    The wrapper of ``CreatePersistentOpCC``.
-
-    """
-    C.CreatePersistentOpCC(_stringify_proto(op_def))
-
-
-def RunPersistentOp(key, anchor, inputs, outputs):
-    """Run the persistent operator in the VM backend.
-
-    Parameters
-    ----------
-    key : str
-        The persistent key.
-    anchor : str
-        The anchor to compute internal resources of op.
-    inputs : list of str
-        The inputs.
-    outputs : list of str
-        The outputs.
-
-    Returns
-    -------
-    None
-
-    References
-    ----------
-    The wrapper of ``RunPersistentOpCC``.
-
-    """
-    C.RunPersistentOpCC(key, anchor, inputs, outputs)
+    if isinstance(op_def, pb.OperatorDef):
+        op_def = op_def.SerializeToString()
+    C.RunOperator(op_def, verbose)
 
 
 def HasTensor(tensor):
@@ -307,12 +189,8 @@ def HasTensor(tensor):
     boolean
         The query result.
 
-    References
-    ----------
-    The wrapper of ``HasTensorCC``.
-
     """
-    return C.HasTensorCC(_stringify_tensor(tensor))
+    return C.HasTensor(_stringify_tensor(tensor))
 
 
 def CreateTensor(tensor):
@@ -327,12 +205,8 @@ def CreateTensor(tensor):
     -------
     None
 
-    References
-    ----------
-    The wrapper of ``CreateTensorCC``.
-
     """
-    return C.CreateTensorCC(_stringify_tensor(tensor))
+    return C.CreateTensor(_stringify_tensor(tensor))
 
 
 def CreateFiller(filler_def):
@@ -340,7 +214,7 @@ def CreateFiller(filler_def):
 
     Parameters
     ----------
-    filler_def : dragon_pb2.TensorFiller
+    filler_def : TensorFiller
         The filler.
 
     Returns
@@ -352,14 +226,10 @@ def CreateFiller(filler_def):
     `Tensor.Fill(*args, **kwargs)
     <tensor.html#dragon.core.tensor.Tensor.Fill>`_ - How to fill a Tensor. [**Caffe Style**]
 
-    References
-    ----------
-    The wrapper of ``CreateFillerCC``.
-
     """
     filler_def = filler_def if isinstance(filler_def, str) \
-        else filler_def.SerializeToString()
-    C.CreateFillerCC(filler_def)
+        else filler_def.SerializePartialToString()
+    C.CreateFiller(filler_def)
 
 
 def GetFillerType(tensor):
@@ -379,12 +249,8 @@ def GetFillerType(tensor):
     str
         The filler type.
 
-    References
-    ----------
-    The wrapper of ``GetFillerTypeCC``.
-
     """
-    return C.GetFillerTypeCC(_stringify_tensor(tensor))
+    return C.GetFillerType(_stringify_tensor(tensor))
 
 
 def GetTensorName(tensor):
@@ -404,34 +270,26 @@ def GetTensorName(tensor):
     -----
     The query result may be different from the one used in the frontend.
 
-    References
-    ----------
-    The wrapper of ``GetTensorNameCC``.
-
     """
-    return C.GetTensorNameCC(_stringify_tensor(tensor))
+    return C.GetTensorName(_stringify_tensor(tensor))
 
 
-def RenameTensor(tensor, target_name):
-    """Rename a tensor in current workspace.
+def SetTensorAlias(tensor, alias):
+    """Bind a alias to a existed tensor.
 
     Parameters
     ----------
     tensor : Tensor or str
-        The tensor to rename.
-    target_name : str
-        The target name.
+        The tensor to bind the alias.
+    alias : str
+        The alias.
 
     Returns
     -------
     None
 
-    References
-    ----------
-    The wrapper of ``RenameTensorCC``.
-
     """
-    return C.RenameTensorCC(_stringify_tensor(tensor), target_name)
+    return C.SetTensorAlias(_stringify_tensor(tensor), alias)
 
 
 def FetchTensor(tensor):
@@ -444,15 +302,11 @@ def FetchTensor(tensor):
 
     Returns
     -------
-    NDArray
+    numpy.ndarray
         The values copied from the backend.
 
-    References
-    ----------
-    The wrapper of ``FetchTensorCC``.
-
     """
-    return C.FetchTensorCC(_stringify_tensor(tensor))
+    return C.FetchTensor(_stringify_tensor(tensor))
 
 
 def FeedTensor(tensor, array, force_cpu=False, dtype=None):
@@ -462,7 +316,7 @@ def FeedTensor(tensor, array, force_cpu=False, dtype=None):
     ----------
     tensor : Tensor or str
         The tensor to feed.
-    array : number, list or NDArray
+    array : number, list, tuple, or numpy.ndarray
         The values to feed.
     force_cpu : boolean
         Whether force to feed to cpu context.
@@ -486,10 +340,6 @@ def FeedTensor(tensor, array, force_cpu=False, dtype=None):
     >>> a_value = a.get_value()
     >>> a_value, a_value.dtype
     >>> [[ 1.  2.  3.]], "float16"
-
-    References
-    ----------
-    The wrapper of ``FeedTensorCC``.
 
     """
     name = tensor.name if hasattr(tensor, 'name') else str(tensor)
@@ -516,7 +366,7 @@ def FeedTensor(tensor, array, force_cpu=False, dtype=None):
         auto_data_type = preset_data_type
 
     nd_array = np.array(array, dtype=auto_data_type, copy=False)
-    C.FeedTensorCC(name, nd_array, _stringify_proto(dev))
+    C.FeedTensor(name, nd_array, _stringify_proto(dev))
 
 
 def ResetTensor(tensor):
@@ -527,24 +377,19 @@ def ResetTensor(tensor):
     Parameters
     ----------
     tensor : Tensor or str
-        The tensor to fetch.
+        The tensor to reset.
 
     Returns
     -------
     None
 
-    References
-    ----------
-    The wrapper of ``ResetTensorCC``.
-
     """
-    return C.ResetTensorCC(_stringify_tensor(tensor))
+    return C.ResetTensor(_stringify_tensor(tensor))
 
 
 def RunGraph(
     graph_name, inputs=(), outputs=[],
-        stage=None, return_outputs=True
-):
+        stage=None, return_outputs=True):
     """Run the specific graph.
 
     Parameters
@@ -582,7 +427,7 @@ def RunGraph(
     # Run the graph according to the specified include/exclude rule
     runtime_stage = stage if stage else 'default'
     rule = _PREDEFINED_GRAPH_RUNTIME_STAGES[runtime_stage]
-    C.RunGraphCC(str(graph_name), str(rule['include']), str(rule['exclude']))
+    C.RunGraph(str(graph_name), str(rule['include']), str(rule['exclude']))
 
     # Try to return the outputs
     # Force to return may lead to asserts if outputs are not computed
@@ -592,18 +437,18 @@ def RunGraph(
         else: return [outputs[i].get_value() for i in range(len(outputs))]
 
 
-def RunGradientFlow(input_flow, targets, input_grads=None, ignored_grads=None):
+def FlowGradients(inputs, targets, input_grads=None, ignored_grads=None):
     """Compute the gradients of given input flows.
 
     Parameters
     ----------
-    input_flow : list of OperatorDef or GraphDef
+    input_flow : sequence of OperatorDef
         The referring flows to generate gradient flows.
-    targets : list or str
+    targets : sequence or str
         The solving targets, generate grads automatically.
-    input_grads : None or list of str
+    input_grads : sequence of str or None
         The input grads.
-    ignored_grads : None or list of str
+    ignored_grads : sequence of str or None
         The grads that are explicitly ignored.
 
     Returns
@@ -611,41 +456,25 @@ def RunGradientFlow(input_flow, targets, input_grads=None, ignored_grads=None):
     None
 
     """
-    if isinstance(input_flow, list):
-        graph_wrapper = pb.GraphDef()
-        graph_wrapper.op.extend(input_flow)
-        input_flow = graph_wrapper
-
-    if not isinstance(input_flow, pb.GraphDef):
-        raise TypeError('Excepted the type of input flow is either'
-            'a list of OperatorDef or a GraphDef, got {}.'.format(type(input_flow)))
-
     option = GetGlobalOptions()
 
     required_logging = True \
         if (option['log_optimized_graph'] or
-                option['log_meta_graph']) else False
+            option['log_meta_graph']) else False
 
-    C.RunGradientFlowCC(
-        _stringify_proto(input_flow), targets,
+    C.FlowGradients(
+        inputs, targets,
             input_grads if input_grads else [],
                 ignored_grads if ignored_grads else [],
                     option['share_grads'], required_logging)
 
-    if required_logging:
-        g_flow = pb.GraphDef()
-        g_flow.ParseFromString(FetchTensor('/graph_def/dynamic/gradient_flow'))
-        print('>>>>>>>>>>>>>>>>>> Gradient Flow <<<<<<<<<<<<<<<<<<\n')
-        print(g_flow)
-        print('>>>>>>>>>>>>>>>>>> Gradient Flow <<<<<<<<<<<<<<<<<<\n')
 
-
-def LogMetaGraph(meta_graph):
+def LogMetaGraph(graph_def):
     """Log the meta graph.
 
     Parameters
     ----------
-    meta_graph : dragon_pb2.GraphDef
+    graph_def : GraphDef
         The definition of meta graph.
 
     Returns
@@ -654,17 +483,17 @@ def LogMetaGraph(meta_graph):
 
     """
     option = GetGlobalOptions()
-    if option['log_meta_graph']: print(meta_graph)
+    if option['log_meta_graph']: print(graph_def)
 
 
-def ExportMetaGraph(meta_graph):
+def ExportMetaGraph(graph_def):
     """Export the meta graph into a file under specific folder.
 
     You can set the exporting prefix by `config.ExportMetaGraph(prefix)`_.
 
     Parameters
     ----------
-    meta_graph : dragon_pb2.GraphDef
+    graph_def : GraphDef
         The definition of meta graph.
 
     Returns
@@ -682,16 +511,16 @@ def ExportMetaGraph(meta_graph):
 
         path = os.path.join(
             option['export_meta_graph'],
-                meta_graph.name + '.metatxt')
+                graph_def.name + '.metatxt')
 
-        with open(path, 'w') as f: f.write(str(meta_graph))
+        with open(path, 'w') as f: f.write(str(graph_def))
         logging.info('Export meta graph into: {}'.format(path))
 
 
 def Snapshot(
     tensors, filename,
         prefix='', suffix='.bin',
-            format='default'
+            format='default',
 ):
     """Snapshot tensors into a binary file.
 
@@ -732,14 +561,12 @@ def Snapshot(
         for tensor in tensors:
             state_dict[tensor.name] = FetchTensor(tensor)
         with open(file_path, 'wb') as f:
-            cPickle.dump(state_dict, f, cPickle.HIGHEST_PROTOCOL)
+            pickle.dump(state_dict, f, pickle.HIGHEST_PROTOCOL)
         logging.info('Snapshot Model@: ' + file_path)
-        logging.info('Model Format: cPickle')
-
+        logging.info('Model Format: Pickle')
     elif format is 'caffe':
         names = [tensor.name for tensor in tensors]
-        C.SnapshotCC(file_path, names, 1)
-
+        C.Snapshot(file_path, names, 1)
     else: raise TypeError('Unknown binary format: {}'.format(format))
 
 
@@ -767,22 +594,19 @@ def Restore(binary_file, format='default'):
 
     if format == 'default':
         try:
-            state_dict = cPickle.load(open(binary_file, 'rb'))
+            state_dict = pickle.load(open(binary_file, 'rb'))
         except UnicodeDecodeError:
-            state_dict = cPickle.load(open(binary_file, 'rb'), encoding='iso-8859-1')
+            state_dict = pickle.load(open(binary_file, 'rb'), encoding='iso-8859-1')
         logging.info('Restore From Model@: ' + binary_file)
-        logging.info('Model Format: cPickle')
+        logging.info('Model Format: Pickle')
         for k, v in state_dict.items():
-            # Avoid to feed an unregistered Tensor
             if HasTensor(k):
                 FeedTensor(k, v)
                 logging.info('[Info]: Tensor({}) is restored.'.format(k))
-
     elif format == 'caffe':
         # Caffe models can't save the tensor name
         # We simply use "layer_name/param:X"
-        C.RestoreCC(binary_file, 1)
-
+        C.Restore(binary_file, 1)
     else:
         raise TypeError('Unknown binary format: {}'.format(format))
 
@@ -812,14 +636,12 @@ def GetDummyName(basename, suffix='', domain='', zero_based=True):
         The unique dummy name.
 
     """
-    return C.GetDummyNameCC(basename, suffix, domain, zero_based)
+    return C.GetDummyName(basename, suffix, domain, zero_based)
 
 
 def _stringify_proto(obj):
     """Try to stringify a proto-buffer structure."""
-    if isinstance(obj, str): return obj
-    elif isinstance(obj, Message): return obj.SerializeToString()
-    else: raise TypeError('Object can not be serialized as a string.')
+    return obj.SerializeToString()
 
 
 def _stringify_tensor(obj):

@@ -83,7 +83,6 @@ class LMDB(object):
             self.env = lmdb.open(database_path, readonly=True, lock=False)
             self._total_size = self.env.info()['map_size']
         if mode == 'w':
-            assert not os.path.isdir(database_path), 'database path is not invalid'
             self.env = lmdb.open(database_path, writemap=True)
         self.txn = self.env.begin(write=(mode == 'w'))
         self.cursor = self.txn.cursor()

@@ -18,7 +18,7 @@ from dragon.vm.torch.ops.primitive import MakeContext, WrapScalar
 from dragon.vm.torch.ops.factory import get_module
 
 from dragon.vm.torch.ops.modules.arithmetic import (
-    Fundamental, Log, Exp,
+    Fundamental, Log, Exp, Sqrt,
     Maximum, Minimum, Clamp,
 )
 
@@ -27,7 +27,7 @@ def _fundamental(input, value, op='Add', out=None):
     if not isinstance(value, Tensor):
         value = WrapScalar(value, input.dtype, input._ctx)
     ctx = MakeContext(inputs=[input, value])
-    key = 'torch.ops.{}/{}:{}'.format(op.lower(), ctx[0], ctx[1])
+    key = '{}/{}'.format(op, ctx)
     module = get_module(Fundamental, key, ctx, op_type=op)
     return module.forward(input, value, out)
 
@@ -36,7 +36,7 @@ def _rfundamental(input, value, op='RAdd', out=None):
     if not isinstance(value, Tensor):
         value = WrapScalar(value, input.dtype, input._ctx)
     ctx = MakeContext(inputs=[input, value])
-    key = 'torch.ops.{}/{}:{}'.format(op.lower(), ctx[0], ctx[1])
+    key = '{}/{}'.format(op, ctx)
     module = get_module(Fundamental, key, ctx, op_type=op)
     return module.forward(value, input, out)
 
@@ -47,7 +47,7 @@ def _maximum(input, other, out=None):
     elif not isinstance(other, Tensor):
         other = WrapScalar(other, input.dtype, input._ctx)
     ctx = MakeContext(inputs=[input])
-    key = 'torch.ops.maximum/{}:{}'.format(ctx[0], ctx[1])
+    key = 'Maximum/{}'.format(ctx)
     module = get_module(Maximum, key, ctx)
     return module.forward(input, other, out)
 
@@ -58,30 +58,36 @@ def _minimum(input, other, out=None):
     elif not isinstance(other, Tensor):
         other = WrapScalar(other, input.dtype, input._ctx)
     ctx = MakeContext(inputs=[input])
-    key = 'torch.ops.minimum/{}:{}'.format(ctx[0], ctx[1])
+    key = 'Minimum/{}'.format(ctx)
     module = get_module(Minimum, key, ctx)
     return module.forward(input, other, out)
 
 
 def _clamp(input, min=None, max=None, out=None):
     ctx = MakeContext(inputs=[input])
-    key = 'torch.ops.clamp/{}:{}/min:{}/max:{}'.format(
-        ctx[0], ctx[1], min, max)
+    key = 'Clamp/{}/min:{}/max:{}'.format(ctx, min, max)
     module = get_module(Clamp, key, ctx, min=min, max=max)
     return module.forward(input, out)
 
 
 def _exp(input, out=None):
     ctx = MakeContext(inputs=[input])
-    key = 'torch.ops.exp/{}:{}'.format(ctx[0], ctx[1])
+    key = 'Exp/{}'.format(ctx)
     module = get_module(Exp, key, ctx)
     return module.forward(input, out)
 
 
 def _log(input, out=None):
     ctx = MakeContext(inputs=[input])
-    key = 'torch.ops.log/{}:{}'.format(ctx[0], ctx[1])
+    key = 'Log/{}'.format(ctx)
     module = get_module(Log, key, ctx)
+    return module.forward(input, out)
+
+
+def _sqrt(input, out=None):
+    ctx = MakeContext(inputs=[input])
+    key = 'Sqrt/{}'.format(ctx)
+    module = get_module(Sqrt, key, ctx)
     return module.forward(input, out)
 
 
@@ -270,3 +276,22 @@ def exp(input, out=None):
 
     """
     return _exp(input, out)
+
+
+def sqrt(input, out=None):
+    """Compute the square-root of input.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    return _sqrt(input, out)

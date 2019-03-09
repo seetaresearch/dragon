@@ -3,7 +3,7 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void CopyOp<Context>::RunWithType() { 
+void CopyOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 

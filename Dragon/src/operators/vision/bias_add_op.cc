@@ -2,6 +2,7 @@
 #include "utils/filler.h"
 #include "utils/op_kernel.h"
 #include "operators/vision/bias_add_op.h"
+#include "operators/arithmetic/affine_op.h"
 
 namespace dragon {
 
@@ -50,22 +51,27 @@ template <class Context> template <typename T>
 void BiasAddGradientOp<Context>::RunWithType() {
     if (Output(1)->name() != "ignore") {
         DECLARE_MULTIPLIER(multiplier, inner_dim);
-        auto* dYdata = Input(-1).template data<T, Context>();
+        auto* dYdata = Input(-1).template mutable_data<T, Context>();
         auto* dBias = Output(1)->template mutable_data<T, Context>();
-        const int y_offset = dim * inner_dim;
-        for (int n = 0; n < outer_dim; n++) {
-            if (data_format == "NCHW") {
-                math::Gemv(
-                    CblasNoTrans, dim, inner_dim,
-                        1.f, dYdata, multiplier,
-                            1.f, dBias, ctx());
-            } else if (data_format == "NHWC") {
-                math::Gemv(
-                    CblasTrans, inner_dim, dim,
-                        1.f, dYdata, multiplier,
-                            1.f, dBias, ctx());
-            }
-            dYdata += y_offset;
+        T* SRes_data = nullptr;
+        // Reduce inner dimensions
+        if (inner_dim == 1) {
+            SRes_data = dYdata;
+        } else {
+            SRes_data = (outer_dim == 1) ?
+                dBias : ws()->template caches<T, Context>(
+                    { outer_dim * dim })[0];
+            math::Gemv(
+                CblasNoTrans, outer_dim * dim, inner_dim,
+                    1.f, dYdata, multiplier,
+                        0.f, SRes_data, ctx());
+        }
+        // Reduce outer dimensions
+        if (outer_dim != 1) {
+            math::Gemv(
+                CblasTrans, outer_dim, dim,
+                    1.f, SRes_data, multiplier,
+                        0.f, dBias, ctx());
         }
     }
 

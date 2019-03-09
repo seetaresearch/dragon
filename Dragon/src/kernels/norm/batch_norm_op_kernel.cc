@@ -37,7 +37,6 @@ void _BatchNormInternalGrad(
         const int i_param = idx[kCDim];
         ds[i_param] += gamma[i_param] * dy[i] * x[i];
         db[i_param] += gamma[i_param] * dy[i];
-        // Accumulate the gradients of trainable parameters
         dgamma[i_param] += dy[i] * (x[i] - mu[i_param]) * rsig[i_param];
         dbeta[i_param] += dy[i];
         utils::IncreaseIndexInDims(3, dims.data(), idx.data());
@@ -85,7 +84,6 @@ void _BatchNormWGrad(
     std::array<int, 3> idx = { 0, 0, 0 };
     for (int i = 0; i < count; ++i) {
         const int i_param = idx[kCDim];
-        // Accumulate the gradients of trainable parameters
         dgamma[i_param] += dy[i] * (x[i] - mu[i_param]) * rsig[i_param];
         dbeta[i_param] += dy[i];
         utils::IncreaseIndexInDims(3, dims.data(), idx.data());
@@ -138,6 +136,8 @@ void _BatchNormInferenceGrad(
         CPUContext*                 ctx) { \
         math::Set(C, (Tp)0, ds, ctx); \
         math::Set(C, (Tp)0, db, ctx); \
+        math::Set(C, (Tp)0, dgamma, ctx); \
+        math::Set(C, (Tp)0, dbeta, ctx); \
         if (data_format == "NCHW") { \
             _BatchNormInternalGrad<Tx, Tp, StorageOrder::NCHW>( \
                 { N, C, S }, x, mu, rsig, gamma, dy, \
@@ -168,6 +168,8 @@ void _BatchNormInferenceGrad(
         CPUContext*                 ctx) { \
         if (data_format == "NCHW") { \
             if (dgamma != nullptr) { \
+                math::Set(C, (Tp)0, dgamma, ctx); \
+                math::Set(C, (Tp)0, dbeta, ctx); \
                 _BatchNormWGrad<Tx, Tp, StorageOrder::NCHW>( \
                     { N, C, S }, x, mu, rsig, dy, dgamma, dbeta); \
             } \
@@ -175,6 +177,8 @@ void _BatchNormInferenceGrad(
                 N, C, S, rsig, gamma, dy, dx); \
         } else if (data_format == "NHWC") { \
             if (dgamma != nullptr) { \
+                math::Set(C, (Tp)0, dgamma, ctx); \
+                math::Set(C, (Tp)0, dbeta, ctx); \
                 _BatchNormWGrad<Tx, Tp, StorageOrder::NHWC>( \
                     { N, S, C }, x, mu, rsig, dy, dgamma, dbeta); \
             } \

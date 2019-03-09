@@ -4,69 +4,59 @@
 
 namespace dragon {
 
-void MixedMemory::ToCPU() {
+void MixedMemory::ToCPU(size_t nbytes) {
     switch (state_) {
-    case UNINITIALIZED:
-        cpu_ptr_ = CPUContext::New(nbytes_);
-        CPUContext::Memset(nbytes_, cpu_ptr_);
-        state_ = STATE_AT_CPU;
-        break;
-    case STATE_AT_CUDA:
-#ifdef WITH_CUDA
-        if (cpu_ptr_ == nullptr)
+        case UNINITIALIZED:
             cpu_ptr_ = CPUContext::New(nbytes_);
-        CUDAContext::Memcpy<CPUContext, CUDAContext>(
-            nbytes_, cpu_ptr_, cuda_ptr_);
-        state_ = SYNCED;
-#endif
-        break;
-    case STATE_AT_CPU:
-    case SYNCED:
-        break;
+            CPUContext::Memset(nbytes_, cpu_ptr_);
+            state_ = STATE_AT_CPU;
+            break;
+        case STATE_AT_CUDA:
+            if (cpu_ptr_ == nullptr) {
+                cpu_ptr_ = CPUContext::New(nbytes_);
+            }
+            CUDAContext::MemcpyEx<CPUContext, CUDAContext>(
+                nbytes > 0 ? nbytes : nbytes_,
+                    cpu_ptr_, cuda_ptr_, ptr_device_);
+            state_ = SYNCED;
+            break;
+        case STATE_AT_CPU:
+        case SYNCED:
+            break;
     }
 }
 
-void MixedMemory::ToCUDA() {
-#ifdef WITH_CUDA
-    void* new_ptr_ = nullptr;
+void MixedMemory::ToCUDA(size_t nbytes) {
     switch (state_) {
-    case UNINITIALIZED:
-        cuda_ptr_ = CUDAContext::New(nbytes_);
-        CUDAContext::Memset(nbytes_, cuda_ptr_);
-        ptr_device_ = CUDA_GET_DEVICE();
-        state_ = STATE_AT_CUDA;
-        break;
-    case STATE_AT_CPU:
-        if (cuda_ptr_ == nullptr) {
+        case UNINITIALIZED:
             cuda_ptr_ = CUDAContext::New(nbytes_);
-            ptr_device_ = CUDA_GET_DEVICE();
-        } CUDAContext::Memcpy<CUDAContext, CPUContext>(
-            nbytes_, cuda_ptr_, cpu_ptr_);
-        state_ = SYNCED;
-        break;
-    case SWITCHED:
-        CHECK(cuda_ptr_) << "\nSwitched from an invalid cuda mem.";
-        new_ptr_ = CUDAContext::New(nbytes_);
-        CUDAContext::Memcpy<CUDAContext, CUDAContext>(
-            nbytes_, new_ptr_, cuda_ptr_);
-        CUDAContext::Delete(cuda_ptr_);
-        cuda_ptr_ = new_ptr_;
-        state_ = STATE_AT_CUDA;
-        break;
-    case STATE_AT_CUDA:
-    case SYNCED:
-        break;
+            CUDAContext::Memset(nbytes_, cuda_ptr_);
+            ptr_device_ = CUDAContext::active_device_id();
+            state_ = STATE_AT_CUDA;
+            break;
+        case STATE_AT_CPU:
+            if (cuda_ptr_ == nullptr) {
+                cuda_ptr_ = CUDAContext::New(nbytes_);
+                ptr_device_ = CUDAContext::active_device_id();
+            }
+            CUDAContext::MemcpyEx<CUDAContext, CPUContext>(
+                nbytes > 0 ? nbytes : nbytes_,
+                    cuda_ptr_, cpu_ptr_, ptr_device_);
+            state_ = SYNCED;
+            break;
+        case STATE_AT_CUDA:
+        case SYNCED:
+            break;
     }
-#endif
 }
 
-const void* MixedMemory::cpu_data() {
-    ToCPU();
+const void* MixedMemory::cpu_data(size_t nbytes) {
+    ToCPU(nbytes);
     return (const void*)cpu_ptr_;
 }
 
-const void* MixedMemory::cuda_data() {
-    ToCUDA();
+const void* MixedMemory::cuda_data(size_t nbytes) {
+    ToCUDA(nbytes);
     return (const void*)cuda_ptr_;
 }
 
@@ -74,14 +64,14 @@ const void* MixedMemory::cnml_data() {
     return (const void*)cnml_ptr_;
 }
 
-void* MixedMemory::mutable_cpu_data() {
-    ToCPU();
+void* MixedMemory::mutable_cpu_data(size_t nbytes) {
+    ToCPU(nbytes);
     state_ = STATE_AT_CPU;
     return cpu_ptr_;
 }
 
-void* MixedMemory::mutable_cuda_data() {
-    ToCUDA();
+void* MixedMemory::mutable_cuda_data(size_t nbytes) {
+    ToCUDA(nbytes);
     state_ = STATE_AT_CUDA;
     return cuda_ptr_;
 }
@@ -133,28 +123,28 @@ MixedMemory::~MixedMemory() {
 #endif
 }
 
-void MixedMemory::SwitchToDevice() {
+void MixedMemory::SwitchToDevice(int device_id) {
     if (cuda_ptr_) {
-#ifdef WITH_CUDA
-        int cur_device = CUDA_GET_DEVICE();
-        if (cur_device != ptr_device_) {
-            state_ = SWITCHED;
-            ptr_device_ = cur_device;
-        }
-#endif
+        SwitchToCUDADevice(device_id);
     }
 }
 
 void MixedMemory::SwitchToCUDADevice(int device_id) {
 #ifdef WITH_CUDA
-    DeviceGuard gurad(device_id);
     if (cuda_ptr_) {
         if (device_id != ptr_device_) {
-            state_ = SWITCHED;
+            // Move the memory to another device
+            void* new_ptr_ = nullptr;
+            DeviceGuard gurad(device_id);
+            new_ptr_ = CUDAContext::New(nbytes_);
+            CUDAContext::MemcpyEx<CUDAContext, CUDAContext>(
+                nbytes_, new_ptr_, cuda_ptr_, ptr_device_);
+            CUDAContext::Delete(cuda_ptr_);
+            // Update the pointer
+            cuda_ptr_ = new_ptr_;
             ptr_device_ = device_id;
         }
     }
-    ToCUDA();
 #endif
 }
 
@@ -165,7 +155,6 @@ const Map<string, string> MixedMemory::info() const {
         { STATE_AT_CUDA, "CUDA" },
         { STATE_AT_CNML, "CNML" },
         { SYNCED, "DEVICE" },
-        { SWITCHED, "DEVICE" },
     };
     Map<string, string> s2s;
     string _state_ = STATE_TO_STRING[state_];
@@ -175,10 +164,8 @@ const Map<string, string> MixedMemory::info() const {
         else LOG(FATAL) << "Device activated, "
                         << "but got invalid mem pointer.";
     }
-    s2s["mem_at"] = _state_;
-    if (cpu_ptr_) s2s["CPU"] = "0";
-    if (cuda_ptr_) s2s["CUDA"] = std::to_string(ptr_device_);
-    else if (cnml_ptr_) s2s["CNML"] = std::to_string(ptr_device_);
+    s2s["device_type"] = _state_;
+    s2s["device_id"] = std::to_string(ptr_device_);
     return s2s;
 }
 

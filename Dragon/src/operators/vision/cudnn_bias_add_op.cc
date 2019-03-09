@@ -72,7 +72,7 @@ void CuDNNBiasAddGradientOp<Context>::RunWithType() {
 
     CUDNN_CHECK(cudnnConvolutionBackwardBias(ctx()->cudnn_handle(),
         CUDNNType<T>::one, input_desc, dYdata,
-            CUDNNType<T>::one, bias_desc, dBdata));
+            CUDNNType<T>::zero, bias_desc, dBdata));
 
     if (Output(0)->name() != "ignore" &&
         Output(0)->name() != Input(-1).name()) {

@@ -37,7 +37,7 @@ class SigmoidFocalLossOp
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename Tx, typename Ty> void RunWithType();
 
  protected:
     float alpha, gamma, pos_alpha, neg_alpha;
@@ -66,7 +66,7 @@ class SigmoidFocalLossGradientOp
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename Tx, typename Ty> void RunWithType();
 
  protected:
     float alpha, gamma, pos_alpha, neg_alpha;

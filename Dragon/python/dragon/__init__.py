@@ -24,6 +24,7 @@ from dragon.core.tensor import Tensor
 import dragon.core.workspace as workspace
 import dragon.core.tensor_utils as tensor_utils
 import dragon.core.mpi as mpi
+import dragon.core.cuda as cuda
 import dragon.memonger as memonger
 
 # Operators

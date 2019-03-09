@@ -2,6 +2,8 @@
 
 #ifdef WITH_PYTHON
 
+#include <pybind11/pybind11.h>
+
 #ifdef WITH_PYTHON3
 #define PyBytes_FromStringAndSize \
     PyUnicode_FromStringAndSize
@@ -66,6 +68,9 @@ string RunOp<Context>::CallMethodHelper(
 
 template <class Context>
 void RunOp<Context>::RunOnDevice() {
+    // GIL may have been released
+    pybind11::gil_scoped_acquire g;
+
     // Reset phase
     PyObject_SetAttr(self, Bytes("phase"), CS2Bytes(phase()));
 
@@ -98,6 +103,9 @@ NO_GRADIENT(Run);
 
 template <class Context>
 void TemplateGradientOp<Context>::RunOnDevice() {
+    // GIL may have been released
+    pybind11::gil_scoped_acquire g;
+
     // Reset phase
     PyObject_SetAttr(this->self,
         Bytes("phase"), CS2Bytes(phase()));

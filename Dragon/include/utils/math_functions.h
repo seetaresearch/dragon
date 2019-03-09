@@ -102,7 +102,7 @@ template <typename T, class Context>
 void Set(
     const int               n,
     const T                 alpha,
-    T*                      x,
+    T*                      y,
     Context*                ctx);
 
 template <typename T, class Context>
@@ -118,6 +118,15 @@ void Axpy(
     const int               n,
     const float             alpha,
     const T*                x,
+    T*                      y,
+    Context*                ctx);
+
+template<typename T, class Context>
+void Axpby(
+    const int               n,
+    const float             alpha,
+    const T*                x,
+    const float             beta,
     T*                      y,
     Context*                ctx);
 
@@ -141,17 +150,8 @@ void AddScalar(
 template<typename T, class Context>
 void InvStd(
     const int               n,
-    float                   eps,
+    const float             eps,
     const T*                x,
-    T*                      y,
-    Context*                ctx);
-
-template<typename T, class Context>
-void Axpby(
-    const int               n,
-    float                   alpha,
-    const T*                x,
-    float                   beta,
     T*                      y,
     Context*                ctx);
 

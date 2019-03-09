@@ -37,6 +37,20 @@ inline std::vector<std::string> split(
     return ret;
 }
 
+inline std::string replace_first(
+    const std::string&              str,
+    const std::string&              pattern,
+    const std::string&              excepted) {
+    size_t pos = 0;
+    if ((pos = str.find(pattern)) != std::string::npos) {
+        std::string ret(str);
+        ret.replace(pos, pattern.size(), excepted);
+        return ret;
+    } else {
+        return str;
+    }
+}
+
 }  // namespace str
 
 }  // namespace dragon

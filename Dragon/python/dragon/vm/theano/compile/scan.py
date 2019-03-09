@@ -120,4 +120,4 @@ def scan(fn, sequences, outputs_info, n_steps=None, axis=0):
     kwargs['inputs_name'] = [t.name for t in inputs]
     kwargs['outputs_name'] = [t.name for t in outputs]
 
-    return Tensor.CreateOperator(inputs, existing_outputs=outputs, op_type='Scan', **kwargs)
+    return Tensor.CreateOperator('Scan', inputs, existing_outputs=outputs, **kwargs)

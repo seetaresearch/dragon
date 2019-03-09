@@ -90,7 +90,6 @@ void MulGradientOp<Context>::BroadcastRunWithType(int type) {
     if (Output(0)->name() != "ignore") {
         auto* x2 = Input(1).template data<T, Context>();
         auto* dx1 = Output(0)->template mutable_data<T, Context>();
-        CHECK(dy != dx1) << "\nCan't set inplace if X2 was broadcast.";
         math::BroadcastMul(rows, cols, type, dy, x2, dx1, ctx());
     }
 }

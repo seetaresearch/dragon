@@ -17,23 +17,18 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import warnings
+import dragon
 from collections import defaultdict
 
-import dragon as dg
-
 from dragon.vm.torch.tensor import Tensor
-from dragon.vm.torch.ops.update import _allreduce, _update
+
+from dragon.vm.torch.ops.update import (
+    _accumulate, _allreduce, _update,
+)
 
 
-_OPTIMIZER_GROUP_UID = 0
+# A simple parameter flag
 required = object()
-
-
-def _get_group_slot():
-    global _OPTIMIZER_GROUP_UID
-    _OPTIMIZER_GROUP_UID += 1
-    return 'Optimizer/Slot:{}'.format(_OPTIMIZER_GROUP_UID - 1)
 
 
 class Optimizer(object):
@@ -70,12 +65,23 @@ class Optimizer(object):
         return format_string
 
     def feed_parameters(self, group):
-        param_temp = group['slot'] + '/{}'
+        template = group['slot'] + '/{}'
         for k, v in group.items():
             if k in self._mutable_parameters:
-                dg.workspace.FeedTensor(param_temp.format(
-                    self._mutable_parameters[k]), v,
-                        dtype='float32', force_cpu=True)
+                dragon.workspace.FeedTensor(
+                    template.format(self._mutable_parameters[k]),
+                        v, dtype='float32', force_cpu=True)
+
+    def _get_grad(self, param, accumulating=False):
+        grad_name = param.name + (
+            '_grad[acc]' if accumulating
+                else '_grad')
+        if dragon.workspace.HasTensor(grad_name):
+            return Tensor(
+                name=grad_name,
+                    own_storage=False,
+                        ctx=param._ctx)
+        return None
 
     def _run_update_ops(self, group):
         """Generate & Run UpdateOps.
@@ -91,13 +97,13 @@ class Optimizer(object):
 
         """
         # Collect params and grads
-        params = []; grads = []
+        params, grads = [], []
         for p in group['params']:
-            g_name = p.name + '_grad'
-            if not dg.workspace.HasTensor(g_name): continue
-            g = Tensor(dg_tensor=g_name)
-            g._own_storage = False; g._ctx = p._ctx
-            params.append(p); grads.append(g)
+            g = self._get_grad(
+                p, p.__accumulating__)
+            if g is not None:
+                params.append(p)
+                grads.append(g)
 
         # Feed optimizer parameters to workspace
         self.feed_parameters(group)
@@ -107,26 +113,34 @@ class Optimizer(object):
 
         # Run regular update ops
         for p, g in zip(params, grads):
-            _update(p, g,
+            _update(
+                p, g,
                 op_type=self._update_type,
                 slot=group['slot'],
                 lr_mult=group.get('lr_mult', 1.0),
-                decay_mult=group.get('decay_mult', 1.0)
+                decay_mult=group.get('decay_mult', 1.0),
             )
 
     def zero_grad(self):
-        """Set all gradients to zeros.
-
-        Deprecated, DO NOT call it.
-
-        """
-        warnings.warn("\nPyTorch@Dragon will automatically zeros the grad "
-                      "after each step. \nYou need not call this function, "
-                      "IT'S TOO SLOW.", stacklevel=2)
+        """Set all gradients to zeros."""
         for group in self.param_groups:
             for p in group['params']:
-                g = p.grad
-                if g is not None: g.zero_()
+                g = self._get_grad(
+                    p, p.__accumulating__)
+                p.__accumulating__ = False
+                if g is not None:
+                    g.zero_()
+
+    def accumulate_grad(self):
+        """Accumulate all gradients."""
+        grads = []
+        for group in self.param_groups:
+            for p in group['params']:
+                g = self._get_grad(p)
+                if g is not None:
+                    grads.append(g)
+                    p.__accumulating__ = True
+        _accumulate(grads)
 
     def step(self, closure=None):
         """Perform one step update.

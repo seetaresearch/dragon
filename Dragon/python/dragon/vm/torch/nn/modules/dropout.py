@@ -26,18 +26,21 @@ class Dropout(Module):
     def register_op(self):
         self.op_meta = {
             'op_type': 'Dropout',
-            'n_inputs': 1, 'n_outputs': 1,
             'arguments': {
                 'prob': self.p,
                 'phase': 'TRAIN',
             }
         }
 
+    def extra_repr(self):
+        inplace_str = ', inplace' if self.inplace else ''
+        return 'p={}{}'.format(self.p, inplace_str)
+
     def forward(self, input):
         if not self.training: return input
         inputs = [input]
         self.unify_devices(inputs)
-        outputs = [input if self.inplace else self.register_output(input.dtype)]
+        outputs = [input if self.inplace else self.register_output()]
         return self.run(inputs, outputs)
 
 

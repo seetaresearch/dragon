@@ -25,14 +25,14 @@ from dragon.core.scope import get_default_phase
 from dragon.core.tensor import Tensor
 
 
-def GraphDef_Grad(meta_graph, targets):
+def GraphDef_Grad(graph_def, targets):
     """Inject the gradient targets into GraphDef.
 
     Parameters
     ----------
-    meta_graph : dragon_pb2.GraphDef
-        The definition of meta graph.
-    targets : list
+    graph_def : GraphDef
+        The definition of graph.
+    targets : sequence of Tensor
         The solving targets.
 
     Returns
@@ -51,19 +51,19 @@ def GraphDef_Grad(meta_graph, targets):
     for pair in all_pairs:
         gradient = pb.GradientProto()
         gradient.cost, gradient.wrt = str(pair[0]), str(pair[1])
-        meta_graph.gradient.extend([gradient])
+        graph_def.gradient.extend([gradient])
 
 
-def GraphDef_Phase(meta_graph, targets):
+def GraphDef_Phase(graph_def, targets):
     """Inject the phase into GraphDef.
 
     If existing gradients, we assume it should be ``TRAIN``, and vice versa.
 
     Parameters
     ----------
-    meta_graph : dragon_pb2.GraphDef
-        The definition of meta graph.
-    targets : list
+    graph_def : GraphDef
+        The definition of graph.
+    targets : sequence of Tensor
         The solving targets.
 
     Returns
@@ -78,18 +78,18 @@ def GraphDef_Phase(meta_graph, targets):
             if target.gradient.required():
                 phase = 'TRAIN'
                 break
-    meta_graph.arg.extend([MakeArgument('phase', phase)])
+    graph_def.arg.extend([MakeArgument('phase', phase)])
 
 
-def GraphDef_Update(meta_graph, updater):
+def GraphDef_Update(graph_def, updater):
     """Inject the update targets into GraphDef.
 
     The ``updater`` should generate update targets before.
 
     Parameters
     ----------
-    meta_graph : dragon_pb2.GraphDef
-        The definition of meta graph.
+    graph_def : GraphDef
+        The definition of graph.
     updater : BaseUpdater
         The updater.
 
@@ -115,7 +115,7 @@ def GraphDef_Update(meta_graph, updater):
                 = mpi.CreateGroup(root=group[0], incl=group)
             parallel_arguments['root'] = group[0]
         for k, v in parallel_arguments.items():
-            meta_graph.arg.add().CopyFrom(MakeArgument(k, v))
+            graph_def.arg.add().CopyFrom(MakeArgument(k, v))
 
     for e in updater._param_group:
         pair, arguments = e
@@ -123,19 +123,19 @@ def GraphDef_Update(meta_graph, updater):
         u_target = pb.UpdaterProto()
         u_target.type = updater.type()
         u_target.name = OperatorHelper.get_name()
-        for t in pair: u_target.tensor.append(t)
+        u_target.tensor.extend(pair)
         for k, v in kwargs.items():
             u_target.arg.add().CopyFrom(MakeArgument(k, v))
-        meta_graph.updater.extend([u_target])
+        graph_def.updater.extend([u_target])
 
 
-def GraphDef_Opt(meta_graph):
+def GraphDef_Opt(graph_def):
     """Inject the optimization options into GraphDef.
 
     Parameters
     ----------
-    meta_graph : dragon_pb2.GraphDef
-        The definition of meta graph.
+    graph_def : GraphDef
+        The definition of graph.
 
     Returns
     -------
@@ -148,21 +148,20 @@ def GraphDef_Opt(meta_graph):
     `memonger.share_grads(*args, **kwargs)`_ - How the enable gradients sharing.
 
     """
-
     from dragon.config import option
-    OX = 3 if option['share_grads'] else 2
-    if option['debug_mode']: OX = 1
-    meta_graph.arg.add().CopyFrom(MakeArgument('optimization_level', OX))
-    meta_graph.graph_type = option['graph_type']
+    OX = option['graph_optimization_level']
+    if not option['share_grads'] and OX >= 3: OX = 2
+    graph_def.arg.add().CopyFrom(MakeArgument('optimization_level', OX))
+    graph_def.graph_type = option['graph_type']
 
 
-def GraphDef_Device(meta_graph):
+def GraphDef_Device(graph_def):
     """Inject the device option into GraphDef.
 
     Parameters
     ----------
-    meta_graph : dragon_pb2.GraphDef
-        The definition of meta graph.
+    graph_def : GraphDef
+        The definition of graph.
 
     Returns
     -------
@@ -186,7 +185,7 @@ def GraphDef_Device(meta_graph):
         device_option.random_seed = option['random_seed']
         if option['device'] == 'CUDA':
             if option['use_cudnn']: device_option.engine = 'CUDNN'
-        meta_graph.device_option.CopyFrom(device_option)
+        graph_def.device_option.CopyFrom(device_option)
 
 
 class Function(object):
@@ -325,8 +324,8 @@ class Function(object):
         with open(file, 'w') as f: f.write(str(meta_graph_copy))
         logging.info('Export meta graph into: {}'.format(file))
 
-    def import_from(self, meta_graph, explicit_inputs=False):
-        """Import the defined function from a meta graph.
+    def import_from(self, graph_def, explicit_inputs=False):
+        """Import the defined function from a graph def.
 
         Set ``explicit_inputs`` to ``False``,
 
@@ -334,8 +333,8 @@ class Function(object):
 
         Parameters
         ----------
-        meta_graph : dragon_pb2.GraphDef
-            The definition of meta graph.
+        meta_graph : GraphDef
+            The definition of graph.
         explicit_inputs : boolean
             Whether to enforce feeding on executing.
 
@@ -345,18 +344,18 @@ class Function(object):
             The self.
 
         """
-        self.inputs = [Tensor(name=input).Variable() for input in meta_graph.input]
-        self.outputs = [Tensor(name=output) for output in meta_graph.output]
+        self.inputs = [Tensor(name=input).Variable() for input in graph_def.input]
+        self.outputs = [Tensor(name=output) for output in graph_def.output]
 
-        GraphDef_Device(meta_graph)
-        GraphDef_Opt(meta_graph)
-        GraphDef_Phase(meta_graph, self.outputs)
+        GraphDef_Device(graph_def)
+        GraphDef_Opt(graph_def)
+        GraphDef_Phase(graph_def, self.outputs)
 
         # Store for future development
-        self.meta_graph = meta_graph
+        self.meta_graph = graph_def
 
         # Call c api to create graph
-        self.graph_name = ws.CreateGraph(meta_graph)
+        self.graph_name = ws.CreateGraph(graph_def)
 
         # Bind a lambda callback to run this graph
         callback_inputs = self.inputs if explicit_inputs else []

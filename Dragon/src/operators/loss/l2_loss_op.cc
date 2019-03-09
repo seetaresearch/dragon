@@ -28,7 +28,7 @@ void L2LossOp<Context>::RunWithType() {
         math::Mul(Input(0).count(), mask, Ddata, Ddata, ctx());
     }
 
-    float normalizer = 2.f / scale;
+    double normalizer = 2. / scale;
     if (normalization == "BATCH_SIZE") {
         normalizer *= Input(0).dim(0);
     } else if (normalization == "FULL") {
@@ -37,8 +37,9 @@ void L2LossOp<Context>::RunWithType() {
 
     T lossT;
     math::Dot(Input(0).count(), Ddata, Ddata, &lossT, ctx());
-    auto alphaF = cast::to<float>(lossT) / normalizer;
-    math::Set(1, alphaF, Ydata, ctx());
+    math::Set(1, cast::to<float>(
+        cast::to<float>(lossT) /
+            normalizer), Ydata, ctx());
 }
 
 template <class Context>
@@ -76,7 +77,8 @@ void L2LossGradientOp<Context>::RunWithType() {
 
     auto* dYdata = Input(-1).template data<float, Context>();
     float dYHost; ctx()->template Copy
-        <float, CPUContext, Context>(1, &dYHost, dYdata);
+        <float, CPUContext, Context>(
+            1, &dYHost, dYdata);
     ctx()->FinishDeviceCompution();
 
     if (normalization == "BATCH_SIZE") {

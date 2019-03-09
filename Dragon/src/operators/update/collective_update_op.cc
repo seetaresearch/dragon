@@ -32,7 +32,6 @@ void CollectiveUpdateOp<Context>::InitNCCL() {
     if (comm_rank == comm_root) NCCL_CHECK(ncclGetUniqueId(&id));
     MPI_Bcast((void *)&id, sizeof(id), MPI_BYTE, comm_root, comm);
     ctx()->SwitchToDevice();
-    closure = CUDAClosure<Context>(ctx());
     NCCL_CHECK(ncclCommInitRank(&nccl_comm, comm_size, id, comm_rank));
 #else
     LOG(FATAL) << "NCCL was not compiled.";
@@ -150,7 +149,7 @@ void CollectiveUpdateOp<Context>::RunOnDevice() {
     }
 #ifdef WITH_NCCL
     else if (mode == "NCCL_ALLREDUCE") {
-        auto stream = closure.cuda_stream(1);
+        auto stream = ((CUDAContext*)ctx())->cuda_stream();
         for (int i = 0; i < InputSize(); i++) {
             if (XIsType(Input(i), float))
                 NCCLAllReduce<float>(&Input(i), ncclFloat, stream);
@@ -158,7 +157,6 @@ void CollectiveUpdateOp<Context>::RunOnDevice() {
                 NCCLAllReduce<float16>(&Input(i), ncclHalf, stream);
             else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
         }
-        closure.Sync();
         for (int i = 0; i < InputSize(); i++) {
             int64_t count = Input(i).count();
             if (XIsType(Input(i), float)) {
@@ -171,7 +169,7 @@ void CollectiveUpdateOp<Context>::RunOnDevice() {
             }
         }
     } else if (mode == "NCCL_BCAST") {
-        auto stream = closure.cuda_stream(1);
+        auto stream = ((CUDAContext*)ctx())->cuda_stream();
         for (int i = 0; i < InputSize(); i++) {
             if (XIsType(Input(i), float))
                 NCCLBcast<float>(&Input(i), ncclFloat, stream);
@@ -179,7 +177,6 @@ void CollectiveUpdateOp<Context>::RunOnDevice() {
                 NCCLBcast<float16>(&Input(i), ncclHalf, stream);
             else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
         }
-        closure.Sync();
     }
 #endif
     else LOG(FATAL) << "Unsupported collective mode: " << mode;

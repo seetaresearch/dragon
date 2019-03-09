@@ -10,29 +10,29 @@
  * ------------------------------------------------------------
  */
 
-#ifndef DRAGON_OPERATORS_UPDATE_MOVING_AVERAGE_OP_H_
-#define DRAGON_OPERATORS_UPDATE_MOVING_AVERAGE_OP_H_
+#ifndef DRAGON_OPERATORS_ARITHMETIC_ACCUMULATE_OP_H_
+#define DRAGON_OPERATORS_ARITHMETIC_ACCUMULATE_OP_H_
 
 #include "core/operator.h"
 
 namespace dragon {
 
 template <class Context>
-class MovingAverageOp final : public Operator<Context> {
+class AccumulateOp final : public Operator<Context> {
  public:
-    MovingAverageOp(const OperatorDef& def, Workspace* ws)
+    AccumulateOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          decay(OperatorBase::Arg<float>("decay", 1.f)) {}
+          alpha(OperatorBase::Arg<float>("alpha", 1.f)),
+          beta(OperatorBase::Arg<float>("beta", 1.f)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunWithType(Tensor* X, Tensor* Y);
 
  protected:
-    float decay;
+    float alpha, beta;
 };
 
-}   // namespace dragon
+}  // namespace dragon
 
-
-#endif  // DRAGON_OPERATORS_UPDATE_MOVING_AVERAGE_OP_H_
+#endif  // DRAGON_OPERATORS_ARITHMETIC_ACCUMULATE_OP_H_

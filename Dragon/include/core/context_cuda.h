@@ -80,9 +80,14 @@ class CUDAObject {
         } return dev_streams[stream_id];
     }
 
-    /*! \brief Return the default cuda stream */
+    /*! \brief Return the default cuda stream of current device */
     cudaStream_t GetDefaultStream() {
         return GetStream(CUDA_GET_DEVICE(), 0);
+    }
+
+    /*! \brief Return the default cuda stream of given device */
+    cudaStream_t GetDefaultStream(int device_id) {
+        return GetStream(device_id, 0);
     }
 
     /*! \brief Return the specified cublas handle */
@@ -141,13 +146,13 @@ class CUDAContext {
           random_seed_(DEFAULT_RNG_SEED) {}
 
     /*! \brief Switch to the device with the given stream */
-    void SwitchToDevice(int stream_id) {
+    void SwitchToDevice(const int stream_id) {
         CUDA_CHECK(cudaSetDevice(device_id_));
         stream_id_ = stream_id;
     }
 
     /*! \brief Switch to the device of this context */
-    void SwitchToDevice() { SwitchToDevice(1); }
+    void SwitchToDevice() { SwitchToDevice(0); }
 
     /*! \brief Synchronize the dispatched operations */
     void FinishDeviceCompution() {
@@ -191,8 +196,19 @@ class CUDAContext {
         size_t              nbytes,
         void*               dst,
         const void*         src) {
+        MemcpyEx<DstContext, SrcContext>(
+            nbytes, dst, src, active_device_id());
+    }
+
+    /*! \brief Copy the memory [Extended] */
+    template<class DstContext, class SrcContext>
+    static void MemcpyEx(
+        size_t              nbytes,
+        void*               dst,
+        const void*         src,
+        int                 device_id) {
         cudaStream_t stream = CUDAContext::
-            cuda_object()->GetDefaultStream();
+            cuda_object()->GetDefaultStream(device_id);
         CUDA_CHECK(cudaMemcpyAsync(dst, src, nbytes,
             cudaMemcpyDefault, stream));
         cudaError_t error = SynchronizeStream(stream);
@@ -230,8 +246,14 @@ class CUDAContext {
         return cudaGetLastError();
     }
 
-    /*! \brief Return the device id */
+    /*! \brief Return the device id of this context */
     int device_id() const { return device_id_; }
+
+    /*! \brief Return the active device id of current thread */
+    static int active_device_id() { return CUDA_GET_DEVICE(); }
+
+    /*! \brief Return the stream id */
+    int stream_id() const { return stream_id_; }
 
     /*! \brief Set the stream id */
     void set_stream_id(int stream_id) { stream_id_ = stream_id; }
@@ -292,85 +314,48 @@ class CUDAContext {
     }
 
  private:
-    int device_id_, stream_id_ = 1, random_seed_;
+    int device_id_, stream_id_ = 0, random_seed_;
     unique_ptr<std::mt19937> rand_generator_;
     curandGenerator_t curand_generator_ = nullptr;
-};
-
-template <class Context>
-class CUDAClosure {
- public:
-     /*! \brief Default Constructor */
-    CUDAClosure() {}
-
-    /*! \brief Constructor with the given context */
-    explicit CUDAClosure(Context* ctx): ctx_(ctx) {}
-
-    /*! \brief Synchronize the dispatched operations */
-    void Sync() {
-        for (auto stream_id : active_streams_) {
-            cudaStreamSynchronize(cuda_object_
-                .GetStream(ctx_->device_id(), stream_id));
-            cudaError_t error = cudaGetLastError();
-            CHECK_EQ(error, cudaSuccess)
-                << "\nCUDA Error: " << cudaGetErrorString(error);
-        }
-        active_streams_.clear();
-    }
-
-    /*! \brief Return the specified cuda stream */
-    cudaStream_t cuda_stream(int stream_id) {
-        active_streams_.push_back(stream_id);
-        return cuda_object_.GetStream(
-            ctx_->device_id(), stream_id);
-    }
-
-    /*! \brief Return the specified cublas handle */
-    cublasHandle_t cublas_handle(int stream_id) {
-        active_streams_.push_back(stream_id);
-        return cuda_object_.GetCuBLASHandle(
-            ctx_->device_id(), stream_id);
-    }
-
-    /*! \brief Return the specified cudnn handle */
-#ifdef WITH_CUDNN
-    cudnnHandle_t cudnn_handle(int stream_id) {
-        active_streams_.push_back(stream_id);
-        return cuda_object_.GetCuDNNHandle(
-            ctx_->device_id(), stream_id);
-    }
-#endif
-
- protected:
-    Context* ctx_;
-    CUDAObject cuda_object_;
-    vector<int> active_streams_;
 };
 
 #else  // WITH_CUDA
 
 class CUDAContext {
  public:
+    /*! \brief Default Constructor */
     CUDAContext(const DeviceOption& option) { CUDA_NOT_COMPILED; }
+
+    /*! \brief Constructor with the specified device id */
     CUDAContext(const int device_id = 0) { CUDA_NOT_COMPILED; }
 
-    void SwitchToDevice() { CUDA_NOT_COMPILED; }
+    /*! \brief Switch to the device with the given stream */
     void SwitchToDevice(int stream_id) { CUDA_NOT_COMPILED; }
 
+    /*! \brief Switch to the device of this context */
+    void SwitchToDevice() { CUDA_NOT_COMPILED; }
+
+    /*! \brief Synchronize the dispatched operations */
     void FinishDeviceCompution() { CUDA_NOT_COMPILED; }
 
+    /*! \brief Malloc the memory */
+    static void* New(size_t nbytes) { CUDA_NOT_COMPILED; }
+
+    /*! \brief Zero-Reset the memory */
     static void Memset(
         size_t              nbytes,
         void*               ptr) {
         CUDA_NOT_COMPILED;
     }
 
+    /*! \brief Zero-Reset the memory asynchronously */
     void MemsetAsync(
         size_t              nbytes,
         void*               ptr) {
         CUDA_NOT_COMPILED;
     }
 
+    /*! \brief Copy the memory */
     template<class DstContext, class SrcContext>
     static void Memcpy(
         size_t              nbytes,
@@ -379,6 +364,17 @@ class CUDAContext {
         CUDA_NOT_COMPILED;
     }
 
+    /*! \brief Copy the memory [Extended] */
+    template<class DstContext, class SrcContext>
+    static void MemcpyEx(
+        size_t              nbytes,
+        void*               dst,
+        const void*         src,
+        int                 device_id) {
+        CUDA_NOT_COMPILED;
+    }
+
+    /*! \brief Copy the memory asynchronously */
     template<class DstContext, class SrcContext>
     void MemcpyAsync(
         size_t              nbytes,
@@ -387,7 +383,16 @@ class CUDAContext {
         CUDA_NOT_COMPILED;
     }
 
+    /*! \brief Return the device id */
     int device_id() const { return 0; }
+
+    /*! \brief Return the active device id of current thread */
+    static int active_device_id() { return 0; }
+
+    /*! \brief Return the stream id */
+    int stream_id() const { return 0; }
+
+    /*! \brief Set the stream id */
     void set_stream_id(int stream_id) {}
 };
 

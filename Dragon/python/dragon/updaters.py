@@ -32,8 +32,12 @@ class BaseUpdater(object):
     # Store the global unique slot index
     _DEFAULT_UNIQUE_SLOT_ID = 0
 
-    def __init__(self, scale_gradient=1.0, clip_gradient=-1.0,
-                 l2_decay=-1.0, slot=None, verbose=True):
+    def __init__(self,
+                 scale_gradient=1.0,
+                 clip_gradient=-1.0,
+                 l2_decay=-1.0,
+                 slot=None,
+                 verbose=True):
         """Construct a Updater to optimize the objectives.
 
         Parameters

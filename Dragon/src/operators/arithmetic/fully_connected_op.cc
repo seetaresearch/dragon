@@ -130,13 +130,13 @@ void FullyConnectedGradientOp<Context>::RunWithType() {
                 CblasTrans, CblasNoTrans,
                     N, K, M,
                         1.f, dYdata, Xdata,
-                            1.f, dWdata, ctx());
+                            0.f, dWdata, ctx());
         } else {
             math::Gemm(
                 CblasTrans, CblasNoTrans,
                     K, N, M,
                         1.f, Xdata, dYdata,
-                            1.f, dWdata, ctx());
+                            0.f, dWdata, ctx());
         }
     }
 
@@ -147,7 +147,7 @@ void FullyConnectedGradientOp<Context>::RunWithType() {
         math::Gemv(
             CblasTrans, M, N,
                 1.f, dYdata, multiplier,
-                    1.f, dBdata, ctx());
+                    0.f, dBdata, ctx());
     }
 
     if (Output(0)->name() != "ignore") {
@@ -181,7 +181,7 @@ void FullyConnectedGradientOp<Context>::RunOnDevice() {
             << "\nFailed to infer the N from "
             << "the weights shape: " << Input(1).DimString();
     }
-    
+
     if (XIsType(Input(0), float16)) RunWithType<float16>();
     else if (XIsType(Input(0), float)) RunWithType<float>();
     else if (XIsType(Input(0), double)) RunWithType<double>();

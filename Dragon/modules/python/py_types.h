@@ -13,6 +13,7 @@
 #ifndef DRAGON_PYTHON_PY_TYPES_H_
 #define DRAGON_PYTHON_PY_TYPES_H_
 
+#include <string>
 #include <numpy/arrayobject.h>
 
 #include "core/types.h"
@@ -31,6 +32,7 @@ inline const int TypeMetaToNPY(const TypeMeta& meta) {
         { TypeMeta::Id<float16>(), NPY_FLOAT16 },
         { TypeMeta::Id<float>(), NPY_FLOAT32 },
         { TypeMeta::Id<double>(), NPY_FLOAT64 },
+        { TypeMeta::Id<std::string>(), NPY_OBJECT },
     };
     return m2npy_type_map.count(meta.id()) ? m2npy_type_map[meta.id()] : -1;
 }
@@ -45,6 +47,8 @@ inline const TypeMeta& TypeNPYToMeta(int npy_type) {
         { NPY_FLOAT16, TypeMeta::Make<float16>() },
         { NPY_FLOAT32, TypeMeta::Make<float>() },
         { NPY_FLOAT64, TypeMeta::Make<double>() },
+        { NPY_UNICODE, TypeMeta::Make<std::string>() },
+        { NPY_STRING, TypeMeta::Make<std::string>() },
     };
     static TypeMeta unknown_type;
     return npy2m_type_map.count(npy_type) ?

@@ -28,21 +28,6 @@ template <> void AdamUpdate<float, CPUContext>(
     }
 }
 
-/*! AdamUpdate <T = float16, Device = CPU> */
-
-template <> void AdamUpdate<float16, CPUContext>(
-    const int               count,
-    const float             lr,
-    const float             beta1,
-    const float             beta2,
-    const float             eps,
-    float16*                g,
-    float16*                m,
-    float16*                v,
-    CPUContext*             ctx) {
-    CPU_FP16_NOT_SUPPORTED;
-}
-
 }  // namespace kernel
 
 }  // namepsace dragon

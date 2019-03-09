@@ -35,12 +35,15 @@ class Linear(Module):
     def register_op(self):
         self.op_meta = {
             'op_type': 'FullyConnected',
-            'n_inputs': 3 if self.bias else 2, 'n_outputs': 1,
             'arguments': {
                 'num_output': self.weight.shape[0],
                 'axis': -1,
             }
         }
+
+    def extra_repr(self):
+        return 'in_features={}, out_features={}, bias={}'.format(
+            self.in_features, self.out_features, self.bias is not None)
 
     def reset_parameters(self):
         stdv = 1. / math.sqrt(self.weight.size(1))
@@ -51,5 +54,5 @@ class Linear(Module):
     def forward(self, input):
         inputs = [input, self.weight] + ([self.bias] if self.bias else [])
         self.unify_devices(inputs)
-        outputs = [self.register_output(input.dtype)]
+        outputs = [self.register_output()]
         return self.run(inputs, outputs)

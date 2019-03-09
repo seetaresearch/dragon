@@ -20,7 +20,10 @@ void CTCLossGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
 
     T dYHost; ctx()->template Copy
-        <T, CPUContext, Context>(1, &dYHost, dYdata);
+        <T, CPUContext, Context>(
+            1, &dYHost, dYdata);
+    ctx()->FinishDeviceCompution();
+
     math::Scale(Output(0)->count(), dYHost, Gdata, dXdata, ctx());
 }
 

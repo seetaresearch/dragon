@@ -15,7 +15,7 @@ __global__ void _SigmoidCrossEntropy(
     const T*                logits,
     const T*                targets,
     T*                      losses,
-    T*                      flags) {
+    int*                    flags) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
         if (targets[idx] < 0) {
             losses[idx] = flags[idx] = 0;
@@ -33,7 +33,7 @@ template <> void SigmoidCrossEntropy<float, CUDAContext>(
     const float*            logits,
     const float*            targets,
     float*                  losses,
-    float*                  flags,
+    int*                    flags,
     CUDAContext*            ctx) {
     _SigmoidCrossEntropy<float>
         << < CUDA_BLOCKS(count), CUDA_THREADS,
@@ -49,7 +49,7 @@ __global__ void _SigmoidCrossEntropyGrad(
     const T*                logits,
     const T*                targets,
     T*                      dlogits,
-    T*                      flags) {
+    int*                    flags) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
         if (targets[idx] < 0) {
             dlogits[idx] = flags[idx] = 0;
@@ -65,7 +65,7 @@ template <> void SigmoidCrossEntropyGrad<float, CUDAContext>(
     const float*            logits,
     const float*            targets,
     float*                  dlogits,
-    float*                  flags,
+    int*                    flags,
     CUDAContext*            ctx) {
     _SigmoidCrossEntropyGrad<float>
         << < CUDA_BLOCKS(count), CUDA_THREADS,

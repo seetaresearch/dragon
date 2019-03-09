@@ -269,7 +269,7 @@ void LoadONNXModel(
  *                                       *
  * * * * * * * * * * * * * * * * * * * * */
 
-void SetLogLevel(const std::string& level) {
+void SetLoggingLevel(const std::string& level) {
     SetLogDestination(StrToLogSeverity(level));
 }
 

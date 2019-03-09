@@ -99,6 +99,6 @@ class CuDNNSoftmaxGradientOp final : public Operator<Context> {
 
 #endif  // WITH_CUDNN
 
-}
+}  // namespace dragon
 
 #endif  // DRAGON_OPERATORS_ACTIVATION_SOFTMAX_OP_H_

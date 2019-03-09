@@ -65,7 +65,7 @@ template<> void PRelu<float, CUDAContext>(
     float*                  y,
     CUDAContext*            ctx) {
     if (channel_shared) {
-        _PRelu<float> 
+        _PRelu<float>
             << < CUDA_BLOCKS(count), CUDA_THREADS,
                  0, ctx->cuda_stream() >> >
             (count, channels, dim, x, w, y);
@@ -204,21 +204,19 @@ template<> void PReluWGrad<float, CUDAContext>(
              0, ctx->cuda_stream() >> >
         (cdim, rows, row_offset, dy, x, bcast_dw);
     if (channel_shared) {
-        float w_sum;
         math::Dot<float, CUDAContext>(channels * dim,
-            bcast_dw, multiplier, &w_sum, ctx);
-        math::AddScalar<float, CUDAContext>(1, w_sum, dw, ctx);
+            bcast_dw, multiplier, dw, ctx);
     } else {
         if (data_format == "NCHW") {
             math::Gemv<float, CUDAContext>(
                 CblasNoTrans, channels, dim,
                     1.f, bcast_dw, multiplier,
-                        1.f, dw, ctx);
+                        0.f, dw, ctx);
         } else if (data_format == "NHWC") {
             math::Gemv<float, CUDAContext>(
                 CblasTrans, dim, channels,
-                    1.f, bcast_dw, multiplier, 
-                        1.f, dw, ctx);
+                    1.f, bcast_dw, multiplier,
+                        0.f, dw, ctx);
         } else LOG(FATAL) << "Unknown data format: " << data_format;
     }
 }

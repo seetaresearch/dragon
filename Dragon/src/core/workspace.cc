@@ -8,18 +8,10 @@ namespace dragon {
 
 void Workspace::InitWorkspace() {
     CreateTensor("ignore");
-    Tensor* head = CreateTensor(
-        "/opt/mirror_stage/head");
-    head->Reshape({ WORKSPACE_MAX_CORRUPTED_SIZE });
-    Tensor* recompute_flag = CreateTensor(
-        "/opt/mirror_stage/recompute_flag");
-    recompute_flag->Reshape({ 1 });
-    recompute_flag->mutable_data<bool, CPUContext>()[0] = false;
-    for (int i = 0; i < WORKSPACE_MAX_CORRUPTED_SIZE; i++) {
-        string name = "/opt/mirror_stage/buffer_" + std::to_string(i);
-        Tensor* buffer = CreateTensor(name);
-        head->mutable_data<string, CPUContext>()[i] = "";
-    }
+    Tensor* recomputing_flag = CreateTensor(
+        "/opt/recomputing_flag")->Reshape({ 1 });
+    recomputing_flag->mutable_data
+        <bool, CPUContext>()[0] = false;
 }
 
 /*! Move a external workspace into this workspace */
@@ -42,8 +34,8 @@ void Workspace::Clear() {
 /*! Query the real name of specified tensor */
 
 string Workspace::GetTensorName(const string& name) const {
-    const auto& it = tensor_proxy_map_.find(name);
-    if (it != tensor_proxy_map_.end()) return it->second;
+    const auto& it = tensor_alias_map_.find(name);
+    if (it != tensor_alias_map_.end()) return it->second;
     return name;
 }
 
@@ -156,56 +148,32 @@ const TensorFillerProto* Workspace::GetFiller(
     return nullptr;
 }
 
-/*! Creathe a persistent operator in this workspace */
+/*! Create a operator in this workspace */
 
-void Workspace::CreatePersistentOp(const OperatorDef& def) {
-    string persistent_key;
-    for (auto& arg : def.arg())
-        if (arg.name() == "persistent_key")
-            persistent_key = arg.s();
-    CHECK(persistent_key.size() > 0)
-        << "\nGot empty persistent key.";
-    if (!operator_map_.count(persistent_key)) {
+OperatorBase* Workspace::CreateOperator(const OperatorDef& def) {
+    const auto& it = operator_map_.find(def.uid());
+    if (it == operator_map_.end()) {
         for (auto& input : def.input()) CreateTensor(input);
-        operator_map_[persistent_key] = unique_ptr<OperatorBase>(
-            CreateOperator(def, this));
+        auto* new_op = NewOperator(def, this);
+        operator_map_[def.uid()] = unique_ptr<
+            OperatorBase>(new_op); return new_op;
     }
+    return it->second.get();
 }
 
-/*! Run the specified persistent operator */
-
-void Workspace::RunPersistentOp(
-    const string&               key,
-    const string&               anchor,
-    const vector<string>&       inputs,
-    const vector<string>&       outputs) {
-    const auto& it = operator_map_.find(key);
-    CHECK(it != operator_map_.end())
-        << "\nPersistentOp(" << key << ") does not exist.";
-    it->second->MutableOp(inputs, outputs, anchor);
-    it->second->Run();
-}
-
-/*! Try to run the operator in a adaptive mode */
+/*! Run the specified existing operator */
 
 void Workspace::RunOperator(const OperatorDef& def) {
-    string persistent_key;
-    for (auto& arg : def.arg()) {
-        if (arg.name() == "persistent_key")
-            persistent_key = arg.s();
-    }
-    if (persistent_key.empty()) {
-        // Run op in the "ONCE" mode
-        unique_ptr<OperatorBase> op(CreateOperator(def, this));
-        op->Run();
-    } else {
-        // Run op in the "PERSISTENT" mode
-        if (!operator_map_.count(persistent_key))
-            operator_map_[persistent_key] = unique_ptr<OperatorBase>(
-                CreateOperator(def, this));
-        else operator_map_[persistent_key]->MutableOp(def);
-        operator_map_[persistent_key]->Run();
-    }
+    auto* op = CreateOperator(def);
+    op->UpdateFrom(def); op->Run(0);
+}
+
+/*! Run the specified operator once */
+
+void Workspace::RunOperatorOnce(const OperatorDef& def) {
+    unique_ptr<OperatorBase> new_op(
+        NewOperator(def, this)
+    ); new_op->Run(0);
 }
 
 /*! Create a Graph in this workspace */
@@ -216,7 +184,7 @@ GraphBase* Workspace::CreateGraph(const GraphDef& def) {
         << "\nThe name of given GraphDef should not be empty.";
     auto unique_name = GetDummyName(def.name(), "", "Graph", false);
 
-    LOG(DEBUG) << "Create Graph: " << unique_name 
+    LOG(DEBUG) << "Create Graph: " << unique_name
                << "(" << def.name() << ")";
 
     GraphDef mutable_def(def);
@@ -234,10 +202,10 @@ void Workspace::RunGraph(
     const string&               graph_name,
     const string&               include,
     const string&               exclude,
-    const int                   stream_id) {
+    int                         stream_id) {
     if (!graph_map_.count(graph_name))
         LOG(FATAL) << "Graph(" << graph_name
-        << ") does not exist.";
+                   << ") does not exist.";
     graph_map_[graph_name]->Run(include, exclude, stream_id);
 }
 
@@ -250,19 +218,19 @@ vector<string> Workspace::GetGraphs() const {
     } return names;
 }
 
-/* Set a proxy name for the tensor */
+/*! Set an alias for the tensor */
 
-bool Workspace::SetTensorProxy(
-    const string&               key,
-    const string&               proxy) {
-    if (key == proxy) return false;
-    if (tensor_proxy_map_.count(key) > 0)
-        return tensor_proxy_map_[key] == proxy;
-    tensor_proxy_map_[key] = proxy;
+bool Workspace::SetTensorAlias(
+    const string&               name,
+    const string&               alias) {
+    if (alias == name) return false;
+    if (tensor_alias_map_.count(alias) > 0)
+        return tensor_alias_map_[alias] == name;
+    tensor_alias_map_[alias] = name;
     return true;
 }
 
-/* Return a unique dummy name within this workspace */
+/*! Return a unique dummy name within this workspace */
 
 string Workspace::GetDummyName(
     const string&               base_name,
