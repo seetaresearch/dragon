@@ -150,17 +150,17 @@ void MixedMemory::SwitchToCUDADevice(int device_id) {
 
 const Map<string, string> MixedMemory::info() const {
     static map<State, string> STATE_TO_STRING {
-        { UNINITIALIZED, "UNINITIALIZED" },
-        { STATE_AT_CPU, "CPU" },
-        { STATE_AT_CUDA, "CUDA" },
-        { STATE_AT_CNML, "CNML" },
-        { SYNCED, "DEVICE" },
+        { UNINITIALIZED, "uninitialized" },
+        { STATE_AT_CPU, "cpu" },
+        { STATE_AT_CUDA, "cuda" },
+        { STATE_AT_CNML, "cnml" },
+        { SYNCED, "device" },
     };
     Map<string, string> s2s;
     string _state_ = STATE_TO_STRING[state_];
-    if (_state_ == "DEVICE") {
-        if (cuda_ptr_) _state_ = "CUDA";
-        else if (cnml_ptr_) _state_ = "CNML";
+    if (_state_ == "device") {
+        if (cuda_ptr_) _state_ = "cuda";
+        else if (cnml_ptr_) _state_ = "cnml";
         else LOG(FATAL) << "Device activated, "
                         << "but got invalid mem pointer.";
     }

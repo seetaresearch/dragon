@@ -45,11 +45,11 @@ class Tensor(object):
 
         Parameters
         ----------
-        name : None or str
+        name : str, optional
             The name of Tensor.
-        shape : None or list
+        shape : list, optional
             The shape of Tensor.
-        dtype : None or str
+        dtype : str, optional
             The type of Tensor.
 
         Returns
@@ -94,7 +94,7 @@ class Tensor(object):
 
         Parameters
         ----------
-        value : number
+        value : number, optional, default=0
             The constant value.
 
         Returns
@@ -105,14 +105,14 @@ class Tensor(object):
         """
         return self.Fill('constant', value=value)
 
-    def Uniform(self, low=-1, high=1):
+    def Uniform(self, low=0, high=1):
         """Register as a variable with uniform initializer.
 
         Parameters
         ----------
-        low : number
+        low : number, optional, default=0
              The lower bound of uniform distribution.
-        high : number
+        high : number, optional, default=1
             The higher bound of uniform distribution.
 
         Returns
@@ -128,9 +128,9 @@ class Tensor(object):
 
         Parameters
         ----------
-        mu : number
+        mu : number, optional, default=0
             The mu of normal distribution.
-        sigma : number
+        sigma : number, optional, default=1
             The sigma of normal distribution.
 
         Returns
@@ -146,9 +146,9 @@ class Tensor(object):
 
         Parameters
         ----------
-        mu : number
+        mu : number, optional, default=0
             The mu of normal distribution.
-        sigma : number
+        sigma : number, optional, default=1
             The sigma of normal distribution.
 
         Returns
@@ -164,9 +164,9 @@ class Tensor(object):
 
         Parameters
         ----------
-        mean : number
+        mean : number, optional, default=0
             The mean(mu) of normal distribution.
-        std : number
+        std : number, optional, default=1
             The std(sigma) of normal distribution.
 
         Returns
@@ -177,12 +177,12 @@ class Tensor(object):
         """
         return self.Normal(mu=mean, sigma=std)
 
-    def GlorotUniform(self, scale=3.0):
+    def GlorotUniform(self, scale=3.):
         """Register as a variable with glorot uniform initializer.
 
         Parameters
         ----------
-        scale : number
+        scale : number, optional, default=3.
             The scale factor.
 
         Returns
@@ -193,12 +193,12 @@ class Tensor(object):
         """
         return self.Fill('glorot_uniform', scale=scale)
 
-    def GlorotNormal(self, scale=2.0):
+    def GlorotNormal(self, scale=2.):
         """Register as a variable with glorot normal initializer.
 
         Parameters
         ----------
-        scale : number
+        scale : number, optional, default=2.
             The scale factor.
 
         Returns
@@ -244,7 +244,7 @@ class Tensor(object):
 
         Parameters
         ----------
-        value : None or str
+        value : str
             The name to set.
 
         Returns
@@ -270,7 +270,7 @@ class Tensor(object):
 
         Parameters
         ----------
-        str
+        name : str
             The name.
 
         Returns
@@ -283,6 +283,11 @@ class Tensor(object):
     @property
     def shape(self):
         """Return or Set the shape.
+
+        Parameters
+        ---------
+        value : sequence of int
+            The shape to set.
 
         Returns
         -------
@@ -344,7 +349,7 @@ class Tensor(object):
         ----------
         dtype : str
             The specific dtype.
-        inplace : boolean
+        inplace : boolean, optional, default=False
             Whether to modify the inputs.
 
         Returns
@@ -650,6 +655,99 @@ class Tensor(object):
 
         """
         return self.__mul__(-1.0)
+
+    def __gt__(self, other):
+        """Compute *self* > *other* element-wise.
+
+        Parameters
+        ----------
+        other : Tensor or number
+            The other tensor.
+
+        Returns
+        -------
+        Tensor
+            The output tensor.
+
+        """
+        if not isinstance(other, Tensor):
+            other = self._from_constants(other)
+        return self.CreateOperator('Compare', [self, other], operation='GT')
+
+    def __ge__(self, other):
+        """Compute *self* > *other* element-wise.
+
+        Parameters
+        ----------
+        other : Tensor or number
+            The other tensor.
+
+        Returns
+        -------
+        Tensor
+            The output tensor.
+
+        """
+        if not isinstance(other, Tensor):
+            other = self._from_constants(other)
+        return self.CreateOperator('Compare', [self, other], operation='GE')
+
+    def __lt__(self, other):
+        """Compute *self* < *other* element-wise.
+
+        Parameters
+        ----------
+        other : Tensor or number
+            The other tensor.
+
+        Returns
+        -------
+        Tensor
+            The output tensor.
+
+        """
+        if not isinstance(other, Tensor):
+            other = self._from_constants(other)
+        return self.CreateOperator('Compare', [self, other], operation='LT')
+
+    def __le__(self, other):
+        """Compute *self* <= *other* element-wise.
+
+        Parameters
+        ----------
+        other : Tensor or number
+            The other tensor.
+
+        Returns
+        -------
+        Tensor
+            The output tensor.
+
+        """
+        if not isinstance(other, Tensor):
+            other = self._from_constants(other)
+        return self.CreateOperator('Compare', [self, other], operation='LE')
+
+    def __eq__(self, other):
+        """Compute *self* == *other* element-wise.
+
+        Parameters
+        ----------
+        other : Tensor or number
+            The other tensor.
+
+        Returns
+        -------
+        Tensor
+            The output tensor.
+
+        """
+        if not isinstance(other, Tensor):
+            other = self._from_constants(other)
+        return self.CreateOperator('Compare', [self, other], operation='EQ')
+
+    def __hash__(self):
+        return id(self)
 
     def __call__(self, *args, **kwargs):
         """Print the expressions.
@@ -984,7 +1082,7 @@ class Tensor(object):
         ----------
         value : number or Tensor
             The value to convert.
-        dtype : str, optional
+        dtype : str, optional, default='float32'
             The data type of the tensor.
 
         Returns

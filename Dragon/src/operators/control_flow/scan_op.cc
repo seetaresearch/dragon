@@ -4,8 +4,8 @@
 #include "utils/string.h"
 #include "utils/math_functions.h"
 #include "utils/proto_utils.h"
+#include "operators/array/slice_op.h"
 #include "operators/control_flow/scan_op.h"
-#include "operators/ndarray/slice_op.h"
 
 namespace dragon {
 

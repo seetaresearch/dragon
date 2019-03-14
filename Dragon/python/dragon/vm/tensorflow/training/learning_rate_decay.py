@@ -121,7 +121,6 @@ class _CosineDecayRestarts(_DecayBase):
     def run(self, inputs, outputs):
         gs = self.get(inputs[0])
         global_step = min(gs - self.last_steps, self.decay_steps)
-        print(global_step, self.decay_steps)
         cosine_decay = 0.5 * (1 + math.cos(math.pi * global_step / self.decay_steps))
         decayed = (1. - self.alpha) * cosine_decay + self.alpha
         new_lr = self.learning_rate * decayed

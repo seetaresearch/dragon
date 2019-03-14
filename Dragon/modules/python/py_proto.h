@@ -63,12 +63,6 @@ void AddProtoMethods(pybind11::module& m) {
           [](OperatorDef* self, const vector<string>& output) {
               *(self->mutable_output()) = { output.begin(), output.end() };
       });
-
-    m.def("TestOperatorDefs", [](vector<OperatorDef*> defs) {
-        for (auto* def : defs) {
-            std::cout << def->DebugString() << std::endl;
-        }
-    });
 }
 
 }  // namespace python

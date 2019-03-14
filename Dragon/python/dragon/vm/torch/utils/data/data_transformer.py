@@ -77,7 +77,7 @@ class DataTransformer(Process):
             im = im.reshape((datum.height, datum.width, datum.channels))
 
         if datum.channels == 3 and \
-                self.color_space == 'RGB':
+            self.color_space == 'RGB':
             im = im[:, :, ::-1]
 
         # Labels

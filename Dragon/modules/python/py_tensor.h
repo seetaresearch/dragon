@@ -27,7 +27,7 @@ void AddTensorMethods(pybind11::module& m) {
         .def_property_readonly("size", &Tensor::size)
         .def_property_readonly("dtype", [](Tensor* self) {
             return TypeMetaToString(self->meta());
-      }).def_property_readonly("ctx", [](Tensor* self) {
+      }).def_property_readonly("device", [](Tensor* self) {
             if (self->has_memory()) {
                 Map<string, string> mem_info = self->memory()->info();
                 return std::tuple<string, int>(

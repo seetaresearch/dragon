@@ -41,7 +41,7 @@ from dragon.vm.theano.tensor import grad as grad
 from dragon.core.scope import name_scope, get_default_name_scope
 from dragon.core.scope import phase_scope, get_default_phase
 from dragon.core.scope import device_scope, get_default_device
-from dragon.core.scope import WorkspaceScope as workspace_scope
+from dragon.core.scope import WorkspaceScope as ws_scope
 
 # Version
 from dragon.version import version

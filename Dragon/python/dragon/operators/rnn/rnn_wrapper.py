@@ -13,24 +13,21 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import numpy
+import dragon
 import warnings
-import dragon as dg
-import numpy as np
 
 from dragon.core.tensor import Tensor
 from dragon.core.tensor_utils import FromShape
-
-from .rnn_param import RNNParamSet
+from dragon.operators.rnn.rnn_param import RNNParamSet
 
 
 class RNNBase(object):
-    """A simple class wrapping general RNN ops.
+    """A simple class wrapping general RNN ops."""
 
-    """
     def __init__(self,
         mode, input_size, hidden_size, num_layers=1,
-            bidirectional=False, dropout=0, name=None
-    ):
+            bidirectional=False, dropout=0, name=None):
         eligible_rnn_modes = ('rnn_tanh', 'rnn_relu', 'lstm', 'gru')
         if mode.lower() not in eligible_rnn_modes:
             raise ValueError('Unknown rnn mode: {}.'
@@ -54,26 +51,23 @@ class RNNBase(object):
         elif self.mode == 'gru': gate_size = 3 * self.hidden_size
         else: gate_size = self.hidden_size
         # 1. Plan weights
-        self._matrix_weights = []; self._bias_weights = []
+        self._matrix_shape, self._bias_shape = [], []
         for layer in range(self.num_layers):
             for direction in range(self.num_directions):
                 layer_input_size = self.input_size if layer == 0 \
                     else self.hidden_size * self.num_directions
-                w_names = ['layer_{}/{}/{}'.format(layer, p, 'L' if direction == 0 else 'R')
-                           for p in ('matrix_ih', 'matrix_hh', 'bias_ih', 'bias_hh')]
-                w_ih = Tensor(name=w_names[0], shape=[gate_size, layer_input_size])
-                w_hh = Tensor(name=w_names[1], shape=[gate_size, self.hidden_size])
-                b_ih = Tensor(name=w_names[2], shape=[gate_size,])
-                b_hh = Tensor(name=w_names[3], shape=[gate_size,])
+                w_ih_shape = [gate_size, layer_input_size]
+                w_hh_shape = [gate_size, self.hidden_size]
+                b_ih_shape, b_hh_shape = [gate_size], [gate_size]
                 # W (0 ~ 3), R (4 ~ 7)
-                self._matrix_weights.extend([w_ih, w_hh])
+                self._matrix_shape.extend([w_ih_shape, w_hh_shape])
                 # Bw (0 ~ 3), Br (4 ~ 7)
-                self._bias_weights.extend([b_ih, b_hh])
+                self._bias_shape.extend([b_ih_shape, b_hh_shape])
 
         # 2. Compute total number of parameters
         self._weights_count = 0
-        for w in self._matrix_weights + self._bias_weights:
-            self._weights_count += np.prod(w.shape)
+        for shape in self._matrix_shape + self._bias_shape:
+            self._weights_count += numpy.prod(shape)
 
         # 3. Register the packed weights
         self.weights = FromShape(shape=[self._weights_count],
@@ -101,8 +95,8 @@ class RNNBase(object):
     ##############################################
 
     def _uniform_init(self, shape, dtype='float32'):
-        stdv = 1.0 / np.sqrt(self.hidden_size)
-        return np.random.uniform(-stdv, stdv, shape).astype(dtype)
+        stdv = 1.0 / numpy.sqrt(self.hidden_size)
+        return numpy.random.uniform(-stdv, stdv, shape).astype(dtype)
 
     def _orthogonal_init(self, shape, gain=1, dtype='float32'):
         num_rows = 1
@@ -110,16 +104,16 @@ class RNNBase(object):
         num_cols = shape[-1]
         flat_shape = (num_cols, num_rows) if num_rows < num_cols \
             else (num_rows,  num_cols)
-        W = np.random.randn(*flat_shape)
-        q, r = np.linalg.qr(W)
+        W = numpy.random.randn(*flat_shape)
+        q, r = numpy.linalg.qr(W)
         # Make Q uniform
-        d = np.diag(r)
-        q *= np.sign(d)
+        d = numpy.diag(r)
+        q *= numpy.sign(d)
         if num_rows < num_cols: q = q.T
         return gain * q.reshape(shape).astype(dtype)
 
     def _zero_init(self, shape, dtype='float32'):
-        return np.zeros(shape, dtype=dtype)
+        return numpy.zeros(shape, dtype=dtype)
 
     ##############################################
     #                                            #
@@ -137,20 +131,19 @@ class RNNBase(object):
             raise ValueError('Unknown param type: ' + type)
 
     def _set_param(self, layer_id, param_id, param_type, param):
-        if not isinstance(param, Tensor):
-            if isinstance(param, np.ndarray):
-                paramT = Tensor('/tmp/rnn_param').Variable()
-                paramT.set_value(param)
-                param = paramT
-            else: raise ValueError('Excepted a tensor or numpy array.')
+        if isinstance(param, numpy.ndarray):
+            param_temp = dragon.Tensor.Ref('/tmp/rnn_param')
+            param_temp.set_value(param)
+            param = param_temp
+        else: raise ValueError('Excepted a numpy array.')
         self.weights.expressions = dict() # Clear cached expressions
         outputs = RNNParamSet([self.weights, param], layer_id, param_id, param_type,
             rnn_mode=self.mode, input_size=self.input_size, hidden_size=self.hidden_size,
             num_layers=self.num_layers, num_directions=self.num_directions)
-        for k, v in outputs.expressions.items(): dg.workspace.RunOperator(v)
+        for k, v in outputs.expressions.items(): dragon.workspace.RunOperator(v)
 
     def _reset_params(self):
-        np.random.seed(dg.config.GetRandomSeed())
+        numpy.random.seed(dragon.config.GetRandomSeed())
         if self.mode == 'lstm': num_gates = 4
         elif self.mode == 'gru': num_gates = 3
         else: num_gates = 1
@@ -166,8 +159,8 @@ class RNNBase(object):
                         bias_init = getattr(self, '_{}_init'.format(bias_init))
                     pseudo_layer_id = layer * self.num_directions + direction
                     packed_id = pseudo_layer_id * 2 + int(param_id / num_gates)
-                    matrix_shape = self._matrix_weights[packed_id].shape[:]
-                    bias_shape = self._bias_weights[packed_id].shape[:]
+                    matrix_shape = self._matrix_shape[packed_id][:]
+                    bias_shape = self._bias_shape[packed_id][:]
                     matrix_shape[0] = bias_shape[0] = int(matrix_shape[0] / num_gates)
                     self._set_param(layer_id=pseudo_layer_id, param_id=param_id,
                         param_type='matrix', param=matrix_init(matrix_shape))
@@ -202,6 +195,7 @@ class RNNBase(object):
         if not self._init_params: self._reset_params()
 
         arguments = {
+            'op_type': 'Recurrent',
             'inputs': [x, self.weights] +
                           ([hx] if hx else []) +
                               ([cx] if cx else []),
@@ -213,11 +207,11 @@ class RNNBase(object):
             'dropout_ratio': self.dropout,
         }
 
-        if required_cell: n_out = 3
-        elif required_hidden: n_out = 2
-        else: n_out = 1
+        if required_cell: num_outputs = 3
+        elif required_hidden: num_outputs = 2
+        else: num_outputs = 1
 
-        return Tensor.CreateOperator(num_outputs=n_out, op_type='Recurrent', **arguments)
+        return Tensor.CreateOperator(num_outputs=num_outputs, **arguments)
 
     def __call__(self, *args, **kwargs):
         return self.create(*args, **kwargs)

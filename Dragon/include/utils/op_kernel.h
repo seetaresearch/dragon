@@ -351,7 +351,23 @@ void Less(
     Context*                ctx);
 
 template <typename T, class Context>
+void LessEqual(
+    const int               count,
+    const T*                a,
+    const T*                b,
+    bool*                   y,
+    Context*                ctx);
+
+template <typename T, class Context>
 void Greater(
+    const int               count,
+    const T*                a,
+    const T*                b,
+    bool*                   y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void GreaterEqual(
     const int               count,
     const T*                a,
     const T*                b,
@@ -574,7 +590,7 @@ void ImageData(
     Ty*                     y,
     Context*                ctx);
 
-/*! ndarray.arange */
+/*! array.arange */
 
 template <typename T, class Context>
 void Arange(
@@ -584,7 +600,7 @@ void Arange(
     T*                      y,
     Context*                ctx);
 
-/*! ndarray.argreduce */
+/*! array.argreduce */
 
 template <typename T, class Context>
 void ArgMax(
@@ -608,7 +624,7 @@ void ArgMin(
     T*                      values,
     Context*                ctx);
 
-/*! ndarray.gather */
+/*! array.gather */
 
 template <typename T, class Context>
 void Gather(
@@ -632,7 +648,7 @@ void GatherGrad(
     T*                      dx,
     Context*                ctx);
 
-/*! ndarray.concat */
+/*! array.concat */
 
 template <typename T, class Context>
 void Concat(
@@ -645,7 +661,7 @@ void Concat(
     T*                      y,
     Context*                ctx);
 
-/*! ndarray.crop */
+/*! array.crop */
 
 template <typename T, class Context>
 void Crop(
@@ -669,7 +685,7 @@ void CropGrad(
     T*                      dx,
     Context*                ctx);
 
-/*! ndarray.pad */
+/*! array.pad */
 
 template <typename T, class Context>
 void ConstPad(
@@ -708,7 +724,7 @@ void EdgePad(
     T*                      y,
     Context*                ctx);
 
-/*! ndarray.one_hot */
+/*! array.one_hot */
 
 template <typename T, class Context>
 void OneHot(
@@ -719,7 +735,7 @@ void OneHot(
     T*                      y,
     Context*                ctx);
 
-/*! ndarray.reduce */
+/*! array.reduce */
 
 template <typename T, class Context>
 void ReduceSum(
@@ -744,7 +760,7 @@ void ReduceSumGrad(
     T*                      dx,
     Context*                ctx);
 
-/*! ndarray.repeat */
+/*! array.repeat */
 
 template <typename T, class Context>
 void Repeat(
@@ -766,7 +782,7 @@ void RepeatGrad(
     T*                      dx,
     Context*                ctx);
 
-/*! ndarray.slice */
+/*! array.slice */
 
 template <typename T, class Context>
 void Slice(
@@ -790,7 +806,7 @@ void SliceGrad(
     T*                      x,
     Context*                ctx);
 
-/*! ndarray.tile */
+/*! array.tile */
 
 template <typename T, class Context>
 void Tile(
@@ -812,7 +828,7 @@ void TileGrad(
     T*                      dx,
     Context*                ctx);
 
-/*! ndarray.transpose */
+/*! array.transpose */
 
 template <typename T, class Context>
 void Transpose(

@@ -129,7 +129,7 @@ __global__ void _SoftmaxFocalLossGrad(
         } else {
             const int t = (oix * axis_dim + label) * inner_dim + iix;
             Tx onemp = 1 - prob[t];
-            //  unstable if gamma is 0
+            // Unstable if gamma is 0
             Tx grad = -gamma * pow(onemp, gamma - 1)
                              * log(max(prob[t], FLT_MIN))
                              * prob[t] + pow(onemp, gamma);

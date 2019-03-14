@@ -14,6 +14,10 @@ from __future__ import division
 from __future__ import print_function
 
 import copy
+import numpy
+import importlib
+
+from dragon.core import mapping, tensor_utils
 
 
 class Size(tuple):
@@ -27,30 +31,68 @@ class Size(tuple):
         return 'torch.Size([{}])'.format(', '.join([str(s) for s in self]))
 
 
-class Context(object):
-    def __init__(self, device_type='CPU', device_id=0):
-        self._device_type = device_type
-        self._device_id = device_id
-
-    @property
-    def device_type(self):
-        return self._device_type
-
-    @device_type.setter
-    def device_type(self, value):
-        self._device_type = value
-
-    @property
-    def device_id(self):
-        return self._device_id
-
-    @device_id.setter
-    def device_id(self, value):
-        self._device_id = value
+class device(object):
+    def __init__(self, type='cpu', index=0):
+        self.type, self.index = type, index
 
     def copy(self):
         return copy.deepcopy(self)
 
+    def __eq__(self, other):
+        return self.type == other.type and \
+               self.index == other.index
+
     def __str__(self):
-        return '{}:{}'.format(
-            self._device_type, self._device_id)
+        return '{}:{}'.format(self.type, self.index)
+
+    def __repr__(self):
+        return 'device(type={}, index={})'.format(self.type, self.index)
+
+
+def from_numpy(data):
+    """Create a tensor from the given numpy array.
+
+    Parameters
+    ----------
+    data :  numpy.ndarray
+        The array with various data type.
+
+    Return
+    ------
+    dragon.vm.torch.Tensor
+        The torch tensor.
+
+    """
+    if not isinstance(data, numpy.ndarray):
+        raise TypeError('The data should be a numpy.ndarray.')
+    if str(data.dtype) not in mapping.TENSOR_TYPE_TO_TORCH_TENSOR:
+        raise ValueError('Unsupported type({}) to torch tensor.'.format(data.dtype))
+    module = importlib.import_module('dragon.vm.torch.tensor')
+    return getattr(module, mapping.TENSOR_TYPE_TO_TORCH_TENSOR[str(data.dtype)])(data)
+
+
+def from_dragon(tensor, own_storage=False):
+    """Create a torch tensor from a existing dragon tensor.
+
+    Set ``own_storage`` as ``True`` for automatically releasing the storage.
+
+    Parameters
+    ----------
+    tensor : Tensor or str
+        The dragon tensor.
+    own_storage : boolean
+        Whether to release storage during deconstructing.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The torch tensor.
+
+    """
+    storage = tensor_utils.GetStorage(tensor)
+    if storage is None: return None
+    module = importlib.import_module('dragon.vm.torch.tensor')
+    T = getattr(module, mapping.TENSOR_TYPE_TO_TORCH_TENSOR[storage.dtype])()
+    T._storage, T._own_storage, T._tensor = storage, own_storage, tensor
+    T._device = device(*storage.device)
+    return T

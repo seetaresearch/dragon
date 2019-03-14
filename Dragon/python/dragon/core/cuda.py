@@ -15,7 +15,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon.import_c_api as C
+import dragon.import_c_api as _C
 
 
 def IsCUDADriverSufficient():
@@ -27,7 +27,7 @@ def IsCUDADriverSufficient():
         ``True`` if your device(s) support CUDA otherwise ``False``.
 
     """
-    return C.IsCUDADriverSufficient()
+    return _C.IsCUDADriverSufficient()
 
 
 def GetDevice():
@@ -39,7 +39,7 @@ def GetDevice():
         The device index.
 
     """
-    return C.cudaGetDevice()
+    return _C.cudaGetDevice()
 
 
 def SynchronizeStream(device_id=None, stream_id=0):
@@ -55,5 +55,5 @@ def SynchronizeStream(device_id=None, stream_id=0):
         The stream index.
 
     """
-    return C.cudaStreamSynchronize(
+    return _C.cudaStreamSynchronize(
         device_id if device_id else -1, stream_id)

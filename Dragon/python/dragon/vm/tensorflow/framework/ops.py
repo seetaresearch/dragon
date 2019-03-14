@@ -290,7 +290,7 @@ class _DefaultGraphStack(_DefaultStack):
     @tf_contextlib.contextmanager
     def get_controller(self, default):
         with super(_DefaultGraphStack, self).get_controller(default) as g:
-            with dragon.workspace_scope(g._workspace):
+            with dragon.ws_scope(g._workspace):
                 yield g
 
 

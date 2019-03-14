@@ -25,6 +25,7 @@ void SoftmaxCrossEntropyOp<Context>::SoftmaxRun() {
     if (softmax_op) { softmax_op->UpdateFrom(softmax_def); }
     else { softmax_op.reset(NewOperator(softmax_def, ws())); }
     softmax_op->Run(ctx()->stream_id());
+    prob = ws()->GetTensor(mount_name("softmax/prob"));
 }
 
 template <class Context> template <typename T>
@@ -69,7 +70,6 @@ void SoftmaxCrossEntropyOp<Context>::RunOnDevice() {
     CHECK_EQ(Input(0).count(), Input(1).count())
         << "\nNumber of predictions must match the number of labels.";
     losses.ReshapeLike(Input(0));
-    prob = ws()->CreateTensor(mount_name("softmax/prob"));
 
     SoftmaxRun();
 

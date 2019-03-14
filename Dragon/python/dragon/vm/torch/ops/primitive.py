@@ -17,34 +17,33 @@ import numpy as np
 import dragon as dg
 
 from dragon.vm.torch.tensor import *
-from dragon.vm.torch.c_api import Context
+from dragon.vm.torch.c_api import device as _Device
 
 
 def UnifyDevices(tensors, key='Inputs'):
-    device_types = [t._ctx.device_type for t in tensors]
-    device_ids = [0]
-    if len(set(device_types)) != 1:
+    types, indices = [t.device.type for t in tensors], [0]
+    if len(set(types)) != 1:
         raise ValueError('{} from different device type: [{}].'
-            .format(key, ', '.join(device_types)))
-    if device_types[0] == 'CUDA':
-        device_ids = [t._ctx.device_id for t in tensors]
-        if len(set(device_ids)) != 1:
+            .format(key, ', '.join(types)))
+    if types[0] == 'cuda':
+        indices = [t.device.index for t in tensors]
+        if len(set(indices)) != 1:
             raise ValueError('{} from different cuda device: [{}].'
-            .format(key, ', '.join([str(d) for d in device_ids])))
-    return Context(device_types[0], device_ids[0])
+                .format(key, ', '.join([str(d) for d in indices])))
+    return _Device(types[0], indices[0])
 
 
-def MakeContext(inputs=(), outputs=()):
+def MakeDevice(inputs=(), outputs=()):
     # Case #1: [], [] -> CPU
     # Case #2: [...], [] -> Refer Inputs
     # Case #3: [], [...] -> Refer Outputs
     # Case #4: [...], [...] -> Refer Outputs
     if len(outputs) > 0: return UnifyDevices(outputs, 'Outputs')
     if len(inputs) > 0: return UnifyDevices(inputs, 'Inputs')
-    return Context()
+    return _Device()
 
 
-def WrapScalar(scalar, dtype, ctx):
+def WrapScalar(scalar, dtype, device):
     # We use (DType + Value) to hash different scalars
     # Setting a Tensor with same DType and shape will not deconstruct it
     if 'float' in dtype: scalar = float(scalar)
@@ -52,6 +51,6 @@ def WrapScalar(scalar, dtype, ctx):
     name = '/share/scalar/{}/{}'.format(dtype, str(scalar))
     if not dg.workspace.HasTensor(name):
         dg.workspace.FeedTensor(name, np.array(scalar, dtype=dtype))
-    t = Tensor(name=name, dtype=dtype, ctx=ctx, own_storage=False)
+    t = Tensor(name=name, dtype=dtype, device=device, own_storage=False)
     t.requires_grad = False
     return t

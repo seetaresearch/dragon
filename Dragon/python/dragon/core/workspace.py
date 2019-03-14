@@ -25,20 +25,16 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-import numpy as np
+import numpy
 import threading
 import six.moves.cPickle as pickle
 
-from google.protobuf.message import Message
-
-import dragon.import_c_api as C
+import dragon.import_c_api as _C
 import dragon.core.logging as logging
+import dragon.proto.dragon_pb2 as pb
 
 from dragon.config import GetGlobalOptions
-import dragon.core.mpi as mpi
-import dragon.proto.dragon_pb2 as pb
-import dragon.core.proto_utils as pb_utils
-import dragon.core.mapping as mapping
+from dragon.core import mpi, mapping, proto_utils
 
 
 def CurrentWorkspace():
@@ -50,7 +46,7 @@ def CurrentWorkspace():
         The workspace name.
 
     """
-    return C.CurrentWorkspace()
+    return _C.CurrentWorkspace()
 
 
 def SwitchWorkspace(workspace_name, create_if_missing=True):
@@ -70,7 +66,7 @@ def SwitchWorkspace(workspace_name, create_if_missing=True):
     """
     if workspace_name == '':
         raise ValueError('The workspace name should not be empty.')
-    C.SwitchWorkspace(workspace_name, create_if_missing)
+    _C.SwitchWorkspace(workspace_name, create_if_missing)
 
 
 def MoveWorkspace(target_ws, source_ws):
@@ -90,7 +86,7 @@ def MoveWorkspace(target_ws, source_ws):
     """
     if target_ws == '' or source_ws == '':
         raise ValueError('The target or source name can not be empty.')
-    C.MoveWorkspace(target_ws, source_ws)
+    _C.MoveWorkspace(target_ws, source_ws)
 
 
 def ResetWorkspace(workspace_name=''):
@@ -110,7 +106,7 @@ def ResetWorkspace(workspace_name=''):
     None
 
     """
-    C.ResetWorkspace(workspace_name)
+    _C.ResetWorkspace(workspace_name)
 
 
 def ClearWorkspace(workspace_name=''):
@@ -130,7 +126,7 @@ def ClearWorkspace(workspace_name=''):
     None
 
     """
-    C.ClearWorkspace(workspace_name)
+    _C.ClearWorkspace(workspace_name)
 
 
 def CreateGraph(graph_def):
@@ -150,7 +146,7 @@ def CreateGraph(graph_def):
     option = GetGlobalOptions()
     LogMetaGraph(graph_def)
     ExportMetaGraph(graph_def)
-    return C.CreateGraph(
+    return _C.CreateGraph(
         _stringify_proto(graph_def),
             option['log_optimized_graph'],
     )
@@ -173,7 +169,7 @@ def RunOperator(op_def, verbose=False):
     """
     if isinstance(op_def, pb.OperatorDef):
         op_def = op_def.SerializeToString()
-    C.RunOperator(op_def, verbose)
+    _C.RunOperator(op_def, verbose)
 
 
 def HasTensor(tensor):
@@ -190,7 +186,7 @@ def HasTensor(tensor):
         The query result.
 
     """
-    return C.HasTensor(_stringify_tensor(tensor))
+    return _C.HasTensor(_stringify_tensor(tensor))
 
 
 def CreateTensor(tensor):
@@ -206,7 +202,7 @@ def CreateTensor(tensor):
     None
 
     """
-    return C.CreateTensor(_stringify_tensor(tensor))
+    return _C.CreateTensor(_stringify_tensor(tensor))
 
 
 def CreateFiller(filler_def):
@@ -229,7 +225,7 @@ def CreateFiller(filler_def):
     """
     filler_def = filler_def if isinstance(filler_def, str) \
         else filler_def.SerializePartialToString()
-    C.CreateFiller(filler_def)
+    _C.CreateFiller(filler_def)
 
 
 def GetFillerType(tensor):
@@ -250,7 +246,7 @@ def GetFillerType(tensor):
         The filler type.
 
     """
-    return C.GetFillerType(_stringify_tensor(tensor))
+    return _C.GetFillerType(_stringify_tensor(tensor))
 
 
 def GetTensorName(tensor):
@@ -271,7 +267,7 @@ def GetTensorName(tensor):
     The query result may be different from the one used in the frontend.
 
     """
-    return C.GetTensorName(_stringify_tensor(tensor))
+    return _C.GetTensorName(_stringify_tensor(tensor))
 
 
 def SetTensorAlias(tensor, alias):
@@ -289,7 +285,7 @@ def SetTensorAlias(tensor, alias):
     None
 
     """
-    return C.SetTensorAlias(_stringify_tensor(tensor), alias)
+    return _C.SetTensorAlias(_stringify_tensor(tensor), alias)
 
 
 def FetchTensor(tensor):
@@ -306,7 +302,7 @@ def FetchTensor(tensor):
         The values copied from the backend.
 
     """
-    return C.FetchTensor(_stringify_tensor(tensor))
+    return _C.FetchTensor(_stringify_tensor(tensor))
 
 
 def FeedTensor(tensor, array, force_cpu=False, dtype=None):
@@ -329,14 +325,14 @@ def FeedTensor(tensor, array, force_cpu=False, dtype=None):
 
     Examples
     --------
-    >>> import dragon as dg
-    >>> a = dg.Tensor().Variable()
-    >>> dg.workspace.FeedTensor(a, 1)
-    >>> a_value = dg.workspace.FetchTensor(a)
+    >>> import dragon
+    >>> a = dragon.Tensor().Variable()
+    >>> dragon.workspace.FeedTensor(a, 1)
+    >>> a_value = dragon.workspace.FetchTensor(a)
     >>> a_value, a_value.dtype
     >>> [ 1.], "float32"
 
-    >>> dg.workspace.FeedTensor(a, [[1, 2, 3]], dtype='float16')
+    >>> dragon.workspace.FeedTensor(a, [[1, 2, 3]], dtype='float16')
     >>> a_value = a.get_value()
     >>> a_value, a_value.dtype
     >>> [[ 1.  2.  3.]], "float16"
@@ -344,13 +340,13 @@ def FeedTensor(tensor, array, force_cpu=False, dtype=None):
     """
     name = tensor.name if hasattr(tensor, 'name') else str(tensor)
     if force_cpu is True:
-        dev = pb_utils.GetDeviceOption('CPU')
+        dev = proto_utils.GetDeviceOption('cpu')
     else:
-        dev = pb_utils.GetDefaultDeviceOption()
-        if dev is None: dev = pb_utils.GetGlobalDeviceOption()
+        dev = proto_utils.GetDefaultDeviceOption()
+        if dev is None: dev = proto_utils.GetGlobalDeviceOption()
 
-    if not isinstance(array, np.ndarray):
-        auto_data_type = np.float32 if dtype is None else dtype
+    if not isinstance(array, numpy.ndarray):
+        auto_data_type = numpy.float32 if dtype is None else dtype
     else:
         auto_data_type = array.dtype if dtype is None else dtype
 
@@ -365,8 +361,8 @@ def FeedTensor(tensor, array, force_cpu=False, dtype=None):
                         format(preset_data_type, dtype))
         auto_data_type = preset_data_type
 
-    nd_array = np.array(array, dtype=auto_data_type, copy=False)
-    C.FeedTensor(name, nd_array, _stringify_proto(dev))
+    nd_array = numpy.array(array, dtype=auto_data_type, copy=False)
+    _C.FeedTensor(name, nd_array, _stringify_proto(dev))
 
 
 def ResetTensor(tensor):
@@ -384,7 +380,7 @@ def ResetTensor(tensor):
     None
 
     """
-    return C.ResetTensor(_stringify_tensor(tensor))
+    return _C.ResetTensor(_stringify_tensor(tensor))
 
 
 def RunGraph(
@@ -427,7 +423,7 @@ def RunGraph(
     # Run the graph according to the specified include/exclude rule
     runtime_stage = stage if stage else 'default'
     rule = _PREDEFINED_GRAPH_RUNTIME_STAGES[runtime_stage]
-    C.RunGraph(str(graph_name), str(rule['include']), str(rule['exclude']))
+    _C.RunGraph(str(graph_name), str(rule['include']), str(rule['exclude']))
 
     # Try to return the outputs
     # Force to return may lead to asserts if outputs are not computed
@@ -462,7 +458,7 @@ def FlowGradients(inputs, targets, input_grads=None, ignored_grads=None):
         if (option['log_optimized_graph'] or
             option['log_meta_graph']) else False
 
-    C.FlowGradients(
+    _C.FlowGradients(
         inputs, targets,
             input_grads if input_grads else [],
                 ignored_grads if ignored_grads else [],
@@ -520,8 +516,7 @@ def ExportMetaGraph(graph_def):
 def Snapshot(
     tensors, filename,
         prefix='', suffix='.bin',
-            format='default',
-):
+            format='default'):
     """Snapshot tensors into a binary file.
 
     Parameters
@@ -566,7 +561,7 @@ def Snapshot(
         logging.info('Model Format: Pickle')
     elif format is 'caffe':
         names = [tensor.name for tensor in tensors]
-        C.Snapshot(file_path, names, 1)
+        _C.Snapshot(file_path, names, 1)
     else: raise TypeError('Unknown binary format: {}'.format(format))
 
 
@@ -606,7 +601,7 @@ def Restore(binary_file, format='default'):
     elif format == 'caffe':
         # Caffe models can't save the tensor name
         # We simply use "layer_name/param:X"
-        C.Restore(binary_file, 1)
+        _C.Restore(binary_file, 1)
     else:
         raise TypeError('Unknown binary format: {}'.format(format))
 
@@ -636,7 +631,7 @@ def GetDummyName(basename, suffix='', domain='', zero_based=True):
         The unique dummy name.
 
     """
-    return C.GetDummyName(basename, suffix, domain, zero_based)
+    return _C.GetDummyName(basename, suffix, domain, zero_based)
 
 
 def _stringify_proto(obj):

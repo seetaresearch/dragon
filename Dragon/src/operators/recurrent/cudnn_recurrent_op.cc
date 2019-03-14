@@ -17,7 +17,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
     const auto num_directions = bidirectional ? 2 : 1;
     const auto output_dim = hidden_size * num_directions;
 
-    //  setup dropout
+    // Setup Dropout
     if (dropout_ratio < 1.f) {
 #if CUDNN_VERSION_MIN(7, 0, 0)
         if (!states_initialized) {
@@ -45,7 +45,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
 #endif
     }
 
-    //  setup rnn
+    // Setup RNN
 #if CUDNN_VERSION_MIN(7, 0, 0)
     CUDNN_CHECK(cudnnSetRNNDescriptor(
         ctx()->cudnn_handle(), rnn_desc,
@@ -63,7 +63,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
                         CUDNNType<T>::type));
 #endif
 
-    //  setup Xs & Ys & Y
+    // Setup Xs & Ys & Y
     xs_desc.reset(new cudnnTensorDescriptors(seq_length));
     xs_desc->Set<T>({ batch_size, input_dim, 1 }, { input_dim, 1, 1 });
     ys_desc.reset(new cudnnTensorDescriptors(seq_length));
@@ -72,14 +72,14 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
         rnn_desc, seq_length, xs_desc->descs(), &workspace_size));
     output_dims = { seq_length, batch_size, output_dim };
 
-    //  setup Hx & Cx & Hy & Cy
+    // Setup Hx & Cx & Hy & Cy
     hidden_dims = { num_layers * num_directions, batch_size, hidden_size };
     cudnnSetTensorDesc<T>(&hx_desc, hidden_dims);
     cudnnSetTensorDesc<T>(&cx_desc, hidden_dims);
     cudnnSetTensorDesc<T>(&hy_desc, hidden_dims);
     cudnnSetTensorDesc<T>(&cy_desc, hidden_dims);
 
-    //  setup packed weights
+    // Setup packed weights
     size_t weights_size; int64_t weights_count;
     CUDNN_CHECK(cudnnGetRNNParamsSize(
         ctx()->cudnn_handle(), rnn_desc, xs_desc->descs()[0],
@@ -94,7 +94,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
         CUDNNType<T>::type, CUDNN_TENSOR_NCHW, 3,
             vector<int>({ (int)weights_count, 1, 1 }).data()));
 
-    //  setup rnn workspace
+    // Determine the RNN workspace
     CUDNN_CHECK(cudnnGetRNNWorkspaceSize(
         ctx()->cudnn_handle(), rnn_desc, seq_length,
             xs_desc->descs(), &workspace_size));
@@ -181,7 +181,7 @@ void CuDNNRecurrentGradientOp<Context>::RunWithType() {
     };
 
     auto* WSdata = ws()->template caches<Context>({ workspace_size })[0];
-    //  check the reserve space
+    // Check the ReserveSpace
     CUDNN_CHECK(cudnnGetRNNTrainingReserveSize(ctx()->cudnn_handle(),
         rnn_desc, seq_length, xs_desc->descs(), &reserve_size));
     auto* reserveT = ws()->GetTensor(mount_name("rnn/reserve"));

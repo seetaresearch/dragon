@@ -16,8 +16,8 @@ from __future__ import division
 from __future__ import print_function
 
 import math
-import numpy as np
-import dragon as dg
+import numpy
+import dragon
 
 
 class OperatorHelper(object):
@@ -39,11 +39,11 @@ class OperatorHelper(object):
 
     @classmethod
     def get_index_and_name(cls, prefix='Op'):
-        name = dg.workspace.GetDummyName(prefix, domain='Operator')
+        name = dragon.workspace.GetDummyName(prefix, domain='Operator')
         try:
             _, op_idx = name.split('_')
         except:
-            name = dg.workspace.GetDummyName(prefix, domain='Operator')
+            name = dragon.workspace.GetDummyName(prefix, domain='Operator')
             _, op_idx = name.split('_')
         return int(op_idx), name
 
@@ -216,7 +216,7 @@ class OperatorHelper(object):
         for i in range(3):
             try:
                 if i == 0:
-                    outputs[0].shape[i] = np.prod(inputs[0].shape[:axis])
+                    outputs[0].shape[i] = numpy.prod(inputs[0].shape[:axis])
                 if i >= 1:
                     outputs[0].shape[i] = inputs[0].shape[axis]
             except: pass
@@ -581,7 +581,7 @@ class OperatorHelper(object):
             if axis is None:
                 try:
                     fake_shape = inputs[0].shape[:]
-                    total_count = np.prod(fake_shape)
+                    total_count = numpy.prod(fake_shape)
                     outputs[0].shape = [total_count * repeats]
                 except:
                     outputs[0].shape = [None]
@@ -643,7 +643,7 @@ class OperatorHelper(object):
             outputs[0].shape = [None] * len(shape)
             n_elements, n_elements_known = None, None
             try:
-                n_elements = int(np.prod(inputs[0].shape))
+                n_elements = int(numpy.prod(inputs[0].shape))
             except:
                 pass
             for i, s in enumerate(shape):
@@ -654,7 +654,7 @@ class OperatorHelper(object):
                 except:
                     pass
             try:
-                n_elements_known = int(np.prod(outputs[0].shape))
+                n_elements_known = int(numpy.prod(outputs[0].shape))
             except:
                 pass
             for i, s in enumerate(shape):
@@ -736,6 +736,16 @@ class OperatorHelper(object):
         except:
             pass
         outputs[0].shape = [count]
+        return outputs
+
+    @classmethod
+    def _apply_Multinomial(cls, arguments, inputs, outputs):
+        outputs[0].dtype = 'int64'
+        try:
+            outputs[0].shape = inputs[0].shape[:]
+            outputs[0].shape[-1] = arguments['num_samples']
+        except:
+            pass
         return outputs
 
     ###############################################

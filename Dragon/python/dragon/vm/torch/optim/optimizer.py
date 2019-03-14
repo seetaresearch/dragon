@@ -22,7 +22,7 @@ from collections import defaultdict
 
 from dragon.vm.torch.tensor import Tensor
 
-from dragon.vm.torch.ops.update import (
+from dragon.vm.torch.ops.builtin import (
     _accumulate, _allreduce, _update,
 )
 
@@ -51,6 +51,10 @@ class Optimizer(object):
         for param_group in param_groups:
             self.add_param_group(param_group)
         self._update_type = None
+        self._allow_parallel = False
+        if dragon.mpi.Is_Init():
+            local_rank, _ = dragon.mpi.AllowParallel()
+            if local_rank != -1: self._allow_parallel = True
         self._mutable_parameters = {}
 
     def __repr__(self):
@@ -80,7 +84,7 @@ class Optimizer(object):
             return Tensor(
                 name=grad_name,
                     own_storage=False,
-                        ctx=param._ctx)
+                        device=param.device)
         return None
 
     def _run_update_ops(self, group):
@@ -109,7 +113,7 @@ class Optimizer(object):
         self.feed_parameters(group)
 
         # Run a all-reduce op to accumulate grads if necessary
-        _allreduce(grads)
+        if self._allow_parallel: _allreduce(grads)
 
         # Run regular update ops
         for p, g in zip(params, grads):

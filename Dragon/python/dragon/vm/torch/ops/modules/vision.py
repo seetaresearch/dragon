@@ -17,8 +17,8 @@ from dragon.vm.torch.ops.modules.base import BaseModule
 
 
 class Resize2d(BaseModule):
-    def __init__(self,  key, ctx, **kwargs):
-        super(Resize2d, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Resize2d, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', 'NNResize')
         self.dsize = kwargs.get('dsize', None)
         self.fx = kwargs.get('fx', None)
@@ -51,8 +51,8 @@ class Resize2d(BaseModule):
 
 
 class RoIPool(BaseModule):
-    def __init__(self,  key, ctx, **kwargs):
-        super(RoIPool, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(RoIPool, self).__init__(key, dev, **kwargs)
         self.pool_h = kwargs.get('pooled_h', 0)
         self.pool_w = kwargs.get('pooled_w', 0)
         self.spatial_scale = kwargs.get('spatial_scale', 1.0)
@@ -74,8 +74,8 @@ class RoIPool(BaseModule):
 
 
 class RoIAlign(BaseModule):
-    def __init__(self,  key, ctx, **kwargs):
-        super(RoIAlign, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(RoIAlign, self).__init__(key, dev, **kwargs)
         self.pool_h = kwargs.get('pooled_h', 0)
         self.pool_w = kwargs.get('pooled_w', 0)
         self.spatial_scale = kwargs.get('spatial_scale', 1.0)

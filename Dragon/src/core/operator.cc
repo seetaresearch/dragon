@@ -126,7 +126,7 @@ OperatorBase* NewOperator(
             << "\nOperator failed to pass the schema checking.";
     }
     OperatorDef mutable_def(def);
-    // Heuristically makes each random seed slightly differnet
+    // Heuristically make each random seed slightly different
     static unsigned int op_seed_uuid = 0;
     mutable_def.mutable_device_option()->set_random_seed(
         op_seed_uuid + def.device_option().random_seed());

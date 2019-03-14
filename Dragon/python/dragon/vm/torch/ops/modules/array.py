@@ -14,7 +14,7 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.vm.torch.autograd import no_grad
-from dragon.vm.torch.tensor import ReferenceTensor
+from dragon.vm.torch.tensor import _ReferenceTensor
 from dragon.vm.torch.ops.modules.base import BaseModule
 
 
@@ -25,8 +25,8 @@ class Indexing(BaseModule):
     and the resulting memory is deep copied.
 
     """
-    def __init__(self, key, ctx, **kwargs):
-        super(Indexing, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Indexing, self).__init__(key, dev, **kwargs)
         self.n_starts = kwargs.get('n_starts', 0)
         self.n_sizes = kwargs.get('n_sizes', 0)
         self.register_op()
@@ -62,8 +62,8 @@ class Concat(BaseModule):
     Concatenate the inputs along the given axis.
 
     """
-    def __init__(self, key, ctx, **kwargs):
-        super(Concat, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Concat, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 0)
         self.register_op()
 
@@ -90,8 +90,8 @@ class Gather(BaseModule):
         input.shape[:axis] + indices.shape + input.shape[axis + 1:]
 
     """
-    def __init__(self, key, ctx, **kwargs):
-        super(Gather, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Gather, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 0)
         self.register_op()
 
@@ -111,8 +111,8 @@ class Gather(BaseModule):
 
 
 class Reduce(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(Reduce, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Reduce, self).__init__(key, dev, **kwargs)
         self.operation = kwargs.get('operation', 'SUM')
         self.dim = kwargs.get('dim', None)
         self.keepdim = kwargs.get('keepdim', True)
@@ -135,8 +135,8 @@ class Reduce(BaseModule):
 
 
 class ArgReduce(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(ArgReduce, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(ArgReduce, self).__init__(key, dev, **kwargs)
         self.operation = kwargs.get('operation', 'ARGMAX')
         self.axis = kwargs.get('axis', None)
         self.keepdim = kwargs.get('keepdim', True)
@@ -179,8 +179,8 @@ class ArgReduce(BaseModule):
 
 
 class Reshape(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(Reshape, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Reshape, self).__init__(key, dev, **kwargs)
         self.n_dim = kwargs.get('n_dim', 0)
         self.register_op()
 
@@ -201,14 +201,14 @@ class Reshape(BaseModule):
 
     def forward(self, x, shape):
         inputs = [x]; self.unify_devices(inputs)
-        outputs = [ReferenceTensor(x)]
+        outputs = [_ReferenceTensor(x)]
         callback = lambda A: self.update_arguments(A, shape)
         return self.run(inputs, outputs, callback=callback)
 
 
 class Squeeze(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(Squeeze, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Squeeze, self).__init__(key, dev, **kwargs)
         self.dim = kwargs.get('dim', None)
         self.register_op()
 
@@ -220,13 +220,13 @@ class Squeeze(BaseModule):
 
     def forward(self, x, out=None):
         inputs = [x]; self.unify_devices(inputs)
-        outputs = [out] if out else [ReferenceTensor(x)]
+        outputs = [out] if out else [_ReferenceTensor(x)]
         return self.run(inputs, outputs)
 
 
 class UnSqueeze(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(UnSqueeze, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(UnSqueeze, self).__init__(key, dev, **kwargs)
         self.dim = kwargs.get('dim', None)
         self.register_op()
 
@@ -238,13 +238,13 @@ class UnSqueeze(BaseModule):
 
     def forward(self, x, out=None):
         inputs = [x]; self.unify_devices(inputs)
-        outputs = [out] if out else [ReferenceTensor(x)]
+        outputs = [out] if out else [_ReferenceTensor(x)]
         return self.run(inputs, outputs)
 
 
 class Permute(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(Permute, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Permute, self).__init__(key, dev, **kwargs)
         self.n_perm = kwargs.get('n_perm', 0)
         self.register_op()
 
@@ -270,8 +270,8 @@ class Permute(BaseModule):
 
 
 class Repeat(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(Repeat, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Repeat, self).__init__(key, dev, **kwargs)
         self.n_times = kwargs.get('n_times', 0)
         self.register_op()
 
@@ -298,8 +298,8 @@ class Repeat(BaseModule):
 
 
 class OneHot(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(OneHot, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(OneHot, self).__init__(key, dev, **kwargs)
         self.depth = kwargs.get('depth', 1)
         self.register_op()
 
@@ -318,8 +318,8 @@ class OneHot(BaseModule):
 
 
 class Cast(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(Cast, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Cast, self).__init__(key, dev, **kwargs)
         self.dtype = kwargs.get('dtype', 'float32')
         self.inplace = kwargs.get('inplace', False)
         self.register_op()
@@ -344,3 +344,25 @@ class Cast(BaseModule):
             with no_grad():
                 y = self.run([], [x])
         return y
+
+
+class Multinomial(BaseModule):
+    def __init__(self, key, dev, **kwargs):
+        super(Multinomial, self).__init__(key, dev, **kwargs)
+        self.num_samples = kwargs.get('num_samples', 1)
+        self.normalize = kwargs.get('normalize', False)
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'Multinomial',
+            'arguments': {
+                'num_samples': self.num_samples,
+                'normalize': self.normalize,
+            },
+        }
+
+    def forward(self, x, y):
+        inputs = [x]; self.unify_devices(inputs)
+        outputs = [y] if y else [self.register_output()]
+        return self.run(inputs, outputs)

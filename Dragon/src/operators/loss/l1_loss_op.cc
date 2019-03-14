@@ -41,7 +41,7 @@ void L1LossOp<Context>::RunWithType() {
 
 template <class Context>
 void L1LossOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  // Enforce SyncStream
+    ctx()->set_stream_id(0);  // Enforce DefaultStream
 
     for (int i = 1; i < InputSize(); i++) {
         CHECK_EQ(Input(0).count(), Input(i).count())

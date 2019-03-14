@@ -154,7 +154,7 @@ void ProposalOp<Context>::RunWithType() {
 
 template <class Context>
 void ProposalOp<Context>::RunOnDevice() {
-    ctx()->set_stream_id(0);  // Enforce SyncStream
+    ctx()->set_stream_id(0);  // Enforce DefaultStream
 
     num_images = Input(0).dim(0);
     CHECK_EQ(Input(-1).dim(0), num_images)

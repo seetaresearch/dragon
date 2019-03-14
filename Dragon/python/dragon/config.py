@@ -20,8 +20,9 @@ import dragon.core.logging as logging
 
 option = {}
 
-# The current device, 'CPU', 'CUDA' or 'CNML'
-option['device'] = 'CPU'
+# The current device
+# enumeration in ('cpu', 'cuda', 'cnml')
+option['device'] = 'cpu'
 
 # The device index
 option['device_id'] = 0
@@ -73,7 +74,7 @@ def EnableCPU():
 
     """
     global option
-    option['device'] = 'CPU'
+    option['device'] = 'cpu'
 
 
 def EnableCUDA(gpu_id=0, use_cudnn=True):
@@ -92,7 +93,7 @@ def EnableCUDA(gpu_id=0, use_cudnn=True):
 
     """
     global option
-    option['device'] = 'CUDA'
+    option['device'] = 'cuda'
     option['device_id'] = gpu_id
     option['use_cudnn'] = use_cudnn
 
@@ -111,7 +112,7 @@ def EnableCNML(mlu_id=0):
 
     """
     global option
-    option['device'] = 'CNML'
+    option['device'] = 'cnml'
     option['device_id'] = mlu_id
 
 

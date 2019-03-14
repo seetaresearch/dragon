@@ -15,11 +15,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import numpy as np
-import dragon as dg
-from google.protobuf.message import Message
-
-import dragon.import_c_api as C
+import numpy
+import dragon
 
 from dragon.core.tensor import Tensor
 from dragon.core.proto_utils import GetDeviceOption
@@ -50,7 +47,7 @@ def FromShape(shape, dtype='float32', name=None):
     tensor.shape = list(shape)
     if not isinstance(shape, (tuple, list)):
         raise TypeError('The shape should be a tuple or list.')
-    C.TensorFromShape(
+    dragon.C.TensorFromShape(
         _stringify_tensor(tensor),
             list(shape), dtype)
     return tensor
@@ -73,7 +70,7 @@ def SetShape(tensor, shape, dtype='float32'):
     None
 
     """
-    C.TensorFromShape(_stringify_tensor(tensor), shape, dtype)
+    dragon.C.TensorFromShape(_stringify_tensor(tensor), shape, dtype)
 
 
 def FromTensor(src, src_ctx=None, name=None, ctx=None):
@@ -100,9 +97,9 @@ def FromTensor(src, src_ctx=None, name=None, ctx=None):
 
     """
     tensor = _try_get_tensor(name)
-    if src_ctx is None: src_ctx = GetDeviceOption('CPU')
-    if ctx is None: ctx = GetDeviceOption('CPU')
-    C.TensorFromTensor(
+    if src_ctx is None: src_ctx = GetDeviceOption('cpu')
+    if ctx is None: ctx = GetDeviceOption('cpu')
+    dragon.C.TensorFromTensor(
         _stringify_tensor(tensor), _stringify_tensor(src),
             _stringify_proto(ctx), _stringify_proto(src_ctx))
     return tensor
@@ -130,9 +127,9 @@ def FromPyArray(array, name=None):
 
     """
     tensor = _try_get_tensor(name)
-    if not isinstance(array, np.ndarray):
+    if not isinstance(array, numpy.ndarray):
         raise TypeError('The given nd-array should be numpy.ndarray.')
-    C.TensorFromPyArray(_stringify_tensor(tensor), array)
+    dragon.C.TensorFromPyArray(_stringify_tensor(tensor), array)
     return tensor
 
 
@@ -157,7 +154,7 @@ def SetPyArray(tensor, array):
     The wrapper of ``TensorFromPyArrayCC``.
 
     """
-    C.TensorFromPyArray(_stringify_tensor(tensor), array)
+    dragon.C.TensorFromPyArray(_stringify_tensor(tensor), array)
 
 
 def ToPyArray(tensor, readonly=False):
@@ -178,7 +175,7 @@ def ToPyArray(tensor, readonly=False):
         The array sharing the memory with original tensor.
 
     """
-    return C.TensorToPyArray(_stringify_tensor(tensor), readonly)
+    return dragon.C.TensorToPyArray(_stringify_tensor(tensor), readonly)
 
 
 def GetStorage(tensor):
@@ -196,8 +193,8 @@ def GetStorage(tensor):
 
     """
     tensor = _stringify_tensor(tensor)
-    if not dg.workspace.HasTensor(tensor): return None
-    return C.GetTensor(tensor)
+    if not dragon.workspace.HasTensor(tensor): return None
+    return dragon.C.GetTensor(tensor)
 
 
 def _stringify_proto(obj):
@@ -213,9 +210,5 @@ def _stringify_tensor(obj):
 
 def _try_get_tensor(name=None):
     """Try to create or get a tensor"""
-    if name is None or name == '':
-        return Tensor()
-    else:
-        tensor = Tensor('')
-        tensor.set_name(name)
-        return tensor
+    if name is None or name == '': return Tensor()
+    else: return Tensor.Ref(name)

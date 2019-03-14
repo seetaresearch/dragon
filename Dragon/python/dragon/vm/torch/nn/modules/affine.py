@@ -14,7 +14,7 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.vm.torch.nn import Module, Parameter
-from dragon.vm.torch.ops.creation import zeros, ones
+from dragon.vm.torch.ops.builtin import zeros, ones
 
 
 class Affine(Module):

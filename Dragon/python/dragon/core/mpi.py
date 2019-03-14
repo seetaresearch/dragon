@@ -15,7 +15,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon.import_c_api as C
+import dragon.import_c_api as _C
 
 
 _GLOBAL_MPI_IS_INIT = False
@@ -40,7 +40,7 @@ def Init():
     This function can only be called once.
 
     """
-    C.MPIInit()
+    _C.MPIInit()
     global _GLOBAL_MPI_IS_INIT
     global _GLOBAL_MPI_SNAPSHOT_RANKS
     _GLOBAL_MPI_IS_INIT = True
@@ -68,7 +68,7 @@ def Rank():
 
     """
     _check_init()
-    return C.MPIRank()
+    return _C.MPIRank()
 
 
 def Size():
@@ -81,7 +81,7 @@ def Size():
 
     """
     _check_init()
-    return C.MPISize()
+    return _C.MPISize()
 
 
 def CreateGroup(root=0, incl=[], excl=[]):
@@ -103,7 +103,7 @@ def CreateGroup(root=0, incl=[], excl=[]):
 
     """
     _check_init()
-    return C.MPICreateGroup(root, incl, excl)
+    return _C.MPICreateGroup(root, incl, excl)
 
 
 def Snapshot(incl):
@@ -226,4 +226,4 @@ def Finalize():
 
     """
     _check_init()
-    C.MPIFinalize()
+    _C.MPIFinalize()

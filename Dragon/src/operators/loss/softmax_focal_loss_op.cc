@@ -60,8 +60,6 @@ void SoftmaxFocalLossOp<Context>::RunOnDevice() {
     flags.Reshape({ outer_dim * inner_dim });
     losses.Reshape({ outer_dim * inner_dim });
 
-    this->prob = ws()->CreateTensor(
-        mount_name("softmax/prob"));
     this->SoftmaxRun();
 
     if (XIsType(Input(0), float)) {

@@ -8,30 +8,3 @@
 #      <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-from .creation import (
-    zeros, zeros_like,
-    ones, ones_like,
-    rand, randn,
-)
-
-from .arithmetic import (
-    add, sub, mul, div,
-    log, exp, sqrt,
-    maximum, minimum, clamp,
-)
-
-from .array import (
-    squeeze, unsqueeze,
-    sum, mean, argmin, argmax, max, min, topk,
-    cat, gather, narrow, one_hot,
-)
-
-from .vision import (
-    nn_resize, bilinear_resize,
-    roi_pool, roi_align,
-)

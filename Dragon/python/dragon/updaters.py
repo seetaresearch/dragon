@@ -22,7 +22,7 @@ from __future__ import print_function
 
 import pprint
 
-import dragon.core.workspace as ws
+from dragon.core import workspace
 from dragon.core.tensor import Tensor
 
 
@@ -93,7 +93,7 @@ class BaseUpdater(object):
         defaults = self.__dict__.get('_defaults')
         if item in defaults:
             if self._registered:
-                return ws.FetchTensor(self._slot + '/' + item)
+                return workspace.FetchTensor(self._slot + '/' + item)
             else: return defaults[item]
         return self.__dict__[item]
 
@@ -101,7 +101,7 @@ class BaseUpdater(object):
         defaults = self.__dict__.get('_defaults')
         if defaults is not None and key in defaults:
             if self._registered:
-                ws.FeedTensor(self._slot + '/' + key, value,
+                workspace.FeedTensor(self._slot + '/' + key, value,
                     dtype='float32', force_cpu=True)
             else:
                 self._defaults[key] = value
@@ -111,7 +111,7 @@ class BaseUpdater(object):
     def register_in_workspace(self):
         if not self._registered:
             for k, v in self._defaults.items():
-                ws.FeedTensor(self._slot + "/" + k, v,
+                workspace.FeedTensor(self._slot + "/" + k, v,
                     dtype='float32', force_cpu=True)
             self._registered = True
             if self._verbose:

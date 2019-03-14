@@ -93,7 +93,7 @@ class GraphGradientMaker(object):
         """
         if forward_op.type in C.NO_GRADIENT_OPERATORS:
             for input in forward_op.input: blacklist.add(input)
-            return (True, None)
+            return True, None
 
         # Generate virtual grads for targets if necessary
         gen_grads = []
@@ -107,11 +107,11 @@ class GraphGradientMaker(object):
         for output in forward_op.output:
             if inputs_to_grads.get(output, None) is None:
                 # check failed: skip backward
-                if output in blacklist: return (True, gen_grads)
-                if len(forward_op.output) == 1: return (True, gen_grads)
+                if output in blacklist: return True, gen_grads
+                if len(forward_op.output) == 1: return True, gen_grads
 
         # Pass, even if missing some grads
-        return (False, gen_grads)
+        return False, gen_grads
 
     @classmethod
     def Make(cls, forward_ops, targets, input_grads=None, auto_names=True):

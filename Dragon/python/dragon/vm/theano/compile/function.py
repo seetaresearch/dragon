@@ -178,12 +178,12 @@ def GraphDef_Device(graph_def):
     """
     from dragon.config import option
     if option['device'] is not 'None':
-        supports = {'CPU': 0, 'CUDA': 1, 'CNML': 2}
+        supports = {'cpu': 0, 'cuda': 1, 'cnml': 2}
         device_option = pb.DeviceOption()
         device_option.device_type = supports[option['device']]
         device_option.device_id = option['device_id']
         device_option.random_seed = option['random_seed']
-        if option['device'] == 'CUDA':
+        if option['device'] == 'cuda':
             if option['use_cudnn']: device_option.engine = 'CUDNN'
         graph_def.device_option.CopyFrom(device_option)
 

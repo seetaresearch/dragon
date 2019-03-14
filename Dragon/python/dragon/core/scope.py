@@ -14,7 +14,7 @@ from __future__ import division
 from __future__ import print_function
 
 import threading
-import dragon.import_c_api as C
+import dragon.import_c_api as _C
 
 from contextlib import contextmanager
 
@@ -76,7 +76,7 @@ class WorkspaceScope(object):
     --------
     >>> import dragon as dg
     >>> with WorkspaceScope('session1'): pass
-    >>> with dg.workspace_scope('session2'): pass
+    >>> with dg.ws_scope('session2'): pass
 
     """
     def __init__(self, ws_name):
@@ -88,11 +88,11 @@ class WorkspaceScope(object):
         self.prev = 'default'
 
     def __enter__(self):
-        self.prev = C.CurrentWorkspace()
-        C.SwitchWorkspace(self.ws, True)
+        self.prev = _C.CurrentWorkspace()
+        _C.SwitchWorkspace(self.ws, True)
 
     def __exit__(self, type, value, traceback):
-        C.SwitchWorkspace(self.prev, True)
+        _C.SwitchWorkspace(self.prev, True)
 
 
 _GLOBAL_TENSOR_STACK = _ThreadLocalStack()
@@ -133,7 +133,7 @@ def device_scope(device_type, device_id=0, engine='AUTO'):
 
     Parameters
     ----------
-    device_type : {'CPU', 'GPU', 'CUDA', 'CNML'}, required
+    device_type : {'cpu', 'gpu', 'cuda', 'cnml'}, required
         The type of device.
     device_id : int, optional
         The index of the device.
@@ -143,9 +143,9 @@ def device_scope(device_type, device_id=0, engine='AUTO'):
     """
     device_type, device_id, device_engine = \
         device_type.upper(), device_id, engine.upper()
-    assert device_type in ['CPU', 'GPU', 'CUDA', 'CNML']
+    assert device_type in ['cpu', 'gpu', 'cuda', 'cnml']
     # Default names
-    if device_type == 'GPU': device_type = 'CUDA'
+    if device_type == 'gpu': device_type = 'cuda'
     if device_engine == 'AUTO': device_engine = 'CUDNN'
     return _GLOBAL_DEVICE_STACK.get_controller({
         'device_type': device_type,

@@ -15,7 +15,7 @@ from __future__ import print_function
 
 from dragon.vm.torch.tensor import Tensor
 from dragon.vm.torch.nn import Module, Parameter
-from dragon.vm.torch.ops.creation import zeros, ones
+from dragon.vm.torch.ops.builtin import zeros, ones
 from dragon.vm.torch.module import RunOperator
 
 
@@ -62,10 +62,10 @@ class _BatchNorm(Module):
                'track_running_stats={track_running_stats}'.format(**self.__dict__)
 
     def make_meta_from_phase(self, phase):
-        """Make the custom meta by referring the phase and ctx.
+        """Make the custom meta by referring the phase and device.
 
         We extend this method as the original module can only
-        detect the mutation of ctx(i.e. cpu -> cuda),
+        detect the mutation of device(i.e. cpu -> cuda),
         but not the (train -> test).
 
         """
@@ -75,8 +75,8 @@ class _BatchNorm(Module):
             self._module_key += '/{}'.format(phase)
             self.op_meta['arguments']['use_stats'] = 0 \
                 if phase == 'TRAIN' else 1
-            self._gen_def()
-            self.op_metas[phase] = (self._module_key, self._def)
+            self._gen_module_def()
+            self.op_metas[phase] = (self._module_key, self._module_def)
 
         if self._module_key is None:
             # Init or Context has changed

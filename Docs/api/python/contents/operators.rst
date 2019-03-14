@@ -11,7 +11,7 @@ Common
    operators/data
    operators/initializer
    operators/arithmetic
-   operators/ndarray
+   operators/array
    operators/control_flow
    operators/misc
    operators/mpi

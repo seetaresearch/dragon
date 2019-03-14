@@ -129,8 +129,8 @@ List                  Brief
 `L2Norm`_             L2 Normalization. `[Liu et.al, 2015] <https://arxiv.org/abs/1506.04579>`_.
 ==================    ======================================================================
 
-NDArray
--------
+Array
+-----
 ===============    ======================================================================
 List               Brief
 ===============    ======================================================================
@@ -157,6 +157,7 @@ List               Brief
 `ExpandDims`_      Expand the new dimension with size 1 to specific axis.
 `Shape`_           Get the dynamic shape of a Tensor.
 `Arange`_          Return evenly spaced values within a given interval.
+`Multinomial`_     Return indices sampled from the multinomial distribution.
 ===============    ======================================================================
 
 Control Flow
@@ -167,7 +168,9 @@ List               Brief
 `Copy`_            Copy A to B.
 `Equal`_           *Equal* Comparing between A and B.
 `Less`_            *Less* Comparing between A and B.
+`LessEqual`_       *LessEqual* Comparing between A and B.
 `Greater`_         *Greater* Comparing between A and B.
+`GreaterEqual`_    *GreaterEqual* Comparing between A and B.
 ===============    ======================================================================
 
 Misc
@@ -277,34 +280,37 @@ List                 Brief
 .. _InstanceNorm: operators/norm.html#dragon.operators.norm.InstanceNorm
 .. _L2Norm: operators/norm.html#dragon.operators.norm.L2Norm
 
-.. _Gather: operators/ndarray.html#dragon.operators.ndarray.Gather
-.. _Crop: operators/ndarray.html#dragon.operators.ndarray.Crop
-.. _Reduce: operators/ndarray.html#dragon.operators.ndarray.Reduce
-.. _Sum: operators/ndarray.html#dragon.operators.ndarray.Sum
-.. _Mean: operators/ndarray.html#dragon.operators.ndarray.Mean
-.. _Max: operators/ndarray.html#dragon.operators.ndarray.Max
-.. _ArgMax: operators/ndarray.html#dragon.operators.ndarray.ArgMax
-.. _Min: operators/ndarray.html#dragon.operators.ndarray.Min
-.. _ArgMin: operators/ndarray.html#dragon.operators.ndarray.ArgMin
-.. _Slice: operators/ndarray.html#dragon.operators.ndarray.Slice
-.. _Stack: operators/ndarray.html#dragon.operators.ndarray.Stack
-.. _Concat: operators/ndarray.html#dragon.operators.ndarray.Concat
-.. _Transpose: operators/ndarray.html#dragon.operators.ndarray.Transpose
-.. _Repeat: operators/ndarray.html#dragon.operators.ndarray.Repeat
-.. _Tile: operators/ndarray.html#dragon.operators.ndarray.Tile
-.. _Pad: operators/ndarray.html#dragon.operators.ndarray.Pad
-.. _OneHot: operators/ndarray.html#dragon.operators.ndarray.OneHot
-.. _Flatten: operators/ndarray.html#dragon.operators.ndarray.Flatten
-.. _Reshape: operators/ndarray.html#dragon.operators.ndarray.Reshape
-.. _Squeeze: operators/ndarray.html#dragon.operators.ndarray.Squeeze
-.. _ExpandDims: operators/ndarray.html#dragon.operators.ndarray.ExpandDims
-.. _Shape: operators/ndarray.html#dragon.operators.ndarray.Shape
-.. _Arange: operators/ndarray.html#dragon.operators.ndarray.Arange
+.. _Gather: operators/array.html#dragon.operators.array.Gather
+.. _Crop: operators/array.html#dragon.operators.array.Crop
+.. _Reduce: operators/array.html#dragon.operators.array.Reduce
+.. _Sum: operators/array.html#dragon.operators.array.Sum
+.. _Mean: operators/array.html#dragon.operators.array.Mean
+.. _Max: operators/array.html#dragon.operators.array.Max
+.. _ArgMax: operators/array.html#dragon.operators.array.ArgMax
+.. _Min: operators/array.html#dragon.operators.array.Min
+.. _ArgMin: operators/array.html#dragon.operators.array.ArgMin
+.. _Slice: operators/array.html#dragon.operators.array.Slice
+.. _Stack: operators/array.html#dragon.operators.array.Stack
+.. _Concat: operators/array.html#dragon.operators.array.Concat
+.. _Transpose: operators/array.html#dragon.operators.array.Transpose
+.. _Repeat: operators/array.html#dragon.operators.array.Repeat
+.. _Tile: operators/array.html#dragon.operators.array.Tile
+.. _Pad: operators/array.html#dragon.operators.array.Pad
+.. _OneHot: operators/array.html#dragon.operators.array.OneHot
+.. _Flatten: operators/array.html#dragon.operators.array.Flatten
+.. _Reshape: operators/array.html#dragon.operators.array.Reshape
+.. _Squeeze: operators/array.html#dragon.operators.array.Squeeze
+.. _ExpandDims: operators/array.html#dragon.operators.array.ExpandDims
+.. _Shape: operators/array.html#dragon.operators.array.Shape
+.. _Arange: operators/array.html#dragon.operators.array.Arange
+.. _Multinomial: operators/array.html#dragon.operators.array.Multinomial
 
-.. _Copy: operators/control_flow.html#dragon.operators.control_flow.Copy
+.. _Copy: operators/control_flow.html#dAragon.operators.control_flow.Copy
 .. _Equal: operators/control_flow.html#dragon.operators.control_flow.Equal
 .. _Less: operators/control_flow.html#dragon.operators.control_flow.Less
+.. _LessEqual: operators/control_flow.html#dragon.operators.control_flow.LessEqual
 .. _Greater: operators/control_flow.html#dragon.operators.control_flow.Greater
+.. _GreaterEqual: operators/control_flow.html#dragon.operators.control_flow.GreaterEqual
 
 .. _Cast: operators/misc.html#dragon.operators.misc.Cast
 .. _Run: operators/misc.html#dragon.operators.misc.Run

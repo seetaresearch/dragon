@@ -14,35 +14,19 @@ from __future__ import division
 from __future__ import print_function
 
 import six
-import numpy as np
-import dragon as dg
+import numpy
+import dragon
 
-import dragon.core.mapping as mapping
-import dragon.core.tensor_utils as tensor_utils
-
-from dragon.vm.torch.c_api import Size, Context
-from dragon.vm.torch.tensor_uitls import from_dragon
+from dragon.core import mapping, tensor_utils, proto_utils
 from dragon.vm.torch.pool import TensorPool
-
-
-__all__ = [
-    'Tensor', 'Parameter',
-    'CharTensor', 'ByteTensor', 'IntTensor', 'LongTensor',
-    'HalfTensor', 'FloatTensor', 'DoubleTensor',
-]
-
-
-##############################################
-#                                            #
-#                 Tensor-Core                #
-#                                            #
-##############################################
+from dragon.vm.torch.c_api import Size, from_dragon
+from dragon.vm.torch.c_api import device as _Device
 
 
 class Tensor(object):
     def __init__(self, *args, **kwargs):
         # Internal properties
-        self._ctx = kwargs.get('ctx', Context())
+        self._device = kwargs.get('device', _Device())
         self._requires_grad = kwargs.get('requires_grad', False)
         self._tensor = kwargs.get('name', None)
         self._own_storage = kwargs.get('own_storage', True)
@@ -60,13 +44,13 @@ class Tensor(object):
         if len(args) == 0:
             # + empty tensor, not leaf
             if self._tensor is not None:
-                dg.C.CreateTensor(self._tensor)
+                dragon.C.CreateTensor(self._tensor)
         elif len(args) == 1:
             if isinstance(args[0], (list, tuple)):
                 # + torch.Tensor(sequence)
-                self._init_from_numpy(np.array(
+                self._init_from_numpy(numpy.array(
                     args[0], dtype=kwargs.get('dtype', 'float32')))
-            elif isinstance(args[0], np.ndarray):
+            elif isinstance(args[0], numpy.ndarray):
                 # + torch.Tensor(array)
                 self._init_from_numpy(args[0])
             else:
@@ -81,7 +65,7 @@ class Tensor(object):
             self._init_from_shape(args, kwargs.get('dtype', 'float32'))
 
         # Store the reference of backend
-        self._storage = dg.C.GetTensor(self.name) \
+        self._storage = dragon.C.GetTensor(self.name) \
             if self.name is not None else None
 
     def _init_from_numpy(self, array):
@@ -114,6 +98,18 @@ class Tensor(object):
         return self._tensor.name if hasattr(
             self._tensor, 'name') else self._tensor
 
+    @property
+    def device(self):
+        """Return the device of this tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.device
+           The device.
+
+        """
+        return self._device
+
     def cpu(self):
         """Switch the internal storage on cpu memory.
 
@@ -123,12 +119,17 @@ class Tensor(object):
             The self.
 
         """
-        self._ctx.device_type = 'CPU'
+        self._device.type = 'cpu'
         self._storage.ToCPU()
         return self
 
     def cuda(self, device=None):
         """Switch the internal storage on cuda memory.
+
+        Parameters
+        ----------
+        device : int, optional
+            The device index.
 
         Returns
         -------
@@ -136,9 +137,9 @@ class Tensor(object):
             The self.
 
         """
-        if device is None: device = dg.config.GetGPU()
+        if device is None: device = dragon.config.GetGPU()
         self._storage.ToCUDA(device)
-        self._ctx.device_type, self._ctx.device_id = ('CUDA', device)
+        self._device.type, self._device.index = 'cuda', device
         return self
 
     def numpy(self, readonly=False):
@@ -146,7 +147,7 @@ class Tensor(object):
 
         Parameters
         ----------
-        readonly : boolean
+        readonly : boolean, optional, default=False
             Whether to sync the contents with device.
 
         Returns
@@ -167,7 +168,7 @@ class Tensor(object):
 
         """
         if isinstance(self._tensor, str):
-            return dg.Tensor.Ref(self._tensor,
+            return dragon.Tensor.Ref(self._tensor,
                 shape=self.shape, dtype=self.dtype)
         else: return self._tensor
 
@@ -342,6 +343,86 @@ class Tensor(object):
         """
         return self.mul(-1.0)
 
+    def __gt__(self, other):
+        """Compute *self* > *other* element-wise.
+
+        Parameters
+        ----------
+        other : dragon.vm.torch.Tensor, number
+            The other tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output byte tensor.
+
+        """
+        return self.gt(other)
+
+    def __ge__(self, other):
+        """Compute *self* >= *other* element-wise.
+
+        Parameters
+        ----------
+        other : dragon.vm.torch.Tensor, number
+            The other tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output byte tensor.
+
+        """
+        return self.ge(other)
+
+    def __lt__(self, other):
+        """Compute *self* < *other* element-wise.
+
+        Parameters
+        ----------
+        other : dragon.vm.torch.Tensor, number
+            The other tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output byte tensor.
+
+        """
+        return self.lt(other)
+
+    def __le__(self, other):
+        """Compute *self* <= *other* element-wise.
+
+        Parameters
+        ----------
+        other : dragon.vm.torch.Tensor, number
+            The other tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output byte tensor.
+
+        """
+        return self.le(other)
+
+    def __eq__(self, other):
+        """Compute *self* == *other* element-wise.
+
+        Parameters
+        ----------
+        other : dragon.vm.torch.Tensor, number
+            The other tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output byte tensor.
+
+        """
+        return self.eq(other)
+
     def __repr__(self):
         """Return a format str representing the internal storage.
 
@@ -354,11 +435,12 @@ class Tensor(object):
         np_data = self.numpy(readonly=True)
         if len(np_data.shape) == 0: return str(np_data)
         format_str = str(np_data)
+        format_shape = 'x'.join([str(dim) for dim in np_data.shape])
         meta_info = '\n[torch.{} of size {}]'.\
-            format(self._type2str(), 'x'.join([str(dim) for dim in np_data.shape]))
-        if self._ctx.device_type == 'CUDA':
-            meta_info = '\n[torch.cuda.{} of size {} (GPU {})]'. \
-                format(self._type2str(), 'x'.join([str(dim) for dim in np_data.shape]), self._ctx.device_id)
+            format(self._type2str(), format_shape)
+        if self.device.type == 'cuda':
+            meta_info = '\n[torch.cuda.{} of size {} (GPU {})]'.format(
+                self._type2str(), format_shape, self.device.index)
         del np_data # DECREF
         return format_str + meta_info
 
@@ -432,7 +514,7 @@ class Tensor(object):
                             'The cropping starts and ends of axis {} '
                                 'can not be equal, got {}:{}.'
                                     .format(ix, starts[-1], it.stop))
-                # handle step
+                # Handle step
                 if it.step is not None:
                     raise NotImplementedError('Indexing with step has not been implemented yet. ')
             elif isinstance(it, int):
@@ -442,8 +524,8 @@ class Tensor(object):
                 raise TypeError('Unsupported type of indices: {}'.format(type(type(it))))
         return self._indexing(starts, sizes)
 
-    def device(self):
-        return self._ctx.device_id
+    def __hash__(self):
+        return id(self)
 
     ##############################################
     #                                            #
@@ -532,7 +614,7 @@ class Tensor(object):
 
         Parameters
         ----------
-        dtype : str
+        dtype : str, optional
             The specified type.
 
         Returns
@@ -541,7 +623,7 @@ class Tensor(object):
             The data type or the new tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.type')
+        raise NotImplementedError('Refer torch.ops.tensor.type')
 
     def is_floating_point(self):
         """Whether the data type is floating.
@@ -563,11 +645,11 @@ class Tensor(object):
     ##############################################
 
     def squeeze(self, dim=None):
-        """Returns a tensor with all the dimensions of input of size 1 removed.
+        """Return a tensor with all the dimensions of input of size 1 removed.
 
         Parameters
         ----------
-        dim : int
+        dim : int, optional
             The optional dim to remove.
 
 
@@ -577,14 +659,14 @@ class Tensor(object):
             The new tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin._squeeze')
+        raise NotImplementedError('Refer torch.ops.tensor.squeeze')
 
     def squeeze_(self, dim=None):
         """Inplace of ``Tensor.squeeze()``
 
         Parameters
         ----------
-        dim : int
+        dim : int, optional
             The optional dim to remove.
 
         Returns
@@ -593,7 +675,7 @@ class Tensor(object):
             The self.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin._squeeze_')
+        raise NotImplementedError('Refer torch.ops.tensor.squeeze_')
 
     def unsqueeze(self, dim):
         """Returns a tensor with a dimension of size 1 inserted at the specified position.
@@ -609,7 +691,7 @@ class Tensor(object):
             The new tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin._unsqueeze')
+        raise NotImplementedError('Refer torch.ops.tensor.unsqueeze')
 
     def unsqueeze_(self, dim):
         """Inplace of ``Tensor.unsqueeze()``
@@ -625,14 +707,14 @@ class Tensor(object):
             The self.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin._unsqueeze_')
+        raise NotImplementedError('Refer torch.ops.tensor.unsqueeze_')
 
-    def view(self, *args):
+    def view(self, *shape):
         """Return a new tensor with the same data but a different size.
 
         Parameters
         ----------
-        args : tuple or int
+        shape : int...
             The new size.
 
         Returns
@@ -641,16 +723,16 @@ class Tensor(object):
             The output tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.view')
+        raise NotImplementedError('Refer torch.ops.tensor.view')
 
-    def reshape(self, *args):
+    def reshape(self, *shape):
         """Return a new tensor with the same data but a different size.
 
-        See also: *torch.view(*args)*
+        See also: *torch.view(*shape)*
 
         Parameters
         ----------
-        args : tuple or int
+        shape : int...
             The new size.
 
         Returns
@@ -659,7 +741,7 @@ class Tensor(object):
             The output tensor.
 
         """
-        return self.view(*args)
+        return self.view(*shape)
 
     def view_as(self, other):
         """Return a new tensor with the same data but a different size as the given tensor.
@@ -675,14 +757,14 @@ class Tensor(object):
             The output tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.view_as')
+        raise NotImplementedError('Refer torch.ops.tensor.view_as')
 
-    def permute(self, dims=None):
+    def permute(self, *dims):
         """Return a new tensor with the specific order of dimensions.
 
         Parameters
         ----------
-        dims : sequence of int
+        dims : int...
             The new order of dimensions.
 
         Returns
@@ -691,7 +773,7 @@ class Tensor(object):
             The output tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.permute')
+        raise NotImplementedError('Refer torch.ops.tensor.permute')
 
     def narrow(self, dimension, start, length):
         """Return a new tensor that is a narrowed version of input tensor.
@@ -703,7 +785,7 @@ class Tensor(object):
         start : int
             The starting position.
         length : int
-            The distance to the ending postion.
+            The distance to the ending position.
 
         Returns
         -------
@@ -711,14 +793,14 @@ class Tensor(object):
             The output tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.narrow')
+        raise NotImplementedError('Refer torch.ops.tensor.narrow')
 
     def repeat(self, *sizes):
         """Repeat this tensor along the specified dimensions.
 
         Parameters
         ----------
-        sizes : vm.torch.Size or int...
+        sizes : int...
             The number of times to repeat.
 
         Returns
@@ -727,7 +809,7 @@ class Tensor(object):
             The output tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.repeat')
+        raise NotImplementedError('Refer torch.ops.tensor.repeat')
 
     def copy_(self, src, non_blocking=False):
         """Copy the elements from ``src`` into this tensor and return ``self``.
@@ -736,7 +818,7 @@ class Tensor(object):
         ----------
         src : dragon.vm.torch.Tensor
             The source tensor.
-        non_blocking : boolean
+        non_blocking : boolean, optional, default=False
             Whether to copy asynchronously between CPU and GPU.
 
         Returns
@@ -745,14 +827,24 @@ class Tensor(object):
             The ``self`` tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.copy_')
+        # Copy memory
+        tensor_utils.FromTensor(
+            src, proto_utils.GetDeviceOption(
+                src.device.type, src.device.index),
+            self.name, proto_utils.GetDeviceOption(
+                self.device.type, self.device.index))
+        # Transfer the static shape if necessary
+        self._static_shape = src.size() \
+            if self._static_shape else None
+        return self
 
     def fill_(self, value):
         """Fills self tensor with the specified value.
 
         Parameters
         ----------
-        value : numerical type
+        value : number
+            The value to fill.
 
         Returns
         -------
@@ -760,14 +852,10 @@ class Tensor(object):
             The self.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.fill_')
+        raise NotImplementedError('Refer torch.ops.tensor.fill_')
 
     def zero_(self):
         """Fills self tensor with zeros.
-
-        Parameters
-        ----------
-        value : numerical type
 
         Returns
         -------
@@ -779,10 +867,6 @@ class Tensor(object):
 
     def one_(self):
         """Fills self tensor with ones.
-
-        Parameters
-        ----------
-        value : numerical type
 
         Returns
         -------
@@ -797,9 +881,9 @@ class Tensor(object):
 
         Parameters
         ----------
-        low : numerical type
+        low : number, optional, default=0
             The lower bound.
-        high : numerical type
+        high : number, optional, default=1
             The higher bound.
 
         Returns
@@ -808,16 +892,16 @@ class Tensor(object):
             The self.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.uniform_')
+        raise NotImplementedError('Refer torch.ops.tensor.uniform_')
 
     def normal_(self, mean=0, std=1):
         """Fill self tensor with the specified normal distribution.
 
         Parameters
         ----------
-        mean : numerical type
+        mean : number, optional, default=0
             The mean(mu) of normal distribution.
-        std : numerical type
+        std : number, optional, default=1
             The std(sigma) of normal distribution.
 
         Returns
@@ -826,7 +910,26 @@ class Tensor(object):
             The self.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.normal_')
+        raise NotImplementedError('Refer torch.ops.tensor.normal_')
+
+    def multinomial(self, num_samples, normalize=False):
+        """Return a tensor where each row contains ``num_samples``,
+           sampled from the multinomial distribution.
+
+        Parameters
+        ----------
+        num_samples : int
+            The number of samples.
+        normalize : boolean, optional, default=False
+            Whether to normalize the inputs.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.tensor.multinomial')
 
     def add(self, value):
         """See ``torch.add()``
@@ -842,7 +945,7 @@ class Tensor(object):
             The output tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.add')
+        raise NotImplementedError('Refer torch.ops.tensor.add')
 
     def add_(self, value):
         """Inplace of ``torch.add()``
@@ -858,7 +961,7 @@ class Tensor(object):
             The self.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.add_')
+        raise NotImplementedError('Refer torch.ops.tensor.add_')
 
     def sub(self, value):
         """Subtract the ``self`` and ``value`` into the output tensor.
@@ -874,7 +977,7 @@ class Tensor(object):
             The output tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.sub')
+        raise NotImplementedError('Refer torch.ops.tensor.sub')
 
     def sub_(self, value):
         """Inplace of ``Tensor.sub()``
@@ -890,7 +993,7 @@ class Tensor(object):
             The self.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.sub_')
+        raise NotImplementedError('Refer torch.ops.tensor.sub_')
 
     def mul(self, value):
         """Multiply the ``self`` and ``value`` into the output tensor.
@@ -906,7 +1009,7 @@ class Tensor(object):
             The output tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.mul')
+        raise NotImplementedError('Refer torch.ops.tensor.mul')
 
     def mul_(self, value):
         """Inplace of ``Tensor.mul()``
@@ -922,7 +1025,7 @@ class Tensor(object):
             The self.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.mul_')
+        raise NotImplementedError('Refer torch.ops.tensor.mul_')
 
     def div(self, value):
         """Divide the ``self`` and ``value`` into the output tensor.
@@ -938,7 +1041,7 @@ class Tensor(object):
             The output tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.div')
+        raise NotImplementedError('Refer torch.ops.tensor.div')
 
     def div_(self, value):
         """Inplace of ``Tensor.div()``
@@ -954,7 +1057,7 @@ class Tensor(object):
             The self.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.div_')
+        raise NotImplementedError('Refer torch.ops.tensor.div_')
 
     def clamp(self, min=None, max=None):
         """Return a tensor that all elements are clamped into the range [min, max].
@@ -972,7 +1075,7 @@ class Tensor(object):
             The output tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.clamp')
+        raise NotImplementedError('Refer torch.ops.tensor.clamp')
 
     def clamp_(self, min=None, max=None):
         """Clamp all elements are clamped into the range [min, max].
@@ -990,14 +1093,10 @@ class Tensor(object):
             The output tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.clamp_')
+        raise NotImplementedError('Refer torch.ops.tensor.clamp_')
 
     def log(self):
         """Compute the natural logarithm of this tensor.
-
-        Parameters
-        ----------
-        None
 
         Returns
         -------
@@ -1005,14 +1104,10 @@ class Tensor(object):
             The log tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.log')
+        raise NotImplementedError('Refer torch.ops.tensor.log')
 
     def exp(self):
         """Compute the exponential of this tensor.
-
-        Parameters
-        ----------
-        None
 
         Returns
         -------
@@ -1020,14 +1115,10 @@ class Tensor(object):
             The exp tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.exp')
+        raise NotImplementedError('Refer torch.ops.tensor.exp')
 
     def sqrt(self):
         """Compute the square-root of this tensor.
-
-        Parameters
-        ----------
-        None
 
         Returns
         -------
@@ -1035,7 +1126,7 @@ class Tensor(object):
             The sqrt tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.sqrt')
+        raise NotImplementedError('Refer torch.ops.tensor.sqrt')
 
     def mean(self, dim=None, keepdim=False):
         """Returns the mean of all elements or elements along the given dim.
@@ -1044,7 +1135,7 @@ class Tensor(object):
         ----------
         dim : int, optional
             The axis of tensor to compute mean value.
-        keepdim : bool, optional
+        keepdim : bool, optional, default=False
             Whether the output tensor has dim retained or not.
 
         Returns
@@ -1053,7 +1144,7 @@ class Tensor(object):
             The mean-reduced tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.mean')
+        raise NotImplementedError('Refer torch.ops.tensor.mean')
 
     def sum(self, dim=None, keepdim=False):
         """Returns the sum of all elements or elements along the given dim.
@@ -1062,7 +1153,7 @@ class Tensor(object):
         ----------
         dim : int, optional
             The axis of tensor to compute sum value.
-        keepdim : bool, optional
+        keepdim : bool, optional, default=False
             Whether the output tensor has dim retained or not.
 
         Returns
@@ -1071,7 +1162,7 @@ class Tensor(object):
             The sum-reduced tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.sum')
+        raise NotImplementedError('Refer torch.ops.tensor.sum')
 
     def max(self, dim=None, keepdim=False):
         """Return the values and indices of maximum elements along the given axis.
@@ -1080,7 +1171,7 @@ class Tensor(object):
         ----------
         dim : int, optional
             The axis of tensor to compute sum value.
-        keepdim : bool, optional
+        keepdim : bool, optional, default=False
             Whether the output tensor has dim retained or not.
 
         Returns
@@ -1089,16 +1180,16 @@ class Tensor(object):
             The maximum values and indices.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.max')
+        raise NotImplementedError('Refer torch.ops.tensor.max')
 
-    def min(input, dim=None, keepdim=False):
+    def min(self, dim=None, keepdim=False):
         """Return the values and indices of minimum elements along the given axis.
 
         Parameters
         ----------
         dim : int, optional
             The axis of tensor to compute sum value.
-        keepdim : bool, optional
+        keepdim : bool, optional, default=False
             Whether the output tensor has dim retained or not.
 
         Returns
@@ -1107,7 +1198,87 @@ class Tensor(object):
             The minimum values and indices.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.min')
+        raise NotImplementedError('Refer torch.ops.tensor.min')
+
+    def gt(self, other):
+        """Compute *self* > *other* element-wise.
+
+        Parameters
+        ----------
+        other : dragon.vm.torch.Tensor, number
+            The other tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output byte tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.tensor.gt')
+
+    def ge(self, other):
+        """Compute *self* >= *other* element-wise.
+
+        Parameters
+        ----------
+        other : dragon.vm.torch.Tensor, number
+            The other tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output byte tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.tensor.ge')
+
+    def lt(self, other):
+        """Compute *self* < *other* element-wise.
+
+        Parameters
+        ----------
+        other : dragon.vm.torch.Tensor, number
+            The other tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output byte tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.tensor.lt')
+
+    def le(self, other):
+        """Compute *self* <= *other* element-wise.
+
+        Parameters
+        ----------
+        other : dragon.vm.torch.Tensor, number
+            The other tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output byte tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.tensor.le')
+
+    def eq(self, other):
+        """Compute *self* == *other* element-wise.
+
+        Parameters
+        ----------
+        other : dragon.vm.torch.Tensor, number
+            The other tensor.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output byte tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.tensor.eq')
 
     def half(self):
         """Return a ``float16`` tensor with elements of ``self``.
@@ -1118,7 +1289,7 @@ class Tensor(object):
             The half tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.half')
+        raise NotImplementedError('Refer torch.ops.tensor.half')
 
     def half_(self):
         """Inplace of ``Tensor.half()``.
@@ -1129,7 +1300,7 @@ class Tensor(object):
             The half tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.half_')
+        raise NotImplementedError('Refer torch.ops.tensor.half_')
 
     def float(self):
         """Return a ``float32`` tensor with elements of ``self``.
@@ -1140,7 +1311,7 @@ class Tensor(object):
             The float tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.float')
+        raise NotImplementedError('Refer torch.ops.tensor.float')
 
     def float_(self):
         """Inplace of ``Tensor.float()``.
@@ -1151,7 +1322,7 @@ class Tensor(object):
             The float tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.float_')
+        raise NotImplementedError('Refer torch.ops.tensor.float_')
 
     def double(self):
         """Return a ``float64`` tensor with elements of ``self``.
@@ -1162,7 +1333,7 @@ class Tensor(object):
             The double tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.double')
+        raise NotImplementedError('Refer torch.ops.tensor.double')
 
     def double_(self):
         """Inplace of ``Tensor.double()``.
@@ -1173,7 +1344,7 @@ class Tensor(object):
             The double tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.double_')
+        raise NotImplementedError('Refer torch.ops.tensor.double_')
 
     def int(self):
         """Return a ``int32`` tensor with elements of ``self``.
@@ -1184,7 +1355,7 @@ class Tensor(object):
             The int tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.int')
+        raise NotImplementedError('Refer torch.ops.tensor.int')
 
     def int_(self):
         """Inplace of ``Tensor.int()``.
@@ -1195,7 +1366,7 @@ class Tensor(object):
             The int tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.int_')
+        raise NotImplementedError('Refer torch.ops.tensor.int_')
 
     def long(self):
         """Return a ``int64`` tensor with elements of ``self``.
@@ -1206,7 +1377,7 @@ class Tensor(object):
             The long tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.long')
+        raise NotImplementedError('Refer torch.ops.tensor.long')
 
     def long_(self):
         """Inplace of ``Tensor.long()``.
@@ -1217,7 +1388,7 @@ class Tensor(object):
             The long tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.long_')
+        raise NotImplementedError('Refer torch.ops.tensor.long_')
 
     def byte(self):
         """Return a ``uint8`` tensor with elements of ``self``.
@@ -1228,7 +1399,7 @@ class Tensor(object):
             The byte tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.byte')
+        raise NotImplementedError('Refer torch.ops.tensor.byte')
 
     def byte_(self):
         """Inplace of ``Tensor.byte()``.
@@ -1239,7 +1410,7 @@ class Tensor(object):
             The byte tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.byte_')
+        raise NotImplementedError('Refer torch.ops.tensor.byte_')
 
     def char(self):
         """Return a ``int8`` tensor with elements of ``self``.
@@ -1250,7 +1421,7 @@ class Tensor(object):
             The byte tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.char')
+        raise NotImplementedError('Refer torch.ops.tensor.char')
 
     def char_(self):
         """Inplace of ``Tensor.char()``.
@@ -1261,7 +1432,7 @@ class Tensor(object):
             The byte tensor.
 
         """
-        raise NotImplementedError('Refer torch.ops.builtin.char_')
+        raise NotImplementedError('Refer torch.ops.tensor.char_')
 
     ##############################################
     #                                            #
@@ -1283,7 +1454,7 @@ class Tensor(object):
 
     @property
     def data(self):
-        return Tensor(ctx=self._ctx, name=self.name, own_storage=False)
+        return Tensor(device=self.device, name=self.name, own_storage=False)
 
     def detach(self):
         return self.data
@@ -1356,28 +1527,28 @@ def DoubleTensor(*args, **kwargs):
     return Tensor(*args, **kwargs)
 
 
-def LeafTensor(shape, dtype='float32', ctx=Context(), requires_grad=False):
-    """Create a torch tensor according to shape, dtype and ctx.
+def _LeafTensor(shape, dtype='float32', device=_Device(), requires_grad=False):
+    """Create a torch tensor according to shape, dtype and device.
 
     Commonly used to create leaf variables, i.e., the parameters or placeholders.
 
     """
     constructor = globals()[mapping.TENSOR_TYPE_TO_TORCH_TENSOR[dtype]]
-    return constructor(*shape, ctx=ctx, requires_grad=requires_grad)
+    return constructor(*shape, device=device, requires_grad=requires_grad)
 
 
-def RuntimeTensor(name, dtype='float32', ctx=Context()):
-    """Create a torch tensor according to dtype and ctx.
+def _RuntimeTensor(name, dtype='float32', device=_Device()):
+    """Create a torch tensor according to dtype and device.
 
     Commonly used to represent the outputs that are hard to compute shape,
     i.e., the shape is computed by the backend automatically.
 
     """
     constructor = globals()[mapping.TENSOR_TYPE_TO_TORCH_TENSOR[dtype]]
-    return constructor(name=name, ctx=ctx)
+    return constructor(name=name, device=device)
 
 
-def ReferenceTensor(src):
+def _ReferenceTensor(src):
     """Create a reference from source tensor.
 
     Commonly used to hold the same storage but takes different sizes,
@@ -1385,7 +1556,7 @@ def ReferenceTensor(src):
 
     """
     constructor = globals()[mapping.TENSOR_TYPE_TO_TORCH_TENSOR[src.dtype]]
-    T = constructor(name=TensorPool.get('${REFERENCE}'), ctx=src._ctx)
+    T = constructor(name=TensorPool.get('${REFERENCE}'), device=src.device)
     T._ref_objects.append(src)
     return T
 

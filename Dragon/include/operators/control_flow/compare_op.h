@@ -30,7 +30,9 @@ class CompareOp final : public Operator<Context> {
     void RunOnDevice() override;
     template <typename T> void EqualRunWithType();
     template <typename T> void LessRunWithType();
+    template <typename T> void LessEqualRunWithType();
     template <typename T> void GreaterRunWithType();
+    template <typename T> void GreaterEqualRunWithType();
    
  protected:
     string operation;

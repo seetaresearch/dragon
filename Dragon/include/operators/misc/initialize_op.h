@@ -192,6 +192,6 @@ DEFINE_ARGUMENTS_WITH_DESC(int64_t, InitializeOp, dims);
 DEFINE_ARGUMENTS_WITH_DESC(int64_t, FillOp, dims);
 DEFINE_ARGUMENTS_WITH_DESC(int64_t, GivenTensorFillOp, dims);
 
-}  // namespace
+}  // namespace dragon
 
 #endif  // DRAGON_OPERATORS_MISC_INITIALIZE_OP_H_

@@ -18,8 +18,8 @@ from dragon.vm.torch.ops.modules.base import BaseModule
 
 
 class Update(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(Update, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Update, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', 'Update')
         self.lr_mult = kwargs.get('lr_mult', 1.0)
         self.decay_mult = kwargs.get('decay_mult', 1.0)
@@ -42,8 +42,8 @@ class Update(BaseModule):
 
 
 class Collective(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(Collective, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Collective, self).__init__(key, dev, **kwargs)
         self.mode = kwargs.get('mode', None)
         if self.mode is None:
             raise ValueError('Got invalid collective mode: {}'.format(self.mode))
@@ -71,8 +71,8 @@ class Collective(BaseModule):
 
 
 class Accumulate(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(Accumulate, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Accumulate, self).__init__(key, dev, **kwargs)
         self.register_op()
 
     def register_op(self):

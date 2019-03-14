@@ -19,16 +19,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import numpy
+import dragon
+import warnings
 from collections import OrderedDict
 
-import numpy as np
-import dragon as dg
-
-import dragon.core.proto_utils as pb_utils
-import dragon.core.logging as logging
+from dragon.core import proto_utils, logging
 from dragon.core.scope import get_default_name_scope
 
-from dragon.vm.torch.c_api import Context
+from dragon.vm.torch.c_api import device as Device
 from dragon.vm.torch.tensor import Tensor, Parameter
 from dragon.vm.torch.execution import RunOperator
 from dragon.vm.torch.environ import add_submodule, get_module_name
@@ -39,8 +38,9 @@ class Module(object):
         self._modules = OrderedDict()
         self._parameters = OrderedDict()
         self._buffers = OrderedDict()
-        self._module_key = self._def = None
-        self._ctx = Context()
+        self._device = Device()
+        self._module_key = None
+        self._module_def = None
         self.training = True
 
     def __getattr__(self, item):
@@ -106,20 +106,8 @@ class Module(object):
                 module.state_dict(destination, prefix + name + '.', to_numpy=to_numpy)
         return destination
 
-    def _load_state_dict_key_mismatch(self, full_name, name, is_missing): pass
-
     def load_state_dict(self, state_dict, strict=True, verbose=True):
         if verbose: logging.info('Load the state dict.')
-        def submodule_key_mismatch(full_name, is_missing):
-            module = self
-            names = full_name.split(".")
-            for module_name in names[:-1]:
-                if module_name in module._modules:
-                    module = module._modules[module_name]
-                else:
-                    return
-            module._load_state_dict_key_mismatch(full_name, names[-1], is_missing)
-
         unexpected = []
         own_state = self.state_dict()
         for name, param in state_dict.items():
@@ -133,28 +121,24 @@ class Module(object):
                         ', '.join([str(d) for d in param_shape])))
                 if isinstance(param, Tensor):
                     own_state[name].copy_(param)
-                elif isinstance(param, np.ndarray):
-                    dg.tensor_utils.SetPyArray(own_state[name], param)
+                elif isinstance(param, numpy.ndarray):
+                    dragon.tensor_utils.SetPyArray(own_state[name], param)
                 else:
                     raise ValueError('Excepted the type of source state is either '
                         'dragon.vm.torch.Tensor or numpy.ndarray, got {}.'.format(type(param)))
                 if verbose:
                     logging.info('Tensor({}) loaded, Size: ({})'.format(name,
                             ', '.join([str(d) for d in param_shape])))
+            else:
+                unexpected.append(name)
         if strict:
             missing = set(own_state.keys()) - set(state_dict.keys())
-            # pass the mismatch info to submodules so that they have a chance to
-            # raise a custom class-specific error
-            for name in unexpected:
-                submodule_key_mismatch(name, False)
-            for name in missing:
-                submodule_key_mismatch(name, True)
             error_msg = ''
             if len(unexpected) > 0:
-                error_msg += 'Unexpected key(s) in state_dict: {}. '.format(
+                error_msg += 'Unexpected key(s) in state_dict: {}.\n'.format(
                     ', '.join('"{}"'.format(k) for k in unexpected))
             if len(missing) > 0:
-                error_msg += 'Missing key(s) in state_dict: {}. '.format(
+                error_msg += 'Missing key(s) in state_dict: {}.'.format(
                     ', '.join('"{}"'.format(k) for k in missing))
             if len(error_msg) > 0:
                 raise KeyError(error_msg)
@@ -201,7 +185,7 @@ class Module(object):
         add_submodule(module, name_v2 if name_v2 else name)
 
     def __call__(self, *args, **kwargs):
-        with dg.name_scope(get_module_name(self)):
+        with dragon.name_scope(get_module_name(self)):
             return self.forward(*args, **kwargs)
 
     def forward(self, *inputs, **kwargs):
@@ -209,7 +193,10 @@ class Module(object):
 
     def name_scope(self, remove_separator=True):
         scope = get_default_name_scope()
-        if remove_separator and scope[-1] == '/': scope = scope[:-1]
+        if remove_separator and \
+            len(scope) > 0 and \
+                scope[-1] == '/':
+                    scope = scope[:-1]
         return scope
 
     def children(self):
@@ -281,17 +268,17 @@ class Module(object):
         return self
 
     def cpu(self):
-        self._ctx = Context()
-        # Remove key and op to re-create a one with new ctx
-        self._module_key = self._def = None
+        self._device = Device()
+        # Remove key and op to re-create a one with new device
+        self._module_key = self._module_def = None
         return self._apply(lambda t: t.cpu(),
                            lambda m: m.cpu())
 
     def cuda(self, device=None):
-        if device is None: device = dg.config.GetGPU()
-        self._ctx = Context('CUDA', device)
-        # Remove key and op to re-create a one with new ctx
-        self._module_key = self._def = None
+        if device is None: device = dragon.config.GetGPU()
+        self._device = Device('cuda', device)
+        # Remove key and op to re-create a one with new device
+        self._module_key = self._module_def = None
         return self._apply(lambda t: t.cuda(device),
                            lambda m: m.cuda(device))
 
@@ -312,7 +299,7 @@ class Module(object):
 
     def _gen_module_key(self):
         self._module_key = '{}{}'.format(
-            self.name_scope(False), self._ctx)
+            self.name_scope(False), self._device)
 
     @property
     def module_key(self):
@@ -320,37 +307,37 @@ class Module(object):
             self._gen_module_key()
         return self._module_key
 
-    def _gen_def(self):
-        self._def = pb_utils.MakeCXXOperatorDef(
-            name='runtime',
-            uid=self.module_key,
-            op_type=self.op_meta['op_type'],
-            device_option=pb_utils.GetDeviceOption(
-                self._ctx.device_type,
-                    self._ctx.device_id,
-                        engine='CUDNN'),
-            **self.op_meta['arguments']
-        )
+    def _gen_module_def(self):
+        self._module_def = \
+            proto_utils.MakeCXXOperatorDef(
+                name='runtime',
+                uid=self.module_key,
+                op_type=self.op_meta['op_type'],
+                device_option=proto_utils.
+                    GetDeviceOption(
+                    self._device.type,
+                        self._device.index,
+                            engine='CUDNN'),
+                **self.op_meta['arguments']
+            )
 
-    def register_op(self): pass
+    def register_op(self):
+        pass
 
     def register_output(self):
-        return self._ctx.copy()
+        return self._device.copy()
 
     def unify_devices(self, inputs):
         for ix, t in enumerate(inputs):
-            if t._ctx.device_type != self._ctx.device_type or \
-                t._ctx.device_id != self._ctx.device_id:
-                    print(self._ctx, self.module_key)
-                    raise ValueError('Module({}) is defined at {}:{}, '
-                        '\nFound Input({}) is at {}:{}.'.format(
-                            self.name_scope(True),
-                                self._ctx.device_type, self._ctx.device_id,
-                                    ix, t._ctx.device_type, t._ctx.device_id))
+            if t._device != self._device:
+                raise ValueError('Module({}) is defined at {}, '
+                    '\nFound Input({}) is at {}.'.format(
+                        self.name_scope(True),
+                            self._device, ix, t._device))
 
     def run(self, inputs, outputs, auto_grad=True, callback=None):
-        if self._def is None: self._gen_def()
-        meta = (self.module_key, self._def)
+        if self._module_def is None: self._gen_module_def()
+        meta = (self.module_key, self._module_def)
         return RunOperator(
             inputs, outputs, meta,
                 auto_grad=auto_grad,
@@ -366,7 +353,7 @@ class Module(object):
         return self.train(False)
 
     def zero_grad(self):
-        raise NotImplementedError('Deprecated. '
+        warnings.warn('Module.zero_grad() is deprecated. '
             'Use ``torch.optim.Optimizer.zero_grad()`` instead.')
 
     def extra_repr(self):

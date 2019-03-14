@@ -21,13 +21,13 @@ def has_module(key):
     return key in _GLOBAL_TORCH_BUILTIN_MODULES
 
 
-def register_module(cls, key, ctx, **kwargs):
+def register_module(cls, key, dev, **kwargs):
     global _GLOBAL_TORCH_BUILTIN_MODULES
-    module = cls(key, ctx, **kwargs)
+    module = cls(key, dev, **kwargs)
     _GLOBAL_TORCH_BUILTIN_MODULES[key] = module
     return module
 
 
-def get_module(cls, key, ctx, **kwargs):
+def get_module(cls, key, dev, **kwargs):
     if has_module(key): return _GLOBAL_TORCH_BUILTIN_MODULES[key]
-    return register_module(cls, key, ctx, **kwargs)
+    return register_module(cls, key, dev, **kwargs)

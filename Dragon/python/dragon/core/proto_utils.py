@@ -21,7 +21,7 @@ import numpy as np
 from google.protobuf.message import Message
 
 import dragon.config as cfg
-import dragon.import_c_api as C
+import dragon.import_c_api as _C
 from dragon.proto import dragon_pb2 as pb
 from dragon.core.scope import get_default_device
 
@@ -97,7 +97,7 @@ def MakeCXXOperatorDef(
     op_type, inputs=(), outputs=(),
         name='', uid=None, device_option=None,
             arg=None, engine=None, **kwargs):
-    c_def = C.OperatorDef()
+    c_def = _C.OperatorDef()
     py_def = MakeOperatorDef(
         op_type, inputs, outputs, name, uid,
             device_option, arg, engine, **kwargs)
@@ -118,7 +118,7 @@ def MakeDeviceOption(
 
 _PREDEFINED_DEVICE_LIMITS = 16
 _PREDEFINED_DEVICE_ENGINES = ['', 'CUDNN']
-_PREDEFINED_DEVICE_DICT = {'CPU': 0, 'CUDA': 1, 'CNML': 2}
+_PREDEFINED_DEVICE_DICT = {'cpu': 0, 'cuda': 1, 'cnml': 2}
 _PREDEFINED_DEVICE_OPTION_DICT = {}
 
 
@@ -127,8 +127,8 @@ for i in range(_PREDEFINED_DEVICE_LIMITS):
         for engine in _PREDEFINED_DEVICE_ENGINES:
             _PREDEFINED_DEVICE_OPTION_DICT[(device, i, engine)] = \
                 MakeDeviceOption(identify, i, engine)
-        if device == 'CUDA':
-            _PREDEFINED_DEVICE_OPTION_DICT[('CUDA', i)] = \
+        if device == 'cuda':
+            _PREDEFINED_DEVICE_OPTION_DICT[('cuda', i)] = \
                 MakeDeviceOption(identify, i, 'CUDNN')
 
 

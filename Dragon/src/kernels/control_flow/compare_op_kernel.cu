@@ -68,6 +68,31 @@ __global__ void _LessHalf(
     }
 }
 
+/*! LessEqual <T = ?, Device = CUDA> */
+
+template <typename T>
+__global__ void _LessEqual(
+    const int               count,
+    const T*                a,
+    const T*                b,
+    bool*                   y) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        y[idx] = a[idx] <= b[idx] ? true : false;
+    }
+}
+
+__global__ void _LessEqualHalf(
+    const int               count,
+    const half*             a,
+    const half*             b,
+    bool*                   y) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+#if __CUDA_ARCH__ >= 530
+        y[idx] = __hle(a[idx], b[idx]) ? true : false;
+#endif
+    }
+}
+
 /*! Greater <T = ?, Device = CUDA> */
 
 template <typename T>
@@ -89,6 +114,31 @@ __global__ void _GreaterHalf(
     CUDA_1D_KERNEL_LOOP(idx, count) {
 #if __CUDA_ARCH__ >= 530
         y[idx] = __hgt(a[idx], b[idx]) ? true : false;
+#endif
+    }
+}
+
+/*! GreaterEqual <T = ?, Device = CUDA> */
+
+template <typename T>
+__global__ void _GreaterEqual(
+    const int               count,
+    const T*                a,
+    const T*                b,
+    bool*                   y) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        y[idx] = a[idx] >= b[idx] ? true : false;
+    }
+}
+
+__global__ void _GreaterEqualHalf(
+    const int               count,
+    const half*             a,
+    const half*             b,
+    bool*                   y) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+#if __CUDA_ARCH__ >= 530
+        y[idx] = __hge(a[idx], b[idx]) ? true : false;
 #endif
     }
 }
@@ -138,6 +188,15 @@ DEFINE_COMPARE_WARPPER(float, Less, _Less);
 DEFINE_COMPARE_WARPPER(double, Less, _Less);
 DEFINE_COMPARE_FP16_WARPPER(Less);
 
+DEFINE_COMPARE_WARPPER(bool, LessEqual, _LessEqual);
+DEFINE_COMPARE_WARPPER(int8_t, LessEqual, _LessEqual);
+DEFINE_COMPARE_WARPPER(uint8_t, LessEqual, _LessEqual);
+DEFINE_COMPARE_WARPPER(int, LessEqual, _LessEqual);
+DEFINE_COMPARE_WARPPER(int64_t, LessEqual, _LessEqual);
+DEFINE_COMPARE_WARPPER(float, LessEqual, _LessEqual);
+DEFINE_COMPARE_WARPPER(double, LessEqual, _LessEqual);
+DEFINE_COMPARE_FP16_WARPPER(LessEqual);
+
 DEFINE_COMPARE_WARPPER(bool, Greater, _Greater);
 DEFINE_COMPARE_WARPPER(int8_t, Greater, _Greater);
 DEFINE_COMPARE_WARPPER(uint8_t, Greater, _Greater);
@@ -146,6 +205,15 @@ DEFINE_COMPARE_WARPPER(int64_t, Greater, _Greater);
 DEFINE_COMPARE_WARPPER(float, Greater, _Greater);
 DEFINE_COMPARE_WARPPER(double, Greater, _Greater);
 DEFINE_COMPARE_FP16_WARPPER(Greater);
+
+DEFINE_COMPARE_WARPPER(bool, GreaterEqual, _GreaterEqual);
+DEFINE_COMPARE_WARPPER(int8_t, GreaterEqual, _GreaterEqual);
+DEFINE_COMPARE_WARPPER(uint8_t, GreaterEqual, _GreaterEqual);
+DEFINE_COMPARE_WARPPER(int, GreaterEqual, _GreaterEqual);
+DEFINE_COMPARE_WARPPER(int64_t, GreaterEqual, _GreaterEqual);
+DEFINE_COMPARE_WARPPER(float, GreaterEqual, _GreaterEqual);
+DEFINE_COMPARE_WARPPER(double, GreaterEqual, _GreaterEqual);
+DEFINE_COMPARE_FP16_WARPPER(GreaterEqual);
 
 #undef DEFINE_COMPARE_WARPPER
 #undef DEFINE_COMPARE_FP16_WARPPER

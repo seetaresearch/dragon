@@ -89,7 +89,7 @@ def native_run_graph(graph_def, inputs, initializer, init_func=None):
     # Create an anonymous workspace
     ws = Workspace()
 
-    with dg.workspace_scope(ws.name):
+    with dg.ws_scope(ws.name):
         # Register all the initializer before feeding them
         for name in initializer:
             dg.Tensor(name=name).Variable()

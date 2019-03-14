@@ -70,12 +70,6 @@ void OnImportModule() {
 
 PYBIND11_MODULE(libdragon, m) {
 
-    /* ------------------------------------ *
-     *                                      *
-     *              Workspace               *
-     *                                      *
-     * ------------------------------------ */
-
      /*! \brief Switch to the specific workspace */
     m.def("SwitchWorkspace", &SwitchWorkspace);
 
@@ -133,6 +127,7 @@ PYBIND11_MODULE(libdragon, m) {
         g_workspaces[target_workspace]->Clear();
     });
 
+    /*! \brief Copy the array data to the tensor */
     m.def("FeedTensor", [](
         const string&           name,
         pybind11::object        value,
@@ -150,6 +145,7 @@ PYBIND11_MODULE(libdragon, m) {
             PyArrayObject*>(value.ptr()), tensor);
     });
 
+    /*! \brief Copy the tensor data to the array */
     m.def("FetchTensor", [](const string& name) {
         if (!g_workspace->HasTensor(name))
             LOG(FATAL) << "Tensor(" + name + ") "
@@ -169,7 +165,7 @@ PYBIND11_MODULE(libdragon, m) {
         }
     });
 
-    /*!            Misc             */
+    /*! \brief Return a unique dummy name */
     m.def("GetDummyName", [](
         const string&           basename,
         const string&           suffix,

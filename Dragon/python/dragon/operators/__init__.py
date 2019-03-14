@@ -69,9 +69,15 @@ class OpSchema(object):
             def Impl(*args, **kwargs):
                 inputs = args[0]
                 if isinstance(inputs, (list, tuple)):
+                    dtype = None
+                    for idx, input in enumerate(inputs):
+                        if isinstance(input, Tensor) and \
+                            input.dtype is not None:
+                                dtype = input.dtype
+                                break
                     for idx, input in enumerate(inputs):
                         if not isinstance(input, Tensor):
-                            inputs[idx] = Tensor.Convert(input, dtype=None)
+                            inputs[idx] = Tensor.Convert(input, dtype=dtype)
                     return op_func(inputs + list(args[1:]), **kwargs)
                 else:
                     if not isinstance(inputs, Tensor):

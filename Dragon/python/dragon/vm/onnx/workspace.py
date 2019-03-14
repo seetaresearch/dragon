@@ -27,7 +27,7 @@ class Workspace(object):
 
     def __getattr__(self, attr):
         def f(*args, **kwargs):
-            with dg.workspace_scope(self.name, ):
+            with dg.ws_scope(self.name, ):
                 return getattr(dg.workspace, attr)(*args, **kwargs)
         return f
 

@@ -13,143 +13,89 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.proto_utils import GetDeviceOption
-from dragon.core.tensor_utils import FromTensor
-
-from dragon.vm.torch.tensor import Tensor, Size
+from dragon.core import mpi
+from dragon.vm.torch.tensor import Tensor, _LeafTensor, _Device
+from dragon.vm.torch.ops.primitive import MakeDevice, WrapScalar
 from dragon.vm.torch.ops.factory import get_module
-from dragon.vm.torch.ops.primitive import MakeContext
-from dragon.vm.torch.ops.modules.array import Cast
+from dragon.vm.torch.ops.modules.control_flow import Compare
 
-from dragon.vm.torch.ops.arithmetic import (
-    _fundamental, _rfundamental,
-    _log, _exp, _sqrt, _clamp,
+from dragon.vm.torch.ops.modules.arithmetic import (
+    Fundamental, Log, Exp, Sqrt,
+    MM, FullyConnected,
+    Maximum, Minimum, Clamp,
 )
 
-from dragon.vm.torch.ops.array import (
-    reshape, squeeze, unsqueeze,
-    _permute, _repeat, _indexing, narrow,
-    _fill, _uniform, _normal,
-    _reduce, _arg_reduce,
+from dragon.vm.torch.ops.modules.init import (
+    Fill, RandomUniform, RandomNormal,
+)
+
+from dragon.vm.torch.ops.modules.array import (
+    Reshape, Squeeze, UnSqueeze, Permute,
+    Indexing, Repeat, Concat, Gather,
+    Reduce, ArgReduce, OneHot, Multinomial,
+)
+
+from dragon.vm.torch.ops.modules.update import (
+    Accumulate, Collective, Update,
+)
+
+from dragon.vm.torch.ops.modules.vision import (
+    Resize2d, RoIPool, RoIAlign,
 )
 
 
+__all__ = [
+    'add', 'sub', 'mul', 'div',
+    'maximum', 'minimum', 'clamp',
+    'log', 'exp', 'sqrt',
+    'mm', 'xw_plus_b',
+    'squeeze', 'unsqueeze',
+    'mean', 'sum', 'min', 'max', 'topk',
+    'argmin', 'argmax',
+    'gt', 'lt', 'eq', 'ge', 'le',
+    'cat', 'gather', 'narrow',
+    'one_hot', 'multinomial', 'rand', 'randn',
+    'zeros', 'zeros_like', 'ones', 'ones_like',
+    'nn_resize', 'bilinear_resize', 'roi_pool', 'roi_align',
+]
+
+
 ##############################################
 #                                            #
-#                   BASE                     #
+#                Arithmetic                  #
 #                                            #
 ##############################################
 
 
-def copy_(self, src, non_blocking=False):
-    """Copy the elements from ``src`` into this tensor and return ``self``.
+def _fundamental(input, value, op='Add', out=None):
+    if not isinstance(value, Tensor):
+        value = WrapScalar(value, input.dtype, input.device)
+    dev = MakeDevice(inputs=[input, value])
+    key = '{}/{}'.format(op, dev)
+    module = get_module(Fundamental, key, dev, op_type=op)
+    return module.forward(input, value, out)
+
+
+def _rfundamental(input, value, op='RAdd', out=None):
+    if not isinstance(value, Tensor):
+        value = WrapScalar(value, input.dtype, input.device)
+    dev = MakeDevice(inputs=[input, value])
+    key = '{}/{}'.format(op, dev)
+    module = get_module(Fundamental, key, dev, op_type=op)
+    return module.forward(value, input, out)
+
+
+def add(input, value, out=None):
+    """Add the ``input`` and ``value`` into the output tensor.
 
     Parameters
     ----------
-    src : dragon.vm.torch.Tensor
-        The source tensor.
-    non_blocking : boolean
-        Whether to copy asynchronously between CPU and GPU.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The ``self`` tensor.
-
-    """
-    # Copy memory
-    FromTensor(
-        src, GetDeviceOption(src._ctx.device_type, src._ctx.device_id),
-        self.name, GetDeviceOption(self._ctx.device_type, self._ctx.device_id))
-    # Transfer the static shape if necessary
-    self._static_shape = src.size() \
-        if self._static_shape else None
-    return self
-
-
-Tensor.copy_ = copy_
-
-
-##############################################
-#                                            #
-#                INITIALIZER                 #
-#                                            #
-##############################################
-
-
-def fill_(self, value):
-    """Fill self tensor with the specified value.
-
-    Parameters
-    ----------
-    value : numerical type
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The self.
-
-    """
-    return _fill(self, self.shape, value)
-
-
-def uniform_(self, low=0, high=1):
-    """Fill self tensor with the specified uniform distribution.
-
-    Parameters
-    ----------
-    low : numerical type
-        The lower bound.
-    high : numerical type
-        The higher bound.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The self.
-
-    """
-    return _uniform(self, self.shape, low, high)
-
-
-def normal_(self, mean=0, std=1):
-    """Fill self tensor with the specified normal distribution.
-
-    Parameters
-    ----------
-    mean : numerical type
-        The mean(mu) of normal distribution.
-    std : numerical type
-        The std(sigma) of normal distribution.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The self.
-
-    """
-    return _normal(self, self.shape, mean, std)
-
-
-Tensor.fill_ = fill_
-Tensor.uniform_ = uniform_
-Tensor.normal_ = normal_
-
-
-##############################################
-#                                            #
-#                 ARITHMETIC                 #
-#                                            #
-##############################################
-
-
-def add(self, value):
-    """See ``torch.add()``
-
-    Parameters
-    ----------
-    value : dragon.vm.torch.Tensor, int or float
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    value : dragon.vm.torch.Tensor, number
         The value tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
 
     Returns
     -------
@@ -157,37 +103,62 @@ def add(self, value):
         The output tensor.
 
     """
-    return _fundamental(self, value, op='Add')
+    return _fundamental(input, value, out=out, op='Add')
 
 
-def add_(self, value):
-    """Inplace of ``torch.add()``
+def sub(input, value, out=None):
+    """Subtract the ``input`` and ``value`` into the output tensor.
 
     Parameters
     ----------
-    value : dragon.vm.torch.Tensor, int or float
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    value : dragon.vm.torch.Tensor or number
         The value tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    torch.Tensor
+        The output tensor.
+
+    """
+    return _fundamental(input, value, out=out, op='Sub')
+
+
+def mul(input, value, out=None):
+    """Multiply the ``input`` and ``value`` into the output tensor.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    value : dragon.vm.torch.Tensor or number
+        The value tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
 
     Returns
     -------
     dragon.vm.torch.Tensor
-        The self.
+        The output tensor.
 
     """
-    return _fundamental(self, value, out=self, op='Add')
+    return _fundamental(input, value, out=out, op='Mul')
 
 
-def radd(self, value):
-    return _rfundamental(self, value, op='RAdd')
-
-
-def sub(self, value):
-    """Subtract the ``self`` and ``value`` into the output tensor.
+def div(input, value, out=None):
+    """Divide the ``input`` and ``value`` into the output tensor.
 
     Parameters
     ----------
-    value : dragon.vm.torch.Tensor, int or float
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    value : dragon.vm.torch.Tensor or number
         The value tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
 
     Returns
     -------
@@ -195,399 +166,988 @@ def sub(self, value):
         The output tensor.
 
     """
-    return _fundamental(self, value, op='Sub')
+    return _fundamental(input, value, out=out, op='Div')
 
 
-def sub_(self, value):
-    """Inplace of ``Tensor.sub()``
-
-    Parameters
-    ----------
-    value : torch.Tensor, int or float
-        The value tensor.
-
-    Returns
-    -------
-    torch.Tensor
-        The self.
-
-    """
-    return _fundamental(self, value, out=self, op='Sub')
-
-
-def rsub(self, value):
-    return _rfundamental(self, value, op='RSub')
-
-
-def mul(self, value):
-    """Multiply the ``self`` and ``value`` into the output tensor.
+def maximum(input, other, out=None):
+    """Return the max value of given two tensors.
 
     Parameters
     ----------
-    value : torch.Tensor, int or float
-        The value tensor.
+    input : dragon.vm.torch.Tensor or number
+        The input tensor.
+    other : dragon.vm.torch.Tensor or number
+        The input tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
 
     Returns
     -------
-    torch.Tensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
-    return _fundamental(self, value, op='Mul')
+    if not isinstance(input, Tensor):
+        input = WrapScalar(input, other.dtype, other.device)
+    elif not isinstance(other, Tensor):
+        other = WrapScalar(other, input.dtype, input.device)
+    dev = MakeDevice(inputs=[input])
+    key = 'Maximum/{}'.format(dev)
+    module = get_module(Maximum, key, dev)
+    return module.forward(input, other, out)
 
 
-def mul_(self, value):
-    """Inplace of ``Tensor.mul()``
-
-    Parameters
-    ----------
-    value : torch.Tensor, int or float
-        The value tensor.
-
-    Returns
-    -------
-    torch.Tensor
-        The self.
-
-    """
-    return _fundamental(self, value, out=self, op='Mul')
-
-
-def rmul(self, value):
-    return _rfundamental(self, value, op='RMul')
-
-
-def div(self, value):
-    """Divide the ``self`` and ``value`` into the output tensor.
+def minimum(input, other, out=None):
+    """Return the min value of given two tensors.
 
     Parameters
     ----------
-    value : torch.Tensor, int or float
-        The value tensor.
+    input : dragon.vm.torch.Tensor or number
+        The input tensor.
+    other : dragon.vm.torch.Tensor or number
+        The input tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
 
     Returns
     -------
-    torch.Tensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
-    return _fundamental(self, value, op='Div')
+    if not isinstance(input, Tensor):
+        input = WrapScalar(input, other.dtype, other.device)
+    elif not isinstance(other, Tensor):
+        other = WrapScalar(other, input.dtype, input.device)
+    dev = MakeDevice(inputs=[input])
+    key = 'Minimum/{}'.format(dev)
+    module = get_module(Minimum, key, dev)
+    return module.forward(input, other, out)
 
 
-def div_(self, value):
-    """Inplace of ``Tensor.div()``
-
-    Parameters
-    ----------
-    value : torch.Tensor, int or float
-        The value tensor.
-
-    Returns
-    -------
-    torch.Tensor
-        The self.
-
-    """
-    return _fundamental(self, value, out=self, op='Div')
-
-
-def rdiv(self, value):
-    return _rfundamental(self, value, op='RDiv')
-
-
-def clamp(self, min=None, max=None):
-    """Return a tensor that all elements are clamped into the range [min, max].
+def clamp(input, min=None, max=None, out=None):
+    """Clamp all elements into the range [min, max].
 
     Parameters
     ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
     min : number, optional
         The min value.
     max : number, optional
         The max value.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
 
     Returns
     -------
-    torch.Tensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
-    return _clamp(self, min, max)
+    dev = MakeDevice(inputs=[input])
+    key = 'Clamp/{}/min:{}/max:{}'.format(dev, min, max)
+    module = get_module(Clamp, key, dev, min=min, max=max)
+    return module.forward(input, out)
 
 
-def clamp_(self, min=None, max=None):
-    """Clamp all elements are clamped into the range [min, max].
+def log(input, out=None):
+    """Compute the natural logarithm of input.
 
     Parameters
     ----------
-    min : number, optional
-        The min value.
-    max : number, optional
-        The max value.
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
 
     Returns
     -------
-    torch.Tensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
-    return _clamp(self, min, max, self)
+    dev = MakeDevice(inputs=[input])
+    key = 'Log/{}'.format(dev)
+    module = get_module(Log, key, dev)
+    return module.forward(input, out)
 
 
-def log(self):
-    """Compute the natural logarithm of this tensor.
-
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    torch.Tensor
-        The log tensor.
-
-    """
-    return _log(self)
-
-
-def exp(self):
-    """Compute the exponential of this tensor.
+def exp(input, out=None):
+    """Compute the exponential of input.
 
     Parameters
     ----------
-    None
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
 
     Returns
     -------
-    torch.Tensor
-        The exp tensor.
+    dragon.vm.torch.Tensor
+        The output tensor.
 
     """
-    return _exp(self)
+    dev = MakeDevice(inputs=[input])
+    key = 'Exp/{}'.format(dev)
+    module = get_module(Exp, key, dev)
+    return module.forward(input, out)
 
 
-def sqrt(self):
-    """Compute the square-root of this tensor.
+def sqrt(input, out=None):
+    """Compute the square-root of input.
 
     Parameters
     ----------
-    None
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
 
     Returns
     -------
-    torch.Tensor
-        The sqrt tensor.
+    dragon.vm.torch.Tensor
+        The output tensor.
 
     """
-    return _sqrt(self)
+    dev = MakeDevice(inputs=[input])
+    key = 'Sqrt/{}'.format(dev)
+    module = get_module(Sqrt, key, dev)
+    return module.forward(input, out)
 
 
-Tensor.add = add
-Tensor.add_ = add_
-Tensor.__radd__ = radd
-Tensor.sub = sub
-Tensor.sub_ = sub_
-Tensor.__rsub__ = rsub
-Tensor.mul = mul
-Tensor.mul_ = mul_
-Tensor.__rmul__ = rmul
-Tensor.div = div
-Tensor.div_ = div_
-Tensor.__rdiv__ = rdiv
-Tensor.__rtruediv__ = rdiv
-Tensor.clamp = clamp
-Tensor.clamp_ = clamp_
-Tensor.log = log
-Tensor.exp = exp
-Tensor.sqrt = sqrt
+def mm(mat1, mat2, transA=False, transB=False, out=None):
+    """Performs a matrix multiplication of the matrices ``mat1`` and ``mat2.``
+
+    Parameters
+    ----------
+    mat1 : dragon.vm.torch.Tensor
+        The matrix A.
+    mat2 : dragon.vm.torch.Tensor
+        The matrix B.
+    transA : boolean
+        Whether to transpose the ``mat1``.
+    transB : boolean
+        Whether to transpose the ``mat2``.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    dev = MakeDevice(inputs=[mat1, mat2])
+    key = 'Matmul/{}/transA:{}/transB:{}'.format(dev, transA, transB)
+    module = get_module(MM, key, dev, transA=transA, transB=transB)
+    return module.forward(mat1, mat2, out)
+
+
+def xw_plus_b(x, w, bias=None, transW=True, out=None):
+    """Compute *matmul(x, w) + bias.*``
+
+    Parameters
+    ----------
+    x : dragon.vm.torch.Tensor
+        The x.
+    w : dragon.vm.torch.Tensor
+        The w.
+    bias : dragon.vm.torch.Tensor, optional
+        The bias.
+    transW : boolean
+        Whether to transpose the ``w``.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    dev = MakeDevice(inputs=[x, w] + ([bias] if bias else []))
+    key = 'FullyConnected/{}/transW:{}'.format(dev, transW)
+    module = get_module(FullyConnected, key, dev, transW=transW)
+    return module.forward(x, w, bias, out)
 
 
 ##############################################
 #                                            #
-#                   ARRAY                    #
+#                   Array                    #
 #                                            #
 ##############################################
 
 
-def _squeeze(self, dim=None):
-    """Returns a tensor with all the dimensions of input of size 1 removed.
+def _reshape(input, shape, shape_like=None):
+    if shape_like is not None: shape = shape_like.shape
+    dev = MakeDevice(inputs=[input]); n_dim = len(shape)
+    key = 'Reshape/{}/n_dim:{}'.format(dev, n_dim)
+    module = get_module(Reshape, key, dev, n_dim=n_dim)
+    return module.forward(input, shape)
+
+
+def _permute(input, perm):
+    dev = MakeDevice(inputs=[input]); n_perm = len(perm)
+    key = 'Permute/{}/n_perm:{}'.format(dev, n_perm)
+    module = get_module(Permute, key, dev, n_perm=n_perm)
+    return module.forward(input, perm)
+
+
+def _repeat(input, times):
+    dev = MakeDevice(inputs=[input]); n_times = len(times)
+    key = 'Repeat/{}/n_times:{}'.format(dev, n_times)
+    module = get_module(Repeat, key, dev, n_times=n_times)
+    return module.forward(input, times)
+
+
+def _fill(input, shape, value):
+    dev = MakeDevice(inputs=[input]); n_dim = len(shape)
+    key = 'Fill/{}/dtype:{}/n_dim:{}/value:{}'.format(
+        dev, input.dtype, n_dim, value)
+    module = get_module(Fill, key, dev, n_dim=n_dim,
+        value=value, dtype=input.dtype)
+    return module.forward(input, shape)
+
+
+def _uniform(input, shape, low, high):
+    dev = MakeDevice(inputs=[input]); n_dim = len(shape)
+    key = 'Uniform/{}/dtype:{}/n_dim:{}/low:{}/high:{}'.format(
+        dev, input.dtype, n_dim, float(low), float(high))
+    module = get_module(
+        RandomUniform, key, dev, n_dim=n_dim,
+            low=low, high=high, dtype=input.dtype)
+    return module.forward(input, shape)
+
+
+def _normal(input, shape, mean, std):
+    dev = MakeDevice(inputs=[input]); n_dim = len(shape)
+    key = 'Normal/{}/dtype:{}/n_dim:{}/mean:{}/std:{}'.format(
+        dev, input.dtype, n_dim, float(mean), float(std))
+    module = get_module(
+        RandomNormal, key, dev, n_dim=n_dim,
+            mean=mean, std=std, dtype=input.dtype)
+    return module.forward(input, shape)
+
+
+def _reduce(input, operation, dim=None, keepdim=False, out=None):
+    if dim is None: keepdim = False
+    dev = MakeDevice(inputs=[input])
+    key = '{}/{}/dim:{}/keepdim:{}'.format(
+        operation, dev, dim, int(keepdim))
+    module = get_module(
+        Reduce, key, dev, operation=operation,
+            dim=dim, keepdim=keepdim)
+    return module.forward(input, out)
+
+
+def _arg_reduce(input, operation, dim=None, keepdim=False, top_k=1, out=None):
+    if dim is None: keepdim = False
+    dev = MakeDevice(inputs=[input])
+    key = '{}/{}/dim:{}/keepdim:{}/top_k:{}'.format(
+        operation, dev, dim, int(keepdim), top_k)
+    module = get_module(
+        ArgReduce, key, dev,
+            operation=operation, axis=dim,
+                keepdim=keepdim, top_k=top_k)
+    return module.forward(input, out)
+
+
+def _indexing(input, starts, sizes):
+    n_starts, n_sizes = len(starts), len(sizes)
+    dev = MakeDevice(inputs=[input])
+    key = 'Index/{}/n_starts:{}/n_sizes:{}'.format(dev, n_starts, n_sizes)
+    module = get_module(Indexing, key, dev, n_starts=n_starts, n_sizes=n_sizes)
+    return module.forward(input, starts, sizes)
+
+
+def _compare(input, other, operation, out=None):
+    if not isinstance(other, Tensor):
+        other = WrapScalar(other, input.dtype, input.device)
+    dev = MakeDevice(inputs=[input, other])
+    key = 'Compare/{}/{}'.format(operation, dev)
+    module = get_module(Compare, key, dev, operation=operation)
+    return module.forward(input, other, out)
+
+
+def squeeze(input, dim=None, out=None):
+    """Return a tensor with all the dimensions of input of size 1 removed.
 
     Parameters
     ----------
     dim : int
         The optional dim to remove.
-
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
 
     Returns
     -------
-    torch.Tensor
+    dragon.vm.torch.Tensor
         The new tensor.
 
     """
-    return squeeze(self, dim=dim)
+    dev = MakeDevice(inputs=[input])
+    key = 'Squeeze/{}/dim:{}'.format(dev, dim if dim else 'None')
+    module = get_module(Squeeze, key, dev, dim=dim)
+    return module.forward(input, out=out)
 
 
-def _squeeze_(self, dim=None):
-    """Inplace of ``Tensor.squeeze()``
-
-    Parameters
-    ----------
-    dim : int
-        The optional dim to remove.
-
-    Returns
-    -------
-    torch.Tensor
-        The self.
-
-    """
-    return squeeze(self, dim=dim, out=self)
-
-
-def _unsqueeze(self, dim):
+def unsqueeze(input, dim, out=None):
     """Returns a tensor with a dimension of size 1 inserted at the specified position.
 
     Parameters
     ----------
     dim : int
-        The dim to insert.
+        The dim to remove.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
 
     Returns
     -------
-    torch.Tensor
+    dragon.vm.torch.Tensor
         The new tensor.
 
     """
-    return unsqueeze(self, dim=dim)
+    dev = MakeDevice(inputs=[input])
+    key = 'Unsqueeze/{}/dim:{}'.format(dev, dim if dim else 'None')
+    module = get_module(UnSqueeze, key, dev, dim=dim)
+    return module.forward(input, out=out)
 
 
-def _unsqueeze_(self, dim=None):
-    """Inplace of ``Tensor.unsqueeze()``
+def mean(input, dim=None, keepdim=False, out=None):
+    """Return the mean of all elements or elements along the given dim.
 
     Parameters
     ----------
-    dim : int
-        The optional dim to remove.
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int, optional
+        The axis of tensor to compute mean value.
+    keepdim : bool, optional
+        Whether the output tensor has dim retained or not.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The mean-reduced tensor.
+
+    """
+    return _reduce(input, 'MEAN', dim, keepdim, out)
+
+
+def sum(input, dim=None, keepdim=False, out=None):
+    """Return the sum of all elements or elements along the given dim.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int, optional
+        The axis of tensor to compute sum value.
+    keepdim : bool, optional
+        Whether the output tensor has dim retained or not.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
 
     Returns
     -------
     torch.Tensor
-        The self.
+        The sum-reduced tensor.
 
     """
-    return unsqueeze(self, dim=dim, out=self)
+    return _reduce(input, 'SUM', dim, keepdim, out)
 
 
-def view(self, *args):
-    return reshape(self, shape=args)
-
-
-def view_as(self, other):
-    if not isinstance(other, Tensor):
-        raise ValueError('The other should be a torch tensor.')
-    return reshape(self, shape=None, shape_like=other)
-
-
-def permute(self, dims=None):
-    return _permute(self, dims)
-
-
-def repeat(self, *sizes):
-    if len(sizes) == 1 and \
-        isinstance(sizes[0], Size):
-            sizes = sizes[0]
-    return _repeat(self, sizes)
-
-
-def indexing(self, starts, ends):
-    return _indexing(self, starts, ends)
-
-
-def _narrow(self, dimension, start, length):
-    return narrow(self, dimension, start, length)
-
-
-def mean(self, dim=None, keepdim=False):
-    return _reduce(self, 'MEAN', dim, keepdim)
-
-
-def sum(self, dim=None, keepdim=False):
-    return _reduce(self, 'SUM', dim, keepdim)
-
-
-def max(self, dim=None, keepdim=False):
-    return _arg_reduce(self, 'MAX', dim, keepdim)
-
-
-def min(self, dim=None, keepdim=False):
-    return _arg_reduce(self, 'MIN', dim, keepdim)
-
-
-Tensor.squeeze = _squeeze
-Tensor.squeeze_ = _squeeze_
-Tensor.unsqueeze = _unsqueeze
-Tensor.unsqueeze_ = _unsqueeze_
-Tensor.view = view
-Tensor.view_as = view_as
-Tensor.permute = permute
-Tensor.repeat = repeat
-Tensor.mean = mean
-Tensor.sum = sum
-Tensor.max = max
-Tensor.min = min
-Tensor.narrow = _narrow
-Tensor._indexing = indexing
-
-
-##############################################
-#                                            #
-#                    TYPE                    #
-#                                            #
-##############################################
-
-
-def _type_to(input, dtype='float32', inplace=False):
-    if dtype == input.dtype: return input
-    ctx = MakeContext(inputs=[input])
-    key = 'Cast/{}/dtype:{}/inplace:{}'.format(
-        ctx, dtype, 'true' if inplace else 'false')
-    module = get_module(Cast, key, ctx, dtype=dtype, inplace=inplace)
-    return module.forward(input)
-
-
-def _type(self, dtype=None):
-    """Return the data type of this tensor.
-
-    If ``dtype`` is not ``None``, cast ``self`` to the new tensor.
+def argmax(input, dim=None, keepdim=False, out=None):
+    """Return the indices of maximum elements along the given axis.
 
     Parameters
     ----------
-    dtype : str
-        The specified type.
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int, optional
+        The axis of tensor to compute sum value.
+    keepdim : bool, optional
+        Whether the output tensor has dim retained or not.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
 
     Returns
     -------
-    str or torch.Tensor
-        The data type or the new tensor.
+    torch.Tensor
+        The maximum indices.
 
     """
-    if dtype is None:
-        return 'torch.' + self._type2str()
+    return _arg_reduce(input, 'ARGMAX', dim, keepdim, 1, out)
+
+
+def max(input, dim=None, keepdim=False, out=None):
+    """Return the values and indices of maximum elements along the given axis.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int, optional
+        The axis of tensor to compute sum value.
+    keepdim : bool, optional
+        Whether the output tensor has dim retained or not.
+    out : dragon.torch.Tensor, optional
+        The optional output tensor.
+
+    Returns
+    -------
+    tuple
+        The maximum values and indices.
+
+    """
+    return _arg_reduce(input, 'MAX', dim, keepdim, 1, out)
+
+
+def argmin(input, dim=None, keepdim=False, out=None):
+    """Return the indices of minimum elements along the given axis.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int, optional
+        The axis of tensor to compute sum value.
+    keepdim : bool, optional
+        Whether the output tensor has dim retained or not.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+
+    Returns
+    -------
+    torch.Tensor
+        The minimum indices.
+
+    """
+    return _arg_reduce(input, 'ARGMIN', dim, keepdim, 1, out)
+
+
+def min(input, dim=None, keepdim=False, out=None):
+    """Return the values and indices of maximum elements along the given axis.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int, optional
+        The axis of tensor to compute sum value.
+    keepdim : bool, optional
+        Whether the output tensor has dim retained or not.
+    out : dragon.torch.Tensor, optional
+        The optional output tensor.
+
+    Returns
+    -------
+    sequence
+        The minimum values and indices.
+
+    """
+    return _arg_reduce(input, 'MIN', dim, keepdim, 1, out)
+
+
+def topk(input, k, dim=None, largest=True, sorted=True, out=None):
+    """Return the k largest/smallest values and indices along the given axis.
+
+    If ``dim`` is not given, the last dimension of the input is chosen.
+
+    If ``largest`` is False then the k smallest elements are returned.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    k : int
+        The top k.
+    dim : int, optional
+        The axis of tensor to compute sum value.
+    largest : bool, optional
+        Whether to return largest or smallest elements.
+    sorted : bool, optional
+        Whether to return in the sorted order.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+
+    Returns
+    -------
+    sequence
+        The values and indices.
+
+    """
+    operation = 'MAX' if largest else 'MIN'
+    if dim is None: dim = input.ndimension() - 1
+    return _arg_reduce(input, operation, dim, True, k, out)
+
+
+def gt(input, other, out=None):
+    """Compute *input* > *other* element-wise.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    other : dragon.vm.torch.Tensor, number
+        The other tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output byte tensor.
+
+    """
+    return _compare(input, other, 'GT', out)
+
+
+def ge(input, other, out=None):
+    """Compute *input* >= *other* element-wise.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    other : dragon.vm.torch.Tensor, number
+        The other tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output byte tensor.
+
+    """
+    return _compare(input, other, 'GE', out)
+
+
+def lt(input, other, out=None):
+    """Compute *input* < *other* element-wise.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    other : dragon.vm.torch.Tensor, number
+        The other tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output byte tensor.
+
+    """
+    return _compare(input, other, 'LT', out)
+
+
+def le(input, other, out=None):
+    """Compute *input* <= *other* element-wise.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    other : dragon.vm.torch.Tensor, number
+        The other tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output byte tensor.
+
+    """
+    return _compare(input, other, 'LE', out)
+
+
+def eq(input, other, out=None):
+    """Compute *input* == *other* element-wise.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    other : dragon.vm.torch.Tensor, number
+        The other tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output byte tensor.
+
+    """
+    return _compare(input, other, 'EQ', out)
+
+
+def cat(seq, dim=0, out=None):
+    """Concatenate the inputs along the given axis.
+
+    Parameters
+    ----------
+    seq : sequence of dragon.vm.torch.Tensor
+        The sequence.
+    dim : int, optional
+        The dim to concatenate.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    dev = MakeDevice(inputs=seq, outputs=[out] if out else [])
+    key = 'Concat/{}/dim:{}'.format(dev, dim)
+    module = get_module(Concat, key, dev, axis=dim)
+    return module.forward(seq, out)
+
+
+def gather(input, dim, index, out=None):
+    """Gather the input values along the given axis.
+
+    Note that it is a tensorflow style gather, which takes a vector index,
+
+    values of other dimension will be copied automatically.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The values.
+    dim : int
+        The dim to gather.
+    index : dragon.vm.torch.Tensor
+        The indices.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    dev = MakeDevice(
+        inputs=[input, index],
+            outputs=[out] if out else [])
+    key = 'Gather/{}/dim:{}'.format(dev, dim)
+    module = get_module(Gather, key, dev, axis=dim)
+    return module.forward(input, index, out)
+
+
+def narrow(input, dimension, start, length):
+    """Return a new tensor that is a narrowed version of input tensor.
+
+    Parameters
+    ----------
+    input : torch.Tensor
+        The input tensor.
+    dimension : int
+        The dimension to narrow.
+    start : int
+        The starting position.
+    length : int
+        The distance to the ending postion.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    sizes = list(input.shape[:]); starts = [0] * len(sizes)
+    starts[dimension], sizes[dimension] = start, length
+    return _indexing(input, starts, sizes)
+
+
+def one_hot(input, depth):
+    """Return a ont hot tensor according to given input.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    depth : int
+        The depth of channels.
+
+    Returns
+    -------
+    dragon.vm.torch.FloatTensor
+        The output tensor.
+
+    """
+    dev = MakeDevice(inputs=[input])
+    key = 'OneHot/{}/depth:{}'.format(dev, depth)
+    module = get_module(OneHot, key, dev, depth=depth)
+    return module.forward(input)
+
+
+def multinomial(input, num_samples, normalize=False, out=None):
+    """Return a tensor where each row contains ``num_samples``,
+     sampled from the multinomial distribution.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    num_samples : int
+        The number of samples.
+    normalize : boolean, optional, default=False
+        Whether to normalize the inputs.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    dev = MakeDevice(inputs=[input])
+    key = 'Multinomial/{}/num_samples:{}/normalize:{}'.format(
+        dev, num_samples, normalize)
+    module = get_module(
+        Multinomial, key, dev,
+            num_samples=num_samples,
+                normalize=normalize)
+    return module.forward(input, out)
+
+
+##############################################
+#                                            #
+#                 Creation                   #
+#                                            #
+##############################################
+
+
+def _get_leaf_tensor(sizes, kwargs):
+    return _LeafTensor(sizes,
+        requires_grad=kwargs['requires_grad'] \
+            if 'requires_grad' in kwargs else False,
+        dtype=kwargs.get('dtype', 'float32'),
+        device=kwargs.get('device', _Device()))
+
+
+def zeros(*sizes, **kwargs):
+    """Return a float tensor with values of ``0``.
+
+    Parameters
+    ----------
+    sizes : tuple, list or int
+        The sizes indicating the shape of the output tensor.
+    out : dragon.vm.torch.Tensor
+        The optional output tensor.
+
+    Returns
+    -------
+    vm.torch.FloatTensor
+        The output tensor.
+
+    """
+    out = kwargs['out'] if 'out' in kwargs else None
+    if out is None: out = _get_leaf_tensor(sizes, kwargs)
+    return _fill(out, shape=sizes, value=0)
+
+
+def zeros_like(input, out=None, **kwargs):
+    """Return a float tensor with values of ``0``, shape as the input.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The tensor for indicating shape.
+    out : dragon.vm.torch.Tensor
+        The optional output tensor.
+
+    Returns
+    -------
+    vm.torch.FloatTensor
+        The output tensor.
+
+    """
+    if not hasattr(input, 'shape'):
+        raise ValueError('Input does not have the shape attribute.')
+    if out is None: out = _get_leaf_tensor(input.shape, kwargs)
+    return _fill(out, shape=input.shape, value=0)
+
+
+def ones(*sizes, **kwargs):
+    """Return a float tensor with values of ``1``.
+
+    Parameters
+    ----------
+    sizes : tuple, list or int
+        The sizes indicating the shape of the output tensor.
+    out : dragon.vm.torch.Tensor
+        The optional output tensor.
+
+    Returns
+    -------
+    vm.torch.FloatTensor
+        The output tensor.
+
+    """
+    out = kwargs['out'] if 'out' in kwargs else None
+    if out is None: out = _get_leaf_tensor(sizes, kwargs)
+    return _fill(out, shape=sizes, value=1)
+
+
+def ones_like(input, out=None, **kwargs):
+    """Return a float tensor with values of ``1``, shape as the input.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The tensor for indicating shape.
+    out : dragon.vm.torch.Tensor
+        The optional output tensor.
+
+    Returns
+    -------
+    vm.torch.FloatTensor
+        The output tensor.
+
+    """
+    if not hasattr(input, 'shape'):
+        raise ValueError('Input does not have the shape attribute.')
+    if out is None: out = _get_leaf_tensor(input.shape, kwargs)
+    return _fill(out, shape=input.shape, value=1)
+
+
+def rand(*sizes, **kwargs):
+    """Return a float tensor with a uniform distribution of U(0, 1).
+
+    Parameters
+    ----------
+    sizes : tuple, list or int
+        The sizes indicating the shape of the output tensor.
+    out : dragon.vm.torch.Tensor
+        The optional output tensor.
+
+    Returns
+    -------
+    vm.torch.FloatTensor
+        The output tensor.
+
+    """
+    out = kwargs['out'] if 'out' in kwargs else None
+    if out is None: out = _get_leaf_tensor(sizes, kwargs)
+    return _uniform(out, sizes, low=0, high=1)
+
+
+def randn(*sizes, **kwargs):
+    """Return a float tensor with a normal distribution of N(0, 1).
+
+    Parameters
+    ----------
+    sizes : tuple, list or int
+        The sizes indicating the shape of the output tensor.
+    out : dragon.vm.torch.Tensor
+        The optional output tensor.
+
+    Returns
+    -------
+    vm.torch.FloatTensor
+        The output tensor.
+
+    """
+    out = kwargs['out'] if 'out' in kwargs else None
+    if out is None: out = _get_leaf_tensor(sizes, kwargs)
+    return _normal(out, sizes, mean=0, std=1)
+
+
+##############################################
+#                                            #
+#                  Update                    #
+#                                            #
+##############################################
+
+
+def _accumulate(grads):
+    if len(grads) == 0: return
+    if not isinstance(grads, (list, tuple)): grads = [grads]
+    dev = MakeDevice(inputs=grads)
+    key = 'Accumulate/{}/alpha:1./beta:1.'.format(dev)
+    module = get_module(Accumulate, key, dev)
+    return module.forward(grads)
+
+
+def _allreduce(grads):
+    if not isinstance(grads, (list, tuple)): grads = [grads]
+    dev = MakeDevice(inputs=grads)
+    mode = mpi.GetParallelMode() + '_ALLREDUCE'
+    key = 'Collective/{}/{}'.format(dev, mode.lower())
+    module = get_module(Collective, key, dev, mode=mode)
+    return module.forward(grads)
+
+
+def _update(param, grad, op_type, slot,
+            lr_mult=1.0, decay_mult=1.0):
+    dev = MakeDevice(inputs=[param])
+    key = '{}/{}/{}/{}'.format(op_type, dev, slot, param.name)
+    module = get_module(Update, key, dev, op_type=op_type,
+        lr_mult=lr_mult, decay_mult=decay_mult, slot=slot)
+    return module.forward(param, grad)
+
+
+##############################################
+#                                            #
+#                  Vision                    #
+#                                            #
+##############################################
+
+
+def _resize_2d(input, op_type, dsize, fx, fy):
+    if dsize is None:
+        if fx < 0 or fy < 0:
+            raise ValueError('Set fx and fy if dsize is None.')
     else:
-        return _type_to(self, dtype=dtype)
+        if len(dsize) != 2:
+            raise ValueError('The dsize should be a list with 2 elements.')
+    if dsize is None and (fy == -1.0 or fx == -1.0):
+        raise RuntimeError('The dsize, fx/fy should be specified either.')
+    dev = MakeDevice(inputs=[input])
+    key = '{}/{}/dsize:{}/fx:{}/fy:{}'.format(
+        op_type, dev, '2' if dsize else 'none', fx, fy)
+    module = get_module(Resize2d, key, dev,
+        op_type=op_type, dsize=dsize, fx=fx, fy=fy)
+    return module.forward(input, dsize)
 
 
-Tensor.type = _type
-Tensor.half = lambda self: _type_to(self, dtype='float16', inplace=False)
-Tensor.half_ = lambda self: _type_to(self, dtype='float16', inplace=True)
-Tensor.float = lambda self: _type_to(self, dtype='float32', inplace=False)
-Tensor.float_ = lambda self: _type_to(self, dtype='float32', inplace=True)
-Tensor.double = lambda self: _type_to(self, dtype='float64', inplace=False)
-Tensor.double_ = lambda self: _type_to(self, dtype='float64', inplace=True)
-Tensor.byte = lambda self: _type_to(self, dtype='uint8', inplace=False)
-Tensor.byte_ = lambda self: _type_to(self, dtype='uint8', inplace=True)
-Tensor.char = lambda self: _type_to(self, dtype='int8', inplace=False)
-Tensor.char_ = lambda self: _type_to(self, dtype='int8', inplace=True)
-Tensor.int = lambda self: _type_to(self, dtype='int32', inplace=False)
-Tensor.int_ = lambda self: _type_to(self, dtype='int32', inplace=True)
-Tensor.long = lambda self: _type_to(self, dtype='int64', inplace=False)
-Tensor.long_ = lambda self: _type_to(self, dtype='int64', inplace=True)
+def nn_resize(input, dsize, fx=-1.0, fy=-1.0):
+    return _resize_2d(input, 'NNResize', dsize, fx, fy)
+
+
+def bilinear_resize(input, dsize, fx=-1.0, fy=-1.0):
+    return _resize_2d(input, 'BilinearResize', dsize, fx, fy)
+
+
+def roi_pool(feature, rois, pooled_h, pooled_w, spatial_scale):
+    dev = MakeDevice(inputs=[feature])
+    key = 'RoIPool/{}/pool_h:{}/pool_w:{}/spatial_scale:{}'.format(
+        dev, pooled_h, pooled_w, spatial_scale)
+    module = get_module(
+        RoIPool, key, dev,
+            pooled_h=pooled_h, pooled_w=pooled_w,
+                spatial_scale=spatial_scale)
+    return module.forward(feature, rois)
+
+
+def roi_align(feature, rois, pooled_h, pooled_w,
+              spatial_scale, sampling_ratio=2):
+    dev = MakeDevice(inputs=[feature])
+    key = 'RoIAlign/{}/pool_h:{}/pool_w:{}/' \
+          'spatial_scale:{}/sampling_ratio:{}'.format(
+        dev, pooled_h, pooled_w, spatial_scale, sampling_ratio)
+    module = get_module(
+        RoIAlign, key, dev,
+            pooled_h=pooled_h, pooled_w=pooled_w,
+                spatial_scale=spatial_scale,
+                    sampling_ratio=sampling_ratio)
+    return module.forward(feature, rois)

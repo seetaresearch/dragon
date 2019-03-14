@@ -16,17 +16,17 @@ from __future__ import print_function
 import numpy as np
 import dragon as dg
 
-from dragon.core import proto_utils as pb_utils
+from dragon.core import proto_utils
 from dragon.vm.torch.module import Module
 
 
 class BaseModule(Module):
-    def __init__(self, key, ctx, **kwargs):
+    def __init__(self, key, dev, **kwargs):
         super(BaseModule, self).__init__()
         self._module_key = key
-        self._ctx = ctx
-        self._args_dev = pb_utils.GetDeviceOption(
-            'CPU').SerializeToString()
+        self._device = dev
+        self._args_dev = proto_utils.\
+            GetDeviceOption('cpu').SerializeToString()
 
     def set_argument_i64(self, name, value):
         dg.C.FeedTensor(name, np.array(

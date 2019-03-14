@@ -17,8 +17,8 @@ from dragon.vm.torch.ops.modules.base import BaseModule
 
 
 class _InitModule(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(_InitModule, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(_InitModule, self).__init__(key, dev, **kwargs)
         self.n_dim = kwargs.get('n_dim', 0)
         self.dtype = kwargs.get('dtype', 'float32')
 
@@ -33,8 +33,8 @@ class _InitModule(BaseModule):
 
 
 class Fill(_InitModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(Fill, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Fill, self).__init__(key, dev, **kwargs)
         self.value = kwargs.get('value', 0.0)
         self.register_op()
 
@@ -53,8 +53,8 @@ class Fill(_InitModule):
 
 
 class RandomNormal(_InitModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(RandomNormal, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(RandomNormal, self).__init__(key, dev, **kwargs)
         self.mean = kwargs.get('mean', 0.0)
         self.std = kwargs.get('std', 1.0)
         self.register_op()
@@ -75,8 +75,8 @@ class RandomNormal(_InitModule):
 
 
 class RandomUniform(_InitModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(RandomUniform, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(RandomUniform, self).__init__(key, dev, **kwargs)
         self.low = kwargs.get('low', 0.0)
         self.high = kwargs.get('high', 1.0)
         self.register_op()

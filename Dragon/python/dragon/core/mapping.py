@@ -15,18 +15,18 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import numpy as np
+import numpy
 
 
 TENSOR_TYPE_TO_NP_TYPE = {
-    'bool': np.bool,
-    'int8': np.int8,
-    'uint8': np.uint8,
-    'int32': np.int32,
-    'int64': np.int64,
-    'float16': np.float16,
-    'float32': np.float32,
-    'float64': np.float64,
+    'bool': numpy.bool,
+    'int8': numpy.int8,
+    'uint8': numpy.uint8,
+    'int32': numpy.int32,
+    'int64': numpy.int64,
+    'float16': numpy.float16,
+    'float32': numpy.float32,
+    'float64': numpy.float64,
 }
 
 

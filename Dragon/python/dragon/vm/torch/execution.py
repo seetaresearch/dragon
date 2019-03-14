@@ -32,10 +32,10 @@ import dragon as dg
 import dragon.import_c_api as C
 from dragon.config import option
 
-from .c_api import Context
+from .c_api import device as _Device
 from .jit import JITRecorder, is_jit_enforced
 from .autograd.grad_mode import is_grad_enabled
-from .tensor import RuntimeTensor
+from .tensor import _RuntimeTensor
 from .pool import TensorPool
 
 
@@ -66,9 +66,9 @@ def RunOperator(
             outputs_name.append(output)
         else:
             # Legacy mode, a torch tensor is excepted
-            if isinstance(output, Context):
+            if isinstance(output, _Device):
                 name = TensorPool.get('${JOIN}' if requires_grad else '${DETACH}')
-                outputs[ix] = RuntimeTensor(name, ctx=output)
+                outputs[ix] = _RuntimeTensor(name, device=output)
             outputs_name.append(outputs[ix].name)
 
     # Key + Inputs + Outputs => Op

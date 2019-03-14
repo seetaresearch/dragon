@@ -24,7 +24,7 @@ from .operators import arithmetic as math_ops
 from .operators import control_flow as control_flow_ops
 from .operators import misc as misc_ops
 from .operators import mpi as mpi_ops
-from .operators import ndarray as array_ops
+from .operators import array as array_ops
 from .operators import norm as norm_ops
 from .operators import recurrent as recurrent_ops
 from .operators import contrib as contrib_ops
@@ -137,12 +137,15 @@ ExpandDims = array_ops.ExpandDims
 Squeeze = array_ops.Squeeze
 Shape = array_ops.Shape
 Arange = array_ops.Arange
+Multinomial = array_ops.Multinomial
 
 # Control Flow
 Copy = control_flow_ops.Copy
 Equal = control_flow_ops.Equal
 Less = control_flow_ops.Less
-Grater = control_flow_ops.Greater
+LessEqual = control_flow_ops.LessEqual
+Greater = control_flow_ops.Greater
+GreaterEqual = control_flow_ops.GreaterEqual
 
 # Misc
 Cast = AsType = misc_ops.Cast

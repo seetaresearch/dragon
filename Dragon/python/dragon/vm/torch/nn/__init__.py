@@ -21,13 +21,12 @@ from dragon.vm.torch.tensor import Parameter
 from .modules.conv import Conv2d, ConvTranspose2d
 from .modules.depthwise_conv import DepthwiseConv2d
 from .modules.pooling import MaxPool2d, AvgPool2d
+from .modules.linear import Linear
 
 from .modules.activation import (
     ReLU, LeakyReLU, ELU, SELU,
     Tanh, Sigmoid, Softmax,
 )
-
-from .modules.linear import Linear
 
 from .modules.loss import (
     BCEWithLogitsLoss,
@@ -36,11 +35,16 @@ from .modules.loss import (
     SigmoidFocalLoss, SoftmaxFocalLoss,
 )
 
+from .modules.rnn import (
+    RNNBase, RNNCellBase,
+    RNN, LSTM, GRU,
+    LSTMCell,
+)
+
 from .modules.container import Container, Sequential, ModuleList
 from .modules.batchnorm import BatchNorm1d, BatchNorm2d, BatchNorm3d
 from .modules.groupnorm import GroupNorm1d, GroupNorm2d, GroupNorm3d
 from .modules.affine import Affine
 from .modules.dropout import Dropout, Dropout2d, Dropout3d
 from .modules.dropblock import DropBlock2d
-from .modules.rnn import RNNBase, RNN, LSTM, GRU
 from . import init

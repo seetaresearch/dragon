@@ -17,8 +17,8 @@ from dragon.vm.torch.ops.modules.base import BaseModule
 
 
 class Fundamental(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(Fundamental, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Fundamental, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', 'Add')
         self.register_op()
 
@@ -32,8 +32,8 @@ class Fundamental(BaseModule):
 
 
 class Maximum(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(Maximum, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Maximum, self).__init__(key, dev, **kwargs)
         self.register_op()
 
     def register_op(self):
@@ -46,8 +46,8 @@ class Maximum(BaseModule):
 
 
 class Minimum(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(Minimum, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Minimum, self).__init__(key, dev, **kwargs)
         self.register_op()
 
     def register_op(self):
@@ -60,8 +60,8 @@ class Minimum(BaseModule):
 
 
 class Clamp(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(Clamp, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Clamp, self).__init__(key, dev, **kwargs)
         self.min = kwargs.get('min', None)
         self.max = kwargs.get('max', None)
         if self.min is not None: self.min = float(self.min)
@@ -84,8 +84,8 @@ class Clamp(BaseModule):
 
 
 class Log(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(Log, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Log, self).__init__(key, dev, **kwargs)
         self.register_op()
 
     def register_op(self):
@@ -98,8 +98,8 @@ class Log(BaseModule):
 
 
 class Exp(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(Exp, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Exp, self).__init__(key, dev, **kwargs)
         self.register_op()
 
     def register_op(self):
@@ -112,8 +112,8 @@ class Exp(BaseModule):
 
 
 class Sqrt(BaseModule):
-    def __init__(self, key, ctx, **kwargs):
-        super(Sqrt, self).__init__(key, ctx, **kwargs)
+    def __init__(self, key, dev, **kwargs):
+        super(Sqrt, self).__init__(key, dev, **kwargs)
         self.register_op()
 
     def register_op(self):
@@ -121,5 +121,45 @@ class Sqrt(BaseModule):
 
     def forward(self, x, y):
         inputs = [x]; self.unify_devices(inputs)
+        outputs = [y] if y else [self.register_output()]
+        return self.run(inputs, outputs)
+
+
+class MM(BaseModule):
+    def __init__(self, key, dev, **kwargs):
+        super(MM, self).__init__(key, dev, **kwargs)
+        self.transA = kwargs.get('transA', False)
+        self.transB = kwargs.get('transB', False)
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'Matmul',
+            'arguments': {
+                'transA': self.transA,
+                'transB': self.transB,
+            }}
+
+    def forward(self, x1, x2, y):
+        inputs = [x1, x2]; self.unify_devices(inputs)
+        outputs = [y] if y else [self.register_output()]
+        return self.run(inputs, outputs)
+
+
+class FullyConnected(BaseModule):
+    def __init__(self, key, dev, **kwargs):
+        super(FullyConnected, self).__init__(key, dev, **kwargs)
+        self.transW = kwargs.get('transW', True)
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'FullyConnected',
+            'arguments': {'transW': self.transW},
+        }
+
+    def forward(self, x, w, b=None, y=None):
+        inputs = [x, w] + ([b] if b else [])
+        self.unify_devices(inputs)
         outputs = [y] if y else [self.register_output()]
         return self.run(inputs, outputs)

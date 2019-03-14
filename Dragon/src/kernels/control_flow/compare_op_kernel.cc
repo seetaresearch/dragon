@@ -51,6 +51,22 @@ void _Less(
     }
 }
 
+/*! LessEqual <T = ?, Device = CPU> */
+
+template <typename T>
+void _LessEqual(
+    const int               count,
+    const T*                a,
+    const T*                b,
+    bool*                   y) {
+#ifdef WITH_OMP
+#pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        y[i] = a[i] <= b[i] ? true : false;
+    }
+}
+
 /*! Greater <T = ?, Device = CPU> */
 
 template <typename T>
@@ -64,6 +80,22 @@ void _Greater(
 #endif
     for (int i = 0; i < count; ++i) {
         y[i] = a[i] > b[i] ? true : false;
+    }
+}
+
+/*! GreaterEqual <T = ?, Device = CPU> */
+
+template <typename T>
+void _GreaterEqual(
+    const int               count,
+    const T*                a,
+    const T*                b,
+    bool*                   y) {
+#ifdef WITH_OMP
+#pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#endif
+    for (int i = 0; i < count; ++i) {
+        y[i] = a[i] >= b[i] ? true : false;
     }
 }
 
@@ -93,6 +125,14 @@ DEFINE_COMPARE_WARPPER(int64_t, Less, _Less);
 DEFINE_COMPARE_WARPPER(float, Less, _Less);
 DEFINE_COMPARE_WARPPER(double, Less, _Less);
 
+DEFINE_COMPARE_WARPPER(bool, LessEqual, _LessEqual);
+DEFINE_COMPARE_WARPPER(int8_t, LessEqual, _LessEqual);
+DEFINE_COMPARE_WARPPER(uint8_t, LessEqual, _LessEqual);
+DEFINE_COMPARE_WARPPER(int, LessEqual, _LessEqual);
+DEFINE_COMPARE_WARPPER(int64_t, LessEqual, _LessEqual);
+DEFINE_COMPARE_WARPPER(float, LessEqual, _LessEqual);
+DEFINE_COMPARE_WARPPER(double, LessEqual, _LessEqual);
+
 DEFINE_COMPARE_WARPPER(bool, Greater, _Greater);
 DEFINE_COMPARE_WARPPER(int8_t, Greater, _Greater);
 DEFINE_COMPARE_WARPPER(uint8_t, Greater, _Greater);
@@ -100,6 +140,14 @@ DEFINE_COMPARE_WARPPER(int, Greater, _Greater);
 DEFINE_COMPARE_WARPPER(int64_t, Greater, _Greater);
 DEFINE_COMPARE_WARPPER(float, Greater, _Greater);
 DEFINE_COMPARE_WARPPER(double, Greater, _Greater);
+
+DEFINE_COMPARE_WARPPER(bool, GreaterEqual, _GreaterEqual);
+DEFINE_COMPARE_WARPPER(int8_t, GreaterEqual, _GreaterEqual);
+DEFINE_COMPARE_WARPPER(uint8_t, GreaterEqual, _GreaterEqual);
+DEFINE_COMPARE_WARPPER(int, GreaterEqual, _GreaterEqual);
+DEFINE_COMPARE_WARPPER(int64_t, GreaterEqual, _GreaterEqual);
+DEFINE_COMPARE_WARPPER(float, GreaterEqual, _GreaterEqual);
+DEFINE_COMPARE_WARPPER(double, GreaterEqual, _GreaterEqual);
 
 template <> void Equal<float16, CPUContext>(
     const int               count,
@@ -119,7 +167,25 @@ template <> void Less<float16, CPUContext>(
     CPU_FP16_NOT_SUPPORTED;
 }
 
+template <> void LessEqual<float16, CPUContext>(
+    const int               count,
+    const float16*          a,
+    const float16*          b,
+    bool*                   y,
+    CPUContext*             ctx) {
+    CPU_FP16_NOT_SUPPORTED;
+}
+
 template <> void Greater<float16, CPUContext>(
+    const int               count,
+    const float16*          a,
+    const float16*          b,
+    bool*                   y,
+    CPUContext*             ctx) {
+    CPU_FP16_NOT_SUPPORTED;
+}
+
+template <> void GreaterEqual<float16, CPUContext>(
     const int               count,
     const float16*          a,
     const float16*          b,

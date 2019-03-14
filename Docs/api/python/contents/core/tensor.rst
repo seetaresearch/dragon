@@ -47,7 +47,7 @@ Override
 List                              Brief
 ==============================    =============================================================================
 `Tensor.__add__`_                 x.__add__(y) <=> x + y
-`Tensor.__radd__`_                 x.__radd__(y) <=> y + x
+`Tensor.__radd__`_                x.__radd__(y) <=> y + x
 `Tensor.__sub__`_                 x.__sub__(y) <=> x - y
 `Tensor.__rsub__`_                x.__rsub__(y) <=> y - x
 `Tensor.__mul__`_                 x.__mul__(y) <=> x * y
@@ -55,7 +55,12 @@ List                              Brief
 `Tensor.__div__`_                 x.__div__(y) <=> x / y
 `Tensor.__rdiv__`_                x.__rdiv__(y) <=> y / x
 `Tensor.__neg__`_                 x.__neg__()  <=> -x
-`Tensor.__str__`_                 Return the information(name/shape).
+`Tensor.__gt__`_                  x.__gt__()  <=> x > y
+`Tensor.__ge__`_                  x.__ge__()  <=> x >= y
+`Tensor.__lt__`_                  x.__lt__()  <=> x < y
+`Tensor.__le__`_                  x.__le__()  <=> x <= y
+`Tensor.__eq__`_                  x.__eq__()  <=> x == y
+`Tensor.__repr__`_                Return the information(name/shape).
 `Tensor.__getitem__`_             Return a Tensor with specific indices.
 `Tensor.__call__`_                Return the expressions for displaying.
 ==============================    =============================================================================
@@ -70,6 +75,24 @@ API Reference
     :members:
 
     .. automethod:: __init__
+    .. automethod:: __add__
+    .. automethod:: __radd__
+    .. automethod:: __sub__
+    .. automethod:: __rsub__
+    .. automethod:: __mul__
+    .. automethod:: __rmul__
+    .. automethod:: __div__
+    .. automethod:: __rdiv__
+    .. automethod:: __neg__
+    .. automethod:: __gt__
+    .. automethod:: __ge__
+    .. automethod:: __lt__
+    .. automethod:: __le__
+    .. automethod:: __eq__
+    .. automethod:: __eq__
+    .. automethod:: __repr__
+    .. automethod:: __getitem__
+    .. automethod:: __call__
 
 .. _Tensor.Variable: #dragon.core.tensor.Tensor.Variable
 .. _Tensor.Placeholder: #dragon.core.tensor.Tensor.Placeholder
@@ -90,8 +113,12 @@ API Reference
 .. _Tensor.__div__: #dragon.core.tensor.Tensor.__div__
 .. _Tensor.__rdiv__: #dragon.core.tensor.Tensor.__rdiv__
 .. _Tensor.__neg__: #dragon.core.tensor.Tensor.__neg__
-.. _Tensor.__str__: #dragon.core.tensor.Tensor.__str__
-.. _Tensor.__getattr__: #dragon.core.tensor.Tensor.__getattr__
+.. _Tensor.__gt__: #dragon.core.tensor.Tensor.__gt__
+.. _Tensor.__ge__: #dragon.core.tensor.Tensor.__ge__
+.. _Tensor.__lt__: #dragon.core.tensor.Tensor.__lt__
+.. _Tensor.__le__: #dragon.core.tensor.Tensor.__le__
+.. _Tensor.__eq__: #dragon.core.tensor.Tensor.__eq__
+.. _Tensor.__repr__: #dragon.core.tensor.Tensor.__repr__
 .. _Tensor.__getitem__: #dragon.core.tensor.Tensor.__getitem__
 .. _Tensor.__call__: #dragon.core.tensor.Tensor.__call__
 
