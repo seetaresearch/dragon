@@ -57,6 +57,9 @@ class _BatchNorm(Module):
             }
         }
 
+    def half(self):
+        return self # Float32 parameters are required
+
     def extra_repr(self):
         return '{num_features}, eps={eps}, momentum={momentum}, affine={affine}, ' \
                'track_running_stats={track_running_stats}'.format(**self.__dict__)

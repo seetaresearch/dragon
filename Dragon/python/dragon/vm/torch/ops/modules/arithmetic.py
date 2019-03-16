@@ -163,3 +163,24 @@ class FullyConnected(BaseModule):
         self.unify_devices(inputs)
         outputs = [y] if y else [self.register_output()]
         return self.run(inputs, outputs)
+
+
+class Accumulate(BaseModule):
+    def __init__(self, key, dev, **kwargs):
+        super(Accumulate, self).__init__(key, dev, **kwargs)
+        self.alpha = kwargs.get('alpha', 1.)
+        self.beta = kwargs.get('beta', 1.)
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'Accumulate',
+            'arguments': {
+                'alpha': self.alpha,
+                'beta': self.beta,
+            },
+        }
+
+    def forward(self, x, y=None):
+        outputs = [y] if y else [self.register_output()]
+        return self.run([x], outputs, auto_grad=False)

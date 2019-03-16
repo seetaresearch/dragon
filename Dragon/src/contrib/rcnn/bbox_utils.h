@@ -90,57 +90,95 @@ inline void GenerateAnchors(
 
 template <typename T>
 inline void GenerateGridAnchors(
-    const int                       A,
+    const int                       num_proposals,
+    const int                       num_anchors,
     const int                       feat_h,
     const int                       feat_w,
     const int                       stride,
+    const int                       base_offset,
     const T*                        anchors,
+    const int64_t*                  indices,
     T*                              proposals) {
-    T* proposal = proposals;
-    for (int a = 0; a < A; ++a) {
-        for (int h = 0; h < feat_h; ++h) {
-            for (int w = 0; w < feat_w; ++w) {
-                const T x = (T)w * stride;
-                const T y = (T)h * stride;
-                proposal[0] = x + anchors[a * 4 + 0];
-                proposal[1] = y + anchors[a * 4 + 1];
-                proposal[2] = x + anchors[a * 4 + 2];
-                proposal[3] = y + anchors[a * 4 + 3];
-                proposal += 5;
-            }
+    T x, y;
+    int idx_3d, a, h, w;
+    int idx_range = num_anchors * feat_h * feat_w;
+    for (int i = 0; i < num_proposals; ++i) {
+        idx_3d = (int)indices[i] - base_offset;
+        if (idx_3d >= 0 && idx_3d < idx_range) {
+            w = idx_3d % feat_w;
+            h = (idx_3d / feat_w) % feat_h;
+            a = idx_3d / feat_w / feat_h;
+            x = (T)w * stride, y = (T)h * stride;
+            auto* A = anchors + a * 4;
+            auto* P = proposals + i * 5;
+            P[0] = x + A[0], P[1] = y + A[1];
+            P[2] = x + A[2], P[3] = y + A[3];
         }
     }
 }
 
 /******************** Proposal ********************/
 
-template <typename T, class Context>
-void GenerateProposals(
-    const int                       A,
-    const int                       feat_h,
-    const int                       feat_w,
-    const int                       stride,
+template <typename T>
+void GenerateSSProposals(
+    const int                       K,
+    const int                       num_proposals,
     const float                     im_h,
     const float                     im_w,
     const float                     min_box_h,
     const float                     min_box_w,
     const T*                        scores,
-    const T*                        bbox_deltas,
-    const T*                        anchors,
-    T*                              proposals,
-    Context*                        ctx);
+    const T*                        deltas,
+    const int64_t*                  indices,
+    T*                              proposals) {
+    int64_t index, a, k;
+    const float* delta;
+    float* proposal = proposals;
+    float dx, dy, d_log_w, d_log_h;
+    for (int i = 0; i < num_proposals; ++i) {
+        index = indices[i];
+        a = index / K, k = index % K;
+        delta = deltas + k;
+        dx = delta[(a * 4 + 0) * K];
+        dy = delta[(a * 4 + 1) * K];
+        d_log_w = delta[(a * 4 + 2) * K];
+        d_log_h = delta[(a * 4 + 3) * K];
+        proposal[4] = BBoxTransform<float>(
+            dx, dy, d_log_w, d_log_h,
+                im_w, im_h, min_box_w, min_box_h,
+                    proposal) * scores[index];
+        proposal += 5;
+    }
+}
 
-template <typename T, class Context>
-void GenerateProposals_v2(
-    const int                       total_anchors,
+template <typename T>
+void GenerateMSProposals(
+    const int                       num_candidates,
+    const int                       num_proposals,
     const float                     im_h,
     const float                     im_w,
     const float                     min_box_h,
     const float                     min_box_w,
     const T*                        scores,
-    const T*                        bbox_deltas,
-    T*                              proposals,
-    Context*                        ctx);
+    const T*                        deltas,
+    const int64_t*                  indices,
+    T*                              proposals) {
+    int64_t index;
+    float* proposal = proposals;
+    float dx, dy, d_log_w, d_log_h;
+    for (int i = 0; i < num_proposals; ++i) {
+        index = indices[i];
+        dx = deltas[index];
+        dy = deltas[num_candidates + index];
+        d_log_w = deltas[2 * num_candidates + index];
+        d_log_h = deltas[3 * num_candidates + index];
+        proposal[4] = BBoxTransform<float>(
+            dx, dy, d_log_w, d_log_h,
+                im_w, im_h, min_box_w, min_box_h,
+                    proposal) * scores[index];
+        proposal += 5;
+    }
+}
 
 template <typename T>
 inline void SortProposals(
@@ -174,7 +212,7 @@ inline void RetrieveRoIs(
     const int                       num_rois,
     const int                       roi_batch_ind,
     const T*                        proposals,
-    const int*                      roi_indices,
+    const int64_t*                  roi_indices,
     T*                              rois) {
     for (int i = 0; i < num_rois; ++i) {
         const T* proposal = proposals + roi_indices[i] * 5;
@@ -248,7 +286,7 @@ void ApplyNMS(
     const int                       max_keeps,
     const T                         thresh,
     const T*                        boxes,
-    int*                            keep_indices,
+    int64_t*                        keep_indices,
     int&                            num_keep,
     Context*                        ctx);
 

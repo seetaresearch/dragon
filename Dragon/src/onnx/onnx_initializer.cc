@@ -79,66 +79,66 @@ void ONNXBackend::ONNXTensorToArgument(
     Argument*                           dtype,
     Argument*                           values) {
     if (onnx_tensor.data_type() == TensorProto::FLOAT16) {
-        /*! floa16 - float_data */
+        /*! float16: raw_data = >floats */
         dtype->set_s("float16");
         auto* floats = values->mutable_floats();
         CHECK((TryConvertingTensorRawValues_v2<
             google::protobuf::uint16, float>(onnx_tensor, floats)))
                 << "Excepted the raw data to store the FLOAT16.";
     } else if (onnx_tensor.data_type() == TensorProto::FLOAT) {
-        /*! float32 - float_data */
+        /*! float32: float_data | raw_data => floats */
         dtype->set_s("float32");
         auto* floats = values->mutable_floats();
         if (!TryConvertingTensorRawValues<float>(onnx_tensor, floats)) {
             floats->CopyFrom(onnx_tensor.float_data());
         } 
     } else if (onnx_tensor.data_type() == TensorProto::DOUBLE) {
-        /*! float64 - double_data */
+        /*! float64: double_data | raw_data => floats */
         dtype->set_s("float64");
         google::protobuf::RepeatedField<double> tmp;
         const auto* src = &tmp;
         if (!TryConvertingTensorRawValues<double>(onnx_tensor, &tmp)) {
             src = &onnx_tensor.double_data();
-        } 
+        }
         for (const auto i : *src) values->add_floats(i);
     } else if (onnx_tensor.data_type() == TensorProto::INT64) {
-        /*! <int64> - int64 - int64_data */
+        /*! int64: int64_data | raw_data => ints */
         dtype->set_s("int64");
         ConvertIntegralValue<google::protobuf::int64>(onnx_tensor, values);
     } else if (onnx_tensor.data_type() == TensorProto::UINT64) {
-        /*! <uint64> - uint64 - uint64_data */
+        /*! uint64: uint64_data | raw_data => ints */
         dtype->set_s("uint64");
         ConvertIntegralValue<google::protobuf::uint64>(onnx_tensor, values);
     } else if (onnx_tensor.data_type() == TensorProto::UINT32) {
-        /*! <uint64> - uint32 - uint64_data */
+        /*! uint32: uint64_data | raw_data => ints */
         dtype->set_s("uint32");
         ConvertIntegralValue<google::protobuf::uint64>(onnx_tensor, values);
     } else if (onnx_tensor.data_type() == TensorProto::BOOL) {
-        /*! <T> - bool - int32_data */
+        /*! bool: int32_data | raw_data => ints */
         dtype->set_s("bool");
         ConvertIntegralValue<google::protobuf::int8>(onnx_tensor, values);
     } else if (onnx_tensor.data_type() == TensorProto::UINT8) {
-        /*! <T> - uint8 - int32_data */
+        /*! uint8: int32_data | raw_data => ints */
         dtype->set_s("uint8");
         ConvertIntegralValue<google::protobuf::uint8>(onnx_tensor, values);
     } else if (onnx_tensor.data_type() == TensorProto::INT8) {
-        /*! <T> - int8 - int32_data */
+        /*! int8: int32_data | raw_data => ints */
         dtype->set_s("int8");
         ConvertIntegralValue<google::protobuf::int8>(onnx_tensor, values);
     } else if (onnx_tensor.data_type() == TensorProto::UINT16) {
-        /*! <T> - uint16 - int32_data */
+        /*! uint16: int32_data | raw_data => ints */
         dtype->set_s("uint16");
         ConvertIntegralValue<google::protobuf::uint16>(onnx_tensor, values);
     } else if (onnx_tensor.data_type() == TensorProto::INT16) {
-        /*! <T> - int16 - int32_data */
+        /*! int16: int32_data | raw_data => ints */
         dtype->set_s("int16");
         ConvertIntegralValue<google::protobuf::int16>(onnx_tensor, values);
     } else if (onnx_tensor.data_type() == TensorProto::INT32) {
-        /*! <T> - int32 - int32_data */
+        /*! int32: int32_data | raw_data => ints */
         dtype->set_s("int32");
         ConvertIntegralValue<google::protobuf::int32>(onnx_tensor, values);
     } else if (onnx_tensor.data_type() == TensorProto::STRING) {
-        /*! <string> - string - string_data */
+        /*! string: string_data => strings */
         dtype->set_s("string");
         auto* strings = values->mutable_strings();
         strings->CopyFrom(onnx_tensor.string_data());

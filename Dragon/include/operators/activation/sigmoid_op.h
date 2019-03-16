@@ -47,7 +47,7 @@ public:
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
         CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc));
-        CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc, 
+        CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc,
             CUDNN_ACTIVATION_SIGMOID, CUDNN_PROPAGATE_NAN, 0));
     }
     USE_OPERATOR_FUNCTIONS;

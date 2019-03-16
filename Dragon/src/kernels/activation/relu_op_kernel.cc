@@ -49,6 +49,18 @@ template<> void ReluGrad<float, CPUContext>(
     }
 }
 
+/*! ReluGrad <T = float16, Device = CPU> */
+
+template<> void ReluGrad<float16, CPUContext>(
+    const int               count,
+    const float             slope,
+    const float16*          dy,
+    const float16*          y,
+    float16*                dx,
+    CPUContext*             ctx) {
+    CPU_FP16_NOT_SUPPORTED;
+}
+
 }  // namespace kernel
 
 }  // namepsace dragon

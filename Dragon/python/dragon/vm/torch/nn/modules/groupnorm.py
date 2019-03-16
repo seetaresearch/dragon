@@ -51,6 +51,13 @@ class _GroupNorm(Module):
             }
         }
 
+    def half(self):
+        return self # Float32 parameters are required
+
+    def extra_repr(self):
+        return '{num_features}, eps={eps}, group={group}, ' \
+               'affine={affine}'.format(**self.__dict__)
+
     def forward(self, input):
         inputs = [input] + self.inputs
         self.unify_devices(inputs)

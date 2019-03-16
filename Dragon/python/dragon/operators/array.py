@@ -17,7 +17,7 @@ from . import *
 
 
 @OpSchema.Inputs(1)
-def Gather(inputs, indices, axis=0, zero_grad=True, **kwargs):
+def Gather(inputs, indices, axis=0, **kwargs):
     """Gather the input according to the indices along the given axis.
 
     **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
@@ -30,8 +30,6 @@ def Gather(inputs, indices, axis=0, zero_grad=True, **kwargs):
         The indices to form output tensor.
     axis : int, optional
         The start axis, can be negative.
-    zero_grad : bool, optional
-        Whether to accumulate the gradients.
 
     Returns
     -------
@@ -49,10 +47,14 @@ def Gather(inputs, indices, axis=0, zero_grad=True, **kwargs):
 @OpSchema.Inputs(1)
 @ArgumentHelper.RepeatedDesc('starts')
 @ArgumentHelper.RepeatedDesc('sizes')
-def Crop(inputs, starts, sizes, start_axis=None, offsets=None, shape_like=None, **kwargs):
+def Crop(
+    inputs, starts=None, sizes=None,
+        start_axis=None, offsets=None,
+            shape_like=None, **kwargs
+):
     """Crop the input according to the given starts and sizes.
 
-    Set ``starts`` and ``sizes`` to *None*, if using ``start_axis``, ``offsets`` and ``shape_like``.
+    The value of ``sizes`` could be set to *-1* (to end) or *0* (squeeze).
 
     **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
@@ -60,10 +62,10 @@ def Crop(inputs, starts, sizes, start_axis=None, offsets=None, shape_like=None, 
     ----------
     inputs : Tensor
         The input tensor.
-    starts : int, Tensor, sequence of (int, Tensor)
-        The starts.
-    sizes : int, Tensor, sequence of (int, Tensor)
-        The crop sizes.
+    starts : sequence of (int, Tensor), optional
+        The start pos of each dimension.
+    sizes : sequence of (int, Tensor), optional
+        The size of each dimension.
     start_axis : int, optional
         The axis to start.
     offsets : int, sequence of, optional

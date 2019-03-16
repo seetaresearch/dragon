@@ -425,26 +425,13 @@ class Tensor(object):
         return 'Tensor("{}", shape={}, dtype={})' \
             .format(self.name, shape_str, self.dtype)
 
-    def __getitem__(self, item):
-        """Return a Tensor with specific indices.
-
-        Parameters
-        ----------
-        item : int, slice or Tensor
-            The indices.
-
-        Returns
-        -------
-        Tensor
-            The output tensor.
-
-        """
+    def _process_indices(self, item):
         if not isinstance(item, (slice, tuple)):
             if not isinstance(item, int):
                 raise ValueError('The index should be a integer.')
             item = (item,)
         if not isinstance(item, tuple): item = tuple([item])
-        starts = []; sizes = []
+        starts, sizes = [], []
         for ix, it in enumerate(item):
             if isinstance(it, slice):
                 # Handle start
@@ -457,20 +444,36 @@ class Tensor(object):
                     sizes.append(it.stop - starts[-1])
                     if sizes[-1] == 0:
                         raise ValueError(
-                            'The cropping starts and ends of axis {} '
+                            'The starts and ends of axis {} '
                                 'can not be equal, got {}:{}.'
                                     .format(ix, starts[-1], it.stop))
                 # Handle step
                 if it.step is not None:
-                    raise NotImplementedError('Cropping with step has not been implemented yet. ')
+                    raise NotImplementedError(
+                        'Indexing with step has not been implemented yet. ')
             elif isinstance(it, int):
                 starts.append(it)
                 sizes.append(0)
             else:
-                raise TypeError('Unsupported type of indices: {}'.format(type(type(it))))
+                raise TypeError('Unsupported type of indices: {}'.format(type(it)))
+        return starts, sizes
 
+    def __getitem__(self, item):
+        """Return the value at the specific indices.
+
+        Parameters
+        ----------
+        item : int or slice
+            The indices.
+
+        Returns
+        -------
+        Tensor
+            The output tensor.
+
+        """
+        starts, sizes = self._process_indices(item)
         output = self.CreateOperator('Crop', self, starts=starts, sizes=sizes)
-
         if self.shape is not None:
             output_shape, squeeze_shape = self.shape[:], []
             for ix in range(len(sizes)):
@@ -479,8 +482,28 @@ class Tensor(object):
                 if dim != -1: squeeze_shape.append(dim)
             if len(squeeze_shape) == 0: output.shape = []
             else: output.shape = squeeze_shape[:]
-
         return output
+
+    def __setitem__(self, key, value):
+        """Set the value at the specific indices.
+
+        Parameters
+        ----------
+        key : int or slice
+            The indices.
+        value : Tensor, number or sequence
+            The value.
+
+        Returns
+        -------
+        None
+
+        """
+        starts, sizes = self._process_indices(key)
+        if not isinstance(value, Tensor):
+            value = self._from_constants(value)
+        return self.CreateOperator('Assign', [value],
+            existing_outputs=[self], starts=starts, sizes=sizes)
 
     def _from_constants(self, value):
         if not isinstance(value, np.ndarray):

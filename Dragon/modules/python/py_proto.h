@@ -34,6 +34,9 @@ void AddProtoMethods(pybind11::module& m) {
       }).def("SerializeAs", [](
             OperatorDef*            self) {
             return pybind11::bytes(self->SerializeAsString());
+      }).def("__repr__", [](
+          OperatorDef*            self) {
+          return self->DebugString();
       }).def("add_input", [](
             OperatorDef*            self,
             const string&           input) {

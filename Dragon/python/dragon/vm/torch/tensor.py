@@ -475,20 +475,7 @@ class Tensor(object):
                 # PyGC will detect them automatically
                 TensorPool.put(self.name)
 
-    def __getitem__(self, item):
-        """Return a Tensor with specific indices.
-
-        Parameters
-        ----------
-        item : int, slice or Tensor
-            The indices.
-
-        Returns
-        -------
-        Tensor
-            The output tensor.
-
-        """
+    def _process_indices(self, item):
         if not isinstance(item, (slice, tuple)):
             # + value[?]
             if not isinstance(item, int):
@@ -498,7 +485,7 @@ class Tensor(object):
             # + value[?:?]
             item = tuple([item])
         # + value[?:?, ?:?, ...]
-        starts = []; sizes = []
+        starts, sizes = [], []
         for ix, it in enumerate(item):
             if isinstance(it, slice):
                 # Handle start
@@ -511,18 +498,54 @@ class Tensor(object):
                     sizes.append(it.stop - starts[-1])
                     if sizes[-1] == 0:
                         raise ValueError(
-                            'The cropping starts and ends of axis {} '
+                            'The starts and ends of axis {} '
                                 'can not be equal, got {}:{}.'
                                     .format(ix, starts[-1], it.stop))
                 # Handle step
                 if it.step is not None:
-                    raise NotImplementedError('Indexing with step has not been implemented yet. ')
+                    raise NotImplementedError(
+                        'Indexing with step has not been implemented yet. ')
             elif isinstance(it, int):
                 starts.append(it)
                 sizes.append(0)
             else:
-                raise TypeError('Unsupported type of indices: {}'.format(type(type(it))))
+                raise TypeError('Unsupported type of indices: {}'.format(type(it)))
+        return starts, sizes
+
+    def __getitem__(self, item):
+        """Return the value at the specific indices.
+
+        Parameters
+        ----------
+        item : int or slice
+            The indices.
+
+        Returns
+        -------
+        Tensor
+            The output tensor.
+
+        """
+        starts, sizes = self._process_indices(item)
         return self._indexing(starts, sizes)
+
+    def __setitem__(self, key, value):
+        """Set the value at the specific indices.
+
+        Parameters
+        ----------
+        key : int, slice
+            The indices.
+        value : dragon.vm.torch.Tensor, number or sequence
+            The value.
+
+        Returns
+        -------
+        None
+
+        """
+        starts, sizes = self._process_indices(key)
+        return self._assigning(value, starts, sizes)
 
     def __hash__(self):
         return id(self)

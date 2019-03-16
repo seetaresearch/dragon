@@ -56,6 +56,42 @@ class Indexing(BaseModule):
         return self.run(inputs, outputs, callback=callback)
 
 
+class Assigning(BaseModule):
+    """This module imports the *AssignOp* from backend.
+
+    Arbitrary length of starts and sizes will be take.
+
+    """
+    def __init__(self, key, dev, **kwargs):
+        super(Assigning, self).__init__(key, dev, **kwargs)
+        self.n_starts = kwargs.get('n_starts', 0)
+        self.n_sizes = kwargs.get('n_sizes', 0)
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'Assign',
+            'arguments': {
+                'starts_desc': [
+                    '${{ANCHOR}}/starts[{}]'.format(n)
+                        for n in range(self.n_starts)],
+                'sizes_desc': [
+                    '${{ANCHOR}}/sizes[{}]'.format(n)
+                        for n in range(self.n_sizes)],
+            },
+        }
+
+    def update_arguments(self, A, starts, sizes):
+        for i, e in enumerate(starts):
+            self.set_argument_i64('{}/starts[{}]'.format(A, i), e)
+            self.set_argument_i64('{}/sizes[{}]'.format(A, i), sizes[i])
+
+    def forward(self, x, y, starts, sizes):
+        self.unify_devices([x, y])
+        callback = lambda A: self.update_arguments(A, starts, sizes)
+        return self.run([x], [y], callback=callback, auto_grad=False)
+
+
 class Concat(BaseModule):
     """This module imports the *ConcatOp* from backend.
 
@@ -100,7 +136,6 @@ class Gather(BaseModule):
             'op_type': 'Gather',
             'arguments': {
                 'axis': self.axis,
-                'zero_grad': True,
             },
         }
 

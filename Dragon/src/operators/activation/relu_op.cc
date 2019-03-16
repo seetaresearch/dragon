@@ -44,7 +44,8 @@ void ReluGradientOp<Context>::RunOnDevice() {
     Output(0)->ReshapeLike(Input(0));
 
     if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    else if (XIsType(Input(0), float16)) RunWithType<float16>();
+    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
 }
 
 DEPLOY_CPU(ReluGradient);

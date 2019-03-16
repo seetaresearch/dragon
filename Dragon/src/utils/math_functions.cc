@@ -81,6 +81,35 @@ DEFINE_SET_FUNC(float);
 DEFINE_SET_FUNC(double);
 #undef DEFINE_SET_FUNC
 
+#define DEFINE_BROADCAST_SET_FUNC(T) \
+    template <> void BroadcastSet<T, CPUContext>( \
+        const int               rows, \
+        const int               cols, \
+        const int               type, \
+        const T*                x, \
+        T*                      y, \
+        CPUContext*             ctx) { \
+        if (type == 0) { \
+            /*! Row - BroadcastX */ \
+            EigenArrayMap<T>(y, cols, rows).colwise() = \
+                ConstEigenVectorArrayMap<T>(x, cols); \
+        } else if (type == 1) { \
+            /*! Col - BroadcastX */ \
+            EigenArrayMap<T>(y, cols, rows).rowwise() = \
+                ConstEigenVectorArrayMap<T>(x, rows).transpose(); \
+        } \
+    }
+
+DEFINE_BROADCAST_SET_FUNC(bool);
+DEFINE_BROADCAST_SET_FUNC(int8_t);
+DEFINE_BROADCAST_SET_FUNC(uint8_t);
+DEFINE_BROADCAST_SET_FUNC(int);
+DEFINE_BROADCAST_SET_FUNC(int64_t);
+DEFINE_BROADCAST_SET_FUNC(float16);
+DEFINE_BROADCAST_SET_FUNC(float);
+DEFINE_BROADCAST_SET_FUNC(double);
+#undef DEFINE_BROADCAST_SET_FUNC
+
 /*!                y = x^e                */
 
 #define DEFINE_POWX_FUNC(T) \

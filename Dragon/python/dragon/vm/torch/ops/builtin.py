@@ -21,6 +21,7 @@ from dragon.vm.torch.ops.modules.control_flow import Compare
 
 from dragon.vm.torch.ops.modules.arithmetic import (
     Fundamental, Log, Exp, Sqrt,
+    Accumulate,
     MM, FullyConnected,
     Maximum, Minimum, Clamp,
 )
@@ -31,12 +32,12 @@ from dragon.vm.torch.ops.modules.init import (
 
 from dragon.vm.torch.ops.modules.array import (
     Reshape, Squeeze, UnSqueeze, Permute,
-    Indexing, Repeat, Concat, Gather,
+    Indexing, Assigning, Repeat, Concat, Gather,
     Reduce, ArgReduce, OneHot, Multinomial,
 )
 
 from dragon.vm.torch.ops.modules.update import (
-    Accumulate, Collective, Update,
+    Accumulate as _Accumulate, Collective, Update,
 )
 
 from dragon.vm.torch.ops.modules.vision import (
@@ -46,6 +47,7 @@ from dragon.vm.torch.ops.modules.vision import (
 
 __all__ = [
     'add', 'sub', 'mul', 'div',
+    'accumulate',
     'maximum', 'minimum', 'clamp',
     'log', 'exp', 'sqrt',
     'mm', 'xw_plus_b',
@@ -317,6 +319,32 @@ def sqrt(input, out=None):
     return module.forward(input, out)
 
 
+def accumulate(input, alpha=1., beta=1., out=None):
+    """Compute *out = alpha * input + beta * out*
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    alpha : float, optional, default=1.
+        The value of alpha.
+    beta : float, optional, default=1.
+        The value beta.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    dev = MakeDevice(inputs=[input])
+    key = 'Accumulate/{}/alpha:{}/beta:{}'.format(dev, alpha, beta)
+    module = get_module(Accumulate, key, dev, alpha=alpha, beta=beta)
+    return module.forward(input, out)
+
+
 def mm(mat1, mat2, transA=False, transB=False, out=None):
     """Performs a matrix multiplication of the matrices ``mat1`` and ``mat2.``
 
@@ -456,6 +484,19 @@ def _indexing(input, starts, sizes):
     key = 'Index/{}/n_starts:{}/n_sizes:{}'.format(dev, n_starts, n_sizes)
     module = get_module(Indexing, key, dev, n_starts=n_starts, n_sizes=n_sizes)
     return module.forward(input, starts, sizes)
+
+
+def _assigning(output, input, starts, sizes):
+    if not isinstance(input, Tensor):
+        if isinstance(input, (tuple, list)):
+            input = Tensor(input, dtype=output.dtype, device=output.device)
+        else:
+            input = WrapScalar(input, output.dtype, output.device)
+    n_starts, n_sizes = len(starts), len(sizes)
+    dev = MakeDevice(inputs=[input])
+    key = 'Assign/{}/n_starts:{}/n_sizes:{}'.format(dev, n_starts, n_sizes)
+    module = get_module(Assigning, key, dev, n_starts=n_starts, n_sizes=n_sizes)
+    return module.forward(input, output, starts, sizes)
 
 
 def _compare(input, other, operation, out=None):
@@ -1074,7 +1115,7 @@ def _accumulate(grads):
     if not isinstance(grads, (list, tuple)): grads = [grads]
     dev = MakeDevice(inputs=grads)
     key = 'Accumulate/{}/alpha:1./beta:1.'.format(dev)
-    module = get_module(Accumulate, key, dev)
+    module = get_module(_Accumulate, key, dev)
     return module.forward(grads)
 
 

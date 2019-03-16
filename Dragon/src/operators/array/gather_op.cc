@@ -72,11 +72,8 @@ void GatherGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
-    // Zero the gradients Optionally
-    if (zero_grad) {
-        math::Set(Output(0)->count(),
-            cast::to<T>(0.f), dXdata, ctx());
-    }
+    math::Set(Output(0)->count(),
+        cast::to<T>(0.f), dXdata, ctx());
 
     kernel::GatherGrad(
         outer_dim, inner_dim,

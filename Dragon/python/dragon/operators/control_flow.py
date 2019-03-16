@@ -18,25 +18,59 @@ from . import *
 
 @OpSchema.Inputs(2)
 def Copy(inputs, **kwargs):
-    """Copy A to B.
+    """Copy the ``value`` to ``ref``.
+
+    The size of ``value`` and ``ref`` should be same.
 
     **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
     Parameters
     ----------
     inputs : sequence of Tensor
-        The inputs, A and B respectively.
+        The ``ref`` and ``value`` respectively.
 
     Returns
     -------
     Tensor
-        The output tensor, i.e., B(taking values of A).
+        The ``ref``.
 
     """
     arguments = ParseArgs(locals())
-    arguments['existing_outputs'] = [arguments['inputs'][1]]
-    arguments['inputs'] = [arguments['inputs'][0]]
+    arguments['existing_outputs'] = [arguments['inputs'][0]]
+    arguments['inputs'] = [arguments['inputs'][1]]
     return Tensor.CreateOperator('Copy', **arguments)
+
+
+@OpSchema.ConvertConstantInputs()
+@OpSchema.Inputs(2)
+@ArgumentHelper.RepeatedDesc('starts')
+@ArgumentHelper.RepeatedDesc('sizes')
+def Assign(inputs, starts=None, sizes=None, **kwargs):
+    """Assign the ``value`` to ``ref``.
+
+    The value of ``sizes`` could be set to *-1* (to end) or *0* (squeeze).
+
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
+
+    Parameters
+    ----------
+    inputs : sequence of Tensor
+        The ``ref`` and ``value`` respectively.
+    starts : sequence of (int, Tensor), optional
+        The start pos of each dimension.
+    sizes : sequence of (int, Tensor), optional
+        The size of each dimension.
+
+    Returns
+    -------
+    Tensor
+        The ``ref``.
+
+    """
+    arguments = ParseArgs(locals())
+    arguments['existing_outputs'] = [arguments['inputs'][0]]
+    arguments['inputs'] = [arguments['inputs'][1]]
+    return Tensor.CreateOperator('Assign', **arguments)
 
 
 @OpSchema.ConvertConstantInputs()

@@ -40,12 +40,12 @@ class ProposalOp final : public Operator<Context> {
     template <typename T> void RunWithType();
 
  protected:
-    vector<int64_t> strides;
+    vector<int64_t> strides, indices, roi_indices;
     vector<float> ratios, scales;
     int64_t pre_nms_top_n, post_nms_top_n, min_size, num_images;
     int64_t min_level, max_level, canonical_level, canonical_scale;
     float nms_thresh;
-    Tensor anchors_, proposals_, roi_indices_, nms_mask_;
+    Tensor anchors_, proposals_, nms_mask_;
 };
 
 }  // namespace dragon

@@ -130,6 +130,28 @@ __global__ void _Set(
 }
 
 template <typename T>
+__global__ void _RowBroadcastSet(
+    const int               count,
+    const int               cols,
+    const T*                x,
+    T*                      y) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        y[idx] = x[idx % cols];
+    }
+}
+
+template <typename T>
+__global__ void _ColBroadcastSet(
+    const int               count,
+    const int               cols,
+    const T*                x,
+    T*                      y) {
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+        y[idx] = x[idx / cols];
+    }
+}
+
+template <typename T>
 __global__ void _Pow(
     const int               n,
     const T                 exp,
@@ -211,6 +233,40 @@ DEFINE_SET_FUNC(int64_t);
 DEFINE_SET_FUNC(float);
 DEFINE_SET_FUNC(double);
 #undef DEFINE_SET_FUNC
+
+#define DEFINE_BROADCAST_SET_FUNC(T) \
+    template <> void BroadcastSet<T, CUDAContext>( \
+        const int               rows, \
+        const int               cols, \
+        const int               type, \
+        const T*                x, \
+        T*                      y, \
+        CUDAContext*            ctx) { \
+        auto n = rows * cols; \
+        if (type == 0) { \
+            /*! Row - BroadcastX */ \
+            _RowBroadcastSet<T> \
+                << < CUDA_BLOCKS(n), CUDA_THREADS, \
+                     0, ctx->cuda_stream() >> > \
+                (n, cols, x, y); \
+        } else if (type == 1) { \
+            /*! Col - BroadcastX */ \
+            _ColBroadcastSet<T> \
+                << < CUDA_BLOCKS(n), CUDA_THREADS, \
+                     0, ctx->cuda_stream() >> > \
+                (n, cols, x, y); \
+        } \
+    }
+
+DEFINE_BROADCAST_SET_FUNC(bool);
+DEFINE_BROADCAST_SET_FUNC(int8_t);
+DEFINE_BROADCAST_SET_FUNC(uint8_t);
+DEFINE_BROADCAST_SET_FUNC(int);
+DEFINE_BROADCAST_SET_FUNC(int64_t);
+DEFINE_BROADCAST_SET_FUNC(float16);
+DEFINE_BROADCAST_SET_FUNC(float);
+DEFINE_BROADCAST_SET_FUNC(double);
+#undef DEFINE_BROADCAST_SET_FUNC
 
 /*!                y = x^e                */
 

@@ -484,8 +484,9 @@ def Accumulate(inputs, alpha=1., beta=1., **kwargs):
     inputs : sequence of Tensor
         The inputs, i.e., the *x*.
     alpha : float, optional, default=1.
-        The alpha value.
+        The value of alpha.
     beta : float, optional, default=1.
+        The value beta.
 
     Returns
     -------

@@ -385,7 +385,8 @@ def ResetTensor(tensor):
 
 def RunGraph(
     graph_name, inputs=(), outputs=[],
-        stage=None, return_outputs=True):
+        stage=None, return_outputs=True,
+):
     """Run the specific graph.
 
     Parameters
@@ -516,7 +517,8 @@ def ExportMetaGraph(graph_def):
 def Snapshot(
     tensors, filename,
         prefix='', suffix='.bin',
-            format='default'):
+            format='default',
+):
     """Snapshot tensors into a binary file.
 
     Parameters

@@ -108,7 +108,7 @@ def Elu(inputs, alpha=1.0, **kwargs):
 def SElu(inputs, **kwargs):
     """Scaled Exponential Linear Unit function. `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 
-    **Type Constraints**: *float32*
+    **Type Constraints**: (*float16*, *float32*)
 
     Parameters
     ----------

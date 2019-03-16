@@ -23,7 +23,7 @@ from dragon.vm.torch.ops.builtin import (
     _fundamental, _rfundamental,
     log, exp, sqrt, clamp,
     _reshape, squeeze, unsqueeze,
-    _permute, _repeat, _indexing, narrow,
+    _permute, _repeat, _indexing, _assigning, narrow,
     mean, sum, max, min,
     gt, lt, eq, ge, le,
 )
@@ -83,6 +83,7 @@ Tensor.le = lambda *args, **kwargs: le(*args, **kwargs)
 Tensor.eq = lambda *args, **kwargs: eq(*args, **kwargs)
 Tensor.narrow = lambda *args, **kwargs: narrow(*args, **kwargs)
 Tensor._indexing = lambda *args, **kwargs: _indexing(*args, **kwargs)
+Tensor._assigning = lambda *args, **kwargs: _assigning(*args, **kwargs)
 
 
 Tensor.half = lambda self: _type_to(self, dtype='float16', inplace=False)

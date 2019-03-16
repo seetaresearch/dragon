@@ -37,6 +37,26 @@ MATH_UTILS_DECL T Cube(const T x) {
     return x * x * x;
 }
 
+template <typename T>
+inline void ArgPartition(
+    const int                   count,
+    const int                   kth,
+    const bool                  descend,
+    const T*                    v,
+    std::vector<int64_t>&       indices) {
+    indices.resize(count);
+    std::iota(indices.begin(), indices.end(), 0);
+    if (descend) {
+        std::nth_element(
+            indices.begin(), indices.begin() + kth, indices.end(),
+                [&v](int64_t i1, int64_t i2) { return v[i1] > v[i2]; });
+    } else {
+        std::nth_element(
+            indices.begin(), indices.begin() + kth, indices.end(),
+                [&v](int64_t i1, int64_t i2) { return v[i1] < v[i2]; });
+    }
+}
+
 }  // namespace math
 
 void IncreaseIndexInDims(

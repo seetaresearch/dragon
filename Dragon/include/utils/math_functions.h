@@ -91,17 +91,26 @@ void Square(
  */
 
 template <typename T, class Context>
-void Pow(
+void Set(
     const int               n,
-    const float             exp,
+    const T                 alpha,
+    T*                      y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void BroadcastSet(
+    const int               rows,
+    const int               cols,
+    const int               type,
     const T*                x,
     T*                      y,
     Context*                ctx);
 
 template <typename T, class Context>
-void Set(
+void Pow(
     const int               n,
-    const T                 alpha,
+    const float             exp,
+    const T*                x,
     T*                      y,
     Context*                ctx);
 

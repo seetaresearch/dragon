@@ -61,7 +61,8 @@ List                              Brief
 `Tensor.__le__`_                  x.__le__()  <=> x <= y
 `Tensor.__eq__`_                  x.__eq__()  <=> x == y
 `Tensor.__repr__`_                Return the information(name/shape).
-`Tensor.__getitem__`_             Return a Tensor with specific indices.
+`Tensor.__getitem__`_             Return the value at the specific indices.
+`Tensor.__setitem__`_             Set the value at the specific indices.
 `Tensor.__call__`_                Return the expressions for displaying.
 ==============================    =============================================================================
 
@@ -120,6 +121,7 @@ API Reference
 .. _Tensor.__eq__: #dragon.core.tensor.Tensor.__eq__
 .. _Tensor.__repr__: #dragon.core.tensor.Tensor.__repr__
 .. _Tensor.__getitem__: #dragon.core.tensor.Tensor.__getitem__
+.. _Tensor.__setitem__: #dragon.core.tensor.Tensor.__setitem__
 .. _Tensor.__call__: #dragon.core.tensor.Tensor.__call__
 
 .. _Tensor.name: #dragon.core.tensor.Tensor.name

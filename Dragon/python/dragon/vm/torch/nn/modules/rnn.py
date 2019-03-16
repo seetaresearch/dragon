@@ -78,6 +78,20 @@ class RNNBase(Module):
             }
         }
 
+    def extra_repr(self):
+        s = '{input_size}, {hidden_size}'
+        if self.num_layers != 1:
+            s += ', num_layers={num_layers}'
+        if self.bias is not True:
+            s += ', bias={bias}'
+        if self.batch_first is not False:
+            s += ', batch_first={batch_first}'
+        if self.dropout != 0:
+            s += ', dropout={dropout}'
+        if self.bidirectional is not False:
+            s += ', bidirectional={bidirectional}'
+        return s.format(**self.__dict__)
+
     def make_meta_from_phase(self, phase):
         def reset_meta(self, phase):
             self._module_key = None

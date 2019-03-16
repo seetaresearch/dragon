@@ -165,7 +165,8 @@ Control Flow
 ===============    ======================================================================
 List               Brief
 ===============    ======================================================================
-`Copy`_            Copy A to B.
+`Copy`_            Copy the *value* to *ref*.
+`Assign`_          Assign the *value* to *ref*.
 `Equal`_           *Equal* Comparing between A and B.
 `Less`_            *Less* Comparing between A and B.
 `LessEqual`_       *LessEqual* Comparing between A and B.
@@ -306,6 +307,7 @@ List                 Brief
 .. _Multinomial: operators/array.html#dragon.operators.array.Multinomial
 
 .. _Copy: operators/control_flow.html#dAragon.operators.control_flow.Copy
+.. _Assign: operators/control_flow.html#dAragon.operators.control_flow.Assign
 .. _Equal: operators/control_flow.html#dragon.operators.control_flow.Equal
 .. _Less: operators/control_flow.html#dragon.operators.control_flow.Less
 .. _LessEqual: operators/control_flow.html#dragon.operators.control_flow.LessEqual

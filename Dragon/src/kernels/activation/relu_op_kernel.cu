@@ -13,11 +13,18 @@ namespace kernel {
 template <typename T>
 __global__ void _Relu(
     const int               count,
-    const float             slope,
+    const T                 slope,
     const T*                x,
     T*                      y) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
-        y[idx] = x[idx] > 0 ? x[idx] : x[idx] * slope;
+#if __CUDA_ARCH__ >= 350
+        y[idx] = __ldg(x + idx) > 0 ?
+            __ldg(x + idx) :
+                __ldg(x + idx) * slope;
+#else
+        y[idx] = x[idx] > 0 ?
+            x[idx] : x[idx] * slope;
+#endif
     }
 }
 
@@ -35,8 +42,7 @@ template<> void Relu<float, CUDAContext>(
 
 /*! Relu <T = float16, Device = CUDA> */
 
-template <typename T>
-__global__ void _ReluHalf(
+template <> __global__ void _Relu<half>(
     const int               count,
     const half              slope,
     const half*             x,
@@ -44,14 +50,14 @@ __global__ void _ReluHalf(
     const half kZero = __float2half(0.f);
     CUDA_1D_KERNEL_LOOP(idx, count) {
 #if __CUDA_ARCH__ >= 530
-        y[idx] = __hgt(x[idx], kZero) ?
-            x[idx] : __hmul(x[idx], slope);
+        y[idx] = __hgt(__ldg(x + idx), kZero) ?
+            __ldg(x + idx) : __hmul(
+                __ldg(x + idx), slope);
 #endif
     }
 }
 
-template <typename T>
-__global__ void _ReluHalf2(
+template <> __global__ void _Relu<half2>(
     const int               count,
     const half2             slope,
     const half2*            x,
@@ -59,8 +65,9 @@ __global__ void _ReluHalf2(
     const half2 kZero = __float2half2_rn(0.f);
     CUDA_1D_KERNEL_LOOP(idx, count) {
 #if __CUDA_ARCH__ >= 530
-        y[idx] = __hbgt2(x[idx], kZero) ?
-            x[idx] : __hmul2(x[idx], slope);
+        y[idx] = __hbgt2(__ldg(x + idx), kZero) ?
+            __ldg(x + idx) : __hmul2(
+                __ldg(x + idx), slope);
 #endif
     }
 }
@@ -72,14 +79,14 @@ template<> void Relu<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     if ((count & 1) == 0) {
-        _ReluHalf2<half2>
+        _Relu<half2>
             << < CUDA_BLOCKS(count >> 1), CUDA_THREADS,
                  0, ctx->cuda_stream() >> >
             (count >> 1, cast::to<half2>(slope),
                 reinterpret_cast<const half2*>(x),
                     reinterpret_cast<half2*>(y));
     } else {
-        _ReluHalf<half>
+        _Relu<half>
             << < CUDA_BLOCKS(count), CUDA_THREADS,
                  0, ctx->cuda_stream() >> >
             (count, cast::to<half>(slope),
@@ -98,9 +105,17 @@ __global__ void _ReluGrad(
     const T*                y,
     T*                      dx) {
     CUDA_1D_KERNEL_LOOP(idx, count) {
-        dx[idx] = dy[idx] * (
-            (y[idx] > 0) + slope * (y[idx] <= 0)
+#if __CUDA_ARCH__ >= 530
+        dx[idx] = __ldg(dy + idx) * (
+            (__ldg(y + idx) > 0) +
+                slope * (__ldg(y + idx) <= 0)
         );
+#else
+        dx[idx] = dy[idx] * (
+            (y[idx] > 0) +
+                slope * (y[idx] <= 0)
+        );
+#endif
     }
 }
 
@@ -115,6 +130,40 @@ template<> void ReluGrad<float, CUDAContext>(
         << < CUDA_BLOCKS(count), CUDA_THREADS,
              0, ctx->cuda_stream() >> >
         (count, slope, dy, y, dx);
+}
+
+/*! ReluGrad <T = float16, Device = CUDA> */
+
+template <> __global__ void _ReluGrad<half>(
+    const int               count,
+    const float             slope,
+    const half*             dy,
+    const half*             y,
+    half*                   dx) {
+    const half kZero = __float2half(0.f);
+    CUDA_1D_KERNEL_LOOP(idx, count) {
+#if __CUDA_ARCH__ >= 530
+        dx[idx] = __hmul(__ldg(dy + idx), __float2half(
+            __hgt(__ldg(y + idx), kZero) +
+                slope * __hle(__ldg(y + idx), kZero))
+        );
+#endif
+    }
+}
+
+template<> void ReluGrad<float16, CUDAContext>(
+    const int               count,
+    const float             slope,
+    const float16*          dy,
+    const float16*          y,
+    float16*                dx,
+    CUDAContext*            ctx) {
+    _ReluGrad<half>
+        << < CUDA_BLOCKS(count), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >
+        (count, slope, reinterpret_cast<const half*>(dy),
+            reinterpret_cast<const half*>(y),
+                reinterpret_cast<half*>(dx));
 }
 
 }  // namespace kernel
