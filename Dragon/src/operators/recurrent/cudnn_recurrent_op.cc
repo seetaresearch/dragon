@@ -116,7 +116,7 @@ void CuDNNRecurrentOp<Context>::RunWithType() {
     };
     auto YsData = [this](int i) {
         if (i >= OutputSize()) return (T*)NULL;
-        if (Output(i)->name() == "ignore") return (T*)NULL;
+        if (Output(i)->name() == "NULL") return (T*)NULL;
         return Output(i)->template mutable_data<T, Context>();
     };
 
@@ -171,12 +171,12 @@ void CuDNNRecurrentGradientOp<Context>::RunWithType() {
 
     auto XsData = [this](int i) {
         if (i >= InputSize()) return (const T*)NULL;
-        if (Input(i).name() == "ignore") return (const T*)NULL;
+        if (Input(i).name() == "NULL") return (const T*)NULL;
         return Input(i).template data<T, Context>();
     };
     auto YsData = [this](int i) {
         if (i >= OutputSize()) return (T*)NULL;
-        if (Output(i)->name() == "ignore" && i > 0) return (T*)NULL;
+        if (Output(i)->name() == "NULL" && i > 0) return (T*)NULL;
         return Output(i)->template mutable_data<T, Context>();
     };
 
@@ -194,10 +194,10 @@ void CuDNNRecurrentGradientOp<Context>::RunWithType() {
 
     auto handle = ctx()->cudnn_handle();
 
-    if (Output(0)->name() != "ignore" ||
-            Output(1)->name() != "ignore" ||
-                Output(2)->name() != "ignore" ||
-                    Output(3)->name() != "ignore") {
+    if (Output(0)->name() != "NULL" ||
+            Output(1)->name() != "NULL" ||
+                Output(2)->name() != "NULL" ||
+                    Output(3)->name() != "NULL") {
         CUDNN_CHECK(cudnnRNNBackwardData(handle, rnn_desc,
                                                seq_length,
                               ys_desc->descs(), XsData(4), //   Y
@@ -214,7 +214,7 @@ void CuDNNRecurrentGradientOp<Context>::RunWithType() {
                                    RSdata, reserve_size));
     }
 
-    if (Output(1)->name() != "ignore") {
+    if (Output(1)->name() != "NULL") {
         CUDNN_CHECK(cudnnRNNBackwardWeights(handle, rnn_desc,
                                                   seq_length,
                                  xs_desc->descs(), XsData(0), //   X

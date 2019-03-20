@@ -242,8 +242,8 @@ void CuDNNBatchNormGradientOp<Context>::InferenceRunWithType() {
     Tp* dgamma = nullptr, *dbeta = nullptr;
 
     // Gradient w.r.t. gamma or beta if necessary
-    if (Output(1)->name() != "ignore" ||
-            Output(2)->name() != "ignore") {
+    if (Output(1)->name() != "NULL" ||
+            Output(2)->name() != "NULL") {
         dgamma = Output(1)->template mutable_data<Tp, Context>();
         dbeta = Output(2)->template mutable_data<Tp, Context>();
     }

@@ -59,13 +59,13 @@ template <class Context> template <typename T>
 void MulGradientOp<Context>::EltwiseRunWithType() {
     auto* dy = Input(-1).template data<T, Context>();
 
-    if (Output(1)->name() != "ignore") {
+    if (Output(1)->name() != "NULL") {
         auto* x1 = Input(0).template data<T, Context>();
         auto* dx2 = Output(1)->template mutable_data<T, Context>();
         math::Mul(Output(1)->count(), dy, x1, dx2, ctx());
     }
 
-    if (Output(0)->name() != "ignore") {
+    if (Output(0)->name() != "NULL") {
         auto* x2 = Input(1).template data<T, Context>();
         auto* dx1 = Output(0)->template mutable_data<T, Context>();
         math::Mul(Output(0)->count(), dy, x2, dx1, ctx());
@@ -77,7 +77,7 @@ void MulGradientOp<Context>::BroadcastRunWithType(int type) {
     DEFINE_FUNDAMENTAL_OP_X1X2;
     auto* dy = Input(-1).template data<T, Context>();
 
-    if (Output(1)->name() != "ignore") {
+    if (Output(1)->name() != "NULL") {
         auto* x1 = Input(0).template data<T, Context>();
         auto* dx2 = Output(1)->template mutable_data<T, Context>();
         auto* c = ws()->template caches<T, Context>({ X1->count() })[0];
@@ -87,7 +87,7 @@ void MulGradientOp<Context>::BroadcastRunWithType(int type) {
             1, axes.data(), 1.f, c, dx2, ctx());
     }
 
-    if (Output(0)->name() != "ignore") {
+    if (Output(0)->name() != "NULL") {
         auto* x2 = Input(1).template data<T, Context>();
         auto* dx1 = Output(0)->template mutable_data<T, Context>();
         math::BroadcastMul(rows, cols, type, dy, x2, dx1, ctx());

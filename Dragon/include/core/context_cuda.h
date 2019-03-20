@@ -128,6 +128,8 @@ class CUDAObject {
 #ifdef WITH_CUDNN
     vector<cudnnHandle_t> cudnn_handles[CUDA_MAX_DEVICES];
 #endif
+
+    bool cudnn_enabled = true;
 };
 
 class CUDAContext {

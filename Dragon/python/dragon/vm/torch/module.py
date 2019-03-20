@@ -315,9 +315,8 @@ class Module(object):
                 op_type=self.op_meta['op_type'],
                 device_option=proto_utils.
                     GetDeviceOption(
-                    self._device.type,
-                        self._device.index,
-                            engine='CUDNN'),
+                        self._device.type,
+                            self._device.index),
                 **self.op_meta['arguments']
             )
 

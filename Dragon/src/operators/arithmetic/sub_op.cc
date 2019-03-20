@@ -60,13 +60,13 @@ template <class Context> template <typename T>
 void SubGradientOp<Context>::EltwiseRunWithType() {
     auto* dy = Input(-1).template data<T, Context>();
 
-    if (Output(1)->name() != "ignore") {
+    if (Output(1)->name() != "NULL") {
         auto* dx2 = Output(1)->template mutable_data<T, Context>();
         math::Scale<T, Context>(Output(1)->count(),
             -1.f, dy, dx2, ctx());
     }
 
-    if (Output(0)->name() != "ignore") {
+    if (Output(0)->name() != "NULL") {
         auto* dx1 = Output(0)->template mutable_data<T, Context>();
         ctx()->template Copy<T, Context, Context>(
             Output(0)->count(), dx1, dy);
@@ -78,14 +78,14 @@ void SubGradientOp<Context>::BroadcastRunWithType(int type) {
     DEFINE_FUNDAMENTAL_OP_X1X2;
     auto* dy = Input(-1).template data<T, Context>();
 
-    if (Output(1)->name() != "ignore") {
+    if (Output(1)->name() != "NULL") {
         auto* dx2 = Output(1)->template mutable_data<T, Context>();
         vector<int> dims = { rows, cols }, axes = { type };
         kernel::ReduceSum(2, dims.data(),
             1, axes.data(), -1.f, dy, dx2, ctx());
     }
 
-    if (Output(0)->name() != "ignore") {
+    if (Output(0)->name() != "NULL") {
         auto* dx1 = Output(0)->template mutable_data<T, Context>();
         ctx()->template Copy<T, Context, Context>(
             X1->count(), dx1, dy);

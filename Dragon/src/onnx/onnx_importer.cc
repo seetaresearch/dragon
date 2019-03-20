@@ -351,7 +351,7 @@ ONNXImporterReturns ONNXBackend::ArgReduceNodeImporter(
     auto* operation = attributes.AddRewrittenAttribute("operation");
     if (onnx_node->node.op_type() == "ArgMax") operation->set_s("ARGMAX");
     else if (onnx_node->node.op_type() == "ArgMin") operation->set_s("ARGMIN");
-    node.add_output("ignore");  // A dummy output("Value") is required
+    node.add_output("NULL");  // A dummy output("Value") is required
 
     return CommonONNXNodeImporter(&onnx_node_v2, ctx);
 }

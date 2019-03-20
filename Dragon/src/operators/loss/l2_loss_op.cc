@@ -88,13 +88,13 @@ void L2LossGradientOp<Context>::RunWithType() {
     } else { dYHost *= scale; }
 
     for (int i = 0; i < 2; i++) {
-        if (Output(i)->name() == "ignore") continue;
+        if (Output(i)->name() == "NULL") continue;
         Output(i)->ReshapeLike(Input(i));
         auto* dXdata = Output(i)->template mutable_data<T, Context>();
         math::Scale(Output(i)->count(),
             dYHost * (i == 0 ? 1.f : -1.f),
                 Ddata, dXdata, ctx());
-        if (Input(2).name() != "ignore") {
+        if (Input(2).name() != "NULL") {
             auto* mask = Input(2).template data<T, Context>();
             math::Mul(Output(i)->count(), mask, dXdata, dXdata, ctx());
         }

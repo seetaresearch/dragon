@@ -349,7 +349,7 @@ class OneHot(BaseModule):
     def forward(self, x):
         inputs = [x]; self.unify_devices(inputs)
         outputs = [self.register_output()]
-        return self.run(inputs, outputs)
+        with no_grad(): return self.run(inputs, outputs)
 
 
 class Cast(BaseModule):
@@ -376,8 +376,7 @@ class Cast(BaseModule):
             y = self.run(inputs, outputs)
         else:
             self.unify_devices([x])
-            with no_grad():
-                y = self.run([], [x])
+            with no_grad(): y = self.run([], [x])
         return y
 
 
@@ -400,4 +399,4 @@ class Multinomial(BaseModule):
     def forward(self, x, y):
         inputs = [x]; self.unify_devices(inputs)
         outputs = [y] if y else [self.register_output()]
-        return self.run(inputs, outputs)
+        with no_grad(): return self.run(inputs, outputs)

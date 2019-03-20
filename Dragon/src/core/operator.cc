@@ -100,10 +100,11 @@ OperatorBase* TryCreateOperator(
         case PROTO_CPU:
             return CPUOperatorRegistry()->Create(key, def, ws);
         case PROTO_CUDA:
-            if (def.device_option().has_engine() &&
-                def.device_option().engine() == "CUDNN" &&
-                CUDNNOperatorRegistry()->Has(key))
+#ifdef WITH_CUDNN
+            if (CUDNNOperatorRegistry()->Has(key) &&
+                    CUDAContext::cuda_object()->cudnn_enabled)
                 return CUDNNOperatorRegistry()->Create(key, def, ws);
+#endif
             return CUDAOperatorRegistry()->Create(key, def, ws);
         case PROTO_CNML:
             return CNMLOperatorRegistry()->Create(key, def, ws);
@@ -155,7 +156,7 @@ Gradient MakeGradientForOp(
             );
         }
     }
-    // Copy device option, engine, and arguments
+    // Copy device option and arguments
     if (maker->CopyDeviceOption() && def.has_device_option())
         for (auto& grad_def : grad.ops)
             grad_def.mutable_device_option()->CopyFrom(

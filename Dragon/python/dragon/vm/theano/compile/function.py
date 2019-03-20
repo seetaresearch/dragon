@@ -183,8 +183,6 @@ def GraphDef_Device(graph_def):
         device_option.device_type = supports[option['device']]
         device_option.device_id = option['device_id']
         device_option.random_seed = option['random_seed']
-        if option['device'] == 'cuda':
-            if option['use_cudnn']: device_option.engine = 'CUDNN'
         graph_def.device_option.CopyFrom(device_option)
 
 

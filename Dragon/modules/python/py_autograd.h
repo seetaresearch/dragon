@@ -53,6 +53,7 @@ void AddGradientMethods(pybind11::module& m) {
         if (is_sharing) maker.Share(backward_ops);
         pybind11::gil_scoped_release g;
         for (auto& op : backward_ops.op()) {
+            if (op.type().empty()) continue;
             if (verbose) std::cout << op.DebugString() << std::endl;
             if (op.has_uid()) ws()->RunOperator(op);
             else ws()->RunOperatorOnce(op);

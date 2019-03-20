@@ -164,7 +164,7 @@ class GraphGradientMaker(object):
             is_skip, gen_grads = \
                 cls.CheckGrad(forward_op, inputs_to_grads, blacklist, targets)
             # Missing grads are represented as ``None``
-            g_outputs = list(inputs_to_grads.get(name, 'ignore') for name in forward_op.output)
+            g_outputs = list(inputs_to_grads.get(name, 'NULL') for name in forward_op.output)
             g_ops, g_inputs, defaults = cls.CreateGrad(forward_op, g_outputs)
 
             # Append ops

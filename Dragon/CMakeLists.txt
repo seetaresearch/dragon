@@ -23,7 +23,7 @@ if (NOT THIRD_PARTY_DIR)
     set(THIRD_PARTY_DIR  ${PROJECT_SOURCE_DIR}/../ThirdParty)
 endif()
 
-# Set your protobuf compiler(protc) if necessary
+# Set your protobuf compiler(protoc) if necessary
 # if not, a default "protoc" in the environment path will be used
 if (NOT PROTOC_EXECUTABLE)
    set(PROTOC_EXECUTABLE protoc)

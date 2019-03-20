@@ -93,6 +93,7 @@ API Reference
     .. automethod:: __eq__
     .. automethod:: __repr__
     .. automethod:: __getitem__
+    .. automethod:: __setitem__
     .. automethod:: __call__
 
 .. _Tensor.Variable: #dragon.core.tensor.Tensor.Variable

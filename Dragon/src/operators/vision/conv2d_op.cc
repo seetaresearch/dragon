@@ -51,12 +51,12 @@ void Conv2dGradientOp<Context>::RunWithType() {
     }
 
     for (int n = 0; n < Input(2).dim(0); n++) {
-        if (Output(1)->name() != "ignore") {
+        if (Output(1)->name() != "NULL") {
             auto* Xdata = Input(0).template data<T, Context>();
             auto* dWdata = Output(1)->template mutable_data<T, Context>();
             Dw(dYdata + n * y_offset, Xdata + n * x_offset, dWdata);
         }
-        if (Output(0)->name() != "ignore") {
+        if (Output(0)->name() != "NULL") {
             auto* Wdata = Input(1).template data<T, Context>();
             auto* dXdata = Output(0)->template mutable_data<T, Context>();
             Dx(dYdata + n * y_offset, Wdata, dXdata + n * x_offset);

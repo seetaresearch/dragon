@@ -101,7 +101,7 @@ void CuDNNAffineGradientOp<Context>::RunWithType() {
             CUDNNType<CT>::type, CUDNN_PROPAGATE_NAN));
 
     // dA = X * dY
-    if (Output(1)->name() != "ignore") {
+    if (Output(1)->name() != "NULL") {
         Output(1)->ReshapeLike(Input(1));
         auto* Xdata = Input(0).template data<DT, Context>();
         auto* dAdata = Output(1)->template mutable_data<DT, Context>();
@@ -119,7 +119,7 @@ void CuDNNAffineGradientOp<Context>::RunWithType() {
     }
 
     // dB = dY
-    if (Output(2)->name() != "ignore") {
+    if (Output(2)->name() != "NULL") {
         Output(2)->ReshapeLike(Input(1));
         auto* dBdata = Output(2)->template mutable_data<DT, Context>();
         // Eltwise
@@ -136,7 +136,7 @@ void CuDNNAffineGradientOp<Context>::RunWithType() {
     }
 
     // dX = alpha * dY
-    if (Output(0)->name() != "ignore") {
+    if (Output(0)->name() != "NULL") {
         CUDNN_CHECK(cudnnOpTensor(
             ctx()->cudnn_handle(), mul_desc,
                 CUDNNType<DT>::one, input_desc, dYdata,

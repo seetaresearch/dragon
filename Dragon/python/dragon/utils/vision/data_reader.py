@@ -35,14 +35,14 @@ class DataReader(Process):
         ----------
         source : str
             The path of database.
-        multiple_nodes: boolean
-            Whether to split data for multiple parallel nodes. Default is ``False``.
-        shuffle : boolean
-            Whether to shuffle the data. Default is ``False``.
-        num_chunks : int
-            The number of chunks to split. Default is ``2048``.
-        chunk_size : int
-            The size(MB) of each chunk. Default is -1 (Refer ``num_chunks``).
+        multiple_nodes: boolean, optional, default=False
+            Whether to split data for multiple parallel nodes.
+        shuffle : bool, optional, default=False
+            Whether to shuffle the data.
+        num_chunks : int, optional, default=2048
+            The number of chunks to split.
+        chunk_size : int, optional, default=-1
+            The size(MB) of each chunk.
 
         """
         super(DataReader, self).__init__()

@@ -31,6 +31,13 @@ void AddCUDAMethods(pybind11::module& m) {
 #endif
     });
 
+    m.def("EnableCUDNN", [](bool enabled) {
+#ifdef WITH_CUDA
+        CUDAContext::cuda_object()
+            ->cudnn_enabled = enabled;
+#endif
+    });
+
     m.def("cudaGetDevice", []() {
         return CUDAContext::active_device_id();
     });

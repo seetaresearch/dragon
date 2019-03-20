@@ -10,4 +10,4 @@
 .. autoclass:: MiniBatchOp
     :members:
 
-.. _dragon.io: ../../io.html
+.. _dragon.utils.vision: ../../utils.html#vision

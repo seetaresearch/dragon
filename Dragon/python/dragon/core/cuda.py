@@ -24,10 +24,26 @@ def IsCUDADriverSufficient():
     Returns
     -------
     boolean
-        ``True`` if your device(s) support CUDA otherwise ``False``.
+        *True* if your device(s) support CUDA otherwise *False*.
 
     """
     return _C.IsCUDADriverSufficient()
+
+
+def EnableCUDNN(enabled=True):
+    """Enable the CuDNN engine.
+
+    Parameters
+    ----------
+    enabled : boolean
+        *True* to enable.
+
+    Returns
+    -------
+    None
+
+    """
+    return _C.EnableCUDNN(enabled)
 
 
 def GetDevice():

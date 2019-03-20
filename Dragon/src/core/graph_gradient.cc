@@ -22,7 +22,7 @@ bool GraphGradientMaker::CheckGrad(
             if (external_grads_.count(g_output))
                 inputs_to_grads_[output] = g_output;
             // Consider generate virtual grad
-            else if (targets.count(output) && g_output != "ignore") {
+            else if (targets.count(output) && g_output != "NULL") {
                 gen_grads.push_back({ output, idx });
                 inputs_to_grads_[output] = g_output;
             }
@@ -88,7 +88,7 @@ void GraphGradientMaker::Make(
             string g_output = "";
             if (inputs_to_grads_.count(output) > 0)
                 g_output = inputs_to_grads_[output];
-            if (g_output.empty()) g_output = "ignore";
+            if (g_output.empty()) g_output = "NULL";
             g_outputs.emplace_back(g_output);
         }
         Gradient grad = MakeGradientForOp(op, g_outputs);
@@ -194,10 +194,10 @@ void GraphGradientMaker::Make(
 
 #define SHARE_OUTPUTS_BODY \
    {string output = op->output(ix); \
-    if (output == "ignore") continue; \
+    if (output == "NULL") continue; \
     if (ref_count.count(output) == 0) { \
         if (ignore_grads_.count(output) > 0) \
-            *op->mutable_output(ix) = "ignore"; \
+            *op->mutable_output(ix) = "NULL"; \
         continue; \
     } \
     if (op->type() == "TemplateGradient" || \
@@ -212,13 +212,22 @@ void GraphGradientMaker::Make(
     *op->mutable_output(ix) = temp_grad;}
 
 void GraphGradientMaker::Share(GraphDef& graph) {
+    Set<int> invalid_ops;
     Map<string, int> ref_count;
     // Count the refs for detecting leaf nodes
-    for (auto& op : graph.op()) {
+    for (int i = 0; i < graph.op_size(); ++i) {
+        const OperatorDef& op = graph.op(i);
         // Ignore the non-gradient ops
         if (op.type().find("Gradient") == string::npos) continue;
+        if (op.type() == "GradientGather" &&
+            ignore_grads_.count(op.output(0))) {
+            for (auto& input : op.input())
+                ignore_grads_.insert(input);
+            invalid_ops.insert(i); continue;
+        }
         for (auto& input : op.input())
-            if (input.find("grad") != string::npos) ref_count[input] += 1;
+            if (input.find("grad") != string::npos)
+                    ref_count[input] += 1;
     }
 
     // Prepare the Gradients Pool
@@ -247,6 +256,8 @@ void GraphGradientMaker::Share(GraphDef& graph) {
         OperatorDef* op = graph.mutable_op(i);
         // Ignore the non-gradient ops
         if (op->type().find("Gradient") == string::npos) continue;
+        // Ignore the invalid ops
+        if (invalid_ops.count(i)) { op->mutable_type()->clear(); continue; }
         // GC to store the grads that have finished lifecycle
         vector<string> GC;
         // Inplace-aware

@@ -74,7 +74,7 @@ void CuDNNBiasAddGradientOp<Context>::RunWithType() {
         CUDNNType<T>::one, input_desc, dYdata,
             CUDNNType<T>::zero, bias_desc, dBdata));
 
-    if (Output(0)->name() != "ignore" &&
+    if (Output(0)->name() != "NULL" &&
         Output(0)->name() != Input(-1).name()) {
         Output(0)->ReshapeLike(Input(-1));
         Output(0)->template CopyFrom<Context>(Input(-1), ctx());

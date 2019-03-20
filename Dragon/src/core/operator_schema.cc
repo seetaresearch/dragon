@@ -16,9 +16,9 @@ bool OpSchema::Verify(const OperatorDef& def) const {
                    << ", max=" << max_output_ << "]";
     }
     for (int in = 0; in < def.input_size(); in++) {
-        if (def.input(in) == "ignore") continue;
+        if (def.input(in) == "NULL") continue;
         for (int out = 0; out < def.output_size(); out++) {
-            if (def.output(out) == "ignore") continue;
+            if (def.output(out) == "NULL") continue;
             if (def.input(in) == def.output(out) && (!CheckInplace(in, out)))
                 LOG(FATAL) << indicator << "Input("  << in << ") and "
                            << "Output(" << out << ") can not be set to inplace.";

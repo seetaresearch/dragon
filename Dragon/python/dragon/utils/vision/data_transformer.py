@@ -42,24 +42,24 @@ class DataTransformer(Process):
 
         Parameters
         ----------
-        padding : int
-            The padding size. Default is ``0`` (Disabled).
-        fill_value : int
-            The value to fill when padding is valid. Default is ``127``.
-        crop_size : int
-            The crop size. Default is ``0`` (Disabled).
-        mirror : boolean
-            Whether to flip(horizontally) images. Default is ``False``.
-        color_augmentation : boolean
-            Whether to distort colors. Default is ``False``.
-        min_random_scale : float
-            The min scale of the input images. Default is ``1.0``.
-        max_random_scale : float
-            The max scale of the input images. Default is ``1.0``.
-        force_color : boolean
-            Set to duplicate channels for gray. Default is ``False``.
-        phase : str
-            The phase of this operator, ``TRAIN`` or ``TEST``. Default is ``TRAIN``.
+        padding : int, optional, default=0
+            The zero-padding size.
+        fill_value : int, optional, default=127
+            The value to fill when padding is valid.
+        crop_size : int, optional, default=0
+            The cropping size.
+        mirror : bool, optional, default=False
+            Whether to mirror(flip horizontally) images.
+        color_augmentation : bool, optional, default=False
+            Whether to use color distortion.1
+        min_random_scale : float, optional, default=1.
+            The min scale of the input images.
+        max_random_scale : float, optional, default=1.
+            The max scale of the input images.
+        force_gray : bool, optional, default=False
+            Set not to duplicate channel for gray.
+        phase : {'TRAIN', 'TEST'}, optional
+            The optional running phase.
 
         """
         super(DataTransformer, self).__init__()

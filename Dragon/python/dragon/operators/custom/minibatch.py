@@ -9,23 +9,26 @@
 #
 # ------------------------------------------------------------
 
-import dragon.core.workspace as ws
-from dragon.utils.vision import DataBatch
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import dragon
+import dragon.utils.vision
 
 
 class MiniBatchOp(object):
-    """How to form a minibatch based on `dragon.io`_ package.
+    """Form a mini-batch based on `dragon.utils.vision`_ package."""
 
-    """
     def setup(self, inputs, outputs):
         """Setup for params or options.
 
         Parameters
         ----------
-        inputs : list of str
-            Indicating the name of input tensors.
-        outputs : list of str
-            Indicating the name of output tensors.
+        inputs : sequence of str
+            The name of inputs.
+        outputs : sequence of str
+            The name of outputs.
 
         Returns
         -------
@@ -33,18 +36,17 @@ class MiniBatchOp(object):
 
         """
         kwargs = eval(self.param_str)
-        self._data_batch = DataBatch(**kwargs)
-
+        self._data_batch = dragon.utils.vision.DataBatch(**kwargs)
 
     def run(self, inputs, outputs):
         """Run method, i.e., forward pass.
 
         Parameters
         ----------
-        inputs : list of str
-            Indicating the name of input tensors.
-        outputs : list of str
-            Indicating the name of output tensors.
+        inputs : sequence of str
+            The name of inputs.
+        outputs : sequence of str
+            The name of outputs.
 
         Returns
         -------
@@ -53,4 +55,4 @@ class MiniBatchOp(object):
         """
         blobs = self._data_batch.get()
         for idx, blob in enumerate(blobs):
-            ws.FeedTensor(outputs[idx], blob)
+            dragon.workspace.FeedTensor(outputs[idx], blob)

@@ -69,7 +69,7 @@ void StackGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
 
     for (int i = 0; i < OutputSize(); i++) {
-        if (Output(i)->name() != "ignore") {
+        if (Output(i)->name() != "NULL") {
             auto* dXdata = Output(i)->template mutable_data<T, Context>();
             kernel::Slice(
                 outer_dim, inner_dim,
@@ -81,7 +81,7 @@ void StackGradientOp<Context>::RunWithType() {
 
 template <class Context>
 void StackGradientOp<Context>::RunOnDevice() {
-    if (Input(-1).name() == "ignore") return;
+    if (Input(-1).name() == "NULL") return;
 
     DETERMINE_RUNTIME_ARGUMENTS(Input(-1));
 

@@ -79,7 +79,7 @@ void SmoothL1LossGradientOp<Context>::RunWithType() {
     }
 
     for (int i = 0; i < 2; i++) {
-        if (Output(i)->name() == "ignore") continue;
+        if (Output(i)->name() == "NULL") continue;
         Output(i)->ReshapeLike(Input(i));
         auto* dXdata = Output(i)->template mutable_data<T, Context>();
         math::Scale(Output(i)->count(),

@@ -60,6 +60,37 @@ inline int BBoxTransform(
     return (bbox_w >= min_box_w) * (bbox_h >= min_box_h);
 }
 
+template <typename T>
+inline void BBoxTransform(
+    const T                         dx,
+    const T                         dy,
+    const T                         d_log_w,
+    const T                         d_log_h,
+    const T                         im_w,
+    const T                         im_h,
+    const T                         im_scale,
+    T*                              bbox) {
+    const T w = bbox[2] - bbox[0] + 1;
+    const T h = bbox[3] - bbox[1] + 1;
+    const T ctr_x = bbox[0] + (T)0.5 * w;
+    const T ctr_y = bbox[1] + (T)0.5 * h;
+
+    const T pred_ctr_x = dx * w + ctr_x;
+    const T pred_ctr_y = dy * h + ctr_y;
+    const T pred_w = exp(d_log_w) * w;
+    const T pred_h = exp(d_log_h) * h;
+
+    bbox[0] = pred_ctr_x - (T)0.5 * pred_w;
+    bbox[1] = pred_ctr_y - (T)0.5 * pred_h;
+    bbox[2] = pred_ctr_x + (T)0.5 * pred_w;
+    bbox[3] = pred_ctr_y + (T)0.5 * pred_h;
+
+    bbox[0] = std::max((T)0, std::min(bbox[0], im_w - 1)) / im_scale;
+    bbox[1] = std::max((T)0, std::min(bbox[1], im_h - 1)) / im_scale;
+    bbox[2] = std::max((T)0, std::min(bbox[2], im_w - 1)) / im_scale;
+    bbox[3] = std::max((T)0, std::min(bbox[3], im_h - 1)) / im_scale;
+}
+
 /******************** Anchor ********************/
 
 template <typename T>
@@ -117,6 +148,38 @@ inline void GenerateGridAnchors(
     }
 }
 
+template <typename T>
+inline void GenerateGridAnchors(
+    const int                       num_proposals,
+    const int                       num_classes,
+    const int                       num_anchors,
+    const int                       feat_h,
+    const int                       feat_w,
+    const int                       stride,
+    const int                       base_offset,
+    const T*                        anchors,
+    const int64_t*                  indices,
+    T*                              proposals) {
+    T x, y;
+    int idx_4d, a, h, w;
+    int lr = num_classes * base_offset;
+    int rr = num_classes * (num_anchors * feat_h * feat_w);
+    for (int i = 0; i < num_proposals; ++i) {
+        idx_4d = (int)indices[i] - lr;
+        if (idx_4d >= 0 && idx_4d < rr) {
+            idx_4d /= num_classes;
+            w = idx_4d % feat_w;
+            h = (idx_4d / feat_w) % feat_h;
+            a = idx_4d / feat_w / feat_h;
+            x = (T)w * stride, y = (T)h * stride;
+            auto* A = anchors + a * 4;
+            auto* P = proposals + i * 7 + 1;
+            P[0] = x + A[0], P[1] = y + A[1];
+            P[2] = x + A[2], P[3] = y + A[3];
+        }
+    }
+}
+
 /******************** Proposal ********************/
 
 template <typename T>
@@ -164,19 +227,56 @@ void GenerateMSProposals(
     const int64_t*                  indices,
     T*                              proposals) {
     int64_t index;
+    int64_t num_candidates_2x = 2 * num_candidates;
+    int64_t num_candidates_3x = 3 * num_candidates;
     float* proposal = proposals;
     float dx, dy, d_log_w, d_log_h;
     for (int i = 0; i < num_proposals; ++i) {
         index = indices[i];
         dx = deltas[index];
         dy = deltas[num_candidates + index];
-        d_log_w = deltas[2 * num_candidates + index];
-        d_log_h = deltas[3 * num_candidates + index];
+        d_log_w = deltas[num_candidates_2x + index];
+        d_log_h = deltas[num_candidates_3x + index];
         proposal[4] = BBoxTransform<float>(
             dx, dy, d_log_w, d_log_h,
                 im_w, im_h, min_box_w, min_box_h,
                     proposal) * scores[index];
         proposal += 5;
+    }
+}
+
+template <typename T>
+void GenerateMCProposals(
+    const int                       num_proposals,
+    const int                       num_boxes,
+    const int                       num_classes,
+    const int                       im_idx,
+    const float                     im_h,
+    const float                     im_w,
+    const float                     im_scale,
+    const T*                        scores,
+    const T*                        deltas,
+    const int64_t*                  indices,
+    T*                              proposals) {
+    int64_t index, cls;
+    int64_t num_boxes_2x = 2 * num_boxes;
+    int64_t num_boxes_3x = 3 * num_boxes;
+    float* proposal = proposals;
+    float dx, dy, d_log_w, d_log_h;
+    for (int i = 0; i < num_proposals; ++i) {
+        cls = indices[i] % num_classes;
+        index = indices[i] / num_classes;
+        dx = deltas[index];
+        dy = deltas[num_boxes + index];
+        d_log_w = deltas[num_boxes_2x + index];
+        d_log_h = deltas[num_boxes_3x + index];
+        proposal[0] = im_idx;
+        BBoxTransform<float>(
+            dx, dy, d_log_w, d_log_h,
+                im_w, im_h, im_scale, proposal + 1);
+        proposal[5] = scores[indices[i]];
+        proposal[6] = cls + 1;
+        proposal += 7;
     }
 }
 

@@ -12,9 +12,9 @@
 
 #ifndef DRAGON_CORE_OPERATOR_SCHEMA_H_
 #define DRAGON_CORE_OPERATOR_SCHEMA_H_
- 
-#include <functional>
+
 #include <limits>
+#include <functional>
 
 #include "common.h"
 
@@ -92,7 +92,7 @@ class OpSchemaRegistry {
     }
 
  private:
-     static Map<string, OpSchema>& schema_map() {
+    static Map<string, OpSchema>& schema_map() {
         static Map<string, OpSchema> schema_map_;
         return schema_map_;
     }

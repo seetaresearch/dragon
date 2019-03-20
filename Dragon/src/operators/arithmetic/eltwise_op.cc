@@ -73,7 +73,7 @@ void EltwiseGradientOp<Context>::SumRunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
 
     for (int i = 0; i < OutputSize(); i++) {
-        if (Output(i)->name() == "ignore") continue;
+        if (Output(i)->name() == "NULL") continue;
         auto* dXdata = Output(i)->template mutable_data<T, Context>();
         // Copy the dY to dX and Apply the coeffients
         math::Scale(nelements, coeffs[i], dYdata, dXdata, ctx());
@@ -86,7 +86,7 @@ void EltwiseGradientOp<Context>::ProdRunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
 
     for (int i = 0; i < OutputSize(); i++) {
-        if (Output(i)->name() == "ignore") continue;
+        if (Output(i)->name() == "NULL") continue;
         auto* dXdata = Output(i)->template mutable_data<T, Context>();
         // Compute the first term of dX
         bool initialized = false;

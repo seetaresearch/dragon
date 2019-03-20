@@ -88,9 +88,8 @@ std::string CreateGraph(
     auto graph_def_copy(*graph_def);
     // Overwritten device options
     DeviceOption* device_option = graph_def_copy.mutable_device_option();
-    device_option->set_device_type((DeviceType)device.device_type());
+    device_option->set_device_type((DeviceTypeProto)device.device_type());
     device_option->set_device_id(device.device_id());
-    device_option->set_engine("CUDNN");
     auto* graph = ws->CreateGraph(graph_def_copy);
     if (!graph) LOG(FATAL) << "Can not create the graph.";
     return graph->name();

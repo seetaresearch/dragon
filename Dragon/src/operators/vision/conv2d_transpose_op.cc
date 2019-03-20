@@ -48,22 +48,22 @@ template <class Context> template <typename T>
 void ConvTranspose2dGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
 
-    if (Output(2)->name() != "ignore") {
+    if (Output(2)->name() != "NULL") {
         auto* dBdata = Output(2)->template mutable_data<T, Context>();
         for (int n = 0; n < Input(2).dim(0); n++)
             Db(dYdata + n * y_offset, dBdata);
     }
 
     for (int n = 0; n < Input(2).dim(0); n++) {
-        if (Output(1)->name() != "ignore") {
+        if (Output(1)->name() != "NULL") {
             auto* Xdata = Input(0).template data<T, Context>();
             auto* dWdata = Output(1)->template mutable_data<T, Context>();
             Dw(Xdata + n * x_offset, dYdata + n * y_offset, dWdata);
         }
-        if (Output(0)->name() != "ignore") {
+        if (Output(0)->name() != "NULL") {
             auto* Wdata = Input(1).template data<T, Context>();
             auto* dXdata = Output(0)->template mutable_data<T, Context>();
-            bool skip = Output(1)->name() != "ignore";
+            bool skip = Output(1)->name() != "NULL";
             Wx(dYdata + n * y_offset, Wdata, dXdata + n * x_offset, skip);
         }
     }

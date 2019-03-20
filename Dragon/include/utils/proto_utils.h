@@ -28,8 +28,7 @@ inline OperatorDef MakeOperatorDef(
     const IterableInputs&               inputs,
     const IterableOutputs&              outputs,
     const IterableArgs&                 args,
-    const DeviceOption&                 device_option,
-    const string&                       engine) {
+    const DeviceOption&                 device_option) {
     OperatorDef def;
     def.set_type(type);
     def.set_name(name);
@@ -51,8 +50,8 @@ inline OperatorDef MakeOperatorDef(
     const IterableOutputs&              outputs,
     const IterableArgs&                 args) {
     return MakeOperatorDef(
-        type, name, inputs, outputs, args,
-            DeviceOption(), "");
+        type, name, inputs, outputs,
+            args, DeviceOption());
 }
 
 template <class IterableInputs,
@@ -64,7 +63,7 @@ inline OperatorDef MakeOperatorDef(
     const IterableOutputs&              outputs) {
     return MakeOperatorDef(
         type, name, inputs, outputs,
-            vector<Argument>(), DeviceOption(), "");
+            vector<Argument>(), DeviceOption());
 }
 
 bool ParseProtoFromText(

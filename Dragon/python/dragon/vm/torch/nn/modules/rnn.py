@@ -413,12 +413,15 @@ class RNNCellBase(Module):
         for weight in self.parameters():
             weight.data.uniform_(-stdv, stdv)
 
+from .activation import Tanh, Sigmoid
 
 class LSTMCell(RNNCellBase):
     def __init__(self, input_size, hidden_size, bias=True):
         super(LSTMCell, self).__init__(
             input_size, hidden_size, bias, num_chunks=4)
         self.register_op()
+        self.tanh = Tanh()
+        self.sigmoid = Sigmoid()
 
     def register_op(self):
         self.op_meta = {'op_type': 'LSTMCell', 'arguments': {}}

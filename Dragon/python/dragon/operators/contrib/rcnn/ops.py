@@ -32,29 +32,29 @@ def Proposal(inputs, strides, ratios, scales,
 
     Parameters
     ----------
-    inputs : list of Tensor
+    inputs : sequence of Tensor
         The inputs.
-    strides : list of int
+    strides : sequence of int
         The strides of anchors.
-    ratios : list of float
+    ratios : sequence of float
         The ratios of anchors.
-    scales : list of float
+    scales : sequence of float
         The scales of anchors.
-    pre_nms_top_n : int
+    pre_nms_top_n : int, optional, default=6000
         The number of anchors before nms.
-    post_nms_top_n : int
+    post_nms_top_n : int, optional, default=300
         The number of anchors after nms.
-    nms_thresh : float
+    nms_thresh : float, optional, default=0.7
         The threshold of nms.
-    min_size : int
+    min_size : int, optional, default=16
         The min size of anchors.
-    min_level : int
+    min_level : int, optional, default=2
         Finest level of the FPN pyramid.
-    max_level : int
+    max_level : int, optional, default=5
         Coarsest level of the FPN pyramid.
-    canonical_scale : int
+    canonical_scale : int, optional, default=224
         The baseline scale of mapping policy.
-    canonical_level : int
+    canonical_level : int, optional, default=4
         Heuristic level of the canonical scale.
 
     Returns

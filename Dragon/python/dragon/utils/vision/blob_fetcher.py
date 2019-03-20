@@ -28,12 +28,12 @@ class BlobFetcher(Process):
 
         Parameters
         ----------
-        batch_size : int
-            The size of a training batch.
-        partition : boolean
-            Whether to partition batch. Default is ``False``.
-        prefetch : int
-            The prefetch count. Default is ``5``.
+        batch_size : int, optional, default=128
+            The size of a mini-batch.
+        partition : bool, optional, default=False
+            Whether to partition batch for parallelism.
+        prefetch : int, optional, default=5
+            The prefetch count.
 
         """
         super(BlobFetcher, self).__init__()

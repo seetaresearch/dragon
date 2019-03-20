@@ -142,7 +142,7 @@ class Operator : public OperatorBase {
         allow_run_ = true;
         allow_run_ &= MPICheck();
         allow_run_ &= (!(OutputSize() == 1 &&
-            Output(0)->name() == "ignore"));
+            Output(0)->name() == "NULL"));
     }
 
     /*! \brief Run this operator on the specified stream */
@@ -168,10 +168,10 @@ class Operator : public OperatorBase {
     /*! \brief Coordinate the context of inputs and outputs */
     virtual void MemorySwitch() {
         for (auto* e : inputs_)
-            if(e->name() != "ignore")
+            if(e->name() != "NULL")
                 e->SwitchToDevice(ctx()->device_id());
         for (auto* e : outputs_)
-            if(e->name() != "ignore")
+            if(e->name() != "NULL")
                 e->SwitchToDevice(ctx()->device_id());
     }
 

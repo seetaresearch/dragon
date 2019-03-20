@@ -83,11 +83,11 @@ template <class Context> template <typename T>
 void MinimumGradientOp<Context>::BroadcastRunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
     if (Input(0).count() == 1) {
-        if (Output(0)->name() != "ignore") {
+        if (Output(0)->name() != "NULL") {
             auto* dAdata = Output(0)->template mutable_data<T, Context>();
             math::Set<T, Context>(1, cast::to<T>(0.f), dAdata, ctx());
         }
-        if (Output(1)->name() != "ignore") {
+        if (Output(1)->name() != "NULL") {
             auto* Adata = Input(0).template data<T, CPUContext>();
             auto* Bdata = Input(1).template data<T, Context>();
             auto* dBdata = Output(1)->template mutable_data<T, Context>();
@@ -95,14 +95,14 @@ void MinimumGradientOp<Context>::BroadcastRunWithType() {
                 Bdata, Adata[0], dYdata, dBdata, (T*)nullptr, ctx());
         }
     } else if (Input(1).count() == 1) {
-        if (Output(0)->name() != "ignore") {
+        if (Output(0)->name() != "NULL") {
             auto* Adata = Input(0).template data<T, Context>();
             auto* Bdata = Input(1).template data<T, CPUContext>();
             auto* dAdata = Output(0)->template mutable_data<T, Context>();
             kernel::BroadcastMinimumGrad(Output(0)->count(),
                 Adata, Bdata[0], dYdata, dAdata, (T*)nullptr, ctx());
         }
-        if (Output(1)->name() != "ignore") {
+        if (Output(1)->name() != "NULL") {
             auto* dBdata = Output(1)->template mutable_data<T, Context>();
             math::Set<T, Context>(1, cast::to<T>(0.f), dBdata, ctx());
         }

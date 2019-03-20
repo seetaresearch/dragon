@@ -52,7 +52,7 @@ def Conv2d(
         The inputs, represent [input, weights] + [bias].
     num_output : int
         The output channels of convolution.
-    kernel_shape : sequence of int.
+    kernel_shape : sequence of int
         The shape of convolution kernel.
     strides : sequence of int, optional, default=1
         The stride(s) of convolution.

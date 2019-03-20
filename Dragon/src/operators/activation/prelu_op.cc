@@ -46,7 +46,7 @@ void PReluGradientOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* dYdata = Input(-1).template data<T, Context>();
 
-    if (Output(1)->name() != "ignore") {
+    if (Output(1)->name() != "NULL") {
         DECLARE_MULTIPLIER(multiplier, channels * dim);
         auto* dWdata = Output(1)->template mutable_data<T, Context>();
         auto* dWBdata = ws()->template caches<T, Context>({ channels * dim })[0];
@@ -55,7 +55,7 @@ void PReluGradientOp<Context>::RunWithType() {
                 dYdata, Xdata, multiplier, dWBdata, dWdata, ctx());
     }
 
-    if (Output(0)->name() != "ignore") {
+    if (Output(0)->name() != "NULL") {
         auto* Wdata = Input(1).template data<T, Context>();
         auto* dXdata = Output(0)->template mutable_data<T, Context>();
         kernel::PReluGrad(Output(0)->count(), channels, dim,

@@ -72,7 +72,7 @@ else:
 def MakeOperatorDef(
     op_type, inputs=(), outputs=(),
         name='', uid=None, device_option=None,
-            arg=None, engine=None, **kwargs):
+            arg=None, **kwargs):
     operator = pb.OperatorDef()
     operator.type = op_type
     operator.name = name
@@ -80,14 +80,12 @@ def MakeOperatorDef(
     operator.output.extend([str(tensor) for tensor in outputs])
     if device_option is not None:
         operator.device_option.CopyFrom(device_option)
-        if engine is not None:
-            operator.device_option.engine = engine
     if 'random_seed' in kwargs:
         operator.device_option.random_seed = kwargs['random_seed']
         del kwargs['random_seed']
     if uid is not None: operator.uid = uid
     if arg is not None: operator.arg.extend(arg)
-    for k,v in kwargs.items():
+    for k, v in kwargs.items():
         if v is None: continue
         operator.arg.add().CopyFrom(MakeArgument(k,v))
     return operator
@@ -96,46 +94,36 @@ def MakeOperatorDef(
 def MakeCXXOperatorDef(
     op_type, inputs=(), outputs=(),
         name='', uid=None, device_option=None,
-            arg=None, engine=None, **kwargs):
+            arg=None, **kwargs):
     c_def = _C.OperatorDef()
     py_def = MakeOperatorDef(
         op_type, inputs, outputs, name, uid,
-            device_option, arg, engine, **kwargs)
+            device_option, arg, **kwargs)
     c_def.ParseFrom(py_def.SerializeToString())
     return c_def
 
 
-def MakeDeviceOption(
-    device_type, device_id,
-        engine=None, rng_seed=None):
+def MakeDeviceOption(device_type, device_id, rng_seed=None):
     option = pb.DeviceOption()
     option.device_type = device_type
     option.device_id = device_id
-    if engine is not None: option.engine = engine
     if rng_seed is not None: option.random_seed = rng_seed
     return option
 
 
 _PREDEFINED_DEVICE_LIMITS = 16
-_PREDEFINED_DEVICE_ENGINES = ['', 'CUDNN']
 _PREDEFINED_DEVICE_DICT = {'cpu': 0, 'cuda': 1, 'cnml': 2}
 _PREDEFINED_DEVICE_OPTION_DICT = {}
 
 
 for i in range(_PREDEFINED_DEVICE_LIMITS):
     for device, identify in _PREDEFINED_DEVICE_DICT.items():
-        for engine in _PREDEFINED_DEVICE_ENGINES:
-            _PREDEFINED_DEVICE_OPTION_DICT[(device, i, engine)] = \
-                MakeDeviceOption(identify, i, engine)
-        if device == 'cuda':
-            _PREDEFINED_DEVICE_OPTION_DICT[('cuda', i)] = \
-                MakeDeviceOption(identify, i, 'CUDNN')
+        _PREDEFINED_DEVICE_OPTION_DICT[(device, i)] = \
+            MakeDeviceOption(identify, i)
 
 
-def GetDeviceOption(
-    device_type, device_id=0,
-        engine=None, rng_seed=None):
-    ctx = (device_type, device_id, engine if engine else '')
+def GetDeviceOption(device_type, device_id=0, rng_seed=None):
+    ctx = (device_type, device_id)
     option = _PREDEFINED_DEVICE_OPTION_DICT[ctx]
     if rng_seed is not None:
         option_copy = copy.deepcopy(option)
@@ -149,16 +137,15 @@ def GetDefaultDeviceOption():
     if device_info is not None:
         return GetDeviceOption(
             device_info['device_type'],
-            device_info['device_id'],
-            device_info['device_engine'])
+                device_info['device_id'])
     return None
 
 
 def GetGlobalDeviceOption():
     option = cfg.GetGlobalOptions()
     return GetDeviceOption(
-        option['device'], option['device_id'],
-            'CUDNN' if option['use_cudnn'] else '')
+        option['device'],
+            option['device_id'])
 
 
 # Fix the python stdout

@@ -70,14 +70,14 @@ void MatmulGradientOp<Context>::RunWithType() {
 
     T* dAdata = nullptr, *dBdata = nullptr;
 
-    if (Output(0)->name() != "ignore") {
+    if (Output(0)->name() != "NULL") {
         dAdata = Output(0)->template mutable_data<T, Context>();
-    } if (Output(1)->name() != "ignore") {
+    } if (Output(1)->name() != "NULL") {
         dBdata = Output(1)->template mutable_data<T, Context>();
     }
 
     for (int i = 0; i < batch_size; ++i) {
-        if (Output(0)->name() != "ignore") {
+        if (Output(0)->name() != "NULL") {
             if (transA) {
                 math::Gemm(
                     transB ? CblasTrans : CblasNoTrans,
@@ -94,7 +94,7 @@ void MatmulGradientOp<Context>::RunWithType() {
                     0.f, dAdata + i * A_stride, ctx());
             }
         }
-        if (Output(1)->name() != "ignore") {
+        if (Output(1)->name() != "NULL") {
             if (transB) {
                 math::Gemm(
                     CblasTrans,

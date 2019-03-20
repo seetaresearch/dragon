@@ -60,7 +60,7 @@ void AffineGradientOp<Context>::RunWithType() {
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
     // dA = X * dY
-    if (Output(1)->name() != "ignore") {
+    if (Output(1)->name() != "NULL") {
         Output(1)->ReshapeLike(Input(1));
         auto* Xdata = Input(0).template data<T, Context>();
         auto* dAdata = Output(1)->template mutable_data<T, Context>();
@@ -74,7 +74,7 @@ void AffineGradientOp<Context>::RunWithType() {
     }
 
     // dB = dY
-    if (Output(2)->name() != "ignore") {
+    if (Output(2)->name() != "NULL") {
         Output(2)->ReshapeLike(Input(1));
         auto* dBdata = Output(2)->template mutable_data<T, Context>();
         // Eltwise
@@ -87,7 +87,7 @@ void AffineGradientOp<Context>::RunWithType() {
     }
 
     // dX = alpha * dY
-    if (Output(0)->name() != "ignore") {
+    if (Output(0)->name() != "NULL") {
         kernel::AffineGrad(outer_dim, inner_dim, scale_dim,
             dYdata, Adata, dXdata, ctx());
     }

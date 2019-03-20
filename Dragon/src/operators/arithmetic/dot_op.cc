@@ -116,13 +116,13 @@ void DotGradientOp<Context>::DotRunWithType() {
     auto* Bdata = Input(1).template data<T, Context>();
     auto* dYdata = Input(-1).template data<T, CPUContext>();
 
-    if (Output(0)->name() != "ignore") {
+    if (Output(0)->name() != "NULL") {
         auto* dAdata = Output(0)->template mutable_data<T, Context>();
         math::Scale(Output(0)->count(), cast::to<float>(
             dYdata[0]), Bdata, dAdata, ctx());
     }
 
-    if (Output(1)->name() != "ignore") {
+    if (Output(1)->name() != "NULL") {
         auto* dBdata = Output(1)->template mutable_data<T, Context>();
         math::Scale(Output(0)->count(), cast::to<float>(
             dYdata[0]), Adata, dBdata, ctx());
@@ -145,7 +145,7 @@ void DotGradientOp<Context>::GemmRunWithType() {
     auto* X2data = Input(1).template data<T, Context>();
     auto* dYdata = Input(2).template data<T, Context>();
 
-    if (Output(0)->name() != "ignore") {
+    if (Output(0)->name() != "NULL") {
         auto* dX1data = Output(0)->template mutable_data<T, Context>();
         if (transA) {
             math::Gemm(
@@ -162,7 +162,7 @@ void DotGradientOp<Context>::GemmRunWithType() {
         }
     }
 
-    if (Output(1)->name() != "ignore") {
+    if (Output(1)->name() != "NULL") {
         auto* dX2data = Output(1)->template mutable_data<T, Context>();
         if (transB) {
            math::Gemm(

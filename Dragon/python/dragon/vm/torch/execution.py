@@ -93,14 +93,14 @@ def RunOperator(
             op_name = recorder.append(op)
             op.name = op_name
             for ix in range(len(outputs)):
-                outputs[ix]._requires_grad = True
+                outputs[ix].requires_grad = True
                 outputs[ix].__jit_recorder__ = recorder
                 if len(ignored_grads) > 0:
                     outputs[ix]._ignored_grads = ignored_grads
         else:
             # Reset status
             for ix in range(len(outputs)):
-                outputs[ix]._requires_grad = False
+                outputs[ix].requires_grad = False
 
     # Callback on Run
     if callback_on_run: callback_on_run(op_name)

@@ -41,7 +41,7 @@ class GradientGatherOp final : public Operator<Context> {
     GradientGatherOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws) {
         for (int i = 0; i < InputSize(); i++)
-            if (Input(i).name() != "ignore") indices.push_back(i);
+            if (Input(i).name() != "NULL") indices.push_back(i);
     }
     USE_OPERATOR_FUNCTIONS;
 

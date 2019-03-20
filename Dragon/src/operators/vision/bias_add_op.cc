@@ -49,7 +49,7 @@ OPERATOR_SCHEMA(BiasAdd)
 
 template <class Context> template <typename T>
 void BiasAddGradientOp<Context>::RunWithType() {
-    if (Output(1)->name() != "ignore") {
+    if (Output(1)->name() != "NULL") {
         DECLARE_MULTIPLIER(multiplier, inner_dim);
         auto* dYdata = Input(-1).template mutable_data<T, Context>();
         auto* dBias = Output(1)->template mutable_data<T, Context>();
@@ -75,7 +75,7 @@ void BiasAddGradientOp<Context>::RunWithType() {
         }
     }
 
-    if (Output(0)->name() != "ignore" &&
+    if (Output(0)->name() != "NULL" &&
         Output(0)->name() != Input(-1).name()) {
         Output(0)->ReshapeLike(Input(-1));
         Output(0)->template CopyFrom<Context>(Input(-1), ctx());

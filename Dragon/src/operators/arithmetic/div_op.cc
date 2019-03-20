@@ -61,7 +61,7 @@ void DivGradientOp<Context>::EltwiseRunWithType() {
     DEFINE_FUNDAMENTAL_OP_X1X2;
     auto* dy = Input(-1).template data<T, Context>();
 
-    if (Output(1)->name() != "ignore") {
+    if (Output(1)->name() != "NULL") {
         auto* x1 = Input(0).template data<T, Context>();
         auto* x2 = Input(1).template data<T, Context>();
         auto* dx2 = Output(1)->template mutable_data<T, Context>();
@@ -73,7 +73,7 @@ void DivGradientOp<Context>::EltwiseRunWithType() {
         math::Scale(X2->count(), -1.f, dx2, dx2, ctx());
     }
 
-    if (Output(0)->name() != "ignore") {
+    if (Output(0)->name() != "NULL") {
         auto* x2 = Input(1).template data<T, Context>();
         auto* dx1 = Output(0)->template mutable_data<T, Context>();
         math::Div(X1->count(), dy, x2, dx1, ctx());
@@ -85,7 +85,7 @@ void DivGradientOp<Context>::BroadcastRunWithType(int type) {
     DEFINE_FUNDAMENTAL_OP_X1X2;
     auto* dy = Input(-1).template data<T, Context>();
 
-    if (Output(1)->name() != "ignore") {
+    if (Output(1)->name() != "NULL") {
         auto* x1 = Input(0).template data<T, Context>();
         auto* x2 = Input(1).template data<T, Context>();
         auto* dx2 = Output(1)->template mutable_data<T, Context>();
@@ -100,7 +100,7 @@ void DivGradientOp<Context>::BroadcastRunWithType(int type) {
             1, axes.data(), -1.f, cs[0], dx2, ctx());
     }
 
-    if (Output(0)->name() != "ignore") {
+    if (Output(0)->name() != "NULL") {
         auto* x2 = Input(1).template data<T, Context>();
         auto* dx1 = Output(0)->template mutable_data<T, Context>();
         math::BroadcastDiv(rows, cols, type, dy, x2, dx1, ctx());

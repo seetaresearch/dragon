@@ -7,7 +7,7 @@ namespace dragon {
 /*! Create some internal tensors */
 
 void Workspace::InitWorkspace() {
-    CreateTensor("ignore");
+    CreateTensor("NULL");
     Tensor* recomputing_flag = CreateTensor(
         "/opt/recomputing_flag")->Reshape({ 1 });
     recomputing_flag->mutable_data

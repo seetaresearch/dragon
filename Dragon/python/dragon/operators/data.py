@@ -25,40 +25,40 @@ def LMDBData(**kwargs):
     ----------
     source : str
         The path of database.
-    shuffle : bool
+    shuffle : bool, optional, default=False
         Whether to shuffle the data.
     node_step: bool
         Whether to split data for multiple parallel nodes.
-    num_chunks : int
-        The number of chunks to split. Default is ``2048``.
-    chunk_size : int
-        The size(MB) of each chunk. Default is -1 (Refer ``num_chunks``).
-    mean_values : list
+    num_chunks : int, optional, default=2048
+        The number of chunks to split.
+    chunk_size : int, optional, default=-1
+        The size(MB) of each chunk.
+    mean_values : list, optional
         The mean value of each image channel.
-    scale : float
-        The scale performed after mean subtraction. Default is ``1.0``.
-    padding : int
-        The zero-padding size. Default is ``0``.
-    crop_size : int
-        The crop size. Default is ``0`` (Disabled).
-    mirror : bool
-        Whether to mirror(flip horizontally) images. Default is ``False``.
-    color_augmentation : bool
-        Whether to use color distortion. Default is ``False``.
-    min_random_scale : float
-        The min scale of the input images. Default is ``1.0``.
-    max_random_scale : float
-        The max scale of the input images. Default is ``1.0``.
-    force_gray : bool
-        Set not to duplicate channel for gray. Default is ``False``.
-    phase : str
-        The phase of this operator, ``TRAIN`` or ``TEST``.
-    batch_size : int
+    scale : float, optional, default=1.
+        The scale performed after mean subtraction.
+    padding : int, optional, default=0
+        The zero-padding size.
+    crop_size : int, optional, default=0
+        The cropping size.
+    mirror : bool, optional, default=False
+        Whether to mirror(flip horizontally) images.
+    color_augmentation : bool, optional, default=False
+        Whether to use color distortion.1
+    min_random_scale : float, optional, default=1.
+        The min scale of the input images.
+    max_random_scale : float, optional, default=1.
+        The max scale of the input images.
+    force_gray : bool, optional, default=False
+        Set not to duplicate channel for gray.
+    phase : {'TRAIN', 'TEST'}, optional
+        The phase of this operator.
+    batch_size : int, optional, default=128
         The size of a mini-batch.
-    partition : bool
-        Whether to partition batch for parallelism. Default is ``False``.
-    prefetch : int
-        The prefetch count. Default is ``5``.
+    partition : bool, optional, default=False
+        Whether to partition batch for parallelism.
+    prefetch : int, optional, default=5
+        The prefetch count.
 
     Returns
     -------
@@ -85,8 +85,7 @@ def LMDBData(**kwargs):
 @OpSchema.Inputs(1)
 def ImageData(
     inputs, mean_values=None, std_values=None,
-        dtype='float32', data_format='NCHW', **kwargs
-):
+        dtype='float32', data_format='NCHW', **kwargs):
     """Process the images from 4D raw data.
 
     Note that we assume the data format of raw data is **NHWC**.
@@ -99,10 +98,10 @@ def ImageData(
         The optional mean values to subtract.
     std_values : sequence of float, optional
         The optional std values to divide.
-    dtype : str
-        The type of output. ``float32`` or ``float16``.
-    data_format : str
-        The data format of output. ``NCHW`` or ``NHWC``.
+    dtype : {'float16', 'float32'}, optional
+        The data type of output.
+    data_format : {'NCHW', 'NHWC'}, optional
+        The data format of output.
 
     Returns
     -------

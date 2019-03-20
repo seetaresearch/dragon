@@ -131,7 +131,7 @@ void ScanOp<Context>::UnrollTemplate() {
             func_def.output(i) +
                 "@" + std::to_string(nsteps));
         // Concat all steps if necessary
-        if (Output(i)->name() == "ignore") continue;
+        if (Output(i)->name() == "NULL") continue;
         OperatorDef* op = new_def.add_op();
         op->set_name(name() + "(BodyOp." + std::to_string(
             nseqs + nrepeats + i) + ")");
@@ -186,7 +186,7 @@ void ScanGradientOp<Context>::MakeOps(
     maker.SetOperatorPrefix(name() + "(BodyOp.");
     maker.SetOperatorSuffix(")");
     for (int i = 0; i < forward_outputs.size(); i++) {
-        if (Input(i + (int)OutputSize()).name() != "ignore")
+        if (Input(i + (int)OutputSize()).name() != "NULL")
             maker.AddExternalGrad(Input(i + (int)OutputSize()).name());
     }
 
@@ -197,8 +197,8 @@ void ScanGradientOp<Context>::MakeOps(
     new_def.set_name(name() + "(ScanLen." + std::to_string(nsteps) + ")");
     for (const auto& target : forward_def.output()) {
         for (int i = 0; i < OutputSize(); i++) {
-            if (Output(i)->name() == "ignore") continue;
-            if (Input(i).name() == "ignore") continue;
+            if (Output(i)->name() == "NULL") continue;
+            if (Input(i).name() == "NULL") continue;
             auto* gradient = new_def.add_gradient();
             gradient->set_cost(target);
             gradient->set_wrt(Input(i).name());

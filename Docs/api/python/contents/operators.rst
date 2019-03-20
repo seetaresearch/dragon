@@ -59,16 +59,12 @@ Custom
    :hidden:
 
    operators/custom/minibatch
-   operators/custom/data_process
-   operators/custom/vec_mult
 
 
 =========================================       =====================================================================
 List                                            Brief
 =========================================       =====================================================================
-`dragon.operators.custom.minibatch`_            How to form a minibatch based on `dragon.io`_ package.
-`dragon.operators.custom.data_process`_         How to custom a RunOp for data processing.
-`dragon.operators.custom.vec_mult`_             How to custom a TemplateOp for Vector Multiplication.
+`dragon.operators.custom.minibatch`_            Form a mini-batch based on `dragon.utils.vision`_ package.
 =========================================       =====================================================================
 
 
@@ -99,9 +95,9 @@ List                                            Brief
 .. _dragon.operators.recurrent: operators/recurrent.html
 .. _dragon.operators.loss: operators/loss.html
 .. _dragon.operators.norm: operators/norm.html
-.. _dragon.io: io.html
 .. _dragon.operators.custom.minibatch: operators/custom/minibatch.html
 .. _dragon.operators.custom.data_process: operators/custom/data_process.html
 .. _dragon.operators.custom.vec_mult: operators/custom/vec_mult.html
 .. _dragon.operators.contrib.rcnn: operators/contrib/rcnn.html
+.. _dragon.utils.vision: utils.html#vision
 

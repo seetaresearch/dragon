@@ -8,7 +8,7 @@ namespace dragon {
 template <class Context> template <typename T>
 void GradientGenerateOp<Context>::RunWithType() {
     for (int i = 0; i < OutputSize(); i++) {
-        if (Output(i)->name() == "ignore") continue;
+        if (Output(i)->name() == "NULL") continue;
         Output(i)->ReshapeLike(Input(i));
         auto* dXdata = Output(0)->template mutable_data<T, Context>();
         math::Set(Output(0)->count(),

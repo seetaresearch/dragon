@@ -60,13 +60,13 @@ template <class Context> template <typename T>
 void RMulGradientOp<Context>::EltwiseRunWithType() {
     auto* dy = Input(-1).template data<T, Context>();
 
-    if (Output(1)->name() != "ignore") {
+    if (Output(1)->name() != "NULL") {
         auto* x1 = Input(0).template data<T, Context>();
         auto* dx2 = Output(1)->template mutable_data<T, Context>();
         math::Mul(Output(1)->count(), dy, x1, dx2, ctx());
     }
 
-    if (Output(0)->name() != "ignore") {
+    if (Output(0)->name() != "NULL") {
         auto* x2 = Input(1).template data<T, Context>();
         auto* dx1 = Output(0)->template mutable_data<T, Context>();
         math::Mul(Output(0)->count(), dy, x2, dx1, ctx());
@@ -78,7 +78,7 @@ void RMulGradientOp<Context>::BroadcastRunWithType(int type) {
     DEFINE_FUNDAMENTAL_OP_X1X2;
     auto* dy = Input(-1).template data<T, Context>();
 
-    if (Output(0)->name() != "ignore") {
+    if (Output(0)->name() != "NULL") {
         auto* x2 = Input(1).template data<T, Context>();
         auto* dx1 = Output(0)->template mutable_data<T, Context>();
         auto* c = ws()->template caches<T, Context>({ X2->count() })[0];
@@ -88,7 +88,7 @@ void RMulGradientOp<Context>::BroadcastRunWithType(int type) {
             1, axes.data(), 1.f, c, dx1, ctx());
     }
 
-    if (Output(1)->name() != "ignore") {
+    if (Output(1)->name() != "NULL") {
         auto* x1 = Input(0).template data<T, Context>();
         auto* dx2 = Output(1)->template mutable_data<T, Context>();
         math::BroadcastMul(rows, cols, type - 2, dy, x1, dx2, ctx());
@@ -102,19 +102,19 @@ void RMulGradientOp<Context>::RunOnDevice() {
     Output(1)->ReshapeLike(*X2);
 
     if (XIsType(Input(-1), int8_t)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(int8_t);
+        DEFINE_FUNDAMENTAL_TYPED_RCALLER(int8_t);
     } else if (XIsType(Input(-1), uint8_t)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(uint8_t);
+        DEFINE_FUNDAMENTAL_TYPED_RCALLER(uint8_t);
     } else if (XIsType(Input(-1), int)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(int);
+        DEFINE_FUNDAMENTAL_TYPED_RCALLER(int);
     } else if (XIsType(Input(-1), int64_t)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(int64_t);
+        DEFINE_FUNDAMENTAL_TYPED_RCALLER(int64_t);
     } else if (XIsType(Input(-1), float16)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(float16);
+        DEFINE_FUNDAMENTAL_TYPED_RCALLER(float16);
     } else if (XIsType(Input(-1), float)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(float);
+        DEFINE_FUNDAMENTAL_TYPED_RCALLER(float);
     } else if (XIsType(Input(-1), double)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(double);
+        DEFINE_FUNDAMENTAL_TYPED_RCALLER(double);
     } else {
         LOG(FATAL) << DTypeHelper(Input(0), {
             "int8", "uint8", "int32", "int64",

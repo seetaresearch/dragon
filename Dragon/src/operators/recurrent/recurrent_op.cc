@@ -24,14 +24,14 @@ class GetRecurrentGradient final : public GradientMakerBase {
     GRADIENT_MAKER_CTOR(GetRecurrentGradient);
     vector<OperatorDef> MakeDefs() override {
         vector<string> inputs({ I(0), I(1),
-            def.input_size() > 2 ? I(2) : "ignore",
-            def.input_size() > 3 ? I(3) : "ignore",
+            def.input_size() > 2 ? I(2) : "NULL",
+            def.input_size() > 3 ? I(3) : "NULL",
             O(0), GO(0),
-            def.output_size() > 1 ? GO(1) : "ignore",
-            def.output_size() > 2 ? GO(2) : "ignore"});
+            def.output_size() > 1 ? GO(1) : "NULL",
+            def.output_size() > 2 ? GO(2) : "NULL"});
         vector<string> outputs({ GI(0), GI(1),
-            def.input_size() > 2 ? GI(2) : "ignore",
-            def.input_size() > 3 ? GI(3) : "ignore"});
+            def.input_size() > 2 ? GI(2) : "NULL",
+            def.input_size() > 3 ? GI(3) : "NULL"});
         return SingleDef(def.type() + "Gradient", "", inputs, outputs);
     }
 };

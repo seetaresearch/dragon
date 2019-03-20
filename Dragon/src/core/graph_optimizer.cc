@@ -19,7 +19,7 @@ GraphDef GraphOptimizer::PruneNodes(const GraphDef& input_def) {
             if (!op.input_size()) sp_u.resize(op.output_size(), "");
             else sp_u.assign(op.input().begin(), op.input().end());
             for (const auto& u : sp_u) {
-                if (u == "ignore") continue;
+                if (u == "NULL") continue;
                 dag_[v].parents.push_back(u);
                 dag_[u].childs.push_back(v);
                 dag_[v].op_idx = i;
@@ -66,32 +66,32 @@ GraphDef GraphOptimizer::PruneNodes(const GraphDef& input_def) {
         for (int i = 0; i < input_def.op(it).input_size(); ++i) {
             string input = input_def.op(it).input(i);
             if (!colored_[input] || !outputs.count(input))
-                *op_def.mutable_input(i) = "ignore";
+                *op_def.mutable_input(i) = "NULL";
         }
         // Rewritten for outputs
         for (int i = 0; i < input_def.op(it).output_size(); ++i) {
             string output = input_def.op(it).output(i);
-            if (!colored_[output]) *op_def.mutable_output(i) = "ignore";
+            if (!colored_[output]) *op_def.mutable_output(i) = "NULL";
             else outputs.insert(op_def.output(i));
         }
         // Rewritten for some hand-craft cases
         if (op_def.type() == "AffineGradient") {
             // Trigger in-place if not solving dAlpha
-            if (op_def.output(1) == "ignore")
-                *op_def.mutable_input(0) = "ignore";
+            if (op_def.output(1) == "NULL")
+                *op_def.mutable_input(0) = "NULL";
         } else if (op_def.type() == "MulGradient" ||
                    op_def.type() == "RMulGradient") {
-            if (op_def.output(0) == "ignore")
-                *op_def.mutable_input(1) = "ignore";
-            if (op_def.output(1) == "ignore")
-                *op_def.mutable_input(0) = "ignore";
+            if (op_def.output(0) == "NULL")
+                *op_def.mutable_input(1) = "NULL";
+            if (op_def.output(1) == "NULL")
+                *op_def.mutable_input(0) = "NULL";
         } else if (op_def.type() == "DivGradient" ||
                    op_def.type() == "RDivGradient") {
             // dX2 requires both X1 and X2
-            if (op_def.output(1) == "ignore") {
-                *op_def.mutable_input(0) = "ignore";
-                if (op_def.output(0) == "ignore")
-                    *op_def.mutable_input(1) = "ignore";
+            if (op_def.output(1) == "NULL") {
+                *op_def.mutable_input(0) = "NULL";
+                if (op_def.output(0) == "NULL")
+                    *op_def.mutable_input(1) = "NULL";
             }
         }
         // Push into the final sequence
@@ -117,7 +117,7 @@ GraphDef GraphOptimizer::AddInplace(const GraphDef& input_def) {
             if (!op.input_size()) sp_u.resize(op.output_size(), "");
             else sp_u.assign(op.input().begin(), op.input().end());
             for (const auto& u : sp_u) {
-                if (u == "ignore") continue;
+                if (u == "NULL") continue;
                 dag_[v].parents.push_back(u);
                 dag_[u].childs.push_back(v);
                 dag_[v].op_idx = i;

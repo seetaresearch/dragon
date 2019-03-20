@@ -47,7 +47,7 @@ class ConvTranspose2dGradientOp : public ConvTranspose2dOp<Context> {
     USE_OPERATOR_FUNCTIONS;
     USE_CONVOLUTION_FUNCTIONS;
 
-    bool HasBias() override { return Output(2)->name() != "ignore"; }
+    bool HasBias() override { return Output(2)->name() != "NULL"; }
 
     void RunOnDevice() override;
     template <typename T> void RunWithType();

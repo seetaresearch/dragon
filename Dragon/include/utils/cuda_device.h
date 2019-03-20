@@ -131,7 +131,7 @@ struct CUDADeviceProps {
     CUDADeviceProps() : props(CUDA_NUM_DEVICES()) {
         for (int i = 0; i < CUDA_NUM_DEVICES(); ++i)
             CUDA_CHECK(cudaGetDeviceProperties(&props[i], i));
-}
+    }
     vector<cudaDeviceProp> props;
 };
 

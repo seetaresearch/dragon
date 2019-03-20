@@ -122,7 +122,7 @@ void FullyConnectedGradientOp<Context>::RunWithType() {
     auto* Wdata = Input(1).template data<T, Context>();
     auto* dYdata = Input(2).template data<T, Context>();
 
-    if (Output(1)->name() != "ignore") {
+    if (Output(1)->name() != "NULL") {
         Output(1)->ReshapeLike(Input(1));
         auto* dWdata = Output(1)->template mutable_data<T, Context>();
         if (transW) {
@@ -140,7 +140,7 @@ void FullyConnectedGradientOp<Context>::RunWithType() {
         }
     }
 
-    if (Output(2)->name() != "ignore") {
+    if (Output(2)->name() != "NULL") {
         DECLARE_MULTIPLIER(multiplier, M);
         Output(2)->Reshape({ N });
         auto* dBdata = Output(2)->template mutable_data<T, Context>();
@@ -150,7 +150,7 @@ void FullyConnectedGradientOp<Context>::RunWithType() {
                     0.f, dBdata, ctx());
     }
 
-    if (Output(0)->name() != "ignore") {
+    if (Output(0)->name() != "NULL") {
         Output(0)->ReshapeLike(Input(0));
         auto* dXdata = Output(0)->template mutable_data<T, Context>();
         if (transW) {

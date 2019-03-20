@@ -76,23 +76,23 @@ class GradientMakerBase {
 
     const string I(const int i) const {
         return i < def.input_size() ?
-            def.input(i) : "ignore";
+            def.input(i) : "NULL";
     }
 
     const string O(const int i) const {
         return i < def.output_size() ?
-            def.output(i) : "ignore";
+            def.output(i) : "NULL";
     }
 
     string GI(const int i) {
-        if (i >= g_inputs_.size()) return "ignore";
+        if (i >= g_inputs_.size()) return "NULL";
         g_inputs_[i] = def.input(i) + "_grad";
         return g_inputs_[i];
     }
 
     const string GO(const int i) const {
         return i < g_outputs_.size() ?
-            g_outputs_[i] : "ignore";
+            g_outputs_[i] : "NULL";
     }
 
  protected:

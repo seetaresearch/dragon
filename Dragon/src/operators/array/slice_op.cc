@@ -89,7 +89,7 @@ void SliceGradientOp<Context>::RunWithType() {
             << "\nIllegal slice points: " << Tensor::DimString(slice_points)
             << " for dimension " << Input(0).dim(axis) << ".";
 
-        const T* dYdata = Input(i + 1).name() != "ignore" ?
+        const T* dYdata = Input(i + 1).name() != "NULL" ?
             Input(i + 1).template data<T, Context>() : nullptr;
 
         kernel::SliceGrad(

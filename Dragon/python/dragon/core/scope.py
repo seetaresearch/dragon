@@ -128,7 +128,7 @@ def name_scope(name):
     return _GLOBAL_TENSOR_STACK.get_controller(default)
 
 
-def device_scope(device_type, device_id=0, engine='AUTO'):
+def device_scope(device_type, device_id=0):
     """Nest the the specific device info.
 
     Parameters
@@ -137,20 +137,15 @@ def device_scope(device_type, device_id=0, engine='AUTO'):
         The type of device.
     device_id : int, optional
         The index of the device.
-    engine : {'AUTO', 'CUDNN'}, optional
-        The auxiliary accelerating library to use.
 
     """
-    device_type, device_id, device_engine = \
-        device_type.upper(), device_id, engine.upper()
+    device_type, device_id, device_type.lower(), device_id
     assert device_type in ['cpu', 'gpu', 'cuda', 'cnml']
     # Default names
     if device_type == 'gpu': device_type = 'cuda'
-    if device_engine == 'AUTO': device_engine = 'CUDNN'
     return _GLOBAL_DEVICE_STACK.get_controller({
         'device_type': device_type,
-        'device_id': device_id,
-        'device_engine': device_engine})
+            'device_id': device_id})
 
 
 def phase_scope(phase):
@@ -209,7 +204,7 @@ def get_default_device():
 
     The device dict contains the following keys:
 
-    (``device_type``, ``device_id``, ``device_engine``).
+    (``device_type``, ``device_id``).
 
     Returns
     -------

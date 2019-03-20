@@ -40,38 +40,38 @@ class DataBatch(object):
         ----------
         source : str
             The path of database.
-        multiple_nodes: boolean
-            Whether to split data for multiple parallel nodes. Default is ``False``.
-        shuffle : boolean
-            Whether to shuffle the data. Default is ``False``.
-        num_chunks : int
-            The number of chunks to split. Default is ``2048``.
-        chunk_size : int
-            The size(MB) of each chunk. Default is -1 (Refer ``num_chunks``).
-        padding : int
-            The zero-padding size. Default is ``0`` (Disabled).
-        fill_value : int
-            The value to fill when padding is valid. Default is ``127``.
-        crop_size : int
-            The crop size. Default is ``0`` (Disabled).
-        mirror : boolean
-            Whether to flip(horizontally) images. Default is ``False``.
-        color_augmentation : boolean
-            Whether to distort colors. Default is ``False``.
-        min_random_scale : float
-            The min scale of the input images. Default is ``1.0``.
-        max_random_scale : float
-            The max scale of the input images. Default is ``1.0``.
-        force_color : boolean
-            Set to duplicate channels for gray. Default is ``False``.
-        phase : str
-            The phase of this operator, ``TRAIN`` or ``TEST``. Default is ``TRAIN``.
-        batch_size : int
-            The size of a training batch.
-        partition : boolean
-            Whether to partition batch. Default is ``False``.
-        prefetch : int
-            The prefetch count. Default is ``5``.
+        multiple_nodes: boolean, optional, default=False
+            Whether to split data for multiple parallel nodes.
+        shuffle : bool, optional, default=False
+            Whether to shuffle the data.
+        num_chunks : int, optional, default=2048
+            The number of chunks to split.
+        chunk_size : int, optional, default=-1
+            The size(MB) of each chunk.
+        padding : int, optional, default=0
+            The zero-padding size.
+        fill_value : int, optional, default=127
+            The value to fill when padding is valid.
+        crop_size : int, optional, default=0
+            The cropping size.
+        mirror : bool, optional, default=False
+            Whether to mirror(flip horizontally) images.
+        color_augmentation : bool, optional, default=False
+            Whether to use color distortion.1
+        min_random_scale : float, optional, default=1.
+            The min scale of the input images.
+        max_random_scale : float, optional, default=1.
+            The max scale of the input images.
+        force_gray : bool, optional, default=False
+            Set not to duplicate channel for gray.
+        phase : {'TRAIN', 'TEST'}, optional
+            The optional running phase.
+        batch_size : int, optional, default=128
+            The size of a mini-batch.
+        partition : bool, optional, default=False
+            Whether to partition batch for parallelism.
+        prefetch : int, optional, default=5
+            The prefetch count.
 
         """
         super(DataBatch, self).__init__()
@@ -109,7 +109,7 @@ class DataBatch(object):
                     self._num_transformers += 1
         self._num_transformers = min(self._num_transformers, self._max_transformers)
 
-        self._batch_size = kwargs.get('batch_size', 100)
+        self._batch_size = kwargs.get('batch_size', 128)
         self._partition = kwargs.get('partition', False)
         if self._partition:
             self._batch_size = int(self._batch_size / kwargs['group_size'])

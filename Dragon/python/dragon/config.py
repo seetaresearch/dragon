@@ -27,9 +27,6 @@ option['device'] = 'cpu'
 # The device index
 option['device_id'] = 0
 
-# Whether to use cuDNN if possible
-option['use_cudnn'] = False
-
 # The global random seed
 option['random_seed'] = 3
 
@@ -77,15 +74,13 @@ def EnableCPU():
     option['device'] = 'cpu'
 
 
-def EnableCUDA(gpu_id=0, use_cudnn=True):
+def EnableCUDA(gpu_id=0):
     """Enable NVIDIA's CUDA mode globally.
 
     Parameters
     ----------
     gpu_id : int
         The index of GPU to use.
-    use_cudnn : boolean
-        Whether to use cuDNN if available.
 
     Returns
     -------
@@ -95,7 +90,6 @@ def EnableCUDA(gpu_id=0, use_cudnn=True):
     global option
     option['device'] = 'cuda'
     option['device_id'] = gpu_id
-    option['use_cudnn'] = use_cudnn
 
 
 def EnableCNML(mlu_id=0):

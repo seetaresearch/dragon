@@ -19,7 +19,7 @@ void ArgReduceOp<Context>::RunWithType() {
         // It's difficult to implement device code when top_k > 1
         auto* Xdata = Input(0).template data<T, CPUContext>();
         auto* Idata = Output(0)->template mutable_data<int64_t, CPUContext>();
-        auto* Vdata = Output(1)->name() != "ignore" ? Output(1)
+        auto* Vdata = Output(1)->name() != "NULL" ? Output(1)
             ->template mutable_data<T, CPUContext>() : nullptr;
         static CPUContext cctx;
         if (operation == "ARGMAX") {
@@ -34,7 +34,7 @@ void ArgReduceOp<Context>::RunWithType() {
     } else {
         auto* Xdata = Input(0).template data<T, Context>();
         auto* Idata = Output(0)->template mutable_data<int64_t, Context>();
-        auto* Vdata = Output(1)->name() != "ignore" ? Output(1)
+        auto* Vdata = Output(1)->name() != "NULL" ? Output(1)
             ->template mutable_data<T, Context>() : nullptr;
         if (operation == "ARGMAX") {
             kernel::ArgMax(outer_dim, inner_dim, axis_dim,

@@ -290,7 +290,7 @@ void CuDNNConvTranspose2dGradientOp<Context>::RunWithType() {
 
     auto cudnn_handle = ctx()->cudnn_handle();
 
-    if (Output(2)->name() != "ignore") {
+    if (Output(2)->name() != "NULL") {
         T* dBdata = Output(2)->template mutable_data<T, Context>();
         CUDNN_CHECK(cudnnConvolutionBackwardBias(cudnn_handle,
             CUDNNType<T>::one, input2b_desc, dYdata,
@@ -298,7 +298,7 @@ void CuDNNConvTranspose2dGradientOp<Context>::RunWithType() {
     }
 
     for (int g = 0; g < cudnn_group; g++) {
-        if (Output(1)->name() != "ignore") {
+        if (Output(1)->name() != "NULL") {
             auto* Xdata = Input(0).template data<T, Context>();
             auto* dWdata = Output(1)->template mutable_data<T, Context>();
             CUDNN_CHECK(cudnnConvolutionBackwardFilter(cudnn_handle,
@@ -307,7 +307,7 @@ void CuDNNConvTranspose2dGradientOp<Context>::RunWithType() {
                         conv_desc, bwd_filter_algo, WSdata, bwd_filter_size,
                 CUDNNType<T>::zero, filter_desc, dWdata + weight_offset * g));
         }
-        if (Output(0)->name() != "ignore") {
+        if (Output(0)->name() != "NULL") {
             auto* Wdata = Input(1).template data<T, Context>();
             auto* dXdata = Output(0)->template mutable_data<T, Context>();
             CUDNN_CHECK(cudnnConvolutionForward(cudnn_handle,

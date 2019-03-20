@@ -9,7 +9,7 @@
     :members:
 
 .. _LMDB: http://lmdb.readthedocs.io/en/release
-.. _DataBatch: ../io/data_batch.html#dragon.io.data_batch
-.. _DataReader: ../io/data_reader.html#dragon.io.data_reader
-.. _DataTransformer: ../io/data_transformer.html#dragon.io.data_transformer
-.. _BlobFetcher: ../io/blob_fetcher.html#dragon.io.blob_fetcher
+.. _DataBatch: ../utils/vision/data_batch.html
+.. _DataReader: ../utils/vision/data_reader.html
+.. _DataTransformer: ../utils/vision/data_transformer.html
+.. _BlobFetcher: ../utils/vision/blob_fetcher.html

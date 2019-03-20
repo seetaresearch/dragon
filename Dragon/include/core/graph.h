@@ -84,7 +84,7 @@ class Graph : public GraphBase {
 
 /*! \brief Create a graph from the raw def */
 GraphBase* NewGraph(
-    const GraphDef&             meta_graph,
+    const GraphDef&             def,
     Workspace*                  ws);
 
 DECLARE_REGISTRY(
