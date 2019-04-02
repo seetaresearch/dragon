@@ -117,19 +117,21 @@ template<> void PReluWGrad<float, CPUContext>(
         }
     }
     if (channel_shared) {
-        math::Dot<float, CPUContext>(channels * dim,
+        math::Dot(channels * dim,
             bcast_dw, multiplier, dw, ctx);
     } else {
         if (data_format == "NCHW") {
-            math::Gemv<float, CPUContext>(
-                CblasNoTrans, channels, dim,
-                    1.f, bcast_dw, multiplier,
-                        0.f, dw, ctx);
+            math::Gemv(
+                CblasNoTrans,
+                channels, dim,
+                1.f, bcast_dw, multiplier,
+                0.f, dw, ctx);
         } else if (data_format == "NHWC") {
-            math::Gemv<float, CPUContext>(
-                CblasTrans, dim, channels,
-                    1.f, bcast_dw, multiplier,
-                        0.f, dw, ctx);
+            math::Gemv(
+                CblasTrans,
+                dim, channels,
+                1.f, bcast_dw, multiplier,
+                0.f, dw, ctx);
         } else LOG(FATAL) << "Unknown data format: " << data_format;
     }
 }

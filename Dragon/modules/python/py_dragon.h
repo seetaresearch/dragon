@@ -16,15 +16,17 @@
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
 #include "py_types.h"
+
 #include "core/common.h"
-#include "core/registry.h"
 #include "core/context.h"
-#include "core/context_cuda.h"
 #include "core/operator.h"
-#include "core/operator_gradient.h"
-#include "core/graph_gradient.h"
+#include "core/registry.h"
 #include "core/workspace.h"
+#include "core/context_cuda.h"
+#include "core/graph_gradient.h"
+#include "core/operator_gradient.h"
 #include "utils/caffemodel.h"
+#include "onnx/onnx_backend.h"
 
 #include <pybind11/stl.h>
 #include <pybind11/pybind11.h>
@@ -135,8 +137,6 @@ class NumpyFeeder : public TensorFeederBase {
         Py_XDECREF(array);
     }
 };
-
-Workspace* ws();
 
 }  // namespace python
 

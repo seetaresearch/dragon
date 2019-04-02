@@ -15,7 +15,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon.import_c_api as _C
+from dragon import import_c_api as _C
 
 
 _GLOBAL_MPI_IS_INIT = False

@@ -20,24 +20,26 @@ from dragon.vm.tensorflow.ops import nn
 
 
 class _Conv(base.Layer):
-    def __init__(self,
-                 rank,
-                 filters,
-                 kernel_size,
-                 strides=1,
-                 padding='valid',
-                 data_format='channels_last',
-                 dilation_rate=1,
-                 activation=None,
-                 use_bias=True,
-                 kernel_initializer=None,
-                 bias_initializer=init_ops.zeros_initializer(),
-                 kernel_regularizer=None,
-                 bias_regularizer=None,
-                 activity_regularizer=None,
-                 trainable=True,
-                 name=None,
-                 **kwargs):
+    def __init__(
+        self,
+        rank,
+        filters,
+        kernel_size,
+        strides=1,
+        padding='valid',
+        data_format='channels_last',
+        dilation_rate=1,
+        activation=None,
+        use_bias=True,
+        kernel_initializer=None,
+        bias_initializer=init_ops.zeros_initializer(),
+        kernel_regularizer=None,
+        bias_regularizer=None,
+        activity_regularizer=None,
+        trainable=True,
+        name=None,
+        **kwargs
+    ):
         super(_Conv, self).__init__(trainable=trainable, name=name, **kwargs)
         self.rank = rank
         self.filters = filters
@@ -82,7 +84,8 @@ class _Conv(base.Layer):
             shape=kernel_shape,
             initializer=self.kernel_initializer,
             regularizer=self.kernel_regularizer,
-            dtype=self.dtype)
+            dtype=self.dtype,
+        )
 
         if self.use_bias:
             self.bias = self.add_variable(
@@ -90,7 +93,8 @@ class _Conv(base.Layer):
                 shape=(self.filters,),
                 initializer=self.bias_initializer,
                 regularizer=self.bias_regularizer,
-                dtype=self.dtype)
+                dtype=self.dtype,
+            )
         else:
             self.bias = None
 
@@ -108,10 +112,15 @@ class _Conv(base.Layer):
             dilation_rate=self.dilation_rate,
             strides=self.strides,
             padding=self.padding.upper(),
-            data_format=tf_data_format)
+            data_format=tf_data_format,
+        )
 
         if self.bias is not None:
-            outputs = nn.bias_add(outputs, self.bias, data_format=tf_data_format)
+            outputs = nn.bias_add(
+                outputs,
+                self.bias,
+                data_format=tf_data_format,
+            )
 
         if self.activation is not None:
             return self.activation(outputs)
@@ -119,22 +128,25 @@ class _Conv(base.Layer):
 
 
 class Conv2D(_Conv):
-    def __init__(self, filters,
-                 kernel_size,
-                 strides=(1, 1),
-                 padding='valid',
-                 data_format='channels_last',
-                 dilation_rate=(1, 1),
-                 activation=None,
-                 use_bias=True,
-                 kernel_initializer=None,
-                 bias_initializer=init_ops.zeros_initializer(),
-                 kernel_regularizer=None,
-                 bias_regularizer=None,
-                 activity_regularizer=None,
-                 trainable=True,
-                 name=None,
-                 **kwargs):
+    def __init__(
+        self,
+        filters,
+        kernel_size,
+        strides=(1, 1),
+        padding='valid',
+        data_format='channels_last',
+        dilation_rate=(1, 1),
+        activation=None,
+        use_bias=True,
+        kernel_initializer=None,
+        bias_initializer=init_ops.zeros_initializer(),
+        kernel_regularizer=None,
+        bias_regularizer=None,
+        activity_regularizer=None,
+        trainable=True,
+        name=None,
+        **kwargs
+    ):
         super(Conv2D, self).__init__(
             rank=2,
             filters=filters,
@@ -154,23 +166,25 @@ class Conv2D(_Conv):
             name=name, **kwargs)
 
 
-def conv2d(inputs,
-           filters,
-           kernel_size,
-           strides=(1, 1),
-           padding='valid',
-           data_format='channels_last',
-           dilation_rate=(1, 1),
-           activation=None,
-           use_bias=True,
-           kernel_initializer=None,
-           bias_initializer=init_ops.zeros_initializer(),
-           kernel_regularizer=None,
-           bias_regularizer=None,
-           activity_regularizer=None,
-           trainable=True,
-           name=None,
-           reuse=None):
+def conv2d(
+    inputs,
+    filters,
+    kernel_size,
+    strides=(1, 1),
+    padding='valid',
+    data_format='channels_last',
+    dilation_rate=(1, 1),
+    activation=None,
+    use_bias=True,
+    kernel_initializer=None,
+    bias_initializer=init_ops.zeros_initializer(),
+    kernel_regularizer=None,
+    bias_regularizer=None,
+    activity_regularizer=None,
+    trainable=True,
+    name=None,
+    reuse=None,
+):
     return Conv2D(
         filters=filters,
         kernel_size=kernel_size,
@@ -188,4 +202,5 @@ def conv2d(inputs,
         trainable=trainable,
         name=name,
         _reuse=reuse,
-        _scope=name).apply(inputs)
+        _scope=name,
+    ).apply(inputs)

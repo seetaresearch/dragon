@@ -9,8 +9,11 @@
 #
 # ------------------------------------------------------------
 
-from dragon.core.tensor import Tensor
-import dragon.ops as ops
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+from dragon import ops as _ops
 
 
 def cumsum(x, axis=None):
@@ -20,8 +23,8 @@ def cumsum(x, axis=None):
     ----------
     x : Tensor
         The input tensor.
-    axis : int
-        The axis to sum. Default is ``None`` (Along all axes).
+    axis : int, optional
+        The axis to sum.
 
     """
     raise NotImplementedError()
@@ -34,8 +37,8 @@ def cumprod(x, axis=None):
     ----------
     x : Tensor
         The input tensor.
-    axis : int
-        The axis to sum. Default is ``None`` (Along all axes).
+    axis : int, optional
+        The axis to sum.
 
     """
     raise NotImplementedError()
@@ -59,5 +62,5 @@ def to_one_hot(y, nb_class, **kwargs):
         The one hot matrix.
 
     """
-    flat_y = ops.Flatten(y, keep_axes=1)
-    return ops.OneHot(flat_y, depth=nb_class)
+    flat_y = _ops.Flatten(y, keep_axes=1)
+    return _ops.OneHot(flat_y, depth=nb_class)

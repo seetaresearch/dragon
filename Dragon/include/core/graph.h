@@ -22,17 +22,15 @@ class GraphBase {
  public:
     /*! \brief Default constructor */
     GraphBase(
-        const GraphDef&         meta_graph,
+        const GraphDef&         def,
         Workspace*              ws);
 
     /*! \brief Default deconstructor */
     virtual ~GraphBase() {}
 
-    GraphDef BuildUpdateOps(const GraphDef& input_def);
-
     /*! \brief Create a graph from the optimized def */
     virtual bool Create(
-        const GraphDef&         optimized_graph,
+        const GraphDef&         def,
         Workspace*              ws) = 0;
 
     /*! \brief Run the graph once synchronously */
@@ -58,14 +56,14 @@ class GraphBase {
 class Graph : public GraphBase {
  public:
     /*! \brief Default constructor */
-    Graph(const GraphDef& meta_graph, Workspace* ws);
+    Graph(const GraphDef& def, Workspace* ws);
 
     /*! \brief Default deconstructor */
     virtual ~Graph() { for (auto* op : ops_) delete op; }
 
     /*! \brief Create a graph from the optimized def */
     bool Create(
-        const GraphDef&         optimized_graph,
+        const GraphDef&         def,
         Workspace*              ws) override;
 
     /*! \brief Run the graph once synchronously */

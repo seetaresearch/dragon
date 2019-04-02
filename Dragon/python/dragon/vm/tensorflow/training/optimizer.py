@@ -13,10 +13,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon
+from dragon import updaters as _updaters
+from dragon.core import workspace as _workspace
+from dragon.core.tensor import Tensor as _Tensor
 
 from dragon.vm.tensorflow.framework import ops
 from dragon.vm.tensorflow.ops import variables
+from dragon.vm.tensorflow.ops.gradients_impl import gradients
 
 
 class Optimizer(object):
@@ -34,16 +37,16 @@ class Optimizer(object):
         self.updater = self.train = self.update = None
 
     def _set_dynamic_lr(self, learning_rate):
-        if isinstance(learning_rate, dragon.Tensor):
+        if isinstance(learning_rate, _Tensor):
             self._targets.append(learning_rate)
             internal_lr = self.updater._slot + '/base_lr'
-            dragon.workspace.SetTensorAlias(learning_rate.name, internal_lr)
+            _workspace.SetTensorAlias(learning_rate, internal_lr)
             self.updater.base_lr = float(learning_rate.get_value())
 
     def _inc_global_step(self):
         if self._global_step is not None:
-            gs = self._global_step.get_value()
-            self._global_step.set_value((gs + 1).astype(gs.dtype))
+            v = self._global_step.get_value() + 1
+            _workspace.FeedTensor(self._global_step, v, True)
 
     def get_name(self):
         return self._name
@@ -57,7 +60,7 @@ class Optimizer(object):
         if var_list is None:
             var_list = variables.trainable_variables() + \
                 ops.get_collection(ops.GraphKeys.TRAINABLE_RESOURCE_VARIABLES)
-        grads = dragon.grad(loss, var_list)
+        grads = gradients(loss, var_list)
         grads_and_vars = list(zip(grads, var_list))
         return grads_and_vars
 
@@ -95,34 +98,66 @@ class Optimizer(object):
 
 
 class GradientDescentOptimizer(Optimizer):
-    def __init__(self, learning_rate, use_locking=False, name='GradientDescent'):
+    def __init__(
+        self,
+        learning_rate,
+        use_locking=False,
+        name='GradientDescent',
+    ):
         super(GradientDescentOptimizer, self).__init__(use_locking, name)
-        self.updater = dragon.updaters.SGDUpdater(learning_rate, 0.0)
+        self.updater = _updaters.SGDUpdater(learning_rate, 0.)
         self._set_dynamic_lr(learning_rate)
 
 
 class MomentumOptimizer(Optimizer):
-    def __init__(self, learning_rate, momentum,
-                 use_locking=False, name='Momentum', use_nesterov=False):
+    def __init__(
+        self,
+        learning_rate,
+        momentum,
+        use_locking=False,
+        name='Momentum',
+        use_nesterov=False,
+    ):
         super(MomentumOptimizer, self).__init__(use_locking, name)
         if not use_nesterov:
-            self.updater = dragon.updaters.SGDUpdater(learning_rate, momentum)
+            self.updater = _updaters.SGDUpdater(learning_rate, momentum)
         else:
-            self.updater = dragon.updaters.NesterovUpdater(learning_rate, momentum)
+            self.updater = _updaters.NesterovUpdater(learning_rate, momentum)
         self._set_dynamic_lr(learning_rate)
 
 
 class AdamOptimizer(Optimizer):
-    def __init__(self, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8,
-                 use_locking=False, name='Adam'):
+    def __init__(
+        self,
+        learning_rate=0.001,
+        beta1=0.9,
+        beta2=0.999,
+        epsilon=1e-8,
+        use_locking=False,
+        name='Adam',
+    ):
         super(AdamOptimizer, self).__init__(use_locking, name)
-        self.updater = dragon.updaters.AdamUpdater(learning_rate, beta1, beta2, epsilon)
+        self.updater = _updaters.AdamUpdater(
+            learning_rate, beta1, beta2, epsilon)
         self._set_dynamic_lr(learning_rate)
 
 
 class RMSPropOptimizer(Optimizer):
-    def __init__(self, learning_rate, decay=0.9, momentum=0.0, epsilon=1e-10,
-                 use_locking=False, centered=False, name='RMSProp'):
+    def __init__(
+        self,
+        learning_rate,
+        decay=0.9,
+        momentum=0.0,
+        epsilon=1e-10,
+        use_locking=False,
+        centered=False,
+        name='RMSProp',
+    ):
         super(RMSPropOptimizer, self).__init__(use_locking, name)
-        self.updater = dragon.updaters.RMSPropUpdater(learning_rate, decay, epsilon)
+        if momentum > 0.:
+            self.updater = _updaters.AdamUpdater(
+                learning_rate, momentum, decay, epsilon)
+        else:
+            self.updater = _updaters.RMSPropUpdater(
+                learning_rate, decay, epsilon)
         self._set_dynamic_lr(learning_rate)

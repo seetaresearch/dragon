@@ -29,22 +29,27 @@ class Workspace {
 
     typedef Map<string, unique_ptr<OperatorBase> > OperatorMap;
     typedef Map<string, unique_ptr<GraphBase> > GraphMap;
-    typedef Map<string, Workspace*> WorkspaceMap;
 
     /*! \brief Constructor */
-    Workspace(const string& name) : name_(name) { InitWorkspace(); }
+    Workspace(const string& name) : name_(name) { Initialize(); }
 
     /*! \brief Return the name of this workspace */
     const string& name() { return name_; }
 
-    /*! \brief Create some internal tensors */
-    void InitWorkspace();
+    /*! \brief Return the name of stored tensors */
+    vector<string> tensors() const;
 
-    /*! \brief Move a external workspace into this workspace */
-    Workspace* Move(Workspace* ws);
+    /*! \brief Return the name of stored graphs */
+    vector<string> graphs() const;
+
+    /*! \brief Create some internal tensors */
+    void Initialize();
 
     /*! \brief Destory all the tensors */
     void Clear();
+
+    /*! \brief Merge from a external workspace */
+    void MergeFrom(Workspace* ws);
 
     /*! \brief Query the real name of specified tensor */
     string GetTensorName(const string& name) const;
@@ -66,14 +71,11 @@ class Workspace {
     /*! \brief Reset the specified tensor */
     void ResetTensor(const string& name);
 
-    /*! \brief Return all the stored tensor names */
-    vector<string> GetTensors() const;
-
     /* \brief Whether the specified filler is in this workspace */
     bool HasFiller(const string& name, bool use_remote = true) const;
 
     /*! \brief Create the specified filler */
-    void CreateFiller(const TensorFillerProto filler);
+    void CreateFiller(const TensorFillerProto& filler);
 
     /*! \brief Return the specified filler */
     const TensorFillerProto* GetFiller(const string& name) const;
@@ -82,27 +84,26 @@ class Workspace {
     template <class Context>
     vector<void*> caches(const vector<size_t>& segments) {
         int64_t nbytes = 0;
+        vector<void*> ret(segments.size());
         for (auto& segment : segments) nbytes += (int64_t)segment;
-        Tensor* cache_t = CreateTensor("/share/cache");
-        cache_t->Reshape({ nbytes });
-        vector<void*> Bcaches(segments.size());
-        Bcaches[0] = cache_t->template mutable_data<uint8_t, Context>();
+        auto* T = CreateTensor("/share/cache")->Reshape({ nbytes });
+        ret[0] = T->template mutable_data<uint8_t, Context>();
         for (int i = 1; i < segments.size(); i++)
-            Bcaches[i] = (uint8_t*)Bcaches[i - 1] + segments[i - 1];
-        return Bcaches;
+            ret[i] = (uint8_t*)ret[i - 1] + segments[i - 1];
+        return ret;
     }
 
     /*! \brief Create temporal cache segments with the specified type */
     template <typename T, class Context>
     vector<T*> caches(const vector<int64_t>& segments) {
-        vector<size_t> Tsegments;
-        for (auto& segment : segments)
-            Tsegments.emplace_back(segment * sizeof(T));
-        vector<void*> Bcaches = caches<Context>(Tsegments);
-        vector<T*> Tcaches(segments.size());
+        vector<size_t> segments_in_byte;
+        vector<T*> ret(segments.size());
+        for (const auto& e : segments)
+            segments_in_byte.emplace_back(e * sizeof(T));
+        auto ret_in_byte = caches<Context>(segments_in_byte);
         for (int i = 0; i < segments.size(); i++)
-            Tcaches[i] = (T*)Bcaches[i];
-        return Tcaches;
+            ret[i] = (T*)ret_in_byte[i];
+        return ret;
     }
 
     /*! \brief Create a operator in this workspace */
@@ -123,9 +124,6 @@ class Workspace {
         const string&               include,
         const string&               exclude,
         int                         stream_id = 0);
-
-    /*! \brief Return all the stored graph names */
-    vector<string> GetGraphs() const;
 
     /* \brief Set an alias for the tensor */
     bool SetTensorAlias(const string& name, const string& alias);
@@ -160,7 +158,7 @@ class Workspace {
     GraphMap graph_map_;
 
     /*! \brief Store the remote workspaces */
-    WorkspaceMap workspace_map_;
+    vector<Workspace*> remote_workspaces_;
 };
 
 }  // namespace dragon

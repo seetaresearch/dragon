@@ -15,11 +15,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon
-from ..layer import Layer
+from dragon import ops as _ops
+from ..layer import Layer as _Layer
 
 
-class SoftmaxWithLossLayer(Layer):
+class SoftmaxWithLossLayer(_Layer):
     """The implementation of ``SoftmaxWithLossLayer``.
 
     Parameters
@@ -52,12 +52,12 @@ class SoftmaxWithLossLayer(Layer):
         }
 
     def LayerSetup(self, bottom):
-        loss = dragon.ops.SparseSoftmaxCrossEntropy(bottom, **self.arguments)
+        loss = _ops.SparseSoftmaxCrossEntropy(bottom, **self.arguments)
         if self._loss_weight is not None: loss *= self._loss_weight
         return loss
 
 
-class SigmoidCrossEntropyLossLayer(Layer):
+class SigmoidCrossEntropyLossLayer(_Layer):
     """The implementation of ``SigmoidCrossEntropyLossLayer``.
 
     Parameters
@@ -79,12 +79,12 @@ class SigmoidCrossEntropyLossLayer(Layer):
         self.arguments = {'normalization': normalization}
 
     def LayerSetup(self, bottom):
-        loss = dragon.ops.SigmoidCrossEntropy(bottom, **self.arguments)
+        loss = _ops.SigmoidCrossEntropy(bottom, **self.arguments)
         if self._loss_weight is not None: loss *= self._loss_weight
         return loss
 
 
-class L2LossLayer(Layer):
+class L2LossLayer(_Layer):
     """The implementation of ``L2LossLayer``.
 
     Parameters
@@ -106,12 +106,12 @@ class L2LossLayer(Layer):
         self.arguments = {'normalization': normalization}
 
     def LayerSetup(self, bottom):
-        loss = dragon.ops.L2Loss(bottom, **self.arguments)
+        loss = _ops.L2Loss(bottom, **self.arguments)
         if self._loss_weight is not None: loss *= self._loss_weight
         return loss
 
 
-class SmoothL1LossLayer(Layer):
+class SmoothL1LossLayer(_Layer):
     """The implementation of ``SmoothL1LossLayer``.
 
     Parameters
@@ -140,12 +140,12 @@ class SmoothL1LossLayer(Layer):
         }
 
     def LayerSetup(self, bottom):
-        loss = dragon.ops.SmoothL1Loss(bottom, **self.arguments)
+        loss = _ops.SmoothL1Loss(bottom, **self.arguments)
         if self._loss_weight is not None: loss *= self._loss_weight
         return loss
 
 
-class SigmoidWithFocalLossLayer(Layer):
+class SigmoidWithFocalLossLayer(_Layer):
     """The implementation of ``SigmoidWithFocalLossLayer``.
 
     Parameters
@@ -183,12 +183,12 @@ class SigmoidWithFocalLossLayer(Layer):
         }
 
     def LayerSetup(self, bottom):
-        loss = dragon.ops.SigmoidFocalLoss(bottom, **self.arguments)
+        loss = _ops.SigmoidFocalLoss(bottom, **self.arguments)
         if self._loss_weight is not None: loss *= self._loss_weight
         return loss
 
 
-class SoftmaxWithFocalLossLayer(Layer):
+class SoftmaxWithFocalLossLayer(_Layer):
     """The implementation of ``SoftmaxWithFocalLossLayer``.
 
     Parameters
@@ -227,6 +227,6 @@ class SoftmaxWithFocalLossLayer(Layer):
         }
 
     def LayerSetup(self, bottom):
-        loss = dragon.ops.SoftmaxFocalLoss(bottom, **self.arguments)
+        loss = _ops.SoftmaxFocalLoss(bottom, **self.arguments)
         if self._loss_weight is not None: loss *= self._loss_weight
         return loss

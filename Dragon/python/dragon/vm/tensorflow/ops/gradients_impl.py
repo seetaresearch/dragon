@@ -13,7 +13,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon
+from dragon.vm.theano.gradient import grad as _Grad
 
 
 def gradients(ys, xs, **kwargs):
@@ -34,5 +34,5 @@ def gradients(ys, xs, **kwargs):
     """
     dxs = []
     if not isinstance(ys, list): ys = [ys]
-    for y in ys: dxs.append(dragon.grad(y, xs))
+    for y in ys: dxs.append(_Grad(y, xs))
     if len(dxs) == 1: return dxs[0]

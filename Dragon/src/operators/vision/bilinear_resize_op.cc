@@ -30,9 +30,9 @@ void BilinearResizeOp<Context>::RunOnDevice() {
         for (int i = 0; i < 2; i++)
             dims[spatial_axis + i] = dsize(i);
     } else if (!shape_like_desc.empty()) {
-        Tensor* shape_like_tensor = ws()->GetTensor(shape_like_desc);
+        auto* sl = ws()->GetTensor(shape_like_desc);
         for (int i = 0; i < 2; i++)
-            dims[spatial_axis + i] = shape_like_tensor->dim(spatial_axis + i);
+            dims[spatial_axis + i] = sl->dim(spatial_axis + i);
     } else {
         CHECK(fy != -1.f && fx != -1.f)
             << "\nThe fx and fy should be set.";

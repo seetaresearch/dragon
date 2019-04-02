@@ -42,9 +42,9 @@ class Tensor {
             d = dims[i]; strides_[i] = (int64_t)new_size;
             CHECK_GE(d, 0);
             if (d > 0) new_size *= d;
-        } if (own_mem_) {
-            if (size_ != new_size &&
-                capacity_ < new_size * meta_.itemsize()) {
+        }
+        if (own_mem_) {
+            if (capacity_ < new_size * meta_.itemsize()) {
                 memory_.reset();
                 capacity_ = 0;
             }

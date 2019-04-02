@@ -21,21 +21,38 @@ from dragon.vm.torch.optim.optimizer import Optimizer
 
 
 class Adam(Optimizer):
-    def __init__(self, params, lr=1e-3, beta1=0.9, beta2=0.999, eps=1e-8,
-                 weight_decay=0, amsgrad=False, scale_gradient=1.0, clip_gradient=-1.0):
-        if not 0.0 <= lr:
+    def __init__(
+        self,
+        params,
+        lr=1e-3,
+        beta1=0.9,
+        beta2=0.999,
+        eps=1e-8,
+        weight_decay=0,
+        amsgrad=False,
+        scale_gradient=1.,
+        clip_gradient=-1.,
+    ):
+        if not 0. <= lr:
             raise ValueError("Invalid learning rate: {}".format(lr))
-        if not 0.0 <= eps:
+        if not 0. <= eps:
             raise ValueError("Invalid epsilon value: {}".format(eps))
-        if not 0.0 <= beta1 < 1.0:
+        if not 0. <= beta1 < 1.:
             raise ValueError("Invalid beta parameter at index 0: {}".format(beta1))
-        if not 0.0 <= beta2 < 1.0:
+        if not 0. <= beta2 < 1.:
             raise ValueError("Invalid beta parameter at index 1: {}".format(beta2))
         if amsgrad:
             raise NotImplementedError()
-        defaults = dict(lr=lr, beta1=beta1, beta2=beta2, eps=eps,
-                        weight_decay=weight_decay, amsgrad=amsgrad,
-                        scale_gradient=scale_gradient, clip_gradient=clip_gradient)
+        defaults = dict(
+            lr=lr,
+            beta1=beta1,
+            beta2=beta2,
+            eps=eps,
+            weight_decay=weight_decay,
+            amsgrad=amsgrad,
+            scale_gradient=scale_gradient,
+            clip_gradient=clip_gradient,
+        )
         super(Adam, self).__init__(params, defaults)
         self._update_type = 'AdamUpdate'
         self._mutable_parameters = {

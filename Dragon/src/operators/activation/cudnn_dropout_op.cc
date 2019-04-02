@@ -51,9 +51,9 @@ void CuDNNDropoutOp<Context>::RunWithType() {
         auto* Rdata = mask->template mutable_data<uint8_t, Context>();
         CUDNN_CHECK(cudnnDropoutForward(
             ctx()->cudnn_handle(), dropout_desc,
-                input_desc, Xdata,
-                    input_desc, Ydata,
-                        Rdata, reserve_space_size));
+            input_desc, Xdata,
+            input_desc, Ydata,
+            Rdata, reserve_space_size));
     } else LOG(FATAL) << "Incorrect Op phase: " << phase();
 }
 
@@ -102,9 +102,9 @@ void CuDNNDropoutGradientOp<Context>::RunWithType() {
         auto* Rdata = mask->template mutable_data<uint8_t, Context>();
         CUDNN_CHECK(cudnnDropoutBackward(
             ctx()->cudnn_handle(), dropout_desc,
-                input_desc, dYdata,
-                    input_desc, dXdata,
-                        Rdata, reserve_space_size));
+            input_desc, dYdata,
+            input_desc, dXdata,
+            Rdata, reserve_space_size));
     } else LOG(FATAL) << "Incorrect Op phase: " << phase();
 }
 

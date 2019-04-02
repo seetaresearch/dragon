@@ -15,12 +15,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon
-
 from collections import OrderedDict
-from google.protobuf.text_format import Parse as parse_text_proto
-from dragon.vm.caffe import layers as layer_factory
-from dragon.vm.caffe.proto import caffe_pb2 as pb
+from google.protobuf.text_format import Parse as _parse_text_proto
+
+from dragon.core.tensor import Tensor as _Tensor
+from dragon.core import workspace as _workspace
+
+from dragon.vm.theano.gradient import grad as _Grad
+from dragon.vm.theano.compile.function import function as _Function
+from dragon.vm.caffe import layers as _layer_factory
+from dragon.vm.caffe.proto import caffe_pb2 as _proto_def
 
 
 class Blob(object):
@@ -89,8 +93,8 @@ class Net(object):
         The implementation of `Net_Init(_caffe.cpp, L109)`_.
 
         """
-        self._net = pb.NetParameter()
-        parse_text_proto(open(proto_txt,'r').read(), self._net)
+        self._net = _proto_def.NetParameter()
+        _parse_text_proto(open(proto_txt,'r').read(), self._net)
         self._phase = phase
         self._layers = []
         self._inputs_to_tensors = {}
@@ -100,16 +104,17 @@ class Net(object):
         if len(self._net.input) > 0:
             for input in self._net.input:
                 if not input in self._blobs:
-                    variable = dragon.Tensor(input).Variable()
+                    variable = _Tensor(input).Variable()
                     self._blobs[input] = {
                         'data': variable,
-                        'diff': dragon.Tensor.Ref(variable.name + '_grad'),
+                        'diff': _Tensor.Ref(variable.name + '_grad'),
                     }
                 self._inputs_to_tensors[input] = self._blobs[input]['data']
 
         for layer in self._net.layer:
             if not self.FilterLayer(layer): continue
-            self._layers.append(getattr(layer_factory, layer.type + 'Layer')(layer))
+            self._layers.append(getattr(
+                _layer_factory, layer.type + 'Layer')(layer))
 
         self.Setup()
 
@@ -199,7 +204,7 @@ class Net(object):
             for idx, top in enumerate(layer._top):
                 self._blobs[top] = {
                     'data': outputs[idx],
-                    'diff': dragon.Tensor.Ref(outputs[idx].name + '_grad'),
+                    'diff': _Tensor.Ref(outputs[idx].name + '_grad'),
                 }
                 self._net_outputs.add(top)
 
@@ -271,14 +276,14 @@ class Net(object):
 
         for loss in self.losses:
             for var in self.trainable_variables:
-                dragon.grad(loss, var)
+                _Grad(loss, var)
 
-        self._function = dragon.function(
+        self._function = _Function(
             outputs=[self.blobs[key].data
-                    for key in self.outputs])
+                for key in self.outputs])
 
         if hasattr(self, '_model'):
-            dragon.workspace.Restore(self._model, format='caffe')
+            _workspace.Restore(self._model, format='caffe')
 
         return self._function
 
@@ -299,7 +304,7 @@ class Net(object):
         The implementation of `CopyTrainedLayersFromBinaryProto(net.cpp, L780)`_.
 
         """
-        dragon.workspace.Restore(model, format='caffe')
+        _workspace.Restore(model, format='caffe')
 
     def forward(self, **kwargs):
         """Forward pass. [**PyCaffe Style**]
@@ -322,11 +327,11 @@ class Net(object):
         def GetOutputs(net, net_outputs):
             ret = {}
             for output in net_outputs:
-                ret[output] = dragon.workspace.FetchTensor(net.blobs[output].data)
+                ret[output] = net.blobs[output].data.get_value()
             return ret
 
         for name, blob in kwargs.items():
-            dragon.workspace.FeedTensor(self._inputs_to_tensors[name], blob)
+            _workspace.FeedTensor(self._inputs_to_tensors[name], blob)
 
         self.function()(return_outputs=False, stage='forward')
 
@@ -347,7 +352,7 @@ class Net(object):
 
         """
         for name, blob in kwargs.items():
-            dragon.workspace.FeedTensor(self._inputs_to_tensors[name], blob)
+            _workspace.FeedTensor(self._inputs_to_tensors[name], blob)
         self.function()(return_outputs=False, stage='forward')
 
     def backward(self, **kwargs):
@@ -368,7 +373,7 @@ class Net(object):
 
         """
         for name, blob in kwargs.items():
-            dragon.workspace.FeedTensor(self.blobs[name].diff, blob)
+            _workspace.FeedTensor(self.blobs[name].diff, blob)
         self.function()(return_outputs=False, stage='backward')
 
     def save(self, filename):
@@ -399,7 +404,7 @@ class Net(object):
                     if param.data.name not in keys:
                         tensors.append(param.data)
                         keys.add(param.data.name)
-        dragon.workspace.Snapshot(tensors, filename, suffix='', format='caffe')
+        _workspace.Snapshot(tensors, filename, suffix='', format='caffe')
 
     @property
     def blobs(self):

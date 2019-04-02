@@ -107,16 +107,18 @@ void AffineGradientOp<Context>::ComputeScaleGradient(
             dA : ws()->template caches<T, Context>(
                 { outer_dim * scale_dim })[0];
         math::Gemv(
-            CblasNoTrans, outer_dim * scale_dim, inner_dim,
-                1.f, dYxX, multiplier,
-                    0.f, SRes_data, ctx());
+            CblasNoTrans,
+            outer_dim * scale_dim, inner_dim,
+            1.f, dYxX, multiplier,
+            0.f, SRes_data, ctx());
     }
     // Reduce outer dimensions
     if (outer_dim != 1) {
         math::Gemv(
-            CblasTrans, outer_dim, scale_dim,
-                1.f, SRes_data, multiplier,
-                    0.f, dA, ctx());
+            CblasTrans,
+            outer_dim, scale_dim,
+            1.f, SRes_data, multiplier,
+            0.f, dA, ctx());
     }
 }
 

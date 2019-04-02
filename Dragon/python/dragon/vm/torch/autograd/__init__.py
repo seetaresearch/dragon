@@ -9,5 +9,11 @@
 #
 # ------------------------------------------------------------
 
-from .variable import Variable
-from .grad_mode import no_grad, enable_grad, set_grad_enabled
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+from dragon.vm.torch.autograd.variable import Variable
+from dragon.vm.torch.autograd.grad_mode import no_grad
+from dragon.vm.torch.autograd.grad_mode import enable_grad
+from dragon.vm.torch.autograd.grad_mode import set_grad_enabled

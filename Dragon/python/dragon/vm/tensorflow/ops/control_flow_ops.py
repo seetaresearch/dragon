@@ -13,8 +13,17 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon
+from dragon import ops as _ops
 
 
 def equal(a, b, name=None):
-    return dragon.ops.Equal([a, b], name=name)
+    return _ops.Equal([a, b], name=name)
+
+
+def greater(a, b, name=None):
+    return _ops.Greater([a, b], name=name)
+
+
+def less(a, b, name=None):
+    return _ops.Less([a, b], name=name)
+

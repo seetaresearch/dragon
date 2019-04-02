@@ -14,11 +14,10 @@ from __future__ import division
 from __future__ import print_function
 
 import time
-import pprint
-from multiprocessing import Queue
+import multiprocessing
 
-import dragon.core.mpi as mpi
-import dragon.core.logging as logging
+from dragon.core import mpi as _mpi
+from dragon.core import logging as _logging
 
 from .data_reader import DataReader
 from .data_transformer import DataTransformer
@@ -77,10 +76,11 @@ class DataBatch(object):
         super(DataBatch, self).__init__()
         # Init mpi
         global_rank = 0; local_rank = 0; group_size = 1
-        if mpi.Is_Init():
-            idx, group = mpi.AllowParallel()
-            if idx != -1:  # DataParallel
-                global_rank = mpi.Rank()
+        if _mpi.Is_Init() and kwargs.get(
+                'phase', 'TRAIN') == 'TRAIN':
+            rank, group = _mpi.AllowParallel()
+            if rank != -1: # DataParallel
+                global_rank = _mpi.Rank()
                 group_size = len(group)
                 for i, node in enumerate(group):
                     if global_rank == node: local_rank = i
@@ -105,7 +105,7 @@ class DataBatch(object):
                     self._num_transformers += 1
             # Add 1 transformer for random crop
             if kwargs.get('crop_size', 0) > 0 and \
-                kwargs.get('phase', 'TEST') == 'TRAIN':
+                kwargs.get('phase', 'TRAIN') == 'TRAIN':
                     self._num_transformers += 1
         self._num_transformers = min(self._num_transformers, self._max_transformers)
 
@@ -115,9 +115,12 @@ class DataBatch(object):
             self._batch_size = int(self._batch_size / kwargs['group_size'])
 
         # Init queues
-        self.Q_level_1 = Queue(self._prefetch * self._num_readers * self._batch_size)
-        self.Q_level_2 = Queue(self._prefetch * self._num_readers * self._batch_size)
-        self.Q_level_3 = Queue(self._prefetch * self._num_readers)
+        self.Q_level_1 = multiprocessing.Queue(
+            self._prefetch * self._num_readers * self._batch_size)
+        self.Q_level_2 = multiprocessing.Queue(
+            self._prefetch * self._num_readers * self._batch_size)
+        self.Q_level_3 = multiprocessing.Queue(
+            self._prefetch * self._num_readers)
 
         # Init readers
         self._readers = []
@@ -167,11 +170,11 @@ class DataBatch(object):
                     process.terminate()
                     process.join()
             terminate(self._fetchers)
-            if local_rank == 0: logging.info('Terminating BlobFetcher ......')
+            if local_rank == 0: _logging.info('Terminate BlobFetcher.')
             terminate(self._transformers)
-            if local_rank == 0: logging.info('Terminating DataTransformer ......')
+            if local_rank == 0: _logging.info('Terminate DataTransformer.')
             terminate(self._readers)
-            if local_rank == 0: logging.info('Terminating DataReader......')
+            if local_rank == 0: _logging.info('Terminate DataReader.')
         import atexit
         atexit.register(cleanup)
 

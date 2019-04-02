@@ -22,6 +22,9 @@ import dragon.config as config
 # Core
 from dragon.core.tensor import Tensor
 import dragon.core.workspace as workspace
+from dragon.core.workspace import Workspace
+from dragon.core.workspace import get_default_workspace
+from dragon.core.workspace import reset_default_workspace
 import dragon.core.tensor_utils as tensor_utils
 import dragon.core.mpi as mpi
 import dragon.core.cuda as cuda
@@ -41,7 +44,6 @@ from dragon.vm.theano.tensor import grad as grad
 from dragon.core.scope import name_scope, get_default_name_scope
 from dragon.core.scope import phase_scope, get_default_phase
 from dragon.core.scope import device_scope, get_default_device
-from dragon.core.scope import WorkspaceScope as ws_scope
 
 # Version
 from dragon.version import version

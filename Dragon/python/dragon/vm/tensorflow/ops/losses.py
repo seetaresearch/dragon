@@ -17,8 +17,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon
-
+from dragon import ops as _ops
 from dragon.vm.tensorflow.framework import ops
 
 
@@ -34,8 +33,8 @@ class Reduction(object):
     * `SUM_OVER_NONZERO_WEIGHTS`: Scalar `SUM` divided by number of non-zero
        weights. DEPRECATED.
     * `SUM_BY_NONZERO_WEIGHTS`: Same as `SUM_OVER_NONZERO_WEIGHTS`.
-    """
 
+    """
     NONE = "none"
     SUM = "weighted_sum"
     SUM_OVER_BATCH_SIZE = "weighted_sum_over_batch_size"
@@ -51,7 +50,8 @@ class Reduction(object):
             cls.MEAN,
             cls.SUM_OVER_BATCH_SIZE,
             cls.SUM_OVER_NONZERO_WEIGHTS,
-            cls.SUM_BY_NONZERO_WEIGHTS)
+            cls.SUM_BY_NONZERO_WEIGHTS,
+        )
 
     @classmethod
     def validate(cls, key):
@@ -59,10 +59,43 @@ class Reduction(object):
             raise ValueError("Invalid Reduction Key %s." % key)
 
 
+def softmax_cross_entropy(
+    onehot_labels,
+    logits,
+    weights=1.,
+    label_smoothing=0,
+    scope=None,
+    loss_collection=ops.GraphKeys.LOSSES,
+    reduction=Reduction.SUM_BY_NONZERO_WEIGHTS,
+):
+    if onehot_labels is None: raise ValueError("onehot_labels must not be None.")
+    if logits is None: raise ValueError("logits must not be None.")
+    normalization = None
+    if reduction == Reduction.NONE: normalization = 'UNIT'
+    elif reduction == Reduction.MEAN: normalization = 'FULL'
+    elif reduction == Reduction.SUM_BY_NONZERO_WEIGHTS or \
+            reduction == Reduction.SUM_OVER_NONZERO_WEIGHTS:
+        normalization = 'NONE'
+    elif reduction == Reduction.SUM_OVER_BATCH_SIZE:
+        normalization = 'BATCH_SIZE'
+    loss = _ops.SoftmaxCrossEntropy(
+        [logits, onehot_labels],
+        normalization=normalization,
+        name=scope,
+    )
+    if weights != 1.0: loss = weights * loss
+    ops.add_to_collection(loss_collection, loss)
+    return loss
+
+
 def sparse_softmax_cross_entropy(
-    labels, logits, weights=1.0, scope=None,
-        loss_collection=ops.GraphKeys.LOSSES,
-            reduction=Reduction.SUM_BY_NONZERO_WEIGHTS):
+    labels,
+    logits,
+    weights=1.,
+    scope=None,
+    loss_collection=ops.GraphKeys.LOSSES,
+    reduction=Reduction.SUM_BY_NONZERO_WEIGHTS,
+):
     if labels is None: raise ValueError("labels must not be None.")
     if logits is None: raise ValueError("logits must not be None.")
     normalization = None
@@ -70,13 +103,14 @@ def sparse_softmax_cross_entropy(
     elif reduction == Reduction.MEAN: normalization = 'FULL'
     elif reduction == Reduction.SUM_BY_NONZERO_WEIGHTS or \
             reduction == Reduction.SUM_OVER_NONZERO_WEIGHTS:
-        normalization = 'VALID'
+        normalization = 'NONE'
     elif reduction == Reduction.SUM_OVER_BATCH_SIZE:
         normalization = 'BATCH_SIZE'
-
-    loss = dragon.ops.SparseSoftmaxCrossEntropy([logits, labels],
-        normalization=normalization, name=scope)
+    loss = _ops.SparseSoftmaxCrossEntropy(
+        [logits, labels],
+        normalization=normalization,
+        name=scope,
+    )
     if weights != 1.0: loss = weights * loss
     ops.add_to_collection(loss_collection, loss)
     return loss
-

@@ -28,19 +28,21 @@ void FullyConnectedOp<Context>::TransRunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
     math::Gemm(
-        CblasNoTrans, CblasTrans,
-            M, N, K,
-                1.f, Xdata, Wdata,
-                    0.f, Ydata, ctx());
+        CblasNoTrans,
+        CblasTrans,
+        M, N, K,
+        1.f, Xdata, Wdata,
+        0.f, Ydata, ctx());
 
     if (InputSize() > 2) {
         DECLARE_MULTIPLIER(multiplier, M);
         auto* Bdata = Input(2).template data<T, Context>();
         math::Gemm(
-            CblasNoTrans, CblasNoTrans,
-                M, N, 1,
-                    1.f, multiplier, Bdata,
-                        1.f, Ydata, ctx());
+            CblasNoTrans,
+            CblasNoTrans,
+            M, N, 1,
+            1.f, multiplier, Bdata,
+            1.f, Ydata, ctx());
     }
 }
 
@@ -61,19 +63,21 @@ void FullyConnectedOp<Context>::NoTransRunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
     math::Gemm(
-        CblasNoTrans, CblasNoTrans,
-            M, N, K,
-                1.f, Xdata, Wdata,
-                    0.f, Ydata, ctx());
+        CblasNoTrans,
+        CblasNoTrans,
+        M, N, K,
+        1.f, Xdata, Wdata,
+        0.f, Ydata, ctx());
 
     if (InputSize() > 2) {
         DECLARE_MULTIPLIER(multiplier, M);
         auto* Bdata = Input(2).template data<T, Context>();
         math::Gemm(
-            CblasNoTrans, CblasNoTrans,
-                M, N, 1,
-                    1.f, multiplier, Bdata,
-                        1.f, Ydata, ctx());
+            CblasNoTrans,
+            CblasNoTrans,
+            M, N, 1,
+            1.f, multiplier, Bdata,
+            1.f, Ydata, ctx());
     }
 }
 
@@ -127,16 +131,18 @@ void FullyConnectedGradientOp<Context>::RunWithType() {
         auto* dWdata = Output(1)->template mutable_data<T, Context>();
         if (transW) {
             math::Gemm(
-                CblasTrans, CblasNoTrans,
-                    N, K, M,
-                        1.f, dYdata, Xdata,
-                            0.f, dWdata, ctx());
+                CblasTrans,
+                CblasNoTrans,
+                N, K, M,
+                1.f, dYdata, Xdata,
+                0.f, dWdata, ctx());
         } else {
             math::Gemm(
-                CblasTrans, CblasNoTrans,
-                    K, N, M,
-                        1.f, Xdata, dYdata,
-                            0.f, dWdata, ctx());
+                CblasTrans,
+                CblasNoTrans,
+                K, N, M,
+                1.f, Xdata, dYdata,
+                0.f, dWdata, ctx());
         }
     }
 
@@ -145,9 +151,10 @@ void FullyConnectedGradientOp<Context>::RunWithType() {
         Output(2)->Reshape({ N });
         auto* dBdata = Output(2)->template mutable_data<T, Context>();
         math::Gemv(
-            CblasTrans, M, N,
-                1.f, dYdata, multiplier,
-                    0.f, dBdata, ctx());
+            CblasTrans,
+            M, N,
+            1.f, dYdata, multiplier,
+            0.f, dBdata, ctx());
     }
 
     if (Output(0)->name() != "NULL") {
@@ -155,16 +162,18 @@ void FullyConnectedGradientOp<Context>::RunWithType() {
         auto* dXdata = Output(0)->template mutable_data<T, Context>();
         if (transW) {
             math::Gemm(
-                CblasNoTrans, CblasNoTrans,
-                    M, K, N,
-                        1.f, dYdata, Wdata,
-                            0.f, dXdata, ctx());
+                CblasNoTrans,
+                CblasNoTrans,
+                M, K, N,
+                1.f, dYdata, Wdata,
+                0.f, dXdata, ctx());
         } else {
             math::Gemm(
-                CblasNoTrans, CblasTrans,
-                    M, K, N,
-                        1.f, dYdata, Wdata,
-                            0.f, dXdata, ctx());
+                CblasNoTrans,
+                CblasTrans,
+                M, K, N,
+                1.f, dYdata, Wdata,
+                0.f, dXdata, ctx());
         }
     }
 }

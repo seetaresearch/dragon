@@ -28,17 +28,20 @@ template<> void Softmax<float, CPUContext>(
                     scale[k], x[i * dim + j * inner_dim + k]
                 );
         }
-        math::Gemm<float, CPUContext>(
-            CblasNoTrans, CblasNoTrans,
-                classes, inner_dim, 1,
-                    -1.f, sum_multiplier, scale, 1.f, y, ctx);
-        math::Exp<float, CPUContext>(dim, y, y, ctx);
-        math::Gemv<float, CPUContext>(
-            CblasTrans, classes, inner_dim,
-                1.f, y, sum_multiplier,
-                    0.f, scale, ctx);
+        math::Gemm(
+            CblasNoTrans,
+            CblasNoTrans,
+            classes, inner_dim, 1,
+            -1.f, sum_multiplier, scale,
+            1.f, y, ctx);
+        math::Exp(dim, y, y, ctx);
+        math::Gemv(
+            CblasTrans,
+            classes, inner_dim,
+            1.f, y, sum_multiplier,
+            0.f, scale, ctx);
         for (int j = 0; j < classes; ++j) {
-            math::Div<float, CPUContext>(inner_dim, y, scale, y, ctx);
+            math::Div(inner_dim, y, scale, y, ctx);
             y += inner_dim;
         }
     }

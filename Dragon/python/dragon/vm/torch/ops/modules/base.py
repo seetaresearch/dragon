@@ -13,10 +13,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import numpy as np
-import dragon as dg
+import numpy
 
-from dragon.core import proto_utils
+from dragon.core import proto_utils as _proto_utils
+from dragon.core import workspace as _workspace
 from dragon.vm.torch.module import Module
 
 
@@ -25,9 +25,10 @@ class BaseModule(Module):
         super(BaseModule, self).__init__()
         self._module_key = key
         self._device = dev
-        self._args_dev = proto_utils.\
+        self._args_dev = _proto_utils.\
             GetDeviceOption('cpu').SerializeToString()
 
     def set_argument_i64(self, name, value):
-        dg.C.FeedTensor(name, np.array(
-            value, dtype=np.int64), self._args_dev)
+        _workspace.get_default_workspace()\
+            .FeedTensor(name, numpy.array(
+                value, dtype=numpy.int64), self._args_dev)

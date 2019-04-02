@@ -7,7 +7,7 @@ namespace dragon {
 
 template <class Context>
 void SGDUpdateOp<Context>::ComputeUpdates(Tensor* dX) {
-    Tensor* h = ws()->CreateTensor(
+    auto* H = ws()->CreateTensor(
         "/mnt/" + Slot() + "/sgd/h")
             ->ReshapeLike(*dX);
 
@@ -15,7 +15,7 @@ void SGDUpdateOp<Context>::ComputeUpdates(Tensor* dX) {
     // Momentum Correction, See arXiv:1706.02677
     if (old_lr > 0) { correction = lr / old_lr; } old_lr = lr;
     auto* dXdata = dX->template mutable_data<float, Context>();
-    auto* Hdata = h->template mutable_data<float, Context>();
+    auto* Hdata = H->template mutable_data<float, Context>();
 
     kernel::SGDUpdate(dX->count(), lr,
         momentum * correction, dXdata, Hdata, ctx());

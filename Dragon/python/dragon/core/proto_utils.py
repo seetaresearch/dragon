@@ -9,7 +9,7 @@
 #
 # ------------------------------------------------------------
 
-"""Define some helpful protobuf makers here."""
+"""Define some helpful protocol buffer makers here."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -17,28 +17,28 @@ from __future__ import print_function
 
 import sys
 import copy
-import numpy as np
-from google.protobuf.message import Message
+import numpy
 
-import dragon.config as cfg
-import dragon.import_c_api as _C
-from dragon.proto import dragon_pb2 as pb
-from dragon.core.scope import get_default_device
+from dragon import config as _cfg
+from dragon import import_c_api as _C
+from dragon.core import scope as _scope
+from dragon.proto import dragon_pb2 as _proto_def
+from google.protobuf.message import Message as _Message
 
 
 if sys.version_info >= (3,0):
     def MakeArgument(key, value):
-        argument = pb.Argument()
+        argument = _proto_def.Argument()
         argument.name = key
         if type(value) is float: argument.f = value
-        elif type(value) in (bool, int, np.int64) : argument.i = value
+        elif type(value) in (bool, int, numpy.int64) : argument.i = value
         elif type(value) is bytes: argument.s = value
         elif type(value) is str: argument.s = str.encode(value)
-        elif isinstance(value, Message): argument.s = value.SerializeToString()
+        elif isinstance(value, _Message): argument.s = value.SerializeToString()
         elif all(type(v) is float for v in value): argument.floats.extend(value)
         elif all(type(v) is int for v in value): argument.ints.extend(value)
         elif all(type(v) is str for v in value): argument.strings.extend([str.encode(v) for v in value])
-        elif all(isinstance(v, Message) for v in value):
+        elif all(isinstance(v, _Message) for v in value):
             argument.strings.extend([v.SerializeToString() for v in value])
         else:
             raise ValueError(
@@ -47,20 +47,20 @@ if sys.version_info >= (3,0):
         return argument
 else:
     def MakeArgument(key, value):
-        argument = pb.Argument()
+        argument = _proto_def.Argument()
         argument.name = key
         if type(value) is float: argument.f = value
-        elif type(value) in (bool, int, long, np.int64) : argument.i = value
+        elif type(value) in (bool, int, long, numpy.int64) : argument.i = value
         elif type(value) is str: argument.s = value
         elif type(value) is unicode: argument.s = str(value)
-        elif isinstance(value, Message): argument.s = value.SerializeToString()
+        elif isinstance(value, _Message): argument.s = value.SerializeToString()
         elif all(type(v) is float for v in value): argument.floats.extend(value)
         elif all(type(v) is int for v in value): argument.ints.extend(value)
         elif all(type(v) is long for v in value): argument.ints.extend(value)
         elif all(type(v) is str for v in value): argument.strings.extend(value)
         elif all(type(v) is unicode for v in value):
             argument.strings.extend([str(v) for v in value])
-        elif all(isinstance(v, Message) for v in value):
+        elif all(isinstance(v, _Message) for v in value):
             argument.strings.extend([v.SerializeToString() for v in value])
         else:
             raise ValueError(
@@ -70,10 +70,16 @@ else:
 
 
 def MakeOperatorDef(
-    op_type, inputs=(), outputs=(),
-        name='', uid=None, device_option=None,
-            arg=None, **kwargs):
-    operator = pb.OperatorDef()
+    op_type,
+    inputs=(),
+    outputs=(),
+    name='',
+    uid=None,
+    device_option=None,
+    arg=None,
+    **kwargs
+):
+    operator = _proto_def.OperatorDef()
     operator.type = op_type
     operator.name = name
     operator.input.extend([str(tensor) for tensor in inputs])
@@ -92,9 +98,15 @@ def MakeOperatorDef(
 
 
 def MakeCXXOperatorDef(
-    op_type, inputs=(), outputs=(),
-        name='', uid=None, device_option=None,
-            arg=None, **kwargs):
+    op_type,
+    inputs=(),
+    outputs=(),
+    name='',
+    uid=None,
+    device_option=None,
+    arg=None,
+    **kwargs
+):
     c_def = _C.OperatorDef()
     py_def = MakeOperatorDef(
         op_type, inputs, outputs, name, uid,
@@ -104,7 +116,7 @@ def MakeCXXOperatorDef(
 
 
 def MakeDeviceOption(device_type, device_id, rng_seed=None):
-    option = pb.DeviceOption()
+    option = _proto_def.DeviceOption()
     option.device_type = device_type
     option.device_id = device_id
     if rng_seed is not None: option.random_seed = rng_seed
@@ -133,7 +145,7 @@ def GetDeviceOption(device_type, device_id=0, rng_seed=None):
 
 
 def GetDefaultDeviceOption():
-    device_info = get_default_device()
+    device_info = _scope.get_default_device()
     if device_info is not None:
         return GetDeviceOption(
             device_info['device_type'],
@@ -142,10 +154,10 @@ def GetDefaultDeviceOption():
 
 
 def GetGlobalDeviceOption():
-    option = cfg.GetGlobalOptions()
+    options = _cfg.GetGlobalOptions()
     return GetDeviceOption(
-        option['device'],
-            option['device_id'])
+        options['device'],
+            options['device_id'])
 
 
 # Fix the python stdout
@@ -159,6 +171,5 @@ class Unbuffered(object):
        return getattr(self.stream, attr)
 
 
-# Clear the stdout buffer for mpi(C++ && Python)
-import sys
+# Clear the stdout buffer for mpi
 sys.stdout = Unbuffered(sys.stdout)

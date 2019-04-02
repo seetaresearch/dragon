@@ -15,149 +15,149 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from .operators import initializer as init_ops
-from .operators import vision as vision_ops
-from .operators import loss as loss_ops
-from .operators import data as data_ops
-from .operators import activation as active_ops
-from .operators import arithmetic as math_ops
-from .operators import control_flow as control_flow_ops
-from .operators import misc as misc_ops
-from .operators import mpi as mpi_ops
-from .operators import array as array_ops
-from .operators import norm as norm_ops
-from .operators import recurrent as recurrent_ops
-from .operators import contrib as contrib_ops
+from .operators import initializer as _init_ops
+from .operators import vision as _vision_ops
+from .operators import loss as _loss_ops
+from .operators import data as _data_ops
+from .operators import activation as _active_ops
+from .operators import arithmetic as _math_ops
+from .operators import control_flow as _control_flow_ops
+from .operators import misc as _misc_ops
+from .operators import mpi as _mpi_ops
+from .operators import array as _array_ops
+from .operators import norm as _norm_ops
+from .operators import recurrent as _recurrent_ops
+from .operators import contrib as _contrib_ops
 
 # Data
-LMDBData = data_ops.LMDBData
-ImageData = data_ops.ImageData
+LMDBData = _data_ops.LMDBData
+ImageData = _data_ops.ImageData
 
 # Initializer
-Fill = init_ops.Fill
-RandomUniform = init_ops.RandomUniform
-RandomNormal = init_ops.RandomNormal
-TruncatedNormal = init_ops.TruncatedNormal
-GlorotUniform = init_ops.GlorotUniform
-GlorotNormal = init_ops.GlorotNormal
+Fill = _init_ops.Fill
+RandomUniform = _init_ops.RandomUniform
+RandomNormal = _init_ops.RandomNormal
+TruncatedNormal = _init_ops.TruncatedNormal
+GlorotUniform = _init_ops.GlorotUniform
+GlorotNormal = _init_ops.GlorotNormal
 
 # Vision
-Conv2d = vision_ops.Conv2d
-DepthwiseConv2d = vision_ops.DepthwiseConv2d
-ConvTranspose2d = DeConv2d = Conv2dTranspose = vision_ops.ConvTranspose2d
-Pool2d = vision_ops.Pool2d
-ROIPool = vision_ops.ROIPool
-ROIAlign = vision_ops.ROIAlign
-LRN = vision_ops.LRN
-NNResize = vision_ops.NNResize
-BilinearResize = vision_ops.BilinearResize
-BiasAdd = vision_ops.BiasAdd
-DropBlock2d = vision_ops.DropBlock2d
+Conv2d = _vision_ops.Conv2d
+DepthwiseConv2d = _vision_ops.DepthwiseConv2d
+ConvTranspose2d = DeConv2d = Conv2dTranspose = _vision_ops.ConvTranspose2d
+Pool2d = _vision_ops.Pool2d
+ROIPool = _vision_ops.ROIPool
+ROIAlign = _vision_ops.ROIAlign
+LRN = _vision_ops.LRN
+NNResize = _vision_ops.NNResize
+BilinearResize = _vision_ops.BilinearResize
+BiasAdd = _vision_ops.BiasAdd
+DropBlock2d = _vision_ops.DropBlock2d
 
 # Recurrent
-LSTMCell = recurrent_ops.LSTMCell
-RNN = recurrent_ops.RNN
-LSTM = recurrent_ops.LSTM
-GRU = recurrent_ops.GRU
+LSTMCell = _recurrent_ops.LSTMCell
+RNN = _recurrent_ops.RNN
+LSTM = _recurrent_ops.LSTM
+GRU = _recurrent_ops.GRU
 
 # Activation
-Sigmoid = active_ops.Sigmoid
-Tanh = active_ops.Tanh
-Relu = active_ops.Relu
-LRelu = active_ops.LRelu
-PRelu = active_ops.PRelu
-Elu = active_ops.Elu
-SElu = active_ops.SElu
-Softmax = active_ops.Softmax
-Dropout = active_ops.Dropout
+Sigmoid = _active_ops.Sigmoid
+Tanh = _active_ops.Tanh
+Relu = _active_ops.Relu
+LRelu = _active_ops.LRelu
+PRelu = _active_ops.PRelu
+Elu = _active_ops.Elu
+SElu = _active_ops.SElu
+Softmax = _active_ops.Softmax
+Dropout = _active_ops.Dropout
 
 # Loss
-NLLLoss = loss_ops.NLLLoss
-SparseSoftmaxCrossEntropy = loss_ops.SparseSoftmaxCrossEntropy
-SigmoidCrossEntropy = loss_ops.SigmoidCrossEntropy
-SoftmaxCrossEntropy = loss_ops.SoftmaxCrossEntropy
-SmoothL1Loss = loss_ops.SmoothL1Loss
-L1Loss = loss_ops.L1Loss
-L2Loss = loss_ops.L2Loss
-SigmoidFocalLoss = loss_ops.SigmoidFocalLoss
-SoftmaxFocalLoss = loss_ops.SoftmaxFocalLoss
-CTCLoss = loss_ops.CTCLoss
+NLLLoss = _loss_ops.NLLLoss
+SparseSoftmaxCrossEntropy = _loss_ops.SparseSoftmaxCrossEntropy
+SigmoidCrossEntropy = _loss_ops.SigmoidCrossEntropy
+SoftmaxCrossEntropy = _loss_ops.SoftmaxCrossEntropy
+SmoothL1Loss = _loss_ops.SmoothL1Loss
+L1Loss = _loss_ops.L1Loss
+L2Loss = _loss_ops.L2Loss
+SigmoidFocalLoss = _loss_ops.SigmoidFocalLoss
+SoftmaxFocalLoss = _loss_ops.SoftmaxFocalLoss
+CTCLoss = _loss_ops.CTCLoss
 
 # Arithmetic
-Add = math_ops.Add
-Sub = math_ops.Sub
-Mul = math_ops.Mul
-Div = math_ops.Div
-Maximum = math_ops.Maximum
-Minimum = math_ops.Minimum
-Moments = math_ops.Moments
-Clip = math_ops.Clip
-Matmul = math_ops.Matmul
-Pow = math_ops.Pow
-Dot = math_ops.Dot
-Log = math_ops.Log
-Exp = math_ops.Exp
-Square = math_ops.Square
-Sqrt = math_ops.Sqrt
-FullyConnected = math_ops.FullyConnected
-Eltwise = math_ops.Eltwise
-Affine = math_ops.Affine
-GramMatrix = math_ops.GramMatrix
-Accumulate = math_ops.Accumulate
-MovingAverage = math_ops.MovingAverage
+Add = _math_ops.Add
+Sub = _math_ops.Sub
+Mul = _math_ops.Mul
+Div = _math_ops.Div
+Maximum = _math_ops.Maximum
+Minimum = _math_ops.Minimum
+Moments = _math_ops.Moments
+Clip = _math_ops.Clip
+Matmul = _math_ops.Matmul
+Pow = _math_ops.Pow
+Dot = _math_ops.Dot
+Log = _math_ops.Log
+Exp = _math_ops.Exp
+Square = _math_ops.Square
+Sqrt = _math_ops.Sqrt
+FullyConnected = _math_ops.FullyConnected
+Eltwise = _math_ops.Eltwise
+Affine = _math_ops.Affine
+GramMatrix = _math_ops.GramMatrix
+Accumulate = _math_ops.Accumulate
+MovingAverage = _math_ops.MovingAverage
 
 # Normalization
-BatchNorm = norm_ops.BatchNorm
-GroupNorm = norm_ops.GroupNorm
-LayerNorm = norm_ops.LayerNorm
-InstanceNorm = norm_ops.InstanceNorm
-L2Norm = norm_ops.L2Norm
+BatchNorm = _norm_ops.BatchNorm
+GroupNorm = _norm_ops.GroupNorm
+LayerNorm = _norm_ops.LayerNorm
+InstanceNorm = _norm_ops.InstanceNorm
+L2Norm = _norm_ops.L2Norm
 
 # NDArray
-Gather = array_ops.Gather
-Crop = array_ops.Crop
-Reduce = array_ops.Reduce
-Sum = array_ops.Sum
-Mean = array_ops.Mean
-Max = array_ops.Max
-ArgMax = array_ops.ArgMax
-Min = array_ops.Min
-ArgMin = array_ops.ArgMin
-Slice = array_ops.Slice
-Stack = array_ops.Stack
-Concat = array_ops.Concat
-Transpose = array_ops.Transpose
-Repeat = array_ops.Repeat
-Tile = array_ops.Tile
-Pad = array_ops.Pad
-OneHot = array_ops.OneHot
-Flatten = array_ops.Flatten
-Reshape = array_ops.Reshape
-ExpandDims = array_ops.ExpandDims
-Squeeze = array_ops.Squeeze
-Shape = array_ops.Shape
-Arange = array_ops.Arange
-Multinomial = array_ops.Multinomial
+Gather = _array_ops.Gather
+Crop = _array_ops.Crop
+Reduce = _array_ops.Reduce
+Sum = _array_ops.Sum
+Mean = _array_ops.Mean
+Max = _array_ops.Max
+ArgMax = _array_ops.ArgMax
+Min = _array_ops.Min
+ArgMin = _array_ops.ArgMin
+Slice = _array_ops.Slice
+Stack = _array_ops.Stack
+Concat = _array_ops.Concat
+Transpose = _array_ops.Transpose
+Repeat = _array_ops.Repeat
+Tile = _array_ops.Tile
+Pad = _array_ops.Pad
+OneHot = _array_ops.OneHot
+Flatten = _array_ops.Flatten
+Reshape = _array_ops.Reshape
+ExpandDims = _array_ops.ExpandDims
+Squeeze = _array_ops.Squeeze
+Shape = _array_ops.Shape
+Arange = _array_ops.Arange
+Multinomial = _array_ops.Multinomial
 
 # Control Flow
-Copy = control_flow_ops.Copy
-Assign = control_flow_ops.Assign
-Equal = control_flow_ops.Equal
-Less = control_flow_ops.Less
-LessEqual = control_flow_ops.LessEqual
-Greater = control_flow_ops.Greater
-GreaterEqual = control_flow_ops.GreaterEqual
+Copy = _control_flow_ops.Copy
+Assign = _control_flow_ops.Assign
+Equal = _control_flow_ops.Equal
+Less = _control_flow_ops.Less
+LessEqual = _control_flow_ops.LessEqual
+Greater = _control_flow_ops.Greater
+GreaterEqual = _control_flow_ops.GreaterEqual
 
 # Misc
-Cast = AsType = misc_ops.Cast
-Run = misc_ops.Run
-Template = misc_ops.Template
-Accuracy = misc_ops.Accuracy
-StopGradient = misc_ops.StopGradient
+Cast = AsType = _misc_ops.Cast
+Run = _misc_ops.Run
+Template = _misc_ops.Template
+Accuracy = _misc_ops.Accuracy
+StopGradient = _misc_ops.StopGradient
 
 # MPI
-MPIBroadcast = mpi_ops.MPIBroadcast
-MPIGather = mpi_ops.MPIGather
+MPIBroadcast = _mpi_ops.MPIBroadcast
+MPIGather = _mpi_ops.MPIGather
 
 # Contrib
-Proposal = contrib_ops.Proposal # R-CNN
+Proposal = _contrib_ops.Proposal # R-CNN

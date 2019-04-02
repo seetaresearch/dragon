@@ -13,92 +13,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import threading
-import dragon.import_c_api as _C
-
-from contextlib import contextmanager
-
-
-__all__ = [
-    'name_scope',
-    'phase_scope',
-    'device_scope',
-    'get_default_phase',
-    'get_default_device',
-    'get_default_name_scope',
-    'WorkspaceScope',
-]
-
-
-class _ThreadLocalStack(threading.local):
-    def __init__(self):
-        super(_ThreadLocalStack, self).__init__()
-        self._enforce_nesting = True
-        self.stack = []
-
-    def get_default(self):
-        return self.stack[-1] if len(self.stack) >= 1 else None
-
-    def is_cleared(self):
-        return not self.stack
-
-    @property
-    def enforce_nesting(self):
-        return self._enforce_nesting
-
-    @enforce_nesting.setter
-    def enforce_nesting(self, value):
-        self._enforce_nesting = value
-
-    @contextmanager
-    def get_controller(self, default):
-        """A context manager for manipulating a default stack."""
-        self.stack.append(default)
-        try:
-            yield default
-        finally:
-            # stack may be empty if reset() was called
-            if self.stack:
-                if self._enforce_nesting:
-                    if self.stack[-1] is not default:
-                        raise AssertionError(
-                            "Nesting violated for default stack of %s objects" %
-                            type(default))
-                    self.stack.pop()
-                else:
-                    self.stack.remove(default)
-
-
-class WorkspaceScope(object):
-    """WorkspaceScope is a auxiliary to assign the specific workspace.
-
-    Examples
-    --------
-    >>> import dragon as dg
-    >>> with WorkspaceScope('session1'): pass
-    >>> with dg.ws_scope('session2'): pass
-
-    """
-    def __init__(self, ws_name):
-        assert isinstance(ws_name, type('str')), \
-            'WorkspaceScope takes in a string as its argument.'
-        assert ws_name != '', \
-            'The workspace name should not be empty.'
-        self.ws = ws_name
-        self.prev = 'default'
-
-    def __enter__(self):
-        self.prev = _C.CurrentWorkspace()
-        _C.SwitchWorkspace(self.ws, True)
-
-    def __exit__(self, type, value, traceback):
-        _C.SwitchWorkspace(self.prev, True)
-
-
-_GLOBAL_TENSOR_STACK = _ThreadLocalStack()
-_GLOBAL_PHASE_STACK = _ThreadLocalStack()
-_GLOBAL_DEVICE_STACK = _ThreadLocalStack()
-_PREDEFINED_SCOPE_SEPARATOR = '/'
+from dragon.core import tls as _tls
 
 
 def name_scope(name):
@@ -140,7 +55,7 @@ def device_scope(device_type, device_id=0):
 
     """
     device_type, device_id, device_type.lower(), device_id
-    assert device_type in ['cpu', 'gpu', 'cuda', 'cnml']
+    assert device_type in ('cpu', 'gpu', 'cuda', 'cnml')
     # Default names
     if device_type == 'gpu': device_type = 'cuda'
     return _GLOBAL_DEVICE_STACK.get_controller({
@@ -213,3 +128,9 @@ def get_default_device():
 
     """
     return _GLOBAL_DEVICE_STACK.get_default()
+
+
+_GLOBAL_TENSOR_STACK = _tls.Stack()
+_GLOBAL_PHASE_STACK = _tls.Stack()
+_GLOBAL_DEVICE_STACK = _tls.Stack()
+_PREDEFINED_SCOPE_SEPARATOR = '/'

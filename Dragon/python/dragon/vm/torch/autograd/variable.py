@@ -15,11 +15,12 @@ from __future__ import print_function
 
 import warnings
 
-import dragon.core.tensor_utils as tensor_utils
-import dragon.core.workspace as ws
+from dragon.core import tensor_utils as _tensor_utils
+from dragon.core.workspace import Backward as _backward_impl
 
-from dragon.vm.torch.tensor import Tensor
-from dragon.vm.torch.pool import TensorPool, OperatorPool
+from dragon.vm.torch.c_api import _get_tensor_pool
+from dragon.vm.torch.c_api import _get_operator_pool
+from dragon.vm.torch.tensor import Tensor as _Tensor
 
 
 def Variable(tensor, requires_grad=False, volatile=False):
@@ -44,32 +45,32 @@ def backward(self, gradient=None):
         raise RuntimeError('This variable does not require grads.'
                            '\nCan not backward from this variable.')
 
-    # 1. Expressions -> Forward-Ops
-    # We should sort out the topology of these operators before using
+    # 1) expressions -> forward_ops
+    # We should sort out the topology before using
     all_expressions = sorted(self.__jit_recorder__.ops.items(), key=lambda d: d[0])
     forward_ops = [v for k, v in all_expressions]
 
-    # 2. Forward-Ops + Targets + InputGrads + IgnoredGrads -> Backward-Ops
-    targets = [self.name]; input_grads = []
+    # 2) forward_ops + targets + input_grads + ignored_grads -> backward_ops
+    targets, input_grads = [self.name], []
     ignored_grads = list(self._ignored_grads) if self._ignored_grads else []
     if gradient is not None:
-        if not isinstance(gradient, Tensor):
+        if not isinstance(gradient, _Tensor):
             raise TypeError('gradients can be either Tensors, Variables or None,'
                             ' but got {}'.format(type(gradient)))
-        tensor_utils.FromPyArray(gradient.cpu().numpy(), self.name + '_grad')
+        _tensor_utils.FromArray(gradient.numpy(True), self.name + '_grad')
         input_grads.append(self.name + '_grad')
 
-    # 3. Flow or Flow or Flow
-    ws.FlowGradients(forward_ops, targets, input_grads, ignored_grads)
+    # 3. Dispatch the backward ops
+    _backward_impl(forward_ops, targets, input_grads, ignored_grads)
 
     # 4. Release resources
     # We should release both the operator handles and tensors
     for forward_op in forward_ops:
-        OperatorPool.put(forward_op.name)
+        _get_operator_pool().put(forward_op.name)
         for output in forward_op.output:
             if output not in forward_op.input:
-                TensorPool.put(output)
+                _get_tensor_pool().put(output)
 
 
-Tensor.backward = backward
-Tensor.volatile = volatile
+_Tensor.backward = backward
+_Tensor.volatile = volatile

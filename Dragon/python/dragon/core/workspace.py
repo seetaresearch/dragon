@@ -9,14 +9,10 @@
 #
 # ------------------------------------------------------------
 
-"""A Wrapper for the C++ backend Workspace.
+"""Wrappers for the Workspace of C++ backend.
 
-Note that a default workspace is switched globally,
-so these C++ calls are safe and deterministic.
-
-See the documentation to learn how to switch between workspaces:
-
-    <http://dragon.seetatech.com/api/python/contents/core/workspace.html>
+Flexible API is provided to manage the global resources
+between the Python threads (quite different from C++).
 
 """
 
@@ -25,112 +21,219 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import re
 import numpy
-import threading
+import contextlib
 import six.moves.cPickle as pickle
+from collections import defaultdict, deque
 
-import dragon.import_c_api as _C
-import dragon.core.logging as logging
-import dragon.proto.dragon_pb2 as pb
+from dragon import config as _cfg
+from dragon import import_c_api as _C
+from dragon.core import tls as _tls
+from dragon.core import mpi as _mpi
+from dragon.core import logging as _logging
+from dragon.core import mapping as _mapping
+from dragon.proto import dragon_pb2 as _proto_def
+from dragon.core import proto_utils as _proto_utils
 
-from dragon.config import GetGlobalOptions
-from dragon.core import mpi, mapping, proto_utils
+
+class TensorPool(object):
+    """We apply the TensorPool to manage the reused tensors.
+
+    Tensors with the same scope in the pool will be reused by turns,
+    which speeds up the whole system by reducing the unnecessary deconstructing.
+
+    Heuristically, we have used 5 pools with different scopes:
+
+    * scope(Leaf): A Pool to reuse leaf tensors.
+
+    * scope(NumPy): A pool to reuse leaf tensors from numpy.
+
+    * scope(Join): A pool to reuse RT(runtime) tensors required by forward-backward.
+
+    * scope(Detach): A pool to reuse RT(runtime) tensors required by forward only.
+
+    * scope(Reference): A pool to reuse reshaped tensors(sharing contents).
+
+    """
+    def __init__(self):
+        # deque provide much higher performance than Queue
+        self._scope2keys = defaultdict(deque)
+
+    def get(self, scope='${DETACH}'):
+        try:
+            return self._scope2keys[scope].popleft()
+        except:
+            self._scope2keys[scope].append(
+                GetDummyName(
+                    '${POOL}/%s/Tensor' % scope,
+                        domain='Tensor', zero_based=False))
+            return self._scope2keys[scope].popleft()
+
+    def put(self, name):
+        if '${POOL}' in name:
+            scope, _ = name[8:].split('/')
+            self._scope2keys[scope].append(name)
+            return True
+        else: return False
 
 
-def CurrentWorkspace():
-    """Return the current active workspace.
+class OperatorPool(object):
+    """Operators whose gradients is required will hold a resource handle,
+    which is also called ``Anchor`` in the backend.
+
+    We apply this pool to collect the handles according to the type of operator,
+    as the mem size of temporal resources varies greatly.
+
+    The resource handle will be released after the gradient flow automatically.
+
+    """
+    def __init__(self):
+        # deque provide much higher performance than Queue
+        self._type2keys = defaultdict(deque)
+
+    def get(self, op_type):
+        try:
+            return self._type2keys[op_type].popleft()
+        except:
+            self._type2keys[op_type].append(
+                GetDummyName(
+                    '${POOL}/%s' % op_type,
+                        domain='Operator', zero_based=False))
+            return self._type2keys[op_type].popleft()
+
+    def put(self, op_name):
+        op_type, _ = op_name[8:].split('_')
+        self._type2keys[op_type].append(op_name)
+
+
+class Workspace(_C.Workspace):
+    """A wrapper for the C implemented workspace.
+
+    This class is a fusion of *Workspace*, *Pool* and *tf.Graph*.
+
+    We find that they work in a similar way while named different.
+
+    """
+    def __init__(self, name=''):
+        super(Workspace, self).__init__(name)
+        self._ref_objects = []
+        self._collections = {}
+        self.tensor_pool = TensorPool()
+        self.operator_pool = OperatorPool()
+
+    def get_collection_ref(self, name):
+        coll_list = self._collections.get(name, None)
+        if coll_list is None:
+            coll_list = []
+            self._collections[name] = coll_list
+        return coll_list
+
+    def get_collection(self, name, scope=None):
+        coll_list = self._collections.get(name, None)
+        if coll_list is None:
+            return []
+        if scope is None:
+            return list(coll_list)
+        else:
+            filter_coll_list = []
+            regex = re.compile(scope)
+            for item in coll_list:
+                if hasattr(item, "name") and regex.match(item.name):
+                    filter_coll_list.append(item)
+            return filter_coll_list
+
+    def add_to_collection(self, name, value):
+        if name not in self._collections:
+            self._collections[name] = [value]
+        else:
+            self._collections[name].append(value)
+
+    def add_to_collections(self, names, value):
+        for name in names:
+            self.add_to_collection(name, value)
+
+    def merge_from(self, other):
+        """Merge a external workspace into ``self``.
+
+        The ``other`` will not be reset until ``self`` is reset.
+        Carefulness should be taken to associate with the workspaces.
+
+        Parameters
+        ----------
+        other : Workspace
+            The given external workspace.
+
+        Returns
+        -------
+        Workspace
+            The ``self``.
+
+        """
+        self.MergeFrom(other)
+        self._ref_objects.append(other)
+        return self
+
+    def as_default(self):
+        """Switch ``self`` as the default workspace.
+
+        Call this method with the *with* keyword.
+
+        Once *with* is exited, the previous default will be set.
+
+        Returns
+        -------
+        Workspace
+            The ``self``.
+
+        """
+        return _GLOBAL_DEFAULT_WORKSPACE_STACK.get_controller(self)
+
+    def clear(self):
+        """Remove all the tensors.
+
+        Optionally call this method to clean the memories.
+
+        Returns
+        -------
+        None
+
+        """
+        self.Clear()
+
+
+def get_default_workspace():
+    """Return the current default workspace.
 
     Returns
     -------
-    str
-        The workspace name.
+    Workspace
+        The default workspace.
 
     """
-    return _C.CurrentWorkspace()
+    return _GLOBAL_DEFAULT_WORKSPACE_STACK.get_default()
 
 
-def SwitchWorkspace(workspace_name, create_if_missing=True):
-    """Switch to the specific workspace.
+def reset_default_workspace():
+    """Reset the global default workspace.
 
-    Parameters
-    ----------
-    workspace_name : str
-        The name of the specific workspace.
-    create_if_missing : boolean
-        Whether to create the specific workspace if it does not exist.
+    Do not call this method to reset any instances.
 
     Returns
     -------
     None
 
     """
-    if workspace_name == '':
-        raise ValueError('The workspace name should not be empty.')
-    _C.SwitchWorkspace(workspace_name, create_if_missing)
-
-
-def MoveWorkspace(target_ws, source_ws):
-    """Move the source workspace into the target workspace.
-
-    Parameters
-    ----------
-    target_ws : str
-        The name of the target workspace.
-    source_ws : str
-        The name of the source workspace.
-
-    Returns
-    -------
-    None
-
-    """
-    if target_ws == '' or source_ws == '':
-        raise ValueError('The target or source name can not be empty.')
-    _C.MoveWorkspace(target_ws, source_ws)
-
-
-def ResetWorkspace(workspace_name=''):
-    """Reset the specific workspace.
-
-    Remove all resources of given workspace.
-
-    If workspace name is empty, the current workspace will be modified.
-
-    Parameters
-    ----------
-    workspace_name : str
-        The name of the specific workspace.
-
-    Returns
-    -------
-    None
-
-    """
-    _C.ResetWorkspace(workspace_name)
-
-
-def ClearWorkspace(workspace_name=''):
-    """Clear the specific workspace.
-
-    You may need to clear the workspace when sharing grads.
-
-    If workspace name is empty, the current workspace will be modified.
-
-    Parameters
-    ----------
-    workspace_name : str
-        The name of the specific workspace.
-
-    Returns
-    -------
-    None
-
-    """
-    _C.ClearWorkspace(workspace_name)
+    if not _GLOBAL_DEFAULT_WORKSPACE_STACK.is_cleared():
+        raise AssertionError(
+            "Do not use reset_default_workspace() to clear "
+            "nested workspaces.\nIf you need a cleared workspace, "
+            "exit the nesting and create a new workspace.")
+    _GLOBAL_DEFAULT_WORKSPACE_STACK.reset()
 
 
 def CreateGraph(graph_def):
-    """Create the graph in the VM backend.
+    """Create the graph in current workspace.
 
     Parameters
     ----------
@@ -143,17 +246,16 @@ def CreateGraph(graph_def):
         The graph name to run.
 
     """
-    option = GetGlobalOptions()
     LogMetaGraph(graph_def)
     ExportMetaGraph(graph_def)
-    return _C.CreateGraph(
+    options = _cfg.GetGlobalOptions()
+    return get_default_workspace().CreateGraph(
         _stringify_proto(graph_def),
-            option['log_optimized_graph'],
-    )
+            options['log_optimized_graph'])
 
 
 def RunOperator(op_def, verbose=False):
-    """Run the operator in the VM backend.
+    """Run the operator.
 
     Parameters
     ----------
@@ -167,9 +269,9 @@ def RunOperator(op_def, verbose=False):
     None
 
     """
-    if isinstance(op_def, pb.OperatorDef):
+    if isinstance(op_def, _proto_def.OperatorDef):
         op_def = op_def.SerializeToString()
-    _C.RunOperator(op_def, verbose)
+    get_default_workspace().RunOperator(op_def, verbose)
 
 
 def HasTensor(tensor):
@@ -186,7 +288,8 @@ def HasTensor(tensor):
         The query result.
 
     """
-    return _C.HasTensor(_stringify_tensor(tensor))
+    tensor = _stringify_tensor(tensor)
+    return get_default_workspace().HasTensor(tensor)
 
 
 def CreateTensor(tensor):
@@ -202,7 +305,8 @@ def CreateTensor(tensor):
     None
 
     """
-    return _C.CreateTensor(_stringify_tensor(tensor))
+    tensor = _stringify_tensor(tensor)
+    get_default_workspace().CreateTensor(tensor)
 
 
 def CreateFiller(filler_def):
@@ -225,7 +329,7 @@ def CreateFiller(filler_def):
     """
     filler_def = filler_def if isinstance(filler_def, str) \
         else filler_def.SerializePartialToString()
-    _C.CreateFiller(filler_def)
+    get_default_workspace().CreateFiller(filler_def)
 
 
 def GetFillerType(tensor):
@@ -246,7 +350,8 @@ def GetFillerType(tensor):
         The filler type.
 
     """
-    return _C.GetFillerType(_stringify_tensor(tensor))
+    tensor = _stringify_tensor(tensor)
+    return get_default_workspace().GetFillerType(tensor)
 
 
 def GetTensorName(tensor):
@@ -267,7 +372,8 @@ def GetTensorName(tensor):
     The query result may be different from the one used in the frontend.
 
     """
-    return _C.GetTensorName(_stringify_tensor(tensor))
+    tensor = _stringify_tensor(tensor)
+    return get_default_workspace().GetTensorName(tensor)
 
 
 def SetTensorAlias(tensor, alias):
@@ -285,7 +391,8 @@ def SetTensorAlias(tensor, alias):
     None
 
     """
-    return _C.SetTensorAlias(_stringify_tensor(tensor), alias)
+    tensor = _stringify_tensor(tensor)
+    get_default_workspace().SetTensorAlias(tensor, alias)
 
 
 def FetchTensor(tensor):
@@ -302,10 +409,16 @@ def FetchTensor(tensor):
         The values copied from the backend.
 
     """
-    return _C.FetchTensor(_stringify_tensor(tensor))
+    tensor = _stringify_tensor(tensor)
+    return get_default_workspace().FetchTensor(tensor)
 
 
-def FeedTensor(tensor, array, force_cpu=False, dtype=None):
+def FeedTensor(
+    tensor,
+    array,
+    force_cpu=False,
+    dtype=None,
+):
     """Feed the values to the given tensor.
 
     Parameters
@@ -314,10 +427,10 @@ def FeedTensor(tensor, array, force_cpu=False, dtype=None):
         The tensor to feed.
     array : number, list, tuple, or numpy.ndarray
         The values to feed.
-    force_cpu : boolean
+    force_cpu : boolean, optional, default=False
         Whether force to feed to cpu context.
-    dtype : str
-        The data type. If ``None``, ``float32`` will be used instead.
+    dtype : str, optional
+        The optional data type.
 
     Returns
     -------
@@ -340,35 +453,28 @@ def FeedTensor(tensor, array, force_cpu=False, dtype=None):
     """
     name = tensor.name if hasattr(tensor, 'name') else str(tensor)
     if force_cpu is True:
-        dev = proto_utils.GetDeviceOption('cpu')
+        dev = _proto_utils.GetDeviceOption('cpu')
     else:
-        dev = proto_utils.GetDefaultDeviceOption()
-        if dev is None: dev = proto_utils.GetGlobalDeviceOption()
+        dev = _proto_utils.GetDefaultDeviceOption()
+        if dev is None: dev = _proto_utils.GetGlobalDeviceOption()
 
     if not isinstance(array, numpy.ndarray):
-        auto_data_type = numpy.float32 if dtype is None else dtype
+        dtype = 'float32' if dtype is None else dtype
     else:
-        auto_data_type = array.dtype if dtype is None else dtype
+        dtype = array.dtype if dtype is None else dtype
 
     if hasattr(tensor, 'dtype') and tensor.dtype is not None:
-        if tensor.dtype not in mapping.TENSOR_TYPE_TO_NP_TYPE:
+        if tensor.dtype not in _mapping.TENSOR_TYPE_TO_NP_TYPE:
             raise TypeError('Unsupported data type: {}'.format(tensor.dtype))
-        preset_data_type = mapping.TENSOR_TYPE_TO_NP_TYPE[tensor.dtype]
-        if dtype is not None:
-            if dtype != preset_data_type:
-                raise TypeError(
-                    'The preset data type is {}, but force to {}'.
-                        format(preset_data_type, dtype))
-        auto_data_type = preset_data_type
+        dtype = _mapping.TENSOR_TYPE_TO_NP_TYPE[tensor.dtype]
 
-    nd_array = numpy.array(array, dtype=auto_data_type, copy=False)
-    _C.FeedTensor(name, nd_array, _stringify_proto(dev))
+    dev = _stringify_proto(dev)
+    array = numpy.array(array, dtype=dtype, copy=False)
+    get_default_workspace().FeedTensor(name, array, dev)
 
 
 def ResetTensor(tensor):
     """Reset the memory of given tensor.
-
-    Note that the tensor will not be ``DELETE`` for the workspace.
 
     Parameters
     ----------
@@ -380,12 +486,16 @@ def ResetTensor(tensor):
     None
 
     """
-    return _C.ResetTensor(_stringify_tensor(tensor))
+    tensor = _stringify_tensor(tensor)
+    return get_default_workspace().ResetTensor(tensor)
 
 
 def RunGraph(
-    graph_name, inputs=(), outputs=[],
-        stage=None, return_outputs=True,
+    graph_name,
+    inputs=(),
+    outputs=[],
+    stage=None,
+    return_outputs=True,
 ):
     """Run the specific graph.
 
@@ -424,7 +534,8 @@ def RunGraph(
     # Run the graph according to the specified include/exclude rule
     runtime_stage = stage if stage else 'default'
     rule = _PREDEFINED_GRAPH_RUNTIME_STAGES[runtime_stage]
-    _C.RunGraph(str(graph_name), str(rule['include']), str(rule['exclude']))
+    get_default_workspace().RunGraph(
+        graph_name, rule['include'], rule['exclude'])
 
     # Try to return the outputs
     # Force to return may lead to asserts if outputs are not computed
@@ -434,18 +545,23 @@ def RunGraph(
         else: return [outputs[i].get_value() for i in range(len(outputs))]
 
 
-def FlowGradients(inputs, targets, input_grads=None, ignored_grads=None):
+def Backward(
+    forward_ops,
+    targets,
+    input_grads=None,
+    ignored_grads=None,
+):
     """Compute the gradients of given input flows.
 
     Parameters
     ----------
     input_flow : sequence of OperatorDef
-        The referring flows to generate gradient flows.
+        The referring ops to generate gradients.
     targets : sequence or str
-        The solving targets, generate grads automatically.
-    input_grads : sequence of str or None
-        The input grads.
-    ignored_grads : sequence of str or None
+        The solving targets.
+    input_grads : sequence of str, optional
+        The external input grads.
+    ignored_grads : sequence of str, optional
         The grads that are explicitly ignored.
 
     Returns
@@ -453,17 +569,17 @@ def FlowGradients(inputs, targets, input_grads=None, ignored_grads=None):
     None
 
     """
-    option = GetGlobalOptions()
+    options = _cfg.GetGlobalOptions()
 
     required_logging = True \
-        if (option['log_optimized_graph'] or
-            option['log_meta_graph']) else False
+        if (options['log_optimized_graph'] or
+            options['log_meta_graph']) else False
 
-    _C.FlowGradients(
-        inputs, targets,
+    get_default_workspace().Backward(
+        forward_ops, targets,
             input_grads if input_grads else [],
                 ignored_grads if ignored_grads else [],
-                    option['share_grads'], required_logging)
+                    options['share_grads'], required_logging)
 
 
 def LogMetaGraph(graph_def):
@@ -479,8 +595,8 @@ def LogMetaGraph(graph_def):
     None
 
     """
-    option = GetGlobalOptions()
-    if option['log_meta_graph']: print(graph_def)
+    options = _cfg.GetGlobalOptions()
+    if options['log_meta_graph']: print(graph_def)
 
 
 def ExportMetaGraph(graph_def):
@@ -498,28 +614,34 @@ def ExportMetaGraph(graph_def):
     None
 
     """
-    option = GetGlobalOptions()
-    if option['export_meta_graph']:
-        if not os.path.exists(option['export_meta_graph']):
+    options = _cfg.GetGlobalOptions()
+    if options['export_meta_graph']:
+        if not os.path.exists(options['export_meta_graph']):
             try:
-                os.makedirs(option['export_meta_graph'])
+                os.makedirs(options['export_meta_graph'])
             except Exception:
                 raise ValueError('The given prefix is invalid.')
 
         path = os.path.join(
-            option['export_meta_graph'],
+            options['export_meta_graph'],
                 graph_def.name + '.metatxt')
 
         with open(path, 'w') as f: f.write(str(graph_def))
-        logging.info('Export meta graph into: {}'.format(path))
+        _logging.info('Export meta graph into: {}'.format(path))
 
 
 def Snapshot(
-    tensors, filename,
-        prefix='', suffix='.bin',
-            format='default',
+    tensors,
+    filename,
+    prefix='',
+    suffix='.bin',
+    format='pickle',
 ):
-    """Snapshot tensors into a binary file.
+    """Serialize tensors into a binary file.
+
+    The filename is formatted as:
+
+        ``prefix`` + ``filename`` + ``suffix``
 
     Parameters
     ----------
@@ -527,11 +649,11 @@ def Snapshot(
         The tensors to be wrote.
     filename : str
         The name of this binary file.
-    prefix : str
+    prefix : str, optional, default=''
         The prefix of this binary file.
-    suffix : str
+    suffix : str, optional, default='.bin'
         The suffix of this binary file.
-    format : str
+    format : {'pickle', 'caffe'}, optional
         The format of this binary file.
 
     Returns
@@ -540,72 +662,66 @@ def Snapshot(
 
     Notes
     -----
-    The full file path will be:  ``prefix`` + ``filename`` + ``suffix``.
 
-    Available formats: ['default', 'caffe'].
 
     """
     file_path = prefix + filename + suffix
-    if mpi.Is_Init():
-        if not mpi.AllowSnapshot(): return
-        file_path = file_path + '.rank.{}'.format(mpi.Rank())
+    if _mpi.Is_Init():
+        if not _mpi.AllowSnapshot(): return
+        file_path = file_path + '.rank.{}'.format(_mpi.Rank())
 
     dir = os.path.split(file_path)[0]
     if len(dir) > 0 and not os.path.exists(dir): os.makedirs(dir)
 
-    if format == 'default':
+    if format == 'pickle':
         state_dict = {}
         for tensor in tensors:
             state_dict[tensor.name] = FetchTensor(tensor)
         with open(file_path, 'wb') as f:
             pickle.dump(state_dict, f, pickle.HIGHEST_PROTOCOL)
-        logging.info('Snapshot Model@: ' + file_path)
-        logging.info('Model Format: Pickle')
-    elif format is 'caffe':
+        _logging.info('Snapshot Model@: ' + file_path)
+        _logging.info('Model Format: Pickle')
+    elif format == 'caffe':
         names = [tensor.name for tensor in tensors]
-        _C.Snapshot(file_path, names, 1)
-    else: raise TypeError('Unknown binary format: {}'.format(format))
+        get_default_workspace().Snapshot(file_path, names, 1)
+    else:
+        raise TypeError('Unknown binary format: ' + format)
 
 
-def Restore(binary_file, format='default'):
+def Restore(binary_file, format='pickle'):
     """Restore tensors from a binary file.
 
     Parameters
     ----------
     binary_file : str
         The path of binary file.
-    format : str
+    format : {'pickle', 'caffe'}, optional
         The format of this binary file.
 
     Returns
     -------
     None
 
-    Notes
-    -----
-    Available formats: ['default', 'caffe'].
-
     """
     assert os.path.exists(binary_file), \
         'Binary file({}) does not exist.'.format(binary_file)
 
-    if format == 'default':
+    if format == 'pickle':
         try:
             state_dict = pickle.load(open(binary_file, 'rb'))
         except UnicodeDecodeError:
-            state_dict = pickle.load(open(binary_file, 'rb'), encoding='iso-8859-1')
-        logging.info('Restore From Model@: ' + binary_file)
-        logging.info('Model Format: Pickle')
+            state_dict = pickle.load(
+                open(binary_file, 'rb'), encoding='iso-8859-1')
+        _logging.info('Restore From Model@: ' + binary_file)
+        _logging.info('Model Format: Pickle')
         for k, v in state_dict.items():
             if HasTensor(k):
                 FeedTensor(k, v)
-                logging.info('[Info]: Tensor({}) is restored.'.format(k))
+                _logging.info('Tensor({}) is restored.'.format(k))
     elif format == 'caffe':
-        # Caffe models can't save the tensor name
-        # We simply use "layer_name/param:X"
-        _C.Restore(binary_file, 1)
+        get_default_workspace().Restore(binary_file, 1)
     else:
-        raise TypeError('Unknown binary format: {}'.format(format))
+        raise TypeError('Unknown binary format: ' + format)
 
 
 def GetDummyName(basename, suffix='', domain='', zero_based=True):
@@ -633,7 +749,8 @@ def GetDummyName(basename, suffix='', domain='', zero_based=True):
         The unique dummy name.
 
     """
-    return _C.GetDummyName(basename, suffix, domain, zero_based)
+    return get_default_workspace().GetDummyName(
+        basename, suffix, domain, zero_based)
 
 
 def _stringify_proto(obj):
@@ -647,8 +764,38 @@ def _stringify_tensor(obj):
     else: return str(obj)
 
 
-# Define a global lock to lock the current workspace
-_GLOBAL_WORKSPACE_LOCK = threading.Lock()
+class _DefaultWorkspaceStack(_tls.Stack):
+    """A thread-local stack of objects for
+    providing an implicit default workspace."""
+
+    def __init__(self):
+        super(_DefaultWorkspaceStack, self).__init__()
+        self._global_default_workspace = None
+
+    def get_default(self):
+        """Override that returns a global default if the stack is empty."""
+        ret = super(_DefaultWorkspaceStack, self).get_default()
+        if ret is None: ret = self._get_default_workspace()
+        return ret
+
+    def _get_default_workspace(self):
+        if self._global_default_workspace is None:
+            self._global_default_workspace = Workspace()
+        return self._global_default_workspace
+
+    def reset(self):
+        super(_DefaultWorkspaceStack, self).reset()
+        self._global_default_workspace = None
+
+    @contextlib.contextmanager
+    def get_controller(self, default):
+        with super(_DefaultWorkspaceStack, self) \
+                .get_controller(default) as g:
+            yield g
+
+
+# Define a global stack to store the workspaces of current thread
+_GLOBAL_DEFAULT_WORKSPACE_STACK = _DefaultWorkspaceStack()
 
 # Define some useful runtime stages
 _PREDEFINED_GRAPH_RUNTIME_STAGES = {

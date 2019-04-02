@@ -13,8 +13,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon
-import dragon.utils.vision
+from dragon.utils import vision as _vision
+from dragon.core import workspace as _workspace
 
 
 class MiniBatchOp(object):
@@ -36,7 +36,7 @@ class MiniBatchOp(object):
 
         """
         kwargs = eval(self.param_str)
-        self._data_batch = dragon.utils.vision.DataBatch(**kwargs)
+        self._data_batch = _vision.DataBatch(**kwargs)
 
     def run(self, inputs, outputs):
         """Run method, i.e., forward pass.
@@ -55,4 +55,4 @@ class MiniBatchOp(object):
         """
         blobs = self._data_batch.get()
         for idx, blob in enumerate(blobs):
-            dragon.workspace.FeedTensor(outputs[idx], blob)
+            _workspace.FeedTensor(outputs[idx], blob)

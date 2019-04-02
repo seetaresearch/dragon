@@ -8,7 +8,7 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void BiasAddOp<Context>::RunWithType() {
-    TENSOR_FILL(Input(1), vector<int64_t>(1, dim));
+    TENSOR_FILL(Input(1), vector<int64_t>({ dim }));
     DECLARE_MULTIPLIER(multiplier, inner_dim);
 
     auto* Bdata = Input(1).template data<T, Context>();
@@ -17,7 +17,7 @@ void BiasAddOp<Context>::RunWithType() {
     // Copy X to Y firstly if necessary
     Output(0)->template CopyFrom<Context>(Input(0), ctx());
 
-    kernel::BiasAdd(Output(0)->count(), outer_dim, dim, inner_dim,
+    kernel::BiasAdd(outer_dim, dim, inner_dim,
         data_format, Bdata, multiplier, Ydata, ctx());
 }
 

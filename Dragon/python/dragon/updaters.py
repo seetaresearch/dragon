@@ -22,8 +22,8 @@ from __future__ import print_function
 
 import pprint
 
-from dragon.core import workspace
-from dragon.core.tensor import Tensor
+from dragon.core import workspace as _workspace
+from dragon.core.tensor import Tensor as _Tensor
 
 
 class BaseUpdater(object):
@@ -32,12 +32,14 @@ class BaseUpdater(object):
     # Store the global unique slot index
     _DEFAULT_UNIQUE_SLOT_ID = 0
 
-    def __init__(self,
-                 scale_gradient=1.0,
-                 clip_gradient=-1.0,
-                 l2_decay=-1.0,
-                 slot=None,
-                 verbose=True):
+    def __init__(
+        self,
+        scale_gradient=1.0,
+        clip_gradient=-1.0,
+        l2_decay=-1.0,
+        slot=None,
+        verbose=True,
+    ):
         """Construct a Updater to optimize the objectives.
 
         Parameters
@@ -84,7 +86,7 @@ class BaseUpdater(object):
         None
 
         """
-        pair = (tensor.name if isinstance(tensor, Tensor) \
+        pair = (tensor.name if isinstance(tensor, _Tensor) \
             else tensor for tensor in pair)
         self._param_group.append((pair,
             {'lr_mult': lr_mult, 'decay_mult': decay_mult}))
@@ -93,7 +95,8 @@ class BaseUpdater(object):
         defaults = self.__dict__.get('_defaults')
         if item in defaults:
             if self._registered:
-                return workspace.FetchTensor(self._slot + '/' + item)
+                return _workspace.FetchTensor(
+                    self._slot + '/' + item)
             else: return defaults[item]
         return self.__dict__[item]
 
@@ -101,8 +104,9 @@ class BaseUpdater(object):
         defaults = self.__dict__.get('_defaults')
         if defaults is not None and key in defaults:
             if self._registered:
-                workspace.FeedTensor(self._slot + '/' + key, value,
-                    dtype='float32', force_cpu=True)
+                _workspace.FeedTensor(
+                    self._slot + '/' + key, value,
+                        dtype='float32', force_cpu=True)
             else:
                 self._defaults[key] = value
         else:
@@ -111,8 +115,9 @@ class BaseUpdater(object):
     def register_in_workspace(self):
         if not self._registered:
             for k, v in self._defaults.items():
-                workspace.FeedTensor(self._slot + "/" + k, v,
-                    dtype='float32', force_cpu=True)
+                _workspace.FeedTensor(
+                    self._slot + "/" + k, v,
+                        dtype='float32', force_cpu=True)
             self._registered = True
             if self._verbose:
                 print('---------------------------------------------------------')
@@ -206,8 +211,14 @@ class AdamUpdater(BaseUpdater):
     Introduced by `[Kingma & Ba, 2014] <https://arxiv.org/abs/1412.6980>`_.
 
     """
-    def __init__(self, base_lr=0.01, beta1=0.9,
-                 beta2=0.999, eps=1e-8, **kwargs):
+    def __init__(
+        self,
+        base_lr=0.01,
+        beta1=0.9,
+        beta2=0.999,
+        eps=1e-8,
+        **kwargs
+    ):
         """Construct a Adam Updater to optimize the objectives.
 
         Parameters
@@ -222,7 +233,7 @@ class AdamUpdater(BaseUpdater):
             The eps.
 
         """
-        super(AdamUpdater, self).__init__(**kwargs )
+        super(AdamUpdater, self).__init__(**kwargs)
         self._defaults = dict({
             'base_lr': base_lr,
             'beta1': beta1,

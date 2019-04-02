@@ -1033,7 +1033,6 @@ void MixedPrecisionUpdate(
 
 template <typename T, class Context>
 void BiasAdd(
-    const int               count,
     const int               outer_dim,
     const int               dim,
     const int               inner_dim,

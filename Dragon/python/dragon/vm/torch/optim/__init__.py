@@ -9,7 +9,11 @@
 #
 # ------------------------------------------------------------
 
-from .adam import Adam
-from .sgd import SGD
-from .rmsprop import RMSprop
-from .optimizer import Optimizer
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+from dragon.vm.torch.optim.adam import Adam
+from dragon.vm.torch.optim.sgd import SGD
+from dragon.vm.torch.optim.rmsprop import RMSprop
+from dragon.vm.torch.optim.optimizer import Optimizer

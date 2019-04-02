@@ -14,13 +14,13 @@ void CuDNNTanhOp<Context>::RunWithType() {
 #if CUDNN_VERSION_MIN(5, 0, 0)
     CUDNN_CHECK(cudnnActivationForward(
         ctx()->cudnn_handle(), act_desc,
-            CUDNNType<T>::one, input_desc, Xdata,
-                CUDNNType<T>::zero, output_desc, Ydata));
+        CUDNNType<T>::one, input_desc, Xdata,
+        CUDNNType<T>::zero, output_desc, Ydata));
 #else
     CUDNN_CHECK(cudnnActivationForward_v4(
         ctx()->cudnn_handle(), act_desc,
-            CUDNNType<Dtype>::one, input_desc, Xdata,
-                CUDNNType<Dtype>::zero, output_desc, Ydata));
+        CUDNNType<Dtype>::one, input_desc, Xdata,
+        CUDNNType<Dtype>::zero, output_desc, Ydata));
 #endif
 }
 
@@ -46,15 +46,15 @@ void CuDNNTanhGradientOp<Context>::RunWithType() {
 #if CUDNN_VERSION_MIN(5, 0, 0)
     CUDNN_CHECK(cudnnActivationBackward(
         ctx()->cudnn_handle(), act_desc,
-            CUDNNType<T>::one, input_desc, Ydata,
-                input_desc, dYdata, output_desc, Ydata,
-                    CUDNNType<T>::zero, output_desc, dXdata));
+        CUDNNType<T>::one, input_desc, Ydata,
+        input_desc, dYdata, output_desc, Ydata,
+        CUDNNType<T>::zero, output_desc, dXdata));
 #else
     CUDNN_CHECK(cudnnActivationBackward_v4(
         ctx()->cudnn_handle(), act_desc,
-            CUDNNType<T>::one, input_desc, Ydata, 
-                input_desc, dYdata, output_desc, Ydata,
-                    CUDNNType<T>::zero, output_desc, dXdata));
+        CUDNNType<T>::one, input_desc, Ydata,
+        input_desc, dYdata, output_desc, Ydata,
+        CUDNNType<T>::zero, output_desc, dXdata));
 #endif
 }
 

@@ -15,6 +15,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from dragon import config as _cfg
+
 
 def ShareGrads(enabled=True):
     """Enable gradients sharing globally.
@@ -34,8 +36,8 @@ def ShareGrads(enabled=True):
     >>> opt.ShareGrads()
 
     """
-    from dragon.config import option
-    option['share_grads'] = enabled
+    options = _cfg.GetGlobalOptions()
+    options['share_grads'] = enabled
 
 
 def IsGradsShared():
@@ -47,8 +49,8 @@ def IsGradsShared():
         ``True`` if sharing grads else ``False``.
 
     """
-    from dragon.config import option
-    return option['share_grads']
+    options = _cfg.GetGlobalOptions()
+    return options['share_grads']
 
 
 def Drop(op_func, *args, **kwargs):

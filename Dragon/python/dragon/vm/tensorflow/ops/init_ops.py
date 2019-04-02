@@ -13,8 +13,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon
-
+from dragon import ops as _ops
 from dragon.vm.tensorflow.framework import dtypes
 
 
@@ -59,7 +58,7 @@ class Zeros(Initializer):
 
     def __call__(self, shape, dtype=None, **kwargs):
         if dtype is None: dtype = self.dtype
-        return dragon.ops.Fill(shape, value=0, dtype=dtype.name)
+        return _ops.Fill(shape, value=0, dtype=dtype.name)
 
 
 class Ones(Initializer):
@@ -83,7 +82,7 @@ class Ones(Initializer):
 
     def __call__(self, shape, dtype=None, **kwargs):
         if dtype is None: dtype = self.dtype
-        return dragon.ops.Fill(shape, value=1, dtype=dtype.name)
+        return _ops.Fill(shape, value=1, dtype=dtype.name)
 
 
 class Constant(Initializer):
@@ -93,7 +92,7 @@ class Constant(Initializer):
 
     def __call__(self, shape, dtype=None, **kwargs):
         if dtype is None: dtype = self.dtype
-        return dragon.ops.Fill(shape, value=self.value, dtype=dtype.name)
+        return _ops.Fill(shape, value=self.value, dtype=dtype.name)
 
 
 class RandomUniform(Initializer):
@@ -104,8 +103,12 @@ class RandomUniform(Initializer):
 
     def __call__(self, shape, dtype=None, **kwargs):
         if dtype is None: dtype = self.dtype
-        return dragon.ops.RandomUniform(
-            shape, self.minval, self.maxval, dtype=dtype.name)
+        return _ops.RandomUniform(
+            shape=shape,
+            low=self.minval,
+            high=self.maxval,
+            dtype=dtype.name,
+        )
 
 
 class RandomNormal(Initializer):
@@ -117,8 +120,12 @@ class RandomNormal(Initializer):
 
     def __call__(self, shape, dtype=None, **kwargs):
         if dtype is None: dtype = self.dtype
-        return dragon.ops.RandomNormal(
-            shape, self.mean, self.stddev, dtype=dtype.name)
+        return _ops.RandomNormal(
+            shape=shape,
+            mean=self.mean,
+            std=self.stddev,
+            dtype=dtype.name,
+        )
 
 
 class TruncatedNormal(Initializer):
@@ -130,15 +137,21 @@ class TruncatedNormal(Initializer):
 
     def __call__(self, shape, dtype=None, **kwargs):
         if dtype is None: dtype = self.dtype
-        return dragon.ops.TruncatedNormal(
-            shape, self.mean, self.stddev, dtype=dtype.name)
+        return _ops.TruncatedNormal(
+            shape=shape,
+            mean=self.mean,
+            std=self.stddev,
+            dtype=dtype.name,
+        )
 
 
 class VarianceScaling(Initializer):
-    def __init__(self,
-        scale=1.0, mode="fan_in",
-            distribution="normal",
-                 dtype=dtypes.float32
+    def __init__(
+        self,
+        scale=1.0,
+        mode="fan_in",
+        distribution="normal",
+        dtype=dtypes.float32,
     ):
         if scale <= 0.:
             raise ValueError("`scale` must be positive float.")
@@ -159,13 +172,40 @@ class VarianceScaling(Initializer):
     def __call__(self, shape, dtype=None, **kwargs):
         if dtype is None: dtype = self.dtype
         if self.distribution == "normal":
-            return dragon.ops.GlorotNormal(shape=shape, scale=self.scale * 2.,
-                mode=self.mode, dtype=dtype.name)
+            return _ops.GlorotNormal(
+                shape=shape,
+                scale=self.scale * 2.,
+                mode=self.mode,
+                dtype=dtype.name,
+            )
         else:
-            return dragon.ops.GlorotUniform(shape=shape, scale=self.scale * 3.,
-                mode=self.mode, dtype=dtype.name)
+            return _ops.GlorotUniform(
+                shape=shape,
+                scale=self.scale * 3.,
+                mode=self.mode,
+                dtype=dtype.name,
+            )
 
 
+def glorot_uniform_initializer(dtype=dtypes.float32):
+    return variance_scaling_initializer(
+        scale=1.0,
+        mode='fan_avg',
+        distribution='uniform',
+        dtype=dtype,
+    )
+
+
+def glorot_normal_initializer(dtype=dtypes.float32):
+    return variance_scaling_initializer(
+        scale=1.0,
+        mode='fan_avg',
+        distribution='normal',
+        dtype=dtype,
+    )
+
+
+# Aliases
 zeros_initializer = Zeros
 ones_initializer = Ones
 constant_initializer = Constant
@@ -173,13 +213,3 @@ random_uniform_initializer = RandomUniform
 random_normal_initializer = RandomNormal
 truncated_normal_initializer = TruncatedNormal
 variance_scaling_initializer = VarianceScaling
-
-
-def glorot_uniform_initializer(dtype=dtypes.float32):
-    return variance_scaling_initializer(scale=1.0,
-        mode='fan_avg', distribution='uniform', dtype=dtype)
-
-
-def glorot_normal_initializer(dtype=dtypes.float32):
-    return variance_scaling_initializer(scale=1.0,
-        mode='fan_avg', distribution='normal', dtype=dtype)

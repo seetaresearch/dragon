@@ -18,7 +18,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os, sys, io
-from dragon.core.tensor_utils import ToPyArray
+from dragon.core.tensor_utils import ToArray as _to_array
 
 if sys.version_info[0] == 2:
     import cPickle as pickle
@@ -67,7 +67,7 @@ def _save_dict(obj):
     py_dict = type(obj)()
     for k, v in obj.items():
         if isinstance(v, dict): py_dict[k] = _save_dict(v)
-        elif hasattr(v, 'name'): py_dict[k] = ToPyArray(v, True)
+        elif hasattr(v, 'name'): py_dict[k] = _to_array(v, True)
         else: py_dict[k] = v
     return py_dict
 
@@ -79,7 +79,7 @@ def _save(obj, f, pickle_module, pickle_protocol):
     py_dict = type(obj)()
     for k, v in obj.items():
         if isinstance(v, dict): py_dict[k] = _save_dict(v)
-        elif hasattr(v, 'name'): py_dict[k] = ToPyArray(v, True)
+        elif hasattr(v, 'name'): py_dict[k] = _to_array(v, True)
         else: py_dict[k] = v
     pickle_module.dump(py_dict, f, pickle_protocol)
 

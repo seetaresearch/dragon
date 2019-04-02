@@ -9,21 +9,13 @@
 #
 # ------------------------------------------------------------
 
-import numpy as np
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-from dragon.core.tensor import Tensor
-import dragon.ops as ops
-
-from ..configdefaults import config
-
-_DATA_TYPES = {
-    'int32': np.int32,
-    'int64': np.int64,
-    'uint8': np.uint8,
-    'float16': np.float16,
-    'float32': np.float32,
-    'float64': np.float64,
-}
+from dragon import ops as _ops
+from dragon.core.tensor import Tensor as _Tensor
+from dragon.vm.theano.configdefaults import config as _cfg
 
 
 def scalar(name=None, dtype=None):
@@ -44,8 +36,8 @@ def scalar(name=None, dtype=None):
         The scalar variable.
 
     """
-    if dtype is None: dtype = config.floatX
-    return Tensor(name=name, dtype=dtype)
+    if dtype is None: dtype = _cfg.floatX
+    return _Tensor(name=name, dtype=dtype)
 
 
 def iscalar(name=None):
@@ -65,43 +57,10 @@ def iscalar(name=None):
     return scalar(name, 'int32')
 
 
-def constant(x, name=None, shape=None, dtype=None):
-    """Initialize a tensor with constant value.
-
-    If dtype is ``None``, use ``config.floatX``.
-
-    Parameters
-    ----------
-    x : basic numerical type
-        The constant value.
-    name : str, optional
-        The name of Tensor.
-    shape : sequence of int, optional
-        The shape of Tensor.
-    dtype : str, optional
-        The data type of Tensor.
-
-    Returns
-    -------
-    Tensor
-        The initialized tensor.
-
-    """
-    if dtype is None: dtype = config.floatX
-    else:
-        if dtype not in _DATA_TYPES.keys():
-            raise TypeError("Unsupported data type: {}".format(dtype))
-    if shape is None: shape = ()
-    np_value = x * np.ones(shape, dtype=_DATA_TYPES[dtype])
-    output = Tensor(name=name, shape=shape, dtype=dtype)
-    output.set_value(np_value)
-    return output
-
-
 def zeros(shape, dtype=None):
     """Initialize a tensor with zeros.
 
-    If dtype is ``None``, use ``config.floatX``.
+    If dtype is *None*, use *config.floatX*.
 
     Parameters
     ----------
@@ -116,14 +75,8 @@ def zeros(shape, dtype=None):
         The initialized tensor.
 
     """
-    if dtype is None: dtype = config.floatX
-    else:
-        if dtype not in _DATA_TYPES.keys():
-            raise TypeError("Unsupported data type: {}".format(dtype))
-    np_value = np.zeros(shape, dtype=_DATA_TYPES[dtype])
-    output = Tensor(shape=shape, dtype=dtype)
-    output.set_value(np_value)
-    return output
+    if dtype is None: dtype = _cfg.floatX
+    return _ops.Fill(shape=shape, value=0, dtype=dtype)
 
 
 def zeros_like(model, dtype=None, **kwargs):
@@ -131,13 +84,13 @@ def zeros_like(model, dtype=None, **kwargs):
 
     The values can be access only after the run of graph.
 
-    If dtype is ``None``, use ``config.floatX``.
+    If dtype is *None*, use *config.floatX*.
 
     Parameters
     ----------
     model : Tensor
         The tensor to refer shape.
-    dtype : str
+    dtype : str, optional
         The data type of Tensor.
 
     Returns
@@ -146,16 +99,13 @@ def zeros_like(model, dtype=None, **kwargs):
         The initialized tensor.
 
     """
-    if dtype is None: dtype = config.floatX
-    else:
-        raise TypeError("Unsupported data type: {}".format(dtype))
-    return ops.Fill(shape=ops.Shape(model), value=0)
+    return zeros(shape=model.shape, dtype=dtype)
 
 
 def ones(shape, dtype=None):
     """Initialize a tensor with ones.
 
-    If dtype is ``None``, use ``config.floatX``.
+    If dtype is *None*, use *config.floatX*.
 
     Parameters
     ----------
@@ -170,14 +120,8 @@ def ones(shape, dtype=None):
         The initialized tensor.
 
     """
-    if dtype is None: dtype = config.floatX
-    else:
-        if dtype not in _DATA_TYPES.keys():
-            raise TypeError("Unsupported data type: {}".format(dtype))
-    np_value = np.ones(shape, dtype=_DATA_TYPES[dtype])
-    output = Tensor(shape=shape, dtype=dtype)
-    output.set_value(np_value)
-    return output
+    if dtype is None: dtype = _cfg.floatX
+    return _ops.Fill(shape=shape, value=1, dtype=dtype)
 
 
 def ones_like(model, dtype=None, **kwargs):
@@ -185,7 +129,7 @@ def ones_like(model, dtype=None, **kwargs):
 
     The values can be access only after the run of graph.
 
-    If dtype is ``None``, use ``config.floatX``.
+    If dtype is *None*, use *config.floatX*.
 
     Parameters
     ----------
@@ -200,16 +144,13 @@ def ones_like(model, dtype=None, **kwargs):
         The initialized tensor.
 
     """
-    if dtype is None: dtype = config.floatX
-    else:
-        raise TypeError("Unsupported data type: {}".format(dtype))
-    return ops.Fill(shape=ops.Shape(model), value=1)
+    return ones(shape=model.shape, dtype=dtype)
 
 
 def cast(x, dtype):
     """Cast input to the tensor of specific data type.
 
-    If dtype is ``None``, use ``config.floatX``.
+    If dtype is *None*, use *config.floatX*.
 
     Parameters
     ----------
@@ -224,8 +165,8 @@ def cast(x, dtype):
         The output tensor.
 
     """
-    if dtype is None: dtype = config.floatX
-    raise NotImplementedError()
+    if dtype is None: dtype = _cfg.floatX
+    return x.astype(dtype)
 
 
 def dot(a, b):
@@ -246,7 +187,7 @@ def dot(a, b):
         The output tensor.
 
     """
-    return ops.Dot([a, b])
+    return _ops.Dot([a, b])
 
 
 def batched_tensordot(x, y, axes=2):
@@ -269,7 +210,7 @@ def transpose(x, axes=None):
         The output tensor.
 
     """
-    return ops.Transpose(x, perm=axes)
+    return _ops.Transpose(x, perm=axes)
 
 
 def max(x, axis=None, keepdims=False):
@@ -291,7 +232,7 @@ def max(x, axis=None, keepdims=False):
 
     """
     if axis is None: axis = -1
-    return ops.Max(x, axis=axis, keep_dims=keepdims)
+    return _ops.Max(x, axis=axis, keep_dims=keepdims)
 
 
 def min(x, axis=None, keepdims=False):
@@ -313,7 +254,7 @@ def min(x, axis=None, keepdims=False):
 
     """
     if axis is None: axis = -1
-    return ops.Min(x, axis=axis, keep_dims=keepdims)
+    return _ops.Min(x, axis=axis, keep_dims=keepdims)
 
 
 def sum(input, axis=None, keepdims=False, **kwargs):
@@ -335,7 +276,7 @@ def sum(input, axis=None, keepdims=False, **kwargs):
 
     """
     if axis is None: axis = -1
-    return ops.Sum(input, axis=axis, keep_dims=keepdims)
+    return _ops.Sum(input, axis=axis, keep_dims=keepdims)
 
 
 def mean(input, axis=None, keepdims=False, **kwargs):
@@ -357,7 +298,7 @@ def mean(input, axis=None, keepdims=False, **kwargs):
 
     """
     if axis is None: axis = -1
-    return ops.Mean(input, axis=axis, keep_dims=keepdims)
+    return _ops.Mean(input, axis=axis, keep_dims=keepdims)
 
 
 def prod(input, axis=None, keepdims=False, **kwargs):
@@ -401,7 +342,7 @@ def argmax(x, axis=None, keepdims=False):
 
     """
     if axis is None: axis = -1
-    return ops.ArgMax(x, axis=axis, keep_dims=keepdims)
+    return _ops.ArgMax(x, axis=axis, keep_dims=keepdims)
 
 
 def argmin(x, axis=None, keepdims=False):
@@ -423,7 +364,7 @@ def argmin(x, axis=None, keepdims=False):
 
     """
     if axis is None: axis = -1
-    return ops.ArgMin(x, axis=axis, keep_dims=keepdims)
+    return _ops.ArgMin(x, axis=axis, keep_dims=keepdims)
 
 
 def square(a):
@@ -440,7 +381,7 @@ def square(a):
         The square result.
 
     """
-    return ops.Square(a)
+    return _ops.Square(a)
 
 
 def sqrt(a):
@@ -457,7 +398,7 @@ def sqrt(a):
         The sqrt result.
 
     """
-    return ops.Sqrt(a)
+    return _ops.Sqrt(a)
 
 
 def pow(a, power):
@@ -474,7 +415,7 @@ def pow(a, power):
         The pow result.
 
     """
-    return ops.Pow(a, power)
+    return _ops.Pow(a, power)
 
 
 def exp(a):
@@ -491,7 +432,7 @@ def exp(a):
         The exponential result.
 
     """
-    return ops.Exp(a)
+    return _ops.Exp(a)
 
 
 def log(a):
@@ -508,7 +449,7 @@ def log(a):
         The logarithm result.
 
     """
-    return ops.Log(a)
+    return _ops.Log(a)
 
 
 def clip(x, min=None, max=None):
@@ -529,7 +470,7 @@ def clip(x, min=None, max=None):
         The clip result.
 
     """
-    return ops.Clip(x, low=min, high=max)
+    return _ops.Clip(x, low=min, high=max)
 
 
 def join(axis, *tensors_list):
@@ -548,7 +489,7 @@ def join(axis, *tensors_list):
         The output tensor.
 
     """
-    return ops.Concat(list(tensors_list), axis=axis)
+    return _ops.Concat(list(tensors_list), axis=axis)
 
 
 def stack(*tensors, **kwargs):
@@ -573,7 +514,7 @@ def stack(*tensors, **kwargs):
     """
     if not 'axis' in kwargs: axis = 0
     else: axis = kwargs['axis']
-    return ops.Stack(list(tensors), axis=axis)
+    return _ops.Stack(list(tensors), axis=axis)
 
 
 def concatenate(tensor_list, axis=0):
@@ -594,7 +535,7 @@ def concatenate(tensor_list, axis=0):
         The output tensor.
 
     """
-    return ops.Concat(tensor_list, axis=axis)
+    return _ops.Concat(tensor_list, axis=axis)
 
 
 def reshape(x, newshape, **kwargs):
@@ -613,7 +554,7 @@ def reshape(x, newshape, **kwargs):
         The output tensor.
 
     """
-    return ops.Reshape(x, shape=newshape)
+    return _ops.Reshape(x, shape=newshape)
 
 
 def flatten(x, outdim=1):
@@ -632,7 +573,7 @@ def flatten(x, outdim=1):
         The output tensor.
 
     """
-    return ops.Flatten(x, keep_axes=outdim)
+    return _ops.Flatten(x, keep_axes=outdim)
 
 
 def repeat(x, repeats, axis=None):
@@ -654,7 +595,7 @@ def repeat(x, repeats, axis=None):
 
     """
     if axis is None: axis = -1
-    return ops.Repeat(x, axis=axis, repeats=repeats)
+    return _ops.Repeat(x, axis=axis, repeats=repeats)
 
 
 def tile(x, reps, **kwargs):
@@ -673,7 +614,7 @@ def tile(x, reps, **kwargs):
         The output tensor.
 
     """
-    return ops.Tile(x, multiples=reps)
+    return _ops.Tile(x, multiples=reps)
 
 
 def arange(start, stop=None, step=1, dtype=None):
@@ -698,4 +639,4 @@ def arange(start, stop=None, step=1, dtype=None):
         The vector.
 
     """
-    return ops.Arange(start=start, stop=stop, step=1, dtype=dtype.upper())
+    return _ops.Arange(start=start, stop=stop, step=step, dtype=dtype)

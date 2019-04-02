@@ -17,16 +17,20 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import re
-import uuid
-import threading
-import dragon
+from dragon.core import tls as _tls
+from dragon.core import scope as _scope
+from dragon.core import workspace as _workspace
+from dragon.core.tensor import Tensor as _Tensor
 
 from dragon.vm.tensorflow.framework import constant_op
-from dragon.vm.tensorflow.util import tf_contextlib
 
 
-def convert_to_tensor(value, dtype=None, name=None, preferred_dtype=None):
+def convert_to_tensor(
+    value,
+    dtype=None,
+    name=None,
+    preferred_dtype=None,
+):
     """Converts the given value to a Tensor.
 
     Parameters
@@ -46,71 +50,8 @@ def convert_to_tensor(value, dtype=None, name=None, preferred_dtype=None):
         The output tensor.
 
     """
-    if isinstance(value, dragon.Tensor): return value
+    if isinstance(value, _Tensor): return value
     return constant_op.constant(value, dtype=dtype, name=name)
-
-
-class Graph(object):
-    """A wrapper to connect ``Function`` to ``Workspace``.
-
-    Note that official TensorFlow trace the expressions explicitly
-    in this class, while we have done in the virtual stack.
-
-    Besides, organizing a ``Flow``, i.e., expressions with specified
-    outputs should also be done here.
-
-    """
-
-    def __init__(self):
-        self._collections = {}
-        self._workspace = 'tf/graph/' + str(uuid.uuid4())
-
-    def get_collection_ref(self, name):
-        coll_list = self._collections.get(name, None)
-        if coll_list is None:
-            coll_list = []
-            self._collections[name] = coll_list
-        return coll_list
-
-    def get_collection(self, name, scope=None):
-        coll_list = self._collections.get(name, None)
-        if coll_list is None:
-            return []
-        if scope is None:
-            return list(coll_list)
-        else:
-            filter_coll_list = []
-            regex = re.compile(scope)
-            for item in coll_list:
-                if hasattr(item, "name") and regex.match(item.name):
-                    filter_coll_list.append(item)
-            return filter_coll_list
-
-    def add_to_collection(self, name, value):
-        if name not in self._collections:
-            self._collections[name] = [value]
-        else:
-            self._collections[name].append(value)
-
-    def add_to_collections(self, names, value):
-        for name in names:
-            self.add_to_collection(name, value)
-
-    def device(self, device_name_or_function):
-        if not isinstance(device_name_or_function, str):
-            raise TypeError('The device function should be a str.')
-        device_and_id = device_name_or_function.split('/')[1]
-        device, id = device_and_id.split(':')
-        if device not in ['cpu', 'gpu']:
-            raise ValueError('The device should either be cpu or gpu.')
-        try:
-            id = int(id)
-        except Exception as e:
-            raise ValueError('The device id should be a integer.')
-        return dragon.device_scope(device, device_id=id)
-
-    def as_default(self):
-        return _default_graph_stack.get_controller(self)
 
 
 class GraphKeys(object):
@@ -202,112 +143,15 @@ def add_to_collections(names, value):
 def name_scope(name, default_name=None, values=None):
     name = default_name if name is None else name
     name = '' if name is None else name
-    return dragon.name_scope(name)
-
-
-##############################################
-#                                            #
-#              Default Stack                 #
-#                                            #
-##############################################
-
-
-class _DefaultStack(threading.local):
-    """A thread-local stack of objects for providing implicit defaults."""
-
-    def __init__(self):
-        super(_DefaultStack, self).__init__()
-        self._enforce_nesting = True
-        self.stack = []
-
-    def get_default(self):
-        return self.stack[-1] if len(self.stack) >= 1 else None
-
-    def reset(self):
-        self.stack = []
-
-    def is_cleared(self):
-        return not self.stack
-
-    @property
-    def enforce_nesting(self):
-        return self._enforce_nesting
-
-    @enforce_nesting.setter
-    def enforce_nesting(self, value):
-        self._enforce_nesting = value
-
-    @tf_contextlib.contextmanager
-    def get_controller(self, default):
-        """A context manager for manipulating a default stack."""
-        self.stack.append(default)
-        try:
-            yield default
-        finally:
-            # stack may be empty if reset() was called
-            if self.stack:
-                if self._enforce_nesting:
-                    if self.stack[-1] is not default:
-                        raise AssertionError(
-                            "Nesting violated for default stack of %s objects" %
-                            type(default))
-                    self.stack.pop()
-                else:
-                    self.stack.remove(default)
-
-
-class _DefaultGraphStack(_DefaultStack):
-    """A thread-local stack of objects for providing an implicit default graph."""
-
-    def __init__(self):
-        super(_DefaultGraphStack, self).__init__()
-        self._global_default_graph = None
-
-    def get_default(self):
-        """Override that returns a global default if the stack is empty."""
-        ret = super(_DefaultGraphStack, self).get_default()
-        if ret is None:
-            ret = self._GetGlobalDefaultGraph()
-        return ret
-
-    def _GetGlobalDefaultGraph(self):
-        if self._global_default_graph is None:
-            # TODO(mrry): Perhaps log that the default graph is being used, or set
-            #   provide some other feedback to prevent confusion when a mixture of
-            #   the global default graph and an explicit graph are combined in the
-            #   same process.
-            self._global_default_graph = Graph()
-            # Rewritten the random workspace name
-            self._global_default_graph._workspace = 'default'
-        return self._global_default_graph
-
-    def reset(self):
-        super(_DefaultGraphStack, self).reset()
-        # We should call dragon api to reset the workspace
-        dragon.workspace.ResetWorkspace(self._global_default_graph._workspace)
-        self._global_default_graph = None
-
-    @tf_contextlib.contextmanager
-    def get_controller(self, default):
-        with super(_DefaultGraphStack, self).get_controller(default) as g:
-            with dragon.ws_scope(g._workspace):
-                yield g
-
-
-_default_graph_stack = _DefaultGraphStack()
-_default_session_stack = _DefaultStack()
+    return _scope.name_scope(name)
 
 
 def get_default_graph():
-    return _default_graph_stack.get_default()
+    return _workspace.get_default_workspace()
 
 
 def reset_default_graph():
-    if not _default_graph_stack.is_cleared():
-        raise AssertionError("Do not use tf.reset_default_graph() to clear "
-                             "nested graphs. If you need a cleared graph, "
-                             "exit the nesting and create a new graph.")
-    _default_graph_stack.reset()
+    _workspace.reset_default_workspace()
 
 
 def default_session(session):
@@ -319,7 +163,17 @@ def get_default_session():
 
 
 def device(device_name_or_function):
-    return get_default_graph().device(device_name_or_function)
+    if not isinstance(device_name_or_function, str):
+        raise TypeError('The device function should be a str.')
+    device_and_id = device_name_or_function.split('/')[1]
+    device, id = device_and_id.split(':')
+    if device not in ['cpu', 'gpu']:
+        raise ValueError('The device should either be cpu or gpu.')
+    try:
+        id = int(id)
+    except Exception as _:
+        raise ValueError('The device id should be a integer.')
+    return _scope.device_scope(device, device_id=id)
 
 
 def _eval_using_default_session(tensors, feed_dict, session=None):
@@ -333,6 +187,10 @@ def _eval_using_default_session(tensors, feed_dict, session=None):
     return session.run(tensors, feed_dict)
 
 
+_default_session_stack = _tls.Stack()
+
+
+# The Monkey Patching
 # Require "import dragon.vm.tensorflow"
-dragon.Tensor.eval = lambda self, feed_dict=None, session=None : \
+_Tensor.eval = lambda self, feed_dict=None, session=None : \
     _eval_using_default_session(self, feed_dict, session)

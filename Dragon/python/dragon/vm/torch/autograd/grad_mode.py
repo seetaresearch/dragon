@@ -17,16 +17,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-
-__all__ = [
-    'is_grad_enabled',
-    'no_grad',
-    'enable_grad',
-    'set_grad_enabled',
-]
+from dragon.core import tls as _tls
 
 
-grad_option = {'enable_grad': True}
+def _set_grad_enabled(enabled=True):
+    """Set the status of grad option."""
+    global _GLOBAL_GRAD_OPTION
+    _GLOBAL_GRAD_OPTION.enabled = enabled
 
 
 def is_grad_enabled():
@@ -38,14 +35,7 @@ def is_grad_enabled():
         ``True`` if enabling auto-grad.
 
     """
-    global grad_option
-    return grad_option['enable_grad']
-
-
-def _set_grad_enabled(enabled=True):
-    global grad_option
-    grad_option['enable_grad'] = enabled
-
+    return _GLOBAL_GRAD_OPTION.enabled
 
 
 class no_grad(object):
@@ -97,3 +87,6 @@ class set_grad_enabled(object):
     def __exit__(self, *args):
         _set_grad_enabled(self.prev)
         return False
+
+
+_GLOBAL_GRAD_OPTION = _tls.Constant(enabled=True)

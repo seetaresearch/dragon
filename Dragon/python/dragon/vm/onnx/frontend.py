@@ -17,17 +17,18 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import numpy
 import itertools
-import numpy as np
 from collections import defaultdict
 
-from onnx import (checker, mapping, numpy_helper, GraphProto, OperatorSetIdProto)
+from onnx import checker, mapping, numpy_helper, GraphProto, OperatorSetIdProto
 from onnx.helper import make_tensor_value_info, make_model, printable_graph
 
-from dragon.vm.onnx.helper import \
-    (extract_initializer, extract_leaf_tensors,
-     native_run_graph, fetch_initializer,)
-
+from dragon.core import workspace as _workspace
+from dragon.vm.onnx.helper import native_run_graph
+from dragon.vm.onnx.helper import fetch_initializer
+from dragon.vm.onnx.helper import extract_initializer
+from dragon.vm.onnx.helper import extract_leaf_tensors
 from dragon.vm.onnx.nodes.factory import get_nodes_def
 
 
@@ -104,15 +105,22 @@ class DragonFrontend(object):
         if run_native_graph and not enforce_no_running:
             inputs = {}
             for name, (elem_type, shape) in value_info.items():
-                inputs[name] = np.random.randn(*shape).astype(
+                inputs[name] = numpy.random.randn(*shape).astype(
                     mapping.TENSOR_TYPE_TO_NP_TYPE[elem_type])
+
             ws, outputs, initializer = native_run_graph(
                 graph_def, inputs, initializer, init_func)
+
+            for name in graph_def.output:
+                output = outputs[name]
+                elem_type = mapping.NP_TYPE_TO_TENSOR_TYPE[output.dtype]
+                shape = output.shape
+                value_info[name] = (elem_type, shape)
 
         if enforce_no_running:
             # In some cases(e.g. PyTorch), we had ran the graph
             # outputs had been in ``value_info`` already
-            import dragon.core.workspace as ws
+            ws = _workspace.get_default_workspace()
             initializer = fetch_initializer(initializer)
 
         # Prepare to make the graph

@@ -37,19 +37,20 @@ void L2NormOp<Context>::RunWithType() {
         math::Square(buffer.count(), Xdata, Bdata, ctx());
         // Compute T1 = \sum_{i} x_{i,j}^{2}
         math::Gemv(
-            CblasTrans, dim, inner_dim,
-                mode == "MEAN" ? 1.f / dim : 1.f, Bdata, Dmult,
-                    1.f, Ndata, ctx());
+            CblasTrans,
+            dim, inner_dim,
+            mode == "MEAN" ? 1.f / dim : 1.f, Bdata, Dmult,
+            1.f, Ndata, ctx());
         // Compute T2 = \sqrt{T1}
         math::Sqrt(inner_dim, Ndata, Ndata, ctx());
         // Compute T3 = x / [(T2)]_{dim}
         math::Gemm(
-            CblasNoTrans, CblasNoTrans,
-                dim, inner_dim, 1,
-                    1.f, Dmult, Ndata,
-                        0.f, Bdata, ctx());
-        math::Div(buffer.count(),
-            Xdata, Bdata, Ydata, ctx());
+            CblasNoTrans,
+            CblasNoTrans,
+            dim, inner_dim, 1,
+            1.f, Dmult, Ndata,
+            0.f, Bdata, ctx());
+        math::Div(buffer.count(), Xdata, Bdata, Ydata, ctx());
         Ndata += inner_dim;
         Xdata += buffer.count();
         Ydata += buffer.count();
@@ -101,31 +102,35 @@ void L2NormGradientOp<Context>::RunWithType() {
         // Compute \sum_{i} x_{i, j}dy_{i, j}
         math::Mul(buffer.count(), Xdata, dYdata, Bdata, ctx());
         math::Gemv(
-            CblasTrans, dim, inner_dim,
-                mode == "MEAN" ? 1.f / dim : 1.f, Bdata, Dmult,
-                    0.f, BInnerdata, ctx());
+            CblasTrans,
+            dim, inner_dim,
+            mode == "MEAN" ? 1.f / dim : 1.f, Bdata, Dmult,
+            0.f, BInnerdata, ctx());
         // Compute T1 = x[(\sum_{i} x_{i, j}dy_{i, j})]_{dim}
         math::Gemm(
-            CblasNoTrans, CblasNoTrans,
-                dim, inner_dim, 1,
-                    1.f, Dmult, BInnerdata,
-                        0.f, Bdata, ctx());
+            CblasNoTrans,
+            CblasNoTrans,
+            dim, inner_dim, 1,
+            1.f, Dmult, BInnerdata,
+            0.f, Bdata, ctx());
         math::Mul(buffer.count(), Xdata, Bdata, dXdata, ctx());
         // Compute T2 = T1 / Normalizer^{2}
         math::Square(inner_dim, Ndata, BInnerdata, ctx());
         math::Gemm(
-            CblasNoTrans, CblasNoTrans,
-                dim, inner_dim, 1,
-                    1.f, Dmult, BInnerdata,
-                        0.f, Bdata, ctx());
+            CblasNoTrans,
+            CblasNoTrans,
+            dim, inner_dim, 1,
+            1.f, Dmult, BInnerdata,
+            0.f, Bdata, ctx());
         math::Div(buffer.count(), dXdata, Bdata, dXdata, ctx());
         // Compute T3 = (dy - T2) / Normalizer
         math::Sub(buffer.count(), dYdata, dXdata, dXdata, ctx());
         math::Gemm(
-            CblasNoTrans, CblasNoTrans,
-                dim, inner_dim, 1,
-                    1.f, Dmult, Ndata,
-                        0.f, Bdata, ctx());
+            CblasNoTrans,
+            CblasNoTrans,
+            dim, inner_dim, 1,
+            1.f, Dmult, Ndata,
+            0.f, Bdata, ctx());
         math::Div(buffer.count(), dXdata, Bdata, dXdata, ctx());
         Ndata += inner_dim;
         Xdata += buffer.count();

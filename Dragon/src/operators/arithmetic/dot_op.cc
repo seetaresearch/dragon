@@ -65,8 +65,10 @@ void DotOp<Context>::GemvRunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
     math::Gemv(
-        transA ? CblasTrans : CblasNoTrans, M1, N1,
-            1.f, X1data, X2data, 0.f, Ydata, ctx());
+        transA ? CblasTrans : CblasNoTrans,
+        M1, N1,
+        1.f, X1data, X2data,
+        0.f, Ydata, ctx());
 }
 
 template <class Context>
@@ -149,16 +151,18 @@ void DotGradientOp<Context>::GemmRunWithType() {
         auto* dX1data = Output(0)->template mutable_data<T, Context>();
         if (transA) {
             math::Gemm(
-                transB ? CblasTrans : CblasNoTrans, CblasTrans,
-                    K1, M, N,
-                        1.f, X2data, dYdata,
-                            0.f, dX1data, ctx());
+                transB ? CblasTrans : CblasNoTrans,
+                CblasTrans,
+                K1, M, N,
+                1.f, X2data, dYdata,
+                0.f, dX1data, ctx());
         } else {
             math::Gemm(
-                CblasNoTrans, transB ? CblasNoTrans : CblasTrans,
-                    M, K1, N,
-                        1.f, dYdata, X2data,
-                            0.f, dX1data, ctx());
+                CblasNoTrans,
+                transB ? CblasNoTrans : CblasTrans,
+                M, K1, N,
+                1.f, dYdata, X2data,
+                0.f, dX1data, ctx());
         }
     }
 
@@ -166,16 +170,18 @@ void DotGradientOp<Context>::GemmRunWithType() {
         auto* dX2data = Output(1)->template mutable_data<T, Context>();
         if (transB) {
            math::Gemm(
-                CblasTrans, transA ? CblasTrans : CblasNoTrans,
-                    N, K1, M,
-                        1.f, dYdata, X1data,
-                            0.f, dX2data, ctx());
+               CblasTrans,
+               transA ? CblasTrans : CblasNoTrans,
+               N, K1, M,
+               1.f, dYdata, X1data,
+               0.f, dX2data, ctx());
         } else {
             math::Gemm(
-                transA ? CblasNoTrans : CblasTrans, CblasNoTrans,
-                    K1, N, M,
-                        1.f, X1data, dYdata,
-                            0.f, dX2data, ctx());
+                transA ? CblasNoTrans : CblasTrans,
+                CblasNoTrans,
+                K1, N, M,
+                1.f, X1data, dYdata,
+                0.f, dX2data, ctx());
         }
     }
 }
@@ -197,16 +203,17 @@ void DotGradientOp<Context>::GemvRunWithType() {
     auto* dX2data = Output(1)->template mutable_data<T, Context>();
 
     math::Gemm(
-        CblasNoTrans, CblasNoTrans,
-            M, N, 1,
-                1.f, dYdata, X2data,
-                    0.f, dX1data, ctx());
+        CblasNoTrans,
+        CblasNoTrans,
+        M, N, 1,
+        1.f, dYdata, X2data,
+        0.f, dX1data, ctx());
 
     math::Gemv(
         transA ? CblasNoTrans : CblasTrans,
-            M1, N1,
-                1.f, X1data, dYdata,
-                    0.f, dX2data, ctx());
+        M1, N1,
+        1.f, X1data, dYdata,
+        0.f, dX2data, ctx());
 }
 
 template <class Context>

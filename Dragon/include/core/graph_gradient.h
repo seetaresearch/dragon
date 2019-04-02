@@ -31,7 +31,7 @@ class GraphGradientMaker {
         const GraphDef&              forward_def,
         GraphDef&                    backward_def);
 
-    void Share(GraphDef& graph);
+    GraphDef Share(const GraphDef& input_def);
 
     void SetTerms(const Map<string, string>& terms) { terms_ = terms; }
     void SetOperatorPrefix(const string& prefix) { op_prefix_ = prefix; }

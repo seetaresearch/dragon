@@ -168,7 +168,7 @@ void GraphGradientMaker::Make(
                 OperatorDef generate_op = MakeOperatorDef(
                     "GradientGenerate", GetOperatorName(),
                         op_inputs, op_outputs,
-                            vector<Argument>(1, arg_defaults));
+                            vector<Argument>({ arg_defaults}));
                 if (op.has_device_option())
                     generate_op.mutable_device_option()
                         ->CopyFrom(op.device_option());
@@ -211,23 +211,63 @@ void GraphGradientMaker::Make(
     } \
     *op->mutable_output(ix) = temp_grad;}
 
-void GraphGradientMaker::Share(GraphDef& graph) {
+GraphDef GraphGradientMaker::Share(const GraphDef& input_def) {
     Set<int> invalid_ops;
     Map<string, int> ref_count;
+    Map< string, pair<int, string> > ssa_map;
     // Count the refs for detecting leaf nodes
-    for (int i = 0; i < graph.op_size(); ++i) {
-        const OperatorDef& op = graph.op(i);
+    for (int i = 0; i < input_def.op_size(); ++i) {
+        const OperatorDef& op = input_def.op(i);
         // Ignore the non-gradient ops
         if (op.type().find("Gradient") == string::npos) continue;
-        if (op.type() == "GradientGather" &&
-            ignore_grads_.count(op.output(0))) {
-            for (auto& input : op.input())
-                ignore_grads_.insert(input);
-            invalid_ops.insert(i); continue;
+        if (op.type() == "GradientGather") {
+            invalid_ops.insert(i);
+            if (ignore_grads_.count(op.output(0))) {
+                for (const auto& input : op.input())
+                    ignore_grads_.insert(input);
+                continue;
+            } else {
+                string head;
+                for (const auto& input : op.input()) {
+                    if (input != "NULL") {
+                        if (head.empty()) head = input;
+                        ssa_map[input] = { i, head };
+                    }
+                }
+            }
         }
-        for (auto& input : op.input())
+        for (const auto& input : op.input())
             if (input.find("grad") != string::npos)
                     ref_count[input] += 1;
+    }
+
+    // Decompose the GradientGather in SSA format
+    GraphDef output_def(input_def); output_def.clear_op();
+    for (int i = 0; i < input_def.op_size(); ++i) {
+        if (invalid_ops.count(i)) continue;
+        const OperatorDef& op = input_def.op(i);
+        output_def.add_op()->CopyFrom(op);
+        if (op.type().find("Gradient") == string::npos) continue;
+        for (const auto& output : op.output()) {
+            const auto& find_iter = ssa_map.find(output);
+            if (find_iter != ssa_map.end()) {
+                const OperatorDef& gather_op =
+                    input_def.op(find_iter->second.first);
+                OperatorDef acc_op(gather_op);
+                acc_op.clear_input();
+                if (output != find_iter->second.second) {
+                    acc_op.set_type("GradientAdd");
+                    // Fake a inplace to avoid a new buffer
+                    acc_op.add_input(gather_op.output(0));
+                    const auto& ref_iter = ref_count.find(
+                        gather_op.output(0));
+                    if (ref_iter != ref_count.end())
+                        ref_iter->second++;
+                }
+                acc_op.add_input(output);
+                output_def.add_op()->CopyFrom(acc_op);
+            }
+        }
     }
 
     // Prepare the Gradients Pool
@@ -240,7 +280,7 @@ void GraphGradientMaker::Share(GraphDef& graph) {
                 std::to_string(temporary_idx++);
         } else {
             /*!
-             * *LIFO* is more memory efficent than *FIFO* usually,
+             * LIFO is more memory efficent than FIFO usually,
              * Because the larger gradients will bring out later.
              *
              * Memory distribution turns out to be uniform,
@@ -252,12 +292,10 @@ void GraphGradientMaker::Share(GraphDef& graph) {
         }
     };
 
-    for (int i = 0; i < graph.op_size(); ++i) {
-        OperatorDef* op = graph.mutable_op(i);
+    for (int i = 0; i < output_def.op_size(); ++i) {
+        OperatorDef* op = output_def.mutable_op(i);
         // Ignore the non-gradient ops
         if (op->type().find("Gradient") == string::npos) continue;
-        // Ignore the invalid ops
-        if (invalid_ops.count(i)) { op->mutable_type()->clear(); continue; }
         // GC to store the grads that have finished lifecycle
         vector<string> GC;
         // Inplace-aware
@@ -284,9 +322,12 @@ void GraphGradientMaker::Share(GraphDef& graph) {
         // Determine the scanning order
         bool left = true;
         static Set<string> ROrderOps = {
-            "ConcatGradient", "StackGradient",
-            "RAddGradient", "RSubGradient",
-            "RMulGradient", "RDivGradient",
+            "RAddGradient",
+            "RSubGradient",
+            "RMulGradient",
+            "RDivGradient",
+            "StackGradient",
+            "ConcatGradient",
         };
         if (ROrderOps.count(op->type())) left = false;
         // Check output grads, left order
@@ -296,6 +337,7 @@ void GraphGradientMaker::Share(GraphDef& graph) {
         // Update the pool from GC
         for (auto& e : GC) grads_pool.emplace_back(e);
     }
+    return output_def;
 }
 
 }  // namespace dragon

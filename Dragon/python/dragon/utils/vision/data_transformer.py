@@ -13,12 +13,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import numpy as np
-import numpy.random as npr
-from multiprocessing import Process
+import numpy
+import multiprocessing
 
-import dragon.config as config
-import dragon.vm.caffe.proto.caffe_pb2 as pb
+from dragon import config as _cfg
+from dragon.vm.caffe.proto import caffe_pb2 as _proto_def
 
 try:
     import cv2
@@ -31,7 +30,7 @@ except ImportError as e:
     print("Failed to import PIL. \nIt's OK if disabling color augmentation.".format(str(e)))
 
 
-class DataTransformer(Process):
+class DataTransformer(multiprocessing.Process):
     """DataTransformer is deployed to queue transformed images from `DataReader`_.
 
     Nearly all common image augmentation methods are supported.
@@ -72,7 +71,7 @@ class DataTransformer(Process):
         self._max_random_scale = kwargs.get('max_random_scale', 1.0)
         self._force_color = kwargs.get('force_color', False)
         self._phase = kwargs.get('phase', 'TRAIN')
-        self._random_seed = config.GetRandomSeed()
+        self._random_seed = _cfg.GetRandomSeed()
         self.Q_in = self.Q_out = None
         self.daemon = True
 
@@ -91,16 +90,16 @@ class DataTransformer(Process):
 
         """
         # decode
-        datum = pb.Datum()
+        datum = _proto_def.Datum()
         datum.ParseFromString(serialized)
-        im = np.fromstring(datum.data, np.uint8)
+        im = numpy.fromstring(datum.data, numpy.uint8)
         if datum.encoded is True:
             im = cv2.imdecode(im, -1)
         else:
             im = im.reshape((datum.height, datum.width, datum.channels))
 
         # Random scale
-        random_scale = npr.uniform() * (
+        random_scale = numpy.random.uniform() * (
             self._max_random_scale - self._min_random_scale) \
                 + self._min_random_scale
         if random_scale != 1.0:
@@ -109,7 +108,7 @@ class DataTransformer(Process):
 
         # Padding
         if self._padding > 0:
-            pad_img = np.empty((
+            pad_img = numpy.empty((
                 im.shape[0] + 2 * self._padding,
                 im.shape[1] + 2 * self._padding, im.shape[2]), dtype=im.dtype)
             pad_img.fill(self._fill_value)
@@ -120,8 +119,8 @@ class DataTransformer(Process):
         # Random crop
         if self._crop_size > 0:
             if self._phase == 'TRAIN':
-                h_off = npr.randint(im.shape[0] - self._crop_size + 1)
-                w_off = npr.randint(im.shape[1] - self._crop_size + 1)
+                h_off = numpy.random.randint(im.shape[0] - self._crop_size + 1)
+                w_off = numpy.random.randint(im.shape[1] - self._crop_size + 1)
             else:
                 h_off = int((im.shape[0] - self._crop_size) / 2)
                 w_off = int((im.shape[1] - self._crop_size) / 2)
@@ -130,28 +129,28 @@ class DataTransformer(Process):
 
         # Random mirror
         if self._mirror:
-            if npr.randint(0, 2) > 0:
+            if numpy.random.randint(0, 2) > 0:
                 im = im[:, ::-1, :]
 
         # Gray Transformation
         if self._force_color:
             if im.shape[2] == 1:
                 # duplicate to 3 channels
-                im = np.concatenate([im, im, im], axis=2)
+                im = numpy.concatenate([im, im, im], axis=2)
 
         # Color Augmentation
         if self._color_aug:
             im = PIL.Image.fromarray(im)
-            delta_brightness = npr.uniform(-0.4, 0.4) + 1.0
-            delta_contrast = npr.uniform(-0.4, 0.4) + 1.0
-            delta_saturation = npr.uniform(-0.4, 0.4) + 1.0
+            delta_brightness = numpy.random.uniform(-0.4, 0.4) + 1.0
+            delta_contrast = numpy.random.uniform(-0.4, 0.4) + 1.0
+            delta_saturation = numpy.random.uniform(-0.4, 0.4) + 1.0
             im = PIL.ImageEnhance.Brightness(im)
             im = im.enhance(delta_brightness)
             im = PIL.ImageEnhance.Contrast(im)
             im = im.enhance(delta_contrast)
             im = PIL.ImageEnhance.Color(im)
             im = im.enhance(delta_saturation)
-            im = np.array(im)
+            im = numpy.array(im)
 
         # Extract Labels
         labels = []
@@ -169,7 +168,7 @@ class DataTransformer(Process):
 
         """
         # Fix the random seed
-        npr.seed(self._random_seed)
+        numpy.random.seed(self._random_seed)
 
         # Run!
         while True:

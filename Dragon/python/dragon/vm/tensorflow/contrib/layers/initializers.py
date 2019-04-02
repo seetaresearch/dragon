@@ -19,25 +19,31 @@ from __future__ import print_function
 
 import math
 
-from dragon.vm.tensorflow.framework import dtypes
 from dragon.vm.tensorflow.ops import random_ops
+from dragon.vm.tensorflow.framework import dtypes
 
 
-__all__ = ['xavier_initializer',
-           'xavier_initializer_conv2d',
-           'variance_scaling_initializer']
+def xavier_initializer(
+    uniform=True,
+    seed=None,
+    dtype=dtypes.float32,
+):
+    return variance_scaling_initializer(
+        factor=1.0,
+        mode='FAN_AVG',
+        uniform=uniform,
+        seed=seed,
+        dtype=dtype,
+    )
 
 
-def xavier_initializer(uniform=True, seed=None, dtype=dtypes.float32):
-    return variance_scaling_initializer(factor=1.0, mode='FAN_AVG',
-                                        uniform=uniform, seed=seed, dtype=dtype)
-
-
-xavier_initializer_conv2d = xavier_initializer
-
-
-def variance_scaling_initializer(factor=2.0, mode='FAN_IN', uniform=False,
-                                 seed=None, dtype=dtypes.float32):
+def variance_scaling_initializer(
+    factor=2.0,
+    mode='FAN_IN',
+    uniform=False,
+    seed=None,
+    dtype=dtypes.float32,
+):
     if not dtype.is_floating:
         raise TypeError('Cannot create initializer for non-floating point type.')
     if mode not in ['FAN_IN', 'FAN_OUT', 'FAN_AVG']:
@@ -79,3 +85,7 @@ def variance_scaling_initializer(factor=2.0, mode='FAN_IN', uniform=False,
                                                seed=seed)
 
     return _initializer
+
+
+# Alias
+xavier_initializer_conv2d = xavier_initializer

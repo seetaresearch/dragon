@@ -15,11 +15,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon
-from ..layer import Layer
+from dragon import ops as _ops
+from ..layer import Layer as _Layer
 
 
-class ReLULayer(Layer):
+class ReLULayer(_Layer):
     """The implementation of ``ReLULayer``.
 
     Parameters
@@ -35,10 +35,10 @@ class ReLULayer(Layer):
             self.arguments = {'slope': param.negative_slope}
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Relu(bottom, **self.arguments)
+        return _ops.Relu(bottom, **self.arguments)
 
 
-class PReLULayer(Layer):
+class PReLULayer(_Layer):
     """The implementation of ``PReLULayer``.
 
     Parameters
@@ -61,10 +61,10 @@ class PReLULayer(Layer):
 
     def LayerSetup(self, bottom):
         inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        return dragon.ops.PRelu(inputs, **self.arguments)
+        return _ops.PRelu(inputs, **self.arguments)
 
 
-class ELULayer(Layer):
+class ELULayer(_Layer):
     """The implementation of ``ELULayer``.
 
     Parameters
@@ -78,40 +78,40 @@ class ELULayer(Layer):
         self.arguments = {'alpha': float(LayerParameter.elu_param.alpha)}
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Elu(bottom, **self.arguments)
+        return _ops.Elu(bottom, **self.arguments)
 
 
-class SELULayer(Layer):
+class SELULayer(_Layer):
     """The implementation of ``SELULayer``."""
 
     def __init__(self, LayerParameter):
         super(SELULayer, self).__init__(LayerParameter)
 
     def LayerSetup(self, bottom):
-        return dragon.ops.SElu(bottom, **self.arguments)
+        return _ops.SElu(bottom, **self.arguments)
 
 
-class SigmoidLayer(Layer):
+class SigmoidLayer(_Layer):
     """The implementation of ``SigmoidLayer``."""
 
     def __init__(self, LayerParameter):
         super(SigmoidLayer, self).__init__(LayerParameter)
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Sigmoid(bottom, **self.arguments)
+        return _ops.Sigmoid(bottom, **self.arguments)
 
 
-class TanHLayer(Layer):
+class TanHLayer(_Layer):
     """The implementation of ``TanHLayer``."""
 
     def __init__(self, LayerParameter):
         super(TanHLayer, self).__init__(LayerParameter)
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Tanh(bottom, **self.arguments)
+        return _ops.Tanh(bottom, **self.arguments)
 
 
-class DropoutLayer(Layer):
+class DropoutLayer(_Layer):
     """The implementation of ``DropoutLayer``.
 
     Parameters
@@ -132,10 +132,10 @@ class DropoutLayer(Layer):
         }
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Dropout(bottom, **self.arguments)
+        return _ops.Dropout(bottom, **self.arguments)
 
 
-class PowerLayer(Layer):
+class PowerLayer(_Layer):
     """The implementation of ``PowerLayer``.
 
     Parameters
@@ -158,4 +158,4 @@ class PowerLayer(Layer):
         }
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Pow(bottom, **self.arguments)
+        return _ops.Pow(bottom, **self.arguments)

@@ -13,11 +13,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import numpy as np
-from multiprocessing import Process
+import numpy
+import multiprocessing
 
 
-class BlobFetcher(Process):
+class BlobFetcher(multiprocessing.Process):
     """BlobFetcher is deployed to queue blobs from `DataTransformer`_.
 
     It is supported to form *NHWC* image blobs and *1d* label blobs.
@@ -37,10 +37,9 @@ class BlobFetcher(Process):
 
         """
         super(BlobFetcher, self).__init__()
-        self._batch_size = kwargs.get('batch_size', 100)
+        self._batch_size = kwargs.get('batch_size', 128)
         self._partition  = kwargs.get('partition', False)
-        if self._partition:
-            self._batch_size = self._batch_size // kwargs['group_size']
+        if self._partition: self._batch_size /= kwargs['group_size']
         self.Q_in = self.Q_out = None
         self.daemon = True
 
@@ -54,9 +53,9 @@ class BlobFetcher(Process):
 
         """
         im, labels = self.Q_in.get()
-        im_blob = np.zeros(shape=([self._batch_size] + list(im.shape)), dtype=np.uint8)
-        label_blob = np.zeros((self._batch_size, len(labels)),  dtype=np.int64)
-        for ix in range(0, self._batch_size):
+        im_blob = numpy.zeros(shape=([self._batch_size] + list(im.shape)), dtype='uint8')
+        label_blob = numpy.zeros((self._batch_size, len(labels)), dtype='int64')
+        for ix in range(self._batch_size):
             im_blob[ix, :, :, :], label_blob[ix, :] = im, labels
             if ix != self._batch_size - 1: im, labels = self.Q_in.get()
         return im_blob, label_blob

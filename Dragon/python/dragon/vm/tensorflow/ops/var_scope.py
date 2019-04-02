@@ -13,12 +13,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon
 import threading
+
+from dragon.core import tls as _tls
+from dragon.core import scope as _scope
 
 from dragon.vm.tensorflow.framework import dtypes, ops
 from dragon.vm.tensorflow.ops.variables import Variable
-from dragon.vm.tensorflow.framework.ops import _DefaultStack
 from dragon.vm.tensorflow.ops import init_ops
 
 
@@ -87,7 +88,8 @@ class VariableScope(object):
         """
         return self._vars
 
-    def get_variable(self,
+    def get_variable(
+        self,
         name,
         shape=None,
         dtype=None,
@@ -95,7 +97,8 @@ class VariableScope(object):
         regularizer=None,
         trainable=True,
         collections=None,
-        validate_shape=True):
+        validate_shape=True,
+    ):
         excepted_name = self.name + name
         if not excepted_name in self._vars:
             # Create a new variable
@@ -112,7 +115,8 @@ class VariableScope(object):
                 collections=collections,
                 validate_shape=validate_shape,
                 name_from_variable_scope=excepted_name,
-                dtype=dtype)
+                dtype=dtype,
+            )
             self._vars[excepted_name] = variable
             return variable
         else:
@@ -132,7 +136,12 @@ class VariableScope(object):
         get_variable_scope_store().close()
         self._name_scope_ctx.__exit__(type, value, traceback)
 
-    def _get_default_initializer(self, name, shape=None, dtype=dtypes.float32):
+    def _get_default_initializer(
+        self,
+        name,
+        shape=None,
+        dtype=dtypes.float32,
+    ):
         # Defaults: float32
         if dtype is None:
             dtype = dtypes.float32
@@ -162,32 +171,35 @@ def variable_scope(name_or_scope, reuse=None, **kwargs):
     prefix = name_or_scope + '/' if name_or_scope != '' else ''
     vs_store = get_variable_scope_store()
     vs_name = vs_store.current_scope.name + prefix
-    original_name_scope = dragon.get_default_name_scope() + prefix
+    original_name_scope = _scope.get_default_name_scope() + prefix
     vs = VariableScope(reuse, name=vs_name, name_scope=original_name_scope)
     # Store the ctx manager instead of returning
     # As we should return a VariableScope
-    vs._name_scope_ctx = dragon.name_scope(name_or_scope)
+    vs._name_scope_ctx = _scope.name_scope(name_or_scope)
     return vs
 
 
-def get_variable(name,
-                 shape=None,
-                 dtype=None,
-                 initializer=None,
-                 regularizer=None,
-                 trainable=True,
-                 collections=None,
-                 validate_shape=True,
-                 **kwargs):
+def get_variable(
+    name,
+    shape=None,
+    dtype=None,
+    initializer=None,
+    regularizer=None,
+    trainable=True,
+    collections=None,
+    validate_shape=True,
+    **kwargs
+):
     return get_variable_scope().get_variable(
-        name, shape=shape, dtype=dtype,
-            initializer=initializer, regularizer=regularizer,
-                trainable=trainable, collections=collections,
-                    validate_shape=validate_shape)
-
-
-_GLOBAL_VARIABLE_SCOPE_STORE_KEY = ("__varscope",)
-_GLOBAL_VARIABLE_SCOPE_STACK = _DefaultStack()
+        name,
+        shape=shape,
+        dtype=dtype,
+        initializer=initializer,
+        regularizer=regularizer,
+        trainable=trainable,
+        collections=collections,
+        validate_shape=validate_shape,
+    )
 
 
 class _VariableScopeStore(threading.local):
@@ -220,3 +232,7 @@ def get_variable_scope_store():
 def get_variable_scope():
     """Returns the current variable scope."""
     return get_variable_scope_store().current_scope
+
+
+_GLOBAL_VARIABLE_SCOPE_STORE_KEY = ("__varscope",)
+_GLOBAL_VARIABLE_SCOPE_STACK = _tls.Stack()

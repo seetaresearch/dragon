@@ -15,10 +15,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.torch.pool import OperatorPool
-
-
-_ENFORCE_JIT_TRACER = False
+from dragon.core import tls as _tls
+from dragon.vm.torch.c_api import _get_operator_pool
 
 
 def _Incrementer():
@@ -38,7 +36,7 @@ class JITRecorder(object):
 
     def append(self, op):
         uid = next(self.UID_GENERATOR)
-        op_name = OperatorPool.get(op.type)
+        op_name = _get_operator_pool().get(op.type)
         self.ops[uid] = op
         self.ops[uid].name = op_name
         return op_name
@@ -70,6 +68,11 @@ class JITRecorder(object):
         return buffer0 + buffer2 + buffer1 + buffer0
 
 
+def is_jit_enforced():
+    """Whether jit tracer is enforced."""
+    return _GLOBAL_ENFORCE_JIT_TRACER.enabled
+
+
 class enforce_jit(object):
     """Context-manager that enforce the jit tracer."""
 
@@ -77,13 +80,12 @@ class enforce_jit(object):
         self.prev = is_jit_enforced()
 
     def __enter__(self):
-        global _ENFORCE_JIT_TRACER
-        _ENFORCE_JIT_TRACER = True
+        global _GLOBAL_ENFORCE_JIT_TRACER
+        _GLOBAL_ENFORCE_JIT_TRACER.enabled = True
 
     def __exit__(self, *args):
-        global _ENFORCE_JIT_TRACER
-        _ENFORCE_JIT_TRACER = self.prev
+        global _GLOBAL_ENFORCE_JIT_TRACER
+        _GLOBAL_ENFORCE_JIT_TRACER.enabled = self.prev
 
 
-def is_jit_enforced():
-    return _ENFORCE_JIT_TRACER
+_GLOBAL_ENFORCE_JIT_TRACER = _tls.Constant(enabled=False)

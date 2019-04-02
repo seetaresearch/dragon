@@ -13,31 +13,18 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon
-from dragon.core.tensor import Tensor
-
-
-__all__ = [
-    'convolution',
-    'relu',
-    'softmax',
-    'conv2d',
-    'conv2d_transpose',
-    'avg_pool',
-    'max_pool',
-    'xw_plus_b',
-    'bias_add',
-    'dropout',
-    'sigmoid_cross_entropy_with_logits',
-    'softmax_cross_entropy_with_logits',
-    'sparse_softmax_cross_entropy_with_logits',
-    'l2_loss',
-]
+from dragon import ops as _ops
 
 
 def convolution(
-    input, filter, padding, strides=None,
-        dilation_rate=None, name=None, data_format=None):
+    input,
+    filter,
+    padding,
+    strides=None,
+    dilation_rate=None,
+    name=None,
+    data_format=None,
+):
     num_total_dims = filter.get_shape().ndims
     if num_total_dims is None:
         num_total_dims = input.get_shape().ndims
@@ -71,24 +58,37 @@ def convolution(
 
     if num_spatial_dims == 2:
         return conv2d(
-            input, filter, strides, padding,
-                dilation_rate, data_format, name)
+            input,
+            filter,
+            strides,
+            padding,
+            dilation_rate,
+            data_format,
+            name,
+        )
     else:
         raise NotImplementedError(
             'conv{}d is not implemented.'.format(num_spatial_dims))
 
 
 def relu(features, name=None):
-   return dragon.ops.Relu(features, name=name)
+   return _ops.Relu(features, name=name)
 
 
 def softmax(logits, dim=-1, name=None):
-    return dragon.ops.Softmax(logits, axis=dim, name=name)
+    return _ops.Softmax(logits, axis=dim, name=name)
 
 
 def conv2d(
-    input, filter, strides, padding,
-        dilation_rate=None, data_format='NHWC', name=None, **kwargs):
+    input,
+    filter,
+    strides,
+    padding,
+    dilation_rate=None,
+    data_format='NHWC',
+    name=None,
+    **kwargs
+):
     """Compute 2D convolution according to the given 4D ``input`` and ``filter``.
 
     For **NHWC** format, filter should be as ``[filter_height, filter_width, in_channels, out_channels]``.
@@ -130,30 +130,41 @@ def conv2d(
             raise ValueError('dilation_rate must be a list with length 4.')
 
     if data_format == 'NHWC':
-        return dragon.ops.Conv2d([input, filter],
+        return _ops.Conv2d(
+            [input, filter],
             num_output=filter.shape[3],
             kernel_shape=filter.shape[0:2],
             strides=strides[1:3],
             dilations=dilation_rate[1:3] if dilation_rate is not None else 1,
             padding=padding,
             data_format=data_format,
-            name=name)
+            name=name,
+        )
     elif data_format == 'NCHW':
-        return dragon.ops.Conv2d([input, filter],
+        return _ops.Conv2d(
+            [input, filter],
             num_output=filter.shape[0],
             kernel_shape=filter.shape[2:4],
             strides=strides[2:4],
             dilations=dilation_rate[2:4] if dilation_rate is not None else 1,
             padding=padding,
             data_format=data_format,
-            name=name)
+            name=name,
+        )
     else:
-        raise ValueError('Unknown data format: {}'.format(data_format))
+        raise ValueError('Unknown data format: ' + data_format)
 
 
 def conv2d_transpose(
-    value, filter, output_shape, strides,
-        padding='SAME', data_format='NHWC', name=None, **kwargs):
+    value,
+    filter,
+    output_shape,
+    strides,
+    padding='SAME',
+    data_format='NHWC',
+    name=None,
+    **kwargs
+):
     """Compute 2D deconvolution according to the given 4D ``input`` and ``filter``.
 
     For **NHWC** format, filter should be as ``[filter_height, filter_width, out_channels, in_channels]``.
@@ -199,28 +210,39 @@ def conv2d_transpose(
         raise ValueError('output_shape should be a list with length 4.')
 
     if data_format == 'NHWC':
-        return dragon.ops.ConvTranspose2d([value, filter],
+        return _ops.ConvTranspose2d(
+            [value, filter],
             num_output=filter.shape[2],
             kernel_shape=filter.shape[0:2],
             strides=strides[1:3],
             padding=padding,
             data_format=data_format,
             output_shape=output_shape,
-            name=name)
+            name=name,
+        )
     elif data_format == 'NCHW':
-        return dragon.ops.Conv2dTranspose([value, filter],
+        return _ops.Conv2dTranspose(
+            [value, filter],
             num_output=filter.shape[1],
             kernel_shape=filter.shape[2:4],
             strides=strides[2:4],
             padding=padding,
             data_format=data_format,
             output_shape=output_shape,
-            name=name)
+            name=name,
+        )
     else:
-        raise ValueError('Unknown data format: {}'.format(data_format))
+        raise ValueError('Unknown data format: ' + data_format)
 
 
-def avg_pool(value, ksize, strides, padding, data_format='NHWC', name=None):
+def avg_pool(
+    value,
+    ksize,
+    strides,
+    padding,
+    data_format='NHWC',
+    name=None,
+):
     """Perform avg pooling on spatial axes.
 
     Parameters
@@ -252,31 +274,40 @@ def avg_pool(value, ksize, strides, padding, data_format='NHWC', name=None):
         if data_format == 'NHWC':
             if ksize[0] != 1 or ksize[3] != 1 or strides[0] != 1 or strides[3] != 1:
                 raise ValueError('The pooling can only be performed on spatial axes.')
-            return dragon.ops.Pool2d(
+            return _ops.Pool2d(
                 value,
                 kernel_shape=[ksize[1], ksize[2]],
                 strides=[strides[1], strides[2]],
                 padding=padding,
                 data_format=data_format,
                 mode='AVG',
-                name=name)
+                name=name,
+            )
         if data_format == 'NCHW':
             if ksize[0] != 1 or ksize[1] != 1 or strides[0] != 1 or strides[1] != 1:
                 raise ValueError('The pooling can only be performed on spatial axes.')
-            return dragon.ops.Pool2d(
+            return _ops.Pool2d(
                 value,
                 kernel_shape=[ksize[2], ksize[3]],
                 strides=[strides[2], strides[3]],
                 padding=padding,
                 data_format=data_format,
                 mode='AVG',
-                name=name)
+                name=name,
+            )
     else:
         raise NotImplementedError(
             'Pool{}d has not been implemented yet.'.format(len(ksize) - 2))
 
 
-def max_pool(value, ksize, strides, padding, data_format='NHWC', name=None):
+def max_pool(
+    value,
+    ksize,
+    strides,
+    padding,
+    data_format='NHWC',
+    name=None,
+):
     """Perform max pooling on spatial axes.
 
     Parameters
@@ -308,25 +339,27 @@ def max_pool(value, ksize, strides, padding, data_format='NHWC', name=None):
         if data_format == 'NHWC':
             if ksize[0] != 1 or ksize[3] != 1 or strides[0] != 1 or strides[3] != 1:
                 raise ValueError('The pooling can only be performed on spatial axes.')
-            return dragon.ops.Pool2d(
+            return _ops.Pool2d(
                 value,
                 kernel_shape=[ksize[1], ksize[2]],
                 strides=[strides[1], strides[2]],
                 padding=padding,
                 data_format=data_format,
                 mode='MAX',
-                name=name)
+                name=name,
+            )
         if data_format == 'NCHW':
             if ksize[0] != 1 or ksize[1] != 1 or strides[0] != 1 or strides[1] != 1:
                 raise ValueError('The pooling can only be performed on spatial axes.')
-            return dragon.ops.Pool2d(
+            return _ops.Pool2d(
                 value,
                 kernel_shape=[ksize[2], ksize[3]],
                 strides=[strides[2], strides[3]],
                 padding=padding,
                 data_format=data_format,
                 mode='MAX',
-                name=name)
+                name=name,
+            )
     else:
         raise NotImplementedError(
             'Pool{}d has not been implemented yet.'.format(len(ksize) - 2))
@@ -347,30 +380,63 @@ def xw_plus_b(x, weights, biases, name=None):
         if weights.shape[1] != biases.shape[0]:
             raise ValueError('the shape of weights and biaes are incompatible.')
 
-    return dragon.ops.FullyConnected([x, weights, biases], num_output=weights.shape[1], transW=False, name=name)
+    return _ops.FullyConnected(
+        [x, weights, biases],
+        num_output=weights.shape[1],
+        transW=False,
+        name=name,
+    )
 
 
 def bias_add(value, bias, data_format='NHWC', name=None):
-    return dragon.ops.BiasAdd([value, bias], data_format=data_format, name=name)
+    return _ops.BiasAdd(
+        [value, bias],
+        data_format=data_format,
+        name=name,
+    )
 
 
 def sigmoid_cross_entropy_with_logits(logits, targets, name=None):
-    return dragon.ops.SigmoidCrossEntropy([logits, targets], normalization='UNIT', name=name)
+    return _ops.SigmoidCrossEntropy(
+        [logits, targets],
+        normalization='UNIT',
+        name=name,
+    )
 
 
-def softmax_cross_entropy_with_logits(_sentinel=None, labels=None, logits=None, dim=-1, name=None):
-    return dragon.ops.SoftmaxCrossEntropy([logits, labels],
-        axis=dim, normalization='UNIT', name=name)
+def softmax_cross_entropy_with_logits(
+    _sentinel=None,
+    labels=None,
+    logits=None,
+    dim=-1,
+    name=None,
+):
+    return _ops.SoftmaxCrossEntropy(
+        [logits, labels],
+        axis=dim,
+        normalization='UNIT',
+        name=name,
+    )
 
 
-def sparse_softmax_cross_entropy_with_logits(_sentinel=None, labels=None, logits=None, dim=-1, name=None):
-    return dragon.ops.SparseSoftmaxCrossEntropy([logits, labels],
-        axis=dim, normalization='UNIT', name=name)
+def sparse_softmax_cross_entropy_with_logits(
+    _sentinel=None,
+    labels=None,
+    logits=None,
+    dim=-1,
+    name=None,
+):
+    return _ops.SparseSoftmaxCrossEntropy(
+        [logits, labels],
+        axis=dim,
+        normalization='UNIT',
+        name=name,
+    )
 
 
 def l2_loss(t, name=None):
-    return dragon.ops.L2Loss(t, normalization='NONE', name=name)
+    return _ops.L2Loss(t, normalization='NONE', name=name)
 
 
 def dropout(x, keep_prob, name=None):
-    return dragon.ops.Dropout(x, 1 - keep_prob, name=name)
+    return _ops.Dropout(x, 1. - keep_prob, name=name)

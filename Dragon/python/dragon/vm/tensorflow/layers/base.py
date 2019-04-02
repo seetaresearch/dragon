@@ -28,7 +28,13 @@ from dragon.vm.tensorflow.util import nest
 
 
 class Layer(object):
-    def __init__(self, trainable=True, name=None, dtype=dtypes.float32, **kwargs):
+    def __init__(
+        self,
+        trainable=True,
+        name=None,
+        dtype=dtypes.float32,
+        **kwargs
+    ):
         allowed_kwargs = {'_scope', '_reuse'}
         for kwarg in kwargs:
             if kwarg not in allowed_kwargs:
@@ -79,13 +85,15 @@ class Layer(object):
             _add_elements_to_collection(self.updates, ops.GraphKeys.UPDATE_OPS)
             return outputs
 
-    def add_variable(self,
-                     name,
-                     shape,
-                     dtype=None,
-                     trainable=True,
-                     initializer=None,
-                     regularizer=None):
+    def add_variable(
+        self,
+        name,
+        shape,
+        dtype=None,
+        trainable=True,
+        initializer=None,
+        regularizer=None,
+    ):
         if dtype is None: dtype = self.dtype
         variable = vs.get_variable(
             name,
@@ -93,7 +101,8 @@ class Layer(object):
             initializer=initializer,
             regularizer=regularizer,
             dtype=dtypes.as_dtype(dtype),
-            trainable=trainable and self.trainable)
+            trainable=trainable and self.trainable,
+        )
         if trainable:
             self._trainable_weights.append(variable)
         else:
@@ -105,9 +114,14 @@ class Layer(object):
 
 
 class InputSpec(object):
-    def __init__(self,
-        dtype=None, shape=None, ndim=None,
-            max_ndim=None, min_ndim=None, axes=None
+    def __init__(
+        self,
+        dtype=None,
+        shape=None,
+        ndim=None,
+        max_ndim=None,
+        min_ndim=None,
+        axes=None,
     ):
         self.dtype = dtype
         self.shape = shape
@@ -123,9 +137,6 @@ def _to_snake_case(name):
     insecure = re.sub('([a-z])([A-Z])', r'\1_\2', intermediate).lower()
     if insecure[0] != '_': return insecure
     return 'private' + insecure
-
-
-PER_GRAPH_LAYER_NAME_UIDS = weakref.WeakKeyDictionary()
 
 
 def _unique_layer_name(name):
@@ -153,3 +164,6 @@ def _add_elements_to_collection(elements, collection_list):
         for element in elements:
             if element not in collection_set:
                 collection.append(element)
+
+
+PER_GRAPH_LAYER_NAME_UIDS = weakref.WeakKeyDictionary()

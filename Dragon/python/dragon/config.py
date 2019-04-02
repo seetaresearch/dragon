@@ -15,8 +15,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon.import_c_api as C
-import dragon.core.logging as logging
+from dragon import import_c_api as _C
+from dragon.core import logging as _logging
+
 
 option = {}
 
@@ -290,12 +291,12 @@ def SetLoggingLevel(level):
     The default level is *INFO*.
 
     """
-    C.SetLoggingLevel(level)
-    logging.set_verbosity({
-        'DEBUG': logging.DEBUG,
-        'INFO': logging.INFO,
-        'WARNING': logging.WARN,
-        'ERROR': logging.ERROR,
-        'FATAL': logging.FATAL,
+    _C.SetLoggingLevel(level)
+    _logging.set_verbosity({
+        'DEBUG': _logging.DEBUG,
+        'INFO': _logging.INFO,
+        'WARNING': _logging.WARN,
+        'ERROR': _logging.ERROR,
+        'FATAL': _logging.FATAL,
         }[level]
     )

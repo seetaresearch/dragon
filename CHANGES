@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------
 The list of most significant changes made over time in Dragon.
 
-Dragon 0.3.0.0 (20190309)
+Dragon 0.3.0.0 (20190402)
 DRAGON_VERSION == 3000
 
 Changes (w.r.t. Dragon 0.2.2.13):
@@ -35,6 +35,8 @@ Preview Features:
   which unifies the naming of static and dynamic computation graph.
 
 - The behavior of accumulating gradients have been canceled.
+
+- Python module now has been assigned to take charge of ``Workspace``.
 
 
 Bugs fixed:

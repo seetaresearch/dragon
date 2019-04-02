@@ -13,10 +13,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import numpy as np
-import dragon as dg
+import numpy
 
-from dragon.vm.torch.tensor import *
+from dragon.core import workspace as _workspace
+from dragon.vm.torch.tensor import Tensor as _Tensor
 from dragon.vm.torch.c_api import device as _Device
 
 
@@ -49,8 +49,8 @@ def WrapScalar(scalar, dtype, device):
     if 'float' in dtype: scalar = float(scalar)
     if 'int' in dtype: scalar = int(scalar)
     name = '/share/scalar/{}/{}'.format(dtype, str(scalar))
-    if not dg.workspace.HasTensor(name):
-        dg.workspace.FeedTensor(name, np.array(scalar, dtype=dtype))
-    t = Tensor(name=name, dtype=dtype, device=device, own_storage=False)
+    if not _workspace.HasTensor(name):
+        _workspace.FeedTensor(name, numpy.array(scalar, dtype=dtype))
+    t = _Tensor(name=name, dtype=dtype, device=device, own_storage=False)
     t.requires_grad = False
     return t

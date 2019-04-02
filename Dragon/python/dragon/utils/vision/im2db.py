@@ -16,8 +16,8 @@ import shutil
 import argparse
 import cv2
 
-from dragon.tools.db import LMDB
-from dragon.vm.caffe.proto import caffe_pb2
+from dragon.tools import db as _db
+from dragon.vm.caffe.proto import caffe_pb2 as _proto_def
 
 
 def resize_image(im, resize):
@@ -37,11 +37,10 @@ def resize_image(im, resize):
 
     """
     if im.shape[0] > im.shape[1]:
-        newsize = (resize, im.shape[0] * resize / im.shape[1])
+        new_size = (resize, im.shape[0] * resize // im.shape[1])
     else:
-        newsize = (im.shape[1] * resize / im.shape[0], resize)
-    im = cv2.resize(im, newsize)
-    return im
+        new_size = (im.shape[1] * resize // im.shape[0], resize)
+    return cv2.resize(im, new_size, interpolation=cv2.INTER_LINEAR)
 
 
 def make_db(args):
@@ -72,7 +71,7 @@ def make_db(args):
 
     print('start time: ', time.strftime("%a, %d %b %Y %H:%M:%S", time.gmtime()))
 
-    db = LMDB(max_commit=10000)
+    db = _db.LMDB(max_commit=10000)
     db.open(args.database, mode='w')
 
     total_line = sum(1 for line in open(args.list))
@@ -106,7 +105,7 @@ def make_db(args):
                 img = resize_image(img, args.resize)
             result, imgencode = cv2.imencode('.jpg', img, encode_param)
 
-            datum = caffe_pb2.Datum()
+            datum = _proto_def.Datum()
             datum.height, datum.width, datum.channels = img.shape
             datum.label = int(label)
             datum.encoded = True

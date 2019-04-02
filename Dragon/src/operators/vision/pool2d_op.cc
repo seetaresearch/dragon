@@ -71,10 +71,11 @@ void Pool2dOp<Context>::MAXRunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
     auto* Mdata = mask->template mutable_data<int, Context>();
 
-    kernel::MAXPool2d(n, c, h, w, pool_h, pool_w,
+    kernel::MAXPool2d(
+        n, c, h, w, pool_h, pool_w,
         kernel_shape[0], kernel_shape[1],
-            stride[0], stride[1], pad_l[0], pad_l[1],
-                data_format, Xdata, Mdata, Ydata, ctx());
+        stride[0], stride[1], pad_l[0], pad_l[1],
+        data_format, Xdata, Mdata, Ydata, ctx());
 }
 
 template <class Context> template <typename T>
@@ -82,10 +83,11 @@ void Pool2dOp<Context>::AVGRunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
-    kernel::AVGPool2d(n, c, h, w, pool_h, pool_w,
+    kernel::AVGPool2d(
+        n, c, h, w, pool_h, pool_w,
         kernel_shape[0], kernel_shape[1],
-            stride[0], stride[1], pad_l[0], pad_l[1],
-                data_format, Xdata, Ydata, ctx());
+        stride[0], stride[1], pad_l[0], pad_l[1],
+        data_format, Xdata, Ydata, ctx());
 }
 
 template <class Context>
@@ -123,10 +125,11 @@ void Pool2dGradientOp<Context>::MAXRunWithType() {
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* Mdata = mask->template data<int, Context>();
 
-    kernel::MAXPool2dGrad(n, c, h, w, pool_h, pool_w,
+    kernel::MAXPool2dGrad(
+        n, c, h, w, pool_h, pool_w,
         kernel_shape[0], kernel_shape[1],
-            stride[0], stride[1], pad_l[0], pad_l[1],
-                data_format, dYdata, Mdata, dXdata, ctx());
+        stride[0], stride[1], pad_l[0], pad_l[1],
+        data_format, dYdata, Mdata, dXdata, ctx());
 }
 
 template <class Context> template <typename T>
@@ -134,10 +137,11 @@ void Pool2dGradientOp<Context>::AVGRunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
-    kernel::AVGPool2dGrad(n, c, h, w, pool_h, pool_w,
+    kernel::AVGPool2dGrad(
+        n, c, h, w, pool_h, pool_w,
         kernel_shape[0], kernel_shape[1],
-            stride[0], stride[1], pad_l[0], pad_l[1],
-                data_format, dYdata, dXdata, ctx());
+        stride[0], stride[1], pad_l[0], pad_l[1],
+        data_format, dYdata, dXdata, ctx());
 }
 
 template <class Context>

@@ -16,7 +16,7 @@ GraphDef GraphOptimizer::PruneNodes(const GraphDef& input_def) {
         const OperatorDef& op = input_def.op(i);
         for (const auto& v : op.output()) {
             vector<string> sp_u;
-            if (!op.input_size()) sp_u.resize(op.output_size(), "");
+            if (!op.input_size()) sp_u.resize(op.output_size());
             else sp_u.assign(op.input().begin(), op.input().end());
             for (const auto& u : sp_u) {
                 if (u == "NULL") continue;
@@ -55,7 +55,7 @@ GraphDef GraphOptimizer::PruneNodes(const GraphDef& input_def) {
     // Remove the tensors that can not be produced(redundant)
     Set<string> outputs;
     // Check if having feeded tensors
-    for (const auto& e : ws_->GetTensors()) outputs.insert(e);
+    for (const auto& e : ws_->tensors()) outputs.insert(e);
     // Note that we use map to keep topo-order
     map<int, OperatorDef> final_sequence;
 
@@ -114,7 +114,7 @@ GraphDef GraphOptimizer::AddInplace(const GraphDef& input_def) {
         const OperatorDef& op = input_def.op(i);
         for (const auto& v : op.output()) {
             vector<string> sp_u;
-            if (!op.input_size()) sp_u.resize(op.output_size(), "");
+            if (!op.input_size()) sp_u.resize(op.output_size());
             else sp_u.assign(op.input().begin(), op.input().end());
             for (const auto& u : sp_u) {
                 if (u == "NULL") continue;
@@ -224,7 +224,6 @@ GraphDef GraphOptimizer::MirrorStage(
                 }
                 CHECK(!v2_name.empty()) << "\nNo enough buffers for outputs.";
                 ws_->CreateTensor(v2_name)->set_version(0);
-                if (!versions.count(v2_name)) versions[v2_name] = 0;
                 version_name = "/ver:" + std::to_string(versions[v2_name]++);
                 *op_v2->mutable_output(j) = rename_map[op.output(j)] =
                               v2_name + version_name;
@@ -248,8 +247,6 @@ GraphDef GraphOptimizer::MirrorStage(
         set<int> minimum_ops = {i};
         for (int j = 0; j < input_op.input_size(); ++j) {
             if (input_op.input(j) != output_op.input(j)) {
-                if (!fake_op_indices.count(input_op.input(j)))
-                    fake_op_indices[input_op.input(j)] = set<int>();
                 for (auto idx : fake_op_indices[input_op.input(j)])
                             minimum_ops.insert(idx);
             }
@@ -262,7 +259,6 @@ GraphDef GraphOptimizer::MirrorStage(
 
     // Bind to the renamed tensors
     for (const auto& it : rename_map) {
-        op_indices[it.second] = vector<int>();
         for (auto op_idx : fake_op_indices[it.first])
             op_indices[it.second].push_back(op_idx);
     }

@@ -9,8 +9,12 @@
 #
 # ------------------------------------------------------------
 
-from dragon.core.tensor import Tensor
-import dragon.ops as ops
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+from dragon import ops as _ops
+from dragon.core.tensor import Tensor as _Tensor
 
 
 def batch_normalization(inputs, gamma, beta, mean, var, **kwargs):
@@ -35,7 +39,7 @@ def batch_normalization(inputs, gamma, beta, mean, var, **kwargs):
         The output tensor.
 
     """
-    return ops.BatchNorm([inputs, mean, var, gamma, beta])
+    return _ops.BatchNorm([inputs, mean, var, gamma, beta])
 
 
 def relu(x, alpha=0):
@@ -54,8 +58,8 @@ def relu(x, alpha=0):
         The output tensor.
 
     """
-    if alpha == 0: return ops.Relu(x)
-    else: return ops.LRelu(x, slope=alpha)
+    if alpha == 0: return _ops.Relu(x)
+    else: return _ops.LRelu(x, slope=alpha)
 
 
 def softmax(c):
@@ -74,7 +78,7 @@ def softmax(c):
         The output tensor.
 
     """
-    return ops.Softmax(c, axis=1)
+    return _ops.Softmax(c, axis=1)
 
 
 def categorical_crossentropy(coding_dist, true_dist, axis=1):
@@ -95,7 +99,7 @@ def categorical_crossentropy(coding_dist, true_dist, axis=1):
         The categorical cross-entropy.
 
     """
-    return -ops.Sum(true_dist * ops.Log(coding_dist), axis=axis)
+    return -_ops.Sum(true_dist * _ops.Log(coding_dist), axis=axis)
 
 
 def sigmoid(x):
@@ -112,7 +116,7 @@ def sigmoid(x):
         The output tensor.
 
     """
-    return ops.Sigmoid(x)
+    return _ops.Sigmoid(x)
 
 
 def tanh(x):
@@ -129,7 +133,7 @@ def tanh(x):
         The output tensor.
 
     """
-    return ops.Tanh(x)
+    return _ops.Tanh(x)
 
 
 def binary_crossentropy(output, target):
@@ -148,7 +152,7 @@ def binary_crossentropy(output, target):
         The binary cross-entropy.
 
     """
-    return -(target * ops.Log(output) + (1.0 - target) * ops.Log(1.0 - output))
+    return -(target * _ops.Log(output) + (1. - target) * _ops.Log(1. - output))
 
 
 

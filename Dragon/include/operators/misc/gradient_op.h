@@ -40,8 +40,11 @@ class GradientGatherOp final : public Operator<Context> {
  public:
     GradientGatherOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws) {
-        for (int i = 0; i < InputSize(); i++)
-            if (Input(i).name() != "NULL") indices.push_back(i);
+        for (int i = 0; i < InputSize(); i++) {
+            if (Input(i).name() != "NULL") {
+                indices.push_back(i);
+            }
+        }
     }
     USE_OPERATOR_FUNCTIONS;
 
@@ -50,6 +53,16 @@ class GradientGatherOp final : public Operator<Context> {
 
  protected:
     vector<int> indices;
+};
+
+template <class Context>
+class GradientAddOp final : public Operator<Context> {
+ public:
+    USE_SIMPLE_CTOR_DTOR(GradientAddOp);
+    USE_OPERATOR_FUNCTIONS;
+
+    void RunOnDevice() override;
+    template <typename T> void RunWithType();
 };
 
 template <class Context>

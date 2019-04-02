@@ -16,12 +16,16 @@ from __future__ import division
 from __future__ import print_function
 
 import time
-import dragon
-from google.protobuf.text_format import Parse as parse_text_proto
 
-from dragon.vm.caffe.misc import root_solver
-from dragon.vm.caffe.net import Net
-from dragon.vm.caffe.proto import caffe_pb2 as pb
+from dragon import updaters as _updaters
+from dragon.core import mpi as _mpi
+from dragon.core import workspace as _workspace
+from google.protobuf.text_format import Parse as _parse_text_proto
+
+from dragon.vm.caffe.net import Net as _Net
+from dragon.vm.caffe.proto import caffe_pb2 as _proto_def
+from dragon.vm.caffe.misc import root_solver as _root_solver
+from dragon.vm.theano.compile.function import function as _Function
 
 
 class Solver(object):
@@ -48,8 +52,8 @@ class Solver(object):
         >>> solver = Solver('solver.prototxt')
 
         """
-        self._param = pb.SolverParameter()
-        parse_text_proto(open(proto_txt, 'r').read(), self._param)
+        self._param = _proto_def.SolverParameter()
+        _parse_text_proto(open(proto_txt, 'r').read(), self._param)
         if self._param.iter_size > 1:
             raise NotImplementedError('Gradients accumulating is deprecated.')
         self._net = None
@@ -75,12 +79,12 @@ class Solver(object):
 
         """
         if self._param.HasField('net'):
-            self._net = Net(self._param.net, "TRAIN")
+            self._net = _Net(self._param.net, "TRAIN")
 
         if self._param.HasField('train_net'):
             if self._net is not None:
                 raise RuntimeError('net or train_net can not be specified both.')
-            self._net = Net(self._param.train_net, "TRAIN")
+            self._net = _Net(self._param.train_net, "TRAIN")
 
     def InitTestNets(self):
         """Initialize the test nets.
@@ -94,10 +98,10 @@ class Solver(object):
         The implementation of `InitTestNets(solver.cpp, L104)`_.
 
         """
-        if dragon.mpi.Is_Init():
-            idx, group = dragon.mpi.AllowParallel()
+        if _mpi.Is_Init():
+            rank, group = _mpi.AllowParallel()
             # Only the root in a parallel group can test
-            if idx != -1 and dragon.mpi.Rank() != group[0]: return
+            if rank != -1 and _mpi.Rank() != group[0]: return
 
         num_test_net = len(self._param.test_iter)
         if num_test_net > 0:
@@ -106,12 +110,12 @@ class Solver(object):
 
         if len(self._param.test_net) > 0:
             for test_net in self._param.test_net:
-                 self._test_nets.append(Net(test_net, "TEST"))
+                 self._test_nets.append(_Net(test_net, "TEST"))
             num_test_net -= len(self._param.test_net)
 
         # Consider generic_net
         if num_test_net > 0:
-            self._test_nets.append(Net(self._param.net, "TEST"))
+            self._test_nets.append(_Net(self._param.net, "TEST"))
 
     def BuildNets(self):
         """Build the nets.
@@ -164,7 +168,7 @@ class Solver(object):
                             blob.decay_multiplier)
 
         # Compile
-        self.update = dragon.function(updater=self.optimizer)
+        self.update = _Function(updater=self.optimizer)
 
     def GetLearningRate(self):
         """Get learning rate based on the preset policy.
@@ -244,7 +248,7 @@ class Solver(object):
 
         for iter in range(test_iter):
             self.tests[test_idx](return_outputs=False)
-            if not root_solver(): continue
+            if not _root_solver(): continue
             if iter == 0:
                 for key in net.outputs:
                     values = net.blobs[key].data.get_value().flatten()
@@ -259,7 +263,7 @@ class Solver(object):
                         test_score[i] += value
                         i += 1
 
-        if not root_solver(): return
+        if not _root_solver(): return
 
         print('Iteration {}, Test net #{}'.format(self.iter, test_idx))
         for idx, score in enumerate(test_score):
@@ -299,12 +303,12 @@ class Solver(object):
             loss = 0.0
             for i in range(self._param.iter_size):
                 self.train(return_outputs=False)
-                if root_solver():
+                if _root_solver():
                     for e in self.net.losses:
                         values = e.get_value().flatten()
                         for v in values: loss += v
 
-            if root_solver():
+            if _root_solver():
                 loss /= self._param.iter_size
                 if len(loss_vec) < self._param.average_loss:
                     loss_vec.append(loss)
@@ -319,7 +323,7 @@ class Solver(object):
             self.update()
 
             # Display
-            if root_solver() and self._param.display:
+            if _root_solver() and self._param.display:
                 if self.iter % self._param.display == 0:
                     base_lr = self.optimizer.base_lr
                     print('Iteration %d, lr = %s, loss = %f, time = %.2fs' % \
@@ -410,7 +414,7 @@ class Solver(object):
         """
         tensors = [blob.data for blob in self._layer_blobs]
         filename = "_iter_" + str(self.iter)
-        dragon.workspace.Snapshot(tensors, filename,
+        _workspace.Snapshot(tensors, filename,
             prefix=self._param.snapshot_prefix,
                 suffix='.caffemodel', format='caffe')
 
@@ -492,7 +496,7 @@ class SGDSolver(Solver):
     """
     def __init__(self, proto_txt):
         super(SGDSolver, self).__init__(proto_txt=proto_txt)
-        self.optimizer = dragon.updaters.SGDUpdater(**self._optimizer_arguments)
+        self.optimizer = _updaters.SGDUpdater(**self._optimizer_arguments)
         self.BuildOptimizer()
 
     def ParseOptimizerArguments(self):
@@ -514,7 +518,7 @@ class NesterovSolver(Solver):
     """
     def __init__(self, proto_txt):
         super(NesterovSolver, self).__init__(proto_txt=proto_txt)
-        self.optimizer = dragon.updaters.NesterovUpdater(**self._optimizer_arguments)
+        self.optimizer = _updaters.NesterovUpdater(**self._optimizer_arguments)
         self.BuildOptimizer()
 
     def ParseOptimizerArguments(self):
@@ -538,7 +542,7 @@ class RMSPropSolver(Solver):
     """
     def __init__(self, proto_txt):
         super(RMSPropSolver, self).__init__(proto_txt=proto_txt)
-        self.optimizer = dragon.updaters.RMSPropUpdater(**self._optimizer_arguments)
+        self.optimizer = _updaters.RMSPropUpdater(**self._optimizer_arguments)
         self.BuildOptimizer()
 
     def ParseOptimizerArguments(self):
@@ -565,7 +569,7 @@ class AdamSolver(Solver):
     """
     def __init__(self, proto_txt):
         super(AdamSolver, self).__init__(proto_txt=proto_txt)
-        self.optimizer = dragon.updaters.AdamUpdater(**self._optimizer_arguments)
+        self.optimizer = _updaters.AdamUpdater(**self._optimizer_arguments)
         self.BuildOptimizer()
 
     def ParseOptimizerArguments(self):

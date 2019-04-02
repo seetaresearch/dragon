@@ -17,7 +17,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon
+from dragon.ops import BatchNorm as _BatchNormOp
 
 from dragon.vm.tensorflow.framework import tensor_shape
 from dragon.vm.tensorflow.layers import base
@@ -25,26 +25,29 @@ from dragon.vm.tensorflow.ops import init_ops
 
 
 class BatchNormalization(base.Layer):
-    def __init__(self,
-                 axis=-1,
-                 momentum=0.99,
-                 epsilon=1e-3,
-                 center=True,
-                 scale=True,
-                 beta_initializer=init_ops.zeros_initializer(),
-                 gamma_initializer=init_ops.ones_initializer(),
-                 moving_mean_initializer=init_ops.zeros_initializer(),
-                 moving_variance_initializer=init_ops.ones_initializer(),
-                 beta_regularizer=None,
-                 gamma_regularizer=None,
-                 renorm=False,
-                 renorm_clipping=None,
-                 renorm_momentum=0.99,
-                 fused=None,
-                 trainable=True,
-                 name=None,
-                 **kwargs):
-        super(BatchNormalization, self).__init__(trainable=trainable, name=name, **kwargs)
+    def __init__(
+        self,
+        axis=-1,
+        momentum=0.99,
+        epsilon=1e-3,
+        center=True,
+        scale=True,
+        beta_initializer=init_ops.zeros_initializer(),
+        gamma_initializer=init_ops.ones_initializer(),
+        moving_mean_initializer=init_ops.zeros_initializer(),
+        moving_variance_initializer=init_ops.ones_initializer(),
+        beta_regularizer=None,
+        gamma_regularizer=None,
+        renorm=False,
+        renorm_clipping=None,
+        renorm_momentum=0.99,
+        fused=None,
+        trainable=True,
+        name=None,
+        **kwargs
+    ):
+        super(BatchNormalization, self).__init__(
+            trainable=trainable, name=name, **kwargs)
         self.axis = axis
         self.momentum = momentum
         self.epsilon = epsilon
@@ -92,33 +95,37 @@ class BatchNormalization(base.Layer):
             name='moving_mean',
             shape=(param_dim.value,),
             initializer=self.moving_mean_initializer,
-            trainable=False)
+            trainable=False,
+        )
 
         self.moving_variance = self.add_variable(
             name='moving_variance',
             shape=(param_dim.value,),
             initializer=self.moving_variance_initializer,
-            trainable=False)
+            trainable=False,
+        )
 
         self.gamma = self.add_variable(
             name='gamma',
             shape=(param_dim.value,),
             initializer=self.gamma_initializer,
             regularizer=self.gamma_regularizer,
-            trainable=self.scale)
+            trainable=self.scale,
+        )
 
         self.beta = self.add_variable(
             name='beta',
             shape=(param_dim.value,),
             initializer=self.beta_initializer,
             regularizer=self.beta_regularizer,
-            trainable=self.center)
+            trainable=self.center,
+        )
 
         self.built = True
 
     def call(self, inputs, training=False, *args, **kwargs):
         use_stats = 0 if training else 1
-        return dragon.ops.BatchNorm([
+        return _BatchNormOp([
             inputs,
             self.moving_mean,
             self.moving_variance,
@@ -127,7 +134,8 @@ class BatchNormalization(base.Layer):
             axis=self.axis,
             momentum=self.momentum,
             eps=self.epsilon,
-            use_stats=use_stats)
+            use_stats=use_stats,
+        )
 
 
 def batch_normalization(
@@ -170,7 +178,8 @@ def batch_normalization(
         trainable=trainable,
         name=name,
         _reuse=reuse,
-        _scope=name).apply(inputs, training=training)
+        _scope=name,
+    ).apply(inputs, training=training)
 
 
 # Aliases

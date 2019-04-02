@@ -24,18 +24,20 @@ from dragon.vm.tensorflow.ops import standard_ops
 
 
 class Dense(base.Layer):
-    def __init__(self,
-                 units,
-                 activation=None,
-                 use_bias=True,
-                 kernel_initializer=None,
-                 bias_initializer=init_ops.zeros_initializer(),
-                 kernel_regularizer=None,
-                 bias_regularizer=None,
-                 activity_regularizer=None,
-                 trainable=True,
-                 name=None,
-                 **kwargs):
+    def __init__(
+        self,
+        units,
+        activation=None,
+        use_bias=True,
+        kernel_initializer=None,
+        bias_initializer=init_ops.zeros_initializer(),
+        kernel_regularizer=None,
+        bias_regularizer=None,
+        activity_regularizer=None,
+        trainable=True,
+        name=None,
+        **kwargs
+    ):
         super(Dense, self).__init__(trainable=trainable, name=name, **kwargs)
         self.units = units
         self.activation = activation
@@ -61,7 +63,8 @@ class Dense(base.Layer):
             shape=[input_shape[-1].value, self.units],
             initializer=self.kernel_initializer,
             regularizer=self.kernel_regularizer,
-            dtype=self.dtype)
+            dtype=self.dtype,
+        )
 
         if self.use_bias:
             self.bias = self.add_variable(
@@ -69,7 +72,8 @@ class Dense(base.Layer):
                 shape=[self.units,],
                 initializer=self.bias_initializer,
                 regularizer=self.bias_regularizer,
-                dtype=self.dtype)
+                dtype=self.dtype,
+            )
         else:
             self.bias = None
         self.built = True
@@ -83,18 +87,20 @@ class Dense(base.Layer):
         return outputs
 
 
-def dense(inputs,
-          units,
-          activation=None,
-          use_bias=True,
-          kernel_initializer=None,
-          bias_initializer=init_ops.zeros_initializer(),
-          kernel_regularizer=None,
-          bias_regularizer=None,
-          activity_regularizer=None,
-          trainable=True,
-          name=None,
-          reuse=None):
+def dense(
+    inputs,
+    units,
+    activation=None,
+    use_bias=True,
+    kernel_initializer=None,
+    bias_initializer=init_ops.zeros_initializer(),
+    kernel_regularizer=None,
+    bias_regularizer=None,
+    activity_regularizer=None,
+    trainable=True,
+    name=None,
+    reuse=None,
+):
     return Dense(
         units,
         activation=activation,
@@ -107,4 +113,5 @@ def dense(inputs,
         trainable=trainable,
         name=name,
         _scope=name,
-        _reuse=reuse).apply(inputs)
+        _reuse=reuse,
+    ).apply(inputs)

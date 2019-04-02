@@ -49,12 +49,12 @@ void CuDNNAffineOp<Context>::RunWithType() {
     // Y = alpha * X
     CUDNN_CHECK(cudnnSetOpTensorDescriptor(
         mul_desc, CUDNN_OP_TENSOR_MUL,
-            CUDNNType<CT>::type, CUDNN_PROPAGATE_NAN));
+        CUDNNType<CT>::type, CUDNN_PROPAGATE_NAN));
     CUDNN_CHECK(cudnnOpTensor(
         ctx()->cudnn_handle(), mul_desc,
-            CUDNNType<DT>::one, input_desc, Xdata,
-                CUDNNType<DT>::one, param_desc, Adata,
-                    CUDNNType<DT>::zero, input_desc, Ydata));
+        CUDNNType<DT>::one, input_desc, Xdata,
+        CUDNNType<DT>::one, param_desc, Adata,
+        CUDNNType<DT>::zero, input_desc, Ydata));
 
     // Y += beta
     if (InputSize() > 2) {
@@ -62,12 +62,12 @@ void CuDNNAffineOp<Context>::RunWithType() {
         auto* Bdata = Input(2).template data<DT, Context>();
         CUDNN_CHECK(cudnnSetOpTensorDescriptor(
             add_desc, CUDNN_OP_TENSOR_ADD,
-                CUDNNType<CT>::type, CUDNN_PROPAGATE_NAN));
+            CUDNNType<CT>::type, CUDNN_PROPAGATE_NAN));
         CUDNN_CHECK(cudnnOpTensor(
             ctx()->cudnn_handle(), add_desc,
-                CUDNNType<DT>::one, input_desc, Ydata,
-                    CUDNNType<DT>::one, param_desc, Bdata,
-                        CUDNNType<DT>::zero, input_desc, Ydata));
+            CUDNNType<DT>::one, input_desc, Ydata,
+            CUDNNType<DT>::one, param_desc, Bdata,
+            CUDNNType<DT>::zero, input_desc, Ydata));
     }
 }
 
@@ -98,7 +98,7 @@ void CuDNNAffineGradientOp<Context>::RunWithType() {
 
     CUDNN_CHECK(cudnnSetOpTensorDescriptor(
         mul_desc, CUDNN_OP_TENSOR_MUL,
-            CUDNNType<CT>::type, CUDNN_PROPAGATE_NAN));
+        CUDNNType<CT>::type, CUDNN_PROPAGATE_NAN));
 
     // dA = X * dY
     if (Output(1)->name() != "NULL") {
@@ -139,9 +139,9 @@ void CuDNNAffineGradientOp<Context>::RunWithType() {
     if (Output(0)->name() != "NULL") {
         CUDNN_CHECK(cudnnOpTensor(
             ctx()->cudnn_handle(), mul_desc,
-                CUDNNType<DT>::one, input_desc, dYdata,
-                    CUDNNType<DT>::one, param_desc, Adata,
-                        CUDNNType<DT>::zero, input_desc, dXdata));
+            CUDNNType<DT>::one, input_desc, dYdata,
+            CUDNNType<DT>::one, param_desc, Adata,
+            CUDNNType<DT>::zero, input_desc, dXdata));
     }
 }
 
@@ -152,8 +152,9 @@ void CuDNNAffineGradientOp<Context>::ComputeScaleGradient(
 #if CUDNN_VERSION_MIN(6, 0, 0)
     CUDNN_CHECK(cudnnSetReduceTensorDescriptor(
         reduce_desc, CUDNN_REDUCE_TENSOR_ADD,
-            CUDNNType<CT>::type, CUDNN_PROPAGATE_NAN,
-                CUDNN_REDUCE_TENSOR_NO_INDICES, CUDNN_32BIT_INDICES));
+        CUDNNType<CT>::type, CUDNN_PROPAGATE_NAN,
+        CUDNN_REDUCE_TENSOR_NO_INDICES,
+        CUDNN_32BIT_INDICES));
     size_t workspace_size = 0;
     CUDNN_CHECK(cudnnGetReductionWorkspaceSize(
         ctx()->cudnn_handle(), reduce_desc,
@@ -161,9 +162,9 @@ void CuDNNAffineGradientOp<Context>::ComputeScaleGradient(
     auto* WSdata = ws()->template caches<Context>({ workspace_size })[0];;
     CUDNN_CHECK(cudnnReduceTensor(
         ctx()->cudnn_handle(), reduce_desc,
-            nullptr, 0, WSdata, workspace_size,
-                CUDNNType<DT>::one, input_desc, dYxX,
-                    CUDNNType<DT>::zero, param_desc, dA));
+        nullptr, 0, WSdata, workspace_size,
+        CUDNNType<DT>::one, input_desc, dYxX,
+        CUDNNType<DT>::zero, param_desc, dA));
 #endif
 }
 
@@ -181,16 +182,18 @@ void CuDNNAffineGradientOp<Context>::ComputeScaleGradient_v2(
             dA : ws()->template caches<T, Context>(
                 { outer_dim * scale_dim })[0];
         math::Gemv(
-            CblasNoTrans, outer_dim * scale_dim, inner_dim,
-                1.f, dYxX, multiplier,
-                    0.f, SRes_data, ctx());
+            CblasNoTrans,
+            outer_dim * scale_dim, inner_dim,
+            1.f, dYxX, multiplier,
+            0.f, SRes_data, ctx());
     }
     // Reduce outer dimensions
     if (outer_dim != 1) {
         math::Gemv(
-            CblasTrans, outer_dim, scale_dim,
-                1.f, SRes_data, multiplier,
-                    0.f, dA, ctx());
+            CblasTrans,
+            outer_dim, scale_dim,
+            1.f, SRes_data, multiplier,
+            0.f, dA, ctx());
     }
 }
 

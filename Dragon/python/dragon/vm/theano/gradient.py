@@ -9,7 +9,12 @@
 #
 # ------------------------------------------------------------
 
-import dragon as dg
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+from dragon.core.tensor import Tensor as _Tensor
+from dragon.ops import StopGradient as _StopGradientOp
 
 
 def grad(cost, wrt, **kwargs):
@@ -44,7 +49,7 @@ def grad(cost, wrt, **kwargs):
     for w in wrt:
         cost.gradient.add_wrt(w.name)
         w.gradient.add_cost(cost)
-        grads.append(dg.Tensor.Ref(
+        grads.append(_Tensor.Ref(
             name=w.name + '_grad',
                 shape=w.shape, dtype=w.dtype))
     if len(grads) == 1: return grads[0]
@@ -67,4 +72,4 @@ def disconnected_grad(x):
         The identity of input.
 
     """
-    return dg.ops.StopGradient(x)
+    return _StopGradientOp(x)

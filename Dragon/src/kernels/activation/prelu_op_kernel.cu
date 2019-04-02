@@ -204,19 +204,21 @@ template<> void PReluWGrad<float, CUDAContext>(
              0, ctx->cuda_stream() >> >
         (cdim, rows, row_offset, dy, x, bcast_dw);
     if (channel_shared) {
-        math::Dot<float, CUDAContext>(channels * dim,
+        math::Dot(channels * dim,
             bcast_dw, multiplier, dw, ctx);
     } else {
         if (data_format == "NCHW") {
-            math::Gemv<float, CUDAContext>(
-                CblasNoTrans, channels, dim,
-                    1.f, bcast_dw, multiplier,
-                        0.f, dw, ctx);
+            math::Gemv(
+                CblasNoTrans,
+                channels, dim,
+                1.f, bcast_dw, multiplier,
+                0.f, dw, ctx);
         } else if (data_format == "NHWC") {
             math::Gemv<float, CUDAContext>(
-                CblasTrans, dim, channels,
-                    1.f, bcast_dw, multiplier,
-                        0.f, dw, ctx);
+                CblasTrans,
+                dim, channels,
+                1.f, bcast_dw, multiplier,
+                0.f, dw, ctx);
         } else LOG(FATAL) << "Unknown data format: " << data_format;
     }
 }

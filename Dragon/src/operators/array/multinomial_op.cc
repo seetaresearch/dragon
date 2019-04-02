@@ -33,6 +33,7 @@ void MultinomialOp<Context>::RunWithType() {
 
     double running_total, r;
     int idx = 0, num_classes = Input(0).dim(axis);
+
     auto* rng = ctx()->rand_generator();
 
     for (int i = 0; i < outer_dim; ++i) {
@@ -47,7 +48,9 @@ void MultinomialOp<Context>::RunWithType() {
             r = dist(*rng);
             auto found_iter = std::upper_bound(
                 Sdata, Sdata + num_classes, r);
-            Ydata[idx++] = std::distance(Sdata, found_iter);
+            Ydata[idx++] = std::min(
+                (int)std::distance(Sdata,
+                    found_iter), num_classes - 1);
         }
         Xdata += num_classes;
     }

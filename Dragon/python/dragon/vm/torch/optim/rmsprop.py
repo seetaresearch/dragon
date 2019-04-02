@@ -21,27 +21,55 @@ from dragon.vm.torch.optim.optimizer import Optimizer
 
 
 class RMSprop(Optimizer):
-    def __init__(self, params, lr=1e-2, alpha=0.99, eps=1e-8, weight_decay=0,
-                 momentum=0, centered=False, scale_gradient=1.0, clip_gradient=-1.0):
-        if not 0.0 <= lr:
+    def __init__(
+        self,
+        params,
+        lr=1e-2,
+        alpha=0.99,
+        eps=1e-8,
+        weight_decay=0,
+        momentum=0,
+        centered=False,
+        scale_gradient=1.,
+        clip_gradient=-1.,
+    ):
+        if not 0. <= lr:
             raise ValueError("Invalid learning rate: {}".format(lr))
-        if not 0.0 <= eps:
+        if not 0. <= eps:
             raise ValueError("Invalid epsilon value: {}".format(eps))
-        if momentum != 0:
-            raise NotImplementedError()
-        if not 0.0 <= alpha:
+        if momentum < 0.:
+            raise ValueError("Invalid momentum value: {}".format(momentum))
+        if not 0. <= alpha:
             raise ValueError("Invalid alpha value: {}".format(alpha))
-
-        defaults = dict(lr=lr, momentum=momentum, alpha=alpha, eps=eps,
-                        centered=centered, weight_decay=weight_decay,
-                        scale_gradient=scale_gradient, clip_gradient=clip_gradient)
+        defaults = dict(
+            lr=lr,
+            momentum=momentum,
+            alpha=alpha,
+            eps=eps,
+            centered=centered,
+            weight_decay=weight_decay,
+            scale_gradient=scale_gradient,
+            clip_gradient=clip_gradient,
+        )
         super(RMSprop, self).__init__(params, defaults)
-        self._update_type = 'RMSPropUpdate'
-        self._mutable_parameters = {
-            'lr': 'base_lr',
-            'alpha': 'decay',
-            'eps': 'eps',
-            'weight_decay': 'l2_decay',
-            'clip_gradient': 'clip_gradient',
-            'scale_gradient': 'scale_gradient',
-        }
+        if momentum != 0.:
+            self._update_type = 'AdamUpdate'
+            self._mutable_parameters = {
+                'lr': 'base_lr',
+                'momentum': 'beta1',
+                'alpha': 'beta2',
+                'eps': 'eps',
+                'weight_decay': 'l2_decay',
+                'clip_gradient': 'clip_gradient',
+                'scale_gradient': 'scale_gradient',
+            }
+        else:
+            self._update_type = 'RMSPropUpdate'
+            self._mutable_parameters = {
+                'lr': 'base_lr',
+                'alpha': 'decay',
+                'eps': 'eps',
+                'weight_decay': 'l2_decay',
+                'clip_gradient': 'clip_gradient',
+                'scale_gradient': 'scale_gradient',
+            }

@@ -9,9 +9,11 @@
 #
 # ------------------------------------------------------------
 
-from .basic import *
-from .extra_ops import *
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-from . import nnet
-
-from ..gradient import grad, disconnected_grad
+from dragon.vm.theano.tensor.basic import *
+from dragon.vm.theano.tensor.extra_ops import *
+from dragon.vm.theano.tensor import nnet
+from dragon.vm.theano.gradient import grad, disconnected_grad

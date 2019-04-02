@@ -38,7 +38,7 @@ Workspace* ResetWorkspace(const std::string& name) {
     g_workspaces[name].reset(new Workspace(name));
     for (auto& sub_workspace : sub_workspaces[name]) {
         if (g_workspaces.count(sub_workspace) > 0)
-            g_workspaces[name]->Move(
+            g_workspaces[name]->MergeFrom(
                 g_workspaces[sub_workspace].get());
     }
     return g_workspaces[name].get();
@@ -55,10 +55,10 @@ void MoveWorkspace(
     std::unique_lock<std::mutex> lock(g_mutex);
     CHECK(src) << "\nGiven source workspace is invalid.";
     CHECK(dst) << "\nGiven destination workspace is invalid.";
-    dst->Move(src);
+    dst->MergeFrom(src);
     sub_workspaces[dst->name()].push_back(src->name());
     LOG(INFO) << "Move the Workspace(" << src->name() << ") "
-        << "into the Workspace(" << dst->name() << ").";
+              << "into the Workspace(" << dst->name() << ").";
 }
 
 void DestroyWorkspace(const std::string& name) {

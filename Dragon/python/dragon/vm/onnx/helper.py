@@ -21,8 +21,8 @@ import sys
 from onnx.backend.base import namedtupledict
 from onnx import numpy_helper
 
-import dragon as dg
-from dragon.vm.onnx.workspace import Workspace
+from dragon.core import workspace as _workspace
+from dragon.core.tensor import Tensor as _Tensor
 
 
 INITIALIZER_TAG = {
@@ -65,7 +65,7 @@ def fetch_initializer(initializer):
     # Fetch the initializer
     return [
         numpy_helper.from_array(
-            dg.workspace.FetchTensor(name), name=name)
+            _workspace.FetchTensor(name), name=name)
                 for name in initializer
     ]
 
@@ -87,32 +87,32 @@ def native_run_graph(graph_def, inputs, initializer, init_func=None):
             graph_def.arg[i].i = 0
 
     # Create an anonymous workspace
-    ws = Workspace()
+    ws = _workspace.Workspace()
 
-    with dg.ws_scope(ws.name):
+    with ws.as_default():
         # Register all the initializer before feeding them
         for name in initializer:
-            dg.Tensor(name=name).Variable()
+            _Tensor(name=name).Variable()
 
         # Feed the given values if necessary
         if init_func: init_func()
 
         # Feed the external inputs
         for name, blob in inputs.items():
-            dg.workspace.FeedTensor(name, blob)
+            _workspace.FeedTensor(name, blob)
 
         # Create and Run the graph
-        graph_name = dg.workspace.CreateGraph(graph_def)
-        dg.workspace.RunGraph(graph_name, return_outputs=False)
+        graph_name = _workspace.CreateGraph(graph_def)
+        _workspace.RunGraph(graph_name, return_outputs=False)
 
         # Fetch the outputs
         output_names = graph_def.output
-        output_values = [dg.workspace.FetchTensor(name) for name in output_names]
+        output_values = [_workspace.FetchTensor(name) for name in output_names]
 
         # Fetch the initializer
         initializer = [
             numpy_helper.from_array(
-                dg.workspace.FetchTensor(name), name=name)
+                _workspace.FetchTensor(name), name=name)
                     for name in initializer
         ]
 

@@ -15,7 +15,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon
+from dragon.core import scope as _scope
+from dragon.core.tensor import Tensor as _Tensor
 
 
 class Layer(object):
@@ -74,12 +75,12 @@ class Layer(object):
         # Note that a non-empty tensor scope will make it
         # impossible to load/save caffe models. You should use
         # a new workspace instead of the terrible name scope
-        scoped_name = dragon.get_default_name_scope() + self._name
+        scoped_name = _scope.get_default_name_scope() + self._name
         param_name = scoped_name + '/param:{}'.format(len(self._blobs))
 
         # Set the name explicitly
-        variable = dragon.Tensor.Ref(param_name)
-        variable_grad = dragon.Tensor.Ref(param_name + '_grad')
+        variable = _Tensor.Ref(param_name)
+        variable_grad = _Tensor.Ref(param_name + '_grad')
 
         if filler is not None:
             variable.Fill(**filler)

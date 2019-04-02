@@ -16,9 +16,14 @@ void ROIPoolOp<Context>::RunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
     kernel::ROIPool(
-        Input(0).dim(1), Input(0).dim(2), Input(0).dim(3),
-            pool_h, pool_w, Input(1).dim(0), spatial_scale,
-                Xdata, Rdata, Mdata, Ydata, ctx());
+        Input(0).dim(1),
+        Input(0).dim(2),
+        Input(0).dim(3),
+        pool_h, pool_w,
+        Input(1).dim(0),
+        spatial_scale,
+        Xdata, Rdata, Mdata,
+        Ydata, ctx());
 }
 
 template <class Context>
@@ -51,10 +56,15 @@ void ROIPoolGradientOp<Context>::RunWithType() {
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
 
     kernel::ROIPoolGrad(
-        Output(0)->dim(0), Output(0)->dim(1),
-            Output(0)->dim(2), Output(0)->dim(3),
-                pool_h, pool_w, Input(1).dim(0), spatial_scale,
-                    dYdata, Rdata, Mdata, dXdata, ctx());
+        Output(0)->dim(0),
+        Output(0)->dim(1),
+        Output(0)->dim(2),
+        Output(0)->dim(3),
+        pool_h, pool_w,
+        Input(1).dim(0),
+        spatial_scale,
+        dYdata, Rdata, Mdata,
+        dXdata, ctx());
 }
 
 template <class Context>
@@ -73,10 +83,15 @@ void ROIPoolGradientOp<Context>::RunWithFloat16() {
     kernel::TypeA2B(Input(-1).count(), dYdata, WSdata[0], ctx());
 
     kernel::ROIPoolGrad(
-        Output(0)->dim(0), Output(0)->dim(1),
-            Output(0)->dim(2), Output(0)->dim(3),
-                 pool_h, pool_w, Input(1).dim(0), spatial_scale,
-                    WSdata[0], Rdata, Mdata, WSdata[1], ctx());
+        Output(0)->dim(0),
+        Output(0)->dim(1),
+        Output(0)->dim(2),
+        Output(0)->dim(3),
+        pool_h, pool_w,
+        Input(1).dim(0),
+        spatial_scale,
+        WSdata[0], Rdata, Mdata,
+        WSdata[1], ctx());
 
     kernel::TypeA2B(Output(0)->count(), WSdata[1], dXdata, ctx());
 }

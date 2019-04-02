@@ -20,36 +20,14 @@ namespace dragon {
 namespace python {
 
 void AddOperatorMethods(pybind11::module& m) {
-    /*! \brief Return all the registered operators */
-    m.def("RegisteredOperators", []() { return CPUOperatorRegistry()->keys(); });
-
-    /*! \brief Return all the operators without gradients */
-    m.def("NoGradientOperators", []() { return NoGradientRegistry()->keys(); });
-
-    /*! \brief Run a operator from the def reference */
-    m.def("RunOperator", [](
-        OperatorDef*        def,
-        const bool          verbose) {
-        pybind11::gil_scoped_release g;
-        if (verbose) {
-            // It is not a good design to print the debug string
-            std::cout << def->DebugString() << std::endl;
-        }
-        ws()->RunOperator(*def);
+    /*! \brief Return the registered operators */
+    m.def("RegisteredOperators", []() {
+        return CPUOperatorRegistry()->keys(); 
     });
 
-    /*! \brief Run a operator from the serialized def */
-    m.def("RunOperator", [](
-        const string&       serialized,
-        const bool          verbose) {
-        OperatorDef def;
-        CHECK(def.ParseFromString(serialized));
-        pybind11::gil_scoped_release g;
-        if (verbose) {
-            // It is not a good design to print the debug string
-            std::cout << def.DebugString() << std::endl;
-        }
-        ws()->RunOperatorOnce(def);
+    /*! \brief Return the non-gradient operators */
+    m.def("NoGradientOperators", []() {
+        return NoGradientRegistry()->keys(); 
     });
 }
 

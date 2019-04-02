@@ -21,10 +21,12 @@ void CuDNNSoftmaxOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
-    CUDNN_CHECK(cudnnSoftmaxForward(ctx()->cudnn_handle(),
-        CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL,
-            CUDNNType<T>::one, input_desc, Xdata,
-                CUDNNType<T>::zero, output_desc, Ydata));
+    CUDNN_CHECK(cudnnSoftmaxForward(
+        ctx()->cudnn_handle(),
+        CUDNN_SOFTMAX_ACCURATE,
+        CUDNN_SOFTMAX_MODE_CHANNEL,
+        CUDNNType<T>::one, input_desc, Xdata,
+        CUDNNType<T>::zero, output_desc, Ydata));
 }
 
 template <class Context>
@@ -52,10 +54,12 @@ void CuDNNSoftmaxGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
     auto* Ydata = Input(0).template data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    CUDNN_CHECK(cudnnSoftmaxBackward(ctx()->cudnn_handle(),
-        CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL,
-            CUDNNType<T>::one, input_desc, Ydata, input_desc, dYdata,
-                CUDNNType<T>::zero, output_desc, dXdata));
+    CUDNN_CHECK(cudnnSoftmaxBackward(
+        ctx()->cudnn_handle(),
+        CUDNN_SOFTMAX_ACCURATE,
+        CUDNN_SOFTMAX_MODE_CHANNEL,
+        CUDNNType<T>::one, input_desc, Ydata, input_desc, dYdata,
+        CUDNNType<T>::zero, output_desc, dXdata));
 }
 
 template <class Context>

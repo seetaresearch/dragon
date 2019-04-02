@@ -13,32 +13,37 @@ template <class Context>
 void CuDNNConvTranspose2dOp<Context>::SetConvDescFromInputs() {
     if (XIsType(Input(0), float)) {
 #if CUDNN_VERSION_MIN(6, 0, 0)
-        CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
+        CUDNN_CHECK(cudnnSetConvolution2dDescriptor(
+            conv_desc,
             pad_l[0], pad_l[1],
-                stride[0], stride[1],
-                    dilation[0], dilation[1],
-                        CUDNN_CROSS_CORRELATION,
-                            CUDNN_DATA_FLOAT));
+            stride[0], stride[1],
+            dilation[0], dilation[1],
+            CUDNN_CROSS_CORRELATION,
+            CUDNN_DATA_FLOAT));
 #else
-        CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
+        CUDNN_CHECK(cudnnSetConvolution2dDescriptor(
+            conv_desc,
             pad_l[0], pad_l[1],
-                stride[0], stride[1], 1, 1,
-                    CUDNN_CROSS_CORRELATION));
+            stride[0], stride[1], 1, 1,
+            CUDNN_CROSS_CORRELATION));
 #endif
     } else if (XIsType(Input(0), float16)) {
 #if CUDNN_VERSION_MIN(6, 0, 0)
         compute_type = CUDNN_DATA_FLOAT;
-        CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
+        CUDNN_CHECK(cudnnSetConvolution2dDescriptor(
+            conv_desc,
             pad_l[0], pad_l[1],
-                stride[0], stride[1],
-                    dilation[0], dilation[1],
-                        CUDNN_CROSS_CORRELATION,
-                            compute_type));
+            stride[0], stride[1],
+            dilation[0], dilation[1],
+            CUDNN_CROSS_CORRELATION,
+            compute_type));
 #else
-        CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
+        CUDNN_CHECK(cudnnSetConvolution2dDescriptor(
+            conv_desc,
             pad_l[0], pad_l[1],
-                stride[0], stride[1], 1, 1,
-                    CUDNN_CROSS_CORRELATION));
+            stride[0], stride[1],
+            1, 1,
+            CUDNN_CROSS_CORRELATION));
 #endif
     }
 #if CUDNN_VERSION_MIN(7, 0, 0)
@@ -58,12 +63,15 @@ void CuDNNConvTranspose2dOp<Context>::ResetDesc() {
             // Determine the input & output shape
             output_dims = Output(0)->dims();
             cudnnSetTensor4dDescWithGroup<T>(
-                &input_desc, data_format, Input(0).dims(), cudnn_group);
+                &input_desc, data_format,
+                    Input(0).dims(), cudnn_group);
             cudnnSetTensor4dDescWithGroup<T>(
-                &output_desc, data_format, Output(0)->dims(), cudnn_group);
+                &output_desc, data_format,
+                    Output(0)->dims(), cudnn_group);
             if (HasBias()) {
                 cudnnSetTensor4dDesc<T>(
-                    &output2b_desc, data_format, Output(0)->dims());
+                    &output2b_desc, data_format,
+                        Output(0)->dims());
             }
             // Determine the misc
             if (data_format == "NCHW") {
@@ -102,15 +110,18 @@ void CuDNNConvTranspose2dOp<Context>::ResetDesc() {
 
         // Now, Select the appropriate algorithm
         CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm(
-            ctx()->cudnn_handle(), filter_desc,
-                input_desc, conv_desc, output_desc,
-                    CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT,
-                        WORKSPACE_LIMIT_BYTES, &fwd_algo));
+            ctx()->cudnn_handle(),
+            filter_desc, input_desc,
+            conv_desc, output_desc,
+            CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT,
+            WORKSPACE_LIMIT_BYTES,
+            &fwd_algo));
 
         CUDNN_CHECK(cudnnGetConvolutionBackwardDataWorkspaceSize(
-            ctx()->cudnn_handle(), filter_desc,
-                input_desc, conv_desc, output_desc,
-                    fwd_algo, &fwd_data_size));
+            ctx()->cudnn_handle(),
+            filter_desc, input_desc,
+            conv_desc, output_desc,
+            fwd_algo, &fwd_data_size));
     }
 }
 
@@ -130,18 +141,20 @@ void CuDNNConvTranspose2dOp<Context>::RunWithType() {
     auto cudnn_handle = ctx()->cudnn_handle();
 
     for (int g = 0; g < cudnn_group; g++) {
-        CUDNN_CHECK(cudnnConvolutionBackwardData(cudnn_handle,
+        CUDNN_CHECK(cudnnConvolutionBackwardData(
+            cudnn_handle,
             CUDNNType<T>::one, filter_desc, Wdata + weight_offset * g,
-                input_desc, Xdata + x_offset * g,
-                    conv_desc, fwd_algo, WSdata, fwd_data_size,
+            input_desc, Xdata + x_offset * g,
+            conv_desc, fwd_algo, WSdata, fwd_data_size,
             CUDNNType<T>::zero, output_desc, Ydata + y_offset * g));
     }
 
     if (HasBias()) {
         auto* Bdata = Input(2).template data<T, Context>();
-        CUDNN_CHECK(cudnnAddTensor(cudnn_handle,
+        CUDNN_CHECK(cudnnAddTensor(
+            cudnn_handle,
             CUDNNType<T>::one, bias_desc, Bdata,
-                CUDNNType<T>::one, output2b_desc, Ydata));
+            CUDNNType<T>::one, output2b_desc, Ydata));
     }
 }
 
@@ -167,32 +180,38 @@ template <class Context>
 void CuDNNConvTranspose2dGradientOp<Context>::SetConvDescFromInputs() {
     if (XIsType(Input(0), float)) {
 #if CUDNN_VERSION_MIN(6, 0, 0)
-        CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
+        CUDNN_CHECK(cudnnSetConvolution2dDescriptor(
+            conv_desc,
             pad_l[0], pad_l[1],
-                stride[0], stride[1],
-                    dilation[0], dilation[1],
-                        CUDNN_CROSS_CORRELATION,
-                            CUDNN_DATA_FLOAT));
+            stride[0], stride[1],
+            dilation[0], dilation[1],
+            CUDNN_CROSS_CORRELATION,
+            CUDNN_DATA_FLOAT));
 #else
-        CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
+        CUDNN_CHECK(cudnnSetConvolution2dDescriptor(
+            conv_desc,
             pad_l[0], pad_l[1],
-                stride[0], stride[1], 1, 1,
-                    CUDNN_CROSS_CORRELATION));
+            stride[0], stride[1],
+            1, 1,
+            CUDNN_CROSS_CORRELATION));
 #endif
     } else if (XIsType(Input(0), float16)) {
 #if CUDNN_VERSION_MIN(6, 0, 0)
         compute_type = CUDNN_DATA_FLOAT;
-        CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
+        CUDNN_CHECK(cudnnSetConvolution2dDescriptor(
+            conv_desc,
             pad_l[0], pad_l[1],
-                stride[0], stride[1],
-                    dilation[0], dilation[1],
-                        CUDNN_CROSS_CORRELATION,
-                            compute_type));
+            stride[0], stride[1],
+            dilation[0], dilation[1],
+            CUDNN_CROSS_CORRELATION,
+            compute_type));
 #else
-        CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc,
+        CUDNN_CHECK(cudnnSetConvolution2dDescriptor(
+            conv_desc,
             pad_l[0], pad_l[1],
-                stride[0], stride[1], 1, 1,
-                    CUDNN_CROSS_CORRELATION));
+            stride[0], stride[1],
+            1, 1,
+            CUDNN_CROSS_CORRELATION));
 #endif
     }
 #if CUDNN_VERSION_MIN(7, 0, 0)
@@ -212,12 +231,15 @@ void CuDNNConvTranspose2dGradientOp<Context>::ResetDesc() {
             // Determine the input & output shape
             output_dims = Input(-1).dims();
             cudnnSetTensor4dDescWithGroup<T>(
-                &input_desc, data_format, Input(-1).dims(), cudnn_group);
+                &input_desc, data_format,
+                    Input(-1).dims(), cudnn_group);
             cudnnSetTensor4dDescWithGroup<T>(
-                &output_desc, data_format, Input(0).dims(), cudnn_group);
+                &output_desc, data_format,
+                    Input(0).dims(), cudnn_group);
             if (HasBias()) {
                 cudnnSetTensor4dDesc<T>(
-                    &input2b_desc, data_format, Input(-1).dims());
+                    &input2b_desc, data_format,
+                        Input(-1).dims());
             }
             // Determine the misc
             if (data_format == "NCHW") {
@@ -256,26 +278,32 @@ void CuDNNConvTranspose2dGradientOp<Context>::ResetDesc() {
 
         // Now, Select the appropriate algorithm
         CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(
-            ctx()->cudnn_handle(), input_desc,
-                output_desc, conv_desc, filter_desc,
-                    CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT,
-                        WORKSPACE_LIMIT_BYTES, &bwd_filter_algo));
+            ctx()->cudnn_handle(),
+            input_desc, output_desc,
+            conv_desc, filter_desc,
+            CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT,
+            WORKSPACE_LIMIT_BYTES,
+            &bwd_filter_algo));
 
         CUDNN_CHECK(cudnnGetConvolutionBackwardFilterWorkspaceSize(
-            ctx()->cudnn_handle(), input_desc,
-                output_desc, conv_desc, filter_desc,
-                    bwd_filter_algo, &bwd_filter_size));
+            ctx()->cudnn_handle(),
+            input_desc, output_desc,
+            conv_desc, filter_desc,
+            bwd_filter_algo, &bwd_filter_size));
 
         CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(
-            ctx()->cudnn_handle(), input_desc,
-                filter_desc, conv_desc, output_desc,
-                    CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
-                        WORKSPACE_LIMIT_BYTES, &bwd_data_algo));
+            ctx()->cudnn_handle(),
+            input_desc, filter_desc,
+            conv_desc, output_desc,
+            CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
+            WORKSPACE_LIMIT_BYTES,
+            &bwd_data_algo));
 
         CUDNN_CHECK(cudnnGetConvolutionForwardWorkspaceSize(
-            ctx()->cudnn_handle(), input_desc,
-                filter_desc, conv_desc, output_desc,
-                    bwd_data_algo, &bwd_data_size));
+            ctx()->cudnn_handle(),
+            input_desc, filter_desc,
+            conv_desc, output_desc,
+            bwd_data_algo, &bwd_data_size));
     }
 }
 
@@ -292,28 +320,31 @@ void CuDNNConvTranspose2dGradientOp<Context>::RunWithType() {
 
     if (Output(2)->name() != "NULL") {
         T* dBdata = Output(2)->template mutable_data<T, Context>();
-        CUDNN_CHECK(cudnnConvolutionBackwardBias(cudnn_handle,
+        CUDNN_CHECK(cudnnConvolutionBackwardBias(
+            cudnn_handle,
             CUDNNType<T>::one, input2b_desc, dYdata,
-                CUDNNType<T>::zero, bias_desc, dBdata));
+            CUDNNType<T>::zero, bias_desc, dBdata));
     }
 
     for (int g = 0; g < cudnn_group; g++) {
         if (Output(1)->name() != "NULL") {
             auto* Xdata = Input(0).template data<T, Context>();
             auto* dWdata = Output(1)->template mutable_data<T, Context>();
-            CUDNN_CHECK(cudnnConvolutionBackwardFilter(cudnn_handle,
+            CUDNN_CHECK(cudnnConvolutionBackwardFilter(
+                cudnn_handle,
                 CUDNNType<T>::one, input_desc, dYdata + y_offset * g,
-                    output_desc, Xdata + x_offset * g,
-                        conv_desc, bwd_filter_algo, WSdata, bwd_filter_size,
+                output_desc, Xdata + x_offset * g,
+                conv_desc, bwd_filter_algo, WSdata, bwd_filter_size,
                 CUDNNType<T>::zero, filter_desc, dWdata + weight_offset * g));
         }
         if (Output(0)->name() != "NULL") {
             auto* Wdata = Input(1).template data<T, Context>();
             auto* dXdata = Output(0)->template mutable_data<T, Context>();
-            CUDNN_CHECK(cudnnConvolutionForward(cudnn_handle,
+            CUDNN_CHECK(cudnnConvolutionForward(
+                cudnn_handle,
                 CUDNNType<T>::one, input_desc, dYdata + y_offset * g,
-                    filter_desc, Wdata + weight_offset * g,
-                        conv_desc, bwd_data_algo, WSdata, bwd_data_size,
+                filter_desc, Wdata + weight_offset * g,
+                conv_desc, bwd_data_algo, WSdata, bwd_data_size,
                 CUDNNType<T>::zero, output_desc, dXdata + x_offset * g));
         }
     }

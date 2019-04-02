@@ -1,11 +1,8 @@
-#include "py_graph.h"
 #include "py_autograd.h"
 #include "py_operator.h"
 #include "py_tensor.h"
 #include "py_cuda.h"
 #include "py_mpi.h"
-#include "py_io.h"
-#include "py_onnx.h"
 #include "py_config.h"
 #include "py_proto.h"
 
@@ -15,13 +12,6 @@ namespace python {
 
 DEFINE_TYPED_REGISTRY(TensorFetcherRegistry, TypeId, TensorFetcherBase);
 DEFINE_TYPED_REGISTRY(TensorFeederRegistry, TypeId, TensorFeederBase);
-
-Map<string, unique_ptr < Workspace > > g_workspaces;
-Map<string, vector<string> > sub_workspaces;
-Workspace* g_workspace;
-string g_current_workspace;
-
-Workspace* ws() { return g_workspace; }
 
 TypeId CTypeToFetcher(TypeId type) {
     static Map<TypeId,TypeId> c_type_map {
@@ -41,152 +31,389 @@ REGISTER_TENSOR_FETCHER(TypeMeta::Id<NumpyFetcher>(), NumpyFetcher);
 REGISTER_TENSOR_FETCHER(TypeMeta::Id<StringFetcher>(), StringFetcher);
 REGISTER_TENSOR_FEEDER(TypeMeta::Id<NumpyFeeder>(), NumpyFeeder);
 
-void SwitchWorkspace(
-    const string&           name,
-    const bool              create_if_missing = true) {
-    if (g_workspaces.count(name)) {
-        g_current_workspace = name;
-        g_workspace = g_workspaces[name].get();
-    } else if (create_if_missing) {
-        unique_ptr<Workspace> new_workspace(new Workspace(name));
-        g_workspace = new_workspace.get();
-        g_workspaces[name] = std::move(new_workspace);
-        sub_workspaces[name] = vector<string>();
-        g_current_workspace = name;
-    } else {
-        LOG(FATAL) << "Workspace of the given name does not exist."
-           "\nAnd, it is not allowed to create. (Try to alllow?)";
-    }
-}
-
-void OnImportModule() {
-    []() { import_array1(); }();
-    static bool initialized = false;
-    if (initialized) return;
-    SwitchWorkspace("default", true);
-    g_current_workspace = "default";
-    initialized = true;
-}
+void OnImportModule() { []() { import_array1(); }(); }
 
 PYBIND11_MODULE(libdragon, m) {
+    /*! \brief Export the Workspace class */
+    pybind11::class_<Workspace>(m, "Workspace")
+        .def(pybind11::init<const string&>())
 
-     /*! \brief Switch to the specific workspace */
-    m.def("SwitchWorkspace", &SwitchWorkspace);
+        /*! \brief Return the name of this workspace */
+        .def_property_readonly("name", &Workspace::name)
 
-    /*! \brief Return the current active workspace */
-    m.def("CurrentWorkspace", []() {
-        return g_current_workspace;
-    });
+        /*! \brief Return the name of stored tensors */
+        .def_property_readonly("tensors", &Workspace::tensors)
 
-    /*! \brief List all of the existing workspace */
-    m.def("Workspaces", []() -> vector<string> {
-        vector<string> names;
-        for (auto const& it : g_workspaces)
-            names.emplace_back(it.first);
-        return names;
-    });
+        /*! \brief Return the name of stored graphs */
+        .def_property_readonly("graphs", &Workspace::graphs)
 
-    /*! \brief Move the source workspace into the target */
-    m.def("MoveWorkspace", [](
-        const string&           target,
-        const string&           source) {
-        CHECK(g_workspaces.count(source))
-            << "\nSource Workspace(" << source << ") does not exist.";
-        CHECK(g_workspaces.count(target))
-            << "\nTarget Workspace(" << target << ") does not exist.";
-        g_workspaces[target]->Move(g_workspaces[source].get());
-        sub_workspaces[target].push_back(source);
-        LOG(INFO) << "Move the Workspace(" << source << ") "
-            << "into the Workspace(" << target << ").";
-    });
+        /*! \brief Destory all the tensors */
+        .def("Clear", &Workspace::Clear)
 
-    /*! \brief Reset the specific workspace */
-    m.def("ResetWorkspace", [](const string& name) {
-        string target_workspace = g_current_workspace;
-        if (!name.empty()) target_workspace = name;
-        CHECK(g_workspaces.count(target_workspace))
-            << "\nWorkspace(" << target_workspace
-            << ") does not exist, can not be reset.";
-        LOG(INFO) << "Reset the Workspace(" << target_workspace << ")";
-        g_workspaces[target_workspace].reset(new Workspace(target_workspace));
-        g_workspace = g_workspaces[target_workspace].get();
-        for (auto& sub_workspace : sub_workspaces[target_workspace]) {
-            if (g_workspaces.count(sub_workspace) > 0)
-                g_workspace->Move(g_workspaces[sub_workspace].get());
-        }
-    });
+        /*! \brief Merge a external workspace into self */
+        .def("MergeFrom", &Workspace::MergeFrom)
 
-    /*! \brief Release the memory of tensors */
-    m.def("ClearWorkspace", [](const string& name) {
-        string target_workspace = g_current_workspace;
-        if (!name.empty()) target_workspace = name;
-        CHECK(g_workspaces.count(target_workspace))
-            << "\nWorkspace(" << target_workspace
-            << ") does not exist, can not be reset.";
-        LOG(INFO) << "Clear the Workspace(" << target_workspace << ")";
-        g_workspaces[target_workspace]->Clear();
-    });
+        /*! \brief Return a unique dummy name */
+        .def("GetDummyName", &Workspace::GetDummyName)
 
-    /*! \brief Copy the array data to the tensor */
-    m.def("FeedTensor", [](
-        const string&           name,
-        pybind11::object        value,
-        const string&           device_option) {
-        DeviceOption dev;
-        if (!device_option.empty()) {
-            if (!dev.ParseFromString(device_option)) {
-                LOG(FATAL) << "Failed to parse the DeviceOption.";
+        /*! \brief Return the unique name of given tensor */
+        .def("GetTensorName", &Workspace::GetTensorName)
+
+        /*! \brief Reset a tensor with the given name */
+        .def("ResetTensor", &Workspace::ResetTensor)
+
+        /*! \brief Indicate whether the given tensor is existing */
+        .def("HasTensor", [](
+            Workspace*                  self,
+            const string&               name) {
+            return self->HasTensor(name);
+        })
+
+        /*! \brief Create a tensor with the given name */
+        .def("CreateTensor", [](
+            Workspace*                  self,
+            const string&               name) {
+            self->CreateTensor(name);
+        })
+
+        /*! \brief Create a tensor from the specified filler */
+        .def("CreateFiller", [](
+            Workspace*                  self,
+            const string&               serialized) {
+            TensorFillerProto filler_proto;
+            if (!filler_proto.ParseFromString(serialized))
+                LOG(FATAL) << "Failed to parse the TensorFiller.";
+            self->CreateFiller(filler_proto);
+            self->CreateTensor(filler_proto.tensor());
+        })
+
+        /*! \brief Create a tensor with the given shape */
+        .def("TensorFromShape", [](
+            Workspace*                  self,
+            const string&               name,
+            const vector<int64_t>&      shape,
+            const string&               dtype) {
+            const TypeMeta& meta = TypeStringToMeta(dtype);
+            CHECK(meta.id() != 0)
+                << "\nUnsupported data type: " + dtype + ".";
+            Tensor* tensor = self->CreateTensor(name);
+            tensor->Reshape(shape);
+            tensor->raw_mutable_data<CPUContext>(meta);
+        })
+
+        /*! \brief Create a tensor with the given array */
+        .def("TensorFromArray", [](
+            Workspace*                  self,
+            const string&               name,
+            pybind11::object            object) {
+            PyArrayObject* array = PyArray_GETCONTIGUOUS(
+                reinterpret_cast<PyArrayObject*>(object.ptr()));
+            const TypeMeta& meta = TypeNPYToMeta(PyArray_TYPE(array));
+            if (meta.id() == 0) LOG(FATAL) << "Unsupported data type.";
+            Tensor* tensor = self->CreateTensor(name);
+            tensor->SetMeta(meta);
+            int ndim = PyArray_NDIM(array);
+            npy_intp* npy_dims = PyArray_DIMS(array);
+            vector<int64_t> dims;
+            for (int i = 0; i < ndim; i++) dims.push_back(npy_dims[i]);
+            tensor->Reshape(dims);
+            auto* data = static_cast<void*>(PyArray_DATA(array));
+            if (!tensor->has_memory()) {
+                MixedMemory* memory(new MixedMemory());
+                memory->set_cpu_data(data, tensor->nbytes());
+                tensor->set_memory(memory);
+            } else {
+                if (tensor->DECREFPyArray) tensor->DECREFPyArray();
+                tensor->memory()->set_cpu_data(data, tensor->nbytes());
             }
-        }
-        Tensor* tensor = g_workspace->CreateTensor(name);
-        unique_ptr<TensorFeederBase> feeder(TensorFeederRegistry()
-            ->Create(TypeMeta::Id<NumpyFeeder>()));
-        feeder->Feed(dev, reinterpret_cast<
-            PyArrayObject*>(value.ptr()), tensor);
-    });
+            // Follow the codes of PyTorch
+            // Here we bind the DECREF to Tensor
+            // ResetTensor() or ResetWorkspace() can trigger it
+            tensor->DECREFPyArray = [array]()->void { Py_XDECREF(array); };
+        })
 
-    /*! \brief Copy the tensor data to the array */
-    m.def("FetchTensor", [](const string& name) {
-        if (!g_workspace->HasTensor(name))
-            LOG(FATAL) << "Tensor(" + name + ") "
-                "does not exist. Have you registered it?";
-        Tensor* tensor = g_workspace->GetTensor(name);
-        TypeId type_id = CTypeToFetcher(tensor->meta().id());
-        CHECK(type_id != 0)
-            << "\nTensor(" << tensor->name()
-            << ") does not initialize or had been reset.";
-        unique_ptr<TensorFetcherBase> fetcher(CreateFetcher(type_id));
-        if (fetcher.get()) {
-            // Copy the tensor data to a numpy object
-            return fetcher->Fetch(*tensor);
-        } else {
-            LOG(FATAL) << name << " is not a C++ native type.";
-            return pybind11::object();
-        }
-    });
+        /*! \brief Create a tensor copied from an existing one */
+        .def("TensorFromTensor", [](
+            Workspace*                  self,
+            const string&               name,
+            const string&               other,
+            const string&               dev1,
+            const string&               dev2) {
+            DeviceOption dst_ctx, src_ctx;
+            dst_ctx.ParseFromString(dev1);
+            src_ctx.ParseFromString(dev2);
+            Tensor* srcT = self->GetTensor(other);
+            Tensor* dstT = self->CreateTensor(name);
+            dstT->ReshapeLike(*srcT);
+            const TypeMeta& meta = srcT->meta();
+            if (dst_ctx.device_type() == PROTO_CUDA) {
+                if (src_ctx.device_type() == PROTO_CUDA) {
+                    // CUDA <- CUDA
+                    CUDAContext::MemcpyEx<CUDAContext, CUDAContext>(
+                        srcT->nbytes(),
+                        dstT->raw_mutable_data<CUDAContext>(meta),
+                        srcT->raw_data<CUDAContext>(),
+                        src_ctx.device_id());
+                } else {
+                    // CUDA <- CPU
+                    CUDAContext::MemcpyEx<CUDAContext, CPUContext>(
+                        srcT->nbytes(),
+                        dstT->raw_mutable_data<CUDAContext>(meta),
+                        srcT->raw_data<CPUContext>(),
+                        dst_ctx.device_id());
+                }
+            } else {
+                if (src_ctx.device_type() == PROTO_CUDA) {
+                    // CPU <- CUDA
+                    CUDAContext::MemcpyEx<CPUContext, CUDAContext>(
+                        srcT->nbytes(),
+                        dstT->raw_mutable_data<CPUContext>(meta),
+                        srcT->raw_data<CUDAContext>(),
+                        src_ctx.device_id());
+                } else {
+                    // CPU <- CPU
+                    CPUContext::Memcpy<CUDAContext, CUDAContext>(
+                        srcT->nbytes(),
+                        dstT->raw_mutable_data<CPUContext>(meta),
+                        srcT->raw_data<CPUContext>());
+                }
+            }
+        })
 
-    /*! \brief Return a unique dummy name */
-    m.def("GetDummyName", [](
-        const string&           basename,
-        const string&           suffix,
-        const string&           domain,
-        const bool              zero_based) {
-        return ws()->GetDummyName(
-            basename, suffix, domain, zero_based);
-    });
+        /*! \brief Return a array zero-copied from an existing tensor */
+        .def("TensorToArray", [](
+            Workspace*                  self,
+            const string&               name,
+            const bool                  readonly) {
+            Tensor* tensor = self->GetTensor(name);
+            CHECK_GT(tensor->count(), 0);
+            vector<npy_intp> dims;
+            for (const auto dim : tensor->dims()) dims.push_back(dim);
+            int npy_type = TypeMetaToNPY(tensor->meta());
+            if (npy_type == -1) {
+                LOG(FATAL) << "Tensor(" + tensor->name() + ") "
+                    "with dtype." + TypeMetaToString(tensor->meta()) +
+                    " is not supported by numpy.";
+            }
+            auto* data = readonly ?
+                const_cast<void*>(tensor->raw_data<CPUContext>()) :
+                    tensor->raw_mutable_data<CPUContext>();
+            PyObject* array = PyArray_SimpleNewFromData(
+                tensor->ndim(), dims.data(), npy_type, data);
+            return pybind11::reinterpret_steal<pybind11::object>(array);
+        })
 
-    AddIOMethods(m);
+        /*! \brief Return the CXX Tensor reference */
+        .def("GetTensor", [](
+            Workspace*                  self,
+            const string&               name) {
+            return self->GetTensor(name);
+        }, pybind11::return_value_policy::reference_internal)
+
+        /*! \brief Return the filler type of a tensor */
+        .def("GetFillerType", [](
+            Workspace*                  self,
+            const string&               name) {
+            return self->GetFiller(name)->type();
+        })
+
+        /* \brief Set an alias for the tensor */
+        .def("SetTensorAlias", [](
+            Workspace*                  self,
+            const string&               name,
+            const string&               alias) {
+            CHECK(self->HasTensor(name))
+                << "\nTensor(" + name << ") has not been "
+                << "registered in the current workspace.";
+            self->SetTensorAlias(name, alias);
+        })
+
+        /*! \brief Copy the array data to tensor */
+        .def("FeedTensor", [](
+            Workspace*                  self,
+            const string&               name,
+            pybind11::object            value,
+            const string&               ctx) {
+            DeviceOption dev;
+            if (!ctx.empty()) {
+                CHECK(dev.ParseFromString(ctx))
+                    << "\nFailed to parse the DeviceOption.";
+            }
+            Tensor* tensor = self->CreateTensor(name);
+            unique_ptr<TensorFeederBase> feeder(
+                TensorFeederRegistry()->Create(
+                    TypeMeta::Id<NumpyFeeder>()));
+            feeder->Feed(dev, reinterpret_cast
+                <PyArrayObject*>(value.ptr()), tensor);
+        })
+
+        /*! \brief Copy the tensor data to the array */
+       .def("FetchTensor", [](
+            Workspace*                  self,
+            const string&               name) {
+            CHECK(self->HasTensor(name))
+                << "\nTensor(" + name + ") does not exist.\n"
+                << "Have you registered it?";
+            Tensor* tensor = self->GetTensor(name);
+            TypeId type_id = CTypeToFetcher(tensor->meta().id());
+            CHECK(type_id != 0)
+                << "\nTensor(" << tensor->name()
+                << ") does not initialize or had been reset.";
+            unique_ptr<TensorFetcherBase> fetcher(CreateFetcher(type_id));
+            if (fetcher.get()) {
+                // Copy the tensor data to a numpy object
+                return fetcher->Fetch(*tensor);
+            } else {
+                LOG(FATAL) << name << " is not a C++ native type.";
+                return pybind11::object();
+            }
+        })
+
+        /*! \brief Run a operator from the def reference */
+        .def("RunOperator", [](
+            Workspace*                  self,
+            OperatorDef*                def,
+            const bool                  verbose) {
+            pybind11::gil_scoped_release g;
+            if (verbose) {
+                // It is not a good design to print the debug string
+                std::cout << def->DebugString() << std::endl;
+            }
+            self->RunOperator(*def);
+        })
+
+        /*! \brief Run a operator from the serialized def */
+        .def("RunOperator", [](
+            Workspace*                  self,
+            const string&               serialized,
+            const bool                  verbose) {
+            OperatorDef def;
+            CHECK(def.ParseFromString(serialized));
+            pybind11::gil_scoped_release g;
+            if (verbose) {
+                // It is not a good design to print the debug string
+                std::cout << def.DebugString() << std::endl;
+            }
+            self->RunOperatorOnce(def);
+        })
+
+        /*! \brief Create a graph from the serialized def */
+        .def("CreateGraph", [](
+            Workspace*                  self,
+            const string&               serialized,
+            const bool                  verbose) {
+            GraphDef graph_def;
+            CHECK(graph_def.ParseFromString(serialized))
+                << "\nFailed to parse the GraphDef.";
+            auto* graph = self->CreateGraph(graph_def);
+            if (verbose) {
+                // It is not a good design to print the debug string
+                auto* T = self->CreateTensor(
+                    "/graph_def/optimized/" + graph->name());
+                if (T->count() > 0) {
+                    auto* data = T->mutable_data<string, CPUContext>();
+                    std::cout << data[0] << std::endl;
+                }
+            }
+            // Return the graph name may be different from the def
+            // We will make a unique dummy name on creating the graph
+            return graph->name();
+        })
+
+        /*! \brief Run an existing graph */
+        .def("RunGraph", [](
+            Workspace*                  self,
+            const string&               name,
+            const string&               include,
+            const string&               exclude) {
+            pybind11::gil_scoped_release g;
+            self->RunGraph(name, include, exclude);
+        })
+
+        .def("Backward", [](
+            Workspace*                      self,
+            const vector<OperatorDef*>&     forward_ops,
+            const vector<string>&           targets,
+            const vector<string>&           input_grads,
+            const vector<string>&           ignore_grads,
+            const bool                      is_sharing,
+            const bool                      verbose) {
+            // Make => Optimize => Run
+            GraphDef backward_ops;
+            GraphGradientMaker maker;
+            for (auto& e : input_grads) maker.AddExternalGrad(e);
+            for (auto& e : ignore_grads) maker.AddIgnoreGrad(e);
+            maker.Make(forward_ops, targets, backward_ops);
+            pybind11::gil_scoped_release g;
+            if (is_sharing) backward_ops = maker.Share(backward_ops);
+            for (auto& op : backward_ops.op()) {
+                if (verbose) std::cout << op.DebugString() << std::endl;
+                if (op.has_uid()) self->RunOperator(op);
+                else self->RunOperatorOnce(op);
+            }
+        })
+
+        /*! \brief Serialize tensors into a binary file */
+        .def("Snapshot", [](
+            Workspace*                  self,
+            const string&               filename,
+            const vector<string>&       tensors,
+            const int                   format) {
+            vector<Tensor*> refs;
+            switch (format) {
+                case 0:  // Pickle
+                    LOG(FATAL) << "Format depends on Pickle. "
+                                  "Can't be used in C++.";
+                    break;
+                case 1:  // CaffeModel
+                    for (const auto& e : tensors)
+                        refs.emplace_back(self->GetTensor(e));
+                    SavaCaffeModel(filename, refs);
+                    break;
+                default:
+                    LOG(FATAL) << "Unknwon format, code: " << format;
+            }
+        })
+
+        /*! \brief Load tensors from a binary file */
+        .def("Restore", [](
+            Workspace*                  self,
+            const string&               filename,
+            const int                   format) {
+                switch (format) {
+                case 0:  // Pickle
+                    LOG(FATAL) << "Format depends on Pickle. "
+                                  "Can't be used in C++.";
+                    break;
+                case 1:  // CaffeModel
+                    LoadCaffeModel(filename, self);
+                    break;
+                default:
+                    LOG(FATAL) << "Unknwon format, code: " << format;
+            }
+        })
+
+        /*! \brief Load tensors and graph from a ONNX model */
+        .def("ImportONNXModel", [](
+            Workspace*                  self,
+            const string&               model_path) {
+            GraphDef init_graph, pred_graph;
+            onnx::ONNXBackend onnx_backend;
+            onnx_backend.Prepare(model_path, &init_graph, &pred_graph);
+            // Serializing to Python is intractable
+            // We should apply the initializer immediately
+            self->RunGraph(self->CreateGraph(init_graph)->name(), "", "");
+            return pybind11::bytes(pred_graph.SerializeAsString());
+        });
+
     AddMPIMethods(m);
     AddCUDAMethods(m);
     AddProtoMethods(m);
-    AddGraphMethods(m);
     AddTensorMethods(m);
     AddConfigMethods(m);
     AddGradientMethods(m);
     AddOperatorMethods(m);
-
     OnImportModule();
-    m.def("OnModuleExit", []() { g_workspaces.clear(); });
 }
 
 }  // namespace python

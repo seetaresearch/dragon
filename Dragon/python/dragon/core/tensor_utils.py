@@ -16,10 +16,10 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy
-import dragon
 
-from dragon.core.tensor import Tensor
-from dragon.core.proto_utils import GetDeviceOption
+from dragon.core import workspace as _workspace
+from dragon.core import proto_utils as _proto_utils
+from dragon.core.tensor import Tensor as _Tensor
 
 
 def FromShape(shape, dtype='float32', name=None):
@@ -47,9 +47,8 @@ def FromShape(shape, dtype='float32', name=None):
     tensor.shape = list(shape)
     if not isinstance(shape, (tuple, list)):
         raise TypeError('The shape should be a tuple or list.')
-    dragon.C.TensorFromShape(
-        _stringify_tensor(tensor),
-            list(shape), dtype)
+    _get_workspace().TensorFromShape(
+        _stringify_tensor(tensor), list(shape), dtype)
     return tensor
 
 
@@ -70,7 +69,8 @@ def SetShape(tensor, shape, dtype='float32'):
     None
 
     """
-    dragon.C.TensorFromShape(_stringify_tensor(tensor), shape, dtype)
+    _get_workspace().TensorFromShape(
+        _stringify_tensor(tensor), shape, dtype)
 
 
 def FromTensor(src, src_ctx=None, name=None, ctx=None):
@@ -97,15 +97,17 @@ def FromTensor(src, src_ctx=None, name=None, ctx=None):
 
     """
     tensor = _try_get_tensor(name)
-    if src_ctx is None: src_ctx = GetDeviceOption('cpu')
-    if ctx is None: ctx = GetDeviceOption('cpu')
-    dragon.C.TensorFromTensor(
-        _stringify_tensor(tensor), _stringify_tensor(src),
-            _stringify_proto(ctx), _stringify_proto(src_ctx))
+    if src_ctx is None: src_ctx = _proto_utils.GetDeviceOption('cpu')
+    if ctx is None: ctx = _proto_utils.GetDeviceOption('cpu')
+    _get_workspace().TensorFromTensor(
+        _stringify_tensor(tensor),
+            _stringify_tensor(src),
+                _stringify_proto(ctx),
+                    _stringify_proto(src_ctx))
     return tensor
 
 
-def FromPyArray(array, name=None):
+def FromArray(array, name=None):
     """Create a Tensor from a existing Array.
 
     Note that memory of Tensor are ``zero-copied``.
@@ -128,12 +130,13 @@ def FromPyArray(array, name=None):
     """
     tensor = _try_get_tensor(name)
     if not isinstance(array, numpy.ndarray):
-        raise TypeError('The given nd-array should be numpy.ndarray.')
-    dragon.C.TensorFromPyArray(_stringify_tensor(tensor), array)
+        raise TypeError('Excepted a numpy.ndarray.')
+    _get_workspace().TensorFromArray(
+        _stringify_tensor(tensor), array)
     return tensor
 
 
-def SetPyArray(tensor, array):
+def SetArray(tensor, array):
     """Set a Tensor from a existing Array.
 
     Note that memory of Tensor are ``zero-copied``.
@@ -149,15 +152,12 @@ def SetPyArray(tensor, array):
     -------
     None
 
-    References
-    ----------
-    The wrapper of ``TensorFromPyArrayCC``.
-
     """
-    dragon.C.TensorFromPyArray(_stringify_tensor(tensor), array)
+    _get_workspace().TensorFromArray(
+        _stringify_tensor(tensor), array)
 
 
-def ToPyArray(tensor, readonly=False):
+def ToArray(tensor, readonly=False):
     """Create a Array from a existing Tensor.
 
     Note that memory of Array are *zero-copied*.
@@ -175,7 +175,8 @@ def ToPyArray(tensor, readonly=False):
         The array sharing the memory with original tensor.
 
     """
-    return dragon.C.TensorToPyArray(_stringify_tensor(tensor), readonly)
+    return  _get_workspace().TensorToArray(
+        _stringify_tensor(tensor), readonly)
 
 
 def GetStorage(tensor):
@@ -193,8 +194,8 @@ def GetStorage(tensor):
 
     """
     tensor = _stringify_tensor(tensor)
-    if not dragon.workspace.HasTensor(tensor): return None
-    return dragon.C.GetTensor(tensor)
+    if not _get_workspace().HasTensor(tensor): return None
+    return _get_workspace().GetTensor(tensor)
 
 
 def _stringify_proto(obj):
@@ -210,5 +211,10 @@ def _stringify_tensor(obj):
 
 def _try_get_tensor(name=None):
     """Try to create or get a tensor"""
-    if name is None or name == '': return Tensor()
-    else: return Tensor.Ref(name)
+    if name is None or name == '': return _Tensor()
+    else: return _Tensor.Ref(name)
+
+
+def _get_workspace():
+    """Get the current default workspace."""
+    return _workspace.get_default_workspace()

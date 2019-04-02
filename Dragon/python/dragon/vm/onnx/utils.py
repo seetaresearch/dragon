@@ -16,12 +16,12 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-import numpy as np
-from onnx import mapping
-from google.protobuf.text_format import Parse as parse_text_proto
+import numpy
 
-import dragon.proto.dragon_pb2 as pb
-import dragon.import_c_api as C
+from onnx import mapping as _mapping
+from dragon.core import workspace as _workspace
+from dragon.proto import dragon_pb2 as _proto_def
+from google.protobuf.text_format import Parse as _parse_text_proto
 
 from dragon.vm.theano.compile.function import Function
 from dragon.vm.onnx.frontend import graph_def_to_onnx_model
@@ -119,8 +119,8 @@ def export_from_graph_text(
 
     """
     with open(text_file, 'r') as rf:
-        graph_def = pb.GraphDef()
-        parse_text_proto(rf.read(), graph_def)
+        graph_def = _proto_def.GraphDef()
+        _parse_text_proto(rf.read(), graph_def)
 
     export_from_graph_def(
         graph_def=graph_def,
@@ -148,8 +148,10 @@ def import_to_graph_def(model_path):
     """
     if not os.path.exists(model_path):
         raise ValueError('Given model({}) is not existed.'.format(model_path))
-    graph_def = pb.GraphDef()
-    serialized_proto = C.ImportONNXModel(model_path)
+    graph_def = _proto_def.GraphDef()
+    serialized_proto = _workspace \
+        .get_default_workspace() \
+            .ImportONNXModel(model_path)
     graph_def.ParseFromString(serialized_proto)
     return graph_def
 
@@ -238,4 +240,4 @@ def surgery_on_graph_def(
 
 
 def make_value_info(shape, dtype='float32'):
-    return mapping.NP_TYPE_TO_TENSOR_TYPE[np.dtype(dtype)], shape
+    return _mapping.NP_TYPE_TO_TENSOR_TYPE[numpy.dtype(dtype)], shape

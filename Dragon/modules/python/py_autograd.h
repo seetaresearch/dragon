@@ -36,29 +36,6 @@ void AddGradientMethods(pybind11::module& m) {
             vector<pybind11::bytes>, vector<string>, vector<float>
         >(grad_ops, grad.g_inputs, grad.defaults);
     });
-
-    m.def("FlowGradients", [](
-        const vector<OperatorDef*>&   forward_ops,
-        const vector<string>&         targets,
-        const vector<string>&         input_grads,
-        const vector<string>&         ignore_grads,
-        const bool                    is_sharing,
-        const bool                    verbose) {
-        // Make => Optimize => Run
-        GraphDef backward_ops;
-        GraphGradientMaker maker;
-        for (auto& grad : input_grads) maker.AddExternalGrad(grad);
-        for (auto& grad : ignore_grads) maker.AddIgnoreGrad(grad);
-        maker.Make(forward_ops, targets, backward_ops);
-        if (is_sharing) maker.Share(backward_ops);
-        pybind11::gil_scoped_release g;
-        for (auto& op : backward_ops.op()) {
-            if (op.type().empty()) continue;
-            if (verbose) std::cout << op.DebugString() << std::endl;
-            if (op.has_uid()) ws()->RunOperator(op);
-            else ws()->RunOperatorOnce(op);
-        }
-    });
 }
 
 }  // namespace python

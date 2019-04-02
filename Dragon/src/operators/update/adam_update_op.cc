@@ -6,10 +6,10 @@ namespace dragon {
 
 template <class Context>
 void AdamUpdateOp<Context>::ComputeUpdates(Tensor* dX) {
-    Tensor* m = ws()->CreateTensor(
+    auto* M = ws()->CreateTensor(
         "/mnt/" + Slot() + "/adam/m")
             ->ReshapeLike(*dX);
-    Tensor* v = ws()->CreateTensor(
+    auto* V = ws()->CreateTensor(
         "/mnt/" + Slot() + "/adam/v")
             ->ReshapeLike(*dX);
 
@@ -18,8 +18,8 @@ void AdamUpdateOp<Context>::ComputeUpdates(Tensor* dX) {
     float coeff = sqrt(1. - pow(beta2, t)) / (1. - pow(beta1, t));
     lr = Param("base_lr") * coeff * this->lr_mult;
     auto* dXdata = dX->template mutable_data<float, Context>();
-    auto* Mdata = m->mutable_data<float, Context>();
-    auto* Vdata = v->mutable_data<float, Context>();
+    auto* Mdata = M->template mutable_data<float, Context>();
+    auto* Vdata = V->template mutable_data<float, Context>();
 
     kernel::AdamUpdate(dX->count(), lr, beta1,
         beta2, eps, dXdata, Mdata, Vdata, ctx());

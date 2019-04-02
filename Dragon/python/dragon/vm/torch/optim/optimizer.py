@@ -17,14 +17,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon
 from collections import defaultdict
 
-from dragon.vm.torch.tensor import Tensor
-
-from dragon.vm.torch.ops.builtin import (
-    _accumulate, _allreduce, _update,
-)
+from dragon.core import mpi as _mpi
+from dragon.core import workspace as _workspace
+from dragon.vm.torch.tensor import Tensor as _Tensor
+from dragon.vm.torch.ops.builtin import _update
+from dragon.vm.torch.ops.builtin import _allreduce
+from dragon.vm.torch.ops.builtin import _accumulate
 
 
 # A simple parameter flag
@@ -37,7 +37,7 @@ class Optimizer(object):
 
     def __init__(self, params, defaults):
         self.defaults = defaults
-        if isinstance(params, Tensor):
+        if isinstance(params, _Tensor):
             raise TypeError("params argument given to the optimizer should be "
                             "an iterable of Variables or dicts, but got " +
                             str(type(params)))
@@ -52,9 +52,9 @@ class Optimizer(object):
             self.add_param_group(param_group)
         self._update_type = None
         self._allow_parallel = False
-        if dragon.mpi.Is_Init():
-            local_rank, _ = dragon.mpi.AllowParallel()
-            if local_rank != -1: self._allow_parallel = True
+        if _mpi.Is_Init():
+            rank, _ = _mpi.AllowParallel()
+            if rank != -1: self._allow_parallel = True
         self._mutable_parameters = {}
 
     def __repr__(self):
@@ -72,7 +72,7 @@ class Optimizer(object):
         template = group['slot'] + '/{}'
         for k, v in group.items():
             if k in self._mutable_parameters:
-                dragon.workspace.FeedTensor(
+                _workspace.FeedTensor(
                     template.format(self._mutable_parameters[k]),
                         v, dtype='float32', force_cpu=True)
 
@@ -80,8 +80,8 @@ class Optimizer(object):
         grad_name = param.name + (
             '_grad[acc]' if accumulating
                 else '_grad')
-        if dragon.workspace.HasTensor(grad_name):
-            return Tensor(
+        if _workspace.HasTensor(grad_name):
+            return _Tensor(
                 name=grad_name,
                     own_storage=False,
                         device=param.device)
@@ -172,7 +172,7 @@ class Optimizer(object):
 
         params = param_group['params']
 
-        if isinstance(params, Tensor):
+        if isinstance(params, _Tensor):
             param_group['params'] = [params]
         elif isinstance(params, set):
             raise TypeError('Optimizer parameters need to be organized in ordered collections,'

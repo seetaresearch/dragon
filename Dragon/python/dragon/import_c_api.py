@@ -23,7 +23,6 @@ from __future__ import print_function
 
 import sys
 import logging as _logging
-import atexit
 
 try:
     from dragon.libdragon import *
@@ -32,9 +31,5 @@ except ImportError as e:
         'Cannot import dragon. Error: {0}'.format(str(e)))
     sys.exit(1)
 
-
 REGISTERED_OPERATORS = set(s for s in RegisteredOperators())
 NO_GRADIENT_OPERATORS = set(s for s in NoGradientOperators())
-
-
-atexit.register(OnModuleExit)

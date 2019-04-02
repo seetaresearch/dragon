@@ -6,7 +6,7 @@ namespace dragon {
 
 /*! Create some internal tensors */
 
-void Workspace::InitWorkspace() {
+void Workspace::Initialize() {
     CreateTensor("NULL");
     Tensor* recomputing_flag = CreateTensor(
         "/opt/recomputing_flag")->Reshape({ 1 });
@@ -14,21 +14,18 @@ void Workspace::InitWorkspace() {
         <bool, CPUContext>()[0] = false;
 }
 
-/*! Move a external workspace into this workspace */
-
-Workspace* Workspace::Move(Workspace* ws) {
-    CHECK(ws) << "The given Workspace is invalid.";
-    if (workspace_map_.count(ws->name()))
-        return workspace_map_[ws->name()];
-    return workspace_map_[ws->name()] = ws;
-}
-
 /*! Destory all the tensors */
 
 void Workspace::Clear() {
-    // Clear tensors, then re-initialization
-    for (auto& kv : tensor_map_) kv.second->Reset();
-    InitWorkspace();
+    // Remove and Initialize again
+    tensor_map_.clear(); Initialize();
+}
+
+/*! Merge from a external workspace */
+
+void Workspace::MergeFrom(Workspace* ws) {
+    CHECK(ws) << "\nThe given Workspace is invalid.";
+    remote_workspaces_.emplace_back(ws);
 }
 
 /*! Query the real name of specified tensor */
@@ -53,9 +50,9 @@ Tensor* Workspace::TryGetTensor(
 
     if (use_remote) {
         // Search the remote workspaces
-        for (auto& it : workspace_map_) {
-            if (it.second->HasTensor(query))
-                return it.second->GetTensor(query);
+        for (auto* ws : remote_workspaces_) {
+            if (ws->HasTensor(query))
+                return ws->GetTensor(query);
         }
     }
     return nullptr;
@@ -66,7 +63,8 @@ Tensor* Workspace::TryGetTensor(
 Tensor* Workspace::CreateTensor(const string& name) {
     Tensor* tensor = TryGetTensor(name);
     if (!tensor) {
-        tensor_map_[name] = unique_ptr<Tensor>(new Tensor(name));
+        tensor_map_[name] = unique_ptr
+            <Tensor>(new Tensor(name));
         return tensor_map_[name].get();
     }
     return tensor;
@@ -78,8 +76,8 @@ Tensor* Workspace::GetTensor(
     const string&               name,
     bool                        use_remote) const {
     Tensor* tensor = TryGetTensor(name, use_remote);
-    CHECK(tensor) << "\nTensor(" << name << ") does not exist "
-        << "in current workspace or sub-workspace.";
+    CHECK(tensor) << "\nTensor(" << name << ") does not "
+                  << "exist in current workspace.";
     return tensor;
 }
 
@@ -88,22 +86,23 @@ Tensor* Workspace::GetTensor(
 void Workspace::ResetTensor(const string& name) {
     Tensor* tensor = TryGetTensor(name, false);
     CHECK(tensor) << "\nTensor(" << name << ") does not "
-        << "belong to current workspace, could not be reset.";
+                  << "belong to current workspace.";
     tensor->Reset();
 }
 
-/*! Return all the stored tensor names */
+/*! Return the name of stored tensors */
 
-vector<string> Workspace::GetTensors() const {
+vector<string> Workspace::tensors() const {
     vector<string> locals;
     // Search the local workspace
     for (const auto& it : tensor_map_)
         locals.push_back(it.first);
 
     // Serach the remote workspaces
-    for (const auto& it : workspace_map_) {
-        vector<string> remotes = it.second->GetTensors();
-        locals.insert(locals.end(), remotes.begin(), remotes.end());
+    for (auto* ws : remote_workspaces_) {
+        vector<string> remotes = ws->tensors();
+        locals.insert(locals.end(),
+            remotes.begin(), remotes.end());
     }
     return locals;
 }
@@ -118,14 +117,14 @@ bool Workspace::HasFiller(
     if (!use_remote) return result;
 
     // Search the remote workspaces
-    for (auto& it : workspace_map_)
-        result |= it.second->HasFiller(name);
+    for (auto* ws : remote_workspaces_)
+        result |= ws->HasFiller(name);
     return result;
 }
 
 /*! Create the specified filler */
 void Workspace::CreateFiller(
-    const TensorFillerProto     filler) {
+    const TensorFillerProto&     filler) {
     CHECK_GT(filler.tensor().size(), 0)
         << "\nTensor with an empty name can not be filled.";
     if (HasFiller(filler.tensor())) return;
@@ -141,9 +140,9 @@ const TensorFillerProto* Workspace::GetFiller(
     if (it != tensor_filler_map_.end()) return &it->second;
 
     // Search the remote workspaces
-    for (const auto& it : workspace_map_) {
-        if (it.second->HasFiller(name))
-            return it.second->GetFiller(name);
+    for (auto* ws : remote_workspaces_) {
+        if (ws->HasFiller(name))
+            return ws->GetFiller(name);
     }
     return nullptr;
 }
@@ -153,7 +152,6 @@ const TensorFillerProto* Workspace::GetFiller(
 OperatorBase* Workspace::CreateOperator(const OperatorDef& def) {
     const auto& it = operator_map_.find(def.uid());
     if (it == operator_map_.end()) {
-        for (auto& input : def.input()) CreateTensor(input);
         auto* new_op = NewOperator(def, this);
         operator_map_[def.uid()] = unique_ptr<
             OperatorBase>(new_op); return new_op;
@@ -209,9 +207,9 @@ void Workspace::RunGraph(
     graph_map_[graph_name]->Run(include, exclude, stream_id);
 }
 
-/*! Return all the stored graph names */
+/*! Return the name of stored graphs */
 
-vector<string> Workspace::GetGraphs() const {
+vector<string> Workspace::graphs() const {
     vector<string> names;
     for (const auto& it : graph_map_) {
         names.push_back(it.first);
@@ -237,17 +235,20 @@ string Workspace::GetDummyName(
     const string&               suffix,
     const string&               domain,
     const bool                  zero_based) {
-    string required_name = base_name + suffix;
-    if (dummy_name_map_.count(domain) == 0) {
-        dummy_name_map_[domain] = Map<string, int64_t>();
+    string accepted_name; int64_t index;
+    const auto required_name = base_name + suffix;
+    auto& dmap = dummy_name_map_[domain];
+    while (1) {
+        index = dmap[required_name]++;
+        accepted_name = index ? base_name + "_" +
+            std::to_string(index) + suffix :
+            zero_based ? required_name :
+                base_name + "_" + std::to_string(
+                    dmap[required_name]++) + suffix;
+        if (remote_workspaces_.empty()) break;
+        if (!HasTensor(accepted_name)) break;
     }
-    auto& map_this_domain = dummy_name_map_[domain];
-    int64_t index = map_this_domain[required_name]++;
-    return index ? base_name + "_" +
-        std::to_string(index) + suffix :
-        zero_based ? required_name :
-        base_name + "_" + std::to_string(
-            map_this_domain[required_name]++) + suffix;
+    return accepted_name;
 }
 
 }  // namespace dragon

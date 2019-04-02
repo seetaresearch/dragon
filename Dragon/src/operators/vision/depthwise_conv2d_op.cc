@@ -14,10 +14,13 @@ void DepthwiseConv2dOp<Context>::RunWithType() {
     auto* Wdata = Input(1).template data<T, Context>();
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
-    kernel::DepthwiseConv2d(Input(0).dim(0), channels,
-        input_shape[0], input_shape[1], output_shape[0], output_shape[1],
-            kernel_shape[0], kernel_shape[1], stride[0], pad_l[0], pad_l[1],
-                data_format, Xdata, Wdata, Ydata, ctx());
+    kernel::DepthwiseConv2d(
+        Input(0).dim(0), channels,
+        input_shape[0], input_shape[1],
+        output_shape[0], output_shape[1],
+        kernel_shape[0], kernel_shape[1],
+        stride[0], pad_l[0], pad_l[1],
+        data_format, Xdata, Wdata, Ydata, ctx());
 
     if (HasBias()) {
         auto* Bdata = Input(2).template data<T, Context>();
@@ -57,19 +60,30 @@ void DepthwiseConv2dGradientOp<Context>::RunWithType() {
         if (Output(1)->name() != "NULL") {
             auto* Xdata = Input(0).template data<T, Context>();
             auto* dWdata = Output(1)->template mutable_data<T, Context>();
-            math::Set(Output(1)->count(), cast::to<T>(0.f), dWdata, ctx());
-            kernel::DepthwiseConv2dWGrad(Input(0).dim(0), channels,
-                input_shape[0], input_shape[1], output_shape[0], output_shape[1],
-                    kernel_shape[0], kernel_shape[1], stride[0], pad_l[0], pad_l[1],
-                        data_format, dYdata, Xdata, dWdata, ctx());
+            math::Set(
+                Output(1)->count(),
+                cast::to<T>(0.f),
+                dWdata,
+                ctx()
+            );  // Zero the gradient of W
+            kernel::DepthwiseConv2dWGrad(
+                Input(0).dim(0), channels,
+                input_shape[0], input_shape[1],
+                output_shape[0], output_shape[1],
+                kernel_shape[0], kernel_shape[1],
+                stride[0], pad_l[0], pad_l[1],
+                data_format, dYdata, Xdata, dWdata, ctx());
         }
         if (Output(0)->name() != "NULL") {
             auto* Wdata = Input(1).template data<T, Context>();
             auto* dXdata = Output(0)->template mutable_data<T, Context>();
-            kernel::DepthwiseConv2dGrad(Input(0).dim(0), channels,
-                input_shape[0], input_shape[1], output_shape[0], output_shape[1],
-                    kernel_shape[0], kernel_shape[1], stride[0], pad_l[0], pad_l[1],
-                        data_format, dYdata, Wdata, dXdata, ctx());
+            kernel::DepthwiseConv2dGrad(
+                Input(0).dim(0), channels,
+                input_shape[0], input_shape[1],
+                output_shape[0], output_shape[1],
+                kernel_shape[0], kernel_shape[1],
+                stride[0], pad_l[0], pad_l[1],
+                data_format, dYdata, Wdata, dXdata, ctx());
         }
     }
 }

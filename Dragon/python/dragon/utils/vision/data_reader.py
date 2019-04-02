@@ -14,15 +14,14 @@ from __future__ import division
 from __future__ import print_function
 
 import math
-import numpy as np
-import numpy.random as npr
-from multiprocessing import Process
+import numpy
+import multiprocessing
 
-import dragon.config as config
-from dragon.tools.db import LMDB
+from dragon import config as _cfg
+from dragon.tools import db as _db
 
 
-class DataReader(Process):
+class DataReader(multiprocessing.Process):
     """DataReader is deployed to queue encoded str from `LMDB`_.
 
     It is supported to adaptively partition and shuffle records over all distributed nodes.
@@ -55,7 +54,7 @@ class DataReader(Process):
 
         self._part_idx, self._num_parts = 0, 1
         self._cur_idx, self._cur_chunk_idx = 0, 0
-        self._random_seed = config.GetRandomSeed()
+        self._random_seed = _cfg.GetRandomSeed()
 
         self.Q_out = None
         self.daemon = True
@@ -106,7 +105,9 @@ class DataReader(Process):
 
         """
         if self._multiple_nodes or self._use_shuffle:
-            if self._use_shuffle: self._perm = npr.permutation(self._num_shuffle_parts)
+            if self._use_shuffle:
+                self._perm = numpy.random.permutation(
+                    self._num_shuffle_parts)
             self._cur_chunk_idx = 0
             self._start_idx = int(self._part_idx * self._num_shuffle_parts + self._perm[self._cur_chunk_idx])
             self._start_idx = int(self._start_idx * self._chunk_size)
@@ -158,23 +159,23 @@ class DataReader(Process):
 
         """
         # fix seed
-        npr.seed(self._random_seed)
+        numpy.random.seed(self._random_seed)
 
         # init db
-        self._db = LMDB()
+        self._db = _db.LMDB()
         self._db.open(self._source)
         self._zfill = self._db.zfill()
         self._num_entries = self._db.num_entries()
-        self._epoch_size = int(self._num_entries/ self._num_parts + 1)
+        self._epoch_size = int(self._num_entries / self._num_parts + 1)
 
         if self._use_shuffle:
             if self._chunk_size == 1:
-                # Each chunk has at most 1 record [For Fully Shuffle]
+                # Each chunk has at most 1 record (Naive Shuffle)
                 self._chunk_size, self._num_shuffle_parts = \
                     1, int(self._num_entries / self._num_parts) + 1
             else:
                 if self._use_shuffle and self._chunk_size == -1:
-                    # Search a optimal chunk size by chunks [For Chunk Shuffle]
+                    # Search a optimal chunk size by chunks (Chunk Shuffle)
                     max_chunk_size = self._db._total_size / ((self._num_chunks * (1 << 20)))
                     min_chunk_size = 1
                     while min_chunk_size * 2 < max_chunk_size: min_chunk_size *= 2
@@ -184,17 +185,17 @@ class DataReader(Process):
                     self._chunk_size = int(self._num_entries / self._num_shuffle_parts / self._num_parts + 1)
                     limit = (self._num_parts - 0.5) * self._num_shuffle_parts * self._chunk_size
                     if self._num_entries <= limit:
-                        # Roll back to fully shuffle
+                        # Roll back to naive shuffle
                         self._chunk_size, self._num_shuffle_parts = \
                             1, int(self._num_entries / self._num_parts) + 1
         else:
-            # Each chunk has at most K records [For Multiple Nodes]
-            # Note that if ``shuffle`` and ``multiple_nodes`` are all ``False``,
+            # Each chunk has at most K records
+            # Note that if ``shuffle`` and ``multiple_nodes`` are all *False*,
             # ``chunk_size`` and ``num_shuffle_parts`` are meaningless
             self._chunk_size = int(self._num_entries / self._num_parts) + 1
             self._num_shuffle_parts = 1
 
-        self._perm = np.arange(self._num_shuffle_parts)
+        self._perm = numpy.arange(self._num_shuffle_parts)
 
         # Init env
         self.reset()

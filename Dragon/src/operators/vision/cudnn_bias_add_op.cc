@@ -28,9 +28,10 @@ void CuDNNBiasAddOp<Context>::RunWithType() {
     // Copy X to Y firstly if necessary
     Output(0)->template CopyFrom<Context>(Input(0), ctx());
 
-    CUDNN_CHECK(cudnnAddTensor(ctx()->cudnn_handle(),
+    CUDNN_CHECK(cudnnAddTensor(
+        ctx()->cudnn_handle(),
         CUDNNType<T>::one, bias_desc, Bdata,
-            CUDNNType<T>::one, output_desc, Ydata));
+        CUDNNType<T>::one, output_desc, Ydata));
 }
 
 template <class Context>
@@ -70,9 +71,10 @@ void CuDNNBiasAddGradientOp<Context>::RunWithType() {
     auto* dYdata = Input(-1).template data<T, Context>();
     T* dBdata = Output(1)->template mutable_data<T, Context>();
 
-    CUDNN_CHECK(cudnnConvolutionBackwardBias(ctx()->cudnn_handle(),
+    CUDNN_CHECK(cudnnConvolutionBackwardBias(
+        ctx()->cudnn_handle(),
         CUDNNType<T>::one, input_desc, dYdata,
-            CUDNNType<T>::zero, bias_desc, dBdata));
+        CUDNNType<T>::zero, bias_desc, dBdata));
 
     if (Output(0)->name() != "NULL" &&
         Output(0)->name() != Input(-1).name()) {

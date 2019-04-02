@@ -13,7 +13,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.tensor import Tensor
+from dragon.core.tensor import Tensor as _Tensor
 
 
 class Dimension(object):
@@ -114,4 +114,5 @@ def get_shape(self):
     return TensorShape(self.shape)
 
 
-Tensor.get_shape = get_shape
+# The Monkey Patching
+_Tensor.get_shape = get_shape

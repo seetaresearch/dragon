@@ -14,9 +14,10 @@ from __future__ import division
 from __future__ import print_function
 
 import math
-import dragon
-import numpy as np
+import numpy
 
+from dragon.ops import Run as _RunOp
+from dragon.core import workspace as _workspace
 from dragon.vm.tensorflow.framework import ops
 
 
@@ -25,11 +26,11 @@ class _DecayBase(object):
         self.param_str = ''
 
     def set(self, tensor, value, dtype=None):
-        dragon.workspace.FeedTensor(tensor,
+        _workspace.FeedTensor(tensor,
             value, dtype=dtype, force_cpu=True)
 
     def get(self, tensor):
-        return dragon.workspace.FetchTensor(tensor)
+        return _workspace.FetchTensor(tensor)
 
 
 class _PiecewiseConstant(_DecayBase):
@@ -120,8 +121,9 @@ class _CosineDecayRestarts(_DecayBase):
 
     def run(self, inputs, outputs):
         gs = self.get(inputs[0])
-        global_step = min(gs - self.last_steps, self.decay_steps)
-        cosine_decay = 0.5 * (1 + math.cos(math.pi * global_step / self.decay_steps))
+        global_step = gs - self.last_steps
+        cosine_decay = 0.5 * (1. + math.cos(
+            math.pi * global_step / self.decay_steps))
         decayed = (1. - self.alpha) * cosine_decay + self.alpha
         new_lr = self.learning_rate * decayed
         # Restarts
@@ -132,94 +134,122 @@ class _CosineDecayRestarts(_DecayBase):
         self.set(outputs[0], new_lr, dtype='float32')
 
 
-def piecewise_constant(x, boundaries, values, name=None):
+def piecewise_constant(
+    x,
+    boundaries,
+    values,
+    name=None,
+):
     if len(values) != len(boundaries) + 1:
         raise ValueError('Excepted {} values, got {}.'.format(
             len(boundaries) + 1, len(values)))
-    lr = dragon.ops.Run([ops.convert_to_tensor(x)],
-                        module=__name__,
-                        op='_PiecewiseConstant',
-                        param_str=str({
-                            'boundaries': boundaries,
-                            'values': values}),
-                        name=name)
-    lr.set_value(np.array(values[0], dtype=np.float32))
+    lr = _RunOp(
+        inputs=[ops.convert_to_tensor(x)],
+        module=__name__,
+        op='_PiecewiseConstant',
+        param_str=str({
+            'boundaries': boundaries,
+            'values': values,
+        }),
+        name=name,
+    )
+    lr.set_value(numpy.array(values[0], dtype='float32'))
     return lr
 
 
-def exponential_decay(learning_rate,
-                      global_step,
-                      decay_steps,
-                      decay_rate,
-                      staircase=False,
-                      name=None):
-    lr = dragon.ops.Run([ops.convert_to_tensor(global_step)],
-                        module=__name__,
-                        op='_ExponentialDecay',
-                        param_str=str({
-                            'learning_rate': learning_rate,
-                            'decay_steps': decay_steps,
-                            'decay_rate': decay_rate,
-                            'staircase': staircase}),
-                        name=name)
-    lr.set_value(np.array(learning_rate, dtype=np.float32))
+def exponential_decay(
+    learning_rate,
+    global_step,
+    decay_steps,
+    decay_rate,
+    staircase=False,
+    name=None,
+):
+    lr = _RunOp(
+        inputs=[ops.convert_to_tensor(global_step)],
+        module=__name__,
+        op='_ExponentialDecay',
+        param_str=str({
+            'learning_rate': learning_rate,
+            'decay_steps': decay_steps,
+            'decay_rate': decay_rate,
+            'staircase': staircase,
+        }),
+        name=name,
+    )
+    lr.set_value(numpy.array(learning_rate, dtype='float32'))
     return lr
 
 
-def natural_exp_decay(learning_rate,
-                      global_step,
-                      decay_steps,
-                      decay_rate,
-                      staircase=False,
-                      name=None):
-    lr = dragon.ops.Run([ops.convert_to_tensor(global_step)],
-                        module=__name__,
-                        op='_NaturalExpDecay',
-                        param_str=str({
-                            'learning_rate': learning_rate,
-                            'decay_steps': decay_steps,
-                            'decay_rate': decay_rate,
-                            'staircase': staircase}),
-                        name=name)
-    lr.set_value(np.array(learning_rate, dtype=np.float32))
+def natural_exp_decay(
+    learning_rate,
+    global_step,
+    decay_steps,
+    decay_rate,
+    staircase=False,
+    name=None,
+):
+    lr = _RunOp(
+        inputs=[ops.convert_to_tensor(global_step)],
+        module=__name__,
+        op='_NaturalExpDecay',
+        param_str=str({
+            'learning_rate': learning_rate,
+            'decay_steps': decay_steps,
+            'decay_rate': decay_rate,
+            'staircase': staircase,
+        }),
+        name=name,
+    )
+    lr.set_value(numpy.array(learning_rate, dtype='float32'))
     return lr
 
 
-def cosine_decay(learning_rate,
-                 global_step,
-                 decay_steps,
-                 alpha=0.0,
-                 name=None):
-    lr = dragon.ops.Run([ops.convert_to_tensor(global_step)],
-                        module=__name__,
-                        op='_CosineDecay',
-                        param_str=str({
-                            'learning_rate': learning_rate,
-                            'decay_steps': decay_steps,
-                            'alpha': alpha}),
-                        name=name)
-    lr.set_value(np.array(learning_rate, dtype=np.float32))
+def cosine_decay(
+    learning_rate,
+    global_step,
+    decay_steps,
+    alpha=0.0,
+    name=None,
+):
+    lr = _RunOp(
+        inputs=[ops.convert_to_tensor(global_step)],
+        module=__name__,
+        op='_CosineDecay',
+        param_str=str({
+            'learning_rate': learning_rate,
+            'decay_steps': decay_steps,
+            'alpha': alpha,
+        }),
+        name=name,
+    )
+    lr.set_value(numpy.array(learning_rate, dtype='float32'))
     return lr
 
 
-def cosine_decay_restarts(learning_rate,
-                          global_step,
-                          first_decay_steps,
-                          t_mul=2.0,
-                          m_mul=1.0,
-                          alpha=0.0,
-                          name=None):
-    lr = dragon.ops.Run([ops.convert_to_tensor(global_step)],
-                        module=__name__,
-                        op='_CosineDecayRestarts',
-                        param_str=str({
-                            'learning_rate': learning_rate,
-                            'first_decay_steps': first_decay_steps,
-                            't_mul': t_mul,
-                            'm_mul': m_mul,
-                            'alpha': alpha}),
-                        name=name)
-    lr.set_value(np.array(learning_rate, dtype=np.float32))
+def cosine_decay_restarts(
+    learning_rate,
+    global_step,
+    first_decay_steps,
+    t_mul=2.0,
+    m_mul=1.0,
+    alpha=0.0,
+    name=None,
+):
+    lr = _RunOp(
+        inputs=[ops.convert_to_tensor(global_step)],
+        module=__name__,
+        op='_CosineDecayRestarts',
+        param_str=str({
+            'learning_rate': learning_rate,
+            'first_decay_steps': first_decay_steps,
+            't_mul': t_mul,
+            'm_mul': m_mul,
+            'alpha': alpha
+        }),
+        name=name,
+    )
+    lr.set_value(numpy.array(learning_rate, dtype='float32'))
     return lr
 
 

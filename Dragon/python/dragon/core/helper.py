@@ -17,7 +17,8 @@ from __future__ import print_function
 
 import math
 import numpy
-import dragon
+
+from dragon.core import workspace as _workspace
 
 
 class OperatorHelper(object):
@@ -39,11 +40,11 @@ class OperatorHelper(object):
 
     @classmethod
     def get_index_and_name(cls, prefix='Op'):
-        name = dragon.workspace.GetDummyName(prefix, domain='Operator')
+        name = _workspace.GetDummyName(prefix, domain='Operator')
         try:
             _, op_idx = name.split('_')
         except:
-            name = dragon.workspace.GetDummyName(prefix, domain='Operator')
+            name = _workspace.GetDummyName(prefix, domain='Operator')
             _, op_idx = name.split('_')
         return int(op_idx), name
 

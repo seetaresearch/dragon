@@ -16,15 +16,13 @@ from __future__ import print_function
 import warnings
 from collections import defaultdict
 
-import dragon
-
+from dragon.core import workspace as _workspace
+from dragon.core.tensor import Tensor as _Tensor
+from dragon.vm.theano.compile import function as _Function
 from dragon.vm.tensorflow.protobuf import config_pb2
 from dragon.vm.tensorflow.training.optimizer import Optimizer
 from dragon.vm.tensorflow.ops.variables import VariablesInitializer
 from dragon.vm.tensorflow.framework import ops
-
-
-_GLOBAL_DATA_FLOW_KEYS = defaultdict(dict)
 
 
 class _DataFlow(object):
@@ -32,29 +30,28 @@ class _DataFlow(object):
     the specified output tensors.
 
     We store the flows that requiring the same output names,
-    i.e., those flows can be reused and should not to create a new graph.
+    i.e., those flows can be reused and should not be created again.
 
     """
     def __init__(self, functions):
         self.functions = functions
 
     def run(self, feed_dict=None):
-        for i, function in enumerate(self.functions):
+        for i, func in enumerate(self.functions):
             if i == 0 and feed_dict is not None:
                 for tensor, value in feed_dict.items():
-                    dragon.workspace.FeedTensor(tensor, value)
-            function(return_outputs=False)
+                    _workspace.FeedTensor(tensor, value)
+            func(return_outputs=False)
 
     @classmethod
-    def try_get(cls, workspace, flow_key):
-        global _GLOBAL_DATA_FLOW_KEYS
-        if flow_key in _GLOBAL_DATA_FLOW_KEYS[workspace]:
-            return _GLOBAL_DATA_FLOW_KEYS[workspace][flow_key]
+    def try_get(cls, graph_id, flow_key):
+        if flow_key in _GLOBAL_DATA_FLOWS[graph_id]:
+            return _GLOBAL_DATA_FLOWS[graph_id][flow_key]
 
     @classmethod
-    def try_add(cls, workspace, flow_key, flow):
-        global _GLOBAL_DATA_FLOW_KEYS
-        _GLOBAL_DATA_FLOW_KEYS[workspace][flow_key] = flow
+    def try_add(cls, graph_id, flow_key, flow):
+        global _GLOBAL_DATA_FLOWS
+        _GLOBAL_DATA_FLOWS[graph_id][flow_key] = flow
 
 
 class BaseSession(object):
@@ -115,7 +112,7 @@ class BaseSession(object):
         for e in fetches:
             if isinstance(e, Optimizer): optimizers.append(e)
             elif isinstance(e, VariablesInitializer): tensors.extend(e.var_list)
-            elif isinstance(e, dragon.Tensor): tensors.append(e)
+            elif isinstance(e, _Tensor): tensors.append(e)
 
         # Find minimum solving targets
         targets = set()
@@ -124,45 +121,45 @@ class BaseSession(object):
             for t in optimizer._targets: targets.add(t)
 
         targets = list(targets)
-        gen_flow_key = tuple(e.name for e in targets)
+        flow_key = tuple(e.name for e in targets)
 
         # Exist this data flow before?
-        data_flow = _DataFlow.try_get(
-            self._graph._workspace, gen_flow_key)
+        flow = _DataFlow.try_get(id(self._graph), flow_key)
 
         # Run by feeding
         if feed_dict is not None:
             # Check the feed dict
             for key, value in feed_dict.items():
-                if not isinstance(key, dragon.Tensor):
-                    raise TypeError('The key of feed_dict key should be a Tensor.')
+                if not isinstance(key, _Tensor):
+                    raise TypeError('The key of ``feed_dict`` should be a Tensor.')
                 if key.shape is not None:
                     # Align the number of dimensions
                     if len(key.shape) != len(value.shape):
                         raise RuntimeError(
-                            'The Tensor({}) was limited to {} dimensions, \
-                                while feed a value with {} dimensions.'
-                                    .format(key.name, len(key.shape), len(value.shape)))
+                            'The Tensor({}) was limited to {} dimensions, '\
+                            'while feed a value with {} dimensions.'
+                            .format(key.name, len(key.shape), len(value.shape)))
                     # Verify for the each dimension
                     for i in range(len(key.shape)):
                         if key.shape[i] is None: continue
                         if key.shape[i] != value.shape[i]:
                             raise RuntimeError(
                                 'The shape of Tensor({}) was limited as ('.format(key.name) +
-                                    ','.join([str(dim) for dim in key.shape]) + '), ' +
-                                        'while feed a value with (' + ','.join([str(dim) for dim in value.shape]) + ').')
+                                ','.join([str(dim) for dim in key.shape]) + '), ' +
+                                'while feed a value with (' +
+                                ','.join([str(dim) for dim in value.shape]) + ').')
 
         # Create a new data flow if necessary
-        if data_flow is None:
-            functions = [dragon.function(outputs=targets)]
+        if flow is None:
+            functions = [_Function(outputs=targets)]
             for optimizer in optimizers:
-                functions.append(dragon.function(
+                functions.append(_Function(
                     updater=optimizer.updater))
-            data_flow = _DataFlow(functions)
-            _DataFlow.try_add(self.graph._workspace, gen_flow_key, data_flow)
+            flow = _DataFlow(functions)
+            _DataFlow.try_add(id(self._graph), flow_key, flow)
 
         # Run this data flow
-        data_flow.run(feed_dict)
+        flow.run(feed_dict)
 
         # Fetch after running
         returns = []
@@ -234,3 +231,8 @@ class InteractiveSession(BaseSession):
     @staticmethod
     def reset(target, containers=None, config=None):
         pass
+
+
+# Store the flows for different graphs
+# ThreadLocal is not necessary
+_GLOBAL_DATA_FLOWS = defaultdict(dict)

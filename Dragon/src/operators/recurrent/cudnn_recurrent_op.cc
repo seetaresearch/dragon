@@ -48,19 +48,26 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
     // Setup RNN
 #if CUDNN_VERSION_MIN(7, 0, 0)
     CUDNN_CHECK(cudnnSetRNNDescriptor(
-        ctx()->cudnn_handle(), rnn_desc,
-            hidden_size, num_layers,
-                dropout_desc,
-                    rnn_input_mode, rnn_direction, rnn_mode,
-                        CUDNN_RNN_ALGO_STANDARD,
-                            CUDNNType<T>::type));
+        ctx()->cudnn_handle(),
+        rnn_desc,
+        hidden_size,
+        num_layers,
+        dropout_desc,
+        rnn_input_mode,
+        rnn_direction,
+        rnn_mode,
+        CUDNN_RNN_ALGO_STANDARD,
+        CUDNNType<T>::type));
 #else
     CUDNN_CHECK(cudnnSetRNNDescriptor(
         rnn_desc,
-            hidden_size, num_layers,
-                dropout_desc,
-                    rnn_input_mode, rnn_direction, rnn_mode,
-                        CUDNNType<T>::type));
+        hidden_size,
+        num_layers,
+        dropout_desc,
+        rnn_input_mode,
+        rnn_direction,
+        rnn_mode,
+        CUDNNType<T>::type));
 #endif
 
     // Setup Xs & Ys & Y
@@ -68,8 +75,6 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
     xs_desc->Set<T>({ batch_size, input_dim, 1 }, { input_dim, 1, 1 });
     ys_desc.reset(new cudnnTensorDescriptors(seq_length));
     ys_desc->Set<T>({ batch_size, output_dim, 1 }, { output_dim, 1, 1 });
-    CUDNN_CHECK(cudnnGetRNNWorkspaceSize(ctx()->cudnn_handle(),
-        rnn_desc, seq_length, xs_desc->descs(), &workspace_size));
     output_dims = { seq_length, batch_size, output_dim };
 
     // Setup Hx & Cx & Hy & Cy
@@ -82,8 +87,10 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
     // Setup packed weights
     size_t weights_size; int64_t weights_count;
     CUDNN_CHECK(cudnnGetRNNParamsSize(
-        ctx()->cudnn_handle(), rnn_desc, xs_desc->descs()[0],
-            &weights_size, CUDNNType<T>::type));
+        ctx()->cudnn_handle(),
+        rnn_desc, xs_desc->descs()[0],
+        &weights_size,
+        CUDNNType<T>::type));
     weights_count = (int64_t)weights_size / sizeof(T);
     CHECK_EQ(weights_count, Input(1).count())
         << "\nModel request " << "Tensor(" << Input(1).name() << ")'s "
@@ -96,8 +103,11 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
 
     // Determine the RNN workspace
     CUDNN_CHECK(cudnnGetRNNWorkspaceSize(
-        ctx()->cudnn_handle(), rnn_desc, seq_length,
-            xs_desc->descs(), &workspace_size));
+        ctx()->cudnn_handle(),
+        rnn_desc,
+        seq_length,
+        xs_desc->descs(),
+        &workspace_size));
 }
 
 template <class Context> template <typename T>
@@ -125,8 +135,9 @@ void CuDNNRecurrentOp<Context>::RunWithType() {
     auto handle = ctx()->cudnn_handle();
 
     if (phase() == "TRAIN") {
-        CUDNN_CHECK(cudnnGetRNNTrainingReserveSize(handle,
-            rnn_desc, seq_length, xs_desc->descs(), &reserve_size));
+        CUDNN_CHECK(cudnnGetRNNTrainingReserveSize(
+            handle, rnn_desc, seq_length,
+                xs_desc->descs(), &reserve_size));
         auto* reserveT = ws()->CreateTensor(mount_name(
             "rnn/reserve"))->Reshape({ (int64_t)reserve_size });
         auto* RSdata = reserveT->template mutable_data<uint8_t, Context>();
@@ -182,8 +193,9 @@ void CuDNNRecurrentGradientOp<Context>::RunWithType() {
 
     auto* WSdata = ws()->template caches<Context>({ workspace_size })[0];
     // Check the ReserveSpace
-    CUDNN_CHECK(cudnnGetRNNTrainingReserveSize(ctx()->cudnn_handle(),
-        rnn_desc, seq_length, xs_desc->descs(), &reserve_size));
+    CUDNN_CHECK(cudnnGetRNNTrainingReserveSize(
+        ctx()->cudnn_handle(), rnn_desc, seq_length,
+            xs_desc->descs(), &reserve_size));
     auto* reserveT = ws()->GetTensor(mount_name("rnn/reserve"));
     CHECK_EQ(reserve_size, reserveT->nbytes());
 #if CUDNN_VERSION_MIN(6,0,0)
@@ -215,6 +227,12 @@ void CuDNNRecurrentGradientOp<Context>::RunWithType() {
     }
 
     if (Output(1)->name() != "NULL") {
+        math::Set(
+            Output(1)->count(),
+            cast::to<T>(0.f),
+            YsData(1),
+            ctx()
+        );  // CuDNN accumulates the gradient of weights
         CUDNN_CHECK(cudnnRNNBackwardWeights(handle, rnn_desc,
                                                   seq_length,
                                  xs_desc->descs(), XsData(0), //   X

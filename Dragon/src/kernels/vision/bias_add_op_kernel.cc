@@ -8,7 +8,6 @@ namespace kernel {
 /*! BiasAdd <T = float32, Device = CPU> */
 
 template<> void BiasAdd<float, CPUContext>(
-    const int               count,
     const int               outer_dim,
     const int               dim,
     const int               inner_dim,

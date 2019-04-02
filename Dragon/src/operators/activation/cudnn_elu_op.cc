@@ -15,8 +15,8 @@ void CuDNNEluOp<Context>::RunWithType() {
 
     CUDNN_CHECK(cudnnActivationForward(
         ctx()->cudnn_handle(), act_desc,
-            CUDNNType<T>::one, input_desc, Xdata,
-                CUDNNType<T>::zero, output_desc, Ydata));
+        CUDNNType<T>::one, input_desc, Xdata,
+        CUDNNType<T>::zero, output_desc, Ydata));
 }
 
 template <class Context>
@@ -40,9 +40,9 @@ void CuDNNEluGradientOp<Context>::RunWithType() {
 
     CUDNN_CHECK(cudnnActivationBackward(
         ctx()->cudnn_handle(), act_desc,
-            CUDNNType<T>::one, input_desc, Ydata,
-                input_desc, dYdata, output_desc, Ydata,
-                    CUDNNType<T>::zero, output_desc, dXdata));
+        CUDNNType<T>::one, input_desc, Ydata,
+        input_desc, dYdata, output_desc, Ydata,
+        CUDNNType<T>::zero, output_desc, dXdata));
 }
 
 template <class Context>

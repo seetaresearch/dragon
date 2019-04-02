@@ -145,18 +145,6 @@ message GradientProto {
     optional string external = 3;
 }
 
-// Record the updater information
-message UpdaterProto {
-    // The operator name to use.
-    optional string name = 1;
-    // The operator type.
-    optional string type = 2;
-    // The tensor to update.
-    repeated string tensor = 3;
-    // The arguments.
-    repeated Argument arg = 4;
-}
-
 // Graph Definition
 message GraphDef {
     // The graph name.
@@ -181,6 +169,4 @@ message GraphDef {
 
     // The gradients information.
     repeated GradientProto gradient = 9;
-    // The updaters information.
-    repeated UpdaterProto updater = 10;
 }

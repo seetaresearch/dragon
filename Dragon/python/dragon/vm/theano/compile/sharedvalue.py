@@ -9,8 +9,11 @@
 #
 # ------------------------------------------------------------
 
-import numpy as np
-import dragon as dg
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+from dragon.core.tensor import Tensor as _Tensor
 
 
 def shared(value, name=None, **kwargs):
@@ -18,10 +21,10 @@ def shared(value, name=None, **kwargs):
 
     Parameters
     ----------
-    value : number, list or numpy.ndarray
+    value : number, sequence or numpy.ndarray
         The numerical values.
-    name : str
-        The name of tensor.
+    name : str, optional
+        The optional name
 
     Returns
     -------
@@ -29,8 +32,4 @@ def shared(value, name=None, **kwargs):
         The initialized tensor.
 
     """
-    if not isinstance(value, (int, float, list, np.ndarray)):
-        raise TypeError("Unsupported type of value: {}".format(type(value)))
-    tensor = dg.Tensor(name).Variable()
-    dg.workspace.FeedTensor(tensor, value)
-    return tensor
+    return _Tensor(name).set_value(value)

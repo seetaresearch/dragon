@@ -12,10 +12,15 @@ void ROIAlignOp<Context>::RunWithType() {
     auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
     kernel::ROIAlign(
-        Input(0).dim(1), Input(0).dim(2), Input(0).dim(3),
-            pool_h, pool_w, Input(1).dim(0),
-                spatial_scale, sampling_ratio,
-                    Xdata, Rdata, Ydata, ctx());
+        Input(0).dim(1),
+        Input(0).dim(2),
+        Input(0).dim(3),
+        pool_h, pool_w,
+        Input(1).dim(0),
+        spatial_scale,
+        sampling_ratio,
+        Xdata, Rdata,
+        Ydata, ctx());
 }
 
 template <class Context>
@@ -47,10 +52,15 @@ void ROIAlignGradientOp<Context>::RunWithType() {
     math::Set(Output(0)->count(), cast::to<T>(0.f), dXdata, ctx());
 
     kernel::ROIAlignGrad(
-        Output(0)->dim(1), Output(0)->dim(2), Output(0)->dim(3),
-            pool_h, pool_w, Input(1).dim(0),
-                spatial_scale, sampling_ratio,
-                    dYdata, Rdata, dXdata, ctx());
+        Output(0)->dim(1),
+        Output(0)->dim(2),
+        Output(0)->dim(3),
+        pool_h, pool_w,
+        Input(1).dim(0),
+        spatial_scale,
+        sampling_ratio,
+        dYdata, Rdata,
+        dXdata, ctx());
 }
 
 template <class Context>
@@ -66,10 +76,15 @@ void ROIAlignGradientOp<Context>::RunWithFloat16() {
     kernel::TypeA2B(Input(-1).count(), dYdata, WSdata[0], ctx());
 
     kernel::ROIAlignGrad(
-        Output(0)->dim(1), Output(0)->dim(2), Output(0)->dim(3),
-            pool_h, pool_w, Input(1).dim(0),
-                spatial_scale, sampling_ratio,
-                    WSdata[0], Rdata, WSdata[1], ctx());
+        Output(0)->dim(1),
+        Output(0)->dim(2),
+        Output(0)->dim(3),
+        pool_h, pool_w,
+        Input(1).dim(0),
+        spatial_scale, 
+        sampling_ratio,
+        WSdata[0], Rdata,
+        WSdata[1], ctx());
 
     kernel::TypeA2B(Output(0)->count(), WSdata[1], dXdata, ctx());
 }

@@ -28,21 +28,23 @@ from __future__ import division
 from __future__ import print_function
 
 import six
-import dragon as dg
-import dragon.import_c_api as C
-from dragon.config import option
+from dragon import import_c_api as _C
+from dragon.config import option as _options
+from dragon.core import workspace as _workspace
 
-from .c_api import device as _Device
-from .jit import JITRecorder, is_jit_enforced
-from .autograd.grad_mode import is_grad_enabled
-from .tensor import _RuntimeTensor
-from .pool import TensorPool
-
+from dragon.vm.torch.c_api import _get_tensor_pool
+from dragon.vm.torch.c_api import device as _Device
+from dragon.vm.torch.jit import JITRecorder, is_jit_enforced
+from dragon.vm.torch.autograd.grad_mode import is_grad_enabled
+from dragon.vm.torch.tensor import _RuntimeTensor
 
 def RunOperator(
-    inputs, outputs, meta,
-        auto_grad=True,
-            callback_on_run=None):
+    inputs,
+    outputs,
+    meta,
+    auto_grad=True,
+    callback_on_run=None,
+):
     if not isinstance(inputs, list): inputs = [inputs]
     if not isinstance(outputs, list): outputs = [outputs]
     if len(outputs) == 0:
@@ -67,14 +69,15 @@ def RunOperator(
         else:
             # Legacy mode, a torch tensor is excepted
             if isinstance(output, _Device):
-                name = TensorPool.get('${JOIN}' if requires_grad else '${DETACH}')
+                name = _get_tensor_pool().get(
+                    '${JOIN}' if requires_grad else '${DETACH}')
                 outputs[ix] = _RuntimeTensor(name, device=output)
             outputs_name.append(outputs[ix].name)
 
     # Key + Inputs + Outputs => Op
     op_name = 'runtime'
     persistent_key, meta_op = meta
-    op = C.OperatorDef(); op.CopyFrom(meta_op)
+    op = _C.OperatorDef(); op.CopyFrom(meta_op)
     op.input, op.output = inputs_name, outputs_name
 
     # Auto-Grad
@@ -106,9 +109,9 @@ def RunOperator(
     if callback_on_run: callback_on_run(op_name)
 
     # Run
-    dg.workspace.RunOperator(op,
-        verbose=option['log_optimized_graph'] or
-                option['log_meta_graph'])
+    _workspace.RunOperator(op,
+        verbose=_options['log_optimized_graph'] or
+                _options['log_meta_graph'])
 
     # Returns
     if len(outputs) > 1: return outputs

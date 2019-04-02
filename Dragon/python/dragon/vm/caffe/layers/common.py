@@ -15,11 +15,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon
-from ..layer import Layer
+from dragon import ops as _ops
+from ..layer import Layer as _Layer
 
 
-class InnerProductLayer(Layer):
+class InnerProductLayer(_Layer):
     """The implementation of ``InnerProductLayer``.
 
     Parameters
@@ -28,9 +28,9 @@ class InnerProductLayer(Layer):
          The output dim. Refer `InnerProductParameter.num_output`_.
     bias_term : boolean
          Whether to use bias. Refer `InnerProductParameter.bias_term`_.
-    weight_filler : caffe_pb2.FillerParameter
+    weight_filler : FillerParameter
          The filler of weight. Refer `InnerProductParameter.weight_filler`_.
-    bias_filler : caffe_pb2.FillerParameter
+    bias_filler : FillerParameter
          The filler of bias. Refer `InnerProductParameter.bias_filler`_.
     axis : int
         The start axis to calculate. Refer `InnerProductParameter.axis`_.
@@ -53,10 +53,10 @@ class InnerProductLayer(Layer):
 
     def LayerSetup(self, bottom):
         inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        return dragon.ops.FullyConnected(inputs, **self.arguments)
+        return _ops.FullyConnected(inputs, **self.arguments)
 
 
-class AccuracyLayer(Layer):
+class AccuracyLayer(_Layer):
     """The implementation of ``AccuracyLayer``.
 
     Parameters
@@ -79,10 +79,10 @@ class AccuracyLayer(Layer):
         }
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Accuracy(bottom, **self.arguments)
+        return _ops.Accuracy(bottom, **self.arguments)
 
 
-class PythonLayer(Layer):
+class PythonLayer(_Layer):
     """The implementation of ``PythonLayer``.
 
     Parameters
@@ -106,10 +106,10 @@ class PythonLayer(Layer):
         }
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Run(bottom, **self.arguments)
+        return _ops.Run(bottom, **self.arguments)
 
 
-class EltwiseLayer(Layer):
+class EltwiseLayer(_Layer):
     """The implementation of ``EltwiseLayer``.
 
     Parameters
@@ -130,20 +130,20 @@ class EltwiseLayer(Layer):
         }
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Eltwise(bottom, **self.arguments)
+        return _ops.Eltwise(bottom, **self.arguments)
 
 
-class AddLayer(Layer):
+class AddLayer(_Layer):
     """The extended implementation of ``EltwiseLayer``."""
 
     def __init__(self, LayerParameter):
         super(AddLayer, self).__init__(LayerParameter)
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Add(bottom, **self.arguments)
+        return _ops.Add(bottom, **self.arguments)
 
 
-class ConcatLayer(Layer):
+class ConcatLayer(_Layer):
     """The implementation of ``ConcatLayer``.
 
     Parameters
@@ -157,10 +157,10 @@ class ConcatLayer(Layer):
         self.arguments = {'axis': LayerParameter.concat_param.axis}
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Concat(bottom, **self.arguments)
+        return _ops.Concat(bottom, **self.arguments)
 
 
-class SliceLayer(Layer):
+class SliceLayer(_Layer):
     """The implementation of ``SliceLayer``.
 
     Parameters
@@ -181,17 +181,17 @@ class SliceLayer(Layer):
         }
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Slice(bottom, **self.arguments)
+        return _ops.Slice(bottom, **self.arguments)
 
 
-class CropLayer(Layer):
+class CropLayer(_Layer):
     """The implementation of ``CropLayer``.
 
     Parameters
     ----------
     axis : int
         The start axis. Refer `CropParameter.axis`_.
-    offset : list of int
+    offset : sequence of int
         The offsets. Refer `CropParameter.offset`_.
 
     """
@@ -208,15 +208,15 @@ class CropLayer(Layer):
             raise ValueError('Excepted two bottom blobs.')
         self.arguments['shape_like'] = bottom[1]
         self.arguments['starts'] = self.arguments['sizes'] = None
-        return dragon.ops.Crop(bottom[0], **self.arguments)
+        return _ops.Crop(bottom[0], **self.arguments)
 
 
-class ReshapeLayer(Layer):
+class ReshapeLayer(_Layer):
     """The implementation of ``ReshapeLayer``.
 
     Parameters
     ----------
-    shape : list of int
+    shape : sequence of int
         The output shape. Refer `ReshapeParameter.shape`_.
 
     """
@@ -226,15 +226,15 @@ class ReshapeLayer(Layer):
             in LayerParameter.reshape_param.shape.dim]}
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Reshape(bottom, **self.arguments)
+        return _ops.Reshape(bottom, **self.arguments)
 
 
-class PermuteLayer(Layer):
+class PermuteLayer(_Layer):
     """The implementation of ``PermuteLayer``.
 
     Parameters
     ----------
-    order : list of int
+    order : sequence of int
         The permutation. Refer `PermuteParameter.order`_.
 
     """
@@ -244,10 +244,10 @@ class PermuteLayer(Layer):
             in LayerParameter.permute_param.order]}
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Transpose(bottom, **self.arguments)
+        return _ops.Transpose(bottom, **self.arguments)
 
 
-class FlattenLayer(Layer):
+class FlattenLayer(_Layer):
     """The implementation of ``FlattenLayer``.
 
     Parameters
@@ -266,10 +266,10 @@ class FlattenLayer(Layer):
         self.arguments = {'axis': axis, 'num_axes': num_axes}
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Flatten(bottom, **self.arguments)
+        return _ops.Flatten(bottom, **self.arguments)
 
 
-class GatherLayer(Layer):
+class GatherLayer(_Layer):
     """The extended implementation of ``GatherOp``.
 
     Parameters
@@ -285,10 +285,10 @@ class GatherLayer(Layer):
     def LayerSetup(self, bottom):
         if not isinstance(bottom, (tuple, list)) or len(bottom) != 2:
             raise ValueError('Excepted two bottom blobs.')
-        return dragon.ops.Gather(bottom[0], indices=bottom[1], **self.arguments)
+        return _ops.Gather(bottom[0], indices=bottom[1], **self.arguments)
 
 
-class SoftmaxLayer(Layer):
+class SoftmaxLayer(_Layer):
     """The implementation of ``SoftmaxLayer``.
 
     Parameters
@@ -302,10 +302,10 @@ class SoftmaxLayer(Layer):
         self.arguments = {'axis': LayerParameter.softmax_param.axis}
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Softmax(bottom, **self.arguments)
+        return _ops.Softmax(bottom, **self.arguments)
 
 
-class ArgMaxLayer(Layer):
+class ArgMaxLayer(_Layer):
     """The implementation of ``ArgMaxLayer``.
 
     Parameters
@@ -326,10 +326,10 @@ class ArgMaxLayer(Layer):
         }
 
     def LayerSetup(self, bottom):
-        return dragon.ops.ArgMax(bottom, **self.arguments)
+        return _ops.ArgMax(bottom, **self.arguments)
 
 
-class BatchNormLayer(Layer):
+class BatchNormLayer(_Layer):
     """The implementation of ``BatchNormLayer``.
 
     Parameters
@@ -359,10 +359,10 @@ class BatchNormLayer(Layer):
 
     def LayerSetup(self, bottom):
         inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        return dragon.ops.BatchNorm(inputs, **self.arguments)
+        return _ops.BatchNorm(inputs, **self.arguments)
 
 
-class GroupNormLayer(Layer):
+class GroupNormLayer(_Layer):
     """The implementation of ``GroupNormLayer``.
 
     Parameters
@@ -386,10 +386,10 @@ class GroupNormLayer(Layer):
 
     def LayerSetup(self, bottom):
         inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        return dragon.ops.GroupNorm(inputs, **self.arguments)
+        return _ops.GroupNorm(inputs, **self.arguments)
 
 
-class InstanceNormLayer(Layer):
+class InstanceNormLayer(_Layer):
     """The implementation of ``InstanceNormLayer``.
 
     Introduced by `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_
@@ -405,10 +405,10 @@ class InstanceNormLayer(Layer):
         self.arguments = {'eps': LayerParameter.instance_norm_param.eps, 'axis': 1}
 
     def LayerSetup(self, bottom):
-        return dragon.ops.InstanceNorm(bottom, **self.arguments)
+        return _ops.InstanceNorm(bottom, **self.arguments)
 
 
-class ScaleLayer(Layer):
+class ScaleLayer(_Layer):
     """The implementation of ``ScaleLayer``.
 
     Parameters
@@ -439,10 +439,10 @@ class ScaleLayer(Layer):
 
     def LayerSetup(self, bottom):
         inputs = [bottom]+ [blob['data'] for blob in self._blobs]
-        return dragon.ops.Affine(inputs, **self.arguments)
+        return _ops.Affine(inputs, **self.arguments)
 
 
-class BNLayer(Layer):
+class BNLayer(_Layer):
     """The implementation of ``BNLayer``.
 
     Parameters
@@ -477,10 +477,10 @@ class BNLayer(Layer):
 
     def LayerSetup(self, bottom):
         inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        return dragon.ops.BatchNorm(inputs, **self.arguments)
+        return _ops.BatchNorm(inputs, **self.arguments)
 
 
-class GNLayer(Layer):
+class GNLayer(_Layer):
     """The implementation of ``GNLayer``.
 
     Parameters
@@ -509,10 +509,10 @@ class GNLayer(Layer):
 
     def LayerSetup(self, bottom):
         inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        return dragon.ops.GroupNorm(inputs, **self.arguments)
+        return _ops.GroupNorm(inputs, **self.arguments)
 
 
-class NormalizeLayer(Layer):
+class NormalizeLayer(_Layer):
     """The implementation of ``NormalizeLayer``.
 
     Parameters
@@ -542,13 +542,13 @@ class NormalizeLayer(Layer):
         self.AddBlob(filler=self.GetFiller(param, 'scale_filler'), value=1) # scale
 
     def LayerSetup(self, bottom):
-        norm_out = [dragon.ops.L2Norm(bottom, **self.l2norm_arguments)]
-        return dragon.ops.Affine(
+        norm_out = [_ops.L2Norm(bottom, **self.l2norm_arguments)]
+        return _ops.Affine(
             norm_out + [blob['data'] for blob in self._blobs],
                 **self.affine_arguments)
 
 
-class TileLayer(Layer):
+class TileLayer(_Layer):
     """The extended implementation of ``TileLayer``.
 
     Parameters
@@ -565,10 +565,10 @@ class TileLayer(Layer):
         }
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Tile(bottom, **self.arguments)
+        return _ops.Tile(bottom, **self.arguments)
 
 
-class ReductionLayer(Layer):
+class ReductionLayer(_Layer):
     """The extended implementation of ``ReductionLayer``.
 
     Parameters
@@ -591,10 +591,10 @@ class ReductionLayer(Layer):
         }
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Reduce(bottom, **self.arguments)
+        return _ops.Reduce(bottom, **self.arguments)
 
 
-class ExpandDimsLayer(Layer):
+class ExpandDimsLayer(_Layer):
     """The implementation of ``ExpandDimsLayer``.
 
     Parameters
@@ -608,29 +608,29 @@ class ExpandDimsLayer(Layer):
         self.arguments = {'axis': LayerParameter.expand_dims_param.axis}
 
     def LayerSetup(self, bottom):
-        return dragon.ops.ExpandDims(bottom, **self.arguments)
+        return _ops.ExpandDims(bottom, **self.arguments)
 
 
-class StopGradientLayer(Layer):
+class StopGradientLayer(_Layer):
     """The implementation of ``StopGradientLayer``."""
 
     def __init__(self, LayerParameter):
         super(StopGradientLayer, self).__init__(LayerParameter)
 
     def LayerSetup(self, bottom):
-        return dragon.ops.StopGradient(bottom, **self.arguments)
+        return _ops.StopGradient(bottom, **self.arguments)
 
 
-class ProposalLayer(Layer):
+class ProposalLayer(_Layer):
     """The implementation of ``ProposalLayer``.
 
     Parameters
     ----------
-    stride : list of int
+    stride : sequence of int
         The stride of anchors. Refer ``ProposalParameter.stride``.
-    scale : list of float
+    scale : sequence of float
         The scales of anchors. Refer `ProposalParameter.scale`_.
-    ratio : list of float
+    ratio : sequence of float
         The ratios of anchors. Refer `ProposalParameter.ratio`_.
     pre_nms_top_n : int
         The num of anchors before nms. Refer `ProposalParameter.pre_nms_topn`_.
@@ -668,10 +668,10 @@ class ProposalLayer(Layer):
         }
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Proposal(bottom, **self.arguments)
+        return _ops.Proposal(bottom, **self.arguments)
 
 
-class CastLayer(Layer):
+class CastLayer(_Layer):
     """The implementation of ``CastLayer``.
 
     Parameters
@@ -686,4 +686,4 @@ class CastLayer(Layer):
         self.arguments = {'dtype': param.dtype.lower()}
 
     def LayerSetup(self, bottom):
-        return dragon.ops.Cast(bottom, **self.arguments)
+        return _ops.Cast(bottom, **self.arguments)

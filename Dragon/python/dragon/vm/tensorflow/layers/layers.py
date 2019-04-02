@@ -13,20 +13,20 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.tensorflow.layers.convolutional import (
+from .convolutional import (
     conv2d, Conv2D,
 )
 
-from dragon.vm.tensorflow.layers.core import (
+from .core import (
     dense, Dense,
 )
 
-from dragon.vm.tensorflow.layers.normalization import (
+from .normalization import (
     batch_normalization, BatchNormalization,
     batch_norm, BatchNorm,
 )
 
-from dragon.vm.tensorflow.layers.pooling import (
+from .pooling import (
     average_pooling2d, AveragePooling2D,
     max_pooling2d, MaxPooling2D,
 )

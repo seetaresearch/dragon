@@ -22,14 +22,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import numpy as np
+import numpy
 
-import dragon.core.workspace as ws
-import dragon.proto.dragon_pb2 as pb
-
-from dragon.core.proto_utils import MakeOperatorDef, GetDefaultDeviceOption
-from dragon.core.scope import get_default_name_scope
-from dragon.core.helper import OperatorHelper, GradientHelper
+from dragon.core import scope as _scope
+from dragon.core import helper as _helper
+from dragon.core import workspace as _workspace
+from dragon.proto import dragon_pb2 as _proto_def
+from dragon.core import proto_utils as _proto_utils
 
 
 class Tensor(object):
@@ -59,7 +58,7 @@ class Tensor(object):
 
         """
         self.name, self.shape, self.dtype = name, shape, dtype
-        self.gradient = GradientHelper(self)
+        self.gradient = _helper.GradientHelper(self)
 
     ##############################################
     #                                            #
@@ -258,8 +257,8 @@ class Tensor(object):
     @name.setter
     def name(self, value):
         if value != '':
-            self._name = ws.GetDummyName(
-                get_default_name_scope() + value
+            self._name = _workspace.GetDummyName(
+                _scope.get_default_name_scope() + value
                     if value else 'Tensor', domain='Tensor')
         else:
             # Set it manually for same cases
@@ -506,15 +505,15 @@ class Tensor(object):
             existing_outputs=[self], starts=starts, sizes=sizes)
 
     def _from_constants(self, value):
-        if not isinstance(value, np.ndarray):
+        if not isinstance(value, numpy.ndarray):
             try:
-                value = np.array(value, dtype=self.dtype
+                value = numpy.array(value, dtype=self.dtype
                     if self.dtype else 'float32')
             except:
                 raise TypeError(
                     'Can not convert the value to Tensor or numpy array.')
         ref_tensor =  Tensor.Ref(
-            name=ws.GetDummyName('Constant',
+            name=_workspace.GetDummyName('Constant',
                 domain='Tensor', zero_based=False),
                     shape=list(value.shape), dtype=str(value.dtype))
         ref_tensor.set_value(value)
@@ -798,14 +797,16 @@ class Tensor(object):
 
         Returns
         -------
-        None
+        Tensor
+            The self.
 
         See Also
         --------
         `workspace.FeedTensor(*args, **kwargs)`_ - How to feed a Tensor.
 
         """
-        ws.FeedTensor(self, new_value)
+        _workspace.FeedTensor(self, new_value)
+        return self
 
     def get_value(self):
         """Fetch the values from C++ backend. [**Theano Style**]
@@ -820,7 +821,7 @@ class Tensor(object):
         `workspace.FetchTensor(*args, **kwargs)`_ - How to fetch a Tensor.
 
         """
-        return ws.FetchTensor(self)
+        return _workspace.FetchTensor(self)
 
     def copy(self):
         """Return a Tensor with same content. [**Theano Style**]
@@ -835,7 +836,7 @@ class Tensor(object):
         `ops.Copy(*args, **kwargs)`_ - How to copy A to B.
 
         """
-        new_tensor = Tensor(self.name + '_copy')
+        new_tensor = Tensor.Ref(self.name + '_copy')
         arguments = {'inputs': self, 'existing_outputs': new_tensor}
         return self.CreateOperator('Copy', **arguments)
 
@@ -906,7 +907,7 @@ class Tensor(object):
 
             if self.shape is not None:
                 output.shape = input_shape[:]
-                output.shape.insert(axis, np.long(1))
+                output.shape.insert(axis, 1)
 
         return output
 
@@ -924,17 +925,8 @@ class Tensor(object):
         TensorShape
             The shape description.
 
-        Examples
-        --------
-        >>> a = Tensor(shape=[1, 2, 3, 4])
-        >>> print a.get_shape()
-        >>> TensorShape([Dimension(1), Dimension(2), Dimension(3), Dimension(4)])
-
-        >>> print a.get_shape().as_list()
-        >>> [1, 2, 3, 4]
-
         """
-        raise NotImplementedError('Implemented in <vm.tensorflow.framework.tensor_shape>')
+        raise NotImplementedError('')
 
     def eval(self, feed_dict=None):
         """Run and return the computing results of this tensor.
@@ -950,7 +942,7 @@ class Tensor(object):
             The values of this tensor in the backend.
 
         """
-        raise NotImplementedError('Try "import dragon.vm.tensorflow" to load this dynamic methods.')
+        raise NotImplementedError('')
 
     ############################################
     #                                          #
@@ -984,26 +976,32 @@ class Tensor(object):
         return ref_tensor
 
     @classmethod
-    def CreateOperator(cls, op_type, inputs,
-            num_outputs=1, existing_outputs=None,
-                extra_inputs=None, name=None, **kwargs):
+    def CreateOperator(
+        cls,
+        op_type,
+        inputs,
+        num_outputs=1,
+        existing_outputs=None,
+        extra_inputs=None,
+        name=None,
+        **kwargs
+    ):
         """Construct a new Tensor with specific operator descriptor.
 
         Parameters
         ----------
-        inputs : list of Tensor or Tensor
-            The inputs for this operator.
         op_type : str
-            The operator type.
-        num_outputs : int, optional
+            The type of operator.
+        inputs : sequence of Tensor
+            The inputs for this operator.
+        num_outputs : int, optional, default=1
             The number of outputs to return.
-            Discarded if ``existing_outputs`` is not None.
         existing_outputs : sequence of Tensor, optional
             The existing outputs for this operator.
         extra_inputs : sequence of Tensor, optional
-            The inputs that should be attached to solving targets, e.g. dynamic shape.
+            The inputs that should be attached to solving targets.
         name : str, optional
-            The optional name to use. ``Op_xxx`` will be used automatically if it is None.
+            The optional name.
 
         Returns
         -------
@@ -1049,10 +1047,10 @@ class Tensor(object):
         # 2. Generate outputs
         outputs = []
         if existing_outputs is None:
-            name_scope = get_default_name_scope()
+            name_scope = _scope.get_default_name_scope()
             for idx in range(num_outputs):
                 outputs.append(Tensor.Ref(
-                    ws.GetDummyName(name_scope +
+                    _workspace.GetDummyName(name_scope +
                         (name if name else op_type),
                             suffix=':{}'.format(idx),
                                 domain='Tensor')))
@@ -1066,11 +1064,10 @@ class Tensor(object):
         # 3. Construct OperatorDef
         inputs_name = [input.name for input in inputs]
         outputs_name = [output.name for output in outputs]
-        op_idx, op_name = OperatorHelper.get_index_and_name()
+        op_idx, op_name = _helper.OperatorHelper.get_index_and_name()
+        device_option = _proto_utils.GetDefaultDeviceOption()
 
-        device_option = GetDefaultDeviceOption()
-
-        op_def = MakeOperatorDef(op_type,
+        op_def = _proto_utils.MakeOperatorDef(op_type,
             inputs_name, outputs_name, op_name,
                 device_option=device_option, **kwargs)
 
@@ -1089,49 +1086,13 @@ class Tensor(object):
                     output.extra_targets.add(input.name)
 
         # 5. Refine the shape and data type
-        outputs = OperatorHelper.apply(op_type,
+        outputs = _helper.OperatorHelper.apply(op_type,
             arguments=kwargs, inputs=inputs, outputs=outputs)
 
         # 6. Returns
         if num_outputs > 1: return outputs
         elif num_outputs == 1: return outputs[0]
         else: return None
-
-    @classmethod
-    def Convert(cls, value, dtype='float32'):
-        """Convert the given value to a tensor.
-
-        Parameters
-        ----------
-        value : number or Tensor
-            The value to convert.
-        dtype : str, optional, default='float32'
-            The data type of the tensor.
-
-        Returns
-        -------
-        Tensor
-            The tensor converted with given value.
-
-        """
-        if isinstance(value, Tensor): return value
-        else:
-            if not isinstance(value, np.ndarray):
-                try:
-                    if dtype:
-                        value = np.array(value, dtype=dtype)
-                    else:
-                        value = np.array(value)
-                except:
-                    raise TypeError('{} value can not be '
-                        'converted to Tensor.'.format(
-                            type(value).__name__))
-            ref_tensor = Tensor.Ref(
-                name=ws.GetDummyName('Constant',
-                    domain='Tensor', zero_based=False),
-                        shape=list(value.shape), dtype=str(value.dtype))
-            ref_tensor.set_value(value)
-            return ref_tensor
 
     def Fill(self, type, **kwargs):
         """Fill self with the specific type of filler.
@@ -1147,11 +1108,12 @@ class Tensor(object):
             Self, with filler registered implicitly in the backend.
 
         """
-        filler = pb.TensorFillerProto()
+        filler = _proto_def.TensorFillerProto()
         filler.tensor = self.name
         filler.type = type.lower()
 
-        if filler.type in ['placeholder', 'variable']: pass
+        if filler.type in ['placeholder', 'variable']:
+            pass
         elif filler.type == 'constant':
             filler.value = kwargs['value'] if 'value' in kwargs else 0
         elif filler.type in ['normal', 'gaussian']:
@@ -1180,39 +1142,5 @@ class Tensor(object):
         else:
             raise ValueError('Unknown filler type: {}'.format(filler.type))
 
-        ws.CreateFiller(filler)
+        _workspace.CreateFiller(filler)
         return self
-
-    def debug_expressions(self):
-        """Return the internal expressions for displaying.
-
-        Returns
-        -------
-        str
-            The internal expressions.
-
-        """
-        external_inputs = set()
-        outputs = set()
-        ordered_exprs = sorted(self.expressions.items(), key=lambda d: d[0])
-        buffer0 = '-------------------Expressions-------------------\n'
-        buffer1 = ''; buffer2 = 'Inputs: ['
-
-        for k, v in ordered_exprs:
-            buffer1 = buffer1 + '>>>  ' + str(k).zfill(3) + '. ('
-            for input in v.input:
-                if input not in outputs:
-                    external_inputs.add(input)
-                buffer1 = buffer1 + input + ', '
-            buffer1 = buffer1 + 'None, ' if len(v.input) == 0 else buffer1
-            buffer1 = buffer1[0:-2] + ') -> ' + v.type + ' -> ('
-            for output in v.output:
-                outputs.add(output)
-                buffer1 = buffer1 + output + ', '
-            buffer1 = buffer1[0:-2] + ') \n'
-
-        buffer1 = buffer1 + 'Target: ' + self._name + '\n'
-        for ex_input in external_inputs:
-            buffer2 = buffer2 + ex_input + ', '
-        buffer2 = buffer2 + ']\n'
-        return buffer0 + buffer2 + buffer1 + buffer0

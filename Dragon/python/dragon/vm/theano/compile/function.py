@@ -9,24 +9,27 @@
 #
 # ------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import os
 import copy
-import numpy as np
 
-import dragon.core.mpi as mpi
-import dragon.core.workspace as ws
-import dragon.core.logging as logging
-import dragon.proto.dragon_pb2 as pb
+from dragon import config as _cfg
+from dragon.core.tensor import Tensor as _Tensor
+from dragon.core import mpi as _mpi
+from dragon.core import scope as _scope
+from dragon.core import helper as _helper
+from dragon.core import logging as _logging
+from dragon.core import workspace as _workspace
+from dragon.proto import dragon_pb2 as _proto_def
+from dragon.core import proto_utils as _proto_utils
+from dragon.core import gradient_maker as _gradient_maker
 
-from dragon.core.proto_utils import MakeArgument
-from dragon.core.helper import OperatorHelper
-from dragon.core.gradient_maker import GraphGradientMaker
-from dragon.core.scope import get_default_phase
-from dragon.core.tensor import Tensor
 
-
-def GraphDef_Grad(graph_def, targets):
-    """Inject the gradient targets into GraphDef.
+def _inject_gradients(graph_def, targets):
+    """Inject the gradients into GraphDef.
 
     Parameters
     ----------
@@ -44,18 +47,18 @@ def GraphDef_Grad(graph_def, targets):
     `T.grad(*args, **kwargs)`_ - How the generate gradient targets.
 
     """
-    all_pairs = set()
+    gradients = set()
     for target in targets:
-        all_pairs.update(target.gradient.make_pairs())
+        gradients.update(target.gradient.make_pairs())
 
-    for pair in all_pairs:
-        gradient = pb.GradientProto()
-        gradient.cost, gradient.wrt = str(pair[0]), str(pair[1])
+    for (cost, wrt) in gradients:
+        gradient = _proto_def.GradientProto()
+        gradient.cost, gradient.wrt = str(cost), str(wrt)
         graph_def.gradient.extend([gradient])
 
 
-def GraphDef_Phase(graph_def, targets):
-    """Inject the phase into GraphDef.
+def _inject_phase(graph_def, targets):
+    """Inject the phase info into GraphDef.
 
     If existing gradients, we assume it should be ``TRAIN``, and vice versa.
 
@@ -71,18 +74,20 @@ def GraphDef_Phase(graph_def, targets):
     None
 
     """
-    phase = get_default_phase()
+    phase = _scope.get_default_phase()
     if phase is None:
         phase = 'TEST'
         for target in targets:
             if target.gradient.required():
                 phase = 'TRAIN'
                 break
-    graph_def.arg.extend([MakeArgument('phase', phase)])
+    graph_def.arg.extend([
+        _proto_utils.MakeArgument(
+            'phase', phase)])
 
 
-def GraphDef_Update(graph_def, updater):
-    """Inject the update targets into GraphDef.
+def _inject_update_ops(graph_def, updater):
+    """Inject the update ops GraphDef.
 
     The ``updater`` should generate update targets before.
 
@@ -99,43 +104,61 @@ def GraphDef_Update(graph_def, updater):
 
     """
     if updater is None: return
-
-    extra_arguments = updater._extra_kwargs
-    extra_arguments['slot'] = updater._slot
-    parallel_arguments = {}
-
     updater.register_in_workspace()
 
-    # Check data parallel if necessary
-    if mpi.Is_Init():
-        idx, group = mpi.AllowParallel()
-        if idx != -1:
-            parallel_arguments['parallel_mode'] = mpi.GetParallelMode()
-            parallel_arguments['comm'], parallel_arguments['group'] \
-                = mpi.CreateGroup(root=group[0], incl=group)
-            parallel_arguments['root'] = group[0]
-        for k, v in parallel_arguments.items():
-            graph_def.arg.add().CopyFrom(MakeArgument(k, v))
+    grads, update_ops = [], []
+    extra_arguments = updater._extra_kwargs
+    extra_arguments['slot'] = updater._slot
 
+    # Build update ops according to the updater
     for e in updater._param_group:
-        pair, arguments = e
-        kwargs = dict(arguments, **extra_arguments)
-        u_target = pb.UpdaterProto()
-        u_target.type = updater.type()
-        u_target.name = OperatorHelper.get_name()
-        u_target.tensor.extend(pair)
-        for k, v in kwargs.items():
-            u_target.arg.add().CopyFrom(MakeArgument(k, v))
-        graph_def.updater.extend([u_target])
+        (param, grad), arguments = e
+        if _workspace.HasTensor(grad):
+            grads.append(grad)
+            arguments = dict(arguments, **extra_arguments)
+            update_ops.append(
+                _proto_utils.
+                    MakeOperatorDef(
+                        op_type=updater.type(),
+                        inputs=[grad],
+                        outputs=[param],
+                        name=_helper.OperatorHelper.get_name(),
+                        **arguments
+                    )
+                )
+        else:
+            _logging.info('Skip to update Tensor({}).'.format(param))
+
+    # Check data parallel if necessary
+    if _mpi.Is_Init():
+        (rank, group), arguments = _mpi.AllowParallel(), {}
+        if rank != -1:
+            arguments['parallel_mode'] = _mpi.GetParallelMode()
+            arguments['root'], (arguments['comm'], arguments['group']) \
+                = group[0], _mpi.CreateGroup(root=group[0], incl=group)
+            update_ops.insert(
+                0, _proto_utils.
+                    MakeOperatorDef(
+                        op_type='CollectiveUpdate',
+                        inputs=grads,
+                        outputs=grads,
+                        name=_helper.OperatorHelper.get_name(),
+                        **arguments
+                    )
+                )
+
+    graph_def.op.extend(update_ops)
 
 
-def GraphDef_Opt(graph_def):
-    """Inject the optimization options into GraphDef.
+def _inject_optimization(graph_def, opt_level=None):
+    """Inject the optimization info into GraphDef.
 
     Parameters
     ----------
     graph_def : GraphDef
         The definition of graph.
+    opt_level : int, optional
+        The optimization level.
 
     Returns
     -------
@@ -148,15 +171,19 @@ def GraphDef_Opt(graph_def):
     `memonger.share_grads(*args, **kwargs)`_ - How the enable gradients sharing.
 
     """
-    from dragon.config import option
-    OX = option['graph_optimization_level']
-    if not option['share_grads'] and OX >= 3: OX = 2
-    graph_def.arg.add().CopyFrom(MakeArgument('optimization_level', OX))
-    graph_def.graph_type = option['graph_type']
+    options = _cfg.GetGlobalOptions()
+    if opt_level is None:
+        opt_level = options['graph_optimization_level']
+        if not options['share_grads'] and \
+            opt_level >= 3: opt_level = 2
+    graph_def.arg.add().CopyFrom(
+        _proto_utils.MakeArgument(
+            'optimization_level', opt_level))
+    graph_def.graph_type = options['graph_type']
 
 
-def GraphDef_Device(graph_def):
-    """Inject the device option into GraphDef.
+def _inject_device(graph_def):
+    """Inject the device info into GraphDef.
 
     Parameters
     ----------
@@ -176,13 +203,13 @@ def GraphDef_Device(graph_def):
     `config.SetRandomSeed(*args, **kwargs)`_ - How to set random seed.
 
     """
-    from dragon.config import option
-    if option['device'] is not 'None':
+    options = _cfg.GetGlobalOptions()
+    if options['device'] is not 'none':
         supports = {'cpu': 0, 'cuda': 1, 'cnml': 2}
-        device_option = pb.DeviceOption()
-        device_option.device_type = supports[option['device']]
-        device_option.device_id = option['device_id']
-        device_option.random_seed = option['random_seed']
+        device_option = _proto_def.DeviceOption()
+        device_option.device_type = supports[options['device']]
+        device_option.device_id = options['device_id']
+        device_option.random_seed = options['random_seed']
         graph_def.device_option.CopyFrom(device_option)
 
 
@@ -194,7 +221,7 @@ class Function(object):
     """
     def __init__(self, name=None):
         self.callback = None
-        self.meta_graph = pb.GraphDef()
+        self.meta_graph = _proto_def.GraphDef()
         self.meta_graph.name = name if name else 'Graph'
         self.graph_name = None # Determined after creating
 
@@ -237,7 +264,7 @@ class Function(object):
             external_input_expressions = {}
             # Extract new ops
             for old_tensor, new_tensor in givens.items():
-                if isinstance(new_tensor, Tensor):
+                if isinstance(new_tensor, _Tensor):
                     name_dict[old_tensor.name] = new_tensor.name
                     external_input_expressions.update(new_tensor.expressions)
                 else:
@@ -259,7 +286,8 @@ class Function(object):
             targets = [output.name for output in outputs]
             targets.extend(all_extra_targets)
             forward_ops, grad_ops, _ = \
-                GraphGradientMaker.Make(forward_ops, targets)
+                _gradient_maker.GraphGradientMaker \
+                    .Make(forward_ops, targets)
         else:
             grad_ops = []
 
@@ -276,26 +304,29 @@ class Function(object):
 
         self.inputs, self.outputs = inputs, outputs
 
-        # Write Misc
+        # Inject arguments based on global options
         if len(outputs) > 0:
-            GraphDef_Device(meta_graph)
-            GraphDef_Opt(meta_graph)
-            GraphDef_Grad(meta_graph, outputs)
-            GraphDef_Phase(meta_graph, outputs)
+            _inject_device(meta_graph)
+            _inject_optimization(meta_graph)
+            _inject_gradients(meta_graph, outputs)
+            _inject_phase(meta_graph, outputs)
 
         elif updater is not None:
-            GraphDef_Device(meta_graph)
-            GraphDef_Opt(meta_graph)
-            GraphDef_Update(meta_graph, updater)
+            _inject_device(meta_graph)
+            _inject_optimization(meta_graph, opt_level=0)
+            _inject_update_ops(meta_graph, updater)
 
         # Call c api to create graph
-        self.graph_name = ws.CreateGraph(meta_graph)
+        self.graph_name = _workspace.CreateGraph(meta_graph)
 
         # Bind a lambda callback to run this graph
         self.callback = lambda *args, **kwargs: \
-            ws.RunGraph(self.graph_name, (inputs, args), outputs, **kwargs)
+            _workspace.RunGraph(
+                graph_name=self.graph_name,
+                    inputs=(inputs, args),
+                        outputs=outputs, **kwargs)
 
-        # Self return
+        # Return the self
         return self
 
     def export_to(self, name=None, export_dir='./'):
@@ -320,7 +351,7 @@ class Function(object):
         meta_graph_copy.name = self.meta_graph.name if name is None else name
         file = os.path.join(export_dir, meta_graph_copy.name + '.metatxt')
         with open(file, 'w') as f: f.write(str(meta_graph_copy))
-        logging.info('Export meta graph into: {}'.format(file))
+        _logging.info('Export meta graph into: {}'.format(file))
 
     def import_from(self, graph_def, explicit_inputs=False):
         """Import the defined function from a graph def.
@@ -342,25 +373,28 @@ class Function(object):
             The self.
 
         """
-        self.inputs = [Tensor(name=input).Variable() for input in graph_def.input]
-        self.outputs = [Tensor(name=output) for output in graph_def.output]
+        self.inputs = [_Tensor(input).Variable() for input in graph_def.input]
+        self.outputs = [_Tensor(output) for output in graph_def.output]
 
-        GraphDef_Device(graph_def)
-        GraphDef_Opt(graph_def)
-        GraphDef_Phase(graph_def, self.outputs)
+        _inject_device(graph_def)
+        _inject_optimization(graph_def)
+        _inject_phase(graph_def, self.outputs)
 
         # Store for future development
         self.meta_graph = graph_def
 
         # Call c api to create graph
-        self.graph_name = ws.CreateGraph(graph_def)
+        self.graph_name = _workspace.CreateGraph(graph_def)
 
         # Bind a lambda callback to run this graph
         callback_inputs = self.inputs if explicit_inputs else []
         self.callback = lambda *args, **kwargs: \
-            ws.RunGraph(self.graph_name, (callback_inputs, args), self.outputs, **kwargs)
+            _workspace.RunGraph(
+                self.graph_name,
+                    (callback_inputs, args),
+                        self.outputs, **kwargs)
 
-        # Self return
+        # Return self
         return self
 
     def __call__(self, *args, **kwargs):
@@ -396,16 +430,17 @@ def function(inputs=None, outputs=None, givens=None, updater=None):
 
     Examples
     --------
-    >>> x = Tensor('x', dtype='float32').Variable()
+    >>> import numpy, dragon
+    >>> x = dragon.Tensor('x', dtype='float32').Variable()
     >>> y = x * 2
     >>> f = function(outputs=y)
-    >>> x.set_value(np.ones((2, 3)))
+    >>> x.set_value(numpy.ones((2, 3)))
     >>> print(f())
     >>> [[ 2.  2.  2.]
          [ 2.  2.  2.]]
 
     >>> f = function(inputs=x, outputs=y)
-    >>> print(f(np.ones((2, 3)))
+    >>> print(f(numpy.ones((2, 3)))
     >>> [[ 2.  2.  2.]
          [ 2.  2.  2.]]
 

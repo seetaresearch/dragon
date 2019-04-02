@@ -15,10 +15,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon
+from dragon import config as _cfg
 
 
-_GLOBAL_ROOT_CAFFE_SOLVER = True
+_GLOBAL_CAFFE_ROOT_SOLVER = True
 
 
 def set_mode_cpu():
@@ -33,7 +33,7 @@ def set_mode_cpu():
     The implementation of `set_mode_cpu(_caffe.cpp, L51)`_.
 
     """
-    dragon.config.EnableCPU()
+    _cfg.EnableCPU()
 
 
 def set_mode_gpu():
@@ -48,7 +48,7 @@ def set_mode_gpu():
     The implementation of `set_mode_gpu(_caffe.cpp, L52)`_.
 
     """
-    dragon.config.EnableCUDA()
+    _cfg.EnableCUDA()
 
 
 def set_device(device):
@@ -63,7 +63,7 @@ def set_device(device):
     The implementation of `SetDevice(common.cpp, L65)`_.
 
     """
-    dragon.config.SetGPU(device)
+    _cfg.SetGPU(device)
 
 
 def set_random_seed(seed):
@@ -83,7 +83,7 @@ def set_random_seed(seed):
     The implementation of `set_random_seed(_caffe.cpp, L71)`_.
 
     """
-    dragon.config.SetRandomSeed(seed)
+    _cfg.SetRandomSeed(seed)
 
 
 def root_solver():
@@ -99,7 +99,7 @@ def root_solver():
     The implementation of `root_solver(common.hpp, L164)`_.
 
     """
-    return _GLOBAL_ROOT_CAFFE_SOLVER
+    return _GLOBAL_CAFFE_ROOT_SOLVER
 
 
 def set_root_solver(val):
@@ -115,5 +115,5 @@ def set_root_solver(val):
     The implementation of `set_root_solver(common.hpp, L165)`_.
 
     """
-    global _GLOBAL_ROOT_CAFFE_SOLVER
-    _GLOBAL_ROOT_CAFFE_SOLVER = val
+    global _GLOBAL_CAFFE_ROOT_SOLVER
+    _GLOBAL_CAFFE_ROOT_SOLVER = val
