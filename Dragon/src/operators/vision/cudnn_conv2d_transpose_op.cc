@@ -163,7 +163,7 @@ void CuDNNConvTranspose2dOp<Context>::RunOnDevice() {
 #if CUDNN_VERSION_MAX(6, 0, 0)
     for (int i = 0; i < dilation.size(); i++)
         if (dilation[i] != 1)
-            return Conv2dTransposeOp<Context>::RunOnDevice();
+            return ConvTranspose2dOp<Context>::RunOnDevice();
 #endif
     ConvTranspose2dOp<Context>::Reshape();
 
@@ -355,7 +355,7 @@ void CuDNNConvTranspose2dGradientOp<Context>::RunOnDevice() {
 #if CUDNN_VERSION_MAX(6, 0, 0)
     for (int i = 0; i < dilation.size(); i++)
         if (dilation[i] != 1)
-            return Conv2dTransposeGradientOp<Context>::RunOnDevice();
+            return ConvTranspose2dGradientOp<Context>::RunOnDevice();
 #endif
     ConvTranspose2dGradientOp<Context>::GradientReshape();
 

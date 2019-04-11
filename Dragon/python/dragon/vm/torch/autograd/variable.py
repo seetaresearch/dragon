@@ -60,10 +60,10 @@ def backward(self, gradient=None):
         _tensor_utils.FromArray(gradient.numpy(True), self.name + '_grad')
         input_grads.append(self.name + '_grad')
 
-    # 3. Dispatch the backward ops
+    # 3) Dispatch the backward ops
     _backward_impl(forward_ops, targets, input_grads, ignored_grads)
 
-    # 4. Release resources
+    # 4) Release resources
     # We should release both the operator handles and tensors
     for forward_op in forward_ops:
         _get_operator_pool().put(forward_op.name)

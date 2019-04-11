@@ -27,9 +27,13 @@ from dragon.vm.onnx import export_from_graph_def
 
 
 def export(
-    model, args, f, verbose=False,
-        input_names=None, output_names=None,
-           opset_version=None,
+    model,
+    args,
+    f,
+    verbose=False,
+    input_names=None,
+    output_names=None,
+    opset_version=None,
 ):
     """Export a model into ONNX format.
 

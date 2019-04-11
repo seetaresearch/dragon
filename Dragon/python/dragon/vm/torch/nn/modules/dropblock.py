@@ -17,8 +17,14 @@ from dragon.vm.torch.nn import Module
 
 
 class DropBlock2d(Module):
-    def __init__(self, block_size=7, kp=0.9,
-                 alpha=1., decrement=0., inplace=False):
+    def __init__(
+        self,
+        block_size=7,
+        kp=0.9,
+        alpha=1.,
+        decrement=0.,
+        inplace=False,
+    ):
         super(DropBlock2d, self).__init__()
         self.kp = kp
         self.block_size = block_size

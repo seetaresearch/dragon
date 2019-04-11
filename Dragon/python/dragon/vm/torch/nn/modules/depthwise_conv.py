@@ -21,8 +21,16 @@ from dragon.vm.torch.nn.modules.utils import _pair
 
 
 class _DepthwiseConvNd(Module):
-    def __init__(self, in_channels, out_channels, kernel_size,
-                 stride, padding, output_padding, bias):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride,
+        padding,
+        output_padding,
+        bias,
+    ):
         super(_DepthwiseConvNd, self).__init__()
         if in_channels != out_channels:
             raise ValueError('in/out channels must be same')
@@ -75,17 +83,26 @@ class _DepthwiseConvNd(Module):
 
 
 class DepthwiseConv2d(_DepthwiseConvNd):
-    def __init__(self, in_channels, out_channels, kernel_size,
-                 stride=1, padding=0, bias=True):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride=1,
+        padding=0,
+        bias=True,
+    ):
         kernel_size = _pair(kernel_size)
         stride = _pair(stride)
         padding = _pair(padding)
         super(DepthwiseConv2d, self).__init__(
             in_channels, out_channels, kernel_size,
-                stride, padding, _pair(0), bias)
+            stride, padding, _pair(0), bias,
+        )
 
     def forward(self, input):
-        inputs = [input, self.weight] + ([self.bias] if self.bias else [])
+        inputs = [input, self.weight] + \
+                 ([self.bias] if self.bias else [])
         self.unify_devices(inputs)
         outputs = [self.register_output()]
         return self.run(inputs, outputs)

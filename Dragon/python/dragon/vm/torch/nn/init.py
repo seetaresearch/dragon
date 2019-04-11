@@ -24,7 +24,15 @@ from dragon.vm.torch.autograd.grad_mode import no_grad
 
 
 def calculate_gain(nonlinearity, param=None):
-    linear_fns = ['linear', 'conv1d', 'conv2d', 'conv3d', 'conv_transpose1d', 'conv_transpose2d', 'conv_transpose3d']
+    linear_fns = [
+        'linear',
+        'conv1d',
+        'conv2d',
+        'conv3d',
+        'conv_transpose1d',
+        'conv_transpose2d',
+        'conv_transpose3d',
+    ]
     if nonlinearity in linear_fns or nonlinearity == 'sigmoid':
         return 1
     elif nonlinearity == 'tanh':
@@ -34,7 +42,9 @@ def calculate_gain(nonlinearity, param=None):
     elif nonlinearity == 'leaky_relu':
         if param is None:
             negative_slope = 0.01
-        elif not isinstance(param, bool) and isinstance(param, int) or isinstance(param, float):
+        elif not isinstance(param, bool) and \
+                isinstance(param, int) or \
+                isinstance(param, float):
             # True/False are instances of int, hence check above
             negative_slope = param
         else:

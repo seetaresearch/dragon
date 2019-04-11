@@ -19,8 +19,13 @@ from dragon.vm.torch.ops.builtin import zeros, ones
 
 
 class _GroupNorm(Module):
-    def __init__(self, num_features, group=32,
-                 eps=1e-5, affine=True):
+    def __init__(
+        self,
+        num_features,
+        group=32,
+        eps=1e-5,
+        affine=True,
+    ):
         super(_GroupNorm, self).__init__()
         self.num_features = num_features
         self.group = group

@@ -29,7 +29,7 @@ from .modules.activation import (
 )
 
 from .modules.loss import (
-    BCEWithLogitsLoss,
+    BCEWithLogitsLoss, SCEWithLogitsLoss,
     NLLLoss, CrossEntropyLoss,
     L1Loss, MSELoss, SmoothL1Loss,
     SigmoidFocalLoss, SoftmaxFocalLoss,

@@ -31,9 +31,17 @@ from dragon.vm.torch.ops.builtin import zeros as Zeros, xw_plus_b
 
 
 class RNNBase(Module):
-    def __init__(self, mode, input_size, hidden_size,
-                 num_layers=1, bias=True, batch_first=False,
-                 dropout=0, bidirectional=False):
+    def __init__(
+        self,
+        mode,
+        input_size,
+        hidden_size,
+        num_layers=1,
+        bias=True,
+        batch_first=False,
+        dropout=0,
+        bidirectional=False,
+    ):
         super(RNNBase, self).__init__()
         self.mode = mode
         self.input_size = input_size
@@ -256,14 +264,23 @@ class RNN(RNNBase):
 
     Examples
     --------
+    >>> import dragon.vm.torch as torch
     >>> rnn = RNN(32, 64, num_layers=1, bidirectional=True)
     >>> x = torch.ones(8, 32, 256)
     >>> outputs, hidden = rnn(x)
 
     """
-    def __init__(self, input_size, hidden_size, nonlinearity='relu',
-                 num_layers=1, bias=True, batch_first=False,
-                 dropout=0, bidirectional=False):
+    def __init__(
+        self,
+        input_size,
+        hidden_size,
+        nonlinearity='relu',
+        num_layers=1,
+        bias=True,
+        batch_first=False,
+        dropout=0,
+        bidirectional=False,
+    ):
         """Construct a RNN module.
 
         Parameters
@@ -303,14 +320,22 @@ class LSTM(RNNBase):
 
     Examples
     --------
+    >>> import dragon.vm.torch as torch
     >>> rnn = LSTM(32, 64, num_layers=2, bidirectional=True, dropout=0.5)
     >>> x = torch.ones(8, 32, 256)
     >>> outputs, hidden = rnn(x)
 
     """
-    def __init__(self, input_size, hidden_size,
-                 num_layers=1, bias=True, batch_first=False,
-                 dropout=0, bidirectional=False):
+    def __init__(
+        self,
+        input_size,
+        hidden_size,
+        num_layers=1,
+        bias=True,
+        batch_first=False,
+        dropout=0,
+        bidirectional=False,
+    ):
         """Construct a LSTM module.
 
         Parameters
@@ -347,14 +372,22 @@ class GRU(RNNBase):
 
     Examples
     --------
+    >>> import dragon.vm.torch as torch
     >>> rnn = GRU(32, 64, num_layers=2, bidirectional=False)
     >>> x = torch.ones(8, 32, 256)
     >>> outputs, hidden = rnn(x)
 
     """
-    def __init__(self, input_size, hidden_size,
-                 num_layers=1, bias=True, batch_first=False,
-                 dropout=0, bidirectional=False):
+    def __init__(
+        self,
+        input_size,
+        hidden_size,
+        num_layers=1,
+        bias=True,
+        batch_first=False,
+        dropout=0,
+        bidirectional=False,
+    ):
         """Construct a GRU module.
 
         Parameters
@@ -413,15 +446,12 @@ class RNNCellBase(Module):
         for weight in self.parameters():
             weight.data.uniform_(-stdv, stdv)
 
-from .activation import Tanh, Sigmoid
 
 class LSTMCell(RNNCellBase):
     def __init__(self, input_size, hidden_size, bias=True):
         super(LSTMCell, self).__init__(
             input_size, hidden_size, bias, num_chunks=4)
         self.register_op()
-        self.tanh = Tanh()
-        self.sigmoid = Sigmoid()
 
     def register_op(self):
         self.op_meta = {'op_type': 'LSTMCell', 'arguments': {}}

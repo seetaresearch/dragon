@@ -112,7 +112,7 @@ class Workspace(_C.Workspace):
 
     This class is a fusion of *Workspace*, *Pool* and *tf.Graph*.
 
-    We find that they work in a similar way while named different.
+    We find that they work in a similar way while named differently.
 
     """
     def __init__(self, name=''):
@@ -514,8 +514,8 @@ def RunGraph(
 
     Returns
     -------
-    None, NDArray or list of NDArray
-        The outputs, format as NDArray.
+    sequence of numpy.ndarray
+        The outputs which are copied to numpy array.
 
     See Also
     --------
@@ -551,11 +551,11 @@ def Backward(
     input_grads=None,
     ignored_grads=None,
 ):
-    """Compute the gradients of given input flows.
+    """Compute the gradients of given input operators.
 
     Parameters
     ----------
-    input_flow : sequence of OperatorDef
+    forward_ops : sequence of OperatorDef
         The referring ops to generate gradients.
     targets : sequence or str
         The solving targets.
@@ -576,10 +576,13 @@ def Backward(
             options['log_meta_graph']) else False
 
     get_default_workspace().Backward(
-        forward_ops, targets,
-            input_grads if input_grads else [],
-                ignored_grads if ignored_grads else [],
-                    options['share_grads'], required_logging)
+        forward_ops,
+        targets,
+        input_grads if input_grads else [],
+        ignored_grads if ignored_grads else [],
+        options['share_grads'],
+        required_logging,
+    )
 
 
 def LogMetaGraph(graph_def):
@@ -666,6 +669,7 @@ def Snapshot(
 
     """
     file_path = prefix + filename + suffix
+
     if _mpi.Is_Init():
         if not _mpi.AllowSnapshot(): return
         file_path = file_path + '.rank.{}'.format(_mpi.Rank())

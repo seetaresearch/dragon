@@ -27,10 +27,8 @@ from dragon.vm.torch.nn import Module
 
 
 class Container(Module):
-
     def __init__(self, **kwargs):
         super(Container, self).__init__()
-        # DeprecationWarning is ignored by default <sigh>
         warnings.warn("nn.Container is deprecated. All of it's functionality "
                       "is now implemented in nn.Module. Subclass that instead.")
         for key, value in kwargs.items():
@@ -38,7 +36,7 @@ class Container(Module):
 
 
 class Sequential(Module):
-    r"""A sequential container.
+    """A sequential container.
     Modules will be added to it in the order they are passed in the constructor.
     Alternatively, an ordered dict of modules can also be passed in.
 
@@ -59,8 +57,8 @@ class Sequential(Module):
                   ('conv2', nn.Conv2d(20,64,5)),
                   ('relu2', nn.ReLU())
                 ]))
-    """
 
+    """
     def __init__(self, *args):
         super(Sequential, self).__init__()
         if len(args) == 1 and isinstance(args[0], OrderedDict):
@@ -71,7 +69,7 @@ class Sequential(Module):
                 self.add_module(str(idx), module)
 
     def _get_item_by_idx(self, iterator, idx):
-        """Get the idx-th item of the iterator"""
+        """Get the idx-th item of the iterator."""
         size = len(self)
         idx = operator.index(idx)
         if not -size <= idx < size:

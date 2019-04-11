@@ -18,8 +18,15 @@ from dragon.vm.torch.nn.modules.utils import _pair
 
 
 class _PoolNd(Module):
-    def __init__(self, kernel_size, stride=None, padding=0, dilation=1,
-                 return_indices=False, ceil_mode=False):
+    def __init__(
+        self,
+        kernel_size,
+        stride=None,
+        padding=0,
+        dilation=1,
+        return_indices=False,
+        ceil_mode=False,
+    ):
         super(_PoolNd, self).__init__()
         self.kernel_size = kernel_size
         self.stride = stride or kernel_size

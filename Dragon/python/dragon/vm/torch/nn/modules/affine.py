@@ -18,8 +18,14 @@ from dragon.vm.torch.ops.builtin import zeros, ones
 
 
 class Affine(Module):
-    def __init__(self, num_features, bias=True,
-                 fix_weight=False, fix_bias=False, inplace=False):
+    def __init__(
+        self,
+        num_features,
+        bias=True,
+        fix_weight=False,
+        fix_bias=False,
+        inplace=False,
+    ):
         super(Affine, self).__init__()
         self.num_features = num_features
         self.inplace = inplace

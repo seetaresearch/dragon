@@ -22,7 +22,12 @@ from dragon.vm.torch.nn.functional import _Reduction
 
 
 class _Loss(Module):
-    def __init__(self, size_average=None, reduce=None, reduction='elementwise_mean'):
+    def __init__(
+        self,
+        size_average=None,
+        reduce=None,
+        reduction='elementwise_mean',
+    ):
         super(_Loss, self).__init__()
         if size_average is not None or reduce is not None:
             self.reduction = _Reduction.legacy_get_string(size_average, reduce)
@@ -31,17 +36,31 @@ class _Loss(Module):
 
 
 class _WeightedLoss(_Loss):
-    def __init__(self, weight=None, size_average=None, reduce=None, reduction='elementwise_mean'):
+    def __init__(
+        self,
+        weight=None,
+        size_average=None,
+        reduce=None,
+        reduction='elementwise_mean',
+    ):
         super(_WeightedLoss, self).__init__(size_average, reduce, reduction)
         self.weight = weight
         if weight is not None:
-            raise NotImplementedError('WeightedLoss has been not implemented yet.')
+            raise NotImplementedError(
+                'WeightedLoss has been not implemented yet.')
 
 
 class NLLLoss(_WeightedLoss):
-    def __init__(self, weight=None, size_average=None, ignore_index=None,
-                 reduce=None, reduction='elementwise_mean'):
-        super(NLLLoss, self).__init__(weight, size_average, reduce, reduction)
+    def __init__(
+        self,
+        weight=None,
+        size_average=None,
+        ignore_index=None,
+        reduce=None,
+        reduction='elementwise_mean',
+    ):
+        super(NLLLoss, self).__init__(
+            weight, size_average, reduce, reduction)
         self.ignore_index = ignore_index
         self.normalization = {
             'elementwise_mean': 'VALID',
@@ -60,17 +79,26 @@ class NLLLoss(_WeightedLoss):
         }
 
     def forward(self, input, target):
-        inputs = [input, target]; self.unify_devices(inputs)
+        inputs = [input, target]
+        self.unify_devices(inputs)
         outputs = [self.register_output()]
         return self.run(inputs, outputs)
 
 
 class BCEWithLogitsLoss(_WeightedLoss):
-    def __init__(self, weight=None, size_average=None, reduce=None,
-                 reduction='elementwise_mean', pos_weight=None):
-        super(BCEWithLogitsLoss, self).__init__(weight, size_average, reduce, reduction)
+    def __init__(
+        self,
+        weight=None,
+        size_average=None,
+        reduce=None,
+        reduction='elementwise_mean',
+        pos_weight=None,
+    ):
+        super(BCEWithLogitsLoss, self).__init__(
+            weight, size_average, reduce, reduction)
         if pos_weight is not None:
-            raise NotImplementedError('Positive weight has been not implemented yet.')
+            raise NotImplementedError(
+                'Positive weight has been not implemented yet.')
         self.normalization = {
             'elementwise_mean': 'VALID',
             'sum': 'None',
@@ -86,15 +114,59 @@ class BCEWithLogitsLoss(_WeightedLoss):
         }
 
     def forward(self, input, target):
-        inputs = [input, target]; self.unify_devices(inputs)
+        inputs = [input, target]
+        self.unify_devices(inputs)
+        outputs = [self.register_output()]
+        return self.run(inputs, outputs)
+
+
+class SCEWithLogitsLoss(_WeightedLoss):
+    def __init__(
+        self,
+        weight=None,
+        size_average=None,
+        reduce=None,
+        reduction='elementwise_mean',
+        pos_weight=None,
+    ):
+        super(SCEWithLogitsLoss, self).__init__(
+            weight, size_average, reduce, reduction)
+        if pos_weight is not None:
+            raise NotImplementedError(
+                'Positive weight has been not implemented yet.')
+        self.normalization = {
+            'elementwise_mean': 'VALID',
+            'sum': 'None',
+            'none': 'UNIT'}[self.reduction]
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'SoftmaxCrossEntropy',
+            'arguments': {
+                'axis': 1,
+                'normalization': self.normalization,
+            },
+        }
+
+    def forward(self, input, target):
+        inputs = [input, target]
+        self.unify_devices(inputs)
         outputs = [self.register_output()]
         return self.run(inputs, outputs)
 
 
 class CrossEntropyLoss(_WeightedLoss):
-    def __init__(self, weight=None, size_average=None, ignore_index=None,
-                 reduce=None, reduction='elementwise_mean'):
-        super(CrossEntropyLoss, self).__init__(weight, size_average, reduce, reduction)
+    def __init__(
+        self,
+        weight=None,
+        size_average=None,
+        ignore_index=None,
+        reduce=None,
+        reduction='elementwise_mean',
+    ):
+        super(CrossEntropyLoss, self).__init__(
+            weight, size_average, reduce, reduction)
         self.ignore_index = ignore_index
         self.normalization = {
             'elementwise_mean': 'VALID',
@@ -113,13 +185,19 @@ class CrossEntropyLoss(_WeightedLoss):
         }
 
     def forward(self, input, target):
-        inputs = [input, target]; self.unify_devices(inputs)
+        inputs = [input, target]
+        self.unify_devices(inputs)
         outputs = [self.register_output()]
         return self.run(inputs, outputs)
 
 
 class L1Loss(_Loss):
-    def __init__(self, size_average=None, reduce=None, reduction='elementwise_mean'):
+    def __init__(
+        self,
+        size_average=None,
+        reduce=None,
+        reduction='elementwise_mean',
+    ):
         super(L1Loss, self).__init__(size_average, reduce, reduction)
         self.normalization = {
             'elementwise_mean': 'BATCH_SIZE',
@@ -135,13 +213,19 @@ class L1Loss(_Loss):
         }
 
     def forward(self, input, target):
-        inputs = [input, target]; self.unify_devices(inputs)
+        inputs = [input, target]
+        self.unify_devices(inputs)
         outputs = [self.register_output()]
         return self.run(inputs, outputs)
 
 
 class MSELoss(_Loss):
-    def __init__(self, size_average=None, reduce=None, reduction='elementwise_mean'):
+    def __init__(
+        self,
+        size_average=None,
+        reduce=None,
+        reduction='elementwise_mean',
+    ):
         super(MSELoss, self).__init__(size_average, reduce, reduction)
         self.normalization = {
             'elementwise_mean': 'BATCH_SIZE',
@@ -158,14 +242,20 @@ class MSELoss(_Loss):
         }
 
     def forward(self, input, target):
-        inputs = [input, target]; self.unify_devices(inputs)
+        inputs = [input, target]
+        self.unify_devices(inputs)
         outputs = [self.register_output()]
         return self.run(inputs, outputs)
 
 
 class SmoothL1Loss(_Loss):
-    def __init__(self, size_average=None, beta=1.0,
-                 reduce=None, reduction='elementwise_mean'):
+    def __init__(
+        self,
+        size_average=None,
+        beta=1.0,
+        reduce=None,
+        reduction='elementwise_mean',
+    ):
         super(SmoothL1Loss, self).__init__(size_average, reduce, reduction)
         self.normalization = {
             'elementwise_mean': 'BATCH_SIZE',
@@ -192,10 +282,19 @@ class SmoothL1Loss(_Loss):
 
 
 class SigmoidFocalLoss(_WeightedLoss):
-    def __init__(self, weight=None, size_average=None,
-                 alpha=0.25, gamma=2.0, neg_id=0, ignore_index=None,
-                 reduce=None, reduction='elementwise_mean'):
-        super(SigmoidFocalLoss, self).__init__(weight, size_average, reduce, reduction)
+    def __init__(
+        self,
+        weight=None,
+        size_average=None,
+        alpha=0.25,
+        gamma=2.0,
+        neg_id=0,
+        ignore_index=None,
+        reduce=None,
+        reduction='elementwise_mean',
+    ):
+        super(SigmoidFocalLoss, self).__init__(
+            weight, size_average, reduce, reduction)
         self.alpha, self.gamma, self.neg_id = alpha, gamma, neg_id
         self.ignore_index = ignore_index
         self.normalization = {
@@ -218,16 +317,26 @@ class SigmoidFocalLoss(_WeightedLoss):
         }
 
     def forward(self, input, target):
-        inputs = [input, target]; self.unify_devices(inputs)
+        inputs = [input, target]
+        self.unify_devices(inputs)
         outputs = [self.register_output()]
         return self.run(inputs, outputs)
 
 
 class SoftmaxFocalLoss(_WeightedLoss):
-    def __init__(self, weight=None, size_average=None,
-                 alpha=0.25, gamma=2.0, neg_id=0, ignore_index=None,
-                 reduce=None, reduction='elementwise_mean'):
-        super(SoftmaxFocalLoss, self).__init__(weight, size_average, reduce, reduction)
+    def __init__(
+        self,
+        weight=None,
+        size_average=None,
+        alpha=0.25,
+        gamma=2.0,
+        neg_id=0,
+        ignore_index=None,
+        reduce=None,
+        reduction='elementwise_mean',
+    ):
+        super(SoftmaxFocalLoss, self).__init__(
+            weight, size_average, reduce, reduction)
         self.alpha, self.gamma, self.neg_id = alpha, gamma, neg_id
         self.ignore_index = ignore_index
         self.normalization = {
@@ -250,6 +359,7 @@ class SoftmaxFocalLoss(_WeightedLoss):
         }
 
     def forward(self, input, target):
-        inputs = [input, target]; self.unify_devices(inputs)
+        inputs = [input, target]
+        self.unify_devices(inputs)
         outputs = [self.register_output()]
         return self.run(inputs, outputs)

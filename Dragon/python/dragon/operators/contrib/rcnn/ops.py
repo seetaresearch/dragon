@@ -17,11 +17,21 @@ from dragon.operators import *
 
 
 @OpSchema.Inputs(3, INT_MAX)
-def Proposal(inputs, strides, ratios, scales,
-             pre_nms_top_n=6000, post_nms_top_n=300,
-             nms_thresh=0.7, min_size=16,
-             min_level=2, max_level=5,
-             canonical_scale=224, canonical_level=4, **kwargs):
+def Proposal(
+    inputs,
+    strides,
+    ratios,
+    scales,
+    pre_nms_top_n=6000,
+    post_nms_top_n=300,
+    nms_thresh=0.7,
+    min_size=16,
+    min_level=2,
+    max_level=5,
+    canonical_scale=224,
+    canonical_level=4,
+    **kwargs
+):
     """Generate Regional Proposals, introduced by `[Ren et.al, 2015] <https://arxiv.org/abs/1506.01497>`_.
 
     Multi-Level proposals was introduced by `[Lin et.al, 2017] <https://arxiv.org/abs/1612.03144>`_.

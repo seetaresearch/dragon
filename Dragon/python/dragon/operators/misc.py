@@ -130,7 +130,7 @@ def Accuracy(inputs, top_k=1, axis=1, ignore_labels=(), **kwargs):
 
     **Type Constraints**:
 
-    * logits (*float16*, *float32*)
+    * logits (*float32*)
 
     * labels (*float32*, *int64*)
 

@@ -771,16 +771,6 @@ class Tensor(object):
     def __hash__(self):
         return id(self)
 
-    def __call__(self, *args, **kwargs):
-        """Print the expressions.
-
-        Returns
-        -------
-        None
-
-        """
-        return self.debug_expressions()
-
     ###############################################
     #                                             #
     #                 Theano API                  #
@@ -1030,7 +1020,7 @@ class Tensor(object):
         """
         expressions = dict()
 
-        # 1. Collect inputs
+        # 1) Collect inputs
         if not isinstance(inputs, list): inputs = [inputs]
         for input in inputs:
             for op_idx, expr in input.expressions.items():
@@ -1044,7 +1034,7 @@ class Tensor(object):
                     if not op_idx in expressions:
                         expressions[op_idx] = expr
 
-        # 2. Generate outputs
+        # 2) Generate outputs
         outputs = []
         if existing_outputs is None:
             name_scope = _scope.get_default_name_scope()
@@ -1061,7 +1051,7 @@ class Tensor(object):
             num_outputs = len(outputs)
             if not isinstance(outputs, list): outputs = [outputs]
 
-        # 3. Construct OperatorDef
+        # 3) Construct OperatorDef
         inputs_name = [input.name for input in inputs]
         outputs_name = [output.name for output in outputs]
         op_idx, op_name = _helper.OperatorHelper.get_index_and_name()
@@ -1073,7 +1063,7 @@ class Tensor(object):
 
         expressions[op_idx] = op_def
 
-        # 4. Add outputs
+        # 4) Add outputs
         for idx, output in enumerate(outputs):
             # Deliver expressions
             output.expressions = expressions
@@ -1085,11 +1075,11 @@ class Tensor(object):
                 for input in extra_inputs:
                     output.extra_targets.add(input.name)
 
-        # 5. Refine the shape and data type
+        # 5) Refine the shape and data type
         outputs = _helper.OperatorHelper.apply(op_type,
             arguments=kwargs, inputs=inputs, outputs=outputs)
 
-        # 6. Returns
+        # 6) Returns
         if num_outputs > 1: return outputs
         elif num_outputs == 1: return outputs[0]
         else: return None

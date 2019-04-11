@@ -37,7 +37,7 @@ void LSTMCellGradientOp<Context>::RunWithType() {
     auto* Xdata = Input(0).template data<T, Context>();
     auto* HXdata = Input(1).template data<T, Context>();
     auto* Cdata = Input(2).template data<T, Context>();
-    auto* dHdata = Input(-2).template data<T, Context>();
+    auto* dHdata = Input(3).template data<T, Context>();
     auto* dCdata = Input(4).template mutable_data<T, Context>();
     auto* dXdata = Output(0)->template mutable_data<T, Context>();
     auto* dHXdata = Output(1)->template mutable_data<T, Context>();
@@ -81,7 +81,7 @@ class GetLSTMCellGradient final : public GradientMakerBase {
     GRADIENT_MAKER_CTOR(GetLSTMCellGradient);
     vector<OperatorDef> MakeDefs() override{
         return SingleDef(def.type() + "Gradient", "",
-            vector<string>({ I(0), I(1), O(0), GO(0), GO(1) }),
+            vector<string>({ I(0), I(1), O(1), GO(0), GO(1) }),
             vector<string>({ GI(0), GI(1) }));
     }
     // Fill zero for dCNext

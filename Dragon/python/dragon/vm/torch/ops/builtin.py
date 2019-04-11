@@ -1128,8 +1128,14 @@ def _allreduce(grads):
     return module.forward(grads)
 
 
-def _update(param, grad, op_type, slot,
-            lr_mult=1.0, decay_mult=1.0):
+def _update(
+    param,
+    grad,
+    op_type,
+    slot,
+    lr_mult=1.0,
+    decay_mult=1.0,
+):
     dev = MakeDevice(inputs=[param])
     key = '{}/{}/{}/{}'.format(op_type, dev, slot, param.name)
     module = get_module(Update, key, dev, op_type=op_type,
@@ -1169,26 +1175,55 @@ def bilinear_resize(input, dsize, fx=-1.0, fy=-1.0):
     return _resize_2d(input, 'BilinearResize', dsize, fx, fy)
 
 
-def roi_pool(feature, rois, pooled_h, pooled_w, spatial_scale):
+def roi_pool(
+    feature,
+    rois,
+    pooled_h,
+    pooled_w,
+    spatial_scale,
+):
     dev = MakeDevice(inputs=[feature])
-    key = 'RoIPool/{}/pool_h:{}/pool_w:{}/spatial_scale:{}'.format(
-        dev, pooled_h, pooled_w, spatial_scale)
+    key = 'RoIPool/{}' \
+          '/pool_h:{}' \
+          '/pool_w:{}' \
+          '/spatial_scale:{}' \
+        .format(dev,
+                pooled_h,
+                pooled_w,
+                spatial_scale)
     module = get_module(
         RoIPool, key, dev,
-            pooled_h=pooled_h, pooled_w=pooled_w,
-                spatial_scale=spatial_scale)
+        pooled_h=pooled_h,
+        pooled_w=pooled_w,
+        spatial_scale=spatial_scale,
+    )
     return module.forward(feature, rois)
 
 
-def roi_align(feature, rois, pooled_h, pooled_w,
-              spatial_scale, sampling_ratio=2):
+def roi_align(
+    feature,
+    rois,
+    pooled_h,
+    pooled_w,
+    spatial_scale,
+    sampling_ratio=2,
+):
     dev = MakeDevice(inputs=[feature])
-    key = 'RoIAlign/{}/pool_h:{}/pool_w:{}/' \
-          'spatial_scale:{}/sampling_ratio:{}'.format(
-        dev, pooled_h, pooled_w, spatial_scale, sampling_ratio)
+    key = 'RoIAlign/{}' \
+          '/pool_h:{}' \
+          '/pool_w:{}' \
+          '/spatial_scale:{}' \
+          '/sampling_ratio:{}' \
+        .format(dev,
+                pooled_h,
+                pooled_w,
+                spatial_scale,
+                sampling_ratio)
     module = get_module(
         RoIAlign, key, dev,
-            pooled_h=pooled_h, pooled_w=pooled_w,
-                spatial_scale=spatial_scale,
-                    sampling_ratio=sampling_ratio)
+        pooled_h=pooled_h,
+        pooled_w=pooled_w,
+        spatial_scale=spatial_scale,
+        sampling_ratio=sampling_ratio,
+    )
     return module.forward(feature, rois)
