@@ -29,8 +29,16 @@ class RNN(RNNBase):
     >>> outputs, hidden = rnn(x)
 
     """
-    def __init__(self, input_size, hidden_size, nonlinearity='relu',
-                 num_layers=1, bidirectional=False, dropout=0, name=None):
+    def __init__(
+        self,
+        input_size,
+        hidden_size,
+        nonlinearity='relu',
+        num_layers=1,
+        bidirectional=False,
+        dropout=0,
+        name=None,
+    ):
         """Construct a RNN instance.
 
         Parameters
@@ -57,8 +65,10 @@ class RNN(RNNBase):
 
         """
         mode = 'rnn_relu' if nonlinearity == 'relu' else 'rnn_tanh'
-        super(RNN, self).__init__(mode, input_size, hidden_size,
-            num_layers, bidirectional, dropout, name)
+        super(RNN, self).__init__(
+            mode, input_size, hidden_size,
+            num_layers, bidirectional, dropout, name,
+        )
 
 
 class LSTM(RNNBase):
@@ -73,8 +83,15 @@ class LSTM(RNNBase):
     >>> outputs, hidden = rnn(x)
 
     """
-    def __init__(self, input_size, hidden_size,
-                 num_layers=1, bidirectional=False, dropout=0, name=None):
+    def __init__(
+        self,
+        input_size,
+        hidden_size,
+        num_layers=1,
+        bidirectional=False,
+        dropout=0,
+        name=None,
+    ):
         """Construct a LSTM instance.
 
         Parameters
@@ -98,8 +115,10 @@ class LSTM(RNNBase):
             The wrapper of general RNN.
 
         """
-        super(LSTM, self).__init__('lstm', input_size, hidden_size,
-            num_layers, bidirectional, dropout, name)
+        super(LSTM, self).__init__(
+            'lstm', input_size, hidden_size,
+            num_layers, bidirectional, dropout, name,
+        )
 
 
 class GRU(RNNBase):
@@ -114,8 +133,15 @@ class GRU(RNNBase):
     >>> outputs, hidden = rnn(x)
 
     """
-    def __init__(self, input_size, hidden_size,
-                 num_layers=1, bidirectional=False, dropout=0, name=None):
+    def __init__(
+        self,
+        input_size,
+        hidden_size,
+        num_layers=1,
+        bidirectional=False,
+        dropout=0,
+        name=None,
+    ):
         """Construct a GRU instance.
 
         Parameters
@@ -139,8 +165,10 @@ class GRU(RNNBase):
             The wrapper of general RNN.
 
         """
-        super(GRU, self).__init__('gru', input_size, hidden_size,
-            num_layers, bidirectional, dropout, name)
+        super(GRU, self).__init__(
+            'gru', input_size, hidden_size,
+            num_layers, bidirectional, dropout, name,
+        )
 
 
 @OpSchema.Inputs(2)
@@ -160,4 +188,5 @@ def LSTMCell(inputs, **kwargs):
         The outputs, ``h`` and ``c`` respectively.
 
     """
-    return Tensor.CreateOperator('LSTMCell', num_outputs=2, **ParseArgs(locals()))
+    return Tensor.CreateOperator(
+        'LSTMCell', num_outputs=2, **ParseArgs(locals()))

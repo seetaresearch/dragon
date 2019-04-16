@@ -53,6 +53,8 @@ class DataBatch(object):
             The value to fill when padding is valid.
         crop_size : int, optional, default=0
             The cropping size.
+        cutout_size : int, optional, default=0
+            The square size to cutout.
         mirror : bool, optional, default=False
             Whether to mirror(flip horizontally) images.
         color_augmentation : bool, optional, default=False

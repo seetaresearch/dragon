@@ -113,6 +113,11 @@ template <class Context>
 void CuDNNDepthwiseConv2dGradientOp<Context>::RunOnDevice() {
     group = channels = data_format == "NCHW" ?
         Input(0).dim(1) : Input(0).dim(-1);
+#if CUDNN_VERSION_MIN(7, 0, 0)
+    // The group implementation of CuDNN is faster
+    // Enable if CuDNN >= 7.0
+    return CuDNNConv2dGradientOp<Context>::RunOnDevice();
+#endif
     GradientReshape();
 
     if (XIsType(Input(0), float)) RunWithType<float>();

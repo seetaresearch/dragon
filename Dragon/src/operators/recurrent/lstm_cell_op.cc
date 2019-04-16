@@ -12,9 +12,10 @@ void LSTMCellOp<Context>::RunWithType() {
     auto* Hdata = Output(0)->template mutable_data<T, Context>();
     auto* Cdata = Output(1)->template mutable_data<T, Context>();
 
-    kernel::LSTMCell(Input(1).count(), Input(1).dim(0),
-        Input(1).ndim() == 2 ? Input(1).dim(1) : Input(1).dim(2),
-            HXdata, Xdata, Cdata, Hdata, ctx());
+    kernel::LSTMCell(
+        Input(1).dim(0), Input(1).ndim() == 2 ?
+            Input(1).dim(1) : Input(1).dim(2),
+        HXdata, Xdata, Cdata, Hdata, ctx());
 }
 
 template <class Context>
@@ -47,10 +48,11 @@ void LSTMCellGradientOp<Context>::RunWithType() {
             cast::to<T>(0.f), dCdata, ctx());
     }
 
-    kernel::LSTMCellGrad(Input(1).count(), Input(1).dim(0),
-        Input(1).ndim() == 2 ? Input(1).dim(1) : Input(1).dim(2),
-            HXdata, Xdata, Cdata, dCdata, dHdata,
-                dHXdata, dXdata, ctx());
+    kernel::LSTMCellGrad(
+        Input(1).dim(0), Input(1).ndim() == 2 ?
+            Input(1).dim(1) : Input(1).dim(2),
+        HXdata, Xdata, Cdata, dCdata, dHdata,
+        dHXdata, dXdata, ctx());
 }
 
 template <class Context>

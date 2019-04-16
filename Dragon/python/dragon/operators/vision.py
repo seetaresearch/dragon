@@ -33,9 +33,17 @@ def _normalize_pads(value, rank):
 
 @OpSchema.Inputs(2, 3)
 def Conv2d(
-    inputs, num_output, kernel_shape,
-        strides=1, pads=0, dilations=1, group=1,
-            padding='VALID', data_format='NCHW', **kwargs):
+    inputs,
+    num_output,
+    kernel_shape,
+    strides=1,
+    pads=0,
+    dilations=1,
+    group=1,
+    padding='VALID',
+    data_format='NCHW',
+    **kwargs
+):
     """2D Convolution.
 
     The spatial output dimension of convolution can be computed as follows:
@@ -99,8 +107,15 @@ def Conv2d(
 
 @OpSchema.Inputs(2, 3)
 def DepthwiseConv2d(
-    inputs, num_output, kernel_shape=3, strides=1, pads=0,
-        padding='VALID', data_format='NCHW', **kwargs):
+    inputs,
+    num_output,
+    kernel_shape=3,
+    strides=1,
+    pads=0,
+    padding='VALID',
+    data_format='NCHW',
+    **kwargs
+):
     """Depthwise 2D Convolution. `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
 
     Set ``padding`` to *VALID* will use the value of ``pads``.
@@ -149,10 +164,19 @@ def DepthwiseConv2d(
 @ArgumentHelper.RepeatedDesc('output_padding')
 @ArgumentHelper.RepeatedDesc('output_shape')
 def ConvTranspose2d(
-    inputs, num_output, kernel_shape,
-        strides=1, pads=0, dilations=1, group=1,
-            output_padding=None, output_shape=None,
-                padding='VALID', data_format='NCHW', **kwargs):
+    inputs,
+    num_output,
+    kernel_shape,
+    strides=1,
+    pads=0,
+    dilations=1,
+    group=1,
+    output_padding=None,
+    output_shape=None,
+    padding='VALID',
+    data_format='NCHW',
+    **kwargs
+):
     """2D Deconvolution.
 
     The spatial output dimension of deconvolution can be computed as follows:
@@ -224,8 +248,17 @@ def ConvTranspose2d(
 
 @OpSchema.Inputs(1)
 def Pool2d(
-    inputs, kernel_shape, strides, pads=0, padding='VALID', ceil_mode=True,
-        mode='MAX', data_format='NCHW', global_pooling=False, **kwargs):
+    inputs,
+    kernel_shape,
+    strides,
+    pads=0,
+    padding='VALID',
+    ceil_mode=True,
+    mode='MAX',
+    data_format='NCHW',
+    global_pooling=False,
+    **kwargs
+):
     """2D Pooling, MAX or AVG.
 
     The spatial output dimension of pooling can be computed as follows:
@@ -308,7 +341,14 @@ def ROIPool(inputs, pool_h, pool_w, spatial_scale=1.0, **kwargs):
 
 
 @OpSchema.Inputs(2)
-def ROIAlign(inputs, pool_h=0, pool_w=0, spatial_scale=1.0, sampling_ratio=2, **kwargs):
+def ROIAlign(
+    inputs,
+    pool_h=0,
+    pool_w=0,
+    spatial_scale=1.0,
+    sampling_ratio=2,
+    **kwargs
+):
     """AVG RoIAlign. `[He et.al, 2017] <https://arxiv.org/abs/1703.06870>`_.
 
     **Type Constraints**: (*float16*, *float32*)
@@ -337,8 +377,15 @@ def ROIAlign(inputs, pool_h=0, pool_w=0, spatial_scale=1.0, sampling_ratio=2, **
 
 @OpSchema.Inputs(1)
 def LRN(
-    inputs, local_size=5, alpha=0.0001, beta=0.75, k=2.0,
-        mode='ACROSS_CHANNELS', data_format='NCHW', **kwargs):
+    inputs,
+    local_size=5,
+    alpha=0.0001,
+    beta=0.75,
+    k=2.0,
+    mode='ACROSS_CHANNELS',
+    data_format='NCHW',
+    **kwargs
+):
     """Local Response Normalization. `[Krizhevsky et.al, 2012] <http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks>`_.
 
     **Type Constraints**: (*float16*, *float32*)
@@ -379,8 +426,14 @@ def LRN(
 @OpSchema.Inputs(1)
 @ArgumentHelper.RepeatedDesc('dsize')
 def NNResize(
-    inputs, dsize, shape_like=None,
-        fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
+    inputs,
+    dsize,
+    shape_like=None,
+    fy=-1.0,
+    fx=-1.0,
+    data_format='NCHW',
+    **kwargs
+):
     """Resize the image with Nearest-Neighbor method.
 
     Set ``dsize`` to None if you want to use ``shape_like`` or ``fy/fx``.
@@ -430,8 +483,14 @@ def NNResize(
 @OpSchema.Inputs(1)
 @ArgumentHelper.RepeatedDesc('dsize')
 def BilinearResize(
-    inputs, dsize, shape_like=None,
-        fy=-1.0, fx=-1.0, data_format='NCHW', **kwargs):
+    inputs,
+    dsize,
+    shape_like=None,
+    fy=-1.0,
+    fx=-1.0,
+    data_format='NCHW',
+    **kwargs
+):
     """Resize the image with Bi-linear method.
 
     Set ``dsize`` to None if you want to use ``shape_like`` or ``fy/fx``.
@@ -508,8 +567,14 @@ def BiasAdd(inputs, data_format='NCHW', **kwargs):
 @OpSchema.Inputs(1)
 @ArgumentHelper.Desc('keep_prob', as_target=False)
 def DropBlock2d(
-    inputs, block_size=7, keep_prob=0.9, alpha=1.,
-        decrement=0., data_format='NCHW', **kwargs):
+    inputs,
+    block_size=7,
+    keep_prob=0.9,
+    alpha=1.,
+    decrement=0.,
+    data_format='NCHW',
+    **kwargs
+):
     """Randomly drop the outputs according to the spatial blocks. `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
 
     Set the ``decrement`` to schedule ``keep_prob`` for each iteration.

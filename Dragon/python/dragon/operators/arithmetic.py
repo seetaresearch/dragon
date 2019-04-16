@@ -516,4 +516,4 @@ def MovingAverage(inputs, decay, **kwargs):
         The outputs, i.e., the *y*.
 
     """
-    return Accumulate(inputs, 1 - decay, decay, **kwargs)
+    return Accumulate(inputs, 1. - decay, decay, **kwargs)

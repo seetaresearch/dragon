@@ -507,17 +507,21 @@ class Tensor(object):
     def _from_constants(self, value):
         if not isinstance(value, numpy.ndarray):
             try:
-                value = numpy.array(value, dtype=self.dtype
-                    if self.dtype else 'float32')
+                value = numpy.array(
+                    value, dtype=self.dtype
+                        if self.dtype else 'float32')
             except:
                 raise TypeError(
                     'Can not convert the value to Tensor or numpy array.')
-        ref_tensor =  Tensor.Ref(
-            name=_workspace.GetDummyName('Constant',
-                domain='Tensor', zero_based=False),
-                    shape=list(value.shape), dtype=str(value.dtype))
-        ref_tensor.set_value(value)
-        return ref_tensor
+        return Tensor.Ref(
+            name=_workspace.GetDummyName(
+                basename='Constant',
+                domain='Tensor',
+                zero_based=False,
+            ),
+            shape=list(value.shape),
+            dtype=str(value.dtype),
+        ).set_value(value)
 
     def __add__(self, other):
         """Calculate x + y.

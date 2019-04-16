@@ -107,7 +107,7 @@ class CuDNNConv2dOp final : public Conv2dOp<Context> {
 };
 
 template <class Context>
-class CuDNNConv2dGradientOp final : public Conv2dGradientOp<Context> {
+class CuDNNConv2dGradientOp : public Conv2dGradientOp<Context> {
  public:
     CuDNNConv2dGradientOp(const OperatorDef& def, Workspace* ws)
         : Conv2dGradientOp<Context>(def, ws),

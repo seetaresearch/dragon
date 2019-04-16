@@ -770,8 +770,9 @@ def _stringify_tensor(obj):
 
 class _DefaultWorkspaceStack(_tls.Stack):
     """A thread-local stack of objects for
-    providing an implicit default workspace."""
+    providing an implicit default workspace.
 
+    """
     def __init__(self):
         super(_DefaultWorkspaceStack, self).__init__()
         self._global_default_workspace = None

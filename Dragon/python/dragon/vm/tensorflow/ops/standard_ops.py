@@ -22,5 +22,4 @@ from dragon.vm.tensorflow.ops.random_ops import *
 from dragon.vm.tensorflow.ops.math_ops import *
 from dragon.vm.tensorflow.ops.array_ops import *
 from dragon.vm.tensorflow.ops.control_flow_ops import *
-from dragon.vm.tensorflow.ops.nn_ops import *
 from dragon.vm.tensorflow.ops.gradients_impl import gradients

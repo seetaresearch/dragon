@@ -84,8 +84,13 @@ def LMDBData(**kwargs):
 
 @OpSchema.Inputs(1)
 def ImageData(
-    inputs, mean_values=None, std_values=None,
-        dtype='float32', data_format='NCHW', **kwargs):
+    inputs,
+    mean_values=None,
+    std_values=None,
+    dtype='float32',
+    data_format='NCHW',
+    **kwargs
+):
     """Process the images from 4D raw data.
 
     Note that we assume the data format of raw data is **NHWC**.

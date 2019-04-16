@@ -38,9 +38,11 @@ def Gather(inputs, indices, axis=0, **kwargs):
 
     """
     arguments = ParseArgs(locals())
+    if not isinstance(indices, Tensor):
+        indices = Tensor.Ref('', dtype='int64') \
+            ._from_constants(indices)
     arguments['inputs'], arguments['indices'] = \
-        [arguments['inputs'], Tensor.Convert(
-            indices, dtype='int64')], None
+        [arguments['inputs'], indices], None
     return Tensor.CreateOperator('Gather', **arguments)
 
 
@@ -48,9 +50,13 @@ def Gather(inputs, indices, axis=0, **kwargs):
 @ArgumentHelper.RepeatedDesc('starts')
 @ArgumentHelper.RepeatedDesc('sizes')
 def Crop(
-    inputs, starts=None, sizes=None,
-        start_axis=None, offsets=None,
-            shape_like=None, **kwargs
+    inputs,
+    starts=None,
+    sizes=None,
+    start_axis=None,
+    offsets=None,
+    shape_like=None,
+    **kwargs
 ):
     """Crop the input according to the given starts and sizes.
 
@@ -274,7 +280,14 @@ def Mean(inputs, axes=None, keep_dims=False, **kwargs):
 
 
 @OpSchema.Inputs(1)
-def _ArgReduce(inputs, axis=None, operation='ARGMAX', top_k=1, keep_dims=False, **kwargs):
+def _ArgReduce(
+    inputs,
+    axis=None,
+    operation='ARGMAX',
+    top_k=1,
+    keep_dims=False,
+    **kwargs
+):
     arguments = ParseArgs(locals())
     arguments['axis'] = arguments['axis'] if arguments else INT_MAX
     return Tensor.CreateOperator('ArgReduce', num_outputs=2, **arguments)
@@ -577,33 +590,7 @@ def Flatten(inputs, axis=0, num_axes=-1, keep_axes=None, **kwargs):
     >>> [24]
 
     """
-    arguments = ParseArgs(locals())
-
-    output = Tensor.CreateOperator(op_type='Flatten', **arguments)
-
-    if inputs.shape is not None:
-        fake_shape = inputs.shape[:]
-        fake_shape = [1 if dim is None else dim for dim in fake_shape]
-        if keep_axes is not None:
-            if keep_axes > len(inputs.shape):
-                raise ValueError(
-                    'The total number of axes is {}, can not keep {}.'
-                        .format(len(inputs.shape), keep_axes))
-            total_count = np.prod(fake_shape)
-            output.shape = []
-            for i in range(keep_axes - 1):
-                output.shape.append(inputs.shape[i])
-                total_count *= fake_shape[i]
-            if total_count != 1:
-                output.shape.append(total_count)
-        else:
-            if num_axes == -1: num_axes = len(inputs.shape) - axis
-            elif num_axes == 0:
-                raise ValueError('num_axes must > 0 or be -1.')
-            num_flatten = np.prod(fake_shape[axis : axis + num_axes])
-            output.shape = inputs.shape[: axis] + [num_flatten] + inputs.shape[axis + num_axes :]
-
-    return output
+    return Tensor.CreateOperator(op_type='Flatten', **ParseArgs(locals()))
 
 
 @OpSchema.Inputs(1)
@@ -676,20 +663,7 @@ def Squeeze(inputs, axis=None, **kwargs):
     >>> print(Squeeze(a, axis=0).shape)
 
     """
-    arguments = ParseArgs(locals())
-
-    output = Tensor.CreateOperator(op_type='Squeeze', **arguments)
-
-    if inputs.shape is not None:
-        output_shape = []
-        if axis: axis += (0 if axis >= 0 else len(inputs.shape))
-        for idx, dim in enumerate(inputs.shape[:]):
-            if dim != 1 or \
-                (axis and dim == 1 and idx != axis):
-                    output_shape.append(dim)
-        output.shape = output_shape
-
-    return output
+    return Tensor.CreateOperator(op_type='Squeeze', **ParseArgs(locals()))
 
 
 @OpSchema.Inputs(1)

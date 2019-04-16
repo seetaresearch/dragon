@@ -18,8 +18,13 @@ from . import *
 
 @OpSchema.Inputs(5)
 def BatchNorm(
-    inputs, axis=-1, momentum=0.9, eps=1e-5,
-        use_stats=-1, **kwargs):
+    inputs,
+    axis=-1,
+    momentum=0.9,
+    eps=1e-5,
+    use_stats=-1,
+    **kwargs
+):
     """Batch Normalization. `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
 
     We enforce the number of inputs should be *5*, i.e.,

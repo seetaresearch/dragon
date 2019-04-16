@@ -19,8 +19,12 @@ from .activation import Softmax
 
 @OpSchema.Inputs(2)
 def NLLLoss(
-    inputs, axis=1, normalization='VALID',
-        ignore_labels=(), **kwargs):
+    inputs,
+    axis=1,
+    normalization='VALID',
+    ignore_labels=(),
+    **kwargs
+):
     """Compute the negative likelihood loss with sparse labels.
 
     **Type Constraints**:
@@ -36,7 +40,7 @@ def NLLLoss(
     axis : int, optional
         The axis to apply softmax, can be negative.
     normalization : {'UNIT', 'FULL', 'VALID', 'BATCH_SIZE', 'NONE'}, optional
-        The normalization method.
+        The method of normalization.
     ignore_labels : sequence of int, optional, default=()
         The label id to ignore.
 
@@ -55,8 +59,12 @@ def NLLLoss(
 
 @OpSchema.Inputs(2)
 def SparseSoftmaxCrossEntropy(
-    inputs, axis=1, normalization='VALID',
-        ignore_labels=(), **kwargs):
+    inputs,
+    axis=1,
+    normalization='VALID',
+    ignore_labels=(),
+    **kwargs
+):
     """Compute the softmax cross entropy with sparse labels.
 
     **Type Constraints**:
@@ -72,7 +80,7 @@ def SparseSoftmaxCrossEntropy(
     axis : int, optional
         The axis to apply softmax, can be negative.
     normalization : {'UNIT', 'FULL', 'VALID', 'BATCH_SIZE', 'NONE'}, optional
-        The normalization method.
+        The method of normalization.
     ignore_labels : sequence of int, optional, default=()
         The label id to ignore.
 
@@ -100,7 +108,7 @@ def SigmoidCrossEntropy(inputs, normalization='VALID', **kwargs):
     inputs : sequence of Tensor
         The inputs, represent [logits, targets].
     normalization : {'UNIT', 'FULL', 'VALID', 'BATCH_SIZE', 'NONE'}, optional
-        The normalization method.
+        The method of normalization.
 
     Returns
     -------
@@ -128,7 +136,7 @@ def SoftmaxCrossEntropy(inputs, axis=1, normalization='FULL', **kwargs):
     axis : int, optional
         The axis to apply softmax, can be negative.
     normalization : {'UNIT', 'FULL', 'BATCH_SIZE', 'NONE'}, optional
-        The normalization method.
+        The method of normalization.
 
     Returns
     -------
@@ -158,7 +166,7 @@ def SmoothL1Loss(inputs, beta=1.0, normalization='BATCH_SIZE', **kwargs):
     beta : float, optional
         The transition point from L1 to L2 loss
     normalization : {'FULL', 'BATCH_SIZE', 'NONE'}, optional
-        The normalization method.
+        The method of normalization.
 
     Returns
     -------
@@ -182,7 +190,7 @@ def L1Loss(inputs, scale=1., normalization='BATCH_SIZE', **kwargs):
     scale : float, optional
         The scale factor applying on the reduced loss.
     normalization : {'FULL', 'BATCH_SIZE', 'NONE'}, optional
-        The normalization method.
+        The method of normalization.
 
     Returns
     -------
@@ -206,7 +214,7 @@ def L2Loss(inputs, scale=1., normalization='BATCH_SIZE', **kwargs):
     scale : float, optional
         The scale factor applying on the reduced loss.
     normalization : {'FULL', 'BATCH_SIZE', 'NONE'}, optional
-        The normalization method.
+        The method of normalization.
 
     Returns
     -------
@@ -219,8 +227,14 @@ def L2Loss(inputs, scale=1., normalization='BATCH_SIZE', **kwargs):
 
 @OpSchema.Inputs(2)
 def SigmoidFocalLoss(
-    inputs, axis=1, normalization='VALID',
-        alpha=0.25, gamma=2.0, neg_id=0, **kwargs):
+    inputs,
+    axis=1,
+    normalization='VALID',
+    alpha=0.25,
+    gamma=2.0,
+    neg_id=0,
+    **kwargs
+):
     """Compute the sigmoid focal loss with sparse labels. `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`_.
 
     **Type Constraints**: *float32*
@@ -232,7 +246,7 @@ def SigmoidFocalLoss(
     axis : int, optional
         The axis to apply softmax, can be negative.
     normalization : {'UNIT', 'FULL', 'VALID', 'BATCH_SIZE', 'NONE'}, optional
-        The normalization method.
+        The method of normalization.
     alpha : float, optional, default=0.25
         The scale factor on the rare class.
     gamma : float, optional, default=2.0
@@ -255,8 +269,15 @@ def SigmoidFocalLoss(
 
 @OpSchema.Inputs(2)
 def SoftmaxFocalLoss(
-    inputs, axis=1, normalization='VALID', ignore_labels=(),
-        alpha=0.25, gamma=2.0, neg_id=0, **kwargs):
+    inputs,
+    axis=1,
+    normalization='VALID',
+    ignore_labels=(),
+    alpha=0.25,
+    gamma=2.0,
+    neg_id=0,
+    **kwargs
+):
     """Compute the softmax focal loss with sparse labels. `[Lin et.al, 2017] <https://arxiv.org/abs/1708.02002>`_.
 
     **Type Constraints**: *float32*
@@ -268,7 +289,7 @@ def SoftmaxFocalLoss(
     axis : int, optional
         The axis to apply softmax, can be negative.
     normalization : {'UNIT', 'FULL', 'VALID', 'BATCH_SIZE', 'NONE'}, optional
-        The normalization method.
+        The method of normalization.
     ignore_labels : sequence of int, optional, default=()
         The label id to ignore.
     alpha : float, optional, default=0.25
@@ -293,8 +314,12 @@ def SoftmaxFocalLoss(
 
 @OpSchema.Inputs(2)
 def CTCLoss(
-    inputs, blank_first=True, padding_mask=-1,
-        use_softmax=True, **kwargs):
+    inputs,
+    blank_first=True,
+    padding_mask=-1,
+    use_softmax=True,
+    **kwargs
+):
     """Compute the ctc loss with batched variable length of labels. `[Graves & Gomez, 2006] <http://www.cs.utoronto.ca/~graves/icml_2006.pdf>`_.
 
     The data format of inputs should be *[T, N, C]*.
@@ -329,5 +354,6 @@ def CTCLoss(
 
     """
     arguments = ParseArgs(locals())
-    if use_softmax: arguments['inputs'][0] = Softmax(arguments['inputs'][0], axis=2)
+    if use_softmax: arguments['inputs'][0] = \
+        Softmax(arguments['inputs'][0], axis=2)
     return Tensor.CreateOperator('CTCLoss', **arguments)

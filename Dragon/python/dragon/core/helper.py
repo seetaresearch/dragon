@@ -637,6 +637,35 @@ class OperatorHelper(object):
         return outputs
 
     @classmethod
+    def _apply_Flatten(cls, arguments, inputs, outputs):
+        outputs[0].dtype = inputs[0].dtype
+        keep_axes = arguments['keep_axes']
+        axis, num_axes = arguments['axis'], arguments['num_axes']
+        try:
+            fake_shape = inputs[0].shape[:]
+            fake_shape = [1 if dim is None else dim for dim in fake_shape]
+            if keep_axes is not None:
+                keep_axes = min(keep_axes, len(inputs.shape))
+                total_count = numpy.prod(fake_shape)
+                outputs[0].shape = []
+                for i in range(keep_axes - 1):
+                    outputs[0].shape.append(inputs[0].shape[i])
+                    total_count *= fake_shape[i]
+                if total_count != 1:
+                    outputs[0].shape.append(total_count)
+            else:
+                if num_axes == -1:
+                    num_axes = len(inputs[0].shape) - axis
+                num_axes = max(num_axes, 1)
+                num_flatten = numpy.prod(fake_shape[axis : axis + num_axes])
+                outputs[0].shape = \
+                    inputs[0].shape[: axis] + [num_flatten] \
+                        + inputs[0].shape[axis + num_axes:]
+        except:
+            pass
+        return outputs
+
+    @classmethod
     def _apply_Reshape(cls, arguments, inputs, outputs):
         outputs[0].dtype = inputs[0].dtype
         shape = arguments['dims']

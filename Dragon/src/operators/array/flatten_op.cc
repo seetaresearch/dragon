@@ -17,8 +17,9 @@ void FlattenOp<Context>::RunOnDevice() {
     vector<int64_t> output_dims;
     if (keep_axes != INT_MAX) {
         CHECK_LE(keep_axes, Input(0).ndim())
-            << "\nThe total number of axes is " + Input(0).ndim()
-            << ", can not keep " + keep_axes << " .";
+            << "\nThe total number of axes is "
+            << Input(0).ndim() << ", can not keep "
+            << keep_axes << " .";
         int i = 0;
         for (; i < keep_axes - 1; i++)
             output_dims.push_back(Input(0).dim(i));

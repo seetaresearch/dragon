@@ -165,7 +165,7 @@ def Tanh(inputs, **kwargs):
 
 
 @OpSchema.Inputs(1)
-@ArgumentHelper.Desc('prob', as_target=False)
+@ArgumentHelper.Desc('prob', as_target=True)
 def Dropout(inputs, prob=0.5, scale=True, **kwargs):
     """Randomly set a unit into zero. `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
 

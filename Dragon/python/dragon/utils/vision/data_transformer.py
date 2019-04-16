@@ -47,6 +47,8 @@ class DataTransformer(multiprocessing.Process):
             The value to fill when padding is valid.
         crop_size : int, optional, default=0
             The cropping size.
+        cutout_size : int, optional, default=0
+            The square size to cutout.
         mirror : bool, optional, default=False
             Whether to mirror(flip horizontally) images.
         color_augmentation : bool, optional, default=False
@@ -65,6 +67,7 @@ class DataTransformer(multiprocessing.Process):
         self._padding = kwargs.get('padding', 0)
         self._fill_value = kwargs.get('fill_value', 127)
         self._crop_size = kwargs.get('crop_size', 0)
+        self._cutout_size = kwargs.get('cutout_size', 0)
         self._mirror = kwargs.get('mirror', False)
         self._color_aug = kwargs.get('color_augmentation', False)
         self._min_random_scale = kwargs.get('min_random_scale', 1.0)
@@ -126,6 +129,13 @@ class DataTransformer(multiprocessing.Process):
                 w_off = int((im.shape[1] - self._crop_size) / 2)
             im = im[h_off : h_off + self._crop_size,
                     w_off : w_off + self._crop_size, :]
+
+        # CutOut
+        if self._cutout_size > 0:
+            h_off = numpy.random.randint(im.shape[0])
+            w_off = numpy.random.randint(im.shape[1])
+            im[h_off : h_off + self._cutout_size,
+               w_off : w_off + self._cutout_size, :] = self._fill_value
 
         # Random mirror
         if self._mirror:

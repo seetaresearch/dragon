@@ -941,22 +941,20 @@ void GroupNormBackward(
 
 template <typename T, class Context>
 void LSTMCell(
-    const int               count,
     const int               N,
     const int               C,
     const T*                cx,
-    T*                      xact,
+    T*                      actx,
     T*                      c,
     T*                      h,
     Context*                ctx);
 
 template <typename T, class Context>
 void LSTMCellGrad(
-    const int               count,
     const int               N,
     const int               C,
     const T*                cx,
-    const T*                xact,
+    const T*                actx,
     const T*                c,
     const T*                dc,
     const T*                dh,

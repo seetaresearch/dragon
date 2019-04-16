@@ -13,7 +13,7 @@
 #ifndef DRAGON_OPERATORS_VISION_DEPTHWISE_CONV_OP_H_
 #define DRAGON_OPERATORS_VISION_DEPTHWISE_CONV_OP_H_
 
-#include "operators/vision/conv_op_base.h"
+#include "operators/vision/conv_op.h"
 
 namespace dragon {
 
@@ -62,10 +62,10 @@ template <class Context>
 class CuDNNDepthwiseConv2dOp final
     : public DepthwiseConv2dOp<Context> {
  public:
-     CuDNNDepthwiseConv2dOp(
-         const OperatorDef&         def,
-         Workspace*                 ws)
-        : DepthwiseConv2dOp<Context>(def, ws) {
+    CuDNNDepthwiseConv2dOp(
+        const OperatorDef&         def,
+        Workspace*                 ws)
+    : DepthwiseConv2dOp<Context>(def, ws) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
     }
@@ -86,12 +86,12 @@ class CuDNNDepthwiseConv2dOp final
 
 template <class Context>
 class CuDNNDepthwiseConv2dGradientOp final
-    : public DepthwiseConv2dGradientOp<Context> {
+    : public CuDNNConv2dGradientOp<Context> {
  public:
-     CuDNNDepthwiseConv2dGradientOp(
-         const OperatorDef&         def,
-         Workspace*                 ws)
-        : DepthwiseConv2dGradientOp<Context>(def, ws) {
+    CuDNNDepthwiseConv2dGradientOp(
+        const OperatorDef&         def,
+        Workspace*                 ws)
+        : CuDNNConv2dGradientOp<Context>(def, ws) {
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
     }
