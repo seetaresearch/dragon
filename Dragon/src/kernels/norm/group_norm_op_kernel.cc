@@ -33,10 +33,12 @@ void _GroupNormFusedParams(
     for (int i = 0; i < N; ++i) {
         EigenArrayMap<T> scale_arr(scale + i * C, D, G);
         scale_arr = gamma_arr.rowwise() *
-            ConstEigenVectorArrayMap<T>(rsig + i * G, G).transpose();
-        EigenArrayMap<T>(bias + i * C, D, G) = beta_arr -
-                    scale_arr.rowwise() *
-            ConstEigenVectorArrayMap<T>(mu + i * G, G).transpose();
+            ConstEigenVectorArrayMap<T>(
+                rsig + i * G, G).transpose();
+        EigenArrayMap<T>(bias + i * C, D, G) =
+            beta_arr - scale_arr.rowwise() *
+                ConstEigenVectorArrayMap<T>(
+                    mu + i * G, G).transpose();
     }
 }
 
@@ -50,9 +52,11 @@ void _GroupNormForwardNCHW(
     const Tp*                   bias,
     Tx*                         y) {
     EigenArrayMap<Tx>(y, S, N * C) =
-        (ConstEigenArrayMap<Tx>(x, S, N * C).rowwise() *
-            ConstEigenVectorArrayMap<Tp>(scale, N * C).transpose())
-        .rowwise() + ConstEigenVectorArrayMap<Tp>(bias, N * C).transpose();
+        (ConstEigenArrayMap<Tx>(
+            x, S, N * C).rowwise() *
+            ConstEigenVectorArrayMap<Tp>(
+                scale, N * C).transpose()).rowwise() +
+        ConstEigenVectorArrayMap<Tp>(bias, N * C).transpose();
 }
 
 template <typename Tx, typename Tp>
@@ -67,9 +71,11 @@ void _GroupNormForwardNHWC(
     const int SC = S * C;
     for (int i = 0; i < N; ++i) {
         EigenArrayMap<Tx>(y + i * SC, C, S) =
-            (ConstEigenArrayMap<Tx>(x + i * SC, C, S).colwise() *
-                ConstEigenVectorArrayMap<Tp>(scale + i * C, C))
-            .colwise() + ConstEigenVectorArrayMap<Tp>(bias + i * C, C);
+            (ConstEigenArrayMap<Tx>(
+                x + i * SC, C, S).colwise() *
+                ConstEigenVectorArrayMap<Tp>(
+                    scale + i * C, C)).colwise() +
+            ConstEigenVectorArrayMap<Tp>(bias + i * C, C);
     }
 }
 
@@ -86,10 +92,10 @@ void _GroupNormInternalGrad(
     const int count = dims[0] * dims[1] * dims[2] * dims[3];
     std::array<int, 4> idx = { 0, 0, 0, 0 };
     for (int i = 0; i < count; ++i) {
-        const int i_mu = idx[0] * dims[kGDim] + idx[kGDim];
-        const int i_gamma = idx[kGDim] * dims[kDDim] + idx[kDDim];
-        ds[i_mu] += gamma[i_gamma] * dy[i] * x[i];
-        db[i_mu] += gamma[i_gamma] * dy[i];
+        const int mi = idx[0] * dims[kGDim] + idx[kGDim];
+        const int gi = idx[kGDim] * dims[kDDim] + idx[kDDim];
+        ds[mi] += gamma[gi] * dy[i] * x[i];
+        db[mi] += gamma[gi] * dy[i];
         utils::IncreaseIndexInDims(4, dims.data(), idx.data());
     }
 }
@@ -114,14 +120,14 @@ void _GroupNormGrad(
     const Tp denom = Tp(1) / static_cast<Tp>(dims[kDDim] * S);
     std::array<int, 4> idx = { 0, 0, 0, 0 };
     for (int i = 0; i < count; ++i) {
-        const int i_mu = idx[0] * dims[kGDim] + idx[kGDim];
-        const int i_gamma = idx[kGDim] * dims[kDDim] + idx[kDDim];
-        const Tp u = (db[i_mu] * mu[i_mu] - ds[i_mu]) *
-            (x[i] - mu[i_mu]) * utils::math::Cube(rsig[i_mu]);
-        const Tp v = db[i_mu] * rsig[i_mu];
-        dx[i] = gamma[i_gamma] * dy[i] * rsig[i_mu] + (u - v) * denom;
-        dgamma[i_gamma] += dy[i] * (x[i] - mu[i_mu]) * rsig[i_mu];
-        dbeta[i_gamma] += dy[i];
+        const int mi = idx[0] * dims[kGDim] + idx[kGDim];
+        const int gi = idx[kGDim] * dims[kDDim] + idx[kDDim];
+        const Tp u = (db[mi] * mu[mi] - ds[mi]) *
+            (x[i] - mu[mi]) * utils::math::Cube(rsig[mi]);
+        const Tp v = db[mi] * rsig[mi];
+        dx[i] = gamma[gi] * dy[i] * rsig[mi] + (u - v) * denom;
+        dgamma[gi] += dy[i] * (x[i] - mu[mi]) * rsig[mi];
+        dbeta[gi] += dy[i];
         utils::IncreaseIndexInDims(4, dims.data(), idx.data());
     }
 }
@@ -145,14 +151,18 @@ void _GroupNormGrad(
         Tx*                         y, \
         CPUContext*                 ctx) { \
         const int C = G * D; \
-        _GroupNormFusedParams<Tp>(N, G, D, \
-            mu, rsig, gamma, beta, scale, bias); \
+        _GroupNormFusedParams<Tp>( \
+            N, G, D, mu, rsig, \
+            gamma, beta, scale, bias \
+        ); \
         if (data_format == "NCHW") { \
             _GroupNormForwardNCHW<Tx, Tp>( \
-                N, C, S, x, scale, bias, y); \
+                N, C, S, x, scale, bias, y \
+            ); \
         } else if (data_format == "NHWC") { \
             _GroupNormForwardNHWC<Tx, Tp>( \
-                N, C, S, x, scale, bias, y); \
+                N, C, S, x, scale, bias, y \
+            ); \
         } \
     }
 
@@ -174,22 +184,26 @@ void _GroupNormGrad(
         Tp*                         dgamma, \
         Tp*                         dbeta, \
         CPUContext*                 ctx) { \
-        math::Set(N * G, (Tp)0, ds, ctx); \
-        math::Set(N * G, (Tp)0, db, ctx); \
-        math::Set(G * D, (Tp)0, dgamma, ctx); \
-        math::Set(G * D, (Tp)0, dbeta, ctx); \
+        math::Set(N * G, Tp(0), ds, ctx); \
+        math::Set(N * G, Tp(0), db, ctx); \
+        math::Set(G * D, Tp(0), dgamma, ctx); \
+        math::Set(G * D, Tp(0), dbeta, ctx); \
         if (data_format == "NCHW") { \
             _GroupNormInternalGrad<Tx, Tp, StorageOrder::NCHW>( \
-                { N, G, D, S }, x, gamma, dy, ds, db); \
+                { N, G, D, S }, x, gamma, dy, ds, db \
+            ); \
             _GroupNormGrad<Tx, Tp, StorageOrder::NCHW>( \
                 { N, G, D, S }, x, mu, rsig, gamma, \
-                    ds, db, dy, dx, dgamma, dbeta); \
+                ds, db, dy, dx, dgamma, dbeta \
+            ); \
         } else if (data_format == "NHWC") { \
             _GroupNormInternalGrad<Tx, Tp, StorageOrder::NHWC>( \
-                { N, S, G, D }, x, gamma, dy, ds, db); \
+                { N, S, G, D }, x, gamma, dy, ds, db \
+            ); \
             _GroupNormGrad<Tx, Tp, StorageOrder::NHWC>( \
                 { N, S, G, D }, x, mu, rsig, gamma, \
-                    ds, db, dy, dx, dgamma, dbeta); \
+                ds, db, dy, dx, dgamma, dbeta \
+            ); \
         } \
     }
 

@@ -14,7 +14,7 @@ void _GradientTwoSum(
     const T*                dy2,
     T*                      dx) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         dx[i] += (dy1[i] + dy2[i]);
@@ -30,7 +30,7 @@ void _GradientTwoSum(
         const T*                dy2, \
         T*                      dx, \
         CPUContext*             ctx) { \
-        _GradientTwoSum<T>(count, dy1, dy2, dx); \
+        _GradientTwoSum(count, dy1, dy2, dx); \
     }
 
 DEFINE_GRAD_SUM2_KERNEL_LAUNCHER(int8_t);

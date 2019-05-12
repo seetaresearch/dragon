@@ -6,7 +6,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! PRelu <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void PRelu<float, CPUContext>(
     const int               count,
@@ -20,7 +20,7 @@ template<> void PRelu<float, CPUContext>(
     CPUContext*             ctx) {
     if (channel_shared) {
 #ifdef WITH_OMP
-        #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+        #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
         for (int i = 0; i < count; ++i) {
             y[i] = std::max(x[i], 0.f) +
@@ -29,7 +29,7 @@ template<> void PRelu<float, CPUContext>(
     } else {
         if (data_format == "NCHW") {
 #ifdef WITH_OMP
-            #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+            #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
             for (int i = 0; i < count; ++i) {
                 int c = (i / dim) % channels;
@@ -38,7 +38,7 @@ template<> void PRelu<float, CPUContext>(
             }
         } else if (data_format == "NHWC") {
 #ifdef WITH_OMP
-            #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+            #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
             for (int i = 0; i < count; ++i) {
                 int c = i % channels;
@@ -49,7 +49,7 @@ template<> void PRelu<float, CPUContext>(
     }
 }
 
-/*! PReluGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void PReluGrad<float, CPUContext>(
     const int               count,
@@ -64,7 +64,7 @@ template<> void PReluGrad<float, CPUContext>(
     CPUContext*             ctx) {
     if (channel_shared) {
 #ifdef WITH_OMP
-        #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+        #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
         for (int i = 0; i < count; ++i) {
             dx[i] = dy[i] * ((x[i] > 0) + w[0] * (x[i] <= 0));
@@ -72,7 +72,7 @@ template<> void PReluGrad<float, CPUContext>(
     } else {
         if (data_format == "NCHW") {
 #ifdef WITH_OMP
-            #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+            #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
             for (int i = 0; i < count; ++i) {
                 int c = (i / dim) % channels;
@@ -80,7 +80,7 @@ template<> void PReluGrad<float, CPUContext>(
             }
         } else if (data_format == "NHWC") {
 #ifdef WITH_OMP
-            #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+            #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
             for (int i = 0; i < count; ++i) {
                 int c = i % channels;
@@ -90,7 +90,7 @@ template<> void PReluGrad<float, CPUContext>(
     }
 }
 
-/*! PReluWGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void PReluWGrad<float, CPUContext>(
     const int               rows,
@@ -107,7 +107,7 @@ template<> void PReluWGrad<float, CPUContext>(
     CPUContext*             ctx) {
     const int cdim = channels * dim;
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(cdim))
+    #pragma omp parallel for num_threads(OMP_THREADS(cdim))
 #endif
     for (int i = 0; i < cdim; ++i) {
         bcast_dw[i] = dy[i] * x[i] * (x[i] <= 0);
@@ -117,22 +117,29 @@ template<> void PReluWGrad<float, CPUContext>(
         }
     }
     if (channel_shared) {
-        math::Dot(channels * dim,
-            bcast_dw, multiplier, dw, ctx);
+        math::Dot(
+            channels * dim,
+            bcast_dw, multiplier,
+            dw, ctx
+        );
     } else {
         if (data_format == "NCHW") {
             math::Gemv(
                 CblasNoTrans,
                 channels, dim,
                 1.f, bcast_dw, multiplier,
-                0.f, dw, ctx);
+                0.f, dw, ctx
+            );
         } else if (data_format == "NHWC") {
             math::Gemv(
                 CblasTrans,
                 dim, channels,
                 1.f, bcast_dw, multiplier,
-                0.f, dw, ctx);
-        } else LOG(FATAL) << "Unknown data format: " << data_format;
+                0.f, dw, ctx
+            );
+        } else {
+            LOG(FATAL) << "Unknown data format: " << data_format;
+        }
     }
 }
 

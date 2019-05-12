@@ -7,141 +7,143 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Equal <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename T>
 __global__ void _EqualInteger(
-    const int               count,
+    const int               nthreads,
     const T*                a,
     const T*                b,
     bool*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        y[idx] = a[idx] == b[idx] ? true : false;
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+        y[i] = a[i] == b[i] ? true : false;
     }
 }
 
 __global__ void _EqualHalf(
-    const int               count,
+    const int               nthreads,
     const half*             a,
     const half*             b,
     bool*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 530
-        y[idx] = __heq(a[idx], b[idx]) ? true : false;
+        y[i] = __heq(a[i], b[i]) ? true : false;
 #endif
     }
 }
 
 template <typename T>
 __global__ void _EqualFloat(
-    const int               count,
+    const int               nthreads,
     const T*                a,
     const T*                b,
     bool*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        y[idx] = fabs(a[idx] - b[idx]) < 1e-15 ? true : false;
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+        y[i] = fabs(a[i] - b[i]) < 1e-15 ? true : false;
     }
 }
 
-/*! Less <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename T>
 __global__ void _Less(
-    const int               count,
+    const int               nthreads,
     const T*                a,
     const T*                b,
     bool*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        y[idx] = a[idx] < b[idx] ? true : false;
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+        y[i] = a[i] < b[i] ? true : false;
     }
 }
 
 __global__ void _LessHalf(
-    const int               count,
+    const int               nthreads,
     const half*             a,
     const half*             b,
     bool*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 530
-        y[idx] = __hlt(a[idx], b[idx]) ? true : false;
+        y[i] = __hlt(a[i], b[i]) ? true : false;
 #endif
     }
 }
 
-/*! LessEqual <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename T>
 __global__ void _LessEqual(
-    const int               count,
+    const int               nthreads,
     const T*                a,
     const T*                b,
     bool*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        y[idx] = a[idx] <= b[idx] ? true : false;
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+        y[i] = a[i] <= b[i] ? true : false;
     }
 }
 
 __global__ void _LessEqualHalf(
-    const int               count,
+    const int               nthreads,
     const half*             a,
     const half*             b,
     bool*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 530
-        y[idx] = __hle(a[idx], b[idx]) ? true : false;
+        y[i] = __hle(a[i], b[i]) ? true : false;
 #endif
     }
 }
 
-/*! Greater <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename T>
 __global__ void _Greater(
-    const int               count,
+    const int               nthreads,
     const T*                a,
     const T*                b,
     bool*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        y[idx] = a[idx] > b[idx] ? true : false;
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+        y[i] = a[i] > b[i] ? true : false;
     }
 }
 
 __global__ void _GreaterHalf(
-    const int               count,
+    const int               nthreads,
     const half*             a,
     const half*             b,
     bool*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 530
-        y[idx] = __hgt(a[idx], b[idx]) ? true : false;
+        y[i] = __hgt(a[i], b[i]) ? true : false;
 #endif
     }
 }
 
-/*! GreaterEqual <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename T>
 __global__ void _GreaterEqual(
-    const int               count,
+    const int               nthreads,
     const T*                a,
     const T*                b,
     bool*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        y[idx] = a[idx] >= b[idx] ? true : false;
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+        y[i] = a[i] >= b[i] ? true : false;
     }
 }
 
 __global__ void _GreaterEqualHalf(
-    const int               count,
+    const int               nthreads,
     const half*             a,
     const half*             b,
     bool*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 530
-        y[idx] = __hge(a[idx], b[idx]) ? true : false;
+        y[i] = __hge(a[i], b[i]) ? true : false;
 #endif
     }
 }
+
+/* Kernel Launchers */
 
 #define DEFINE_COMPARE_WARPPER(T, OP, IMPL) \
     template <> void OP<T, CUDAContext>( \
@@ -149,11 +151,12 @@ __global__ void _GreaterEqualHalf(
         const T*                a, \
         const T*                b, \
         bool*                   y, \
-        CUDAContext*           ctx) { \
-        IMPL<T> \
+        CUDAContext*            ctx) { \
+        IMPL \
             << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> > \
-            (count, a, b, y); \
+                 0, ctx->cuda_stream() >> >( \
+            count, a, b, y \
+        ); \
     }
 
 #define DEFINE_COMPARE_FP16_WARPPER(OP) \
@@ -165,9 +168,12 @@ __global__ void _GreaterEqualHalf(
         CUDAContext*            ctx) { \
         _##OP##Half \
             << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> > \
-            (count, reinterpret_cast<const half*>(a), \
-                reinterpret_cast<const half*>(b), y); \
+                 0, ctx->cuda_stream() >> >( \
+            count, \
+            reinterpret_cast<const half*>(a), \
+            reinterpret_cast<const half*>(b), \
+            y \
+        ); \
     }
 
 DEFINE_COMPARE_WARPPER(bool, Equal, _EqualInteger);

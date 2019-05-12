@@ -20,7 +20,7 @@ from ..layer import Layer as _Layer
 
 
 class ReLULayer(_Layer):
-    """The implementation of ``ReLULayer``.
+    """The implementation of *ReLULayer*.
 
     Parameters
     ----------
@@ -39,7 +39,7 @@ class ReLULayer(_Layer):
 
 
 class PReLULayer(_Layer):
-    """The implementation of ``PReLULayer``.
+    """The implementation of *PReLULayer*.
 
     Parameters
     ----------
@@ -65,7 +65,7 @@ class PReLULayer(_Layer):
 
 
 class ELULayer(_Layer):
-    """The implementation of ``ELULayer``.
+    """The implementation of *ELULayer*.
 
     Parameters
     ----------
@@ -82,7 +82,7 @@ class ELULayer(_Layer):
 
 
 class SELULayer(_Layer):
-    """The implementation of ``SELULayer``."""
+    """The implementation of *SELULayer*."""
 
     def __init__(self, LayerParameter):
         super(SELULayer, self).__init__(LayerParameter)
@@ -92,7 +92,7 @@ class SELULayer(_Layer):
 
 
 class SigmoidLayer(_Layer):
-    """The implementation of ``SigmoidLayer``."""
+    """The implementation of *SigmoidLayer*."""
 
     def __init__(self, LayerParameter):
         super(SigmoidLayer, self).__init__(LayerParameter)
@@ -102,7 +102,7 @@ class SigmoidLayer(_Layer):
 
 
 class TanHLayer(_Layer):
-    """The implementation of ``TanHLayer``."""
+    """The implementation of *TanHLayer*."""
 
     def __init__(self, LayerParameter):
         super(TanHLayer, self).__init__(LayerParameter)
@@ -112,7 +112,7 @@ class TanHLayer(_Layer):
 
 
 class DropoutLayer(_Layer):
-    """The implementation of ``DropoutLayer``.
+    """The implementation of *DropoutLayer*.
 
     Parameters
     ----------
@@ -136,7 +136,7 @@ class DropoutLayer(_Layer):
 
 
 class PowerLayer(_Layer):
-    """The implementation of ``PowerLayer``.
+    """The implementation of *PowerLayer*.
 
     Parameters
     ----------

@@ -4,56 +4,68 @@
 
 namespace dragon {
 
-/*! Default constructor of <OperatorBase> */
+/* Default constructor of <OperatorBase> */
 
 OperatorBase::OperatorBase(
     const OperatorDef&          def,
     Workspace*                  ws)
-        : def_(def), ws_(ws), anchor_(def.name()) {
+        : def_(def), ws_(ws),
+          anchor_(def.name()),
+          dtype_("float32"),
+          data_format_("NCHW") {
+    // Scan the defined arguments
     for (auto& arg : def_.arg()) {
         CHECK_GT(arg.name().size(), 0);
         CHECK_EQ(args_.count(arg.name()), 0);
         args_[arg.name()] = &arg;
-        if (arg.name() == "anchor") anchor_ = arg.s();
+        if (arg.name() == "anchor") {
+            anchor_ = arg.s();
+        } else if (arg.name() == "dtype") {
+            dtype_ = arg.s();
+        } else if (arg.name() == "data_format") {
+            data_format_ = arg.s();
+        }
     }
+
+    // Set the inputs and outputs
     string tensor_name; size_t ver_pos;
-    for (auto& input : def.input()) {
-        tensor_name = input;
-        if ((ver_pos = input.find("/ver:")) != string::npos)
-            tensor_name = input.substr(0, ver_pos);
+    for (auto& e : def.input()) {
+        tensor_name = e;
+        if ((ver_pos = e.find("/ver:")) != string::npos)
+            tensor_name = e.substr(0, ver_pos);
         auto* tensor = ws->GetTensor(tensor_name);
         inputs_.push_back(tensor);
     }
-    for (auto& output : def.output()) {
-        tensor_name = output;
-        if ((ver_pos = output.find("/ver:")) != string::npos)
-            tensor_name = output.substr(0, ver_pos);
+    for (auto& e : def.output()) {
+        tensor_name = e;
+        if ((ver_pos = e.find("/ver:")) != string::npos)
+            tensor_name = e.substr(0, ver_pos);
         auto* tensor = ws->CreateTensor(tensor_name);
         outputs_.push_back(tensor);
     }
 }
 
-/*! Return the specified input tensor */
+/* Return the specified input tensor */
 
-Tensor& OperatorBase::Input(int idx) {
-    CHECK_LT(idx, (int)inputs_.size());
-    CHECK_GE(idx, -(int)inputs_.size());
-    if (idx >= 0) return *inputs_[idx];
-    else return *inputs_[idx + inputs_.size()];
+Tensor& OperatorBase::X(int i) {
+    CHECK_LT(i, (int)inputs_.size());
+    CHECK_GE(i, -(int)inputs_.size());
+    if (i >= 0) return *inputs_[i];
+    else return *inputs_[i + inputs_.size()];
 }
 
-/*! Return the specified output tensor */
+/* Return the specified output tensor */
 
-Tensor* OperatorBase::Output(int idx) {
-    CHECK_LT(idx, (int)outputs_.size());
-    CHECK_GE(idx, -(int)outputs_.size());
-    if (idx >= 0) return outputs_[idx];
-    else return outputs_[idx + outputs_.size()];
+Tensor* OperatorBase::Y(int i) {
+    CHECK_LT(i, (int)outputs_.size());
+    CHECK_GE(i, -(int)outputs_.size());
+    if (i >= 0) return outputs_[i];
+    else return outputs_[i + outputs_.size()];
 }
 
-/*! Return the debug DType string on given tensor */
+/* Return the dtype string according to given tensor */
 
-string OperatorBase::DTypeHelper(
+string OperatorBase::DTypeString(
     const Tensor&               tensor,
     const Set<string>&          dtypes) const {
     std::stringstream ss;
@@ -65,9 +77,9 @@ string OperatorBase::DTypeHelper(
     return ss.str();
 }
 
-/* Return the debug DType string on given type */
+/* Return the dtype string according to given type */
 
-string OperatorBase::DTypeHelper(
+string OperatorBase::DTypeString(
     const string&               dtype,
     const Set<string>&          dtypes) const {
     std::stringstream ss;
@@ -78,7 +90,7 @@ string OperatorBase::DTypeHelper(
     return ss.str();
 }
 
-/*! Modify this operator according to the given def  */
+/* Modify this operator according to the given def  */
 
 void OperatorBase::UpdateFrom(const OperatorDef& def) {
     anchor_ = def.name();
@@ -102,20 +114,20 @@ OperatorBase* TryCreateOperator(
         case PROTO_CUDA:
 #ifdef WITH_CUDNN
             if (CUDNNOperatorRegistry()->Has(key) &&
-                    CUDAContext::cuda_object()->cudnn_enabled)
+                CUDAContext::obj()->cudnn_enabled_)
                 return CUDNNOperatorRegistry()->Create(key, def, ws);
 #endif
             return CUDAOperatorRegistry()->Create(key, def, ws);
         case PROTO_CNML:
             return CNMLOperatorRegistry()->Create(key, def, ws);
         default:
-            LOG(FATAL) << "Unknown device type: "
+            LOG(FATAL) << "Unknown Device: "
                        << def.device_option().device_type();
             return nullptr;
     }
 }
 
-/*! New a operator from the raw def */
+/* New a operator from the raw def */
 
 OperatorBase* NewOperator(
     const OperatorDef&          def,
@@ -135,7 +147,7 @@ OperatorBase* NewOperator(
     return TryCreateOperator(def.type(), mutable_def, ws);
 }
 
-/*! Make the gradient for the given def */
+/* Make the gradient for the given def */
 
 Gradient MakeGradientForOp(
     const OperatorDef&          def,
@@ -169,22 +181,22 @@ Gradient MakeGradientForOp(
     return grad;
 }
 
-/*! Prepare the content of inputs */
+/* Prepare the content of inputs */
 
 template <class Context>
 void Operator<Context>::PrepareResource() {
     string tensor_name;
     size_t ver_pos; int version;
-    for (int i = 0; i < InputSize(); i++) {
-        if (Input(i).version() >= 0) {
+    for (int i = 0; i < XSize(); i++) {
+        if (X(i).version() >= 0) {
             tensor_name = def().input(i);
             ver_pos = tensor_name.find("/ver:");
             version = std::atoi(tensor_name.substr(ver_pos + 5).c_str());
-            if (version == Input(i).version()) continue;
-            LOG(DEBUG) << "Excepted version of Tensor(" + Input(i).name() + ") "
-                       << "is " << version << ", got " << Input(i).version()
+            if (version == X(i).version()) continue;
+            LOG(DEBUG) << "Excepted version of Tensor(" + X(i).name() + ") "
+                       << "is " << version << ", got " << X(i).version()
                        << ". Recompute.";
-            Tensor* flag = ws()->GetTensor("/opt/recomputing_flag");
+            Tensor* flag = ws()->GetTensor("/opt/recomp_flag");
             flag->mutable_data<bool, CPUContext>()[0] = true;
             vector<OperatorBase*>& chain = subgraph()[tensor_name];
             for (auto* op : chain) op->Run(ctx()->stream_id());
@@ -193,23 +205,23 @@ void Operator<Context>::PrepareResource() {
     }
 }
 
-/*! Release the ownership of inputs */
+/* Release the ownership of inputs */
 
 template <class Context>
 void Operator<Context>::ReleaseResource() {
     string tensor_name;
     size_t ver_pos; int version;
-    for (int i = 0; i < OutputSize(); i++) {
-        if (Output(i)->version() >= 0) {
+    for (int i = 0; i < YSize(); i++) {
+        if (Y(i)->version() >= 0) {
             tensor_name = def().output(i);
             ver_pos = tensor_name.find("/ver:");
             version = std::atoi(tensor_name.substr(ver_pos + 5).c_str());
-            Output(i)->set_version(version);
+            Y(i)->set_version(version);
         }
     }
 }
 
-/*! Operator Registry */
+/* Operator Registry */
 
 DEFINE_REGISTRY(
     CPUOperatorRegistry,
@@ -247,7 +259,7 @@ DEFINE_REGISTRY(
     const OperatorDef&,
     const vector<string>&);
 
-/*! Macros */
+/* Macros */
 
 #define INSTANTIATE_GET_SINGLE_ARGUMENT(T, fieldname) \
 template <> T OperatorBase::Arg( \
@@ -268,7 +280,7 @@ INSTANTIATE_GET_SINGLE_ARGUMENT(string, s)
 #undef INSTANTIATE_GET_SINGLE_ARGUMENT
 
 #define INSTANTIATE_GET_REPEATED_ARGUMENT(T, fieldname) \
-template<> vector<T> OperatorBase::Args<T>(const string& name) { \
+template<> vector<T> OpArgs<T>(const string& name) { \
     if(args_.count(name) == 0) return vector<T>(); \
     vector<T> values; \
     for(const auto& v : args_[name]->fieldname()) \

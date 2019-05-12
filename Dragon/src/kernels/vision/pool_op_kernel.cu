@@ -7,10 +7,10 @@ namespace dragon {
 
 namespace kernel {
 
-/*! MAXPool2d <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template<typename T>
-__global__ void _MAXPool2d_NCHW(
+__global__ void _MaxPool2dNCHW(
     const int               nthreads,
     const int               C,
     const int               H,
@@ -26,39 +26,36 @@ __global__ void _MAXPool2d_NCHW(
     const T*                x,
     int*                    mask,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        const int pw = y_idx % pool_w;
-        const int ph = (y_idx / pool_w) % pool_h;
-        const int pc = (y_idx / pool_w / pool_h) % C;
-        const int pn = y_idx / pool_w / pool_h / C;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        const int pw = yi % pool_w;
+        const int ph = (yi / pool_w) % pool_h;
+        const int c = (yi / pool_w / pool_h) % C;
+        const int n = yi / pool_w / pool_h / C;
 
-        int start_h = ph * stride_h - pad_h;
-        int start_w = pw * stride_w - pad_w;
-        const int end_h = min(start_h + kernel_h, H);
-        const int end_w = min(start_w + kernel_w, W);
+        int h_start = ph * stride_h - pad_h;
+        int w_start = pw * stride_w - pad_w;
+        const int h_end = min(h_start + kernel_h, H);
+        const int w_end = min(w_start + kernel_w, W);
+        h_start = max(h_start, 0);
+        w_start = max(w_start, 0);
 
-        start_h = max(start_h, 0);
-        start_w = max(start_w, 0);
-
-        T max_val = -FLT_MAX;
-        int max_idx = -1;
-        const T* x_ptr = x + (pn * C + pc) * H * W;
-
-        for (int h = start_h; h < end_h; ++h) {
-            for (int w = start_w; w < end_w; ++w) {
-                if (x_ptr[h * W + w] > max_val) {
-                    max_idx = h * W + w;
-                    max_val = x_ptr[max_idx];
+        int maxi = -1; T max_val = -FLT_MAX;
+        const T* X = x + (n * C + c) * H * W;
+        for (int h = h_start; h < h_end; ++h) {
+            for (int w = w_start; w < w_end; ++w) {
+                if (X[h * W + w] > max_val) {
+                    maxi = h * W + w;
+                    max_val = X[maxi];
                 }
             }
         }
-        y[y_idx] = max_val;
-        mask[y_idx] = max_idx;
+        y[yi] = max_val;
+        mask[yi] = maxi;
     }
 }
 
 template<typename T>
-__global__ void _MAXPool2d_NHWC(
+__global__ void _MaxPool2dNHWC(
     const int               nthreads,
     const int               C,
     const int               H,
@@ -74,37 +71,35 @@ __global__ void _MAXPool2d_NHWC(
     const T*                x,
     int*                    mask,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        const int pc = y_idx % C;
-        const int pw = (y_idx / C) % pool_w;
-        const int ph = (y_idx / C / pool_w) % pool_h;
-        const int pn = y_idx / C / pool_w / pool_h;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        const int c = yi % C;
+        const int pw = (yi / C) % pool_w;
+        const int ph = (yi / C / pool_w) % pool_h;
+        const int n = yi / C / pool_w / pool_h;
 
-        int start_h = ph * stride_h - pad_h;
-        int start_w = pw * stride_w - pad_w;
-        const int end_h = min(start_h + kernel_h, H);
-        const int end_w = min(start_w + kernel_w, W);
+        int h_start = ph * stride_h - pad_h;
+        int w_start = pw * stride_w - pad_w;
+        const int h_end = min(h_start + kernel_h, H);
+        const int w_end = min(w_start + kernel_w, W);
+        h_start = max(h_start, 0);
+        w_start = max(w_start, 0);
 
-        start_h = max(start_h, 0);
-        start_w = max(start_w, 0);
-
-        T max_val = -FLT_MAX;
-        int max_idx = -1;
-        for (int h = start_h; h < end_h; ++h) {
-            for (int w = start_w; w < end_w; ++w) {
-                const int x_idx = ((pn * H + h) * W + w) * C + pc;
-                if (x[x_idx] > max_val) {
-                    max_idx = x_idx;
-                    max_val = x[max_idx];
+        int maxi = -1; T max_val = -FLT_MAX;
+        for (int h = h_start; h < h_end; ++h) {
+            for (int w = w_start; w < w_end; ++w) {
+                const int xi = ((n * H + h) * W + w) * C + c;
+                if (x[xi] > max_val) {
+                    maxi = xi;
+                    max_val = x[xi];
                 }
             }
         }
-        y[y_idx] = max_val;
-        mask[y_idx] = max_idx;
+        y[yi] = max_val;
+        mask[yi] = maxi;
     }
 }
 
-template<> void MAXPool2d<float, CUDAContext>(
+template<> void MaxPool2d<float, CUDAContext>(
     const int               N,
     const int               C,
     const int               H,
@@ -124,24 +119,38 @@ template<> void MAXPool2d<float, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = N * C * pool_h * pool_w;
     if (data_format == "NCHW") {
-        _MAXPool2d_NCHW<float>
+        _MaxPool2dNCHW
             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (nthreads, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, x, mask, y);
+                 0, ctx->cuda_stream() >> >(
+            nthreads,
+            C, H, W,
+            pool_h, pool_w,
+            kernel_h, kernel_w,
+            stride_h, stride_w,
+            pad_h, pad_w,
+            x, mask, y
+        );
     } else if (data_format == "NHWC") {
-        _MAXPool2d_NHWC<float>
+        _MaxPool2dNHWC
             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (nthreads, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, x, mask, y);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+                 0, ctx->cuda_stream() >> >(
+            nthreads,
+            C, H, W,
+            pool_h, pool_w,
+            kernel_h, kernel_w,
+            stride_h, stride_w,
+            pad_h, pad_w,
+            x, mask, y
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
-/*! AVGPool2d <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template<typename T>
-__global__ void _AVGPool2d_NCHW(
+__global__ void _AvgPool2dNCHW(
     const int               nthreads,
     const int               C,
     const int               H,
@@ -156,37 +165,36 @@ __global__ void _AVGPool2d_NCHW(
     const int               pad_w,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        const int pw = y_idx % pool_w;
-        const int ph = (y_idx / pool_w) % pool_h;
-        const int pc = (y_idx / pool_w / pool_h) % C;
-        const int pn = y_idx / pool_w / pool_h / C;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        const int pw = yi % pool_w;
+        const int ph = (yi / pool_w) % pool_h;
+        const int c = (yi / pool_w / pool_h) % C;
+        const int n = yi / pool_w / pool_h / C;
 
-        int start_h = ph * stride_h - pad_h;
-        int start_w = pw * stride_w - pad_w;
-        int end_h = min(start_h + kernel_h, H + pad_h);
-        int end_w = min(start_w + kernel_w, W + pad_w);
+        int h_start = ph * stride_h - pad_h;
+        int w_start = pw * stride_w - pad_w;
+        int h_end = min(h_start + kernel_h, H + pad_h);
+        int w_end = min(w_start + kernel_w, W + pad_w);
 
-        start_h = max(start_h, 0);
-        start_w = max(start_w, 0);
-        end_h = min(end_h, H);
-        end_w = min(end_w, W);
+        h_start = max(h_start, 0);
+        w_start = max(w_start, 0);
+        h_end = min(h_end, H);
+        w_end = min(w_end, W);
 
-        const T* x_ptr = x + (pn * C + pc) * H * W;
-        const int pool_area = (end_h - start_h) * (end_w - start_w);
-        T avg_val = 0;
-
-        for (int h = start_h; h < end_h; ++h) {
-            for (int w = start_w; w < end_w; ++w) {
-                avg_val += x_ptr[h * W + w];
+        T sum_val = T(0);
+        const T* X = x + (n * C + c) * H * W;
+        const T area = (h_end - h_start) * (w_end - w_start);
+        for (int h = h_start; h < h_end; ++h) {
+            for (int w = w_start; w < w_end; ++w) {
+                sum_val += X[h * W + w];
             }
         }
-        y[y_idx] = avg_val / pool_area;
+        y[yi] = sum_val / area;
     }
 }
 
 template<typename T>
-__global__ void _AVGPool2d_NHWC(
+__global__ void _AvgPool2dNHWC(
     const int               nthreads,
     const int               C,
     const int               H,
@@ -201,34 +209,34 @@ __global__ void _AVGPool2d_NHWC(
     const int               pad_w,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        const int pc = y_idx % C;
-        const int pw = (y_idx / C) % pool_w;
-        const int ph = (y_idx / C / pool_w) % pool_h;
-        const int pn = y_idx / C / pool_w / pool_h;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        const int c = yi % C;
+        const int pw = (yi / C) % pool_w;
+        const int ph = (yi / C / pool_w) % pool_h;
+        const int n = yi / C / pool_w / pool_h;
 
-        int start_h = ph * stride_h - pad_h;
-        int start_w = pw * stride_w - pad_w;
-        int end_h = min(start_h + kernel_h, H + pad_h);
-        int end_w = min(start_w + kernel_w, W + pad_w);
+        int h_start = ph * stride_h - pad_h;
+        int w_start = pw * stride_w - pad_w;
+        int h_end = min(h_start + kernel_h, H + pad_h);
+        int w_end = min(w_start + kernel_w, W + pad_w);
 
-        start_h = max(start_h, 0);
-        start_w = max(start_w, 0);
-        end_h = min(end_h, H);
-        end_w = min(end_w, W);
+        h_start = max(h_start, 0);
+        w_start = max(w_start, 0);
+        h_end = min(h_end, H);
+        w_end = min(w_end, W);
 
-        const int pool_area = (end_h - start_h) * (end_w - start_w);
-        T avg_val = 0;
-
-        for (int h = start_h; h < end_h; ++h) 
-            for (int w = start_w; w < end_w; ++w)
-                avg_val += x[((pn * H + h) * W + w) * C + pc];
-
-        y[y_idx] = avg_val / pool_area;
+        T sum_val = 0;
+        const T area = (h_end - h_start) * (w_end - w_start);
+        for (int h = h_start; h < h_end; ++h) {
+            for (int w = w_start; w < w_end; ++w) {
+                sum_val += x[((n * H + h) * W + w) * C + c];
+            }
+        }
+        y[yi] = sum_val / area;
     }
 }
 
-template<> void AVGPool2d<float, CUDAContext>(
+template<> void AvgPool2d<float, CUDAContext>(
     const int               N,
     const int               C,
     const int               H,
@@ -247,24 +255,38 @@ template<> void AVGPool2d<float, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = N * C * pool_h * pool_w;
     if (data_format == "NCHW") {
-        _AVGPool2d_NCHW<float>
+        _AvgPool2dNCHW
             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (nthreads, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, x, y);
+                 0, ctx->cuda_stream() >> >(
+            nthreads,
+            C, H, W,
+            pool_h, pool_w,
+            kernel_h, kernel_w,
+            stride_h, stride_w,
+            pad_h, pad_w,
+            x, y
+        );
     } else if (data_format == "NHWC") {
-        _AVGPool2d_NHWC<float>
+        _AvgPool2dNHWC
             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (nthreads, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, x, y);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+                 0, ctx->cuda_stream() >> >(
+            nthreads,
+            C, H, W,
+            pool_h, pool_w,
+            kernel_h, kernel_w,
+            stride_h, stride_w,
+            pad_h, pad_w,
+            x, y
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
-/*! MAXPool2dGrad <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template<typename T>
-__global__ void _MAXPool2dGrad_NCHW(
+__global__ void _MaxPool2dGrad_NCHW(
     const int               nthreads,
     const int               C,
     const int               H,
@@ -280,39 +302,36 @@ __global__ void _MAXPool2dGrad_NCHW(
     const T*                dy,
     const int*              mask,
     T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(x_idx, nthreads) {
-        const int w = x_idx % W;
-        const int h = (x_idx / W) % H;
-        const int c = (x_idx / W / H) % C;
-        const int n = x_idx / W / H / C;
+    CUDA_1D_KERNEL_LOOP(xi, nthreads) {
+        const int w = xi % W;
+        const int h = (xi / W) % H;
+        const int c = (xi / W / H) % C;
+        const int n = xi / W / H / C;
 
-        // Allow overlapping
-        const int start_ph = (h + pad_h < kernel_h) ?
+        const int ph_start = (h + pad_h < kernel_h) ?
             0 : (h + pad_h - kernel_h) / stride_h + 1;
-        const int start_pw = (w + pad_w < kernel_w) ? 
+        const int pw_start = (w + pad_w < kernel_w) ? 
             0 : (w + pad_w - kernel_w) / stride_w + 1;
-        // Allow clip
-        const int end_ph = min((h + pad_h) / stride_h + 1, pool_h);
-        const int end_pw = min((w + pad_w) / stride_w + 1, pool_w);
+        const int ph_end = min((h + pad_h) / stride_h + 1, pool_h);
+        const int pw_end = min((w + pad_w) / stride_w + 1, pool_w);
 
-        T grad = 0;
+        T grad = T(0);
         const int offset = (n * C + c) * pool_h * pool_w;
-        const T* dy_ptr = dy + offset;
-        const int* mask_ptr = mask + offset;
-
-        for (int ph = start_ph; ph < end_ph; ++ph) {
-            for (int pw = start_pw; pw < end_pw; ++pw) {
-                if (mask_ptr[ph * pool_w + pw] == (h * W + w)) {
-                    grad += dy_ptr[ph * pool_w + pw];
+        const T* dY = dy + offset;
+        const int* M = mask + offset;
+        for (int ph = ph_start; ph < ph_end; ++ph) {
+            for (int pw = pw_start; pw < pw_end; ++pw) {
+                if (M[ph * pool_w + pw] == (h * W + w)) {
+                    grad += dY[ph * pool_w + pw];
                 }
             }
         }
-        dx[x_idx] = grad;
+        dx[xi] = grad;
     }
 }
 
 template<typename T>
-__global__ void _MAXPool2dGrad_NHWC(
+__global__ void _MaxPool2dGradNHWC(
     const int               nthreads,
     const int               C,
     const int               H,
@@ -328,34 +347,31 @@ __global__ void _MAXPool2dGrad_NHWC(
     const T*                dy,
     const int*              mask,
     T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(x_idx, nthreads) {
-        const int c = x_idx % C;
-        const int w = (x_idx / C) % W;
-        const int h = (x_idx / C / W) % H;
-        const int n = x_idx / C / W / H;
+    CUDA_1D_KERNEL_LOOP(xi, nthreads) {
+        const int c = xi % C;
+        const int w = (xi / C) % W;
+        const int h = (xi / C / W) % H;
+        const int n = xi / C / W / H;
 
-        // Allow overlapping
-        const int start_ph = (h + pad_h < kernel_h) ?
+        const int ph_start = (h + pad_h < kernel_h) ?
             0 : (h + pad_h - kernel_h) / stride_h + 1;
-        const int start_pw = (w + pad_w < kernel_w) ?
+        const int pw_start = (w + pad_w < kernel_w) ?
             0 : (w + pad_w - kernel_w) / stride_w + 1;
-        // Allow clip
-        const int end_ph = min((h + pad_h) / stride_h + 1, pool_h);
-        const int end_pw = min((w + pad_w) / stride_w + 1, pool_w);
+        const int ph_end = min((h + pad_h) / stride_h + 1, pool_h);
+        const int pw_end = min((w + pad_w) / stride_w + 1, pool_w);
 
-        T grad = 0;
-        for (int ph = start_ph; ph < end_ph; ++ph) {
-            for (int pw = start_pw; pw < end_pw; ++pw) {
-                const int x_idx = ((n * H + h) * W + w) * C + c;
-                const int y_idx = ((n * pool_h + ph) * pool_w + pw) * C + c;
-                if (mask[y_idx] == x_idx) grad += dy[y_idx];
+        T grad = T(0);
+        for (int ph = ph_start; ph < ph_end; ++ph) {
+            for (int pw = pw_start; pw < pw_end; ++pw) {
+                const int yi = ((n * pool_h + ph) * pool_w + pw) * C + c;
+                if (mask[yi] == xi) grad += dy[yi];
             }
         }
-        dx[x_idx] = grad;
+        dx[xi] = grad;
     }
 }
 
-template<> void MAXPool2dGrad<float, CUDAContext>(
+template<> void MaxPool2dGrad<float, CUDAContext>(
     const int               N,
     const int               C,
     const int               H,
@@ -375,24 +391,38 @@ template<> void MAXPool2dGrad<float, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = N * C * H * W;
     if (data_format == "NCHW") {
-        _MAXPool2dGrad_NCHW<float>
+        _MaxPool2dGrad_NCHW
             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (nthreads, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, dy,mask, dx);
+                 0, ctx->cuda_stream() >> >(
+            nthreads,
+            C, H, W,
+            pool_h, pool_w,
+            kernel_h, kernel_w,
+            stride_h, stride_w,
+            pad_h, pad_w,
+            dy,mask, dx
+        );
     } else if (data_format == "NHWC") {
-        _MAXPool2dGrad_NHWC<float>
+        _MaxPool2dGradNHWC
             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (nthreads, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, dy, mask, dx);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+                 0, ctx->cuda_stream() >> >(
+            nthreads,
+            C, H, W,
+            pool_h, pool_w,
+            kernel_h, kernel_w,
+            stride_h, stride_w,
+            pad_h, pad_w,
+            dy, mask, dx
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
-/*! AVGPool2dGrad <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template<typename T>
-__global__ void _AVGPool2dGrad_NCHW(
+__global__ void _AvgPool2dGradNCHW(
     const int               nthreads,
     const int               C,
     const int               H,
@@ -407,37 +437,37 @@ __global__ void _AVGPool2dGrad_NCHW(
     const int               pad_w,
     const T*                dy,
     T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(x_idx, nthreads) {
-        const int w = x_idx % W;
-        const int h = (x_idx / W) % H;
-        const int c = (x_idx / W / H) % C;
-        const int n = x_idx / W / H / C;
+    CUDA_1D_KERNEL_LOOP(xi, nthreads) {
+        const int w = xi % W;
+        const int h = (xi / W) % H;
+        const int c = (xi / W / H) % C;
+        const int n = xi / W / H / C;
 
-        const int start_ph = (h + pad_h < kernel_h) ?
+        const int ph_start = (h + pad_h < kernel_h) ?
             0 : (h + pad_h - kernel_h) / stride_h + 1;
-        const int start_pw = (w + pad_w < kernel_w) ?
+        const int pw_start = (w + pad_w < kernel_w) ?
             0 : (w + pad_w - kernel_w) / stride_w + 1;
-        const int end_ph = min(h / stride_h + 1, pool_h);
-        const int end_pw = min(w / stride_w + 1, pool_w);
+        const int ph_end = min(h / stride_h + 1, pool_h);
+        const int pw_end = min(w / stride_w + 1, pool_w);
 
-        T grad = 0;
-        const T* dy_ptr = dy + (n * C + c) * pool_h * pool_w;
-        for (int ph = start_ph; ph < end_ph; ++ph) {
-            for (int pw = start_pw; pw < end_pw; ++pw) {
-                int start_h = ph * stride_h - pad_h;
-                int start_w = pw * stride_w - pad_w;
-                int end_h = min(start_h + kernel_h, H + pad_h);
-                int end_w = min(start_w + kernel_w, W + pad_w);
-                int pool_area = (end_h - start_h) * (end_w - start_w);
-                grad += (dy_ptr[ph * pool_w + pw] / pool_area);
+        T grad = T(0);
+        const T* dY = dy + (n * C + c) * pool_h * pool_w;
+        for (int ph = ph_start; ph < ph_end; ++ph) {
+            for (int pw = pw_start; pw < pw_end; ++pw) {
+                const int h_start = ph * stride_h - pad_h;
+                const int w_start = pw * stride_w - pad_w;
+                const int h_end = min(h_start + kernel_h, H + pad_h);
+                const int w_end = min(w_start + kernel_w, W + pad_w);
+                const T area = (h_end - h_start) * (w_end - w_start);
+                grad += dY[ph * pool_w + pw] / area;
             }
         }
-        dx[x_idx] = grad;
+        dx[xi] = grad;
     }
 }
 
 template<typename T>
-__global__ void _AVGPool2dGrad_NHWC(
+__global__ void _AvgPool2dGradNHWC(
     const int               nthreads,
     const int               C,
     const int               H,
@@ -452,36 +482,36 @@ __global__ void _AVGPool2dGrad_NHWC(
     const int               pad_w,
     const T*                dy,
     T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(x_idx, nthreads) {
-        const int c = x_idx % C;
-        const int w = (x_idx / C) % W;
-        const int h = (x_idx / C / W) % H;
-        const int n = x_idx / C / W / H;
+    CUDA_1D_KERNEL_LOOP(xi, nthreads) {
+        const int c = xi % C;
+        const int w = (xi / C) % W;
+        const int h = (xi / C / W) % H;
+        const int n = xi / C / W / H;
 
-        const int start_ph = (h + pad_h < kernel_h) ?
+        const int ph_start = (h + pad_h < kernel_h) ?
             0 : (h + pad_h - kernel_h) / stride_h + 1;
-        const int start_pw = (w + pad_w < kernel_w) ?
+        const int pw_start = (w + pad_w < kernel_w) ?
             0 : (w + pad_w - kernel_w) / stride_w + 1;
-        const int end_ph = min(h / stride_h + 1, pool_h);
-        const int end_pw = min(w / stride_w + 1, pool_w);
+        const int ph_end = min(h / stride_h + 1, pool_h);
+        const int pw_end = min(w / stride_w + 1, pool_w);
 
         T grad = 0;
-        for (int ph = start_ph; ph < end_ph; ++ph) {
-            for (int pw = start_pw; pw < end_pw; ++pw) {
-                int start_h = ph * stride_h - pad_h;
-                int start_w = pw * stride_w - pad_w;
-                int end_h = min(start_h + kernel_h, H + pad_h);
-                int end_w = min(start_w + kernel_w, W + pad_w);
-                int pool_area = (end_h - start_h) * (end_w - start_w);
-                const int y_idx = ((n * pool_h + ph) * pool_w + pw) * C + c;
-                grad += (dy[y_idx] / pool_area);
+        for (int ph = ph_start; ph < ph_end; ++ph) {
+            for (int pw = pw_start; pw < pw_end; ++pw) {
+                const int h_start = ph * stride_h - pad_h;
+                const int w_start = pw * stride_w - pad_w;
+                const int h_end = min(h_start + kernel_h, H + pad_h);
+                const int w_end = min(w_start + kernel_w, W + pad_w);
+                const T area = (h_end - h_start) * (w_end - w_start);
+                const int yi = ((n * pool_h + ph) * pool_w + pw) * C + c;
+                grad += dy[yi] / area;
             }
         }
-        dx[x_idx] = grad;
+        dx[xi] = grad;
     }
 }
 
-template<> void AVGPool2dGrad<float, CUDAContext>(
+template<> void AvgPool2dGrad<float, CUDAContext>(
     const int               N,
     const int               C,
     const int               H,
@@ -500,18 +530,32 @@ template<> void AVGPool2dGrad<float, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = N * C * H * W;
     if (data_format == "NCHW") {
-        _AVGPool2dGrad_NCHW<float>
+        _AvgPool2dGradNCHW
             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (nthreads, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, dy, dx);
+                 0, ctx->cuda_stream() >> >(
+            nthreads,
+            C, H, W,
+            pool_h, pool_w,
+            kernel_h, kernel_w,
+            stride_h, stride_w,
+            pad_h, pad_w,
+            dy, dx
+        );
     } else if (data_format == "NHWC") {
-        _AVGPool2dGrad_NHWC<float>
+        _AvgPool2dGradNHWC
             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (nthreads, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, dy, dx);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+                 0, ctx->cuda_stream() >> >(
+            nthreads,
+            C, H, W,
+            pool_h, pool_w,
+            kernel_h, kernel_w,
+            stride_h, stride_w,
+            pad_h, pad_w,
+            dy, dx
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
 }  // namespace kernel

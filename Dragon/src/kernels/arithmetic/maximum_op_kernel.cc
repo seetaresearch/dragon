@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Maximum <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _Maximum(
@@ -14,14 +14,14 @@ void _Maximum(
     const T*                x2,
     T*                      y) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         y[i] = std::max(x1[i], x2[i]);
     }
 }
 
-/*! BroadcastMaximum <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _BroadcastMaximum(
@@ -30,14 +30,14 @@ void _BroadcastMaximum(
     const T                 x2,
     T*                      y) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         y[i] = std::max(x1[i], x2);
     }
 }
 
-/*! MaximumGrad <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _MaximumGrad(
@@ -48,7 +48,7 @@ void _MaximumGrad(
     T*                      dx1,
     T*                      dx2) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         const bool dy_to_dx1 = x1[i] > x2[i];
@@ -57,7 +57,7 @@ void _MaximumGrad(
     }
 }
 
-/*! BroadcastMaximumGrad <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _BroadcastMaximumGrad(
@@ -68,14 +68,14 @@ void _BroadcastMaximumGrad(
     T*                      dx1,
     T*                      dx2) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         dx1[i] = (x1[i] > x2) ? dy[i] : 0;
     }
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_MAXIMUM_KERNEL_LAUNCHER(name, T, T2) \
     template <> void name<T, CPUContext>( \
@@ -84,7 +84,7 @@ void _BroadcastMaximumGrad(
         const T2                x2, \
         T*                      y, \
         CPUContext*             ctx) { \
-        _##name<T>(count, x1, x2, y); \
+        _##name(count, x1, x2, y); \
     }
 
 #define DEFINE_MAXIMUM_GRAD_KERNEL_LAUNCHER(name, T, T2) \
@@ -96,7 +96,7 @@ void _BroadcastMaximumGrad(
         T*                      dx1, \
         T*                      dx2, \
         CPUContext*             ctx) { \
-        _##name<T>(count, x1, x2, dy, dx1, dx2); \
+        _##name(count, x1, x2, dy, dx1, dx2); \
     }
 
 DEFINE_MAXIMUM_KERNEL_LAUNCHER(Maximum, int8_t, int8_t*);

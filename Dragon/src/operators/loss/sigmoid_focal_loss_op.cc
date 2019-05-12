@@ -5,158 +5,208 @@
 
 namespace dragon {
 
-#define DETERMINE_RUNTIME_ARGUMENTS(X) \
-    axis = OperatorBase::Arg<int64_t>("axis", 1); \
-    axis = axis < 0 ? axis + X.ndim() : axis; \
-    CHECK(axis >= 0 && axis < X.ndim()) \
-       << "\nExcepted the axis in [-" << X.ndim() << ", " << X.ndim() \
-       << "), got " << OperatorBase::Arg<int64_t>("axis", 1) << ".";
+#define DETERMINE_RUNTIME_ARGS(X) \
+    axis_ = OpArg<int64_t>("axis", 1); \
+    axis_ = axis_ < 0 ? axis_ + X.ndim() : axis_; \
+    CHECK(axis_ >= 0 && axis_ < X.ndim()) \
+        << "\nExcepted the axis in [-" << X.ndim() \
+        << ", " << X.ndim() << "), got " \
+        << OpArg<int64_t>("axis", 1) << ".";
 
-template <class Context> template <typename Tx, typename Ty>
-void SigmoidFocalLossOp<Context>::RunWithType() {
-    auto* Xdata = Input(0).template data<Tx, Context>();
-    auto* Tdata = Input(1).template data<Ty, Context>();
-    auto* Ldata = losses.template mutable_data<Tx, Context>();
-    auto* Fdata = flags.template mutable_data<int, Context>();
+template <class Context>
+template <typename Tx, typename Ty>
+void SigmoidFocalLossOp<Context>::RunImpl() {
+    auto* logit  = X(0).template data<Tx, Context>();
+    auto* target = X(1).template data<Ty, Context>();
+    auto* loss = loss_.template mutable_data<Tx, Context>();
+    auto* flag = flag_.template mutable_data<int, Context>();
 
     kernel::SigmoidFocalLoss(
-        outer_dim, axis_dim, inner_dim,
-            pos_alpha, neg_alpha, gamma, neg_id,
-                Xdata, Tdata, Ldata, Fdata, ctx());
+        outer_dim_,
+        X(0).dim(axis_),
+        inner_dim_,
+        pos_alpha_,
+        neg_alpha_,
+        gamma_,
+        neg_id_,
+        logit, target,
+        loss, flag, ctx()
+    );
 
-    if (normalization == "UNIT") {
-        vector<int64_t> output_dims = Input(0).dims();
-        output_dims.erase(output_dims.begin() + axis);
-        Output(0)->Reshape(output_dims);
-        Output(0)->template CopyFrom<Context>(
-            losses, ctx()); return;
+    if (reduction_ == "NONE") {
+        Y(0)->ReshapeLike(loss_)
+            ->CopyFrom(loss_, ctx());
+        return;
     }
 
     double normalizer = 1.;
-    if (normalization == "VALID") {
+    if (reduction_ == "VALID") {
         normalizer = std::max(
-            math::Sum(flags.count(),
-                1.f, Fdata, ctx()), 1);
-    } else if (normalization == "BATCH_SIZE") {
-        normalizer = (float)Input(0).dim(0);
-    } else if (normalization == "FULL") {
-        normalizer = (float)(outer_dim * inner_dim);
+            math::Sum(
+                flag_.count(),
+                1.f, flag, ctx()
+            ), 1);
+    } else if (reduction_ == "BATCH_SIZE") {
+        normalizer = X(0).dim(0);
+    } else if (reduction_ == "MEAN") {
+        normalizer = X(0).count();
     }
 
-    Output(0)->Reshape(vector<int64_t>());
-    auto* Ydata = Output(0)->template mutable_data<Tx, Context>();
-    math::Sum(losses.count(), 1. / normalizer, Ldata, Ydata, ctx());
+    Y(0)->Reshape({});
+    auto* y = Y(0)->template mutable_data<Tx, Context>();
+    math::Sum(loss_.count(), 1. / normalizer, loss, y, ctx());
 }
 
 template <class Context>
 void SigmoidFocalLossOp<Context>::RunOnDevice() {
-    DETERMINE_RUNTIME_ARGUMENTS(Input(0));
+    DETERMINE_RUNTIME_ARGS(X(0));
 
-    outer_dim = Input(0).count(0, axis);
-    axis_dim = Input(0).dim(axis);
-    inner_dim = Input(0).count(axis + 1);
-    CHECK_EQ(outer_dim * inner_dim, Input(1).count())
-        << "\nNumber of predictions must match the number of labels.";
+    outer_dim_ = X(0).count(0, axis_);
+    inner_dim_ = X(0).count(axis_ + 1);
+    CHECK_EQ(outer_dim_ * inner_dim_, X(1).count())
+        << "\nNum of preds must match the num of labels.";
 
-    losses.ReshapeLike(Input(0));
-    flags.ReshapeLike(Input(0));
+    loss_.ReshapeLike(X(0));
+    flag_.ReshapeLike(X(0));
 
-    if (XIsType(Input(0), float)) {
-        if (XIsType(Input(1), float)) RunWithType<float, float>();
-        else if (XIsType(Input(1), int64_t)) RunWithType<float, int64_t>();
-        else LOG(FATAL) << DTypeHelper(Input(1), { "float32", "int64" });
-    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    if (XIsType(X(0), float)) {
+        if (XIsType(X(1), float)) {
+            RunImpl<float, float>();
+        } else if (XIsType(X(1), int64_t)) {
+            RunImpl<float, int64_t>();
+        } else {
+            LOG(FATAL) << DTypeString(X(1),
+                { "float32", "int64" }
+            );
+        }
+    } else {
+        LOG(FATAL) << DTypeString(
+            X(0), { "float32" }
+        );
+    }
+}
+
+template <class Context> template <typename Tx, typename Ty>
+void SigmoidFocalLossGradientOp<Context>::RunImpl() {
+    auto* logit = X(0).template data<Tx, Context>();
+    auto* target = X(1).template data<Ty, Context>();
+    auto* dx = Y(0)->template mutable_data<Tx, Context>();
+    auto* flag = flag_.template mutable_data<int, Context>();
+
+    kernel::SigmoidFocalLossGrad(
+        outer_dim_,
+        X(0).dim(axis_),
+        inner_dim_,
+        pos_alpha_,
+        neg_alpha_,
+        gamma_,
+        neg_id_,
+        logit, target,
+        dx, flag, ctx()
+    );
+
+    if (reduction_ == "NONE") {
+        auto* dy = X(-1).template data<Tx, Context>();
+        math::Mul(
+            Y(0)->count(),
+            dy, dx,
+            dx, ctx()
+        );
+        return;
+    }
+
+    double normalizer = 1.;
+    if (reduction_ == "VALID") {
+        normalizer = std::max(
+            math::Sum(
+                flag_.count(),
+                1.f, flag, ctx()
+            ), 1);
+    } else if (reduction_ == "BATCH_SIZE") {
+        normalizer = X(0).dim(0);
+    } else if (reduction_ == "MEAN") {
+        normalizer = X(0).count();
+    }
+
+    auto* dy = X(-1).template data<Tx, Context>();
+    Tx dyHost; ctx()->template Copy
+        <Tx, CPUContext, Context>(
+            1, &dyHost, dy);
+    ctx()->FinishDeviceCompution();
+
+    math::Scale(
+        Y(0)->count(),
+        dyHost / normalizer,
+        dx, dx, ctx()
+    );
+}
+
+template <class Context>
+void SigmoidFocalLossGradientOp<Context>::RunOnDevice() {
+    DETERMINE_RUNTIME_ARGS(X(0));
+
+    outer_dim_ = X(0).count(0, axis_);
+    inner_dim_ = X(0).count(axis_ + 1);
+
+    Y(0)->ReshapeLike(X(0));
+    flag_.ReshapeLike(X(0));
+
+    if (XIsType(X(0), float)) {
+        if (XIsType(X(1), float)) {
+            RunImpl<float, float>();
+        } else if (XIsType(X(1), int64_t)) {
+            RunImpl<float, int64_t>();
+        } else {
+            LOG(FATAL) << DTypeString(X(1),
+                { "float32", "int64" }
+            );
+        }
+    } else {
+        LOG(FATAL) << DTypeString(X(0),
+            { "float32" }
+        );
+    }
 }
 
 DEPLOY_CPU(SigmoidFocalLoss);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(SigmoidFocalLoss);
 #endif
-OPERATOR_SCHEMA(SigmoidFocalLoss).NumInputs(2).NumOutputs(1);
-
-template <class Context> template <typename Tx, typename Ty>
-void SigmoidFocalLossGradientOp<Context>::RunWithType() {
-    auto* Xdata = Input(0).template data<Tx, Context>();
-    auto* Tdata = Input(1).template data<Ty, Context>();
-    auto* dXdata = Output(0)->template mutable_data<Tx, Context>();
-    auto* Fdata = flags.template mutable_data<int, Context>();
-
-    kernel::SigmoidFocalLossGrad(
-        outer_dim, axis_dim, inner_dim,
-            pos_alpha, neg_alpha, gamma, neg_id,
-                Xdata, Tdata, dXdata, Fdata, ctx());
-
-    if (normalization == "UNIT") {
-        auto* dYdata = Input(-1).template data<Tx, Context>();
-        math::Mul(Output(0)->count(),
-            dYdata, dXdata, dXdata, ctx()); return;
-    }
-
-    double normalizer = 1.;
-    if (normalization == "VALID") {
-        normalizer = std::max(
-            math::Sum(flags.count(),
-                1.f, Fdata, ctx()), 1);
-    } else if (normalization == "BATCH_SIZE") {
-        normalizer = Input(0).dim(0);
-    } else if (normalization == "FULL") {
-        normalizer = Input(0).count();
-    }
-
-    auto* dYdata = Input(-1).template data<Tx, Context>();
-    Tx dYHost; ctx()->template Copy
-        <Tx, CPUContext, Context>(
-            1, &dYHost, dYdata);
-    ctx()->FinishDeviceCompution();
-
-    math::Scale(
-        Output(0)->count(),
-            dYHost / normalizer,
-                dXdata, dXdata, ctx());
-}
-
-template <class Context>
-void SigmoidFocalLossGradientOp<Context>::RunOnDevice() {
-    DETERMINE_RUNTIME_ARGUMENTS(Input(0));
-
-    outer_dim = Input(0).count(0, axis);
-    axis_dim = Input(0).dim(axis);
-    inner_dim = Input(0).count(axis + 1);
-
-    Output(0)->ReshapeLike(Input(0));
-    flags.ReshapeLike(Input(0));
-
-    if (XIsType(Input(0), float)) {
-        if (XIsType(Input(1), float)) RunWithType<float, float>();
-        else if (XIsType(Input(1), int64_t)) RunWithType<float, int64_t>();
-        else LOG(FATAL) << DTypeHelper(Input(1), { "float32", "int64" });
-    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
-}
 
 DEPLOY_CPU(SigmoidFocalLossGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(SigmoidFocalLossGradient);
 #endif
 
-OPERATOR_SCHEMA(SigmoidFocalLossGradient)
-    .NumInputs(3).NumOutputs(1);
+OPERATOR_SCHEMA(SigmoidFocalLoss)
+     /* X, T */
+    .NumInputs(2)
+     /* Y */
+    .NumOutputs(1);
 
-class GetSigmoidFocalLossGradient
-    final : public GradientMakerBase {
+OPERATOR_SCHEMA(SigmoidFocalLossGradient)
+     /* X, T, dY */
+    .NumInputs(3)
+     /* dX */
+    .NumOutputs(1);
+
+namespace {
+
+class GradientMaker final : public GradientMakerBase {
  public:
-    GRADIENT_MAKER_CTOR(GetSigmoidFocalLossGradient);
-    vector<OperatorDef> MakeDefs() override {
+    GRADIENT_MAKER_CTOR(GradientMaker);
+    vector<OperatorDef> MakeDef() override {
         return SingleDef(def.type() + "Gradient", "",
             vector<string>({ I(0), I(1), GO(0) }),
-            vector<string>({ GI(0) }));
+            vector<string>({ GI(0) })
+        );
     }
 };
 
-REGISTER_GRADIENT(
-    SigmoidFocalLoss,
-    GetSigmoidFocalLossGradient
-);
+}  // namespace
 
-#undef DETERMINE_RUNTIME_ARGUMENTS
+REGISTER_GRADIENT(SigmoidFocalLoss, GradientMaker);
+
+#undef DETERMINE_RUNTIME_ARGS
 
 }  // namespace dragon

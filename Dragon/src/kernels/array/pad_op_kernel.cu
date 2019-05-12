@@ -9,13 +9,13 @@ namespace dragon {
 namespace kernel {
 
 #define FIXED_DIVISOR_DIV_MOD(d, n, q, r) \
-  do {                                    \
-    const auto n_copy = n;                \
-    *q = n_copy / d;                      \
-    *r = n_copy % d;                      \
-  } while (0)
+    do {                                  \
+        const auto n_copy = n;            \
+        *q = n_copy / d;                  \
+        *r = n_copy % d;                  \
+    } while (0)
 
-/*! ConstPad <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template<typename T>
 __global__ void _ConstPad(
@@ -28,26 +28,28 @@ __global__ void _ConstPad(
     const T                 value,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        int x_idx = 0, tmp = y_idx, d;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        int xi = 0, tmp = yi, d;
 #pragma unroll
         for (d = ndims - 1; d >= 0; --d) {
             int r;
 #if __CUDA_ARCH__ >= 350
             FIXED_DIVISOR_DIV_MOD(__ldg(y_dims + d), tmp, &tmp, &r);
-            r -= __ldg(l_pads + d); if (r < 0 || r >= __ldg(x_dims + d)) break;
-            x_idx += r * __ldg(x_strides + d);
+            r -= __ldg(l_pads + d);
+            if (r < 0 || r >= __ldg(x_dims + d)) break;
+            xi += r * __ldg(x_strides + d);
 #else
             FIXED_DIVISOR_DIV_MOD(y_dims[d], tmp, &tmp, &r);
-            r -= l_pads[d]; if (r < 0 || r >= x_dims[d]) break;
-            x_idx += r * x_strides[d];
+            r -= l_pads[d];
+            if (r < 0 || r >= x_dims[d]) break;
+            xi += r * x_strides[d];
 #endif
         }
-        y[y_idx] = d >= 0 ? value : x[x_idx];
+        y[yi] = d >= 0 ? value : x[xi];
     }
 }
 
-/*! ReflectPad <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template<typename T>
 __global__ void _ReflectPad(
@@ -59,8 +61,8 @@ __global__ void _ReflectPad(
     const int*              l_pads,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        int x_idx = 0, tmp = y_idx;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        int xi = 0, tmp = yi;
 #pragma unroll
         for (int d = ndims - 1; d >= 0; --d) {
             int r;
@@ -69,20 +71,20 @@ __global__ void _ReflectPad(
             r -= __ldg(l_pads + d);
             r = max(r, -r);
             r = min(r, 2 * __ldg(x_dims + d) - r - 2);
-            x_idx += r * __ldg(x_strides + d);
+            xi += r * __ldg(x_strides + d);
 #else
             FIXED_DIVISOR_DIV_MOD(y_dims[d], tmp, &tmp, &r);
             r -= l_pads[d];
             r = max(r, -r);
             r = min(r, 2 * x_dims[d] - r - 2);
-            x_idx += r * x_strides[d];
+            xi += r * x_strides[d];
 #endif
         }
-        y[y_idx] = x[x_idx];
+        y[yi] = x[xi];
     }
 }
 
-/*! EdgePad <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template<typename T>
 __global__ void _EdgePad(
@@ -94,26 +96,26 @@ __global__ void _EdgePad(
     const int*              l_pads,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        int x_idx = 0, tmp = y_idx;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        int xi = 0, tmp = yi;
 #pragma unroll
         for (int d = ndims - 1; d >= 0; --d) {
             int r;
 #if __CUDA_ARCH__ >= 350
             FIXED_DIVISOR_DIV_MOD(__ldg(y_dims + d), tmp, &tmp, &r);
             r = min(__ldg(x_dims + d) - 1, max(r - __ldg(l_pads + d), 0));
-            x_idx += r * __ldg(x_strides + d);
+            xi += r * __ldg(x_strides + d);
 #else
             FIXED_DIVISOR_DIV_MOD(y_dims[d], tmp, &tmp, &r);
             r = min(x_dims[d] - 1, max(r - l_pads[d], 0));
-            x_idx += r * x_strides[d];
+            xi += r * x_strides[d];
 #endif
         }
-        y[y_idx] = x[x_idx];
+        y[yi] = x[xi];
     }
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_CONST_PAD_KERNEL_LAUNCHER(T) \
     template<> void ConstPad<T, CUDAContext>( \
@@ -127,11 +129,15 @@ __global__ void _EdgePad(
         const T*                x, \
         T*                      y, \
         CUDAContext*            ctx) { \
-        _ConstPad<T> \
+        _ConstPad \
             << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> > \
-            (count, ndims, x_dims, x_strides, y_dims, l_pads, \
-                cast::to<T>(value), x, y); \
+                 0, ctx->cuda_stream() >> >( \
+            count, ndims, \
+            x_dims, x_strides, \
+            y_dims, l_pads, \
+            cast::to<T>(value), \
+            x, y \
+        ); \
     }
 
 #define DEFINE_PAD_KERNEL_LAUNCHER(name, T) \
@@ -145,11 +151,14 @@ __global__ void _EdgePad(
         const T*                x, \
         T*                      y, \
         CUDAContext*            ctx) { \
-        _##name<T> \
+        _##name \
             << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> > \
-            (count, ndims, x_dims, x_strides, \
-                y_dims, l_pads, x, y); \
+                 0, ctx->cuda_stream() >> >( \
+            count, ndims, \
+            x_dims, x_strides, \
+            y_dims, l_pads, \
+            x, y \
+        ); \
     }
 
 DEFINE_CONST_PAD_KERNEL_LAUNCHER(bool);

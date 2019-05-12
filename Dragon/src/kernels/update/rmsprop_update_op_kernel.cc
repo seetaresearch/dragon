@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! RMSPropUpdate <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <> void RMSPropUpdate<float, CPUContext>(
     const int               count,
@@ -16,7 +16,7 @@ template <> void RMSPropUpdate<float, CPUContext>(
     float*                  h,
     CPUContext*             ctx) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         float gi = g[i];

@@ -112,6 +112,7 @@ def DepthwiseConv2d(
     kernel_shape=3,
     strides=1,
     pads=0,
+    dilations=1,
     padding='VALID',
     data_format='NCHW',
     **kwargs
@@ -134,6 +135,8 @@ def DepthwiseConv2d(
         The stride(s) of convolution.
     pads : sequence of int, optional, default=0
         The zero padding size(s) of convolution.
+    dilations : sequence of int, optional, default=0
+        The dilation multiple(s) of convolution.
     padding : {'VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'}, optional
         The padding algorithm.
     data_format : {'NCHW', 'NHWC'}, optional
@@ -154,7 +157,6 @@ def DepthwiseConv2d(
 
     for key in ('kernel_shape', 'strides', 'pads', 'dilations'):
         if key == 'pads': arguments[key] = _normalize_pads(arguments[key], 2)
-        elif key == 'dilations': arguments[key] = _normalize_tuple([1], 2)
         else: arguments[key] = _normalize_tuple(arguments[key], 2)
 
     return Tensor.CreateOperator('DepthwiseConv2d', **arguments)
@@ -577,7 +579,7 @@ def DropBlock2d(
 ):
     """Randomly drop the outputs according to the spatial blocks. `[Ghiasi et.al, 2018] <https://arxiv.org/abs/1810.12890>`_.
 
-    Set the ``decrement`` to schedule ``keep_prob`` for each iteration.
+    Set the ``decrement`` to schedule ``keep_prob`` from *1* after each run.
 
     Set the ``alpha`` to decrease ``gamma`` for different stages.
 

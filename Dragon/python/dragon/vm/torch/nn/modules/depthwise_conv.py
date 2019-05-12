@@ -28,7 +28,7 @@ class _DepthwiseConvNd(Module):
         kernel_size,
         stride,
         padding,
-        output_padding,
+        dilation,
         bias,
     ):
         super(_DepthwiseConvNd, self).__init__()
@@ -39,7 +39,7 @@ class _DepthwiseConvNd(Module):
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
-        self.output_padding = output_padding
+        self.dilation = dilation
         self.weight = Parameter(Tensor(out_channels, 1, *kernel_size))
         if bias:
             self.bias = Parameter(Tensor(out_channels))
@@ -56,7 +56,7 @@ class _DepthwiseConvNd(Module):
                 'kernel_shape': self.weight.shape[2:],
                 'strides': _pair(self.stride),
                 'pads': _pair(self.padding),
-                'dilations': _pair(1),
+                'dilations': _pair(self.dilation),
                 'data_format': 'NCHW',
             }
         }
@@ -75,8 +75,8 @@ class _DepthwiseConvNd(Module):
              ', stride={stride}')
         if self.padding != (0,) * len(self.padding):
             s += ', padding={padding}'
-        if self.output_padding != (0,) * len(self.output_padding):
-            s += ', output_padding={output_padding}'
+        if self.dilation != (1,) * len(self.dilation):
+            s += ', dilation={dilation}'
         if self.bias is None:
             s += ', bias=False'
         return s.format(**self.__dict__)
@@ -90,6 +90,7 @@ class DepthwiseConv2d(_DepthwiseConvNd):
         kernel_size,
         stride=1,
         padding=0,
+        dilation=1,
         bias=True,
     ):
         kernel_size = _pair(kernel_size)
@@ -97,7 +98,7 @@ class DepthwiseConv2d(_DepthwiseConvNd):
         padding = _pair(padding)
         super(DepthwiseConv2d, self).__init__(
             in_channels, out_channels, kernel_size,
-            stride, padding, _pair(0), bias,
+            stride, padding, dilation, bias,
         )
 
     def forward(self, input):

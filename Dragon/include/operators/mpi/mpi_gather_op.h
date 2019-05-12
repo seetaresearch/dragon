@@ -15,32 +15,32 @@
 
 #ifdef WITH_MPI
 
-#include "operators/mpi/base_mpi_op.h"
+#include "operators/mpi/mpi_op_base.h"
 
 namespace dragon {
 
 template <class Context>
-class MPIGatherOp final : public ModelMPIBase<Context> {
+class MPIGatherOp final : public MPIOpBase<Context> {
  public:
     MPIGatherOp(const OperatorDef& def, Workspace *ws)
-        : ModelMPIBase<Context>(def, ws) {}
+        : MPIOpBase<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
-    USE_MODEL_MPI_FUNCTIONS;
+    USE_MPI_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 };
 
 template <class Context>
-class MPIGatherGradientOp final : public ModelMPIBase<Context> {
+class MPIGatherGradientOp final : public MPIOpBase<Context> {
  public:
     MPIGatherGradientOp(const OperatorDef& def, Workspace *ws) 
-        : ModelMPIBase<Context>(def, ws) {}
+        : MPIOpBase<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
-    USE_MODEL_MPI_FUNCTIONS;
+    USE_MPI_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 };
 
 }  // namespace dragon

@@ -22,14 +22,14 @@ class GradientGenerateOp final: public Operator<Context> {
  public:
     GradientGenerateOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          defaults(OperatorBase::Args<float>("defaults")) {
-        CHECK_EQ(InputSize(), OutputSize());
-        CHECK_EQ(defaults.size(), OutputSize());
+          defaults(OpArgs<float>("defaults")) {
+        CHECK_EQ(XSize(), YSize());
+        CHECK_EQ(defaults.size(), YSize());
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
     vector<float> defaults;
@@ -40,8 +40,8 @@ class GradientGatherOp final : public Operator<Context> {
  public:
     GradientGatherOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws) {
-        for (int i = 0; i < InputSize(); i++) {
-            if (Input(i).name() != "NULL") {
+        for (int i = 0; i < XSize(); i++) {
+            if (X(i).name() != "NULL") {
                 indices.push_back(i);
             }
         }
@@ -49,26 +49,26 @@ class GradientGatherOp final : public Operator<Context> {
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    vector<int> indices;
+    vec32_t indices;
 };
 
 template <class Context>
 class GradientAddOp final : public Operator<Context> {
  public:
-    USE_SIMPLE_CTOR_DTOR(GradientAddOp);
+    SIMPLE_CTOR_DTOR(GradientAddOp);
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 };
 
 template <class Context>
 class StopGradientOp final : public Operator<Context> {
  public:
-    USE_SIMPLE_CTOR_DTOR(StopGradientOp);
+    SIMPLE_CTOR_DTOR(StopGradientOp);
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;

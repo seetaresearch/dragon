@@ -500,11 +500,11 @@ class Tensor(object):
         """
         starts, sizes = self._process_indices(key)
         if not isinstance(value, Tensor):
-            value = self._from_constants(value)
+            value = self._from_constant(value)
         return self.CreateOperator('Assign', [value],
             existing_outputs=[self], starts=starts, sizes=sizes)
 
-    def _from_constants(self, value):
+    def _from_constant(self, value, name=None):
         if not isinstance(value, numpy.ndarray):
             try:
                 value = numpy.array(
@@ -515,9 +515,10 @@ class Tensor(object):
                     'Can not convert the value to Tensor or numpy array.')
         return Tensor.Ref(
             name=_workspace.GetDummyName(
-                basename='Constant',
-                domain='Tensor',
-                zero_based=False,
+                basename=_scope.get_default_name_scope() +
+                         (name if name else 'Const'),
+                suffix=':0',
+                domain='Tensor'
             ),
             shape=list(value.shape),
             dtype=str(value.dtype),
@@ -538,7 +539,7 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            other = self._from_constants(other)
+            other = self._from_constant(other)
         return self.CreateOperator('Add', [self, other])
 
     def __radd__(self, other):
@@ -556,7 +557,7 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            other = self._from_constants(other)
+            other = self._from_constant(other)
         return self.CreateOperator('RAdd', [other, self])
 
     def __sub__(self, other):
@@ -574,7 +575,7 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            other = self._from_constants(other)
+            other = self._from_constant(other)
         return self.CreateOperator('Sub', [self, other])
 
     def __rsub__(self, other):
@@ -592,7 +593,7 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            other = self._from_constants(other)
+            other = self._from_constant(other)
         return self.CreateOperator('RSub', [other, self])
 
     def __mul__(self, other):
@@ -610,7 +611,7 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            other = self._from_constants(other)
+            other = self._from_constant(other)
         return self.CreateOperator('Mul', [self, other])
 
     def __rmul__(self, other):
@@ -628,7 +629,7 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            other = self._from_constants(other)
+            other = self._from_constant(other)
         return self.CreateOperator('RMul', [other, self])
 
     def __div__(self, other):
@@ -646,7 +647,7 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            other = self._from_constants(other)
+            other = self._from_constant(other)
         return self.CreateOperator('Div', [self, other])
 
     __truediv__ = __div__
@@ -666,7 +667,7 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            other = self._from_constants(other)
+            other = self._from_constant(other)
         return self.CreateOperator('RDiv', [other, self])
 
     __rtruediv__ = __rdiv__
@@ -697,7 +698,7 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            other = self._from_constants(other)
+            other = self._from_constant(other)
         return self.CreateOperator('Compare', [self, other], operation='GT')
 
     def __ge__(self, other):
@@ -715,7 +716,7 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            other = self._from_constants(other)
+            other = self._from_constant(other)
         return self.CreateOperator('Compare', [self, other], operation='GE')
 
     def __lt__(self, other):
@@ -733,7 +734,7 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            other = self._from_constants(other)
+            other = self._from_constant(other)
         return self.CreateOperator('Compare', [self, other], operation='LT')
 
     def __le__(self, other):
@@ -751,26 +752,8 @@ class Tensor(object):
 
         """
         if not isinstance(other, Tensor):
-            other = self._from_constants(other)
+            other = self._from_constant(other)
         return self.CreateOperator('Compare', [self, other], operation='LE')
-
-    def __eq__(self, other):
-        """Compute *self* == *other* element-wise.
-
-        Parameters
-        ----------
-        other : Tensor or number
-            The other tensor.
-
-        Returns
-        -------
-        Tensor
-            The output tensor.
-
-        """
-        if not isinstance(other, Tensor):
-            other = self._from_constants(other)
-        return self.CreateOperator('Compare', [self, other], operation='EQ')
 
     def __hash__(self):
         return id(self)
@@ -910,6 +893,27 @@ class Tensor(object):
     #                   TensorFlow API                     #
     #                                                      #
     ########################################################
+
+    @classmethod
+    def convert_to(cls, value, dtype=None, name=None):
+        """Converts the given ``value`` to a ``Tensor``.
+
+        Parameters
+        ----------
+        value : number, sequence or numpy.ndarray
+            The value to convert.
+        dtype: str, optional
+            The optional data type.
+        name: str, optional
+            The optional name for this tensor.
+
+        Returns
+        -------
+        Tensor
+            The constant contains the value.
+
+        """
+        return Tensor.Ref('', dtype=dtype)._from_constant(value, name)
 
     def get_shape(self):
         """Construct the shape descriptor. [**TensorFlow Style**]

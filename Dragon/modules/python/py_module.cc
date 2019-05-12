@@ -109,7 +109,7 @@ PYBIND11_MODULE(libdragon, m) {
             PyArrayObject* array = PyArray_GETCONTIGUOUS(
                 reinterpret_cast<PyArrayObject*>(object.ptr()));
             const TypeMeta& meta = TypeNPYToMeta(PyArray_TYPE(array));
-            if (meta.id() == 0) LOG(FATAL) << "Unsupported data type.";
+            if (meta.id() == 0) LOG(FATAL) << "Unsupported DType.";
             Tensor* tensor = self->CreateTensor(name);
             tensor->SetMeta(meta);
             int ndim = PyArray_NDIM(array);

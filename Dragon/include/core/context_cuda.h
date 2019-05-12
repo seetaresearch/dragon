@@ -28,10 +28,10 @@ class CUDAObject {
      /*! \brief Default Constructor */
     CUDAObject() {
         for (int i = 0; i < CUDA_MAX_DEVICES; i++) {
-            cuda_streams[i] = vector<cudaStream_t>();
-            cublas_handles[i] = vector<cublasHandle_t>();
+            cuda_streams_[i] = vector<cudaStream_t>();
+            cublas_handles_[i] = vector<cublasHandle_t>();
 #ifdef WITH_CUDNN
-            cudnn_handles[i] = vector<cudnnHandle_t>();
+            cudnn_handles_[i] = vector<cudnnHandle_t>();
 #endif
         }
     }
@@ -39,19 +39,19 @@ class CUDAObject {
     /*! \brief Deconstructor */
     ~CUDAObject() {
         for (int i = 0; i < CUDA_MAX_DEVICES; i++) {
-            for (int j = 0; j < cuda_streams[i].size(); j++) {
-                auto& stream = cuda_streams[i][j];
+            for (int j = 0; j < cuda_streams_[i].size(); j++) {
+                auto& stream = cuda_streams_[i][j];
                 /*!
                  * Do not check the stream destroying,
                  * error code 29 (driver shutting down) is inevitable.
                  */
                 if (stream) cudaStreamDestroy(stream);
             }
-            for (auto& handle : cublas_handles[i])
-                if (handle) { CUBLAS_CHECK(cublasDestroy_v2(handle)); }
+            for (auto& e : cublas_handles_[i])
+                if (e) { CUBLAS_CHECK(cublasDestroy_v2(e)); }
 #ifdef WITH_CUDNN
-            for (auto& handle : cudnn_handles[i])
-                if (handle) { CUDNN_CHECK(cudnnDestroy(handle)); }
+            for (auto& e : cudnn_handles_[i])
+                if (e) { CUDNN_CHECK(cudnnDestroy(e)); }
 #endif
         }
     }
@@ -67,69 +67,76 @@ class CUDAObject {
      */
 
     /*! \brief Return the specified cuda stream */
-    cudaStream_t GetStream(int device_id, int stream_id) {
-        vector<cudaStream_t>& dev_streams = cuda_streams[device_id];
-        if (dev_streams.size() <= (unsigned)stream_id)
-            dev_streams.resize(stream_id + 1, nullptr);
-        if (!dev_streams[stream_id]) {
+    cudaStream_t stream(int device_id, int stream_id) {
+        auto& streams = cuda_streams_[device_id];
+        if (streams.size() <= (unsigned)stream_id)
+            streams.resize(stream_id + 1, nullptr);
+        if (!streams[stream_id]) {
             DeviceGuard guard(device_id);
             unsigned int flags = !stream_id ?
-                cudaStreamDefault : cudaStreamNonBlocking;
+                cudaStreamDefault :
+                cudaStreamNonBlocking;
             CUDA_CHECK(cudaStreamCreateWithFlags(
-                &dev_streams[stream_id], flags));
-        } return dev_streams[stream_id];
+                &streams[stream_id], flags));
+        } return streams[stream_id];
     }
 
     /*! \brief Return the default cuda stream of current device */
-    cudaStream_t GetDefaultStream() {
-        return GetStream(CUDA_GET_DEVICE(), 0);
+    cudaStream_t default_stream() {
+        return stream(CUDA_GET_DEVICE(), 0);
     }
 
     /*! \brief Return the default cuda stream of given device */
-    cudaStream_t GetDefaultStream(int device_id) {
-        return GetStream(device_id, 0);
+    cudaStream_t default_stream(int device_id) {
+        return stream(device_id, 0);
     }
 
     /*! \brief Return the specified cublas handle */
-    cublasHandle_t GetCuBLASHandle(int device_id, int stream_id) {
-        vector<cublasHandle_t>& dev_handles = cublas_handles[device_id];
-        if (dev_handles.size() <= (unsigned)stream_id)
-            dev_handles.resize(stream_id + 1, nullptr);
-        if (!dev_handles[stream_id]) {
+    cublasHandle_t cublas_handle(int device_id, int stream_id) {
+        auto& handles = cublas_handles_[device_id];
+        if (handles.size() <= (unsigned)stream_id)
+            handles.resize(stream_id + 1, nullptr);
+        if (!handles[stream_id]) {
             DeviceGuard guard(device_id);
-            CUBLAS_CHECK(cublasCreate_v2(&dev_handles[stream_id]));
-            CUBLAS_CHECK(cublasSetStream_v2(dev_handles[stream_id],
-                GetStream(device_id, stream_id)));
+            CUBLAS_CHECK(cublasCreate_v2(&handles[stream_id]));
+            CUBLAS_CHECK(cublasSetStream_v2(
+                handles[stream_id],
+                stream(device_id, stream_id)
+            ));
 #if CUDA_VERSION >= 9000
             if (TENSOR_CORE_AVAILABLE())
                 CUBLAS_CHECK(cublasSetMathMode(
-                    dev_handles[stream_id], CUBLAS_TENSOR_OP_MATH));
+                    handles[stream_id],
+                    CUBLAS_TENSOR_OP_MATH
+                ));
 #endif
-        } return dev_handles[stream_id];
+        } return handles[stream_id];
     }
 
     /*! \brief Return the specified cudnn handle */
 #ifdef WITH_CUDNN
-    cudnnHandle_t GetCuDNNHandle(int device_id, int stream_id) {
-        vector<cudnnHandle_t>& dev_handles = cudnn_handles[device_id];
-        if (dev_handles.size() <= (unsigned)stream_id)
-            dev_handles.resize(stream_id + 1, nullptr);
-        if (!dev_handles[stream_id]) {
+    cudnnHandle_t cudnn_handle(int device_id, int stream_id) {
+        auto& handles = cudnn_handles_[device_id];
+        if (handles.size() <= (unsigned)stream_id)
+            handles.resize(stream_id + 1, nullptr);
+        if (!handles[stream_id]) {
             DeviceGuard guard(device_id);
-            CUDNN_CHECK(cudnnCreate(&dev_handles[stream_id]));
-            CUDNN_CHECK(cudnnSetStream(dev_handles[stream_id],
-                GetStream(device_id, stream_id)));
-        } return dev_handles[stream_id];
+            CUDNN_CHECK(cudnnCreate(&handles[stream_id]));
+            CUDNN_CHECK(cudnnSetStream(
+                handles[stream_id],
+                stream(device_id, stream_id)
+            ));
+        } return handles[stream_id];
     }
 #endif
 
-    vector<cudaStream_t> cuda_streams[CUDA_MAX_DEVICES];
-    vector<cublasHandle_t> cublas_handles[CUDA_MAX_DEVICES];
+    vector<cudaStream_t> cuda_streams_[CUDA_MAX_DEVICES];
+    vector<cublasHandle_t> cublas_handles_[CUDA_MAX_DEVICES];
 #ifdef WITH_CUDNN
-    vector<cudnnHandle_t> cudnn_handles[CUDA_MAX_DEVICES];
+    vector<cudnnHandle_t> cudnn_handles_[CUDA_MAX_DEVICES];
 #endif
 
-    bool cudnn_enabled = true;
+    bool cudnn_enabled_ = true;
 };
 
 class CUDAContext {
@@ -157,11 +164,7 @@ class CUDAContext {
     void SwitchToDevice() { SwitchToDevice(0); }
 
     /*! \brief Synchronize the dispatched operations */
-    void FinishDeviceCompution() {
-        cudaError_t error = SynchronizeStream(cuda_stream());
-        CHECK_EQ(error, cudaSuccess)
-            << "\nCUDA Error: " << cudaGetErrorString(error);
-    }
+    void FinishDeviceCompution() { SyncStream(cuda_stream()); }
 
     /*! \brief Malloc the memory */
     static void* New(size_t nbytes) {
@@ -176,20 +179,17 @@ class CUDAContext {
     static void Memset(
         size_t              nbytes,
         void*               ptr) {
-        cudaStream_t stream = CUDAContext::
-            cuda_object()->GetDefaultStream();
+        auto stream = obj()->default_stream();
         CUDA_CHECK(cudaMemsetAsync(ptr, 0, nbytes, stream));
-        cudaError_t error = SynchronizeStream(stream);
-        CHECK_EQ(error, cudaSuccess)
-            << "\nCUDA Error: " << cudaGetErrorString(error);
+        SyncStream(stream);
     }
 
     /*! \brief Zero-Reset the memory asynchronously */
     void MemsetAsync(
         size_t              nbytes,
         void*               ptr) {
-        CUDA_CHECK(cudaMemsetAsync(ptr, 0,
-            nbytes, cuda_stream()));
+        CUDA_CHECK(cudaMemsetAsync(
+            ptr, 0, nbytes, cuda_stream()));
     }
 
     /*! \brief Copy the memory */
@@ -209,13 +209,12 @@ class CUDAContext {
         void*               dst,
         const void*         src,
         int                 device_id) {
-        cudaStream_t stream = CUDAContext::
-            cuda_object()->GetDefaultStream(device_id);
-        CUDA_CHECK(cudaMemcpyAsync(dst, src, nbytes,
-            cudaMemcpyDefault, stream));
-        cudaError_t error = SynchronizeStream(stream);
-        CHECK_EQ(error, cudaSuccess)
-            << "\nCUDA Error: " << cudaGetErrorString(error);
+        auto stream = obj()->default_stream(device_id);
+        CUDA_CHECK(cudaMemcpyAsync(
+            dst, src, nbytes,
+            cudaMemcpyDefault,
+            stream
+        )); SyncStream(stream);
     }
 
     /*! \brief Copy the memory asynchronously */
@@ -224,8 +223,11 @@ class CUDAContext {
         size_t              nbytes,
         void*               dst,
         const void*         src) {
-        CUDA_CHECK(cudaMemcpyAsync(dst, src, nbytes,
-            cudaMemcpyDefault, cuda_stream()));
+        CUDA_CHECK(cudaMemcpyAsync(
+            dst, src, nbytes,
+            cudaMemcpyDefault,
+            cuda_stream()
+        ));
     }
 
     /*! \brief Copy the memory with given type asynchronously */
@@ -236,16 +238,19 @@ class CUDAContext {
         const T*            src) {
         if (dst == src) return;
         MemcpyAsync<SrcContext, DstContext>(
-            n * sizeof(T), (void*)dst, (const void*)src);
+            n * sizeof(T), dst, src);
     }
 
     /*! \brief Free the memory */
     static void Delete(void* data) { cudaFree(data); }
 
     /*! \brief Synchronize the specified cuda stream */
-    static cudaError_t SynchronizeStream(cudaStream_t stream) {
+    static void SyncStream(cudaStream_t stream) {
         cudaStreamSynchronize(stream);
-        return cudaGetLastError();
+        auto error = cudaGetLastError();
+        CHECK_EQ(error, cudaSuccess)
+            << "\nCUDA Error: "
+            << cudaGetErrorString(error);
     }
 
     /*! \brief Return the device id of this context */
@@ -269,12 +274,12 @@ class CUDAContext {
     cudaStream_t cuda_stream(
         int                 device_id,
         int                 stream_id) {
-        return cuda_object()->GetStream(device_id, stream_id);
+        return obj()->stream(device_id, stream_id);
     }
 
     /*! \brief Return the internal cublas handle */
     cublasHandle_t cublas_handle() {
-        return cuda_object()->GetCuBLASHandle(device_id_, stream_id_);
+        return obj()->cublas_handle(device_id_, stream_id_);
     }
 
     /*! \brief Return the internal random generator */
@@ -301,7 +306,7 @@ class CUDAContext {
     /*! \brief Return the internal cudnn handle */
 #ifdef WITH_CUDNN
     cudnnHandle_t cudnn_handle() {
-        return cuda_object()->GetCuDNNHandle(device_id_, stream_id_);
+        return obj()->cudnn_handle(device_id_, stream_id_);
     }
 #endif
 
@@ -309,7 +314,7 @@ class CUDAContext {
     static std::mutex& mutex() { static std::mutex m; return m; }
 
     /*! \brief Return the thread local cuda object */
-    static CUDAObject* cuda_object() {
+    static CUDAObject* obj() {
         static TLS_OBJECT CUDAObject* cuda_object_;
         if (!cuda_object_) cuda_object_ = new CUDAObject();
         return cuda_object_;

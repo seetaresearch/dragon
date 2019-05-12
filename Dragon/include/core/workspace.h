@@ -80,13 +80,13 @@ class Workspace {
     /*! \brief Return the specified filler */
     const TensorFillerProto* GetFiller(const string& name) const;
 
-    /*! \brief Create temporal cache segments */
+    /*! \brief Create temporal data segments */
     template <class Context>
-    vector<void*> caches(const vector<size_t>& segments) {
+    vector<void*> data(const vector<size_t>& segments) {
         int64_t nbytes = 0;
         vector<void*> ret(segments.size());
         for (auto& segment : segments) nbytes += (int64_t)segment;
-        auto* T = CreateTensor("/share/cache")->Reshape({ nbytes });
+        auto* T = CreateTensor("/share/data")->Reshape({ nbytes });
         ret[0] = T->template mutable_data<uint8_t, Context>();
         for (int i = 1; i < segments.size(); i++)
             ret[i] = (uint8_t*)ret[i - 1] + segments[i - 1];
@@ -95,12 +95,12 @@ class Workspace {
 
     /*! \brief Create temporal cache segments with the specified type */
     template <typename T, class Context>
-    vector<T*> caches(const vector<int64_t>& segments) {
+    vector<T*> data(const vector<int64_t>& segments) {
         vector<size_t> segments_in_byte;
         vector<T*> ret(segments.size());
         for (const auto& e : segments)
             segments_in_byte.emplace_back(e * sizeof(T));
-        auto ret_in_byte = caches<Context>(segments_in_byte);
+        auto ret_in_byte = data<Context>(segments_in_byte);
         for (int i = 0; i < segments.size(); i++)
             ret[i] = (T*)ret_in_byte[i];
         return ret;

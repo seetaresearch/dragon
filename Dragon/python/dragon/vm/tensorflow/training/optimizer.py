@@ -93,7 +93,6 @@ class Optimizer(object):
             self.updater.append((var, grad), decay_mult=decay_multiplier)
             targets.update(var.gradient.cost)
         self._targets.extend(list(targets))
-
         return self
 
 

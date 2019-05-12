@@ -4,10 +4,10 @@ namespace dragon {
 
 namespace kernel {
 
-/*! NNResize <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
-void _NNResize_NCHW(
+void _NNResizeNCHW(
     const int               N,
     const int               C,
     const int               H,
@@ -20,13 +20,15 @@ void _NNResize_NCHW(
     T*                      y) {
     for (int n = 0; n < N; ++n) {
         for (int c = 0; c < C; ++c) {
-            const int NC = n * C + c;
+            const int nc = n * C + c;
             for (int h = 0; h < out_h; ++h) {
-                const int h_in = std::min(int(floorf(h * scale_h)), H - 1);
-                const int NCH = NC * H + h_in;
+                const int h_in = std::min(
+                    int(floorf(h * scale_h)), H - 1);
+                const int nch = nc * H + h_in;
                 for (int w = 0; w < out_w; ++w) {
-                    const int w_in = std::min(int(floorf(w * scale_w)), W - 1);
-                    *(y++) = x[NCH * W + w_in];
+                    const int w_in = std::min(
+                        int(floorf(w * scale_w)), W - 1);
+                    *(y++) = x[nch * W + w_in];
                 }
             }
         }
@@ -34,7 +36,7 @@ void _NNResize_NCHW(
 }
 
 template <typename T>
-void _NNResize_NHWC(
+void _NNResizeNHWC(
     const int               N,
     const int               C,
     const int               H,
@@ -47,18 +49,21 @@ void _NNResize_NHWC(
     T*                      y) {
     for (int n = 0; n < N; ++n) {
         for (int h = 0; h < out_h; ++h) {
-            const int h_in = std::min(int(floorf(h * scale_h)), H - 1);
-            const int NH = n * H + h_in;
+            const int h_in = std::min(
+                int(floorf(h * scale_h)), H - 1);
+            const int nh = n * H + h_in;
             for (int w = 0; w < out_w; ++w) {
-                const int w_in = std::min(int(floorf(w * scale_w)), W - 1);
-                const int NHW = NH * W + w_in;
-                for (int c = 0; c < C; ++c) *(y++) = x[NHW * C + c];
+                const int w_in = std::min(
+                    int(floorf(w * scale_w)), W - 1);
+                const int nhw = nh * W + w_in;
+                for (int c = 0; c < C; ++c)
+                    *(y++) = x[nhw * C + c];
             }
         }
     }
 }
 
-/*! NNResize <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <> void NNResize<float, CPUContext>(
     const int               N,
@@ -71,20 +76,24 @@ template <> void NNResize<float, CPUContext>(
     const float*            x,
     float*                  y,
     CPUContext*             ctx) {
-    const float scale_h = (float)H / out_h;
-    const float scale_w = (float)W / out_w;
+    auto scale_h = (float)H / (float)out_h;
+    auto scale_w = (float)W / (float)out_w;
     if (data_format == "NCHW") {
-        _NNResize_NCHW<float>(
+        _NNResizeNCHW<float>(
             N, C, H, W, out_h, out_w,
-                scale_h, scale_w, x, y);
+            scale_h, scale_w, x, y
+        );
     } else if (data_format == "NHWC"){
-        _NNResize_NHWC<float>(
+        _NNResizeNHWC(
             N, C, H, W, out_h, out_w,
-                scale_h, scale_w, x, y);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+            scale_h, scale_w, x, y
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
-/*! NNResize <T = float16, Device = CPU> */
+/* <T = float16, Device = CPU> */
 
 template <> void NNResize<float16, CPUContext>(
     const int               N,
@@ -100,20 +109,22 @@ template <> void NNResize<float16, CPUContext>(
     const float scale_h = (float)H / out_h;
     const float scale_w = (float)W / out_w;
     if (data_format == "NCHW") {
-        _NNResize_NCHW<float16>(
+        _NNResizeNCHW<float16>(
             N, C, H, W, out_h, out_w,
                 scale_h, scale_w, x, y);
     } else if (data_format == "NHWC"){
-        _NNResize_NHWC<float16>(
+        _NNResizeNHWC<float16>(
             N, C, H, W, out_h, out_w,
                 scale_h, scale_w, x, y);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
-/*! NNResizeGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <typename T>
-void _NNResizeGrad_NCHW(
+void _NNResizeGradNCHW(
     const int               N,
     const int               C,
     const int               H,
@@ -126,13 +137,15 @@ void _NNResizeGrad_NCHW(
     T*                      dx) {
     for (int n = 0; n < N; ++n) {
         for (int c = 0; c < C; ++c) {
-            const int NC = n * C + c;
+            const int nc = n * C + c;
             for (int h = 0; h < out_h; ++h) {
-                const int h_in = std::min(int(floorf(h * scale_h)), H - 1);
-                const int NCH = NC * H + h_in;
+                const int h_in = std::min(
+                    int(floorf(h * scale_h)), H - 1);
+                const int nch = nc * H + h_in;
                 for (int w = 0; w < out_w; ++w) {
-                    const int w_in = std::min(int(floorf(w * scale_w)), W - 1);
-                    dx[NCH * W + w_in] += *(dy++);
+                    const int w_in = std::min(
+                        int(floorf(w * scale_w)), W - 1);
+                    dx[nch * W + w_in] += *(dy++);
                 }
             }
         }
@@ -140,7 +153,7 @@ void _NNResizeGrad_NCHW(
 }
 
 template <typename T>
-void _NNResizeGrad_NHWC(
+void _NNResizeGradNHWC(
     const int               N,
     const int               C,
     const int               H,
@@ -153,12 +166,15 @@ void _NNResizeGrad_NHWC(
     T*                      dx) {
     for (int n = 0; n < N; ++n) {
         for (int h = 0; h < out_h; ++h) {
-            const int h_in = std::min(int(floorf(h * scale_h)), H - 1);
-            const int NH = n * H + h_in;
+            const int h_in = std::min(
+                int(floorf(h * scale_h)), H - 1);
+            const int nh = n * H + h_in;
             for (int w = 0; w < out_w; ++w) {
-                const int w_in = std::min(int(floorf(w * scale_w)), W - 1);
-                const int NHW = NH * W + w_in;
-                for (int c = 0; c < C; ++c) dx[NHW * C + c] += *(dy++);
+                const int w_in = std::min(
+                    int(floorf(w * scale_w)), W - 1);
+                const int nhw = nh * W + w_in;
+                for (int c = 0; c < C; ++c)
+                    dx[nhw * C + c] += *(dy++);
             }
         }
     }
@@ -175,17 +191,21 @@ template <> void NNResizeGrad<float, CPUContext>(
     const float*            dy,
     float*                  dx,
     CPUContext*             ctx) {
-    const float scale_h = (float)H / out_h;
-    const float scale_w = (float)W / out_w;
+    auto scale_h = (float)H / (float)out_h;
+    auto scale_w = (float)W / (float)out_w;
     if (data_format == "NCHW") {
-        _NNResizeGrad_NCHW<float>(
+        _NNResizeGradNCHW(
             N, C, H, W, out_h, out_w,
-                scale_h, scale_w, dy, dx);
+            scale_h, scale_w, dy, dx
+        );
     } else if (data_format == "NHWC"){
-        _NNResizeGrad_NHWC<float>(
+        _NNResizeGradNHWC(
             N, C, H, W, out_h, out_w,
-                scale_h, scale_w, dy, dx);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+            scale_h, scale_w, dy, dx
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
 }  // namespace kernel

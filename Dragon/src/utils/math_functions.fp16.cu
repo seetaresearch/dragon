@@ -19,11 +19,10 @@ namespace math {
  * ----------------------------------------------
  */
 
-template <typename T>
 __global__ void _ExpHalf(
     const int               n,
-    const T*                a,
-    T*                      y) {
+    const half*             a,
+    half*                   y) {
     CUDA_1D_KERNEL_LOOP(i, n) {
 #if __CUDA_ARCH__ >= 530
         y[i] = hexp(a[i]);
@@ -31,11 +30,10 @@ __global__ void _ExpHalf(
     }
 }
 
-template <typename T>
 __global__ void _ExpHalf2(
     const int               n,
-    const T*                a,
-    T*                      y) {
+    const half2*            a,
+    half2*                  y) {
     CUDA_1D_KERNEL_LOOP(i, n) {
 #if __CUDA_ARCH__ >= 530
         y[i] = h2exp(a[i]);
@@ -44,31 +42,33 @@ __global__ void _ExpHalf2(
 }
 
 template <> void Exp<float16, CUDAContext>(
-    int                     n,
+    const int               n,
     const float16*          x,
     float16*                y,
     CUDAContext*            ctx) {
     if ((n & 1) == 0) {
-        _ExpHalf2<half2>
+        _ExpHalf2
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n >> 1,
-                    reinterpret_cast<const half2*>(x),
-                        reinterpret_cast<half2*>(y));
-    }
-    else {
-        _ExpHalf<half>
+                 0, ctx->cuda_stream() >> >(
+            n >> 1,
+            reinterpret_cast<const half2*>(x),
+            reinterpret_cast<half2*>(y)
+        );
+    } else {
+        _ExpHalf
             << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n,
-                     reinterpret_cast<const half*>(x),
-                        reinterpret_cast<half*>(y));
+                 0, ctx->cuda_stream() >> >(
+            n,
+            reinterpret_cast<const half*>(x),
+            reinterpret_cast<half*>(y)
+        );
     }
 }
 
-template <typename T>
 __global__ void _LogHalf(
     const int               n,
-    const T*                a,
-    T*                      y) {
+    const half*             a,
+    half*                   y) {
     CUDA_1D_KERNEL_LOOP(i, n) {
 #if __CUDA_ARCH__ >= 530
         y[i] = hlog(a[i]);
@@ -76,11 +76,10 @@ __global__ void _LogHalf(
     }
 }
 
-template <typename T>
 __global__ void _LogHalf2(
     const int               n,
-    const T*                a,
-    T*                      y) {
+    const half2*            a,
+    half2*                  y) {
     CUDA_1D_KERNEL_LOOP(i, n) {
 #if __CUDA_ARCH__ >= 530
         y[i] = h2log(a[i]);
@@ -94,22 +93,24 @@ template <> void Log<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     if ((n & 1) == 0) {
-        _LogHalf2<half2>
+        _LogHalf2
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n >> 1,
-                    reinterpret_cast<const half2*>(x),
-                        reinterpret_cast<half2*>(y));
-    }
-    else {
-        _LogHalf<half>
+                 0, ctx->cuda_stream() >> >(
+            n >> 1,
+            reinterpret_cast<const half2*>(x),
+            reinterpret_cast<half2*>(y)
+        );
+    } else {
+        _LogHalf
             << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n,
-                     reinterpret_cast<const half*>(x),
-                        reinterpret_cast<half*>(y));
+                 0, ctx->cuda_stream() >> >(
+            n,
+            reinterpret_cast<const half*>(x),
+            reinterpret_cast<half*>(y)
+        );
     }
 }
 
-template <typename T>
 __global__ void _InvHalf(
     const int               n,
     const half*             x,
@@ -121,7 +122,6 @@ __global__ void _InvHalf(
     }
 }
 
-template <typename T>
 __global__ void _InvHalf2(
     const int               n,
     const half2*            x,
@@ -139,21 +139,24 @@ template <> void Inv<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     if ((n & 1) == 0) {
-        _InvHalf2<half2>
+        _InvHalf2
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n >> 1,
-                     reinterpret_cast<const half2*>(x),
-                        reinterpret_cast<half2*>(y));
+                 0, ctx->cuda_stream() >> >(
+            n >> 1,
+            reinterpret_cast<const half2*>(x),
+            reinterpret_cast<half2*>(y)
+        );
     } else {
-        _InvHalf<half>
+        _InvHalf
             << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n,
-                     reinterpret_cast<const half*>(x),
-                        reinterpret_cast<half*>(y));
+                 0, ctx->cuda_stream() >> >(
+            n,
+            reinterpret_cast<const half*>(x),
+            reinterpret_cast<half*>(y)
+        );
     }
 }
 
-template <typename T>
 __global__ void _SqrtHalf(
     int                     n,
     const half*             x,
@@ -165,7 +168,6 @@ __global__ void _SqrtHalf(
     }
 }
 
-template <typename T>
 __global__ void _SqrtHalf2(
     const int               n,
     const half2*            x,
@@ -183,21 +185,24 @@ template <> void Sqrt<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     if ((n & 1) == 0) {
-        _SqrtHalf2<half2>
+        _SqrtHalf2
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n >> 1,
-                     reinterpret_cast<const half2*>(x),
-                         reinterpret_cast<half2*>(y));
+                 0, ctx->cuda_stream() >> >(
+            n >> 1,
+            reinterpret_cast<const half2*>(x),
+            reinterpret_cast<half2*>(y)
+        );
     } else {
-        _SqrtHalf<half>
+        _SqrtHalf
             << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n,
-                     reinterpret_cast<const half*>(x),
-                         reinterpret_cast<half*>(y));
+                 0, ctx->cuda_stream() >> >(
+            n,
+            reinterpret_cast<const half*>(x),
+            reinterpret_cast<half*>(y)
+        );
     }
 }
 
-template <typename T>
 __global__ void _RSqrtHalf(
     int                     n,
     const half*             x,
@@ -209,7 +214,6 @@ __global__ void _RSqrtHalf(
     }
 }
 
-template <typename T>
 __global__ void _RSqrtHalf2(
     const int               n,
     const half2*            x,
@@ -227,21 +231,24 @@ template <> void RSqrt<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     if ((n & 1) == 0) {
-        _RSqrtHalf2<half2>
+        _RSqrtHalf2
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n >> 1,
-                     reinterpret_cast<const half2*>(x),
-                         reinterpret_cast<half2*>(y));
+                 0, ctx->cuda_stream() >> >(
+            n >> 1,
+            reinterpret_cast<const half2*>(x),
+            reinterpret_cast<half2*>(y)
+        );
     } else {
-        _RSqrtHalf<half>
+        _RSqrtHalf
             << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n,
-                     reinterpret_cast<const half*>(x),
-                         reinterpret_cast<half*>(y));
+                 0, ctx->cuda_stream() >> >(
+            n,
+            reinterpret_cast<const half*>(x),
+            reinterpret_cast<half*>(y)
+        );
     }
 }
 
-template <typename T>
 __global__ void _SquareHalf(
     const int               n,
     const half*             x,
@@ -253,7 +260,6 @@ __global__ void _SquareHalf(
     }
 }
 
-template <typename T>
 __global__ void _SquareHalf2(
     const int               n,
     const half2*            x,
@@ -271,17 +277,21 @@ template <> void Square<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     if ((n & 1) == 0) {
-        _SquareHalf2<half2>
+        _SquareHalf2
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n >> 1,
-                     reinterpret_cast<const half2*>(x),
-                         reinterpret_cast<half2*>(y));
+                 0, ctx->cuda_stream() >> >(
+            n >> 1,
+            reinterpret_cast<const half2*>(x),
+            reinterpret_cast<half2*>(y)
+        );
     } else {
-        _SquareHalf<half>
+        _SquareHalf
             << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n,
-                     reinterpret_cast<const half*>(x),
-                         reinterpret_cast<half*>(y));
+                 0, ctx->cuda_stream() >> >(
+            n,
+            reinterpret_cast<const half*>(x),
+            reinterpret_cast<half*>(y)
+        );
     }
 }
 
@@ -313,26 +323,30 @@ template <> void Set<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     if (alpha.x == (unsigned short)0) {
-        CUDA_CHECK(cudaMemsetAsync(y, 0,
-            sizeof(float16) * n, ctx->cuda_stream()));
-        return;
+        CUDA_CHECK(cudaMemsetAsync(
+            y, 0, sizeof(float16) * n,
+            ctx->cuda_stream()
+        )); return;
     }
     if ((n & 1) == 0) {
         _SetHalf<half2>
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n >> 1,
-                     cast::to<half2>(alpha),
-                         reinterpret_cast<half2*>(y));
+                 0, ctx->cuda_stream() >> >(
+            n >> 1,
+            cast::to<half2>(alpha),
+            reinterpret_cast<half2*>(y)
+        );
     } else {
         _SetHalf<float16>
             << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n, alpha, y);
+                 0, ctx->cuda_stream() >> >(
+            n, alpha, y
+        );
     }
 }
 
 /*!                y = x^e                */
 
-template <typename T>
 __global__ void _PowHalf(
     const int               n,
     const float             alpha,
@@ -345,7 +359,6 @@ __global__ void _PowHalf(
     }
 }
 
-template <typename T>
 __global__ void _PowHalf2(
     const int               n,
     const float             alpha,
@@ -364,19 +377,25 @@ template <> void Pow<float16, CUDAContext>(
     const float16*          x,
     float16*                y,
     CUDAContext*            ctx) {
-    CHECK(alpha == float(2)) << "\nRequired power = 2";
+    CHECK(alpha == 2.f) << "\nRequired power = 2";
     if ((n & 1) == 0) {
-        _PowHalf2<half2>
+        _PowHalf2
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n >> 1,
-                     alpha, reinterpret_cast<const half2*>(x),
-                         reinterpret_cast<half2*>(y));
+                 0, ctx->cuda_stream() >> >(
+            n >> 1,
+            alpha,
+            reinterpret_cast<const half2*>(x),
+            reinterpret_cast<half2*>(y)
+        );
     } else {
-        _PowHalf<half>
+        _PowHalf
             << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(n,
-                     alpha, reinterpret_cast<const half*>(x),
-                         reinterpret_cast<half*>(y));
+                 0, ctx->cuda_stream() >> >(
+            n,
+            alpha,
+            reinterpret_cast<const half*>(x),
+            reinterpret_cast<half*>(y)
+        );
     }
 }
 
@@ -389,15 +408,20 @@ template <> void Scale<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     if (x != y) {
-        CUDA_CHECK(cudaMemcpyAsync(y, x, sizeof(float16) * n,
-            cudaMemcpyDeviceToDevice, ctx->cuda_stream()));
+        CUDA_CHECK(cudaMemcpyAsync(
+            y, x, sizeof(float16) * n,
+            cudaMemcpyDeviceToDevice,
+            ctx->cuda_stream()
+        ));
     }
     if (alpha != 1.f) {
         CUBLAS_CHECK(cublasScalEx(
-            ctx->cublas_handle(), n,
-                &alpha, CUDA_R_32F,
-                    y, CUDA_R_16F, 1,
-                        CUDA_R_32F));
+            ctx->cublas_handle(),
+            n,
+            &alpha, CUDA_R_32F,
+            y, CUDA_R_16F, 1,
+            CUDA_R_32F
+        ));
     }
 }
 
@@ -410,11 +434,13 @@ template <> void Axpy<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     CUBLAS_CHECK(cublasAxpyEx(
-        ctx->cublas_handle(), n,
-            &alpha, CUDA_R_32F,
-                x, CUDA_R_16F, 1,
-                    y, CUDA_R_16F, 1,
-                        CUDA_R_32F));
+        ctx->cublas_handle(),
+        n,
+        &alpha, CUDA_R_32F,
+        x, CUDA_R_16F, 1,
+        y, CUDA_R_16F, 1,
+        CUDA_R_32F
+    ));
 }
 
 /*!                 y = ax + by               */
@@ -432,7 +458,6 @@ template <> void Axpby<float16, CUDAContext>(
 
 /*!                 y += a                */
 
-template <typename T>
 __global__ void _AddScalarHalf(
     const int               n,
     half                    alpha,
@@ -444,7 +469,6 @@ __global__ void _AddScalarHalf(
     }
 }
 
-template <typename T>
 __global__ void _AddScalarHalf2(
     const int               n,
     half2                   alpha,
@@ -462,17 +486,21 @@ template <> void AddScalar<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     if ((n & 1) == 0) {
-        _AddScalarHalf2<half2>
+        _AddScalarHalf2
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (n >> 1, cast::to<half2>(alpha),
-                reinterpret_cast<half2*>(y));
+                 0, ctx->cuda_stream() >> >(
+            n >> 1,
+            cast::to<half2>(alpha),
+            reinterpret_cast<half2*>(y)
+        );
     } else {
-        _AddScalarHalf<half>
+        _AddScalarHalf
             << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (n, cast::to<half>(alpha),
-                reinterpret_cast<half*>(y));
+                 0, ctx->cuda_stream() >> >(
+            n,
+            cast::to<half>(alpha),
+            reinterpret_cast<half*>(y)
+        );
     }
 }
 
@@ -486,7 +514,6 @@ template <> void AddScalar<float16, CUDAContext>(
  * ----------------------------------------------
  */
 
-template <typename T>
 __global__ void _InvStdHalf(
     int                     n,
     const half              eps,
@@ -499,7 +526,6 @@ __global__ void _InvStdHalf(
     }
 }
 
-template <typename T>
 __global__ void _InvStdHalf2(
     const int               n,
     const half2             eps,
@@ -519,19 +545,23 @@ template <> void InvStd<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     if ((n & 1) == 0) {
-        _InvStdHalf2<half2>
+        _InvStdHalf2
             << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (n >> 1, cast::to<half2>(eps),
-                reinterpret_cast<const half2*>(x),
-                    reinterpret_cast<half2*>(y));
+                 0, ctx->cuda_stream() >> >(
+            n >> 1,
+            cast::to<half2>(eps),
+            reinterpret_cast<const half2*>(x),
+            reinterpret_cast<half2*>(y)
+        );
     } else {
-        _InvStdHalf<half>
+        _InvStdHalf
             << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (n, cast::to<half>(eps),
-                reinterpret_cast<const half*>(x),
-                    reinterpret_cast<half*>(y));
+                 0, ctx->cuda_stream() >> >(
+            n,
+            cast::to<half>(eps),
+            reinterpret_cast<const half*>(x),
+            reinterpret_cast<half*>(y)
+        );
     }
 }
 
@@ -639,17 +669,21 @@ __global__ void _DivHalf(
         if ((n & 1) == 0) { \
             _##name##Half2 \
                 << < CUDA_BLOCKS(n >> 1), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> > \
-                (n >> 1, reinterpret_cast<const half2*>(a), \
-                    reinterpret_cast<const half2*>(b), \
-                        reinterpret_cast<half2*>(y)); \
+                     0, ctx->cuda_stream() >> >( \
+                n >> 1, \
+                reinterpret_cast<const half2*>(a), \
+                reinterpret_cast<const half2*>(b), \
+                reinterpret_cast<half2*>(y) \
+            ); \
         } else { \
             _##name##Half \
                 << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> > \
-                (n, reinterpret_cast<const half*>(a), \
-                    reinterpret_cast<const half*>(b), \
-                        reinterpret_cast<half*>(y)); \
+                     0, ctx->cuda_stream() >> >( \
+                n, \
+                reinterpret_cast<const half*>(a), \
+                reinterpret_cast<const half*>(b), \
+                reinterpret_cast<half*>(y) \
+            ); \
         } \
     }
 
@@ -666,10 +700,12 @@ template <> void Div<float16, CUDAContext>(
     CUDAContext*            ctx) {
     _DivHalf
         << < CUDA_BLOCKS(n), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (n, reinterpret_cast<const half*>(a),
-            reinterpret_cast<const half*>(b),
-                reinterpret_cast<half*>(y));
+             0, ctx->cuda_stream() >> >(
+        n,
+        reinterpret_cast<const half*>(a),
+        reinterpret_cast<const half*>(b),
+        reinterpret_cast<half*>(y)
+    );
 }
 
 template <> void Dot<float16, CUDAContext>(
@@ -679,11 +715,13 @@ template <> void Dot<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     CUBLAS_CHECK(cublasDotEx(
-        ctx->cublas_handle(), n,
-            a, CUDA_R_16F, 1,
-                b, CUDA_R_16F, 1,
-                    y, CUDA_R_16F,
-                        CUDA_R_32F));
+        ctx->cublas_handle(),
+        n,
+        a, CUDA_R_16F, 1,
+        b, CUDA_R_16F, 1,
+        y, CUDA_R_16F,
+        CUDA_R_32F
+    ));
     ctx->FinishDeviceCompution();
 }
 
@@ -699,136 +737,136 @@ template <> void Dot<float16, CUDAContext>(
 
 template <bool BroadcastA>
 __global__ void _RowBroadcastAddHalf(
-    const int               count,
+    const int               n,
     const int               cols,
     const half*             a,
     const half*             b,
     half*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(yi, n) {
 #if __CUDA_ARCH__ >= 530
-        const int i = idx % cols;
-        const int a_idx = BroadcastA ? i : idx;
-        const int b_idx = BroadcastA ? idx : i;
-        y[idx] = __hadd(a[a_idx], b[b_idx]);
+        const int i = yi % cols;
+        const int ai = BroadcastA ? i : yi;
+        const int bi = BroadcastA ? yi : i;
+        y[yi] = __hadd(a[ai], b[bi]);
 #endif
     }
 }
 
 template <bool BroadcastA>
 __global__ void _ColBroadcastAddHalf(
-    const int               count,
+    const int               n,
     const int               cols,
     const half*             a,
     const half*             b,
     half*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(yi, n) {
 #if __CUDA_ARCH__ >= 530
-        const int i = idx / cols;
-        const int a_idx = BroadcastA ? i : idx;
-        const int b_idx = BroadcastA ? idx : i;
-        y[idx] = __hadd(a[a_idx], b[b_idx]);
+        const int i = yi / cols;
+        const int ai = BroadcastA ? i : yi;
+        const int bi = BroadcastA ? yi : i;
+        y[yi] = __hadd(a[ai], b[bi]);
 #endif
     }
 }
 
 template <bool BroadcastA>
 __global__ void _RowBroadcastSubHalf(
-    const int               count,
+    const int               n,
     const int               cols,
     const half*             a,
     const half*             b,
     half*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(yi, n) {
 #if __CUDA_ARCH__ >= 530
-        const int i = idx % cols;
-        const int a_idx = BroadcastA ? i : idx;
-        const int b_idx = BroadcastA ? idx : i;
-        y[idx] = __hsub(a[a_idx], b[b_idx]);
+        const int i = yi % cols;
+        const int ai = BroadcastA ? i : yi;
+        const int bi = BroadcastA ? yi : i;
+        y[yi] = __hsub(a[ai], b[bi]);
 #endif
     }
 }
 
 template <bool BroadcastA>
 __global__ void _ColBroadcastSubHalf(
-    const int               count,
+    const int               n,
     const int               cols,
     const half*             a,
     const half*             b,
     half*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(yi, n) {
 #if __CUDA_ARCH__ >= 530
-        const int i = idx / cols;
-        const int a_idx = BroadcastA ? i : idx;
-        const int b_idx = BroadcastA ? idx : i;
-        y[idx] = __hsub(a[a_idx], b[b_idx]);
+        const int i = yi / cols;
+        const int ai = BroadcastA ? i : yi;
+        const int bi = BroadcastA ? yi : i;
+        y[yi] = __hsub(a[ai], b[bi]);
 #endif
     }
 }
 
 template <bool BroadcastA>
 __global__ void _RowBroadcastMulHalf(
-    const int               count,
+    const int               n,
     const int               cols,
     const half*             a,
     const half*             b,
     half*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(yi, n) {
 #if __CUDA_ARCH__ >= 530
-        const int i = idx % cols;
-        const int a_idx = BroadcastA ? i : idx;
-        const int b_idx = BroadcastA ? idx : i;
-        y[idx] = __hmul(a[a_idx], b[b_idx]);
+        const int i = yi % cols;
+        const int ai = BroadcastA ? i : yi;
+        const int bi = BroadcastA ? yi : i;
+        y[yi] = __hmul(a[ai], b[bi]);
 #endif
     }
 }
 
 template <bool BroadcastA>
 __global__ void _ColBroadcastMulHalf(
-    const int               count,
+    const int               n,
     const int               cols,
     const half*             a,
     const half*             b,
     half*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(yi, n) {
 #if __CUDA_ARCH__ >= 530
-        const int i = idx / cols;
-        const int a_idx = BroadcastA ? i : idx;
-        const int b_idx = BroadcastA ? idx : i;
-        y[idx] = __hmul(a[a_idx], b[b_idx]);
+        const int i = yi / cols;
+        const int ai = BroadcastA ? i : yi;
+        const int bi = BroadcastA ? yi : i;
+        y[yi] = __hmul(a[ai], b[bi]);
 #endif
     }
 }
 
 template <bool BroadcastA>
 __global__ void _RowBroadcastDivHalf(
-    const int               count,
+    const int               n,
     const int               cols,
     const half*             a,
     const half*             b,
     half*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(yi, n) {
 #if __CUDA_ARCH__ >= 530
-        const int i = idx % cols;
-        const int a_idx = BroadcastA ? i : idx;
-        const int b_idx = BroadcastA ? idx : i;
-        y[idx] = __hdiv(a[a_idx], b[b_idx]);
+        const int i = yi % cols;
+        const int ai = BroadcastA ? i : yi;
+        const int bi = BroadcastA ? yi : i;
+        y[yi] = __hdiv(a[ai], b[bi]);
 #endif
     }
 }
 
 template <bool BroadcastA>
 __global__ void _ColBroadcastDivHalf(
-    const int               count,
+    const int               n,
     const int               cols,
     const half*             a,
     const half*             b,
     half*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(yi, n) {
 #if __CUDA_ARCH__ >= 530
-        const int i = idx / cols;
-        const int a_idx = BroadcastA ? i : idx;
-        const int b_idx = BroadcastA ? idx : i;
-        y[idx] = __hdiv(a[a_idx], b[b_idx]);
+        const int i = yi / cols;
+        const int ai = BroadcastA ? i : yi;
+        const int bi = BroadcastA ? yi : i;
+        y[yi] = __hdiv(a[ai], b[bi]);
 #endif
     }
 }
@@ -847,36 +885,44 @@ __global__ void _ColBroadcastDivHalf(
             /*! Row - BroadcastB */ \
             _RowBroadcast##name##Half<false> \
                 << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> > \
-                (n, cols, reinterpret_cast<const half*>(a), \
-                    reinterpret_cast<const half*>(b), \
-                        reinterpret_cast<half*>(y)); \
+                     0, ctx->cuda_stream() >> >( \
+                n, cols, \
+                reinterpret_cast<const half*>(a), \
+                reinterpret_cast<const half*>(b), \
+                reinterpret_cast<half*>(y) \
+            ); \
         } else if (type == 1) { \
             /*! Col - BroadcastB */ \
             _ColBroadcast##name##Half<false> \
                 << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> > \
-                (n, cols, reinterpret_cast<const half*>(a), \
-                    reinterpret_cast<const half*>(b), \
-                        reinterpret_cast<half*>(y)); \
+                     0, ctx->cuda_stream() >> >( \
+                n, cols, \
+                reinterpret_cast<const half*>(a), \
+                reinterpret_cast<const half*>(b), \
+                reinterpret_cast<half*>(y) \
+            ); \
         } else if (type == 2) { \
             /*! Row - BroadcastA */ \
             _RowBroadcast##name##Half<true> \
                 << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> > \
-                (n, cols, reinterpret_cast<const half*>(a), \
-                    reinterpret_cast<const half*>(b), \
-                        reinterpret_cast<half*>(y)); \
+                     0, ctx->cuda_stream() >> >( \
+                n, cols, \
+                reinterpret_cast<const half*>(a), \
+                reinterpret_cast<const half*>(b), \
+                reinterpret_cast<half*>(y) \
+            ); \
         } else if (type == 3) { \
             /*! Col - BroadcastA */ \
             _ColBroadcast##name##Half<true> \
                 << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> > \
-                (n, cols, reinterpret_cast<const half*>(a), \
-                    reinterpret_cast<const half*>(b), \
-                        reinterpret_cast<half*>(y)); \
+                     0, ctx->cuda_stream() >> >( \
+                n, cols, \
+                reinterpret_cast<const half*>(a), \
+                reinterpret_cast<const half*>(b), \
+                reinterpret_cast<half*>(y) \
+            ); \
         } else { \
-            LOG(FATAL) << "Unknown broadcast type: " << type; \
+            LOG(FATAL) << "Unknown Broadcast Type: " << type; \
         } \
     }
 
@@ -911,85 +957,105 @@ template <> void Gemm<float16, CUDAContext>(
     TensorProto_DataType    math_type) {
     int lda = (TransA == CblasNoTrans) ? K : M;
     int ldb = (TransB == CblasNoTrans) ? N : K;
-    cublasOperation_t cuTransA = (TransA == CblasNoTrans) ?
-        CUBLAS_OP_N : CUBLAS_OP_T;
-    cublasOperation_t cuTransB = (TransB == CblasNoTrans) ?
-        CUBLAS_OP_N : CUBLAS_OP_T;
+    cublasOperation_t cuTransA =
+        TransA == CblasNoTrans ?
+            CUBLAS_OP_N : CUBLAS_OP_T;
+    cublasOperation_t cuTransB =
+        TransB == CblasNoTrans ?
+            CUBLAS_OP_N : CUBLAS_OP_T;
     if (math_type == TensorProto_DataType_FLOAT) {
         const float _alpha_ = alpha, _beta_ = beta;
 #if CUDA_VERSION >= 9000
         if (TENSOR_CORE_AVAILABLE()) {
-            //  GEMM + MATH32 + TENSOR-CORE
+            // GEMM + MATH32 + TENSOR-CORE
             CUBLAS_CHECK(cublasGemmEx(
                 ctx->cublas_handle(),
-                cuTransB, cuTransA, N, M, K,
+                cuTransB,
+                cuTransA,
+                N, M, K,
                 &_alpha_,
-                    B, CUDA_R_16F, ldb,
-                    A, CUDA_R_16F, lda,
+                B, CUDA_R_16F, ldb,
+                A, CUDA_R_16F, lda,
                 &_beta_,
-                    C, CUDA_R_16F, N,
+                C, CUDA_R_16F, N,
                 CUDA_R_32F,
-                CUBLAS_GEMM_DEFAULT_TENSOR_OP));
+                CUBLAS_GEMM_DEFAULT_TENSOR_OP
+            ));
         } else {
-            //  GEMM + MATH32 + DEFAULT
+            // GEMM + MATH32 + DEFAULT
             CUBLAS_CHECK(cublasSgemmEx(
                 ctx->cublas_handle(),
-                cuTransB, cuTransA, N, M, K,
+                cuTransB,
+                cuTransA,
+                N, M, K,
                 &_alpha_,
-                    B, CUDA_R_16F, ldb,
-                    A, CUDA_R_16F, lda,
+                B, CUDA_R_16F, ldb,
+                A, CUDA_R_16F, lda,
                 &_beta_,
-                    C, CUDA_R_16F, N));
+                C, CUDA_R_16F, N
+            ));
         }
 #else
        CUBLAS_CHECK(cublasSgemmEx(
            ctx->cublas_handle(),
-           cuTransB, cuTransA, N, M, K,
+           cuTransB,
+           cuTransA,
+           N, M, K,
            &_alpha_,
-               B, CUDA_R_16F, ldb,
-               A, CUDA_R_16F, lda,
+           B, CUDA_R_16F, ldb,
+           A, CUDA_R_16F, lda,
            &_beta_,
-               C, CUDA_R_16F, N));
+           C, CUDA_R_16F, N
+       ));
 #endif
     } else if (math_type == TensorProto_DataType_FLOAT16) {
         const half _alpha_ = cast::to<half>(alpha);
         const half _beta_ = cast::to<half>(beta);
 #if CUDA_VERSION >= 9000
         if (TENSOR_CORE_AVAILABLE()) {
-            //  GEMM + MATH16 + TENSOR-CORE
+            // GEMM + MATH16 + TENSOR-CORE
             CUBLAS_CHECK(cublasGemmEx(
                 ctx->cublas_handle(),
-                cuTransB, cuTransA, N, M, K,
+                cuTransB,
+                cuTransA,
+                N, M, K,
                 &_alpha_,
-                    B, CUDA_R_16F, ldb,
-                    A, CUDA_R_16F, lda,
+                B, CUDA_R_16F, ldb,
+                A, CUDA_R_16F, lda,
                 &_beta_,
-                    C, CUDA_R_16F, N,
+                C, CUDA_R_16F, N,
                 CUDA_R_16F,
-                CUBLAS_GEMM_DEFAULT_TENSOR_OP));
+                CUBLAS_GEMM_DEFAULT_TENSOR_OP
+            ));
         } else {
-            //  GEMM + MATH16 + DEFAULT
+            // GEMM + MATH16 + DEFAULT
             CUBLAS_CHECK(cublasHgemm(
                 ctx->cublas_handle(),
-                cuTransB, cuTransA, N, M, K,
+                cuTransB,
+                cuTransA,
+                N, M, K,
                 &_alpha_,
-                    reinterpret_cast<const half*>(B), ldb,
-                    reinterpret_cast<const half*>(A), lda,
+                reinterpret_cast<const half*>(B), ldb,
+                reinterpret_cast<const half*>(A), lda,
                 &_beta_,
-                    reinterpret_cast<half*>(C), N));
+                reinterpret_cast<half*>(C), N
+            ));
         }
 #else
         CUBLAS_CHECK(cublasHgemm(
             ctx->cublas_handle(),
-            cuTransB, cuTransA, N, M, K,
+            cuTransB,
+            cuTransA,
+            N, M, K,
             &_alpha_,
-                reinterpret_cast<const half*>(B), ldb,
-                reinterpret_cast<const half*>(A), lda,
+            reinterpret_cast<const half*>(B), ldb,
+            reinterpret_cast<const half*>(A), lda,
             &_beta_,
-                reinterpret_cast<half*>(C), N));
+            reinterpret_cast<half*>(C), N
+        ));
 #endif
     } else {
-        LOG(FATAL) << "Unsupported math type";
+        LOG(FATAL) << "Unknown Math Type.";
     }
 }
 
@@ -1004,87 +1070,106 @@ template <> void Gemv<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx,
     TensorProto_DataType    math_type) {
-    cublasOperation_t cuTransA = (TransA == CblasNoTrans) ?
-        CUBLAS_OP_T : CUBLAS_OP_N;
-    int m = (cuTransA == CUBLAS_OP_N) ? N : M;
-    int k = (cuTransA == CUBLAS_OP_N) ? M : N;
-    int LDA = (cuTransA == CUBLAS_OP_N) ? m : k;
+    cublasOperation_t cuTransA =
+        TransA == CblasNoTrans ?
+            CUBLAS_OP_T : CUBLAS_OP_N;
+    int m = cuTransA == CUBLAS_OP_N ? N : M;
+    int k = cuTransA == CUBLAS_OP_N ? M : N;
+    int LDA = cuTransA == CUBLAS_OP_N ? m : k;
     int LDC = m;
     const float _alpha_ = alpha, _beta_ = beta;
     if (math_type == TensorProto_DataType_FLOAT) {
 #if CUDA_VERSION >= 9000
         if (TENSOR_CORE_AVAILABLE()) {
-            //  GEMV + MATH32 + TENSOR-CORE
+            // GEMV + MATH32 + TENSOR-CORE
             CUBLAS_CHECK(cublasGemmEx(
                 ctx->cublas_handle(),
-                cuTransA, CUBLAS_OP_N, m, 1, k,
+                cuTransA,
+                CUBLAS_OP_N,
+                m, 1, k,
                 &_alpha_,
-                    A, CUDA_R_16F, LDA,
-                    x, CUDA_R_16F, k,
+                A, CUDA_R_16F, LDA,
+                x, CUDA_R_16F, k,
                 &_beta_,
-                    y, CUDA_R_16F, LDC,
+                y, CUDA_R_16F, LDC,
                 CUDA_R_32F,
-                CUBLAS_GEMM_DEFAULT_TENSOR_OP));
+                CUBLAS_GEMM_DEFAULT_TENSOR_OP
+            ));
         } else {
-            //  GEMV + MATH32 + DEFAULT
+            // GEMV + MATH32 + DEFAULT
             CUBLAS_CHECK(cublasSgemmEx(
                 ctx->cublas_handle(),
-                cuTransA, CUBLAS_OP_N, m, 1, k,
+                cuTransA,
+                CUBLAS_OP_N,
+                m, 1, k,
                 &_alpha_,
-                    A, CUDA_R_16F, LDA,
-                    x, CUDA_R_16F, k,
+                A, CUDA_R_16F, LDA,
+                x, CUDA_R_16F, k,
                 &_beta_,
-                    y, CUDA_R_16F, LDC));
+                y, CUDA_R_16F, LDC
+            ));
         }
 #else
         CUBLAS_CHECK(cublasSgemmEx(
             ctx->cublas_handle(),
-            cuTransA, CUBLAS_OP_N, m, 1, k,
+            cuTransA,
+            CUBLAS_OP_N,
+            m, 1, k,
             &_alpha_,
-                A, CUDA_R_16F, LDA,
-                x, CUDA_R_16F, k,
+            A, CUDA_R_16F, LDA,
+            x, CUDA_R_16F, k,
             &_beta_,
-                y, CUDA_R_16F, LDC));
+            y, CUDA_R_16F, LDC
+        ));
 #endif
     } else if (math_type == TensorProto_DataType_FLOAT16) {
         const half _alpha_ = cast::to<half>(alpha);
         const half _beta_ = cast::to<half>(beta);
 #if CUDA_VERSION >= 9000
         if (TENSOR_CORE_AVAILABLE()) {
-            //  GEMV + MATH16 + TENSOR-CORE
+            // GEMV + MATH16 + TENSOR-CORE
             CUBLAS_CHECK(cublasGemmEx(
                 ctx->cublas_handle(),
-                cuTransA, CUBLAS_OP_N, m, 1, k,
+                cuTransA,
+                CUBLAS_OP_N,
+                m, 1, k,
                 &_alpha_,
-                    A, CUDA_R_16F, LDA,
-                    x, CUDA_R_16F, k,
+                A, CUDA_R_16F, LDA,
+                x, CUDA_R_16F, k,
                 &_beta_,
-                    y, CUDA_R_16F, LDC,
+                y, CUDA_R_16F, LDC,
                 CUDA_R_16F,
-                CUBLAS_GEMM_DEFAULT_TENSOR_OP));
+                CUBLAS_GEMM_DEFAULT_TENSOR_OP
+            ));
         } else {
-            //  GEMV + MATH16 + DEFAULT
+            // GEMV + MATH16 + DEFAULT
             CUBLAS_CHECK(cublasHgemm(
                 ctx->cublas_handle(),
-                cuTransA, CUBLAS_OP_N, m, 1, k,
+                cuTransA,
+                CUBLAS_OP_N,
+                m, 1, k,
                 &_alpha_,
-                    reinterpret_cast<const half*>(A), LDA,
-                    reinterpret_cast<const half*>(x), k,
+                reinterpret_cast<const half*>(A), LDA,
+                reinterpret_cast<const half*>(x), k,
                 &_beta_,
-                    reinterpret_cast<half*>(y), LDC));
+                reinterpret_cast<half*>(y), LDC
+            ));
         }
 #else
         CUBLAS_CHECK(cublasHgemm(
             ctx->cublas_handle(),
-            cuTransA, CUBLAS_OP_N, m, 1, k,
+            cuTransA,
+            CUBLAS_OP_N,
+            m, 1, k,
             &_alpha_,
-                reinterpret_cast<const half*>(A), LDA,
-                reinterpret_cast<const half*>(x), k,
+            reinterpret_cast<const half*>(A), LDA,
+            reinterpret_cast<const half*>(x), k,
             &_beta_,
-                reinterpret_cast<half*>(y), LDC));
+            reinterpret_cast<half*>(y), LDC
+        ));
 #endif
     } else {
-            LOG(FATAL) << "Unsupported math type";
+        LOG(FATAL) << "Unknown Math Type";
     }
 }
 
@@ -1105,9 +1190,9 @@ template <> void RandomUniform<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     auto* y32 = (float*)ctx->New(n * sizeof(float));
-    math::RandomUniform<float, CUDAContext>(n, low, high, y32, ctx);
-    kernel::TypeA2B<float, float16>(n, y32, y, ctx);
-    ctx->FinishDeviceCompution();  // Sync the stream
+    math::RandomUniform(n, low, high, y32, ctx);
+    kernel::TypeA2B(n, y32, y, ctx);
+    ctx->FinishDeviceCompution();
     ctx->Delete(y32);
 }
 
@@ -1118,9 +1203,9 @@ template <> void RandomNormal<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     auto* y32 = (float*)ctx->New(n * sizeof(float));
-    math::RandomNormal<float, CUDAContext>(n, mu, sigma, y32, ctx);
-    kernel::TypeA2B<float, float16>(n, y32, y, ctx);
-    ctx->FinishDeviceCompution();  // Sync the stream
+    math::RandomNormal(n, mu, sigma, y32, ctx);
+    kernel::TypeA2B(n, y32, y, ctx);
+    ctx->FinishDeviceCompution();
     ctx->Delete(y32);
 }
 

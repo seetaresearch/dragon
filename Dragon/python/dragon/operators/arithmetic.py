@@ -279,10 +279,10 @@ def FullyConnected(inputs, num_output, axis=1, transW=True, **kwargs):
 
 
 @OpSchema.Inputs(2, INT_MAX)
-def Eltwise(inputs, operation='SUM', coefficients=None, **kwargs):
+def Eltwise(inputs, operation='SUM', coef=None, **kwargs):
     """Element-wise Sum or Product the arbitrary number of inputs.
 
-    If ``coefficients`` is *None*, *1.0* will be used instead.
+    If ``coef`` is *None*, *1.0* will be used instead.
 
     **Type Constraints**: (*int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
@@ -292,7 +292,7 @@ def Eltwise(inputs, operation='SUM', coefficients=None, **kwargs):
         The inputs.
     operation : {*SUM*, *PROD*}, optional
         The operation to apply.
-    coefficients : sequence of number, optional
+    coef : sequence of number, optional
         The coefficients on inputs.
 
     Returns
@@ -302,8 +302,8 @@ def Eltwise(inputs, operation='SUM', coefficients=None, **kwargs):
 
     """
     arguments = ParseArgs(locals())
-    if arguments['coefficients'] is not None:
-        arguments['coefficients'] = [float(e) for e in arguments['coefficients']]
+    if arguments['coef'] is not None:
+        arguments['coef'] = [float(e) for e in arguments['coef']]
     return Tensor.CreateOperator('Eltwise', **arguments)
 
 

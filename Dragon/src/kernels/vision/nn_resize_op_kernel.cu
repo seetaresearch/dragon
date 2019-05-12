@@ -7,10 +7,10 @@ namespace dragon {
 
 namespace kernel {
 
-/*! NNResize <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename T>
-__global__ void _NNResize_NCHW(
+__global__ void _NNResizeNCHW(
     const int               nthreads,
     const int               C,
     const int               H,
@@ -21,23 +21,23 @@ __global__ void _NNResize_NCHW(
     const float             scale_w,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        const int w = y_idx % out_w;
-        const int h = (y_idx / out_w) % out_h;
-        const int c = (y_idx / out_w / out_h) % C;
-        const int n = y_idx / out_w / out_h / C;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        const int w = yi % out_w;
+        const int h = (yi / out_w) % out_h;
+        const int c = (yi / out_w / out_h) % C;
+        const int n = yi / out_w / out_h / C;
         const int h_in = min(int(floorf(h * scale_h)), H - 1);
         const int w_in = min(int(floorf(w * scale_w)), W - 1);
 #if __CUDA_ARCH__ >= 350
-        y[y_idx] = __ldg(x + (((n * C + c) * H + h_in) * W + w_in));
+        y[yi] = __ldg(x + (((n * C + c) * H + h_in) * W + w_in));
 #else
-        y[y_idx] = x[((n * C + c) * H + h_in) * W + w_in];
+        y[yi] = x[((n * C + c) * H + h_in) * W + w_in];
 #endif
     }
 }
 
 template <typename T>
-__global__ void _NNResize_NHWC(
+__global__ void _NNResizeNHWC(
     const int               nthreads,
     const int               C,
     const int               H,
@@ -48,17 +48,17 @@ __global__ void _NNResize_NHWC(
     const float             scale_w,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        const int c = y_idx % C;
-        const int w = (y_idx / C) % out_w;
-        const int h = (y_idx / C / out_w) % out_h;
-        const int n = y_idx / C / out_w / out_h;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        const int c = yi % C;
+        const int w = (yi / C) % out_w;
+        const int h = (yi / C / out_w) % out_h;
+        const int n = yi / C / out_w / out_h;
         const int h_in = min(int(floorf(h * scale_h)), H - 1);
         const int w_in = min(int(floorf(w * scale_w)), W - 1);
 #if __CUDA_ARCH__ >= 350
-        y[y_idx] = __ldg(x + (((n * H + h_in) * W + w_in) * C + c));
+        y[yi] = __ldg(x + (((n * H + h_in) * W + w_in) * C + c));
 #else
-        y[y_idx] = x[((n * H + h_in) * W + w_in) * C + c];
+        y[yi] = x[((n * H + h_in) * W + w_in) * C + c];
 #endif
     }
 }
@@ -77,21 +77,25 @@ template <> void NNResize<float, CUDAContext>(
     float*                  y,
     CUDAContext*            ctx) {
     auto nthreads = N * C * out_h * out_w;
-    const float scale_h = (float)H / out_h;
-    const float scale_w = (float)W / out_w;
+    auto scale_h = (float)H / (float)out_h;
+    auto scale_w = (float)W / (float)out_w;
     if (data_format == "NCHW") {
-        _NNResize_NCHW<float>
+        _NNResizeNCHW
             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (nthreads, C, H, W, out_h, out_w,
-                scale_h, scale_w, x, y);
+                 0, ctx->cuda_stream() >> >(
+            nthreads, C, H, W, out_h, out_w,
+            scale_h, scale_w, x, y
+        );
     } else if(data_format == "NHWC") {
-        _NNResize_NHWC<float>
+        _NNResizeNHWC
             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (nthreads, C, H, W, out_h, out_w,
-                scale_h, scale_w, x, y);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+                 0, ctx->cuda_stream() >> >(
+            nthreads, C, H, W, out_h, out_w,
+            scale_h, scale_w, x, y
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
 /*! NNResize <T = float16, Device = CUDA> */
@@ -108,56 +112,62 @@ template <> void NNResize<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     auto nthreads = N * C * out_h * out_w;
-    const float scale_h = (float)H / out_h;
-    const float scale_w = (float)W / out_w;
+    auto scale_h = (float)H / (float)out_h;
+    auto scale_w = (float)W / (float)out_w;
     if (data_format == "NCHW") {
-        _NNResize_NCHW<half>
+        _NNResizeNCHW
             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (nthreads, C, H, W, out_h, out_w, scale_h, scale_w,
-                reinterpret_cast<const half*>(x),
-                    reinterpret_cast<half*>(y));
+                 0, ctx->cuda_stream() >> >(
+            nthreads, C, H, W,
+            out_h, out_w, scale_h, scale_w,
+            reinterpret_cast<const half*>(x),
+            reinterpret_cast<half*>(y)
+        );
     } else if(data_format == "NHWC") {
-        _NNResize_NHWC<half>
+        _NNResizeNHWC
             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (nthreads, C, H, W, out_h, out_w, scale_h, scale_w,
-                reinterpret_cast<const half*>(x),
-                    reinterpret_cast<half*>(y));
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+                 0, ctx->cuda_stream() >> >(
+            nthreads, C, H, W,
+            out_h, out_w, scale_h, scale_w,
+            reinterpret_cast<const half*>(x),
+            reinterpret_cast<half*>(y)
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
-/*! NNResizeGrad <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
- __global__ void _NNResizeGrad_NCHW(
-     const int              nthreads,
-     const int              C,
-     const int              H,
-     const int              W,
-     const int              out_h,
-     const int              out_w,
-     const float            scale_h,
-     const float            scale_w,
-     const T*               dy,
-     T*                     dx) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        const int w = y_idx % out_w;
-        const int h = (y_idx / out_w) % out_h;
-        const int c = (y_idx / out_w / out_h) % C;
-        const int n = y_idx / out_w / out_h / C;
+__global__ void _NNResizeGradNCHW(
+    const int              nthreads,
+    const int              C,
+    const int              H,
+    const int              W,
+    const int              out_h,
+    const int              out_w,
+    const float            scale_h,
+    const float            scale_w,
+    const T*               dy,
+    T*                     dx) {
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        const int w = yi % out_w;
+        const int h = (yi / out_w) % out_h;
+        const int c = (yi / out_w / out_h) % C;
+        const int n = yi / out_w / out_h / C;
         const int h_in = min(int(floorf(h * scale_h)), H - 1);
         const int w_in = min(int(floorf(w * scale_w)), W - 1);
 #if __CUDA_ARCH__ >= 350
-        atomicAdd(&dx[((n * C + c) * H + h_in) * W + w_in], __ldg(dy + y_idx));
+        atomicAdd(&dx[((n * C + c) * H + h_in) * W + w_in], __ldg(dy + yi));
 #else
-        atomicAdd(&dx[((n * C + c) * H + h_in) * W + w_in], dy[y_idx]);
+        atomicAdd(&dx[((n * C + c) * H + h_in) * W + w_in], dy[yi]);
 #endif
     }
 }
 
 template <typename T>
-__global__ void _NNResizeGrad_NHWC(
+__global__ void _NNResizeGradNHWC(
     const int               nthreads,
     const int               C,
     const int               H,
@@ -168,17 +178,17 @@ __global__ void _NNResizeGrad_NHWC(
     const float             scale_w,
     const T*                dy,
     T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        const int c = y_idx % C;
-        const int w = (y_idx / C) % out_w;
-        const int h = (y_idx / C / out_w) % out_h;
-        const int n = y_idx / C / out_w / out_h;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        const int c = yi % C;
+        const int w = (yi / C) % out_w;
+        const int h = (yi / C / out_w) % out_h;
+        const int n = yi / C / out_w / out_h;
         const int h_in = min(int(floorf(h * scale_h)), H - 1);
         const int w_in = min(int(floorf(w * scale_w)), W - 1);
 #if __CUDA_ARCH__ >= 350
-        atomicAdd(&dx[((n * H + h_in) * W + w_in) * C + c], __ldg(dy + y_idx));
+        atomicAdd(&dx[((n * H + h_in) * W + w_in) * C + c], __ldg(dy + yi));
 #else
-        atomicAdd(&dx[((n * H + h_in) * W + w_in) * C + c], dy[y_idx]);
+        atomicAdd(&dx[((n * H + h_in) * W + w_in) * C + c], dy[yi]);
 #endif
     }
 }
@@ -195,21 +205,25 @@ template <> void NNResizeGrad<float, CUDAContext>(
     float*                  dx,
     CUDAContext*            ctx) {
     auto nthreads = N * C * out_h * out_w;
-    const float scale_h = (float)H / out_h;
-    const float scale_w = (float)W / out_w;
+    auto scale_h = (float)H / (float)out_h;
+    auto scale_w = (float)W / (float)out_w;
     if (data_format == "NCHW") {
-        _NNResizeGrad_NCHW<float>
+        _NNResizeGradNCHW
             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (nthreads, C, H, W, out_h, out_w,
-                scale_h, scale_w, dy, dx);
+                 0, ctx->cuda_stream() >> >(
+            nthreads, C, H, W, out_h, out_w,
+            scale_h, scale_w, dy, dx
+        );
     } else if(data_format == "NHWC") {
-        _NNResizeGrad_NHWC<float> 
+        _NNResizeGradNHWC 
             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (nthreads, C, H, W, out_h, out_w,
-                scale_h, scale_w, dy, dx);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+                 0, ctx->cuda_stream() >> >(
+            nthreads, C, H, W, out_h, out_w,
+            scale_h, scale_w, dy, dx
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
 }  // namespace kernel

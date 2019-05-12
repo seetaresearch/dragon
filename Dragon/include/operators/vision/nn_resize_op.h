@@ -22,48 +22,44 @@ class NNResizeOp final : public Operator<Context> {
  public:
     NNResizeOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          fy(OperatorBase::Arg<float>("fy", -1.f)),
-          fx(OperatorBase::Arg<float>("fx", -1.f)),
-          shape_like_desc(OperatorBase::Arg<string>(
-              "shape_like", "")),
-          data_format(OperatorBase::Arg<string>(
-              "data_format", "NCHW")) {
-        if (data_format == "NCHW") spatial_axis = 2;
-        else if (data_format == "NHWC") spatial_axis = 1;
-        else LOG(FATAL) << "Unknown data format: " << data_format;
-        GET_ARGUMENTS_WITH_DESC(int64_t, dsize);
+          fy_(OpArg<float>("fy", -1.f)),
+          fx_(OpArg<float>("fx", -1.f)),
+          shape_desc_(OpArg<string>(
+              "shape_like", "")) {
+        if (data_format() == "NCHW") axis_ = 2;
+        else if (data_format() == "NHWC") axis_ = 1;
+        else LOG(FATAL) << "Unknown DataFormat: " << data_format();
+        GET_ARGS_WITH_DESC(int64_t, dsize);
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    float fy, fx;
-    string data_format, shape_like_desc;
-    int64_t n, c, h, w, out_h, out_w, spatial_axis;
-    DECLARE_ARGUMENTS_WITH_DESC(int64_t, dsize);
+    float fy_, fx_;
+    string shape_desc_;
+    int64_t n_, c_, h_, w_;
+    int64_t out_h_, out_w_, axis_;
+    DECLARE_ARGS_WITH_DESC(int64_t, dsize);
 };
 
 template <class Context>
 class NNResizeGradientOp final : public Operator<Context> {
  public:
-    NNResizeGradientOp(const OperatorDef& def, Workspace* ws)
-        : Operator<Context>(def, ws),
-          data_format(OperatorBase::Arg<string>(
-              "data_format", "NCHW")) {}
+    SIMPLE_CTOR_DTOR(NNResizeGradientOp);
     USE_OPERATOR_FUNCTIONS;
 
+    void RunImplFloat16();
+
     void RunOnDevice() override;
-    void RunWithFloat16();
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    string data_format;
-    int64_t n, c, h, w, out_h, out_w;
+    int64_t n_, c_, h_, w_, out_h_, out_w_;
 };
 
-DEFINE_ARGUMENTS_WITH_DESC(int64_t, NNResizeOp, dsize);
+DEFINE_ARGS_WITH_DESC(int64_t, NNResizeOp, dsize);
 
 }  // namespace dragon
 

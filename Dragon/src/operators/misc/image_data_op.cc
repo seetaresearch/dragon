@@ -3,46 +3,73 @@
 
 namespace dragon {
 
-template <class Context> template <typename Tx, typename Ty>
-void ImageDataOp<Context>::RunWithType() {
-    auto* Xdata = Input(0).template data<Tx, Context>();
-    auto* Mdata = mean.count() > 0 ?
-        mean.template data<float, Context>() : nullptr;
-    auto* Sdata = std.count() > 0 ?
-        std.template data<float, Context>() : nullptr;
-    auto* Ydata = Output(0)->template mutable_data<Ty, Context>();
+template <class Context>
+template <typename Tx, typename Ty>
+void ImageDataOp<Context>::RunImpl() {
+    auto* mean = mean_.count() == 0 ? nullptr :
+                 mean_.template data<float, Context>();
+    auto* std  = std_.count() == 0 ? nullptr :
+                 std_.template data<float, Context>();
 
-    kernel::ImageData(Output(0)->count(), n, c, h, w,
-        Mdata, Sdata, data_format, Xdata, Ydata, ctx());
+    auto* x = X(0).template data<Tx, Context>();
+    auto* y = Y(0)->template mutable_data<Ty, Context>();
+
+    kernel::ImageData(
+        n_, c_, h_, w_, data_format(),
+        mean, std, x, y, ctx()
+    );
 }
 
 template <class Context>
 void ImageDataOp<Context>::RunOnDevice() {
-    n = Input(0).dim(0), c = Input(0).dim(3);
-    h = Input(0).dim(1), w = Input(0).dim(2);
+    n_ = X(0).dim(0), c_ = X(0).dim(3);
+    h_ = X(0).dim(1), w_ = X(0).dim(2);
 
-    if (data_format == "NCHW") {
-        Output(0)->Reshape(vector<int64_t>({ n, c, h, w }));
-    } else if (data_format == "NHWC") {
-        Output(0)->ReshapeLike(Input(0));
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+    if (data_format() == "NCHW") {
+        Y(0)->Reshape({ n_, c_, h_, w_ });
+    } else if (data_format() == "NHWC") {
+        Y(0)->ReshapeLike(X(0));
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format();
+    }
 
-    if (XIsType(Input(0), float)) {
-        if (dtype == "float32") RunWithType<float, float>();
-        else if (dtype == "float16") RunWithType<float, float16>();
-        else LOG(FATAL) << "Unsupported output type: " << dtype;
-    } else if (XIsType(Input(0), uint8_t)) {
-        if (dtype == "float32") RunWithType<uint8_t, float>();
-        else if (dtype == "float16") RunWithType<uint8_t, float16>();
-        else LOG(FATAL) << "Unsupported output type: " << dtype;
-    } else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "uint8" });
+    if (XIsType(X(0), float)) {
+        if (dtype() == "float32") {
+            RunImpl<float, float>();
+        } else if (dtype() == "float16") {
+            RunImpl<float, float16>();
+        } else {
+            LOG(FATAL) << DTypeString(dtype(),
+                { "float32", "float16" }
+            );
+        }
+    } else if (XIsType(X(0), uint8_t)) {
+        if (dtype() == "float32") {
+            RunImpl<uint8_t, float>();
+        } else if (dtype() == "float16") {
+            RunImpl<uint8_t, float16>();
+        } else {
+            LOG(FATAL) << DTypeString(dtype(),
+                { "float32", "float16" }
+            );
+        }
+    } else {
+        LOG(FATAL) << DTypeString(X(0),
+            { "float32", "uint8" }
+        );
+    }
 }
 
 DEPLOY_CPU(ImageData);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(ImageData);
 #endif
-OPERATOR_SCHEMA(ImageData).NumInputs(1).NumOutputs(1);
+
+OPERATOR_SCHEMA(ImageData)
+     /* X */
+    .NumInputs(1)
+     /* Y */
+    .NumOutputs(1);
 
 NO_GRADIENT(ImageData);
 

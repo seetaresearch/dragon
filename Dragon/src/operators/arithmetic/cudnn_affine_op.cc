@@ -2,6 +2,7 @@
 
 #include "core/workspace.h"
 #include "utils/filler.h"
+#include "utils/op_kernel.h"
 #include "utils/math_functions.h"
 #include "operators/arithmetic/affine_op.h"
 
@@ -9,204 +10,259 @@
 
 namespace dragon {
 
-#define DETERMINE_RUNTIME_ARGUMENTS(X) \
-    axis = OperatorBase::Arg<int64_t>("axis", 1); \
-    num_axes = OperatorBase::Arg<int64_t>("num_axes", 1); \
-    if (axis < 0) axis += X.ndim(); \
-    if (num_axes < 0) num_axes = X.ndim() - axis; \
-    else if (num_axes == 0) num_axes = 1; \
-    CHECK(axis >= 0 && axis + num_axes <= X.ndim())
+#define DETERMINE_RUNTIME_ARGS(X) \
+    axis_ = OpArg<int64_t>("axis", 1); \
+    num_axes_ = OpArg<int64_t>("num_axes", 1); \
+    if (axis_ < 0) axis_ += X.ndim(); \
+    if (num_axes_ < 0) num_axes_ = X.ndim() - axis_; \
+    else if (num_axes_ == 0) num_axes_ = 1; \
+    CHECK(axis_ >= 0 && axis_ + num_axes_ <= X.ndim())
 
 template <class Context> template <typename T>
 void CuDNNAffineOpBase<Context>::ResetDesc(const Tensor& X) {
     // Determine the runtime arguments
-    DETERMINE_RUNTIME_ARGUMENTS(X);
+    DETERMINE_RUNTIME_ARGS(X);
     // Determine the input desc
-    vector<int64_t> input_dims = X.dims();
+    vec64_t input_dims = X.dims();
     // CuDNN requires ndimensions range from [4, 5]
     if (input_dims.size() < 4) input_dims.resize(4, 1);
     else if (input_dims.size() > 5)
         LOG(FATAL) << "CuDNN Affine the dimensions up to 5.";
-    cudnnSetTensorDesc<T>(&input_desc, input_dims);
+    CuDNNSetTensorDesc<T>(&input_desc_, input_dims);
     // Determine the scale desc
-    vector<int64_t> param_dims(input_dims.size(), 1);
-    for (int i = axis; i < axis + num_axes; i++)
+    vec64_t param_dims(input_dims.size(), 1);
+    for (int i = axis_; i < axis_ + num_axes_; i++)
         param_dims[i] = input_dims[i];
-    cudnnSetTensorDesc<T>(&param_desc, param_dims);
+    CuDNNSetTensorDesc<T>(&param_desc_, param_dims);
 }
 
-template <class Context> template <typename DT, typename CT>
-void CuDNNAffineOp<Context>::RunWithType() {
-    this->template ResetDesc<DT>(Input(0));
-    const auto& dim_start = Input(0).dims().begin() + axis;
-    const auto& dim_end = dim_start + num_axes;
-    vector<int64_t> param_dims(dim_start, dim_end);
-    TENSOR_FILL_WITH_TYPE(Input(1), param_dims, DT);
-    auto* Xdata = Input(0).template data<DT, Context>();
-    auto* Adata = Input(1).template data<DT, Context>();
-    auto* Ydata = Output(0)->template mutable_data<DT, Context>();
+template <class Context>
+template <typename DT, typename CT>
+void CuDNNAffineOp<Context>::RunImpl() {
+    this->template ResetDesc<DT>(X(0));
+    const auto& dim_start = X(0).dims().begin() + axis_;
+    const auto& dim_end = dim_start + num_axes_;
+    vec64_t param_dims(dim_start, dim_end);
+    TENSOR_FILL_WITH_TYPE(X(1), param_dims, DT);
+
+    auto* x = X(0).template data<DT, Context>();
+    auto* alpha = X(1).template data<DT, Context>();
+    auto* y = Y(0)->template mutable_data<DT, Context>();
 
     // Y = alpha * X
     CUDNN_CHECK(cudnnSetOpTensorDescriptor(
-        mul_desc, CUDNN_OP_TENSOR_MUL,
-        CUDNNType<CT>::type, CUDNN_PROPAGATE_NAN));
+        mul_op_,
+        CUDNN_OP_TENSOR_MUL,
+        CuDNNType<CT>::type,
+        CUDNN_PROPAGATE_NAN
+    ));
     CUDNN_CHECK(cudnnOpTensor(
-        ctx()->cudnn_handle(), mul_desc,
-        CUDNNType<DT>::one, input_desc, Xdata,
-        CUDNNType<DT>::one, param_desc, Adata,
-        CUDNNType<DT>::zero, input_desc, Ydata));
+        ctx()->cudnn_handle(),
+        mul_op_,
+        CuDNNType<DT>::one,
+        input_desc_, x,
+        CuDNNType<DT>::one,
+        param_desc_, alpha,
+        CuDNNType<DT>::zero,
+        input_desc_, y
+    ));
 
     // Y += beta
-    if (InputSize() > 2) {
-        TENSOR_FILL_WITH_TYPE(Input(2), param_dims, DT);
-        auto* Bdata = Input(2).template data<DT, Context>();
+    if (XSize() > 2) {
+        TENSOR_FILL_WITH_TYPE(X(2), param_dims, DT);
+        auto* beta = X(2).template data<DT, Context>();
         CUDNN_CHECK(cudnnSetOpTensorDescriptor(
-            add_desc, CUDNN_OP_TENSOR_ADD,
-            CUDNNType<CT>::type, CUDNN_PROPAGATE_NAN));
+            add_op_,
+            CUDNN_OP_TENSOR_ADD,
+            CuDNNType<CT>::type,
+            CUDNN_PROPAGATE_NAN
+        ));
         CUDNN_CHECK(cudnnOpTensor(
-            ctx()->cudnn_handle(), add_desc,
-            CUDNNType<DT>::one, input_desc, Ydata,
-            CUDNNType<DT>::one, param_desc, Bdata,
-            CUDNNType<DT>::zero, input_desc, Ydata));
+            ctx()->cudnn_handle(),
+            add_op_,
+            CuDNNType<DT>::one,
+            input_desc_, y,
+            CuDNNType<DT>::one,
+            param_desc_, beta,
+            CuDNNType<DT>::zero,
+            input_desc_, y
+        ));
     }
 }
 
 template <class Context>
 void CuDNNAffineOp<Context>::RunOnDevice() {
-    Output(0)->ReshapeLike(Input(0));
+    Y(0)->ReshapeLike(X(0));
 
-    if (XIsType(Input(0), float)) RunWithType<float, float>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16, float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+    if (XIsType(X(0), float)) {
+        RunImpl<float, float>();
+    } else if (XIsType(X(0), float16)) {
+        RunImpl<float16, float>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0),
+            { "float32", "float16" }
+        );
+    }
 }
 
-DEPLOY_CUDNN(Affine);
-
 template <class Context> template <typename DT, typename CT>
-void CuDNNAffineGradientOp<Context>::RunWithType() {
-    this->template ResetDesc<DT>(Input(-1));
-    outer_dim = Input(-1).count(0, axis);
-    inner_dim = Input(-1).count(axis + num_axes);
-    scale_dim = Input(1).count();
-    dim = scale_dim * inner_dim;
-    sum_dim = std::max(outer_dim, inner_dim);
-    Output(0)->ReshapeLike(Input(-1));
+void CuDNNAffineGradientOp<Context>::RunImpl() {
+    this->template ResetDesc<DT>(X(-1));
+    scale_dim_ = X(1).count();
+    outer_dim_ = X(-1).count(0, axis_);
+    inner_dim_ = X(-1).count(axis_ + num_axes_);
+    dim_ = scale_dim_ * inner_dim_;
+    reduce_dim_ = std::max(outer_dim_, inner_dim_);
 
-    auto* dYdata = Input(-1).template mutable_data<DT, Context>();
-    auto* Adata = Input(1).template data<DT, Context>();
-    auto* dXdata = Output(0)->template mutable_data<DT, Context>();
+    Y(0)->ReshapeLike(X(-1));
+
+    auto* alpha = X(1).template data<DT, Context>();
+    auto* dy = X(-1).template mutable_data<DT, Context>();
+    auto* dx = Y(0)->template mutable_data<DT, Context>();
 
     CUDNN_CHECK(cudnnSetOpTensorDescriptor(
-        mul_desc, CUDNN_OP_TENSOR_MUL,
-        CUDNNType<CT>::type, CUDNN_PROPAGATE_NAN));
+        mul_op_,
+        CUDNN_OP_TENSOR_MUL,
+        CuDNNType<CT>::type,
+        CUDNN_PROPAGATE_NAN
+    ));
 
     // dA = X * dY
-    if (Output(1)->name() != "NULL") {
-        Output(1)->ReshapeLike(Input(1));
-        auto* Xdata = Input(0).template data<DT, Context>();
-        auto* dAdata = Output(1)->template mutable_data<DT, Context>();
+    if (Y(1)->name() != "NULL") {
+        Y(1)->ReshapeLike(X(1));
+        auto* x = X(0).template data<DT, Context>();
+        auto* dalpha = Y(1)->template mutable_data<DT, Context>();
         // Eltwise
-        if (Input(0).count() == Input(1).count()) {
-            math::Mul(Output(0)->count(), dYdata, Xdata, dAdata, ctx());
+        if (X(0).count() == X(1).count()) {
+            math::Mul(
+                Y(0)->count(),
+                dy, x,
+                dalpha, ctx()
+            );
         } else {
-            math::Mul(Output(0)->count(), dYdata, Xdata, dXdata, ctx());
+            math::Mul(
+                Y(0)->count(),
+                dy, x,
+                dx, ctx()
+            );
 #if CUDNN_VERSION_MIN(6, 0, 0)
-            ComputeScaleGradient<DT, CT>(dXdata, dAdata);
+            /*!
+             *  ReduceSum is faster and cleaner
+             *  CuDNNReduce<DT, CT>(dx, dalpha);
+             */
+            Reduce(dx, dalpha);
 #else
-            ComputeScaleGradient_v2<DT>(dXdata, dAdata);
+            Reduce(dx, dalpha);
 #endif
         }
     }
 
     // dB = dY
-    if (Output(2)->name() != "NULL") {
-        Output(2)->ReshapeLike(Input(1));
-        auto* dBdata = Output(2)->template mutable_data<DT, Context>();
+    if (Y(2)->name() != "NULL") {
+        Y(2)->ReshapeLike(X(1));
+        auto* dbeta = Y(2)->template mutable_data<DT, Context>();
         // Eltwise
-        if (Input(-1).count() == Input(1).count()) {
+        if (X(-1).count() == X(1).count()) {
             ctx()->template Copy<DT, Context, Context>(
-                Output(2)->count(), dBdata, dYdata);
+                Y(2)->count(), dbeta, dy);
         } else {
 #if CUDNN_VERSION_MIN(6, 0, 0)
-            ComputeScaleGradient<DT, CT>(dYdata, dBdata);
+            /*!
+             *  ReduceSum is faster and cleaner
+             *  CuDNNReduce<DT, CT>(dy, dbeta);
+             */
+            Reduce(dy, dbeta);
 #else
-            ComputeScaleGradient_v2<DT>(dYdata, dBdata);
+            Reduce(dy, dbeta);
 #endif
         }
     }
 
     // dX = alpha * dY
-    if (Output(0)->name() != "NULL") {
+    if (Y(0)->name() != "NULL") {
         CUDNN_CHECK(cudnnOpTensor(
-            ctx()->cudnn_handle(), mul_desc,
-            CUDNNType<DT>::one, input_desc, dYdata,
-            CUDNNType<DT>::one, param_desc, Adata,
-            CUDNNType<DT>::zero, input_desc, dXdata));
+            ctx()->cudnn_handle(),
+            mul_op_,
+            CuDNNType<DT>::one,
+            input_desc_, dy,
+            CuDNNType<DT>::one,
+            param_desc_, alpha,
+            CuDNNType<DT>::zero,
+            input_desc_, dx
+        ));
     }
 }
 
 template <class Context> template <typename DT, typename CT>
-void CuDNNAffineGradientOp<Context>::ComputeScaleGradient(
-    DT*                     dYxX,
-    DT*                     dA) {
+void CuDNNAffineGradientOp<Context>::CuDNNReduce(
+    DT*                     x,
+    DT*                     y) {
 #if CUDNN_VERSION_MIN(6, 0, 0)
     CUDNN_CHECK(cudnnSetReduceTensorDescriptor(
-        reduce_desc, CUDNN_REDUCE_TENSOR_ADD,
-        CUDNNType<CT>::type, CUDNN_PROPAGATE_NAN,
+        reduce_desc_,
+        CUDNN_REDUCE_TENSOR_ADD,
+        CuDNNType<CT>::type,
+        CUDNN_PROPAGATE_NAN,
         CUDNN_REDUCE_TENSOR_NO_INDICES,
-        CUDNN_32BIT_INDICES));
+        CUDNN_32BIT_INDICES
+    ));
     size_t workspace_size = 0;
     CUDNN_CHECK(cudnnGetReductionWorkspaceSize(
-        ctx()->cudnn_handle(), reduce_desc,
-            input_desc, param_desc, &workspace_size));
-    auto* WSdata = ws()->template caches<Context>({ workspace_size })[0];;
+        ctx()->cudnn_handle(),
+        reduce_desc_,
+        input_desc_,
+        param_desc_,
+        &workspace_size
+    ));
+    auto* scratch = ws()->template data
+        <Context>({ workspace_size })[0];
     CUDNN_CHECK(cudnnReduceTensor(
-        ctx()->cudnn_handle(), reduce_desc,
-        nullptr, 0, WSdata, workspace_size,
-        CUDNNType<DT>::one, input_desc, dYxX,
-        CUDNNType<DT>::zero, param_desc, dA));
+        ctx()->cudnn_handle(),
+        reduce_desc_,
+        nullptr, 0,
+        scratch, workspace_size,
+        CuDNNType<DT>::one,
+        input_desc_, x,
+        CuDNNType<DT>::zero,
+        param_desc_, y
+    ));
 #endif
 }
 
 template <class Context> template <typename T>
-void CuDNNAffineGradientOp<Context>::ComputeScaleGradient_v2(
-    T*                      dYxX,
-    T*                      dA) {
-    DECLARE_MULTIPLIER(multiplier, sum_dim);
-    T* SRes_data = nullptr;
-    // Reduce inner dimensions
-    if (inner_dim == 1) {
-        SRes_data = dYxX;
-    } else {
-        SRes_data = (outer_dim == 1) ?
-            dA : ws()->template caches<T, Context>(
-                { outer_dim * scale_dim })[0];
-        math::Gemv(
-            CblasNoTrans,
-            outer_dim * scale_dim, inner_dim,
-            1.f, dYxX, multiplier,
-            0.f, SRes_data, ctx());
-    }
-    // Reduce outer dimensions
-    if (outer_dim != 1) {
-        math::Gemv(
-            CblasTrans,
-            outer_dim, scale_dim,
-            1.f, SRes_data, multiplier,
-            0.f, dA, ctx());
-    }
+void CuDNNAffineGradientOp<Context>::Reduce(
+    T*                      x,
+    T*                      y) {
+    vec32_t dims = {
+        (int)outer_dim_,
+        (int)scale_dim_,
+        (int)inner_dim_,
+    }, axes = { 0, 2 };
+    kernel::ReduceSum(
+        3, dims.data(),
+        2, axes.data(),
+        1.f, x,
+        y, ctx()
+    );
 }
 
 template <class Context>
 void CuDNNAffineGradientOp<Context>::RunOnDevice() {
-    if (XIsType(Input(-1), float)) RunWithType<float, float>();
-    else if (XIsType(Input(-1), float16)) RunWithType<float16, float>();
-    else LOG(FATAL) << DTypeHelper(Input(-1), { "float32", "float16" });
+    if (XIsType(X(-1), float)) {
+        RunImpl<float, float>();
+    } else if (XIsType(X(-1), float16)) {
+        RunImpl<float16, float>();
+    } else {
+        LOG(FATAL) << DTypeString(X(-1),
+            { "float32", "float16" }
+        );
+    }
 }
 
+DEPLOY_CUDNN(Affine);
 DEPLOY_CUDNN(AffineGradient);
 
-#undef DETERMINE_RUNTIME_ARGUMENTS
+#undef DETERMINE_RUNTIME_ARGS
 
 }  // namespace dragon
 

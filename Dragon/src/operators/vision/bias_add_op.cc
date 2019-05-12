@@ -7,117 +7,150 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void BiasAddOp<Context>::RunWithType() {
-    TENSOR_FILL(Input(1), vector<int64_t>({ dim }));
-    DECLARE_MULTIPLIER(multiplier, inner_dim);
-
-    auto* Bdata = Input(1).template data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+void BiasAddOp<Context>::RunImpl() {
+    DECLARE_MULTIPLIER(multiplier, inner_dim_);
+    TENSOR_FILL(X(1), vec64_t({ axis_dim_ }));
 
     // Copy X to Y firstly if necessary
-    Output(0)->template CopyFrom<Context>(Input(0), ctx());
+    Y(0)->CopyFrom(X(0), ctx());
 
-    kernel::BiasAdd(outer_dim, dim, inner_dim,
-        data_format, Bdata, multiplier, Ydata, ctx());
+    auto* b = X(1).template data<T, Context>();
+    auto* y = Y(0)->template mutable_data<T, Context>();
+
+    kernel::BiasAdd(
+        outer_dim_,
+        axis_dim_,
+        inner_dim_,
+        data_format(),
+        b, multiplier,
+        y, ctx()
+    );
 }
 
 template <class Context>
 void BiasAddOp<Context>::RunOnDevice() {
-    if (data_format == "NCHW") {
-        outer_dim = Input(0).dim(0);
-        dim = Input(0).dim(1);
-        inner_dim = Input(0).count(2);
-    } else if (data_format == "NHWC") {
-        outer_dim = Input(0).dim(0);
-        dim = Input(0).dim(-1);
-        inner_dim = Input(0).count(1) / dim;
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+    if (data_format() == "NCHW") {
+        outer_dim_ = X(0).dim(0);
+        axis_dim_ = X(0).dim(1);
+        inner_dim_ = X(0).count(2);
+    } else if (data_format() == "NHWC") {
+        outer_dim_ = X(0).dim(0);
+        axis_dim_ = X(0).dim(-1);
+        inner_dim_ = X(0).count(1) / axis_dim_;
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format();
+    }
 
-    Output(0)->ReshapeLike(Input(0));
+    Y(0)->ReshapeLike(X(0));
 
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else {
+        LOG(FATAL) << DTypeString(
+            X(0), { "float32" }
+        );
+    }
+}
+
+template <class Context> template <typename T>
+void BiasAddGradientOp<Context>::RunImpl() {
+    if (Y(1)->name() != "NULL") {
+        vec32_t dims, axes;
+        if (data_format() == "NCHW") {
+            dims = {
+                (int)outer_dim_,
+                (int)axis_dim_,
+                (int)inner_dim_,
+            }, axes = { 0, 2 };
+        } else if (data_format() == "NHWC") {
+            dims = {
+                (int)outer_dim_,
+                (int)inner_dim_,
+                (int)axis_dim_,
+            }, axes = { 0, 1 };
+        }
+        kernel::ReduceSum(
+            3, dims.data(),
+            2, axes.data(),
+            1.f,
+            X(-1).template data<T, Context>(),
+            Y(1)->template mutable_data<T, Context>(),
+            ctx()
+        );
+    }
+
+    if (Y(0)->name() != "NULL" &&
+        Y(0)->name() != X(-1).name()) {
+        Y(0)->ReshapeLike(X(-1))
+            ->CopyFrom(X(-1), ctx());
+    }
+}
+
+template <class Context>
+void BiasAddGradientOp<Context>::RunOnDevice() {
+    if (data_format() == "NCHW") {
+        outer_dim_ = X(-1).dim(0);
+        axis_dim_ = X(-1).dim(1);
+        inner_dim_ = X(-1).count(2);
+    } else if (data_format() == "NHWC") {
+        outer_dim_ = X(-1).dim(0);
+        axis_dim_ = X(-1).dim(-1);
+        inner_dim_ = X(-1).count(1) / axis_dim_;
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format();
+    }
+
+    Y(1)->ReshapeLike(X(0));
+
+    if (XIsType(X(-1), float)) {
+        RunImpl<float>();
+    } else {
+        LOG(FATAL) << DTypeString(
+            X(-1), { "float32" }
+        );
+    }
 }
 
 DEPLOY_CPU(BiasAdd);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(BiasAdd);
 #endif
-OPERATOR_SCHEMA(BiasAdd)
-    .NumInputs(2).NumOutputs(1)
-    .Inplace({ { 0, 0 } });
-
-template <class Context> template <typename T>
-void BiasAddGradientOp<Context>::RunWithType() {
-    if (Output(1)->name() != "NULL") {
-        DECLARE_MULTIPLIER(multiplier, inner_dim);
-        auto* dYdata = Input(-1).template mutable_data<T, Context>();
-        auto* dBias = Output(1)->template mutable_data<T, Context>();
-        T* SRes_data = nullptr;
-        // Reduce inner dimensions
-        if (inner_dim == 1) {
-            SRes_data = dYdata;
-        } else {
-            SRes_data = (outer_dim == 1) ?
-                dBias : ws()->template caches<T, Context>(
-                    { outer_dim * dim })[0];
-            math::Gemv(
-                CblasNoTrans, outer_dim * dim, inner_dim,
-                    1.f, dYdata, multiplier,
-                        0.f, SRes_data, ctx());
-        }
-        // Reduce outer dimensions
-        if (outer_dim != 1) {
-            math::Gemv(
-                CblasTrans, outer_dim, dim,
-                    1.f, SRes_data, multiplier,
-                        0.f, dBias, ctx());
-        }
-    }
-
-    if (Output(0)->name() != "NULL" &&
-        Output(0)->name() != Input(-1).name()) {
-        Output(0)->ReshapeLike(Input(-1));
-        Output(0)->template CopyFrom<Context>(Input(-1), ctx());
-    }
-}
-
-template <class Context>
-void BiasAddGradientOp<Context>::RunOnDevice() {
-    if (data_format == "NCHW") {
-        outer_dim = Input(-1).dim(0);
-        dim = Input(-1).dim(1);
-        inner_dim = Input(-1).count(2);
-    } else if (data_format == "NHWC") {
-        outer_dim = Input(-1).dim(0);
-        dim = Input(-1).dim(-1);
-        inner_dim = Input(-1).count(1) / dim;
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
-
-    Output(1)->ReshapeLike(Input(0));
-
-    if (XIsType(Input(-1), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(-1), { "float32" });
-}
 
 DEPLOY_CPU(BiasAddGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(BiasAddGradient);
 #endif
 
+OPERATOR_SCHEMA(BiasAdd)
+     /* X, B */
+    .NumInputs(2)
+     /* Y */
+    .NumOutputs(1)
+     /* X => Y */
+    .Inplace({ { 0, 0 } });
+
 OPERATOR_SCHEMA(BiasAddGradient)
-    .NumInputs(2).NumOutputs(2)
+     /* B, dY */
+    .NumInputs(2)
+     /* dX, dB */
+    .NumOutputs(2)
+     /* dY => dX */
     .Inplace({ { 1, 0 } });
+
+namespace {
 
 class GetBiasAddGradient final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetBiasAddGradient);
-    vector<OperatorDef> MakeDefs() override {
+    vector<OperatorDef> MakeDef() override {
         return SingleDef(def.type() + "Gradient", "",
             vector<string>({ I(1), GO(0) }),
-            vector<string>({ GI(0), GI(1) }));
+            vector<string>({ GI(0), GI(1) })
+        );
     }
 };
+
+}  // namespace
 
 REGISTER_GRADIENT(BiasAdd, GetBiasAddGradient);
 

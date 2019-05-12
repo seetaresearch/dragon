@@ -9,91 +9,110 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Dropout <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template<typename T>
 __global__ void _Dropout(
-    const int               count,
+    const int               nthreads,
     const uint32_t          thresh,
-    const float             scale,
+    const T                 scale,
     const T*                x,
     const uint32_t*         mask32,
     uint8_t*                mask8,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        mask8[idx] = (mask32[idx] > thresh);
-        y[idx] = x[idx] * mask8[idx] * scale;
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+        const T m = mask8[i] =
+            mask32[i] > thresh;
+        y[i] = x[i] * m * scale;
     }
 }
 
 template<> void Dropout<float, CUDAContext>(
     const int               count,
-    float                   prob,
-    float                   scale,
+    const float             prob,
+    const float             scale,
     const float*            x,
     uint32_t*               mask32,
     uint8_t*                mask8,
     float*                  y,
     CUDAContext*            ctx) {
-    math::RandomUniform<uint32_t, CUDAContext>(
-        count, float(0), float(UINT_MAX), mask32, ctx);
-    auto thresh = static_cast<uint32_t>(UINT_MAX * prob);
-    _Dropout<float>
+    auto thresh = (uint32_t)(UINT_MAX * prob);
+    math::RandomUniform(
+        count,
+        0.f, (float)UINT_MAX,
+        mask32, ctx
+    );
+    _Dropout
         << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, thresh, scale, x, mask32, mask8, y);
+             0, ctx->cuda_stream() >> >(
+        count,
+        thresh,
+        scale,
+        x, mask32,
+        mask8, y
+    );
 }
 
-/*! Dropout <T = float16, Device = CUDA> */
+/* <T = float16, Device = CUDA> */
 
-__global__ void _DropoutHalf(
-    const int               count,
+template<> __global__ void _Dropout<half>(
+    const int               nthreads,
     const uint32_t          thresh,
     const half              scale,
     const half*             x,
     const uint32_t*         mask32,
     uint8_t*                mask8,
     half*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 530
-        mask8[idx] = (mask32[idx] > thresh);
-        y[idx] = __hmul(__hmul(x[idx], scale),
-            __float2half((float)mask8[idx]));
+        const float m = mask8[i] =
+            mask32[i] > thresh;
+        y[i] = __hmul(
+            __hmul(x[i], scale),
+            __float2half(m)
+        );
 #endif
     }
 }
 
 template<> void Dropout<float16, CUDAContext>(
     const int               count,
-    float                   prob,
-    float                   scale,
+    const float             prob,
+    const float             scale,
     const float16*          x,
     uint32_t*               mask32,
     uint8_t*                mask8,
     float16*                y,
     CUDAContext*            ctx) {
-    math::RandomUniform<uint32_t, CUDAContext>(
-        count, float(0), float(UINT_MAX), mask32, ctx);
-    auto thresh = static_cast<uint32_t>(UINT_MAX * prob);
-    _DropoutHalf
+    auto thresh = (uint32_t)(UINT_MAX * prob);
+    math::RandomUniform(
+        count,
+        0.f, (float)UINT_MAX,
+        mask32, ctx
+    );
+    _Dropout
         << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, thresh, cast::to<half>(scale),
-            reinterpret_cast<const half*>(x),
-                mask32, mask8, reinterpret_cast<half*>(y));
+             0, ctx->cuda_stream() >> >(
+        count,
+        thresh,
+        cast::to<half>(scale),
+        reinterpret_cast<const half*>(x),
+        mask32, mask8,
+        reinterpret_cast<half*>(y)
+    );
 }
 
-/*! ApplyMask <Tx = float32, Tm = uint8, Device = CUDA> */
+/* <Tx = float32, Tm = uint8, Device = CUDA> */
 
 template <typename Tx, typename Tm>
 __global__ void _ApplyMask(
-    const int               count,
+    const int               nthreads,
     const float             scale,
     const Tx*               x,
     const Tm*               mask,
     Tx*                     y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        y[idx] = x[idx] * mask[idx] * scale;
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+        y[i] = x[i] * (Tx)mask[i] * scale;
     }
 }
 
@@ -104,25 +123,28 @@ template <> void ApplyMask<float, uint8_t, CUDAContext>(
     const uint8_t*          mask,
     float*                  y,
     CUDAContext*            ctx) {
-    _ApplyMask<float, uint8_t>
+    _ApplyMask
         << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, scale, x, mask, y);
+             0, ctx->cuda_stream() >> >(
+        count, scale, x, mask, y
+    );
 }
 
-/*! ApplyMask <Tx = float16, Tm = uint8, Device = CUDA> */
+/* <Tx = float16, Tm = uint8, Device = CUDA> */
 
 template <typename Tm>
 __global__ void _ApplyMaskHalf(
-    const int               count,
+    const int               nthreads,
     const half              scale,
     const half*             x,
     const Tm*               mask,
     half*                   y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 530
-        y[idx] = __hmul(__hmul(x[idx], scale),
-            __float2half((float)mask[idx]));
+        y[i] = __hmul(
+            __hmul(x[i], scale),
+            __float2half((float)mask[i])
+        );
 #endif
     }
 }
@@ -134,12 +156,15 @@ template <> void ApplyMask<float16, uint8_t, CUDAContext>(
     const uint8_t*          mask,
     float16*                y,
     CUDAContext*            ctx) {
-    _ApplyMaskHalf<uint8_t>
+    _ApplyMaskHalf
         << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, cast::to<half>(scale),
-            reinterpret_cast<const half*>(x),
-                 mask, reinterpret_cast<half*>(y));
+             0, ctx->cuda_stream() >> >(
+        count,
+        cast::to<half>(scale),
+        reinterpret_cast<const half*>(x),
+        mask,
+        reinterpret_cast<half*>(y)
+    );
 }
 
 }  // namespace kernel

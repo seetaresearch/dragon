@@ -62,10 +62,10 @@ class NLLLoss(_WeightedLoss):
         super(NLLLoss, self).__init__(
             weight, size_average, reduce, reduction)
         self.ignore_index = ignore_index
-        self.normalization = {
+        self.reduction_v2 = {
             'elementwise_mean': 'VALID',
-            'sum': 'None',
-            'none': 'UNIT'}[self.reduction]
+            'sum': 'SUM',
+            'none': 'NONE'}[self.reduction]
         self.register_op()
 
     def register_op(self):
@@ -73,7 +73,7 @@ class NLLLoss(_WeightedLoss):
             'op_type': 'NLLLoss',
             'arguments': {
                 'axis': 1,
-                'normalization': self.normalization,
+                'reduction': self.reduction_v2,
                 'ignore_labels': [] if self.ignore_index is None else [self.ignore_index],
             },
         }
@@ -99,17 +99,17 @@ class BCEWithLogitsLoss(_WeightedLoss):
         if pos_weight is not None:
             raise NotImplementedError(
                 'Positive weight has been not implemented yet.')
-        self.normalization = {
+        self.reduction_v2 = {
             'elementwise_mean': 'VALID',
-            'sum': 'None',
-            'none': 'UNIT'}[self.reduction]
+            'sum': 'SUM',
+            'none': 'NONE'}[self.reduction]
         self.register_op()
 
     def register_op(self):
         self.op_meta = {
             'op_type': 'SigmoidCrossEntropy',
             'arguments': {
-                'normalization': self.normalization,
+                'reduction': self.reduction_v2,
             },
         }
 
@@ -134,10 +134,10 @@ class SCEWithLogitsLoss(_WeightedLoss):
         if pos_weight is not None:
             raise NotImplementedError(
                 'Positive weight has been not implemented yet.')
-        self.normalization = {
+        self.reduction_v2 = {
             'elementwise_mean': 'VALID',
-            'sum': 'None',
-            'none': 'UNIT'}[self.reduction]
+            'sum': 'SUM',
+            'none': 'NONE'}[self.reduction]
         self.register_op()
 
     def register_op(self):
@@ -145,7 +145,7 @@ class SCEWithLogitsLoss(_WeightedLoss):
             'op_type': 'SoftmaxCrossEntropy',
             'arguments': {
                 'axis': 1,
-                'normalization': self.normalization,
+                'reduction': self.reduction_v2,
             },
         }
 
@@ -168,10 +168,10 @@ class CrossEntropyLoss(_WeightedLoss):
         super(CrossEntropyLoss, self).__init__(
             weight, size_average, reduce, reduction)
         self.ignore_index = ignore_index
-        self.normalization = {
+        self.reduction_v2 = {
             'elementwise_mean': 'VALID',
-            'sum': 'None',
-            'none': 'UNIT'}[self.reduction]
+            'sum': 'SUM',
+            'none': 'NONE'}[self.reduction]
         self.register_op()
 
     def register_op(self):
@@ -179,7 +179,7 @@ class CrossEntropyLoss(_WeightedLoss):
             'op_type': 'SparseSoftmaxCrossEntropy',
             'arguments': {
                 'axis': 1,
-                'normalization': self.normalization,
+                'reduction': self.reduction_v2,
                 'ignore_labels': [] if self.ignore_index is None else [self.ignore_index],
             },
         }
@@ -199,16 +199,16 @@ class L1Loss(_Loss):
         reduction='elementwise_mean',
     ):
         super(L1Loss, self).__init__(size_average, reduce, reduction)
-        self.normalization = {
+        self.reduction_v2 = {
             'elementwise_mean': 'BATCH_SIZE',
-            'sum': 'None'}[self.reduction]
+            'sum': 'SUM'}[self.reduction]
         self.register_op()
 
     def register_op(self):
         self.op_meta = {
             'op_type': 'L1Loss',
             'arguments': {
-                'normalization': self.normalization,
+                'reduction': self.reduction_v2,
             },
         }
 
@@ -227,16 +227,16 @@ class MSELoss(_Loss):
         reduction='elementwise_mean',
     ):
         super(MSELoss, self).__init__(size_average, reduce, reduction)
-        self.normalization = {
+        self.reduction_v2 = {
             'elementwise_mean': 'BATCH_SIZE',
-            'sum': 'None'}[self.reduction]
+            'sum': 'SUM'}[self.reduction]
         self.register_op()
 
     def register_op(self):
         self.op_meta = {
             'op_type': 'L2Loss',
             'arguments': {
-                'normalization': self.normalization,
+                'reduction': self.reduction_v2,
                 'scale': 2., # We computes the 0.5 * (x - t) ** 2
             },
         }
@@ -257,9 +257,9 @@ class SmoothL1Loss(_Loss):
         reduction='elementwise_mean',
     ):
         super(SmoothL1Loss, self).__init__(size_average, reduce, reduction)
-        self.normalization = {
+        self.reduction_v2 = {
             'elementwise_mean': 'BATCH_SIZE',
-            'sum': 'None'}[self.reduction]
+            'sum': 'SUM'}[self.reduction]
         self.beta = beta
         self.register_op()
 
@@ -268,7 +268,7 @@ class SmoothL1Loss(_Loss):
             'op_type': 'SmoothL1Loss',
             'arguments': {
                 'beta': self.beta,
-                'normalization': self.normalization,
+                'reduction': self.reduction_v2,
             },
         }
 
@@ -297,10 +297,10 @@ class SigmoidFocalLoss(_WeightedLoss):
             weight, size_average, reduce, reduction)
         self.alpha, self.gamma, self.neg_id = alpha, gamma, neg_id
         self.ignore_index = ignore_index
-        self.normalization = {
+        self.reduction_v2 = {
             'elementwise_mean': 'VALID',
-            'sum': 'None',
-            'none': 'UNIT'}[self.reduction]
+            'sum': 'SUM',
+            'none': 'NONE'}[self.reduction]
         self.register_op()
 
     def register_op(self):
@@ -311,7 +311,7 @@ class SigmoidFocalLoss(_WeightedLoss):
                 'alpha': self.alpha,
                 'gamma': self.gamma,
                 'neg_id': self.neg_id,
-                'normalization': self.normalization,
+                'reduction': self.reduction_v2,
                 'ignore_labels': [] if self.ignore_index is None else [self.ignore_index],
             },
         }
@@ -339,10 +339,10 @@ class SoftmaxFocalLoss(_WeightedLoss):
             weight, size_average, reduce, reduction)
         self.alpha, self.gamma, self.neg_id = alpha, gamma, neg_id
         self.ignore_index = ignore_index
-        self.normalization = {
+        self.reduction_v2 = {
             'elementwise_mean': 'VALID',
-            'sum': 'None',
-            'none': 'UNIT'}[self.reduction]
+            'sum': 'SUM',
+            'none': 'NONE'}[self.reduction]
         self.register_op()
 
     def register_op(self):
@@ -353,7 +353,7 @@ class SoftmaxFocalLoss(_WeightedLoss):
                 'alpha': self.alpha,
                 'gamma': self.gamma,
                 'neg_id': self.neg_id,
-                'normalization': self.normalization,
+                'reduction': self.reduction_v2,
                 'ignore_labels': [] if self.ignore_index is None else [self.ignore_index],
             },
         }

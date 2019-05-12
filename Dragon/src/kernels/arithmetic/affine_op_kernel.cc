@@ -7,12 +7,12 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Affine <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void Affine<float, CPUContext>(
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
-    const int               scale_dim,
     const float*            x,
     const float*            alpha,
     const float*            beta,
@@ -20,7 +20,7 @@ template<> void Affine<float, CPUContext>(
     CPUContext*             ctx) {
     const auto* X = x; auto* Y = y;
     for (int n = 0; n < outer_dim; ++n) {
-        for (int d = 0; d < scale_dim; ++d) {
+        for (int d = 0; d < axis_dim; ++d) {
             if (beta != nullptr) {
                 EigenVectorArrayMap<float>(Y, inner_dim)
                     = ConstEigenVectorArrayMap<float>(
@@ -35,12 +35,12 @@ template<> void Affine<float, CPUContext>(
     }
 }
 
-/*! Affine <T = float16, Device = CPU> */
+/* <T = float16, Device = CPU> */
 
 template<> void Affine<float16, CPUContext>(
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
-    const int               scale_dim,
     const float16*          x,
     const float16*          alpha,
     const float16*          beta,
@@ -50,19 +50,19 @@ template<> void Affine<float16, CPUContext>(
 }
 
 
-/*! AffineGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <> void AffineGrad<float, CPUContext>(
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
-    const int               scale_dim,
     const float*            dy,
     const float*            alpha,
     float*                  dx,
     CPUContext*             ctx) {
     const auto* dY = dy; auto* dX = dx;
     for (int n = 0; n < outer_dim; ++n) {
-        for (int d = 0; d < scale_dim; ++d) {
+        for (int d = 0; d < axis_dim; ++d) {
             EigenVectorArrayMap<float>(dX, inner_dim)
                 = ConstEigenVectorArrayMap<float>(
                     dY, inner_dim) * alpha[d];
@@ -71,12 +71,12 @@ template <> void AffineGrad<float, CPUContext>(
     }
 }
 
-/*! AffineGrad <T = float16, Device = CPU> */
+/* <T = float16, Device = CPU> */
 
 template <> void AffineGrad<float16, CPUContext>(
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
-    const int               scale_dim,
     const float16*          dy,
     const float16*          alpha,
     float16*                dx,

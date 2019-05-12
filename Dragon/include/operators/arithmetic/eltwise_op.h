@@ -22,28 +22,30 @@ class EltwiseOp final : public Operator<Context> {
  public:
     EltwiseOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          operation(OperatorBase::Arg<string>("operation", "SUM")),
-          coeffs(OperatorBase::Args<float>("coefficients")) {
+          coef_(OpArgs<float>("coef")),
+          operation_(OpArg<string>("operation", "SUM")) {
         // Check the number of coeffients
-        if (coeffs.size() > 0) {
-            CHECK_EQ(coeffs.size(), InputSize())
-                << "\nOp has " << InputSize() << " inputs, "
-                << "but provided " << coeffs.size() << " coeffs.";
-        } else coeffs.resize(InputSize(), 1.f);
+        if (coef_.size() > 0) {
+            CHECK_EQ(coef_.size(), XSize())
+                << "\nOp has " << XSize() << " inputs, "
+                << "while providing " << coef_.size() << " coefs.";
+        } else {
+            coef_.resize((size_t)XSize(), 1.f);
+        }
         // Compute the alpha for product operation
-        for (auto e : coeffs) { if (e != 1.f) alpha *= e; }
+        for (auto e : coef_) { if (e != 1.f) alpha_ *= e; }
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
-    template <typename T> void SumRunWithType();
-    template <typename T> void ProdRunWithType();
+    template <typename T> void RunImpl();
+    template <typename T> void SumRunImpl();
+    template <typename T> void ProdRunImpl();
 
  protected:
-    string operation;
-    float alpha = 1.f;
-    vector<float> coeffs;
+    string operation_;
+    float alpha_ = 1.f;
+    vector<float> coef_;
 };
 
 template <class Context>
@@ -51,27 +53,29 @@ class EltwiseGradientOp final : public Operator<Context> {
  public:
     EltwiseGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          operation(OperatorBase::Arg<string>("operation", "SUM")),
-          coeffs(OperatorBase::Args<float>("coefficients")) {
-        if (coeffs.size() > 0) {
-            CHECK_EQ(coeffs.size(), OutputSize())
-                << "\nOp has " << OutputSize() << " inputs, "
-                << "but provided " << coeffs.size() << " coeffs.";
-        } else coeffs.resize(InputSize(), 1.f);
+          coef_(OpArgs<float>("coef")),
+          operation_(OpArg<string>("operation", "SUM")) {
+        if (coef_.size() > 0) {
+            CHECK_EQ(coef_.size(), YSize())
+                << "\nOp has " << YSize() << " inputs, "
+                << "while providing " << coef_.size() << " coefs.";
+        } else {
+            coef_.resize(YSize(), 1.f);
+        }
         // Compute the alpha for product operation
-        for (auto e : coeffs) { if (e != 1.f) alpha *= e; }
+        for (auto e : coef_) { if (e != 1.f) alpha_ *= e; }
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
-    template <typename T> void SumRunWithType();
-    template <typename T> void ProdRunWithType();
+    template <typename T> void RunImpl();
+    template <typename T> void SumRunImpl();
+    template <typename T> void ProdRunImpl();
 
  protected:
-    string operation;
-    float alpha = 1.f;
-    vector<float> coeffs;
+    string operation_;
+    float alpha_ = 1.f;
+    vector<float> coef_;
 };
 
 }  // namespace dragon

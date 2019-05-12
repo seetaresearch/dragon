@@ -41,7 +41,7 @@ class GraphOptimizer {
     /*! \brief Plan the recomputing for inputs (-O3) */
     GraphDef MirrorStage(
         const GraphDef&                   input_def,
-        Map< string, vector<int> >&       op_indices);
+        Map< string, vec32_t >&       op_indices);
 
     /*! \brief Allocate the buffer for outputs (-O3) */
     GraphDef SimulateGC(const GraphDef& input_def);

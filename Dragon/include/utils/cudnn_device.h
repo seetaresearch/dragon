@@ -38,9 +38,9 @@ class Tensor;
       << cudnnGetErrorString(status); \
     } while (0)
 
-template <typename T> class CUDNNType;
+template <typename T> class CuDNNType;
 
-template<> class CUDNNType<float>  {
+template<> class CuDNNType<float>  {
  public:
     static const cudnnDataType_t type = CUDNN_DATA_FLOAT;
     static float oneval, zeroval;
@@ -48,7 +48,7 @@ template<> class CUDNNType<float>  {
     typedef float BNParamType;
 };
 
-template<> class CUDNNType<double> {
+template<> class CuDNNType<double> {
  public:
     static const cudnnDataType_t type = CUDNN_DATA_DOUBLE;
     static double oneval, zeroval;
@@ -56,7 +56,7 @@ template<> class CUDNNType<double> {
     typedef double BNParamType;
 };
 
-template<> class CUDNNType<float16> {
+template<> class CuDNNType<float16> {
  public:
     static const cudnnDataType_t type = CUDNN_DATA_HALF;
     static float oneval, zeroval;
@@ -64,66 +64,76 @@ template<> class CUDNNType<float16> {
     typedef float BNParamType;
 };
 
+inline void CuDNNCreateTensorDesc(
+    cudnnTensorDescriptor_t*            desc) {
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(desc));
+}
+
+inline void CuDNNDestroyTensorDesc(
+    cudnnTensorDescriptor_t*            desc) {
+    CUDNN_CHECK(cudnnDestroyTensorDescriptor(*desc));
+}
+
 template <typename T>
-void cudnnSetTensorDesc(
+void CuDNNSetTensorDesc(
     cudnnTensorDescriptor_t*            desc,
     Tensor*                             tensor);
 
 template <typename T>
-void cudnnSetTensor4dDesc(
+void CuDNNSetTensor4dDesc(
     cudnnTensorDescriptor_t*            desc,
     const string&                       data_format,
     Tensor*                             tensor);
 
 template <typename T>
-void cudnnSetTensor5dDesc(
+void CuDNNSetTensor5dDesc(
     cudnnTensorDescriptor_t*            desc,
     const string&                       data_format,
     Tensor*                             tensor);
 
 template <typename T>
-void cudnnSetTensor3dDesc(
+void CuDNNSetTensor3dDesc(
     cudnnTensorDescriptor_t*            desc,
     const string&                       data_format,
     Tensor*                             tensor);
 
 template <typename T>
-void cudnnSetTensorDesc(
+void CuDNNSetTensorDesc(
     cudnnTensorDescriptor_t*            desc,
-    const std::vector<int64_t>&         dims);
+    const vec64_t&                        dims);
 
 template <typename T>
-void cudnnSetTensor4dDesc(
+void CuDNNSetTensor4dDesc(
     cudnnTensorDescriptor_t*            desc,
     const string&                       data_format,
-    const std::vector<int64_t>&         dims);
+    const vec64_t&                        dims);
 
 template <typename T>
-void cudnnSetTensor4dDescWithGroup(
+void CuDNNSetTensor4dDescWithGroup(
     cudnnTensorDescriptor_t*            desc,
     const string&                       data_format,
-    const std::vector<int64_t>&         dims,
+    const vec64_t&                        dims,
     const int64_t                       group);
 
 template <typename T>
-void cudnnSetTensor5dDesc(
+void CuDNNSetTensor5dDesc(
     cudnnTensorDescriptor_t*            desc,
     const string&                       data_format,
-    const std::vector<int64_t>&         dims);
+    const vec64_t&                        dims);
 
 template <typename T>
-void cudnnSetTensor3dDesc(
+void CuDNNSetTensor3dDesc(
     cudnnTensorDescriptor_t*            desc,
     const string&                       data_format,
-    const std::vector<int64_t>&         dims);
+    const vec64_t&                        dims);
 
 template <typename T>
-void cudnnSetTensorDesc(
+void CuDNNSetTensorDesc(
     cudnnTensorDescriptor_t*            desc,
-    const std::vector<int64_t>&         dims,
-    const std::vector<int64_t>&         strides);
+    const vec64_t&                        dims,
+    const vec64_t&                        strides);
 
-}
+}  // namespace dragon
 
 #endif  // WITH_CUDNN
 

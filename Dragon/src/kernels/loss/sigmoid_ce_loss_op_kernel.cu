@@ -7,70 +7,80 @@ namespace dragon {
 
 namespace kernel {
 
-/*! SigmoidCrossEntropy <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _SigmoidCrossEntropy(
-    const int               count,
-    const T*                logits,
-    const T*                targets,
-    T*                      losses,
-    int*                    flags) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        if (targets[idx] < 0) {
-            losses[idx] = flags[idx] = 0;
+    const int               nthreads,
+    const T*                logit,
+    const T*                target,
+    T*                      loss,
+    int*                    flag) {
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+        if (target[i] < 0) {
+            loss[i] = flag[i] = 0;
         } else {
-            losses[idx] = log(1 +
-                exp(logits[idx] - 2 * logits[idx] * (logits[idx] >= 0))
-            ) + logits[idx] * ((logits[idx] >= 0) - targets[idx]);
-            flags[idx] = 1;
+            loss[i] = log(
+                T(1) + exp(
+                    logit[i] - T(2) * logit[i] * (
+                            logit[i] >= 0
+                        )
+                )
+            ) + logit[i] * (
+                (logit[i] >= 0) - target[i]
+            );
+            flag[i] = 1;
         }
     }
 }
 
 template <> void SigmoidCrossEntropy<float, CUDAContext>(
     const int               count,
-    const float*            logits,
-    const float*            targets,
-    float*                  losses,
-    int*                    flags,
+    const float*            logit,
+    const float*            target,
+    float*                  loss,
+    int*                    flag,
     CUDAContext*            ctx) {
-    _SigmoidCrossEntropy<float>
+    _SigmoidCrossEntropy
         << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, logits, targets, losses, flags);
+             0, ctx->cuda_stream() >> >(
+        count, logit, target, loss, flag
+    );
 }
 
-/*! SigmoidCrossEntropyGrad <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _SigmoidCrossEntropyGrad(
-    const int               count,
-    const T*                logits,
-    const T*                targets,
-    T*                      dlogits,
-    int*                    flags) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        if (targets[idx] < 0) {
-            dlogits[idx] = flags[idx] = 0;
+    const int               nthreads,
+    const T*                logit,
+    const T*                target,
+    T*                      dlogit,
+    int*                    flag) {
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+        if (target[i] < 0) {
+            dlogit[i] = flag[i] = 0;
         } else {
-            dlogits[idx] = 1 / (1 + exp(-logits[idx])) - targets[idx];
-            flags[idx] = 1;
+            dlogit[i] = T(1) / (
+                T(1) + exp(-logit[i])
+            ) - target[i];
+            flag[i] = 1;
         }
     }
 }
 
 template <> void SigmoidCrossEntropyGrad<float, CUDAContext>(
     const int               count,
-    const float*            logits,
-    const float*            targets,
-    float*                  dlogits,
-    int*                    flags,
+    const float*            logit,
+    const float*            target,
+    float*                  dlogit,
+    int*                    flag,
     CUDAContext*            ctx) {
-    _SigmoidCrossEntropyGrad<float>
+    _SigmoidCrossEntropyGrad
         << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, logits, targets, dlogits, flags);
+             0, ctx->cuda_stream() >> >(
+        count, logit, target, dlogit, flag
+    );
 }
 
 }  // namespace kernel

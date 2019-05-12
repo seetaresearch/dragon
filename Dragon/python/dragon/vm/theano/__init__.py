@@ -14,7 +14,6 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.vm.theano import tensor
-from dragon.vm.theano.compile import scan
 from dragon.vm.theano.compile import shared
 from dragon.vm.theano.compile import function
 from dragon.vm.theano.configdefaults import config

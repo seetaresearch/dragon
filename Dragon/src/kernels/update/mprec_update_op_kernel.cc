@@ -6,35 +6,36 @@ namespace dragon {
 
 namespace kernel {
 
-/*! MixedPrecisionL2Decay <T = float16, Device = CPU> */
+/* <T = float16, Device = CPU> */
 
-template <> void MixedPrecisionL2Decay<float16, CPUContext>(
+template <> void MixedPrecL2Decay<float16, CPUContext>(
     const int               count,
     const float             alpha,
     const float16*          w,
     float*                  dx,
     CPUContext*             ctx) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         dx[i] += (cast::to<float>(w[i]) * alpha);
     }
 }
 
-/*! MixedPrecisionUpdate <T = float16, Device = CPU> */
+/* <T = float16, Device = CPU> */
 
-template <> void MixedPrecisionUpdate<float16, CPUContext>(
+template <> void MixedPrecUpdate<float16, CPUContext>(
     const int               count,
     const float*            updates,
     float16*                w,
     CPUContext*             ctx) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
-        w[i] = cast::to<float16>(cast::to<float>(
-            w[i]) - updates[i]);
+        w[i] = cast::to<float16>(
+            cast::to<float>(
+                w[i]) - updates[i]);
     }
 }
 

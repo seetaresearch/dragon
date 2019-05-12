@@ -37,16 +37,16 @@ class OperatorBase {
     virtual ~OperatorBase() {}
 
     /*! \brief Return the specified input tensor */
-    Tensor& Input(int idx);
+    Tensor& X(int i);
 
     /*! \brief Return the specified output tensor */
-    Tensor* Output(int idx);
+    Tensor* Y(int i);
 
     /*! \brief Return the number of inputs */
-    int InputSize() { return (int)inputs_.size(); }
+    int XSize() { return (int)inputs_.size(); }
 
     /*! \brief Return the number of outputs */
-    int OutputSize() { return (int)outputs_.size(); }
+    int YSize() { return (int)outputs_.size(); }
 
     /*! \brief Modify this operator according to the given def  */
     void UpdateFrom(const OperatorDef& def);
@@ -72,8 +72,14 @@ class OperatorBase {
     /*! \brief Return the anchor name of this operator */
     const string& anchor() const { return anchor_; }
 
-    /*! \brief Return the mount name in this operator */
-    const string mount_name(const string& name) const {
+    /*! \brief Return the data type of this operator */
+    const string& dtype() const { return dtype_; }
+
+    /*! \brief Return the data format of this operator */
+    const string& data_format() const { return data_format_; }
+
+    /*! \brief Return the unique name in this operator */
+    const string unique_name(const string& name) const {
         return "/mnt/" + anchor_ + "/" + name;
     }
 
@@ -110,23 +116,24 @@ class OperatorBase {
     /*! \brief Return the debug string of the stored operator def */
     string DebugString() const { return def_.DebugString(); }
 
-    /*! \brief Return the debug DType string on given tensor */
-    string DTypeHelper(
+    /*! \brief Return the dtype string according to given tensor */
+    string DTypeString(
         const Tensor&           tensor,
         const Set<string>&      dtypes) const;
 
-    /* \brief Return the debug DType string on given type */
-    string DTypeHelper(
+    /* \brief Return the dtype string according to given type */
+    string DTypeString(
         const string&           dtype,
         const Set<string>&      dtypes) const;
 
  protected:
-    string phase_, anchor_;
-    Map<std::string, const Argument*> args_;
-    SubGraph subgraph_;
-    vector<Tensor*> inputs_, outputs_;
-    OperatorDef def_;
     Workspace* ws_;
+    OperatorDef def_;
+    SubGraph subgraph_;
+    string phase_, anchor_;
+    string dtype_, data_format_;
+    vector<Tensor*> inputs_, outputs_;
+    Map<string, const Argument*> args_;
 };
 
 template <class Context>
@@ -134,29 +141,30 @@ class Operator : public OperatorBase {
  public:
     /*! \brief Default constructor */
     Operator(const OperatorDef& def, Workspace* ws)
-        : OperatorBase(def, ws), ctx_(def.device_option()),
-          allow_recomputing_(OperatorBase::Arg<bool>(
-              "allow_recomputing", false)),
+        : OperatorBase(def, ws),
+          ctx_(def.device_option()),
           do_sync_(OperatorBase::Arg<bool>(
-              "do_sync", false)) {
+              "do_sync", false)),
+          allow_recomp_(OperatorBase::Arg<bool>(
+              "allow_recomp", false)) {
         allow_run_ = true;
         allow_run_ &= MPICheck();
-        allow_run_ &= (!(OutputSize() == 1 &&
-            Output(0)->name() == "NULL"));
+        allow_run_ &= (!(YSize() == 1 &&
+            Y(0)->name() == "NULL"));
     }
 
     /*! \brief Run this operator on the specified stream */
     void Run(int stream_id = 0) final {
         if (!allow_run_) return;
-        if (allow_recomputing_) PrepareResource();
+        if (allow_recomp_) PrepareResource();
         ctx()->SwitchToDevice(stream_id);
         MemorySwitch();
         RunOnDevice();
         if (do_sync_ || stream_id > 0) {
-            // We will sync the stream 0 at the specific time
+            // Sync the stream(0) at the specific time
             ctx()->FinishDeviceCompution();
         }
-        if (allow_recomputing_) ReleaseResource();
+        if (allow_recomp_) ReleaseResource();
     }
 
     /*! \brief Prepare the content of inputs */
@@ -187,7 +195,7 @@ class Operator : public OperatorBase {
  protected:
     /*! \brief Store the internal context */
     Context ctx_;
-    bool allow_run_, allow_recomputing_, do_sync_;
+    bool allow_run_, allow_recomp_, do_sync_;
 
  private:
     /*! \brief Check the MPI conditions */
@@ -195,7 +203,7 @@ class Operator : public OperatorBase {
 #ifndef WITH_MPI
         return true;
 #else
-        vector<int> allow_ranks =
+        vec32_t allow_ranks =
             OperatorBase::Args<int>("mpi_ranks");
         if (allow_ranks.empty()) return true;
         int cur_rank;
@@ -215,25 +223,30 @@ OperatorBase* NewOperator(
 
 /*! Macros */
 
-#define USE_SIMPLE_CTOR_DTOR(name) \
+#define OpArg OperatorBase::Arg
+#define OpArgs OperatorBase::Args
+
+#define SIMPLE_CTOR_DTOR(name) \
     name(const OperatorDef& def, Workspace* ws) \
         : Operator<Context>(def, ws) {} \
     virtual ~name() {}
 
 #define USE_OPERATOR_BASE_FUNCTIONS \
-    using OperatorBase::Input; \
-    using OperatorBase::Output; \
     using OperatorBase::ws; \
     using OperatorBase::name; \
     using OperatorBase::type; \
     using OperatorBase::phase; \
     using OperatorBase::anchor; \
-    using OperatorBase::mount_name; \
+    using OperatorBase::dtype; \
+    using OperatorBase::data_format; \
+    using OperatorBase::unique_name; \
     using OperatorBase::def; \
-    using OperatorBase::InputSize; \
-    using OperatorBase::OutputSize; \
+    using OperatorBase::X; \
+    using OperatorBase::Y; \
+    using OperatorBase::XSize; \
+    using OperatorBase::YSize; \
     using OperatorBase::DebugString; \
-    using OperatorBase::DTypeHelper; \
+    using OperatorBase::DTypeString; \
     using OperatorBase::SwitchToPhase
 
 #define USE_OPERATOR_FUNCTIONS \
@@ -322,63 +335,63 @@ DECLARE_REGISTRY(
         name = mp->template data<T, Context>(); \
     }
 
-#define DECLARE_ARGUMENT_WITH_DESC(type, argument) \
-    type argument##_value; \
-    string argument##_desc; \
-    type argument()
+#define DECLARE_ARG_WITH_DESC(type, arg) \
+    type arg##_; \
+    string arg##_desc_; \
+    type arg()
 
-#define DECLARE_ARGUMENTS_WITH_DESC(type, argument) \
-    vector<type> argument##_value; \
-    vector<string> argument##_desc; \
-    type argument(int idx)
+#define DECLARE_ARGS_WITH_DESC(type, arg) \
+    vector<type> arg##_; \
+    vector<string> arg##_desc_; \
+    type arg(int i)
 
-#define GET_ARGUMENT_WITH_DESC(type, argument, default_value) \
-    argument##_value = OperatorBase::Arg<type>(#argument, default_value); \
-    argument##_desc = OperatorBase::Arg<string>(string(#argument) + "_desc", "")
+#define GET_ARG_WITH_DESC(type, arg, default_value) \
+    arg##_ = OpArg<type>(#arg, default_value); \
+    arg##_desc_ = OpArg<string>(string(#arg) + "_desc", "")
 
-#define GET_ARGUMENTS_WITH_DESC(type, argument) \
-    argument##_value = OperatorBase::Args<type>(#argument); \
-    argument##_desc = OperatorBase::Args<string>(string(#argument) + "_desc")
+#define GET_ARGS_WITH_DESC(type, arg) \
+    arg##_ = OpArgs<type>(#arg); \
+    arg##_desc_ = OpArgs<string>(string(#arg) + "_desc")
 
-#define DEFINE_ARGUMENT_WITH_DESC(type, classname, argument) \
+#define DEFINE_ARG_WITH_DESC(type, classname, arg) \
     template <class Context> \
-    type classname<Context>::argument() { \
-        if (argument##_desc.empty()) return argument##_value; \
-        Tensor* argument##_tensor = ws()->GetTensor(argument##_desc); \
-        CHECK(argument##_tensor->IsType<type>()) \
-            << "\nThe type of " << #argument << " should be " << #type << "."; \
-        CHECK_EQ(argument##_tensor->count(), 1) \
-            << "\nThe argument of " << #argument << " should be a scalar."; \
-        return argument##_tensor->template data<type, CPUContext>()[0]; \
+    type classname<Context>::arg() { \
+        if (arg##_desc_.empty()) return arg##_; \
+        auto* arg##T = ws()->GetTensor(arg##_desc_); \
+        CHECK(arg##T->template IsType<type>()) \
+            << "\nThe type of " << #arg << " should be " << #type << "."; \
+        CHECK_EQ(arg##T->count(), 1) \
+            << "\nThe argument of " << #arg << " should be a scalar."; \
+        return arg##T->template data<type, CPUContext>()[0]; \
     }
 
-#define DEFINE_ARGUMENTS_WITH_DESC(type, classname, argument) \
+#define DEFINE_ARGS_WITH_DESC(type, classname, arg) \
     template <class Context> \
-    type classname<Context>::argument(int idx) { \
-        if (argument##_desc.empty()) { \
-            CHECK_LT(idx, argument##_value.size()) \
-                << "\nExcepted the size of " << #argument \
-                << " > " << idx << ". (Got " \
-                << argument##_value.size() << ")."; \
-            return argument##_value[idx]; \
+    type classname<Context>::arg(int i) { \
+        if (arg##_desc_.empty()) { \
+            CHECK_LT(i, arg##_.size()) \
+                << "\nExcepted the size of " << #arg \
+                << " > " << i << ". (Got " \
+                << arg##_.size() << ")."; \
+            return arg##_[i]; \
         } \
-        CHECK_LT(idx, argument##_desc.size()) \
-            << "\nExcepted the size of " << #argument \
-            << " > " << idx << ". (Got " \
-            << argument##_desc.size() << ")."; \
-        Tensor* argument##_tensor = ws()->GetTensor( \
-            str::replace_first(argument##_desc[idx], \
+        CHECK_LT(i, arg##_desc_.size()) \
+            << "\nExcepted the size of " << #arg \
+            << " > " << i << ". (Got " \
+            << arg##_desc_.size() << ")."; \
+        auto* arg##T = ws()->GetTensor( \
+            str::replace_first(arg##_desc_[i], \
                 "${ANCHOR}", anchor())); \
-        CHECK(argument##_tensor->IsType<type>()) \
-            << "\nThe type of " << #argument << " should be " << #type << "."; \
-        CHECK_EQ(argument##_tensor->count(), 1) \
-            << "\nThe argument of " << #argument << " at pos(" \
-            << idx << ") should be a scalar."; \
-        return argument##_tensor->template data<type, CPUContext>()[0]; \
+        CHECK(arg##T->template IsType<type>()) \
+            << "\nThe type of " << #arg << " should be " << #type << "."; \
+        CHECK_EQ(arg##T->count(), 1) \
+            << "\nThe argument of " << #arg << " at pos(" \
+            << i << ") should be a scalar."; \
+        return arg##T->template data<type, CPUContext>()[0]; \
     }
 
-#define GET_ARGUMENTS_SIZE(argument) \
-    (int)std::max(argument##_value.size(), argument##_desc.size())
+#define GET_ARGS_SIZE(arg) \
+    (int)std::max(arg##_.size(), arg##_desc_.size())
 
 #define XIsType(x, dtype) \
     x.template IsType<dtype>()

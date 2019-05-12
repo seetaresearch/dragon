@@ -22,14 +22,14 @@ class ReluOp : public Operator<Context> {
  public:
     ReluOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          slope(OperatorBase::Arg<float>("slope", 0.f)) {}
+          slope_(OpArg<float>("slope", 0.f)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    float slope;
+    float slope_;
 };
 
 template <class Context>
@@ -37,14 +37,14 @@ class ReluGradientOp : public Operator<Context> {
  public:
     ReluGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          slope(OperatorBase::Arg<float>("slope", 0.f)) {}
+          slope_(OpArg<float>("slope", 0.f)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    float slope;
+    float slope_;
 };
 
 #ifdef WITH_CUDNN
@@ -54,26 +54,27 @@ class CuDNNReluOp final : public ReluOp<Context> {
 public:
     CuDNNReluOp(const OperatorDef& def, Workspace* ws)
         : ReluOp<Context>(def, ws) {
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
-        CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc));
-        CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc, 
-            CUDNN_ACTIVATION_RELU, CUDNN_PROPAGATE_NAN, 0));
+        CuDNNCreateTensorDesc(&input_desc_);
+        CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc_));
+        CUDNN_CHECK(cudnnSetActivationDescriptor(
+            act_desc_,
+            CUDNN_ACTIVATION_RELU,
+            CUDNN_PROPAGATE_NAN, 0
+        ));
     }
     USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNReluOp() {
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
-        CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc));
+        CuDNNDestroyTensorDesc(&input_desc_);
+        CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
     }
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    cudnnTensorDescriptor_t input_desc, output_desc;
-    cudnnActivationDescriptor_t act_desc;
+    cudnnTensorDescriptor_t input_desc_;
+    cudnnActivationDescriptor_t act_desc_;
 };
 
 template <class Context>
@@ -81,26 +82,27 @@ class CuDNNReluGradientOp final : public ReluGradientOp<Context> {
  public:
     CuDNNReluGradientOp(const OperatorDef& def, Workspace* ws)
         : ReluGradientOp<Context>(def, ws) {
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
-        CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc));
-        CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc,
-            CUDNN_ACTIVATION_RELU, CUDNN_PROPAGATE_NAN, 0));
+        CuDNNCreateTensorDesc(&input_desc_);
+        CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc_));
+        CUDNN_CHECK(cudnnSetActivationDescriptor(
+            act_desc_,
+            CUDNN_ACTIVATION_RELU,
+            CUDNN_PROPAGATE_NAN, 0
+        ));
     }
     USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNReluGradientOp() {
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
-        CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc));
+        CuDNNDestroyTensorDesc(&input_desc_);
+        CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
     }
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    cudnnTensorDescriptor_t input_desc, output_desc;
-    cudnnActivationDescriptor_t act_desc;
+    cudnnTensorDescriptor_t input_desc_;
+    cudnnActivationDescriptor_t act_desc_;
 };
 
 #endif  // WITH_CUDNN

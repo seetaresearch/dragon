@@ -22,36 +22,37 @@ class UpdateOpBase : public Operator<Context> {
  public:
     UpdateOpBase(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          lr_mult(OperatorBase::Arg<float>("lr_mult", 1.f)),
-          decay_mult(OperatorBase::Arg<float>("decay_mult", 1.f)),
-          slot(OperatorBase::Arg<string>("slot", "")) {
-        CHECK(!slot.empty()) << "\nRequired a non-empty slot";
+          lr_mult_(OpArg<float>("lr_mult", 1.f)),
+          decay_mult_(OpArg<float>("decay_mult", 1.f)),
+          slot_(OpArg<string>("slot", "")) {
+        CHECK(!slot_.empty()) << "\nRequired a non-empty slot";
     }
     USE_OPERATOR_FUNCTIONS;
 
-    string Slot() { return slot + "/" + Output(0)->name(); }
+    string slot() { return slot_ + "/" + Y(0)->name(); }
 
-    float Param(const string& name) const;
-
-    template <typename T>
-    void ProcessGradients(Tensor* dX, Tensor* X);
-
-    virtual void ComputeUpdates(Tensor* dX) = 0;
+    float param(const string& name) const;
+    float lr_mult() const { return lr_mult_; }
 
     template <typename T>
-    void ApplyUpdates(Tensor* dX, Tensor* X);
+    void Process(Tensor* dX, Tensor* X);
+
+    virtual void Compute(Tensor* dX) = 0;
+
+    template <typename T>
+    void Apply(Tensor* dX, Tensor* X);
 
     void RunOnDevice() override;
 
  protected:
-    float lr_mult, decay_mult;
-    float l2_decay, clip_thresh, scale_factor;
-    string slot;
+    string slot_;
+    float lr_mult_, decay_mult_;
 };
 
-#define USE_UPDATER_FUNCTIONS(context) \
-    using UpdateOpBase<context>::Param; \
-    using UpdateOpBase<context>::Slot
+#define USE_UPDATER_FUNCTIONS \
+    using UpdateOpBase<Context>::slot; \
+    using UpdateOpBase<Context>::param; \
+    using UpdateOpBase<Context>::lr_mult
 
 }  // namespace dragon
 

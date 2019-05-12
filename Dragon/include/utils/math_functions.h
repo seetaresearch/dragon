@@ -39,6 +39,13 @@ namespace math {
  */
 
 template <typename T, class Context>
+void Copy(
+    const int               n,
+    const T*                x,
+    T*                      y,
+    Context*                ctx);
+
+template <typename T, class Context>
 void Exp(
     const int               n,
     const T*                x,

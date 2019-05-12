@@ -6,23 +6,22 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Softmax <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void Softmax<float, CPUContext>(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
-    const float*            sum_multiplier,
+    const float*            multiplier,
     const float*            x,
     float*                  scale,
     float*                  y,
     CPUContext*             ctx) {
-    const int dim = count / outer_dim;
+    const int dim = axis_dim * inner_dim;
     for (int i = 0; i < outer_dim; ++i) {
        ctx->Copy<float, CPUContext, CPUContext>(
             inner_dim, scale, x + i * dim);
-        for (int j = 0; j < classes; ++j) {
+        for (int j = 0; j < axis_dim; ++j) {
             for (int k = 0; k < inner_dim; k++)
                 scale[k] = std::max(
                     scale[k], x[i * dim + j * inner_dim + k]
@@ -31,28 +30,29 @@ template<> void Softmax<float, CPUContext>(
         math::Gemm(
             CblasNoTrans,
             CblasNoTrans,
-            classes, inner_dim, 1,
-            -1.f, sum_multiplier, scale,
-            1.f, y, ctx);
+            axis_dim, inner_dim, 1,
+            -1.f, multiplier, scale,
+            1.f, y, ctx
+        );
         math::Exp(dim, y, y, ctx);
         math::Gemv(
             CblasTrans,
-            classes, inner_dim,
-            1.f, y, sum_multiplier,
-            0.f, scale, ctx);
-        for (int j = 0; j < classes; ++j) {
+            axis_dim, inner_dim,
+            1.f, y, multiplier,
+            0.f, scale, ctx
+        );
+        for (int j = 0; j < axis_dim; ++j) {
             math::Div(inner_dim, y, scale, y, ctx);
             y += inner_dim;
         }
     }
 }
 
-
 template <typename T>
 void _SoftmaxGrad(
     const int           outer_dim,
-    const int           inner_dim,
     const int           axis_dim,
+    const int           inner_dim,
     const T*            dy,
     const T*            y,
     T*                  dx) {
@@ -73,21 +73,22 @@ void _SoftmaxGrad(
     }
 }
 
-/*! SoftmaxGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void SoftmaxGrad<float, CPUContext>(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
-    const float*            sum_multiplier,
+    const float*            multiplier,
     const float*            dy,
     const float*            y,
     float*                  scale,
     float*                  dx,
     CPUContext*             ctx) {
-    _SoftmaxGrad<float>(outer_dim,
-        inner_dim, classes, dy, y, dx);
+    _SoftmaxGrad(
+        outer_dim, axis_dim,
+        inner_dim, dy, y, dx
+    );
 }
 
 }  // namespace kernel

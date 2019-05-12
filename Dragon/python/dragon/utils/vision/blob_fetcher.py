@@ -39,7 +39,7 @@ class BlobFetcher(multiprocessing.Process):
         super(BlobFetcher, self).__init__()
         self._batch_size = kwargs.get('batch_size', 128)
         self._partition  = kwargs.get('partition', False)
-        if self._partition: self._batch_size /= kwargs['group_size']
+        if self._partition: self._batch_size //= kwargs['group_size']
         self.Q_in = self.Q_out = None
         self.daemon = True
 

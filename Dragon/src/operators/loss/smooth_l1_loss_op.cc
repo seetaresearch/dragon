@@ -6,127 +6,158 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void SmoothL1LossOp<Context>::RunWithType() {
-    auto* X0data = Input(0).template data<T, Context>();
-    auto* X1data = Input(1).template data<T, Context>();
-    auto* Ddata = diff->template mutable_data<T, Context>();
-    auto* Edata = error->template mutable_data<T, Context>();
+void SmoothL1LossOp<Context>::RunImpl() {
+    auto nelements = X(0).count();
+    auto* x = X(0).template data<T, Context>();
+    auto* target = X(1).template data<T, Context>();
 
-    math::Sub(diff->count(), X0data, X1data, Ddata, ctx());
+    auto* diff = ws()
+        ->CreateTensor(unique_name("diff"))
+        ->ReshapeLike(X(0))
+        ->template mutable_data<T, Context>();
 
-    if (InputSize() > 2) {
-        auto* iWdata = Input(2).template data<T, Context>();
-        math::Mul(diff->count(), iWdata, Ddata, Ddata, ctx());
+    auto* err = ws()
+        ->CreateTensor("/share/smoothl1/err")
+        ->ReshapeLike(X(0))
+        ->template mutable_data<T, Context>();
+
+    math::Sub(nelements, x, target, diff, ctx());
+
+    if (XSize() > 2) {
+        CHECK_EQ(X(2).count(), nelements);
+        auto* iw = X(2).template data<T, Context>();
+        math::Mul(nelements, iw, diff, diff, ctx());
     }
 
-    kernel::SmoothL1(diff->count(), beta, Ddata, Edata, ctx());
+    kernel::SmoothL1(nelements, beta_, diff, err, ctx());
 
-    if (InputSize() > 3) {
-        auto* oWdata = Input(3).template data<T, Context>();
-        math::Mul(diff->count(), oWdata, Edata, Edata, ctx());
+    if (XSize() > 3) {
+        CHECK_EQ(X(3).count(), nelements);
+        auto* ow = X(3).template data<T, Context>();
+        math::Mul(nelements, ow, err, err, ctx());
     }
 
     double normalizer = 1.;
-    if (normalization == "BATCH_SIZE") {
-        normalizer = Input(0).dim(0);
-    } else if (normalization == "FULL") {
-        normalizer = Input(0).count();
+    if (reduction_ == "BATCH_SIZE") {
+        normalizer = X(0).dim(0);
+    } else if (reduction_ == "MEAN") {
+        normalizer = X(0).count();
     }
 
-    Output(0)->Reshape(vector<int64_t>());
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Sum(error->count(), 1. / normalizer, Edata, Ydata, ctx());
+    Y(0)->Reshape({});
+    auto* y = Y(0)->template mutable_data<T, Context>();
+    math::Sum(nelements, 1. / normalizer, err, y, ctx());
 }
 
 template <class Context>
 void SmoothL1LossOp<Context>::RunOnDevice() {
-    CHECK(Input(0).count() == Input(1).count());
-    if (InputSize() > 2) CHECK(Input(0).count() == Input(2).count());
-    if (InputSize() > 3) CHECK(Input(0).count() == Input(3).count());
+    CHECK(X(0).count() == X(1).count());
 
-    diff = ws()->CreateTensor(mount_name(
-        "smoothl1_loss/diff"))->ReshapeLike(Input(0));
-    error = ws()->CreateTensor(
-        "/share/smoothl1_loss_error")->ReshapeLike(Input(0));
-
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else {
+        LOG(FATAL) << DTypeString(
+            X(0), { "float32" }
+        );
+    }
 }
 
-DEPLOY_CPU(SmoothL1Loss);
-#ifdef WITH_CUDA
-DEPLOY_CUDA(SmoothL1Loss);
-#endif
-OPERATOR_SCHEMA(SmoothL1Loss).NumInputs(2, 4).NumOutputs(1);
-
 template <class Context> template <typename T>
-void SmoothL1LossGradientOp<Context>::RunWithType() {
-    auto* Ddata = diff->template mutable_data<T, Context>();
-    auto* dYdata = Input(-1).template data<T, Context>();
+void SmoothL1LossGradientOp<Context>::RunImpl() {
+    auto nelements = X(0).count();
+    auto* dy = X(-1).template data<T, Context>();
 
-    T dYHost; ctx()->template Copy
+    T dyHost; ctx()->template Copy
         <T, CPUContext, Context>(
-            1, &dYHost, dYdata);
+            1, &dyHost, dy);
     ctx()->FinishDeviceCompution();
 
-    kernel::SmoothL1Grad(diff->count(),
-        beta, Ddata, Ddata, ctx());
+    auto* diff = ws()
+        ->GetTensor(unique_name("diff"))
+        ->template mutable_data<T, Context>();
 
-    if (normalization == "BATCH_SIZE") {
-        dYHost /= Input(0).dim(0);
-    } else if (normalization == "FULL") {
-        dYHost /= Input(0).count();
+    kernel::SmoothL1Grad(
+        nelements,
+        beta_, diff,
+        diff, ctx()
+    );
+
+    if (reduction_ == "BATCH_SIZE") {
+        dyHost /= X(0).dim(0);
+    } else if (reduction_ == "MEAN") {
+        dyHost /= X(0).count();
     }
 
-    for (int i = 0; i < 2; i++) {
-        if (Output(i)->name() == "NULL") continue;
-        Output(i)->ReshapeLike(Input(i));
-        auto* dXdata = Output(i)->template mutable_data<T, Context>();
-        math::Scale(Output(i)->count(),
-            dYHost * (i == 0 ? 1.f : -1.f),
-                Ddata, dXdata, ctx());
-        if (InputSize() > 3) {
-            auto* iWdata = Input(2).template data<T, Context>();
-            math::Mul(Output(i)->count(),
-                iWdata, dXdata, dXdata, ctx());
+    for (int i = 0; i < YSize(); i++) {
+        if (Y(i)->name() == "NULL") continue;
+        Y(i)->ReshapeLike(X(i));
+        auto* dx = Y(i)->template mutable_data<T, Context>();
+        math::Scale(
+            nelements,
+            dyHost * (i == 0 ? 1.f : -1.f),
+            diff, dx, ctx()
+        );
+        if (XSize() > 3) {
+            auto* iw = X(2).template data<T, Context>();
+            math::Mul(nelements, iw, dx, dx, ctx());
         }
-        if (InputSize() > 4) {
-            auto* oWdata = Input(3).template data<T, Context>();
-            math::Mul(Output(i)->count(),
-                oWdata, dXdata, dXdata, ctx());
+        if (XSize() > 4) {
+            auto* ow = X(3).template data<T, Context>();
+            math::Mul(nelements, ow, dx, dx, ctx());
         }
     }
 }
 
 template <class Context>
 void SmoothL1LossGradientOp<Context>::RunOnDevice() {
-    diff = ws()->GetTensor(mount_name("smoothl1_loss/diff"));
-
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else {
+        LOG(FATAL) << DTypeString(
+            X(0), { "float32" }
+        );
+    }
 }
+
+DEPLOY_CPU(SmoothL1Loss);
+#ifdef WITH_CUDA
+DEPLOY_CUDA(SmoothL1Loss);
+#endif
 
 DEPLOY_CPU(SmoothL1LossGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(SmoothL1LossGradient);
 #endif
 
-OPERATOR_SCHEMA(SmoothL1LossGradient)
-    .NumInputs(3, 5).NumOutputs(2);
+OPERATOR_SCHEMA(SmoothL1Loss)
+     /* X, T, IW, OW */
+    .NumInputs(2, 4)
+     /* Y */
+    .NumOutputs(1);
 
-class GetSmoothL1LossGradient
-    final : public GradientMakerBase {
+OPERATOR_SCHEMA(SmoothL1LossGradient)
+     /* X, T, IW, OW, dY */
+    .NumInputs(3, 5)
+     /* dX, dT */
+    .NumOutputs(2);
+
+namespace {
+
+class GradientMaker final : public GradientMakerBase {
  public:
-    GRADIENT_MAKER_CTOR(GetSmoothL1LossGradient);
-    vector<OperatorDef> MakeDefs() override {
+    GRADIENT_MAKER_CTOR(GradientMaker);
+    vector<OperatorDef> MakeDef() override {
         vector<string> inputs;
-        for (auto input : def.input()) inputs.push_back(input);
+        for (auto e : def.input()) inputs.push_back(e);
         inputs.push_back(GO(0));
         return SingleDef(def.type() + "Gradient", "",
-            inputs, vector<string>({ GI(0), GI(1) }));
+            inputs, vector<string>({ GI(0), GI(1) })
+        );
     }
 };
 
-REGISTER_GRADIENT(SmoothL1Loss, GetSmoothL1LossGradient);
+}  // namespace
+
+REGISTER_GRADIENT(SmoothL1Loss, GradientMaker);
 
 }  // namespace dragon

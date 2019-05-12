@@ -9,6 +9,9 @@
 #
 # ------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from .function import function
-from .scan import scan
 from .sharedvalue import shared

@@ -9,74 +9,81 @@ using kernel::Equal;
 using kernel::Less;
 using kernel::Greater;
 
-#define ELIGIBLE_DATA_TYPES \
+#define ELIGIBLE_DTYPES \
     { "bool", "int8", "uint8", "int32", "int64", \
-      "float16", "float32", "float64" }
+           "float16", "float32", "float64" }
 
-#define DEFINE_TYPED_CALLER(Operation) \
-    if (XIsType(Input(0), bool)) Operation##RunWithType<bool>(); \
-    else if (XIsType(Input(0), int8_t)) Operation##RunWithType<int8_t>(); \
-    else if (XIsType(Input(0), uint8_t)) Operation##RunWithType<uint8_t>(); \
-    else if (XIsType(Input(0), int)) Operation##RunWithType<int>(); \
-    else if (XIsType(Input(0), int64_t)) Operation##RunWithType<int64_t>(); \
-    else if (XIsType(Input(0), float16)) Operation##RunWithType<float16>(); \
-    else if (XIsType(Input(0), float)) Operation##RunWithType<float>(); \
-    else if (XIsType(Input(0), double)) Operation##RunWithType<double>(); \
-    else LOG(FATAL) << DTypeHelper(Input(0), ELIGIBLE_DATA_TYPES)
+#define DEFINE_TYPED_IMPL(Op) \
+    if (XIsType(X(0), bool)) Op##RunImpl<bool>(); \
+    else if (XIsType(X(0), int8_t)) Op##RunImpl<int8_t>(); \
+    else if (XIsType(X(0), uint8_t)) Op##RunImpl<uint8_t>(); \
+    else if (XIsType(X(0), int)) Op##RunImpl<int>(); \
+    else if (XIsType(X(0), int64_t)) Op##RunImpl<int64_t>(); \
+    else if (XIsType(X(0), float16)) Op##RunImpl<float16>(); \
+    else if (XIsType(X(0), float)) Op##RunImpl<float>(); \
+    else if (XIsType(X(0), double)) Op##RunImpl<double>(); \
+    else LOG(FATAL) << DTypeString(X(0), ELIGIBLE_DTYPES)
 
-#define DEFINE_OP_CALLER(Operation) \
+#define DEFINE_OP_IMPL(Op) \
     template <class Context> template <typename T> \
-    void CompareOp<Context>::Operation##RunWithType() { \
-        auto* Adata = Input(0).template data<T, Context>(); \
-        const T* Bdata = nullptr; \
-        auto* Ydata = Output(0)->template mutable_data<bool, Context>(); \
-        if (Input(1).count() == 1) { \
-            auto* WSdata = ws()->template caches<T, Context> \
-                    ({ Input(0).count() })[0]; \
-            auto* BCdata = Input(1).template data<T, CPUContext>(); \
-            math::Set(Input(0).count(), BCdata[0], WSdata, ctx()); \
-            Bdata = WSdata; \
-        } else { Bdata = Input(1).template data<T, Context>(); } \
-        kernel::Operation(Output(0)->count(), Adata, Bdata, Ydata, ctx()); \
+    void CompareOp<Context>::Op##RunImpl() { \
+        auto* a = X(0).template data<T, Context>(); \
+        const T* b = nullptr; \
+        auto* y = Y(0)->template mutable_data<bool, Context>(); \
+        if (X(1).count() == 1) { \
+            auto* scratch = ws() \
+                ->template data<T, Context> \
+                    ({ X(0).count() })[0]; \
+            auto* bc = X(1).template data<T, CPUContext>(); \
+            math::Set(X(0).count(), bc[0], scratch, ctx()); \
+            b = scratch; \
+        } else { b = X(1).template data<T, Context>(); } \
+        kernel::Op(Y(0)->count(), a, b, y, ctx()); \
     }
 
 template <class Context>
 void CompareOp<Context>::RunOnDevice() {
-    if (Input(0).count() != Input(1).count()) {
-        CHECK_EQ(Input(1).count(), 1)
-            << "\nBoth A and B should have the same number of elements."
+    if (X(0).count() != X(1).count()) {
+        CHECK_EQ(X(1).count(), 1)
+            << "\nBoth A and B should have the same num of elements."
             << "\nOr the B should be a Scalar."
-            << "\nDimensions of A and B are " << Input(0).DimString()
-            << " and " << Input(1).DimString();
+            << "\nDimensions of A and B are "
+            << X(0).DimString() << " and " << X(1).DimString();
     }
 
-    Output(0)->ReshapeLike(Input(0));
+    Y(0)->ReshapeLike(X(0));
 
-    if (operation == "EQ") { DEFINE_TYPED_CALLER(Equal); }
-    else if (operation == "LT") { DEFINE_TYPED_CALLER(Less); }
-    else if (operation == "GT") { DEFINE_TYPED_CALLER(Greater); }
-    else if (operation == "LE") { DEFINE_TYPED_CALLER(LessEqual); }
-    else if (operation == "GE") { DEFINE_TYPED_CALLER(GreaterEqual); }
-    else { LOG(FATAL) << "Unsupport operation: " << operation << "."; }
-    if (to_uint8) Output(0)->SetMeta(TypeMeta::Make<uint8_t>());
+    if (op_str_ == "EQ") { DEFINE_TYPED_IMPL(Equal); }
+    else if (op_str_ == "LT") { DEFINE_TYPED_IMPL(Less); }
+    else if (op_str_ == "GT") { DEFINE_TYPED_IMPL(Greater); }
+    else if (op_str_ == "LE") { DEFINE_TYPED_IMPL(LessEqual); }
+    else if (op_str_ == "GE") { DEFINE_TYPED_IMPL(GreaterEqual); }
+    else { LOG(FATAL) << "Unknown Operation: " << op_str_ << "."; }
+
+    if (to_uint8_) Y(0)->SetMeta(TypeMeta::Make<uint8_t>());
 }
 
-DEFINE_OP_CALLER(Equal);
-DEFINE_OP_CALLER(Less);
-DEFINE_OP_CALLER(LessEqual);
-DEFINE_OP_CALLER(Greater);
-DEFINE_OP_CALLER(GreaterEqual);
+DEFINE_OP_IMPL(Equal);
+DEFINE_OP_IMPL(Less);
+DEFINE_OP_IMPL(LessEqual);
+DEFINE_OP_IMPL(Greater);
+DEFINE_OP_IMPL(GreaterEqual);
 
 DEPLOY_CPU(Compare);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Compare);
 #endif
-OPERATOR_SCHEMA(Compare).NumInputs(2).NumOutputs(1);
+
+OPERATOR_SCHEMA(Compare)
+     /* A, B */
+    .NumInputs(2)
+     /* Y */
+    .NumOutputs(1);
 
 NO_GRADIENT(Compare);
 
-#undef ELIGIBLE_DATA_TYPES
-#undef DEFINE_OP_CALLLER
-#undef DEFINE_TYPED_CALLER
+#undef ELIGIBLE_DTYPES
+#undef DEFINE_OP_IMPL
+#undef DEFINE_TYPED_IMPL
 
 }  // namespace dragon

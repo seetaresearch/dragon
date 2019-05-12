@@ -8,7 +8,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! PRelu <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _PRelu(
@@ -65,26 +65,31 @@ template<> void PRelu<float, CUDAContext>(
     float*                  y,
     CUDAContext*            ctx) {
     if (channel_shared) {
-        _PRelu<float>
+        _PRelu
             << < CUDA_BLOCKS(count), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (count, channels, dim, x, w, y);
+                 0, ctx->cuda_stream() >> >(
+            count, channels, dim, x, w, y
+        );
     } else {
         if (data_format == "NCHW") {
-            _PReluNCHW<float>
+            _PReluNCHW
                 << < CUDA_BLOCKS(count), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >
-                (count, channels, dim, x, w, y);
+                     0, ctx->cuda_stream() >> >(
+                count, channels, dim, x, w, y
+            );
         } else if (data_format == "NHWC") {
-            _PReluNHWC<float>
+            _PReluNHWC
                 << < CUDA_BLOCKS(count), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >
-                (count, channels, dim, x, w, y);
-        } else LOG(FATAL) << "Unknown data format: " << data_format;
+                     0, ctx->cuda_stream() >> >(
+                count, channels, dim, x, w, y
+            );
+        } else {
+            LOG(FATAL) << "Unknown data format: " << data_format;
+        }
     }
 }
 
-/*! PReluGrad <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _PReluGrad(
@@ -146,26 +151,31 @@ template<> void PReluGrad<float, CUDAContext>(
     float*                  dx,
     CUDAContext*            ctx) {
     if (channel_shared) {
-        _PReluGrad<float>
+        _PReluGrad
             << < CUDA_BLOCKS(count), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (count, channels, dim, dy, x, w, dx);
+                 0, ctx->cuda_stream() >> >(
+            count, channels, dim, dy, x, w, dx
+        );
     } else {
         if (data_format == "NCHW") {
-            _PReluGradNCHW<float>
+            _PReluGradNCHW
                 << < CUDA_BLOCKS(count), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >
-                (count, channels, dim, dy, x, w, dx);
+                     0, ctx->cuda_stream() >> >(
+                count, channels, dim, dy, x, w, dx
+            );
         } else if (data_format == "NHWC") {
-            _PReluGradNHWC<float>
+            _PReluGradNHWC
                 << < CUDA_BLOCKS(count), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >
-                (count, channels, dim, dy, x, w, dx);
-        } else LOG(FATAL) << "Unknown data format: " << data_format;
+                     0, ctx->cuda_stream() >> >(
+                count, channels, dim, dy, x, w, dx
+            );
+        } else {
+            LOG(FATAL) << "Unknown data format: " << data_format;
+        }
     }
 }
 
-/*! PReluWGrad <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _PReluWGradBcast(
@@ -198,28 +208,36 @@ template<> void PReluWGrad<float, CUDAContext>(
     float*                  bcast_dw,
     float*                  dw,
     CUDAContext*            ctx) {
-    const int cdim = channels * dim;
-    _PReluWGradBcast<float>
+    auto cdim = channels * dim;
+    _PReluWGradBcast
         << < CUDA_BLOCKS(cdim), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (cdim, rows, row_offset, dy, x, bcast_dw);
+             0, ctx->cuda_stream() >> >(
+        cdim, rows, row_offset, dy, x, bcast_dw
+    );
     if (channel_shared) {
-        math::Dot(channels * dim,
-            bcast_dw, multiplier, dw, ctx);
+        math::Dot(
+            channels * dim,
+            bcast_dw, multiplier,
+            dw, ctx
+        );
     } else {
         if (data_format == "NCHW") {
             math::Gemv(
                 CblasNoTrans,
                 channels, dim,
                 1.f, bcast_dw, multiplier,
-                0.f, dw, ctx);
+                0.f, dw, ctx
+            );
         } else if (data_format == "NHWC") {
-            math::Gemv<float, CUDAContext>(
+            math::Gemv(
                 CblasTrans,
                 dim, channels,
                 1.f, bcast_dw, multiplier,
-                0.f, dw, ctx);
-        } else LOG(FATAL) << "Unknown data format: " << data_format;
+                0.f, dw, ctx
+            );
+        } else {
+            LOG(FATAL) << "Unknown data format: " << data_format;
+        }
     }
 }
 

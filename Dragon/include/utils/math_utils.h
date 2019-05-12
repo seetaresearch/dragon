@@ -43,17 +43,27 @@ inline void ArgPartition(
     const int                   kth,
     const bool                  descend,
     const T*                    v,
-    std::vector<int64_t>&       indices) {
+    vec64_t&                    indices) {
     indices.resize(count);
     std::iota(indices.begin(), indices.end(), 0);
     if (descend) {
         std::nth_element(
-            indices.begin(), indices.begin() + kth, indices.end(),
-                [&v](int64_t i1, int64_t i2) { return v[i1] > v[i2]; });
+            indices.begin(),
+            indices.begin() + kth,
+            indices.end(),
+            [&v](int64_t i1, int64_t i2) {
+                return v[i1] > v[i2]; 
+            }
+        );
     } else {
         std::nth_element(
-            indices.begin(), indices.begin() + kth, indices.end(),
-                [&v](int64_t i1, int64_t i2) { return v[i1] < v[i2]; });
+            indices.begin(),
+            indices.begin() + kth,
+            indices.end(),
+            [&v](int64_t i1, int64_t i2) { 
+                return v[i1] < v[i2];
+            }
+        );
     }
 }
 
@@ -65,16 +75,16 @@ void IncreaseIndexInDims(
     int*                    index);
 
 bool IsRowwiseBroadcast(
-    const std::vector<int64_t>&     A_dims,
-    const std::vector<int64_t>&     B_dims,
-    int*                            rows,
-    int*                            cols);
+    const vec64_t&          A_dims,
+    const vec64_t&          B_dims,
+    int*                    rows,
+    int*                    cols);
 
 bool IsColwiseBroadcast(
-    const std::vector<int64_t>&     A_dims,
-    const std::vector<int64_t>&     B_dims,
-    int*                            rows,
-    int*                            cols);
+    const vec64_t&          A_dims,
+    const vec64_t&          B_dims,
+    int*                    rows,
+    int*                    cols);
 
 bool IsRowwiseReduce(
     const int               ndims,

@@ -20,7 +20,7 @@ from ..layer import Layer as _Layer
 
 
 class MPIBroadcastLayer(_Layer):
-    """The implementation of ``MPIBroadcastLayer``.
+    """The implementation of *MPIBroadcastLayer*.
 
     Parameters
     ----------
@@ -37,7 +37,7 @@ class MPIBroadcastLayer(_Layer):
 
 
 class MPIGatherLayer(_Layer):
-    """The implementation of ``MPIGatherLayer``.
+    """The implementation of *MPIGatherLayer*.
 
     Parameters
     ----------

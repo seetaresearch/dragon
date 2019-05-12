@@ -13,11 +13,11 @@ template<> void AbsGrad<float, CPUContext>(
     float*                  dx,
     CPUContext*             ctx) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         const float val = dy[i];
-        //  val > 0: 1 | val == 0: 0 | val < 0: -1
+        // val > 0: 1 | val == 0: 0 | val < 0: -1
         dx[i] = (float)((val > 0.f) - (val < 0.f));
     }
 }

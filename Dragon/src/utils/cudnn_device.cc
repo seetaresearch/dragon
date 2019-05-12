@@ -6,31 +6,31 @@
 
 namespace dragon {
 
-float CUDNNType<float>::oneval = 1.f;
-float CUDNNType<float>::zeroval = 0.f;
-const void* CUDNNType<float>::one =
-static_cast<void *>(&CUDNNType<float>::oneval);
-const void* CUDNNType<float>::zero =
-static_cast<void *>(&CUDNNType<float>::zeroval);
+float CuDNNType<float>::oneval = 1.f;
+float CuDNNType<float>::zeroval = 0.f;
+const void* CuDNNType<float>::one =
+static_cast<void *>(&CuDNNType<float>::oneval);
+const void* CuDNNType<float>::zero =
+static_cast<void *>(&CuDNNType<float>::zeroval);
 
-double CUDNNType<double>::oneval = 1.0;
-double CUDNNType<double>::zeroval = 0.0;
-const void* CUDNNType<double>::one =
-static_cast<void *>(&CUDNNType<double>::oneval);
-const void* CUDNNType<double>::zero =
-static_cast<void *>(&CUDNNType<double>::zeroval);
+double CuDNNType<double>::oneval = 1.0;
+double CuDNNType<double>::zeroval = 0.0;
+const void* CuDNNType<double>::one =
+static_cast<void *>(&CuDNNType<double>::oneval);
+const void* CuDNNType<double>::zero =
+static_cast<void *>(&CuDNNType<double>::zeroval);
 
-float CUDNNType<float16>::oneval = 1.f;
-float CUDNNType<float16>::zeroval = 0.f;
-const void* CUDNNType<float16>::one =
-static_cast<void*>(&CUDNNType<float16>::oneval);
-const void* CUDNNType<float16>::zero =
-static_cast<void*>(&CUDNNType<float16>::zeroval);
+float CuDNNType<float16>::oneval = 1.f;
+float CuDNNType<float16>::zeroval = 0.f;
+const void* CuDNNType<float16>::one =
+static_cast<void*>(&CuDNNType<float16>::oneval);
+const void* CuDNNType<float16>::zero =
+static_cast<void*>(&CuDNNType<float16>::zeroval);
 
 template <typename T>
-void cudnnSetTensorDesc(
+void CuDNNSetTensorDesc(
     cudnnTensorDescriptor_t*        desc,
-    const vector<int64_t>&          dims) {
+    const vec64_t&                  dims) {
     int ndim = (int)dims.size();
     int* dimA = new int[ndim];
     int* strideA = new int[ndim];
@@ -40,80 +40,114 @@ void cudnnSetTensorDesc(
         dimA[i] = (int)dims[i];
         stride *= dimA[i];
     }
-    CUDNN_CHECK(cudnnSetTensorNdDescriptor(*desc,
-        CUDNNType<T>::type, ndim, dimA, strideA));
+    CUDNN_CHECK(cudnnSetTensorNdDescriptor(
+        *desc,
+        CuDNNType<T>::type,
+        ndim,
+        dimA,
+        strideA
+    ));
     delete[] dimA;
     delete[] strideA;
 }
 
 template <typename T>
-void cudnnSetTensor4dDesc(
+void CuDNNSetTensor4dDesc(
     cudnnTensorDescriptor_t*        desc,
     const string&                   data_format,
-    const vector<int64_t>&          dims) {
+    const vec64_t&                  dims) {
     if (data_format == "NCHW") {
         CUDNN_CHECK(cudnnSetTensor4dDescriptor(
-            *desc, CUDNN_TENSOR_NCHW, CUDNNType<T>::type,
-                dims[0], dims[1], dims[2], dims[3]));
+            *desc,
+            CUDNN_TENSOR_NCHW,
+            CuDNNType<T>::type,
+            dims[0],
+            dims[1],
+            dims[2],
+            dims[3]
+        ));
     } else if (data_format == "NHWC") {
         CUDNN_CHECK(cudnnSetTensor4dDescriptor(
-            *desc, CUDNN_TENSOR_NHWC, CUDNNType<T>::type,
-                dims[0], dims[3], dims[1], dims[2]));
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+            *desc,
+            CUDNN_TENSOR_NHWC,
+            CuDNNType<T>::type,
+            dims[0],
+            dims[3],
+            dims[1],
+            dims[2]
+        ));
+    }
 }
 
 template <typename T>
-void cudnnSetTensor4dDescWithGroup(
+void CuDNNSetTensor4dDescWithGroup(
     cudnnTensorDescriptor_t*        desc,
     const string&                   data_format,
-    const vector<int64_t>&          dims,
+    const vec64_t&                  dims,
     const int64_t                   group) {
     if (data_format == "NCHW") {
         CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(
-            *desc, CUDNNType<T>::type,
-                dims[0], dims[1] / group, dims[2], dims[3],
-                    dims[1] * dims[2] * dims[3],
-                        dims[2] * dims[3], dims[3], 1));
+            *desc,
+            CuDNNType<T>::type,
+            dims[0],
+            dims[1] / group,
+            dims[2],
+            dims[3],
+            dims[1] * dims[2] * dims[3],
+            dims[2] * dims[3],
+            dims[3],
+            1
+        ));
     } else if (data_format == "NHWC") {
         CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(
-            *desc, CUDNNType<T>::type,
-                dims[0], dims[3] / group, dims[1], dims[2],
-                    dims[1] * dims[2] * dims[3],
-                        1, dims[2] * dims[3], dims[3]));
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+            *desc,
+            CuDNNType<T>::type,
+            dims[0],
+            dims[3] / group,
+            dims[1],
+            dims[2],
+            dims[1] * dims[2] * dims[3],
+            1,
+            dims[2] * dims[3], dims[3]
+        ));
+    }
 }
 
 template <typename T>
-void cudnnSetTensor5dDesc(
+void CuDNNSetTensor5dDesc(
     cudnnTensorDescriptor_t*        desc,
     const string&                   data_format,
-    const vector<int64_t>&          dims) {
+    const vec64_t&                  dims) {
     if (data_format == "NCHW") {
-        cudnnSetTensorDesc<T>(desc, dims);
+        CuDNNSetTensorDesc<T>(desc, dims);
     } else if (data_format == "NHWC") {
         const int N = (int)dims[0];
         const int C = (int)dims[4];
         const int H = (int)dims[1];
         const int W = (int)dims[2];
         const int D = (int)dims[3];
-        vector<int> fake_dims = { N, C, H, W, D };
-        vector<int> fake_strides = {
+        vec32_t fake_dims = { N, C, H, W, D };
+        vec32_t fake_strides = {
             H * W * D * C, 1,
                 W * D * C,
                     D * C,
                         C };
         CUDNN_CHECK(cudnnSetTensorNdDescriptor(
-            *desc, CUDNNType<T>::type, 5,
-                fake_dims.data(), fake_strides.data()));
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+            *desc,
+            CuDNNType<T>::type,
+            5,
+            fake_dims.data(),
+            fake_strides.data()
+        ));
+    }
 }
 
 template <typename T>
-void cudnnSetTensor3dDesc(
+void CuDNNSetTensor3dDesc(
     cudnnTensorDescriptor_t*        desc,
     const string&                   data_format,
-    const vector<int64_t>&          dims) {
-    vector<int64_t> fake_dims = dims;
+    const vec64_t&                  dims) {
+    vec64_t fake_dims = dims;
     if (data_format == "NCHW") {
         // NCH -> NCHXX
         fake_dims.push_back(1);
@@ -122,40 +156,44 @@ void cudnnSetTensor3dDesc(
         // NHC -> NHXXC
         fake_dims.insert(fake_dims.begin() + 2, 1);
         fake_dims.insert(fake_dims.begin() + 2, 1);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
-    cudnnSetTensor5dDesc<T>(desc, data_format, fake_dims);
+    }
+    CuDNNSetTensor5dDesc<T>(desc, data_format, fake_dims);
 }
 
 template <typename T>
-void cudnnSetTensorDesc(
+void CuDNNSetTensorDesc(
     cudnnTensorDescriptor_t*        desc,
-    const vector<int64_t>&          dims,
-    const vector<int64_t>&          strides) {
+    const vec64_t&                  dims,
+    const vec64_t&                  strides) {
     CHECK_EQ(dims.size(), strides.size());
     CHECK(dims.size() >= 3 && dims.size() <= 8);
-    vector<int> dimA(dims.begin(), dims.end());
-    vector<int> strideA(strides.begin(), strides.end());
+    vec32_t dimA(dims.begin(), dims.end());
+    vec32_t strideA(strides.begin(), strides.end());
     CUDNN_CHECK(cudnnSetTensorNdDescriptor(
-        *desc, CUDNNType<T>::type, (int)dimA.size(),
-            dimA.data(), strideA.data()));
+        *desc,
+        CuDNNType<T>::type,
+        (int)dimA.size(),
+        dimA.data(),
+        strideA.data()
+    ));
 }
 
 template <typename T>
-void cudnnSetTensorDesc(
+void CuDNNSetTensorDesc(
     cudnnTensorDescriptor_t*        desc,
     Tensor*                         tensor) {
     // CuDNN requires ndimensions from 3 to 8
     // Exapnd or Squeeze dimensions to pass check
-    vector<int64_t> fake_dims(tensor->dims());
+    vec64_t fake_dims(tensor->dims());
     if (fake_dims.size() < 3) {
         fake_dims.resize(3, 1);
     } else if (fake_dims.size() > 8) {
         fake_dims = { tensor->count(), 1, 1 };
-    } cudnnSetTensorDesc<T>(desc, fake_dims);
+    } CuDNNSetTensorDesc<T>(desc, fake_dims);
 }
 
 template <typename T>
-void cudnnSetTensor4dDesc(
+void CuDNNSetTensor4dDesc(
     cudnnTensorDescriptor_t*        desc,
     const string&                   data_format,
     Tensor*                         tensor) {
@@ -163,11 +201,11 @@ void cudnnSetTensor4dDesc(
         << "\nThe num of dimensions of Tensor("
         << tensor->name() << ") "
         << "should be 4, but got " << tensor->ndim() << ".";
-    cudnnSetTensor4dDesc<T>(desc, data_format, tensor->dims());
+    CuDNNSetTensor4dDesc<T>(desc, data_format, tensor->dims());
 }
 
 template <typename T>
-void cudnnSetTensor5dDesc(
+void CuDNNSetTensor5dDesc(
     cudnnTensorDescriptor_t*        desc,
     const string&                   data_format,
     Tensor*                         tensor) {
@@ -175,11 +213,11 @@ void cudnnSetTensor5dDesc(
         << "\nThe num of dimensions of Tensor("
         << tensor->name() << ") "
         << "should be 5, but got " << tensor->ndim() << ".";
-    cudnnSetTensor5dDesc<T>(desc, data_format, tensor->dims());
+    CuDNNSetTensor5dDesc<T>(desc, data_format, tensor->dims());
 }
 
 template <typename T>
-void cudnnSetTensor3dDesc(
+void CuDNNSetTensor3dDesc(
     cudnnTensorDescriptor_t*        desc,
     const string&                   data_format,
     Tensor*                         tensor) {
@@ -187,155 +225,155 @@ void cudnnSetTensor3dDesc(
         << "\nThe num of dimensions of Tensor("
         << tensor->name() << ") "
         << "should be 3, but got " << tensor->ndim() << ".";
-    cudnnSetTensor3dDesc<T>(desc, data_format, tensor->dims());
+    CuDNNSetTensor3dDesc<T>(desc, data_format, tensor->dims());
 }
 
-template void cudnnSetTensorDesc<float>(
+template void CuDNNSetTensorDesc<float>(
     cudnnTensorDescriptor_t*,
     Tensor*);
 
-template void cudnnSetTensor4dDesc<float>(
-    cudnnTensorDescriptor_t*,
-    const string&,
-    Tensor*);
-
-template void cudnnSetTensor5dDesc<float>(
+template void CuDNNSetTensor4dDesc<float>(
     cudnnTensorDescriptor_t*,
     const string&,
     Tensor*);
 
-template void cudnnSetTensor3dDesc<float>(
+template void CuDNNSetTensor5dDesc<float>(
     cudnnTensorDescriptor_t*,
     const string&,
     Tensor*);
 
-template void cudnnSetTensorDesc<float>(
-    cudnnTensorDescriptor_t*,
-    const vector<int64_t>&);
-
-template void cudnnSetTensor4dDesc<float>(
+template void CuDNNSetTensor3dDesc<float>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<int64_t>&);
+    Tensor*);
 
-template void cudnnSetTensor5dDesc<float>(
+template void CuDNNSetTensorDesc<float>(
+    cudnnTensorDescriptor_t*,
+    const vec64_t&);
+
+template void CuDNNSetTensor4dDesc<float>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<int64_t>&);
+    const vec64_t&);
 
-template void cudnnSetTensor3dDesc<float>(
+template void CuDNNSetTensor5dDesc<float>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<int64_t>&);
+    const vec64_t&);
 
-template void cudnnSetTensor4dDescWithGroup<float>(
+template void CuDNNSetTensor3dDesc<float>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<int64_t>&,
+    const vec64_t&);
+
+template void CuDNNSetTensor4dDescWithGroup<float>(
+    cudnnTensorDescriptor_t*,
+    const string&,
+    const vec64_t&,
     const int64_t);
 
-template void cudnnSetTensorDesc<float>(
+template void CuDNNSetTensorDesc<float>(
     cudnnTensorDescriptor_t*,
-    const vector<int64_t>&,
-    const vector<int64_t>&);
+    const vec64_t&,
+    const vec64_t&);
 
-template void cudnnSetTensorDesc<double>(
+template void CuDNNSetTensorDesc<double>(
     cudnnTensorDescriptor_t*,
     Tensor*);
 
-template void cudnnSetTensor4dDesc<double>(
-    cudnnTensorDescriptor_t*,
-    const string&,
-    Tensor*);
-
-template void cudnnSetTensor5dDesc<double>(
+template void CuDNNSetTensor4dDesc<double>(
     cudnnTensorDescriptor_t*,
     const string&,
     Tensor*);
 
-template void cudnnSetTensor3dDesc<double>(
+template void CuDNNSetTensor5dDesc<double>(
     cudnnTensorDescriptor_t*,
     const string&,
     Tensor*);
 
-template void cudnnSetTensorDesc<double>(
-    cudnnTensorDescriptor_t*,
-    const vector<int64_t>&);
-
-template void cudnnSetTensor4dDesc<double>(
+template void CuDNNSetTensor3dDesc<double>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<int64_t>&);
+    Tensor*);
 
-template void cudnnSetTensor5dDesc<double>(
+template void CuDNNSetTensorDesc<double>(
+    cudnnTensorDescriptor_t*,
+    const vec64_t&);
+
+template void CuDNNSetTensor4dDesc<double>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<int64_t>&);
+    const vec64_t&);
 
-template void cudnnSetTensor3dDesc<double>(
+template void CuDNNSetTensor5dDesc<double>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<int64_t>&);
+    const vec64_t&);
 
-template void cudnnSetTensor4dDescWithGroup<double>(
+template void CuDNNSetTensor3dDesc<double>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<int64_t>&,
+    const vec64_t&);
+
+template void CuDNNSetTensor4dDescWithGroup<double>(
+    cudnnTensorDescriptor_t*,
+    const string&,
+    const vec64_t&,
     const int64_t);
 
-template void cudnnSetTensorDesc<double>(
+template void CuDNNSetTensorDesc<double>(
     cudnnTensorDescriptor_t*,
-    const vector<int64_t>&,
-    const vector<int64_t>&);
+    const vec64_t&,
+    const vec64_t&);
 
-template void cudnnSetTensorDesc<float16>(
+template void CuDNNSetTensorDesc<float16>(
     cudnnTensorDescriptor_t*,
     Tensor*);
 
-template void cudnnSetTensor4dDesc<float16>(
-    cudnnTensorDescriptor_t*,
-    const string&,
-    Tensor*);
-
-template void cudnnSetTensor5dDesc<float16>(
+template void CuDNNSetTensor4dDesc<float16>(
     cudnnTensorDescriptor_t*,
     const string&,
     Tensor*);
 
-template void cudnnSetTensor3dDesc<float16>(
+template void CuDNNSetTensor5dDesc<float16>(
     cudnnTensorDescriptor_t*,
     const string&,
     Tensor*);
 
-template void cudnnSetTensorDesc<float16>(
-    cudnnTensorDescriptor_t*,
-    const vector<int64_t>&);
-
-template void cudnnSetTensor4dDesc<float16>(
+template void CuDNNSetTensor3dDesc<float16>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<int64_t>&);
+    Tensor*);
 
-template void cudnnSetTensor5dDesc<float16>(
+template void CuDNNSetTensorDesc<float16>(
+    cudnnTensorDescriptor_t*,
+    const vec64_t&);
+
+template void CuDNNSetTensor4dDesc<float16>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<int64_t>&);
+    const vec64_t&);
 
-template void cudnnSetTensor3dDesc<float16>(
+template void CuDNNSetTensor5dDesc<float16>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<int64_t>&);
+    const vec64_t&);
 
-template void cudnnSetTensor4dDescWithGroup<float16>(
+template void CuDNNSetTensor3dDesc<float16>(
     cudnnTensorDescriptor_t*,
     const string&,
-    const vector<int64_t>&,
+    const vec64_t&);
+
+template void CuDNNSetTensor4dDescWithGroup<float16>(
+    cudnnTensorDescriptor_t*,
+    const string&,
+    const vec64_t&,
     const int64_t);
 
-template void cudnnSetTensorDesc<float16>(
+template void CuDNNSetTensorDesc<float16>(
     cudnnTensorDescriptor_t*,
-    const vector<int64_t>&,
-    const vector<int64_t>&);
+    const vec64_t&,
+    const vec64_t&);
 
 }  // namespace dragon
 

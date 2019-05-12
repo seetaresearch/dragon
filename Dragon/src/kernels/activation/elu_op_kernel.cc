@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Elu <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void Elu<float, CPUContext>(
     const int               count,
@@ -14,7 +14,7 @@ template<> void Elu<float, CPUContext>(
     float*                  y,
     CPUContext*             ctx) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         y[i] = std::max(x[i], 0.f) + alpha *
@@ -22,7 +22,7 @@ template<> void Elu<float, CPUContext>(
     }
 }
 
-/*! EluGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void EluGrad<float, CPUContext>(
     const int               count,
@@ -32,7 +32,7 @@ template<> void EluGrad<float, CPUContext>(
     float*                  dx,
     CPUContext*             ctx) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         dx[i] = dy[i] * (

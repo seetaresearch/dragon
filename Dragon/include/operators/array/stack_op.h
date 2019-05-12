@@ -22,15 +22,14 @@ class StackOp final : public Operator<Context> {
  public:
     StackOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 0)) {}
+          axis_(OpArg<int64_t>("axis", 0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t axis, outer_dim, inner_dim;
-    vector<int64_t> stack_dims, concat_dims;
+    int64_t axis_, outer_dim_, inner_dim_;
 };
 
 template <class Context>
@@ -38,14 +37,14 @@ class StackGradientOp final : public Operator<Context> {
  public:
     StackGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 0)) {}
+          axis_(OpArg<int64_t>("axis", 0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t axis, outer_dim, inner_dim;
+    int64_t axis_, outer_dim_, inner_dim_;
 };
 
 }  // namespace dragon

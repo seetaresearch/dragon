@@ -5,10 +5,10 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Sigmoid <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <typename T>
-T _SigmoidUnit(T x) { return T(1) / (T(1) + exp(-x)); }
+T _Sigmoid(T x) { return T(1) / (T(1) + exp(-x)); }
 
 template<> void Sigmoid<float, CPUContext>(
     const int               count,
@@ -16,14 +16,14 @@ template<> void Sigmoid<float, CPUContext>(
     float*                  y,
     CPUContext*             ctx) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
-        y[i] = _SigmoidUnit<float>(x[i]);
+        y[i] = _Sigmoid(x[i]);
     }
 }
 
-/*! SigmoidGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void SigmoidGrad<float, CPUContext>(
     const int               count,
@@ -32,7 +32,7 @@ template<> void SigmoidGrad<float, CPUContext>(
     float*                  dx,
     CPUContext*             ctx) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         dx[i] = dy[i] * y[i] * (1 - y[i]);

@@ -8,13 +8,13 @@ namespace dragon {
 namespace kernel {
 
 #define FIXED_DIVISOR_DIV_MOD(d, n, q, r) \
-  do {                                    \
-    const auto n_copy = n;                \
-    *q = n_copy / d;                      \
-    *r = n_copy % d;                      \
-  } while (0)
+    do {                                  \
+        const auto n_copy = n;            \
+        *q = n_copy / d;                  \
+        *r = n_copy % d;                  \
+    } while (0)
 
-/*! Tile <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename T>
 __global__ void _Tile(
@@ -25,24 +25,24 @@ __global__ void _Tile(
     const int*              y_dims,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        int x_idx = 0, tmp = y_idx;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        int xi = 0, tmp = yi;
 #pragma unroll
         for (int d = ndims - 1; d >= 0; --d) {
             int r;
 #if __CUDA_ARCH__ >= 350
             FIXED_DIVISOR_DIV_MOD(__ldg(y_dims + d), tmp, &tmp, &r);
-            x_idx += r % __ldg(x_dims + d) * __ldg(x_strides + d);
+            xi += r % __ldg(x_dims + d) * __ldg(x_strides + d);
 #else
             FIXED_DIVISOR_DIV_MOD(y_dims[d], tmp, &tmp, &r);
-            x_idx += r % x_dims[d] * x_strides[d];
+            xi += r % x_dims[d] * x_strides[d];
 #endif
         }
-        y[y_idx] = x[x_idx];
+        y[yi] = x[xi];
     }
 }
 
-/*! TileGrad <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename T>
 __global__ void _TileGrad(
@@ -52,40 +52,40 @@ __global__ void _TileGrad(
     const int               multiple,
     const T*                dy,
     T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(x_idx, nthreads) {
+    CUDA_1D_KERNEL_LOOP(xi, nthreads) {
         T gradient = 0;
-        const int col_idx = x_idx % cols;
-        const int row_idx = x_idx / cols;
+        const int col_idx = xi % cols;
+        const int row_idx = xi / cols;
         const int y_offset = row_idx * tiled_cols + col_idx;
         for (int m = 0; m < multiple; ++m)
             gradient += dy[y_offset + m * cols];
-        dx[x_idx] = gradient;
+        dx[xi] = gradient;
     }
 }
 
-/*! TileGrad <T = float16, Device = CUDA> */
+/* <T = float16, Device = CUDA> */
 
-__global__ void _TileGradHalf(
+template<> __global__ void _TileGrad<half>(
     const int               nthreads,
     const int               cols,
     const int               tiled_cols,
     const int               multiple,
     const half*             dy,
     half*                   dx) {
-    CUDA_1D_KERNEL_LOOP(x_idx, nthreads) {
+    CUDA_1D_KERNEL_LOOP(xi, nthreads) {
 #if __CUDA_ARCH__ >= 530
         float gradient = 0.f;
-        const int col_idx = x_idx % cols;
-        const int row_idx = x_idx / cols;
+        const int col_idx = xi % cols;
+        const int row_idx = xi / cols;
         const int y_offset = row_idx * tiled_cols + col_idx;
         for (int m = 0; m < multiple; ++m)
             gradient += __half2float(dy[y_offset + m * cols]);
-        dx[x_idx] = __float2half(gradient);
+        dx[xi] = __float2half(gradient);
 #endif
     }
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_TILE_KERNEL_LAUNCHER(T) \
     template<> void Tile<T, CUDAContext>( \
@@ -97,10 +97,16 @@ __global__ void _TileGradHalf(
         const T*                x, \
         T*                      y, \
         CUDAContext*            ctx) { \
-        _Tile<T> \
+        _Tile \
             << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> > \
-            (count, ndims, x_dims, x_strides, y_dims, x, y); \
+                 0, ctx->cuda_stream() >> >( \
+            count, \
+            ndims, \
+            x_dims, \
+            x_strides, \
+            y_dims, \
+            x, y \
+        ); \
     }
 
 #define DEFINE_TILE_GRAD_KERNEL_LAUNCHER(T) \
@@ -113,10 +119,15 @@ __global__ void _TileGradHalf(
         CUDAContext*            ctx) { \
         auto nthreads = rows * cols; \
         auto tiled_cols = multiple * cols; \
-        _TileGrad<T> \
+        _TileGrad \
             << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> > \
-            (nthreads, cols, tiled_cols, multiple, dy, dx); \
+                 0, ctx->cuda_stream() >> >( \
+            nthreads, \
+            cols, \
+            tiled_cols, \
+            multiple, \
+            dy, dx \
+        ); \
     }
 
 DEFINE_TILE_KERNEL_LAUNCHER(bool);
@@ -144,12 +155,16 @@ template<> void TileGrad<float16, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = rows * cols;
     auto tiled_cols = multiple * cols;
-    _TileGradHalf
+    _TileGrad
         << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (nthreads, cols, tiled_cols, multiple,
-            reinterpret_cast<const half*>(dy),
-                reinterpret_cast<half*>(dx));
+             0, ctx->cuda_stream() >> >(
+        nthreads,
+        cols,
+        tiled_cols,
+        multiple,
+        reinterpret_cast<const half*>(dy),
+        reinterpret_cast<half*>(dx)
+    );
 }
 
 #undef DEFINE_TILE_KERNEL_LAUNCHER

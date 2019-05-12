@@ -6,62 +6,68 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Repeat <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _Repeat(
     const int               outer_dim,
-    const int               repeat_dim,
     const int               inner_dim,
+    const int               axis_dim,
     const int               repeats,
     const T*                x,
     T*                      y,
     CPUContext*             ctx) {
     for (int i = 0; i < outer_dim; ++i) {
-        for (int j = 0; j < repeat_dim; ++j) {
+        for (int j = 0; j < axis_dim; ++j) {
             for (int k = 0; k < repeats; ++k) {
-                ctx->Copy<T, CPUContext, CPUContext>(
-                    inner_dim, y, x); y += inner_dim;
+                math::Copy(inner_dim, x, y, ctx);
+                y += inner_dim;
             } x += inner_dim;
         }
     }
 }
 
-/*! RepeatGrad <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _RepeatGrad(
     const int               outer_dim,
-    const int               repeat_dim,
     const int               inner_dim,
+    const int               axis_dim,
     const int               repeats,
     const T*                dy,
     T*                      dx,
     CPUContext*             ctx) {
     for (int i = 0; i < outer_dim; ++i) {
-        for (int j = 0; j < repeat_dim; ++j) {
-            ctx->Copy<T, CPUContext, CPUContext>(
-                inner_dim, dx, dy); dy += inner_dim;
+        for (int j = 0; j < axis_dim; ++j) {
+            math::Copy(inner_dim, dy, dx, ctx);
+            dy += inner_dim;
             for (int k = 1; k < repeats; ++k) {
-                math::Add<T, CPUContext>(
-                    inner_dim, dy, dx, dx, ctx);
+                math::Add(inner_dim, dy, dx, dx, ctx);
                 dy += inner_dim;
             } dx += inner_dim;
         }
     }
 } 
 
+/* Kernel Launchers */
+
 #define DEFINE_REPEAT_KERNEL_LAUNCHER(name, T) \
     template<> void name<T, CPUContext>( \
         const int               outer_dim, \
-        const int               repeat_dim, \
         const int               inner_dim, \
+        const int               axis_dim, \
         const int               repeats, \
         const T*                x, \
         T*                      y, \
         CPUContext*             ctx) { \
-        _##name<T>(outer_dim, repeat_dim, \
-            inner_dim, repeats, x, y, ctx); \
+        _##name( \
+            outer_dim, \
+            inner_dim, \
+            axis_dim, \
+            repeats, \
+            x, y, ctx \
+        ); \
     }
 
 DEFINE_REPEAT_KERNEL_LAUNCHER(Repeat, bool);

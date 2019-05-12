@@ -14,111 +14,139 @@ namespace dragon {
     }
 
 template <class Context> template <typename T>
-void AssignOp<Context>::RunWithType() {
-    const T* Xdata = nullptr;
-    auto* XDS = x_dimsT.template data<int, Context>();
-    auto* YSS = y_stridesT.template data<int, Context>();
-    auto* STS = startsT.template data<int, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+void AssignOp<Context>::RunImpl() {
+    const T* x = nullptr;
+    auto* y = Y(0)->template mutable_data<T, Context>();
 
-    if (Input(0).count() < fake_x.count()) {
+    if (X(0).count() < X_.count()) {
         int rows, cols;
-        auto* WSdata = ws()->template caches
-            <T, Context>({ fake_x.count() })[0];
-        auto* RXdata = Input(0).template data<T, Context>();
+        auto* scratch = ws()
+            ->template data<T, Context>
+                ({ X_.count() })[0];
+        auto* rx = X(0).template data<T, Context>();
         if (utils::IsRowwiseBroadcast(
-                fake_x.dims(), Input(0).dims(),
+                X_.dims(), X(0).dims(),
                     &rows, &cols)) {
-            math::BroadcastSet(rows, cols, 0,
-                RXdata, WSdata, ctx());
+            math::BroadcastSet(
+                rows, cols, 0,
+                rx, scratch, ctx()
+            );
         } else if (utils::IsColwiseBroadcast(
-                fake_x.dims(), Input(0).dims(),
+                X_.dims(), X(0).dims(),
                     &rows, &cols)) {
-            math::BroadcastSet(rows, cols, 1,
-                RXdata, WSdata, ctx());
+            math::BroadcastSet(
+                rows, cols, 1,
+                rx, scratch, ctx()
+            );
         } else {
-            LOG(FATAL) << "Could not broadcast "
-                << Input(0).DimString() << " to "
-                << fake_x.DimString();
+            LOG(FATAL)
+                << "Could not broadcast "
+                << X(0).DimString()
+                << " to "
+                << X_.DimString();
         }
-        Xdata = WSdata;
-    } else if (Input(0).count() == fake_x.count()) {
-        Xdata = Input(0).template data<T, Context>();
+        x = scratch;
+    } else if (X(0).count() == X_.count()) {
+        x = X(0).template data<T, Context>();
     } else {
-        LOG(FATAL) << "Could not assign "
-            << Input(0).DimString() << " to "
-            << Output(0)->DimString();
+        LOG(FATAL) 
+            << "Could not assign "
+            << X(0).DimString()
+            << " to "
+            << Y(0)->DimString();
     }
 
     // Apply a simple Nd-Broadcast solution
-    kernel::Assign(fake_x.count(), x_dimsT.count(),
-        XDS, YSS, STS, Xdata, Ydata, ctx());
+    kernel::Assign(
+        X_.count(),
+        X_dims_.count(),
+        X_dims_.template data<int, Context>(),
+        Y_strides_.template data<int, Context>(),
+        X_starts_.template data<int, Context>(),
+        x, y, ctx()
+    );
 }
 
 template <class Context>
 void AssignOp<Context>::Setup() {
-    st.assign((size_t)Output(0)->ndim(), 0);
-    ed.assign(st.size(), 0);
+    st_.assign((size_t)Y(0)->ndim(), 0);
+    ed_.assign(st_.size(), 0);
 
     // Determine the starts
-    int n_starts = GET_ARGUMENTS_SIZE(starts);
-    for (int i = 0; i < st.size(); i++)
-        if (i < n_starts) st[i] = starts(i);
+    int nstarts = GET_ARGS_SIZE(starts);
+    for (int i = 0; i < st_.size(); i++)
+        if (i < nstarts) st_[i] = starts(i);
  
     // Determine the ends
-    int n_sizes = GET_ARGUMENTS_SIZE(sizes);
-    for (int i = 0; i < ed.size(); i++) {
-        ed[i] = Output(0)->dim(i);
-        if (i < n_sizes) {
+    int nsizes = GET_ARGS_SIZE(sizes);
+    for (int i = 0; i < ed_.size(); i++) {
+        ed_[i] = Y(0)->dim(i);
+        if (i < nsizes) {
             auto len = sizes(i);
-            if (len > 0) { ed[i] = st[i] + len; }
-            else if (len == 0) { ed[i] = st[i] + 1; }
+            if (len > 0) { ed_[i] = st_[i] + len; }
+            else if (len == 0) { ed_[i] = st_[i] + 1; }
         }
     }
 
     // Check starts and ends
-    for (int i = 0; i < st.size(); i++) {
-        CHECK(st[i] >= 0 && st[i] < Output(0)->dim(i))
-            << "\nThe assigning starts at the pos " << st[i] << " of axis " << i << ", "
-            << "while the dimension of this axis is " << Output(0)->dim(i) << ".";
-        CHECK(ed[i] > 0 && ed[i] <= Output(0)->dim(i))
-            << "\nThe assigning ends at the pos " << ed[i] << " of axis " << i << ", "
-            << "while the dimension of this axis is " << Output(0)->dim(i) << ".";
+    for (int i = 0; i < st_.size(); i++) {
+        CHECK(st_[i] >= 0 && st_[i] < Y(0)->dim(i))
+            << "\nThe assigning starts at the pos "
+            << st_[i] << " of axis " << i << ", "
+            << "while the dimension of this axis is "
+            << Y(0)->dim(i) << ".";
+        CHECK(ed_[i] > 0 && ed_[i] <= Y(0)->dim(i))
+            << "\nThe assigning ends at the pos "
+            << ed_[i] << " of axis " << i << ", "
+            << "while the dimension of this axis is "
+            << Y(0)->dim(i) << ".";
     }
-
-    x_dimsV = Output(0)->dims();
-    for (int i = 0; i < st.size(); i++)
-        x_dimsV[i] = ed[i] - st[i];
-    fake_x.Reshape(x_dimsV);
 }
 
 template <class Context>
 void AssignOp<Context>::RunOnDevice() {
     Setup();
 
-    TENSOR_FROM_VECTOR(y_stridesT, Output(0)->strides(), int);
-    TENSOR_FROM_VECTOR(x_dimsT, x_dimsV, int);
-    TENSOR_FROM_VECTOR(startsT, st, int);
+    auto X_dims = Y(0)->dims();
+    for (int i = 0; i < st_.size(); i++)
+        X_dims[i] = ed_[i] - st_[i];
+    X_.Reshape(X_dims);
 
-    if (XIsType(Input(0), bool)) RunWithType<bool>();
-    else if (XIsType(Input(0), int8_t)) RunWithType<int8_t>();
-    else if (XIsType(Input(0), uint8_t)) RunWithType<uint8_t>();
-    else if (XIsType(Input(0), int)) RunWithType<int>();
-    else if (XIsType(Input(0), int64_t)) RunWithType<int64_t>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), double)) RunWithType<double>();
-    else LOG(FATAL) << DTypeHelper(Input(0), {
-        "bool", "int8", "uint8", "int32", "int64",
-            "float16", "float32", "float64",
-    });
+    TENSOR_FROM_VECTOR(X_starts_, st_, int);
+    TENSOR_FROM_VECTOR(X_dims_, X_dims, int);
+    TENSOR_FROM_VECTOR(Y_strides_, Y(0)->strides(), int);
+
+    if (XIsType(X(0), bool)) {
+        RunImpl<bool>();
+    } else if (XIsType(X(0), int8_t)) {
+        RunImpl<int8_t>();
+    } else if (XIsType(X(0), uint8_t)) {
+        RunImpl<uint8_t>();
+    } else if (XIsType(X(0), int)) {
+        RunImpl<int>();
+    } else if (XIsType(X(0), int64_t)) {
+        RunImpl<int64_t>();
+    } else if (XIsType(X(0), float16)) {
+        RunImpl<float16>();
+    } else if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(0), double)) {
+        RunImpl<double>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0), {
+            "bool", "int8", "uint8", "int32", "int64",
+                 "float16", "float32", "float64",
+        });
+    }
 }
 
 DEPLOY_CPU(Assign);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Assign);
 #endif
-OPERATOR_SCHEMA(Assign).NumInputs(1).NumOutputs(1);
+
+OPERATOR_SCHEMA(Assign)
+    .NumInputs(1).NumOutputs(1);
 
 NO_GRADIENT(Assign);
 

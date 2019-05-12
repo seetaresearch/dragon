@@ -22,41 +22,46 @@ class Pool2dOp : public Operator<Context> {
  public:
     Pool2dOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          mode(OperatorBase::Arg<string>("mode", "MAX")),
-          data_format(OperatorBase::Arg<string>("data_format", "NCHW")),
-          padding(OperatorBase::Arg<string>("padding", "VALID")),
-          global_pooling(OperatorBase::Arg<bool>("global_pooling", false)),
-          ceil_mode(OperatorBase::Arg<bool>("ceil_mode", true)) {
-        auto ks = OperatorBase::Args<int64_t>("kernel_shape");
-        auto s = OperatorBase::Args<int64_t>("strides");
-        auto p = OperatorBase::Args<int64_t>("pads");
+          mode_(OpArg<string>("mode", "MAX")),
+          padding_(OpArg<string>("padding", "VALID")),
+          ceil_mode_(OpArg<bool>("ceil_mode", true)),
+          global_pool_(OpArg<bool>("global_pooling", false)) {
+        auto at = [&](const vec64_t & vec, int i) {
+            return i < vec.size() ? vec[i] : vec[0];
+        };
+        auto pads = OpArgs<int64_t>("pads");
+        auto strides = OpArgs<int64_t>("strides");
+        auto kshape = OpArgs<int64_t>("kernel_shape");
         for (int i = 0; i < 2; i++) {
-            if (global_pooling) {
-                kernel_shape.push_back(-1);
-                stride.push_back(1);
-                pad_l.push_back(0);
+            if (global_pool_) {
+                pad_l_.push_back(0);
+                stride_.push_back(1);
+                kshape_.push_back(-1);
             } else {
-                kernel_shape.push_back(i < ks.size() ? ks[i] : ks[0]);
-                stride.push_back(i < s.size() ? s[i] : s[0]);
-                pad_l.push_back(i < p.size() ? p[i] : p[0]);
+                pad_l_.push_back(at(pads, i));
+                stride_.push_back(at(strides, i));
+                kshape_.push_back(at(kshape, i));
              }
         }
-        if (p.size() == 4) pad_r.assign(p.begin() + 2, p.end());
-        else pad_r.assign(pad_l.begin(), pad_l.end());
+        if (pads.size() == 4) {
+            pad_r_.assign(pads.begin() + 2, pads.end());
+        } else {
+            pad_r_.assign(pad_l_.begin(), pad_l_.end());
+        }
     }
     USE_OPERATOR_FUNCTIONS;
 
     void Reshape();
+
     void RunOnDevice() override;
-    template <typename T> void MAXRunWithType();
-    template <typename T> void AVGRunWithType();
+    template <typename T> void MaxRunImpl();
+    template <typename T> void AvgRunImpl();
 
  protected:
-    vector<int64_t> kernel_shape, stride, pad_l, pad_r;
-    Tensor* mask;
-    string mode, data_format, padding;
-    int64_t n, c, h, w, pool_h, pool_w;
-    bool global_pooling, ceil_mode;
+    string mode_, padding_;
+    bool global_pool_, ceil_mode_;
+    vec64_t kshape_, stride_, pad_l_, pad_r_;
+    int64_t n_, c_, h_, w_, pool_h_, pool_w_;
 };
 
 template <class Context>
@@ -64,41 +69,45 @@ class Pool2dGradientOp : public Operator<Context> {
  public:
     Pool2dGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          mode(OperatorBase::Arg<string>("mode", "MAX")),
-          data_format(OperatorBase::Arg<string>("data_format", "NCHW")),
-          padding(OperatorBase::Arg<string>("padding", "VALID")),
-          global_pooling(OperatorBase::Arg<bool>("global_pooling", false)),
-          ceil_mode(OperatorBase::Arg<bool>("ceil_mode", true)) {
-        auto ks = OperatorBase::Args<int64_t>("kernel_shape");
-        auto s = OperatorBase::Args<int64_t>("strides");
-        auto p = OperatorBase::Args<int64_t>("pads");
+          mode_(OpArg<string>("mode", "MAX")),
+          padding_(OpArg<string>("padding", "VALID")),
+          ceil_mode_(OpArg<bool>("ceil_mode", true)),
+          global_pool_(OpArg<bool>("global_pooling", false)) {
+        auto at = [&](const vec64_t & vec, int i) {
+            return i < vec.size() ? vec[i] : vec[0];
+        };
+        auto pads = OpArgs<int64_t>("pads");
+        auto strides = OpArgs<int64_t>("strides");
+        auto kshape = OpArgs<int64_t>("kernel_shape");
         for (int i = 0; i < 2; i++) {
-            if (global_pooling) {
-                kernel_shape.push_back(-1);
-                stride.push_back(1);
-                pad_l.push_back(0);
+            if (global_pool_) {
+                pad_l_.push_back(0);
+                stride_.push_back(1);
+                kshape_.push_back(-1);
             } else {
-                kernel_shape.push_back(i < ks.size() ? ks[i] : ks[0]);
-                stride.push_back(i < s.size() ? s[i] : s[0]);
-                pad_l.push_back(i < p.size() ? p[i] : p[0]);
-            }
+                pad_l_.push_back(at(pads, i));
+                stride_.push_back(at(strides, i));
+                kshape_.push_back(at(kshape, i));
+             }
         }
-        if (p.size() == 4) pad_r.assign(p.begin() + 2, p.end());
-        else pad_r.assign(pad_l.begin(), pad_l.end());
+        if (pads.size() == 4) {
+            pad_r_.assign(pads.begin() + 2, pads.end());
+        } else {
+            pad_r_.assign(pad_l_.begin(), pad_l_.end());
+        }
     }
     USE_OPERATOR_FUNCTIONS;
 
     void Reshape();
     void RunOnDevice() override;
-    template <typename T> void MAXRunWithType();
-    template <typename T> void AVGRunWithType();
+    template <typename T> void MaxRunImpl();
+    template <typename T> void AvgRunImpl();
 
  protected:
-    vector<int64_t> kernel_shape, stride, pad_l, pad_r;
-    Tensor* mask;
-    string mode, data_format, padding;
-    int64_t n, c, h, w, pool_h, pool_w;
-    bool global_pooling, ceil_mode;
+    string mode_, padding_;
+    bool global_pool_, ceil_mode_;
+    vec64_t kshape_, stride_, pad_l_, pad_r_;
+    int64_t n_, c_, h_, w_, pool_h_, pool_w_;
 };
 
 #ifdef WITH_CUDNN
@@ -108,34 +117,37 @@ class CuDNNPool2dOp final : public Pool2dOp<Context> {
  public:
     CuDNNPool2dOp(const OperatorDef& def, Workspace* ws)
         : Pool2dOp<Context>(def, ws) {
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
-        CUDNN_CHECK(cudnnCreatePoolingDescriptor(&pool_desc));
-        if (this->mode == "MAX") {
+        CuDNNCreateTensorDesc(&input_desc_);
+        CuDNNCreateTensorDesc(&output_desc_);
+        CUDNN_CHECK(cudnnCreatePoolingDescriptor(&pool_desc_));
+        if (this->mode_ == "MAX") {
 #if CUDNN_VERSION_MIN(6,0,0)
-            pool_mode = CUDNN_POOLING_MAX_DETERMINISTIC;
+            pool_mode_ = CUDNN_POOLING_MAX_DETERMINISTIC;
 #else
-            pool_mode = CUDNN_POOLING_MAX;
+            pool_mode_ = CUDNN_POOLING_MAX;
 #endif
-        } else if (this->mode == "AVG") {
-            pool_mode = CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
-        } else LOG(FATAL) << "Unsupported pooling mode: " << this->mode;
+        } else if (this->mode_ == "AVG") {
+            pool_mode_ = CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
+        } else {
+            LOG(FATAL) << "Unknown Mode: " << this->mode_;
+        }
     }
     USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNPool2dOp() {
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
-        CUDNN_CHECK(cudnnDestroyPoolingDescriptor(pool_desc));
+        CuDNNDestroyTensorDesc(&input_desc_);
+        CuDNNDestroyTensorDesc(&output_desc_);
+        CUDNN_CHECK(cudnnDestroyPoolingDescriptor(pool_desc_));
     }
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    cudnnTensorDescriptor_t input_desc, output_desc;
-    cudnnPoolingDescriptor_t pool_desc;
-    cudnnPoolingMode_t pool_mode;
+    cudnnTensorDescriptor_t input_desc_;
+    cudnnTensorDescriptor_t output_desc_;
+    cudnnPoolingDescriptor_t pool_desc_;
+    cudnnPoolingMode_t pool_mode_;
 };
 
 template <class Context>
@@ -143,34 +155,37 @@ class CuDNNPool2dGradientOp final : public Pool2dGradientOp<Context> {
  public:
     CuDNNPool2dGradientOp(const OperatorDef& def, Workspace* ws)
         : Pool2dGradientOp<Context>(def, ws) {
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
-        CUDNN_CHECK(cudnnCreatePoolingDescriptor(&pool_desc));
-        if (this->mode == "MAX") {
+        CuDNNCreateTensorDesc(&input_desc_);
+        CuDNNCreateTensorDesc(&output_desc_);
+        CUDNN_CHECK(cudnnCreatePoolingDescriptor(&pool_desc_));
+        if (this->mode_ == "MAX") {
 #if CUDNN_VERSION_MIN(6,0,0)
-            pool_mode = CUDNN_POOLING_MAX_DETERMINISTIC;
+            pool_mode_ = CUDNN_POOLING_MAX_DETERMINISTIC;
 #else
-            pool_mode = CUDNN_POOLING_MAX;
+            pool_mode_ = CUDNN_POOLING_MAX;
 #endif
-        } else if (this->mode == "AVG") {
-            pool_mode = CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
-        } else LOG(FATAL) << "Unsupported pooling mode: " << this->mode;
+        } else if (this->mode_ == "AVG") {
+            pool_mode_ = CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
+        } else {
+            LOG(FATAL) << "Unknown Mode: " << this->mode_;
+        }
     }
     USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNPool2dGradientOp() {
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
-        CUDNN_CHECK(cudnnDestroyPoolingDescriptor(pool_desc));
+        CuDNNDestroyTensorDesc(&input_desc_);
+        CuDNNDestroyTensorDesc(&output_desc_);
+        CUDNN_CHECK(cudnnDestroyPoolingDescriptor(pool_desc_));
     }
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    cudnnTensorDescriptor_t input_desc, output_desc;
-    cudnnPoolingDescriptor_t pool_desc;
-    cudnnPoolingMode_t pool_mode;
+    cudnnTensorDescriptor_t input_desc_;
+    cudnnTensorDescriptor_t output_desc_;
+    cudnnPoolingDescriptor_t pool_desc_;
+    cudnnPoolingMode_t pool_mode_;
 };
 
 #endif  // WITH_CUDNN

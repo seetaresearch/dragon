@@ -8,11 +8,10 @@ namespace dragon {
 
 namespace kernel {
 
-/*! DropBlock2d <T = float32, Device = CUDA> */
+/* < Device = CUDA> */
 
-template <typename T>
-__global__ void _DropBlock2d_NCHW(
-    const int               count,
+__global__ void _DropBlock2dNCHW(
+    const int               nthreads,
     const int               C,
     const int               H,
     const int               W,
@@ -22,7 +21,7 @@ __global__ void _DropBlock2d_NCHW(
     const uint32_t          thresh,
     const uint32_t*         seed,
     int*                    mask) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, nthreads) {
         if (seed[idx] < thresh) {
             const int x = idx % seed_w;
             const int y = (idx / seed_w) % seed_h;
@@ -38,9 +37,8 @@ __global__ void _DropBlock2d_NCHW(
     }
 }
 
-template <typename T>
-__global__ void _DropBlock2d_NHWC(
-    const int               count,
+__global__ void _DropBlock2dNHWC(
+    const int               nthreads,
     const int               C,
     const int               H,
     const int               W,
@@ -50,7 +48,7 @@ __global__ void _DropBlock2d_NHWC(
     const uint32_t          thresh,
     const uint32_t*         seed,
     int*                    mask) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(idx, nthreads) {
         if (seed[idx] < thresh) {
             const int x = idx % seed_w;
             const int y = (idx / seed_w) % seed_h;
@@ -78,23 +76,38 @@ template <> void DropBlock2d<CUDAContext>(
     uint32_t*               seed,
     int*                    mask,
     CUDAContext*            ctx) {
-    const int count = N * C * seed_h * seed_w;
-    math::RandomUniform<uint32_t, CUDAContext>(
-        count, 0.f, float(UINT_MAX), seed, ctx);
-    auto thresh = static_cast<uint32_t>(UINT_MAX * gamma);
+    auto nthreads = N * C * seed_h * seed_w;
+    math::RandomUniform(
+        nthreads,
+        0.f, float(UINT_MAX),
+        seed, ctx
+    );
+    auto mask_thresh = (uint32_t)(UINT_MAX * gamma);
     if (data_format == "NCHW") {
-        _DropBlock2d_NCHW<int>
-            << < CUDA_BLOCKS(count), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (count, C, H, W, seed_h, seed_w,
-                block_size, thresh, seed, mask);
+        _DropBlock2dNCHW
+            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(
+            nthreads,
+            C, H, W,
+            seed_h, seed_w,
+            block_size,
+            mask_thresh,
+            seed, mask
+        );
     } else if(data_format == "NHWC") {
-        _DropBlock2d_NHWC<int>
-            << < CUDA_BLOCKS(count), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (count, C, H, W, seed_h, seed_w,
-                block_size, thresh, seed, mask);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+        _DropBlock2dNHWC
+            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                 0, ctx->cuda_stream() >> >(
+            nthreads,
+            C, H, W,
+            seed_h, seed_w,
+            block_size,
+            mask_thresh,
+            seed, mask
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
 }  // namespace kernel

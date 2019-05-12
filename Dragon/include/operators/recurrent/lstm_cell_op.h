@@ -25,8 +25,7 @@ class LSTMCellOp final : public Operator<Context> {
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void ResetDesc();
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 };
 
 template <class Context>
@@ -37,7 +36,7 @@ class LSTMCellGradientOp final : public Operator<Context> {
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 };
 
 }  // namespace dragon

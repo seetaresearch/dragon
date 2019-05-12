@@ -22,15 +22,17 @@ class AccumulateOp final : public Operator<Context> {
  public:
     AccumulateOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          alpha(OperatorBase::Arg<float>("alpha", 1.f)),
-          beta(OperatorBase::Arg<float>("beta", 1.f)) {}
+          alpha_(OpArg<float>("alpha", 1.f)),
+          beta_(OpArg<float>("beta", 1.f)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType(Tensor* X, Tensor* Y);
+
+    template <typename T>
+    void RunImpl(Tensor* X, Tensor* Y);
 
  protected:
-    float alpha, beta;
+    float alpha_, beta_;
 };
 
 }  // namespace dragon

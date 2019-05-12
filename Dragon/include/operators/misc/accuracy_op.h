@@ -22,23 +22,25 @@ class AccuracyOp final : public Operator<Context> {
  public:
     AccuracyOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          top_k(OperatorBase::Arg<int64_t>("top_k", 1)),
-          axis(OperatorBase::Arg<int64_t>("axis", 1)) {
-        auto ignores = OperatorBase::Args<int>("ignore_labels");
-        if (ignores.size()) {
-            ignore.Reshape({ (int64_t)ignores.size() });
-            auto* Idata = ignore.mutable_data<int, CPUContext>();
-            for (int i = 0; i < ignores.size(); i++) Idata[i] = ignores[i];
+          axis_(OpArg<int64_t>("axis", 1)),
+          top_k_(OpArg<int64_t>("top_k", 1)) {
+        auto ivec = OpArgs<int64_t>("ignore_labels");
+        if (!ivec.empty()) {
+            ignore_.Reshape({ (int64_t)ivec.size() });
+            auto* x = ignore_.mutable_data<int, CPUContext>();
+            for (int i = 0; i < ivec.size(); i++) x[i] = ivec[i];
         }
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename Tx, typename Ty> void RunWithType();
+    template <typename Tx, typename Ty> void RunImpl();
 
  protected:
-    int64_t top_k, axis, outer_dim, inner_dim, num_classes;
-    Tensor ignore;
+    Tensor ignore_;
+    CPUContext cctx_;
+    int64_t outer_dim_, inner_dim_;
+    int64_t axis_, axis_dim_, top_k_;
 };
 
 }  // namespace dragon

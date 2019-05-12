@@ -11,38 +11,38 @@ namespace kernel {
 template <typename Ta, typename Tb>
 void _TypeA2B(const int count, const Ta* a, Tb* b) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         b[i] = cast::to<Tb>(a[i]);
     }
 }
 
-#define DEFINE_TYPE_A_TO_B(type_a, type_b) \
-    template <> void TypeA2B<type_a, type_b, CPUContext>( \
+#define DEFINE_TYPE_A_TO_B(Ta, Tb) \
+    template <> void TypeA2B<Ta, Tb, CPUContext>( \
         const int           count, \
-        const type_a*       a, \
-        type_b*             b, \
+        const Ta*           a, \
+        Tb*                 b, \
         CPUContext*         ctx) { \
-        _TypeA2B<type_a, type_b>(count, a, b); \
+        _TypeA2B(count, a, b); \
     }
 
-#define DEFINE_TYPE_FP16_DISABLED(type) \
-    template <> void TypeA2B<float16, type, CPUContext>( \
+#define DEFINE_TYPE_FP16_DISABLED(T) \
+    template <> void TypeA2B<float16, T, CPUContext>( \
         const int           count, \
         const float16*      a, \
-        type*               b, \
+        T*                  b, \
         CPUContext*         ctx) { \
         LOG(FATAL) << "Not Implemented: float16 -> " \
-                   << TypeMetaToString(TypeMeta::Make<type>()); \
+                   << TypeMetaToString(TypeMeta::Make<T>()); \
     } \
-    template <> void TypeA2B<type, float16, CPUContext>( \
+    template <> void TypeA2B<T, float16, CPUContext>( \
         const int           count, \
-        const type*         a, \
+        const T*            a, \
         float16*            b, \
         CPUContext*         ctx) { \
         LOG(FATAL) << "Not Implemented: " \
-                   << TypeMetaToString(TypeMeta::Make<type>()) \
+                   << TypeMetaToString(TypeMeta::Make<T>()) \
                    << " -> float16"; \
     }
 

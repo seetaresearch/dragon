@@ -7,7 +7,7 @@
 
 namespace dragon {
 
-/*! Prune the redundant nodes (-O1) */
+/* Prune the redundant nodes (-O1) */
 
 GraphDef GraphOptimizer::PruneNodes(const GraphDef& input_def) {
     dag_.clear(); colored_.clear();
@@ -105,7 +105,7 @@ GraphDef GraphOptimizer::PruneNodes(const GraphDef& input_def) {
     return output_def;
 }
 
-/*! Add the inplace for outputs (-O2) */
+/* Add the inplace for outputs (-O2) */
 
 GraphDef GraphOptimizer::AddInplace(const GraphDef& input_def) {
     dag_.clear(); renamed_.clear();
@@ -168,11 +168,11 @@ GraphDef GraphOptimizer::AddInplace(const GraphDef& input_def) {
     return output_def;
 }
 
-/*! Plan the recomputing for inputs (-O3) */
+/* Plan the recomputing for inputs (-O3) */
 
 GraphDef GraphOptimizer::MirrorStage(
     const GraphDef&                  input_def,
-    Map<string, vector<int> >&       op_indices) {
+    Map<string, vec32_t >&       op_indices) {
     GraphDef output_def(input_def);
     Map<string, set<int> > fake_op_indices;
     Map<string, string> rename_map;
@@ -186,7 +186,7 @@ GraphDef GraphOptimizer::MirrorStage(
             if (arg.name() == "mirror_stage")
                 mirror_stage |= (bool)arg.i();
         if (mirror_stage) {
-            // We only assume Input(0) can be recomputed
+            // We only assume X(0) can be recomputed
             rename_map[op.input(0)] = "placeholder";
         }
     }
@@ -267,7 +267,7 @@ GraphDef GraphOptimizer::MirrorStage(
     return output_def;
 }
 
-/*! Allocate the buffer for outputs (-O3) */
+/* Allocate the buffer for outputs (-O3) */
 
 GraphDef GraphOptimizer::SimulateGC(const GraphDef& input_def) {
     GraphDef output_def(input_def);
@@ -298,7 +298,7 @@ GraphDef GraphOptimizer::SimulateGC(const GraphDef& input_def) {
     };
 
     // Count the references
-    for (auto& op : input_def.op()) {
+    for (const auto& op : input_def.op()) {
         for (auto& input : op.input())
             ref_count[input] += 1;
         if (dimension_ops.count(op.type()))
@@ -363,7 +363,7 @@ GraphDef GraphOptimizer::SimulateGC(const GraphDef& input_def) {
     return output_def;
 }
 
-/*! Traverse from input gradients to dying the nodes */
+/* Traverse from input gradients to dying the nodes */
 
 void GraphOptimizer::ForwardPruneTraversal(
     const string&               u,
@@ -389,7 +389,7 @@ void GraphOptimizer::ForwardPruneTraversal(
     }
 }
 
-/*! Traverse from targets to dying the nodes */
+/* Traverse from targets to dying the nodes */
 
 void GraphOptimizer::BackwardPruneTraversal(const string& v) {
     colored_[v] = true;
@@ -400,7 +400,7 @@ void GraphOptimizer::BackwardPruneTraversal(const string& v) {
     }
 }
 
-/*! Traverse from inputs to find the available inplace chain */
+/* Traverse from inputs to find the available inplace chain */
 
 void GraphOptimizer::InplaceTraversal(
     const string&               u,

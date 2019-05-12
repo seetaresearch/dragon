@@ -9,55 +9,59 @@ namespace dragon {
     B[i] = padding_needed - A[i]
 
 template <class Context>
-void ConvOpBase<Context>::ComputeOutputShape() {
-    output_shape.clear();
-    for (int i = 0; i < num_spatial_axes; i++) {
-        if (!ReverseDimensions()) {
-            const int64_t idm = bottom_shape[spatial_axis + i];
-            const int64_t dk = dilation[i] * (kernel_shape[i] - 1) + 1;
-            if (padding.find("SAME") == string::npos) {
+void ConvOpBase<Context>::ComputeOutShape() {
+    out_shape_.clear();
+    for (int i = 0; i < num_axes_; i++) {
+        if (!Transposed()) {
+            auto idm = x_shape_[axis_ + i];
+            auto dk = dilation_[i] * (kshape_[i] - 1) + 1;
+            if (padding_.find("SAME") == string::npos) {
                 // Explicit pads
-                const int64_t odm = (idm + pad_l[i] + pad_r[i] - dk) / stride[i] + 1;
-                output_shape.push_back(odm);
+                auto odm = (
+                    idm + pad_l_[i] + pad_r_[i] - dk
+                        ) / stride_[i] + 1;
+                out_shape_.push_back(odm);
             } else {
                 // Auto pads
-                int64_t odm = (idm + stride[i] - 1) / (float)stride[i];
-                int64_t padding_needed = std::max(
-                    (int64_t)0, (odm - 1) * stride[i] + dk - idm);
-                output_shape.push_back(odm);
-                if (padding != "SAME_UPPER") { DEFINE_SAME_PADDING(pad_l, pad_r); }
-                else { DEFINE_SAME_PADDING(pad_r, pad_l); }  // SAME_LOWER or SAME
+                int64_t odm = (
+                    idm + stride_[i] - 1
+                        ) / (float)stride_[i];
+                auto padding_needed = std::max(
+                    int64_t(0), (odm - 1) * stride_[i] + dk - idm);
+                out_shape_.push_back(odm);
+                if (padding_ != "SAME_UPPER") {
+                    DEFINE_SAME_PADDING(pad_l_, pad_r_);
+                } else { 
+                    DEFINE_SAME_PADDING(pad_r_, pad_l_);
+                }  // SAME_LOWER or SAME
             }
         } else {
-            const int64_t idm = bottom_shape[spatial_axis + i];
-            const int64_t dk = dilation[i] * (kernel_shape[i] - 1) + 1;
-            if (padding.find("SAME") == string::npos) {
+            auto idm = x_shape_[axis_ + i];
+            auto dk = dilation_[i] * (kshape_[i] - 1) + 1;
+            if (padding_.find("SAME") == string::npos) {
                 // Explicit pads
-                const int64_t odm = stride[i] * (idm - 1) + dk - pad_l[i] - pad_r[i];
-                output_shape.push_back(odm);
+                auto odm = stride_[i] * (idm - 1
+                    ) + dk - pad_l_[i] - pad_r_[i];
+                out_shape_.push_back(odm);
             } else {
                 // Auto pads
-                int given_num_output_shape = (int)std::max(
-                    output_shape_spec_desc.size(),
-                        output_shape_spec_value.size());
-                int given_num_output_padding = (int)std::max(
-                    output_padding_desc.size(),
-                        output_padding_value.size());
-                CHECK(given_num_output_shape == 0 ||
-                    given_num_output_shape == num_spatial_axes)
-                    << "Excepted 0 or " << num_spatial_axes
+                int output_shape_size = GET_ARGS_SIZE(output_shape);
+                int output_padding_size = GET_ARGS_SIZE(output_padding);
+                CHECK(output_shape_size == 0 ||
+                      output_shape_size == num_axes_)
+                    << "Excepted 0 or " << num_axes_
                     << " ints for output shape.";
-                CHECK(given_num_output_padding == 0 ||
-                      given_num_output_padding == num_spatial_axes)
-                    << "Excepted 0 or " << num_spatial_axes
+                CHECK(output_padding_size == 0 ||
+                      output_padding_size == num_axes_)
+                    << "Excepted 0 or " << num_axes_
                     << " ints for output padding.";
                 int64_t padding_needed, odm;
-                if (given_num_output_padding) {
+                if (output_padding_size) {
                     padding_needed = output_padding(i);
-                    odm = stride[i] * (idm - 1) + dk + padding_needed;
-                } else if (given_num_output_shape) {
-                    odm = output_shape_spec(i);
-                    padding_needed = odm - (stride[i] * (idm - 1) + dk);
+                    odm = stride_[i] * (idm - 1) + dk + padding_needed;
+                } else if (output_shape_size) {
+                    odm = output_shape(i);
+                    padding_needed = odm - (stride_[i] * (idm - 1) + dk);
                     CHECK_GE(padding_needed, 0)
                         << "\nThe output shape is incorrect."
                         << "\nWith the given stride and kernel, "
@@ -69,9 +73,12 @@ void ConvOpBase<Context>::ComputeOutputShape() {
                         << "Excepted the output padding or output shape"
                            "for \"SAME\" padding algorithm.";
                 }
-                output_shape.push_back(odm);
-                if (padding != "SAME_UPPER") { DEFINE_SAME_PADDING(pad_l, pad_r); }
-                else { DEFINE_SAME_PADDING(pad_r, pad_l); }  // SAME_LOWER or SAME
+                out_shape_.push_back(odm);
+                if (padding_ != "SAME_UPPER") {
+                    DEFINE_SAME_PADDING(pad_l_, pad_r_);
+                } else {
+                    DEFINE_SAME_PADDING(pad_r_, pad_l_);
+                }  // SAME_LOWER or SAME
             }
         }
     }
@@ -80,357 +87,336 @@ void ConvOpBase<Context>::ComputeOutputShape() {
 template <class Context> template <typename T>
 void ConvOpBase<Context>::Wx(
     const T*                x,
-    const T*                weights,
+    const T*                w,
     T*                      y,
-    bool                    skip_im2col) {
-    auto* col_buffer = x;
+    bool                    skip) {
+    auto* col = x;
 
-    if (!is_1x1) {
-        auto* WSdata = ws()->template
-            caches<T, Context>({ col_dim })[0];
-        if (!skip_im2col) Im2Col(x, WSdata);
-        col_buffer = WSdata;
+    if (!is_1x1_) {
+        auto* scratch = ws()->template
+            data<T, Context>({ col_dim_ })[0];
+        if (!skip) Im2Col(x, scratch);
+        col = scratch;
     }
 
-    for (int g = 0; g < group; g++) {
-        if (data_format == "NCHW") {
+    for (int g = 0; g < group_; g++) {
+        if (data_format() == "NCHW") {
             math::Gemm(
                 CblasNoTrans,
                 CblasNoTrans,
-                conv_out_channels / group,
-                conv_out_spatial_dim,
-                kernel_dim,
-                1.f, weights + weight_offset * g,
-                col_buffer + col_offset * g,
-                0.f, y + output_offset * g, ctx());
-        } else if (data_format == "NHWC") {
+                conv_out_channels_ / group_,
+                conv_out_dim_,
+                kernel_dim_,
+                1.f,
+                w + w_ofs_ * g,
+                col + col_ofs_ * g,
+                0.f,
+                y + output_ofs_ * g, ctx()
+            );
+        } else if (data_format() == "NHWC") {
             math::Gemm(
                 CblasNoTrans,
                 CblasTrans,
-                conv_out_spatial_dim,
-                conv_out_channels,
-                kernel_dim,
-                1.f, col_buffer, weights,
-                0.f, y, ctx());
+                conv_out_dim_,
+                conv_out_channels_,
+                kernel_dim_,
+                1.f, col, w,
+                0.f, y, ctx()
+            );
         }
     }
 }
 
 template <class Context> template <typename T>
 void ConvOpBase<Context>::Pb(const T* bias, T* y) {
-    DECLARE_MULTIPLIER(multiplier, out_spatial_dim);
+    DECLARE_MULTIPLIER(multiplier, out_dim_);
     kernel::BiasAdd(
-        Input(0).dim(0), num_output, out_spatial_dim,
-            data_format, bias, multiplier, y, ctx());
+        X(0).dim(0),
+        num_output_,
+        out_dim_,
+        data_format(),
+        bias, multiplier,
+        y, ctx()
+    );
 }
 
 template <class Context> template <typename T>
-void ConvOpBase<Context>::Dx(const T* dy, const T* weights, T* dx) {
-    auto* col_buffer = is_1x1 ? dx :
-        ws()->template caches<T, Context>({ col_dim })[0];
-    for (int g = 0; g < group; g++) {
-        if (data_format == "NCHW") {
+void ConvOpBase<Context>::Dx(const T* dy, const T* w, T* dx) {
+    auto* col = is_1x1_ ? dx :
+        ws()->template data
+            <T, Context>({ col_dim_ })[0];
+    for (int g = 0; g < group_; g++) {
+        if (data_format() == "NCHW") {
             math::Gemm(
                 CblasTrans,
                 CblasNoTrans,
-                kernel_dim,
-                conv_out_spatial_dim,
-                conv_out_channels / group,
-                1.f, weights + weight_offset * g,
-                dy + output_offset * g,
-                0.f, col_buffer + col_offset * g, ctx());
-        } else if (data_format == "NHWC") {
+                kernel_dim_,
+                conv_out_dim_,
+                conv_out_channels_ / group_,
+                1.f,
+                w + w_ofs_ * g,
+                dy + output_ofs_ * g,
+                0.f,
+                col + col_ofs_ * g, ctx()
+            );
+        } else if (data_format() == "NHWC") {
              math::Gemm(
                  CblasNoTrans,
                  CblasNoTrans,
-                 conv_out_spatial_dim,
-                 kernel_dim,
-                 conv_out_channels,
-                 1.f, dy, weights,
-                 0.f, col_buffer, ctx());
+                 conv_out_dim_,
+                 kernel_dim_,
+                 conv_out_channels_,
+                 1.f, dy, w,
+                 0.f, col, ctx()
+             );
         }
     }
-    if (!is_1x1) Col2Im(col_buffer, dx);
+    if (!is_1x1_) Col2Im(col, dx);
 }
 
 template <class Context> template <typename T>
-void ConvOpBase<Context>::Dw(const T* dy, const T* x, T *dw) {
-    auto* col_buffer = x;
+void ConvOpBase<Context>::Dw(
+    const T*                dy,
+    const T*                x,
+    T*                      dw,
+    bool                    accum) {
+    auto* col = x;
 
-    if (!is_1x1) {
-        auto* WSdata = ws()->template
-            caches<T, Context>({ col_dim })[0];
-        Im2Col(x, WSdata);
-        col_buffer = WSdata;
+    if (!is_1x1_) {
+        auto* scratch = ws()
+            ->template data<T, Context>
+                ({ col_dim_ })[0];
+        Im2Col(x, scratch);
+        col = scratch;
     }
 
-    for (int g = 0; g < group; g++) {
-        if (data_format == "NCHW") {
+    for (int g = 0; g < group_; g++) {
+        if (data_format() == "NCHW") {
             math::Gemm(
                 CblasNoTrans,
                 CblasTrans,
-                conv_out_channels / group,
-                kernel_dim,
-                conv_out_spatial_dim,
-                1.f, dy + output_offset * g,
-                col_buffer + col_offset * g,
-                0.f, dw + weight_offset * g, ctx());
-        } else if (data_format == "NHWC") {
+                conv_out_channels_ / group_,
+                kernel_dim_,
+                conv_out_dim_,
+                1.f,
+                dy + output_ofs_ * g,
+                col + col_ofs_ * g,
+                accum ? 1.f : 0.f,
+                dw + w_ofs_ * g, ctx()
+            );
+        } else if (data_format() == "NHWC") {
             math::Gemm(
                 CblasTrans,
                 CblasNoTrans,
-                conv_out_channels,
-                kernel_dim,
-                conv_out_spatial_dim,
-                1.f, dy, col_buffer,
-                0.f, dw, ctx());
+                conv_out_channels_,
+                kernel_dim_,
+                conv_out_dim_,
+                1.f,
+                dy, col,
+                accum ? 1.f : 0.f,
+                dw, ctx()
+            );
         }
     }
 }
 
 template <class Context> template <typename T>
 void ConvOpBase<Context>::Db(const T* dy, T* db) {
-    DECLARE_MULTIPLIER(multiplier, out_spatial_dim);
-    if (data_format == "NCHW") {
-        math::Gemv(
-            CblasNoTrans,
-            num_output,
-            out_spatial_dim,
-            1.f, dy, multiplier,
-            0.f, db, ctx());
-    } else if (data_format == "NHWC") {
-        math::Gemv(
-            CblasTrans,
-            out_spatial_dim,
-            num_output,
-            1.f, dy, multiplier,
-            0.f, db, ctx());
+    vec32_t dims, axes;
+    if (data_format() == "NCHW") {
+        dims = {
+            (int)X(0).dim(0),
+            (int)num_output_,
+            (int)out_dim_,
+        }, axes = { 0, 2 };
+    } else if (data_format() == "NHWC") {
+        dims = {
+            (int)X(0).dim(0),
+            (int)out_dim_,
+            (int)num_output_,
+        }, axes = { 0, 1 };
     }
+    kernel::ReduceSum(
+        3, dims.data(),
+        2, axes.data(),
+        1.f, dy,
+        db, ctx()
+    );
 }
 
 template <class Context>
-void ConvOpBase<Context>::Setup() {
-    auto ks = OperatorBase::Args<int64_t>("kernel_shape");
-    for (int i = 0; i < num_spatial_axes; i++)
-        kernel_shape.emplace_back(i < ks.size() ? ks[i] : ks[0]);
+void ConvOpBase<Context>::Setup(int num_axes) {
+    num_axes_ = num_axes;
 
-    auto s = OperatorBase::Args<int64_t>("strides");
-    for (int i = 0; i < num_spatial_axes; i++)
-        stride.emplace_back(i < s.size() ? s[i] : s[0]);
+    auto at = [&](const vec64_t& vec, int i) {
+        return i < vec.size() ? vec[i] : vec[0];
+    };
 
-    auto p = OperatorBase::Args<int64_t>("pads");
-    for (int i = 0; i < num_spatial_axes; i++)
-        pad_l.push_back(i < p.size() ? p[i] : p[0]);
+    auto pads = OpArgs<int64_t>("pads");
+    auto strides = OpArgs<int64_t>("strides");
+    auto kshape = OpArgs<int64_t>("kernel_shape");
+    auto dilations = OpArgs<int64_t>("dilations");
 
-    if ((int64_t)p.size() == (num_spatial_axes * 2)) {
-        for (int i = 0; i < num_spatial_axes; i++)
-            pad_r.push_back(p[num_spatial_axes + i]);
+    for (int i = 0; i < num_axes; i++) {
+        pad_l_.push_back(at(pads, i));
+        stride_.push_back(at(strides, i));
+        kshape_.push_back(at(kshape, i));
+        dilation_.push_back(at(dilations, i));
+    }
+
+    if ((int64_t)pads.size() == (num_axes * 2)) {
+        for (int i = 0; i < num_axes; i++)
+            pad_r_.push_back(pads[num_axes + i]);
     } else {
-        pad_r.assign(pad_l.begin(), pad_l.end());
+        pad_r_.assign(pad_l_.begin(), pad_l_.end());
     }
 
-    auto d = OperatorBase::Args<int64_t>("dilations");
-    for (int i = 0; i < num_spatial_axes; i++)
-        dilation.push_back(i < d.size() ? d[i] : d[0]);
-
-    is_1x1 = true;
-    for (int i = 0; i < num_spatial_axes; i++) {
-        is_1x1 &= (kernel_shape[i] == 1 && stride[i] == 1 &&
-                   pad_l[i] == 0 && pad_r[i] == 0);
-        if (!is_1x1) break;
+    bool flag_1x1 = true;
+    for (int i = 0; i < num_axes; i++) {
+        flag_1x1 &= (
+            pad_l_[i] == 0 &&
+            pad_r_[i] == 0 &&
+            stride_[i] == 1 &&
+            kshape_[i] == 1
+        );
+        if (!flag_1x1) break;
     }
+    is_1x1_ = flag_1x1 ? 1 : 0;
 }
 
 template <class Context>
-void ConvOpBase<Context>::Reshape() {
+void ConvOpBase<Context>::Reshape(bool backward) {
+    auto* Y_ref = backward ? &X(-1) : Y(0);
+
     // Determine the in/out channels
-    channels = data_format == "NCHW" ?
-        Input(0).dim(1) : Input(0).dim(-1);
-    if (num_output <= 0) {
+    channels_ = data_format() == "NCHW" ?
+                X(0).dim(1) : X(0).dim(-1);
+    if (num_output_ <= 0) {
         // Infer the out channels from the weights shape
-        num_output = Input(1).count() / channels;
-        for (int i = 0; i < num_spatial_axes; i++)
-            num_output /= kernel_shape[i];
-        CHECK_GT(num_output, 0)
-            << "\nFailed to infer the out channels from"
-            << "the weights shape: " << Input(1).DimString();
+        num_output_ = X(1).count() / channels_;
+        for (int i = 0; i < num_axes_; i++)
+            num_output_ /= kshape_[i];
+        CHECK_GT(num_output_, 0)
+            << "\nFailed to infer the out channels "
+            << "from weights: " << X(1).DimString();
     }
-    if (ReverseDimensions()) {
-        conv_out_channels = channels;
-        conv_in_channels = num_output;
+    if (Transposed()) {
+        conv_out_channels_ = channels_;
+        conv_in_channels_ = num_output_;
     } else {
-        conv_out_channels = num_output;
-        conv_in_channels = channels;
+        conv_out_channels_ = num_output_;
+        conv_in_channels_ = channels_;
     }
 
     // Determine the weight and bias shape
-    if (data_format == "NCHW") {
-        weight_shape.assign({ conv_out_channels,
-                              conv_in_channels / group });
-        for (int i = 0; i < num_spatial_axes; i++)
-            weight_shape.push_back(kernel_shape[i]);
-    } else if (data_format == "NHWC") {
-        weight_shape.assign({ conv_out_channels });
-        for (int i = 0; i < num_spatial_axes; i++)
-            weight_shape.push_back(kernel_shape[i]);
-        weight_shape.push_back(conv_in_channels / group);
+    if (data_format() == "NCHW") {
+        w_shape_ = {
+            conv_out_channels_,
+            conv_in_channels_ / group_
+        };
+        for (int i = 0; i < num_axes_; i++)
+            w_shape_.push_back(kshape_[i]);
+    } else if (data_format() == "NHWC") {
+        w_shape_ = { conv_out_channels_ };
+        for (int i = 0; i < num_axes_; i++)
+            w_shape_.push_back(kshape_[i]);
+        w_shape_.push_back(conv_in_channels_ / group_);
     }
-    bias_shape = { num_output };
+    b_shape_ = { num_output_ };
 
-    // Determine the bottom and top shape
-    bottom_shape = Input(0).dims();
-    ComputeOutputShape();
-    if (data_format == "NCHW") {
-        top_shape.assign({ Input(0).dim(0), num_output });
-        for (int i = 0; i < num_spatial_axes; i++)
-            top_shape.push_back(output_shape[i]);
-    } else if (data_format == "NHWC") {
-        top_shape.assign({ Input(0).dim(0) });
-        for (int i = 0; i < num_spatial_axes; i++)
-            top_shape.push_back(output_shape[i]);
-        top_shape.push_back(num_output);
+    // Determine the Y shape
+    x_shape_ = X(0).dims();
+    ComputeOutShape();
+    if (backward) {
+        Y(0)->ReshapeLike(X(0));
+        Y(1)->ReshapeLike(X(1));
+        Y(2)->Reshape({ num_output_ });
+    } else {
+        if (data_format() == "NCHW") {
+            y_shape_ = { X(0).dim(0), num_output_ };
+            for (int i = 0; i < num_axes_; i++)
+                y_shape_.push_back(out_shape_[i]);
+        } else if (data_format() == "NHWC") {
+            y_shape_ = { X(0).dim(0) };
+            for (int i = 0; i < num_axes_; i++)
+                y_shape_.push_back(out_shape_[i]);
+            y_shape_.push_back(num_output_);
+        }
+        Y(0)->Reshape(y_shape_);
     }
-    Output(0)->Reshape(top_shape);
 
     // Determine the input shape for im2col/col2im
-    input_shape.clear();
-    for (int i = 0; i < num_spatial_axes; i++) {
-        if (ReverseDimensions()) {
-            input_shape.push_back(Output(0)->dim(spatial_axis + i));
+    in_shape_.clear();
+    for (int i = 0; i < num_axes_; i++) {
+        if (Transposed()) {
+            in_shape_.push_back(Y_ref->dim(axis_ + i));
         } else {
-            input_shape.push_back(Input(0).dim(spatial_axis + i));
+            in_shape_.push_back(X(0).dim(axis_ + i));
         }
     }
 
     // Determine the out spatial dim
-    if (data_format == "NCHW") {
-        if (ReverseDimensions()) {
-            conv_out_spatial_dim = Input(0).count(spatial_axis);
+    auto end_axis = X(0).ndim() - 1;
+    if (data_format() == "NCHW") {
+        if (Transposed()) {
+            conv_out_dim_ = X(0).count(axis_);
         } else {
-            conv_out_spatial_dim = Output(0)->count(spatial_axis);
+            conv_out_dim_ = Y_ref->count(axis_);
         }
-        out_spatial_dim = Output(0)->count(spatial_axis);
-    } else if (data_format == "NHWC") {
-        if (ReverseDimensions()) {
-            conv_out_spatial_dim = Input(0).count(
-                spatial_axis, Input(0).ndim() - 1);
+        out_dim_ = Y_ref->count(axis_);
+    } else if (data_format() == "NHWC") {
+        if (Transposed()) {       
+            conv_out_dim_ = X(0).count(axis_, end_axis);
         } else {
-            conv_out_spatial_dim = Output(0)->count(
-                spatial_axis, Output(0)->ndim() - 1);
+            conv_out_dim_ = Y_ref->count(axis_, end_axis);
         }
-        out_spatial_dim = Output(0)->count(
-            spatial_axis, Output(0)->ndim() - 1);
+        out_dim_ = Y_ref->count(axis_, end_axis);
     }
 
     // Determine the misc
-    x_offset = Input(0).count(1);
-    y_offset = Output(0)->count(1);
-    kernel_dim = conv_in_channels / group;
-    for (int i = 0; i < num_spatial_axes; i++) kernel_dim *= kernel_shape[i];
-    weight_offset = conv_out_channels * kernel_dim / group;
-    col_offset = kernel_dim * conv_out_spatial_dim;
-    output_offset = conv_out_channels * conv_out_spatial_dim / group;
+    x_ofs_ = X(0).count(1);
+    y_ofs_ = Y_ref->count(1);
+    kernel_dim_ = conv_in_channels_ / group_;
+    for (int i = 0; i < num_axes_; i++) kernel_dim_ *= kshape_[i];
+    col_ofs_ = kernel_dim_ * conv_out_dim_;
+    w_ofs_ = conv_out_channels_ * kernel_dim_ / group_;
+    output_ofs_ = conv_out_channels_ * conv_out_dim_ / group_;
 
     // Determine the workspace size for col buffer
-    col_dim = kernel_dim * group;
-    for (int i = 0; i < num_spatial_axes; i++) {
-        if (ReverseDimensions())
-            col_dim *= bottom_shape[spatial_axis + i];
-        else col_dim *= output_shape[i];
-    }
-}
-
-template <class Context>
-void ConvOpBase<Context>::GradientReshape() {
-    // Determine the in/out channels
-    channels = data_format == "NCHW" ?
-        Input(0).dim(1) : Input(0).dim(-1);
-    if (num_output <= 0) {
-        // Infer the out channels from the weights shape
-        num_output = Input(1).count() / channels;
-        for (int i = 0; i < num_spatial_axes; i++)
-            num_output /= kernel_shape[i];
-        CHECK_GT(num_output, 0)
-            << "\nFailed to infer the out channels from"
-            << "the weights shape: " << Input(1).DimString();
-    }
-    if (ReverseDimensions()) {
-        conv_out_channels = channels;
-        conv_in_channels = num_output;
-    } else{
-        conv_out_channels = num_output;
-        conv_in_channels = channels;
-    }
-
-    // Determine the bottom and top shape
-    bottom_shape = Input(0).dims();
-    ComputeOutputShape();
-    Output(0)->Reshape(bottom_shape);
-    Output(1)->ReshapeLike(Input(1));
-    Output(2)->Reshape({ num_output });
-
-    // Determine the input shape for im2col/col2im
-    input_shape.clear();
-    for (int i = 0; i < num_spatial_axes; i++) {
-        if (ReverseDimensions()) {
-            input_shape.push_back(Input(-1).dim(spatial_axis + i));
+    col_dim_ = kernel_dim_ * group_;
+    for (int i = 0; i < num_axes_; i++) {
+        if (Transposed()) {
+            col_dim_ *= x_shape_[axis_ + i];
         } else {
-            input_shape.push_back(Input(0).dim(spatial_axis + i));
+            col_dim_ *= out_shape_[i];
         }
-    }
-
-    // Determine the out spatial dim
-    if (data_format == "NCHW") {
-        if (ReverseDimensions()) {
-            conv_out_spatial_dim = Input(0).count(spatial_axis);
-        } else {
-            conv_out_spatial_dim = Input(-1).count(spatial_axis);
-        }
-        out_spatial_dim = Input(-1).count(spatial_axis);
-    } else if (data_format == "NHWC") {
-        if (ReverseDimensions()) {
-            conv_out_spatial_dim = Input(0).count(
-                spatial_axis, Input(0).ndim() - 1);
-        } else {
-            conv_out_spatial_dim = Input(-1).count(
-                spatial_axis, Input(-1).ndim() - 1);
-        }
-        out_spatial_dim = Input(-1).count(
-            spatial_axis, Input(-1).ndim() - 1);
-    }
-
-    // Determine the misc
-    x_offset = Input(0).count(1);
-    y_offset = Input(-1).count(1);
-    kernel_dim = conv_in_channels / group;
-    for (int i = 0; i < num_spatial_axes; i++) kernel_dim *= kernel_shape[i];
-    weight_offset = conv_out_channels * kernel_dim / group;
-    col_offset = kernel_dim * conv_out_spatial_dim;
-    output_offset = conv_out_channels * conv_out_spatial_dim / group;
-
-    // Determine the workspace size for col buffer
-    col_dim = kernel_dim * group;
-    for (int i = 0; i < num_spatial_axes; i++) {
-        if (ReverseDimensions())
-            col_dim *= bottom_shape[spatial_axis + i];
-        else col_dim *= output_shape[i];
     }
 }
 
 template class ConvOpBase<CPUContext>;
-template void ConvOpBase<CPUContext>::Wx(const float*, const float*, float*, bool);
-template void ConvOpBase<CPUContext>::Pb(const float*, float*);
-template void ConvOpBase<CPUContext>::Dx(const float*, const float*, float*);
-template void ConvOpBase<CPUContext>::Dw(const float*, const float*, float*);
-template void ConvOpBase<CPUContext>::Db(const float*, float*);
+template void ConvOpBase<CPUContext>
+    ::Wx(const float*, const float*, float*, bool);
+template void ConvOpBase<CPUContext>
+    ::Pb(const float*, float*);
+template void ConvOpBase<CPUContext>
+    ::Dx(const float*, const float*, float*);
+template void ConvOpBase<CPUContext>
+    ::Dw(const float*, const float*, float*, bool);
+template void ConvOpBase<CPUContext>
+    ::Db(const float*, float*);
 
 #ifdef WITH_CUDA
 template class ConvOpBase<CUDAContext>;
-template void ConvOpBase<CUDAContext>::Wx(const float*, const float*, float*, bool);
-template void ConvOpBase<CUDAContext>::Pb(const float*, float*);
-template void ConvOpBase<CUDAContext>::Dx(const float*, const float*, float*);
-template void ConvOpBase<CUDAContext>::Dw(const float*, const float*, float*);
-template void ConvOpBase<CUDAContext>::Db(const float*, float*);
+template void ConvOpBase<CUDAContext>
+    ::Wx(const float*, const float*, float*, bool);
+template void ConvOpBase<CUDAContext>
+    ::Pb(const float*, float*);
+template void ConvOpBase<CUDAContext>
+    ::Dx(const float*, const float*, float*);
+template void ConvOpBase<CUDAContext>
+    ::Dw(const float*, const float*, float*, bool);
+template void ConvOpBase<CUDAContext>
+    ::Db(const float*, float*);
 #endif
 
 #undef DEFINE_SAME_PADDING

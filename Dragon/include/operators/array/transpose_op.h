@@ -22,16 +22,16 @@ class TransposeOp final: public Operator<Context> {
  public:
     TransposeOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws) {
-        GET_ARGUMENTS_WITH_DESC(int64_t, perm);
+        GET_ARGS_WITH_DESC(int64_t, perm);
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    Tensor x_strides, y_dims;
-    DECLARE_ARGUMENTS_WITH_DESC(int64_t, perm);
+    Tensor X_strides_, Y_dims_;
+    DECLARE_ARGS_WITH_DESC(int64_t, perm);
 };
 
 template <class Context>
@@ -39,20 +39,20 @@ class TransposeGradientOp final : public Operator<Context> {
  public:
     TransposeGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws) {
-        GET_ARGUMENTS_WITH_DESC(int64_t, perm);
+        GET_ARGS_WITH_DESC(int64_t, perm);
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    Tensor x_strides, y_dims;
-    DECLARE_ARGUMENTS_WITH_DESC(int64_t, perm);
+    Tensor X_strides_, Y_dims_;
+    DECLARE_ARGS_WITH_DESC(int64_t, perm);
 };
 
-DEFINE_ARGUMENTS_WITH_DESC(int64_t, TransposeOp, perm);
-DEFINE_ARGUMENTS_WITH_DESC(int64_t, TransposeGradientOp, perm);
+DEFINE_ARGS_WITH_DESC(int64_t, TransposeOp, perm);
+DEFINE_ARGS_WITH_DESC(int64_t, TransposeGradientOp, perm);
 
 }  // namespace dragon
 

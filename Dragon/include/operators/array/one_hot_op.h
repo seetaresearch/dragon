@@ -22,16 +22,16 @@ class OneHotOp final : public Operator < Context > {
  public:
     OneHotOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          depth(OperatorBase::Arg<int64_t>("depth", -1)),
-          on_value(OperatorBase::Arg<int64_t>("on_value", 1)),
-          off_value(OperatorBase::Arg<int64_t>("off_value", 0)) {}
+          depth_(OpArg<int64_t>("depth", -1)),
+          on_value_(OpArg<int64_t>("on_value", 1)),
+          off_value_(OpArg<int64_t>("off_value", 0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t depth, on_value, off_value;
+    int64_t depth_, on_value_, off_value_;
 };
 
 }  // namespace dragon

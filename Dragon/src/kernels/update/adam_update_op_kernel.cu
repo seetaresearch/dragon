@@ -8,11 +8,11 @@ namespace dragon {
 
 namespace kernel {
 
-/*! AdamUpdate <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _AdamUpdate(
-    const int               count,
+    const int               nthreads,
     const T                 lr,
     const T                 beta1,
     const T                 beta2,
@@ -20,7 +20,7 @@ __global__ void _AdamUpdate(
     T*                      g,
     T*                      m,
     T*                      v) {
-    CUDA_1D_KERNEL_LOOP(i, count) {
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
         T gi = g[i];
         T mi = m[i] = m[i] * beta1 + gi * (1 - beta1);
         T vi = v[i] = v[i] * beta2 + gi * gi * (1 - beta2);
@@ -38,10 +38,11 @@ template <> void AdamUpdate<float, CUDAContext>(
     float*                  m,
     float*                  v,
     CUDAContext*            ctx) {
-    _AdamUpdate<float>
+    _AdamUpdate
         << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, lr, beta1, beta2, eps, g, m, v);
+             0, ctx->cuda_stream() >> >(
+        count, lr, beta1, beta2, eps, g, m, v
+    );
 }
 
 }  // namespace kernel

@@ -18,20 +18,21 @@
 namespace dragon {
 
 template <class Context>
-class SparseSoftmaxCrossEntropyOp : public Operator<Context> {
+class SparseSoftmaxCrossEntropyOp
+    : public Operator<Context> {
  public:
     SparseSoftmaxCrossEntropyOp(
         const OperatorDef&          def,
         Workspace*                  ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 1)),
-          normalization(OperatorBase::Arg<string>(
-              "normalization", "VALID")) {
-        auto xs = OperatorBase::Args<int64_t>("ignore_labels");
-        if (xs.size()) {
-            ignores.Reshape({ (int64_t)xs.size() });
-            auto* Idata = ignores.mutable_data<int, CPUContext>();
-            for (int i = 0; i < xs.size(); i++) Idata[i] = xs[i];
+          axis_(OpArg<int64_t>("axis", 1)),
+          reduction_(OpArg<string>(
+              "reduction", "VALID")) {
+        auto ivec = OpArgs<int64_t>("ignore_labels");
+        if (!ivec.empty()) {
+            ignore_.Reshape({ (int64_t)ivec.size() });
+            auto* x = ignore_.mutable_data<int, CPUContext>();
+            for (int i = 0; i < ivec.size(); i++) x[i] = ivec[i];
         }
     }
     USE_OPERATOR_FUNCTIONS;
@@ -39,13 +40,13 @@ class SparseSoftmaxCrossEntropyOp : public Operator<Context> {
     void SoftmaxRun();
 
     void RunOnDevice() override;
-    template <typename Tx, typename Ty> void RunWithType();
+    template <typename Tx, typename Ty> void RunImpl();
 
  protected:
-    int64_t axis, outer_dim, inner_dim;
-    Tensor* prob, losses, flags, ignores;
-    unique_ptr<OperatorBase> softmax_op;
-    string normalization;
+    string reduction_;
+    Tensor loss_, flag_, ignore_;
+    int64_t axis_, outer_dim_, inner_dim_;
+    unique_ptr<OperatorBase> softmax_op_;
 };
 
 template <class Context>
@@ -56,25 +57,25 @@ class SparseSoftmaxCrossEntropyGradientOp
         const OperatorDef&          def,
         Workspace*                  ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 1)),
-          normalization(OperatorBase::Arg<string>(
-              "normalization", "VALID")) {
-        auto xs = OperatorBase::Args<int64_t>("ignore_labels");
-        if (xs.size()) {
-            ignores.Reshape({ (int64_t)xs.size() });
-            auto* Idata = ignores.mutable_data<int, CPUContext>();
-            for (int i = 0; i < xs.size(); i++) Idata[i] = xs[i];
+          axis_(OpArg<int64_t>("axis", 1)),
+          reduction_(OpArg<string>(
+              "reduction", "VALID")) {
+        auto ivec = OpArgs<int64_t>("ignore_labels");
+        if (!ivec.empty()) {
+            ignore_.Reshape({ (int64_t)ivec.size() });
+            auto* x = ignore_.mutable_data<int, CPUContext>();
+            for (int i = 0; i < ivec.size(); i++) x[i] = ivec[i];
         }
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename Tx, typename Ty> void RunWithType();
+    template <typename Tx, typename Ty> void RunImpl();
 
  protected:
-    int64_t axis, outer_dim, inner_dim;
-    Tensor* prob, ignores, flags;
-    string normalization;
+    string reduction_;
+    Tensor ignore_, flag_;
+    int64_t axis_, outer_dim_, inner_dim_;
 };
 
 }  // namespace dragon

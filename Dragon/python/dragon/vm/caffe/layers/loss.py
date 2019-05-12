@@ -20,7 +20,7 @@ from ..layer import Layer as _Layer
 
 
 class SoftmaxWithLossLayer(_Layer):
-    """The implementation of ``SoftmaxWithLossLayer``.
+    """The implementation of *SoftmaxWithLossLayer*.
 
     Parameters
     ----------
@@ -38,15 +38,15 @@ class SoftmaxWithLossLayer(_Layer):
         super(SoftmaxWithLossLayer, self).__init__(LayerParameter)
         param = LayerParameter.loss_param
         softmax_param = LayerParameter.softmax_param
-        norm_mode = {0: 'FULL', 1: 'VALID', 2: 'BATCH_SIZE', 3: 'NONE', 4: 'UNIT'}
-        normalization = 'VALID'
+        norm_dict = {0: 'MEAN', 1: 'VALID', 2: 'BATCH_SIZE', 3: 'SUM', 4: 'NONE'}
+        reduction = 'VALID'
         if param.HasField('normalize'):
-            if not param.normalize: normalization = 'BATCH_SIZE'
+            if not param.normalize: reduction = 'BATCH_SIZE'
         else:
-            normalization = norm_mode[param.normalization]
+            reduction = norm_dict[param.normalization]
         self.arguments = {
             'axis': softmax_param.axis,
-            'normalization': normalization,
+            'reduction': reduction,
             'ignore_labels': [param.ignore_label]
                 if param.HasField('ignore_label') else [],
         }
@@ -58,7 +58,7 @@ class SoftmaxWithLossLayer(_Layer):
 
 
 class SigmoidCrossEntropyLossLayer(_Layer):
-    """The implementation of ``SigmoidCrossEntropyLossLayer``.
+    """The implementation of *SigmoidCrossEntropyLossLayer*.
 
     Parameters
     ----------
@@ -71,12 +71,12 @@ class SigmoidCrossEntropyLossLayer(_Layer):
     def __init__(self, LayerParameter):
         super(SigmoidCrossEntropyLossLayer, self).__init__(LayerParameter)
         param = LayerParameter.loss_param
-        norm_mode = {0: 'FULL', 1: 'VALID', 2: 'BATCH_SIZE', 3: 'NONE', 4: 'UNIT'}
-        normalization = 'VALID'
+        norm_dict = {0: 'MEAN', 1: 'VALID', 2: 'BATCH_SIZE', 3: 'SUM', 4: 'NONE'}
+        reduction = 'VALID'
         if param.HasField('normalize'):
-            if not param.normalize: normalization = 'BATCH_SIZE'
-        else: normalization = norm_mode[param.normalization]
-        self.arguments = {'normalization': normalization}
+            if not param.normalize: reduction = 'BATCH_SIZE'
+        else: reduction = norm_dict[param.normalization]
+        self.arguments = {'reduction': reduction}
 
     def LayerSetup(self, bottom):
         loss = _ops.SigmoidCrossEntropy(bottom, **self.arguments)
@@ -85,7 +85,7 @@ class SigmoidCrossEntropyLossLayer(_Layer):
 
 
 class L2LossLayer(_Layer):
-    """The implementation of ``L2LossLayer``.
+    """The implementation of *L2LossLayer*.
 
     Parameters
     ----------
@@ -98,12 +98,12 @@ class L2LossLayer(_Layer):
     def __init__(self, LayerParameter):
         super(L2LossLayer, self).__init__(LayerParameter)
         param = LayerParameter.loss_param
-        norm_mode = {0: 'FULL', 1: 'BATCH_SIZE', 2: 'BATCH_SIZE', 3: 'NONE'}
-        normalization = 'BATCH_SIZE'
+        norm_dict = {0: 'MEAN', 1: 'BATCH_SIZE', 2: 'BATCH_SIZE', 3: 'SUM'}
+        reduction = 'BATCH_SIZE'
         if param.HasField('normalize'):
-            if param.normalize: normalization = 'FULL'
-        else: normalization = norm_mode[param.normalization]
-        self.arguments = {'normalization': normalization}
+            if param.normalize: reduction = 'MEAN'
+        else: reduction = norm_dict[param.normalization]
+        self.arguments = {'reduction': reduction}
 
     def LayerSetup(self, bottom):
         loss = _ops.L2Loss(bottom, **self.arguments)
@@ -112,7 +112,7 @@ class L2LossLayer(_Layer):
 
 
 class SmoothL1LossLayer(_Layer):
-    """The implementation of ``SmoothL1LossLayer``.
+    """The implementation of *SmoothL1LossLayer*.
 
     Parameters
     ----------
@@ -128,15 +128,15 @@ class SmoothL1LossLayer(_Layer):
         super(SmoothL1LossLayer, self).__init__(LayerParameter)
         param = LayerParameter.loss_param
         smooth_l1_param = LayerParameter.smooth_l1_loss_param
-        norm_mode = {0: 'FULL', 1: 'BATCH_SIZE', 2: 'BATCH_SIZE', 3: 'NONE'}
-        normalization = 'BATCH_SIZE'
+        norm_dict = {0: 'MEAN', 1: 'BATCH_SIZE', 2: 'BATCH_SIZE', 3: 'SUM'}
+        reduction = 'BATCH_SIZE'
         if param.HasField('normalize'):
-            if param.normalize: normalization = 'FULL'
-        else: normalization = norm_mode[param.normalization]
+            if param.normalize: reduction = 'MEAN'
+        else: reduction = norm_dict[param.normalization]
         sigma2 = smooth_l1_param.sigma * smooth_l1_param.sigma
         self.arguments = {
             'beta': float(1. / sigma2),
-            'normalization': normalization,
+            'reduction': reduction,
         }
 
     def LayerSetup(self, bottom):
@@ -146,7 +146,7 @@ class SmoothL1LossLayer(_Layer):
 
 
 class SigmoidWithFocalLossLayer(_Layer):
-    """The implementation of ``SigmoidWithFocalLossLayer``.
+    """The implementation of *SigmoidWithFocalLossLayer*.
 
     Parameters
     ----------
@@ -169,14 +169,14 @@ class SigmoidWithFocalLossLayer(_Layer):
         param = LayerParameter.loss_param
         softmax_param = LayerParameter.softmax_param
         focal_loss_param = LayerParameter.focal_loss_param
-        norm_mode = {0: 'FULL', 1: 'VALID', 2: 'BATCH_SIZE', 3: 'NONE', 4: 'UNIT'}
-        normalization = 'VALID'
+        norm_dict = {0: 'MEAN', 1: 'VALID', 2: 'BATCH_SIZE', 3: 'SUM', 4: 'NONE'}
+        reduction = 'VALID'
         if param.HasField('normalize'):
-            if not param.normalize: normalization = 'BATCH_SIZE'
-        else: normalization = norm_mode[param.normalization]
+            if not param.normalize: reduction = 'BATCH_SIZE'
+        else: reduction = norm_dict[param.normalization]
         self.arguments = {
             'axis': softmax_param.axis,
-            'normalization': normalization,
+            'reduction': reduction,
             'alpha': float(focal_loss_param.alpha),
             'gamma': float(focal_loss_param.gamma),
             'neg_id': focal_loss_param.neg_id,
@@ -189,7 +189,7 @@ class SigmoidWithFocalLossLayer(_Layer):
 
 
 class SoftmaxWithFocalLossLayer(_Layer):
-    """The implementation of ``SoftmaxWithFocalLossLayer``.
+    """The implementation of *SoftmaxWithFocalLossLayer*.
 
     Parameters
     ----------
@@ -212,15 +212,16 @@ class SoftmaxWithFocalLossLayer(_Layer):
         param = LayerParameter.loss_param
         softmax_param = LayerParameter.softmax_param
         focal_loss_param = LayerParameter.focal_loss_param
-        norm_mode = {0: 'FULL', 1: 'VALID', 2: 'BATCH_SIZE', 3: 'NONE', 4: 'UNIT'}
-        normalization = 'VALID'
+        norm_dict = {0: 'MEAN', 1: 'VALID', 2: 'BATCH_SIZE', 3: 'SUM', 4: 'NONE'}
+        reduction = 'VALID'
         if param.HasField('normalize'):
-            if not param.normalize: normalization = 'BATCH_SIZE'
-        else: normalization = norm_mode[param.normalization]
+            if not param.normalize: reduction = 'BATCH_SIZE'
+        else: reduction = norm_dict[param.normalization]
         self.arguments = {
             'axis': softmax_param.axis,
-            'normalization': normalization,
-            'ignore_labels': [param.ignore_label] if param.HasField('ignore_label') else [],
+            'reduction': reduction,
+            'ignore_labels': [param.ignore_label]
+                if param.HasField('ignore_label') else [],
             'alpha': float(focal_loss_param.alpha),
             'gamma': float(focal_loss_param.gamma),
             'neg_id': focal_loss_param.neg_id,

@@ -18,17 +18,17 @@
 
 namespace dragon {
 
-#define DECLARE_FUNDAMENTAL_OP(type) \
+#define DECLARE_FUNDAMENTAL_OP(name) \
     template <class Context> \
-    class type##Op final : public Operator<Context> { \
+    class name##Op final : public Operator<Context> { \
      public: \
-         USE_SIMPLE_CTOR_DTOR(type##Op); \
+         SIMPLE_CTOR_DTOR(name##Op); \
          USE_OPERATOR_FUNCTIONS; \
          void RunOnDevice() override; \
-         template <typename T> void EltwiseRunWithType(); \
-         template <typename T> void BroadcastRunWithType(int type); \
+         template <typename T> void EltwiseRunImpl(); \
+         template <typename T> void BroadcastRunImpl(int type); \
      protected: \
-        int rows, cols; \
+        int rows_, cols_; \
     };
 
 DECLARE_FUNDAMENTAL_OP(Add);
@@ -51,50 +51,48 @@ DECLARE_FUNDAMENTAL_OP(RSubGradient);
 DECLARE_FUNDAMENTAL_OP(RMulGradient);
 DECLARE_FUNDAMENTAL_OP(RDivGradient);
 
-#define DECLARE_FUNDAMENTAL_OP_X1X2 \
-    ws()->CreateTensor(mount_name( \
-        "fundamental/X1"))->ReshapeLike(Input(0)); \
-    ws()->CreateTensor(mount_name( \
-        "fundamental/X2"))->ReshapeLike(Input(1));
+#define DECLARE_INPUT_DESC \
+    ws()->CreateTensor(unique_name("A"))->ReshapeLike(X(0)); \
+    ws()->CreateTensor(unique_name("B"))->ReshapeLike(X(1));
 
-#define DEFINE_FUNDAMENTAL_OP_X1X2 \
-    Tensor* X1 = ws()->GetTensor(mount_name("fundamental/X1")); \
-    Tensor* X2 = ws()->GetTensor(mount_name("fundamental/X2"));
+#define DEFINE_INPUT_DESC \
+    auto* A = ws()->GetTensor(unique_name("A")); \
+    auto* B = ws()->GetTensor(unique_name("B"));
 
-#define DEFINE_FUNDAMENTAL_TYPED_CALLER(dtype) \
-    DEFINE_FUNDAMENTAL_OP_X1X2; \
-    if (X2->count() < X1->count() && \
+#define DEFINE_FUNDAMENTAL_TYPED_IMPL(dtype) \
+    DEFINE_INPUT_DESC; \
+    if (B->count() < A->count() && \
         utils::IsRowwiseBroadcast( \
-            X1->dims(), X2->dims(), &rows, &cols)) { \
-        BroadcastRunWithType<dtype>(0); \
-    } else if (X2->count() < X1->count() && \
+            A->dims(), B->dims(), &rows_, &cols_)) { \
+        BroadcastRunImpl<dtype>(0); \
+    } else if (B->count() < A->count() && \
        utils::IsColwiseBroadcast( \
-           X1->dims(), X2->dims(), &rows, &cols)) { \
-        BroadcastRunWithType<dtype>(1); \
-    } else if (X1->count() == X2->count()) { \
-        EltwiseRunWithType<dtype>(); \
+           A->dims(), B->dims(), &rows_, &cols_)) { \
+        BroadcastRunImpl<dtype>(1); \
+    } else if (A->count() == B->count()) { \
+        EltwiseRunImpl<dtype>(); \
     } else { \
         LOG(FATAL) << "Could not broadcast with shapes: " \
-                   << X1->DimString() << " and " \
-                   << X2->DimString(); \
+                   << A->DimString() << " and " \
+                   << B->DimString(); \
     }
 
-#define DEFINE_FUNDAMENTAL_TYPED_RCALLER(dtype) \
-    DEFINE_FUNDAMENTAL_OP_X1X2; \
-    if (X2->count() > X1->count() && \
+#define DEFINE_RFUNDAMENTAL_TYPED_IMPL(dtype) \
+    DEFINE_INPUT_DESC; \
+    if (B->count() > A->count() && \
         utils::IsRowwiseBroadcast( \
-            X1->dims(), X2->dims(), &rows, &cols)) { \
-        BroadcastRunWithType<dtype>(2); \
-    } else if (X2->count() > X1->count() && \
+            A->dims(), B->dims(), &rows_, &cols_)) { \
+        BroadcastRunImpl<dtype>(2); \
+    } else if (B->count() > A->count() && \
        utils::IsColwiseBroadcast( \
-           X1->dims(), X2->dims(), &rows, &cols)) { \
-        BroadcastRunWithType<dtype>(3); \
-    } else if (X1->count() == X2->count()) { \
-        EltwiseRunWithType<dtype>(); \
+           A->dims(), B->dims(), &rows_, &cols_)) { \
+        BroadcastRunImpl<dtype>(3); \
+    } else if (A->count() == B->count()) { \
+        EltwiseRunImpl<dtype>(); \
     } else { \
         LOG(FATAL) << "Could not broadcast with shapes: " \
-                   << X1->DimString() << " and " \
-                   << X2->DimString(); \
+                   << A->DimString() << " and " \
+                   << B->DimString(); \
     }
 
 #undef DECLARE_FUNDAMENTAL_OP

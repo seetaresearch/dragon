@@ -4,22 +4,22 @@
 
 namespace dragon {
 
-#define PUT_X_AND_Y(X, Y) \
-    const T* X; T* Y; \
-    if (src == &nav) { \
-        X = ws()->template caches<T, Context> \
-            ({ src->count() })[0]; \
+#define PUT_X_AND_Y(x, y) \
+    const T* x; T* y; \
+    if (src_ == &nav_) { \
+        x = ws()->template data<T, Context> \
+                ({ src_->count() })[0]; \
     } else { \
-        X = src->template data<T, Context>(); \
+        x = src_->template data<T, Context>(); \
     } \
-    if (dst == &nav) { \
-        Y = ws()->template caches<T, Context> \
-            ({ dst->count() })[0]; \
+    if (dst_ == &nav_) { \
+        y = ws()->template data<T, Context> \
+                ({ dst_->count() })[0]; \
     } else { \
-        Y = dst->template mutable_data<T, Context>(); \
+        y = dst_->template mutable_data<T, Context>(); \
     }
 
-#define TENSOR_FROM_VECTOR(tensor, vec, T) \
+#define TENSOR_FROM_VEC(tensor, vec, T) \
     { \
         tensor.Reshape({ (int64_t)vec.size() }); \
         auto* data = tensor.template mutable_data<T, CPUContext>(); \
@@ -27,70 +27,80 @@ namespace dragon {
     }
 
 template <class Context> template <typename T>
-void TileOp<Context>::RunWithType() {
-    auto* XDS = x_dimsT.template data<int, Context>();
-    auto* YDS = y_dimsT.template data<int, Context>();
-    auto* XSS = x_stridesT.template data<int, Context>();
-
-    auto* Xdata = Input(0).template data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+void TileOp<Context>::RunImpl() {
+    auto* x = X(0).template data<T, Context>();
+    auto* y = Y(0)->template mutable_data<T, Context>();
 
     // Apply a simple Nd-Broadcast solution
-    kernel::Tile(Output(0)->count(), Output(0)->ndim(),
-        XDS, XSS, YDS, Xdata, Ydata, ctx());
+    kernel::Tile(
+        Y(0)->count(),
+        Y(0)->ndim(),
+        X_dims_.template data<int, Context>(),
+        X_strides_.template data<int, Context>(),
+        X_dims_.template data<int, Context>(),
+        x, y, ctx()
+    );
 }
 
 template <class Context>
 void TileOp<Context>::RunOnDevice() {
-    y_dimsV = Input(0).dims();
-
-    for (int i = 0; i < y_dimsV.size(); ++i) {
-        y_dimsV[i] *= multiples(i);
-    } Output(0)->Reshape(y_dimsV);
+    auto Y_dims = X(0).dims();
+    for (int i = 0; i < Y_dims.size(); ++i)
+        Y_dims[i] *= multiples(i);
+    
+    Y(0)->Reshape(Y_dims);
 
     // Just copy the contents
-    if (Input(0).dims() == y_dimsV) {
-        Output(0)->template CopyFrom<Context>(
-            Input(0), ctx()); return;
+    if (X(0).dims() == Y_dims) {
+        Y(0)->CopyFrom(X(0), ctx());
+        return;
     }
 
-    TENSOR_FROM_VECTOR(x_stridesT, Input(0).strides(), int);
-    TENSOR_FROM_VECTOR(x_dimsT, Input(0).dims(), int);
-    TENSOR_FROM_VECTOR(y_dimsT, y_dimsV, int);
+    TENSOR_FROM_VEC(X_strides_, X(0).strides(), int);
+    TENSOR_FROM_VEC(X_dims_, X(0).dims(), int);
+    TENSOR_FROM_VEC(Y_dims_, Y_dims, int);
 
-    if (XIsType(Input(0), bool)) RunWithType<bool>();
-    else if (XIsType(Input(0), int8_t)) RunWithType<int8_t>();
-    else if (XIsType(Input(0), uint8_t)) RunWithType<uint8_t>();
-    else if (XIsType(Input(0), int)) RunWithType<int>();
-    else if (XIsType(Input(0), int64_t)) RunWithType<int64_t>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), double)) RunWithType<double>();
-    else LOG(FATAL) << DTypeHelper(Input(0), {
-        "bool", "int8", "uint8", "int32", "int64",
-            "float16", "float32", "float64",
-    });
+    if (XIsType(X(0), bool)) {
+        RunImpl<bool>();
+    } else if (XIsType(X(0), int8_t)) {
+        RunImpl<int8_t>();
+    } else if (XIsType(X(0), uint8_t)) {
+        RunImpl<uint8_t>();
+    } else if (XIsType(X(0), int)) {
+        RunImpl<int>();
+    } else if (XIsType(X(0), int64_t)) {
+        RunImpl<int64_t>();
+    } else if (XIsType(X(0), float16)) {
+        RunImpl<float16>();
+    } else if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(0), double)) {
+        RunImpl<double>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0), {
+            "bool", "int8", "uint8", "int32", "int64",
+                 "float16", "float32", "float64",
+        });
+    }
 }
 
-DEPLOY_CPU(Tile);
-#ifdef WITH_CUDA
-DEPLOY_CUDA(Tile);
-#endif
-OPERATOR_SCHEMA(Tile).NumInputs(1).NumOutputs(1);
-
 template <class Context> template <typename T>
-void TileGradientOp<Context>::RunWithType() {
-    PUT_X_AND_Y(dYdata, dXdata);
+void TileGradientOp<Context>::RunImpl() {
+    PUT_X_AND_Y(dy, dx);
 
-    kernel::TileGrad(rows, cols,
-        multiple, dYdata, dXdata, ctx());
+    kernel::TileGrad(
+        rows_,
+        cols_,
+        multiple_,
+        dy, dx, ctx()
+    );
 }
 
 template <class Context>
 void TileGradientOp<Context>::RunOnDevice() {
     // Add the axes
     vector< pair<int, int> > dispatch_axes;
-    for (int i = 0; i < Input(0).ndim(); i++) {
+    for (int i = 0; i < X(0).ndim(); i++) {
         auto m = multiples(i);
         if (m > 1) { dispatch_axes.push_back({ m, i }); }
     }
@@ -99,67 +109,96 @@ void TileGradientOp<Context>::RunOnDevice() {
 
     // Just copy the contents
     if (dispatch_axes.size() == 0) {
-        Output(0)->ReshapeLike(Input(-1));
-        Output(0)->template CopyFrom<Context>(
-            Input(-1), ctx()); return;
+        Y(0)->ReshapeLike(X(-1));
+        Y(0)->CopyFrom(X(-1), ctx());
+        return;
     }
 
     // Select the src && dst
-    src = &Input(-1); dst = Output(0);
-    if (dispatch_axes.size() % 2 == 0) dst = &nav;
+    src_ = &X(0); dst_ = Y(0);
+    if (dispatch_axes.size() % 2 == 0) dst_ = &nav_;
 
     for (const auto& task : dispatch_axes) {
-        axis = task.second; multiple = task.first;
+        axis_ = task.second;
+        multiple_ = task.first;
 
-        auto dims = src->dims();
-        dims[axis] /= multiple;
-        dst->Reshape(dims);
-        rows = dst->count(0, axis);
-        cols = dst->count(axis);
+        auto out_shape = src_->dims();
+        out_shape[axis_] /= multiple_;
+        dst_->Reshape(out_shape);
+        rows_ = dst_->count(0, axis_);
+        cols_ = dst_->count(axis_);
 
-        if (XIsType(Input(0), int8_t)) RunWithType<int8_t>();
-        else if (XIsType(Input(0), uint8_t)) RunWithType<uint8_t>();
-        else if (XIsType(Input(0), int)) RunWithType<int>();
-        else if (XIsType(Input(0), int64_t)) RunWithType<int64_t>();
-        else if (XIsType(Input(0), float16)) RunWithType<float16>();
-        else if (XIsType(Input(0), float)) RunWithType<float>();
-        else if (XIsType(Input(0), double)) RunWithType<double>();
-        else LOG(FATAL) << DTypeHelper(Input(0), { 
-            "int8", "uint8", "int32", "int64",
+        if (XIsType(X(0), int8_t)) {
+            RunImpl<int8_t>();
+        } else if (XIsType(X(0), uint8_t)) {
+            RunImpl<uint8_t>();
+        } else if (XIsType(X(0), int)) {
+            RunImpl<int>();
+        } else if (XIsType(X(0), int64_t)) {
+            RunImpl<int64_t>();
+        } else if (XIsType(X(0), float16)) {
+            RunImpl<float16>();
+        } else if (XIsType(X(0), float)) {
+            RunImpl<float>();
+        } else if (XIsType(X(0), double)) {
+            RunImpl<double>();
+        } else {
+            LOG(FATAL) << DTypeString(X(0), {
+                "int8", "uint8", "int32", "int64",
                 "float16", "float32", "float64",
-        }); ctx()->FinishDeviceCompution();
+            });
+        } ctx()->FinishDeviceCompution();
 
         // Protect X if num_axes >= 2
-        std::swap(src, dst);
+        std::swap(src_, dst_);
         if (dispatch_axes.size() % 2 == 1) {
-            if (dst == &Input(-1)) dst = &nav;
+            if (dst_ == &X(-1)) dst_ = &nav_;
         } else {
-            if (dst == &Input(-1)) dst = Output(0);
+            if (dst_ == &X(-1)) dst_ = Y(0);
         }
     }
 }
+
+DEPLOY_CPU(Tile);
+#ifdef WITH_CUDA
+DEPLOY_CUDA(Tile);
+#endif
 
 DEPLOY_CPU(TileGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(TileGradient);
 #endif
 
-OPERATOR_SCHEMA(TileGradient)
-    .NumInputs(1).NumOutputs(1);
+OPERATOR_SCHEMA(Tile)
+     /* X */
+    .NumInputs(1)
+     /* Y */
+    .NumOutputs(1);
 
-class GetTileGradient final : public GradientMakerBase { 
+OPERATOR_SCHEMA(TileGradient)
+     /* dY */
+    .NumInputs(1)
+     /* dX */
+    .NumOutputs(1);
+
+namespace {
+
+class GradientMaker final : public GradientMakerBase { 
  public:
-    GRADIENT_MAKER_CTOR(GetTileGradient);
-    vector<OperatorDef> MakeDefs() override {
+    GRADIENT_MAKER_CTOR(GradientMaker);
+    vector<OperatorDef> MakeDef() override {
         return SingleDef(def.type() + "Gradient", "",
             vector<string>({ GO(0) }),
-            vector<string>({ GI(0) }));
+            vector<string>({ GI(0) })
+        );
     }
 };
 
-REGISTER_GRADIENT(Tile, GetTileGradient);
+}  // namespace
+
+REGISTER_GRADIENT(Tile, GradientMaker);
 
 #undef PUT_X_AND_Y
-#undef TENSOR_FROM_VECTOR
+#undef TENSOR_FROM_VEC
 
 }  // namespace dragon

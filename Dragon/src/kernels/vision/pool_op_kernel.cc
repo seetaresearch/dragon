@@ -1,3 +1,4 @@
+#include "utils/cast.h"
 #include "utils/op_kernel.h"
 #include "utils/math_functions.h"
 
@@ -5,10 +6,10 @@ namespace dragon {
 
 namespace kernel {
 
-/*! MAXPool2d <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <typename T>
-void _MAXPool2d_NCHW(
+void _MaxPool2dNCHW(
     const int               N,
     const int               C,
     const int               H,
@@ -21,50 +22,48 @@ void _MAXPool2d_NCHW(
     const int               stride_w,
     const int               pad_h,
     const int               pad_w,
-    const float*            x,
+    const T*                x,
     int*                    mask,
-    float*                  y) {
-    const int64_t x_offset = H * W, y_offset = pool_h * pool_w;
-    const int64_t X_offset = C * x_offset, Y_offset = C * y_offset;
-
+    T*                      y) {
+    auto x_ofs = H * W, y_ofs = pool_h * pool_w;
+    auto X_ofs = C * x_ofs, Y_ofs = C * y_ofs;
     for (int n = 0; n < N; ++n) {
-        auto* X = x + n * X_offset;
-        auto* Y = y + n * Y_offset;
-        auto* M = mask + n * Y_offset;
+        auto* X = x + n * X_ofs;
+        auto* Y = y + n * Y_ofs;
+        auto* M = mask + n * Y_ofs;
         for (int c = 0; c < C; ++c) {
             for (int ph = 0; ph < pool_h; ++ph) {
                 for (int pw = 0; pw < pool_w; ++pw) {
-                    int start_h = ph * stride_h - pad_h;
-                    int start_w = pw * stride_w - pad_w;
-                    int end_h = std::min(start_h + kernel_h, H);
-                    int end_w = std::min(start_w + kernel_w, W);
-                    start_h = std::max(start_h, 0);
-                    start_w = std::max(start_w, 0);
-                    const int pool_idx = ph * pool_w + pw;
-                    float max_val = -FLT_MAX;
-                    int max_idx = -1;
-                    for (int h = start_h; h < end_h; ++h) {
-                        for (int w = start_w; w < end_w; ++w) {
-                            const int idx = h * W + w;
-                            if (X[idx] > max_val) {
-                                max_val = X[idx];
-                                max_idx = idx;
+                    int h_start = ph * stride_h - pad_h;
+                    int w_start = pw * stride_w - pad_w;
+                    int h_end = std::min(h_start + kernel_h, H);
+                    int w_end = std::min(w_start + kernel_w, W);
+                    h_start = std::max(h_start, 0);
+                    w_start = std::max(w_start, 0);
+                    const int yi = ph * pool_w + pw;
+                    int max_idx = -1; T max_val = -FLT_MAX;
+                    for (int h = h_start; h < h_end; ++h) {
+                        for (int w = w_start; w < w_end; ++w) {
+                            const int xi = h * W + w;
+                            if (X[xi] > max_val) {
+                                max_idx = xi;
+                                max_val = X[xi];
                             }
                         }
                     }
-                    Y[pool_idx] = max_val;
-                    M[pool_idx] = max_idx;
+                    Y[yi] = max_val;
+                    M[yi] = max_idx;
                 }
             } 
-            X += x_offset;
-            Y += y_offset;
-            M += y_offset;
+            X += x_ofs;
+            Y += y_ofs;
+            M += y_ofs;
         }
     }
 }
 
 template <typename T>
-void _MAXPool2d_NHWC(
+void _MaxPool2dNHWC(
     const int               N,
     const int               C,
     const int               H,
@@ -77,50 +76,45 @@ void _MAXPool2d_NHWC(
     const int               stride_w,
     const int               pad_h,
     const int               pad_w,
-    const float*            x,
+    const T*                x,
     int*                    mask,
-    float*                  y) {
-    const int64_t X_offset = H * W * C,
-        Y_offset = pool_h * pool_w * C;
-
+    T*                      y) {
+    auto X_ofs = H * W * C;
+    auto Y_ofs = pool_h * pool_w * C;
     for (int n = 0; n < N; ++n) {
-        auto* X = x + n * X_offset;
-        auto* Y = y + n * Y_offset;
-        auto* M = mask + n * Y_offset;
+        auto* X = x + n * X_ofs;
+        auto* Y = y + n * Y_ofs;
+        auto* M = mask + n * Y_ofs;
         for (int ph = 0; ph < pool_h; ph++) {
             for (int pw = 0; pw < pool_w; ++pw) {
-                int start_h = ph * stride_h - pad_h;
-                int start_w = pw * stride_w - pad_w;
-                int end_h = std::min(start_h + kernel_h, H);
-                int end_w = std::min(start_w + kernel_w, W);
-                start_h = std::max(start_h, 0);
-                start_w = std::max(start_w, 0);
-                const int base_pool_idx = ph * pool_w + pw;
+                int h_start = ph * stride_h - pad_h;
+                int w_start = pw * stride_w - pad_w;
+                int h_end = std::min(h_start + kernel_h, H);
+                int w_end = std::min(w_start + kernel_w, W);
+                h_start = std::max(h_start, 0);
+                w_start = std::max(w_start, 0);
+                const int base_yi = ph * pool_w + pw;
                 for (int c = 0; c < C; ++c) {
-                    const int pool_idx = base_pool_idx * C + c;
-                    float max_val = -FLT_MAX;
-                    int max_idx = -1;
-                    for (int h = start_h; h < end_h; ++h) {
-                        for (int w = start_w; w < end_w; ++w) {
-                            const int idx = (h * W + w) * C + c;
-                            if (X[idx] > max_val) {
-                                max_val = X[idx];
-                                max_idx = idx;
+                    const int yi = base_yi * C + c;
+                    int max_idx = -1; T max_val = -FLT_MAX;
+                    for (int h = h_start; h < h_end; ++h) {
+                        for (int w = w_start; w < w_end; ++w) {
+                            const int xi = (h * W + w) * C + c;
+                            if (X[xi] > max_val) {
+                                max_idx = xi;
+                                max_val = X[xi];
                             }
                         }
                     }
-                    Y[pool_idx] = max_val;
-                    M[pool_idx] = max_idx;
+                    Y[yi] = max_val;
+                    M[yi] = max_idx;
                 }
             }
         }
-        x += X_offset;
-        y += Y_offset;
-        mask += Y_offset;
     }
 }
 
-template<> void MAXPool2d<float, CPUContext>(
+template<> void MaxPool2d<float, CPUContext>(
     const int               N,
     const int               C,
     const int               H,
@@ -139,20 +133,32 @@ template<> void MAXPool2d<float, CPUContext>(
     float*                  y,
     CPUContext*             ctx) {
     if (data_format == "NCHW") {
-        _MAXPool2d_NCHW<float>(
-            N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, x, mask, y);
+        _MaxPool2dNCHW(
+            N, C, H, W,
+            pool_h, pool_w,
+            kernel_h, kernel_w,
+            stride_h, stride_w,
+            pad_h, pad_w,
+            x, mask, y
+        );
     } else if (data_format == "NHWC") {
-        _MAXPool2d_NHWC<float>(
-            N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, x, mask, y);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+        _MaxPool2dNHWC(
+            N, C, H, W,
+            pool_h, pool_w,
+            kernel_h, kernel_w,
+            stride_h, stride_w,
+            pad_h, pad_w,
+            x, mask, y
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
-/*! AVGPool2d <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<typename T>
-void _AVGPool2d_NCHW(
+void _AvgPool2dNCHW(
     const int               N,
     const int               C,
     const int               H,
@@ -165,42 +171,41 @@ void _AVGPool2d_NCHW(
     const int               stride_w,
     const int               pad_h,
     const int               pad_w,
-    const float*            x,
-    float*                  y) {
-    const int64_t x_offset = H * W, y_offset = pool_h * pool_w;
-    const int64_t X_offset = C * x_offset, Y_offset = C * y_offset;
-
+    const T*                x,
+    T*                      y) {
+    auto x_ofs = H * W, y_ofs = pool_h * pool_w;
+    auto X_ofs = C * x_ofs, Y_ofs = C * y_ofs;
     for (int n = 0; n < N; ++n) {
-        auto* X = x + n * X_offset;
-        auto* Y = y + n * Y_offset;
+        auto* X = x + n * X_ofs;
+        auto* Y = y + n * Y_ofs;
         for (int c = 0; c < C; ++c) {
             for (int ph = 0; ph < pool_h; ++ph) {
                 for (int pw = 0; pw < pool_w; ++pw) {
-                    int start_h = ph * stride_h - pad_h;
-                    int start_w = pw * stride_w - pad_w;
-                    int end_h = std::min(start_h + kernel_h, H + pad_h);
-                    int end_w = std::min(start_w + kernel_w, W + pad_w);
-                    int pool_area = (end_h - start_h) * (end_w - start_w);
-                    end_h = std::min(end_h, H);
-                    end_w = std::min(end_w, W);
-                    start_h = std::max(start_h, 0);
-                    start_w = std::max(start_w, 0);
-                    const int pool_idx = ph * pool_w + pw;
+                    int h_start = ph * stride_h - pad_h;
+                    int w_start = pw * stride_w - pad_w;
+                    int h_end = std::min(h_start + kernel_h, H + pad_h);
+                    int w_end = std::min(w_start + kernel_w, W + pad_w);
+                    T area = (h_end - h_start) * (w_end - w_start);
+                    h_end = std::min(h_end, H);
+                    w_end = std::min(w_end, W);
+                    h_start = std::max(h_start, 0);
+                    w_start = std::max(w_start, 0);
+                    const int yi = ph * pool_w + pw;
                     T sum_val = 0;
-                    for (int h = start_h; h < end_h; ++h)
-                        for (int w = start_w; w < end_w; ++w)
+                    for (int h = h_start; h < h_end; ++h)
+                        for (int w = w_start; w < w_end; ++w)
                             sum_val += X[h * W + w];
-                    Y[pool_idx] = sum_val / pool_area;
+                    Y[yi] = sum_val / area;
                 } 
             }
-            X += x_offset;
-            Y += y_offset;
+            X += x_ofs;
+            Y += y_ofs;
         }
     }
 }
 
 template<typename T>
-void _AVGPool2d_NHWC(
+void _AvgPool2dNHWC(
     const int               N,
     const int               C,
     const int               H,
@@ -213,42 +218,39 @@ void _AVGPool2d_NHWC(
     const int               stride_w,
     const int               pad_h,
     const int               pad_w,
-    const float*            x,
-    float*                  y) {
-    const int64_t X_offset = H * W * C,
-        Y_offset = pool_h * pool_w * C;
-
+    const T*                x,
+    T*                      y) {
+    auto X_ofs = H * W * C;
+    auto Y_ofs = pool_h * pool_w * C;
     for (int n = 0; n < N; ++n) {
-        auto* X = x + n * X_offset;
-        auto* Y = y + n * Y_offset;
+        auto* X = x + n * X_ofs;
+        auto* Y = y + n * Y_ofs;
         for (int ph = 0; ph < pool_h; ph++) {
             for (int pw = 0; pw < pool_w; ++pw) {
-                int start_h = ph * stride_h - pad_h;
-                int start_w = pw * stride_w - pad_w;
-                int end_h = std::min(start_h + kernel_h, H + pad_h);
-                int end_w = std::min(start_w + kernel_w, W + pad_w);
-                int pool_area = (end_h - start_h) * (end_w - start_w);
-                end_h = std::min(end_h, H);
-                end_w = std::min(end_w, W);
-                start_h = std::max(start_h, 0);
-                start_w = std::max(start_w, 0);
-                const int base_pool_idx = ph * pool_w + pw;
+                int h_start = ph * stride_h - pad_h;
+                int w_start = pw * stride_w - pad_w;
+                int h_end = std::min(h_start + kernel_h, H + pad_h);
+                int w_end = std::min(w_start + kernel_w, W + pad_w);
+                T area = (h_end - h_start) * (w_end - w_start);
+                h_end = std::min(h_end, H);
+                w_end = std::min(w_end, W);
+                h_start = std::max(h_start, 0);
+                w_start = std::max(w_start, 0);
+                const int base_yi = ph * pool_w + pw;
                 for (int c = 0; c < C; ++c) {
-                    const int pool_idx = base_pool_idx * C + c;
+                    const int yi = base_yi * C + c;
                     T sum_val = 0;
-                    for (int h = start_h; h < end_h; ++h)
-                        for (int w = start_w; w < end_w; ++w)
+                    for (int h = h_start; h < h_end; ++h)
+                        for (int w = w_start; w < w_end; ++w)
                             sum_val += X[(h * W + w) * C + c];
-                    Y[pool_idx] = sum_val / pool_area;
+                    Y[yi] = sum_val / area;
                 }
             }
         }
-        X += X_offset;
-        Y += Y_offset;
     }
 }
 
-template<> void AVGPool2d<float, CPUContext>(
+template<> void AvgPool2d<float, CPUContext>(
     const int               N,
     const int               C,
     const int               H,
@@ -266,20 +268,32 @@ template<> void AVGPool2d<float, CPUContext>(
     float*                  y,
     CPUContext*             ctx) {
     if (data_format == "NCHW") {
-        _AVGPool2d_NCHW<float>(
-            N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, x, y);
+        _AvgPool2dNCHW(
+            N, C, H, W,
+            pool_h, pool_w,
+            kernel_h, kernel_w,
+            stride_h, stride_w,
+            pad_h, pad_w, 
+            x, y
+        );
     } else if (data_format == "NHWC") {
-        _AVGPool2d_NHWC<float>(
-            N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, x, y);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+        _AvgPool2dNHWC(
+            N, C, H, W,
+            pool_h, pool_w,
+            kernel_h, kernel_w,
+            stride_h, stride_w,
+            pad_h, pad_w,
+            x, y
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
-/*! MAXPool2dGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <typename T>
-void _MAXPool2dGrad_NCHW(
+void _MaxPool2dGradNCHW(
     const int               N,
     const int               C,
     const int               H,
@@ -292,35 +306,34 @@ void _MAXPool2dGrad_NCHW(
     const int               stride_w,
     const int               pad_h,
     const int               pad_w,
-    const float*            dy,
+    const T*                dy,
     const int*              mask,
-    float*                  dx,
-    CPUContext*             ctx) {
-    const int64_t x_offset = H * W, y_offset = pool_h * pool_w;
-    const int64_t X_offset = C * x_offset, Y_offset = C * y_offset;
-    math::Set<float, CPUContext>(N * C * H * W, 0, dx, ctx);
-
+    T*                      dx,
+    CPUContext*             ctx) { 
+    auto x_ofs = H * W, y_ofs = pool_h * pool_w;
+    auto X_ofs = C * x_ofs, Y_ofs = C * y_ofs;
+    math::Set(N * C * H * W, cast::to<T>(0.f), dx, ctx);
     for (int n = 0; n < N; ++n) {
-        auto* dY = dy + n * Y_offset;
-        auto* dX = dx + n * X_offset;
-        auto* M = mask + n * Y_offset;
+        auto* dY = dy + n * Y_ofs;
+        auto* dX = dx + n * X_ofs;
+        auto* M = mask + n * Y_ofs;
         for (int c = 0; c < C; ++c) {
             for (int ph = 0; ph < pool_h; ++ph) {
                 for (int pw = 0; pw < pool_w; ++pw) {
-                    const int pool_idx = ph * pool_w + pw;
-                    const int idx = M[pool_idx];
-                    dX[idx] += dY[pool_idx];
+                    const int yi = ph * pool_w + pw;
+                    const int xi = M[yi];
+                    dX[xi] += dY[yi];
                 }
             }
-            dX += x_offset;
-            dY += y_offset;
-            M += y_offset;
+            dX += x_ofs;
+            dY += y_ofs;
+            M += y_ofs;
         }
     }
 }
 
 template <typename T>
-void _MAXPool2dGrad_NHWC(
+void _MaxPool2dGradNHWC(
     const int               N,
     const int               C,
     const int               H,
@@ -333,34 +346,31 @@ void _MAXPool2dGrad_NHWC(
     const int               stride_w,
     const int               pad_h,
     const int               pad_w,
-    const float*            dy,
+    const T*                dy,
     const int*              mask,
-    float*                  dx,
+    T*                      dx,
     CPUContext*             ctx) {
-    const int64_t X_offset = H * W * C,
-        Y_offset = pool_h * pool_w * C;
-    math::Set<float, CPUContext>(N * H * W * C, 0, dx, ctx);
-
+    auto X_ofs = H * W * C;
+    auto Y_ofs = pool_h * pool_w * C;
+    math::Set(N * H * W * C, cast::to<T>(0.f), dx, ctx);
     for (int n = 0; n < N; ++n) {
-        auto* dY = dy + n * X_offset;
-        auto* dX = dx + n * Y_offset;
-        auto* M = mask + n * Y_offset;
+        auto* dY = dy + n * X_ofs;
+        auto* dX = dx + n * Y_ofs;
+        auto* M = mask + n * Y_ofs;
         for (int ph = 0; ph < pool_h; ph++) {
             for (int pw = 0; pw < pool_w; ++pw) {
-                const int base_pool_idx = ph * pool_w + pw;
+                const int base_yi = ph * pool_w + pw;
                 for (int c = 0; c < C; ++c) {
-                    const int pool_idx = base_pool_idx * C + c;
-                    const int idx = M[pool_idx];
-                    dX[idx] += dY[pool_idx];
+                    const int yi = base_yi * C + c;
+                    const int xi = M[yi];
+                    dX[xi] += dY[yi];
                 }
             }
         }
-        dX += X_offset;
-        dY += Y_offset;
     }
 }
 
-template<> void MAXPool2dGrad<float, CPUContext>(
+template<> void MaxPool2dGrad<float, CPUContext>(
     const int               N,
     const int               C,
     const int               H,
@@ -379,20 +389,32 @@ template<> void MAXPool2dGrad<float, CPUContext>(
     float*                  dx,
     CPUContext*             ctx) {
     if (data_format == "NCHW") {
-        _MAXPool2dGrad_NCHW<float>(
-            N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, dy, mask, dx, ctx);
+        _MaxPool2dGradNCHW(
+            N, C, H, W,
+            pool_h, pool_w,
+            kernel_h, kernel_w,
+            stride_h, stride_w,
+            pad_h, pad_w, dy,
+            mask, dx, ctx
+        );
     } else if (data_format == "NHWC") {
-        _MAXPool2dGrad_NHWC<float>(
-            N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, dy, mask, dx, ctx);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+        _MaxPool2dGradNHWC(
+            N, C, H, W,
+            pool_h, pool_w,
+            kernel_h, kernel_w,
+            stride_h, stride_w,
+            pad_h, pad_w,
+            dy, mask, dx, ctx
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
-/*! AVGPool2dGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <typename T>
-void _AVGPool2dGrad_NCHW(
+void _AvgPool2dGradNCHW(
     const int               N,
     const int               C,
     const int               H,
@@ -405,45 +427,44 @@ void _AVGPool2dGrad_NCHW(
     const int               stride_w,
     const int               pad_h,
     const int               pad_w,
-    const float*            dy,
-    float*                  dx,
+    const T*                dy,
+    T*                      dx,
     CPUContext*             ctx) {
-    const int64_t x_offset = H * W, y_offset = pool_h * pool_w;
-    const int64_t X_offset = C * x_offset, Y_offset = C * y_offset;
-    math::Set<float, CPUContext>(N * C * H * W, 0, dx, ctx);
-
+    auto x_ofs = H * W, y_ofs = pool_h * pool_w;
+    auto X_ofs = C * x_ofs, Y_ofs = C * y_ofs;
+    math::Set(N * C * H * W, cast::to<T>(0.f), dx, ctx);
     for (int n = 0; n < N; ++n) {
-        auto* dY = dy + n * Y_offset;
-        auto* dX = dx + n * X_offset;
+        auto* dY = dy + n * Y_ofs;
+        auto* dX = dx + n * X_ofs;
         for (int c = 0; c < C; ++c) {
             for (int ph = 0; ph < pool_h; ++ph) {
                 for (int pw = 0; pw < pool_w; ++pw) {
-                    int start_h = ph * stride_h - pad_h;
-                    int start_w = pw * stride_w - pad_w;
-                    int end_h = std::min(start_h + kernel_h, H + pad_h);
-                    int end_w = std::min(start_w + kernel_w, W + pad_w);
-                    int pool_area = (end_h - start_h) * (end_w - start_w);
-                    end_h = std::min(end_h, H);
-                    end_w = std::min(end_w, W);
-                    start_h = std::max(start_h, 0);
-                    start_w = std::max(start_w, 0);
-                    const int pool_idx = ph * pool_w + pw;
-                    for (int h = start_h; h < end_h; ++h) {
-                        for (int w = start_w; w < end_w; ++w) {
-                            const int idx = h * W + w;
-                            dX[idx] += (dY[pool_idx] / pool_area);
+                    int h_start = ph * stride_h - pad_h;
+                    int w_start = pw * stride_w - pad_w;
+                    int h_end = std::min(h_start + kernel_h, H + pad_h);
+                    int w_end = std::min(w_start + kernel_w, W + pad_w);
+                    T area = (h_end - h_start) * (w_end - w_start);
+                    h_end = std::min(h_end, H);
+                    w_end = std::min(w_end, W);
+                    h_start = std::max(h_start, 0);
+                    w_start = std::max(w_start, 0);
+                    const int yi = ph * pool_w + pw;
+                    for (int h = h_start; h < h_end; ++h) {
+                        for (int w = w_start; w < w_end; ++w) {
+                            const int xi = h * W + w;
+                            dX[xi] += dY[yi] / area;
                         }
                     }
                 }
             } 
-            dX += x_offset;
-            dY += y_offset;
+            dX += x_ofs;
+            dY += y_ofs;
         }
     }
 }
 
 template <typename T>
-void _AVGPool2dGrad_NHWC(
+void _AvgPool2dGradNHWC(
     const int               N,
     const int               C,
     const int               H,
@@ -456,43 +477,39 @@ void _AVGPool2dGrad_NHWC(
     const int               stride_w,
     const int               pad_h,
     const int               pad_w,
-    const float*            dy,
-    float*                  dx,
+    const T*                dy,
+    T*                      dx,
     CPUContext*             ctx) {
-    const int64_t X_offset = H * W * C,
-        Y_offset = pool_h * pool_w * C;
-    math::Set<float, CPUContext>(N * H * W * C, 0, dx, ctx);
-
+    auto X_ofs = H * W * C;
+    auto Y_ofs = pool_h * pool_w * C;
+    math::Set(N * H * W * C, cast::to<T>(0.f), dx, ctx);
     for (int n = 0; n < N; ++n) {
-        auto* dY = dy + n * X_offset;
-        auto* dX = dx + n * Y_offset;
+        auto* dY = dy + n * X_ofs;
+        auto* dX = dx + n * Y_ofs;
         for (int ph = 0; ph < pool_h; ph++) {
             for (int pw = 0; pw < pool_w; ++pw) {
-                int start_h = ph * stride_h - pad_h;
-                int start_w = pw * stride_w - pad_w;
-                int end_h = std::min(start_h + kernel_h, H + pad_h);
-                int end_w = std::min(start_w + kernel_w, W + pad_w);
-                int pool_area = (end_h - start_h) * (end_w - start_w);
-                end_h = std::min(end_h, H);
-                end_w = std::min(end_w, W);
-                start_h = std::max(start_h, 0);
-                start_w = std::max(start_w, 0);
-                const int base_pool_idx = ph * pool_w + pw;
+                int h_start = ph * stride_h - pad_h;
+                int w_start = pw * stride_w - pad_w;
+                int h_end = std::min(h_start + kernel_h, H + pad_h);
+                int w_end = std::min(w_start + kernel_w, W + pad_w);
+                T area = (h_end - h_start) * (w_end - w_start);
+                h_end = std::min(h_end, H);
+                w_end = std::min(w_end, W);
+                h_start = std::max(h_start, 0);
+                w_start = std::max(w_start, 0);
+                const int base_yi = ph * pool_w + pw;
                 for (int c = 0; c < C; ++c) {
-                    const int pool_idx = base_pool_idx * C + c;
-                    for (int h = start_h; h < end_h; ++h)
-                        for (int w = start_w; w < end_w; ++w)
-                            dX[(h * W + w) * C + c] +=
-                                (dY[pool_idx] / pool_area);
+                    const int yi = base_yi * C + c;
+                    for (int h = h_start; h < h_end; ++h)
+                        for (int w = w_start; w < w_end; ++w)
+                            dX[(h * W + w) * C + c] += dY[yi] / area;
                 }
             }
         }
-        dX += X_offset;
-        dY += Y_offset;
     }
 }
 
-template<> void AVGPool2dGrad<float, CPUContext>(
+template<> void AvgPool2dGrad<float, CPUContext>(
     const int               N,
     const int               C,
     const int               H,
@@ -510,14 +527,26 @@ template<> void AVGPool2dGrad<float, CPUContext>(
     float*                  dx,
     CPUContext*             ctx) {
     if (data_format == "NCHW") {
-        _AVGPool2dGrad_NCHW<float>(
-            N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, dy, dx, ctx);
+        _AvgPool2dGradNCHW(
+            N, C, H, W,
+            pool_h, pool_w,
+            kernel_h, kernel_w,
+            stride_h, stride_w,
+            pad_h, pad_w,
+            dy, dx, ctx
+        );
     } else if (data_format == "NHWC") {
-        _AVGPool2dGrad_NHWC<float>(
-            N, C, H, W, pool_h, pool_w, kernel_h, kernel_w,
-                stride_h, stride_w, pad_h, pad_w, dy, dx, ctx);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+        _AvgPool2dGradNHWC(
+            N, C, H, W,
+            pool_h, pool_w,
+            kernel_h, kernel_w,
+            stride_h, stride_w,
+            pad_h, pad_w,
+            dy, dx, ctx
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
 }  // namespace kernel

@@ -22,16 +22,15 @@ class PReluOp final : public Operator<Context> {
  public:
     PReluOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          channel_shared(OperatorBase::Arg<bool>("channel_shared", false)),
-          data_format(OperatorBase::Arg<string>("data_format", "NCHW")) {}
+          channel_shared_(OpArg<bool>(
+              "channel_shared", false)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t channel_shared, channels, dim;
-    string data_format;
+    int64_t channel_shared_, channels_, dim_;
 };
 
 template <class Context>
@@ -39,16 +38,15 @@ class PReluGradientOp final : public Operator<Context> {
  public:
     PReluGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          channel_shared(OperatorBase::Arg<bool>("channel_shared", false)),
-          data_format(OperatorBase::Arg<string>("data_format", "NCHW")) {}
+          channel_shared_(OpArg<bool>(
+              "channel_shared", false)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t channel_shared, channels, dim;
-    string data_format;
+    int64_t channel_shared_, channels_, dim_;
 };
 
 }  // namespace dragon

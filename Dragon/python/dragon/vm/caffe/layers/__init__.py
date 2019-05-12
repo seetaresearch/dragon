@@ -82,7 +82,6 @@ from .common import (
     ArgMaxLayer,
     PermuteLayer,
     FlattenLayer,
-    GatherLayer,
     ConcatLayer,
     NormalizeLayer,
     InstanceNormLayer,

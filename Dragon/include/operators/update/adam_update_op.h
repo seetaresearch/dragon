@@ -21,14 +21,15 @@ template <class Context>
 class AdamUpdateOp final : public UpdateOpBase<Context> {
  public:
     AdamUpdateOp(const OperatorDef& def, Workspace* ws)
-        : UpdateOpBase<Context>(def, ws), t(0) {}
+        : UpdateOpBase<Context>(def, ws), t_(0) {}
     USE_OPERATOR_FUNCTIONS;
-    USE_UPDATER_FUNCTIONS(Context);
+    USE_UPDATER_FUNCTIONS;
 
-    void ComputeUpdates(Tensor* dX) override;
+    void Compute(Tensor* dX) override;
 
  protected:
-    int t; float lr, beta1, beta2, eps;
+    int t_;
+    float lr_, beta1_, beta2_, eps_;
 };
 
 }  // namespace dragon

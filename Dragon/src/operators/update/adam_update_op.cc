@@ -5,31 +5,44 @@
 namespace dragon {
 
 template <class Context>
-void AdamUpdateOp<Context>::ComputeUpdates(Tensor* dX) {
-    auto* M = ws()->CreateTensor(
-        "/mnt/" + Slot() + "/adam/m")
-            ->ReshapeLike(*dX);
-    auto* V = ws()->CreateTensor(
-        "/mnt/" + Slot() + "/adam/v")
-            ->ReshapeLike(*dX);
+void AdamUpdateOp<Context>::Compute(Tensor* dX) {
+    auto* m = ws()
+        ->CreateTensor("/mnt/" + slot() + "/m")
+        ->ReshapeLike(*dX)
+        ->template mutable_data<float, Context>();
 
-    t++;
-    beta1 = Param("beta1"), beta2 = Param("beta2"), eps = Param("eps");
-    float coeff = sqrt(1. - pow(beta2, t)) / (1. - pow(beta1, t));
-    lr = Param("base_lr") * coeff * this->lr_mult;
-    auto* dXdata = dX->template mutable_data<float, Context>();
-    auto* Mdata = M->template mutable_data<float, Context>();
-    auto* Vdata = V->template mutable_data<float, Context>();
+    auto* v = ws()
+        ->CreateTensor("/mnt/" + slot() + "/v")
+        ->ReshapeLike(*dX)
+        ->template mutable_data<float, Context>();
 
-    kernel::AdamUpdate(dX->count(), lr, beta1,
-        beta2, eps, dXdata, Mdata, Vdata, ctx());
+    auto* dx = dX->template mutable_data<float, Context>();
+
+    beta1_ = param("beta1");
+    beta2_ = param("beta2");
+    eps_   = param("eps");
+    float coef = sqrt(1. - pow(beta2_, ++t_))
+                   / (1. - pow(beta1_, t_));
+    lr_ = param("base_lr") * coef * lr_mult();
+
+    kernel::AdamUpdate(
+        dX->count(),
+        lr_, beta1_,
+        beta2_, eps_,
+        dx, m, v, ctx()
+    );
 }
 
 DEPLOY_CPU(AdamUpdate);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(AdamUpdate);
 #endif
-OPERATOR_SCHEMA(AdamUpdate).NumInputs(1).NumOutputs(1);
+
+OPERATOR_SCHEMA(AdamUpdate)
+     /* dX */
+    .NumInputs(1)
+     /* X */
+    .NumOutputs(1);
 
 NO_GRADIENT(AdamUpdate);
 

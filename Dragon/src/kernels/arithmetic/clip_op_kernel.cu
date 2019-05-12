@@ -8,7 +8,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Clip <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename T>
 __global__ void _Clip(
@@ -22,7 +22,7 @@ __global__ void _Clip(
     }
 }
 
-__global__ void _ClipHalf(
+template<> __global__ void _Clip<half>(
     const int               nthreads,
     const half              low,
     const half              high,
@@ -36,7 +36,7 @@ __global__ void _ClipHalf(
     }
 }
 
-/*! ClipGrad <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename T>
 __global__ void _ClipGrad(
@@ -48,13 +48,13 @@ __global__ void _ClipGrad(
     T*                      dx) {
     CUDA_1D_KERNEL_LOOP(i, nthreads) {
         const T xi = x[i];
-        dx[i] = (xi < low || xi > high) ? (T)0 : dy[i];
+        dx[i] = (xi < low || xi > high) ? T(0) : dy[i];
     }
 }
 
-/*! ClipGrad <T = float16, Device = CUDA> */
+/* <T = float16, Device = CUDA> */
 
-__global__ void _ClipGradHalf(
+template<> __global__ void _ClipGrad<half>(
     const int               nthreads,
     const half              low,
     const half              high,
@@ -72,7 +72,7 @@ __global__ void _ClipGradHalf(
     }
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_CLIP_KERNEL_LAUNCHER(T) \
     template <> void Clip<T, CUDAContext>( \
@@ -84,8 +84,12 @@ __global__ void _ClipGradHalf(
         CUDAContext*            ctx) { \
         _Clip<T> \
             << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> > \
-            (count, cast::to<T>(low), cast::to<T>(high), x, y); \
+                 0, ctx->cuda_stream() >> >( \
+            count,  \
+            cast::to<T>(low), \
+            cast::to<T>(high), \
+            x, y \
+        ); \
     }
 
 #define DEFINE_CLIP_GRAD_KERNEL_LAUNCHER(T) \
@@ -99,8 +103,12 @@ __global__ void _ClipGradHalf(
         CUDAContext*            ctx) { \
         _ClipGrad<T> \
             << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> > \
-            (count, cast::to<T>(low), cast::to<T>(high), x, dy, dx); \
+                 0, ctx->cuda_stream() >> >( \
+            count, \
+            cast::to<T>(low), \
+            cast::to<T>(high), \
+            x, dy, dx \
+        ); \
     }
 
 DEFINE_CLIP_KERNEL_LAUNCHER(int8_t);
@@ -124,12 +132,15 @@ template <> void Clip<float16, CUDAContext>(
     const float16*          x,
     float16*                y,
     CUDAContext*            ctx) {
-    _ClipHalf
+    _Clip
         << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, cast::to<half>(low), cast::to<half>(high), 
-            reinterpret_cast<const half*>(x),
-                reinterpret_cast<half*>(y));
+             0, ctx->cuda_stream() >> >(
+        count,
+        cast::to<half>(low),
+        cast::to<half>(high),
+        reinterpret_cast<const half*>(x),
+        reinterpret_cast<half*>(y)
+    );
 }
 
 template <> void ClipGrad<float16, CUDAContext>(
@@ -140,13 +151,16 @@ template <> void ClipGrad<float16, CUDAContext>(
     const float16*          dy,
     float16*                dx,
     CUDAContext*            ctx) {
-    _ClipGradHalf
+    _ClipGrad
         << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, cast::to<half>(low), cast::to<half>(high),
-            reinterpret_cast<const half*>(x),
-                reinterpret_cast<const half*>(dy),
-                    reinterpret_cast<half*>(dx));
+             0, ctx->cuda_stream() >> >(
+        count,
+        cast::to<half>(low),
+        cast::to<half>(high),
+        reinterpret_cast<const half*>(x),
+        reinterpret_cast<const half*>(dy),
+        reinterpret_cast<half*>(dx)
+    );
 }
 
 #undef DEFINE_CLIP_KERNEL_LAUNCHER

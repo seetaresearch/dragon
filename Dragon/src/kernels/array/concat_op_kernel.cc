@@ -1,44 +1,55 @@
 #include "utils/op_kernel.h"
-#include "utils/omp_alternative.h"
+#include "utils/math_functions.h"
 
 namespace dragon {
 
 namespace kernel {
 
-/*! Concat <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _Concat(
     const int               outer_dim,
     const int               inner_dim,
-    const int               x_concat_dim,
-    const int               y_concat_dim,
-    const int               concat_offset,
+    const int               axis_dim,
+    const int               cat_dim,
+    const int               cat_ofs,
     const T*                x,
     T*                      y,
     CPUContext*             ctx) {
-    int64_t y_offset = 0, x_cols = x_concat_dim * inner_dim;
+    int64_t y_ofs, cols = axis_dim * inner_dim;
     for (int n = 0; n < outer_dim; ++n) {
-        y_offset = (n * y_concat_dim + concat_offset) * inner_dim;
-        ctx->Copy<T, CPUContext, CPUContext>(
-            x_cols, y + y_offset, x + n * x_cols);
+        y_ofs = (
+            n * cat_dim + cat_ofs
+                ) * inner_dim;
+        math::Copy(
+            cols,
+            x + n * cols,
+            y + y_ofs, ctx
+        );
     }
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_CONCAT_KERNEL_LAUNCHER(name, T) \
     template <> void name<T, CPUContext>( \
         const int               outer_dim, \
         const int               inner_dim, \
-        const int               x_concat_dim, \
-        const int               y_concat_dim, \
-        const int               concat_offset, \
+        const int               axis_dim, \
+        const int               cat_dim, \
+        const int               cat_ofs, \
         const T*                x, \
         T*                      y, \
         CPUContext*             ctx) { \
-        _##name(outer_dim, inner_dim, x_concat_dim, \
-            y_concat_dim, concat_offset, x, y, ctx); \
+        _##name( \
+            outer_dim, \
+            inner_dim, \
+            axis_dim, \
+            cat_dim, \
+            cat_ofs, \
+            x, y, ctx \
+        ); \
     }
 
 DEFINE_CONCAT_KERNEL_LAUNCHER(Concat, bool);

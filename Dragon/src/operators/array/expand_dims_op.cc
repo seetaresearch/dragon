@@ -3,38 +3,48 @@
 
 namespace dragon {
 
-#define DETERMINE_RUNTIME_ARGUMENTS(X) \
-    axis = OperatorBase::Arg<int64_t>("axis", 0); \
-    axis = axis < 0 ? axis + X.ndim() + 1 : axis; \
-    CHECK(axis >= 0 && axis <= X.ndim()) \
-       << "\nExcepted the axis in [-" << X.ndim() + 1 << ", " << X.ndim() \
-       << "], got " << OperatorBase::Arg<int64_t>("axis", 0) << ".";
+#define DETERMINE_RUNTIME_ARGS(X) \
+    axis_ = OpArg<int64_t>("axis", 0); \
+    axis_ = axis_ < 0 ? axis_ + X.ndim() + 1 : axis_; \
+    CHECK(axis_ >= 0 && axis_ <= X.ndim()) \
+        << "\nExcepted the axis in [-" << X.ndim() + 1 \
+        << ", " << X.ndim() << "], got " \
+        << OpArg<int64_t>("axis", 0) << ".";
 
 template <class Context>
 void ExpandDimsOp<Context>::RunOnDevice() {
-    DETERMINE_RUNTIME_ARGUMENTS(Input(0));
-    vector<int64_t> dims = Input(0).dims();
-    dims.insert(dims.begin() + axis, 1);
+    DETERMINE_RUNTIME_ARGS(X(0));
 
-    Output(0)->Reshape(dims);
-    Output(0)->SetMeta(Input(0).meta());
-    Output(0)->Share(Input(0).memory());
+    auto out_shape = X(0).dims();
+    out_shape.insert(out_shape.begin() + axis_, 1);
+
+    Y(0)->Reshape(out_shape);
+    Y(0)->SetMeta(X(0).meta());
+    Y(0)->Share(X(0).memory());
 }
 
 DEPLOY_CPU(ExpandDims);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(ExpandDims);
 #endif
-OPERATOR_SCHEMA(ExpandDims).NumInputs(1).NumOutputs(1);
-
 
 DEPLOY_CPU(ExpandDimsGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(ExpandDimsGradient);
 #endif
 
+OPERATOR_SCHEMA(ExpandDims)
+     /* X */
+    .NumInputs(1)
+     /* Y */
+    .NumOutputs(1);
+
 OPERATOR_SCHEMA(ExpandDimsGradient)
-    .NumInputs(2).NumOutputs(1)
+     /* X, dY */
+    .NumInputs(2)
+     /* dX */
+    .NumOutputs(1)
+     /* dY => dX */
     .Inplace({ { 1, 0 } });
 
 REGISTER_GRADIENT(ExpandDims, SimpleGradientMaker);

@@ -45,13 +45,9 @@ class CPUContext {
 
     /*! \brief Malloc the memory */
     static void* New(size_t nbytes) {
-        void* data;
-#ifdef WITH_CUDA_HOST_MEM
-        CUDA_CHECK(cudaMallocHost(&data, nbytes));
-#else
-        data = malloc(nbytes);
-#endif
-        CHECK(data) << "\nMalloc mem: " << nbytes << " bytes failed.";
+        void* data = malloc(nbytes);
+        CHECK(data) << "\nMalloc mem: "
+                    << nbytes << " bytes failed.";
         return data;
     }
 

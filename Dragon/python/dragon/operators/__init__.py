@@ -70,18 +70,18 @@ class OpSchema(object):
                 inputs = args[0]
                 if isinstance(inputs, (list, tuple)):
                     dtype = None
-                    for idx, input in enumerate(inputs):
+                    for input in inputs:
                         if isinstance(input, Tensor) and \
                             input.dtype is not None:
                                 dtype = input.dtype
                                 break
-                    for idx, input in enumerate(inputs):
+                    for i, input in enumerate(inputs):
                         if not isinstance(input, Tensor):
-                            inputs[idx] = Tensor.Convert(input, dtype=dtype)
+                            inputs[i] = Tensor.convert_to(input, dtype)
                     return op_func(inputs + list(args[1:]), **kwargs)
                 else:
                     if not isinstance(inputs, Tensor):
-                        inputs = Tensor.Convert(inputs, dtype=None)
+                        inputs = Tensor.convert_to(inputs)
                     return op_func([inputs] + list(args[1:]), **kwargs)
             return Impl
         return Decorator
@@ -138,7 +138,7 @@ class ArgumentHelper(object):
                                     arguments['extra_inputs'].extend([property])
                                 properties_t.append(property.name)
                             else:
-                                properties_t.append(Tensor.Convert(property, dtype=dtype).name)
+                                properties_t.append(Tensor.convert_to(property, dtype).name)
                         arguments[desc_name] = None
                         arguments[desc_name + '_desc'] = properties_t
                     else:

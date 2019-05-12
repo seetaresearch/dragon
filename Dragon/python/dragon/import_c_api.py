@@ -22,13 +22,11 @@ from __future__ import division
 from __future__ import print_function
 
 import sys
-import logging as _logging
 
 try:
     from dragon.libdragon import *
 except ImportError as e:
-    _logging.critical(
-        'Cannot import dragon. Error: {0}'.format(str(e)))
+    print('Cannot import dragon. Error: {0}'.format(str(e)))
     sys.exit(1)
 
 REGISTERED_OPERATORS = set(s for s in RegisteredOperators())

@@ -22,19 +22,19 @@ class ReduceOp final : public Operator<Context> {
  public:
     ReduceOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axes(OperatorBase::Args<int64_t>("axes")),
-          keep_dims(OperatorBase::Arg<bool>("keep_dims", false)),
-          operation(OperatorBase::Arg<string>("operation", "SUM")) {}
+          axes_(OpArgs<int64_t>("axes")),
+          keep_dims_(OpArg<int64_t>("keep_dims", 0)),
+          operation_(OpArg<string>("operation", "SUM")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    string operation;
-    int64_t keep_dims;
-    vector<int64_t> dims, axes;
-    vector<int> dims32, axes32;
+    string operation_;
+    int64_t keep_dims_;
+    vec64_t dims_, axes_;
+    vec32_t dims32_, axes32_;
 };
 
 template <class Context>
@@ -42,19 +42,18 @@ class ReduceGradientOp final : public Operator<Context> {
  public:
     ReduceGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axes(OperatorBase::Args<int64_t>("axes")),
-          operation(OperatorBase::Arg<string>("operation", "SUM")) {}
+          axes_(OpArgs<int64_t>("axes")),
+          operation_(OpArg<string>("operation", "SUM")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    string operation;
-    int64_t axis, outer_dim, inner_dim, axis_dim;
-    vector<int64_t> axes, y_dimsV, y_stridesV;
-    vector<int> dims32, axes32;
-    Tensor x_dimsT, y_dimsT, y_stridesT;
+    string operation_;
+    vec32_t axes32_;
+    vec64_t axes_, y_dims_, y_strides_;
+    Tensor X_dims_, Y_dims_, Y_strides_;
 };
 
 }  // namespace dragon

@@ -9,13 +9,13 @@ namespace dragon {
 namespace kernel {
 
 #define FIXED_DIVISOR_DIV_MOD(d, n, q, r) \
-  do {                                    \
-    const auto n_copy = n;                \
-    *q = n_copy / d;                      \
-    *r = n_copy % d;                      \
-  } while (0)
+    do {                                  \
+        const auto n_copy = n;            \
+        *q = n_copy / d;                  \
+        *r = n_copy % d;                  \
+    } while (0)
 
-/*! ReduceSum <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _ColwiseReduceSum(
@@ -38,7 +38,7 @@ void _RowwiseReduceSum(
     const T*                    x,
     T*                          y) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(cols))
+    #pragma omp parallel for num_threads(OMP_THREADS(cols))
 #endif
     for (int i = 0; i < cols; ++i) {
         T val = 0;
@@ -60,18 +60,18 @@ void _GenericReduceSum(
     const T*                    x,
     T*                          y) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(outer_dim))
+    #pragma omp parallel for num_threads(OMP_THREADS(outer_dim))
 #endif
     for (int i = 0; i < outer_dim; ++i) {
         T val = 0;
-        int x_idx, y_idx, r;
+        int xi, yi, r;
         for (int j = 0; j < inner_dim; ++j) {
-            x_idx = 0; y_idx = i * inner_dim + j;
+            xi = 0; yi = i * inner_dim + j;
             for (int d = ndims - 1; d >= 0; --d) {
-                FIXED_DIVISOR_DIV_MOD(y_dims[d], y_idx, &y_idx, &r);
-                x_idx += r * x_strides[d];
+                FIXED_DIVISOR_DIV_MOD(y_dims[d], yi, &yi, &r);
+                xi += r * x_strides[d];
             }
-            val += x[x_idx];
+            val += x[xi];
         }
         y[i] = val;
     }
@@ -87,12 +87,22 @@ void _GenericReduceSumLauncher(
     const float                 scale,
     const T*                    x,
     T*                          y) {
-    vector<int> x_strides(ndims);
-    vector<int> y_dims(ndims);
-    utils::ComputeTransposedStrides(ndims, dims, axes, x_strides.data());
-    for (int i = 0; i < ndims; ++i) y_dims[i] = dims[axes[i]];
-    _GenericReduceSum<T>(outer_dim, inner_dim, ndims,
-        x_strides.data(), y_dims.data(), scale, x, y);
+    vec32_t x_strides(ndims), y_dims(ndims);
+    utils::ComputeTransposedStrides(
+        ndims, dims, axes,
+        x_strides.data()
+    );
+    for (int i = 0; i < ndims; ++i)
+        y_dims[i] = dims[axes[i]];
+    _GenericReduceSum(
+        outer_dim,
+        inner_dim,
+        ndims,
+        x_strides.data(),
+        y_dims.data(),
+        scale,
+        x, y
+    );
 }
 
 template <typename T>
@@ -104,7 +114,7 @@ void _ReduceSum(
     const float             scale,
     const T*                x,
     T*                      y) {
-    vector<int> y_dims_V(dims, dims + num_dims);
+    vec32_t y_dims_V(dims, dims + num_dims);
     for (int i = 0; i < num_axes; ++i) y_dims_V[axes[i]] = 1;
     const int* x_dims = dims;
     const int* y_dims = y_dims_V.data();
@@ -114,30 +124,45 @@ void _ReduceSum(
         y_dims + num_dims, 1, std::multiplies<int>());
     int rows, cols;
     // Case #1: Colwise Reduce
-    if (utils::IsColwiseReduce(num_dims, x_dims, y_dims, &rows, &cols)) {
-        _ColwiseReduceSum<T>(rows, cols, scale, x, y);
-        return;
+    if (utils::IsColwiseReduce(
+            num_dims, x_dims, y_dims,
+                &rows, &cols)) {
+        _ColwiseReduceSum(
+            rows, cols, scale, x, y
+        ); return;
     }
     // Case #2: Rowwise Reduce
-    if (utils::IsRowwiseReduce(num_dims, x_dims, y_dims, &rows, &cols)) {
-        _RowwiseReduceSum<T>(rows, cols, scale, x, y);
-        return;
+    if (utils::IsRowwiseReduce(
+            num_dims, x_dims, y_dims, 
+                &rows, &cols)) {
+        _RowwiseReduceSum(
+            rows, cols, scale, x, y
+        ); return;
     }
     // Case #3: Generic Reduce
-    std::vector<int> transpose_axes(num_dims);
+    vec32_t transpose_axes(num_dims);
     utils::ComputeTransposedAxesForReduce(
-        num_dims, num_axes, axes, transpose_axes.data());
+        num_dims, num_axes, axes,
+        transpose_axes.data()
+    );
     const int pivot = num_dims - num_axes;
     int outer_dim = 1, inner_dim = 1;
-    for (int i = 0; i < pivot; ++i) outer_dim *= dims[transpose_axes[i]];
-    for (int i = pivot; i < num_dims; ++i) inner_dim *= dims[transpose_axes[i]];
-    _GenericReduceSumLauncher<T>(
-        outer_dim, inner_dim, num_dims,
-            dims, transpose_axes.data(),
-                scale, x, y);
+    for (int i = 0; i < pivot; ++i)
+        outer_dim *= dims[transpose_axes[i]];
+    for (int i = pivot; i < num_dims; ++i)
+        inner_dim *= dims[transpose_axes[i]];
+    _GenericReduceSumLauncher(
+        outer_dim,
+        inner_dim,
+        num_dims,
+        dims,
+        transpose_axes.data(),
+        scale,
+        x, y
+    );
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_REDUCE_SUM_KERNEL_LAUNCHER(T) \
     template <> void ReduceSum<T, CPUContext>( \
@@ -149,8 +174,11 @@ void _ReduceSum(
         const T*                x, \
         T*                      y, \
         CPUContext*             ctx) { \
-        _ReduceSum<T>(num_dims, dims, \
-            num_axes, axes, scale, x, y); \
+        _ReduceSum( \
+            num_dims, dims, \
+            num_axes, axes, \
+            scale, x, y \
+        ); \
     }
 
 DEFINE_REDUCE_SUM_KERNEL_LAUNCHER(int8_t);
@@ -186,14 +214,18 @@ void _ReduceSumGrad(
     const float             scale,
     const T*                dy,
     T*                      dx) {
-    vector<int> index(ndims, 0); int y_idx;
-    for (int x_idx = 0; x_idx < nthreads; ++x_idx) {
-        y_idx = 0;
+    vec32_t index(ndims, 0); int yi;
+    for (int xi = 0; xi < nthreads; ++xi) {
+        yi = 0;
         for (int d = ndims - 1; d >= 0; --d) {
-            y_idx += (index[d] % y_dims[d]) * y_strides[d];
+            yi += (
+                index[d] % y_dims[d]
+            ) * y_strides[d];
         }
-        dx[x_idx] = dy[y_idx] * scale;
-        utils::IncreaseIndexInDims(ndims, x_dims, index.data());
+        dx[xi] = dy[yi] * scale;
+        utils::IncreaseIndexInDims(
+            ndims, x_dims, index.data()
+        );
     }
 }
 
@@ -210,8 +242,11 @@ void _ReduceSumGrad(
         const T*                dy, \
         T*                      dx, \
         CPUContext*             ctx) { \
-        _ReduceSumGrad<T>(count, ndims, x_dims, \
-            y_dims, y_strides, scale, dy, dx); \
+        _ReduceSumGrad( \
+            count, ndims, x_dims, \
+            y_dims, y_strides, \
+            scale, dy, dx \
+        ); \
     }
 
 DEFINE_REDUCE_SUM_GRAD_KERNEL_LAUNCHER(int8_t);

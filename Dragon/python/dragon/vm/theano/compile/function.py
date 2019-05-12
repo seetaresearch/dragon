@@ -133,7 +133,7 @@ def _inject_update_ops(graph_def, updater):
     if _mpi.Is_Init():
         (rank, group), arguments = _mpi.AllowParallel(), {}
         if rank != -1:
-            arguments['parallel_mode'] = _mpi.GetParallelMode()
+            arguments['mode'] = '%s_ALLREDUCE' % _mpi.GetParallelMode()
             arguments['root'], (arguments['comm'], arguments['group']) \
                 = group[0], _mpi.CreateGroup(root=group[0], incl=group)
             update_ops.insert(

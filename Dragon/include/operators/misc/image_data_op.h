@@ -22,35 +22,32 @@ class ImageDataOp final : public Operator<Context> {
  public:
     ImageDataOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          dtype(OperatorBase::Arg<string>("dtype", "float32")),
-          mean_values(OperatorBase::Args<float>("mean_values")),
-          std_values(OperatorBase::Args<float>("std_values")),
-          data_format(OperatorBase::Arg<string>("data_format", "NCHW")) {
-        if (mean_values.size() > 0) {
-            CHECK_EQ((int)mean_values.size(), 3)
-                << "The mean values should be a list with length 3.";
-            mean.Reshape({ 3 });
-            for (int i = 0; i < 3; i++)
-                mean.mutable_data<float, CPUContext>()[i] = mean_values[i];
+          mean_vec_(OpArgs<float>("mean_values")),
+          std_vec_(OpArgs<float>("std_values")) {
+        if (mean_vec_.size() > 0) {
+            CHECK_EQ((int)mean_vec_.size(), 3);
+            auto* mean = mean_.Reshape({ 3 })
+                ->mutable_data<float, CPUContext>();
+            for (int i = 0; i < 3; ++i) mean[i] = mean_vec_[i];
         }
-        if (std_values.size() > 0) {
-            CHECK_EQ((int)std_values.size(), 3)
-                << "The std values should be a list with length 3.";
-            std.Reshape({ 3 });
-            for (int i = 0; i < 3; i++)
-                std.mutable_data<float, CPUContext>()[i] = std_values[i];
+        if (std_vec_.size() > 0) {
+            CHECK_EQ((int)std_vec_.size(), 3);
+            auto* std = std_.Reshape({ 3 })
+                ->mutable_data<float, CPUContext>();
+            for (int i = 0; i < 3; ++i) std[i] = std_vec_[i];
         }
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename Tx, typename Ty> void RunWithType();
+
+    template <typename Tx, typename Ty>
+    void RunImpl();
 
  protected:
-    string dtype, data_format;
-    vector<float> mean_values, std_values;
-    int64_t n, c, h, w;
-    Tensor mean, std;
+    Tensor mean_, std_;
+    int64_t n_, c_, h_, w_;
+    vector<float> mean_vec_, std_vec_;
 };
 
 }  // namespace dragon

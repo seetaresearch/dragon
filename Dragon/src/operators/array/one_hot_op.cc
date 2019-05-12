@@ -5,36 +5,53 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void OneHotOp<Context>::RunWithType() {
-    auto* Xdata = Input(0).template data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+void OneHotOp<Context>::RunImpl() {
+    auto* x = X(0).template data<T, Context>();
+    auto* y = Y(0)->template mutable_data<T, Context>();
 
-    math::Set(Output(0)->count(),
-        cast::to<T>((float)off_value), Ydata, ctx());
+    math::Set(
+        Y(0)->count(),
+        cast::to<T>((float)off_value_),
+        y, ctx()
+    );
 
-    kernel::OneHot(Input(0).count(),
-        depth, on_value, Xdata, Ydata, ctx());
+    kernel::OneHot(
+        X(0).count(),
+        depth_, on_value_,
+        x, y, ctx()
+    );
 }
 
 template <class Context>
 void OneHotOp<Context>::RunOnDevice() {
-    auto dims = Input(0).dims();
-    dims.push_back(depth);
+    auto out_shape = X(0).dims();
+    out_shape.push_back(depth_);
 
-    Output(0)->Reshape(dims);
+    Y(0)->Reshape(out_shape);
    
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), int)) RunWithType<int>();
-    else if (XIsType(Input(0), int64_t)) RunWithType<int64_t>();
-    else LOG(FATAL) << DTypeHelper(Input(0),
-        { "float32", "int32", "int64" });
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(0), int)) {
+        RunImpl<int>();
+    } else if (XIsType(X(0), int64_t)) {
+        RunImpl<int64_t>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0),
+            { "float32", "int32", "int64" }
+        );
+    }
 }
 
 DEPLOY_CPU(OneHot);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(OneHot);
 #endif
-OPERATOR_SCHEMA(OneHot).NumInputs(1).NumOutputs(1);
+
+OPERATOR_SCHEMA(OneHot)
+     /* X */
+    .NumInputs(1)
+     /* Y */
+    .NumOutputs(1);
 
 NO_GRADIENT(OneHot);
 

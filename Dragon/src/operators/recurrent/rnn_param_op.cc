@@ -6,45 +6,73 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void RNNParamSetOp<Context>::RunWithType() {
-    auto* Pdata = Input(0).template data<T, Context>();
-    auto* Wdata = Output(0)->template mutable_data<T, Context>();
-    int64_t matrix_count = 0, bias_count = 0, offset = 0, size = -1;
-    for (int i = 0; i < num_layers; ++i) {
-        for (int j = 0; j < num_directions; ++j) {
-            int64_t pseudo_layer_id = i * num_directions + j;
-            for (int k = 0; k < num_params; ++k) {
-                if (layer_id == pseudo_layer_id && param_id == k)
-                    size = offset = (param_type == "matrix" ? matrix_count : bias_count);
-                if (k < spliter) {
-                    matrix_count += (hidden_size * (i == 0 ?
-                        input_size : input_ex_size));
-                } else { matrix_count += hidden_size * hidden_size; }
-                bias_count += hidden_size;
-                if (layer_id == pseudo_layer_id && param_id == k)
-                    size = (param_type == "matrix" ? matrix_count : bias_count) - size;
+void RNNParamSetOp<Context>::RunImpl() {
+    auto* x = X(0).template data<T, Context>();
+    auto* y = Y(0)->template mutable_data<T, Context>();
+    int64_t ofs = 0, size = -1;
+    int64_t w_count = 0, b_count = 0;
+    for (int i = 0; i < nlayers_; ++i) {
+        for (int j = 0; j < ndirections_; ++j) {
+            int64_t pseudo_id = i * ndirections_ + j;
+            for (int k = 0; k < nparams_; ++k) {
+                if (layer_id_ == pseudo_id &&
+                        param_id_ == k)
+                    size = ofs = (
+                        param_type_ == "matrix" ?
+                            w_count : b_count
+                    );
+                if (k < spliter_) {
+                    w_count += (
+                        hidden_size_ * (
+                            i == 0 ? 
+                            input_size_ :
+                            input_ex_size_
+                        )
+                    );
+                } else {
+                    w_count += hidden_size_ * hidden_size_;
+                }
+                b_count += hidden_size_;
+                if (layer_id_ == pseudo_id &&
+                        param_id_ == k)
+                    size = (
+                        param_type_ == "matrix" ?
+                            w_count : b_count
+                    ) - size;
             }
         }
     }
-    CHECK_EQ(size, Input(0).count())
+    CHECK_EQ(size, X(0).count())
         << "\nExcepted the size of param is " << size
-        << ", but got " << Input(0).count();
-    offset += param_type == "bias" ? matrix_count : 0;
-    ctx()->template Copy<T, Context, Context>(size, Wdata + offset, Pdata);
+        << ", but got " << X(0).count();
+    ofs += param_type_ == "bias" ? w_count : 0;
+    math::Copy(size, x, y + ofs, ctx());
+    ctx()->FinishDeviceCompution();
 }
 
 template <class Context>
 void RNNParamSetOp<Context>::RunOnDevice() {
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(0), float16)) {
+        RunImpl<float16>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0),
+            { "float32", "float16" }
+        );
+    }
 }
 
 DEPLOY_CPU(RNNParamSet);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(RNNParamSet);
 #endif
-OPERATOR_SCHEMA(RNNParamSet).NumInputs(1).NumOutputs(1);
+
+OPERATOR_SCHEMA(RNNParamSet)
+     /* X */
+    .NumInputs(1)
+     /* Y */
+    .NumOutputs(1);
 
 NO_GRADIENT(RNNParamSet);
 

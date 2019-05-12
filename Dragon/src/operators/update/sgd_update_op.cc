@@ -6,26 +6,38 @@
 namespace dragon {
 
 template <class Context>
-void SGDUpdateOp<Context>::ComputeUpdates(Tensor* dX) {
-    auto* H = ws()->CreateTensor(
-        "/mnt/" + Slot() + "/sgd/h")
-            ->ReshapeLike(*dX);
+void SGDUpdateOp<Context>::Compute(Tensor* dX) {
+    auto* h = ws()
+        ->CreateTensor("/mnt/" + slot() + "/h")
+        ->ReshapeLike(*dX)
+        ->template mutable_data<float, Context>();
 
-    lr = Param("base_lr") * this->lr_mult, momentum = Param("momentum");
+    auto* dx = dX->template mutable_data<float, Context>();
+    
+    momentum_ = param("momentum");
+    lr_ = param("base_lr") * lr_mult();
+
     // Momentum Correction, See arXiv:1706.02677
-    if (old_lr > 0) { correction = lr / old_lr; } old_lr = lr;
-    auto* dXdata = dX->template mutable_data<float, Context>();
-    auto* Hdata = H->template mutable_data<float, Context>();
+    if (last_lr_ > 0) correction_ = lr_ / last_lr_;
+    last_lr_ = lr_;  // Record the last value
 
-    kernel::SGDUpdate(dX->count(), lr,
-        momentum * correction, dXdata, Hdata, ctx());
+    kernel::SGDUpdate(
+        dX->count(),
+        lr_, momentum_ * correction_,
+        dx, h, ctx()
+    );
 }
 
 DEPLOY_CPU(SGDUpdate);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(SGDUpdate);
 #endif
-OPERATOR_SCHEMA(SGDUpdate).NumInputs(1).NumOutputs(1);
+
+OPERATOR_SCHEMA(SGDUpdate)
+     /* dX */
+    .NumInputs(1)
+     /* X */
+    .NumOutputs(1);
 
 NO_GRADIENT(SGDUpdate);
 

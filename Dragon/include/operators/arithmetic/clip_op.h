@@ -22,15 +22,15 @@ class ClipOp final : public Operator<Context> {
  public:
     ClipOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          low(OperatorBase::Arg<float>("low", -FLT_MAX)),
-          high(OperatorBase::Arg<float>("high", FLT_MAX)) {}
+          low_(OpArg<float>("low", -FLT_MAX)),
+          high_(OpArg<float>("high", FLT_MAX)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
     
  protected:
-    float low, high, lowT, highT;
+    float low_, high_, lowT_, highT_;
 };
 
 template <class Context>
@@ -38,15 +38,15 @@ class ClipGradientOp final : public Operator<Context> {
  public:
     ClipGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          low(OperatorBase::Arg<float>("low", -FLT_MAX)),
-          high(OperatorBase::Arg<float>("high", FLT_MAX)) {}
+          low_(OpArg<float>("low", -FLT_MAX)),
+          high_(OpArg<float>("high", FLT_MAX)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    float low, high, lowT, highT;
+    float low_, high_, lowT_, highT_;
 };
 
 }  // namespace dragon

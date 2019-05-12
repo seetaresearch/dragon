@@ -13,65 +13,52 @@
 #ifndef DRAGON_OPERATORS_UPDATE_COLLECTIVE_UPDATE_OP_H_
 #define DRAGON_OPERATORS_UPDATE_COLLECTIVE_UPDATE_OP_H_
 
-#include "core/operator.h"
+#include "operators/mpi/mpi_op_base.h"
 
 namespace dragon {
 
 #ifdef WITH_MPI
 
 template <class Context>
-class CollectiveUpdateOp final : public Operator<Context> {
+class CollectiveUpdateOp final
+    : public MPIOpBase<Context> {
  public:
-    CollectiveUpdateOp(const OperatorDef& def, Workspace* ws)
-        : Operator<Context>(def, ws),
-          mode(OperatorBase::Arg<string>("mode", "UNKNOWN")) {
-         InitMPI();
-         if (mode.find("NCCL") != string::npos) InitNCCL();
+    CollectiveUpdateOp(
+        const OperatorDef&      def,
+        Workspace*              ws)
+        : MPIOpBase<Context>(def, ws),
+          mode_(OpArg<string>("mode", "")) {
+        if (mode_.find("NCCL") != string::npos) InitNCCL();
     }
     USE_OPERATOR_FUNCTIONS;
+    USE_MPI_FUNCTIONS;
 
     ~CollectiveUpdateOp() {
         /*  TODO(PhyscalX): Temporarily disable it,
                             to avoid a unhandled error. */
 #ifdef WITH_NCCL
-        if (mode.find("NCCL") != string::npos) {
+        if (mode_.find("NCCL") != string::npos) {
             /* ncclCommDestroy(nccl_comm); */
         }
 #endif
     }
 
-    void InitMPI();
     void InitNCCL();
 
     void RunOnDevice() override;
-
-    template <typename T> void MPIAllReduce(
-        Tensor*                 tensor,
-        MPI_Datatype            dtype);
-
-    template <typename T> void MPIBcast(
-        Tensor*                 tensor,
-        MPI_Datatype            dtype);
+    template <typename T> void MPIBCast(Tensor*);
+    template <typename T> void MPIAllReduce(Tensor*);
 
 #ifdef WITH_NCCL
-    template <typename T> void NCCLAllReduce(
-        Tensor*                 tensor,
-        ncclDataType_t          dtype,
-        cudaStream_t&           stream);
+    template <typename T>
+    void NCCLAllReduce(Tensor*, ncclDataType_t);
 
-    template <typename T> void NCCLBcast(
-        Tensor*                 tensor,
-        ncclDataType_t          dtype,
-        cudaStream_t&           stream);
+    template <typename T>
+    void NCCLBcast(Tensor*, ncclDataType_t);
 #endif
 
  protected:
-    int comm_size, comm_rank, comm_root;
-    int world_size, world_rank;
-    string mode;
-
-    MPI_Comm comm;
-    MPI_Group group;
+    string mode_;
 
 #ifdef WITH_NCCL
     ncclComm_t nccl_comm;

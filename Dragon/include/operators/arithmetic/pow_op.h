@@ -22,18 +22,19 @@ class PowOp final : public Operator<Context> {
  public:
     PowOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          scale(OperatorBase::Arg<float>("scale", 1.f)),
-          shift(OperatorBase::Arg<float>("shift", 0.f)),
-          power(OperatorBase::Arg<float>("power", 1.f)) {
-          power_scale = power * scale;
+          scale_(OpArg<float>("scale", 1.f)),
+          shift_(OpArg<float>("shift", 0.f)),
+          power_(OpArg<float>("power", 1.f)) {
+        power_scale_ = power_ * scale_;
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    float scale, shift, power, power_scale;
+    float scale_, shift_;
+    float power_, power_scale_;
 };
 
 template <class Context>
@@ -41,18 +42,19 @@ class PowGradientOp final : public Operator<Context> {
  public:
     PowGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-        scale(OperatorBase::Arg<float>("scale", 1.f)),
-        shift(OperatorBase::Arg<float>("shift", 0.f)),
-        power(OperatorBase::Arg<float>("power", 1.f)) {
-        power_scale = power * scale;
+          scale_(OpArg<float>("scale", 1.f)),
+          shift_(OpArg<float>("shift", 0.f)),
+          power_(OpArg<float>("power", 1.f)) {
+        power_scale_ = power_ * scale_;
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    float scale, shift, power, power_scale;
+    float scale_, shift_;
+    float power_, power_scale_;
 };
 
 }  // namespace dragon

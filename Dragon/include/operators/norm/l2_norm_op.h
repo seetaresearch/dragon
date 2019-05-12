@@ -22,20 +22,20 @@ class L2NormOp final : public Operator<Context> {
  public:
     L2NormOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 0)),
-          num_axes(OperatorBase::Arg<int64_t>("num_axes", -1)),
-          eps(OperatorBase::Arg<float>("eps", 1e-5f)),
-          mode(OperatorBase::Arg<string>("mode", "SUM")) {}
+          axis_(OpArg<int64_t>("axis", 0)),
+          num_axes_(OpArg<int64_t>("num_axes", -1)),
+          eps_(OpArg<float>("eps", 1e-5f)),
+          mode_(OpArg<string>("mode", "SUM")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    float eps; string mode;
-    int64_t axis, num_axes, end_axis;
-    int64_t outer_dim, dim, inner_dim, spatial_dim;
-    Tensor* norm, buffer;
+    float eps_;
+    string mode_;
+    int64_t axis_, num_axes_, end_axis_;
+    int64_t outer_dim_, reduce_dim_, inner_dim_;
 };
 
 template <class Context>
@@ -43,19 +43,18 @@ class L2NormGradientOp final : public Operator<Context> {
  public:
     L2NormGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 0)),
-          num_axes(OperatorBase::Arg<int64_t>("num_axes", -1)),
-          mode(OperatorBase::Arg<string>("mode", "SUM")) {}
+          axis_(OpArg<int64_t>("axis", 0)),
+          num_axes_(OpArg<int64_t>("num_axes", -1)),
+          mode_(OpArg<string>("mode", "SUM")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    string mode;
-    int64_t axis, num_axes, end_axis;
-    int64_t outer_dim, dim, inner_dim;
-    Tensor* norm, buffer, buffer_inner;
+    string mode_;
+    int64_t axis_, num_axes_, end_axis_;
+    int64_t outer_dim_, reduce_dim_, inner_dim_;
 };
 
 }  // namespace dragon

@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! ArgMax <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _ArgMax(
@@ -34,7 +34,7 @@ void _ArgMax(
     }
 }
 
-/*! ArgMin <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _ArgMin(
@@ -61,7 +61,7 @@ void _ArgMin(
     }
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_ARGREDUCE_KERNEL_LAUNCHER(name, T) \
     template<> void name<T, CPUContext>( \
@@ -73,8 +73,10 @@ void _ArgMin(
         int64_t*                indices, \
         T*                      values, \
         CPUContext*             ctx) { \
-        _##name<T>(outer_dim, inner_dim, axis_dim, \
-            top_k, x, indices, values); \
+        _##name( \
+            outer_dim, inner_dim, axis_dim, \
+            top_k, x, indices, values \
+        ); \
     }
 
 DEFINE_ARGREDUCE_KERNEL_LAUNCHER(ArgMax, bool);
@@ -93,7 +95,7 @@ DEFINE_ARGREDUCE_KERNEL_LAUNCHER(ArgMin, int64_t);
 DEFINE_ARGREDUCE_KERNEL_LAUNCHER(ArgMin, float);
 DEFINE_ARGREDUCE_KERNEL_LAUNCHER(ArgMin, double);
 
-/*! ArgMax <T = float16, Device = CPU> */
+/* <T = float16, Device = CPU> */
 
 template<> void ArgMax<float16, CPUContext>(
     const int               outer_dim,
@@ -107,7 +109,7 @@ template<> void ArgMax<float16, CPUContext>(
     CPU_FP16_NOT_SUPPORTED;
 }
 
-/*! ArgMin <T = float16, Device = CPU> */
+/* <T = float16, Device = CPU> */
 
 template<> void ArgMin<float16, CPUContext>(
     const int               outer_dim,

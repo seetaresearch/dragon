@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! AdamUpdate <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <> void AdamUpdate<float, CPUContext>(
     const int               count,
@@ -18,7 +18,7 @@ template <> void AdamUpdate<float, CPUContext>(
     float*                  v,
     CPUContext*             ctx) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         float gi = g[i];

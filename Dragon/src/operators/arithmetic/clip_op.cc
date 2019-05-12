@@ -5,86 +5,101 @@
 
 namespace dragon {
 
-#define DEFINE_TYPED_CALLER \
-    lowT = low, highT = high; \
-    if (XIsType(Input(0), int8_t)) { \
-        lowT = std::max(low, -128.f); \
-        highT = std::min(high, 127.f); \
-        RunWithType<int8_t>(); \
-    } else if (XIsType(Input(0), uint8_t)) { \
-        lowT = std::max(low, 0.f); \
-        highT = std::min(high, 255.f); \
-        RunWithType<uint8_t>(); \
-    } else if (XIsType(Input(0), int)) { \
+#define DEFINE_TYPED_RUN_IMPL \
+    lowT_ = low_, highT_ = high_; \
+    if (XIsType(X(0), int8_t)) { \
+        lowT_ = std::max(low_, -128.f); \
+        highT_ = std::min(high_, 127.f); \
+        RunImpl<int8_t>(); \
+    } else if (XIsType(X(0), uint8_t)) { \
+        lowT_ = std::max(low_, 0.f); \
+        highT_ = std::min(high_, 255.f); \
+        RunImpl<uint8_t>(); \
+    } else if (XIsType(X(0), int)) { \
         /* Careful bounds for float32 -> int32 */ \
-        lowT = std::max(low, -214748e4f); \
-        highT = std::min(high, 214748e4f); \
-        RunWithType<int>(); \
-    } else if (XIsType(Input(0), int64_t)) { \
+        lowT_ = std::max(low_, -214748e4f); \
+        highT_ = std::min(high_, 214748e4f); \
+        RunImpl<int>(); \
+    } else if (XIsType(X(0), int64_t)) { \
         /* Careful bounds for float32 -> int64 */ \
-        lowT = std::max(low, -922337e13f); \
-        highT = std::min(high, 922337e13f); \
-        RunWithType<int64_t>(); \
-    } else if (XIsType(Input(0), float16)) { \
-        lowT = std::max(low, -65505.f); \
-        highT = std::min(high, 65504.f); \
-        RunWithType<float16>(); \
-    } else if (XIsType(Input(0), float)) { \
-        RunWithType<float>(); \
-    } else if (XIsType(Input(0), double)) { \
-        RunWithType<double>(); \
-    } else LOG(FATAL) << DTypeHelper(Input(0), { \
+        lowT_ = std::max(low_, -922337e13f); \
+        highT_ = std::min(high_, 922337e13f); \
+        RunImpl<int64_t>(); \
+    } else if (XIsType(X(0), float16)) { \
+        lowT_ = std::max(low_, -65505.f); \
+        highT_ = std::min(high_, 65504.f); \
+        RunImpl<float16>(); \
+    } else if (XIsType(X(0), float)) { \
+        RunImpl<float>(); \
+    } else if (XIsType(X(0), double)) { \
+        RunImpl<double>(); \
+    } else LOG(FATAL) << DTypeString(X(0), { \
         "int8", "uint8", "int32", "int64", \
-            "float16", "float32", "float64", \
+        "float16", "float32", "float64", \
     });
 
 template <class Context> template <typename T>
-void ClipOp<Context>::RunWithType() {
-    auto* Xdata = Input(0).template data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+void ClipOp<Context>::RunImpl() {
+    auto* x = X(0).template data<T, Context>();
+    auto* y = Y(0)->template mutable_data<T, Context>();
 
-    kernel::Clip(Output(0)->count(),
-        lowT, highT, Xdata, Ydata, ctx());
+    kernel::Clip(
+        X(0).count(),
+        lowT_, highT_,
+        x, y, ctx()
+    );
 }
 
 template <class Context>
 void ClipOp<Context>::RunOnDevice() {
-    Output(0)->ReshapeLike(Input(0));
-    DEFINE_TYPED_CALLER;
+    Y(0)->ReshapeLike(X(0));
+    DEFINE_TYPED_RUN_IMPL;
+}
+
+template <class Context> template <typename T>
+void ClipGradientOp<Context>::RunImpl() {
+    auto* x  = X(0).template data<T, Context>();
+    auto* dy = X(1).template data<T, Context>();
+    auto* dx = Y(0)->template mutable_data<T, Context>();
+
+    kernel::ClipGrad(
+        X(0).count(),
+        lowT_, highT_,
+        x, dy,
+        dx, ctx()
+    );
+}
+
+template <class Context>
+void ClipGradientOp<Context>::RunOnDevice() {
+    Y(0)->ReshapeLike(X(0));
+    DEFINE_TYPED_RUN_IMPL;
 }
 
 DEPLOY_CPU(Clip);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Clip);
 #endif
-OPERATOR_SCHEMA(Clip).NumInputs(1).NumOutputs(1);
-
-template <class Context> template <typename T>
-void ClipGradientOp<Context>::RunWithType() {
-    auto* Xdata = Input(0).template data<T, Context>();
-    auto* dYdata = Input(-1).template data<T, Context>();
-    auto* dXdata = Output(0)->template mutable_data<T, Context>();
-
-    kernel::ClipGrad(Output(0)->count(),
-        lowT, highT, Xdata, dYdata, dXdata, ctx());
-}
-
-template <class Context>
-void ClipGradientOp<Context>::RunOnDevice() {
-    Output(0)->ReshapeLike(Input(0));
-    DEFINE_TYPED_CALLER;
-}
 
 DEPLOY_CPU(ClipGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(ClipGradient);
 #endif
 
+OPERATOR_SCHEMA(Clip)
+     /* X */
+    .NumInputs(1)
+     /* Y */
+    .NumOutputs(1);
+
 OPERATOR_SCHEMA(ClipGradient)
-    .NumInputs(2).NumOutputs(1);
+     /* X, dY */
+    .NumInputs(2)
+     /* X, dX */
+    .NumOutputs(1);
 
 REGISTER_GRADIENT(Clip, SimpleGradientMaker);
 
-#undef DEFINE_TYPED_CALLER
+#undef DEFINE_TYPED_RUN_IMPL
 
 }  // namespace dragon

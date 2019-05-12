@@ -4,53 +4,71 @@
 
 namespace dragon {
 
-DEPLOY_CPU(CTCLoss);
-#ifdef WITH_CUDA
-DEPLOY_CUDA(CTCLoss);
-#endif
-OPERATOR_SCHEMA(CTCLoss).NumInputs(2).NumOutputs(1);
-
 template <class Context> template <typename T>
-void CTCLossGradientOp<Context>::RunWithType() {
-    auto* gradT = ws()->GetTensor(mount_name("ctc/grads"));
-    Output(0)->ReshapeLike(*gradT);
+void CTCLossGradientOp<Context>::RunImpl() {
+    auto* G = ws()->GetTensor(unique_name("grad"));
+    Y(0)->ReshapeLike(*G);
 
-    auto* Gdata = gradT->template data<T, Context>();
-    auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    auto* dYdata = Input(-1).template data<T, Context>();
+    auto* g  = G->template data<T, Context>();
+    auto* dy = X(0).template data<T, Context>();
+    auto* dx = Y(0)->template mutable_data<T, Context>();
 
-    T dYHost; ctx()->template Copy
+    T dyHost; ctx()->template Copy
         <T, CPUContext, Context>(
-            1, &dYHost, dYdata);
+            1, &dyHost, dy);
     ctx()->FinishDeviceCompution();
 
-    math::Scale(Output(0)->count(), dYHost, Gdata, dXdata, ctx());
+    math::Scale(Y(0)->count(), dyHost, g, dx, ctx());
 }
 
 template <class Context>
 void CTCLossGradientOp<Context>::RunOnDevice() {
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else {
+        LOG(FATAL) << DTypeString(
+            X(0), { "float32" }
+        );
+    }
 }
+
+DEPLOY_CPU(CTCLoss);
+#ifdef WITH_CUDA
+DEPLOY_CUDA(CTCLoss);
+#endif
 
 DEPLOY_CPU(CTCLossGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(CTCLossGradient);
 #endif
 
-OPERATOR_SCHEMA(CTCLossGradient)
-    .NumInputs(1).NumOutputs(1);
+OPERATOR_SCHEMA(CTCLoss)
+     /* X, T */
+    .NumInputs(2)
+     /* Y */
+    .NumOutputs(1);
 
-class GetCTCLossGradient final : public GradientMakerBase {
+OPERATOR_SCHEMA(CTCLossGradient)
+     /* dY */
+    .NumInputs(1)
+     /* dX */
+    .NumOutputs(1);
+
+namespace {
+
+class GradientMaker final : public GradientMakerBase {
  public:
-    GRADIENT_MAKER_CTOR(GetCTCLossGradient);
-    vector<OperatorDef> MakeDefs() override{
+    GRADIENT_MAKER_CTOR(GradientMaker);
+    vector<OperatorDef> MakeDef() override{
         return SingleDef(def.type() + "Gradient", "",
             vector<string>({ GO(0) }),
-            vector<string>({ GI(0) }));
+            vector<string>({ GI(0) })
+        );
     }
 };
 
-REGISTER_GRADIENT(CTCLoss, GetCTCLossGradient);
+}  // namespace
+
+REGISTER_GRADIENT(CTCLoss, GradientMaker);
 
 }  // namespace dragon

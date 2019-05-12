@@ -110,7 +110,7 @@ class NumpyFeeder : public TensorFeederBase {
         Tensor*                     tensor) override {
         PyArrayObject* array = PyArray_GETCONTIGUOUS(original_array);
         const TypeMeta& meta = TypeNPYToMeta(PyArray_TYPE(array));
-        if (meta.id() == 0) LOG(FATAL) << "Unsupported data type.";
+        if (meta.id() == 0) LOG(FATAL) << "Unsupported DType.";
         tensor->SetMeta(meta);
         int ndim = PyArray_NDIM(array);
         npy_intp* npy_dims = PyArray_DIMS(array);

@@ -23,18 +23,18 @@ class DropoutOp final : public Operator<Context> {
  public:
     DropoutOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          use_scale(OperatorBase::Arg<bool>("scale", true)) {
-        GET_ARGUMENT_WITH_DESC(float, prob, 0.5f);
-        SwitchToPhase(OperatorBase::Arg<string>("phase", ""));
+          use_scale_(OpArg<bool>("scale", true)) {
+        SwitchToPhase(OpArg<string>("phase", ""));
+        GET_ARG_WITH_DESC(float, prob, 0.5f);
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    bool use_scale;
-    DECLARE_ARGUMENT_WITH_DESC(float, prob);
+    bool use_scale_;
+    DECLARE_ARG_WITH_DESC(float, prob);
 };
 
 template <class Context>
@@ -42,22 +42,22 @@ class DropoutGradientOp final : public Operator<Context> {
  public:
     DropoutGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          use_scale(OperatorBase::Arg<bool>("scale", true)) {
-        GET_ARGUMENT_WITH_DESC(float, prob, 0.5f);
-        SwitchToPhase(OperatorBase::Arg<string>("phase", ""));
+          use_scale_(OpArg<bool>("scale", true)) {
+        SwitchToPhase(OpArg<string>("phase", ""));
+        GET_ARG_WITH_DESC(float, prob, 0.5f);
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-     bool use_scale;
-     DECLARE_ARGUMENT_WITH_DESC(float, prob);
+    bool use_scale_;
+    DECLARE_ARG_WITH_DESC(float, prob);
 };
 
-DEFINE_ARGUMENT_WITH_DESC(float, DropoutOp, prob);
-DEFINE_ARGUMENT_WITH_DESC(float, DropoutGradientOp, prob);
+DEFINE_ARG_WITH_DESC(float, DropoutOp, prob);
+DEFINE_ARG_WITH_DESC(float, DropoutGradientOp, prob);
 
 #ifdef WITH_CUDNN
 
@@ -65,68 +65,70 @@ DEFINE_ARGUMENT_WITH_DESC(float, DropoutGradientOp, prob);
 
 template <class Context>
 class CuDNNDropoutOp final : public Operator<Context> {
-public:
+ public:
     CuDNNDropoutOp(const OperatorDef& def, Workspace* ws)
-        : Operator<Context>(def, ws), states_initialized(false),
-        use_scale(OperatorBase::Arg<bool>("scale", true)),
-        random_seed(DEFAULT_RNG_SEED) {
-        GET_ARGUMENT_WITH_DESC(float, prob, 0.5f);
-        SwitchToPhase(OperatorBase::Arg<string>("phase", ""));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
-        CUDNN_CHECK(cudnnCreateDropoutDescriptor(&dropout_desc));
+        : Operator<Context>(def, ws),
+          states_initialized_(false),
+          rng_seed_(DEFAULT_RNG_SEED),
+          use_scale_(OpArg<bool>("scale", true)) {
+        SwitchToPhase(OpArg<string>("phase", ""));
+        GET_ARG_WITH_DESC(float, prob, 0.5f);
+        CuDNNCreateTensorDesc(&input_desc_);
+        CUDNN_CHECK(cudnnCreateDropoutDescriptor(&dropout_desc_));
     }
     USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNDropoutOp() {
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
-        CUDNN_CHECK(cudnnDestroyDropoutDescriptor(dropout_desc));
+        CuDNNDestroyTensorDesc(&input_desc_);
+        CUDNN_CHECK(cudnnDestroyDropoutDescriptor(dropout_desc_));
     }
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType(); 
+    template <typename T> void RunImpl();
 
  protected:
-    bool use_scale, states_initialized;
-    cudnnTensorDescriptor_t input_desc;
-    cudnnDropoutDescriptor_t dropout_desc;
-    size_t states_size, reserve_space_size;
-    unsigned long long random_seed;
-    DECLARE_ARGUMENT_WITH_DESC(float, prob);
+    bool use_scale_, states_initialized_;
+    cudnnTensorDescriptor_t input_desc_;
+    cudnnDropoutDescriptor_t dropout_desc_;
+    size_t states_size_, reserve_size_;
+    unsigned long long rng_seed_;
+    DECLARE_ARG_WITH_DESC(float, prob);
 };
 
 template <class Context>
 class CuDNNDropoutGradientOp final : public Operator<Context> {
 public:
     CuDNNDropoutGradientOp(const OperatorDef& def, Workspace* ws)
-        : Operator<Context>(def, ws), states_initialized(false),
-        use_scale(OperatorBase::Arg<bool>("scale", true)),
-        random_seed(DEFAULT_RNG_SEED) {
-        GET_ARGUMENT_WITH_DESC(float, prob, 0.5f);
-        SwitchToPhase(OperatorBase::Arg<string>("phase", ""));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
-        CUDNN_CHECK(cudnnCreateDropoutDescriptor(&dropout_desc));
+        : Operator<Context>(def, ws),
+          states_initialized_(false),
+          rng_seed_(DEFAULT_RNG_SEED),
+          use_scale_(OpArg<bool>("scale", true)) {
+        SwitchToPhase(OpArg<string>("phase", ""));
+        GET_ARG_WITH_DESC(float, prob, 0.5f);
+        CuDNNCreateTensorDesc(&input_desc_);
+        CUDNN_CHECK(cudnnCreateDropoutDescriptor(&dropout_desc_));
     }
     USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNDropoutGradientOp() {
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
-        CUDNN_CHECK(cudnnDestroyDropoutDescriptor(dropout_desc));
+        CuDNNDestroyTensorDesc(&input_desc_);
+        CUDNN_CHECK(cudnnDestroyDropoutDescriptor(dropout_desc_));
     }
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType(); 
+    template <typename T> void RunImpl();
 
  protected:
-    bool use_scale, states_initialized;
-    cudnnTensorDescriptor_t input_desc;
-    cudnnDropoutDescriptor_t dropout_desc;
-    size_t states_size, reserve_space_size;
-    unsigned long long random_seed;
-    DECLARE_ARGUMENT_WITH_DESC(float, prob);
+    bool use_scale_, states_initialized_;
+    cudnnTensorDescriptor_t input_desc_;
+    cudnnDropoutDescriptor_t dropout_desc_;
+    size_t states_size_, reserve_size_;
+    unsigned long long rng_seed_;
+    DECLARE_ARG_WITH_DESC(float, prob);
 };
 
-DEFINE_ARGUMENT_WITH_DESC(float, CuDNNDropoutOp, prob);
-DEFINE_ARGUMENT_WITH_DESC(float, CuDNNDropoutGradientOp, prob);
+DEFINE_ARG_WITH_DESC(float, CuDNNDropoutOp, prob);
+DEFINE_ARG_WITH_DESC(float, CuDNNDropoutGradientOp, prob);
 
 #endif
 

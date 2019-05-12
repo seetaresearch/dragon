@@ -132,10 +132,14 @@ class DataTransformer(multiprocessing.Process):
 
         # CutOut
         if self._cutout_size > 0:
-            h_off = numpy.random.randint(im.shape[0])
-            w_off = numpy.random.randint(im.shape[1])
-            im[h_off : h_off + self._cutout_size,
-               w_off : w_off + self._cutout_size, :] = self._fill_value
+            h, w = im.shape[:2]
+            y = numpy.random.randint(h)
+            x = numpy.random.randint(w)
+            y1 = numpy.clip(y - self._cutout_size // 2, 0, h)
+            y2 = numpy.clip(y + self._cutout_size // 2, 0, h)
+            x1 = numpy.clip(x - self._cutout_size // 2, 0, w)
+            x2 = numpy.clip(x + self._cutout_size // 2, 0, w)
+            im[y1 : y2, x1 : x2] = self._fill_value
 
         # Random mirror
         if self._mirror:

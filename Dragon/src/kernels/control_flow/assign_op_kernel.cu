@@ -8,13 +8,13 @@ namespace dragon {
 namespace kernel {
 
 #define FIXED_DIVISOR_DIV_MOD(d, n, q, r) \
-  do {                                    \
-    const auto n_copy = n;                \
-    *q = n_copy / d;                      \
-    *r = n_copy % d;                      \
-  } while (0)
+    do {                                  \
+        const auto n_copy = n;            \
+        *q = n_copy / d;                  \
+        *r = n_copy % d;                  \
+    } while (0)
 
-/*! Assign <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template<typename T>
 __global__ void _Assign(
@@ -25,24 +25,24 @@ __global__ void _Assign(
     const int*              starts,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(x_idx, nthreads) {
-        int y_idx = 0, tmp = x_idx;
+    CUDA_1D_KERNEL_LOOP(xi, nthreads) {
+        int yi = 0, tmp = xi;
 #pragma unroll
         for (int d = ndims - 1; d >= 0; --d) {
             int r;
 #if __CUDA_ARCH__ >= 350
             FIXED_DIVISOR_DIV_MOD(__ldg(x_dims + d), tmp, &tmp, &r);
-            y_idx += (r + __ldg(starts + d)) * __ldg(y_strides + d);
+            yi += (r + __ldg(starts + d)) * __ldg(y_strides + d);
 #else
             FIXED_DIVISOR_DIV_MOD(x_dims[d], tmp, &tmp, &r);
-            y_idx += (r + starts[d]) * y_strides[d];
+            yi += (r + starts[d]) * y_strides[d];
 #endif
         }
-        y[y_idx] = x[x_idx];
+        y[yi] = x[xi];
     }
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_ASSIGN_KERNEL_LAUNCHER(T) \
     template<> void Assign<T, CUDAContext>( \
@@ -56,8 +56,14 @@ __global__ void _Assign(
         CUDAContext*            ctx) { \
         _Assign<T> \
             << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> > \
-            (count, ndims, x_dims, y_strides, starts, x, y); \
+                 0, ctx->cuda_stream() >> >( \
+            count, \
+            ndims, \
+            x_dims, \
+            y_strides, \
+            starts, \
+            x, y \
+        ); \
     }
 
 DEFINE_ASSIGN_KERNEL_LAUNCHER(bool);

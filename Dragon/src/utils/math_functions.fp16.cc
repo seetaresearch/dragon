@@ -86,7 +86,7 @@ template <> void Set<float16, CPUContext>(
         return;
     }
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(n))
+    #pragma omp parallel for num_threads(OMP_THREADS(n))
 #endif
     for (int i = 0; i < n; ++i) y[i] = alpha;
 }

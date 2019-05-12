@@ -18,50 +18,48 @@
 namespace dragon {
 
 template <class Context>
-class SoftmaxCrossEntropyOp
-    final : public Operator<Context> {
+class SoftmaxCrossEntropyOp final
+    : public Operator<Context> {
  public:
     SoftmaxCrossEntropyOp(
         const OperatorDef&          def,
         Workspace*                  ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 1)),
-          normalization(OperatorBase::Arg<string>(
-              "normalization", "FULL")) {}
+          axis_(OpArg<int64_t>("axis", 1)),
+          reduction_(OpArg<string>(
+              "reduction", "MEAN")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void SoftmaxRun();
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t axis, outer_dim, inner_dim;
-    Tensor losses;
-    Tensor* prob;
-    unique_ptr<OperatorBase> softmax_op;
-    string normalization;
+    Tensor loss_;
+    string reduction_;
+    int64_t axis_, outer_dim_, inner_dim_;
+    unique_ptr<OperatorBase> softmax_op_;
 };
 
 template <class Context>
-class SoftmaxCrossEntropyGradientOp
-    final : public Operator<Context> {
+class SoftmaxCrossEntropyGradientOp final
+    : public Operator<Context> {
  public:
     SoftmaxCrossEntropyGradientOp(
         const OperatorDef&          def,
         Workspace*                  ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 1)),
-          normalization(OperatorBase::Arg<string>(
-              "normalization", "FULL")) {}
+          axis_(OpArg<int64_t>("axis", 1)),
+          reduction_(OpArg<string>(
+              "reduction", "MEAN")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t axis, outer_dim, inner_dim;
-    Tensor* prob;
-    string normalization;
+    string reduction_;
+    int64_t axis_, outer_dim_, inner_dim_;
 };
 
 }  // namespace dragon

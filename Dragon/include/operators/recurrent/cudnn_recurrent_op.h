@@ -21,25 +21,27 @@ namespace dragon {
 
 #if CUDNN_VERSION_MIN(5, 0, 0)
 
-class cudnnTensorDescriptors {
+class CuDNNTensorDescs {
  public:
-    cudnnTensorDescriptors(const int num_descs) {
+    CuDNNTensorDescs(int num_descs) {
         descs_.resize(num_descs);
         for (int i = 0; i < num_descs; ++i)
-            CUDNN_CHECK(cudnnCreateTensorDescriptor(&descs_[i]));
+            CuDNNCreateTensorDesc(&descs_[i]);
     }
-    ~cudnnTensorDescriptors() {
+
+    ~CuDNNTensorDescs() {
         for (auto desc : descs_)
-            cudnnDestroyTensorDescriptor(desc);
+            CuDNNDestroyTensorDesc(&desc);
     }
 
     template <typename T>
-    void Set(const vector<int64_t>& dims, const vector<int64_t>& strides) {
+    void Set(const vec64_t& dims, const vec64_t& strides) {
         CHECK_EQ(dims.size(), strides.size());
-        for (auto desc : descs_) cudnnSetTensorDesc<T>(&desc, dims, strides);
+        for (auto desc : descs_)
+            CuDNNSetTensorDesc<T>(&desc, dims, strides);
     }
 
-    const cudnnTensorDescriptor_t* descs() const { return descs_.data(); }
+    cudnnTensorDescriptor_t* data() { return descs_.data(); }
 
  protected:
     vector<cudnnTensorDescriptor_t> descs_;
@@ -49,108 +51,116 @@ template <class Context>
 class CuDNNRecurrentOpBase : public Operator<Context> {
  public:
     CuDNNRecurrentOpBase(const OperatorDef& def, Workspace* ws)
-        : Operator<Context>(def, ws), states_initialized(false), 
-          hidden_size(OperatorBase::Arg<int64_t>("hidden_size", 0)),
-          num_layers(OperatorBase::Arg<int64_t>("num_layers", 1)),
-          bidirectional(OperatorBase::Arg<bool>("bidirectional", false)),
-          dropout_ratio(OperatorBase::Arg<float>("dropout_ratio", 1.f)),
-          random_seed(def.device_option().random_seed()) {
-        //  determine the rnn direction
-        rnn_direction = bidirectional ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL;
-        //  determine the rnn mode
-        const string mode = OperatorBase::Arg<string>("rnn_mode", "");
-        if (mode == "rnn_tanh") rnn_mode = CUDNN_RNN_TANH;
-        else if (mode == "rnn_relu") rnn_mode = CUDNN_RNN_RELU;
-        else if (mode == "lstm") rnn_mode = CUDNN_LSTM;
-        else if (mode == "gru") rnn_mode = CUDNN_GRU;
-        else LOG(FATAL) << "Unsupported rnn mode: " << mode;
-        //  determine the rnn input mode
-        const string input_mode = OperatorBase::Arg<string>("rnn_input_mode", "linear");
-        if (input_mode == "skip") rnn_input_mode = CUDNN_SKIP_INPUT;
-        else if (input_mode == "linear") rnn_input_mode = CUDNN_LINEAR_INPUT;
-        else LOG(FATAL) << "Unsupported rnn input mode: " << input_mode;
-        //  override the running phase
-        SwitchToPhase(OperatorBase::Arg<string>("phase", ""));
-        CUDNN_CHECK(cudnnCreateRNNDescriptor(&rnn_desc));
-        CUDNN_CHECK(cudnnCreateDropoutDescriptor(&dropout_desc));
-        CUDNN_CHECK(cudnnCreateFilterDescriptor(&w_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&hx_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&cx_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&hy_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&cy_desc));
+        : Operator<Context>(def, ws),
+          states_initialized_(0),
+          num_layers_(OpArg<int64_t>("num_layers", 1)),
+          hidden_size_(OpArg<int64_t>("hidden_size", 0)),
+          bidirectional_(OpArg<int64_t>("bidirectional", 0)),
+          dropout_ratio_(OpArg<float>("dropout_ratio", 1.f)),
+          rng_seed_(def.device_option().random_seed()) {
+        // Determine the rnn direction
+        rnn_direction_ = bidirectional_ ?
+            CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL;
+        // Determine the rnn mode
+        auto mode_str = OpArg<string>("rnn_mode", "");
+        if (mode_str == "rnn_tanh") rnn_mode_ = CUDNN_RNN_TANH;
+        else if (mode_str == "rnn_relu") rnn_mode_ = CUDNN_RNN_RELU;
+        else if (mode_str == "lstm") rnn_mode_ = CUDNN_LSTM;
+        else if (mode_str == "gru") rnn_mode_ = CUDNN_GRU;
+        else LOG(FATAL) << "Unknown RNN Mode: " << mode_str;
+        // Determine the rnn input mode
+        auto input_mode_str = OpArg<string>("rnn_input_mode", "linear");
+        if (input_mode_str == "skip") rnn_input_mode_ = CUDNN_SKIP_INPUT;
+        else if (input_mode_str == "linear") rnn_input_mode_ = CUDNN_LINEAR_INPUT;
+        else LOG(FATAL) << "Unknown RNN InputMode: " << input_mode_str;
+        // Override the running phase
+        SwitchToPhase(OpArg<string>("phase", ""));
+        CuDNNCreateTensorDesc(&hx_desc_);
+        CuDNNCreateTensorDesc(&cx_desc_);
+        CuDNNCreateTensorDesc(&hy_desc_);
+        CuDNNCreateTensorDesc(&cy_desc_);
+        CUDNN_CHECK(cudnnCreateRNNDescriptor(&rnn_desc_));
+        CUDNN_CHECK(cudnnCreateFilterDescriptor(&w_desc_));
+        CUDNN_CHECK(cudnnCreateDropoutDescriptor(&dropout_desc_));
     }
     USE_OPERATOR_FUNCTIONS;
 
     virtual ~CuDNNRecurrentOpBase() {
-        CUDNN_CHECK(cudnnDestroyRNNDescriptor(rnn_desc));
-        CUDNN_CHECK(cudnnDestroyDropoutDescriptor(dropout_desc));
-        CUDNN_CHECK(cudnnDestroyFilterDescriptor(w_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(hx_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(cx_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(hy_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(cy_desc));
+        CuDNNDestroyTensorDesc(&hx_desc_);
+        CuDNNDestroyTensorDesc(&cx_desc_);
+        CuDNNDestroyTensorDesc(&hy_desc_);
+        CuDNNDestroyTensorDesc(&cy_desc_);
+        CUDNN_CHECK(cudnnDestroyRNNDescriptor(rnn_desc_));
+        CUDNN_CHECK(cudnnDestroyFilterDescriptor(w_desc_));
+        CUDNN_CHECK(cudnnDestroyDropoutDescriptor(dropout_desc_));
     }
 
     template <typename T> void ResetDesc();
 
  public:
-    int64_t hidden_size, num_layers;
-    bool bidirectional, states_initialized;
-    float dropout_ratio;
-    unsigned long long random_seed;
+    float dropout_ratio_;
+    unsigned long long rng_seed_;
+    int64_t bidirectional_, states_initialized_;
+    int64_t seq_length_, hidden_size_, num_layers_;
+    vec64_t input_dims_, output_dims_, hidden_dims_;
+    size_t workspace_size_, reserve_size_, states_size_;
 
-    cudnnRNNDescriptor_t rnn_desc;
-    cudnnDropoutDescriptor_t dropout_desc;
-    cudnnDirectionMode_t rnn_direction;
-    cudnnRNNMode_t rnn_mode;
-    cudnnRNNInputMode_t rnn_input_mode;
-    cudnnFilterDescriptor_t w_desc;
-    cudnnTensorDescriptor_t hx_desc, cx_desc;
-    cudnnTensorDescriptor_t hy_desc, cy_desc;
-    vector<int64_t> input_dims, output_dims, hidden_dims;
-    size_t workspace_size, reserve_size, states_size;
-
-    std::unique_ptr<cudnnTensorDescriptors> xs_desc;
-    std::unique_ptr<cudnnTensorDescriptors> ys_desc;
+    cudnnRNNMode_t rnn_mode_;
+    cudnnRNNDescriptor_t rnn_desc_;
+    cudnnDirectionMode_t rnn_direction_;
+    cudnnRNNInputMode_t rnn_input_mode_;
+    cudnnDropoutDescriptor_t dropout_desc_;
+    cudnnFilterDescriptor_t w_desc_;
+    cudnnTensorDescriptor_t hx_desc_, cx_desc_;
+    cudnnTensorDescriptor_t hy_desc_, cy_desc_;
+    std::unique_ptr<CuDNNTensorDescs> x_descs_;
+    std::unique_ptr<CuDNNTensorDescs> y_descs_;
 };
 
 #define USE_CUDNN_RECURRENT_FUNCTIONS \
     USE_OPERATOR_FUNCTIONS; \
-    using CuDNNRecurrentOpBase<Context>::dropout_desc; \
-    using CuDNNRecurrentOpBase<Context>::rnn_desc; \
-    using CuDNNRecurrentOpBase<Context>::w_desc; \
-    using CuDNNRecurrentOpBase<Context>::hx_desc; \
-    using CuDNNRecurrentOpBase<Context>::cx_desc; \
-    using CuDNNRecurrentOpBase<Context>::hy_desc; \
-    using CuDNNRecurrentOpBase<Context>::cy_desc; \
-    using CuDNNRecurrentOpBase<Context>::xs_desc; \
-    using CuDNNRecurrentOpBase<Context>::ys_desc; \
-    using CuDNNRecurrentOpBase<Context>::input_dims; \
-    using CuDNNRecurrentOpBase<Context>::output_dims; \
-    using CuDNNRecurrentOpBase<Context>::hidden_dims; \
-    using CuDNNRecurrentOpBase<Context>::workspace_size; \
-    using CuDNNRecurrentOpBase<Context>::reserve_size
+    using CuDNNRecurrentOpBase<Context>::w_desc_; \
+    using CuDNNRecurrentOpBase<Context>::rnn_desc_; \
+    using CuDNNRecurrentOpBase<Context>::dropout_desc_; \
+    using CuDNNRecurrentOpBase<Context>::hx_desc_; \
+    using CuDNNRecurrentOpBase<Context>::cx_desc_; \
+    using CuDNNRecurrentOpBase<Context>::hy_desc_; \
+    using CuDNNRecurrentOpBase<Context>::cy_desc_; \
+    using CuDNNRecurrentOpBase<Context>::x_descs_; \
+    using CuDNNRecurrentOpBase<Context>::y_descs_; \
+    using CuDNNRecurrentOpBase<Context>::seq_length_; \
+    using CuDNNRecurrentOpBase<Context>::input_dims_; \
+    using CuDNNRecurrentOpBase<Context>::output_dims_; \
+    using CuDNNRecurrentOpBase<Context>::hidden_dims_; \
+    using CuDNNRecurrentOpBase<Context>::workspace_size_; \
+    using CuDNNRecurrentOpBase<Context>::reserve_size_
 
 template <class Context>
-class CuDNNRecurrentOp final : public CuDNNRecurrentOpBase<Context> {
+class CuDNNRecurrentOp final
+    : public CuDNNRecurrentOpBase<Context> {
  public:
-    CuDNNRecurrentOp(const OperatorDef& def, Workspace* ws)
+    CuDNNRecurrentOp(
+        const OperatorDef&          def,
+        Workspace*                  ws)
         : CuDNNRecurrentOpBase<Context>(def, ws) {}
     USE_CUDNN_RECURRENT_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 };
 
 template <class Context>
-class CuDNNRecurrentGradientOp final : public CuDNNRecurrentOpBase<Context> {
+class CuDNNRecurrentGradientOp final
+    : public CuDNNRecurrentOpBase<Context> {
  public:
-    CuDNNRecurrentGradientOp(const OperatorDef& def, Workspace* ws)
+    CuDNNRecurrentGradientOp(
+        const OperatorDef&          def,
+        Workspace*                  ws)
         : CuDNNRecurrentOpBase<Context>(def, ws) {}
     USE_CUDNN_RECURRENT_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 };
 
 #endif

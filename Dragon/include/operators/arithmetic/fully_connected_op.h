@@ -22,34 +22,37 @@ class FullyConnectedOp final : public Operator<Context> {
  public:
     FullyConnectedOp(const OperatorDef& def, Workspace *ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 1)),
-          N(OperatorBase::Arg<int64_t>("num_output", 0)),
-          transW(OperatorBase::Arg<bool>("transW", true)) {}
+          axis_(OpArg<int64_t>("axis", 1)),
+          N_(OpArg<int64_t>("num_output", 0)),
+          transW_(OpArg<bool>("transW", true)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice();
-    template <typename T> void TransRunWithType();
-    template <typename T> void NoTransRunWithType();
+    template <typename T> void TransRunImpl();
+    template <typename T> void NoTransRunImpl();
 
  protected:
-    int64_t axis, transW, M, K, N;
+    int64_t axis_, transW_, M_, K_, N_;
 };
 
 template <class Context>
-class FullyConnectedGradientOp final : public Operator<Context> {
+class FullyConnectedGradientOp
+    final : public Operator<Context> {
  public:
-    FullyConnectedGradientOp(const OperatorDef& def, Workspace *ws)
+    FullyConnectedGradientOp(
+        const OperatorDef&      def,
+        Workspace*              ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 1)),
-          N(OperatorBase::Arg<int64_t>("num_output", 0)),
-          transW(OperatorBase::Arg<bool>("transW", true)) {}
+          axis_(OpArg<int64_t>("axis", 1)),
+          N_(OpArg<int64_t>("num_output", 0)),
+          transW_(OpArg<bool>("transW", true)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t axis, transW, M, K, N;
+    int64_t axis_, transW_, M_, K_, N_;
 };
 
 }  // namespace dragon

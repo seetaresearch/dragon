@@ -10,14 +10,16 @@ namespace kernel {
 template <> void SoftmaxCrossEntropy<float, CPUContext>(
     const int               count,
     const float*            prob,
-    const float*            target,
-    float*                  loss,
+    const float*            targets,
+    float*                  losses,
     CPUContext*             ctx) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
-        loss[i] = - target[i] * std::log(std::max(prob[i], FLT_MIN));
+        losses[i] = - targets[i] * std::log(
+            std::max(prob[i], FLT_MIN)
+        );
     }
 }
 

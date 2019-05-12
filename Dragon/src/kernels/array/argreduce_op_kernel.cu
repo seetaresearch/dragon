@@ -8,7 +8,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Argmax <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename T>
 __global__ void _ArgMax(
@@ -18,9 +18,9 @@ __global__ void _ArgMax(
     const T*                x,
     int64_t*                indices,
     T*                      values) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        const int oix = y_idx / inner_dim;
-        const int iix = y_idx % inner_dim;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        const int oix = yi / inner_dim;
+        const int iix = yi % inner_dim;
         const T* X = x + (oix * axis_dim * inner_dim + iix);
         T max_val = X[0], val; int64_t max_idx = 0;
         for (int j = 1; j < axis_dim; ++j) {
@@ -30,24 +30,24 @@ __global__ void _ArgMax(
                 max_idx = j;
             }
         }
-        indices[y_idx] = max_idx;
-        if (values) values[y_idx] = max_val;
+        indices[yi] = max_idx;
+        if (values) values[yi] = max_val;
     }
 }
 
-/*! ArgMax <T = float16, Device = CUDA> */
+/* <T = float16, Device = CUDA> */
 
-__global__ void _ArgMaxHalf(
+template<> __global__ void _ArgMax<half>(
     const int               nthreads,
     const int               inner_dim,
     const int               axis_dim,
     const half*             x,
     int64_t*                indices,
     half*                   values) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
 #if __CUDA_ARCH__ >= 530
-        const int oix = y_idx / inner_dim;
-        const int iix = y_idx % inner_dim;
+        const int oix = yi / inner_dim;
+        const int iix = yi % inner_dim;
         const half* X = x + (oix * axis_dim * inner_dim + iix);
         half max_val = X[0], val; int64_t max_idx = 0;
         for (int j = 1; j < axis_dim; ++j) {
@@ -57,13 +57,13 @@ __global__ void _ArgMaxHalf(
                 max_idx = j;
             }
         }
-        indices[y_idx] = max_idx;
-        if (values) values[y_idx] = max_val;
+        indices[yi] = max_idx;
+        if (values) values[yi] = max_val;
 #endif
     }
 }
 
-/*! ArgMin <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename T>
 __global__ void _ArgMin(
@@ -73,9 +73,9 @@ __global__ void _ArgMin(
     const T*                x,
     int64_t*                indices,
     T*                      values) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        const int oix = y_idx / inner_dim;
-        const int iix = y_idx % inner_dim;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        const int oix = yi / inner_dim;
+        const int iix = yi % inner_dim;
         const T* X = x + (oix * axis_dim * inner_dim + iix);
         T min_val = X[0], val; int64_t min_idx = 0;
         for (int j = 1; j < axis_dim; ++j) {
@@ -85,24 +85,24 @@ __global__ void _ArgMin(
                 min_idx = j;
             }
         }
-        indices[y_idx] = min_idx;
-        if (values) values[y_idx] = min_val;
+        indices[yi] = min_idx;
+        if (values) values[yi] = min_val;
     }
 }
 
-/*! ArgMin <T = float16, Device = CUDA> */
+/* <T = float16, Device = CUDA> */
 
-__global__ void _ArgMinHalf(
+template<> __global__ void _ArgMin<half>(
     const int               nthreads,
     const int               inner_dim,
     const int               axis_dim,
     const half*             x,
     int64_t*                indices,
     half*                   values) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
 #if __CUDA_ARCH__ >= 530
-        const int oix = y_idx / inner_dim;
-        const int iix = y_idx % inner_dim;
+        const int oix = yi / inner_dim;
+        const int iix = yi % inner_dim;
         const half* X = x + (oix * axis_dim * inner_dim + iix);
         half max_val = X[0], val; int64_t max_idx = 0;
         for (int j = 1; j < axis_dim; ++j) {
@@ -112,13 +112,13 @@ __global__ void _ArgMinHalf(
                 max_idx = j;
             }
         }
-        indices[y_idx] = max_idx;
-        if (values) values[y_idx] = max_val;
+        indices[yi] = max_idx;
+        if (values) values[yi] = max_val;
 #endif
     }
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_ARGREDUCE_KERNEL_LAUNCHER(name, T) \
     template<> void name<T, CUDAContext>( \
@@ -132,11 +132,12 @@ __global__ void _ArgMinHalf(
         CUDAContext*            ctx) { \
         CHECK_EQ(top_k, 1) << "\nRequired top_k == 1."; \
         auto nthreads = outer_dim * inner_dim; \
-        _##name<T> \
+        _##name \
             << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> > \
-            (nthreads, inner_dim, axis_dim, \
-                x, indices, values); \
+                 0, ctx->cuda_stream() >> >( \
+            nthreads, inner_dim, axis_dim, \
+            x, indices, values \
+        ); \
     }
 
 DEFINE_ARGREDUCE_KERNEL_LAUNCHER(ArgMax, bool);
@@ -166,12 +167,14 @@ template<> void ArgMax<float16, CUDAContext>(
     CUDAContext*            ctx) {
     CHECK_EQ(top_k, 1) << "\nRequired top_k == 1.";
     auto nthreads = outer_dim * inner_dim;
-    _ArgMaxHalf
+    _ArgMax
         << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (nthreads, inner_dim, axis_dim,
-            reinterpret_cast<const half*>(x), indices,
-                reinterpret_cast<half*>(values));
+             0, ctx->cuda_stream() >> >(
+        nthreads, inner_dim, axis_dim,
+        reinterpret_cast<const half*>(x),
+        indices,
+        reinterpret_cast<half*>(values)
+    );
 }
 
 template<> void ArgMin<float16, CUDAContext>(
@@ -185,12 +188,14 @@ template<> void ArgMin<float16, CUDAContext>(
     CUDAContext*            ctx) {
     CHECK_EQ(top_k, 1) << "\nRequired top_k == 1.";
     auto nthreads = outer_dim * inner_dim;
-    _ArgMinHalf
+    _ArgMin
         << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (nthreads, inner_dim, axis_dim,
-            reinterpret_cast<const half*>(x), indices,
-                reinterpret_cast<half*>(values));
+             0, ctx->cuda_stream() >> >(
+         nthreads, inner_dim, axis_dim,
+         reinterpret_cast<const half*>(x),
+         indices,
+         reinterpret_cast<half*>(values)
+    );
 }
 
 #undef DEFINE_ARGREDUCE_KERNEL_LAUNCHER

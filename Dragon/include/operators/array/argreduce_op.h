@@ -22,19 +22,20 @@ class ArgReduceOp final : public Operator<Context> {
  public:
     ArgReduceOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", INT_MAX)),
-          operation(OperatorBase::Arg<string>("operation", "NONE")),
-          keep_dims(OperatorBase::Arg<bool>("keep_dims", false)),
-          top_k(OperatorBase::Arg<int64_t>("top_k", 1)) {}
+          top_k_(OpArg<int64_t>("top_k", 1)),
+          axis_(OpArg<int64_t>("axis", INT_MAX)),
+          keep_dims_(OpArg<int64_t>("keep_dims", 0)),
+          operation_(OpArg<string>("operation", "NONE")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    bool keep_dims;
-    string operation;
-    int64_t axis, top_k, outer_dim, axis_dim, inner_dim;
+    CPUContext cctx_;
+    string operation_;
+    int64_t axis_, top_k_, keep_dims_;
+    int64_t outer_dim_, axis_dim_, inner_dim_;
 };
 
 }  // namespace dragon

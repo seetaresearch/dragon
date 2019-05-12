@@ -64,14 +64,13 @@ void AddMPIMethods(pybind11::module& m) {
     });
 
     m.def("MPICreateGroup", [](
-        const int local_root,
-        const vector<int>& incl,
-        const vector<int>& excl) {
+        int                 local_root,
+        const vec32_t&      incl,
+        const vec32_t&      excl) {
 #ifdef WITH_MPI
-        int world_size;
+        int world_size, err_code;
         MPI_Group world_group, local_group;
         MPI_Comm local_comm;
-        int err_code;
         MPI_Comm_group(MPI_COMM_WORLD, &world_group);
         MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
@@ -83,10 +82,14 @@ void AddMPIMethods(pybind11::module& m) {
         if (!incl.empty()) {
             all_ranks.clear();
             for (auto e : incl) all_ranks.insert(e);
-            err_code = MPI_Group_incl(world_group,
-                (int)incl.size(), incl.data(), &local_group);
+            err_code = MPI_Group_incl(
+                world_group,
+                (int)incl.size(),
+                incl.data(),
+                &local_group
+            );
             CHECK(err_code == MPI_SUCCESS)
-                << "\nFail to create MPI Group.";
+                << "\nFailed to create MPI Group.";
         }
 
         // Check exclude ranks
@@ -95,14 +98,20 @@ void AddMPIMethods(pybind11::module& m) {
             for (auto e : excl) tmp.insert(e);
             for (int i = 0; i < world_size; i++)
                 if (!tmp.count(i)) all_ranks.insert(i);
-            err_code = MPI_Group_excl(world_group,
-                (int)excl.size(), excl.data(), &local_group);
+            err_code = MPI_Group_excl(
+                world_group,
+                (int)excl.size(),
+                excl.data(),
+                &local_group
+            );
             CHECK(err_code == MPI_SUCCESS)
-                << "\nFail to create MPI Group.";
+                << "\nFailed to create MPI Group.";
         }
 
-        err_code = MPI_Comm_create(MPI_COMM_WORLD, local_group, &local_comm);
-        CHECK(err_code == MPI_SUCCESS) << "\nFail to create MPI Group.";
+        err_code = MPI_Comm_create(
+            MPI_COMM_WORLD, local_group, &local_comm);
+        CHECK(err_code == MPI_SUCCESS)
+            << "\nFailed to create MPI Group.";
 
         if (local_comm != MPI_COMM_NULL) {
             int world_rank, local_size;
@@ -117,7 +126,8 @@ void AddMPIMethods(pybind11::module& m) {
                     if (rank != local_root) ss << rank << ", ";
                     else ss << rank << "*, ";
                 }
-                string log_info = ss.str(); log_info[log_info.size() - 2] = ']';
+                string log_info = ss.str();
+                log_info[log_info.size() - 2] = ']';
                 LOG(INFO) << log_info;
             }
         }

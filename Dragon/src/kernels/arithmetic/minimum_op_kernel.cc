@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Minimum <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _Minimum(
@@ -14,14 +14,14 @@ void _Minimum(
     const T*                x2,
     T*                      y) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         y[i] = std::min(x1[i], x2[i]);
     }
 }
 
-/*! BroadcastMinimum <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _BroadcastMinimum(
@@ -30,14 +30,14 @@ void _BroadcastMinimum(
     const T                 x2,
     T*                      y) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         y[i] = std::min(x1[i], x2);
     }
 }
 
-/*! MinimumGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <typename T>
 void _MinimumGrad(
@@ -48,7 +48,7 @@ void _MinimumGrad(
     T*                      dx1,
     T*                      dx2) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         const bool dy_to_dx1 = x1[i] < x2[i];
@@ -57,7 +57,7 @@ void _MinimumGrad(
     }
 }
 
-/*! BroadcastMinimumGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <typename T>
 void _BroadcastMinimumGrad(
@@ -68,14 +68,14 @@ void _BroadcastMinimumGrad(
     T*                      dx1,
     T*                      dx2) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         dx1[i] = (x1[i] < x2) ? dy[i] : 0;
     }
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_MINIMUM_KERNEL_LAUNCHER(name, T, T2) \
     template <> void name<T, CPUContext>( \
@@ -84,7 +84,7 @@ void _BroadcastMinimumGrad(
         const T2                x2, \
         T*                      y, \
         CPUContext*             ctx) { \
-        _##name<T>(count, x1, x2, y); \
+        _##name(count, x1, x2, y); \
     }
 
 #define DEFINE_MINIMUM_GRAD_KERNEL_LAUNCHER(name, T, T2) \
@@ -96,7 +96,7 @@ void _BroadcastMinimumGrad(
         T*                      dx1, \
         T*                      dx2, \
         CPUContext*             ctx) { \
-        _##name<T>(count, x1, x2, dy, dx1, dx2); \
+        _##name(count, x1, x2, dy, dx1, dx2); \
     }
 
 DEFINE_MINIMUM_KERNEL_LAUNCHER(Minimum, int8_t, int8_t*);

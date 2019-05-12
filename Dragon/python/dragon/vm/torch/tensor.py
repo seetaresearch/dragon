@@ -840,6 +840,24 @@ class Tensor(object):
         """
         raise NotImplementedError('Refer torch.ops.tensor.repeat')
 
+    def index_select(self, dim, index):
+        """Select the input values along the given axis using index.
+
+        Parameters
+        ----------
+        dim : int
+            The dim to gather.
+        index : dragon.vm.torch.Tensor
+            The indices.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+        raise NotImplementedError('Refer torch.ops.tensor.index_select')
+
     def copy_(self, src, non_blocking=False):
         """Copy the elements from ``src`` into this tensor and return ``self``.
 

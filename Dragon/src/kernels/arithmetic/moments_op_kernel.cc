@@ -8,13 +8,13 @@ namespace dragon {
 namespace kernel {
 
 #define FIXED_DIVISOR_DIV_MOD(d, n, q, r) \
-  do {                                    \
-    const auto n_copy = n;                \
-    *q = n_copy / d;                      \
-    *r = n_copy % d;                      \
-  } while (0)
+    do {                                  \
+        const auto n_copy = n;            \
+        *q = n_copy / d;                  \
+        *r = n_copy % d;                  \
+    } while (0)
 
-/*! Moments <Tx = ?, Ty = ?, Device = CPU> */
+/* <Tx = ?, Ty = ?, Device = CPU> */
 
 template <typename Tx, typename Ty>
 void _ColwiseMoments(
@@ -23,9 +23,9 @@ void _ColwiseMoments(
     const Tx*                   x,
     Ty*                         mean,
     Ty*                         var) {
-    const Ty scale = (Ty)1 / static_cast<Ty>(cols);
+    const Ty scale = Ty(1) / (Ty)cols;
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(rows))
+    #pragma omp parallel for num_threads(OMP_THREADS(rows))
 #endif
     for (int i = 0; i < rows; ++i) {
         Tx x_val; Ty m_val = 0, v_val = 0, mu;
@@ -45,9 +45,9 @@ void _RowwiseMoments(
     const Tx*                   x,
     Ty*                         mean,
     Ty*                         var) {
-    const Ty scale = (Ty)1 / static_cast<Ty>(rows);
+    const Ty scale = Ty(1) / (Ty)rows;
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(cols))
+    #pragma omp parallel for num_threads(OMP_THREADS(cols))
 #endif
     for (int i = 0; i < cols; ++i) {
         Tx x_val; Ty m_val = 0, v_val = 0, mu;
@@ -70,9 +70,9 @@ void _GenericMoments(
     const Tx*                   x,
     Ty*                         mean,
     Ty*                         var) {
-    const Ty scale = (Ty)1 / static_cast<Ty>(inner_dim);
+    const Ty scale = Ty(1) / (Ty)inner_dim;
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(outer_dim))
+    #pragma omp parallel for num_threads(OMP_THREADS(outer_dim))
 #endif
     for (int i = 0; i < outer_dim; ++i) {
         Tx x_val;
@@ -102,12 +102,19 @@ void _GenericMomentsLauncher(
     const Tx*                   x,
     Ty*                         mean,
     Ty*                         var) {
-    vector<int> x_strides(ndim);
-    vector<int> y_dims(ndim);
-    utils::ComputeTransposedStrides(ndim, dims, axes, x_strides.data());
-    for (int i = 0; i < ndim; ++i) y_dims[i] = dims[axes[i]];
-    _GenericMoments<Tx, Ty>(outer_dim, inner_dim, ndim,
-        x_strides.data(), y_dims.data(), x, mean, var);
+    vec32_t x_strides(ndim);
+    vec32_t y_dims(ndim);
+    utils::ComputeTransposedStrides(
+        ndim, dims, axes,
+        x_strides.data()
+    );
+    for (int i = 0; i < ndim; ++i)
+        y_dims[i] = dims[axes[i]];
+    _GenericMoments(
+        outer_dim, inner_dim, ndim,
+        x_strides.data(), y_dims.data(), 
+        x, mean, var
+    );
 }
 
 template <typename Tx, typename Ty>
@@ -120,7 +127,7 @@ void _Moments(
     Ty*                     mean,
     Ty*                     var,
     CPUContext*             ctx) {
-    vector<int> y_dims_V(dims, dims + num_dims);
+    vec32_t y_dims_V(dims, dims + num_dims);
     for (int i = 0; i < num_axes; ++i) y_dims_V[axes[i]] = 1;
     const int* x_dims = dims;
     const int* y_dims = y_dims_V.data();
@@ -130,30 +137,42 @@ void _Moments(
         y_dims + num_dims, 1, std::multiplies<int>());
     int rows, cols;
     // Case #1: Colwise Reduce
-    if (utils::IsColwiseReduce(num_dims, x_dims, y_dims, &rows, &cols)) {
-        _ColwiseMoments<Tx, Ty>(rows, cols, x, mean, var);
-        return;
+    if (utils::IsColwiseReduce(
+            num_dims, x_dims, y_dims,
+                &rows, &cols)) {
+        _ColwiseMoments(
+            rows, cols, x, mean, var
+        ); return;
     }
     // Case #2: Rowwise Reduce
-    if (utils::IsRowwiseReduce(num_dims, x_dims, y_dims, &rows, &cols)) {
-        _RowwiseMoments<Tx, Ty>(rows, cols, x, mean, var);
-        return;
+    if (utils::IsRowwiseReduce(
+            num_dims, x_dims, y_dims,
+                &rows, &cols)) {
+        _RowwiseMoments(
+            rows, cols, x, mean, var
+        ); return;
     }
     // Case #3: Generic Reduce
-    std::vector<int> transpose_axes(num_dims);
+    vec32_t transpose_axes(num_dims);
     utils::ComputeTransposedAxesForReduce(
-        num_dims, num_axes, axes, transpose_axes.data());
+        num_dims, num_axes, axes,
+        transpose_axes.data()
+    );
     const int pivot = num_dims - num_axes;
     int outer_dim = 1, inner_dim = 1;
-    for (int i = 0; i < pivot; ++i) outer_dim *= dims[transpose_axes[i]];
-    for (int i = pivot; i < num_dims; ++i) inner_dim *= dims[transpose_axes[i]];
-    _GenericMomentsLauncher<Tx, Ty>(
-        outer_dim, inner_dim, num_dims,
-            dims, transpose_axes.data(),
-                x, mean, var);
+    for (int i = 0; i < pivot; ++i)
+        outer_dim *= dims[transpose_axes[i]];
+    for (int i = pivot; i < num_dims; ++i) 
+        inner_dim *= dims[transpose_axes[i]];
+    _GenericMomentsLauncher(
+        outer_dim, inner_dim,
+        num_dims, dims,
+        transpose_axes.data(),
+        x, mean, var
+    );
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_MOMENTS_KERNEL_LAUNCHER(Tx, Ty) \
     template <> void Moments<Tx, Ty, CPUContext>( \
@@ -165,8 +184,11 @@ void _Moments(
         Ty*                     mean, \
         Ty*                     var, \
         CPUContext*             ctx) { \
-        _Moments<Tx, Ty>(num_dims, dims, \
-            num_axes, axes, x, mean, var, ctx); \
+        _Moments( \
+            num_dims, dims, \
+            num_axes, axes, \
+            x, mean, var, ctx \
+        ); \
     }
 
 DEFINE_MOMENTS_KERNEL_LAUNCHER(int8_t, float);

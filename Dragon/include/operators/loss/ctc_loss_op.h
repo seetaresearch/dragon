@@ -20,24 +20,24 @@ namespace dragon {
 template <class Context>
 class CTCLossOp final : public Operator<Context> {
  public:
-     CTCLossOp(const OperatorDef& def, Workspace* ws)
+    CTCLossOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws) {
         LOG(FATAL) << "CTCLoss requires CuDNN support.";
-     }
-     USE_OPERATOR_FUNCTIONS;
+    }
+    USE_OPERATOR_FUNCTIONS;
 
-     void RunOnDevice() override {}
+    void RunOnDevice() override {}
 };
 
 template <class Context>
 class CTCLossGradientOp final : public Operator<Context> {
-public:
+ public:
     CTCLossGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 };
 
 #ifdef WITH_CUDNN
@@ -49,36 +49,34 @@ class CuDNNCTCLossOp final : public Operator<Context> {
  public:
     CuDNNCTCLossOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          blank_first(OperatorBase::Arg<bool>("blank_first", true)),
-          padding_mask(OperatorBase::Arg<int64_t>("padding_mask", -1)) {
-         CUDNN_CHECK(cudnnCreateCTCLossDescriptor(&ctc_desc));
-         CUDNN_CHECK(cudnnCreateTensorDescriptor(&prob_desc));
-         CUDNN_CHECK(cudnnCreateTensorDescriptor(&grad_desc));
-         ctc_algo = CUDNN_CTC_LOSS_ALGO_DETERMINISTIC;
+          blank_first_(OpArg<bool>("blank_first", true)),
+          padding_mask_(OpArg<int64_t>("padding_mask", -1)) {
+        CuDNNCreateTensorDesc(&prob_desc_);
+        CuDNNCreateTensorDesc(&grad_desc_);
+        ctc_algo_ = CUDNN_CTC_LOSS_ALGO_DETERMINISTIC;
+        CUDNN_CHECK(cudnnCreateCTCLossDescriptor(&ctc_desc_));
      }
      USE_OPERATOR_FUNCTIONS;
 
      ~CuDNNCTCLossOp() {
-         CUDNN_CHECK(cudnnDestroyCTCLossDescriptor(ctc_desc));
-         CUDNN_CHECK(cudnnDestroyTensorDescriptor(prob_desc));
-         CUDNN_CHECK(cudnnDestroyTensorDescriptor(grad_desc));
+         CuDNNDestroyTensorDesc(&prob_desc_);
+         CuDNNDestroyTensorDesc(&grad_desc_);
+         CUDNN_CHECK(cudnnDestroyCTCLossDescriptor(ctc_desc_));
      }
 
+    void Reshape();
+
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
-    
-    void WrapIO();
+    template <typename T> void RunImpl();
 
  protected:
-    bool blank_first;
-    int64_t padding_mask;
-
-    cudnnCTCLossAlgo_t ctc_algo;
-    cudnnCTCLossDescriptor_t ctc_desc;
-    cudnnTensorDescriptor_t prob_desc, grad_desc;
-    size_t workspace_size;
-
-    vector<int> packed_labels, label_lengths, input_lengths;
+    bool blank_first_;
+    int64_t padding_mask_;
+    size_t workspace_size_;
+    cudnnCTCLossAlgo_t ctc_algo_;
+    cudnnCTCLossDescriptor_t ctc_desc_;
+    cudnnTensorDescriptor_t prob_desc_, grad_desc_;
+    vec32_t packed_labels_, label_lengths_, input_lengths_;
 };
 
 #endif

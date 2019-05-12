@@ -5,25 +5,34 @@
 namespace dragon {
 
 template <class Context>
-void RMSPropUpdateOp<Context>::ComputeUpdates(Tensor* dX) {
-    auto* H = ws()->CreateTensor(
-        "/mnt/" + Slot() + "/rmsprop/h")
-            ->ReshapeLike(*dX);
+void RMSPropUpdateOp<Context>::Compute(Tensor* dX) {
+    auto* h = ws()
+        ->CreateTensor("/mnt/" + slot() + "/h")
+        ->ReshapeLike(*dX)
+        ->template mutable_data<float, Context>();
 
-    lr = Param("base_lr") * this->lr_mult;
-    decay = Param("decay"), eps = Param("eps");
-    auto* dXdata = dX->template mutable_data<float, Context>();
-    auto* Hdata = H->template mutable_data<float, Context>();
+    auto* dx = dX->template mutable_data<float, Context>();
 
-    kernel::RMSPropUpdate(dX->count(), lr,
-        decay, eps, dXdata, Hdata, ctx());
+    lr_ = param("base_lr") * lr_mult();
+    decay_ = param("decay"), eps_ = param("eps");
+
+    kernel::RMSPropUpdate(
+        dX->count(),
+        lr_, decay_, eps_,
+        dx, h, ctx()
+    );
 }
 
 DEPLOY_CPU(RMSPropUpdate);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(RMSPropUpdate);
 #endif
-OPERATOR_SCHEMA(RMSPropUpdate).NumInputs(1).NumOutputs(1);
+
+OPERATOR_SCHEMA(RMSPropUpdate)
+     /* dX */
+    .NumInputs(1)
+     /* X */
+    .NumOutputs(1);
 
 NO_GRADIENT(RMSPropUpdate);
 

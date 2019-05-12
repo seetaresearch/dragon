@@ -34,11 +34,11 @@ void _BatchNormInternalGrad(
     const int count = dims[0] * dims[1] * dims[2];
     std::array<int, 3> idx = { 0, 0, 0 };
     for (int i = 0; i < count; ++i) {
-        const int i_param = idx[kCDim];
-        ds[i_param] += gamma[i_param] * dy[i] * x[i];
-        db[i_param] += gamma[i_param] * dy[i];
-        dgamma[i_param] += dy[i] * (x[i] - mu[i_param]) * rsig[i_param];
-        dbeta[i_param] += dy[i];
+        const int pi = idx[kCDim];
+        ds[pi] += gamma[pi] * dy[i] * x[i];
+        db[pi] += gamma[pi] * dy[i];
+        dgamma[pi] += dy[i] * (x[i] - mu[pi]) * rsig[pi];
+        dbeta[pi] += dy[i];
         utils::IncreaseIndexInDims(3, dims.data(), idx.data());
     }
 }
@@ -59,11 +59,11 @@ void _BatchNormTrainingGrad(
     const Tp denom = Tp(1) / static_cast<Tp>(count / dims[kCDim]);
     std::array<int, 3> idx = { 0, 0, 0 };
     for (int i = 0; i < count; ++i) {
-        const int i_param = idx[kCDim];
-        const Tp u = (db[i_param] * mu[i_param] - ds[i_param]) *
-            (x[i] - mu[i_param]) * utils::math::Cube(rsig[i_param]);
-        const Tp v = db[i_param] * rsig[i_param];
-        dx[i] = gamma[i_param] * dy[i] * rsig[i_param] + (u - v) * denom;
+        const int pi = idx[kCDim];
+        const Tp u = (db[pi] * mu[pi] - ds[pi]) *
+            (x[i] - mu[pi]) * utils::math::Cube(rsig[pi]);
+        const Tp v = db[pi] * rsig[pi];
+        dx[i] = gamma[pi] * dy[i] * rsig[pi] + (u - v) * denom;
         utils::IncreaseIndexInDims(3, dims.data(), idx.data());
     }
 }
@@ -83,9 +83,9 @@ void _BatchNormWGrad(
     const int count = dims[0] * dims[1] * dims[2];
     std::array<int, 3> idx = { 0, 0, 0 };
     for (int i = 0; i < count; ++i) {
-        const int i_param = idx[kCDim];
-        dgamma[i_param] += dy[i] * (x[i] - mu[i_param]) * rsig[i_param];
-        dbeta[i_param] += dy[i];
+        const int pi = idx[kCDim];
+        dgamma[pi] += dy[i] * (x[i] - mu[pi]) * rsig[pi];
+        dbeta[pi] += dy[i];
         utils::IncreaseIndexInDims(3, dims.data(), idx.data());
     }
 }
@@ -134,22 +134,26 @@ void _BatchNormInferenceGrad(
         Tp*                         dgamma, \
         Tp*                         dbeta, \
         CPUContext*                 ctx) { \
-        math::Set(C, (Tp)0, ds, ctx); \
-        math::Set(C, (Tp)0, db, ctx); \
-        math::Set(C, (Tp)0, dgamma, ctx); \
-        math::Set(C, (Tp)0, dbeta, ctx); \
+        math::Set(C, Tp(0), ds, ctx); \
+        math::Set(C, Tp(0), db, ctx); \
+        math::Set(C, Tp(0), dgamma, ctx); \
+        math::Set(C, Tp(0), dbeta, ctx); \
         if (data_format == "NCHW") { \
             _BatchNormInternalGrad<Tx, Tp, StorageOrder::NCHW>( \
-                { N, C, S }, x, mu, rsig, gamma, dy, \
-                    ds, db, dgamma, dbeta); \
+                { N, C, S }, x, mu, rsig, gamma, \
+                dy, ds, db, dgamma, dbeta \
+            ); \
             _BatchNormTrainingGrad<Tx, Tp, StorageOrder::NCHW>( \
-                { N, C, S }, x, mu, rsig, gamma, ds, db, dy, dx); \
+                { N, C, S }, x, mu, rsig, gamma, ds, db, dy, dx \
+            ); \
         } else if (data_format == "NHWC") { \
             _BatchNormInternalGrad<Tx, Tp, StorageOrder::NHWC>( \
-                { N, S, C }, x, mu, rsig, gamma, dy, \
-                    ds, db, dgamma, dbeta); \
+                { N, S, C }, x, mu, rsig, gamma, \
+                dy, ds, db, dgamma, dbeta \
+            ); \
             _BatchNormTrainingGrad<Tx, Tp, StorageOrder::NHWC>( \
-                { N, S, C }, x, mu, rsig, gamma, ds, db, dy, dx); \
+                { N, S, C }, x, mu, rsig, gamma, ds, db, dy, dx \
+            ); \
         } \
     } \
     template <> void BatchNormBackwardInference<Tx, Tp, CPUContext>( \
@@ -168,22 +172,26 @@ void _BatchNormInferenceGrad(
         CPUContext*                 ctx) { \
         if (data_format == "NCHW") { \
             if (dgamma != nullptr) { \
-                math::Set(C, (Tp)0, dgamma, ctx); \
-                math::Set(C, (Tp)0, dbeta, ctx); \
+                math::Set(C, Tp(0), dgamma, ctx); \
+                math::Set(C, Tp(0), dbeta, ctx); \
                 _BatchNormWGrad<Tx, Tp, StorageOrder::NCHW>( \
-                    { N, C, S }, x, mu, rsig, dy, dgamma, dbeta); \
+                    { N, C, S }, x, mu, rsig, dy, dgamma, dbeta \
+                ); \
             } \
             _BatchNormInferenceGrad<Tx, Tp, StorageOrder::NCHW>( \
-                N, C, S, rsig, gamma, dy, dx); \
+                N, C, S, rsig, gamma, dy, dx \
+            ); \
         } else if (data_format == "NHWC") { \
             if (dgamma != nullptr) { \
-                math::Set(C, (Tp)0, dgamma, ctx); \
-                math::Set(C, (Tp)0, dbeta, ctx); \
+                math::Set(C, Tp(0), dgamma, ctx); \
+                math::Set(C, Tp(0), dbeta, ctx); \
                 _BatchNormWGrad<Tx, Tp, StorageOrder::NHWC>( \
-                    { N, S, C }, x, mu, rsig, dy, dgamma, dbeta); \
+                    { N, S, C }, x, mu, rsig, dy, dgamma, dbeta \
+                ); \
             } \
             _BatchNormInferenceGrad<Tx, Tp, StorageOrder::NHWC>( \
-                N, C, S, rsig, gamma, dy, dx); \
+                N, C, S, rsig, gamma, dy, dx \
+            ); \
         } \
     }
 

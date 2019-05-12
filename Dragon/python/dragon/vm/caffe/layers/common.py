@@ -20,7 +20,7 @@ from ..layer import Layer as _Layer
 
 
 class InnerProductLayer(_Layer):
-    """The implementation of ``InnerProductLayer``.
+    """The implementation of *InnerProductLayer*.
 
     Parameters
     ----------
@@ -57,7 +57,7 @@ class InnerProductLayer(_Layer):
 
 
 class AccuracyLayer(_Layer):
-    """The implementation of ``AccuracyLayer``.
+    """The implementation of *AccuracyLayer*.
 
     Parameters
     ----------
@@ -83,7 +83,7 @@ class AccuracyLayer(_Layer):
 
 
 class PythonLayer(_Layer):
-    """The implementation of ``PythonLayer``.
+    """The implementation of *PythonLayer*.
 
     Parameters
     ----------
@@ -110,7 +110,7 @@ class PythonLayer(_Layer):
 
 
 class EltwiseLayer(_Layer):
-    """The implementation of ``EltwiseLayer``.
+    """The implementation of *EltwiseLayer*.
 
     Parameters
     ----------
@@ -125,7 +125,7 @@ class EltwiseLayer(_Layer):
         param = LayerParameter.eltwise_param
         self.arguments = {
             'operation': {0: 'PROD', 1: 'SUM', 2: 'MAX'}[param.operation],
-            'coefficients': [element for element in param.coeff]
+            'coef': [element for element in param.coeff]
                 if len(param.coeff) > 0 else None,
         }
 
@@ -134,7 +134,7 @@ class EltwiseLayer(_Layer):
 
 
 class AddLayer(_Layer):
-    """The extended implementation of ``EltwiseLayer``."""
+    """The extended implementation of *EltwiseLayer*."""
 
     def __init__(self, LayerParameter):
         super(AddLayer, self).__init__(LayerParameter)
@@ -144,7 +144,7 @@ class AddLayer(_Layer):
 
 
 class ConcatLayer(_Layer):
-    """The implementation of ``ConcatLayer``.
+    """The implementation of *ConcatLayer*.
 
     Parameters
     ----------
@@ -161,7 +161,7 @@ class ConcatLayer(_Layer):
 
 
 class SliceLayer(_Layer):
-    """The implementation of ``SliceLayer``.
+    """The implementation of *SliceLayer*.
 
     Parameters
     ----------
@@ -185,7 +185,7 @@ class SliceLayer(_Layer):
 
 
 class CropLayer(_Layer):
-    """The implementation of ``CropLayer``.
+    """The implementation of *CropLayer*.
 
     Parameters
     ----------
@@ -212,7 +212,7 @@ class CropLayer(_Layer):
 
 
 class ReshapeLayer(_Layer):
-    """The implementation of ``ReshapeLayer``.
+    """The implementation of *ReshapeLayer*.
 
     Parameters
     ----------
@@ -230,7 +230,7 @@ class ReshapeLayer(_Layer):
 
 
 class PermuteLayer(_Layer):
-    """The implementation of ``PermuteLayer``.
+    """The implementation of *PermuteLayer*.
 
     Parameters
     ----------
@@ -248,7 +248,7 @@ class PermuteLayer(_Layer):
 
 
 class FlattenLayer(_Layer):
-    """The implementation of ``FlattenLayer``.
+    """The implementation of *FlattenLayer*.
 
     Parameters
     ----------
@@ -269,27 +269,8 @@ class FlattenLayer(_Layer):
         return _ops.Flatten(bottom, **self.arguments)
 
 
-class GatherLayer(_Layer):
-    """The extended implementation of ``GatherOp``.
-
-    Parameters
-    ----------
-    axis : int
-        The axis for gathering. Refer ``GatherParameter.axis``.
-
-    """
-    def __init__(self, LayerParameter):
-        super(GatherLayer, self).__init__(LayerParameter)
-        self.arguments = {'axis': LayerParameter.gather_param.axis}
-
-    def LayerSetup(self, bottom):
-        if not isinstance(bottom, (tuple, list)) or len(bottom) != 2:
-            raise ValueError('Excepted two bottom blobs.')
-        return _ops.Gather(bottom[0], indices=bottom[1], **self.arguments)
-
-
 class SoftmaxLayer(_Layer):
-    """The implementation of ``SoftmaxLayer``.
+    """The implementation of *SoftmaxLayer*.
 
     Parameters
     ----------
@@ -306,7 +287,7 @@ class SoftmaxLayer(_Layer):
 
 
 class ArgMaxLayer(_Layer):
-    """The implementation of ``ArgMaxLayer``.
+    """The implementation of *ArgMaxLayer*.
 
     Parameters
     ----------
@@ -330,7 +311,7 @@ class ArgMaxLayer(_Layer):
 
 
 class BatchNormLayer(_Layer):
-    """The implementation of ``BatchNormLayer``.
+    """The implementation of *BatchNormLayer*.
 
     Parameters
     ----------
@@ -363,7 +344,7 @@ class BatchNormLayer(_Layer):
 
 
 class GroupNormLayer(_Layer):
-    """The implementation of ``GroupNormLayer``.
+    """The implementation of *GroupNormLayer*.
 
     Parameters
     ----------
@@ -390,7 +371,7 @@ class GroupNormLayer(_Layer):
 
 
 class InstanceNormLayer(_Layer):
-    """The implementation of ``InstanceNormLayer``.
+    """The implementation of *InstanceNormLayer*.
 
     Introduced by `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_
 
@@ -402,14 +383,17 @@ class InstanceNormLayer(_Layer):
     """
     def __init__(self, LayerParameter):
         super(InstanceNormLayer, self).__init__(LayerParameter)
-        self.arguments = {'eps': LayerParameter.instance_norm_param.eps, 'axis': 1}
+        self.arguments = {
+            'axis': 1,
+            'eps': LayerParameter.instance_norm_param.eps,
+        }
 
     def LayerSetup(self, bottom):
         return _ops.InstanceNorm(bottom, **self.arguments)
 
 
 class ScaleLayer(_Layer):
-    """The implementation of ``ScaleLayer``.
+    """The implementation of *ScaleLayer*.
 
     Parameters
     ----------
@@ -443,7 +427,7 @@ class ScaleLayer(_Layer):
 
 
 class BNLayer(_Layer):
-    """The implementation of ``BNLayer``.
+    """The implementation of *BNLayer*.
 
     Parameters
     ----------
@@ -481,7 +465,7 @@ class BNLayer(_Layer):
 
 
 class GNLayer(_Layer):
-    """The implementation of ``GNLayer``.
+    """The implementation of *GNLayer*.
 
     Parameters
     ----------
@@ -513,7 +497,7 @@ class GNLayer(_Layer):
 
 
 class NormalizeLayer(_Layer):
-    """The implementation of ``NormalizeLayer``.
+    """The implementation of *NormalizeLayer*.
 
     Parameters
     ----------
@@ -543,17 +527,16 @@ class NormalizeLayer(_Layer):
 
     def LayerSetup(self, bottom):
         norm_out = [_ops.L2Norm(bottom, **self.l2norm_arguments)]
-        return _ops.Affine(
-            norm_out + [blob['data'] for blob in self._blobs],
-                **self.affine_arguments)
+        norm_out += [blob['data'] for blob in self._blobs]
+        return _ops.Affine(norm_out, **self.affine_arguments)
 
 
 class TileLayer(_Layer):
-    """The extended implementation of ``TileLayer``.
+    """The extended implementation of *TileLayer*.
 
     Parameters
     ----------
-    multiples : caffe_pb2.BlobShape
+    multiples : BlobShape
         The multiples. Refer `TileParameter.multiples`_.
 
     """
@@ -569,11 +552,11 @@ class TileLayer(_Layer):
 
 
 class ReductionLayer(_Layer):
-    """The extended implementation of ``ReductionLayer``.
+    """The extended implementation of *ReductionLayer*.
 
     Parameters
     ----------
-    operation : caffe_pb2.ReductionOp
+    operation : ReductionOp
         The operation. Refer `ReductionParameter.operation`_.
     axis : int
         The axis to to reduce. Refer `ReductionParameter.axis`_.
@@ -595,7 +578,7 @@ class ReductionLayer(_Layer):
 
 
 class ExpandDimsLayer(_Layer):
-    """The implementation of ``ExpandDimsLayer``.
+    """The implementation of *ExpandDimsLayer*.
 
     Parameters
     ----------
@@ -612,7 +595,7 @@ class ExpandDimsLayer(_Layer):
 
 
 class StopGradientLayer(_Layer):
-    """The implementation of ``StopGradientLayer``."""
+    """The implementation of *StopGradientLayer*."""
 
     def __init__(self, LayerParameter):
         super(StopGradientLayer, self).__init__(LayerParameter)
@@ -622,7 +605,7 @@ class StopGradientLayer(_Layer):
 
 
 class ProposalLayer(_Layer):
-    """The implementation of ``ProposalLayer``.
+    """The implementation of *ProposalLayer*.
 
     Parameters
     ----------
@@ -672,7 +655,7 @@ class ProposalLayer(_Layer):
 
 
 class CastLayer(_Layer):
-    """The implementation of ``CastLayer``.
+    """The implementation of *CastLayer*.
 
     Parameters
     ----------

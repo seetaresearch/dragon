@@ -22,18 +22,18 @@ class L1LossOp final : public Operator<Context> {
  public:
     L1LossOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          scale(OperatorBase::Arg<float>("scale", 1.f)),
-          normalization(OperatorBase::Arg<string>(
-              "normalization", "BATCH_SIZE")) {}
+          scale_(OpArg<float>(
+              "scale", 1.f)),
+          reduction_(OpArg<string>(
+              "reduction", "BATCH_SIZE")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    float scale;
-    Tensor* diff;
-    string normalization;
+    float scale_;
+    string reduction_;
 };
 
 template <class Context>
@@ -41,18 +41,18 @@ class L1LossGradientOp final : public Operator<Context> {
  public:
     L1LossGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          scale(OperatorBase::Arg<float>("scale", 1.f)),
-          normalization(OperatorBase::Arg<string>(
-              "normalization", "BATCH_SIZE")) {}
+          scale_(OpArg<float>(
+              "scale", 1.f)),
+          reduction_(OpArg<string>(
+              "reduction", "BATCH_SIZE")) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    float scale;
-    Tensor* diff;
-    string normalization;
+    float scale_;
+    string reduction_;
 };
 
 }  // namespace dragon

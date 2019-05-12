@@ -5,68 +5,95 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void CuDNNTanhOp<Context>::RunWithType() {
-    cudnnSetTensorDesc<T>(&input_desc, &Input(0));
-    cudnnSetTensorDesc<T>(&output_desc, Output(0));
-    auto* Xdata = Input(0).template data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+void CuDNNTanhOp<Context>::RunImpl() {
+    CuDNNSetTensorDesc<T>(&input_desc_, &X(0));
+    auto* x = X(0).template data<T, Context>();
+    auto* y = Y(0)->template mutable_data<T, Context>();
 
 #if CUDNN_VERSION_MIN(5, 0, 0)
     CUDNN_CHECK(cudnnActivationForward(
-        ctx()->cudnn_handle(), act_desc,
-        CUDNNType<T>::one, input_desc, Xdata,
-        CUDNNType<T>::zero, output_desc, Ydata));
+        ctx()->cudnn_handle(),
+        act_desc_,
+        CuDNNType<T>::one,
+        input_desc_, x,
+        CuDNNType<T>::zero,
+        input_desc_, y
+    ));
 #else
     CUDNN_CHECK(cudnnActivationForward_v4(
-        ctx()->cudnn_handle(), act_desc,
-        CUDNNType<Dtype>::one, input_desc, Xdata,
-        CUDNNType<Dtype>::zero, output_desc, Ydata));
+        ctx()->cudnn_handle(),
+        act_desc_,
+        CuDNNType<T>::one,
+        input_desc_, x,
+        CuDNNType<T>::zero,
+        output_desc_, y
+    ));
 #endif
 }
 
 template <class Context>
 void CuDNNTanhOp<Context>::RunOnDevice() {
-    Output(0)->ReshapeLike(Input(0));
+    Y(0)->ReshapeLike(X(0));
 
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(0), float16)) {
+        RunImpl<float16>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0),
+            { "float32", "float16" }
+        );
+    }
 }
 
-DEPLOY_CUDNN(Tanh);
-
 template <class Context> template <typename T>
-void CuDNNTanhGradientOp<Context>::RunWithType() {
-    cudnnSetTensorDesc<T>(&input_desc, &Input(-1));
-    cudnnSetTensorDesc<T>(&output_desc, Output(0));
-    auto* dYdata = Input(-1).template data<T, Context>();
-    auto* Ydata = Input(0).template data<T, Context>();
-    auto* dXdata = Output(0)->template mutable_data<T, Context>();
+void CuDNNTanhGradientOp<Context>::RunImpl() {
+    CuDNNSetTensorDesc<T>(&input_desc_, &X(1));
+    auto* y  = X(0).template data<T, Context>();
+    auto* dy = X(1).template data<T, Context>();
+    auto* dx = Y(0)->template mutable_data<T, Context>();
 
 #if CUDNN_VERSION_MIN(5, 0, 0)
     CUDNN_CHECK(cudnnActivationBackward(
-        ctx()->cudnn_handle(), act_desc,
-        CUDNNType<T>::one, input_desc, Ydata,
-        input_desc, dYdata, output_desc, Ydata,
-        CUDNNType<T>::zero, output_desc, dXdata));
+        ctx()->cudnn_handle(),
+        act_desc_,
+        CuDNNType<T>::one,
+        input_desc_, y,
+        input_desc_, dy,
+        input_desc_, y,
+        CuDNNType<T>::zero,
+        input_desc_, dx
+    ));
 #else
     CUDNN_CHECK(cudnnActivationBackward_v4(
-        ctx()->cudnn_handle(), act_desc,
-        CUDNNType<T>::one, input_desc, Ydata,
-        input_desc, dYdata, output_desc, Ydata,
-        CUDNNType<T>::zero, output_desc, dXdata));
+        ctx()->cudnn_handle(),
+        act_desc_,
+        CuDNNType<T>::one,
+        input_desc_, y,
+        input_desc_, dy,
+        input_desc_, y,
+        CuDNNType<T>::zero,
+        input_desc_, dx
+    ));
 #endif
 }
 
 template <class Context>
 void CuDNNTanhGradientOp<Context>::RunOnDevice() {
-    Output(0)->ReshapeLike(Input(0));
+    Y(0)->ReshapeLike(X(0));
 
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(0), float16)) {
+        RunImpl<float16>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0),
+            { "float32", "float16" }
+        );
+    }
 }
 
+DEPLOY_CUDNN(Tanh);
 DEPLOY_CUDNN(TanhGradient);
 
 }  // namespace dragon

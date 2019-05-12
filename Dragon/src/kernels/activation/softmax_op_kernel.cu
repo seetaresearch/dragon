@@ -8,164 +8,167 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Softmax <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
-__global__ void _SoftmaxMaxClass(
-    const int               outer_dim,
-    const int               classes,
+__global__ void _SoftmaxReduceMax(
+    const int               nthreads,
+    const int               axis_dim,
     const int               inner_dim,
     const T*                x,
     T*                      scale) {
-    CUDA_1D_KERNEL_LOOP(idx, outer_dim * inner_dim) {
-        int o_idx = idx / inner_dim;
-        int i_idx = idx % inner_dim;
-        T max_val = -FLT_MAX;
-        for (int c = 0; c < classes; c++)
-            max_val = max(
-                x[(o_idx * classes + c) * inner_dim + i_idx], max_val
-            );
-        scale[idx] = max_val;
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+        const T* X = x + (
+            (i / inner_dim) *
+                axis_dim * inner_dim
+        ) + (i % inner_dim);
+        T val = *X;
+        for (int c = 1; c < axis_dim; c++)
+            val = max(X[c * inner_dim], val);
+        scale[i] = val;
     }
 }
 
 template <typename T>
-__global__ void _SoftmaxSubtract(
-    const int               count,
-    const int               classes,
+__global__ void _SoftmaxSub(
+    const int               nthreads,
+    const int               axis_dim,
     const int               inner_dim,
     const T*                scale,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        int o_idx = idx / inner_dim / classes;
-        int i_idx = idx % inner_dim;
-        y[idx] -= scale[o_idx * inner_dim + i_idx];
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+        const int iix = i % inner_dim;
+        const int oix = i / inner_dim / axis_dim;
+#if __CUDA_ARCH__ >= 350
+        y[i] -= __ldg(scale + (oix * inner_dim + iix));
+#else
+        y[i] -= scale[oix * inner_dim + iix];
+#endif
     }
 }
 
 template <typename T>
-__global__ void _SoftmaxExp(
-    const int               count,
-    T*                      y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        y[idx] = exp(y[idx]);
-    }
-}
-
-template <typename T>
-__global__ void _SoftmaxSumClass(
-    const int               outer_dim,
-    const int               classes,
+__global__ void _SoftmaxReduceSum(
+    const int               nthreads,
+    const int               axis_dim,
     const int               inner_dim,
     const T*                y,
     T*                      scale) {
-    CUDA_1D_KERNEL_LOOP(idx, outer_dim * inner_dim) {
-        int o_idx = idx / inner_dim;
-        int i_idx = idx % inner_dim;
-        T sum = 0;
-        for (int c = 0; c < classes; c++)
-            sum += y[(o_idx * classes + c) * inner_dim + i_idx];
-        scale[idx] = sum;
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+        const T* Y = y + (
+            (i / inner_dim) *
+                axis_dim * inner_dim
+        ) + (i % inner_dim);
+        T val = *Y;
+        for (int c = 1; c < axis_dim; c++)
+            val += Y[c * inner_dim];
+        scale[i] = val;
     }
 }
 
 template <typename T>
  __global__ void _SoftmaxDiv(
-     const int              count,
-     const int              classes,
+     const int              nthreads,
+     const int              axis_dim,
      const int              inner_dim,
      const T*               scale,
      T*                     y) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        int o_idx = idx / inner_dim / classes;
-        int i_idx = idx % inner_dim;
-        y[idx] /= scale[o_idx * inner_dim + i_idx];
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+        const int iix = i % inner_dim;
+        const int oix = i / inner_dim / axis_dim;
+#if __CUDA_ARCH__ >= 350
+        y[i] /= __ldg(scale + (oix * inner_dim + iix));
+#else
+        y[i] /= scale[oix * inner_dim + iix];
+#endif
     }
 }
 
 template<> void Softmax<float, CUDAContext>(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
-    const float*            sum_multiplier,
+    const float*            multiplier,
     const float*            x,
     float*                  scale,
     float*                  y,
     CUDAContext*            ctx) {
-    const int num_preds = inner_dim * outer_dim;
-    _SoftmaxMaxClass<float>
+    auto num_preds = outer_dim * inner_dim;
+    auto nelements = num_preds * axis_dim;
+    _SoftmaxReduceMax
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (outer_dim, classes, inner_dim, x, scale);
+             0, ctx->cuda_stream() >> >(
+        num_preds, axis_dim, inner_dim, x, scale
+    );
+    _SoftmaxSub
+        << < CUDA_BLOCKS(nelements), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+        nelements, axis_dim, inner_dim, scale, y
+    );
 
-    _SoftmaxSubtract<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, classes, inner_dim, scale, y);
+    math::Exp(nelements, y, y, ctx);
 
-    _SoftmaxExp<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, y);
-
-    _SoftmaxSumClass<float>
+    _SoftmaxReduceSum
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (outer_dim, classes, inner_dim, y, scale);
-
-    _SoftmaxDiv<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, classes, inner_dim, scale, y);
+             0, ctx->cuda_stream() >> >(
+        num_preds, axis_dim, inner_dim, y, scale
+    );
+    _SoftmaxDiv
+        << < CUDA_BLOCKS(nelements), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+        nelements, axis_dim, inner_dim, scale, y
+    );
 }
 
-/*! SoftmaxGrad <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _SoftmaxDot(
-    const int               outer_dim,
-    const int               classes,
+    const int               nthreads,
+    const int               axis_dim,
     const int               inner_dim,
     const T*                dy,
     const T*                y,
     T*                      scale) {
-    CUDA_1D_KERNEL_LOOP(idx, outer_dim * inner_dim) {
-        int o_idx = idx / inner_dim;
-        int i_idx = idx % inner_dim;
-        T dot = 0;
-        for (int c = 0; c < classes; c++)
-            dot += (
-                y[(o_idx * classes + c) * inner_dim + i_idx] *
-                    dy[(o_idx * classes + c) * inner_dim + i_idx]
-            );
-        scale[idx] = dot;
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+        const T* dY = dy + (
+            (i / inner_dim) *
+                axis_dim * inner_dim
+        ) + (i % inner_dim);
+        const T* Y = y + (
+            (i / inner_dim) *
+                axis_dim * inner_dim
+        ) + (i % inner_dim);
+        T val = (*dY) * (*Y);
+        for (int c = 1; c < axis_dim; c++)
+            val += dY[c * inner_dim] * Y[c * inner_dim];
+        scale[i] = val;
     }
 }
 
 template<> void SoftmaxGrad<float, CUDAContext>(
-    const int               count,
-    const int               classes,
     const int               outer_dim,
+    const int               axis_dim,
     const int               inner_dim,
-    const float*            sum_multiplier,
+    const float*            multiplier,
     const float*            dy,
     const float*            y,
     float*                  scale,
     float*                  dx,
     CUDAContext*            ctx) {
-    const int num_preds = inner_dim * outer_dim;
-    _SoftmaxDot<float>
+    auto num_preds = outer_dim * inner_dim;
+    auto nelements = num_preds * axis_dim;
+    _SoftmaxDot
         << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (outer_dim, classes, inner_dim, dy, y, scale);
-
-    _SoftmaxSubtract<float>
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, classes,inner_dim, scale, dx);
-
-    math::Mul<float, CUDAContext>(count, dx, y, dx, ctx);
+             0, ctx->cuda_stream() >> >(
+        num_preds, axis_dim, inner_dim, dy, y, scale
+    );
+    _SoftmaxSub
+        << < CUDA_BLOCKS(nelements), CUDA_THREADS,
+             0, ctx->cuda_stream() >> >(
+        nelements, axis_dim, inner_dim, scale, dx
+    );
+    math::Mul(nelements, dx, y, dx, ctx);
 }
 
 }  // namespace kernel

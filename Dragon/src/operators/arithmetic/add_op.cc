@@ -6,44 +6,110 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void AddOp<Context>::EltwiseRunWithType() {
-    auto* x1 = Input(0).template data<T, Context>();
-    auto* x2 = Input(1).template data<T, Context>();
-    auto* y = Output(0)->template mutable_data<T, Context>();
-    math::Add(Output(0)->count(), x1, x2, y, ctx());
+void AddOp<Context>::EltwiseRunImpl() {
+    auto* a = X(0).template data<T, Context>();
+    auto* b = X(1).template data<T, Context>();
+    auto* y = Y(0)->template mutable_data<T, Context>();
+    math::Add(Y(0)->count(), a, b, y, ctx());
 }
 
 template <class Context> template <typename T>
-void AddOp<Context>::BroadcastRunWithType(int type) {
-    auto* x1 = Input(0).template data<T, Context>();
-    auto* x2 = Input(1).template data<T, Context>();
-    auto* y = Output(0)->template mutable_data<T, Context>();
-    math::BroadcastAdd(rows, cols, type, x1, x2, y, ctx());
+void AddOp<Context>::BroadcastRunImpl(int type) {
+    auto* a = X(0).template data<T, Context>();
+    auto* b = X(1).template data<T, Context>();
+    auto* y = Y(0)->template mutable_data<T, Context>();
+    math::BroadcastAdd(rows_, cols_, type, a, b, y, ctx());
 }
 
 template <class Context>
 void AddOp<Context>::RunOnDevice() {
-    DECLARE_FUNDAMENTAL_OP_X1X2;
-    Output(0)->ReshapeLike(Input(0));
+    DECLARE_INPUT_DESC;
+    Y(0)->ReshapeLike(X(0));
 
-    if (XIsType(Input(0), int8_t)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(int8_t);
-    } else if (XIsType(Input(0), uint8_t)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(uint8_t);
-    } else if (XIsType(Input(0), int)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(int);
-    } else if (XIsType(Input(0), int64_t)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(int64_t);
-    } else if (XIsType(Input(0), float16)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(float16);
-    } else if (XIsType(Input(0), float)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(float);
-    } else if (XIsType(Input(0), double)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(double);
+    if (XIsType(X(0), int8_t)) {
+        DEFINE_FUNDAMENTAL_TYPED_IMPL(int8_t);
+    } else if (XIsType(X(0), uint8_t)) {
+        DEFINE_FUNDAMENTAL_TYPED_IMPL(uint8_t);
+    } else if (XIsType(X(0), int)) {
+        DEFINE_FUNDAMENTAL_TYPED_IMPL(int);
+    } else if (XIsType(X(0), int64_t)) {
+        DEFINE_FUNDAMENTAL_TYPED_IMPL(int64_t);
+    } else if (XIsType(X(0), float16)) {
+        DEFINE_FUNDAMENTAL_TYPED_IMPL(float16);
+    } else if (XIsType(X(0), float)) {
+        DEFINE_FUNDAMENTAL_TYPED_IMPL(float);
+    } else if (XIsType(X(0), double)) {
+        DEFINE_FUNDAMENTAL_TYPED_IMPL(double);
     } else {
-        LOG(FATAL) << DTypeHelper(Input(0), {
+        LOG(FATAL) << DTypeString(X(0), {
             "int8", "uint8", "int32", "int64",
-                  "float16", "float32", "float64",
+            "float16", "float32", "float64",
+        });
+    }
+}
+
+template <class Context> template <typename T>
+void AddGradientOp<Context>::EltwiseRunImpl() {
+    auto* dy = X(-1).template data<T, Context>();
+
+    if (Y(1)->name() != "NULL") {
+        auto* db = Y(1)->template mutable_data<T, Context>();
+        math::Copy(Y(1)->count(), dy, db, ctx());
+    }
+
+    if (Y(0)->name() != "NULL") {
+        auto* da = Y(0)->template mutable_data<T, Context>();
+        math::Copy(Y(0)->count(), dy, da, ctx());
+    }
+}
+
+template <class Context> template <typename T>
+void AddGradientOp<Context>::BroadcastRunImpl(int type) {
+    DEFINE_INPUT_DESC;
+    auto* dy = X(-1).template data<T, Context>();
+
+    if (Y(1)->name() != "NULL") {
+        auto* db = Y(1)->template mutable_data<T, Context>();
+        vec32_t dims = { rows_, cols_ };
+        vec32_t axes = { type };
+        kernel::ReduceSum(
+            2, dims.data(),
+            1, axes.data(),
+            1.f, dy,
+            db, ctx()
+        );
+    }
+
+    if (Y(0)->name() != "NULL") {
+        auto* da = Y(0)->template mutable_data<T, Context>();
+        math::Copy(Y(0)->count(), dy, da, ctx());
+    }
+}
+
+template <class Context>
+void AddGradientOp<Context>::RunOnDevice() {
+    DEFINE_INPUT_DESC;
+    Y(0)->ReshapeLike(*A);
+    Y(1)->ReshapeLike(*B);
+
+    if (XIsType(X(-1), int8_t)) {
+        DEFINE_FUNDAMENTAL_TYPED_IMPL(int8_t);
+    } else if (XIsType(X(-1), uint8_t)) {
+        DEFINE_FUNDAMENTAL_TYPED_IMPL(uint8_t);
+    } else if (XIsType(X(-1), int)) {
+        DEFINE_FUNDAMENTAL_TYPED_IMPL(int);
+    } else if (XIsType(X(-1), int64_t)) {
+        DEFINE_FUNDAMENTAL_TYPED_IMPL(int64_t);
+    } else if (XIsType(X(-1), float16)) {
+        DEFINE_FUNDAMENTAL_TYPED_IMPL(float16);
+    } else if (XIsType(X(-1), float)) {
+        DEFINE_FUNDAMENTAL_TYPED_IMPL(float);
+    } else if (XIsType(X(-1), double)) {
+        DEFINE_FUNDAMENTAL_TYPED_IMPL(double);
+    } else {
+        LOG(FATAL) << DTypeString(X(-1), {
+            "int8", "uint8", "int32", "int64",
+            "float16", "float32", "float64",
         });
     }
 }
@@ -52,93 +118,43 @@ DEPLOY_CPU(Add);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Add);
 #endif
-OPERATOR_SCHEMA(Add)
-    .NumInputs(2).NumOutputs(1)
-    .Inplace({ { 0, 0 } });
-
-template <class Context> template <typename T>
-void AddGradientOp<Context>::EltwiseRunWithType() {
-    auto* dy = Input(-1).template data<T, Context>();
-
-    if (Output(1)->name() != "NULL") {
-        auto* dx2 = Output(1)->template mutable_data<T, Context>();
-        ctx()->template Copy<T, Context, Context>(
-            Output(1)->count(), dx2, dy);
-    }
-
-    if (Output(0)->name() != "NULL") {
-        auto* dx1 = Output(0)->template mutable_data<T, Context>();
-        ctx()->template Copy<T, Context, Context>(
-            Output(0)->count(), dx1, dy);
-    }
-}
-
-template <class Context> template <typename T>
-void AddGradientOp<Context>::BroadcastRunWithType(int type) {
-    DEFINE_FUNDAMENTAL_OP_X1X2;
-    auto* dy = Input(-1).template data<T, Context>();
-
-    if (Output(1)->name() != "NULL") {
-        auto* dx2 = Output(1)->template mutable_data<T, Context>();
-        vector<int> dims = { rows, cols }, axes = { type };
-        kernel::ReduceSum(2, dims.data(),
-            1, axes.data(), 1.f, dy, dx2, ctx());
-    }
-
-    if (Output(0)->name() != "NULL") {
-        auto* dx1 = Output(0)->template mutable_data<T, Context>();
-        ctx()->template Copy<T, Context, Context>(
-            X1->count(), dx1, dy);
-    }
-}
-
-template <class Context>
-void AddGradientOp<Context>::RunOnDevice() {
-    DEFINE_FUNDAMENTAL_OP_X1X2;
-    Output(0)->ReshapeLike(*X1);
-    Output(1)->ReshapeLike(*X2);
-
-    if (XIsType(Input(-1), int8_t)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(int8_t);
-    } else if (XIsType(Input(-1), uint8_t)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(uint8_t);
-    } else if (XIsType(Input(-1), int)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(int);
-    } else if (XIsType(Input(-1), int64_t)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(int64_t);
-    } else if (XIsType(Input(-1), float16)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(float16);
-    } else if (XIsType(Input(-1), float)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(float);
-    } else if (XIsType(Input(-1), double)) {
-        DEFINE_FUNDAMENTAL_TYPED_CALLER(double);
-    } else {
-        LOG(FATAL) << DTypeHelper(Input(0), {
-            "int8", "uint8", "int32", "int64",
-                  "float16", "float32", "float64",
-        });
-    }
-}
 
 DEPLOY_CPU(AddGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(AddGradient);
 #endif
 
-OPERATOR_SCHEMA(AddGradient)
-    .NumInputs(1).NumOutputs(2)
+OPERATOR_SCHEMA(Add)
+     /* A, B */
+    .NumInputs(2)
+     /* Y */
+    .NumOutputs(1)
+     /* A => Y */
     .Inplace({ { 0, 0 } });
 
-class GetAddGradient : public GradientMakerBase {
+OPERATOR_SCHEMA(AddGradient)
+     /* dY */
+    .NumInputs(1)
+     /* dA, dB */
+    .NumOutputs(2)
+     /* dY => dA */
+    .Inplace({ { 0, 0 } });
+
+namespace {
+
+class GradientMaker : public GradientMakerBase {
  public:
-    GRADIENT_MAKER_CTOR(GetAddGradient);
-    vector<OperatorDef> MakeDefs() override {
+    GRADIENT_MAKER_CTOR(GradientMaker);
+    vector<OperatorDef> MakeDef() override {
         return SingleDef(def.type() + "Gradient", "",
             vector<string>({ GO(0) }),
-            vector<string>({ GI(0), GI(1) }));
+            vector<string>({ GI(0), GI(1) })
+        );
     }
 };
 
-REGISTER_GRADIENT(Add, GetAddGradient);
+}  // namespace
+
+REGISTER_GRADIENT(Add, GradientMaker);
 
 }  // namespace dragon

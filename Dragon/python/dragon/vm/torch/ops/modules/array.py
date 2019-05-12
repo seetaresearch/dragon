@@ -117,8 +117,33 @@ class Concat(BaseModule):
         return self.run(inputs, outputs)
 
 
-class Gather(BaseModule):
-    """This module imports the *GatherOp* from backend.
+class Stack(BaseModule):
+    """This module imports the *StackOp* from backend.
+
+    Stack the inputs along the given axis.
+
+    """
+    def __init__(self, key, dev, **kwargs):
+        super(Stack, self).__init__(key, dev, **kwargs)
+        self.axis = kwargs.get('axis', 0)
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'Stack',
+            'arguments': {
+                'axis': self.axis
+            },
+        }
+
+    def forward(self, xs, y):
+        inputs = xs; self.unify_devices(inputs)
+        outputs = [y] if y else [self.register_output()]
+        return self.run(inputs, outputs)
+
+
+class IndexSelect(BaseModule):
+    """This module imports the *IndexSelectOp* from backend.
 
     Gather the input according to the indices along the given axis,
     and the resulting shape should be:
@@ -127,13 +152,13 @@ class Gather(BaseModule):
 
     """
     def __init__(self, key, dev, **kwargs):
-        super(Gather, self).__init__(key, dev, **kwargs)
+        super(IndexSelect, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 0)
         self.register_op()
 
     def register_op(self):
         self.op_meta = {
-            'op_type': 'Gather',
+            'op_type': 'IndexSelect',
             'arguments': {
                 'axis': self.axis,
             },

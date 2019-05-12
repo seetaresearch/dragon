@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Equal <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _EqualInteger(
@@ -14,7 +14,7 @@ void _EqualInteger(
     const T*                b,
     bool*                   y) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         y[i] = a[i] == b[i] ? true : false;
@@ -28,14 +28,14 @@ void _EqualFloat(
     const T*                b,
     bool*                   y) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         y[i] = fabs(a[i] - b[i]) < 1e-15 ? true : false;
     }
 }
 
-/*! Less <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _Less(
@@ -44,14 +44,14 @@ void _Less(
     const T*                b,
     bool*                   y) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         y[i] = a[i] < b[i] ? true : false;
     }
 }
 
-/*! LessEqual <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _LessEqual(
@@ -60,14 +60,14 @@ void _LessEqual(
     const T*                b,
     bool*                   y) {
 #ifdef WITH_OMP
-#pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         y[i] = a[i] <= b[i] ? true : false;
     }
 }
 
-/*! Greater <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _Greater(
@@ -76,14 +76,14 @@ void _Greater(
     const T*                b,
     bool*                   y) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         y[i] = a[i] > b[i] ? true : false;
     }
 }
 
-/*! GreaterEqual <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _GreaterEqual(
@@ -92,12 +92,14 @@ void _GreaterEqual(
     const T*                b,
     bool*                   y) {
 #ifdef WITH_OMP
-#pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+#pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         y[i] = a[i] >= b[i] ? true : false;
     }
 }
+
+/* Kernel Launchers */
 
 #define DEFINE_COMPARE_WARPPER(T, OP, IMPL) \
     template <> void OP<T, CPUContext>( \
@@ -106,7 +108,7 @@ void _GreaterEqual(
         const T*                b, \
         bool*                   y, \
         CPUContext*             ctx) { \
-        IMPL<T>(count, a, b, y); \
+        IMPL(count, a, b, y); \
     }
 
 DEFINE_COMPARE_WARPPER(bool, Equal, _EqualInteger);

@@ -74,6 +74,7 @@ class _ConvNd(Module):
                 'strides': _pair(self.stride),
                 'pads': _pair(self.padding),
                 'dilations': _pair(self.dilation),
+                'output_padding': self.output_padding,
                 'group': self.groups,
                 'data_format': 'NCHW',
             }
@@ -154,7 +155,7 @@ class ConvTranspose2d(_ConvNd):
         super(ConvTranspose2d, self).__init__(
             in_channels, out_channels,
             kernel_size, stride, padding, dilation,
-            True, _pair(0), groups, bias,
+            True, _pair(output_padding), groups, bias,
         )
 
     def forward(self, input):

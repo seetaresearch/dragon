@@ -20,7 +20,7 @@ from ..layer import Layer as _Layer
 
 
 class ConvolutionLayer(_Layer):
-    """The implementation of ``ConvolutionLayer``.
+    """The implementation of *ConvolutionLayer*.
 
     Parameters
     ----------
@@ -80,7 +80,7 @@ class ConvolutionLayer(_Layer):
 
 
 class DepthwiseConvolutionLayer(_Layer):
-    """The implementation of ``DepthwiseConvolutionLayer``.
+    """The implementation of *DepthwiseConvolutionLayer*.
 
     Parameters
     ----------
@@ -134,7 +134,7 @@ class DepthwiseConvolutionLayer(_Layer):
 
 
 class DeconvolutionLayer(ConvolutionLayer):
-    """The implementation of ``DeconvolutionLayer``.
+    """The implementation of *DeconvolutionLayer*.
 
     Parameters
     ----------
@@ -167,7 +167,7 @@ class DeconvolutionLayer(ConvolutionLayer):
 
 
 class PoolingLayer(_Layer):
-    """The implementation of ``PoolingLayer``.
+    """The implementation of *PoolingLayer*.
 
     Parameters
     ----------
@@ -216,7 +216,7 @@ class PoolingLayer(_Layer):
 
 
 class ROIPoolingLayer(_Layer):
-    """The implementation of ``ROIPoolingLayer``.
+    """The implementation of *ROIPoolingLayer*.
 
     Parameters
     ----------
@@ -242,7 +242,7 @@ class ROIPoolingLayer(_Layer):
 
 
 class ROIAlignLayer(_Layer):
-    """The implementation of ``ROIAlignLayer``.
+    """The implementation of *ROIAlignLayer*.
 
     Parameters
     ----------
@@ -268,7 +268,7 @@ class ROIAlignLayer(_Layer):
 
 
 class LRNLayer(_Layer):
-    """The implementation of ``LRNLayer``.
+    """The implementation of *LRNLayer*.
 
     Parameters
     ----------
@@ -300,7 +300,7 @@ class LRNLayer(_Layer):
 
 
 class NNResizeLayer(_Layer):
-    """The implementation of ``NNResizeLayer``.
+    """The implementation of *NNResizeLayer*.
 
     Parameters
     ----------
@@ -334,7 +334,7 @@ class NNResizeLayer(_Layer):
 
 
 class BilinearResizeLayer(_Layer):
-    """The implementation of ``BilinearResizeLayer``.
+    """The implementation of *BilinearResizeLayer*.
 
     Parameters
     ----------
@@ -368,7 +368,7 @@ class BilinearResizeLayer(_Layer):
 
 
 class DropBlockLayer(_Layer):
-    """The implementation of ``DropBlock2dLayer``.
+    """The implementation of *DropBlock2dLayer*.
 
     Parameters
     ----------

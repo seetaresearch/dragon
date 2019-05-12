@@ -4,70 +4,94 @@
 
 namespace dragon {
 
-template <class Context> template <typename Tx, typename Ty>
-void MomentsOp<Context>::RunWithType() {
-    dims = Input(0).dims(); axes32.clear();
-    dims32.assign(dims.begin(), dims.end());
-    axes32.assign(axes.begin(), axes.end());
+template <class Context>
+template <typename Tx, typename Ty>
+void MomentsOp<Context>::RunImpl() {
+    dims_ = X(0).dims(); axes32_.clear();
+    dims32_.assign(dims_.begin(), dims_.end());
+    axes32_.assign(axes_.begin(), axes_.end());
 
-    if (axes32.empty()) {
+    if (axes32_.empty()) {
         // Reduce to a Scalar if missing axes
-        for (int i = 0; i < Input(0).ndim(); ++i)
-            axes32.push_back(i);
+        for (int i = 0; i < X(0).ndim(); ++i)
+            axes32_.push_back(i);
     }
 
-    for (int i = 0; i < axes32.size(); i++) {
-        int axis = axes32[i];
-        axes32[i] = axis < 0 ? axis + Input(0).ndim() : axis;
-        CHECK(axes32[i] >= 0 && axes32[i] < Input(0).ndim()) \
-            << "\nExcepted the axis in [-" << Input(0).ndim()
-            << ", " << Input(0).ndim() << "), got " << axis << ".";
-        dims[axes32[i]] = 1;
+    for (int i = 0; i < axes32_.size(); i++) {
+        auto axis = axes32_[i];
+        axes32_[i] = axis < 0 ? axis + X(0).ndim() : axis;
+        CHECK(axes32_[i] >= 0 && axes32_[i] < X(0).ndim()) \
+            << "\nExcepted the axis in [-" << X(0).ndim()
+            << ", " << X(0).ndim() << "), got " << axis << ".";
+        dims_[axes32_[i]] = 1;
     }
 
-    vector<int64_t> y_dims;
-    for (const auto& dim : dims) {
-        if (dim != 1 || keep_dims)
-            y_dims.emplace_back(dim);
+    vec64_t out_shape;
+    for (const auto& dim : dims_) {
+        if (dim != 1 || keep_dims_)
+            out_shape.push_back(dim);
     }
 
-    Output(0)->Reshape(y_dims); Output(1)->Reshape(y_dims);
+    Y(0)->Reshape(out_shape);
+    Y(1)->Reshape(out_shape);
 
-    auto* Xdata = Input(0).template data<Tx, Context>();
-    auto* Mdata = Output(0)->template mutable_data<Ty, Context>();
-    auto* Vdata = Output(1)->template mutable_data<Ty, Context>();
+    auto* x = X(0).template data<Tx, Context>();
+    auto* mean = Y(0)->template mutable_data<Ty, Context>();
+    auto* var = Y(1)->template mutable_data<Ty, Context>();
 
-    if (Input(0).count() == 1) {
-        kernel::TypeA2B(Output(0)->count(), Xdata, Mdata, ctx());
-        math::Set(Output(0)->count(), cast::to<Ty>(0.f), Vdata, ctx());
+    if (X(0).count() == 1) {
+        kernel::TypeA2B(
+            Y(0)->count(),
+            x, mean, ctx()
+        );
+        math::Set(
+            Y(0)->count(),
+            cast::to<Ty>(0.f),
+            var, ctx()
+        );
     } else {
         kernel::Moments(
-            (int)dims32.size(), dims32.data(),
-                (int)axes32.size(), axes32.data(),
-                    Xdata, Mdata, Vdata, ctx());
+            (int)dims32_.size(), dims32_.data(),
+            (int)axes32_.size(), axes32_.data(),
+            x, mean, var, ctx()
+        );
     }
 }
 
 template <class Context>
 void MomentsOp<Context>::RunOnDevice() {
-    if (XIsType(Input(0), int8_t)) RunWithType<int8_t, float>();
-    else if (XIsType(Input(0), uint8_t)) RunWithType<uint8_t, float>();
-    else if (XIsType(Input(0), int)) RunWithType<int, float>();
-    else if (XIsType(Input(0), int64_t)) RunWithType<int64_t, float>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16, float>();
-    else if (XIsType(Input(0), float)) RunWithType<float, float>();
-    else if (XIsType(Input(0), double)) RunWithType<double, double>();
-    else LOG(FATAL) << DTypeHelper(Input(0), {
-        "int8", "uint8", "int32", "int64",
+    if (XIsType(X(0), int8_t)) {
+        RunImpl<int8_t, float>();
+    } else if (XIsType(X(0), uint8_t)) {
+        RunImpl<uint8_t, float>();
+    } else if (XIsType(X(0), int)) {
+        RunImpl<int, float>();
+    } else if (XIsType(X(0), int64_t)) {
+        RunImpl<int64_t, float>();
+    } else if (XIsType(X(0), float16)) {
+        RunImpl<float16, float>();
+    } else if (XIsType(X(0), float)) {
+        RunImpl<float, float>();
+    } else if (XIsType(X(0), double)) {
+        RunImpl<double, double>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0), {
+            "int8", "uint8", "int32", "int64",
             "float16", "float32", "float64",
-    });
+        });
+    }
 }
 
 DEPLOY_CPU(Moments);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Moments);
 #endif
-OPERATOR_SCHEMA(Moments).NumInputs(1).NumOutputs(2);
+
+OPERATOR_SCHEMA(Moments)
+     /* X */
+    .NumInputs(1)
+     /* Mean, Var */
+    .NumOutputs(2);
 
 NO_GRADIENT(Moments);
 

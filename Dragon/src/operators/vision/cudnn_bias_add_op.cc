@@ -7,101 +7,140 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void CuDNNBiasAddOp<Context>::RunWithType() {
-    TENSOR_FILL(Input(1), vector<int64_t>(1, dim));
+void CuDNNBiasAddOp<Context>::RunImpl() {
+    TENSOR_FILL(X(1), vec64_t({ axis_dim_ }));
 
-    if (data_format == "NCHW") {
-        cudnnSetTensor4dDesc<T>(&bias_desc, data_format,
-            vector<int64_t>({ 1, dim, 1, 1 }));
-        cudnnSetTensor4dDesc<T>(&output_desc, data_format,
-            vector<int64_t>({ outer_dim, dim, 1, inner_dim }));
-    } else if (data_format == "NHWC") {
-        cudnnSetTensor4dDesc<T>(&bias_desc, data_format,
-            vector<int64_t>({ 1, 1, 1, dim }));
-        cudnnSetTensor4dDesc<T>(&output_desc, data_format,
-            vector<int64_t>({ outer_dim, 1, inner_dim, dim }));
+    if (data_format() == "NCHW") {
+        CuDNNSetTensor4dDesc<T>(
+            &bias_desc_, data_format(),
+            vec64_t({ 1, axis_dim_, 1, 1 })
+        );
+        CuDNNSetTensor4dDesc<T>(
+            &output_desc_, data_format(),
+            vec64_t({ outer_dim_, axis_dim_, 1, inner_dim_ })
+        );
+    } else if (data_format() == "NHWC") {
+        CuDNNSetTensor4dDesc<T>(
+            &bias_desc_, data_format(),
+            vec64_t({ 1, 1, 1, axis_dim_ })
+        );
+        CuDNNSetTensor4dDesc<T>(
+            &output_desc_, data_format(),
+            vec64_t({ outer_dim_, 1, inner_dim_, axis_dim_ })
+        );
     }
 
-    auto* Bdata = Input(1).template data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    auto* bias = X(1).template data<T, Context>();
+    auto* y = Y(0)->template mutable_data<T, Context>();
 
     // Copy X to Y firstly if necessary
-    Output(0)->template CopyFrom<Context>(Input(0), ctx());
+    Y(0)->CopyFrom(X(0), ctx());
 
     CUDNN_CHECK(cudnnAddTensor(
         ctx()->cudnn_handle(),
-        CUDNNType<T>::one, bias_desc, Bdata,
-        CUDNNType<T>::one, output_desc, Ydata));
+        CuDNNType<T>::one,
+        bias_desc_, bias,
+        CuDNNType<T>::one,
+        output_desc_, y
+    ));
 }
 
 template <class Context>
 void CuDNNBiasAddOp<Context>::RunOnDevice() {
-    if (data_format == "NCHW") {
-        outer_dim = Input(0).dim(0);
-        dim = Input(0).dim(1);
-        inner_dim = Input(0).count(2);
-    } else if (data_format == "NHWC") {
-        outer_dim = Input(0).dim(0);
-        dim = Input(0).dim(-1);
-        inner_dim = Input(0).count(1) / dim;
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
-    Output(0)->ReshapeLike(Input(0));
-
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
-}
-
-DEPLOY_CUDNN(BiasAdd);
-
-template <class Context> template <typename T>
-void CuDNNBiasAddGradientOp<Context>::RunWithType() {
-    if (data_format == "NCHW") {
-        cudnnSetTensor4dDesc<T>(&input_desc, data_format,
-            vector<int64_t>({ outer_dim, dim, 1, inner_dim }));
-        cudnnSetTensor4dDesc<T>(&bias_desc, data_format,
-            vector<int64_t>({ 1, dim, 1, 1 }));
-    } else if (data_format == "NHWC") {
-        cudnnSetTensor4dDesc<T>(&input_desc, data_format,
-            vector<int64_t>({ outer_dim, 1, inner_dim, dim }));
-        cudnnSetTensor4dDesc<T>(&bias_desc, data_format,
-            vector<int64_t>({ 1, 1, 1, dim }));
+    if (data_format() == "NCHW") {
+        outer_dim_ = X(0).dim(0);
+        axis_dim_ = X(0).dim(1);
+        inner_dim_ = X(0).count(2);
+    } else if (data_format() == "NHWC") {
+        outer_dim_ = X(0).dim(0);
+        axis_dim_ = X(0).dim(-1);
+        inner_dim_ = X(0).count(1) / axis_dim_;
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: "
+                   << data_format();
     }
 
-    auto* dYdata = Input(-1).template data<T, Context>();
-    T* dBdata = Output(1)->template mutable_data<T, Context>();
+    Y(0)->ReshapeLike(X(0));
+
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(0), float16)) {
+        RunImpl<float16>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0),
+            { "float32", "float16" }
+        );
+    }
+}
+
+template <class Context> template <typename T>
+void CuDNNBiasAddGradientOp<Context>::RunImpl() {
+    if (data_format() == "NCHW") {
+        CuDNNSetTensor4dDesc<T>(
+            &input_desc_, data_format(),
+            vec64_t({ outer_dim_, axis_dim_, 1, inner_dim_ })
+        );
+        CuDNNSetTensor4dDesc<T>(
+            &bias_desc_, data_format(),
+            vec64_t({ 1, axis_dim_, 1, 1 })
+        );
+    } else if (data_format() == "NHWC") {
+        CuDNNSetTensor4dDesc<T>(
+            &input_desc_, data_format(),
+            vec64_t({ outer_dim_, 1, inner_dim_, axis_dim_ })
+        );
+        CuDNNSetTensor4dDesc<T>(
+            &bias_desc_, data_format(),
+            vec64_t({ 1, 1, 1, axis_dim_ })
+        );
+    }
+
+    auto* dy = X(-1).template data<T, Context>();
+    auto* db = Y(1)->template mutable_data<T, Context>();
 
     CUDNN_CHECK(cudnnConvolutionBackwardBias(
         ctx()->cudnn_handle(),
-        CUDNNType<T>::one, input_desc, dYdata,
-        CUDNNType<T>::zero, bias_desc, dBdata));
+        CuDNNType<T>::one,
+        input_desc_, dy,
+        CuDNNType<T>::zero,
+        bias_desc_, db
+    ));
 
-    if (Output(0)->name() != "NULL" &&
-        Output(0)->name() != Input(-1).name()) {
-        Output(0)->ReshapeLike(Input(-1));
-        Output(0)->template CopyFrom<Context>(Input(-1), ctx());
+    if (Y(0)->name() != "NULL" &&
+        Y(0)->name() != X(-1).name()) {
+        Y(0)->ReshapeLike(X(-1))
+            ->CopyFrom(X(-1), ctx());
     }
 }
 
 template <class Context>
 void CuDNNBiasAddGradientOp<Context>::RunOnDevice() {
-    if (data_format == "NCHW") {
-        outer_dim = Input(-1).dim(0);
-        dim = Input(-1).dim(1);
-        inner_dim = Input(-1).count(2);
-    } else if (data_format == "NHWC") {
-        outer_dim = Input(-1).dim(0);
-        dim = Input(-1).dim(-1);
-        inner_dim = Input(-1).count(1) / dim;
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+    if (data_format() == "NCHW") {
+        outer_dim_ = X(-1).dim(0);
+        axis_dim_ = X(-1).dim(1);
+        inner_dim_ = X(-1).count(2);
+    } else if (data_format() == "NHWC") {
+        outer_dim_ = X(-1).dim(0);
+        axis_dim_ = X(-1).dim(-1);
+        inner_dim_ = X(-1).count(1) / axis_dim_;
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format();
+    }
 
-    Output(1)->ReshapeLike(Input(0));
+    Y(1)->ReshapeLike(X(0));
 
-    if (XIsType(Input(-1), float)) RunWithType<float>();
-    else if (XIsType(Input(-1), float16)) RunWithType<float16>();
-    else LOG(FATAL) << DTypeHelper(Input(-1), { "float32", "float16" });
+    if (XIsType(X(-1), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(-1), float16)) {
+        RunImpl<float16>();
+    } else {
+        LOG(FATAL) << DTypeString(X(-1),
+            { "float32", "float16" }
+        );
+    }
 }
 
+DEPLOY_CUDNN(BiasAdd);
 DEPLOY_CUDNN(BiasAddGradient);
 
 }  // namespace dragon

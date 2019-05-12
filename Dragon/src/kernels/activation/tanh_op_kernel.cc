@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Tanh <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void Tanh<float, CPUContext>(
     const int               count,
@@ -13,14 +13,14 @@ template<> void Tanh<float, CPUContext>(
     float*                  y,
     CPUContext*             ctx) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         y[i] = std::tanh(x[i]);
     }
 }
 
-/*! TanhGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void TanhGrad<float, CPUContext>(
     const int               count,
@@ -29,7 +29,7 @@ template<> void TanhGrad<float, CPUContext>(
     float*                  dx,
     CPUContext*             ctx) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         dx[i] = dy[i] * (1 - y[i] * y[i]);

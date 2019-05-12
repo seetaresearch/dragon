@@ -22,17 +22,18 @@ class RepeatOp final : public Operator<Context> {
  public:
     RepeatOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", INT_MAX)) {
-        GET_ARGUMENT_WITH_DESC(int64_t, repeats, 1);
+          axis_(OpArg<int64_t>("axis", INT_MAX)) {
+        GET_ARG_WITH_DESC(int64_t, repeats, 1);
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template<typename T> void RunWithType();
+    template<typename T> void RunImpl();
 
  protected:
-    int64_t axis, outer_dim, repeat_dim, inner_dim;
-    DECLARE_ARGUMENT_WITH_DESC(int64_t, repeats);
+    int64_t axis_, axis_dim_;
+    int64_t outer_dim_, inner_dim_;
+    DECLARE_ARG_WITH_DESC(int64_t, repeats);
 };
 
 template <class Context>
@@ -40,21 +41,22 @@ class RepeatGradientOp final : public Operator<Context> {
  public:
     RepeatGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", INT_MAX)) {
-        GET_ARGUMENT_WITH_DESC(int64_t, repeats, 1);
+          axis_(OpArg<int64_t>("axis", INT_MAX)) {
+        GET_ARG_WITH_DESC(int64_t, repeats, 1);
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template<typename T> void RunWithType();
+    template<typename T> void RunImpl();
 
  protected:
-    int64_t axis, outer_dim, repeat_dim, inner_dim;
-    DECLARE_ARGUMENT_WITH_DESC(int64_t, repeats);
+    int64_t axis_, axis_dim_;
+    int64_t outer_dim_, inner_dim_;
+    DECLARE_ARG_WITH_DESC(int64_t, repeats);
 };
 
-DEFINE_ARGUMENT_WITH_DESC(int64_t, RepeatOp, repeats);
-DEFINE_ARGUMENT_WITH_DESC(int64_t, RepeatGradientOp, repeats);
+DEFINE_ARG_WITH_DESC(int64_t, RepeatOp, repeats);
+DEFINE_ARG_WITH_DESC(int64_t, RepeatGradientOp, repeats);
 
 }  // namespace dragon
 

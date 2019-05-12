@@ -5,90 +5,124 @@
 
 namespace dragon {
 
-#define DETERMINE_RUNTIME_ARGUMENTS(X) \
-    axis = OperatorBase::Arg<int64_t>("axis", 0); \
-    axis = axis < 0 ? axis + X.ndim() : axis; \
-    CHECK(axis >= 0 && axis < X.ndim()) \
-       << "\nExcepted the axis in [-" << X.ndim() << ", " << X.ndim() \
-       << "), got " << OperatorBase::Arg<int64_t>("axis", 0) << ".";
+#define DETERMINE_RUNTIME_ARGS(X) \
+    axis_ = OpArg<int64_t>("axis", 0); \
+    axis_ = axis_ < 0 ? axis_ + X.ndim() : axis_; \
+    CHECK(axis_ >= 0 && axis_ < X.ndim()) \
+       << "\nExcepted axis in [-" << X.ndim() << ", " << X.ndim() \
+       << "), got " << OpArg<int64_t>("axis", 0) << ".";
 
 template <class Context> template <typename T>
-void SoftmaxOp<Context>::RunWithType() {
-    DECLARE_MULTIPLIER(multiplier, Input(0).dim(axis));
-    auto* Xdata = Input(0).template data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    auto* WSdata = ws()->template caches<T, Context>({ Input(0).count() })[0];
+void SoftmaxOp<Context>::RunImpl() {
+    DECLARE_MULTIPLIER(multiplier, axis_dim_);
+    auto* x = X(0).template data<T, Context>();
+    auto* y = Y(0)->template mutable_data<T, Context>();
 
-    ctx()->template Copy<T, Context, Context>(
-        Input(0).count(), Ydata, Xdata);
+    auto* scratch = ws()
+        ->template data<T, Context>
+            ({ X(0).count() })[0];
+
+    math::Copy(X(0).count(), x, y, ctx());
 
     kernel::Softmax(
-        Output(0)->count(), Input(0).dim(axis),
-            outer_dim, inner_dim, multiplier,
-                Xdata, WSdata, Ydata, ctx());
+        outer_dim_,
+        axis_dim_,
+        inner_dim_,
+        multiplier,
+        x, scratch,
+        y, ctx()
+    );
 }
 
 template <class Context>
 void SoftmaxOp<Context>::RunOnDevice() {
-    DETERMINE_RUNTIME_ARGUMENTS(Input(0));
+    DETERMINE_RUNTIME_ARGS(X(0));
+    axis_dim_  = X(0).dim(axis_);
+    outer_dim_ = X(0).count(0, axis_);
+    inner_dim_ = X(0).count(axis_ + 1);
 
-    outer_dim = Input(0).count(0, axis);
-    inner_dim = Input(0).count(axis + 1);
-    Output(0)->ReshapeLike(Input(0));
+    Y(0)->ReshapeLike(X(0));
 
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else {
+        LOG(FATAL) << DTypeString(
+            X(0), { "float32" }
+        );
+    }
+}
+
+template <class Context> template <typename T>
+void SoftmaxGradientOp<Context>::RunImpl() {
+    DECLARE_MULTIPLIER(multiplier, axis_dim_);
+
+    auto* y  = X(0).template data<T, Context>();
+    auto* dy = X(1).template data<T, Context>();
+    auto* dx = Y(0)->template mutable_data<T, Context>();
+
+    auto* scratch = ws()
+        ->template data<T, Context>
+            ({ X(0).count() })[0];
+
+    math::Copy(X(0).count(), dy, dx, ctx());
+
+    kernel::SoftmaxGrad(
+        outer_dim_,
+        axis_dim_,
+        inner_dim_,
+        multiplier,
+        dy, y,
+        scratch,
+        dx, ctx()
+    );
+}
+
+template <class Context>
+void SoftmaxGradientOp<Context>::RunOnDevice() {
+    DETERMINE_RUNTIME_ARGS(X(0));
+    axis_dim_  = X(0).dim(axis_);
+    outer_dim_ = X(0).count(0, axis_);
+    inner_dim_ = X(0).count(axis_ + 1);
+
+    Y(0)->ReshapeLike(X(0));
+
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else {
+        LOG(FATAL) << DTypeString(
+            X(0), { "float32" }
+        );
+    }
 }
 
 DEPLOY_CPU(Softmax);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Softmax);
 #endif
-OPERATOR_SCHEMA(Softmax)
-    .NumInputs(1).NumOutputs(1)
-    .Inplace({ { 0, 0 } });
-
-template <class Context> template <typename T>
-void SoftmaxGradientOp<Context>::RunWithType() {
-    DECLARE_MULTIPLIER(multiplier, Input(0).dim(axis));
-    auto* dYdata = Input(-1).template data<T, Context>();
-    auto* Ydata = Input(0).template data<T, Context>();
-    auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    auto* WSdata = ws()->template caches<T, Context>(
-        { Input(0).count() })[0];
-
-    ctx()->template Copy<T, Context, Context>(
-        Input(0).count(), dXdata, dYdata);
-
-    kernel::SoftmaxGrad(
-        Output(0)->count(), Input(0).dim(axis),
-            outer_dim, inner_dim, multiplier,
-                dYdata, Ydata, WSdata, dXdata, ctx());
-}
-
-template <class Context>
-void SoftmaxGradientOp<Context>::RunOnDevice() {
-    DETERMINE_RUNTIME_ARGUMENTS(Input(0));
-
-    outer_dim = Input(0).count(0, axis);
-    inner_dim = Input(0).count(axis + 1);
-    Output(0)->ReshapeLike(Input(0));
-
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
-}
 
 DEPLOY_CPU(SoftmaxGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(SoftmaxGradient);
 #endif
 
+OPERATOR_SCHEMA(Softmax)
+     /* X */
+    .NumInputs(1)
+     /* Y */
+    .NumOutputs(1)
+     /* X => Y */
+    .Inplace({ { 0, 0 } });
+
 OPERATOR_SCHEMA(SoftmaxGradient)
-    .NumInputs(2).NumOutputs(1)
+     /* Y, dY */
+    .NumInputs(2)
+     /* dX */
+    .NumOutputs(1)
+     /* dY => dX */
     .Inplace({ { 1, 0 } });
 
 REGISTER_GRADIENT(Softmax, InplaceGradientMaker);
 
-#undef DETERMINE_RUNTIME_ARGUMENTS
+#undef DETERMINE_RUNTIME_ARGS
 
 }  // namespace dragon

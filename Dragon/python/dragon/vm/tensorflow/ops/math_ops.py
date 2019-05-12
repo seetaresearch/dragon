@@ -78,6 +78,7 @@ def div(x, y, name=None):
 
 
 def cast(x, dtype, name=None):
+    if hasattr(dtype, 'name'): dtype = dtype.name
     return _ops.Cast(x, dtype=dtype, name=name)
 
 

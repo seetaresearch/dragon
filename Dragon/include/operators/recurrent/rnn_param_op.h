@@ -22,31 +22,31 @@ class RNNParamSetOp final : public Operator<Context> {
  public:
     RNNParamSetOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          param_type(OperatorBase::Arg<string>("param_type", "matrix")),
-          rnn_mode(OperatorBase::Arg<string>("rnn_mode", "rnn_tanh")),
-          num_layers(OperatorBase::Arg<int64_t>("num_layers", 1)),
-          num_directions(OperatorBase::Arg<int64_t>("num_directions", 1)),
-          input_size(OperatorBase::Arg<int64_t>("input_size", 0)),
-          hidden_size(OperatorBase::Arg<int64_t>("hidden_size", 0)),
-          layer_id(OperatorBase::Arg<int64_t>("layer_id", 0)),
-          param_id(OperatorBase::Arg<int64_t>("param_id", 0)) {
-        if (rnn_mode == "rnn_tanh") { num_params = 2; spliter = 1; }
-        else if (rnn_mode == "rnn_relu") { num_params = 2; spliter = 1; }
-        else if (rnn_mode == "lstm") { num_params = 8; spliter = 4; }
-        else if (rnn_mode == "gru") { num_params = 6; spliter = 3; }
-        else LOG(FATAL) << "Unsupported rnn mode: " << rnn_mode;
-        input_ex_size = hidden_size * num_directions;
+          param_type_(OpArg<string>("param_type", "matrix")),
+          nlayers_(OpArg<int64_t>("num_layers", 1)),
+          ndirections_(OpArg<int64_t>("num_directions", 1)),
+          input_size_(OpArg<int64_t>("input_size", 0)),
+          hidden_size_(OpArg<int64_t>("hidden_size", 0)),
+          layer_id_(OpArg<int64_t>("layer_id", 0)),
+          param_id_(OpArg<int64_t>("param_id", 0)) {
+        auto mode_str = OpArg<string>("rnn_mode", "rnn_tanh");
+        if (mode_str == "rnn_tanh") { nparams_ = 2; spliter_ = 1; }
+        else if (mode_str == "rnn_relu") { nparams_ = 2; spliter_ = 1; }
+        else if (mode_str == "lstm") { nparams_ = 8; spliter_ = 4; }
+        else if (mode_str == "gru") { nparams_ = 6; spliter_ = 3; }
+        else LOG(FATAL) << "Unknown RNN Mode: " << mode_str;
+        input_ex_size_ = hidden_size_ * ndirections_;
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    string param_type, rnn_mode;
-    int64_t num_layers, num_directions, num_params, spliter;
-    int64_t input_size, input_ex_size, hidden_size;
-    int64_t layer_id, param_id;
+    string param_type_;
+    int64_t layer_id_, param_id_;
+    int64_t nlayers_, ndirections_, nparams_, spliter_;
+    int64_t input_size_, hidden_size_, input_ex_size_;
 };
 
 }  // namespace dragon

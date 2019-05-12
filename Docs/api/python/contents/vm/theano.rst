@@ -74,13 +74,6 @@ which will enhance all frameworks in the VirtualBox.
 |para| We remove the mechanism of `SharedVaraible`_ due to the **memory-storage** is taken by the backend.
 Following the `Caffe2`_ and `TensorFlow`_, we attribute it to the **Feed** of data streams.
 
-|sectitle| □ |nbsp| `Scan`_
-
-|para| We use this primitive to create the dynamic computation graphs.
-
-|para| By taking a template of the sub-graph, `Scan`_ unfolds it for specific loop steps,
-which is very useful to model sentence-level **Recurrent Neural Networks**.
-
 |context| For detailed Documentation, see: `Compile`_.
 
 |paratitle| **Tensor**
@@ -148,7 +141,6 @@ We are sorry for removing some odd implementations supported by the original `Th
 
 .. _Function: theano/compile.html#dragon.vm.theano.compile.function.function
 .. _Shared: theano/compile.html#dragon.vm.theano.compile.sharedvalue.shared
-.. _Scan: theano/compile.html#dragon.vm.theano.compile.scan.scan
 .. _FeedTensor: ../core/workspace.html#dragon.core.workspace.FeedTensor
 .. _SharedVaraible: http://deeplearning.net/software/theano/library/compile/shared.html
 

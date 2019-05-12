@@ -8,16 +8,16 @@ namespace dragon {
 
 namespace kernel {
 
-/*! SGDUpdate <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _SGDUpdate(
-    const int               count,
+    const int               nthreads,
     const T                 lr,
     const T                 momentum,
     T*                      g,
     T*                      h) {
-    CUDA_1D_KERNEL_LOOP(i, count) {
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
         T hi = h[i];
         g[i] = h[i] = momentum * hi + lr * g[i];
     }
@@ -30,10 +30,11 @@ template <> void SGDUpdate<float, CUDAContext>(
     float*                  g,
     float*                  h,
     CUDAContext*            ctx) {
-    _SGDUpdate<float>
+    _SGDUpdate
         << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, lr, momentum, g, h);
+             0, ctx->cuda_stream() >> >(
+        count, lr, momentum, g, h
+    );
 }
 
 }  // namespace kernel

@@ -11,39 +11,43 @@ namespace kernel {
 
 template <typename T>
 __global__ void _GradientTwoSum(
-    const int               count,
+    const int               nthreads,
     const T*                dy1,
     const T*                dy2,
     T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        dx[idx] += (dy1[idx] + dy2[idx]);
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+        dx[i] += (dy1[i] + dy2[i]);
     }
 }
 
 /*! GradientTwoSum <T = float16, Device = CUDA> */
 
 template <> __global__ void _GradientTwoSum<half>(
-    const int               count,
+    const int               nthreads,
     const half*             dy1,
     const half*             dy2,
     half*                   dx) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 530
-        dx[idx] = __hadd(dx[idx],
-            __hadd(dy1[idx], dy2[idx]));
+        dx[i] = __hadd(
+            dx[i],
+            __hadd(dy1[i], dy2[i])
+        );
 #endif
     }
 }
 
 template <> __global__ void _GradientTwoSum<half2>(
-    const int               count,
+    const int               nthreads,
     const half2*            dy1,
     const half2*            dy2,
     half2*                   dx) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 530
-        dx[idx] = __hadd2(dx[idx],
-            __hadd2(dy1[idx], dy2[idx]));
+        dx[i] = __hadd2(
+            dx[i],
+            __hadd2(dy1[i], dy2[i])
+        );
 #endif
     }
 }
@@ -57,10 +61,11 @@ template <> __global__ void _GradientTwoSum<half2>(
         const T*                dy2, \
         T*                      dx, \
         CUDAContext*            ctx) { \
-        _GradientTwoSum<T> \
+        _GradientTwoSum \
             << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> > \
-            (count, dy1, dy2, dx); \
+                 0, ctx->cuda_stream() >> >( \
+            count, dy1, dy2, dx \
+        ); \
     }
 
 DEFINE_GRAD_SUM2_KERNEL_LAUNCHER(int8_t);
@@ -77,19 +82,23 @@ template <> void GradientTwoSum<float16, CUDAContext>(
     float16*                dx,
     CUDAContext*            ctx) {
     if ((count & 1) == 0) {
-        _GradientTwoSum<half2>
+        _GradientTwoSum
             << < CUDA_BLOCKS(count >> 2), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (count >> 2, reinterpret_cast<const half2*>(dy1),
-                reinterpret_cast<const half2*>(dy2),
-                    reinterpret_cast<half2*>(dx));
+                 0, ctx->cuda_stream() >> >(
+            count >> 2,
+            reinterpret_cast<const half2*>(dy1),
+            reinterpret_cast<const half2*>(dy2),
+            reinterpret_cast<half2*>(dx)
+        );
     } else {
-        _GradientTwoSum<half>
+        _GradientTwoSum
             << < CUDA_BLOCKS(count), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >
-            (count, reinterpret_cast<const half*>(dy1),
-                reinterpret_cast<const half*>(dy2),
-                    reinterpret_cast<half*>(dx));
+                 0, ctx->cuda_stream() >> >(
+            count,
+            reinterpret_cast<const half*>(dy1),
+            reinterpret_cast<const half*>(dy2),
+            reinterpret_cast<half*>(dx)
+        );
     }
 }
 

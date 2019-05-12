@@ -5,9 +5,9 @@ namespace dragon {
 
 namespace kernel {
 
-/*! DropBlock2d <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
-void _DropBlock2d_NCHW(
+void _DropBlock2dNCHW(
     const int               N,
     const int               C,
     const int               H,
@@ -38,7 +38,7 @@ void _DropBlock2d_NCHW(
     }  // End n
 }
 
-void _DropBlock2d_NHWC(
+void _DropBlock2dNHWC(
     const int               N,
     const int               C,
     const int               H,
@@ -82,15 +82,22 @@ template <> void DropBlock2d<CPUContext>(
     int*                    mask,
     CPUContext*             ctx) {
     const int count = N * C * seed_h * seed_w;
-    math::RandomBernoulli<uint32_t, CPUContext>(
-        count, gamma, seed, ctx);
+    math::RandomBernoulli(count, gamma, seed, ctx);
     if (data_format == "NCHW") {
-        _DropBlock2d_NCHW(N, C, H, W,
-            seed_h, seed_w, block_size, seed, mask);
+        _DropBlock2dNCHW(
+            N, C, H, W,
+            seed_h, seed_w,
+            block_size, seed, mask
+        );
     } else if (data_format == "NHWC") {
-        _DropBlock2d_NHWC(N, C, H, W,
-            seed_h, seed_w, block_size, seed, mask);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+        _DropBlock2dNHWC(
+            N, C, H, W,
+            seed_h, seed_w,
+            block_size, seed, mask
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
 }  // namespace kernel

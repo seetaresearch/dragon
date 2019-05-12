@@ -19,45 +19,45 @@
 namespace dragon {
 
 template <class Context>
-class DropBlock2dOp final : public Operator<Context> {
+class DropBlock2dOp final
+    : public Operator<Context> {
  public:
     DropBlock2dOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          block_size(OperatorBase::Arg<int64_t>("block_size", 7)),
-          alpha(OperatorBase::Arg<float>("alpha", 1.f)),
-          decrement(OperatorBase::Arg<float>("decrement", 0.f)),
-          data_format(OperatorBase::Arg<string>("data_format", "NCHW")) {
-        GET_ARGUMENT_WITH_DESC(float, keep_prob, 0.9f);
-        SwitchToPhase(OperatorBase::Arg<string>("phase", ""));
+          alpha_(OpArg<float>("alpha", 1.f)),
+          dec_(OpArg<float>("decrement", 0.f)),
+          block_size_(OpArg<int64_t>("block_size", 7)) {
+        GET_ARG_WITH_DESC(float, keep_prob, 0.9f);
+        SwitchToPhase(OpArg<string>("phase", ""));
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t block_size, seed_h, seed_w;
-    int64_t n, c, h, w;
-    float alpha, decrement, apply_prob = 1., gamma;
-    string data_format;
-    vector<int64_t> seed_dims;
-    DECLARE_ARGUMENT_WITH_DESC(float, keep_prob);
+    vec64_t seed_dims;
+    int64_t n_, c_, h_, w_;
+    int64_t block_size_, seed_h_, seed_w_;
+    float alpha_, dec_, prob_ = 1., gamma_;
+    DECLARE_ARG_WITH_DESC(float, keep_prob);
 };
 
 template <class Context>
-class DropBlock2dGradientOp final : public Operator<Context> {
+class DropBlock2dGradientOp final
+    : public Operator<Context> {
  public:
     DropBlock2dGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws) {
-        SwitchToPhase(OperatorBase::Arg<string>("phase", ""));
+        SwitchToPhase(OpArg<string>("phase", ""));
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 };
 
-DEFINE_ARGUMENT_WITH_DESC(float, DropBlock2dOp, keep_prob);
+DEFINE_ARG_WITH_DESC(float, DropBlock2dOp, keep_prob);
 
 }  // namespace dragon
 

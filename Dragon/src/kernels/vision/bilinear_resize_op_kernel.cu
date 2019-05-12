@@ -7,10 +7,10 @@ namespace dragon {
 
 namespace kernel {
 
-/*! BilinearResize <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
-__global__ void _BilinearResize_NCHW(
+__global__ void _BilinearResizeNCHW(
     const int               nthreads,
     const int               C,
     const int               H,
@@ -21,38 +21,38 @@ __global__ void _BilinearResize_NCHW(
     const float             scale_w,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        const int w = y_idx % out_w;
-        const int h = (y_idx / out_w) % out_h;
-        const int c = (y_idx / out_w / out_h) % C;
-        const int n = y_idx / out_w / out_w / C;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        const int w = yi % out_w;
+        const int h = (yi / out_w) % out_h;
+        const int c = (yi / out_w / out_h) % C;
+        const int n = yi / out_w / out_w / C;
 
         const float h_in = h * scale_h;
-        const int top_y_idx = floorf(h_in);
-        const int bottom_y_idx = (h_in < H - 1) ? ceilf(h_in) : H - 1;
-        const float y_lerp = h_in - top_y_idx;
+        const int tyi = floorf(h_in);
+        const int byi = h_in < H - 1 ? ceilf(h_in) : H - 1;
+        const T ylerp = h_in - tyi;
 
         const float w_in = w * scale_w;
-        const int left_x_idx = floorf(w_in);
-        const int right_x_idx = (w_in < W - 1) ? ceilf(w_in) : W - 1;
-        const float x_lerp = w_in - left_x_idx;
+        const int lxi = floorf(w_in);
+        const int rxi = (w_in < W - 1) ? ceilf(w_in) : W - 1;
+        const T xlerp = w_in - lxi;
 
-        const int NCHT = (n * C + c) * H + top_y_idx;
-        const int NCHB = (n * C + c) * H + bottom_y_idx;
+        const int ncht = (n * C + c) * H + tyi;
+        const int nchb = (n * C + c) * H + byi;
 
-        const float top_left(x[NCHT * W + left_x_idx]);
-        const float top_right(x[NCHT * W + right_x_idx]);
-        const float bottom_left(x[NCHB * W + left_x_idx]);
-        const float bottom_right(x[NCHB * W + right_x_idx]);
+        const T tl(x[ncht * W + lxi]);
+        const T tr(x[ncht * W + rxi]);
+        const T bl(x[nchb * W + lxi]);
+        const T br(x[nchb * W + rxi]);
 
-        const float top = top_left + (top_right - top_left) * x_lerp;
-        const float bottom = bottom_left + (bottom_right - bottom_left) * x_lerp;
-        y[y_idx] = top + (bottom - top) * y_lerp;
+        const T t = tl + (tr - tl) * xlerp;
+        const T b = bl + (br - bl) * xlerp;
+        y[yi] = t + (b - t) * ylerp;
     }
 }
 
 template <typename T>
-__global__ void _BilinearResize_NHWC(
+__global__ void _BilinearResizeNHWC(
     const int               nthreads,
     const int               C,
     const int               H,
@@ -63,33 +63,33 @@ __global__ void _BilinearResize_NHWC(
     const float             scale_w,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        const int c = y_idx % C;
-        const int w = (y_idx / C) % out_w;
-        const int h = (y_idx / C / out_w) % out_h;
-        const int n = y_idx / C / out_w / out_h;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        const int c = yi % C;
+        const int w = (yi / C) % out_w;
+        const int h = (yi / C / out_w) % out_h;
+        const int n = yi / C / out_w / out_h;
 
         const float h_in = h * scale_h;
-        const int top_y_idx = floorf(h_in);
-        const int bottom_y_idx = (h_in < H - 1) ? ceilf(h_in) : H - 1;
-        const float y_lerp = h_in - top_y_idx;
+        const int tyi = floorf(h_in);
+        const int byi = (h_in < H - 1) ? ceilf(h_in) : H - 1;
+        const T ylerp = h_in - tyi;
 
         const float w_in = w * scale_w;
-        const int left_x_idx = floorf(w_in);
-        const int right_x_idx = (w_in < W - 1) ? ceilf(w_in) : W - 1;
-        const float x_lerp = w_in - left_x_idx;
+        const int lxi = floorf(w_in);
+        const int rxi = (w_in < W - 1) ? ceilf(w_in) : W - 1;
+        const T xlerp = w_in - lxi;
 
-        const int NHT = n * H + top_y_idx;
-        const int NHB = n * H + bottom_y_idx;
+        const int nht = n * H + tyi;
+        const int nhb = n * H + byi;
 
-        const float top_left(x[(NHT * W + left_x_idx) * C + c]);
-        const float top_right(x[(NHT * W + right_x_idx) * C + c]);
-        const float bottom_left(x[(NHB * W + left_x_idx) * C + c]);
-        const float bottom_right(x[(NHB * W + right_x_idx) * C + c]);
+        const T tl(x[(nht * W + lxi) * C + c]);
+        const T tr(x[(nht * W + rxi) * C + c]);
+        const T bl(x[(nhb * W + lxi) * C + c]);
+        const T br(x[(nhb * W + rxi) * C + c]);
 
-        const float top = top_left + (top_right - top_left) * x_lerp;
-        const float bottom = bottom_left + (bottom_right - bottom_left) * x_lerp;
-        y[y_idx] = top + (bottom - top) * y_lerp;
+        const T t = tl + (tr - tl) * xlerp;
+        const T b = bl + (br - bl) * xlerp;
+        y[yi] = t + (b - t) * ylerp;
     }
 }
 
@@ -105,27 +105,31 @@ template <> void BilinearResize<float, CUDAContext>(
     float*                  y,
     CUDAContext*            ctx) {
     auto nthreads = N * C * out_h * out_w;
-    const float scale_h = (float)H / out_h;
-    const float scale_w = (float)W / out_w;
+    auto scale_h = (float)H / (float)out_h;
+    auto scale_w = (float)W / (float)out_w;
      if (data_format == "NCHW") {
-         _BilinearResize_NCHW<float>
+         _BilinearResizeNCHW
              << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                  0, ctx->cuda_stream() >> >
-             (nthreads, C, H, W, out_h, out_w,
-                 scale_h, scale_w, x, y);
+                  0, ctx->cuda_stream() >> >(
+             nthreads, C, H, W, out_h, out_w,
+             scale_h, scale_w, x, y
+        );
     } else if(data_format == "NHWC") {
-         _BilinearResize_NHWC<float>
+         _BilinearResizeNHWC
              << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                  0, ctx->cuda_stream() >> >
-             (nthreads, C, H, W, out_h, out_w,
-                 scale_h, scale_w, x, y);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+                  0, ctx->cuda_stream() >> >(
+             nthreads, C, H, W, out_h, out_w,
+             scale_h, scale_w, x, y
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
-/*! BilinearResizeGrad <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
-__global__ void _BilinearResizeGrad_NCHW(
+__global__ void _BilinearResizeGradNCHW(
     const int               nthreads,
     const int               C,
     const int               H,
@@ -136,36 +140,36 @@ __global__ void _BilinearResizeGrad_NCHW(
     const float             scale_w,
     const T*                dy,
     T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        const int w = y_idx % out_w;
-        const int h = (y_idx / out_w) % out_h;
-        const int c = (y_idx / out_w / out_h) % C;
-        const int n = y_idx / out_w / out_w / C;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        const int w = yi % out_w;
+        const int h = (yi / out_w) % out_h;
+        const int c = (yi / out_w / out_h) % C;
+        const int n = yi / out_w / out_w / C;
 
         const float h_in = h * scale_h;
-        const int top_y_idx = floorf(h_in);
-        const int bottom_y_idx = (h_in < H - 1) ? ceilf(h_in) : H - 1;
-        const float y_lerp = h_in - top_y_idx;
+        const int tyi = floorf(h_in);
+        const int byi = (h_in < H - 1) ? ceilf(h_in) : H - 1;
+        const T ylerp = h_in - tyi;
 
         const float w_in = w * scale_w;
-        const int left_x_idx = floorf(w_in);
-        const int right_x_idx = (w_in < W - 1) ? ceilf(w_in) : W - 1;
-        const float x_lerp = w_in - left_x_idx;
+        const int lxi = floorf(w_in);
+        const int rxi = (w_in < W - 1) ? ceilf(w_in) : W - 1;
+        const T xlerp = w_in - lxi;
 
-        const int NCHT = (n * C + c) * H + top_y_idx;
-        const int NCHB = (n * C + c) * H + bottom_y_idx;
-        const float dtop = (1 - y_lerp) * dy[y_idx];
-        const float dbottom = y_lerp * dy[y_idx];
+        const int ncht = (n * C + c) * H + tyi;
+        const int nchb = (n * C + c) * H + byi;
+        const T dt = (T(1) - ylerp) * dy[yi];
+        const T db = ylerp * dy[yi];
 
-        atomicAdd(&dx[NCHT * W + left_x_idx], static_cast<T>((1 - x_lerp) * dtop));
-        atomicAdd(&dx[NCHT * W + right_x_idx], static_cast<T>(x_lerp * dtop));
-        atomicAdd(&dx[NCHB * W + left_x_idx], static_cast<T>((1 - x_lerp) * dbottom));
-        atomicAdd(&dx[NCHB * W + right_x_idx], static_cast<T>(x_lerp * dbottom));
+        atomicAdd(&dx[ncht * W + lxi], (T(1) - xlerp) * dt);
+        atomicAdd(&dx[ncht * W + rxi], xlerp * dt);
+        atomicAdd(&dx[nchb * W + lxi], (T(1) - xlerp) * db);
+        atomicAdd(&dx[nchb * W + rxi], xlerp * db);
     }
 }
 
 template <typename T>
-__global__ void _BilinearResizeGrad_NHWC(
+__global__ void _BilinearResizeGradNHWC(
     const int               nthreads,
     const int               C,
     const int               H,
@@ -176,31 +180,31 @@ __global__ void _BilinearResizeGrad_NHWC(
     const float             scale_w,
     const T*                dy,
     T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        const int c = y_idx % C;
-        const int w = (y_idx / C) % out_w;
-        const int h = (y_idx / C / out_w) % out_h;
-        const int n = y_idx / C / out_w / out_h;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        const int c = yi % C;
+        const int w = (yi / C) % out_w;
+        const int h = (yi / C / out_w) % out_h;
+        const int n = yi / C / out_w / out_h;
 
         const float h_in = h * scale_h;
-        const int top_y_idx = floorf(h_in);
-        const int bottom_y_idx = (h_in < H - 1) ? ceilf(h_in) : H - 1;
-        const float y_lerp = h_in - top_y_idx;
+        const int tyi = floorf(h_in);
+        const int byi = (h_in < H - 1) ? ceilf(h_in) : H - 1;
+        const T ylerp = h_in - tyi;
 
         const float w_in = w * scale_w;
-        const int left_x_idx = floorf(w_in);
-        const int right_x_idx = (w_in < W - 1) ? ceilf(w_in) : W - 1;
-        const float x_lerp = w_in - left_x_idx;
+        const int lxi = floorf(w_in);
+        const int rxi = (w_in < W - 1) ? ceilf(w_in) : W - 1;
+        const T xlerp = w_in - lxi;
 
-        const int NHT = n * H + top_y_idx;
-        const int NHB = n * H + bottom_y_idx;
-        const float dtop = (1 - y_lerp) * dy[y_idx];
-        const float dbottom = y_lerp * dy[y_idx];
+        const int nht = n * H + tyi;
+        const int nhb = n * H + byi;
+        const T dt = (T(1) - ylerp) * dy[yi];
+        const T db = ylerp * dy[yi];
 
-        atomicAdd(&dx[(NHT * W + left_x_idx) * C + c], static_cast<T>((1 - x_lerp) * dtop));
-        atomicAdd(&dx[(NHT * W + right_x_idx) * C + c], static_cast<T>(x_lerp * dtop));
-        atomicAdd(&dx[(NHB * W + left_x_idx) * C + c], static_cast<T>((1 - x_lerp) * dbottom));
-        atomicAdd(&dx[(NHB * W + right_x_idx) * C + c], static_cast<T>(x_lerp * dbottom));
+        atomicAdd(&dx[(nht * W + lxi) * C + c], (T(1) - xlerp) * dt);
+        atomicAdd(&dx[(nht * W + rxi) * C + c], xlerp * dt);
+        atomicAdd(&dx[(nhb * W + lxi) * C + c], (T(1) - xlerp) * db);
+        atomicAdd(&dx[(nhb * W + rxi) * C + c], xlerp * db);
     }
 }
 
@@ -216,21 +220,25 @@ template <> void BilinearResizeGrad<float, CUDAContext>(
     float*                  dx,
     CUDAContext*            ctx) {
     auto nthreads = N * C * out_h * out_w;
-    const float scale_h = (float)H / out_h;
-    const float scale_w = (float)W / out_w;
+    auto scale_h = (float)H / (float)out_h;
+    auto scale_w = (float)W / (float)out_w;
      if (data_format == "NCHW") {
-         _BilinearResizeGrad_NCHW<float>
+         _BilinearResizeGradNCHW
              << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                  0, ctx->cuda_stream() >> >
-             (nthreads, C, H, W, out_h, out_w,
-                 scale_h, scale_w, dy, dx);
+                  0, ctx->cuda_stream() >> >(
+             nthreads, C, H, W, out_h, out_w,
+             scale_h, scale_w, dy, dx
+        );
     } else if(data_format == "NHWC") {
-         _BilinearResizeGrad_NHWC<float>
+         _BilinearResizeGradNHWC
              << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                  0, ctx->cuda_stream() >> >
-             (nthreads, C, H, W, out_h, out_w,
-                 scale_h, scale_w, dy, dx);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+                  0, ctx->cuda_stream() >> >(
+             nthreads, C, H, W, out_h, out_w,
+             scale_h, scale_w, dy, dx
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
 }  // namespace kernel

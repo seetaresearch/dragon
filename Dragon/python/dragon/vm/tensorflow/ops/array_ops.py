@@ -20,6 +20,10 @@ from dragon.core.tensor import Tensor as _Tensor
 from dragon.vm.tensorflow.framework import dtypes
 
 
+def identity(input, name=None):
+    return input
+
+
 def expand_dims(input, axis=None, name=None, dim=None):
     if dim is not None:
         if axis is not None:

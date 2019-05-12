@@ -19,9 +19,9 @@ namespace dragon {
 template <class Context>
 RunOp<Context>::RunOp(const OperatorDef& def, Workspace* ws)
     : Operator<Context>(def, ws),
-      module(OperatorBase::Arg<string>("module", "")),
-      op(OperatorBase::Arg<string>("op", "")),
-      param_str((OperatorBase::Arg<string>("param_str", ""))) {
+      module(OpArg<string>("module", "")),
+      op(OpArg<string>("op", "")),
+      param_str((OpArg<string>("param_str", ""))) {
     // Optimization for all python ops
     if (!AllowRun()) return; this->do_sync_ = false;
 
@@ -36,22 +36,27 @@ RunOp<Context>::RunOp(const OperatorDef& def, Workspace* ws)
     self = PyObject_CallObject(py_op, NULL);
 
     // Wrap inputs and outputs
-    inputs = PyList_New(InputSize());
-    for (int i = 0; i < InputSize(); i++)
-        PyList_SetItem(inputs, i, CS2Bytes(Input(i).name()));
-    outputs = PyList_New(OutputSize());
-    for (int i = 0; i < OutputSize(); i++)
-        PyList_SetItem(outputs, i, CS2Bytes(Output(i)->name()));
+    inputs = PyList_New(XSize());
+    for (int i = 0; i < XSize(); i++)
+        PyList_SetItem(inputs, i,
+            CS2Bytes(X(i).name()));
+
+    outputs = PyList_New(YSize());
+    for (int i = 0; i < YSize(); i++)
+        PyList_SetItem(outputs, i,
+            CS2Bytes(Y(i)->name()));
 
     // Backward compatibility: param_str
     PyObject_SetAttr(self, Bytes("param_str"), CS2Bytes(param_str));
     PyObject_SetAttr(self, Bytes("param_str_"), CS2Bytes(param_str));
 
     // Backward compatibility: self.setup(inputs, outputs)
-    if (PyObject_HasAttr(self, Bytes("setup")))
+    if (PyObject_HasAttr(self, Bytes("setup"))) {
         CHECK(PyObject_CallMethod(
-            self, "setup", "OO", inputs, outputs))
-                << CallMethodHelper("setup");
+            self, "setup", "OO",
+                inputs, outputs
+        )) << CallMethodHelper("setup");
+    }
 }
 
 template <class Context>
@@ -74,22 +79,25 @@ void RunOp<Context>::RunOnDevice() {
     // Reset phase
     PyObject_SetAttr(self, Bytes("phase"), CS2Bytes(phase()));
 
-    // Backward compatibility: reshape(inputs, outputs)
+    // Backward compatibility: %self.reshape(*)%
     if (PyObject_HasAttr(self, Bytes("reshape"))) {
         CHECK(PyObject_CallMethod(
-            self, "reshape", "OO", inputs, outputs))
-                << CallMethodHelper("reshape");
+            self, "reshape", "OO",
+                inputs, outputs
+        )) << CallMethodHelper("reshape");
     }
 
     // Overloaded run inferfaces
     if (PyObject_HasAttr(self, Bytes("forward"))) {
         CHECK(PyObject_CallMethod(
-            self, "forward", "OO", inputs, outputs))
-                << CallMethodHelper("forward");
+            self, "forward", "OO",
+                inputs, outputs
+        )) << CallMethodHelper("forward");
     } else if (PyObject_HasAttr(self, Bytes("run"))) {
         CHECK(PyObject_CallMethod(
-            self, "run", "OO", inputs, outputs))
-                << CallMethodHelper("run");
+            self, "run", "OO",
+                inputs, outputs
+        )) << CallMethodHelper("run");
     }
 }
 
@@ -110,22 +118,25 @@ void TemplateGradientOp<Context>::RunOnDevice() {
     PyObject_SetAttr(this->self,
         Bytes("phase"), CS2Bytes(phase()));
 
-    // Backward compatibility: reshape(inputs, outputs)
+    // Backward compatibility: %self.reshape(*)%
     if (PyObject_HasAttr(this->self, Bytes("reshape"))) {
-        CHECK(PyObject_CallMethod(this->self, "reshape",
-            "OO", this->inputs, this->outputs))
-                << this->CallMethodHelper("reshape");
+        CHECK(PyObject_CallMethod(
+            this->self, "reshape", "OO",
+                this->inputs, this->outputs
+        )) << this->CallMethodHelper("reshape");
     }
 
     // Overloaded run inferfaces
     if (PyObject_HasAttr(this->self, Bytes("backward"))) {
-        CHECK(PyObject_CallMethod(this->self, "backward",
-            "OO", this->inputs, this->outputs))
-                << this->CallMethodHelper("backward");
+        CHECK(PyObject_CallMethod(
+            this->self, "backward", "OO",
+                this->inputs, this->outputs
+        )) << this->CallMethodHelper("backward");
     } else if (PyObject_HasAttr(this->self, Bytes("grad"))) {
-        CHECK(PyObject_CallMethod(this->self, "grad",
-            "OO", this->inputs, this->outputs))
-                << this->CallMethodHelper("grad");
+        CHECK(PyObject_CallMethod(
+            this->self, "grad", "OO",
+                this->inputs, this->outputs
+        )) << this->CallMethodHelper("grad");
     }
 }
 
@@ -144,7 +155,7 @@ OPERATOR_SCHEMA(TemplateGradient);
 class GetTemplateGradient final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GetTemplateGradient);
-    vector<OperatorDef> MakeDefs() override {
+    vector<OperatorDef> MakeDef() override {
         vector<string> inputs, outputs;
         for (auto input : def.input()) inputs.push_back(input);
         for (int i = 0; i < def.output_size(); i++) inputs.push_back(GO(i));
@@ -152,6 +163,7 @@ class GetTemplateGradient final : public GradientMakerBase {
         return SingleDef(def.type() + "Gradient", "", inputs, outputs);
     }
 };
+
 REGISTER_GRADIENT(Template, GetTemplateGradient);
 
 }  // namespace dragon

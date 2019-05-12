@@ -22,17 +22,17 @@ class MomentsOp final : public Operator<Context> {
  public:
     MomentsOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axes(OperatorBase::Args<int64_t>("axes")),
-          keep_dims(OperatorBase::Arg<int64_t>("keep_dims", 0)) {}
+          axes_(OpArgs<int64_t>("axes")),
+          keep_dims_(OpArg<int64_t>("keep_dims", 0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename Tx, typename Ty> void RunWithType();
+    template <typename Tx, typename Ty> void RunImpl();
 
  protected:
-    int64_t keep_dims;
-    vector<int64_t> dims, axes;
-    vector<int> dims32, axes32;
+    int64_t keep_dims_;
+    vec64_t dims_, axes_;
+    vec32_t dims32_, axes32_;
 };
 
 }  // namespace dragon

@@ -24,23 +24,31 @@ void IncreaseIndexInDims(
 }
 
 bool IsRowwiseBroadcast(
-    const std::vector<int64_t>&     A_dims,
-    const std::vector<int64_t>&     B_dims,
-    int*                            rows,
-    int*                            cols) {
-    auto a_size = std::accumulate(A_dims.data(),
-        A_dims.data() + A_dims.size(), 1, std::multiplies<int64_t>());
-    auto b_size = std::accumulate(B_dims.data(),
-        B_dims.data() + B_dims.size(), 1, std::multiplies<int64_t>());
+    const vec64_t&          A_dims,
+    const vec64_t&          B_dims,
+    int*                    rows,
+    int*                    cols) {
+    auto a_size = std::accumulate(
+        A_dims.data(),
+        A_dims.data() + A_dims.size(),
+        1, std::multiplies<int64_t>()
+    );
+    auto b_size = std::accumulate(
+        B_dims.data(),
+        B_dims.data() + B_dims.size(),
+        1, std::multiplies<int64_t>()
+    );
     if (a_size == b_size) return false;
 
-    std::vector<int64_t> a_dims(b_size > a_size ? B_dims : A_dims);
-    std::vector<int64_t> b_dims(b_size > a_size ? A_dims : B_dims);
+    vec64_t a_dims(b_size > a_size ? B_dims : A_dims);
+    vec64_t b_dims(b_size > a_size ? A_dims : B_dims);
 
     auto ndims = (int)std::max(a_dims.size(), b_dims.size());
 
-    for (int i = (int)a_dims.size(); i < ndims; ++i) a_dims.insert(a_dims.begin(), 1);
-    for (int i = (int)b_dims.size(); i < ndims; ++i) b_dims.insert(b_dims.begin(), 1);
+    for (int i = (int)a_dims.size(); i < ndims; ++i)
+        a_dims.insert(a_dims.begin(), 1);
+    for (int i = (int)b_dims.size(); i < ndims; ++i)
+        b_dims.insert(b_dims.begin(), 1);
 
     int pivot = ndims - 1; *cols = 1; *rows = 1;
     for (; pivot >= 0 && a_dims[pivot] == b_dims[pivot]; --pivot) {
@@ -54,22 +62,28 @@ bool IsRowwiseBroadcast(
 }
 
 bool IsColwiseBroadcast(
-    const std::vector<int64_t>&     A_dims,
-    const std::vector<int64_t>&     B_dims,
-    int*                            rows,
-    int*                            cols) {
-    auto a_size = std::accumulate(A_dims.data(),
-        A_dims.data() + A_dims.size(), 1, std::multiplies<int64_t>());
-    auto b_size = std::accumulate(B_dims.data(),
-        B_dims.data() + B_dims.size(), 1, std::multiplies<int64_t>());
+    const vec64_t&          A_dims,
+    const vec64_t&          B_dims,
+    int*                    rows,
+    int*                    cols) {
+    auto a_size = std::accumulate(
+        A_dims.data(),
+        A_dims.data() + A_dims.size(), 1,
+        std::multiplies<int64_t>()
+    );
+    auto b_size = std::accumulate(
+        B_dims.data(),
+        B_dims.data() + B_dims.size(), 1,
+        std::multiplies<int64_t>()
+    );
     if (a_size == b_size) return false;
 
-    std::vector<int64_t> a_dims(b_size > a_size ? B_dims : A_dims);
-    std::vector<int64_t> b_dims(b_size > a_size ? A_dims : B_dims);
+    vec64_t a_dims(b_size > a_size ? B_dims : A_dims);
+    vec64_t b_dims(b_size > a_size ? A_dims : B_dims);
 
     auto ndims = (int)std::max(a_dims.size(), b_dims.size());
-    for (int i = (int)a_dims.size(); i < ndims; ++i) a_dims.emplace_back(1);
-    for (int i = (int)b_dims.size(); i < ndims; ++i) b_dims.emplace_back(1);
+    for (int i = (int)a_dims.size(); i < ndims; ++i) a_dims.push_back(1);
+    for (int i = (int)b_dims.size(); i < ndims; ++i) b_dims.push_back(1);
 
     int pivot = 0; *cols = 1; *rows = 1;
     for (; pivot < ndims && a_dims[pivot] == b_dims[pivot]; ++pivot) {
@@ -140,14 +154,14 @@ void ComputeTransposedStrides(
     const int*              dims,
     const int*              axes,
     int*                    strides) {
-    std::vector<int> buff(ndimss);
+    vec32_t buf(ndimss);
     int cur_stride = 1;
     for (int i = ndimss - 1; i >= 0; --i) {
-        buff[i] = cur_stride;
+        buf[i] = cur_stride;
         cur_stride *= dims[i];
     }
     for (int i = 0; i < ndimss; ++i) {
-        strides[i] = buff[axes[i]];
+        strides[i] = buf[axes[i]];
     }
 }
 

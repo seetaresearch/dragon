@@ -3,109 +3,134 @@
 
 #ifdef WITH_MPI
 
-#define DTYPE this->template mpi_dtype<T>()
-
 namespace dragon {
 
 template <class Context> template <typename T>
-void MPIBroadcastOp<Context>::RunWithType() {
-    if (comm_rank == comm_root) {
-        auto* Xdata = Input(0).template mutable_data<T, Context>();
-        MPI_Bcast(Xdata, Input(0).count(), DTYPE, comm_root, comm);
-        Output(0)->template CopyFrom<Context>(Input(0), ctx());
+void MPIBroadcastOp<Context>::RunImpl() {
+    if (comm_rank_ == comm_root_) {
+        auto* x = X(0).template mutable_data<T, Context>();
+        BCast(x, X(0).count());
+        Y(0)->CopyFrom(X(0), ctx());
     } else {
-        auto* Ydata = Output(0)->template mutable_data<T, Context>();
-        MPI_Bcast(Ydata, Output(0)->count(), DTYPE, comm_root, comm);
+        auto* y = Y(0)->template mutable_data<T, Context>();
+        BCast(y, Y(0)->count());
     }
 }
 
 template <class Context>
 void MPIBroadcastOp<Context>::RunOnDevice() {
-    CHECK(comm != MPI_COMM_NULL)
+    CHECK(comm_ != MPI_COMM_NULL)
         << "\nMPIBroadcastOp, name: " << name()
         << ", does not belong to any group, can't run.";
 
     int ndim;
-    vector<int64_t> dims;
-    if (comm_rank == comm_root) {
-        ndim = Input(0).ndim();
-        for (int i = 0; i < Input(0).ndim(); i++)
-            dims.emplace_back(Input(0).dim(i));
+    vec64_t dims;
+    if (comm_rank_ == comm_root_) {
+        ndim = X(0).ndim();
+        for (int i = 0; i < X(0).ndim(); i++)
+            dims.emplace_back(X(0).dim(i));
     }
-    MPI_Bcast(&ndim, 1, MPI_INT, comm_root, comm);
+    BCast(&ndim, 1);
     if (dims.empty()) dims.resize((size_t)ndim, 0);
-    MPI_Bcast(dims.data(), ndim, MPI_LONG_LONG, comm_root, comm);
-    Output(0)->Reshape(dims);
+    BCast(dims.data(), ndim);
+    Y(0)->Reshape(dims);
 
-    if (XIsType(Input(0), int8_t)) RunWithType<int8_t>();
-    else if (XIsType(Input(0), int)) RunWithType<int>();
-    else if (XIsType(Input(0), int64_t)) RunWithType<int64_t>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { 
-        "int8", "int32", "int64",
+    if (XIsType(X(0), int8_t)) {
+        RunImpl<int8_t>();
+    } else if (XIsType(X(0), int)) {
+        RunImpl<int>();
+    } else if (XIsType(X(0), int64_t)) {
+        RunImpl<int64_t>();
+    } else if (XIsType(X(0), float16)) {
+        RunImpl<float16>();
+    } else if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0), {
+            "int8", "int32", "int64",
             "float16", "float32",
-    });
+        });
+    }
+}
+
+template <class Context> template <typename T>
+void MPIBroadcastGradientOp<Context>::RunImpl() {
+    if (comm_rank_ == comm_root_) {
+        auto* dy = X(-1).template mutable_data<T, Context>();
+        auto* dx = Y(0)->template mutable_data<T, Context>();
+        math::Copy(Y(0)->count(), dy, dx, ctx());
+        for (int i = 0; i < comm_size_; i++) {
+            if (i == comm_root_) continue;
+            Recv(dy, Y(0)->count(), i);
+            math::Add(Y(0)->count(), dy, dx, dx, ctx());
+        }
+    } else {
+        auto* dy = X(-1).template data<T, Context>();
+        Send(dy, X(-1).count(), comm_root_);
+    }
+}
+
+template <class Context>
+void MPIBroadcastGradientOp<Context>::RunOnDevice() {
+    Y(0)->ReshapeLike(X(-1));
+
+    if (XIsType(X(-1), int8_t)) {
+        RunImpl<int8_t>();
+    } else if (XIsType(X(-1), int)) {
+        RunImpl<int>();
+    } else if (XIsType(X(-1), int64_t)) {
+        RunImpl<int64_t>();
+    } else if (XIsType(X(-1), float16)) {
+        RunImpl<float16>();
+    } else if (XIsType(X(-1), float)) {
+        RunImpl<float>();
+    } else {
+        LOG(FATAL) << DTypeString(X(-1), {
+            "int8", "int32", "int64",
+            "float16", "float32",
+        });
+    }
 }
 
 DEPLOY_CPU(MPIBroadcast);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(MPIBroadcast);
 #endif
-OPERATOR_SCHEMA(MPIBroadcast).NumInputs(1).NumOutputs(1);
-
-template <class Context> template <typename T>
-void MPIBroadcastGradientOp<Context>::RunWithType() {
-    if (comm_rank == comm_root) {
-        auto* dYdata = Input(-1).template mutable_data<T, Context>();
-        auto* dXdata = Output(0)->template mutable_data<T, Context>();
-        ctx()->template Copy<T, Context, Context>(
-            Output(0)->count(), dXdata, dYdata);
-        for (int i = 0; i < comm_size; i++) {
-            if (i == comm_root) continue;
-            MPI_Recv(dYdata, Output(0)->count(), DTYPE,
-                i, 0, comm, MPI_STATUS_IGNORE);
-            math::Add(Output(0)->count(),
-                dYdata, dXdata, dXdata, ctx());
-        }
-    }
-    else {
-        auto* dYdata = Input(-1).template data<T, Context>();
-        MPI_Send(dYdata, Input(-1).count(), DTYPE, comm_root, 0, comm);
-    }
-}
-
-template <class Context>
-void MPIBroadcastGradientOp<Context>::RunOnDevice() {
-    Output(0)->ReshapeLike(Input(-1));
-
-    if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float16", "float32" });
-}
 
 DEPLOY_CPU(MPIBroadcastGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(MPIBroadcastGradient);
 #endif
 
-OPERATOR_SCHEMA(MPIBroadcastGradient)
-    .NumInputs(1).NumOutputs(1);
+OPERATOR_SCHEMA(MPIBroadcast)
+     /* X */
+    .NumInputs(1)
+     /* Y */
+    .NumOutputs(1);
 
-class GetMPIBroadcastGradient final : public GradientMakerBase {
+OPERATOR_SCHEMA(MPIBroadcastGradient)
+     /* dY */
+    .NumInputs(1)
+     /* dX */
+    .NumOutputs(1);
+
+namespace {
+
+class GradientMaker final : public GradientMakerBase {
  public:
-    GRADIENT_MAKER_CTOR(GetMPIBroadcastGradient);
-    vector<OperatorDef> MakeDefs() override {
+    GRADIENT_MAKER_CTOR(GradientMaker);
+    vector<OperatorDef> MakeDef() override {
         return SingleDef(def.type() + "Gradient", "",
             vector<string>({ GO(0) }),
-            vector<string>({ GI(0) }));
+            vector<string>({ GI(0) })
+        );
     }
 };
 
-REGISTER_GRADIENT(MPIBroadcast, GetMPIBroadcastGradient);
+}  // namespace
+
+REGISTER_GRADIENT(MPIBroadcast, GradientMaker);
 
 }  // namespace dragon
-
-#undef DTYPE
 
 #endif  // WITH_MPI

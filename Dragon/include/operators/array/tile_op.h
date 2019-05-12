@@ -22,19 +22,16 @@ class TileOp final : public Operator<Context> {
  public:
     TileOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws) {
-        GET_ARGUMENTS_WITH_DESC(int64_t, multiples);
+        GET_ARGS_WITH_DESC(int64_t, multiples);
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template<typename T> void RunWithType();
+    template<typename T> void RunImpl();
 
  protected:
-    int64_t axis, multiple, rows, cols;
-    Tensor* dst, *src, nav;
-    vector<int64_t> y_dimsV;
-    Tensor x_dimsT, x_stridesT, y_dimsT;
-    DECLARE_ARGUMENTS_WITH_DESC(int64_t, multiples);
+    Tensor X_dims_, X_strides_, Y_dims_;
+    DECLARE_ARGS_WITH_DESC(int64_t, multiples);
 };
 
 template <class Context>
@@ -42,21 +39,21 @@ class TileGradientOp final : public Operator<Context> {
  public:
     TileGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws) {
-        GET_ARGUMENTS_WITH_DESC(int64_t, multiples);
+        GET_ARGS_WITH_DESC(int64_t, multiples);
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template<typename T> void RunWithType();
+    template<typename T> void RunImpl();
 
  protected:
-    int64_t axis, multiple, rows, cols;
-    Tensor* dst, *src, nav;
-    DECLARE_ARGUMENTS_WITH_DESC(int64_t, multiples);
+    Tensor* dst_, * src_, nav_;
+    int64_t axis_, multiple_, rows_, cols_;
+    DECLARE_ARGS_WITH_DESC(int64_t, multiples);
 };
 
-DEFINE_ARGUMENTS_WITH_DESC(int64_t, TileOp, multiples);
-DEFINE_ARGUMENTS_WITH_DESC(int64_t, TileGradientOp, multiples);
+DEFINE_ARGS_WITH_DESC(int64_t, TileOp, multiples);
+DEFINE_ARGS_WITH_DESC(int64_t, TileGradientOp, multiples);
 
 }  // namespace dragon
 

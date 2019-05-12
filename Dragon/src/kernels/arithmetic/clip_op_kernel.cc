@@ -6,7 +6,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Clip <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _Clip(
@@ -16,14 +16,14 @@ void _Clip(
     const T*                x,
     T*                      y) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         y[i] = std::max(low, std::min(x[i], high));
     }
 }
 
-/*! ClipGrad <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _ClipGrad(
@@ -34,15 +34,15 @@ void _ClipGrad(
     const T*                dy,
     T*                      dx) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         const T xi = x[i];
-        dx[i] = (xi < low || xi > high) ? (T)0 : dy[i];
+        dx[i] = (xi < low || xi > high) ? T(0) : dy[i];
     }
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_CLIP_KERNEL_LAUNCHER(T) \
     template <> void Clip<T, CPUContext>( \
@@ -52,8 +52,12 @@ void _ClipGrad(
         const T*                x, \
         T*                      y, \
         CPUContext*             ctx) { \
-        _Clip<T>(count, cast::to<T>(low), \
-            cast::to<T>(high), x, y); \
+        _Clip( \
+            count, \
+            cast::to<T>(low), \
+            cast::to<T>(high), \
+            x, y \
+        ); \
     }
 
 #define DEFINE_CLIP_GRAD_KERNEL_LAUNCHER(T) \
@@ -65,8 +69,12 @@ void _ClipGrad(
         const T*                dy, \
         T*                      dx, \
         CPUContext*             ctx) { \
-        _ClipGrad<T>(count, cast::to<T>(low), \
-            cast::to<T>(high), x, dy, dx); \
+        _ClipGrad( \
+            count, \
+            cast::to<T>(low), \
+            cast::to<T>(high), \
+            x, dy, dx \
+        ); \
     }
 
 DEFINE_CLIP_KERNEL_LAUNCHER(int8_t);
@@ -83,7 +91,7 @@ DEFINE_CLIP_GRAD_KERNEL_LAUNCHER(int64_t);
 DEFINE_CLIP_GRAD_KERNEL_LAUNCHER(float);
 DEFINE_CLIP_GRAD_KERNEL_LAUNCHER(double);
 
-/*! Clip <T = float16, Device = CPU> */
+/* <T = float16, Device = CPU> */
 
 template <> void Clip<float16, CPUContext>(
     const int               count,
@@ -95,7 +103,7 @@ template <> void Clip<float16, CPUContext>(
     CPU_FP16_NOT_SUPPORTED;
 }
 
-/*! ClipGrad <T = float16, Device = CPU> */
+/* <T = float16, Device = CPU> */
 
 template <> void ClipGrad<float16, CPUContext>(
     const int               count,

@@ -111,7 +111,7 @@ class CNMLContext {
     static std::mutex& mutex() { static std::mutex m; return m; }
 
     /*! \brief Return the thread local cnrt object */
-    static CNRTObject* cnrt_object();
+    static CNRTObject* obj();
 
  private:
     int device_id_, stream_id_ = 1, random_seed_;

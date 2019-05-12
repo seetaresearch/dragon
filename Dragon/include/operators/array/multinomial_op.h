@@ -22,19 +22,19 @@ class MultinomialOp final : public Operator<Context> {
  public:
     MultinomialOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          normalize(OperatorBase::Arg<int64_t>("normalize", 0)),
-          num_samples(OperatorBase::Arg<int64_t>("num_samples", 1)) {}
+          normalize_(OpArg<int64_t>("normalize", 0)),
+          num_samples_(OpArg<int64_t>("num_samples", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void SoftmaxRun();
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    Tensor* prob;
-    int64_t normalize, num_samples, outer_dim, axis;
-    unique_ptr<OperatorBase> softmax_op;
+    int64_t outer_dim_, axis_;
+    int64_t normalize_, num_samples_;
+    unique_ptr<OperatorBase> softmax_op_;
 };
 
 }  // namespace dragon

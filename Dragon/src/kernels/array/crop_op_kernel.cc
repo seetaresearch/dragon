@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Crop <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _Crop(
@@ -16,18 +16,22 @@ void _Crop(
     const int*              starts,
     const T*                x,
     T*                      y) {
-    vector<int> index(ndims, 0); int x_idx;
-    for (int y_idx = 0; y_idx < count; ++y_idx) {
-        x_idx = 0;
+    vec32_t index(ndims, 0); int xi;
+    for (int yi = 0; yi < count; ++yi) {
+        xi = 0;
         for (int d = ndims - 1; d >= 0; --d) {
-            x_idx += (index[d] + starts[d]) * x_strides[d];
+            xi += (
+                index[d] + starts[d]
+            ) * x_strides[d];
         }
-        y[y_idx] = x[x_idx];
-        utils::IncreaseIndexInDims(ndims, y_dims, index.data());
+        y[yi] = x[xi];
+        utils::IncreaseIndexInDims(
+            ndims, y_dims, index.data()
+        );
     }
 }
 
-/*! CropGrad <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _CropGrad(
@@ -38,18 +42,22 @@ void _CropGrad(
     const int*              starts,
     const T*                dy,
     T*                      dx) {
-    vector<int> index(ndims, 0); int x_idx;
-    for (int y_idx = 0; y_idx < count; ++y_idx) {
-        x_idx = 0;
+    vec32_t index(ndims, 0); int xi;
+    for (int yi = 0; yi < count; ++yi) {
+        xi = 0;
         for (int d = ndims - 1; d >= 0; --d) {
-            x_idx += (index[d] + starts[d]) * x_strides[d];
+            xi += (
+                index[d] + starts[d]
+            ) * x_strides[d];
         }
-        dx[x_idx] = dy[y_idx];
-        utils::IncreaseIndexInDims(ndims, y_dims, index.data());
+        dx[xi] = dy[yi];
+        utils::IncreaseIndexInDims(
+            ndims, y_dims, index.data()
+        );
     }
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_CROP_KERNEL_LAUNCHER(name, T) \
     template<> void name<T, CPUContext>( \
@@ -61,8 +69,11 @@ void _CropGrad(
         const T*                x, \
         T*                      y, \
         CPUContext*             ctx) { \
-        _##name<T>(count, ndims, x_strides, \
-            y_dims, starts, x, y); \
+        _##name( \
+            count, ndims, \
+            x_strides, y_dims, \
+            starts, x, y \
+        ); \
     }
 
 DEFINE_CROP_KERNEL_LAUNCHER(Crop, bool);

@@ -27,15 +27,15 @@ class Tensor {
     Tensor(const string& name) : name_(name) {}
 
     /*! \brief Constructor with the known int64 dimensions */
-    Tensor(const vector<int64_t>& dims) { Reshape(dims); }
+    Tensor(const vec64_t& dims) { Reshape(dims); }
 
     /*! \brief Constructor with the known int32 dimensions */
-    Tensor(const vector<int>& dims) {
-        Reshape(vector<int64_t>(dims.begin(), dims.end()));
+    Tensor(const vec32_t& dims) {
+        Reshape(vec64_t(dims.begin(), dims.end()));
     }
 
     /*! \brief Reshape to the given dimensions */
-    Tensor* Reshape(const vector<int64_t>& dims) {
+    Tensor* Reshape(const vec64_t& dims) {
         dims_ = dims; strides_.resize(dims.size());
         size_t new_size = 1; int64_t d;
         for (int i = (int)dims.size() - 1; i >= 0; i--) {
@@ -61,7 +61,9 @@ class Tensor {
     }
 
     /*! \brief Reshape the dimensions like the given tensor */
-    Tensor* ReshapeLike(const Tensor& other) { return Reshape(other.dims_); }
+    Tensor* ReshapeLike(const Tensor& other) { 
+        return Reshape(other.dims_);
+    }
 
     /*! \brief Return the tensor name */
     const string& name() const { return name_; }
@@ -83,7 +85,7 @@ class Tensor {
     int64_t dim(int64_t i) const{ return dims_[axis(i)]; }
 
     /*! \brief Return all the dimensions */
-    const vector<int64_t>& dims() const { return dims_; }
+    const vec64_t& dims() const { return dims_; }
 
     /*! \brief Return the total number of elements of this tensor */
     size_t size() const { return size_; }
@@ -111,7 +113,7 @@ class Tensor {
     int64_t stride(int64_t i) const { return strides_[axis(i)]; }
 
     /*! \brief Return all the strides */
-    const vector<int64_t>& strides() const { return strides_; }
+    const vec64_t& strides() const { return strides_; }
 
     /*! \brief Return a string to describe the given dimensions */
     static string DimString(const vector<int64_t>& dims) {
@@ -178,15 +180,16 @@ class Tensor {
             if (TypeMeta::Id<Context>() ==
                 TypeMeta::Id<CPUContext>()) {
                 *data_ptr = mem->mutable_cpu_data(nbytes());
-            } else if (TypeMeta::Id<Context>() ==
+            } else if (
+                TypeMeta::Id<Context>() ==
                 TypeMeta::Id<CUDAContext>()) {
                 *data_ptr = mem->mutable_cuda_data(nbytes());
-            } else if (TypeMeta::Id<Context>() ==
+            } else if (
+                TypeMeta::Id<Context>() ==
                 TypeMeta::Id<CNMLContext>()) {
                 *data_ptr = mem->mutable_cnml_data();
             } else {
-                LOG(FATAL) << "Unknown memory type.\n"
-                    << "Only CPU, CUDA and CNML are supported.";
+                LOG(FATAL) << "Unknown memory type.";
             }
         }
     }
@@ -199,15 +202,16 @@ class Tensor {
         if (TypeMeta::Id<Context>() ==
             TypeMeta::Id<CPUContext>()) {
             return mem->cpu_data(nbytes());
-        } else if (TypeMeta::Id<Context>() ==
+        } else if (
+            TypeMeta::Id<Context>() ==
             TypeMeta::Id<CUDAContext>()) {
             return mem->cuda_data(nbytes());
-        } else if (TypeMeta::Id<Context>() ==
+        } else if (
+            TypeMeta::Id<Context>() ==
             TypeMeta::Id<CNMLContext>()) {
             return mem->cnml_data();
         } else {
-            LOG(FATAL) << "Unknown memory type.\n"
-                << "Only CPU, CUDA, and CNML are supported.";
+            LOG(FATAL) << "Unknown memory type.";
             return nullptr;
         }
     }
@@ -268,8 +272,9 @@ class Tensor {
                 return static_cast<T*>(data_ptr);
             }
         }
-        return static_cast<T*>(raw_mutable_data
-            <Context>(TypeMeta::Make<T>()));
+        return static_cast<T*>(
+            raw_mutable_data<Context>
+                (TypeMeta::Make<T>()));
     }
 
     /*! \brief Get the typed const data pointer */
@@ -284,13 +289,15 @@ class Tensor {
 
     /*! \brief Copy the contents from the given tensor */
     template <class Context>
-    void CopyFrom(const Tensor& other, Context* ctx) {
-        if ((void*)&other == (void*)this) return;
+    Tensor* CopyFrom(const Tensor& other, Context* ctx) {
+        if ((void*)&other == (void*)this) return this;
         CHECK_EQ(size_, other.size_);
         auto* src = other.template raw_data<Context>();
         auto* dst = raw_mutable_data<Context>(other.meta_);
-        ctx->template MemcpyAsync<Context, Context>(
-            nbytes(), dst, src);
+        ctx->template MemcpyAsync
+            <Context, Context>(
+                nbytes(), dst, src);
+        return this;
     }
 
     /*! \brief Move the external memory */
@@ -337,7 +344,7 @@ class Tensor {
     int version_ = -1;
 
     /*! \brief Store the dimensions and strides */
-    vector<int64_t> dims_, strides_;
+    vec64_t dims_, strides_;
 
     /*! \brief The internal memory */
     shared_ptr<MixedMemory> memory_;

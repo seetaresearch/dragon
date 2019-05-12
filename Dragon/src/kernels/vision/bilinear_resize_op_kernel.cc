@@ -4,10 +4,10 @@ namespace dragon {
 
 namespace kernel {
 
-/*! BilinearResize <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <typename T>
-void _BilinearResize_NCHW(
+void _BilinearResizeNCHW(
     const int               N,
     const int               C,
     const int               H,
@@ -20,28 +20,28 @@ void _BilinearResize_NCHW(
     T*                      y) {
     for (int n = 0; n < N; ++n) {
         for (int c = 0; c < C; ++c) {
-            const int NC = n * C + c;
+            const int nc = n * C + c;
             for (int h = 0; h < out_h; ++h) {
                 const float h_in = h * scale_h;
-                const int top_y_idx = (int)floorf(h_in);
-                const int bottom_y_idx = (h_in < H - 1) ? (int)ceilf(h_in) : H - 1;
-                const int NCHT = NC * H + top_y_idx;
-                const int NCHB = NC * H + bottom_y_idx;
-                const float y_lerp = h_in - top_y_idx;
+                const int tyi = (int)floorf(h_in);
+                const int byi = (h_in < H - 1) ?
+                    (int)ceilf(h_in) : H - 1;
+                const int ncht = nc * H + tyi;
+                const int nchb = nc * H + byi;
+                const T ylerp = h_in - tyi;
                 for (int w = 0; w < out_w; ++w) {
                     const float w_in = w * scale_w;
-                    const int left_x_idx = (int)floorf(w_in);
-                    const int right_x_idx = (w_in < W - 1) ? (int)ceilf(w_in) : W - 1;
-                    const float x_lerp = w_in - left_x_idx;
-
-                    const float top_left(x[NCHT * W + left_x_idx]);
-                    const float top_right(x[NCHT * W + right_x_idx]);
-                    const float bottom_left(x[NCHB * W + left_x_idx]);
-                    const float bottom_right(x[NCHB * W + right_x_idx]);
-
-                    const float top = top_left + (top_right - top_left) * x_lerp;
-                    const float bottom = bottom_left + (bottom_right - bottom_left) * x_lerp;
-                    *(y++) = top + (bottom - top) * y_lerp;
+                    const int lxi = (int)floorf(w_in);
+                    const int rxi = (w_in < W - 1) ?
+                        (int)ceilf(w_in) : W - 1;
+                    const T xlerp = w_in - lxi;
+                    const T tl(x[ncht * W + lxi]);
+                    const T tr(x[ncht * W + rxi]);
+                    const T bl(x[nchb * W + lxi]);
+                    const T br(x[nchb * W + rxi]);
+                    const T t = tl + (tr - tl) * xlerp;
+                    const T b = bl + (br - bl) * xlerp;
+                    *(y++) = t + (b - t) * ylerp;
                 }
             }
         }
@@ -49,7 +49,7 @@ void _BilinearResize_NCHW(
 }
 
 template <typename T>
-void _BilinearResize_NHWC(
+void _BilinearResizeNHWC(
     const int               N,
     const int               C,
     const int               H,
@@ -63,24 +63,26 @@ void _BilinearResize_NHWC(
     for (int n = 0; n < N; ++n) {
         for (int h = 0; h < out_h; ++h) {
             const float h_in = h * scale_h;
-            const int top_y_idx = (int)floorf(h_in);
-            const int bottom_y_idx = (h_in < H - 1) ? (int)ceilf(h_in) : H - 1;
-            const int NHT = n * H + top_y_idx;
-            const int NHB = n * H + bottom_y_idx;
-            const float y_lerp = h_in - top_y_idx;
+            const int tyi = (int)floorf(h_in);
+            const int byi = (h_in < H - 1) ? 
+                (int)ceilf(h_in) : H - 1;
+            const int nht = n * H + tyi;
+            const int nhb = n * H + byi;
+            const T ylerp = h_in - tyi;
             for (int w = 0; w < out_w; ++w) {
                 const float w_in = w * scale_w;
-                const int left_x_idx = (int)floorf(w_in);
-                const int right_x_idx = (w_in < W - 1) ? (int)ceilf(w_in) : W - 1;
-                const float x_lerp = w_in - left_x_idx;
+                const int lxi = (int)floorf(w_in);
+                const int rxi = (w_in < W - 1) ?
+                    (int)ceilf(w_in) : W - 1;
+                const T xlerp = w_in - lxi;
                 for (int c = 0; c < C; ++c) {
-                    const float top_left(x[(NHT * W + left_x_idx) * C + c]);
-                    const float top_right(x[(NHT * W + right_x_idx) * C + c]);
-                    const float bottom_left(x[(NHB * W + left_x_idx) * C + c]);
-                    const float bottom_right(x[(NHB * W + right_x_idx) * C + c]);
-                    const float top = top_left + (top_right - top_left) * x_lerp;
-                    const float bottom = bottom_left + (bottom_right - bottom_left) * x_lerp;
-                    *(y++) = top + (bottom - top) * y_lerp;
+                    const T tl(x[(nht * W + lxi) * C + c]);
+                    const T tr(x[(nht * W + rxi) * C + c]);
+                    const T bl(x[(nhb * W + lxi) * C + c]);
+                    const T br(x[(nhb * W + rxi) * C + c]);
+                    const T t = tl + (tr - tl) * xlerp;
+                    const T b = bl + (br - bl) * xlerp;
+                    *(y++) = t + (b - t) * ylerp;
                 }
             }
         }
@@ -98,23 +100,27 @@ template <> void BilinearResize<float, CPUContext>(
     const float*            x,
     float*                  y,
     CPUContext*             ctx) {
-    const float scale_h = (float)H / out_h;
-    const float scale_w = (float)W / out_w;
+    auto scale_h = (float)H / (float)out_h;
+    auto scale_w = (float)W / (float)out_w;
     if (data_format == "NCHW") {
-        _BilinearResize_NCHW<float>(
+        _BilinearResizeNCHW(
             N, C, H, W, out_h, out_w,
-                scale_h, scale_w, x, y);
+            scale_h, scale_w, x, y
+        );
     } else if (data_format == "NHWC"){
-        _BilinearResize_NHWC<float>(
+        _BilinearResizeNHWC(
             N, C, H, W, out_h, out_w,
-                scale_h, scale_w, x, y);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+            scale_h, scale_w, x, y
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
-/*! BilinearResizeGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <typename T>
-void _BilinearResizeGrad_NCHW(
+void _BilinearResizeGradNCHW(
     const int               N,
     const int               C,
     const int               H,
@@ -130,26 +136,24 @@ void _BilinearResizeGrad_NCHW(
             const int NC = n * C + c;
             for (int h = 0; h < out_h; ++h) {
                 const float h_in = h * scale_h;
-                const int top_y_idx = (int)floorf(h_in);
-                const int bottom_y_idx = (h_in < H - 1) ? (int)ceilf(h_in) : H - 1;
-                const int NCHT = NC * H + top_y_idx;
-                const int NCHB = NC * H + bottom_y_idx;
-                const float y_lerp = h_in - top_y_idx;
+                const int tyi = (int)floorf(h_in);
+                const int byi = (h_in < H - 1) ?
+                    (int)ceilf(h_in) : H - 1;
+                const int ncht = NC * H + tyi;
+                const int nchb = NC * H + byi;
+                const T ylerp = h_in - tyi;
                 for (int w = 0; w < out_w; ++w) {
                     const float w_in = w * scale_w;
-                    const int left_x_idx = (int)floorf(w_in);
-                    const int right_x_idx = (w_in < W - 1) ? (int)ceilf(w_in) : W - 1;
-                    const float x_lerp = w_in - left_x_idx;
-                    const float dtop = (1 - y_lerp) * (*(dy));
-                    const float dbottom = y_lerp * (*(dy++));
-                    dx[NCHT * W + left_x_idx] +=
-                        static_cast<T>((1 - x_lerp) * dtop);
-                    dx[NCHT * W + right_x_idx] +=
-                        static_cast<T>(x_lerp * dtop);
-                    dx[NCHB * W + left_x_idx] +=
-                        static_cast<T>((1 - x_lerp) * dbottom);
-                    dx[NCHB * W + right_x_idx] += 
-                        static_cast<T>(x_lerp * dbottom);
+                    const int lxi = (int)floorf(w_in);
+                    const int rxi = (w_in < W - 1) ?
+                        (int)ceilf(w_in) : W - 1;
+                    const T xlerp = w_in - lxi;
+                    const T dt = (T(1) - ylerp) * (*(dy));
+                    const T db = ylerp * (*(dy++));
+                    dx[ncht * W + lxi] += (T(1) - xlerp) * dt;
+                    dx[ncht * W + rxi] += xlerp * dt;
+                    dx[nchb * W + lxi] += (T(1) - xlerp) * db;
+                    dx[nchb * W + rxi] += xlerp * db;
                 }
             }
         }
@@ -157,7 +161,7 @@ void _BilinearResizeGrad_NCHW(
 }
 
 template <typename T>
-void _BilinearResizeGrad_NHWC(
+void _BilinearResizeGradNHWC(
     const int               N,
     const int               C,
     const int               H,
@@ -171,27 +175,25 @@ void _BilinearResizeGrad_NHWC(
     for (int n = 0; n < N; ++n) {
         for (int h = 0; h < out_h; ++h) {
             const float h_in = h * scale_h;
-            const int top_y_idx = (int)floorf(h_in);
-            const int bottom_y_idx = (h_in < H - 1) ? (int)ceilf(h_in) : H - 1;
-            const int NHT = n * H + top_y_idx;
-            const int NHB = n * H + bottom_y_idx;
-            const float y_lerp = h_in - top_y_idx;
+            const int tyi = (int)floorf(h_in);
+            const int byi = (h_in < H - 1) ?
+                (int)ceilf(h_in) : H - 1;
+            const int nht = n * H + tyi;
+            const int nhb = n * H + byi;
+            const T ylerp = h_in - tyi;
             for (int w = 0; w < out_w; ++w) {
                 const float w_in = w * scale_w;
-                const int left_x_idx = (int)floorf(w_in);
-                const int right_x_idx = (w_in < W - 1) ? (int)ceilf(w_in) : W - 1;
-                const float x_lerp = w_in - left_x_idx;
-                const float dtop = (1 - y_lerp) * (*(dy));
-                const float dbottom = y_lerp * (*(dy++));
+                const int lxi = (int)floorf(w_in);
+                const int rxi = (w_in < W - 1) ?
+                    (int)ceilf(w_in) : W - 1;
+                const T xlerp = w_in - lxi;
+                const T dt = (T(1) - ylerp) * (*(dy));
+                const T db = ylerp * (*(dy++));
                 for (int c = 0; c < C; ++c) {
-                    dx[(NHT * W + left_x_idx) * C + c] +=
-                        static_cast<T>((1 - x_lerp) * dtop);
-                    dx[(NHT * W + right_x_idx) * C + c] +=
-                        static_cast<T>(x_lerp * dtop);
-                    dx[(NHB * W + left_x_idx) * C + c] +=
-                        static_cast<T>((1 - x_lerp) * dbottom);
-                    dx[(NHB * W + right_x_idx) * C + c] += 
-                        static_cast<T>(x_lerp * dbottom);
+                    dx[(nht * W + lxi) * C + c] += (T(1) - xlerp) * dt;
+                    dx[(nht * W + rxi) * C + c] += xlerp * dt;
+                    dx[(nhb * W + lxi) * C + c] += (T(1) - xlerp) * db;
+                    dx[(nhb * W + rxi) * C + c] += xlerp * db;
                 }
             }
         }
@@ -209,17 +211,21 @@ template <> void BilinearResizeGrad<float, CPUContext>(
     const float*            dy,
     float*                  dx,
     CPUContext*             ctx) {
-    const float scale_h = (float)H / out_h;
-    const float scale_w = (float)W / out_w;
+    auto scale_h = (float)H / (float)out_h;
+    auto scale_w = (float)W / (float)out_w;
     if (data_format == "NCHW") {
-        _BilinearResizeGrad_NCHW<float>(
+        _BilinearResizeGradNCHW(
             N, C, H, W, out_h, out_w,
-                scale_h, scale_w, dy, dx);
+            scale_h, scale_w, dy, dx
+        );
     } else if (data_format == "NHWC"){
-        _BilinearResizeGrad_NHWC<float>(
+        _BilinearResizeGradNHWC(
             N, C, H, W, out_h, out_w,
-                scale_h, scale_w, dy, dx);
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+            scale_h, scale_w, dy, dx
+        );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
 }  // namespace kernel

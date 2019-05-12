@@ -105,7 +105,7 @@ void CopyAttrValueToArg(
     } else if (attr.strings_size()) {
         arg->mutable_strings()->CopyFrom(attr.strings());
     } else {
-        LOG(FATAL) << "Unsupported ONNX attribute: " << attr.name();
+        LOG(FATAL) << "Unsupported Attribute: " << attr.name();
     }
 }
 

@@ -5,75 +5,94 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void CuDNNLRNOp<Context>::RunWithType() {
-    if (this->data_format == "NCHW") {
-        cudnnSetTensorDesc<T>(&input_desc, &Input(0));
-        cudnnSetTensorDesc<T>(&output_desc, Output(0));
-        auto* Xdata = Input(0).template data<T, Context>();
-        auto* Ydata = Output(0)->template mutable_data<T, Context>();
+void CuDNNLRNOp<Context>::RunImpl() {
+    if (data_format() == "NCHW") {
+        CuDNNSetTensorDesc<T>(&input_desc_, &X(0));
+        CuDNNSetTensorDesc<T>(&output_desc_, Y(0));
+
+        auto* x = X(0).template data<T, Context>();
+        auto* y = Y(0)->template mutable_data<T, Context>();
 
         CUDNN_CHECK(cudnnLRNCrossChannelForward(
-            ctx()->cudnn_handle(), norm_desc,
-                CUDNN_LRN_CROSS_CHANNEL_DIM1,
-                    CUDNNType<T>::one, input_desc, Xdata,
-                        CUDNNType<T>::zero, output_desc, Ydata));
-
-    } else LOG(FATAL) << "Unknown data format: " << this->data_format;
+            ctx()->cudnn_handle(), lrn_desc_,
+            CUDNN_LRN_CROSS_CHANNEL_DIM1,
+            CuDNNType<T>::one, input_desc_, x,
+            CuDNNType<T>::zero, output_desc_, y
+        ));
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format();
+    }
 }
 
 template <class Context>
 void CuDNNLRNOp<Context>::RunOnDevice() {
-    Output(0)->ReshapeLike(Input(0));
+    Y(0)->ReshapeLike(X(0));
 
-    if (this->mode == "ACROSS_CHANNELS") {
-        if (XIsType(Input(0), float)) RunWithType<float>();
-        else if (XIsType(Input(0), float16)) RunWithType<float16>();
-        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
-    } else if (this->mode == "WITHIN_CHANNEL") {
-        LRNOp<Context>::RunOnDevice(); 
+    if (this->mode_ == "ACROSS_CHANNELS") {
+        if (XIsType(X(0), float)) {
+            RunImpl<float>();
+        } else if (XIsType(X(0), float16)) {
+            RunImpl<float16>();
+        } else {
+            LOG(FATAL) << DTypeString(X(0),
+                { "float32", "float16" }
+            );
+        }
+    } else if (this->mode_ == "WITHIN_CHANNEL") {
+        LRNOp<Context>::RunOnDevice();
     } else {
-        LOG(FATAL) << "Unsupported lrn mode: " << this->mode;
+        LOG(FATAL) << "Unknown Mode: " << this->mode_;
     }
 }
 
-DEPLOY_CUDNN(LRN);
-
 template <class Context> template <typename T>
-void CuDNNLRNGradientOp<Context>::RunWithType() {
-    if (this->data_format == "NCHW") {
-        cudnnSetTensorDesc<T>(&input_desc, &Input(-1));
-        cudnnSetTensorDesc<T>(&output_desc, Output(0));
+void CuDNNLRNGradientOp<Context>::RunImpl() {
+    if (data_format() == "NCHW") {
+        CuDNNSetTensorDesc<T>(&input_desc_, &X(-1));
+        CuDNNSetTensorDesc<T>(&output_desc_, Y(0));
 
-        auto* dYdata = Input(-1).template data<T, Context>();
-        auto* Xdata = Input(0).template data<T, Context>();
-        auto* Ydata = Input(1).template data<T, Context>();
-        auto* dXdata = Output(0)->template mutable_data<T, Context>();
+        auto* dy = X(-1).template data<T, Context>();
+        auto* x = X(0).template data<T, Context>();
+        auto* y = X(1).template data<T, Context>();
+        auto* dx = Y(0)->template mutable_data<T, Context>();
 
         CUDNN_CHECK(cudnnLRNCrossChannelBackward(
-            ctx()->cudnn_handle(), norm_desc,
-                CUDNN_LRN_CROSS_CHANNEL_DIM1,
-                    CUDNNType<T>::one, input_desc, Ydata,
-                        input_desc, dYdata, output_desc, Xdata,
-                            CUDNNType<T>::zero, output_desc, dXdata));
-
-    } else LOG(FATAL) << "Unknown data format: " << this->data_format;
+            ctx()->cudnn_handle(), lrn_desc_,
+            CUDNN_LRN_CROSS_CHANNEL_DIM1,
+            CuDNNType<T>::one,
+            input_desc_, y,
+            input_desc_, dy,
+            output_desc_, x,
+            CuDNNType<T>::zero,
+            output_desc_, dx
+        ));
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format();
+    }
 }
 
 template <class Context>
 void CuDNNLRNGradientOp<Context>::RunOnDevice() {
-    Output(0)->ReshapeLike(Input(0));
+    Y(0)->ReshapeLike(X(0));
 
-    if (this->mode == "ACROSS_CHANNELS") {
-        if (XIsType(Input(0), float)) RunWithType<float>();
-        else if (XIsType(Input(0), float16)) RunWithType<float16>();
-        else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
-    } else if (this->mode == "WITHIN_CHANNEL") {
-        LRNGradientOp<Context>::RunOnDevice(); 
+    if (this->mode_ == "ACROSS_CHANNELS") {
+        if (XIsType(X(0), float)) {
+            RunImpl<float>();
+        } else if (XIsType(X(0), float16)) {
+            RunImpl<float16>();
+        } else {
+            LOG(FATAL) << DTypeString(X(0),
+                { "float32", "float16" }
+            );
+        }
+    } else if (this->mode_ == "WITHIN_CHANNEL") {
+        LRNGradientOp<Context>::RunOnDevice();
     } else {
-        LOG(FATAL) << "Unsupported lrn mode: " << this->mode;
+        LOG(FATAL) << "Unknown Mode: " << this->mode_;
     }
 }
 
+DEPLOY_CUDNN(LRN);
 DEPLOY_CUDNN(LRNGradient);
 
 }  // namespace dragon

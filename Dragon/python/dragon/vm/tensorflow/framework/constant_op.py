@@ -70,11 +70,13 @@ def constant(
         _workspace.GetDummyName(
             basename=_scope.get_default_name_scope() +
                 (name if name else 'Const'),
-            suffix=':0', domain='Tensor')
+            suffix=':0',
+            domain='Tensor',
+        )
 
     # Feed into the workspace
     return _Tensor.Ref(
         name=defined_name,
-            shape=list(value.shape),
-                dtype=str(value.dtype)
+        shape=list(value.shape),
+        dtype=str(value.dtype),
     ).set_value(value)

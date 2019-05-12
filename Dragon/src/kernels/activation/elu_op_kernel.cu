@@ -7,7 +7,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Elu <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _Elu(
@@ -27,13 +27,14 @@ template<> void Elu<float, CUDAContext>(
     const float*            x,
     float*                  y,
     CUDAContext*            ctx) {
-    _Elu<float>
+    _Elu
         << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, x, alpha, y);
+             0, ctx->cuda_stream() >> >(
+        count, x, alpha, y
+    );
 }
 
-/*! EluGrad <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _EluGrad(
@@ -56,10 +57,11 @@ template<> void EluGrad<float, CUDAContext>(
     const float*            y,
     float*                  dx,
     CUDAContext*            ctx) {
-    _EluGrad<float>
+    _EluGrad
         << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, alpha, dy, y, dx);
+             0, ctx->cuda_stream() >> >(
+        count, alpha, dy, y, dx
+    );
 }
 
 }  // namespace kernel

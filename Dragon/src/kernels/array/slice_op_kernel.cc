@@ -1,68 +1,87 @@
 #include "utils/op_kernel.h"
-#include "utils/omp_alternative.h"
+#include "utils/math_functions.h"
 
 namespace dragon {
 
 namespace kernel {
 
-/*! Slice <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _Slice(
     const int               outer_dim,
     const int               inner_dim,
-    const int               x_slice_dim,
-    const int               y_slice_dim,
-    const int               slice_offset,
+    const int               axis_dim,
+    const int               slice_dim,
+    const int               slice_ofs,
     const T*                x,
     T*                      y,
     CPUContext*             ctx) {
-    int64_t x_offset; int64_t cols = y_slice_dim * inner_dim;
+    int64_t x_ofs, cols = slice_dim * inner_dim;
     for (int n = 0; n < outer_dim; ++n) {
-        x_offset = (n * x_slice_dim + slice_offset) * inner_dim;
-        ctx->Copy<T, CPUContext, CPUContext>(
-            cols, y + n * cols, x + x_offset);
+        x_ofs = (
+            n * axis_dim + slice_ofs
+                ) * inner_dim;
+        math::Copy(
+            cols,
+            x + x_ofs,
+            y + n * cols, ctx
+        );
     }
 }
 
-/*! SliceGrad <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _SliceGrad(
     const int               outer_dim,
     const int               inner_dim,
-    const int               x_slice_dim,
-    const int               y_slice_dim,
-    const int               slice_offset,
+    const int               axis_dim,
+    const int               slice_dim,
+    const int               slice_ofs,
     const T*                dy,
     T*                      dx,
     CPUContext*             ctx) {
-    int64_t x_offset; int64_t cols = y_slice_dim * inner_dim;
+    int64_t x_ofs, cols = slice_dim * inner_dim;
     for (int n = 0; n < outer_dim; ++n) {
-        x_offset = (n * x_slice_dim + slice_offset) * inner_dim;
+        x_ofs = (
+            n * axis_dim + slice_ofs
+                ) * inner_dim;
         if (dy != nullptr) {
-            ctx->Copy<T, CPUContext, CPUContext>(
-                cols, dx + x_offset, dy + n * cols);
+            math::Copy(
+                cols,
+                dy + n * cols,
+                dx + x_ofs, ctx
+            );
         } else {
-            ctx->Memset(sizeof(T) * cols, dx + x_offset);
+            ctx->Memset(
+                sizeof(T) * cols,
+                dx + x_ofs
+            );
         }
     }
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_SLICE_KERNEL_LAUNCHER(name, T) \
     template <> void name<T, CPUContext>( \
         const int               outer_dim, \
         const int               inner_dim, \
-        const int               x_slice_dim, \
-        const int               y_slice_dim, \
-        const int               slice_offset, \
+        const int               axis_dim, \
+        const int               slice_dim, \
+        const int               slice_ofs, \
         const T*                x, \
         T*                      y, \
         CPUContext*             ctx) { \
-        _##name(outer_dim, inner_dim, x_slice_dim, \
-            y_slice_dim, slice_offset, x, y, ctx); \
+        _##name( \
+            outer_dim, \
+            inner_dim, \
+            axis_dim, \
+            slice_dim, \
+            slice_ofs, \
+            x, y, ctx \
+        ); \
     }
 
 DEFINE_SLICE_KERNEL_LAUNCHER(Slice, bool);

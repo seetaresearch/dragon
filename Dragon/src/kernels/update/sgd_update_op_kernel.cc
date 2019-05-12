@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! SGDUpdate <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <> void SGDUpdate<float, CPUContext>(
     const int               count,
@@ -15,7 +15,7 @@ template <> void SGDUpdate<float, CPUContext>(
     float*                  h,
     CPUContext*             ctx) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         float hi = h[i];

@@ -11,13 +11,13 @@ namespace kernel {
 
 template <typename T>
 __global__ void _AbsGrad(
-    const int               count,
+    const int               nthreads,
     const T*                dy,
     T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-       const T val = dy[idx];
-       //  val > 0: 1 | val == 0: 0 | val < 0: -1
-       dx[idx] = (val > T(0)) - (val < T(0));
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+       const T val = dy[i];
+       // val > 0: 1 | val == 0: 0 | val < 0: -1
+       dx[i] = (val > T(0)) - (val < T(0));
     }
 }
 
@@ -26,10 +26,11 @@ template<> void AbsGrad<float, CUDAContext>(
     const float*            dy,
     float*                  dx,
     CUDAContext*            ctx) {
-    _AbsGrad<float>
+    _AbsGrad
         << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, dy, dx);
+             0, ctx->cuda_stream() >> >(
+        count, dy, dx
+    );
 }
 
 }  // namespace kernel

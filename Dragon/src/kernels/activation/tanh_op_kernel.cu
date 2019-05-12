@@ -7,14 +7,14 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Tanh <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _Tanh(
-    const int               count,
+    const int               nthreads,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(i, count) {
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
         y[i] = tanh(x[i]);
     }
 }
@@ -24,21 +24,22 @@ template<> void Tanh<float, CUDAContext>(
     const float*            x,
     float*                  y,
     CUDAContext*            ctx) {
-    _Tanh<float>
+    _Tanh
         << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, x, y);
+             0, ctx->cuda_stream() >> >(
+        count, x, y
+    );
 }
 
-/*! TanhGrad <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _TanhGrad(
-    const int               count,
+    const int               nthreads,
     const T*                dy,
     const T*                y,
     T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(i, count) {
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
         dx[i] = dy[i] * (1 - y[i] * y[i]);
     }
 }
@@ -49,10 +50,11 @@ template<> void TanhGrad<float, CUDAContext>(
     const float*            y,
     float*                  dx,
     CUDAContext*            ctx) {
-    _TanhGrad<float>
+    _TanhGrad
         << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (count, dy, y, dx);
+             0, ctx->cuda_stream() >> >(
+        count, dy, y, dx
+    );
 }
 
 }  // namespace kernel

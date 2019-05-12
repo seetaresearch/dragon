@@ -23,12 +23,12 @@ class RMSPropUpdateOp final : public UpdateOpBase<Context> {
     RMSPropUpdateOp(const OperatorDef& def, Workspace* ws)
         : UpdateOpBase<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
-    USE_UPDATER_FUNCTIONS(Context);
+    USE_UPDATER_FUNCTIONS;
 
-    void ComputeUpdates(Tensor* dX) override;
+    void Compute(Tensor* dX) override;
 
  protected:
-    float lr, decay, eps;
+    float lr_, decay_, eps_;
 };
 
 }  // namespace dragon

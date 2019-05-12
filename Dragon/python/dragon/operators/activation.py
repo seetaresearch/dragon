@@ -175,8 +175,8 @@ def Dropout(inputs, prob=0.5, scale=True, **kwargs):
     ----------
     inputs : Tensor
         The input tensor.
-    prob : float or Tensor
-        The prob of dropping. Default is ``0.5``.
+    prob : float or Tensor, optional, default=0.2
+        The prob of dropping.
     scale : bool
         Whether to scale the output during training.
 
@@ -187,6 +187,33 @@ def Dropout(inputs, prob=0.5, scale=True, **kwargs):
 
     """
     return Tensor.CreateOperator('Dropout', **ParseArgs(locals()))
+
+
+@OpSchema.Inputs(1)
+@ArgumentHelper.Desc('prob', as_target=True)
+def DropPath(inputs, prob=0.2, increment=0., **kwargs):
+    """Randomly set a example of batch into zero. `[Larsson et.al, 2016] <https://arxiv.org/abs/1605.07648>`_.
+
+    Set the ``increment`` to schedule ``prob`` from *0* after each run.
+
+    **Type Constraints**: (*float16*, *float32*)
+
+    Parameters
+    ----------
+    inputs : Tensor
+        The input tensor.
+    prob : float or Tensor, optional, default=0.2
+        The prob of dropping
+    increment : float, optional, default=0.0
+        The increment to drop prob.
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
+    """
+    return Tensor.CreateOperator('DropPath', **ParseArgs(locals()))
 
 
 @OpSchema.Inputs(1)

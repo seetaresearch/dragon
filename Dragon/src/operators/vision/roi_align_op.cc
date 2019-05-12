@@ -6,116 +6,160 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void ROIAlignOp<Context>::RunWithType() {
-    auto* Xdata = Input(0).template data<T, Context>();
-    auto* Rdata = Input(1).template data<float, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+void ROIAlignOp<Context>::RunImpl() {
+    auto* x   = X(0).template data<T, Context>();
+    auto* roi = X(1).template data<float, Context>();
+    auto* y   = Y(0)->template mutable_data<T, Context>();
 
     kernel::ROIAlign(
-        Input(0).dim(1),
-        Input(0).dim(2),
-        Input(0).dim(3),
-        pool_h, pool_w,
-        Input(1).dim(0),
-        spatial_scale,
-        sampling_ratio,
-        Xdata, Rdata,
-        Ydata, ctx());
+        X(0).dim(1),
+        X(0).dim(2),
+        X(0).dim(3),
+        pool_h_, pool_w_,
+        X(1).dim(0),
+        spatial_scale_,
+        sampling_ratio_,
+        x, roi,
+        y, ctx()
+    );
 }
 
 template <class Context>
 void ROIAlignOp<Context>::RunOnDevice() {
-    Output(0)->Reshape({
-        Input(1).dim(0),    /*!   Number of RoIs  */
-        Input(0).dim(1),    /*!   Channels        */
-        pool_h,             /*!   Pooled height   */
-        pool_w              /*!   Pooled width    */
+    Y(0)->Reshape({
+        X(1).dim(0),  /*   nRoIs   */
+        X(0).dim(1),  /* nchannels */
+        pool_h_,      /* feature_h */
+        pool_w_       /* feature_w */
     });
 
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(0), float16)) {
+        RunImpl<float16>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0),
+            { "float32", "float16" }
+        );
+    };
+}
+
+template <class Context> template <typename T>
+void ROIAlignGradientOp<Context>::RunImpl() {
+    auto* roi = X(1).template data<float, Context>();
+    auto* dy  = X(2).template data<T, Context>();
+    auto* dx  = Y(0)->template mutable_data<T, Context>();
+
+    math::Set(
+        Y(0)->count(),
+        cast::to<T>(0.f),
+        dx, ctx()
+    );
+
+    kernel::ROIAlignGrad(
+        Y(0)->dim(1),
+        Y(0)->dim(2),
+        Y(0)->dim(3),
+        pool_h_, pool_w_,
+        X(1).dim(0),
+        spatial_scale_,
+        sampling_ratio_,
+        dy, roi,
+        dx, ctx()
+    );
+}
+
+template <class Context>
+void ROIAlignGradientOp<Context>::RunImplFloat16() {
+    auto* roi = X(1).template data<float, Context>();
+    auto* dy  = X(2).template data<float16, Context>();
+    auto* dx  = Y(0)->template mutable_data<float16, Context>();
+
+    auto buf = ws()
+        ->template data<float, Context>
+            ({ X(2).count(), Y(0)->count() });
+
+    math::Set(
+        Y(0)->count(),
+        0.f,
+        buf[1], ctx()
+    );
+
+    kernel::TypeA2B(
+        X(2).count(),
+        dy, buf[0], ctx()
+    );
+
+    kernel::ROIAlignGrad(
+        Y(0)->dim(1),
+        Y(0)->dim(2),
+        Y(0)->dim(3),
+        pool_h_, pool_w_,
+        X(1).dim(0),
+        spatial_scale_,
+        sampling_ratio_,
+        buf[0], roi,
+        buf[1], ctx()
+    );
+
+    kernel::TypeA2B(
+        Y(0)->count(),
+        buf[1], dx, ctx()
+    );
+}
+
+template <class Context>
+void ROIAlignGradientOp<Context>::RunOnDevice() {
+    Y(0)->ReshapeLike(X(0));
+
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(0), float16)) {
+        RunImplFloat16();
+    } else {
+        LOG(FATAL) << DTypeString(X(0),
+            { "float32", "float16" }
+        );
+    };
 }
 
 DEPLOY_CPU(ROIAlign);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(ROIAlign);
 #endif
-OPERATOR_SCHEMA(ROIAlign).NumInputs(2).NumOutputs(1);
-
-template <class Context> template <typename T>
-void ROIAlignGradientOp<Context>::RunWithType() {
-    auto* dYdata = Input(-1).template data<T, Context>();
-    auto* Rdata = Input(1).template data<float, Context>();
-    auto* dXdata = Output(0)->template mutable_data<T, Context>();
-
-    math::Set(Output(0)->count(), cast::to<T>(0.f), dXdata, ctx());
-
-    kernel::ROIAlignGrad(
-        Output(0)->dim(1),
-        Output(0)->dim(2),
-        Output(0)->dim(3),
-        pool_h, pool_w,
-        Input(1).dim(0),
-        spatial_scale,
-        sampling_ratio,
-        dYdata, Rdata,
-        dXdata, ctx());
-}
-
-template <class Context>
-void ROIAlignGradientOp<Context>::RunWithFloat16() {
-    auto* dYdata = Input(-1).template data<float16, Context>();
-    auto* Rdata = Input(1).template data<float, Context>();
-    auto* dXdata = Output(0)->template mutable_data<float16, Context>();
-
-    auto WSdata = ws()->template caches<float, Context>({
-        Input(-1).count(), Output(0)->count() });
-
-    math::Set(Output(0)->count(), 0.f, WSdata[1], ctx());
-    kernel::TypeA2B(Input(-1).count(), dYdata, WSdata[0], ctx());
-
-    kernel::ROIAlignGrad(
-        Output(0)->dim(1),
-        Output(0)->dim(2),
-        Output(0)->dim(3),
-        pool_h, pool_w,
-        Input(1).dim(0),
-        spatial_scale, 
-        sampling_ratio,
-        WSdata[0], Rdata,
-        WSdata[1], ctx());
-
-    kernel::TypeA2B(Output(0)->count(), WSdata[1], dXdata, ctx());
-}
-
-template <class Context>
-void ROIAlignGradientOp<Context>::RunOnDevice() {
-    Output(0)->ReshapeLike(Input(0));
-
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), float16)) RunWithFloat16();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
-}
 
 DEPLOY_CPU(ROIAlignGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(ROIAlignGradient);
 #endif
 
-OPERATOR_SCHEMA(ROIAlignGradient)
-    .NumInputs(3).NumOutputs(1);
+OPERATOR_SCHEMA(ROIAlign)
+     /* X, RoI */
+    .NumInputs(2)
+     /* Y */
+    .NumOutputs(1);
 
-class GetROIAlignGradient final : public GradientMakerBase {
+OPERATOR_SCHEMA(ROIAlignGradient)
+     /* X, RoI, dY */
+    .NumInputs(3)
+     /* dX */
+    .NumOutputs(1);
+
+namespace {
+
+class GradientMaker final : public GradientMakerBase {
  public:
-    GRADIENT_MAKER_CTOR(GetROIAlignGradient);
-    vector<OperatorDef> MakeDefs() override {
+    GRADIENT_MAKER_CTOR(GradientMaker);
+    vector<OperatorDef> MakeDef() override {
         return SingleDef(def.type() + "Gradient", "",
             vector<string>({ I(0), I(1), GO(0) }),
-            vector<string>({ GI(0) }));
+            vector<string>({ GI(0) })
+        );
     }
 };
 
-REGISTER_GRADIENT(ROIAlign, GetROIAlignGradient);
+}  // namespace
+
+REGISTER_GRADIENT(ROIAlign, GradientMaker);
 
 }  // namespace dragon

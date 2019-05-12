@@ -15,32 +15,32 @@
 
 #ifdef WITH_MPI
 
-#include "operators/mpi/base_mpi_op.h"
+#include "operators/mpi/mpi_op_base.h"
 
 namespace dragon {
 
 template <class Context>
-class MPIBroadcastOp final : public ModelMPIBase<Context> {
+class MPIBroadcastOp final : public MPIOpBase<Context> {
  public:
     MPIBroadcastOp(const OperatorDef& def, Workspace* ws)
-        : ModelMPIBase<Context>(def, ws) {}
+        : MPIOpBase<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
-    USE_MODEL_MPI_FUNCTIONS;
+    USE_MPI_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 };
 
 template <class Context>
-class MPIBroadcastGradientOp final : public ModelMPIBase<Context> {
+class MPIBroadcastGradientOp final : public MPIOpBase<Context> {
 public:
     MPIBroadcastGradientOp(const OperatorDef& def, Workspace* ws)
-        : ModelMPIBase<Context>(def, ws) {}
+        : MPIOpBase<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
-    USE_MODEL_MPI_FUNCTIONS;
+    USE_MPI_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 };
 
 }  // namespace dragon

@@ -6,90 +6,121 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void LSTMCellOp<Context>::RunWithType() {
-    auto* Xdata = Input(0).template mutable_data<T, Context>();
-    auto* HXdata = Input(1).template data<T, Context>();
-    auto* Hdata = Output(0)->template mutable_data<T, Context>();
-    auto* Cdata = Output(1)->template mutable_data<T, Context>();
+void LSTMCellOp<Context>::RunImpl() {
+    auto* x = X(0).template mutable_data<T, Context>();
+    auto* hx = X(1).template data<T, Context>();
+    auto* h = Y(0)->template mutable_data<T, Context>();
+    auto* c = Y(1)->template mutable_data<T, Context>();
 
     kernel::LSTMCell(
-        Input(1).dim(0), Input(1).ndim() == 2 ?
-            Input(1).dim(1) : Input(1).dim(2),
-        HXdata, Xdata, Cdata, Hdata, ctx());
+        X(1).dim(0),
+        X(1).dim(-1),
+        hx, x,
+        c, h, ctx()
+    );
 }
 
 template <class Context>
 void LSTMCellOp<Context>::RunOnDevice() {
-    Output(0)->ReshapeLike(Input(1));
-    Output(1)->ReshapeLike(Input(1));
+    Y(0)->ReshapeLike(X(1));
+    Y(1)->ReshapeLike(X(1));
 
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else {
+        LOG(FATAL) << DTypeString(
+            X(0), { "float32" }
+        );
+    }
+}
+
+template <class Context> template <typename T>
+void LSTMCellGradientOp<Context>::RunImpl() {
+    auto* x = X(0).template data<T, Context>();
+    auto* hx = X(1).template data<T, Context>();
+    auto* c = X(2).template data<T, Context>();
+    auto* dh = X(3).template data<T, Context>();
+    auto* dc = X(4).template mutable_data<T, Context>();
+    auto* dx = Y(0)->template mutable_data<T, Context>();
+    auto* dhx = Y(1)->template mutable_data<T, Context>();
+
+    if (X(-1).name() == "NULL") {
+        math::Set(
+            X(-1).count(),
+            cast::to<T>(0.f),
+            dc, ctx()
+        );
+    }
+
+    kernel::LSTMCellGrad(
+        X(1).dim(0),
+        X(1).dim(-1),
+        hx, x, c, dc, dh,
+        dhx, dx, ctx()
+    );
+}
+
+template <class Context>
+void LSTMCellGradientOp<Context>::RunOnDevice() {
+    Y(0)->ReshapeLike(X(0));
+    Y(1)->ReshapeLike(X(1));
+
+    if (X(-1).name() == "NULL") {
+        // dC will be ignored if C is not solved
+        // We should Zero-Reset the dC
+        X(-1).ReshapeLike(X(-2));
+    }
+
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else {
+        LOG(FATAL) << DTypeString(
+            X(0), { "float32" }
+        );
+    }
 }
 
 DEPLOY_CPU(LSTMCell);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(LSTMCell);
 #endif
-OPERATOR_SCHEMA(LSTMCell).NumInputs(2, 3).NumOutputs(2);
-
-template <class Context> template <typename T>
-void LSTMCellGradientOp<Context>::RunWithType() {
-    auto* Xdata = Input(0).template data<T, Context>();
-    auto* HXdata = Input(1).template data<T, Context>();
-    auto* Cdata = Input(2).template data<T, Context>();
-    auto* dHdata = Input(3).template data<T, Context>();
-    auto* dCdata = Input(4).template mutable_data<T, Context>();
-    auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    auto* dHXdata = Output(1)->template mutable_data<T, Context>();
-
-    if (Input(-1).name() == "NULL") {
-        math::Set(Input(-1).count(),
-            cast::to<T>(0.f), dCdata, ctx());
-    }
-
-    kernel::LSTMCellGrad(
-        Input(1).dim(0), Input(1).ndim() == 2 ?
-            Input(1).dim(1) : Input(1).dim(2),
-        HXdata, Xdata, Cdata, dCdata, dHdata,
-        dHXdata, dXdata, ctx());
-}
-
-template <class Context>
-void LSTMCellGradientOp<Context>::RunOnDevice() {
-    Output(0)->ReshapeLike(Input(0));
-    Output(1)->ReshapeLike(Input(1));
-
-    if (Input(-1).name() == "NULL") {
-        // dC will be ignored if C is not solved
-        // We should Zero-Reset the dC
-        Input(-1).ReshapeLike(Input(-2));
-    }
-
-    if (Input(0).template IsType<float>()) RunWithType<float>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32" });
-}
 
 DEPLOY_CPU(LSTMCellGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(LSTMCellGradient);
 #endif
 
-OPERATOR_SCHEMA(LSTMCellGradient)
-    .NumInputs(5).NumOutputs(2);
+OPERATOR_SCHEMA(LSTMCell)
+     /* X, HX */
+    .NumInputs(2, 3)
+     /* H, C */
+    .NumOutputs(2);
 
-class GetLSTMCellGradient final : public GradientMakerBase {
+OPERATOR_SCHEMA(LSTMCellGradient)
+     /* X, HX, C, dH, dC */
+    .NumInputs(5)
+     /* dX, dHX */
+    .NumOutputs(2);
+
+namespace {
+
+class GradientMaker final : public GradientMakerBase {
  public:
-    GRADIENT_MAKER_CTOR(GetLSTMCellGradient);
-    vector<OperatorDef> MakeDefs() override{
+    GRADIENT_MAKER_CTOR(GradientMaker);
+    vector<OperatorDef> MakeDef() override{
         return SingleDef(def.type() + "Gradient", "",
             vector<string>({ I(0), I(1), O(1), GO(0), GO(1) }),
-            vector<string>({ GI(0), GI(1) }));
+            vector<string>({ GI(0), GI(1) })
+        );
     }
     // Fill zero for dCNext
-    vector<float> DefaultValues() override{ return { 1.f, 0.f }; }
+    vector<float> DefaultValues() override{
+        return { 1.f, 0.f };
+    }
 };
 
-REGISTER_GRADIENT(LSTMCell, GetLSTMCellGradient);
+}  // namespace
+
+REGISTER_GRADIENT(LSTMCell, GradientMaker);
 
 }  // namespace dragon

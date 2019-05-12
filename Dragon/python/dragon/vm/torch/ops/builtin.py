@@ -32,7 +32,9 @@ from dragon.vm.torch.ops.modules.init import (
 
 from dragon.vm.torch.ops.modules.array import (
     Reshape, Squeeze, UnSqueeze, Permute,
-    Indexing, Assigning, Repeat, Concat, Gather,
+    Indexing, Assigning,
+    Repeat, Concat, Stack,
+    IndexSelect,
     Reduce, ArgReduce, OneHot, Multinomial,
 )
 
@@ -55,7 +57,8 @@ __all__ = [
     'mean', 'sum', 'min', 'max', 'topk',
     'argmin', 'argmax',
     'gt', 'lt', 'eq', 'ge', 'le',
-    'cat', 'gather', 'narrow',
+    'cat', 'stack', 'narrow',
+    'index_select',
     'one_hot', 'multinomial', 'rand', 'randn',
     'zeros', 'zeros_like', 'ones', 'ones_like',
     'nn_resize', 'bilinear_resize', 'roi_pool', 'roi_align',
@@ -852,12 +855,32 @@ def cat(seq, dim=0, out=None):
     return module.forward(seq, out)
 
 
-def gather(input, dim, index, out=None):
-    """Gather the input values along the given axis.
+def stack(seq, dim=0, out=None):
+    """Stack the inputs along the given axis.
 
-    Note that it is a tensorflow style gather, which takes a vector index,
+    Parameters
+    ----------
+    seq : sequence of dragon.vm.torch.Tensor
+        The sequence.
+    dim : int, optional
+        The dim to stack.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
 
-    values of other dimension will be copied automatically.
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    dev = MakeDevice(inputs=seq, outputs=[out] if out else [])
+    key = 'Stack/{}/dim:{}'.format(dev, dim)
+    module = get_module(Stack, key, dev, axis=dim)
+    return module.forward(seq, out)
+
+
+def index_select(input, dim, index, out=None):
+    """Select the input values along the given axis using index.
 
     Parameters
     ----------
@@ -876,11 +899,9 @@ def gather(input, dim, index, out=None):
         The output tensor.
 
     """
-    dev = MakeDevice(
-        inputs=[input, index],
-            outputs=[out] if out else [])
-    key = 'Gather/{}/dim:{}'.format(dev, dim)
-    module = get_module(Gather, key, dev, axis=dim)
+    dev = MakeDevice([input, index], [out] if out else [])
+    key = 'IndexSelect/{}/dim:{}'.format(dev, dim)
+    module = get_module(IndexSelect, key, dev, axis=dim)
     return module.forward(input, index, out)
 
 
@@ -931,7 +952,7 @@ def one_hot(input, depth):
     return module.forward(input)
 
 
-def multinomial(input, num_samples, normalize=False, out=None):
+def multinomial(input, num_samples, out=None):
     """Return a tensor where each row contains ``num_samples``,
      sampled from the multinomial distribution.
 
@@ -951,12 +972,12 @@ def multinomial(input, num_samples, normalize=False, out=None):
 
     """
     dev = MakeDevice(inputs=[input])
-    key = 'Multinomial/{}/num_samples:{}/normalize:{}'.format(
-        dev, num_samples, normalize)
+    key = 'Multinomial/{}' \
+          '/num_samples:{}'.format(dev, num_samples)
     module = get_module(
         Multinomial, key, dev,
-            num_samples=num_samples,
-                normalize=normalize)
+        num_samples=num_samples,
+    )
     return module.forward(input, out)
 
 

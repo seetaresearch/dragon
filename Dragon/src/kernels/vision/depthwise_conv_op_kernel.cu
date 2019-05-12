@@ -2,16 +2,17 @@
 
 #include "core/context_cuda.h"
 #include "utils/op_kernel.h"
+#include "utils/cub_device.h"
 
 namespace dragon {
 
 namespace kernel {
 
-/*! DepthwiseConv2d <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T, int KKH, int KKW>
-__global__ void _DepthwiseConv2d_NCHW(
-    const int               count,
+__global__ void _DepthwiseConv2dNCHW(
+    const int               nthreads,
     const int               C,
     const int               H,
     const int               W,
@@ -19,74 +20,54 @@ __global__ void _DepthwiseConv2d_NCHW(
     const int               out_w,
     const int               kernel_h,
     const int               kernel_w,
-    const int               stride,
+    const int               stride_h,
+    const int               stride_w,
     const int               pad_h,
     const int               pad_w,
+    const int               dilation_h,
+    const int               dilation_w,
     const T*                x,
     const T*                w,
     T*                      y) {
     const int KH = KKH < 0 ? kernel_h : KKH;
     const int KW = KKW < 0 ? kernel_w : KKW;
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        const int OW = idx % out_w;
-        const int OH = (idx / out_w) % out_h;
-        const int OC = (idx / out_w / out_h) % C;
-        const int OB = idx / out_w / out_h / C;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        const int ow = yi % out_w;
+        const int oh = (yi / out_w) % out_h;
+        const int c = (yi / out_w / out_h) % C;
+        const int n = yi / out_w / out_h / C;
 
-        const int ih_start = OH * stride - pad_h;
-        const int iw_start = OW * stride - pad_w;
-        const int ih_end = ih_start + KH;
-        const int iw_end = iw_start + KW;
+        const int ih_start = oh * stride_h - pad_h;
+        const int iw_start = ow * stride_w - pad_w;
+        const int x_start = (n * C + c) * H * W;
 
-        const int fc_start = OC * KH * KW;
-        const int xc_start = (OB * C + OC) * H * W;
+        T sum_val = T(0);
+        int ih, iw, xi, wi = c * KH * KW;
 
-        T sum = 0;
-        if (ih_start >= 0 && iw_start >= 0 &&
-                ih_end < H && iw_end < W) {
-            // Loop that doesn't need to check for boundary conditions
 #pragma unroll
-            for (int fh = 0; fh < KH; ++fh) {
-                const int ih = ih_start + fh;
-                const int x_start = xc_start + ih * W;
-                const int f_start = fc_start + fh * KW;
+        for (int kh = 0; kh < KH; ++kh) {
 #pragma unroll
-                for (int fw = 0; fw < KW; ++fw) {
-                    const int iw = iw_start + fw;
+            for (int kw = 0; kw < KW; ++kw) {
+                ih = ih_start + kh * dilation_h;
+                iw = iw_start + kw * dilation_w;
+                if (ih >= 0 && ih < H && iw >= 0 && iw < W) {
+                    xi = x_start + ih * W + iw;
 #if __CUDA_ARCH__ >= 350
-                    sum += __ldg(x + x_start + iw) * __ldg(w + f_start + fw);
+                    sum_val += __ldg(x + xi) * __ldg(w + wi);
 #else
-                    sum += x[x_start + iw] * w[f_start + fw];
+                    sum_val += x[xi] * w[wi];
 #endif
-                }  // End fw
-            } // End fh
-        } else {
-            // Loop that needs to check for boundary conditions
-#pragma unroll
-            for (int fh = 0; fh < KH; ++fh) {
-                const int ih = ih_start + fh;
-                const int x_start = xc_start + ih * W;
-                const int f_start = fc_start + fh * KW;
-#pragma unroll
-                for (int fw = 0; fw < KW; ++fw) {
-                    const int iw = iw_start + fw;
-                    if (ih >= 0 && ih < H && iw >= 0 && iw < W) {
-#if __CUDA_ARCH__ >= 350
-                    sum += __ldg(x + x_start + iw) * __ldg(w + f_start + fw);
-#else
-                    sum += x[x_start + iw] * w[f_start + fw];
-#endif
-                    }
-                }  // End fw
-            }  // End fh
-        }
-        y[idx] = sum;
+                }
+                ++wi;
+            }  // End kw
+        }  // End kh
+        y[yi] = sum_val;
     }
 }
 
 template <typename T, int KKH, int KKW>
-__global__ void _DepthwiseConv2d_NHWC(
-    const int               count,
+__global__ void _DepthwiseConv2dNHWC(
+    const int               nthreads,
     const int               C,
     const int               H,
     const int               W,
@@ -94,70 +75,48 @@ __global__ void _DepthwiseConv2d_NHWC(
     const int               out_w,
     const int               kernel_h,
     const int               kernel_w,
-    const int               stride,
+    const int               stride_h,
+    const int               stride_w,
     const int               pad_h,
     const int               pad_w,
+    const int               dilation_h,
+    const int               dilation_w,
     const T*                x,
     const T*                w,
     T*                      y) {
     const int KH = KKH < 0 ? kernel_h : KKH;
     const int KW = KKW < 0 ? kernel_w : KKW;
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        const int OC = idx % C;
-        const int OW = (idx / C) % out_w;
-        const int OH = (idx / C / out_w) % out_h;
-        const int OB = idx / C / out_h / out_h;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        const int c = yi % C;
+        const int ow = (yi / C) % out_w;
+        const int oh = (yi / C / out_w) % out_h;
+        const int n = yi / C / out_h / out_h;
 
-        const int ih_start = OH * stride - pad_h;
-        const int iw_start = OW * stride - pad_w;
-        const int ih_end = ih_start + KH;
-        const int iw_end = iw_start + KW;
+        const int ih_start = oh * stride_h - pad_h;
+        const int iw_start = ow * stride_w - pad_w;
+        const int x_start = n * H;
 
-        const int xb_start = OB * H;
-        const int fc_start = OC  * KH;
+        T sum_val = T(0);
+        int ih, iw, xi, wi = c * KH * KW;
 
-        T sum = 0;
-
-        if (ih_start >= 0 && iw_start >= 0 &&
-                ih_end < H && iw_end < W) {
-            // Loop that doesn't need to check for boundary conditions
 #pragma unroll
-            for (int fh = 0; fh < KH; ++fh) {
-                const int ih = ih_start + fh;
-                const int x_start = (xb_start + ih) * W;
-                const int f_start = (fc_start + fh) * KW;
+        for (int kh = 0; kh < KH; ++kh) {
 #pragma unroll
-                for (int fw = 0; fw < KW; ++fw) {
-                    const int iw = iw_start + fw;
-                    const int x_idx = (x_start + iw) * C + OC;
+            for (int kw = 0; kw < KW; ++kw) {
+                ih = ih_start + kh * dilation_h;
+                iw = iw_start + kw * dilation_w;
+                if (ih >= 0 && ih < H && iw >= 0 && iw < W) {
+                    xi = ((x_start + ih) * W + iw) * C + c;
 #if __CUDA_ARCH__ >= 350
-                    sum += __ldg(x + x_idx) * __ldg(w + f_start + fw);
+                    sum_val += __ldg(x + xi) * __ldg(w + wi);
 #else
-                    sum += x[x_idx] * w[f_start + fw];
+                    sum_val += x[xi] * w[wi];
 #endif
                 }
-            }
-        } else {
-#pragma unroll
-            for (int fh = 0; fh < KH; ++fh) {
-                const int ih = ih_start + fh;
-                const int x_start = (xb_start + ih) * W;
-                const int f_start = (fc_start + fh) * KW;
-#pragma unroll
-                for (int fw = 0; fw < KW; ++fw) {
-                    const int iw = iw_start + fw;
-                    if (ih >= 0 && ih < H && iw >= 0 && iw < W) {
-                        const int x_idx = (x_start + iw) * C + OC;
-#if __CUDA_ARCH__ >= 350
-                        sum += __ldg(x + x_idx) * __ldg(w + f_start + fw);
-#else
-                        sum += x[x_idx] * w[f_start + fw];
-#endif
-                    }
-                }  // End fw
-            }  // End fh
-        }
-        y[idx] = sum;
+                ++wi;
+            }  // End kw
+        }  // End kh
+        y[yi] = sum_val;
     }
 }
 
@@ -170,53 +129,134 @@ template <> void DepthwiseConv2d<float, CUDAContext>(
     const int               out_w,
     const int               kernel_h,
     const int               kernel_w,
-    const int               stride,
+    const int               stride_h,
+    const int               stride_w,
     const int               pad_h,
     const int               pad_w,
+    const int               dilation_h,
+    const int               dilation_w,
     const string&           data_format,
     const float*            x,
     const float*            w,
     float*                  y,
     CUDAContext*            ctx) {
-    const auto count = N * C * out_h * out_w;
+    const auto nthreads = N * C * out_h * out_w;
     if (data_format == "NCHW") {
         if (kernel_h == 3 && kernel_w == 3) {
-            _DepthwiseConv2d_NCHW<float, 3, 3>
-                << < CUDA_BLOCKS(count), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >
-                (count, C, H, W, out_h, out_w,
-                    kernel_h, kernel_w, stride,
-                        pad_h, pad_w, x, w, y);
-        } else {
-            _DepthwiseConv2d_NCHW<float, -1, -1>
-                << < CUDA_BLOCKS(count), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >
-                (count, C, H, W, out_h, out_w,
-                    kernel_h, kernel_w, stride,
-                        pad_h, pad_w, x, w, y);
+            _DepthwiseConv2dNCHW<float, 3, 3>
+                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(
+                nthreads,
+                C, H, W,
+                out_h, out_w,
+                kernel_h, kernel_w,
+                stride_h, stride_w,
+                pad_h, pad_w,
+                dilation_h, dilation_w,
+                x, w, y
+            );
+        } else if (kernel_h == 5 && kernel_w == 5) {
+            _DepthwiseConv2dNCHW<float, 5, 5>
+                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(
+                nthreads,
+                C, H, W,
+                out_h, out_w,
+                kernel_h, kernel_w,
+                stride_h, stride_w,
+                pad_h, pad_w,
+                dilation_h, dilation_w,
+                x, w, y
+            );
+        } else if (kernel_h == 7 && kernel_w == 7) {
+            _DepthwiseConv2dNCHW<float, 7, 7>
+                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(
+                nthreads,
+                C, H, W,
+                out_h, out_w,
+                kernel_h, kernel_w,
+                stride_h, stride_w,
+                pad_h, pad_w,
+                dilation_h, dilation_w,
+                x, w, y
+            );
+       } else {
+            _DepthwiseConv2dNCHW<float, -1, -1>
+                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(
+                nthreads,
+                C, H, W,
+                out_h, out_w,
+                kernel_h, kernel_w,
+                stride_h, stride_w,
+                pad_h, pad_w,
+                dilation_h, dilation_w,
+                x, w, y
+            );
         }
     } else if (data_format == "NHWC") {
         if (kernel_h == 3 && kernel_w == 3) {
-            _DepthwiseConv2d_NHWC<float, 3, 3>
-                << < CUDA_BLOCKS(count), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >
-                (count, C, H, W, out_h, out_w,
-                    kernel_h, kernel_w, stride,
-                        pad_h, pad_w, x, w, y);
+            _DepthwiseConv2dNHWC<float, 3, 3>
+                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(
+                nthreads,
+                C, H, W,
+                out_h, out_w,
+                kernel_h, kernel_w,
+                stride_h, stride_w,
+                pad_h, pad_w,
+                dilation_h, dilation_w,
+                x, w, y
+            );
+        } else if (kernel_h == 5 && kernel_w == 5) {
+            _DepthwiseConv2dNHWC<float, 5, 5>
+                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(
+                nthreads,
+                C, H, W,
+                out_h, out_w,
+                kernel_h, kernel_w,
+                stride_h, stride_w,
+                pad_h, pad_w,
+                dilation_h, dilation_w,
+                x, w, y
+            );
+        } else if (kernel_h == 7 && kernel_w == 7) {
+            _DepthwiseConv2dNHWC<float, 7, 7>
+                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(
+                nthreads,
+                C, H, W,
+                out_h, out_w,
+                kernel_h, kernel_w,
+                stride_h, stride_w,
+                pad_h, pad_w,
+                dilation_h, dilation_w,
+                x, w, y
+            );
         } else {
-            _DepthwiseConv2d_NHWC<float, -1, -1>
-                << < CUDA_BLOCKS(count), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >
-                (count, C, H, W, out_h, out_w,
-                    kernel_h, kernel_w, stride,
-                        pad_h, pad_w, x, w, y);
+            _DepthwiseConv2dNHWC<float, -1, -1>
+                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(
+                nthreads,
+                C, H, W,
+                out_h, out_w,
+                kernel_h, kernel_w,
+                stride_h, stride_w,
+                pad_h, pad_w,
+                dilation_h, dilation_w,
+                x, w, y
+            );
         }
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
 template <typename T, int KKH, int KKW>
-__global__ void _DepthwiseConv2dGrad_NCHW(
-    const int               count,
+__global__ void _DepthwiseConv2dGradNCHW(
+    const int               nthreads,
     const int               C,
     const int               H,
     const int               W,
@@ -224,45 +264,110 @@ __global__ void _DepthwiseConv2dGrad_NCHW(
     const int               out_w,
     const int               kernel_h,
     const int               kernel_w,
-    const int               stride,
+    const int               stride_h,
+    const int               stride_w,
     const int               pad_h,
     const int               pad_w,
+    const int               dilation_h,
+    const int               dilation_w,
     const T*                dy,
     const T*                w,
-    T*                      dx) { 
+    T*                      dx) {
     const int KH = KKH < 0 ? kernel_h : KKH;
     const int KW = KKW < 0 ? kernel_w : KKW;
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        const int IW = idx % W;
-        const int IH = (idx / W) % H;
-        const int IC = (idx / W / H) % C;
-        const int IB = idx / W / H / C;
+    CUDA_1D_KERNEL_LOOP(xi, nthreads) {
+        const int iw = xi % W;
+        const int ih = (xi / W) % H;
+        const int c = (xi / W / H) % C;
+        const int n = xi / W / H / C;
 
-        const int oh_start = max(0, (IH - KH + pad_h + stride) / stride);
-        const int oh_end = min(out_h - 1, (IH + pad_h) / stride);
-        const int ow_start = max(0, (IW - KW + pad_w + stride) / stride);
-        const int ow_end = min(out_w - 1, (IW + pad_w) / stride);
+        T sum_val = T(0);
+        int oh, ow, yi, wi = c * KH * KW;
+        const int y_start = (n * C + c) * out_h * out_w;
 
-        const int fc_start = IC * KH * KW;
-        const int yc_start = (IB * C + IC) * (out_h * out_w);
-
-        T sum = 0;
 #pragma unroll
-        for (int oh = oh_start; oh <= oh_end; ++oh) {
-            const int fh = IH + pad_h - oh * stride;
-            const int f_start = fc_start + fh * KW;
-            const int y_start = yc_start + oh * out_w;
-            for (int ow = ow_start; ow <= ow_end; ++ow) {
-                const int fw = IW + pad_w - ow * stride;
+        for (int kh = 0; kh < KH; ++kh) {
+#pragma unroll
+            for (int kw = 0; kw < KW; ++kw) {
+                oh = ih + pad_h - kh * dilation_h;
+                ow = iw + pad_w - kw * dilation_w;
+                if ((oh % stride_h == 0) &&
+                    (ow % stride_w == 0)) {
+                    oh = oh / stride_h;
+                    ow = ow / stride_w;
+                    if (oh >= 0 && oh < out_h &&
+                        ow >= 0 && ow < out_w) {
+                        yi = y_start + oh * out_w + ow;
 #if __CUDA_ARCH__ >= 350
-                sum += __ldg(dy + y_start + ow) * __ldg(w + f_start + fw);
+                        sum_val += __ldg(dy + yi) * __ldg(w + wi);
 #else
-                sum += dy[y_start + ow] * w[f_start + fw];
+                        sum_val += dy[yi] * w[wi];
 #endif
-            }  // End yw
-        }  // End yh
-        dx[idx] = sum;
-  }
+                    }
+                }
+                ++wi;
+            }  // End kw
+        }  // End kh
+        dx[xi] = sum_val;
+    }
+}
+
+template <typename T, int KKH, int KKW>
+__global__ void _DepthwiseConv2dGradNHWC(
+    const int               nthreads,
+    const int               C,
+    const int               H,
+    const int               W,
+    const int               out_h,
+    const int               out_w,
+    const int               kernel_h,
+    const int               kernel_w,
+    const int               stride_h,
+    const int               stride_w,
+    const int               pad_h,
+    const int               pad_w,
+    const int               dilation_h,
+    const int               dilation_w,
+    const T*                dy,
+    const T*                w,
+    T*                      dx) {
+    const int KH = KKH < 0 ? kernel_h : KKH;
+    const int KW = KKW < 0 ? kernel_w : KKW;
+    CUDA_1D_KERNEL_LOOP(xi, nthreads) {
+        const int c = xi % C;
+        const int iw = (xi / C) % W;
+        const int ih = (xi / C / W) % H;
+        const int n = xi / C / W / H;
+
+        T sum_val = T(0);
+        int oh, ow, yi, wi = c * KH * KW;
+        const int y_start = n * out_h;
+
+#pragma unroll
+        for (int kh = 0; kh < KH; ++kh) {
+#pragma unroll
+            for (int kw = 0; kw < KW; ++kw) {
+                oh = ih + pad_h - kh * dilation_h;
+                ow = iw + pad_w - kw * dilation_w;
+                if ((oh % stride_h == 0) &&
+                    (ow % stride_w == 0)) {
+                    oh = oh / stride_h;
+                    ow = ow / stride_w;
+                    if (oh >= 0 && oh < out_h &&
+                        ow >= 0 && ow < out_w) {
+                        yi = ((y_start + oh) * out_w + ow) * C + c;
+#if __CUDA_ARCH__ >= 350
+                        sum_val += __ldg(dy + yi) * __ldg(w + wi);
+#else
+                        sum_val += dy[yi] * w[wi];
+#endif
+                    }
+                }
+                ++wi;
+            }  // End kw
+        }  // End kh
+        dx[xi] = sum_val;
+    }
 }
 
 template <> void DepthwiseConv2dGrad<float, CUDAContext>(
@@ -274,45 +379,136 @@ template <> void DepthwiseConv2dGrad<float, CUDAContext>(
     const int               out_w,
     const int               kernel_h,
     const int               kernel_w,
-    const int               stride,
+    const int               stride_h,
+    const int               stride_w,
     const int               pad_h,
     const int               pad_w,
+    const int               dilation_h,
+    const int               dilation_w,
     const string&           data_format,
     const float*            dy,
     const float*            w,
     float*                  dx,
     CUDAContext*            ctx) {
-    const auto count = N * C * out_h * out_w;
+    auto nthreads = N * C * H * W;
     if (data_format == "NCHW") {
         if (kernel_h == 3 && kernel_w == 3) {
-            _DepthwiseConv2dGrad_NCHW<float, 3, 3>
-                << < CUDA_BLOCKS(count), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >
-                (count, C, H, W, out_h, out_w,
-                    kernel_h, kernel_w, stride,
-                        pad_h, pad_w, dy, w, dx);
+            _DepthwiseConv2dGradNCHW<float, 3, 3>
+                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(
+                nthreads,
+                C, H, W,
+                out_h, out_w,
+                kernel_h, kernel_w,
+                stride_h, stride_w,
+                pad_h, pad_w,
+                dilation_h, dilation_w,
+                dy, w, dx
+            );
+        } else if (kernel_h == 5 && kernel_w == 5) {
+            _DepthwiseConv2dGradNCHW<float, 5, 5>
+                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(
+                nthreads,
+                C, H, W,
+                out_h, out_w,
+                kernel_h, kernel_w,
+                stride_h, stride_w,
+                pad_h, pad_w,
+                dilation_h, dilation_w,
+                dy, w, dx
+            );
+        } else if (kernel_h == 7 && kernel_w == 7) {
+            _DepthwiseConv2dGradNCHW<float, 7, 7>
+                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(
+                nthreads,
+                C, H, W,
+                out_h, out_w,
+                kernel_h, kernel_w,
+                stride_h, stride_w,
+                pad_h, pad_w,
+                dilation_h, dilation_w,
+                dy, w, dx
+            );
         } else {
-            _DepthwiseConv2dGrad_NCHW<float, -1, -1>
-                << < CUDA_BLOCKS(count), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >
-                (count, C, H, W, out_h, out_w,
-                    kernel_h, kernel_w, stride,
-                        pad_h, pad_w, dy, w, dx);
+             _DepthwiseConv2dGradNCHW<float, -1, -1>
+                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(
+                nthreads,
+                C, H, W,
+                out_h, out_w,
+                kernel_h, kernel_w,
+                stride_h, stride_w,
+                pad_h, pad_w,
+                dilation_h, dilation_w,
+                dy, w, dx
+            );
         }
     } else if (data_format == "NHWC") {
         if (kernel_h == 3 && kernel_w == 3) {
-            NOT_IMPLEMENTED;
+            _DepthwiseConv2dGradNHWC<float, 3, 3>
+                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(
+                nthreads,
+                C, H, W,
+                out_h, out_w,
+                kernel_h, kernel_w,
+                stride_h, stride_w,
+                pad_h, pad_w,
+                dilation_h, dilation_w,
+                dy, w, dx
+            );
+        } else if (kernel_h == 5 && kernel_w == 5) {
+            _DepthwiseConv2dGradNHWC<float, 5, 5>
+                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(
+                nthreads,
+                C, H, W,
+                out_h, out_w,
+                kernel_h, kernel_w,
+                stride_h, stride_w,
+                pad_h, pad_w,
+                dilation_h, dilation_w,
+                dy, w, dx
+            );
+        } else if (kernel_h == 7 && kernel_w == 7) {
+            _DepthwiseConv2dGradNHWC<float, 7, 7>
+                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(
+                nthreads,
+                C, H, W,
+                out_h, out_w,
+                kernel_h, kernel_w,
+                stride_h, stride_w,
+                pad_h, pad_w,
+                dilation_h, dilation_w,
+                dy, w, dx
+            );
         } else {
-            NOT_IMPLEMENTED;
+             _DepthwiseConv2dGradNHWC<float, -1, -1>
+                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                     0, ctx->cuda_stream() >> >(
+                nthreads,
+                C, H, W,
+                out_h, out_w,
+                kernel_h, kernel_w,
+                stride_h, stride_w,
+                pad_h, pad_w,
+                dilation_h, dilation_w,
+                dy, w, dx
+            );
         }
-    } else LOG(FATAL) << "Unknown data format: " << data_format;
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
+    }
 }
 
-/*! DepthwiseConv2dWGrad <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
-template <typename T, int KKH, int KKW>
-__global__ void _DepthwiseConv2dWGrad_NCHW(
-    const int               count,
+template <typename T>
+__global__ void _DepthwiseConv2dWGradNCHW(
+    const int               N,
     const int               C,
     const int               H,
     const int               W,
@@ -320,72 +516,98 @@ __global__ void _DepthwiseConv2dWGrad_NCHW(
     const int               out_w,
     const int               kernel_h,
     const int               kernel_w,
-    const int               stride,
+    const int               stride_h,
+    const int               stride_w,
     const int               pad_h,
     const int               pad_w,
+    const int               dilation_h,
+    const int               dilation_w,
     const T*                dy,
     const T*                x,
     T*                      dw) {
-    const int KH = KKH < 0 ? kernel_h : KKH;
-    const int KW = KKW < 0 ? kernel_w : KKW;
-    CUDA_1D_KERNEL_LOOP(idx, count) {
-        const int OW = idx % out_w;
-        const int OH = (idx / out_w) % out_h;
-        const int OC = (idx / out_w / out_h) % C;
-        const int OB = idx / out_w / out_h / C;
+    const int block_idx = blockIdx.x;
+    const int kw = block_idx % kernel_w;
+    const int kh = (block_idx / kernel_w) % kernel_h;
+    const int c = block_idx / kernel_w / kernel_h;
 
-        const int ih_start = OH * stride - pad_h;
-        const int iw_start = OW * stride - pad_w;
-        const int ih_end = ih_start + KH;
-        const int iw_end = iw_start + KW;
+    const int n = threadIdx.x / 32;
+    const int nwarps = blockDim.x / 32;
+    const int lane_idx = threadIdx.x % 32;
 
-        const int fc_start = OC * KH * KW;
-        const int xc_start = (OB * C + OC) * (H * W);
+    const int ohw = out_h * out_w;
+    T grad = T(0); int ih, iw, xi, yi;
 
+    for (int i = n; i < N; i += nwarps) {
+        for (int j = lane_idx; j < ohw; j += 32) {
+            ih = (j / out_w) * stride_h - pad_h + kh * dilation_h;
+            iw = (j % out_w) * stride_w - pad_w + kw * dilation_w;
+            if (ih >= 0 && iw >= 0 && ih < H && iw < W) {
+                xi = ((i * C + c) * H + ih) * W + iw;
+                yi = (i * C + c) * out_h * out_w + j;
 #if __CUDA_ARCH__ >= 350
-        const T dY = __ldg(dy + idx);
+                grad += __ldg(dy + yi) * __ldg(x + xi);
 #else
-        const T dY = dy[idx];
+                grad += dy[yi] * x[xi];
 #endif
-        if (ih_start >= 0 && iw_start >= 0 &&
-                ih_end < H && iw_end < W) {
-#pragma unroll
-            for (int fh = 0; fh < KH; ++fh) {
-                const int ih = ih_start + fh;
-                const int x_start = xc_start + ih * W;
-                const int f_start = fc_start + fh * KW;
-#pragma unroll
-            for (int fw = 0; fw < KW; ++fw) {
-                const int iw = iw_start + fw;
-#if __CUDA_ARCH__ >= 350
-                T partial_sum = __ldg(x + x_start + iw) * dY;
-#else
-                T partial_sum = x[x_start + iw] * dY;
-#endif
-                atomicAdd(dw + f_start + fw, partial_sum);
-            }  // End fw
-        }  // End fh
-    } else {
-#pragma unroll
-            for (int fh = 0; fh < KH; ++fh) {
-                const int ih = ih_start + fh;
-                const int x_start = xc_start + ih * W;
-                const int f_start = fc_start + fh * KW;
-#pragma unroll
-                for (int fw = 0; fw < KW; ++fw) {
-                    const int iw = iw_start + fw;
-                    if (ih >= 0 && ih < H && iw >= 0 && iw < W) {
-#if __CUDA_ARCH__ >= 350
-                        T partial_sum = __ldg(x + x_start + iw) * dY;
-#else
-                        T partial_sum = x[x_start + iw] * dY;
-#endif
-                        atomicAdd(dw + f_start + fw, partial_sum);
-                    } // End if
-                }  // End fw
-            }  // End fh
-        }  // End if
+             }
+        }
     }
+    typedef cub::BlockReduce<T, 256> Reduce;
+    __shared__ typename Reduce::TempStorage storage;
+    grad = Reduce(storage).Sum(grad);
+    if (threadIdx.x == 0) dw[block_idx] = grad;
+}
+
+template <typename T>
+__global__ void _DepthwiseConv2dWGradNHWC(
+    const int               N,
+    const int               C,
+    const int               H,
+    const int               W,
+    const int               out_h,
+    const int               out_w,
+    const int               kernel_h,
+    const int               kernel_w,
+    const int               stride_h,
+    const int               stride_w,
+    const int               pad_h,
+    const int               pad_w,
+    const int               dilation_h,
+    const int               dilation_w,
+    const T*                dy,
+    const T*                x,
+    T*                      dw) {
+    const int block_idx = blockIdx.x;
+    const int kw = block_idx % kernel_w;
+    const int kh = (block_idx / kernel_w) % kernel_h;
+    const int c = block_idx / kernel_w / kernel_h;
+
+    const int n = threadIdx.x / 32;
+    const int nwarps = blockDim.x / 32;
+    const int lane_idx = threadIdx.x % 32;
+
+    const int ohw = out_h * out_w;
+    T grad = T(0); int ih, iw, xi, yi;
+
+    for (int i = n; i < N; i += nwarps) {
+        for (int j = lane_idx; j < ohw; j += 32) {
+            ih = (j / out_w) * stride_h - pad_h + kh * dilation_h;
+            iw = (j % out_w) * stride_w - pad_w + kw * dilation_w;
+            if (ih >= 0 && iw >= 0 && ih < H && iw < W) {
+                xi = ((i * H + ih) * W + iw) * C + c;
+                yi = (i * ohw + j) * C + c;
+#if __CUDA_ARCH__ >= 350
+                grad += __ldg(dy + yi) * __ldg(x + xi);
+#else
+                grad += dy[yi] * x[xi];
+#endif
+             }
+        }
+    }
+    typedef cub::BlockReduce<T, 256> Reduce;
+    __shared__ typename Reduce::TempStorage storage;
+    grad = Reduce(storage).Sum(grad);
+    if (threadIdx.x == 0) dw[block_idx] = grad;
 }
 
 template <> void DepthwiseConv2dWGrad<float, CUDAContext>(
@@ -397,40 +619,46 @@ template <> void DepthwiseConv2dWGrad<float, CUDAContext>(
     const int               out_w,
     const int               kernel_h,
     const int               kernel_w,
-    const int               stride,
+    const int               stride_h,
+    const int               stride_w,
     const int               pad_h,
     const int               pad_w,
+    const int               dilation_h,
+    const int               dilation_w,
     const string&           data_format,
     const float*            dy,
     const float*            x,
     float*                  dw,
     CUDAContext*            ctx) {
-    const auto count = N * C * out_h * out_w;
+    int nthreads = 256;
+    auto nblocks = C * kernel_h * kernel_w;
     if (data_format == "NCHW") {
-        if (kernel_h == 3 && kernel_w == 3) {
-            _DepthwiseConv2dWGrad_NCHW<float, 3, 3>
-                << < CUDA_BLOCKS(count), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >
-                (count, C, H, W, out_h, out_w,
-                    kernel_h, kernel_w, stride,
-                        pad_h, pad_w, dy, x, dw);
-        } else {
-            _DepthwiseConv2dWGrad_NCHW<float, -1, -1>
-                << < CUDA_BLOCKS(count), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >
-                (count, C, H, W, out_h, out_w,
-                    kernel_h, kernel_w, stride,
-                        pad_h, pad_w, dy, x, dw);
-        }
+        _DepthwiseConv2dWGradNCHW
+            << < nblocks, nthreads,
+                 0, ctx->cuda_stream() >> >(
+            N, C, H, W,
+            out_h, out_w,
+            kernel_h, kernel_w,
+            stride_h, stride_w,
+            pad_h, pad_w,
+            dilation_h, dilation_w,
+            dy, x, dw
+       );
     } else if (data_format == "NHWC") {
-        if (kernel_h == 3 && kernel_w == 3) {
-            NOT_IMPLEMENTED;
-        }
-        else {
-            NOT_IMPLEMENTED;
-        }
+        _DepthwiseConv2dWGradNHWC
+            << < nblocks, nthreads,
+                 0, ctx->cuda_stream() >> >(
+            N, C, H, W,
+            out_h, out_w,
+            kernel_h, kernel_w,
+            stride_h, stride_w,
+            pad_h, pad_w,
+            dilation_h, dilation_w,
+            dy, x, dw
+       );
+    } else {
+        LOG(FATAL) << "Unknown DataFormat: " << data_format;
     }
-    else LOG(FATAL) << "Unknown data format: " << data_format;
 }
 
 }  // namespace kernel

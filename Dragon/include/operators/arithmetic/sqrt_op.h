@@ -20,21 +20,21 @@ namespace dragon {
 template <class Context>
 class SqrtOp final : public Operator<Context> {
  public:
-    USE_SIMPLE_CTOR_DTOR(SqrtOp);
+    SIMPLE_CTOR_DTOR(SqrtOp);
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 };
 
 template <class Context>
 class SqrtGradientOp final : public Operator<Context> {
  public:
-    USE_SIMPLE_CTOR_DTOR(SqrtGradientOp);
+    SIMPLE_CTOR_DTOR(SqrtGradientOp);
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 };
 
 }  // namespace dragon

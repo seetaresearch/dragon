@@ -32,10 +32,11 @@ class OperatorHelper(object):
     _SIMPLE_APPLY = (
         # Following operators is the simplest case:
         # Input(0) => Output(0), shape and data type unchanged.
-        'Relu', 'PRelu', 'Elu', 'SElu', 'Sigmoid', 'Tanh', 'Dropout', 'Softmax',
+        'Relu', 'PRelu', 'Elu', 'SElu', 'Sigmoid', 'Tanh', 'Softmax',
+        'Dropout', 'DropPath', 'DropBlock2d',
         'Add', 'Sub', 'Mul', 'Div', 'Clip', 'Log', 'Exp', 'Pow', 'Square', 'Sqrt',
-        'Accumulate', 'Affine', 'Copy', 'Compare', 'StopGradient',  'MPIBroadcast',
-        'BatchNorm', 'GroupNorm', 'L2Norm', 'LRN', 'BiasAdd', 'DropBlock2d',
+        'Accumulate', 'Affine', 'Copy', 'Compare', 'StopGradient', 'MPIBroadcast',
+        'BatchNorm', 'GroupNorm', 'L2Norm', 'LRN', 'BiasAdd',
     )
 
     @classmethod
@@ -289,8 +290,8 @@ class OperatorHelper(object):
     def _apply_NLLLoss(cls, arguments, inputs, outputs):
         outputs[0].dtype = 'float32'
         axis = arguments['axis']
-        normalization = arguments['normalization']
-        if normalization != 'UNIT': outputs[0].shape = []
+        reduction = arguments['reduction']
+        if reduction != 'NONE': outputs[0].shape = []
         else:
             try:
                 outputs[0].shape = inputs[0].shape[:]
@@ -306,8 +307,8 @@ class OperatorHelper(object):
     @classmethod
     def _apply_SigmoidCrossEntropy(cls, arguments, inputs, outputs):
         outputs[0].dtype = 'float32'
-        normalization = arguments['normalization']
-        if normalization != 'UNIT': outputs[0].shape = []
+        reduction = arguments['reduction']
+        if reduction != 'NONE': outputs[0].shape = []
         else:
             try:
                 outputs[0].shape = inputs[0].shape[:]
@@ -390,7 +391,7 @@ class OperatorHelper(object):
     ###############################################
 
     @classmethod
-    def _apply_Gather(cls, arguments, inputs, outputs):
+    def _apply_IndexSelect(cls, arguments, inputs, outputs):
         outputs[0].dtype = inputs[0].dtype
         axis = arguments['axis']
         try:

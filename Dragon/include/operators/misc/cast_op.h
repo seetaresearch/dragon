@@ -22,27 +22,22 @@ class CastOp final : public Operator<Context> {
  public:
     CastOp(const OperatorDef& def, Workspace* ws)
        : Operator<Context>(def, ws),
-         dtype(OperatorBase::Arg<string>("dtype", "float32")),
-         inplace(OperatorBase::Arg<bool>("inplace", false)) {}
+         inplace_(OpArg<int64_t>("inplace", 0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
 
  protected:
-    string dtype;
-    bool inplace;
+    int64_t inplace_;
 };
 
 template <class Context>
 class CastGradientOp final : public Operator<Context> {
  public:
-    USE_SIMPLE_CTOR_DTOR(CastGradientOp);
+    SIMPLE_CTOR_DTOR(CastGradientOp);
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-
- protected:
-    string dtype;
 };
 
 }  // namespace dragon

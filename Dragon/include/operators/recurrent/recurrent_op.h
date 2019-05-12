@@ -22,7 +22,7 @@ class RecurrentOp : public Operator<Context> {
  public:
     RecurrentOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws) {
-        LOG(FATAL) << "RNN Operators require CuDNN support.";
+        LOG(FATAL) << "CuDNN is required.";
     }
     USE_OPERATOR_FUNCTIONS;
 
@@ -34,7 +34,7 @@ class RecurrentGradientOp : public Operator<Context> {
 public:
     RecurrentGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws) {
-        LOG(FATAL) << "RNN Operators require CuDNN support.";
+        LOG(FATAL) << "CuDNN is required.";
     }
     USE_OPERATOR_FUNCTIONS;
 

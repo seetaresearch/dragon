@@ -70,6 +70,7 @@ Elu = _active_ops.Elu
 SElu = _active_ops.SElu
 Softmax = _active_ops.Softmax
 Dropout = _active_ops.Dropout
+DropPath = _active_ops.DropPath
 
 # Loss
 NLLLoss = _loss_ops.NLLLoss
@@ -114,7 +115,6 @@ InstanceNorm = _norm_ops.InstanceNorm
 L2Norm = _norm_ops.L2Norm
 
 # NDArray
-Gather = _array_ops.Gather
 Crop = _array_ops.Crop
 Reduce = _array_ops.Reduce
 Sum = _array_ops.Sum
@@ -130,6 +130,7 @@ Transpose = _array_ops.Transpose
 Repeat = _array_ops.Repeat
 Tile = _array_ops.Tile
 Pad = _array_ops.Pad
+IndexSelect = _array_ops.IndexSelect
 OneHot = _array_ops.OneHot
 Flatten = _array_ops.Flatten
 Reshape = _array_ops.Reshape

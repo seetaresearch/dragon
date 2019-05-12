@@ -22,24 +22,24 @@ class AssignOp final : public Operator<Context> {
  public:
     AssignOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws) {
-        GET_ARGUMENTS_WITH_DESC(int64_t, starts);
-        GET_ARGUMENTS_WITH_DESC(int64_t, sizes);
+        GET_ARGS_WITH_DESC(int64_t, starts);
+        GET_ARGS_WITH_DESC(int64_t, sizes);
     }
     USE_OPERATOR_FUNCTIONS;
 
     void Setup();
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    vector<int64_t> st, ed, x_dimsV;
-    Tensor startsT, y_stridesT, x_dimsT, fake_x;
-    DECLARE_ARGUMENTS_WITH_DESC(int64_t, starts);
-    DECLARE_ARGUMENTS_WITH_DESC(int64_t, sizes);
+    vec64_t st_, ed_;
+    Tensor X_, X_starts_, Y_strides_, X_dims_;
+    DECLARE_ARGS_WITH_DESC(int64_t, starts);
+    DECLARE_ARGS_WITH_DESC(int64_t, sizes);
 };
 
-DEFINE_ARGUMENTS_WITH_DESC(int64_t, AssignOp, starts);
-DEFINE_ARGUMENTS_WITH_DESC(int64_t, AssignOp, sizes);
+DEFINE_ARGS_WITH_DESC(int64_t, AssignOp, starts);
+DEFINE_ARGS_WITH_DESC(int64_t, AssignOp, sizes);
 
 }  // namespace dragon
 

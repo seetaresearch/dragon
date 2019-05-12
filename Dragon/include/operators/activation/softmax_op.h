@@ -22,14 +22,15 @@ class SoftmaxOp final : public Operator<Context> {
  public:
     SoftmaxOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 1)) {}
+          axis_(OpArg<int64_t>("axis", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t axis, outer_dim, inner_dim;
+    int64_t axis_, axis_dim_;
+    int64_t outer_dim_, inner_dim_;
 };
 
 template <class Context>
@@ -37,14 +38,15 @@ class SoftmaxGradientOp final : public Operator<Context> {
  public:
     SoftmaxGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 1)) {}
+          axis_(OpArg<int64_t>("axis", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t axis, outer_dim, inner_dim;
+    int64_t axis_, axis_dim_;
+    int64_t outer_dim_, inner_dim_;
 };
 
 #ifdef WITH_CUDNN
@@ -54,23 +56,21 @@ class CuDNNSoftmaxOp final : public Operator<Context> {
  public:
     CuDNNSoftmaxOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 1)) {
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
+          axis_(OpArg<int64_t>("axis", 1)) {
+        CuDNNCreateTensorDesc(&input_desc_);
     }
     USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNSoftmaxOp() {
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
+        CuDNNDestroyTensorDesc(&input_desc_);
     }
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t axis, outer_dim, inner_dim;
-    cudnnTensorDescriptor_t input_desc, output_desc;
+    int64_t axis_, outer_dim_, inner_dim_;
+    cudnnTensorDescriptor_t input_desc_;
 };
 
 template <class Context>
@@ -78,23 +78,21 @@ class CuDNNSoftmaxGradientOp final : public Operator<Context> {
  public:
     CuDNNSoftmaxGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 1)) {
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
+          axis_(OpArg<int64_t>("axis", 1)) {
+        CuDNNCreateTensorDesc(&input_desc_);
     }
     USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNSoftmaxGradientOp() {
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
+        CuDNNDestroyTensorDesc(&input_desc_);
     }
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t axis, outer_dim, inner_dim;
-    cudnnTensorDescriptor_t input_desc, output_desc;
+    int64_t axis_, outer_dim_, inner_dim_;
+    cudnnTensorDescriptor_t input_desc_;
 };
 
 #endif  // WITH_CUDNN

@@ -6,121 +6,167 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void DropBlock2dOp<Context>::RunWithType() {
-    auto* Xdata = Input(0).template data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+void DropBlock2dOp<Context>::RunImpl() {
     if (phase() == "TEST") {
-        if (Output(0) != &Input(0)) {
-            ctx()->template Copy<T, Context, Context>(
-                Output(0)->count(), Ydata, Xdata);
-        }
+        Y(0)->CopyFrom(X(0), ctx());
     } else if (phase() == "TRAIN") {
-        if (data_format == "NCHW") {
-            n = Input(0).dim(0), c = Input(0).dim(1);
-            h = Input(0).dim(2), w = Input(0).dim(3);
-        } else if (data_format == "NHWC") {
-            n = Input(0).dim(0), c = Input(0).dim(-1);
-            h = Input(0).dim(1), w = Input(0).dim(2);
+        if (data_format() == "NCHW") {
+            n_ = X(0).dim(0), c_ = X(0).dim(1);
+            h_ = X(0).dim(2), w_ = X(0).dim(3);
+        } else if (data_format() == "NHWC") {
+            n_ = X(0).dim(0), c_ = X(0).dim(-1);
+            h_ = X(0).dim(1), w_ = X(0).dim(2);
         }
 
-        seed_h = h - block_size + 1;
-        seed_w = w - block_size + 1;
+        seed_h_ = h_ - block_size_ + 1;
+        seed_w_ = w_ - block_size_ + 1;
 
-        CHECK(seed_h > 0 && seed_w > 0)
+        CHECK(seed_h_ > 0 && seed_w_ > 0)
             << "\nExcepted block_size <= feat_size.";
 
-        if (decrement > 0 && apply_prob > keep_prob()) {
-            apply_prob -= decrement;
-        } else { apply_prob = keep_prob(); }
+        if (dec_ > 0.f && prob_ > keep_prob()) {
+            prob_ -= dec_;
+        } else { prob_ = keep_prob(); }
 
-        gamma = (1.f - apply_prob) / (block_size * block_size);
-        gamma *= (alpha * (h * w) / (seed_h * seed_w));
+        gamma_= (1.f - prob_) / (block_size_ * block_size_);
+        gamma_ *= (alpha_ * (h_ * w_) / (seed_h_ * seed_w_));
 
-        auto* mask = ws()->CreateTensor(mount_name(
-            "drop_block/mask"))->ReshapeLike(Input(0));
-        auto* norm = ws()->CreateTensor(mount_name(
-            "drop_block/norm"))->Reshape({ 1 });
-    
-        auto WSdata = ws()->template caches<Context>({
-            n * c * seed_h * seed_w * sizeof(uint32_t),
-                mask->count() * sizeof(int),
-                    mask->count() * sizeof(float)});
+        auto count = X(0).count();
 
-        auto* Mdata = mask->template mutable_data<uint8_t, Context>();
-        auto* Ndata = norm->template mutable_data<float, CPUContext>();
+        auto* mask = ws()
+            ->CreateTensor(unique_name("mask"))
+            ->ReshapeLike(X(0))
+            ->template mutable_data<uint8_t, Context>();
+
+        auto* norm = ws()
+            ->CreateTensor(unique_name("norm"))
+            ->Reshape({})
+            ->template mutable_data<float, CPUContext>();
+
+        auto buf = ws()->template data<Context>({
+            n_ * c_ * seed_h_ * seed_w_ * sizeof(uint32_t),
+            count * sizeof(int),
+            count * sizeof(float)
+        });
 
         // Fill the mask with ones
-        math::Set(mask->count(), 1, (int*)WSdata[1], ctx());
+        math::Set(count, 1, (int*)buf[1], ctx());
 
         // Generate 2d mask from seed region
-        kernel::DropBlock2d(n, c, h, w,
-            seed_h, seed_w, block_size, gamma, data_format,
-                (uint32_t*)WSdata[0], (int*)WSdata[1], ctx());
+        kernel::DropBlock2d(
+            n_, c_, h_, w_,
+            seed_h_, seed_w_,
+            block_size_, gamma_,
+            data_format(),
+            (uint32_t*)buf[0],
+            (int*)buf[1], ctx()
+        );
 
         // Convert to float mask for counting
-        kernel::TypeA2B(mask->count(),
-            (int*)WSdata[1], (float*)WSdata[2], ctx());
+        kernel::TypeA2B(
+            count,
+            (int*)buf[1],
+            (float*)buf[2], ctx()
+        );
 
         // Convert to uint8 mask for applying
-        kernel::TypeA2B(mask->count(),
-            (int*)WSdata[1], Mdata, ctx());
+        kernel::TypeA2B(
+            count,
+            (int*)buf[1],
+            mask, ctx()
+        );
 
         // Count && Apply
-        float normalizer = math::Sum(
-            mask->count(), 1.f, (float*)WSdata[2], ctx());
+        auto normalizer = math::Sum(
+            count, 1.f,
+            (float*)buf[2], ctx()
+        );
         normalizer = std::max(normalizer, 1.f);
-        Ndata[0] = normalizer = mask->count() / normalizer;
+        norm[0] = normalizer = count / normalizer;
 
-        kernel::ApplyMask(mask->count(),
-            normalizer, Xdata, Mdata, Ydata, ctx());
+        auto* x = X(0).template data<T, Context>();
+        auto* y = Y(0)->template mutable_data<T, Context>();
 
-    } else LOG(FATAL) << "Incorrect Op phase: " << phase();
+        kernel::ApplyMask(
+            count,
+            normalizer,
+            x, mask,
+            y, ctx()
+        );
+    } else {
+        LOG(FATAL) << "Unknown Phase: " << phase();
+    }
 }
 
 template <class Context>
 void DropBlock2dOp<Context>::RunOnDevice() {
-    Output(0)->ReshapeLike(Input(0));
+    Y(0)->ReshapeLike(X(0));
 
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(0), float16)) {
+        RunImpl<float16>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0),
+            { "float32", "float16" }
+        );
+    }
+}
+
+template <class Context> template <typename T>
+void DropBlock2dGradientOp<Context>::RunImpl() {
+    auto* mask = ws()
+        ->GetTensor(unique_name("mask"))
+        ->template data<uint8_t, Context>();
+
+    auto* norm = ws()
+        ->GetTensor(unique_name("norm"))
+        ->template data<float, CPUContext>();
+
+    auto* dy = X(1).template data<T, Context>();
+    auto* dx = Y(0)->template mutable_data<T, Context>();
+
+    if (phase() == "TEST") {
+        NOT_IMPLEMENTED;
+    } else if (phase() == "TRAIN") {
+        kernel::ApplyMask(
+            Y(0)->count(),
+            norm[0],
+            dy, mask,
+            dx, ctx()
+        );
+    } else {
+        LOG(FATAL) << "Unknown Phase: " << phase();
+    }
+}
+
+template <class Context>
+void DropBlock2dGradientOp<Context>::RunOnDevice() {
+    Y(0)->ReshapeLike(X(0));
+
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(0), float16)) {
+        RunImpl<float16>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0),
+            { "float32", "float16" }
+        );
+    }
 }
 
 DEPLOY_CPU(DropBlock2d);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(DropBlock2d);
 #endif
+
 OPERATOR_SCHEMA(DropBlock2d)
-    .NumInputs(1).NumOutputs(1)
+     /* X */
+    .NumInputs(1)
+     /* Y */
+    .NumOutputs(1)
+     /* X => Y */
     .Inplace({ { 0, 0 } });
-
-template <class Context> template <typename T>
-void DropBlock2dGradientOp<Context>::RunWithType() {
-    auto* mask = ws()->GetTensor(
-        mount_name("drop_block/mask"));
-    auto* norm = ws()->GetTensor(
-        mount_name("drop_block/norm"));
-
-    auto* dYdata = Input(-1).template data<T, Context>();
-    auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    auto* Mdata   = mask->template data<uint8_t, Context>();
-    auto* Ndata = norm->template mutable_data<float, CPUContext>();
-
-    if (phase() == "TEST") { NOT_IMPLEMENTED; }
-    else if (phase() == "TRAIN") {
-        kernel::ApplyMask(mask->count(),
-            Ndata[0], dYdata, Mdata, dXdata, ctx());
-    } else LOG(FATAL) << "Incorrect Op phase: " << phase();
-}
-
-template <class Context>
-void DropBlock2dGradientOp<Context>::RunOnDevice() {
-    Output(0)->ReshapeLike(Input(0));
-
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
-}
 
 DEPLOY_CPU(DropBlock2dGradient);
 #ifdef WITH_CUDA
@@ -128,7 +174,11 @@ DEPLOY_CUDA(DropBlock2dGradient);
 #endif
 
 OPERATOR_SCHEMA(DropBlock2dGradient)
-    .NumInputs(2).NumOutputs(1)
+     /* Y, dY */
+    .NumInputs(2)
+     /* dX */
+    .NumOutputs(1)
+     /* dY => dX */
     .Inplace({ { 1, 0 } });
 
 REGISTER_GRADIENT(DropBlock2d, InplaceGradientMaker);

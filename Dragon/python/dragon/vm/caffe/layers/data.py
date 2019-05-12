@@ -20,9 +20,9 @@ from ..layer import Layer as _Layer
 
 
 class DataLayer(_Layer):
-    """The implementation of ``DataLayer``.
+    """The implementation of *DataLayer*.
 
-    Different from ``Caffe``, we force to use `LMDB`_ backend.
+    Different from *caffe*, we force to use `LMDB`_ backend.
 
     Parameters
     ----------
@@ -88,7 +88,7 @@ class DataLayer(_Layer):
                 for element in transform_param.mean_value]
 
         if transform_param.scale != 1:
-            self.arguments['mean_values'] = \
+            self.arguments['std_values'] = \
                 [1. / transform_param.scale] * 3
 
     def LayerSetup(self, bottom):
@@ -97,9 +97,9 @@ class DataLayer(_Layer):
 
 
 class MemoryDataLayer(_Layer):
-    """The implementation of ``MemoryDataLayer``.
+    """The implementation of *MemoryDataLayer*.
 
-    We extend it with ``FP16`` and ``NHWC => NCHW``.
+    We extend it with *float16* and *NHWC => NCHW*.
 
     Parameters
     ----------
@@ -126,7 +126,7 @@ class MemoryDataLayer(_Layer):
                 [float(element) for element in transform_param.mean_value]
 
         if transform_param.scale != 1:
-            self.arguments['mean_values'] = \
+            self.arguments['std_values'] = \
                 [1. / transform_param.scale] * 3
 
     def LayerSetup(self, bottom):

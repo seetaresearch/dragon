@@ -20,21 +20,21 @@ namespace dragon {
 template <class Context>
 class TanhOp : public Operator<Context> {
  public:
-    USE_SIMPLE_CTOR_DTOR(TanhOp);
+    SIMPLE_CTOR_DTOR(TanhOp);
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 };
 
 template <class Context>
 class TanhGradientOp : public Operator<Context> {
  public:
-     USE_SIMPLE_CTOR_DTOR(TanhGradientOp);
+     SIMPLE_CTOR_DTOR(TanhGradientOp);
      USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 };
 
 #ifdef WITH_CUDNN
@@ -44,53 +44,56 @@ class CuDNNTanhOp final : public TanhOp<Context> {
 public:
     CuDNNTanhOp(const OperatorDef& def, Workspace* ws)
         : TanhOp<Context>(def, ws) {
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
-        CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc));
-        CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc, 
-            CUDNN_ACTIVATION_TANH, CUDNN_PROPAGATE_NAN, 0));
+        CuDNNCreateTensorDesc(&input_desc_);
+        CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc_));
+        CUDNN_CHECK(cudnnSetActivationDescriptor(
+            act_desc_,
+            CUDNN_ACTIVATION_TANH,
+            CUDNN_PROPAGATE_NAN, 0
+        ));
     }
     USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNTanhOp() {
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
-        CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc));
+        CuDNNDestroyTensorDesc(&input_desc_);
+        CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
     }
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType(); 
+    template <typename T> void RunImpl();
 
  protected:
-    cudnnTensorDescriptor_t input_desc, output_desc;
-    cudnnActivationDescriptor_t act_desc;
+    cudnnTensorDescriptor_t input_desc_;
+    cudnnActivationDescriptor_t act_desc_;
 };
 
 template <class Context>
-class CuDNNTanhGradientOp final : public TanhGradientOp<Context> {
+class CuDNNTanhGradientOp
+    final : public TanhGradientOp<Context> {
  public:
     CuDNNTanhGradientOp(const OperatorDef& def, Workspace* ws)
         : TanhGradientOp<Context>(def, ws) {
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
-        CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc));
-        CUDNN_CHECK(cudnnSetActivationDescriptor(act_desc,
-            CUDNN_ACTIVATION_TANH, CUDNN_PROPAGATE_NAN, 0));
+        CuDNNCreateTensorDesc(&input_desc_);
+        CUDNN_CHECK(cudnnCreateActivationDescriptor(&act_desc_));
+        CUDNN_CHECK(cudnnSetActivationDescriptor(
+            act_desc_,
+            CUDNN_ACTIVATION_TANH,
+            CUDNN_PROPAGATE_NAN, 0
+        ));
     }
     USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNTanhGradientOp() {
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
-        CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc));
+        CuDNNDestroyTensorDesc(&input_desc_);
+        CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
     }
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    cudnnTensorDescriptor_t input_desc, output_desc;
-    cudnnActivationDescriptor_t act_desc;
+    cudnnTensorDescriptor_t input_desc_;
+    cudnnActivationDescriptor_t act_desc_;
 };
 
 #endif  // WITH_CUDNN

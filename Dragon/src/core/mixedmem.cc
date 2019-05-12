@@ -17,7 +17,7 @@ void MixedMemory::ToCPU(size_t nbytes) {
             }
             CUDAContext::MemcpyEx<CPUContext, CUDAContext>(
                 nbytes > 0 ? nbytes : nbytes_,
-                    cpu_ptr_, cuda_ptr_, ptr_device_);
+                cpu_ptr_, cuda_ptr_, ptr_device_);
             state_ = SYNCED;
             break;
         case STATE_AT_CPU:
@@ -41,7 +41,7 @@ void MixedMemory::ToCUDA(size_t nbytes) {
             }
             CUDAContext::MemcpyEx<CUDAContext, CPUContext>(
                 nbytes > 0 ? nbytes : nbytes_,
-                    cuda_ptr_, cpu_ptr_, ptr_device_);
+                cuda_ptr_, cpu_ptr_, ptr_device_);
             state_ = SYNCED;
             break;
         case STATE_AT_CUDA:
@@ -82,18 +82,12 @@ void* MixedMemory::mutable_cnml_data() {
 }
 
 void MixedMemory::set_cpu_data(void* cpu_ptr, size_t nbytes) {
-    bool use_cudahost_mem = false;
-#ifdef WITH_CUDA_HOST_MEM
-    use_cudahost_mem = true;
-#endif
-    if (own_cpu_ptr_ && cpu_ptr_ && !use_cudahost_mem) {
+    if (own_cpu_ptr_ && cpu_ptr_) {
         if (meta_.dtor()) meta_.dtor()(
             cpu_ptr_, nbytes_ / meta_.itemsize());
         CPUContext::Delete(cpu_ptr_);
     }
 #ifdef WITH_CUDA
-    if (own_cpu_ptr_ && cpu_ptr_ &&
-            use_cudahost_mem) cudaFreeHost(cpu_ptr_);
     if (cuda_ptr_ && nbytes > nbytes_) {
         // Maintain the cuda ptr as regular mems
         CUDAContext::Delete(cuda_ptr_);
@@ -107,18 +101,12 @@ void MixedMemory::set_cpu_data(void* cpu_ptr, size_t nbytes) {
 }
 
 MixedMemory::~MixedMemory() {
-    bool use_cudahost_mem = false;
-#ifdef WITH_CUDA_HOST_MEM
-    use_cudahost_mem = true;
-#endif
-    if (own_cpu_ptr_ && cpu_ptr_ && !use_cudahost_mem) {
+    if (own_cpu_ptr_ && cpu_ptr_) {
         if (meta_.dtor()) meta_.dtor()(
             cpu_ptr_, nbytes_ / meta_.itemsize());
         CPUContext::Delete(cpu_ptr_);
     }
 #ifdef WITH_CUDA
-    if (own_cpu_ptr_ && cpu_ptr_ &&
-            use_cudahost_mem) cudaFreeHost(cpu_ptr_);
     if (cuda_ptr_) CUDAContext::Delete(cuda_ptr_);
 #endif
 }

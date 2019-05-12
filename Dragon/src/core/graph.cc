@@ -5,7 +5,7 @@
 
 namespace dragon {
 
-/*! Default constructor of <GraphBase> */
+/* Default constructor of <GraphBase> */
 
 GraphBase::GraphBase(const GraphDef& def, Workspace* ws)
     : name_(def.name()), ws_(ws) {
@@ -55,7 +55,7 @@ GraphBase::GraphBase(const GraphDef& def, Workspace* ws)
     }
 }
 
-/*! Create a graph from the optimized def */
+/* Create a graph from the optimized def */
 
 bool Graph::Create(const GraphDef& def, Workspace* ws) {
     bool has_device_option = def.has_device_option();
@@ -68,7 +68,7 @@ bool Graph::Create(const GraphDef& def, Workspace* ws) {
             op_def.mutable_device_option()
                 ->CopyFrom(def.device_option());
         // For the static graph, do recomputing-aware
-        Argument arg; arg.set_name("allow_recomputing");
+        Argument arg; arg.set_name("allow_recomp");
         arg.set_i(1); op_def.add_arg()->CopyFrom(arg);
         // For the last operator, enforce the synchronization
         if (i == def.op_size() - 1) {
@@ -81,7 +81,7 @@ bool Graph::Create(const GraphDef& def, Workspace* ws) {
     return true;
 }
 
-/*! Default constructor of <Graph> */
+/* Default constructor of <Graph> */
 
 Graph::Graph(const GraphDef& def, Workspace* ws)
     : GraphBase(def, ws) {
@@ -89,7 +89,7 @@ Graph::Graph(const GraphDef& def, Workspace* ws)
     GraphDef opt_def = def;
     GraphOptimizer graph_optim(ws);
     GraphGradientMaker gradient_maker;
-    Map< string, vector<int> > subgraph_indices;
+    Map< string, vec32_t > subgraph_indices;
     int opt = 3;  // defaults: O3
     if (this->args_.count("optimization_level"))
         opt = this->args_["optimization_level"].i();
@@ -111,10 +111,10 @@ Graph::Graph(const GraphDef& def, Workspace* ws)
         if (op.type() == "GivenTensorFill")
             could_be_serialized = false;
     if (could_be_serialized) {
-        auto* T = ws_->CreateTensor(
-            "/graph_def/optimized/" +
-                opt_def.name())->Reshape({ 1 });
-        T->mutable_data<string, CPUContext>()[0]
+        ws_->CreateTensor(
+            "/graph_def/optimized/" + opt_def.name())
+            ->Reshape({ 1 })
+            ->mutable_data<string, CPUContext>()[0]
             = opt_def.DebugString();
     }
 
@@ -133,7 +133,7 @@ Graph::Graph(const GraphDef& def, Workspace* ws)
     }
 }
 
-/*! Run the graph once synchronously */
+/* Run the graph once synchronously */
 
 bool Graph::Run(
     const string&               include,
@@ -153,7 +153,7 @@ bool Graph::Run(
     return true;
 }
 
-/*! New a graph from the raw def */
+/* New a graph from the raw def */
 
 GraphBase* NewGraph(
     const GraphDef&             meta_graph,
@@ -166,7 +166,7 @@ GraphBase* NewGraph(
         meta_graph.graph_type(), meta_graph, ws);
 }
 
-/*! Graph Registry */
+/* Graph Registry */
 
 DEFINE_REGISTRY(
     GraphRegistry,

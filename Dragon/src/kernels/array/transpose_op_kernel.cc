@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Transpose <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _Transpose(
@@ -15,18 +15,20 @@ void _Transpose(
     const int*              y_dims,
     const T*                x,
     T*                      y) {
-    vector<int> index(ndims, 0); int x_idx;
-    for (int y_idx = 0; y_idx < nthreads; ++y_idx) {
-        x_idx = 0;
+    vec32_t index(ndims, 0); int xi;
+    for (int yi = 0; yi < nthreads; ++yi) {
+        xi = 0;
         for (int d = ndims - 1; d >= 0; --d) {
-            x_idx += index[d] * x_strides[d];
+            xi += index[d] * x_strides[d];
         }
-        y[y_idx] = x[x_idx];
-        utils::IncreaseIndexInDims(ndims, y_dims, index.data());
+        y[yi] = x[xi];
+        utils::IncreaseIndexInDims(
+            ndims, y_dims, index.data()
+        );
     }
 }
 
-/*! TransposeGrad <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _TransposeGrad(
@@ -36,18 +38,20 @@ void _TransposeGrad(
     const int*              y_dims,
     const T*                dy,
     T*                      dx) {
-    vector<int> index(ndims, 0); int x_idx;
-    for (int y_idx = 0; y_idx < nthreads; ++y_idx) {
-        x_idx = 0;
+    vec32_t index(ndims, 0); int xi;
+    for (int yi = 0; yi < nthreads; ++yi) {
+        xi = 0;
         for (int d = ndims - 1; d >= 0; --d) {
-            x_idx += index[d] * x_strides[d];
+            xi += index[d] * x_strides[d];
         }
-        dx[x_idx] = dy[y_idx];
-        utils::IncreaseIndexInDims(ndims, y_dims, index.data());
+        dx[xi] = dy[yi];
+        utils::IncreaseIndexInDims(
+            ndims, y_dims, index.data()
+        );
     }
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_TRANSPOSE_KERNEL_LAUNCHER(name, T) \
     template <> void name<T, CPUContext>( \
@@ -58,7 +62,7 @@ void _TransposeGrad(
         const T*                x, \
         T*                      y, \
         CPUContext*             ctx) { \
-        _##name<T>(count, ndims, x_strides, y_dims, x, y); \
+        _##name(count, ndims, x_strides, y_dims, x, y); \
     }
 
 DEFINE_TRANSPOSE_KERNEL_LAUNCHER(Transpose, bool);

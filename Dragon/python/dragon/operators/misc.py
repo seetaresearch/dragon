@@ -52,7 +52,6 @@ def Cast(inputs, dtype='float32', inplace=False, **kwargs):
     if inplace:
         arguments['inputs'] = []
         arguments['existing_outputs'] = [inputs]
-
     return Tensor.CreateOperator('Cast', **arguments)
 
 

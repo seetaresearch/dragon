@@ -20,35 +20,27 @@ namespace dragon {
 template <class Context>
 class BiasAddOp final : public Operator<Context> {
  public:
-    BiasAddOp(const OperatorDef& def, Workspace* ws)
-        : Operator<Context>(def, ws),
-          data_format(OperatorBase::Arg<string>(
-              "data_format", "NCHW")) {}
+    SIMPLE_CTOR_DTOR(BiasAddOp);
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t outer_dim, dim, inner_dim;
-    string data_format;
+    int64_t outer_dim_, axis_dim_, inner_dim_;
 };
 
 template <class Context>
 class BiasAddGradientOp final : public Operator<Context> {
  public:
-    BiasAddGradientOp(const OperatorDef& def, Workspace* ws)
-        : Operator<Context>(def, ws),
-          data_format(OperatorBase::Arg<string>(
-              "data_format", "NCHW")) {}
+    SIMPLE_CTOR_DTOR(BiasAddGradientOp);
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t outer_dim, dim, inner_dim;
-    string data_format;
+    int64_t outer_dim_, axis_dim_, inner_dim_;
 };
 
 #ifdef WITH_CUDNN
@@ -57,52 +49,48 @@ template <class Context>
 class CuDNNBiasAddOp final : public Operator<Context> {
  public:
     CuDNNBiasAddOp(const OperatorDef& def, Workspace* ws)
-        : Operator<Context>(def, ws),
-          data_format(OperatorBase::Arg<string>(
-              "data_format", "NCHW")) {
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
+        : Operator<Context>(def, ws) {
+        CuDNNCreateTensorDesc(&bias_desc_);
+        CuDNNCreateTensorDesc(&output_desc_);
     }
     USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNBiasAddOp() {
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(bias_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
+        CuDNNDestroyTensorDesc(&bias_desc_);
+        CuDNNDestroyTensorDesc(&output_desc_);
     }
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t outer_dim, dim, inner_dim;
-    string data_format;
-    cudnnTensorDescriptor_t bias_desc, output_desc;
+    int64_t outer_dim_, axis_dim_, inner_dim_;
+    cudnnTensorDescriptor_t bias_desc_;
+    cudnnTensorDescriptor_t output_desc_;
 };
 
 template <class Context>
 class CuDNNBiasAddGradientOp final : public Operator<Context> {
 public:
     CuDNNBiasAddGradientOp(const OperatorDef& def, Workspace* ws)
-        : Operator<Context>(def, ws),
-          data_format(OperatorBase::Arg<string>(
-              "data_format", "NCHW")) {
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
+        : Operator<Context>(def, ws) {
+        CuDNNCreateTensorDesc(&bias_desc_);
+        CuDNNCreateTensorDesc(&input_desc_);
     }
     USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNBiasAddGradientOp() {
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(bias_desc));
+        CuDNNDestroyTensorDesc(&bias_desc_);
+        CuDNNDestroyTensorDesc(&input_desc_);
     }
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
 protected:
-    int64_t outer_dim, dim, inner_dim;
-    string data_format;
-    cudnnTensorDescriptor_t input_desc, bias_desc;
+    int64_t outer_dim_, axis_dim_, inner_dim_;
+    cudnnTensorDescriptor_t bias_desc_;
+    cudnnTensorDescriptor_t input_desc_;
 };
 
 #endif  // WITH_CUDNN

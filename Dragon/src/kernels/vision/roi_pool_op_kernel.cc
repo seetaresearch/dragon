@@ -20,66 +20,65 @@ template<> void ROIPool<float, CPUContext>(
     int*                    mask,
     float*                  y,
     CPUContext*             ctx) {
-    const int64_t X_offset = H * W, Y_offset = pool_h * pool_w;
-    const int64_t x_offset = C * X_offset, y_offset = C * Y_offset;
+    auto X_ofs = H * W, Y_ofs = pool_h * pool_w;
+    auto x_ofs = C * X_ofs, y_ofs = C * Y_ofs;
 
     for (int n = 0; n < num_rois; ++n) {
-        auto* R = rois + n * 5;
-        int roi_batch_ind = (int)R[0];
-        auto* Y = y + n * y_offset;
-        auto* M = mask + n * y_offset;
+        auto* roi = rois + n * 5;
+        int batch_ind = (int)roi[0];
+        auto* Y = y + n * y_ofs;
+        auto* M = mask + n * y_ofs;
 
-        if (roi_batch_ind < 0) {
-            memset(Y, 0, sizeof(float) * y_offset);
-            memset(M, -1, sizeof(int) * y_offset);
+        if (batch_ind < 0) {
+            memset(Y, 0, sizeof(float) * y_ofs);
+            memset(M, -1, sizeof(int) * y_ofs);
             continue;
         }
 
-        int x1 = (int)round(R[1] * spatial_scale);
-        int y1 = (int)round(R[2] * spatial_scale);
-        int x2 = (int)round(R[3] * spatial_scale);
-        int y2 = (int)round(R[4] * spatial_scale);
-        int roi_height = std::max(y2 - y1 + 1, 1);
-        int roi_width = std::max(x2 - x1 + 1, 1);
-        const float unit_h = (float)roi_height / (float)pool_h;
-        const float unit_w = (float)roi_width / (float)pool_w;
-        const float* X = x + roi_batch_ind * x_offset;
-        
+        const float* X = x + batch_ind * x_ofs;
+        const int roi_wstart = (int)round(roi[1] * spatial_scale);
+        const int roi_hstart = (int)round(roi[2] * spatial_scale);
+        const int roi_wend = (int)round(roi[3] * spatial_scale);
+        const int roi_hend = (int)round(roi[4] * spatial_scale);
+
+        const int roi_h = std::max(roi_hend - roi_hstart + 1, 1);
+        const int roi_w = std::max(roi_wend - roi_wstart + 1, 1);
+        const float bin_h = (float)roi_h / (float)pool_h;
+        const float bin_w = (float)roi_w / (float)pool_w;
+
+        int xi, yi, hstart, wstart, hend, wend;
+
         for (int c = 0; c < C; ++c) {
             for (int ph = 0; ph < pool_h; ++ph) {
                 for (int pw = 0; pw < pool_w; ++pw) {
-                    int start_h = (int)floor(unit_h * ph);
-                    int start_w = (int)floor(unit_w * pw);
-                    int end_h = (int)ceil(unit_h*(ph + 1));
-                    int end_w = (int)ceil(unit_w*(pw + 1));
-                    start_h = std::max(start_h + y1, 0);
-                    start_w = std::max(start_w + x1, 0);
-                    end_h = std::max(end_h + y1, 0);
-                    end_w = std::max(end_w + x1, 0);
-                    start_h = std::min(start_h, H);
-                    start_w = std::min(start_w, W);
-                    end_h = std::min(end_h, H);
-                    end_w = std::min(end_w, W);
-                    bool is_empty = (end_h == start_h) || (end_w == start_w);
-                    const int pool_idx = ph * pool_w + pw;
-                    M[pool_idx] = -1;
-                    if (is_empty) Y[pool_idx] = 0;
-                    else Y[pool_idx] = -FLT_MAX;
-                    for (int h = start_h; h < end_h; ++h) {
-                        for (int w = start_w; w < end_w; ++w) {
-                            const int idx = h * W + w;
-                            if (X[idx] > Y[pool_idx]) {
-                                M[pool_idx] = idx;
-                                Y[pool_idx] = X[idx];
+                    hstart = (int)floor(bin_h * ph);
+                    wstart = (int)floor(bin_w * pw);
+                    hend = (int)ceil(bin_h * (ph + 1));
+                    wend = (int)ceil(bin_w * (pw + 1));
+                    hstart = std::min(std::max(hstart + roi_hstart, 0), H);
+                    wstart = std::min(std::max(wstart + roi_wstart, 0), W);
+                    hend = std::min(std::max(hend + roi_hstart, 0), H);
+                    wend = std::min(std::max(wend + roi_wstart, 0), W);
+                    bool empty = (hend == hstart) || (wend == wstart);
+                    yi = ph * pool_w + pw;
+                    M[yi] = -1;
+                    if (empty) Y[yi] = 0;
+                    else Y[yi] = -FLT_MAX;
+                    for (int h = hstart; h < hend; ++h) {
+                        for (int w = wstart; w < wend; ++w) {
+                            xi = h * W + w;
+                            if (X[xi] > Y[yi]) {
+                                M[yi] = xi;
+                                Y[yi] = X[xi];
                             }
                         }  // End w
                     }  // End h
                 }  // End pw
             }  // End ph
             // Offset according to C
-            X += X_offset;
-            Y += Y_offset;
-            M += Y_offset;
+            X += X_ofs;
+            Y += Y_ofs;
+            M += Y_ofs;
         }  // End c
     }  // End n
 }

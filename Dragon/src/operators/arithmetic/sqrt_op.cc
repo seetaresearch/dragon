@@ -4,58 +4,79 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void SqrtOp<Context>::RunWithType() {
-    auto* Xdata = Input(0).template data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
-    math::Sqrt(Output(0)->count(), Xdata, Ydata, ctx());
+void SqrtOp<Context>::RunImpl() {
+    auto* x = X(0).template data<T, Context>();
+    auto* y = Y(0)->template mutable_data<T, Context>();
+    math::Sqrt(X(0).count(), x, y, ctx());
 }
 
 template <class Context>
 void SqrtOp<Context>::RunOnDevice() {
-    Output(0)->ReshapeLike(Input(0));
+    Y(0)->ReshapeLike(X(0));
 
-    if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), double)) RunWithType<double>();
-    else LOG(FATAL) << DTypeHelper(Input(0),
-        {"float16", "float32", "float64"});
+    if (XIsType(X(0), float16)) {
+        RunImpl<float16>();
+    } else if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(0), double)) {
+        RunImpl<double>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0),
+            { "float16", "float32", "float64" }
+        );
+    }
+}
+
+template <class Context> template <typename T>
+void SqrtGradientOp<Context>::RunImpl() {
+    auto* y = X(0).template data<T, Context>();
+    auto* dy = X(-1).template data<T, Context>();
+    auto* dx = Y(0)->template mutable_data<T, Context>();
+    math::Scale(X(0).count(), 2.f, y, dx, ctx());
+    math::Inv(X(0).count(), dx, dx, ctx());
+}
+
+template <class Context>
+void SqrtGradientOp<Context>::RunOnDevice() {
+    Y(0)->ReshapeLike(X(0));
+
+    if (XIsType(X(0), float16)) {
+        RunImpl<float16>();
+    } else if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(0), double)) {
+        RunImpl<double>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0),
+            { "float16", "float32", "float64" }
+        );
+    }
 }
 
 DEPLOY_CPU(Sqrt);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Sqrt);
 #endif
-OPERATOR_SCHEMA(Sqrt)
-    .NumInputs(1).NumOutputs(1)
-    .Inplace({ { 0, 0 } });
-
-template <class Context> template <typename T>
-void SqrtGradientOp<Context>::RunWithType() {
-    auto* Ydata = Input(0).template data<T, Context>();
-    auto* dYdata = Input(1).template data<T, Context>();
-    auto* dXdata = Output(0)->template mutable_data<T, Context>();
-    math::Scale(Output(0)->count(), 2.f, Ydata, dXdata, ctx());
-    math::Inv(Output(0)->count(), dXdata, dXdata, ctx());
-}
-
-template <class Context>
-void SqrtGradientOp<Context>::RunOnDevice() {
-    Output(0)->ReshapeLike(Input(0));
-
-    if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), double)) RunWithType<double>();
-    else LOG(FATAL) << DTypeHelper(Input(0),
-        {"float16", "float32", "float64" });
-}
 
 DEPLOY_CPU(SqrtGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(SqrtGradient);
 #endif
 
+OPERATOR_SCHEMA(Sqrt)
+     /* X */
+    .NumInputs(1)
+     /* Y */
+    .NumOutputs(1)
+     /* X => Y */
+    .Inplace({ { 0, 0 } });
+
 OPERATOR_SCHEMA(SqrtGradient)
-    .NumInputs(2).NumOutputs(1)
+     /* Y, dY */
+    .NumInputs(2)
+     /* dX */
+    .NumOutputs(1)
+     /* dY => dX */
     .Inplace({ { 1, 0 } });
 
 REGISTER_GRADIENT(Sqrt, InplaceGradientMaker);

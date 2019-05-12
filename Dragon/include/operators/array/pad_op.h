@@ -22,27 +22,31 @@ class PadOp final : public Operator<Context> {
  public:
     PadOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          pad_l(OperatorBase::Args<int64_t>("pad_l")),
-          pad_r(OperatorBase::Args<int64_t>("pad_r")),
-          mode(OperatorBase::Arg<string>("mode", "CONSTANT")),
-          value(OperatorBase::Arg<float>("value", 0.f)) {
-        if (pad_r.size() == 0) pad_r = pad_l;
-        else CHECK_EQ(pad_l.size(), pad_r.size())
-            << "The pad_l and pad_r should have the same length.";
+          pad_l_(OpArgs<int64_t>("pad_l")),
+          pad_r_(OpArgs<int64_t>("pad_r")),
+          mode_(OpArg<string>("mode", "CONSTANT")),
+          value_(OpArg<float>("value", 0.f)) {
+        if (pad_r_.empty()) {
+            pad_r_ = pad_l_;
+        } else {
+            CHECK_EQ(pad_l_.size(), pad_r_.size())
+                << "\nThe pad_l and pad_r "
+                << "should have the same length.";
+        }
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
-    template <typename T> void ConstRunWithType();
-    template <typename T> void ReflectRunWithType();
-    template <typename T> void EdgeRunWithType();
+    template <typename T> void RunImpl();
+    template <typename T> void ConstRunImpl();
+    template <typename T> void ReflectRunImpl();
+    template <typename T> void EdgeRunImpl();
 
  protected:
-    float value;
-    string mode;
-    vector<int64_t> pad_l, pad_r, y_dimsV;
-    Tensor l_padsT, x_dimsT, x_stridesT, y_dimsT;
+    float value_;
+    string mode_;
+    vec64_t pad_l_, pad_r_;
+    Tensor pads_, X_dims_, X_strides_, Y_dims_;
 };
 
 template <class Context>
@@ -50,25 +54,29 @@ class PadGradientOp final : public Operator<Context> {
  public:
     PadGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          pad_l(OperatorBase::Args<int64_t>("pad_l")),
-          pad_r(OperatorBase::Args<int64_t>("pad_r")),
-          mode(OperatorBase::Arg<string>("mode", "CONSTANT")) {
-        if (pad_r.size() == 0) pad_r = pad_l;
-        else CHECK_EQ(pad_l.size(), pad_r.size())
-            << "The pad_l and pad_r should have the same length.";
+          pad_l_(OpArgs<int64_t>("pad_l")),
+          pad_r_(OpArgs<int64_t>("pad_r")),
+          mode_(OpArg<string>("mode", "CONSTANT")) {
+        if (pad_r_.empty()) {
+            pad_r_ = pad_l_;
+        } else {
+            CHECK_EQ(pad_l_.size(), pad_r_.size())
+                << "\nThe pad_l and pad_r "
+                << "should have the same length.";
+        }
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
-    template <typename T> void ConstRunWithType();
-    template <typename T> void ReflectRunWithType();
-    template <typename T> void EdgeRunWithType();
+    template <typename T> void RunImpl();
+    template <typename T> void ConstRunImpl();
+    template <typename T> void ReflectRunImpl();
+    template <typename T> void EdgeRunImpl();
 
  protected:
-    string mode;
-    vector<int64_t> pad_l, pad_r, x_dimsV;
-    Tensor l_padsT, x_dimsT, y_stridesT;
+    string mode_;
+    vec64_t pad_l_, pad_r_;
+    Tensor pads_, X_dims_, Y_strides_;
 };
 
 }  // namespace dragon

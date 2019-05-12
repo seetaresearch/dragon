@@ -24,24 +24,23 @@ class BatchNormOp : public Operator<Context> {
  public:
     BatchNormOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", -1)),
-          momentum(OperatorBase::Arg<float>("momentum", 0.9f)),
-          eps(OperatorBase::Arg<float>("eps", 1e-5f)),
-          use_stats(OperatorBase::Arg<int64_t>("use_stats", -1)) {}
+          axis_(OpArg<int64_t>("axis", -1)),
+          momentum_(OpArg<float>("momentum", 0.9f)),
+          eps_(OpArg<float>("eps", 1e-5f)),
+          use_stats_(OpArg<int64_t>("use_stats", -1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void Reshape();
 
     void RunOnDevice() override;
-    template <typename Tx, typename Tp> void TrainingRunWithType();
-    template <typename Tx, typename Tp> void InferenceRunWithType();
+    template <typename Tx, typename Tp> void TrainingImpl();
+    template <typename Tx, typename Tp> void InferenceImpl();
 
  protected:
-    float momentum, eps;
-    string data_format;
-    int64_t axis, use_stats, N, C, S;
-    Tensor *mean, *var, scale, bias;
-    bool is_training, is_recomputing;
+    float momentum_, eps_;
+    int64_t axis_, use_stats_, N_, C_, S_;
+    Tensor *mean_, *var_, scale_, bias_;
+    bool is_training_, is_recomp_;
 };
 
 template <class Context>
@@ -49,23 +48,22 @@ class BatchNormGradientOp : public Operator<Context> {
  public:
     BatchNormGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", -1)),
-          eps(OperatorBase::Arg<float>("eps", 1e-5f)),
-          use_stats(OperatorBase::Arg<int64_t>("use_stats", -1)) {}
+          axis_(OpArg<int64_t>("axis", -1)),
+          eps_(OpArg<float>("eps", 1e-5f)),
+          use_stats_(OpArg<int64_t>("use_stats", -1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void Reshape();
 
     void RunOnDevice() override;
-    template <typename Tx, typename Tp> void TrainingRunWithType();
-    template <typename Tx, typename Tp> void InferenceRunWithType();
+    template <typename Tx, typename Tp> void TrainingImpl();
+    template <typename Tx, typename Tp> void InferenceImpl();
 
  protected:
-    float eps;
-    string data_format;
-    int64_t axis, use_stats, N, C, S, NC, NS;
-    Tensor *mean, *var, dscale, dbias;
-    bool is_training;
+    float eps_;
+    int64_t N_, C_, S_, NC_, NS_;
+    int64_t axis_, use_stats_, is_training_;
+    Tensor* mean_, *var_, dscale_, dbias_;
 };
 
 #ifdef WITH_CUDNN
@@ -77,39 +75,36 @@ class CuDNNBatchNormOp final : public BatchNormOp<Context> {
  public:
     CuDNNBatchNormOp(const OperatorDef& def, Workspace* ws)
         : BatchNormOp<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", -1)),
-          eps64(OperatorBase::Arg<float>("eps", 1e-5f)),
-          use_stats(OperatorBase::Arg<int64_t>("use_stats", -1)) {
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&bn_desc));
-        if (eps64 <= CUDNN_BN_MIN_EPSILON - FLT_EPSILON)
+          axis_(OpArg<int64_t>("axis", -1)),
+          eps64_(OpArg<float>("eps", 1e-5f)),
+          use_stats_(OpArg<int64_t>("use_stats", -1)) {
+        CuDNNCreateTensorDesc(&bn_desc_);
+        CuDNNCreateTensorDesc(&input_desc_);
+        if (eps64_ <= CUDNN_BN_MIN_EPSILON - FLT_EPSILON)
             LOG(FATAL) << "Provided epsilon is smaller than "
-                << "CUDNN_BN_MIN_EPSILON. Setting it to "
-                << "CUDNN_BN_MIN_EPSILON instead.";
-        eps64 = std::max(eps64, CUDNN_BN_MIN_EPSILON);
+                       << "CUDNN_BN_MIN_EPSILON. \nSet it to "
+                       << "CUDNN_BN_MIN_EPSILON instead.";
+        eps64_ = std::max(eps64_, CUDNN_BN_MIN_EPSILON);
     }
     USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNBatchNormOp() {
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(bn_desc));
+        CuDNNDestroyTensorDesc(&bn_desc_);
+        CuDNNDestroyTensorDesc(&input_desc_);
     }
 
     void Reshape();
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    double eps64;
-    int64_t axis, use_stats, N, C;
-    string data_format;
-    Tensor* mean, *var;
-    bool is_training, is_recomputing;
-    cudnnTensorDescriptor_t input_desc, output_desc, bn_desc;
-    cudnnBatchNormMode_t bn_mode;
+    double eps64_;
+    int64_t axis_, N_, C_;
+    int64_t use_stats_, is_training_, is_recomp_;
+    Tensor* mean_, *var_;
+    cudnnTensorDescriptor_t input_desc_, bn_desc_;
+    cudnnBatchNormMode_t bn_mode_;
 };
 
 template <class Context>
@@ -118,40 +113,37 @@ class CuDNNBatchNormGradientOp final
  public:
     CuDNNBatchNormGradientOp(const OperatorDef& def, Workspace* ws)
         : BatchNormGradientOp<Context>(def, ws),
-        axis(OperatorBase::Arg<int64_t>("axis", -1)),
-        eps64(OperatorBase::Arg<float>("eps", 1e-5f)),
-        use_stats(OperatorBase::Arg<int64_t>("use_stats", -1)) {
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&bn_desc));
-        if (eps64 <= CUDNN_BN_MIN_EPSILON - FLT_EPSILON)
+        axis_(OpArg<int64_t>("axis", -1)),
+        eps64_(OpArg<float>("eps", 1e-5f)),
+        use_stats_(OpArg<int64_t>("use_stats", -1)) {
+        CuDNNCreateTensorDesc(&bn_desc_);
+        CuDNNCreateTensorDesc(&input_desc_);
+        if (eps64_ <= CUDNN_BN_MIN_EPSILON - FLT_EPSILON)
             LOG(FATAL) << "Provided epsilon is smaller than "
-            << "CUDNN_BN_MIN_EPSILON. Setting it to "
-            << "CUDNN_BN_MIN_EPSILON instead.";
-        eps64 = std::max(eps64, CUDNN_BN_MIN_EPSILON);
+                       << "CUDNN_BN_MIN_EPSILON. \nSet it to "
+                       << "CUDNN_BN_MIN_EPSILON instead.";
+        eps64_ = std::max(eps64_, CUDNN_BN_MIN_EPSILON);
     }
     USE_OPERATOR_FUNCTIONS;
 
     ~CuDNNBatchNormGradientOp() {
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(bn_desc));
+        CuDNNDestroyTensorDesc(&bn_desc_);
+        CuDNNDestroyTensorDesc(&input_desc_);
     }
 
     void Reshape();
 
     void RunOnDevice() override;
-    template <typename T> void TrainingRunWithType();
-    template <typename T> void InferenceRunWithType();
+    template <typename T> void TrainingImpl();
+    template <typename T> void InferenceImpl();
 
  protected:
-    double eps64;
-    int64_t axis, use_stats, N, C, S;
-    string data_format;
-    Tensor* mean, *var;
-    bool is_training;
-    cudnnTensorDescriptor_t input_desc, output_desc, bn_desc;
-    cudnnBatchNormMode_t bn_mode;
+    double eps64_;
+    int64_t axis_, N_, C_, S_;
+    int64_t use_stats_, is_training_;
+    Tensor* mean_, *var_;
+    cudnnTensorDescriptor_t input_desc_, bn_desc_;
+    cudnnBatchNormMode_t bn_mode_;
 };
 
 #endif

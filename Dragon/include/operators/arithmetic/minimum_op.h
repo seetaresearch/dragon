@@ -20,25 +20,25 @@ namespace dragon {
 template <class Context>
 class MinimumOp final : public Operator<Context> {
  public:
-    USE_SIMPLE_CTOR_DTOR(MinimumOp);
+    SIMPLE_CTOR_DTOR(MinimumOp);
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
-    template <typename T> void EltwiseRunWithType();
-    template <typename T> void BroadcastRunWithType();
+    template <typename T> void RunImpl();
+    template <typename T> void EltwiseRunImpl();
+    template <typename T> void BroadcastRunImpl();
 };
 
 template <class Context>
 class MinimumGradientOp final : public Operator<Context> {
  public:
-    USE_SIMPLE_CTOR_DTOR(MinimumGradientOp);
+    SIMPLE_CTOR_DTOR(MinimumGradientOp);
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
-    template <typename T> void EltwiseRunWithType();
-    template <typename T> void BroadcastRunWithType();
+    template <typename T> void RunImpl();
+    template <typename T> void EltwiseRunImpl();
+    template <typename T> void BroadcastRunImpl();
 };
 
 }  // namespace dragon

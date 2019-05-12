@@ -17,8 +17,8 @@ from . import *
 
 
 @OpSchema.Inputs(1)
-def Gather(inputs, indices, axis=0, **kwargs):
-    """Gather the input according to the indices along the given axis.
+def IndexSelect(inputs, indices, axis=0, **kwargs):
+    """Select the elements according to the indices along the given axis.
 
     **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
@@ -26,10 +26,10 @@ def Gather(inputs, indices, axis=0, **kwargs):
     ----------
     inputs : Tensor
         The input tensor.
-    indices : int, sequence of (number, Tensor)
-        The indices to form output tensor.
+    indices : Tensor
+        The indices to select elements.
     axis : int, optional
-        The start axis, can be negative.
+        The axis of indices.
 
     Returns
     -------
@@ -39,11 +39,10 @@ def Gather(inputs, indices, axis=0, **kwargs):
     """
     arguments = ParseArgs(locals())
     if not isinstance(indices, Tensor):
-        indices = Tensor.Ref('', dtype='int64') \
-            ._from_constants(indices)
+        indices = Tensor.convert_to(indices, 'int64')
     arguments['inputs'], arguments['indices'] = \
         [arguments['inputs'], indices], None
-    return Tensor.CreateOperator('Gather', **arguments)
+    return Tensor.CreateOperator('IndexSelect', **arguments)
 
 
 @OpSchema.Inputs(1)

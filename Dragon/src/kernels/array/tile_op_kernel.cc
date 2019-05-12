@@ -7,7 +7,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Tile <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _Tile(
@@ -18,18 +18,20 @@ void _Tile(
     const int*              y_dims,
     const T*                x,
     T*                      y) {
-    vector<int> index(ndims, 0); int x_idx;
-    for (int y_idx = 0; y_idx < nthreads; ++y_idx) {
-        x_idx = 0;
+    vec32_t index(ndims, 0); int xi;
+    for (int yi = 0; yi < nthreads; ++yi) {
+        xi = 0;
         for (int d = ndims - 1; d >= 0; --d) {
-            x_idx += (index[d] % x_dims[d]) * x_strides[d];
+            xi += (index[d] % x_dims[d]) * x_strides[d];
         }
-        y[y_idx] = x[x_idx];
-        utils::IncreaseIndexInDims(ndims, y_dims, index.data());
+        y[yi] = x[xi];
+        utils::IncreaseIndexInDims(
+            ndims, y_dims, index.data()
+        );
     }
 }
 
-/*! TileGrad <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _TileGrad(
@@ -43,13 +45,13 @@ void _TileGrad(
         ctx->Copy<T, CPUContext, CPUContext>(
             cols, dx, dy); dy += cols;
         for (int m = 1; m < multiple; ++m) {
-            math::Add<T, CPUContext>(
-                cols, dy, dx, dx, ctx); dy += cols;
+            math::Add(cols, dy, dx, dx, ctx);
+            dy += cols;
         } dx += cols;
     }
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_TILE_KERNEL_LAUNCHER(T) \
     template<> void Tile<T, CPUContext>( \
@@ -61,7 +63,14 @@ void _TileGrad(
         const T*                x, \
         T*                      y, \
         CPUContext*             ctx) { \
-        _Tile<T>(count, ndims, x_dims, x_strides, y_dims, x, y); \
+        _Tile( \
+            count, \
+            ndims, \
+            x_dims, \
+            x_strides, \
+            y_dims, \
+            x, y \
+        ); \
     }
 
 #define DEFINE_TILE_GRAD_KERNEL_LAUNCHER(T) \
@@ -72,7 +81,12 @@ void _TileGrad(
         const T*                dy, \
         T*                      dx, \
         CPUContext*             ctx) { \
-        _TileGrad<T>(rows, cols, multiple, dy, dx, ctx); \
+        _TileGrad( \
+            rows, \
+            cols, \
+            multiple, \
+            dy, dx, ctx \
+        ); \
     }
 
 DEFINE_TILE_KERNEL_LAUNCHER(bool);

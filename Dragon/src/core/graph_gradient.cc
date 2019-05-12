@@ -299,7 +299,7 @@ GraphDef GraphGradientMaker::Share(const GraphDef& input_def) {
         // GC to store the grads that have finished lifecycle
         vector<string> GC;
         // Inplace-aware
-        vector<int> inplace_flags;
+        vec32_t inplace_flags;
         for (int oix = 0; oix < op->output_size(); ++oix) {
             int flag = -1;
             for (int iix = 0; iix < op->input_size(); ++iix)

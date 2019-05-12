@@ -45,6 +45,18 @@ class Dimension(object):
             return None
         return self._value == other.value
 
+    def __ne__(self, other):
+        try:
+            other = as_dimension(other)
+        except (TypeError, ValueError):
+            return NotImplemented
+        if self._value is None or other.value is None:
+            return None
+        return self._value != other.value
+
+    def __int__(self):
+        return self._value
+
 
 def as_dimension(value):
     if isinstance(value, Dimension): return value

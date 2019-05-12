@@ -70,6 +70,7 @@ List               Brief
 `SElu`_            Scaled Exponential Linear Unit function. `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
 `Softmax`_         *Softmax* function.
 `Dropout`_         Randomly set a unit into zero. `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
+`DropPath`_        Randomly set a example of batch into zero. `[Larsson et.al, 2016] <https://arxiv.org/abs/1605.07648>`_.
 ===============    ======================================================================
 
 Loss
@@ -134,7 +135,7 @@ Array
 ===============    ======================================================================
 List               Brief
 ===============    ======================================================================
-`Gather`_          Gather the input according to the indices along the given axis.
+`IndexSelect`_     Select the elements according to the indices along the given axis.
 `Reduce`_          Reduce the inputs along the axis in given axes.
 `Sum`_             Compute the sum along the given axis.
 `Mean`_            Compute the mean along the given axis.
@@ -241,6 +242,7 @@ List                 Brief
 .. _SElu: operators/activation.html#dragon.operators.activation.SElu
 .. _Softmax: operators/activation.html#dragon.operators.activation.Softmax
 .. _Dropout: operators/activation.html#dragon.operators.activation.Dropout
+.. _DropPath: operators/activation.html#dragon.operators.activation.DropPath
 
 .. _NLLLoss: operators/loss.html#dragon.operators.loss.NLLLoss
 .. _SparseSoftmaxCrossEntropy: operators/loss.html#dragon.operators.loss.SparseSoftmaxCrossEntropy
@@ -281,7 +283,7 @@ List                 Brief
 .. _InstanceNorm: operators/norm.html#dragon.operators.norm.InstanceNorm
 .. _L2Norm: operators/norm.html#dragon.operators.norm.L2Norm
 
-.. _Gather: operators/array.html#dragon.operators.array.Gather
+.. _IndexSelect: operators/array.html#dragon.operators.array.IndexSelect
 .. _Crop: operators/array.html#dragon.operators.array.Crop
 .. _Reduce: operators/array.html#dragon.operators.array.Reduce
 .. _Sum: operators/array.html#dragon.operators.array.Sum

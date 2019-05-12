@@ -6,114 +6,171 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void NNResizeOp<Context>::RunWithType() {
-    if (data_format == "NCHW") {
-        n = Input(0).dim(0), c = Input(0).dim(1);
-        h = Input(0).dim(2), w = Input(0).dim(3);
-        out_h = Output(0)->dim(2), out_w = Output(0)->dim(3);
-    } else if (data_format == "NHWC") {
-        n = Input(0).dim(0), h = Input(0).dim(1);
-        w = Input(0).dim(2), c = Input(0).dim(3);
-        out_h = Output(0)->dim(1), out_w = Output(0)->dim(2);
+void NNResizeOp<Context>::RunImpl() {
+    if (data_format() == "NCHW") {
+        n_ = X(0).dim(0), c_ = X(0).dim(1);
+        h_ = X(0).dim(2), w_ = X(0).dim(3);
+        out_h_ = Y(0)->dim(2);
+        out_w_ = Y(0)->dim(3);
+    } else if (data_format() == "NHWC") {
+        n_ = X(0).dim(0), h_ = X(0).dim(1);
+        w_ = X(0).dim(2), c_ = X(0).dim(3);
+        out_h_ = Y(0)->dim(1);
+        out_w_ = Y(0)->dim(2);
     }
-    auto* Xdata = Input(0).template data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
 
-    kernel::NNResize(n, c, h, w, out_h, out_w,
-        data_format, Xdata, Ydata, ctx());
+    auto* x = X(0).template data<T, Context>();
+    auto* y = Y(0)->template mutable_data<T, Context>();
+
+    kernel::NNResize(
+        n_, c_, h_, w_,
+        out_h_, out_w_,
+        data_format(),
+        x, y, ctx()
+    );
 }
 
 template <class Context>
 void NNResizeOp<Context>::RunOnDevice() {
-    vector<int64_t> dims = Input(0).dims();
-    if (dsize_desc.size() > 0 || dsize_value.size() > 0) {
+    auto out_shape = X(0).dims();
+    if (GET_ARGS_SIZE(dsize) > 0) {
         for (int i = 0; i < 2; i++)
-            dims[spatial_axis + i] = dsize(i);
-    } else if (!shape_like_desc.empty()) {
-        auto* sl = ws()->GetTensor(shape_like_desc);
+            out_shape[axis_ + i] = dsize(i);
+    } else if (!shape_desc_.empty()) {
+        auto* sl = ws()->GetTensor(shape_desc_);
         for (int i = 0; i < 2; i++)
-            dims[spatial_axis + i] = sl->dim(spatial_axis + i);
+            out_shape[axis_ + i] = sl->dim(axis_ + i);
     } else {
-        CHECK(fy != -1.f && fx != -1.f)
+        CHECK(fy_ != -1.f && fx_ != -1.f)
                 << "\nThe fx and fy should be set.";
-        dims[spatial_axis] = int(dims[spatial_axis] * fy);
-        dims[spatial_axis + 1] = int(dims[spatial_axis + 1] * fx);
+        out_shape[axis_] = int(out_shape[axis_] * fy_);
+        out_shape[axis_ + 1] = int(out_shape[axis_ + 1] * fx_);
     }
-    Output(0)->Reshape(dims);
 
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+    Y(0)->Reshape(out_shape);
+
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(0), float16)) {
+        RunImpl<float16>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0),
+            { "float32", "float16" }
+        );
+    }
+}
+
+template <class Context> template <typename T>
+void NNResizeGradientOp<Context>::RunImpl() {
+    if (data_format() == "NCHW") {
+        n_ = X(0).dim(0), c_ = X(0).dim(1);
+        h_ = X(0).dim(2), w_ = X(0).dim(3);
+        out_h_ = X(-1).dim(2);
+        out_w_ = X(-1).dim(3);
+    } else if (data_format() == "NHWC") {
+        n_ = X(0).dim(0), h_ = X(0).dim(1);
+        w_ = X(0).dim(2), c_ = X(0).dim(3);
+        out_h_ = X(-1).dim(1);
+        out_w_ = X(-1).dim(2);
+    }
+
+    auto* dy = X(-1).template data<T, Context>();
+    auto* dx = Y(0)->template mutable_data<T, Context>();
+
+    math::Set(
+        Y(0)->count(),
+        cast::to<T>(0.f),
+        dx, ctx()
+    );
+
+    kernel::NNResizeGrad(
+        n_, c_, h_, w_,
+        out_h_, out_w_,
+        data_format(),
+        dy, dx, ctx()
+    );
+}
+
+template <class Context>
+void NNResizeGradientOp<Context>::RunImplFloat16() {
+    if (data_format() == "NCHW") {
+        n_ = X(0).dim(0), c_ = X(0).dim(1);
+        h_ = X(0).dim(2), w_ = X(0).dim(3);
+        out_h_ = X(-1).dim(2);
+        out_w_ = X(-1).dim(3);
+    } else if (data_format() == "NHWC") {
+        n_ = X(0).dim(0), h_ = X(0).dim(1);
+        w_ = X(0).dim(2), c_ = X(0).dim(3);
+        out_h_ = X(-1).dim(1);
+        out_w_ = X(-1).dim(2);
+    }
+
+    auto* dy = X(-1).template data<float16, Context>();
+    auto* dx = Y(0)->template mutable_data<float16, Context>();
+
+    auto buf = ws()->template data<float, Context>({
+        X(-1).count(), Y(0)->count() });
+
+    math::Set(
+        Y(0)->count(),
+        0.f,
+        buf[1], ctx()
+    );
+
+    kernel::TypeA2B(
+        X(-1).count(),
+        dy, buf[0], ctx()
+    );
+
+    kernel::NNResizeGrad(
+        n_, c_, h_, w_,
+        out_h_, out_w_,
+        data_format(),
+        buf[0], buf[1], ctx()
+    );
+
+    kernel::TypeA2B(
+        Y(0)->count(),
+        buf[1], dx, ctx()
+    );
+}
+
+template <class Context>
+void NNResizeGradientOp<Context>::RunOnDevice() {
+    Y(0)->ReshapeLike(X(0));
+    
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(0), float16)) {
+        RunImplFloat16();
+    } else {
+        LOG(FATAL) << DTypeString(X(0),
+            { "float32", "float16" }
+        );
+    }
 }
 
 DEPLOY_CPU(NNResize);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(NNResize);
 #endif
-OPERATOR_SCHEMA(NNResize).NumInputs(1).NumOutputs(1);
-
-template <class Context> template <typename T>
-void NNResizeGradientOp<Context>::RunWithType() {
-    if (data_format == "NCHW") {
-        n = Input(0).dim(0), c = Input(0).dim(1);
-        h = Input(0).dim(2), w = Input(0).dim(3);
-        out_h = Input(-1).dim(2), out_w = Input(-1).dim(3);
-    } else if (data_format == "NHWC") {
-        n = Input(0).dim(0), h = Input(0).dim(1);
-        w = Input(0).dim(2), c = Input(0).dim(3);
-        out_h = Input(-1).dim(1), out_w = Input(-1).dim(2);
-    }
-    auto* dYdata = Input(-1).template data<T, Context>();
-    auto* dXdata = Output(0)->template mutable_data<T, Context>();
-
-    math::Set(Output(0)->count(), cast::to<T>(0.f), dXdata, ctx());
-
-    kernel::NNResizeGrad(n, c, h, w, out_h, out_w,
-        data_format, dYdata, dXdata, ctx());
-}
-
-template <class Context>
-void NNResizeGradientOp<Context>::RunWithFloat16() {
-    if (data_format == "NCHW") {
-        n = Input(0).dim(0), c = Input(0).dim(1);
-        h = Input(0).dim(2), w = Input(0).dim(3);
-        out_h = Input(-1).dim(2), out_w = Input(-1).dim(3);
-    } else if (data_format == "NHWC") {
-        n = Input(0).dim(0), h = Input(0).dim(1);
-        w = Input(0).dim(2), c = Input(0).dim(3);
-        out_h = Input(-1).dim(1), out_w = Input(-1).dim(2);
-    }
-    auto* dYdata = Input(-1).template data<float16, Context>();
-    auto* dXdata = Output(0)->template mutable_data<float16, Context>();
-
-    auto WSdata = ws()->template caches<float, Context>({
-        Input(-1).count(), Output(0)->count() });
-
-    math::Set(Output(0)->count(), 0.f, WSdata[1], ctx());
-    kernel::TypeA2B(Input(-1).count(), dYdata, WSdata[0], ctx());
-
-    kernel::NNResizeGrad(n, c, h, w, out_h, out_w,
-        data_format, WSdata[0], WSdata[1], ctx());
-
-    kernel::TypeA2B(Output(0)->count(), WSdata[1], dXdata, ctx());
-}
-
-template <class Context>
-void NNResizeGradientOp<Context>::RunOnDevice() {
-    Output(0)->ReshapeLike(Input(0));
-    
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), float16)) RunWithFloat16();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
-}
 
 DEPLOY_CPU(NNResizeGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(NNResizeGradient);
 #endif
 
+OPERATOR_SCHEMA(NNResize)
+     /* X */
+    .NumInputs(1)
+     /* Y */
+    .NumOutputs(1);
+
 OPERATOR_SCHEMA(NNResizeGradient)
-    .NumInputs(2).NumOutputs(1);
+     /* X, dY */
+    .NumInputs(2)
+     /* dX */
+    .NumOutputs(1);
 
 REGISTER_GRADIENT(NNResize, SimpleGradientMaker);
 

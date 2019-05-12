@@ -22,14 +22,15 @@ class SGDUpdateOp final : public UpdateOpBase<Context> {
  public:
     SGDUpdateOp(const OperatorDef& def, Workspace* ws)
         : UpdateOpBase<Context>(def, ws),
-        old_lr(-1.f), correction(1.f) {}
+          last_lr_(-1.f), correction_(1.f) {}
     USE_OPERATOR_FUNCTIONS;
-    USE_UPDATER_FUNCTIONS(Context);
+    USE_UPDATER_FUNCTIONS;
 
-    void ComputeUpdates(Tensor* dX) override;
+    void Compute(Tensor* dX) override;
 
  protected:
-    float old_lr, lr, momentum, correction;
+    float lr_, momentum_;
+    float last_lr_, correction_;
 };
 
 }  // namespace dragon

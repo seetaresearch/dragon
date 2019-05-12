@@ -22,17 +22,19 @@ class MatmulOp final : public Operator<Context> {
  public:
     MatmulOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          transA(OperatorBase::Arg<bool>("transA", false)),
-          transB(OperatorBase::Arg<bool>("transB", false)) {}
+          transA_(OpArg<bool>("transA", false)),
+          transB_(OpArg<bool>("transB", false)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t M1, N1, M2, N2;
-    int64_t transA, transB, M, K1, K2, N;
-    int64_t batch_size, A_stride, B_stride, C_stride;
+    int64_t batch_size_;
+    int64_t transA_, transB_;
+    int64_t M_, K1_, K2_, N_;
+    int64_t M1_, N1_, M2_, N2_;
+    int64_t A_stride_, B_stride_, Y_stride_;
 };
 
 template <class Context>
@@ -40,17 +42,19 @@ class MatmulGradientOp final : public Operator<Context> {
  public:
     MatmulGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          transA(OperatorBase::Arg<bool>("transA", false)),
-          transB(OperatorBase::Arg<bool>("transB", false)) {}
+          transA_(OpArg<bool>("transA", false)),
+          transB_(OpArg<bool>("transB", false)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t M1, N1, M2, N2;
-    int64_t transA, transB, M, K1, K2, N;
-    int64_t batch_size, A_stride, B_stride, C_stride;
+    int64_t batch_size_;
+    int64_t transA_, transB_;
+    int64_t M_, K1_, K2_, N_;
+    int64_t M1_, N1_, M2_, N2_;
+    int64_t A_stride_, B_stride_, Y_stride_;
 };
 
 }  // namespace dragon

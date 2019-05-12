@@ -6,145 +6,190 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void MinimumOp<Context>::EltwiseRunWithType() {
-    Output(0)->ReshapeLike(Input(0));
+void MinimumOp<Context>::EltwiseRunImpl() {
+    Y(0)->ReshapeLike(X(0));
 
-    auto* Adata = Input(0).template data<T, Context>();
-    auto* Bdata = Input(1).template data<T, Context>();
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    auto* a = X(0).template data<T, Context>();
+    auto* b = X(1).template data<T, Context>();
+    auto* y = Y(0)->template mutable_data<T, Context>();
 
-    kernel::Minimum(Output(0)->count(), Adata, Bdata, Ydata, ctx());
+    kernel::Minimum(
+        Y(0)->count(),
+        a, b,
+        y, ctx()
+    );
 }
 
 template <class Context> template <typename T>
-void MinimumOp<Context>::BroadcastRunWithType() {
-    if (Input(0).count() == 1) {
-        Output(0)->ReshapeLike(Input(1));
-        auto* Adata = Input(0).template data<T, CPUContext>();
-        auto* Bdata = Input(1).template data<T, Context>();
-        auto* Ydata = Output(0)->template mutable_data<T, Context>();
-        kernel::BroadcastMinimum(Output(0)->count(),
-            Bdata, Adata[0], Ydata, ctx());
-    } else if (Input(1).count() == 1) {
-        Output(0)->ReshapeLike(Input(0));
-        auto* Adata = Input(0).template data<T, Context>();
-        auto* Bdata = Input(1).template data<T, CPUContext>();
-        auto* Ydata = Output(0)->template mutable_data<T, Context>();
-        kernel::BroadcastMinimum(Output(0)->count(),
-            Adata, Bdata[0], Ydata, ctx());
-    } else { 
-        LOG(FATAL) << "Either Input(0) or Input(1) should be a scalar."; 
+void MinimumOp<Context>::BroadcastRunImpl() {
+    if (X(0).count() == 1) {
+        Y(0)->ReshapeLike(X(1));
+        auto* a = X(0).template data<T, CPUContext>();
+        auto* b = X(1).template data<T, Context>();
+        auto* y = Y(0)->template mutable_data<T, Context>();
+        kernel::BroadcastMinimum(
+            Y(0)->count(),
+            b, a[0],
+            y, ctx()
+        );
+    } else if (X(1).count() == 1) {
+        Y(0)->ReshapeLike(X(0));
+        auto* a = X(0).template data<T, Context>();
+        auto* b = X(1).template data<T, CPUContext>();
+        auto* y = Y(0)->template mutable_data<T, Context>();
+        kernel::BroadcastMinimum(
+            Y(0)->count(),
+            a, b[0],
+            y, ctx()
+        );
+    } else {
+        LOG(FATAL) << "Either X(0) or X(1) should be a scalar.";
     }
 }
 
 template <class Context> template <typename T>
-void MinimumOp<Context>::RunWithType() {
-    if (Input(0).dims() == Input(1).dims()) {
-        EltwiseRunWithType<T>();
+void MinimumOp<Context>::RunImpl() {
+    if (X(0).dims() == X(1).dims()) {
+        EltwiseRunImpl<T>();
     } else {
-        BroadcastRunWithType<T>();
+        BroadcastRunImpl<T>();
     }
 }
 
 template <class Context>
 void MinimumOp<Context>::RunOnDevice() {
-    if (XIsType(Input(0), int8_t)) RunWithType<int8_t>();
-    else if (XIsType(Input(0), uint8_t)) RunWithType<uint8_t>();
-    else if (XIsType(Input(0), int)) RunWithType<int>();
-    else if (XIsType(Input(0), int64_t)) RunWithType<int64_t>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), double)) RunWithType<double>();
-    else LOG(FATAL) << DTypeHelper(Input(0), {
-        "int8", "uint8", "int32", "int64",
+    if (XIsType(X(0), int8_t)) {
+        RunImpl<int8_t>();
+    } else if (XIsType(X(0), uint8_t)) {
+        RunImpl<uint8_t>();
+    } else if (XIsType(X(0), int)) {
+        RunImpl<int>();
+    } else if (XIsType(X(0), int64_t)) {
+        RunImpl<int64_t>();
+    } else if (XIsType(X(0), float16)) {
+        RunImpl<float16>();
+    } else if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(0), double)) {
+        RunImpl<double>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0), {
+            "int8", "uint8", "int32", "int64",
             "float16", "float32", "float64",
-    });
+        });
+    }
+}
+
+template <class Context> template <typename T>
+void MinimumGradientOp<Context>::EltwiseRunImpl() {
+    auto* a  = X(0).template data<T, Context>();
+    auto* b  = X(1).template data<T, Context>();
+    auto* dy = X(2).template data<T, Context>();
+    auto* da = Y(0)->template mutable_data<T, Context>();
+    auto* db = Y(1)->template mutable_data<T, Context>();
+
+    kernel::MinimumGrad(
+        Y(0)->count(),
+        a, b, dy,
+        da, db, ctx()
+    );
+}
+
+template <class Context> template <typename T>
+void MinimumGradientOp<Context>::BroadcastRunImpl() {
+    auto* dy = X(-1).template data<T, Context>();
+    if (X(0).count() == 1) {
+        if (Y(0)->name() != "NULL") {
+            auto* da = Y(0)->template mutable_data<T, Context>();
+            math::Set(1, cast::to<T>(0.f), da, ctx());
+        }
+        if (Y(1)->name() != "NULL") {
+            auto* a  = X(0).template data<T, CPUContext>();
+            auto* b  = X(1).template data<T, Context>();
+            auto* db = Y(1)->template mutable_data<T, Context>();
+            kernel::BroadcastMinimumGrad(
+                Y(1)->count(),
+                b, a[0], dy,
+                db, (T*)nullptr, ctx()
+            );
+        }
+    } else if (X(1).count() == 1) {
+        if (Y(0)->name() != "NULL") {
+            auto* a  = X(0).template data<T, Context>();
+            auto* b  = X(1).template data<T, CPUContext>();
+            auto* da = Y(0)->template mutable_data<T, Context>();
+            kernel::BroadcastMinimumGrad(
+                Y(0)->count(),
+                a, b[0], dy,
+                da, (T*)nullptr, ctx()
+            );
+        }
+        if (Y(1)->name() != "NULL") {
+            auto* db = Y(1)->template mutable_data<T, Context>();
+            math::Set(1, cast::to<T>(0.f), db, ctx());
+        }
+    } else {
+        LOG(FATAL) << "Either X(0) or X(1) should be a scalar.";
+    }
+}
+
+template <class Context> template <typename T>
+void MinimumGradientOp<Context>::RunImpl() {
+    Y(0)->ReshapeLike(X(0));
+    Y(1)->ReshapeLike(X(1));
+
+    if (X(0).dims() == X(1).dims()) {
+        EltwiseRunImpl<T>();
+    } else {
+        BroadcastRunImpl<T>();
+    }
+}
+
+template <class Context>
+void MinimumGradientOp<Context>::RunOnDevice() {
+    if (XIsType(X(0), int8_t)) {
+        RunImpl<int8_t>();
+    } else if (XIsType(X(0), uint8_t)) {
+        RunImpl<uint8_t>();
+    } else if (XIsType(X(0), int)) {
+        RunImpl<int>();
+    } else if (XIsType(X(0), int64_t)) {
+        RunImpl<int64_t>();
+    } else if (XIsType(X(0), float16)) {
+        RunImpl<float16>();
+    } else if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(0), double)) {
+        RunImpl<double>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0), {
+            "int8", "uint8", "int32", "int64",
+            "float16", "float32", "float64",
+        });
+    }
 }
 
 DEPLOY_CPU(Minimum);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(Minimum);
 #endif
-OPERATOR_SCHEMA(Minimum).NumInputs(2).NumOutputs(1);
-
-template <class Context> template <typename T>
-void MinimumGradientOp<Context>::EltwiseRunWithType() {
-    auto* Adata = Input(0).template data<T, Context>();
-    auto* Bdata = Input(1).template data<T, Context>();
-    auto* dYdata = Input(-1).template data<T, Context>();
-    auto* dAdata = Output(0)->template mutable_data<T, Context>();
-    auto* dBdata = Output(1)->template mutable_data<T, Context>();
-
-    kernel::MinimumGrad(Output(0)->count(),
-        Adata, Bdata, dYdata, dAdata, dBdata, ctx());
-}
-
-template <class Context> template <typename T>
-void MinimumGradientOp<Context>::BroadcastRunWithType() {
-    auto* dYdata = Input(-1).template data<T, Context>();
-    if (Input(0).count() == 1) {
-        if (Output(0)->name() != "NULL") {
-            auto* dAdata = Output(0)->template mutable_data<T, Context>();
-            math::Set<T, Context>(1, cast::to<T>(0.f), dAdata, ctx());
-        }
-        if (Output(1)->name() != "NULL") {
-            auto* Adata = Input(0).template data<T, CPUContext>();
-            auto* Bdata = Input(1).template data<T, Context>();
-            auto* dBdata = Output(1)->template mutable_data<T, Context>();
-            kernel::BroadcastMinimumGrad(Output(1)->count(),
-                Bdata, Adata[0], dYdata, dBdata, (T*)nullptr, ctx());
-        }
-    } else if (Input(1).count() == 1) {
-        if (Output(0)->name() != "NULL") {
-            auto* Adata = Input(0).template data<T, Context>();
-            auto* Bdata = Input(1).template data<T, CPUContext>();
-            auto* dAdata = Output(0)->template mutable_data<T, Context>();
-            kernel::BroadcastMinimumGrad(Output(0)->count(),
-                Adata, Bdata[0], dYdata, dAdata, (T*)nullptr, ctx());
-        }
-        if (Output(1)->name() != "NULL") {
-            auto* dBdata = Output(1)->template mutable_data<T, Context>();
-            math::Set<T, Context>(1, cast::to<T>(0.f), dBdata, ctx());
-        }
-    } else {
-        LOG(FATAL) << "Either Input(0) or Input(1) should be a scalar."; 
-    }
-}
-
-template <class Context> template <typename T>
-void MinimumGradientOp<Context>::RunWithType() {
-    Output(0)->ReshapeLike(Input(0));
-    Output(1)->ReshapeLike(Input(1));
-
-    if (Input(0).dims() == Input(1).dims()) {
-        EltwiseRunWithType<T>();
-    } else {
-        BroadcastRunWithType<T>();
-    }
-}
-
-template <class Context>
-void MinimumGradientOp<Context>::RunOnDevice() {
-    if (XIsType(Input(0), int8_t)) RunWithType<int8_t>();
-    else if (XIsType(Input(0), uint8_t)) RunWithType<uint8_t>();
-    else if (XIsType(Input(0), int)) RunWithType<int>();
-    else if (XIsType(Input(0), int64_t)) RunWithType<int64_t>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), double)) RunWithType<double>();
-    else LOG(FATAL) << DTypeHelper(Input(0), {
-        "int8", "uint8", "int32", "int64",
-            "float16", "float32", "float64",
-    });
-}
 
 DEPLOY_CPU(MinimumGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(MinimumGradient);
 #endif
 
+OPERATOR_SCHEMA(Minimum)
+     /* A, B */
+    .NumInputs(2)
+     /* Y */
+    .NumOutputs(1);
+
 OPERATOR_SCHEMA(MinimumGradient)
-    .NumInputs(3).NumOutputs(2);
+     /* A, B, dY */
+    .NumInputs(3)
+     /* dA, dB */
+    .NumOutputs(2);
 
 REGISTER_GRADIENT(Minimum, SimpleGradientMaker);
 

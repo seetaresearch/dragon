@@ -15,16 +15,16 @@
 
 #ifdef WITH_OMP
 
-#include <algorithm>
 #include <omp.h>
+#include <algorithm>
 
 namespace dragon {
 
 #define OMP_MIN_ITERATORS_PER_CORE 200000
 
-inline int GET_OMP_THREADS(const int N) {
-   int threads = std::max(N / OMP_MIN_ITERATORS_PER_CORE, 1);
-   return std::min(threads, omp_get_num_procs());
+inline int OMP_THREADS(const int N) {
+    int threads = std::max(N / OMP_MIN_ITERATORS_PER_CORE, 1);
+    return std::min(threads, omp_get_num_procs());
 }
 
 }  // namespace dragon

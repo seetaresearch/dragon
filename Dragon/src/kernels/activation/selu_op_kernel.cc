@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! SElu <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void SElu<float, CPUContext>(
     const int               count,
@@ -13,7 +13,7 @@ template<> void SElu<float, CPUContext>(
     float*                  y,
     CPUContext*             ctx) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         y[i] = 1.0507f * std::max(x[i], 0.f)
@@ -21,7 +21,7 @@ template<> void SElu<float, CPUContext>(
     }
 }
 
-/*! SElu <T = float16, Device = CPU> */
+/* <T = float16, Device = CPU> */
 
 template<> void SElu<float16, CPUContext>(
     const int               count,
@@ -31,7 +31,7 @@ template<> void SElu<float16, CPUContext>(
     CPU_FP16_NOT_SUPPORTED;
 }
 
-/*! SEluGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void SEluGrad<float, CPUContext>(
     const int               count,
@@ -40,7 +40,7 @@ template<> void SEluGrad<float, CPUContext>(
     float*                  dx,
     CPUContext*             ctx) {
 #ifdef WITH_OMP
-    #pragma omp parallel for num_threads(GET_OMP_THREADS(count))
+    #pragma omp parallel for num_threads(OMP_THREADS(count))
 #endif
     for (int i = 0; i < count; ++i) {
         dx[i] = y[i] > 0 ? 1.0507f * dy[i] :
@@ -48,7 +48,7 @@ template<> void SEluGrad<float, CPUContext>(
     }
 }
 
-/*! SEluGrad <T = float16, Device = CPU> */
+/* <T = float16, Device = CPU> */
 
 template<> void SEluGrad<float16, CPUContext>(
     const int               count,

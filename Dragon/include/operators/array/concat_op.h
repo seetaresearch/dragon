@@ -22,17 +22,15 @@ class ConcatOp : public Operator<Context> {
  public:
     ConcatOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 0)) {}
+          axis_(OpArg<int64_t>("axis", 0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t axis, outer_dim, inner_dim;
-    int64_t x_concat_dim, y_concat_dim;
-    int64_t x_offset, y_offset, concat_offset;
-    vector<int64_t> concat_dims;
+    int64_t axis_, cat_dim_;
+    int64_t outer_dim_, inner_dim_;
 };
 
 template <class Context>
@@ -40,17 +38,15 @@ class ConcatGradientOp : public Operator<Context> {
  public:
     ConcatGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 0)) {}
+          axis_(OpArg<int64_t>("axis", 0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t axis, outer_dim, inner_dim;
-    int64_t x_concat_dim, y_concat_dim;
-    int64_t x_offset, y_offset, concat_offset;
-    vector<int64_t> concat_dims;
+    int64_t axis_, cat_dim_;
+    int64_t outer_dim_, inner_dim_;
 };
 
 }  // namespace dragon

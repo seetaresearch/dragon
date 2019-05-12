@@ -20,7 +20,7 @@ namespace dragon {
 template <class Context>
 class ShapeOp final : public Operator<Context> {
  public:
-    USE_SIMPLE_CTOR_DTOR(ShapeOp);
+    SIMPLE_CTOR_DTOR(ShapeOp);
     USE_OPERATOR_FUNCTIONS;
     void RunOnDevice() override;
 };

@@ -18,6 +18,27 @@ namespace math {
  * ----------------------------------------------
  */
 
+#define DEFINE_COPY_FUNC(T) \
+    template<> void Copy<T, CPUContext>( \
+        const int               n, \
+        const T*                x, \
+        T*                      y, \
+        CPUContext*             ctx) { \
+        if (x != y && n > 0) { \
+            memcpy(y, x, n * sizeof(T)); \
+        } \
+    }
+
+DEFINE_COPY_FUNC(bool);
+DEFINE_COPY_FUNC(int8_t);
+DEFINE_COPY_FUNC(uint8_t);
+DEFINE_COPY_FUNC(int);
+DEFINE_COPY_FUNC(int64_t);
+DEFINE_COPY_FUNC(float16);
+DEFINE_COPY_FUNC(float);
+DEFINE_COPY_FUNC(double);
+#undef DEFINE_COPY_FUNC
+
 #define DEFINE_SIMPLE_UNARY_FUNC(name, T, expr) \
     template <> void name<T, CPUContext>( \
         const int           n, \
@@ -689,6 +710,7 @@ DEFINE_RANDOM_TRUNCATED_NORMAL_FUNC(double);
 
 DEFINE_RANDOM_BERNOULI_FUNC(uint8_t);
 DEFINE_RANDOM_BERNOULI_FUNC(uint32_t);
+DEFINE_RANDOM_BERNOULI_FUNC(float);
 #undef DEFINE_RANDOM_BERNOULI_FUNC
 
 }  // namespace math

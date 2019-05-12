@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Assign <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _Assign(
@@ -16,18 +16,22 @@ void _Assign(
     const int*              starts,
     const T*                x,
     T*                      y) {
-    vector<int> index(ndims, 0); int y_idx;
-    for (int x_idx = 0; x_idx < count; ++x_idx) {
-        y_idx = 0;
+    vec32_t index(ndims, 0); int yi;
+    for (int xi = 0; xi < count; ++xi) {
+        yi = 0;
         for (int d = ndims - 1; d >= 0; --d) {
-            y_idx += (index[d] + starts[d]) * y_strides[d];
+            yi += (
+                index[d] + starts[d]
+            ) * y_strides[d];
         }
-        y[y_idx] = x[x_idx];
-        utils::IncreaseIndexInDims(ndims, x_dims, index.data());
+        y[yi] = x[xi];
+        utils::IncreaseIndexInDims(
+            ndims, x_dims, index.data()
+        );
     }
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_ASSIGN_KERNEL_LAUNCHER(T) \
     template<> void Assign<T, CPUContext>( \
@@ -39,8 +43,14 @@ void _Assign(
         const T*                x, \
         T*                      y, \
         CPUContext*             ctx) { \
-        _Assign<T>(count, ndims, x_dims, \
-            y_strides, starts, x, y); \
+        _Assign( \
+            count, \
+            ndims, \
+            x_dims, \
+            y_strides, \
+            starts, \
+            x, y \
+        ); \
     }
 
 DEFINE_ASSIGN_KERNEL_LAUNCHER(bool);

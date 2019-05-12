@@ -24,118 +24,119 @@ class ConvOpBase : public Operator<Context> {
  public:
     ConvOpBase(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          data_format(OperatorBase::Arg<string>("data_format", "NCHW")),
-          padding(OperatorBase::Arg<string>("padding", "VALID")),
-          num_output(OperatorBase::Arg<int64_t>("num_output", 0)),
-          group(OperatorBase::Arg<int64_t>("group", 1)) {
-        if (data_format == "NCHW") spatial_axis = 2;
-        else if (data_format == "NHWC") spatial_axis = 1;
-        else LOG(FATAL) << "Unknown data format: " << data_format;
-        num_spatial_axes = -1;  // Unknown
-        output_shape_spec_value = OperatorBase::Args<int64_t>("output_shape");
-        output_shape_spec_desc = OperatorBase::Args<string>("output_shape_desc");
-        GET_ARGUMENTS_WITH_DESC(int64_t, output_padding);
+          padding_(OpArg<string>("padding", "VALID")),
+          num_output_(OpArg<int64_t>("num_output", 0)),
+          group_(OpArg<int64_t>("group", 1)) {
+        if (data_format() == "NCHW") axis_ = 2;
+        else if (data_format() == "NHWC") axis_ = 1;
+        else LOG(FATAL) << "Unknown DataFormat: " << data_format();
+        num_axes_ = -1;  // Unknown
+        GET_ARGS_WITH_DESC(int64_t, output_shape);
+        GET_ARGS_WITH_DESC(int64_t, output_padding);
     }
     USE_OPERATOR_FUNCTIONS;
 
  public:
-    vector<int64_t> kernel_shape, stride, pad_l, pad_r, dilation;
-    string data_format, padding;
-    vector<int64_t> input_shape, output_shape, bottom_shape, top_shape;
-    vector<int64_t> weight_shape, bias_shape;
-    int64_t num_output, group;
-    int64_t spatial_axis, num_spatial_axes;
-    int64_t channels, out_spatial_dim;
-    int64_t conv_in_channels, conv_out_channels;
-    int64_t conv_out_spatial_dim, kernel_dim, col_dim;
-    int64_t col_offset, output_offset, weight_offset, x_offset, y_offset;
-    bool is_1x1;
-    DECLARE_ARGUMENTS_WITH_DESC(int64_t, output_padding);  // Adjs
-    DECLARE_ARGUMENTS_WITH_DESC(int64_t, output_shape_spec);
+    vec64_t kshape_, stride_;
+    vec64_t pad_l_, pad_r_, dilation_;
+    vec64_t in_shape_, out_shape_;
+    vec64_t x_shape_, y_shape_;
+    vec64_t w_shape_, b_shape_;
 
-    void Setup();
-    void Reshape();
-    void GradientReshape();
-    virtual void ComputeOutputShape();
-    virtual bool ReverseDimensions() = 0;
-    virtual bool HasBias() { NOT_IMPLEMENTED; return true; }
+    string padding_;
+    int64_t is_1x1_, num_output_, group_;
+    int64_t axis_, num_axes_;
+    int64_t channels_, out_dim_;
+    int64_t conv_in_channels_, conv_out_channels_;
+    int64_t conv_out_dim_, kernel_dim_, col_dim_;
+    int64_t col_ofs_, output_ofs_;
+    int64_t w_ofs_, x_ofs_, y_ofs_;
 
-    template <typename T> void Wx(const T* x,
-        const T* weights, T* y, bool skip_im2col = false);
+    DECLARE_ARGS_WITH_DESC(int64_t, output_shape);
+    DECLARE_ARGS_WITH_DESC(int64_t, output_padding);
 
-    template <typename T> void Pb(const T* bias, T* y);
+    void Setup(int num_axes);
+    void Reshape(bool backward = false);
 
-    template <typename T> void Dx(const T* dy, const T* weights, T* dx);
+    virtual bool HasBias() = 0;
+    virtual bool Transposed() = 0;
 
-    template <typename T> void Dw(const T* dy, const T* x, T* dw);
-
-    template <typename T> void Db(const T* dy, T* db);
+    template <typename T> void Wx(const T*, const T*, T*, bool);
+    template <typename T> void Pb(const T*, T*);
+    template <typename T> void Dx(const T*, const T*, T*);
+    template <typename T> void Dw(const T*, const T*, T*, bool);
+    template <typename T> void Db(const T*, T*);
 
  private:
-    template <typename T> void Im2Col(const T* im, T* col) {
-        if (Input(0).ndim() == 4) {
-             kernel::Im2Col2d<T, Context>(conv_in_channels,
-                            input_shape[0], input_shape[1],
-                          output_shape[0], output_shape[1],
-                          kernel_shape[0], kernel_shape[1],
-                                      stride[0], stride[1],
-                                        pad_l[0], pad_l[1],
-                                  dilation[0], dilation[1],
-                                               data_format,
-                                                        im,
-                                                       col,
-                                                   ctx());
-        } else LOG(FATAL) << "ConvNd has not been implemented yet";
+    void ComputeOutShape();
+
+    template <typename T>
+    void Im2Col(const T* im, T* col) {
+        if (X(0).ndim() == 4) {
+             kernel::Im2Col2d(
+                 conv_in_channels_,
+                 in_shape_[0], in_shape_[1],
+                 out_shape_[0], out_shape_[1],
+                 kshape_[0], kshape_[1],
+                 stride_[0], stride_[1],
+                 pad_l_[0], pad_l_[1],
+                 dilation_[0], dilation_[1],
+                 data_format(), im, col, ctx()
+             );
+        } else {
+            LOG(FATAL) << "ConvNd has not been implemented.";
+        }
     }
 
-    template <typename T> void Col2Im(const T* col, T* im) {
-        if (Input(0).ndim() == 4) {
-             kernel::Col2Im2d<T, Context>(conv_in_channels,
-                            input_shape[0], input_shape[1],
-                          output_shape[0], output_shape[1],
-                          kernel_shape[0], kernel_shape[1],
-                                      stride[0], stride[1],
-                                        pad_l[0], pad_l[1],
-                                  dilation[0], dilation[1],
-                                               data_format,
-                                                       col,
-                                                        im,
-                                                   ctx());
-        } else LOG(FATAL) << "ConvNd has not been implemented yet";
+    template <typename T>
+    void Col2Im(const T* col, T* im) {
+        if (X(0).ndim() == 4) {
+             kernel::Col2Im2d(
+                 conv_in_channels_,
+                 in_shape_[0], in_shape_[1],
+                 out_shape_[0], out_shape_[1],
+                 kshape_[0], kshape_[1],
+                 stride_[0], stride_[1],
+                 pad_l_[0], pad_l_[1],
+                 dilation_[0], dilation_[1],
+                 data_format(), col, im, ctx()
+             );
+        } else {
+            LOG(FATAL) << "ConvNd has not been implemented.";
+        }
     }
 };
 
-DEFINE_ARGUMENTS_WITH_DESC(int64_t, ConvOpBase, output_padding);
-DEFINE_ARGUMENTS_WITH_DESC(int64_t, ConvOpBase, output_shape_spec);
+DEFINE_ARGS_WITH_DESC(int64_t, ConvOpBase, output_shape);
+DEFINE_ARGS_WITH_DESC(int64_t, ConvOpBase, output_padding);
 
 #define USE_CONVOLUTION_FUNCTIONS \
     using ConvOpBase<Context>::Setup; \
     using ConvOpBase<Context>::Reshape; \
-    using ConvOpBase<Context>::GradientReshape; \
-    using ConvOpBase<Context>::ComputeOutputShape; \
-    using ConvOpBase<Context>::ReverseDimensions; \
+    using ConvOpBase<Context>::Transposed; \
     using ConvOpBase<Context>::HasBias; \
     using ConvOpBase<Context>::Wx; \
     using ConvOpBase<Context>::Pb; \
     using ConvOpBase<Context>::Dx; \
     using ConvOpBase<Context>::Dw; \
     using ConvOpBase<Context>::Db; \
-    using ConvOpBase<Context>::kernel_shape; \
-    using ConvOpBase<Context>::stride; \
-    using ConvOpBase<Context>::pad_l; \
-    using ConvOpBase<Context>::pad_r; \
-    using ConvOpBase<Context>::dilation; \
-    using ConvOpBase<Context>::group; \
-    using ConvOpBase<Context>::channels; \
-    using ConvOpBase<Context>::num_output; \
-    using ConvOpBase<Context>::data_format; \
-    using ConvOpBase<Context>::x_offset; \
-    using ConvOpBase<Context>::y_offset; \
-    using ConvOpBase<Context>::weight_offset; \
-    using ConvOpBase<Context>::weight_shape; \
-    using ConvOpBase<Context>::bias_shape; \
-    using ConvOpBase<Context>::input_shape; \
-    using ConvOpBase<Context>::output_shape
+    using ConvOpBase<Context>::kshape_; \
+    using ConvOpBase<Context>::stride_; \
+    using ConvOpBase<Context>::pad_l_; \
+    using ConvOpBase<Context>::pad_r_; \
+    using ConvOpBase<Context>::dilation_; \
+    using ConvOpBase<Context>::group_; \
+    using ConvOpBase<Context>::channels_; \
+    using ConvOpBase<Context>::num_output_; \
+    using ConvOpBase<Context>::axis_; \
+    using ConvOpBase<Context>::num_axes_; \
+    using ConvOpBase<Context>::x_ofs_; \
+    using ConvOpBase<Context>::y_ofs_; \
+    using ConvOpBase<Context>::w_ofs_; \
+    using ConvOpBase<Context>::w_shape_; \
+    using ConvOpBase<Context>::b_shape_; \
+    using ConvOpBase<Context>::in_shape_; \
+    using ConvOpBase<Context>::out_shape_
 
 }  // namespace dragon
 

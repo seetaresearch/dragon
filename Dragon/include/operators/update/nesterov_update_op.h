@@ -23,12 +23,12 @@ class NesterovUpdateOp final : public UpdateOpBase<Context> {
     NesterovUpdateOp(const OperatorDef& def, Workspace* ws)
         : UpdateOpBase<Context>(def, ws) {}
     USE_OPERATOR_FUNCTIONS;
-    USE_UPDATER_FUNCTIONS(Context);
+    USE_UPDATER_FUNCTIONS;
 
-    void ComputeUpdates(Tensor* dX) override;
+    void Compute(Tensor* dX) override;
 
  protected:
-    float lr, momentum;
+    float lr_, momentum_;
 };
 
 }  // namespace dragon

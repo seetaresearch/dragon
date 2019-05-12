@@ -7,65 +7,72 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Slice <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename T>
 __global__ void _Slice(
     const int               nthreads,
     const int               inner_dim,
-    const int               x_slice_dim,
-    const int               y_cols,
-    const int               slice_offset,
+    const int               axis_dim,
+    const int               cols,
+    const int               slice_ofs,
     const T*                x,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        const int outer_idx = y_idx / y_cols;
-        const int slice_idx = y_idx % y_cols;
-        const int x_idx = (outer_idx * x_slice_dim + slice_offset)
-                                * inner_dim + slice_idx;
-        y[y_idx] = x[x_idx];
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        const int outer_idx = yi / cols;
+        const int slice_idx = yi % cols;
+        const int xi = (
+            outer_idx * axis_dim + slice_ofs
+                ) * inner_dim + slice_idx;
+        y[yi] = x[xi];
     }
 }
 
-/*! SliceGrad <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename T>
 __global__ void _SliceGrad(
     const int               nthreads,
     const int               inner_dim,
-    const int               x_slice_dim,
-    const int               y_cols,
-    const int               slice_offset,
+    const int               axis_dim,
+    const int               cols,
+    const int               slice_ofs,
     const T*                dy,
     T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        const int outer_idx = y_idx / y_cols;
-        const int slice_idx = y_idx % y_cols;
-        const int x_idx = (outer_idx * x_slice_dim + slice_offset)
-                                * inner_dim + slice_idx;
-        dx[x_idx] = dy ? dy[y_idx] : 0;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        const int outer_idx = yi / cols;
+        const int slice_idx = yi % cols;
+        const int xi = (
+            outer_idx * axis_dim + slice_ofs
+                ) * inner_dim + slice_idx;
+        dx[xi] = dy ? dy[yi] : T(0);
     }
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_SLICE_KERNEL_LAUNCHER(name, T) \
     template <> void name<T, CUDAContext>( \
         const int               outer_dim, \
         const int               inner_dim, \
-        const int               x_slice_dim, \
-        const int               y_slice_dim, \
-        const int               slice_offset, \
+        const int               axis_dim, \
+        const int               slice_dim, \
+        const int               slice_ofs, \
         const T*                x, \
         T*                      y, \
         CUDAContext*            ctx) { \
-        auto y_cols = y_slice_dim * inner_dim; \
-        auto nthreads = outer_dim * y_slice_dim * inner_dim; \
-        _##name<T> \
+        auto cols = slice_dim * inner_dim; \
+        auto nthreads = outer_dim * cols; \
+        _##name \
             << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> > \
-            (nthreads, inner_dim, x_slice_dim, \
-                y_cols, slice_offset, x, y); \
+                 0, ctx->cuda_stream() >> >( \
+            nthreads, \
+            inner_dim, \
+            axis_dim, \
+            cols, \
+            slice_ofs, \
+            x, y \
+        ); \
     }
 
 DEFINE_SLICE_KERNEL_LAUNCHER(Slice, bool);
@@ -85,23 +92,24 @@ DEFINE_SLICE_KERNEL_LAUNCHER(SliceGrad, int64_t);
 DEFINE_SLICE_KERNEL_LAUNCHER(SliceGrad, float);
 DEFINE_SLICE_KERNEL_LAUNCHER(SliceGrad, double);
 
-/*! SliceGrad <T = float16, Device = CUDA> */
+/* <T = float16, Device = CUDA> */
 
-__global__ void _SliceGradHalf(
+template<> __global__ void _SliceGrad<half>(
     const int               nthreads,
     const int               inner_dim,
-    const int               x_slice_dim,
-    const int               y_cols,
-    const int               slice_offset,
+    const int               axis_dim,
+    const int               cols,
+    const int               slice_ofs,
     const half*             dy,
     half*                   dx) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
 #if __CUDA_ARCH__ >= 530
-        const int outer_idx = y_idx / y_cols;
-        const int slice_idx = y_idx % y_cols;
-        const int x_idx = (outer_idx * x_slice_dim + slice_offset)
-                                * inner_dim + slice_idx;
-        dx[x_idx] = dy ? dy[y_idx] : __float2half(0.f);
+        const int outer_idx = yi / cols;
+        const int slice_idx = yi % cols;
+        const int xi = (
+            outer_idx * axis_dim + slice_ofs
+                ) * inner_dim + slice_idx;
+        dx[xi] = dy ? dy[yi] : __float2half(0.f);
 #endif
     }
 }
@@ -109,21 +117,25 @@ __global__ void _SliceGradHalf(
 template <> void SliceGrad<float16, CUDAContext>(
     const int               outer_dim,
     const int               inner_dim,
-    const int               x_slice_dim,
-    const int               y_slice_dim,
-    const int               slice_offset,
+    const int               axis_dim,
+    const int               slice_dim,
+    const int               slice_ofs,
     const float16*          x,
     float16*                y,
     CUDAContext*            ctx) {
-    auto y_cols = y_slice_dim * inner_dim;
-    auto nthreads = outer_dim * y_slice_dim * inner_dim;
-    _SliceGradHalf
+    auto cols = slice_dim * inner_dim;
+    auto nthreads = outer_dim * cols;
+    _SliceGrad
         << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (nthreads, inner_dim, x_slice_dim,
-            y_cols, slice_offset,
-                reinterpret_cast<const half*>(x),
-                    reinterpret_cast<half*>(y));
+             0, ctx->cuda_stream() >> >(
+        nthreads,
+        inner_dim,
+        axis_dim,
+        cols,
+        slice_ofs,
+        reinterpret_cast<const half*>(x),
+        reinterpret_cast<half*>(y)
+    );
 }
 
 #undef DEFINE_SLICE_KERNEL_LAUNCHER

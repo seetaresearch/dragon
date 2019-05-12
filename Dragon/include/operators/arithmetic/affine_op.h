@@ -22,16 +22,16 @@ class AffineOp final : public Operator<Context> {
  public:
     AffineOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 1)),
-          num_axes(OperatorBase::Arg<int64_t>("num_axes", 1)) {}
+          axis_(OpArg<int64_t>("axis", 1)),
+          num_axes_(OpArg<int64_t>("num_axes", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t axis, num_axes;
-    int64_t outer_dim, scale_dim, inner_dim;
+    int64_t outer_dim_, inner_dim_;
+    int64_t axis_, num_axes_, scale_dim_;
 };
 
 template <class Context>
@@ -39,19 +39,18 @@ class AffineGradientOp final : public Operator<Context> {
  public:
     AffineGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 1)),
-          num_axes(OperatorBase::Arg<int64_t>("num_axes", 1)) {}
+          axis_(OpArg<int64_t>("axis", 1)),
+          num_axes_(OpArg<int64_t>("num_axes", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
-    template <typename T> void BiasRunWithType();
-    template <typename T> void ScaleRunWithType();
-    template <typename T> void ComputeScaleGradient(T* dYxX, T* dA);
-    template <typename T> void RunWithType();
+    template <typename T> void Reduce(T* x, T* y);
+    template <typename T> void RunImpl();
 
  protected:
-    int64_t axis, num_axes;
-    int64_t outer_dim, inner_dim, scale_dim, sum_dim, dim;
+    int64_t axis_, num_axes_;
+    int64_t outer_dim_, inner_dim_;
+    int64_t scale_dim_, reduce_dim_, dim_;
 };
 
 #ifdef WITH_CUDNN
@@ -63,41 +62,42 @@ class CuDNNAffineOpBase : public Operator<Context> {
  public:
     CuDNNAffineOpBase(const OperatorDef& def, Workspace* ws)
          : Operator<Context>(def, ws),
-           axis(OperatorBase::Arg<int64_t>("axis", 1)),
-           num_axes(OperatorBase::Arg<int64_t>("num_axes", 1)) {
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&param_desc));
-        CUDNN_CHECK(cudnnCreateOpTensorDescriptor(&mul_desc));
-        CUDNN_CHECK(cudnnCreateOpTensorDescriptor(&add_desc));
-        CUDNN_CHECK(cudnnCreateReduceTensorDescriptor(&reduce_desc));
+           axis_(OpArg<int64_t>("axis", 1)),
+           num_axes_(OpArg<int64_t>("num_axes", 1)) {
+        CuDNNCreateTensorDesc(&input_desc_);
+        CuDNNCreateTensorDesc(&param_desc_);
+        CUDNN_CHECK(cudnnCreateOpTensorDescriptor(&mul_op_));
+        CUDNN_CHECK(cudnnCreateOpTensorDescriptor(&add_op_));
+        CUDNN_CHECK(cudnnCreateReduceTensorDescriptor(&reduce_desc_));
     }
     USE_OPERATOR_FUNCTIONS;
 
     virtual ~CuDNNAffineOpBase() {
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(param_desc));
-        CUDNN_CHECK(cudnnDestroyOpTensorDescriptor(mul_desc));
-        CUDNN_CHECK(cudnnDestroyReduceTensorDescriptor(reduce_desc));
+        CuDNNDestroyTensorDesc(&input_desc_);
+        CuDNNDestroyTensorDesc(&param_desc_);
+        CUDNN_CHECK(cudnnDestroyOpTensorDescriptor(mul_op_));
+        CUDNN_CHECK(cudnnDestroyOpTensorDescriptor(add_op_));
+        CUDNN_CHECK(cudnnDestroyReduceTensorDescriptor(reduce_desc_));
     }
 
     template <typename T>
     void ResetDesc(const Tensor& X);
 
-    int64_t axis, num_axes;
-    cudnnTensorDescriptor_t input_desc, param_desc;
-    cudnnOpTensorDescriptor_t mul_desc, add_desc;
-    cudnnReduceTensorDescriptor_t reduce_desc;
+    int64_t axis_, num_axes_;
+    cudnnTensorDescriptor_t input_desc_, param_desc_;
+    cudnnOpTensorDescriptor_t mul_op_, add_op_;
+    cudnnReduceTensorDescriptor_t reduce_desc_;
 };
 
 #define USE_CUDNN_AFFINE_FUCNTIONS \
     USE_OPERATOR_FUNCTIONS; \
-    using CuDNNAffineOpBase<Context>::axis; \
-    using CuDNNAffineOpBase<Context>::num_axes; \
-    using CuDNNAffineOpBase<Context>::input_desc; \
-    using CuDNNAffineOpBase<Context>::param_desc; \
-    using CuDNNAffineOpBase<Context>::mul_desc; \
-    using CuDNNAffineOpBase<Context>::add_desc; \
-    using CuDNNAffineOpBase<Context>::reduce_desc
+    using CuDNNAffineOpBase<Context>::axis_; \
+    using CuDNNAffineOpBase<Context>::num_axes_; \
+    using CuDNNAffineOpBase<Context>::input_desc_; \
+    using CuDNNAffineOpBase<Context>::param_desc_; \
+    using CuDNNAffineOpBase<Context>::mul_op_; \
+    using CuDNNAffineOpBase<Context>::add_op_; \
+    using CuDNNAffineOpBase<Context>::reduce_desc_
 
 template <class Context>
 class CuDNNAffineOp final : public CuDNNAffineOpBase<Context> {
@@ -106,7 +106,7 @@ class CuDNNAffineOp final : public CuDNNAffineOpBase<Context> {
          : CuDNNAffineOpBase<Context>(def, ws) {}
 
     void RunOnDevice() override;
-    template <typename DT, typename CT> void RunWithType();
+    template <typename DT, typename CT> void RunImpl();
 
  protected:
     USE_CUDNN_AFFINE_FUCNTIONS;
@@ -124,13 +124,14 @@ public:
     void RunOnDevice() override;
 
     template <typename DT, typename CT>
-    void ComputeScaleGradient(DT* dYxX, DT* dA);
-    template <typename T> void ComputeScaleGradient_v2(T* dYxX, T* dA);
-    template <typename DT, typename CT> void RunWithType();
+    void CuDNNReduce(DT* x, DT* y);
+    template <typename T> void Reduce(T* x, T* y);
+    template <typename DT, typename CT> void RunImpl();
 
  protected:
     USE_CUDNN_AFFINE_FUCNTIONS;
-    int64_t outer_dim, inner_dim, scale_dim, dim, sum_dim;
+    int64_t outer_dim_, inner_dim_;
+    int64_t scale_dim_, dim_, reduce_dim_;
 };
 
 #endif

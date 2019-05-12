@@ -45,6 +45,7 @@ from .modules.container import Container, Sequential, ModuleList
 from .modules.batchnorm import BatchNorm1d, BatchNorm2d, BatchNorm3d
 from .modules.groupnorm import GroupNorm1d, GroupNorm2d, GroupNorm3d
 from .modules.affine import Affine
+from .modules.droppath import DropPath
 from .modules.dropout import Dropout, Dropout2d, Dropout3d
 from .modules.dropblock import DropBlock2d
 from . import init

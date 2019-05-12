@@ -6,44 +6,110 @@
 namespace dragon {
 
 template <class Context> template <typename T>
-void RSubOp<Context>::EltwiseRunWithType() {
-    auto* x1 = Input(0).template data<T, Context>();
-    auto* x2 = Input(1).template data<T, Context>();
-    auto* y = Output(0)->template mutable_data<T, Context>();
-    math::Sub<T, Context>(Output(0)->count(), x1, x2, y, ctx());
+void RSubOp<Context>::EltwiseRunImpl() {
+    auto* a = X(0).template data<T, Context>();
+    auto* b = X(1).template data<T, Context>();
+    auto* y = Y(0)->template mutable_data<T, Context>();
+    math::Sub(Y(0)->count(), a, b, y, ctx());
 }
 
 template <class Context> template <typename T>
-void RSubOp<Context>::BroadcastRunWithType(int type) {
-    auto* x1 = Input(0).template data<T, Context>();
-    auto* x2 = Input(1).template data<T, Context>();
-    auto* y = Output(0)->template mutable_data<T, Context>();
-    math::BroadcastSub(rows, cols, type, x1, x2, y, ctx());
+void RSubOp<Context>::BroadcastRunImpl(int type) {
+    auto* a = X(0).template data<T, Context>();
+    auto* b = X(1).template data<T, Context>();
+    auto* y = Y(0)->template mutable_data<T, Context>();
+    math::BroadcastSub(rows_, cols_, type, a, b, y, ctx());
 }
 
 template <class Context>
 void RSubOp<Context>::RunOnDevice() {
-    DECLARE_FUNDAMENTAL_OP_X1X2;
-    Output(0)->ReshapeLike(Input(1));
+    DECLARE_INPUT_DESC;
+    Y(0)->ReshapeLike(X(1));
 
-    if (XIsType(Input(0), int8_t)) {
-        DEFINE_FUNDAMENTAL_TYPED_RCALLER(int8_t);
-    } else if (XIsType(Input(0), uint8_t)) {
-        DEFINE_FUNDAMENTAL_TYPED_RCALLER(uint8_t);
-    } else if (XIsType(Input(0), int)) {
-        DEFINE_FUNDAMENTAL_TYPED_RCALLER(int);
-    } else if (XIsType(Input(0), int64_t)) {
-        DEFINE_FUNDAMENTAL_TYPED_RCALLER(int64_t);
-    } else if (XIsType(Input(0), float16)) {
-        DEFINE_FUNDAMENTAL_TYPED_RCALLER(float16);
-    } else if (XIsType(Input(0), float)) {
-        DEFINE_FUNDAMENTAL_TYPED_RCALLER(float);
-    } else if (XIsType(Input(0), double)) {
-        DEFINE_FUNDAMENTAL_TYPED_RCALLER(double);
+    if (XIsType(X(0), int8_t)) {
+        DEFINE_RFUNDAMENTAL_TYPED_IMPL(int8_t);
+    } else if (XIsType(X(0), uint8_t)) {
+        DEFINE_RFUNDAMENTAL_TYPED_IMPL(uint8_t);
+    } else if (XIsType(X(0), int)) {
+        DEFINE_RFUNDAMENTAL_TYPED_IMPL(int);
+    } else if (XIsType(X(0), int64_t)) {
+        DEFINE_RFUNDAMENTAL_TYPED_IMPL(int64_t);
+    } else if (XIsType(X(0), float16)) {
+        DEFINE_RFUNDAMENTAL_TYPED_IMPL(float16);
+    } else if (XIsType(X(0), float)) {
+        DEFINE_RFUNDAMENTAL_TYPED_IMPL(float);
+    } else if (XIsType(X(0), double)) {
+        DEFINE_RFUNDAMENTAL_TYPED_IMPL(double);
     } else {
-        LOG(FATAL) << DTypeHelper(Input(0), {
+        LOG(FATAL) << DTypeString(X(0), {
             "int8", "uint8", "int32", "int64",
-                "float16", "float32", "float64",
+            "float16", "float32", "float64",
+        });
+    }
+}
+
+template <class Context> template <typename T>
+void RSubGradientOp<Context>::EltwiseRunImpl() {
+    auto* dy = X(-1).template data<T, Context>();
+
+    if (Y(1)->name() != "NULL") {
+        auto* db = Y(1)->template mutable_data<T, Context>();
+        math::Scale(Y(1)->count(), -1.f, dy, db, ctx());
+    }
+
+    if (Y(0)->name() != "NULL") {
+        auto* da = Y(0)->template mutable_data<T, Context>();
+        math::Copy(Y(0)->count(), dy, da, ctx());
+    }
+}
+
+template <class Context> template <typename T>
+void RSubGradientOp<Context>::BroadcastRunImpl(int type) {
+    DEFINE_INPUT_DESC;
+    auto* dy = X(-1).template data<T, Context>();
+
+    if (Y(0)->name() != "NULL") {
+        auto* da = Y(0)->template mutable_data<T, Context>();
+        vec32_t dims = { rows_, cols_ };
+        vec32_t axes = { type - 2 };
+        kernel::ReduceSum(
+            2, dims.data(),
+            1, axes.data(),
+            1.f, dy,
+            da, ctx()
+        );
+    }
+
+    if (Y(1)->name() != "NULL") {
+        auto* db = Y(1)->template mutable_data<T, Context>();
+        math::Scale(B->count(), -1.f, dy, db, ctx());
+    }
+}
+
+template <class Context>
+void RSubGradientOp<Context>::RunOnDevice() {
+    DEFINE_INPUT_DESC;
+    Y(0)->ReshapeLike(*A);
+    Y(1)->ReshapeLike(*B);
+
+    if (XIsType(X(-1), int8_t)) {
+        DEFINE_RFUNDAMENTAL_TYPED_IMPL(int8_t);
+    } else if (XIsType(X(-1), uint8_t)) {
+        DEFINE_RFUNDAMENTAL_TYPED_IMPL(uint8_t);
+    } else if (XIsType(X(-1), int)) {
+        DEFINE_RFUNDAMENTAL_TYPED_IMPL(int);
+    } else if (XIsType(X(-1), int64_t)) {
+        DEFINE_RFUNDAMENTAL_TYPED_IMPL(int64_t);
+    } else if (XIsType(X(-1), float16)) {
+        DEFINE_RFUNDAMENTAL_TYPED_IMPL(float16);
+    } else if (XIsType(X(-1), float)) {
+        DEFINE_RFUNDAMENTAL_TYPED_IMPL(float);
+    } else if (XIsType(X(-1), double)) {
+        DEFINE_RFUNDAMENTAL_TYPED_IMPL(double);
+    } else {
+        LOG(FATAL) << DTypeString(X(0), {
+            "int8", "uint8", "int32", "int64",
+            "float16", "float32", "float64",
         });
     }
 }
@@ -52,91 +118,41 @@ DEPLOY_CPU(RSub);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(RSub);
 #endif
-OPERATOR_SCHEMA(RSub)
-    .NumInputs(2).NumOutputs(1)
-    .Inplace({ { 1, 0 } });
-
-template <class Context> template <typename T>
-void RSubGradientOp<Context>::EltwiseRunWithType() {
-    auto* dy = Input(-1).template data<T, Context>();
-
-    if (Output(1)->name() != "NULL") {
-        auto* dx2 = Output(1)->template mutable_data<T, Context>();
-        math::Scale<T, Context>(
-            Output(1)->count(), -1, dy, dx2, ctx());
-    }
-
-    if (Output(0)->name() != "NULL") {
-        auto* dx1 = Output(0)->template mutable_data<T, Context>();
-        ctx()->template Copy<T, Context, Context>(
-            Output(0)->count(), dx1, dy);
-    }
-}
-
-template <class Context> template <typename T>
-void RSubGradientOp<Context>::BroadcastRunWithType(int type) {
-    DEFINE_FUNDAMENTAL_OP_X1X2;
-    auto* dy = Input(-1).template data<T, Context>();
-
-    if (Output(0)->name() != "NULL") {
-        auto* dx1 = Output(0)->template mutable_data<T, Context>();
-        vector<int> dims = { rows, cols }, axes = { type - 2 };
-        kernel::ReduceSum(2, dims.data(),
-            1, axes.data(), 1.f, dy, dx1, ctx());
-    }
-
-    if (Output(1)->name() != "NULL") {
-        auto* dx2 = Output(1)->template mutable_data<T, Context>();
-        math::Scale(X2->count(), -1.f, dy, dx2, ctx());
-    }
-}
-
-template <class Context>
-void RSubGradientOp<Context>::RunOnDevice() {
-    DEFINE_FUNDAMENTAL_OP_X1X2;
-    Output(0)->ReshapeLike(*X1);
-    Output(1)->ReshapeLike(*X2);
-
-    if (XIsType(Input(-1), int8_t)) {
-        DEFINE_FUNDAMENTAL_TYPED_RCALLER(int8_t);
-    } else if (XIsType(Input(-1), uint8_t)) {
-        DEFINE_FUNDAMENTAL_TYPED_RCALLER(uint8_t);
-    } else if (XIsType(Input(-1), int)) {
-        DEFINE_FUNDAMENTAL_TYPED_RCALLER(int);
-    } else if (XIsType(Input(-1), int64_t)) {
-        DEFINE_FUNDAMENTAL_TYPED_RCALLER(int64_t);
-    } else if (XIsType(Input(-1), float16)) {
-        DEFINE_FUNDAMENTAL_TYPED_RCALLER(float16);
-    } else if (XIsType(Input(-1), float)) {
-        DEFINE_FUNDAMENTAL_TYPED_RCALLER(float);
-    } else if (XIsType(Input(-1), double)) {
-        DEFINE_FUNDAMENTAL_TYPED_RCALLER(double);
-    } else {
-        LOG(FATAL) << DTypeHelper(Input(0), {
-            "int8", "uint8", "int32", "int64",
-                  "float16", "float32", "float64",
-        });
-    }
-}
 
 DEPLOY_CPU(RSubGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(RSubGradient);
 #endif
 
-OPERATOR_SCHEMA(RSubGradient)
-    .NumInputs(1).NumOutputs(2);
+OPERATOR_SCHEMA(RSub)
+     /* A, B */
+    .NumInputs(2)
+     /* Y */
+    .NumOutputs(1)
+     /* B => Y */
+    .Inplace({ { 1, 0 } });
 
-class GetRSubGradient : public GradientMakerBase {
+OPERATOR_SCHEMA(RSubGradient)
+     /* dY */
+    .NumInputs(1)
+     /* dA, dB */
+    .NumOutputs(2);
+
+namespace {
+
+class GradientMaker : public GradientMakerBase {
  public:
-    GRADIENT_MAKER_CTOR(GetRSubGradient);
-    vector<OperatorDef> MakeDefs() override {
+    GRADIENT_MAKER_CTOR(GradientMaker);
+    vector<OperatorDef> MakeDef() override {
         return SingleDef(def.type() + "Gradient", "",
             vector<string>({ GO(0) }),
-            vector<string>({ GI(0), GI(1) }));
+            vector<string>({ GI(0), GI(1) })
+        );
     }
 };
 
-REGISTER_GRADIENT(RSub, GetRSubGradient);
+}  // namespace
+
+REGISTER_GRADIENT(RSub, GradientMaker);
 
 }  // namespace dragon

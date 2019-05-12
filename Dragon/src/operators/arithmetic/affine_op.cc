@@ -5,43 +5,148 @@
 
 namespace dragon {
 
-#define DETERMINE_RUNTIME_ARGUMENTS(X) \
-    axis = OperatorBase::Arg<int64_t>("axis", 1); \
-    num_axes = OperatorBase::Arg<int64_t>("num_axes", 1); \
-    if (axis < 0) axis += X.ndim(); \
-    if (num_axes < 0) num_axes = X.ndim() - axis; \
-    else if (num_axes == 0) num_axes = 1; \
-    CHECK(axis >= 0 && axis + num_axes <= X.ndim())
+#define DETERMINE_RUNTIME_ARGS(X) \
+    axis_ = OpArg<int64_t>("axis", 1); \
+    num_axes_ = OpArg<int64_t>("num_axes", 1); \
+    if (axis_ < 0) axis_ += X.ndim(); \
+    if (num_axes_ < 0) num_axes_ = X.ndim() - axis_; \
+    else if (num_axes_ == 0) num_axes_ = 1; \
+    CHECK(axis_ >= 0 && axis_ + num_axes_ <= X.ndim())
 
 template <class Context> template <typename T>
-void AffineOp<Context>::RunWithType() {
-    const auto& dim_start = Input(0).dims().begin() + axis;
-    const auto& dim_end = dim_start + num_axes;
-    vector<int64_t> param_dims(dim_start, dim_end);
-    TENSOR_FILL(Input(1), param_dims);;
-    outer_dim = Input(0).count(0, axis);
-    inner_dim = Input(0).count(axis + num_axes);
-    scale_dim = Input(1).count();
-    if (InputSize() > 2) { TENSOR_FILL(Input(2), param_dims); }
+void AffineOp<Context>::RunImpl() {
+    const auto& dim_start = X(0).dims().begin() + axis_;
+    const auto& dim_end = dim_start + num_axes_;
+    vec64_t param_dims(dim_start, dim_end);
+    scale_dim_ = X(1).count();
+    outer_dim_ = X(0).count(0, axis_);
+    inner_dim_ = X(0).count(axis_ + num_axes_);
 
-    auto* Xdata = Input(0).template data<T, Context>();
-    auto* Adata = Input(1).template data<T, Context>();
-    auto* Bdata = InputSize() > 2 ?
-        Input(2).template data<T, Context>() : nullptr;
-    auto* Ydata = Output(0)->template mutable_data<T, Context>();
+    TENSOR_FILL(X(1), param_dims);
+    if (XSize() > 2) TENSOR_FILL(X(2), param_dims);
 
-    kernel::Affine(outer_dim, inner_dim, scale_dim,
-        Xdata, Adata, Bdata, Ydata, ctx());
+    auto* x = X(0).template data<T, Context>();
+    auto* alpha = X(1).template data<T, Context>();
+    auto* beta = XSize() <= 2 ? nullptr :
+                 X(2).template data<T, Context>();
+    auto* y = Y(0)->template mutable_data<T, Context>();
+
+    kernel::Affine(
+        outer_dim_,
+        scale_dim_,
+        inner_dim_,
+        x, alpha, beta,
+        y, ctx()
+    );
 }
 
 template <class Context>
 void AffineOp<Context>::RunOnDevice() {
-    DETERMINE_RUNTIME_ARGUMENTS(Input(0));
-    Output(0)->ReshapeLike(Input(0));
+    DETERMINE_RUNTIME_ARGS(X(0));
 
-    if (XIsType(Input(0), float)) RunWithType<float>();
-    else if (XIsType(Input(0), float16)) RunWithType<float16>();
-    else LOG(FATAL) << DTypeHelper(Input(0), { "float32", "float16" });
+    Y(0)->ReshapeLike(X(0));
+
+    if (XIsType(X(0), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(0), float16)) {
+        RunImpl<float16>();
+    } else {
+        LOG(FATAL) << DTypeString(X(0),
+            { "float32", "float16" }
+        );
+    }
+}
+
+template <class Context> template <typename T>
+void AffineGradientOp<Context>::RunImpl() {
+    auto* alpha = X(1).template data<T, Context>();
+    auto* dy = X(-1).template mutable_data<T, Context>();
+    auto* dx = Y(0)->template mutable_data<T, Context>();
+
+    // dA = X * dY
+    if (Y(1)->name() != "NULL") {
+        Y(1)->ReshapeLike(X(1));
+        auto* x = X(0).template data<T, Context>();
+        auto* dalpha = Y(1)->template mutable_data<T, Context>();
+        // Eltwise
+        if (X(0).count() == X(1).count()) {
+            math::Mul(
+                Y(0)->count(),
+                dy, x,
+                dalpha, ctx()
+            );
+        } else {
+            math::Mul(
+                Y(0)->count(),
+                dy, x,
+                dx, ctx()
+            );
+            Reduce(dx, dalpha);
+        }
+    }
+
+    // dB = dY
+    if (Y(2)->name() != "NULL") {
+        Y(2)->ReshapeLike(X(1));
+        auto* dbeta = Y(2)->template
+            mutable_data<T, Context>();
+        // Eltwise
+        if (X(-1).count() == X(1).count()) {
+            math::Copy(X(1).count(), dy, dbeta, ctx());
+        } else {
+            Reduce(dy, dbeta);
+        }
+    }
+
+    // dX = alpha * dY
+    if (Y(0)->name() != "NULL") {
+        kernel::AffineGrad(
+            outer_dim_,
+            scale_dim_,
+            inner_dim_,
+            dy, alpha,
+            dx, ctx()
+        );
+    }
+}
+
+template <class Context> template <typename T>
+void AffineGradientOp<Context>::Reduce(
+    T*                      x,
+    T*                      y) {
+    vec32_t dims = {
+        (int)outer_dim_,
+        (int)scale_dim_,
+        (int)inner_dim_,
+    }, axes = { 0, 2 };
+    kernel::ReduceSum(
+        3, dims.data(),
+        2, axes.data(),
+        1.f, x,
+        y, ctx()
+    );
+}
+
+template <class Context>
+void AffineGradientOp<Context>::RunOnDevice() {
+    DETERMINE_RUNTIME_ARGS(X(0));
+    scale_dim_ = X(1).count();
+    outer_dim_ = X(-1).count(0, axis_);
+    inner_dim_ = X(-1).count(axis_ + num_axes_);
+    dim_ = scale_dim_ * inner_dim_;
+    reduce_dim_ = std::max(outer_dim_, inner_dim_);
+
+    Y(0)->ReshapeLike(X(-1));
+
+    if (XIsType(X(-1), float)) {
+        RunImpl<float>();
+    } else if (XIsType(X(-1), float16)) {
+        RunImpl<float16>();
+    } else {
+        LOG(FATAL) << DTypeString(X(-1),
+            { "float32", "float16" }
+        );
+    }
 }
 
 DEPLOY_CPU(Affine);
@@ -49,116 +154,44 @@ DEPLOY_CPU(Affine);
 DEPLOY_CUDA(Affine);
 #endif
 
-OPERATOR_SCHEMA(Affine)
-    .NumInputs(2, 3).NumOutputs(1)
-    .Inplace({ { 0, 0 } });
-
-template <class Context> template <typename T>
-void AffineGradientOp<Context>::RunWithType() {
-    auto* dYdata = Input(-1).template mutable_data<T, Context>();
-    auto* Adata = Input(1).template data<T, Context>();
-    auto* dXdata = Output(0)->template mutable_data<T, Context>();
-
-    // dA = X * dY
-    if (Output(1)->name() != "NULL") {
-        Output(1)->ReshapeLike(Input(1));
-        auto* Xdata = Input(0).template data<T, Context>();
-        auto* dAdata = Output(1)->template mutable_data<T, Context>();
-        // Eltwise
-        if (Input(0).count() == Input(1).count()) {
-            math::Mul(Output(0)->count(), dYdata, Xdata, dAdata, ctx());
-        } else {
-            math::Mul(Output(0)->count(), dYdata, Xdata, dXdata, ctx());
-            ComputeScaleGradient<T>(dXdata, dAdata);
-        }
-    }
-
-    // dB = dY
-    if (Output(2)->name() != "NULL") {
-        Output(2)->ReshapeLike(Input(1));
-        auto* dBdata = Output(2)->template mutable_data<T, Context>();
-        // Eltwise
-        if (Input(-1).count() == Input(1).count()) {
-            ctx()->template Copy<T, Context, Context>(
-                Output(2)->count(), dBdata, dYdata);
-        } else {
-            ComputeScaleGradient<T>(dYdata, dBdata);
-        }
-    }
-
-    // dX = alpha * dY
-    if (Output(0)->name() != "NULL") {
-        kernel::AffineGrad(outer_dim, inner_dim, scale_dim,
-            dYdata, Adata, dXdata, ctx());
-    }
-}
-
-template <class Context> template <typename T>
-void AffineGradientOp<Context>::ComputeScaleGradient(
-    T*                      dYxX,
-    T*                      dA) {
-    DECLARE_MULTIPLIER(multiplier, sum_dim);
-    T* SRes_data = nullptr;
-    // Reduce inner dimensions
-    if (inner_dim == 1) {
-        SRes_data = dYxX;
-    } else {
-        SRes_data = (outer_dim == 1) ?
-            dA : ws()->template caches<T, Context>(
-                { outer_dim * scale_dim })[0];
-        math::Gemv(
-            CblasNoTrans,
-            outer_dim * scale_dim, inner_dim,
-            1.f, dYxX, multiplier,
-            0.f, SRes_data, ctx());
-    }
-    // Reduce outer dimensions
-    if (outer_dim != 1) {
-        math::Gemv(
-            CblasTrans,
-            outer_dim, scale_dim,
-            1.f, SRes_data, multiplier,
-            0.f, dA, ctx());
-    }
-}
-
-template <class Context>
-void AffineGradientOp<Context>::RunOnDevice() {
-    DETERMINE_RUNTIME_ARGUMENTS(Input(0));
-    Output(0)->ReshapeLike(Input(-1));
-
-    outer_dim = Input(-1).count(0, axis);
-    inner_dim = Input(-1).count(axis + num_axes);
-    scale_dim = Input(1).count();
-    dim = scale_dim * inner_dim;
-    sum_dim = std::max(outer_dim, inner_dim);
-
-    if (XIsType(Input(-1), float)) RunWithType<float>();
-    else if (XIsType(Input(-1), float16)) RunWithType<float16>();
-    else LOG(FATAL) << DTypeHelper(Input(-1), { "float32", "float16" });
-}
-
 DEPLOY_CPU(AffineGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(AffineGradient);
 #endif
 
+OPERATOR_SCHEMA(Affine)
+     /* X, A, B */
+    .NumInputs(2, 3)
+     /* Y */
+    .NumOutputs(1)
+     /* X => Y */
+    .Inplace({ { 0, 0 } });
+
 OPERATOR_SCHEMA(AffineGradient)
-    .NumInputs(3).NumOutputs(3)
+     /* X, A, dY */
+    .NumInputs(3)
+     /* dX, dA, dB */
+    .NumOutputs(3)
+     /* dY => dX */
     .Inplace({ { 2, 0 } });
 
-class GetAffineGradient final : public GradientMakerBase {
+namespace {
+
+class GradientMaker final : public GradientMakerBase {
  public:
-    GRADIENT_MAKER_CTOR(GetAffineGradient);
-    vector<OperatorDef> MakeDefs() override {
+    GRADIENT_MAKER_CTOR(GradientMaker);
+    vector<OperatorDef> MakeDef() override {
         return SingleDef(def.type() + "Gradient", "",
             vector<string>({ I(0), I(1), GO(0) }),
-            vector<string>({ GI(0), GI(1), GI(2) }));
+            vector<string>({ GI(0), GI(1), GI(2) })
+        );
     }
 };
 
-REGISTER_GRADIENT(Affine, GetAffineGradient);
+}  // namespace
 
-#undef DETERMINE_RUNTIME_ARGUMENTS
+REGISTER_GRADIENT(Affine, GradientMaker);
+
+#undef DETERMINE_RUNTIME_ARGS
 
 }  // namespace dragon

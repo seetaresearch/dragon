@@ -33,8 +33,7 @@ void AddCUDAMethods(pybind11::module& m) {
 
     m.def("EnableCUDNN", [](bool enabled) {
 #ifdef WITH_CUDA
-        CUDAContext::cuda_object()
-            ->cudnn_enabled = enabled;
+        CUDAContext::obj()->cudnn_enabled_ = enabled;
 #endif
     });
 
@@ -47,11 +46,9 @@ void AddCUDAMethods(pybind11::module& m) {
 #ifdef WITH_CUDA
         if (device_id < 0) device_id =
             CUDAContext::active_device_id();
-        cudaStreamSynchronize(CUDAContext::cuda_object()
-            ->GetStream(device_id, stream_id));
-        cudaError_t error = cudaGetLastError();
-        CHECK_EQ(error, cudaSuccess)
-            << "\nCUDA Error: " << cudaGetErrorString(error);
+        CUDAContext::SyncStream(
+            CUDAContext::obj()->stream(
+                device_id, stream_id));
 #endif
     });
 }

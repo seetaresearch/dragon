@@ -17,16 +17,12 @@
 
 namespace dragon {
 
-/*********************************************
-*                                            *
-*                   Base                     *
-*                                            *
-**********************************************/
+/*                  Base                  */
 
 template <class Context>
 class DimOpBase : public Operator<Context> {
  public:
-    USE_SIMPLE_CTOR_DTOR(DimOpBase);
+    SIMPLE_CTOR_DTOR(DimOpBase);
 
     void MemorySwitch() override {
         /* Disable the Memory Activation */
@@ -36,115 +32,102 @@ class DimOpBase : public Operator<Context> {
 template <class Context>
 class DimGradientOpBase : public Operator<Context> {
  public:
-    USE_SIMPLE_CTOR_DTOR(DimGradientOpBase);
+    SIMPLE_CTOR_DTOR(DimGradientOpBase);
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override {
         // Simply copy the dY to dX
-        Output(0)->ReshapeLike(Input(0));
-        Output(0)->template CopyFrom<Context>(Input(-1), ctx());
+        Y(0)->ReshapeLike(X(0));
+        Y(0)->CopyFrom(X(-1), ctx());
     }
 };
 
 #define DEFINE_DIMENSION_GRADIENT_OP(name) \
     template <class Context> \
-    class name##GradientOp final : public DimGradientOpBase<Context> { \
+    class name##GradientOp final : \
+        public DimGradientOpBase<Context> { \
      public: \
-      name##GradientOp(const OperatorDef& def, Workspace* ws) \
+      name##GradientOp( \
+        const OperatorDef&      def, \
+        Workspace*              ws) \
         : DimGradientOpBase<Context>(def, ws) {} \
     };
 
-/*********************************************
-*                                            *
-*                   Reshape                  *
-*                                            *
-**********************************************/
+/*                  Reshape                  */
 
 template <class Context>
 class ReshapeOp final : public DimOpBase<Context> {
  public:
     ReshapeOp(const OperatorDef& def, Workspace* ws)
         : DimOpBase<Context>(def, ws),
-          shape_like_desc(OperatorBase::Arg<string>("shape_like", "")) {
-        GET_ARGUMENTS_WITH_DESC(int64_t, dims);
+          shape_desc_(OpArg<string>("shape_like", "")) {
+        GET_ARGS_WITH_DESC(int64_t, dims);
     }
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
 
  protected:
-    string shape_like_desc;
-    vector<int64_t> require_shape, new_shape;
-    DECLARE_ARGUMENTS_WITH_DESC(int64_t, dims);
+    string shape_desc_;
+    vec64_t req_shape_, new_shape_;
+    DECLARE_ARGS_WITH_DESC(int64_t, dims);
 };
 
 DEFINE_DIMENSION_GRADIENT_OP(Reshape);
-DEFINE_ARGUMENTS_WITH_DESC(int64_t, ReshapeOp, dims);
+DEFINE_ARGS_WITH_DESC(int64_t, ReshapeOp, dims);
 
-/*********************************************
-*                                            *
-*                   Flatten                  *
-*                                            *
-**********************************************/
+/*                  Flatten                  */
 
 template <class Context>
 class FlattenOp final : public DimOpBase<Context> {
  public:
     FlattenOp(const OperatorDef& def, Workspace* ws)
         : DimOpBase<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 0)),
-          num_axes(OperatorBase::Arg<int64_t>("num_axes", -1)),
-          keep_axes(OperatorBase::Arg<int64_t>("keep_axes", INT_MAX)) {}
+          axis_(OpArg<int64_t>("axis", 0)),
+          num_axes_(OpArg<int64_t>("num_axes", -1)),
+          keep_axes_(OpArg<int64_t>("keep_axes", INT_MAX)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
 
  protected:
-    int64_t axis, num_axes, keep_axes;
+    int64_t axis_, num_axes_, keep_axes_;
 };
 
 DEFINE_DIMENSION_GRADIENT_OP(Flatten);
 
-/*********************************************
-*                                            *
-*                Expand Dims                 *
-*                                            *
-**********************************************/
+/*                  ExpandDims                  */
 
 template <class Context>
 class ExpandDimsOp final : public DimOpBase<Context> {
  public:
     ExpandDimsOp(const OperatorDef& def, Workspace* ws)
         : DimOpBase<Context>(def, ws),
-          axis(OperatorBase::Arg<int64_t>("axis", 0)) {}
+          axis_(OpArg<int64_t>("axis", 0)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
 
  protected:
-    int64_t axis;
+    int64_t axis_;
 };
 
 DEFINE_DIMENSION_GRADIENT_OP(ExpandDims);
 
-/*********************************************
-*                                            *
-*                  Squeeze                   *
-*                                            *
-**********************************************/
+/*                  Squeeze                  */
 
 template <class Context>
 class SqueezeOp final : public DimOpBase<Context> {
 public:
     SqueezeOp(const OperatorDef& def, Workspace* ws)
         : DimOpBase<Context>(def, ws),
-        axis(OperatorBase::Arg<int64_t>("axis", INT_MAX)) {}
+        axis_(OpArg<int64_t>("axis", INT_MAX)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
 
  protected:
-    int64_t axis;
+    int64_t axis_;
 };
 
 DEFINE_DIMENSION_GRADIENT_OP(Squeeze);

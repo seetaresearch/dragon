@@ -18,25 +18,21 @@
 namespace dragon {
 
 template <class Context>
-class DepthwiseConv2dOp : public ConvOpBase<Context> {
+class DepthwiseConv2dOp
+    : public ConvOpBase<Context> {
  public:
-    DepthwiseConv2dOp(const OperatorDef& def, Workspace* ws)
-        : ConvOpBase<Context>(def, ws) {
-        this->num_spatial_axes = 2;
-        Setup();
-        CHECK_EQ(stride[0], stride[1])
-            << "Excepted stride_h == stride_w";
-    }
+    DepthwiseConv2dOp(
+        const OperatorDef&          def,
+        Workspace*                  ws)
+        : ConvOpBase<Context>(def, ws) { Setup(2); }
     USE_OPERATOR_FUNCTIONS;
     USE_CONVOLUTION_FUNCTIONS;
 
-    bool ReverseDimensions() override { return false; }
-    bool HasBias() override { return InputSize() > 2; }
+    bool Transposed() override { return false; }
+    bool HasBias() override { return XSize() > 2; }
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
-
- protected:
+    template <typename T> void RunImpl();
 };
 
 template <class Context>
@@ -50,10 +46,12 @@ class DepthwiseConv2dGradientOp
     USE_OPERATOR_FUNCTIONS;
     USE_CONVOLUTION_FUNCTIONS;
 
-    bool HasBias() override { return Output(2)->name() != "NULL"; }
+    bool HasBias() override {
+        return Y(2)->name() != "NULL";
+    }
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 };
 
 #ifdef WITH_CUDNN
@@ -65,49 +63,51 @@ class CuDNNDepthwiseConv2dOp final
     CuDNNDepthwiseConv2dOp(
         const OperatorDef&         def,
         Workspace*                 ws)
-    : DepthwiseConv2dOp<Context>(def, ws) {
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&output_desc));
+        : DepthwiseConv2dOp<Context>(def, ws) {
+        CuDNNCreateTensorDesc(&bias_desc_);
+        CuDNNCreateTensorDesc(&output_desc_);
     }
     USE_OPERATOR_FUNCTIONS;
     USE_CONVOLUTION_FUNCTIONS;
 
     ~CuDNNDepthwiseConv2dOp() {
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(bias_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(output_desc));
+        CuDNNDestroyTensorDesc(&bias_desc_);
+        CuDNNDestroyTensorDesc(&output_desc_);
     }
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    cudnnTensorDescriptor_t bias_desc, output_desc;
+    cudnnTensorDescriptor_t bias_desc_;
+    cudnnTensorDescriptor_t output_desc_;
 };
 
 template <class Context>
 class CuDNNDepthwiseConv2dGradientOp final
-    : public CuDNNConv2dGradientOp<Context> {
+    : public Conv2dGradientOp<Context> {
  public:
     CuDNNDepthwiseConv2dGradientOp(
         const OperatorDef&         def,
         Workspace*                 ws)
-        : CuDNNConv2dGradientOp<Context>(def, ws) {
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
-        CUDNN_CHECK(cudnnCreateTensorDescriptor(&input_desc));
+        : Conv2dGradientOp<Context>(def, ws) {
+        CuDNNCreateTensorDesc(&bias_desc_);
+        CuDNNCreateTensorDesc(&input_desc_);
     }
     USE_OPERATOR_FUNCTIONS;
     USE_CONVOLUTION_FUNCTIONS;
 
     ~CuDNNDepthwiseConv2dGradientOp() {
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(bias_desc));
-        CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc));
+        CuDNNDestroyTensorDesc(&bias_desc_);
+        CuDNNDestroyTensorDesc(&input_desc_);
     }
 
     void RunOnDevice() override;
-    template <typename T> void RunWithType();
+    template <typename T> void RunImpl();
 
  protected:
-    cudnnTensorDescriptor_t bias_desc, input_desc;
+    cudnnTensorDescriptor_t bias_desc_;
+    cudnnTensorDescriptor_t input_desc_;
 };
 
 #endif  // WITH_CUDNN

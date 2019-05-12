@@ -6,7 +6,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! ConstPad <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _ConstPad(
@@ -19,20 +19,22 @@ void _ConstPad(
     const T                 value,
     const T*                x,
     T*                      y) {
-    vector<int> index(ndims, 0); int x_idx, d, r;
-    for (int y_idx = 0; y_idx < nthreads; ++y_idx) {
-        x_idx = 0;
+    vec32_t index(ndims, 0); int xi, d, r;
+    for (int yi = 0; yi < nthreads; ++yi) {
+        xi = 0;
         for (d = ndims - 1; d >= 0; --d) {
             r = index[d] - l_pads[d];
             if (r < 0 || r >= x_dims[d]) break;
-            x_idx += r * x_strides[d];
+            xi += r * x_strides[d];
         }
-        y[y_idx] = d >= 0 ? value : x[x_idx];
-        utils::IncreaseIndexInDims(ndims, y_dims, index.data());
+        y[yi] = d >= 0 ? value : x[xi];
+        utils::IncreaseIndexInDims(
+            ndims, y_dims, index.data()
+        );
     }
 }
 
-/*! ReflectPad <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _ReflectPad(
@@ -44,21 +46,23 @@ void _ReflectPad(
     const int*              l_pads,
     const T*                x,
     T*                      y) {
-    vector<int> index(ndims, 0); int x_idx, d, r;
-    for (int y_idx = 0; y_idx < nthreads; ++y_idx) {
-        x_idx = 0;
+    vec32_t index(ndims, 0); int xi, d, r;
+    for (int yi = 0; yi < nthreads; ++yi) {
+        xi = 0;
         for (d = ndims - 1; d >= 0; --d) {
             r = index[d] - l_pads[d];
             r = std::max(r, -r);
             r = std::min(r, 2 * x_dims[d] - r - 2);
-            x_idx += r * x_strides[d];
+            xi += r * x_strides[d];
         }
-        y[y_idx] = x[x_idx];
-        utils::IncreaseIndexInDims(ndims, y_dims, index.data());
+        y[yi] = x[xi];
+        utils::IncreaseIndexInDims(
+            ndims, y_dims, index.data()
+        );
     }
 }
 
-/*! EdgePad <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename T>
 void _EdgePad(
@@ -70,20 +74,24 @@ void _EdgePad(
     const int*              l_pads,
     const T*                x,
     T*                      y) {
-    vector<int> index(ndims, 0); int x_idx, d, r;
-    for (int y_idx = 0; y_idx < nthreads; ++y_idx) {
-        x_idx = 0;
+    vec32_t index(ndims, 0); int xi, d, r;
+    for (int yi = 0; yi < nthreads; ++yi) {
+        xi = 0;
         for (d = ndims - 1; d >= 0; --d) {
-            r = std::min(x_dims[d] - 1, std::max(
-                index[d] - l_pads[d], 0));
-            x_idx += r * x_strides[d];
+            r = std::min(
+                x_dims[d] - 1,
+                std::max(index[d] - l_pads[d], 0)
+            );
+            xi += r * x_strides[d];
         }
-        y[y_idx] = x[x_idx];
-        utils::IncreaseIndexInDims(ndims, y_dims, index.data());
+        y[yi] = x[xi];
+        utils::IncreaseIndexInDims(
+            ndims, y_dims, index.data()
+        );
     }
 }
 
-/*! Kernel Launchers */
+/* Kernel Launchers */
 
 #define DEFINE_CONST_PAD_KERNEL_LAUNCHER(T) \
     template<> void ConstPad<T, CPUContext>( \
@@ -97,8 +105,13 @@ void _EdgePad(
         const T*                x, \
         T*                      y, \
         CPUContext*             ctx) { \
-        _ConstPad<T>(count, ndims, x_dims, x_strides, \
-            y_dims, l_pads, cast::to<T>(value), x, y); \
+        _ConstPad( \
+            count, ndims, \
+            x_dims, x_strides, \
+            y_dims, l_pads, \
+            cast::to<T>(value), \
+            x, y \
+        ); \
     }
 
 #define DEFINE_PAD_KERNEL_LAUNCHER(name, T) \
@@ -112,8 +125,12 @@ void _EdgePad(
         const T*                x, \
         T*                      y, \
         CPUContext*             ctx) { \
-        _##name<T>(count, ndims, x_dims, x_strides, \
-            y_dims, l_pads, x, y); \
+        _##name( \
+            count, ndims, \
+            x_dims, x_strides, \
+            y_dims, l_pads, \
+            x, y \
+        ); \
     }
 
 DEFINE_CONST_PAD_KERNEL_LAUNCHER(bool);

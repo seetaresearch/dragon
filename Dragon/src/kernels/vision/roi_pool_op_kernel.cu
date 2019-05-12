@@ -7,7 +7,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! ROIPool <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _ROIPool(
@@ -22,61 +22,58 @@ __global__ void _ROIPool(
     const float*            rois,
     int*                    mask,
     T*                      y) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
-        int pw = y_idx % pool_w;
-        int ph = (y_idx / pool_w) % pool_h;
-        int c = (y_idx / pool_w / pool_h) % C;
-        int n = y_idx / pool_w / pool_h / C;
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
+        int pw = yi % pool_w;
+        int ph = (yi / pool_w) % pool_h;
+        int c = (yi / pool_w / pool_h) % C;
+        int n = yi / pool_w / pool_h / C;
 
-        const float* offset_rois = rois + n * 5;
-        int roi_batch_ind = offset_rois[0];
+        const float* roi = rois + n * 5;
+        const int batch_ind = roi[0];
+        const T* X = x + ((batch_ind * C + c) * H * W);
 
-        if (roi_batch_ind < 0) {
-            y[y_idx] = 0; mask[y_idx] = -1; continue;
+        if (batch_ind < 0) {
+            y[yi] = 0; mask[yi] = -1; continue;
         }
 
-        int roi_start_w = round(offset_rois[1] * spatial_scale);
-        int roi_start_h = round(offset_rois[2] * spatial_scale);
-        int roi_end_w = round(offset_rois[3] * spatial_scale);
-        int roi_end_h = round(offset_rois[4] * spatial_scale);
+        const int roi_wstart = round(roi[1] * spatial_scale);
+        const int roi_hstart = round(roi[2] * spatial_scale);
+        const int roi_wend = round(roi[3] * spatial_scale);
+        const int roi_hend = round(roi[4] * spatial_scale);
 
-        int roi_width = max(roi_end_w - roi_start_w + 1, 1);
-        int roi_height = max(roi_end_h - roi_start_h + 1, 1);
-        const float bin_size_h = (float)roi_height / (float)pool_h;
-        const float bin_size_w = (float)roi_width / (float)pool_w;
+        const int roi_w = max(roi_wend - roi_wstart + 1, 1);
+        const int roi_h = max(roi_hend - roi_hstart + 1, 1);
+        const float bin_h = (float)roi_h / (float)pool_h;
+        const float bin_w = (float)roi_w / (float)pool_w;
 
-        int hstart = floor(bin_size_h * ph);
-        int wstart = floor(bin_size_w * pw);
-        int hend = ceil(bin_size_h * (ph + 1));
-        int wend = ceil(bin_size_w * (pw + 1));
+        int hstart = floor(bin_h * ph);
+        int wstart = floor(bin_w * pw);
+        int hend = ceil(bin_h * (ph + 1));
+        int wend = ceil(bin_w * (pw + 1));
 
-        hstart = min(max(hstart + roi_start_h, 0), H);
-        hend = min(max(hend + roi_start_h, 0), H);
-        wstart = min(max(wstart + roi_start_w, 0), W);
-        wend = min(max(wend + roi_start_w, 0), W);
+        hstart = min(max(hstart + roi_hstart, 0), H);
+        hend = min(max(hend + roi_hstart, 0), H);
+        wstart = min(max(wstart + roi_wstart, 0), W);
+        wend = min(max(wend + roi_wstart, 0), W);
+        const bool empty = (hend <= hstart) || (wend <= wstart);
 
-        bool is_empty = (hend <= hstart) || (wend <= wstart);
-        float max_val = is_empty ? 0 : -FLT_MAX;
-        int max_idx = -1;
-        x += ((roi_batch_ind * C + c) * H * W);
+        int xi, maxi = -1;
+        T maxv = empty ? T(0) : -FLT_MAX;
         for (int h = hstart; h < hend; ++h) {
             for (int w = wstart; w < wend; ++w) {
-                const int x_idx = h * W + w;
+                xi = h * W + w;
 #if __CUDA_ARCH__ >= 350
-                if (__ldg(x + x_idx) > max_val) {
-                    max_val = __ldg(x + x_idx);
-                    max_idx = x_idx;
+                if (__ldg(X + xi) > maxv) {
+                    maxi = xi; maxv = __ldg(X + xi);
                 }
 #else
-                if (x[x_idx] > max_val) {
-                    max_val = x[x_idx];
-                    max_idx = x_idx;
+                if (X[xi] > maxv) {
+                    maxi = xi; maxv = X[xi];
                 }
 #endif
             }
         }
-        y[y_idx] = max_val;
-        mask[y_idx] = max_idx;
+        y[yi] = maxv; mask[yi] = maxi;
     }
 }
 
@@ -94,14 +91,19 @@ template<> void ROIPool<float, CUDAContext>(
     float*                  y,
     CUDAContext*            ctx) {
     auto nthreads = num_rois * C * pool_h * pool_w;
-    _ROIPool<float>
+    _ROIPool
         << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (nthreads, C, H, W, pool_h, pool_w,
-            spatial_scale, x, rois, mask, y);
+             0, ctx->cuda_stream() >> >(
+        nthreads,
+        C, H, W,
+        pool_h, pool_w,
+        spatial_scale,
+        x, rois,
+        mask, y
+    );
 }
 
-/*! ROIPool <T = float16, Device = CUDA> */
+/* <T = float16, Device = CUDA> */
 
 __global__ void _ROIPoolHalf(
     const int               nthreads,
@@ -115,58 +117,55 @@ __global__ void _ROIPoolHalf(
     const float*            rois,
     int*                    mask,
     half*                   y) {
-    CUDA_1D_KERNEL_LOOP(y_idx, nthreads) {
+    CUDA_1D_KERNEL_LOOP(yi, nthreads) {
 #if __CUDA_ARCH__ >= 530
-        int pw = y_idx % pool_w;
-        int ph = (y_idx / pool_w) % pool_h;
-        int c = (y_idx / pool_w / pool_h) % C;
-        int n = y_idx / pool_w / pool_h / C;
+        int pw = yi % pool_w;
+        int ph = (yi / pool_w) % pool_h;
+        int c = (yi / pool_w / pool_h) % C;
+        int n = yi / pool_w / pool_h / C;
 
-        const float* offset_rois = rois + n * 5;
-        int roi_batch_ind = offset_rois[0];
+        const float* roi = rois + n * 5;
+        const int batch_ind = roi[0];
+        const half* X = x + ((batch_ind * C + c) * H * W);
 
-        if (roi_batch_ind < 0) {
-            y[y_idx] = __float2half(0.f);
-            mask[y_idx] = -1; continue;
+        if (batch_ind < 0) {
+            y[yi] = __float2half(0.f);
+            mask[yi] = -1; continue;
         }
 
-        int roi_start_w = round(offset_rois[1] * spatial_scale);
-        int roi_start_h = round(offset_rois[2] * spatial_scale);
-        int roi_end_w = round(offset_rois[3] * spatial_scale);
-        int roi_end_h = round(offset_rois[4] * spatial_scale);
+        const int roi_wstart = round(roi[1] * spatial_scale);
+        const int roi_hstart = round(roi[2] * spatial_scale);
+        const int roi_wend = round(roi[3] * spatial_scale);
+        const int roi_hend = round(roi[4] * spatial_scale);
 
-        int roi_width = max(roi_end_w - roi_start_w + 1, 1);
-        int roi_height = max(roi_end_h - roi_start_h + 1, 1);
-        const float bin_size_h = (float)roi_height / (float)pool_h;
-        const float bin_size_w = (float)roi_width / (float)pool_w;
+        const int roi_w = max(roi_wend - roi_wstart + 1, 1);
+        const int roi_h = max(roi_hend - roi_hstart + 1, 1);
+        const float bin_h = (float)roi_h / (float)pool_h;
+        const float bin_w = (float)roi_w / (float)pool_w;
 
-        int hstart = floor(bin_size_h * ph);
-        int wstart = floor(bin_size_w * pw);
-        int hend = ceil(bin_size_h * (ph + 1));
-        int wend = ceil(bin_size_w * (pw + 1));
+        int hstart = floor(bin_h * ph);
+        int wstart = floor(bin_w * pw);
+        int hend = ceil(bin_h * (ph + 1));
+        int wend = ceil(bin_w * (pw + 1));
 
-        hstart = min(max(hstart + roi_start_h, 0), H);
-        hend = min(max(hend + roi_start_h, 0), H);
-        wstart = min(max(wstart + roi_start_w, 0), W);
-        wend = min(max(wend + roi_start_w, 0), W);
+        hstart = min(max(hstart + roi_hstart, 0), H);
+        hend = min(max(hend + roi_hstart, 0), H);
+        wstart = min(max(wstart + roi_wstart, 0), W);
+        wend = min(max(wend + roi_wstart, 0), W);
+        const bool empty = (hend <= hstart) || (wend <= wstart);
 
-        bool is_empty = (hend <= hstart) || (wend <= wstart);
-        x += ((roi_batch_ind * C + c) * H * W);
-
-        int max_idx = -1;
-        half max_val = is_empty ? __float2half(0.f) : x[0];
+        int xi, maxi = -1;
+        half maxv = empty ? __float2half(0.f) : X[0];
 
         for (int h = hstart; h < hend; ++h) {
             for (int w = wstart; w < wend; ++w) {
-                const int x_idx = h * W + w;
-                if (__hgt(__ldg(x + x_idx), max_val)) {
-                    max_val = __ldg(x + x_idx);
-                    max_idx = x_idx;
+                xi = h * W + w;
+                if (__hgt(__ldg(X + xi), maxv)) {
+                    maxi = xi; maxv = __ldg(X + xi);
                 }
             }
         }
-        y[y_idx] = max_val;
-        mask[y_idx] = max_idx;
+        y[yi] = maxv; mask[yi] = maxi;
 #endif
     }
 }
@@ -187,13 +186,18 @@ template<> void ROIPool<float16, CUDAContext>(
     auto nthreads = num_rois * C * pool_h * pool_w;
     _ROIPoolHalf
         << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (nthreads, C, H, W, pool_h, pool_w, spatial_scale,
-            reinterpret_cast<const half*>(x), rois,
-                mask, reinterpret_cast<half*>(y));
+             0, ctx->cuda_stream() >> >(
+        nthreads,
+        C, H, W,
+        pool_h, pool_w,
+        spatial_scale,
+        reinterpret_cast<const half*>(x),
+        rois, mask,
+        reinterpret_cast<half*>(y)
+    );
 }
 
-/*! ROIPoolGrad <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _ROIPoolGrad(
@@ -209,46 +213,44 @@ __global__ void _ROIPoolGrad(
     const T*                rois,
     const int*              mask,
     T*                      dx) {
-    CUDA_1D_KERNEL_LOOP(x_idx, nthreads) {
-        int w = x_idx % W;
-        int h = (x_idx / W) % H;
-        int c = (x_idx / W / H) % C;
-        int n = x_idx / W / H / C;
+    CUDA_1D_KERNEL_LOOP(xi, nthreads) {
+        const int w = xi % W;
+        const int h = (xi / W) % H;
+        const int c = (xi / W / H) % C;
+        const int n = xi / W / H / C;
 
-        T gradient = 0;
+        T grad = 0;
 
         for (int roi_n = 0; roi_n < num_rois; ++roi_n) {
-            const T* offset_rois = rois + roi_n * 5;
-            int roi_batch_ind = offset_rois[0];
+            const T* roi = rois + roi_n * 5;
+            if (n != roi[0]) continue;
 
-            if (n != roi_batch_ind) continue;
+            const int roi_wstart = round(roi[1] * spatial_scale);
+            const int roi_hstart = round(roi[2] * spatial_scale);
+            const int roi_wend = round(roi[3] * spatial_scale);
+            const int roi_hend = round(roi[4] * spatial_scale);
 
-            int roi_start_w = round(offset_rois[1] * spatial_scale);
-            int roi_start_h = round(offset_rois[2] * spatial_scale);
-            int roi_end_w = round(offset_rois[3] * spatial_scale);
-            int roi_end_h = round(offset_rois[4] * spatial_scale);
-
-            const bool in_roi = (w >= roi_start_w &&
-                                 w <= roi_end_w &&
-                                 h >= roi_start_h &&
-                                 h <= roi_end_h);
+            const bool in_roi = (w >= roi_wstart &&
+                                 w <= roi_wend &&
+                                 h >= roi_hstart &&
+                                 h <= roi_hend);
 
             if (!in_roi) continue;
 
-            int y_offset = (roi_n * C + c) * pool_h * pool_w;
-            const T* offset_dy = dy + y_offset;
-            const int* offset_mask = mask + y_offset;
+            const int y_ofs = (roi_n * C + c) * pool_h * pool_w;
+            const T* dY = dy + y_ofs;
+            const int* M = mask + y_ofs;
 
-            int roi_width = max(roi_end_w - roi_start_w + 1, 1);
-            int roi_height = max(roi_end_h - roi_start_h + 1, 1);
+            const int roi_w = max(roi_wend - roi_wstart + 1, 1);
+            const int roi_h = max(roi_hend - roi_hstart + 1, 1);
 
-            const T bin_size_h = (T)roi_height / (T)pool_h;
-            const T bin_size_w = (T)roi_width / (T)pool_w;
+            const T bin_h = (T)roi_h / (T)pool_h;
+            const T bin_w = (T)roi_w / (T)pool_w;
 
-            int phstart = floor(static_cast<T>(h - roi_start_h) / bin_size_h);
-            int phend = ceil(static_cast<T>(h - roi_start_h + 1) / bin_size_h);
-            int pwstart = floor(static_cast<T>(w - roi_start_w) / bin_size_w);
-            int pwend = ceil(static_cast<T>(w - roi_start_w + 1) / bin_size_w);
+            int phstart = floor((T)(h - roi_hstart) / (T)bin_h);
+            int phend = ceil((T)(h - roi_hstart + 1) / (T)bin_h);
+            int pwstart = floor((T)(w - roi_wstart) / (T)bin_w);
+            int pwend = ceil((T)(w - roi_wstart + 1) / (T)bin_w);
 
             phstart = min(max(phstart, 0), pool_h);
             phend = min(max(phend, 0), pool_h);
@@ -257,14 +259,14 @@ __global__ void _ROIPoolGrad(
 
             for (int ph = phstart; ph < phend; ++ph) {
                 for (int pw = pwstart; pw < pwend; ++pw) {
-                    int pool_idx = ph * pool_w + pw;
-                    if (offset_mask[pool_idx] == (h * W + w)) {
-                        gradient += offset_dy[pool_idx];
+                    int yi = ph * pool_w + pw;
+                    if (M[yi] == (h * W + w)) {
+                        grad += dY[yi];
                     }
                 }
             }
         }
-        dx[x_idx] = gradient;
+        dx[xi] = grad;
     }
 }
 
@@ -283,11 +285,17 @@ template<> void ROIPoolGrad<float, CUDAContext>(
     float*                  dx,
     CUDAContext*            ctx) {
     auto nthreads = N * C * H * W;
-    _ROIPoolGrad<float>
+    _ROIPoolGrad
         << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
-        (nthreads, num_rois, C, H, W, pool_h, pool_w,
-            spatial_scale, dy, rois, mask, dx);
+             0, ctx->cuda_stream() >> >(
+        nthreads,
+        num_rois,
+        C, H, W,
+        pool_h, pool_w,
+        spatial_scale,
+        dy, rois,
+        mask, dx
+    );
 }
 
 }  // namespace kernel

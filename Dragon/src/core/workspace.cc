@@ -4,31 +4,31 @@
 
 namespace dragon {
 
-/*! Create some internal tensors */
+/* Create some internal tensors */
 
 void Workspace::Initialize() {
     CreateTensor("NULL");
-    Tensor* recomputing_flag = CreateTensor(
-        "/opt/recomputing_flag")->Reshape({ 1 });
-    recomputing_flag->mutable_data
-        <bool, CPUContext>()[0] = false;
+    CreateTensor("/opt/recomp_flag")
+        ->Reshape({ 1 })
+        ->mutable_data<bool, CPUContext>()[0]
+        = false;
 }
 
-/*! Destory all the tensors */
+/* Destory all the tensors */
 
 void Workspace::Clear() {
     // Remove and Initialize again
     tensor_map_.clear(); Initialize();
 }
 
-/*! Merge from a external workspace */
+/* Merge from a external workspace */
 
 void Workspace::MergeFrom(Workspace* ws) {
     CHECK(ws) << "\nThe given Workspace is invalid.";
     remote_workspaces_.emplace_back(ws);
 }
 
-/*! Query the real name of specified tensor */
+/* Query the real name of specified tensor */
 
 string Workspace::GetTensorName(const string& name) const {
     const auto& it = tensor_alias_map_.find(name);
@@ -36,7 +36,7 @@ string Workspace::GetTensorName(const string& name) const {
     return name;
 }
 
-/*! Try to serach the specified tensor in this workspace */
+/* Try to serach the specified tensor in this workspace */
 
 Tensor* Workspace::TryGetTensor(
     const string&           name,
@@ -58,7 +58,7 @@ Tensor* Workspace::TryGetTensor(
     return nullptr;
 }
 
-/*! Create the specified tensor */
+/* Create the specified tensor */
 
 Tensor* Workspace::CreateTensor(const string& name) {
     Tensor* tensor = TryGetTensor(name);
@@ -70,7 +70,7 @@ Tensor* Workspace::CreateTensor(const string& name) {
     return tensor;
 }
 
-/*! Return the specified tensor */
+/* Return the specified tensor */
 
 Tensor* Workspace::GetTensor(
     const string&               name,
@@ -81,7 +81,7 @@ Tensor* Workspace::GetTensor(
     return tensor;
 }
 
-/*! Reset the specified tensor */
+/* Reset the specified tensor */
 
 void Workspace::ResetTensor(const string& name) {
     Tensor* tensor = TryGetTensor(name, false);
@@ -90,7 +90,7 @@ void Workspace::ResetTensor(const string& name) {
     tensor->Reset();
 }
 
-/*! Return the name of stored tensors */
+/* Return the name of stored tensors */
 
 vector<string> Workspace::tensors() const {
     vector<string> locals;
@@ -107,7 +107,7 @@ vector<string> Workspace::tensors() const {
     return locals;
 }
 
-/*! Whether the specified filler is in this workspace */
+/* Whether the specified filler is in this workspace */
 
 bool Workspace::HasFiller(
     const string&               name,
@@ -122,7 +122,7 @@ bool Workspace::HasFiller(
     return result;
 }
 
-/*! Create the specified filler */
+/* Create the specified filler */
 void Workspace::CreateFiller(
     const TensorFillerProto&     filler) {
     CHECK_GT(filler.tensor().size(), 0)
@@ -131,7 +131,7 @@ void Workspace::CreateFiller(
     tensor_filler_map_[filler.tensor()] = filler;
 }
 
-/*! Return the specified filler */
+/* Return the specified filler */
 
 const TensorFillerProto* Workspace::GetFiller(
     const string&               name) const {
@@ -147,7 +147,7 @@ const TensorFillerProto* Workspace::GetFiller(
     return nullptr;
 }
 
-/*! Create a operator in this workspace */
+/* Create a operator in this workspace */
 
 OperatorBase* Workspace::CreateOperator(const OperatorDef& def) {
     const auto& it = operator_map_.find(def.uid());
@@ -159,14 +159,14 @@ OperatorBase* Workspace::CreateOperator(const OperatorDef& def) {
     return it->second.get();
 }
 
-/*! Run the specified existing operator */
+/* Run the specified existing operator */
 
 void Workspace::RunOperator(const OperatorDef& def) {
     auto* op = CreateOperator(def);
     op->UpdateFrom(def); op->Run(0);
 }
 
-/*! Run the specified operator once */
+/* Run the specified operator once */
 
 void Workspace::RunOperatorOnce(const OperatorDef& def) {
     unique_ptr<OperatorBase> new_op(
@@ -174,7 +174,7 @@ void Workspace::RunOperatorOnce(const OperatorDef& def) {
     ); new_op->Run(0);
 }
 
-/*! Create a Graph in this workspace */
+/* Create a Graph in this workspace */
 
 GraphBase* Workspace::CreateGraph(const GraphDef& def) {
     // A unique graph name is required
@@ -194,7 +194,7 @@ GraphBase* Workspace::CreateGraph(const GraphDef& def) {
     return graph_map_[unique_name].get();
 }
 
-/*! Run the specifed graph by name and rules */
+/* Run the specifed graph by name and rules */
 
 void Workspace::RunGraph(
     const string&               graph_name,
@@ -207,7 +207,7 @@ void Workspace::RunGraph(
     graph_map_[graph_name]->Run(include, exclude, stream_id);
 }
 
-/*! Return the name of stored graphs */
+/* Return the name of stored graphs */
 
 vector<string> Workspace::graphs() const {
     vector<string> names;
@@ -216,7 +216,7 @@ vector<string> Workspace::graphs() const {
     } return names;
 }
 
-/*! Set an alias for the tensor */
+/* Set an alias for the tensor */
 
 bool Workspace::SetTensorAlias(
     const string&               name,
@@ -228,7 +228,7 @@ bool Workspace::SetTensorAlias(
     return true;
 }
 
-/*! Return a unique dummy name within this workspace */
+/* Return a unique dummy name within this workspace */
 
 string Workspace::GetDummyName(
     const string&               base_name,
