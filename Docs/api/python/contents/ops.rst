@@ -168,6 +168,7 @@ List               Brief
 ===============    ======================================================================
 `Copy`_            Copy the *value* to *ref*.
 `Assign`_          Assign the *value* to *ref*.
+`MaskedAssign`_    Assign the *value* to *ref* where mask is *1*.
 `Equal`_           *Equal* Comparing between A and B.
 `Less`_            *Less* Comparing between A and B.
 `LessEqual`_       *LessEqual* Comparing between A and B.
@@ -308,8 +309,9 @@ List                 Brief
 .. _Arange: operators/array.html#dragon.operators.array.Arange
 .. _Multinomial: operators/array.html#dragon.operators.array.Multinomial
 
-.. _Copy: operators/control_flow.html#dAragon.operators.control_flow.Copy
-.. _Assign: operators/control_flow.html#dAragon.operators.control_flow.Assign
+.. _Copy: operators/control_flow.html#dragon.operators.control_flow.Copy
+.. _Assign: operators/control_flow.html#dragon.operators.control_flow.Assign
+.. _MaskedAssign: operators/control_flow.html#dragon.operators.control_flow.MaskedAssign
 .. _Equal: operators/control_flow.html#dragon.operators.control_flow.Equal
 .. _Less: operators/control_flow.html#dragon.operators.control_flow.Less
 .. _LessEqual: operators/control_flow.html#dragon.operators.control_flow.LessEqual

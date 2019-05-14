@@ -72,7 +72,7 @@ class CUDAObject {
         if (streams.size() <= (unsigned)stream_id)
             streams.resize(stream_id + 1, nullptr);
         if (!streams[stream_id]) {
-            DeviceGuard guard(device_id);
+            CUDADeviceGuard guard(device_id);
             unsigned int flags = !stream_id ?
                 cudaStreamDefault :
                 cudaStreamNonBlocking;
@@ -97,7 +97,7 @@ class CUDAObject {
         if (handles.size() <= (unsigned)stream_id)
             handles.resize(stream_id + 1, nullptr);
         if (!handles[stream_id]) {
-            DeviceGuard guard(device_id);
+            CUDADeviceGuard guard(device_id);
             CUBLAS_CHECK(cublasCreate_v2(&handles[stream_id]));
             CUBLAS_CHECK(cublasSetStream_v2(
                 handles[stream_id],
@@ -120,7 +120,7 @@ class CUDAObject {
         if (handles.size() <= (unsigned)stream_id)
             handles.resize(stream_id + 1, nullptr);
         if (!handles[stream_id]) {
-            DeviceGuard guard(device_id);
+            CUDADeviceGuard guard(device_id);
             CUDNN_CHECK(cudnnCreate(&handles[stream_id]));
             CUDNN_CHECK(cudnnSetStream(
                 handles[stream_id],
@@ -292,7 +292,7 @@ class CUDAContext {
     /*! \brief Return the internal cuda random generator */
     curandGenerator_t& curand_generator() {
         if (!curand_generator_) {
-            DeviceGuard guard(device_id_);
+            CUDADeviceGuard guard(device_id_);
             CURAND_CHECK(curandCreateGenerator(
                 &curand_generator_, CURAND_RNG_PSEUDO_DEFAULT));
             CURAND_CHECK(curandSetPseudoRandomGeneratorSeed(

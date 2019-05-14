@@ -657,6 +657,16 @@ void GreaterEqual(
     bool*                   y,
     Context*                ctx);
 
+/*! control_flow.masked_assign */
+
+template <typename T, class Context>
+void MaskedAssign(
+    const int               count,
+    const uint8_t*          mask,
+    const T*                x,
+    T*                      y,
+    Context*                ctx);
+
 /*! loss.l1_loss */
 
 template <typename T, class Context>

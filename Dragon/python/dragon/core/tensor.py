@@ -488,9 +488,9 @@ class Tensor(object):
 
         Parameters
         ----------
-        key : int or slice
+        key : int, slice or Tensor
             The indices.
-        value : Tensor, number or sequence
+        value : number, sequence or Tensor
             The value.
 
         Returns
@@ -498,11 +498,20 @@ class Tensor(object):
         None
 
         """
-        starts, sizes = self._process_indices(key)
         if not isinstance(value, Tensor):
             value = self._from_constant(value)
-        return self.CreateOperator('Assign', [value],
-            existing_outputs=[self], starts=starts, sizes=sizes)
+        if isinstance(key, Tensor):
+            return self.CreateOperator(
+                'MaskedAssign', [value, key],
+                existing_outputs=[self],
+            )
+        else:
+            starts, sizes = self._process_indices(key)
+            return self.CreateOperator(
+                'Assign', [value],
+                starts=starts, sizes=sizes,
+                existing_outputs=[self],
+            )
 
     def _from_constant(self, value, name=None):
         if not isinstance(value, numpy.ndarray):

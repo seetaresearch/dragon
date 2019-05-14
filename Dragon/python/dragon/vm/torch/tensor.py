@@ -533,16 +533,16 @@ class Tensor(object):
 
         """
         starts, sizes = self._process_indices(item)
-        return self._indexing(starts, sizes)
+        return self._index(starts, sizes)
 
     def __setitem__(self, key, value):
         """Set the value at the specific indices.
 
         Parameters
         ----------
-        key : int, slice
+        key : int, slice or dragon.vm.torch.Tensor
             The indices.
-        value : dragon.vm.torch.Tensor, number or sequence
+        value : number, sequence or dragon.vm.torch.Tensor
             The value.
 
         Returns
@@ -550,8 +550,11 @@ class Tensor(object):
         None
 
         """
-        starts, sizes = self._process_indices(key)
-        return self._assigning(value, starts, sizes)
+        if isinstance(key, Tensor):
+            return self.masked_fill_(key, value)
+        else:
+            starts, sizes = self._process_indices(key)
+            return self._assign(starts, sizes, value)
 
     def __hash__(self):
         return id(self)
@@ -886,7 +889,7 @@ class Tensor(object):
         return self
 
     def fill_(self, value):
-        """Fills self tensor with the specified value.
+        """Fill self with the given value.
 
         Parameters
         ----------
@@ -900,6 +903,24 @@ class Tensor(object):
 
         """
         raise NotImplementedError('Refer torch.ops.tensor.fill_')
+
+    def masked_fill_(self, mask, value):
+        """Fill self with the given value where ``mask`` is *1*.
+
+        Parameters
+        ----------
+        mask : dragon.vm.torch.Tensor
+            The mask.
+        value : number
+            The value to fill.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The self.
+
+        """
+        raise NotImplementedError('Refer torch.ops.tensor.masked_fill_')
 
     def zero_(self):
         """Fills self tensor with zeros.

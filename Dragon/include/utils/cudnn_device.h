@@ -100,38 +100,38 @@ void CuDNNSetTensor3dDesc(
 template <typename T>
 void CuDNNSetTensorDesc(
     cudnnTensorDescriptor_t*            desc,
-    const vec64_t&                        dims);
+    const vec64_t&                      dims);
 
 template <typename T>
 void CuDNNSetTensor4dDesc(
     cudnnTensorDescriptor_t*            desc,
     const string&                       data_format,
-    const vec64_t&                        dims);
+    const vec64_t&                      dims);
 
 template <typename T>
 void CuDNNSetTensor4dDescWithGroup(
     cudnnTensorDescriptor_t*            desc,
     const string&                       data_format,
-    const vec64_t&                        dims,
+    const vec64_t&                      dims,
     const int64_t                       group);
 
 template <typename T>
 void CuDNNSetTensor5dDesc(
     cudnnTensorDescriptor_t*            desc,
     const string&                       data_format,
-    const vec64_t&                        dims);
+    const vec64_t&                      dims);
 
 template <typename T>
 void CuDNNSetTensor3dDesc(
     cudnnTensorDescriptor_t*            desc,
     const string&                       data_format,
-    const vec64_t&                        dims);
+    const vec64_t&                      dims);
 
 template <typename T>
 void CuDNNSetTensorDesc(
     cudnnTensorDescriptor_t*            desc,
-    const vec64_t&                        dims,
-    const vec64_t&                        strides);
+    const vec64_t&                      dims,
+    const vec64_t&                      strides);
 
 }  // namespace dragon
 

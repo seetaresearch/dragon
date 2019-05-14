@@ -49,7 +49,7 @@ void AssignOp<Context>::RunImpl() {
     } else if (X(0).count() == X_.count()) {
         x = X(0).template data<T, Context>();
     } else {
-        LOG(FATAL) 
+        LOG(FATAL)
             << "Could not assign "
             << X(0).DimString()
             << " to "
@@ -146,7 +146,10 @@ DEPLOY_CUDA(Assign);
 #endif
 
 OPERATOR_SCHEMA(Assign)
-    .NumInputs(1).NumOutputs(1);
+     /* V */
+    .NumInputs(1)
+     /* X */
+    .NumOutputs(1);
 
 NO_GRADIENT(Assign);
 

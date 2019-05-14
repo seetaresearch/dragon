@@ -17,7 +17,10 @@ from dragon.core import mpi
 from dragon.vm.torch.tensor import Tensor, _LeafTensor, _Device
 from dragon.vm.torch.ops.primitive import MakeDevice, WrapScalar
 from dragon.vm.torch.ops.factory import get_module
-from dragon.vm.torch.ops.modules.control_flow import Compare
+
+from dragon.vm.torch.ops.modules.control_flow import (
+    Assign, MaskedAssign, Compare
+)
 
 from dragon.vm.torch.ops.modules.arithmetic import (
     Fundamental, Log, Exp, Sqrt,
@@ -32,9 +35,8 @@ from dragon.vm.torch.ops.modules.init import (
 
 from dragon.vm.torch.ops.modules.array import (
     Reshape, Squeeze, UnSqueeze, Permute,
-    Indexing, Assigning,
+    Indexing, IndexSelect,
     Repeat, Concat, Stack,
-    IndexSelect,
     Reduce, ArgReduce, OneHot, Multinomial,
 )
 
@@ -48,8 +50,8 @@ from dragon.vm.torch.ops.modules.vision import (
 
 
 __all__ = [
-    'add', 'sub', 'mul', 'div',
     'accumulate',
+    'add', 'sub', 'mul', 'div',
     'maximum', 'minimum', 'clamp',
     'log', 'exp', 'sqrt',
     'mm', 'xw_plus_b',
@@ -59,9 +61,12 @@ __all__ = [
     'gt', 'lt', 'eq', 'ge', 'le',
     'cat', 'stack', 'narrow',
     'index_select',
-    'one_hot', 'multinomial', 'rand', 'randn',
-    'zeros', 'zeros_like', 'ones', 'ones_like',
-    'nn_resize', 'bilinear_resize', 'roi_pool', 'roi_align',
+    'one_hot', 'multinomial',
+    'rand', 'randn',
+    'ones', 'ones_like',
+    'zeros', 'zeros_like',
+    'nn_resize', 'bilinear_resize',
+    'roi_pool', 'roi_align',
 ]
 
 
@@ -409,52 +414,64 @@ def xw_plus_b(x, w, bias=None, transW=True, out=None):
 
 def _reshape(input, shape, shape_like=None):
     if shape_like is not None: shape = shape_like.shape
-    dev = MakeDevice(inputs=[input]); n_dim = len(shape)
-    key = 'Reshape/{}/n_dim:{}'.format(dev, n_dim)
-    module = get_module(Reshape, key, dev, n_dim=n_dim)
+    dev = MakeDevice(inputs=[input]); ndim = len(shape)
+    key = 'Reshape/{}/ndim:{}'.format(dev, ndim)
+    module = get_module(Reshape, key, dev, ndim=ndim)
     return module.forward(input, shape)
 
 
 def _permute(input, perm):
-    dev = MakeDevice(inputs=[input]); n_perm = len(perm)
-    key = 'Permute/{}/n_perm:{}'.format(dev, n_perm)
-    module = get_module(Permute, key, dev, n_perm=n_perm)
+    dev = MakeDevice(inputs=[input]); nperm = len(perm)
+    key = 'Permute/{}/nperm:{}'.format(dev, nperm)
+    module = get_module(Permute, key, dev, nperm=nperm)
     return module.forward(input, perm)
 
 
 def _repeat(input, times):
-    dev = MakeDevice(inputs=[input]); n_times = len(times)
-    key = 'Repeat/{}/n_times:{}'.format(dev, n_times)
-    module = get_module(Repeat, key, dev, n_times=n_times)
+    dev = MakeDevice(inputs=[input]); ntimes = len(times)
+    key = 'Repeat/{}/ntimes:{}'.format(dev, ntimes)
+    module = get_module(Repeat, key, dev, ntimes=ntimes)
     return module.forward(input, times)
 
 
 def _fill(input, shape, value):
-    dev = MakeDevice(inputs=[input]); n_dim = len(shape)
-    key = 'Fill/{}/dtype:{}/n_dim:{}/value:{}'.format(
-        dev, input.dtype, n_dim, value)
-    module = get_module(Fill, key, dev, n_dim=n_dim,
-        value=value, dtype=input.dtype)
+    dev = MakeDevice(inputs=[input]); ndim = len(shape)
+    key = 'Fill/{}/dtype:{}/ndim:{}/value:{}' \
+        .format(dev, input.dtype, ndim, value)
+    module = get_module(
+        Fill, key, dev,
+        ndim=ndim,
+        value=value,
+        dtype=input.dtype,
+    )
     return module.forward(input, shape)
 
 
 def _uniform(input, shape, low, high):
-    dev = MakeDevice(inputs=[input]); n_dim = len(shape)
-    key = 'Uniform/{}/dtype:{}/n_dim:{}/low:{}/high:{}'.format(
-        dev, input.dtype, n_dim, float(low), float(high))
+    dev = MakeDevice(inputs=[input]); ndim = len(shape)
+    key = 'Uniform/{}/dtype:{}/ndim:{}/low:{}/high:{}'.format(
+        dev, input.dtype, ndim, float(low), float(high))
     module = get_module(
-        RandomUniform, key, dev, n_dim=n_dim,
-            low=low, high=high, dtype=input.dtype)
+        RandomUniform, key, dev,
+        ndim=ndim,
+        low=low,
+        high=high,
+        dtype=input.dtype,
+    )
     return module.forward(input, shape)
 
 
 def _normal(input, shape, mean, std):
-    dev = MakeDevice(inputs=[input]); n_dim = len(shape)
-    key = 'Normal/{}/dtype:{}/n_dim:{}/mean:{}/std:{}'.format(
-        dev, input.dtype, n_dim, float(mean), float(std))
+    dev = MakeDevice(inputs=[input]); ndim = len(shape)
+    key = 'Normal/{}/dtype:{}/ndim:{}/mean:{}/std:{}'.format(
+        dev, input.dtype, ndim, float(mean), float(std))
     module = get_module(
-        RandomNormal, key, dev, n_dim=n_dim,
-            mean=mean, std=std, dtype=input.dtype)
+        RandomNormal, key, dev,
+        ndim=ndim,
+        mean=mean,
+        std=std,
+        dtype=input.dtype,
+    )
     return module.forward(input, shape)
 
 
@@ -464,42 +481,60 @@ def _reduce(input, operation, dim=None, keepdim=False, out=None):
     key = '{}/{}/dim:{}/keepdim:{}'.format(
         operation, dev, dim, int(keepdim))
     module = get_module(
-        Reduce, key, dev, operation=operation,
-            dim=dim, keepdim=keepdim)
+        Reduce, key, dev,
+        dim=dim,
+        keepdim=keepdim,
+        operation=operation,
+    )
     return module.forward(input, out)
 
 
-def _arg_reduce(input, operation, dim=None, keepdim=False, top_k=1, out=None):
+def _arg_reduce(input, operation, dim=None, keepdim=False, topk=1, out=None):
     if dim is None: keepdim = False
     dev = MakeDevice(inputs=[input])
-    key = '{}/{}/dim:{}/keepdim:{}/top_k:{}'.format(
-        operation, dev, dim, int(keepdim), top_k)
+    key = '{}/{}/dim:{}/keepdim:{}/topk:{}'.format(
+        operation, dev, dim, int(keepdim), topk)
     module = get_module(
         ArgReduce, key, dev,
-            operation=operation, axis=dim,
-                keepdim=keepdim, top_k=top_k)
+        axis=dim,
+        topk=topk,
+        keepdim=keepdim,
+        operation=operation,
+    )
     return module.forward(input, out)
 
 
-def _indexing(input, starts, sizes):
-    n_starts, n_sizes = len(starts), len(sizes)
+def _index(input, starts, sizes):
+    nstarts, nsizes = len(starts), len(sizes)
     dev = MakeDevice(inputs=[input])
-    key = 'Index/{}/n_starts:{}/n_sizes:{}'.format(dev, n_starts, n_sizes)
-    module = get_module(Indexing, key, dev, n_starts=n_starts, n_sizes=n_sizes)
+    key = 'Index/{}/nstarts:{}/nsizes:{}'.format(dev, nstarts, nsizes)
+    module = get_module(Indexing, key, dev, nstarts=nstarts, nsizes=nsizes)
     return module.forward(input, starts, sizes)
 
 
-def _assigning(output, input, starts, sizes):
+def _assign(output, starts, sizes, input):
     if not isinstance(input, Tensor):
         if isinstance(input, (tuple, list)):
             input = Tensor(input, dtype=output.dtype, device=output.device)
         else:
             input = WrapScalar(input, output.dtype, output.device)
-    n_starts, n_sizes = len(starts), len(sizes)
+    nstarts, nsizes = len(starts), len(sizes)
     dev = MakeDevice(inputs=[input])
-    key = 'Assign/{}/n_starts:{}/n_sizes:{}'.format(dev, n_starts, n_sizes)
-    module = get_module(Assigning, key, dev, n_starts=n_starts, n_sizes=n_sizes)
+    key = 'Assign/{}/nstarts:{}/nsizes:{}'.format(dev, nstarts, nsizes)
+    module = get_module(Assign, key, dev, nstarts=nstarts, nsizes=nsizes)
     return module.forward(input, output, starts, sizes)
+
+
+def _masked_assign(output, mask, input):
+    if not isinstance(input, Tensor):
+        if isinstance(input, (tuple, list)):
+            input = Tensor(input, dtype=output.dtype, device=output.device)
+        else:
+            input = WrapScalar(input, output.dtype, output.device)
+    dev = MakeDevice(inputs=[input])
+    key = 'MaskedAssign/{}'.format(dev)
+    module = get_module(MaskedAssign, key, dev)
+    return module.forward(input, output, mask)
 
 
 def _compare(input, other, operation, out=None):
@@ -927,7 +962,7 @@ def narrow(input, dimension, start, length):
     """
     sizes = list(input.shape[:]); starts = [0] * len(sizes)
     starts[dimension], sizes[dimension] = start, length
-    return _indexing(input, starts, sizes)
+    return _index(input, starts, sizes)
 
 
 def one_hot(input, depth):
@@ -1159,8 +1194,13 @@ def _update(
 ):
     dev = MakeDevice(inputs=[param])
     key = '{}/{}/{}/{}'.format(op_type, dev, slot, param.name)
-    module = get_module(Update, key, dev, op_type=op_type,
-        lr_mult=lr_mult, decay_mult=decay_mult, slot=slot)
+    module = get_module(
+        Update, key, dev,
+        op_type=op_type,
+        lr_mult=lr_mult,
+        decay_mult=decay_mult,
+        slot=slot,
+    )
     return module.forward(param, grad)
 
 
@@ -1183,8 +1223,12 @@ def _resize_2d(input, op_type, dsize, fx, fy):
     dev = MakeDevice(inputs=[input])
     key = '{}/{}/dsize:{}/fx:{}/fy:{}'.format(
         op_type, dev, '2' if dsize else 'none', fx, fy)
-    module = get_module(Resize2d, key, dev,
-        op_type=op_type, dsize=dsize, fx=fx, fy=fy)
+    module = get_module(
+        Resize2d, key, dev,
+        dsize=dsize,
+        fx=fx, fy=fy,
+        op_type=op_type,
+    )
     return module.forward(input, dsize)
 
 

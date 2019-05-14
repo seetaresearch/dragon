@@ -123,7 +123,7 @@ void MixedMemory::SwitchToCUDADevice(int device_id) {
         if (device_id != ptr_device_) {
             // Move the memory to another device
             void* new_ptr_ = nullptr;
-            DeviceGuard gurad(device_id);
+            CUDADeviceGuard gurad(device_id);
             new_ptr_ = CUDAContext::New(nbytes_);
             CUDAContext::MemcpyEx<CUDAContext, CUDAContext>(
                 nbytes_, new_ptr_, cuda_ptr_, ptr_device_);

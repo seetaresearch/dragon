@@ -23,9 +23,9 @@ from dragon.vm.torch.ops.builtin import (
     _fundamental, _rfundamental,
     log, exp, sqrt, clamp,
     _reshape, squeeze, unsqueeze,
-    _permute, _repeat,
-    _indexing, _assigning,
-    narrow, index_select,
+    _permute, _repeat, narrow,
+    _index, index_select,
+    _assign, _masked_assign,
     mean, sum, max, min,
     gt, lt, eq, ge, le,
 )
@@ -41,6 +41,7 @@ def _type_to(input, dtype='float32', inplace=False):
 
 
 Tensor.fill_ = lambda self, value: _fill(self, self.shape, value)
+Tensor.masked_fill_ = lambda *args, **kwargs: _masked_assign(*args, **kwargs)
 Tensor.uniform_ = lambda self, low=0, high=1: _uniform(self, self.shape, low, high)
 Tensor.normal_ = lambda self, mean=0, std=1: _normal(self, self.shape, mean, std)
 Tensor.multinomial = lambda *args, **kwargs: multinomial(*args, **kwargs)
@@ -85,8 +86,8 @@ Tensor.le = lambda *args, **kwargs: le(*args, **kwargs)
 Tensor.eq = lambda *args, **kwargs: eq(*args, **kwargs)
 Tensor.index_select = lambda *args, **kwargs: index_select(*args, **kwargs)
 Tensor.narrow = lambda *args, **kwargs: narrow(*args, **kwargs)
-Tensor._indexing = lambda *args, **kwargs: _indexing(*args, **kwargs)
-Tensor._assigning = lambda *args, **kwargs: _assigning(*args, **kwargs)
+Tensor._index = lambda *args, **kwargs: _index(*args, **kwargs)
+Tensor._assign = lambda *args, **kwargs: _assign(*args, **kwargs)
 
 
 Tensor.half = lambda self: _type_to(self, dtype='float16', inplace=False)

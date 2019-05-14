@@ -19,16 +19,16 @@ from dragon.vm.torch.ops.modules.base import BaseModule
 class _InitModule(BaseModule):
     def __init__(self, key, dev, **kwargs):
         super(_InitModule, self).__init__(key, dev, **kwargs)
-        self.n_dim = kwargs.get('n_dim', 0)
+        self.ndim = kwargs.get('ndim', 0)
         self.dtype = kwargs.get('dtype', 'float32')
 
-    def update_arguments(self, A, shape):
+    def update_args(self, A, shape):
         for i, e in enumerate(shape):
-            self.set_argument_i64('{}/dims[{}]'.format(A, i), e)
+            self.set_arg_i64('{}/dims[{}]'.format(A, i), e)
 
     def forward(self, x, shape):
         outputs = [x]; self.unify_devices(outputs)
-        callback = lambda A: self.update_arguments(A, shape)
+        callback = lambda A: self.update_args(A, shape)
         return self.run([], outputs, callback=callback)
 
 
@@ -46,7 +46,7 @@ class Fill(_InitModule):
                 'value': float(self.value),
                 'dims_desc': [
                     '${{ANCHOR}}/dims[{}]'.format(n)
-                        for n in range(self.n_dim)
+                        for n in range(self.ndim)
                 ],
             },
         }
@@ -68,7 +68,7 @@ class RandomNormal(_InitModule):
                 'std': float(self.std),
                 'dims_desc': [
                     '${{ANCHOR}}/dims[{}]'.format(n)
-                        for n in range(self.n_dim)
+                        for n in range(self.ndim)
                 ],
             },
         }
@@ -90,7 +90,7 @@ class RandomUniform(_InitModule):
                 'high': float(self.high),
                 'dims_desc': [
                     '${{ANCHOR}}/dims[{}]'.format(n)
-                        for n in range(self.n_dim)
+                        for n in range(self.ndim)
                 ],
             },
         }

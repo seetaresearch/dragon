@@ -338,11 +338,13 @@ class Module(object):
 
     def run(self, inputs, outputs, auto_grad=True, callback=None):
         if self._module_def is None: self._gen_module_def()
-        meta = (self.module_key, self._module_def)
         return RunOperator(
-            inputs, outputs, meta,
-                auto_grad=auto_grad,
-                    callback_on_run=callback)
+            inputs=inputs,
+            outputs=outputs,
+            meta=(self.module_key, self._module_def),
+            auto_grad=auto_grad,
+            callback_on_run=callback,
+        )
 
     def train(self, mode=True):
         self.training = mode

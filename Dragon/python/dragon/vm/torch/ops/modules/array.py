@@ -27,8 +27,8 @@ class Indexing(BaseModule):
     """
     def __init__(self, key, dev, **kwargs):
         super(Indexing, self).__init__(key, dev, **kwargs)
-        self.n_starts = kwargs.get('n_starts', 0)
-        self.n_sizes = kwargs.get('n_sizes', 0)
+        self.nstarts = kwargs.get('nstarts', 0)
+        self.nsizes = kwargs.get('nsizes', 0)
         self.register_op()
 
     def register_op(self):
@@ -37,59 +37,23 @@ class Indexing(BaseModule):
             'arguments': {
                 'starts_desc': [
                     '${{ANCHOR}}/starts[{}]'.format(n)
-                        for n in range(self.n_starts)],
+                        for n in range(self.nstarts)],
                 'sizes_desc': [
                     '${{ANCHOR}}/sizes[{}]'.format(n)
-                        for n in range(self.n_sizes)],
+                        for n in range(self.nsizes)],
             },
         }
 
-    def update_arguments(self, A, starts, sizes):
+    def update_args(self, A, starts, sizes):
         for i, e in enumerate(starts):
-            self.set_argument_i64('{}/starts[{}]'.format(A, i), e)
-            self.set_argument_i64('{}/sizes[{}]'.format(A, i), sizes[i])
+            self.set_arg_i64('{}/starts[{}]'.format(A, i), e)
+            self.set_arg_i64('{}/sizes[{}]'.format(A, i), sizes[i])
 
     def forward(self, x, starts, sizes):
         inputs = [x]; self.unify_devices(inputs)
         outputs = [self.register_output()]
-        callback = lambda A: self.update_arguments(A, starts, sizes)
+        callback = lambda A: self.update_args(A, starts, sizes)
         return self.run(inputs, outputs, callback=callback)
-
-
-class Assigning(BaseModule):
-    """This module imports the *AssignOp* from backend.
-
-    Arbitrary length of starts and sizes will be take.
-
-    """
-    def __init__(self, key, dev, **kwargs):
-        super(Assigning, self).__init__(key, dev, **kwargs)
-        self.n_starts = kwargs.get('n_starts', 0)
-        self.n_sizes = kwargs.get('n_sizes', 0)
-        self.register_op()
-
-    def register_op(self):
-        self.op_meta = {
-            'op_type': 'Assign',
-            'arguments': {
-                'starts_desc': [
-                    '${{ANCHOR}}/starts[{}]'.format(n)
-                        for n in range(self.n_starts)],
-                'sizes_desc': [
-                    '${{ANCHOR}}/sizes[{}]'.format(n)
-                        for n in range(self.n_sizes)],
-            },
-        }
-
-    def update_arguments(self, A, starts, sizes):
-        for i, e in enumerate(starts):
-            self.set_argument_i64('{}/starts[{}]'.format(A, i), e)
-            self.set_argument_i64('{}/sizes[{}]'.format(A, i), sizes[i])
-
-    def forward(self, x, y, starts, sizes):
-        self.unify_devices([x, y])
-        callback = lambda A: self.update_arguments(A, starts, sizes)
-        return self.run([x], [y], callback=callback, auto_grad=False)
 
 
 class Concat(BaseModule):
@@ -200,18 +164,19 @@ class ArgReduce(BaseModule):
         self.operation = kwargs.get('operation', 'ARGMAX')
         self.axis = kwargs.get('axis', None)
         self.keepdim = kwargs.get('keepdim', True)
-        self.top_k = kwargs.get('top_k', 1)
+        self.topk = kwargs.get('topk', 1)
         self.register_op()
 
     def register_op(self):
         self.op_meta = {
             'op_type': 'ArgReduce',
             'arguments': {
-                'operation': self.operation if 'ARG' in self.operation \
+                'operation': self.operation
+                    if 'ARG' in self.operation \
                     else 'ARG' + self.operation,
                 'axis': self.axis if self.axis else 2147483647,
                 'keep_dims': self.keepdim,
-                'top_k': self.top_k,
+                'top_k': self.topk,
             },
         }
 
@@ -241,7 +206,7 @@ class ArgReduce(BaseModule):
 class Reshape(BaseModule):
     def __init__(self, key, dev, **kwargs):
         super(Reshape, self).__init__(key, dev, **kwargs)
-        self.n_dim = kwargs.get('n_dim', 0)
+        self.ndim = kwargs.get('ndim', 0)
         self.register_op()
 
     def register_op(self):
@@ -250,19 +215,19 @@ class Reshape(BaseModule):
             'arguments': {
                 'dims_desc': [
                     '${{ANCHOR}}/dims[{}]'.format(n)
-                        for n in range(self.n_dim)
+                        for n in range(self.ndim)
                 ],
             },
         }
 
-    def update_arguments(self, A, shape):
+    def update_args(self, A, shape):
         for i, e in enumerate(shape):
-            self.set_argument_i64('{}/dims[{}]'.format(A, i), e)
+            self.set_arg_i64('{}/dims[{}]'.format(A, i), e)
 
     def forward(self, x, shape):
         inputs = [x]; self.unify_devices(inputs)
         outputs = [_ReferenceTensor(x)]
-        callback = lambda A: self.update_arguments(A, shape)
+        callback = lambda A: self.update_args(A, shape)
         return self.run(inputs, outputs, callback=callback)
 
 
@@ -275,7 +240,9 @@ class Squeeze(BaseModule):
     def register_op(self):
         self.op_meta = {
             'op_type': 'Squeeze',
-            'arguments': {'axis': self.dim},
+            'arguments': {
+                'axis': self.dim,
+            },
         }
 
     def forward(self, x, out=None):
@@ -293,7 +260,9 @@ class UnSqueeze(BaseModule):
     def register_op(self):
         self.op_meta = {
             'op_type': 'ExpandDims',
-            'arguments': {'axis': self.dim},
+            'arguments': {
+                'axis': self.dim,
+            },
         }
 
     def forward(self, x, out=None):
@@ -305,7 +274,7 @@ class UnSqueeze(BaseModule):
 class Permute(BaseModule):
     def __init__(self, key, dev, **kwargs):
         super(Permute, self).__init__(key, dev, **kwargs)
-        self.n_perm = kwargs.get('n_perm', 0)
+        self.nperm = kwargs.get('nperm', 0)
         self.register_op()
 
     def register_op(self):
@@ -313,26 +282,26 @@ class Permute(BaseModule):
             'op_type': 'Transpose',
             'arguments': {
                 'perm_desc': ['${{ANCHOR}}/perm[{}]'.format(n)
-                    for n in range(self.n_perm)],
+                    for n in range(self.nperm)],
             },
         }
 
-    def update_arguments(self, A, perm):
+    def update_args(self, A, perm):
         if perm:
             for i, e in enumerate(perm):
-                self.set_argument_i64('{}/perm[{}]'.format(A, i), e)
+                self.set_arg_i64('{}/perm[{}]'.format(A, i), e)
 
     def forward(self, x, perm):
         inputs = [x]; self.unify_devices(inputs)
         outputs = [self.register_output()]
-        callback = lambda A: self.update_arguments(A, perm)
+        callback = lambda A: self.update_args(A, perm)
         return self.run(inputs, outputs, callback=callback)
 
 
 class Repeat(BaseModule):
     def __init__(self, key, dev, **kwargs):
         super(Repeat, self).__init__(key, dev, **kwargs)
-        self.n_times = kwargs.get('n_times', 0)
+        self.ntimes = kwargs.get('ntimes', 0)
         self.register_op()
 
     def register_op(self):
@@ -341,19 +310,19 @@ class Repeat(BaseModule):
             'arguments': {
                 'multiples_desc': [
                     '${{ANCHOR}}/multiples[{}]'.format(n)
-                        for n in range(self.n_times)
+                        for n in range(self.ntimes)
                 ],
             },
         }
 
-    def update_arguments(self, A, times):
+    def update_args(self, A, times):
         for i, d in enumerate(times):
-            self.set_argument_i64('{}/multiples[{}]'.format(A, i), d)
+            self.set_arg_i64('{}/multiples[{}]'.format(A, i), d)
 
     def forward(self, x, times):
         inputs = [x]; self.unify_devices(inputs)
         outputs = [self.register_output()]
-        callback = lambda A: self.update_arguments(A, times)
+        callback = lambda A: self.update_args(A, times)
         return self.run(inputs, outputs, callback=callback)
 
 
@@ -409,7 +378,6 @@ class Multinomial(BaseModule):
     def __init__(self, key, dev, **kwargs):
         super(Multinomial, self).__init__(key, dev, **kwargs)
         self.num_samples = kwargs.get('num_samples', 1)
-        self.normalize = kwargs.get('normalize', False)
         self.register_op()
 
     def register_op(self):
@@ -417,7 +385,7 @@ class Multinomial(BaseModule):
             'op_type': 'Multinomial',
             'arguments': {
                 'num_samples': self.num_samples,
-                'normalize': self.normalize,
+                'normalize': False,
             },
         }
 

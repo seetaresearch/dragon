@@ -13,7 +13,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import dragon.core.mpi as mpi
+from dragon.core import mpi as _mpi
 from dragon.vm.torch.ops.modules.base import BaseModule
 
 
@@ -50,11 +50,13 @@ class Collective(BaseModule):
         self.register_op()
 
     def register_op(self):
-        idx, group = mpi.AllowParallel()
+        idx, group = _mpi.AllowParallel()
         if idx == -1:
-            raise RuntimeError('The mpi node({}) dost not in '
-                'parallel groups. \nSet it using mpi.Parallel([..]).'.format(mpi.Rank()))
-        mpi_comm, mpi_group = mpi.CreateGroup(root=group[0], incl=group)
+            raise RuntimeError(
+                'The mpi node({}) dost not in groups.\n'
+                'Set it using mpi.Parallel([..]).'.format(_mpi.Rank())
+            )
+        mpi_comm, mpi_group = _mpi.CreateGroup(root=group[0], incl=group)
         self.op_meta = {
             'op_type': 'CollectiveUpdate',
             'arguments': {
@@ -78,7 +80,10 @@ class Accumulate(BaseModule):
     def register_op(self):
         self.op_meta = {
             'op_type': 'Accumulate',
-            'arguments': {'alpha': 1., 'beta': 1.},
+            'arguments': {
+                'alpha': 1.,
+                'beta': 1.,
+            },
         }
 
     def forward(self, grads):

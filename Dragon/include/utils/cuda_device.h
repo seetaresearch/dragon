@@ -135,19 +135,19 @@ struct CUDADeviceProps {
     vector<cudaDeviceProp> props;
 };
 
-inline const cudaDeviceProp& GetDeviceProperty(
-    const int               device_id) {
+inline const cudaDeviceProp& GetCUDADeviceProp(
+    int               device_id) {
     static CUDADeviceProps props;
     CHECK_LT(device_id, (int)props.props.size())
-        << "Invalid device id: " << device_id
+        << "\nInvalid device id: " << device_id
         << "\nDetected " << props.props.size()
-        << " eligible cuda devices.";
+        << " devices.";
     return props.props[device_id];
 }
 
 inline bool CUDA_TRUE_FP16_AVAILABLE() {
     int device = CUDA_GET_DEVICE();
-    auto& prop = GetDeviceProperty(device);
+    auto& prop = GetCUDADeviceProp(device);
     return prop.major >= 6;
 }
 
@@ -156,21 +156,26 @@ inline bool TENSOR_CORE_AVAILABLE() {
     return false;
 #else
     int device = CUDA_GET_DEVICE();
-    auto& prop = GetDeviceProperty(device);
+    auto& prop = GetCUDADeviceProp(device);
     return prop.major >= 7;
 #endif
 }
 
-class DeviceGuard {
+class CUDADeviceGuard {
  public:
-    DeviceGuard(int new_id) : prev_id(CUDA_GET_DEVICE()) {
-        if (prev_id != new_id) CUDA_CHECK(cudaSetDevice(new_id));
+    CUDADeviceGuard(int new_id)
+        : prev_id_(CUDA_GET_DEVICE()) {
+        if (prev_id_ != new_id) {
+            CUDA_CHECK(cudaSetDevice(new_id));
+        }
     }
 
-    ~DeviceGuard() { CUDA_CHECK(cudaSetDevice(prev_id)); }
+    ~CUDADeviceGuard() {
+        CUDA_CHECK(cudaSetDevice(prev_id_));
+    }
 
  private:
-    int prev_id;
+    int prev_id_;
 };
 
 #else

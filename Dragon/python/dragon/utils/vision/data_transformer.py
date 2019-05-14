@@ -70,8 +70,8 @@ class DataTransformer(multiprocessing.Process):
         self._cutout_size = kwargs.get('cutout_size', 0)
         self._mirror = kwargs.get('mirror', False)
         self._color_aug = kwargs.get('color_augmentation', False)
-        self._min_random_scale = kwargs.get('min_random_scale', 1.0)
-        self._max_random_scale = kwargs.get('max_random_scale', 1.0)
+        self._min_rand_scale = kwargs.get('min_random_scale', 1.0)
+        self._max_rand_scale = kwargs.get('max_random_scale', 1.0)
         self._force_color = kwargs.get('force_color', False)
         self._phase = kwargs.get('phase', 'TRAIN')
         self._random_seed = _cfg.GetRandomSeed()
@@ -102,12 +102,16 @@ class DataTransformer(multiprocessing.Process):
             im = im.reshape((datum.height, datum.width, datum.channels))
 
         # Random scale
-        random_scale = numpy.random.uniform() * (
-            self._max_random_scale - self._min_random_scale) \
-                + self._min_random_scale
-        if random_scale != 1.0:
-            im = cv2.resize(im, None, fx=random_scale,
-                fy=random_scale, interpolation=cv2.INTER_LINEAR)
+        rand_scale = numpy.random.uniform() * (
+            self._max_rand_scale - self._min_rand_scale
+                ) + self._min_rand_scale
+        if rand_scale != 1.0:
+            im = cv2.resize(
+                im, None,
+                fx=rand_scale,
+                fy=rand_scale,
+                interpolation=cv2.INTER_LINEAR,
+            )
 
         # Padding
         if self._padding > 0:
@@ -149,7 +153,7 @@ class DataTransformer(multiprocessing.Process):
         # Gray Transformation
         if self._force_color:
             if im.shape[2] == 1:
-                # duplicate to 3 channels
+                # Duplicate to 3 channels
                 im = numpy.concatenate([im, im, im], axis=2)
 
         # Color Augmentation

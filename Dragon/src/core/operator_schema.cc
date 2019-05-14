@@ -4,24 +4,31 @@ namespace dragon {
 
 bool OpSchema::Verify(const OperatorDef& def) const {
     if (ignore_verify_) return true;
-    string indicator = "[" + def.name() + ", " + def.type() + "]\n";
-    if (def.input_size() < min_input_ || def.input_size() > max_input_) {
-        LOG(FATAL) << indicator << "Input size: " << def.input_size()
-                   << " is not in range [min=" << min_input_
-                   << ", max=" << max_input_ << "]";
+    auto header = "[" + def.name() + ", " + def.type() + "]\n";
+    if (def.input_size() < min_input_ ||
+        def.input_size() > max_input_) {
+        LOG(FATAL)
+            << header << "Input size: " << def.input_size()
+            << " is not in range [min=" << min_input_
+            << ", max=" << max_input_ << "]";
     }
-    if (def.output_size() < min_output_ || def.output_size() > max_output_) {
-        LOG(FATAL) << indicator << "Output size: " << def.output_size()
-                   << " is not in range [min=" << min_output_
-                   << ", max=" << max_output_ << "]";
+    if (def.output_size() < min_output_ ||
+        def.output_size() > max_output_) {
+        LOG(FATAL)
+            << header << "Output size: " << def.output_size()
+            << " is not in range [min=" << min_output_
+            << ", max=" << max_output_ << "]";
     }
-    for (int in = 0; in < def.input_size(); in++) {
-        if (def.input(in) == "NULL") continue;
-        for (int out = 0; out < def.output_size(); out++) {
-            if (def.output(out) == "NULL") continue;
-            if (def.input(in) == def.output(out) && (!CheckInplace(in, out)))
-                LOG(FATAL) << indicator << "Input("  << in << ") and "
-                           << "Output(" << out << ") can not be set to inplace.";
+    for (int i = 0; i < def.input_size(); ++i) {
+        if (def.input(i) == "NULL") continue;
+        for (int j = 0; j < def.output_size(); ++j) {
+            if (def.output(j) == "NULL") continue;
+            if (def.input(i) == def.output(j) &&
+                !CheckInplace(i, j))
+                LOG(FATAL)
+                    << header << "Input("  << i
+                    << ") and Output(" << j << ") "
+                    << "can not be set to inplace.";
         }
     }
     return true;

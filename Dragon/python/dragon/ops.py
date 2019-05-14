@@ -143,6 +143,7 @@ Multinomial = _array_ops.Multinomial
 # Control Flow
 Copy = _control_flow_ops.Copy
 Assign = _control_flow_ops.Assign
+MaskedAssign = _control_flow_ops.MaskedAssign
 Equal = _control_flow_ops.Equal
 Less = _control_flow_ops.Less
 LessEqual = _control_flow_ops.LessEqual

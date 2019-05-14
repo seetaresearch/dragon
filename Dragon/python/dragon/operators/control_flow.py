@@ -75,10 +75,36 @@ def Assign(inputs, starts=None, sizes=None, **kwargs):
 
 @OpSchema.ConvertConstantInputs()
 @OpSchema.Inputs(2)
-def Equal(inputs, to_uint8=False, **kwargs):
-    """``Equal`` comparing between A and B.
+def MaskedAssign(inputs, mask, **kwargs):
+    """Assign the ``value`` to ``ref`` where ``mask`` is *1*.
 
-    Set ``to_uint8`` if you expect the ``uint8`` results instead of ``bool``.
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
+
+    Parameters
+    ----------
+    inputs : sequence of Tensor
+        The ``ref`` and ``value`` respectively.
+    mask : Tensor
+        The mask, with the same size as ``ref``.
+
+    Returns
+    -------
+    Tensor
+        The ``ref``.
+
+    """
+    arguments = ParseArgs(locals())
+    arguments['existing_outputs'] = [arguments['inputs'][0]]
+    arguments['inputs'] = [arguments['inputs'][1], mask]
+    return Tensor.CreateOperator('Assign', **arguments)
+
+
+@OpSchema.ConvertConstantInputs()
+@OpSchema.Inputs(2)
+def Equal(inputs, to_uint8=False, **kwargs):
+    """*Equal* comparing between A and B.
+
+    Set ``to_uint8`` if you expect the *uint8* results instead of *bool*.
 
     **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
@@ -87,7 +113,7 @@ def Equal(inputs, to_uint8=False, **kwargs):
     inputs : sequence of Tensor
         The inputs, represent A and B respectively.
     to_uint8 : bool
-        ``True`` to convert to ``uint8`` results.
+        *True* to convert to *uint8* results.
 
     Returns
     -------
@@ -102,9 +128,9 @@ def Equal(inputs, to_uint8=False, **kwargs):
 @OpSchema.ConvertConstantInputs()
 @OpSchema.Inputs(2)
 def Less(inputs, to_uint8=False, **kwargs):
-    """``Less`` comparing between A and B.
+    """*Less* comparing between A and B.
 
-    Set ``to_uint8`` if you expect the ``uint8`` results instead of ``bool``.
+    Set ``to_uint8`` if you expect the *uint8* results instead of *bool*.
 
     **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
@@ -113,7 +139,7 @@ def Less(inputs, to_uint8=False, **kwargs):
     inputs : sequence of Tensor
         The inputs, represent A and B respectively.
     to_uint8 : bool
-        ``True`` to convert to ``uint8`` results.
+        *True* to convert to *uint8* results.
 
     Returns
     -------
@@ -128,9 +154,9 @@ def Less(inputs, to_uint8=False, **kwargs):
 @OpSchema.ConvertConstantInputs()
 @OpSchema.Inputs(2)
 def LessEqual(inputs, to_uint8=False, **kwargs):
-    """``LessEqual`` comparing between A and B.
+    """*LessEqual* comparing between A and B.
 
-    Set ``to_uint8`` if you expect the ``uint8`` results instead of ``bool``.
+    Set ``to_uint8`` if you expect the *uint8* results instead of *bool*.
 
     **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
@@ -139,7 +165,7 @@ def LessEqual(inputs, to_uint8=False, **kwargs):
     inputs : sequence of Tensor
         The inputs, represent A and B respectively.
     to_uint8 : bool
-        ``True`` to convert to ``uint8`` results.
+        *True* to convert to *uint8* results.
 
     Returns
     -------
@@ -154,9 +180,9 @@ def LessEqual(inputs, to_uint8=False, **kwargs):
 @OpSchema.ConvertConstantInputs()
 @OpSchema.Inputs(2)
 def Greater(inputs, to_uint8=False, **kwargs):
-    """``Greater`` comparing between A and B.
+    """*Greater* comparing between A and B.
 
-    Set ``to_uint8`` if you expect the ``uint8`` results instead of ``bool``.
+    Set ``to_uint8`` if you expect the *uint8* results instead of *bool*.
 
     **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
@@ -165,7 +191,7 @@ def Greater(inputs, to_uint8=False, **kwargs):
     inputs : sequence of Tensor
         The inputs, represent A and B respectively.
     to_uint8 : bool
-        ``True`` to convert to ``uint8`` results.
+        *True* to convert to *uint8* results.
 
     Returns
     -------
@@ -180,9 +206,9 @@ def Greater(inputs, to_uint8=False, **kwargs):
 @OpSchema.ConvertConstantInputs()
 @OpSchema.Inputs(2)
 def GreaterEqual(inputs, to_uint8=False, **kwargs):
-    """``GreaterEqual`` comparing between A and B.
+    """*GreaterEqual* comparing between A and B.
 
-    Set ``to_uint8`` if you expect the ``uint8`` results instead of ``bool``.
+    Set ``to_uint8`` if you expect the *uint8* results instead of *bool*.
 
     **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
@@ -191,7 +217,7 @@ def GreaterEqual(inputs, to_uint8=False, **kwargs):
     inputs : sequence of Tensor
         The inputs, represent A and B respectively.
     to_uint8 : bool
-        ``True`` to convert to ``uint8`` results.
+        *True* to convert to *uint8* results.
 
     Returns
     -------

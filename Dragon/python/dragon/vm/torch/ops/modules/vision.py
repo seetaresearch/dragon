@@ -19,10 +19,10 @@ from dragon.vm.torch.ops.modules.base import BaseModule
 class Resize2d(BaseModule):
     def __init__(self, key, dev, **kwargs):
         super(Resize2d, self).__init__(key, dev, **kwargs)
-        self.op_type = kwargs.get('op_type', 'NNResize')
         self.dsize = kwargs.get('dsize', None)
         self.fx = kwargs.get('fx', None)
         self.fy = kwargs.get('fy', None)
+        self.op_type = kwargs.get('op_type', 'NNResize')
         self.register_op()
 
     def register_op(self):
@@ -38,15 +38,15 @@ class Resize2d(BaseModule):
             },
         }
 
-    def update_arguments(self, A, dsize):
+    def update_args(self, A, dsize):
         if self.dsize:
             for i, e in enumerate(dsize):
-                self.set_argument_i64('{}/dsize[{}]'.format(A, i), e)
+                self.set_arg_i64('{}/dsize[{}]'.format(A, i), e)
 
     def forward(self, input, dsize=None):
         inputs = [input]; self.unify_devices(inputs)
         outputs = [self.register_output()]
-        callback = lambda A: self.update_arguments(A, dsize)
+        callback = lambda A: self.update_args(A, dsize)
         return self.run(inputs, outputs, callback=callback)
 
 
@@ -62,7 +62,8 @@ class RoIPool(BaseModule):
         self.op_meta = {
             'op_type': 'ROIPool',
             'arguments': {
-                'pool_h': self.pool_h, 'pool_w': self.pool_w,
+                'pool_h': self.pool_h,
+                'pool_w': self.pool_w,
                 'spatial_scale': self.spatial_scale,
             },
         }
@@ -86,7 +87,8 @@ class RoIAlign(BaseModule):
         self.op_meta = {
             'op_type': 'ROIAlign',
             'arguments': {
-                'pool_h': self.pool_h, 'pool_w': self.pool_w,
+                'pool_h': self.pool_h,
+                'pool_w': self.pool_w,
                 'spatial_scale': self.spatial_scale,
                 'sampling_ratio': self.sampling_ratio,
             },
