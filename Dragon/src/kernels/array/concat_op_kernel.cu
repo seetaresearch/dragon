@@ -43,8 +43,8 @@ __global__ void _Concat(
         auto cols = axis_dim * inner_dim; \
         auto nthreads = outer_dim * axis_dim * inner_dim; \
         _##name \
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             nthreads, \
             inner_dim, \
             cols, \

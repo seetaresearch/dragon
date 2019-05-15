@@ -92,8 +92,8 @@ template<> void ROIPool<float, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = num_rois * C * pool_h * pool_w;
     _ROIPool
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads,
         C, H, W,
         pool_h, pool_w,
@@ -185,8 +185,8 @@ template<> void ROIPool<float16, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = num_rois * C * pool_h * pool_w;
     _ROIPoolHalf
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads,
         C, H, W,
         pool_h, pool_w,
@@ -286,8 +286,8 @@ template<> void ROIPoolGrad<float, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = N * C * H * W;
     _ROIPoolGrad
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads,
         num_rois,
         C, H, W,

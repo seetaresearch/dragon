@@ -98,8 +98,8 @@ template<> __global__ void _TileGrad<half>(
         T*                      y, \
         CUDAContext*            ctx) { \
         _Tile \
-            << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(count), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             count, \
             ndims, \
             x_dims, \
@@ -120,8 +120,8 @@ template<> __global__ void _TileGrad<half>(
         auto nthreads = rows * cols; \
         auto tiled_cols = multiple * cols; \
         _TileGrad \
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             nthreads, \
             cols, \
             tiled_cols, \
@@ -156,8 +156,8 @@ template<> void TileGrad<float16, CUDAContext>(
     auto nthreads = rows * cols;
     auto tiled_cols = multiple * cols;
     _TileGrad
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads,
         cols,
         tiled_cols,

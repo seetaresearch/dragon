@@ -35,22 +35,10 @@ void MPIBroadcastOp<Context>::RunOnDevice() {
     BCast(dims.data(), ndim);
     Y(0)->Reshape(dims);
 
-    if (XIsType(X(0), int8_t)) {
-        RunImpl<int8_t>();
-    } else if (XIsType(X(0), int)) {
-        RunImpl<int>();
-    } else if (XIsType(X(0), int64_t)) {
-        RunImpl<int64_t>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0), {
-            "int8", "int32", "int64",
-            "float16", "float32",
-        });
-    }
+    DispatchHelper<TensorTypes
+        <bool, int8_t, uint8_t, int, int64_t,
+               float16, float, double>
+    >::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -74,22 +62,10 @@ template <class Context>
 void MPIBroadcastGradientOp<Context>::RunOnDevice() {
     Y(0)->ReshapeLike(X(-1));
 
-    if (XIsType(X(-1), int8_t)) {
-        RunImpl<int8_t>();
-    } else if (XIsType(X(-1), int)) {
-        RunImpl<int>();
-    } else if (XIsType(X(-1), int64_t)) {
-        RunImpl<int64_t>();
-    } else if (XIsType(X(-1), float16)) {
-        RunImpl<float16>();
-    } else if (XIsType(X(-1), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(X(-1), {
-            "int8", "int32", "int64",
-            "float16", "float32",
-        });
-    }
+    DispatchHelper<TensorTypes
+        <int8_t, uint8_t, int, int64_t,
+            float16, float, double>
+    >::Call(this, X(-1));
 }
 
 DEPLOY_CPU(MPIBroadcast);

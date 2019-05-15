@@ -15,9 +15,7 @@ void L1LossOp<Context>::RunImpl() {
         ->ReshapeLike(X(0))
         ->template mutable_data<T, Context>();
 
-    auto* y = Y(0)
-        ->Reshape({})
-        ->template mutable_data<T, Context>();
+    auto* y = Y(0)->template mutable_data<T, Context>();
 
     if (XSize() > 1) {
         auto* target = X(1).template data<T, Context>();
@@ -53,13 +51,10 @@ void L1LossOp<Context>::RunOnDevice() {
             << "while " << X(0).DimString() << " is required.";
     }
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(0), { "float32" }
-        );
-    }
+    Y(0)->Reshape({});
+
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -104,13 +99,8 @@ void L1LossGradientOp<Context>::RunImpl() {
 
 template <class Context>
 void L1LossGradientOp<Context>::RunOnDevice() {
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(0), { "float32" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 DEPLOY_CPU(L1Loss);

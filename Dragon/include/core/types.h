@@ -73,6 +73,11 @@ inline const std::string TypeMetaToString(
         m2s_type_map[meta.id()] : "unknown";
 }
 
+template<typename T>
+inline const std::string TypeToString() {
+    return TypeMetaToString(TypeMeta::Make<T>());
+}
+
 }  // namespace dragon
 
 #endif  // DRAGON_CORE_TYPES_H_

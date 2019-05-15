@@ -39,9 +39,12 @@ void CuDNNPool2dOp<Context>::RunImpl() {
     auto* y = Y(0)->template mutable_data<T, Context>();
 
     CUDNN_CHECK(cudnnPoolingForward(
-        ctx()->cudnn_handle(), pool_desc_,
-        CuDNNType<T>::one, input_desc_, x,
-        CuDNNType<T>::zero, output_desc_, y
+        ctx()->cudnn_handle(),
+        pool_desc_,
+        CuDNNType<T>::one,
+        input_desc_, x,
+        CuDNNType<T>::zero,
+        output_desc_, y
     ));
 }
 
@@ -49,15 +52,8 @@ template <class Context>
 void CuDNNPool2dOp<Context>::RunOnDevice() {
     Pool2dOp<Context>::Reshape();
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0),
-            { "float32", "float16" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float, float16>>::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -97,7 +93,8 @@ void CuDNNPool2dGradientOp<Context>::RunImpl() {
     auto* dx = Y(0)->template mutable_data<T, Context>();
 
     CUDNN_CHECK(cudnnPoolingBackward(
-        ctx()->cudnn_handle(), pool_desc_,
+        ctx()->cudnn_handle(),
+        pool_desc_,
         CuDNNType<T>::one,
         input_desc_, y,
         input_desc_, dy,
@@ -111,15 +108,8 @@ template <class Context>
 void CuDNNPool2dGradientOp<Context>::RunOnDevice() {
     Pool2dGradientOp<Context>::Reshape();
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0),
-            { "float32", "float16" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float, float16>>::Call(this, X(0));
 }
 
 DEPLOY_CUDNN(Pool2d);

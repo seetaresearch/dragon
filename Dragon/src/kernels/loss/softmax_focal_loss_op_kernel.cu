@@ -67,8 +67,8 @@ template <> void SoftmaxFocalLoss<float, float, CUDAContext>(
     CUDAContext*            ctx) {
     auto num_preds = outer_dim * inner_dim;
     _SoftmaxFocalLoss
-        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(num_preds), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         num_preds, axis_dim, inner_dim,
         pos_alpha, neg_alpha, gamma, neg_id,
         nignores, ignores,
@@ -95,8 +95,8 @@ template <> void SoftmaxFocalLoss<float, int64_t, CUDAContext>(
     CUDAContext*            ctx) {
     auto num_preds = outer_dim * inner_dim;
     _SoftmaxFocalLoss
-        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(num_preds), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         num_preds, axis_dim, inner_dim,
         pos_alpha, neg_alpha, gamma, neg_id,
         nignores, ignores,
@@ -179,8 +179,8 @@ template<> void SoftmaxFocalLossGrad<float, float, CUDAContext>(
     CUDAContext*            ctx) {
     auto num_preds = outer_dim * inner_dim;
     _SoftmaxFocalLossGrad
-        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(num_preds), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         num_preds, axis_dim, inner_dim,
         pos_alpha, neg_alpha, gamma, neg_id,
         nignores, ignores,
@@ -207,8 +207,8 @@ template<> void SoftmaxFocalLossGrad<float, int64_t, CUDAContext>(
     CUDAContext*            ctx) {
     auto num_preds = outer_dim * inner_dim;
     _SoftmaxFocalLossGrad
-        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(num_preds), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         num_preds, axis_dim, inner_dim,
         pos_alpha, neg_alpha, gamma, neg_id,
         nignores, ignores,

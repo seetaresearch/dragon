@@ -100,7 +100,7 @@ class OperatorBase {
     /*! \brief Return the specified argument */
     const Argument& arg(const string& name) { return *(args_[name]); }
 
-    typedef Map<string, vector<OperatorBase*> > SubGraph;
+    typedef Map<string, vector<OperatorBase*>> SubGraph;
 
     /*! \brief Return the recomputing subgraph of this operator */
     SubGraph& subgraph() { return subgraph_; }
@@ -221,7 +221,7 @@ OperatorBase* NewOperator(
     const OperatorDef&          def,
     Workspace*                  ws);
 
-/*! Macros */
+/* Macros */
 
 #define OpArg OperatorBase::Arg
 #define OpArgs OperatorBase::Args
@@ -266,7 +266,7 @@ DECLARE_REGISTRY(
     const OperatorDef&,
     Workspace*);
 
-/*! NVIDIA's Accelerated Library - CUDNN */
+/* NVIDIA's Accelerated Library - CUDNN */
 
 DECLARE_REGISTRY(
     CUDNNOperatorRegistry,
@@ -274,7 +274,7 @@ DECLARE_REGISTRY(
     const OperatorDef&,
     Workspace*);
 
-/*! CAMBRICON's Accelerated Library - CNML */
+/* CAMBRICON's Accelerated Library - CNML */
 
 DECLARE_REGISTRY(
     CNMLOperatorRegistry,
@@ -282,13 +282,60 @@ DECLARE_REGISTRY(
     const OperatorDef&,
     Workspace*);
 
+/* Dispatcher for Runtime Typed-Implementation */
+
+#define XIsType(x, dtype) \
+    x.template IsType<dtype>()
+
+template <typename... Types>
+struct TensorTypes {};
+
+template <typename Sizes, typename... Args>
+struct DispatchHelper;
+
+#define DEFINE_TENSOR_TYPES_DISPATCHER(TensorTypes, Impl) \
+    template <typename T, typename... Types, typename... Args> \
+    struct DispatchHelper<TensorTypes<T, Types...>, Args...> { \
+        template <typename Op> \
+        static void Call(Op* op, const TypeMeta& meta, string& types) { \
+            if (meta.Match<T>()) return op->template Impl<T, Args...>(); \
+            types += "    * " + TypeToString<T>() + ",\n"; \
+            return DispatchHelper<TensorTypes<Types...>, Args...> \
+                ::Call(op, meta, types); \
+        } \
+        template <typename Op> \
+        static void Call(Op* op, const Tensor& tensor) { \
+            string types; return Call(op, tensor.meta(), types); \
+        } \
+    }; \
+    template <typename... Args> \
+    struct DispatchHelper<TensorTypes<>, Args...> { \
+        template <typename Op> \
+        static void Call(Op* op, const TypeMeta& meta, string& types) { \
+            LOG(FATAL) << "Unsupported DType: " \
+                       << TypeMetaToString(meta) << "\n" \
+                       << "<" << op->type() << "Op>" \
+                       << " supports the following dtypes: {\n" \
+                       << types << "}"; \
+        } \
+        template <typename Op> \
+        static void Call(Op* op, const Tensor& tensor) { \
+            return Call(op, tensor.meta(), ""); \
+        } \
+    };
+
+DEFINE_TENSOR_TYPES_DISPATCHER(TensorTypes, RunImpl);
+#undef DEFINE_TENSOR_TYPES_DISPATCHER
+
+/* TensorFiller */
+
 #define TENSOR_FILL_WITH_TYPE(tensor, shape, type) \
     if (tensor.count() == 0) { \
         CHECK(ws()->GetFiller(tensor.name())) \
             << "\nTensor(" << tensor.name() << ") is empty. \n" \
             << "may be specify a filler for it ?"; \
         tensor.Reshape(shape); \
-        unique_ptr< Filler<type, Context> > filler(  \
+        unique_ptr<Filler<type, Context>> filler(  \
             CreateFiller<type, Context>(*ws()->GetFiller(tensor.name()))); \
         filler->Fill(&tensor, ctx()); \
     } else { \
@@ -308,7 +355,7 @@ DECLARE_REGISTRY(
             << "\nTensor(" << tensor.name() << ") is empty. \n" \
             << "may be specify a filler for it ?"; \
         tensor.Reshape(shape); \
-        unique_ptr< Filler<T, Context> > filler(  \
+        unique_ptr<Filler<T, Context>> filler(  \
             CreateFiller<T, Context>(*ws()->GetFiller(tensor.name()))); \
         filler->Fill(&tensor, ctx()); \
     } else { \
@@ -322,6 +369,8 @@ DECLARE_REGISTRY(
         tensor.Reshape(shape); \
     }
 
+/* Shared Multiplier */
+
 #define DECLARE_MULTIPLIER(name, size) \
     const T* name; \
     { \
@@ -334,6 +383,8 @@ DECLARE_REGISTRY(
         } \
         name = mp->template data<T, Context>(); \
     }
+
+/* Dynamic Arguments */
 
 #define DECLARE_ARG_WITH_DESC(type, arg) \
     type arg##_; \
@@ -393,8 +444,7 @@ DECLARE_REGISTRY(
 #define GET_ARGS_SIZE(arg) \
     (int)std::max(arg##_.size(), arg##_desc_.size())
 
-#define XIsType(x, dtype) \
-    x.template IsType<dtype>()
+/* Registers */
 
 #define INSTANTIATE_OPERATOR(name, context) \
     template class name##Op<context>;

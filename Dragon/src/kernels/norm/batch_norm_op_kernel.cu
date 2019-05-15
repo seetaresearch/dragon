@@ -190,27 +190,27 @@ __global__ void _BatchNormInferenceGrad(
         auto nthreads = N * C * S; \
         if (data_format == "NCHW") { \
             _BatchNormInternalGrad<Tx, Tp, StorageOrder::NCHW> \
-                << < CUDA_2D_BLOCKS(C), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_2D_BLOCKS(C), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 N, C, S, x, mu, rsig, gamma, \
                 dy, ds, db, dgamma, dbeta \
             ); \
             _BatchNormTrainingGrad<Tx, Tp, StorageOrder::NCHW> \
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 nthreads, N, C, S, x, mu, \
                 rsig, gamma, ds, db, dy, dx \
             ); \
         } else if (data_format == "NHWC") { \
             _BatchNormInternalGrad<Tx, Tp, StorageOrder::NHWC> \
-                << < CUDA_2D_BLOCKS(C), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_2D_BLOCKS(C), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 N, C, S, x, mu, rsig, gamma, \
                 dy, ds, db, dgamma, dbeta \
             ); \
             _BatchNormTrainingGrad<Tx, Tp, StorageOrder::NHWC> \
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 nthreads, N, C, S, x, mu, \
                 rsig, gamma, ds, db, dy, dx \
             ); \
@@ -234,24 +234,24 @@ __global__ void _BatchNormInferenceGrad(
         if (data_format == "NCHW") { \
             if (dgamma != nullptr) { \
                 _BatchNormWGrad<Tx, Tp, StorageOrder::NCHW> \
-                    << < CUDA_2D_BLOCKS(C), CUDA_THREADS, \
-                         0, ctx->cuda_stream() >> > \
+                    <<< CUDA_2D_BLOCKS(C), CUDA_THREADS, \
+                        0, ctx->cuda_stream() >>> \
                     (N, C, S, x, mu, rsig, dy, dgamma, dbeta); \
             } \
             _BatchNormInferenceGrad<Tx, Tp, StorageOrder::NCHW> \
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> > \
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>> \
                 (nthreads, C, S, rsig, gamma, dy, dx); \
         } else if (data_format == "NHWC") { \
             if (dgamma != nullptr) { \
                 _BatchNormWGrad<Tx, Tp, StorageOrder::NHWC> \
-                    << < CUDA_2D_BLOCKS(C), CUDA_THREADS, \
-                         0, ctx->cuda_stream() >> > \
+                    <<< CUDA_2D_BLOCKS(C), CUDA_THREADS, \
+                        0, ctx->cuda_stream() >>> \
                     (N, C, S, x, mu, rsig, dy, dgamma, dbeta); \
             } \
             _BatchNormInferenceGrad<Tx, Tp, StorageOrder::NHWC> \
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> > \
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>> \
                 (nthreads, C, S, rsig, gamma, dy, dx); \
         } \
     }

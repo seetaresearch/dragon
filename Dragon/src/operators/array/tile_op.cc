@@ -60,28 +60,10 @@ void TileOp<Context>::RunOnDevice() {
     TENSOR_FROM_VEC(X_dims_, X(0).dims(), int);
     TENSOR_FROM_VEC(Y_dims_, Y_dims, int);
 
-    if (XIsType(X(0), bool)) {
-        RunImpl<bool>();
-    } else if (XIsType(X(0), int8_t)) {
-        RunImpl<int8_t>();
-    } else if (XIsType(X(0), uint8_t)) {
-        RunImpl<uint8_t>();
-    } else if (XIsType(X(0), int)) {
-        RunImpl<int>();
-    } else if (XIsType(X(0), int64_t)) {
-        RunImpl<int64_t>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), double)) {
-        RunImpl<double>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0), {
-            "bool", "int8", "uint8", "int32", "int64",
-                 "float16", "float32", "float64",
-        });
-    }
+    DispatchHelper<TensorTypes
+        <bool, int8_t, uint8_t, int, int64_t,
+               float16, float, double>
+    >::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -99,7 +81,7 @@ void TileGradientOp<Context>::RunImpl() {
 template <class Context>
 void TileGradientOp<Context>::RunOnDevice() {
     // Add the axes
-    vector< pair<int, int> > dispatch_axes;
+    vector<pair<int, int>> dispatch_axes;
     for (int i = 0; i < X(0).ndim(); i++) {
         auto m = multiples(i);
         if (m > 1) { dispatch_axes.push_back({ m, i }); }
@@ -128,26 +110,11 @@ void TileGradientOp<Context>::RunOnDevice() {
         rows_ = dst_->count(0, axis_);
         cols_ = dst_->count(axis_);
 
-        if (XIsType(X(0), int8_t)) {
-            RunImpl<int8_t>();
-        } else if (XIsType(X(0), uint8_t)) {
-            RunImpl<uint8_t>();
-        } else if (XIsType(X(0), int)) {
-            RunImpl<int>();
-        } else if (XIsType(X(0), int64_t)) {
-            RunImpl<int64_t>();
-        } else if (XIsType(X(0), float16)) {
-            RunImpl<float16>();
-        } else if (XIsType(X(0), float)) {
-            RunImpl<float>();
-        } else if (XIsType(X(0), double)) {
-            RunImpl<double>();
-        } else {
-            LOG(FATAL) << DTypeString(X(0), {
-                "int8", "uint8", "int32", "int64",
-                "float16", "float32", "float64",
-            });
-        } ctx()->FinishDeviceCompution();
+        DispatchHelper<TensorTypes
+            <int8_t, uint8_t, int, int64_t,
+                float16, float, double>
+        >::Call(this, X(0));
+        ctx()->FinishDeviceCompution();
 
         // Protect X if num_axes >= 2
         std::swap(src_, dst_);

@@ -30,8 +30,8 @@ __global__ void _Arange(
         T*                      y, \
         CUDAContext*            ctx) { \
         _Arange \
-            << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(count), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             count, start, step, y \
         ); \
     }
@@ -64,8 +64,8 @@ template <> void Arange<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     _Arange
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, start, step,
         reinterpret_cast<half*>(y)
     );

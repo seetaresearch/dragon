@@ -202,8 +202,8 @@ void _ReduceSum(
         ndims, x_dims, y_dims,
             &rows, &cols)) {
         _ColwiseReduceSum
-            << < CUDA_2D_BLOCKS(rows), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_2D_BLOCKS(rows), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             rows, cols, scale, x, y
         ); return;
     }
@@ -213,8 +213,8 @@ void _ReduceSum(
             ndims, x_dims, y_dims,
                 &rows, &cols)) {
         _RowwiseReduceSum
-            << < CUDA_2D_BLOCKS(cols), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_2D_BLOCKS(cols), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             rows, cols, scale, x, y
         ); return;
     }
@@ -245,8 +245,8 @@ void _ReduceSum(
     ctx->Memcpy<CUDAContext, CPUContext>(dbytes, YDS, dimsT.data());
 
     _GenericReduceSum
-        << < CUDA_2D_BLOCKS(outer_dim), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_2D_BLOCKS(outer_dim), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         ndims, outer_dim, inner_dim,
         XSS, YDS, scale, x, y
     );
@@ -372,8 +372,8 @@ template <> __global__ void _ReduceSumGrad<half>(
         T*                      dx, \
         CUDAContext*            ctx) { \
         _ReduceSumGrad \
-            << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(count), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             count, ndim, x_dims, \
             y_dims, y_strides, \
             scale, dy, dx \
@@ -398,8 +398,8 @@ template<> void ReduceSumGrad<float16, CUDAContext>(
     float16*                dx,
     CUDAContext*            ctx) {
     _ReduceSumGrad
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, ndim, x_dims,
         y_dims, y_strides,
         scale,

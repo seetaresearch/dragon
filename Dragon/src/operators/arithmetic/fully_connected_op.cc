@@ -84,6 +84,12 @@ void FullyConnectedOp<Context>::NoTransRunImpl() {
     }
 }
 
+template <class Context> template <typename T>
+void FullyConnectedOp<Context>::RunImpl() {
+    if (transW_) TransRunImpl<T>();
+    else NoTransRunImpl<T>();
+}
+
 template <class Context>
 void FullyConnectedOp<Context>::RunOnDevice() {
     DETERMINE_RUNTIME_ARGS(X(0));
@@ -101,31 +107,12 @@ void FullyConnectedOp<Context>::RunOnDevice() {
     for (int i = 0; i < axis_ + 1; i++) {
         out_shape[i] = i < axis_ ? X(0).dim(i) : N_;
     }
+
     Y(0)->Reshape(out_shape);
 
-    if (XIsType(X(0), float16)) {
-        if (transW_) {
-            TransRunImpl<float16>();
-        } else {
-            NoTransRunImpl<float16>();
-        }
-    } else if (XIsType(X(0), float)) {
-        if (transW_) {
-            TransRunImpl<float>();
-        } else {
-            NoTransRunImpl<float>();
-        }
-    } else if (XIsType(X(0), double)) {
-        if (transW_) {
-            TransRunImpl<double>();
-        } else {
-            NoTransRunImpl<double>();
-        }
-    } else {
-        LOG(FATAL) << DTypeString(X(0),
-            { "float16",  "float32", "float64" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float, float16, double>
+    >::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -209,17 +196,9 @@ void FullyConnectedGradientOp<Context>::RunOnDevice() {
             << X(1).DimString();
     }
 
-    if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), double)) {
-        RunImpl<double>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0),
-            { "float16", "float32", "float64" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float, float16, double>
+    >::Call(this, X(0));
 }
 
 DEPLOY_CPU(FullyConnected);

@@ -55,8 +55,8 @@ template <> void NLLLoss<float, float, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = outer_dim * inner_dim;
     _NLLLoss
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads, axis_dim, inner_dim, nignores,
         ignore, log_prob, target, loss, flag
      );
@@ -77,8 +77,8 @@ template <> void NLLLoss<float, int64_t, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = outer_dim * inner_dim;
     _NLLLoss
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads, axis_dim, inner_dim, nignores,
         ignore, log_prob, target, loss, flag
     );
@@ -129,8 +129,8 @@ template<> void NLLLossGrad<float, float, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = outer_dim * inner_dim;
     _NLLLossGrad
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads, axis_dim, inner_dim, nignores,
         ignore, log_prob, target, dx, flag
     );
@@ -151,8 +151,8 @@ template<> void NLLLossGrad<float, int64_t, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = outer_dim * inner_dim;
     _NLLLossGrad
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads, axis_dim, inner_dim, nignores,
         ignore, log_prob, target, dx, flag
     );

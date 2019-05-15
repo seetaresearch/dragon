@@ -40,13 +40,8 @@ void DepthwiseConv2dOp<Context>::RunOnDevice() {
         << "\nExcepted in/out channels unchanged.";
     ConvOpBase<Context>::Reshape();
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(0), { "float32" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -98,13 +93,8 @@ void DepthwiseConv2dGradientOp<Context>::RunOnDevice() {
         X(0).dim(1) : X(0).dim(-1);
     ConvOpBase<Context>::Reshape(true);
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(0), { "float32" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 DEPLOY_CPU(DepthwiseConv2d);

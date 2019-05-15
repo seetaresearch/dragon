@@ -133,8 +133,8 @@ template<> __global__ void _ArgMin<half>(
         CHECK_EQ(top_k, 1) << "\nRequired top_k == 1."; \
         auto nthreads = outer_dim * inner_dim; \
         _##name \
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             nthreads, inner_dim, axis_dim, \
             x, indices, values \
         ); \
@@ -168,8 +168,8 @@ template<> void ArgMax<float16, CUDAContext>(
     CHECK_EQ(top_k, 1) << "\nRequired top_k == 1.";
     auto nthreads = outer_dim * inner_dim;
     _ArgMax
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads, inner_dim, axis_dim,
         reinterpret_cast<const half*>(x),
         indices,
@@ -189,8 +189,8 @@ template<> void ArgMin<float16, CUDAContext>(
     CHECK_EQ(top_k, 1) << "\nRequired top_k == 1.";
     auto nthreads = outer_dim * inner_dim;
     _ArgMin
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
          nthreads, inner_dim, axis_dim,
          reinterpret_cast<const half*>(x),
          indices,

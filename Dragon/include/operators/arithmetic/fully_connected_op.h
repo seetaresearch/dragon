@@ -28,6 +28,7 @@ class FullyConnectedOp final : public Operator<Context> {
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice();
+    template <typename T> void RunImpl();
     template <typename T> void TransRunImpl();
     template <typename T> void NoTransRunImpl();
 

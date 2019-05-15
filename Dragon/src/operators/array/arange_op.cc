@@ -6,20 +6,24 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void ArangeOp<Context>::RunImpl() {
-    astart_ = start(), astop_ = stop(), astep_ = step();
-    if (astop_ == 0) { astop_ = astart_; astart_ = 0; }
-    dim_ = (astop_ - astart_ - 1) / astep_ + 1;
-    CHECK_GT(dim_, 0) << "\nInvalid arguments: \n"
-                     << "start = " << start() << ", "
-                     << "stop = " << stop() << ", "
-                     << "step = " << step() << ".";
-    Y(0)->Reshape({ dim_ });
     auto* y = Y(0)->template mutable_data<T, Context>();
     kernel::Arange(dim_, astart_, astep_, y, ctx());
 }
 
 template <class Context>
 void ArangeOp<Context>::RunOnDevice() {
+    astart_ = start(), astop_ = stop(), astep_ = step();
+    if (astop_ == 0) { astop_ = astart_; astart_ = 0; }
+    dim_ = (astop_ - astart_ - 1) / astep_ + 1;
+
+    CHECK_GT(dim_, 0)
+        << "\nInvalid arguments: \n"
+        << "start = " << start() << ", "
+        << "stop = " << stop() << ", "
+        << "step = " << step() << ".";
+
+    Y(0)->Reshape({ dim_ });
+
     if (dtype() == "int8") {
         RunImpl<int8_t>();
     } else if (dtype() == "uint8") {

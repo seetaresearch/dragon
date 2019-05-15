@@ -5,7 +5,7 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void InitializeOp<Context>::RunImpl() {
-    unique_ptr< Filler<T, Context> > f;
+    unique_ptr<Filler<T, Context>> f;
     f.reset(CreateFiller<T, Context>(proto_));
     f->Fill(Y(0), ctx());
 }

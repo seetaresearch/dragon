@@ -221,7 +221,7 @@ class ONNXBackend {
     const Map<string, SpecialNodeConverter>& get_special_nodes() const;
 
     const Map<string, string>& get_renamed_attrs() const;
-    const Map< string, Map<string, string> >& get_node_renamed_attrs() const;
+    const Map<string, Map<string, string>>& get_node_renamed_attrs() const;
 };
 
 }  // namespace onnx

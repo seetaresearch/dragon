@@ -64,8 +64,8 @@ __global__ void _SliceGrad(
         auto cols = slice_dim * inner_dim; \
         auto nthreads = outer_dim * cols; \
         _##name \
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             nthreads, \
             inner_dim, \
             axis_dim, \
@@ -126,8 +126,8 @@ template <> void SliceGrad<float16, CUDAContext>(
     auto cols = slice_dim * inner_dim;
     auto nthreads = outer_dim * cols;
     _SliceGrad
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads,
         inner_dim,
         axis_dim,

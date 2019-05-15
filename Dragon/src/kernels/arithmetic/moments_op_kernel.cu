@@ -251,8 +251,8 @@ void _Moments(
             ndims, x_dims, y_dims,
                 &rows, &cols)) {
         _ColwiseMoments
-            << < CUDA_2D_BLOCKS(rows), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_2D_BLOCKS(rows), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             rows, cols, x, mean, var
         ); return;
     }
@@ -262,8 +262,8 @@ void _Moments(
             ndims, x_dims, y_dims, 
                 &rows, &cols)) {
         _RowwiseMoments
-            << < CUDA_2D_BLOCKS(cols), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_2D_BLOCKS(cols), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             rows, cols, x, mean, var
         ); return;
     }
@@ -294,8 +294,8 @@ void _Moments(
     ctx->Memcpy<CUDAContext, CPUContext>(dbytes, YDS, dimsT.data());
 
     _GenericMoments
-        << < CUDA_2D_BLOCKS(outer_dim), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_2D_BLOCKS(outer_dim), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         ndims, outer_dim, inner_dim,
         XSS, YDS, x, mean, var
     );

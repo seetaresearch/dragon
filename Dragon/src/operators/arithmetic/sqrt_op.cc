@@ -14,17 +14,9 @@ template <class Context>
 void SqrtOp<Context>::RunOnDevice() {
     Y(0)->ReshapeLike(X(0));
 
-    if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), double)) {
-        RunImpl<double>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0),
-            { "float16", "float32", "float64" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float, float16, double>
+    >::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -40,17 +32,9 @@ template <class Context>
 void SqrtGradientOp<Context>::RunOnDevice() {
     Y(0)->ReshapeLike(X(0));
 
-    if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), double)) {
-        RunImpl<double>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0),
-            { "float16", "float32", "float64" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float, float16, double>
+    >::Call(this, X(0));
 }
 
 DEPLOY_CPU(Sqrt);

@@ -20,13 +20,8 @@ template <class Context>
 void EluOp<Context>::RunOnDevice() {
     Y(0)->ReshapeLike(X(0));
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(0), { "float32" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -46,13 +41,8 @@ template <class Context>
 void EluGradientOp<Context>::RunOnDevice() {
     Y(0)->ReshapeLike(X(0));
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(0), { "float32" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 DEPLOY_CPU(Elu);

@@ -30,8 +30,8 @@ __global__ void _MaskedAssign(
         T*                      y, \
         CUDAContext*            ctx) { \
         _MaskedAssign \
-            << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(count), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             count, mask, x, y \
         ); \
     }

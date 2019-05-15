@@ -34,8 +34,8 @@ template<> void SElu<float, CUDAContext>(
     float*                  y,
     CUDAContext*            ctx) {
     _SElu
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, x, y
     );
 }
@@ -63,8 +63,8 @@ template<> void SElu<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     _SElu
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count,
         reinterpret_cast<const half*>(x),
         reinterpret_cast<half*>(y)
@@ -99,8 +99,8 @@ template<> void SEluGrad<float, CUDAContext>(
     float*                  dx,
     CUDAContext*            ctx) {
     _SEluGrad
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, dy, y, dx
     );
 }
@@ -131,8 +131,8 @@ template<> void SEluGrad<float16, CUDAContext>(
     float16*                dx,
     CUDAContext*            ctx) {
     _SEluGrad
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count,
         reinterpret_cast<const half*>(dy),
         reinterpret_cast<const half*>(y),

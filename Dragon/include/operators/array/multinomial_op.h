@@ -22,6 +22,7 @@ class MultinomialOp final : public Operator<Context> {
  public:
     MultinomialOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
+          eps_(OpArg<float>("eps", 0.f)),
           normalize_(OpArg<int64_t>("normalize", 0)),
           num_samples_(OpArg<int64_t>("num_samples", 1)) {}
     USE_OPERATOR_FUNCTIONS;
@@ -32,6 +33,7 @@ class MultinomialOp final : public Operator<Context> {
     template <typename T> void RunImpl();
 
  protected:
+    float eps_;
     int64_t outer_dim_, axis_;
     int64_t normalize_, num_samples_;
     unique_ptr<OperatorBase> softmax_op_;

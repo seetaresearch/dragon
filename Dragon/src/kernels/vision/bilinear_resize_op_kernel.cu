@@ -109,15 +109,15 @@ template <> void BilinearResize<float, CUDAContext>(
     auto scale_w = (float)W / (float)out_w;
      if (data_format == "NCHW") {
          _BilinearResizeNCHW
-             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                  0, ctx->cuda_stream() >> >(
+             <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                 0, ctx->cuda_stream() >>>(
              nthreads, C, H, W, out_h, out_w,
              scale_h, scale_w, x, y
         );
     } else if(data_format == "NHWC") {
          _BilinearResizeNHWC
-             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                  0, ctx->cuda_stream() >> >(
+             <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                 0, ctx->cuda_stream() >>>(
              nthreads, C, H, W, out_h, out_w,
              scale_h, scale_w, x, y
         );
@@ -224,15 +224,15 @@ template <> void BilinearResizeGrad<float, CUDAContext>(
     auto scale_w = (float)W / (float)out_w;
      if (data_format == "NCHW") {
          _BilinearResizeGradNCHW
-             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                  0, ctx->cuda_stream() >> >(
+             <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                 0, ctx->cuda_stream() >>>(
              nthreads, C, H, W, out_h, out_w,
              scale_h, scale_w, dy, dx
         );
     } else if(data_format == "NHWC") {
          _BilinearResizeGradNHWC
-             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                  0, ctx->cuda_stream() >> >(
+             <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                 0, ctx->cuda_stream() >>>(
              nthreads, C, H, W, out_h, out_w,
              scale_h, scale_w, dy, dx
         );

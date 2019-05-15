@@ -58,13 +58,13 @@ template <> void LSTMCell<float, CUDAContext>(
     auto o_offset = 2 * C, c_offset = 3 * C,
          x_offset = 4 * C, NC = N * C;
     _LSTMCellAct
-        << < CUDA_BLOCKS(NC * 4), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(NC * 4), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         NC * 4, c_offset, x_offset, actx
     );
     _LSTMCellGate
-        << < CUDA_BLOCKS(NC), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(NC), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         NC, C, o_offset, c_offset,
         x_offset, cx, actx, c, h
     );
@@ -138,14 +138,14 @@ template <> void LSTMCellGrad<float, CUDAContext>(
     auto o_offset = 2 * C, c_offset = 3 * C,
          x_offset = 4 * C, NC = N * C;
     _LSTMCellGateGrad
-        << < CUDA_BLOCKS(NC), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(NC), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         NC, C, o_offset, c_offset, x_offset,
         cx, actx, c, dc, dh, dcx, dx
     );
     _LSTMCellActGrad
-        << < CUDA_BLOCKS(NC * 4), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(NC * 4), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         NC * 4, c_offset, x_offset, actx, dx
     );
 }

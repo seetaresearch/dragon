@@ -174,7 +174,7 @@ GraphDef GraphOptimizer::MirrorStage(
     const GraphDef&                  input_def,
     Map<string, vec32_t >&       op_indices) {
     GraphDef output_def(input_def);
-    Map<string, set<int> > fake_op_indices;
+    Map<string, set<int>> fake_op_indices;
     Map<string, string> rename_map;
     Map<string, int> versions;
 

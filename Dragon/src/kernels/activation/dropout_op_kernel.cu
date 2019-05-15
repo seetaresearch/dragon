@@ -37,14 +37,10 @@ template<> void Dropout<float, CUDAContext>(
     float*                  y,
     CUDAContext*            ctx) {
     auto thresh = (uint32_t)(UINT_MAX * prob);
-    math::RandomUniform(
-        count,
-        0.f, (float)UINT_MAX,
-        mask32, ctx
-    );
+    math::RandomUniform(count, 0.f, 1.f, mask32, ctx);
     _Dropout
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count,
         thresh,
         scale,
@@ -85,14 +81,10 @@ template<> void Dropout<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     auto thresh = (uint32_t)(UINT_MAX * prob);
-    math::RandomUniform(
-        count,
-        0.f, (float)UINT_MAX,
-        mask32, ctx
-    );
+    math::RandomUniform(count, 0.f, 1.f, mask32, ctx);
     _Dropout
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count,
         thresh,
         cast::to<half>(scale),
@@ -124,8 +116,8 @@ template <> void ApplyMask<float, uint8_t, CUDAContext>(
     float*                  y,
     CUDAContext*            ctx) {
     _ApplyMask
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, scale, x, mask, y
     );
 }
@@ -157,8 +149,8 @@ template <> void ApplyMask<float16, uint8_t, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     _ApplyMaskHalf
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count,
         cast::to<half>(scale),
         reinterpret_cast<const half*>(x),

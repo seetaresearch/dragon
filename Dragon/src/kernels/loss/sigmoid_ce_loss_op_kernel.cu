@@ -42,8 +42,8 @@ template <> void SigmoidCrossEntropy<float, CUDAContext>(
     int*                    flag,
     CUDAContext*            ctx) {
     _SigmoidCrossEntropy
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, logit, target, loss, flag
     );
 }
@@ -77,8 +77,8 @@ template <> void SigmoidCrossEntropyGrad<float, CUDAContext>(
     int*                    flag,
     CUDAContext*            ctx) {
     _SigmoidCrossEntropyGrad
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, logit, target, dlogit, flag
     );
 }

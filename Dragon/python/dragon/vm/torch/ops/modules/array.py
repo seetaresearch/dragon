@@ -377,6 +377,7 @@ class Cast(BaseModule):
 class Multinomial(BaseModule):
     def __init__(self, key, dev, **kwargs):
         super(Multinomial, self).__init__(key, dev, **kwargs)
+        self.eps = kwargs.get('eps', 0)
         self.num_samples = kwargs.get('num_samples', 1)
         self.register_op()
 
@@ -384,6 +385,7 @@ class Multinomial(BaseModule):
         self.op_meta = {
             'op_type': 'Multinomial',
             'arguments': {
+                'eps': float(self.eps),
                 'num_samples': self.num_samples,
                 'normalize': False,
             },

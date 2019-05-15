@@ -65,17 +65,9 @@ void MatmulOp<Context>::RunOnDevice() {
 
     Y(0)->Reshape(out_shape);
 
-    if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), double)) {
-        RunImpl<double>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0),
-            { "float16", "float32", "float64" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float, float16, double>
+    >::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -182,17 +174,9 @@ void MatmulGradientOp<Context>::RunOnDevice() {
     Y(0)->ReshapeLike(X(0));
     Y(1)->ReshapeLike(X(1));
 
-    if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), double)) {
-        RunImpl<double>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0),
-            { "float16", "float32", "float64" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float, float16, double>
+    >::Call(this, X(0));
 }
 
 DEPLOY_CPU(Matmul);

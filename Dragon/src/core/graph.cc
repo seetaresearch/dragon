@@ -123,7 +123,7 @@ Graph::Graph(const GraphDef& def, Workspace* ws)
 
     // Recomputing-aware
     if (subgraph_indices.size() > 0) {
-        Map< string, vector<OperatorBase*> > subgraph;
+        Map<string, vector<OperatorBase*>> subgraph;
         for (const auto& it : subgraph_indices) {
             subgraph[it.first] = vector<OperatorBase*>();
             for (const auto& idx : subgraph_indices[it.first])

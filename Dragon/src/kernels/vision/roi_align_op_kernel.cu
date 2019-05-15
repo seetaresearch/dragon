@@ -132,8 +132,8 @@ template<> void ROIAlign<float, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = num_rois * C  * pool_h * pool_w;
     _ROIAlign
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads,
         C, H, W,
         pool_h, pool_w,
@@ -283,8 +283,8 @@ template<> void ROIAlignGrad<float, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = num_rois * C  * pool_h * pool_w;
     _ROIAlignGrad
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads,
         C, H, W,
         pool_h, pool_w,

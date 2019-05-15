@@ -26,22 +26,24 @@ inline void LoadCaffeModel(
     LOG(INFO) << "Restore From Model @: " << file << "......";
     LOG(INFO) << "Model Format: CaffeModel";
     for (int i = 0; i < net_param.layer_size(); i++) {
-        const LayerParameter& layer = net_param.layer(i);
-        const string& layer_name = layer.name();
-        string prefix = layer_name + "/param:";
+        const auto& layer = net_param.layer(i);
+        const auto& layer_name = layer.name();
+        auto prefix = layer_name + "/param:";
         for (int j = 0; j < layer.blobs_size(); j++) {
-            string tensor_name = prefix + std::to_string(j);
-            if (!ws->HasTensor(tensor_name))
-                LOG(WARNING) << "Tensor(" << tensor_name << ") "
-                << "does not exist in any Graphs, skip.";
-            else{
-                BlobProto blob = layer.blobs(j);
-                vector<int64_t> dims;
-                for (auto dim : blob.shape().dim()) dims.push_back(dim);
-                Tensor* tensor = ws->GetTensor(tensor_name);
+            auto tensor_name = prefix + std::to_string(j);
+            if (!ws->HasTensor(tensor_name)) {
+                LOG(WARNING)
+                    << "Tensor(" << tensor_name << ") "
+                    << "does not exist in any Graphs, skip.";
+            } else {
+                auto blob = layer.blobs(j);
+                vec64_t tensor_shape;
+                for (auto dim : blob.shape().dim())
+                    tensor_shape.push_back(dim);
+                auto* tensor = ws->GetTensor(tensor_name);
                 std::stringstream DimString;
-                if (dims.size() > 0) {
-                    tensor->Reshape(dims);
+                if (tensor_shape.size() > 0) {
+                    tensor->Reshape(tensor_shape);
                     CHECK_EQ(tensor->count(), blob.data_size())
                         << "\nTensor(" << tensor_name << ") "
                         << "failed to load, except size:  "
@@ -52,9 +54,9 @@ inline void LoadCaffeModel(
                     tensor->Reshape({ blob.data_size() });
                     DimString << "(missing)";
                 }
-                float* Xdata = tensor->mutable_data<float, CPUContext>();
-                for (int idx = 0; idx < blob.data_size(); idx++)
-                    Xdata[idx] = blob.data(idx);
+                auto* x = tensor->mutable_data<float, CPUContext>();
+                for (int xi = 0; xi < blob.data_size(); ++xi)
+                    x[xi] = blob.data(xi);
                 LOG(INFO) << "Tensor(" << tensor_name << ") "
                           << "loaded, shape: " << DimString.str()
                           << ", size: " << blob.data_size();
@@ -66,32 +68,33 @@ inline void LoadCaffeModel(
 inline void SavaCaffeModel(
     string                          file,
     const vector<Tensor*>&          tensors) {
-    NetParameter net_param;
+    int j = -1;
+    NetParameter net;
     Map<string, int> layer_hash;
-    int layer_idx = -1;
     for (int i = 0; i < tensors.size(); i++) {
         if (tensors[i]->count() <= 0) continue;
-        vector<string> splits = str::split(
+        auto splits = str::split(
             tensors[i]->name(), "/param:");
         if (layer_hash.count(splits[0]) == 0) {
-            layer_hash[splits[0]] = ++layer_idx;
-            LayerParameter* layer = net_param.add_layer();
+            layer_hash[splits[0]] = ++j;
+            auto* layer = net.add_layer();
             layer->set_name(splits[0]);
         }
-        BlobProto* blob = net_param.mutable_layer(layer_idx)->add_blobs();
-        for (auto dim : tensors[i]->dims()) blob->mutable_shape()->add_dim(dim);
+        auto* blob = net.mutable_layer(j)->add_blobs();
+        for (auto dim : tensors[i]->dims())
+            blob->mutable_shape()->add_dim(dim);
         if (XIsType((*tensors[i]), float)) {
-            auto* Xdata = tensors[i]->data<float, CPUContext>();
-            for (int id = 0; id < tensors[i]->count(); id++)
-                blob->mutable_data()->Add(Xdata[id]);
+            auto* x = tensors[i]->data<float, CPUContext>();
+            for (int xi = 0; xi < tensors[i]->count(); ++xi)
+                blob->mutable_data()->Add(x[xi]);
         } else if (XIsType((*tensors[i]), float16)) {
-            auto* Xdata = tensors[i]->data<float16, CPUContext>();
-            for (int id = 0; id < tensors[i]->count(); id++)
+            auto* x = tensors[i]->data<float16, CPUContext>();
+            for (int xi = 0; xi < tensors[i]->count(); ++xi)
                 blob->mutable_data()->Add(
-                    cast::to<float>(Xdata[id]));
+                    cast::to<float>(x[xi]));
         }
     }
-    WriteProtoToBinaryFile(net_param, file.c_str());
+    WriteProtoToBinaryFile(net, file.c_str());
     LOG(INFO) << "Save the model @: " << file << "......";
     LOG(INFO) << "Model format: Caffe";
 }

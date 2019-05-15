@@ -108,13 +108,6 @@ void CuDNNAffineOp<Context>::RunOnDevice() {
 template <class Context> template <typename DT, typename CT>
 void CuDNNAffineGradientOp<Context>::RunImpl() {
     this->template ResetDesc<DT>(X(-1));
-    scale_dim_ = X(1).count();
-    outer_dim_ = X(-1).count(0, axis_);
-    inner_dim_ = X(-1).count(axis_ + num_axes_);
-    dim_ = scale_dim_ * inner_dim_;
-    reduce_dim_ = std::max(outer_dim_, inner_dim_);
-
-    Y(0)->ReshapeLike(X(-1));
 
     auto* alpha = X(1).template data<DT, Context>();
     auto* dy = X(-1).template mutable_data<DT, Context>();
@@ -230,9 +223,7 @@ void CuDNNAffineGradientOp<Context>::CuDNNReduce(
 }
 
 template <class Context> template <typename T>
-void CuDNNAffineGradientOp<Context>::Reduce(
-    T*                      x,
-    T*                      y) {
+void CuDNNAffineGradientOp<Context>::Reduce(T* x, T* y) {
     vec32_t dims = {
         (int)outer_dim_,
         (int)scale_dim_,
@@ -248,6 +239,14 @@ void CuDNNAffineGradientOp<Context>::Reduce(
 
 template <class Context>
 void CuDNNAffineGradientOp<Context>::RunOnDevice() {
+    scale_dim_ = X(1).count();
+    outer_dim_ = X(-1).count(0, axis_);
+    inner_dim_ = X(-1).count(axis_ + num_axes_);
+    dim_ = scale_dim_ * inner_dim_;
+    reduce_dim_ = std::max(outer_dim_, inner_dim_);
+
+    Y(0)->ReshapeLike(X(-1));
+
     if (XIsType(X(-1), float)) {
         RunImpl<float, float>();
     } else if (XIsType(X(-1), float16)) {

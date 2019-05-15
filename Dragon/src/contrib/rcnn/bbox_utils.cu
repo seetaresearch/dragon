@@ -81,8 +81,8 @@ void _ApplyNMS(
     CUDA_CHECK(cudaMemcpy(boxes_dev, boxes,
         boxes_nbytes, cudaMemcpyHostToDevice));
     nms_mask<T>
-        << < blocks, NMS_BLOCK_SIZE,
-             0, ctx->cuda_stream() >> > (num_boxes,
+        <<< blocks, NMS_BLOCK_SIZE,
+            0, ctx->cuda_stream() >>> (num_boxes,
                  thresh, (T*)boxes_dev, (uint64_t*)mask_dev);
     ctx->FinishDeviceCompution();
 

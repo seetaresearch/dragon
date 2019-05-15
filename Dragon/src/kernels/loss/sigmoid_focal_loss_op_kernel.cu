@@ -71,8 +71,8 @@ template <> void SigmoidFocalLoss<float, float, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = outer_dim * axis_dim * inner_dim;
     _SigmoidFocalLoss
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads, axis_dim, inner_dim,
         pos_alpha, neg_alpha, gamma, neg_id,
         logits, targets, losses, flags
@@ -96,8 +96,8 @@ template <> void SigmoidFocalLoss<float, int64_t, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = outer_dim * axis_dim * inner_dim;
     _SigmoidFocalLoss
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads, axis_dim, inner_dim,
         pos_alpha, neg_alpha, gamma, neg_id,
         logits, targets, losses, flags
@@ -171,8 +171,8 @@ template <> void SigmoidFocalLossGrad<float, float, CUDAContext>(
     CUDAContext*            ctx) {
     auto count = outer_dim * axis_dim * inner_dim;
     _SigmoidFocalLossGrad
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, axis_dim, inner_dim,
         pos_alpha, neg_alpha, gamma, neg_id,
         logits, targets, dlogits, flags
@@ -196,8 +196,8 @@ template <> void SigmoidFocalLossGrad<float, int64_t, CUDAContext>(
     CUDAContext*            ctx) {
     auto count = outer_dim * axis_dim * inner_dim;
     _SigmoidFocalLossGrad
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, axis_dim, inner_dim,
         pos_alpha, neg_alpha, gamma, neg_id,
         logits, targets, dlogits, flags

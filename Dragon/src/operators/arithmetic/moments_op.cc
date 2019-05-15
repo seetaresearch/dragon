@@ -7,6 +7,31 @@ namespace dragon {
 template <class Context>
 template <typename Tx, typename Ty>
 void MomentsOp<Context>::RunImpl() {
+    auto* x = X(0).template data<Tx, Context>();
+    auto* mean = Y(0)->template mutable_data<Ty, Context>();
+    auto* var = Y(1)->template mutable_data<Ty, Context>();
+
+    if (X(0).count() == 1) {
+        kernel::TypeA2B(
+            Y(0)->count(),
+            x, mean, ctx()
+        );
+        math::Set(
+            Y(0)->count(),
+            cast::to<Ty>(0.f),
+            var, ctx()
+        );
+    } else {
+        kernel::Moments(
+            (int)dims32_.size(), dims32_.data(),
+            (int)axes32_.size(), axes32_.data(),
+            x, mean, var, ctx()
+        );
+    }
+}
+
+template <class Context>
+void MomentsOp<Context>::RunOnDevice() {
     dims_ = X(0).dims(); axes32_.clear();
     dims32_.assign(dims_.begin(), dims_.end());
     axes32_.assign(axes_.begin(), axes_.end());
@@ -35,31 +60,6 @@ void MomentsOp<Context>::RunImpl() {
     Y(0)->Reshape(out_shape);
     Y(1)->Reshape(out_shape);
 
-    auto* x = X(0).template data<Tx, Context>();
-    auto* mean = Y(0)->template mutable_data<Ty, Context>();
-    auto* var = Y(1)->template mutable_data<Ty, Context>();
-
-    if (X(0).count() == 1) {
-        kernel::TypeA2B(
-            Y(0)->count(),
-            x, mean, ctx()
-        );
-        math::Set(
-            Y(0)->count(),
-            cast::to<Ty>(0.f),
-            var, ctx()
-        );
-    } else {
-        kernel::Moments(
-            (int)dims32_.size(), dims32_.data(),
-            (int)axes32_.size(), axes32_.data(),
-            x, mean, var, ctx()
-        );
-    }
-}
-
-template <class Context>
-void MomentsOp<Context>::RunOnDevice() {
     if (XIsType(X(0), int8_t)) {
         RunImpl<int8_t, float>();
     } else if (XIsType(X(0), uint8_t)) {

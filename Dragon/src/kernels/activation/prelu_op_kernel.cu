@@ -66,21 +66,21 @@ template<> void PRelu<float, CUDAContext>(
     CUDAContext*            ctx) {
     if (channel_shared) {
         _PRelu
-            << < CUDA_BLOCKS(count), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(count), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             count, channels, dim, x, w, y
         );
     } else {
         if (data_format == "NCHW") {
             _PReluNCHW
-                << < CUDA_BLOCKS(count), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(count), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 count, channels, dim, x, w, y
             );
         } else if (data_format == "NHWC") {
             _PReluNHWC
-                << < CUDA_BLOCKS(count), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(count), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 count, channels, dim, x, w, y
             );
         } else {
@@ -152,21 +152,21 @@ template<> void PReluGrad<float, CUDAContext>(
     CUDAContext*            ctx) {
     if (channel_shared) {
         _PReluGrad
-            << < CUDA_BLOCKS(count), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(count), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             count, channels, dim, dy, x, w, dx
         );
     } else {
         if (data_format == "NCHW") {
             _PReluGradNCHW
-                << < CUDA_BLOCKS(count), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(count), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 count, channels, dim, dy, x, w, dx
             );
         } else if (data_format == "NHWC") {
             _PReluGradNHWC
-                << < CUDA_BLOCKS(count), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(count), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 count, channels, dim, dy, x, w, dx
             );
         } else {
@@ -210,8 +210,8 @@ template<> void PReluWGrad<float, CUDAContext>(
     CUDAContext*            ctx) {
     auto cdim = channels * dim;
     _PReluWGradBcast
-        << < CUDA_BLOCKS(cdim), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(cdim), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         cdim, rows, row_offset, dy, x, bcast_dw
     );
     if (channel_shared) {

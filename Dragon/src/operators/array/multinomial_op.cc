@@ -35,17 +35,26 @@ void MultinomialOp<Context>::RunImpl() {
 
     double running_total, r;
     int yi = 0, num_classes = X(0).dim(axis_);
+    double uniform_p = 1. / (double)num_classes;
 
     auto* rng = ctx()->rand_generator();
+    std::uniform_real_distribution<float> eps_dist;
 
     for (int i = 0; i < outer_dim_; ++i) {
         running_total = 0.;
-        for (int j = 0; j < num_classes; ++j) {
-            running_total += (double)x[j];
-            cdf[j] = running_total;
+        if (eps_ > 0.f && eps_dist(*rng) < eps_) {
+            for (int j = 0; j < num_classes; ++j) {
+                running_total += uniform_p;
+                cdf[j] = running_total;
+            }
+        } else {
+            for (int j = 0; j < num_classes; ++j) {
+                running_total += (double)x[j];
+                cdf[j] = running_total;
+            }
         }
         std::uniform_real_distribution<double>
-            dist(0.f, running_total);
+            dist(0., running_total);
         for (int j = 0; j < (int)num_samples_; ++j) {
             r = dist(*rng);
             auto found_iter = std::upper_bound(
@@ -75,24 +84,10 @@ void MultinomialOp<Context>::RunOnDevice() {
     // Normalize the logits if necessary
     if (normalize_) SoftmaxRun();
 
-    if (XIsType(X(0), int8_t)) {
-        RunImpl<int8_t>();
-    } else if (XIsType(X(0), uint8_t)) {
-        RunImpl<uint8_t>();
-    } else if (XIsType(X(0), int)) {
-        RunImpl<int>();
-    } else if (XIsType(X(0), int64_t)) {
-        RunImpl<int64_t>();
-    } else if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), double)) {
-        RunImpl<double>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0), {
-            "int8", "uint8", "int32", "int64",
-                 "float32", "float64",
-        });
-    }
+    DispatchHelper<TensorTypes
+        <int8_t, uint8_t, int,
+         int64_t, float, double>
+    >::Call(this, X(0));
 }
 
 DEPLOY_CPU(Multinomial);

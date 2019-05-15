@@ -216,15 +216,8 @@ void CuDNNConv2dOp<Context>::RunOnDevice() {
 #endif
     ConvOpBase<Context>::Reshape();
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0),
-            { "float32", "float16" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float, float16>>::Call(this, X(0));
 }
 
 template <class Context>
@@ -474,15 +467,8 @@ void CuDNNConv2dGradientOp<Context>::RunOnDevice() {
 #endif
     ConvOpBase<Context>::Reshape(true);
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0),
-            { "float32", "float16" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float, float16>>::Call(this, X(0));
 }
 
 DEPLOY_CUDNN(Conv2d);

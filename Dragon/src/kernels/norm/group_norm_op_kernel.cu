@@ -408,20 +408,20 @@ __global__ void _GroupNormGradHalf(
         CUDAContext*                ctx) { \
         const int C = G * D; \
         _GroupNormFusedParams<Tp> \
-            << < CUDA_2D_BLOCKS(N * G), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_2D_BLOCKS(N * G), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             N, G, D, mu, rsig, gamma, beta, scale, bias \
         ); \
         if (data_format == "NCHW") { \
             _GroupNormForwardNCHW<Tx, Tp> \
-                << < CUDA_2D_BLOCKS(N * C), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_2D_BLOCKS(N * C), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 N, C, S, x, scale, bias, y \
             ); \
         } else if (data_format == "NHWC") { \
             _GroupNormForwardNHWC<Tx, Tp> \
-                << < CUDA_2D_BLOCKS(N * C), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_2D_BLOCKS(N * C), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 N, C, S, x, scale, bias, y \
             ); \
         } \
@@ -448,35 +448,35 @@ __global__ void _GroupNormGradHalf(
         auto nthreads = N * G * D * S; \
         if (data_format == "NCHW") { \
             _GroupNormWGrad<Tx, Tp, StorageOrder::NCHW> \
-                << < CUDA_2D_BLOCKS(G * D), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_2D_BLOCKS(G * D), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 N, G, D, S, x, mu, rsig, dy, dgamma, dbeta \
             ); \
             _GroupNormInternalGrad<Tx, Tp, StorageOrder::NCHW> \
-                << < CUDA_2D_BLOCKS(N * G), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_2D_BLOCKS(N * G), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 N, G, D, S, x, gamma, dy, ds, db \
             ); \
             _GroupNormGrad<Tx, Tp, StorageOrder::NCHW> \
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 nthreads, G, D, S, x, mu, rsig, \
                 gamma, ds, db, dy, dx \
             ); \
         } else if (data_format == "NHWC") { \
             _GroupNormWGrad<Tx, Tp, StorageOrder::NHWC> \
-                << < CUDA_2D_BLOCKS(G * D), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_2D_BLOCKS(G * D), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 N, G, D, S, x, mu, rsig, dy, dgamma, dbeta \
             ); \
             _GroupNormInternalGrad<Tx, Tp, StorageOrder::NHWC> \
-                << < CUDA_2D_BLOCKS(N * G), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_2D_BLOCKS(N * G), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 N, G, D, S, x, gamma, dy, ds, db \
             ); \
             _GroupNormGrad<Tx, Tp, StorageOrder::NHWC> \
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> > ( \
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>> ( \
                 nthreads, G, D, S, x, mu, rsig, \
                 gamma, ds, db, dy, dx \
             ); \
@@ -503,14 +503,14 @@ template <> void GroupNormForward<float16, float, CUDAContext>(
     CUDAContext*                ctx) {
     const int C = G * D;
     _GroupNormFusedParams<float>
-        << < CUDA_2D_BLOCKS(N * G), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_2D_BLOCKS(N * G), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         N, G, D, mu, rsig, gamma, beta, scale, bias
     );
     if (data_format == "NCHW") {
         _GroupNormForwardNCHW<half, float>
-            << < CUDA_2D_BLOCKS(N * C), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_2D_BLOCKS(N * C), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             N, C, S,
             reinterpret_cast<const half*>(x),
             scale, bias,
@@ -518,8 +518,8 @@ template <> void GroupNormForward<float16, float, CUDAContext>(
         );
     } else if (data_format == "NHWC") {
         _GroupNormForwardNHWC<half, float>
-            << < CUDA_2D_BLOCKS(N * C), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_2D_BLOCKS(N * C), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             N, C, S,
             reinterpret_cast<const half*>(x),
             scale, bias,
@@ -548,8 +548,8 @@ template <> void GroupNormBackward<float16, float, CUDAContext>(
     auto nthreads = N * G * D * S;
     if (data_format == "NCHW") {
         _GroupNormWGradHalf<StorageOrder::NCHW>
-            << < CUDA_2D_BLOCKS(G * D), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_2D_BLOCKS(G * D), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             N, G, D, S,
             reinterpret_cast<const half*>(x),
             mu, rsig,
@@ -557,8 +557,8 @@ template <> void GroupNormBackward<float16, float, CUDAContext>(
             dgamma, dbeta
         );
         _GroupNormInternalGradHalf<StorageOrder::NCHW>
-            << < CUDA_2D_BLOCKS(N * G), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_2D_BLOCKS(N * G), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             N, G, D, S,
             reinterpret_cast<const half*>(x),
             gamma,
@@ -566,8 +566,8 @@ template <> void GroupNormBackward<float16, float, CUDAContext>(
             ds, db
         );
         _GroupNormGradHalf<StorageOrder::NCHW>
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, G, D, S,
             reinterpret_cast<const half*>(x),
             mu, rsig, gamma, ds, db,
@@ -576,8 +576,8 @@ template <> void GroupNormBackward<float16, float, CUDAContext>(
         );
     } else if (data_format == "NHWC") { \
         _GroupNormWGradHalf<StorageOrder::NHWC>
-            << < CUDA_2D_BLOCKS(G * D), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_2D_BLOCKS(G * D), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             N, G, D, S,
             reinterpret_cast<const half*>(x),
             mu, rsig,
@@ -585,8 +585,8 @@ template <> void GroupNormBackward<float16, float, CUDAContext>(
             dgamma, dbeta
         );
         _GroupNormInternalGradHalf<StorageOrder::NHWC>
-            << < CUDA_2D_BLOCKS(N * G), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_2D_BLOCKS(N * G), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             N, G, D, S,
             reinterpret_cast<const half*>(x),
             gamma,
@@ -594,8 +594,8 @@ template <> void GroupNormBackward<float16, float, CUDAContext>(
             ds, db
         );
         _GroupNormGradHalf<StorageOrder::NHWC>
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, G, D, S,
             reinterpret_cast<const half*>(x),
             mu, rsig, gamma, ds, db,

@@ -139,8 +139,8 @@ template<> __global__ void _BroadcastMinimumGrad<half>(
         T*                      y, \
         CUDAContext*            ctx) { \
         _##name \
-            << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(count), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             count, x1, x2, y \
         ); \
     }
@@ -155,8 +155,8 @@ template<> __global__ void _BroadcastMinimumGrad<half>(
         T*                      dx2, \
         CUDAContext*            ctx) { \
         _##name \
-            << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(count), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             count, x1, x2, dy, dx1, dx2 \
         ); \
     }
@@ -196,8 +196,8 @@ template <> void Minimum<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     _Minimum \
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count,
         reinterpret_cast<const half*>(x1),
         reinterpret_cast<const half*>(x2),
@@ -212,8 +212,8 @@ template <> void BroadcastMinimum<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     _BroadcastMinimum \
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count,
         reinterpret_cast<const half*>(x1),
         cast::to<half>(x2),
@@ -230,8 +230,8 @@ template <> void MinimumGrad<float16, CUDAContext>(
     float16*                dx2,
     CUDAContext*            ctx) {
     _MinimumGrad \
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count,
         reinterpret_cast<const half*>(x1),
         reinterpret_cast<const half*>(x2),
@@ -250,8 +250,8 @@ template <> void BroadcastMinimumGrad<float16, CUDAContext>(
     float16*                dx2,
     CUDAContext*            ctx) {
     _BroadcastMinimumGrad \
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count,
         reinterpret_cast<const half*>(x1),
         cast::to<half>(x2),

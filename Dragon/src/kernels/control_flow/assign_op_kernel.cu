@@ -55,8 +55,8 @@ __global__ void _Assign(
         T*                      y, \
         CUDAContext*            ctx) { \
         _Assign \
-            << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(count), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             count, \
             ndims, \
             x_dims, \

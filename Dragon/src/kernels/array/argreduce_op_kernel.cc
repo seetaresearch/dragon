@@ -20,12 +20,12 @@ void _ArgMax(
         for (int iix = 0; iix < inner_dim; ++iix) {
             const T* X = x + (oix * axis_dim * inner_dim + iix);
             const int y_offset = oix * top_k * inner_dim + iix;
-            vector< pair<T, int64_t> > vec(axis_dim);
+            vector<pair<T, int64_t>> vec(axis_dim);
             for (int j = 0; j < axis_dim; ++j)
                 vec[j] = std::make_pair(X[j * inner_dim], j);
             std::partial_sort(
                 vec.begin(), vec.begin() + top_k, vec.end(),
-                    std::greater< pair<T, int64_t> >());
+                    std::greater<pair<T, int64_t>>());
             for (int j = 0; j < top_k; ++j) {
                 indices[y_offset + j * inner_dim] = vec[j].second;
                 if (values) values[y_offset + j * inner_dim] = vec[j].first;
@@ -49,7 +49,7 @@ void _ArgMin(
         for (int iix = 0; iix < inner_dim; ++iix) {
             const T* X = x + (oix * axis_dim * inner_dim + iix);
             const int y_offset = oix * top_k * inner_dim + iix;
-            vector< pair<T, int64_t> > vec(axis_dim);
+            vector<pair<T, int64_t>> vec(axis_dim);
             for (int j = 0; j < axis_dim; ++j)
                 vec[j] = std::make_pair(X[j * inner_dim], j);
             std::partial_sort(vec.begin(), vec.begin() + top_k, vec.end());

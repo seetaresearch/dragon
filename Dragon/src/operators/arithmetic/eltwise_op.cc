@@ -36,6 +36,13 @@ void EltwiseOp<Context>::ProdRunImpl() {
 
 template <class Context> template <typename T>
 void EltwiseOp<Context>::RunImpl() {
+    if (operation_ == "SUM") SumRunImpl<T>();
+    else if (operation_ == "PROD") ProdRunImpl<T>();
+    else LOG(FATAL) << "Unknwon Operation: " << operation_;
+}
+
+template <class Context>
+void EltwiseOp<Context>::RunOnDevice() {
     for (int i = 1; i < XSize(); i++) {
         CHECK(X(i).dims() == X(0).dims())
             << "\nExcepted Input(" << i << ")'s dims as "
@@ -45,33 +52,10 @@ void EltwiseOp<Context>::RunImpl() {
 
     Y(0)->ReshapeLike(X(0));
 
-    if (operation_ == "SUM") SumRunImpl<T>();
-    else if (operation_ == "PROD") ProdRunImpl<T>();
-    else LOG(FATAL) << "Unknwon Operation: " << operation_;
-}
-
-template <class Context>
-void EltwiseOp<Context>::RunOnDevice() {
-    if (XIsType(X(0), int8_t)) {
-        RunImpl<int8_t>();
-    } else if (XIsType(X(0), uint8_t)) {
-        RunImpl<uint8_t>();
-    } else if (XIsType(X(0), int)) {
-        RunImpl<int>();
-    } else if (XIsType(X(0), int64_t)) {
-        RunImpl<int64_t>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), double)) {
-        RunImpl<double>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0), {
-            "int8", "uint8", "int32", "int64",
-            "float16", "float32", "float64",
-        });
-    }
+    DispatchHelper<TensorTypes
+        <int8_t, uint8_t, int, int64_t,
+            float16, float, double>
+    >::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -133,26 +117,10 @@ void EltwiseGradientOp<Context>::RunImpl() {
 
 template <class Context>
 void EltwiseGradientOp<Context>::RunOnDevice() {
-    if (XIsType(X(0), int8_t)) {
-        RunImpl<int8_t>();
-    } else if (XIsType(X(0), uint8_t)) {
-        RunImpl<uint8_t>();
-    } else if (XIsType(X(0), int)) {
-        RunImpl<int>();
-    } else if (XIsType(X(0), int64_t)) {
-        RunImpl<int64_t>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), double)) {
-        RunImpl<double>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0), {
-            "int8", "uint8", "int32", "int64",
-            "float16", "float32", "float64",
-        });
-    }
+    DispatchHelper<TensorTypes
+        <int8_t, uint8_t, int, int64_t,
+            float16, float, double>
+    >::Call(this, X(0));
 }
 
 DEPLOY_CPU(Eltwise);

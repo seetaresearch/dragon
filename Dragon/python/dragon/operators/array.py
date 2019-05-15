@@ -748,7 +748,7 @@ def Arange(start, stop=None, step=1, dtype='float32', **kwargs):
 
 
 @OpSchema.Inputs(1)
-def Multinomial(inputs, num_samples=1, normalize=False, **kwargs):
+def Multinomial(inputs, num_samples=1, eps=0., normalize=False, **kwargs):
     """Return a tensor where each row contains ``num_samples``,
     sampled from the multinomial distribution.
 
@@ -765,6 +765,8 @@ def Multinomial(inputs, num_samples=1, normalize=False, **kwargs):
         The input tensor.
     num_samples : int, optional, default=1
         The number of samples.
+    eps : float, optional, default=0.
+        The prob to a uniform sampling.
     normalize : boolean, optional, default=False
         Whether to normalize the inputs.
 

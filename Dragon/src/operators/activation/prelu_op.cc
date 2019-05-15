@@ -40,13 +40,8 @@ void PReluOp<Context>::RunOnDevice() {
 
     Y(0)->ReshapeLike(X(0));
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0),
-            { "float32" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -98,13 +93,8 @@ void PReluGradientOp<Context>::RunOnDevice() {
     Y(0)->ReshapeLike(X(0));
     Y(1)->ReshapeLike(X(1));
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(0), { "float32" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 DEPLOY_CPU(PRelu);

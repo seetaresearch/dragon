@@ -13,22 +13,18 @@
 #ifndef DRAGON_CORE_WORKSPACE_H_
 #define DRAGON_CORE_WORKSPACE_H_
 
-#include "core/common.h"
 #include "core/graph.h"
-#include "utils/string.h"
 
 namespace dragon {
 
 class Workspace {
  public:
-    typedef Map<string, Map<string, int64_t> > DummyNameMap;
-
-    typedef Map<string, unique_ptr<Tensor> > TensorMap;
+    typedef Map<string, Map<string, int64_t>> DummyNameMap;
+    typedef Map<string, unique_ptr<Tensor>> TensorMap;
     typedef Map<string, string> TensorAliasMap;
     typedef Map<string, TensorFillerProto> TensorFillerMap;
-
-    typedef Map<string, unique_ptr<OperatorBase> > OperatorMap;
-    typedef Map<string, unique_ptr<GraphBase> > GraphMap;
+    typedef Map<string, unique_ptr<OperatorBase>> OperatorMap;
+    typedef Map<string, unique_ptr<GraphBase>> GraphMap;
 
     /*! \brief Constructor */
     Workspace(const string& name) : name_(name) { Initialize(); }

@@ -33,8 +33,8 @@ template<> void SmoothL1<float, CUDAContext>(
     float*                  y,
     CUDAContext*            ctx) {
     _SmoothL1
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, beta, x, y
      );
 }
@@ -63,8 +63,8 @@ template<> void SmoothL1Grad<float, CUDAContext>(
     float*                  dx,
     CUDAContext*            ctx) {
     _SmoothL1Grad
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, beta, dy, dx
     );
 }

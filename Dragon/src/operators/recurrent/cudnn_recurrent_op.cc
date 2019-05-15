@@ -211,15 +211,8 @@ void CuDNNRecurrentOp<Context>::RunImpl() {
 
 template <class Context>
 void CuDNNRecurrentOp<Context>::RunOnDevice() {
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0),
-            { "float32", "float16" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float, float16>>::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -313,15 +306,8 @@ void CuDNNRecurrentGradientOp<Context>::RunOnDevice() {
     Y(2)->ReshapeLike(X(2));  // dHx
     Y(3)->ReshapeLike(X(3));  // dCx
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0),
-            { "float32", "float16" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float, float16>>::Call(this, X(0));
 }
 
 DEPLOY_CUDNN(Recurrent);

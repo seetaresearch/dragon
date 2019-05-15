@@ -77,16 +77,12 @@ template <> void DropBlock2d<CUDAContext>(
     int*                    mask,
     CUDAContext*            ctx) {
     auto nthreads = N * C * seed_h * seed_w;
-    math::RandomUniform(
-        nthreads,
-        0.f, float(UINT_MAX),
-        seed, ctx
-    );
+    math::RandomUniform(nthreads, 0.f, 1.f, seed, ctx);
     auto mask_thresh = (uint32_t)(UINT_MAX * gamma);
     if (data_format == "NCHW") {
         _DropBlock2dNCHW
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads,
             C, H, W,
             seed_h, seed_w,
@@ -96,8 +92,8 @@ template <> void DropBlock2d<CUDAContext>(
         );
     } else if(data_format == "NHWC") {
         _DropBlock2dNHWC
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads,
             C, H, W,
             seed_h, seed_w,

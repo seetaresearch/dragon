@@ -180,9 +180,9 @@ ONNXBackend::get_special_nodes() const {
     }; return kSpecialNodes;
 }
 
-const Map< string, Map<string, string> >&
+const Map<string, Map<string, string>>&
 ONNXBackend::get_node_renamed_attrs() const {
-    const static Map< string, Map<string, string> >
+    const static Map<string, Map<string, string>>
         kPerNodeRenamedAttrs = {
             { "Gemm", { { "transB", "transW" } } },
             { "BatchNormalization", { { "epsilon", "eps" } } },

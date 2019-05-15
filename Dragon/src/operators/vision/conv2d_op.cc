@@ -27,13 +27,8 @@ void Conv2dOp<Context>::RunOnDevice() {
     if (data_format() == "NHWC" && group_ != 1)
         LOG(FATAL) << "GroupConv(NHWC) is not supported.";
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(0), { "float32" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -66,13 +61,8 @@ void Conv2dGradientOp<Context>::RunOnDevice() {
     if (data_format() == "NHWC" && group_ != 1)
         LOG(FATAL) << "GroupConv(NHWC) is not supported.";
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(0), { "float32" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 DEPLOY_CPU(Conv2d);

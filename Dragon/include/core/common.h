@@ -35,6 +35,7 @@
 
 #include "core/types.h"
 #include "proto/dragon.pb.h"
+#include "utils/string.h"
 #include "utils/logging.h"
 
 namespace dragon {

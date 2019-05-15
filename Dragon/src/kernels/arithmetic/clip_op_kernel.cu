@@ -83,8 +83,8 @@ template<> __global__ void _ClipGrad<half>(
         T*                      y, \
         CUDAContext*            ctx) { \
         _Clip<T> \
-            << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(count), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             count,  \
             cast::to<T>(low), \
             cast::to<T>(high), \
@@ -102,8 +102,8 @@ template<> __global__ void _ClipGrad<half>(
         T*                      dx, \
         CUDAContext*            ctx) { \
         _ClipGrad<T> \
-            << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(count), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             count, \
             cast::to<T>(low), \
             cast::to<T>(high), \
@@ -133,8 +133,8 @@ template <> void Clip<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     _Clip
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count,
         cast::to<half>(low),
         cast::to<half>(high),
@@ -152,8 +152,8 @@ template <> void ClipGrad<float16, CUDAContext>(
     float16*                dx,
     CUDAContext*            ctx) {
     _ClipGrad
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count,
         cast::to<half>(low),
         cast::to<half>(high),

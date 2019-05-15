@@ -35,8 +35,8 @@ template<> void Relu<float, CUDAContext>(
     float*                  y,
     CUDAContext*            ctx) {
     _Relu
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, slope, x, y
     );
 }
@@ -83,8 +83,8 @@ template<> void Relu<float16, CUDAContext>(
     CUDAContext*            ctx) {
     if ((count & 1) == 0) {
         _Relu
-            << < CUDA_BLOCKS(count >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(count >> 1), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             count >> 1,
             cast::to<half2>(slope),
             reinterpret_cast<const half2*>(x),
@@ -92,8 +92,8 @@ template<> void Relu<float16, CUDAContext>(
         );
     } else {
         _Relu
-            << < CUDA_BLOCKS(count), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(count), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             count,
             cast::to<half>(slope),
             reinterpret_cast<const half*>(x),
@@ -134,8 +134,8 @@ template<> void ReluGrad<float, CUDAContext>(
     float*                  dx,
     CUDAContext*            ctx) {
     _ReluGrad
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, slope, dy, y, dx
     );
 }
@@ -170,8 +170,8 @@ template<> void ReluGrad<float16, CUDAContext>(
     float16*                dx,
     CUDAContext*            ctx) {
     _ReluGrad
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, slope,
         reinterpret_cast<const half*>(dy),
         reinterpret_cast<const half*>(y),

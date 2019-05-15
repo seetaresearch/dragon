@@ -111,8 +111,8 @@ DEFINE_COPY_FUNC(double);
         T*                      y, \
         CUDAContext*            ctx) { \
         _##name \
-            << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             n, x, y \
         ); \
     }
@@ -245,8 +245,8 @@ __global__ void _AddScalar(
                 sizeof(T) * n, ctx->cuda_stream())); \
         } else { \
             _Set \
-                << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 n, alpha, y \
             ); \
         } \
@@ -273,15 +273,15 @@ DEFINE_SET_FUNC(double);
         if (type == 0) { \
             /*! Row - BroadcastX */ \
             _RowBroadcastSet \
-                << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 n, cols, x, y \
             ); \
         } else if (type == 1) { \
             /*! Col - BroadcastX */ \
             _ColBroadcastSet \
-                << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 n, cols, x, y \
             ); \
         } \
@@ -307,8 +307,8 @@ DEFINE_BROADCAST_SET_FUNC(double);
         T*                      y, \
         CUDAContext*            ctx) { \
         _Pow \
-            << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             n, cast::to<T>(exp), x, y \
         ); \
     }
@@ -337,8 +337,8 @@ DEFINE_POWX_FUNC(double);
             } return; \
         } \
         _Scale \
-            << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             n, _alpha_, x, y \
         ); \
     }
@@ -386,8 +386,8 @@ DEFINE_CUBLAS_SCALE_FUNC(double, cublasDscal_v2);
         T*                      y, \
         CUDAContext*            ctx) { \
         _Axpy \
-            << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             n, cast::to<T>(alpha), x, y \
         ); \
     }
@@ -434,8 +434,8 @@ DEFINE_AXPY_FUNC(int64_t);
         T*                      y, \
         CUDAContext*            ctx) { \
         _Axpby \
-            << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             n, \
             cast::to<T>(alpha), x, \
             cast::to<T>(beta), y \
@@ -461,8 +461,8 @@ DEFINE_AXPBY_FUNC(double);
         T _alpha_ = (T)alpha; \
         if (_alpha_ == T(0)) return; \
         _AddScalar \
-            << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             n, _alpha_, y \
         ); \
     }
@@ -506,8 +506,8 @@ __global__ void _InvStd(
         T*                      y, \
         CUDAContext*            ctx) { \
         _InvStd \
-            << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             n, cast::to<T>(eps), x, y \
         ); \
     }
@@ -598,8 +598,8 @@ template <> float ASum<float, CUDAContext>(
         T*                      y, \
         CUDAContext*            ctx) { \
         _##name \
-            << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             n, a, b, y \
         ); \
     }
@@ -829,29 +829,29 @@ __global__ void _ColBroadcastDiv(
         if (type == 0) { \
             /*! Row - BroadcastB */ \
             _RowBroadcast##name<T, false> \
-                << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                    0, ctx->cuda_stream() >> >( \
+                <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                   0, ctx->cuda_stream() >>>( \
                 n, cols, a, b, y \
             ); \
         } else if (type == 1) { \
             /*! Col - BroadcastB */ \
             _ColBroadcast##name<T, false> \
-                << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                    0, ctx->cuda_stream() >> >( \
+                <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                   0, ctx->cuda_stream() >>>( \
                 n, cols, a, b, y \
             ); \
         } else if (type == 2) { \
             /*! Row - BroadcastA */ \
             _RowBroadcast##name<T, true> \
-                << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                    0, ctx->cuda_stream() >> >( \
+                <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                   0, ctx->cuda_stream() >>>( \
                 n, cols, a, b, y \
             ); \
         } else if (type == 3) { \
             /*! Col - BroadcastA */ \
             _ColBroadcast##name<T, true> \
-                << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                    0, ctx->cuda_stream() >> >( \
+                <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                   0, ctx->cuda_stream() >>>( \
                 n, cols, a, b, y \
             ); \
         } else { \

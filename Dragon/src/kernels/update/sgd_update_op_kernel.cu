@@ -31,8 +31,8 @@ template <> void SGDUpdate<float, CUDAContext>(
     float*                  h,
     CUDAContext*            ctx) {
     _SGDUpdate
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, lr, momentum, g, h
     );
 }

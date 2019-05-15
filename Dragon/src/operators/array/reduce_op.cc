@@ -14,6 +14,29 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void ReduceOp<Context>::RunImpl() {
+    auto* x = X(0).template data<T, Context>();
+    auto* y = Y(0)->template mutable_data<T, Context>();
+
+    auto scale = operation_ == "SUM" ? 1.f :
+        1.f / (X(0).count() / Y(0)->count());
+
+    if (X(0).count() == 1) {
+        // Just copy the contents
+        math::Copy(Y(0)->count(), x, y, ctx());
+    } else {
+        kernel::ReduceSum(
+            (int)dims32_.size(),
+            dims32_.data(),
+            (int)axes32_.size(),
+            axes32_.data(),
+            scale, x,
+            y, ctx()
+        );
+    }
+}
+
+template <class Context>
+void ReduceOp<Context>::RunOnDevice() {
     dims_ = X(0).dims();
     dims32_.assign(dims_.begin(), dims_.end());
     axes32_.assign(axes_.begin(), axes_.end());
@@ -41,73 +64,14 @@ void ReduceOp<Context>::RunImpl() {
 
     Y(0)->Reshape(out_shape);
 
-    auto* x = X(0).template data<T, Context>();
-    auto* y = Y(0)->template mutable_data<T, Context>();
-
-    auto scale = operation_ == "SUM" ? 1.f :
-        1.f / (X(0).count() / Y(0)->count());
-
-    if (X(0).count() == 1) {
-        // Just copy the contents
-        math::Copy(Y(0)->count(), x, y, ctx());
-    } else {
-        kernel::ReduceSum(
-            (int)dims32_.size(),
-            dims32_.data(),
-            (int)axes32_.size(),
-            axes32_.data(),
-            scale, x,
-            y, ctx()
-        );
-    }
-}
-
-template <class Context>
-void ReduceOp<Context>::RunOnDevice() {
-    if (XIsType(X(0), int8_t)) {
-        RunImpl<int8_t>();
-    } else if (XIsType(X(0), uint8_t)) {
-        RunImpl<uint8_t>();
-    } else if (XIsType(X(0), int)) {
-        RunImpl<int>();
-    } else if (XIsType(X(0), int64_t)) {
-        RunImpl<int64_t>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), double)) {
-        RunImpl<double>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0), {
-            "int8", "uint8", "int32", "int64",
-            "float16", "float32", "float64",
-        });
-    }
+    DispatchHelper<TensorTypes
+        <int8_t, uint8_t, int, int64_t,
+            float16, float, double>
+    >::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
 void ReduceGradientOp<Context>::RunImpl() {
-    y_dims_ = X(0).dims();
-    axes32_.assign(axes_.begin(), axes_.end());
-
-    if (axes32_.empty()) {
-        // Reduce to a Scalar if missing axes
-        for (int i = 0; i < X(0).ndim(); ++i)
-            axes32_.push_back(i);
-    }
-
-    for (int i = 0; i < axes32_.size(); i++) {
-        int axis = axes32_[i];
-        axes32_[i] = axis < 0 ? axis + X(0).ndim() : axis;
-        CHECK(axes32_[i] >= 0 && axes32_[i] < X(0).ndim()) \
-            << "\nExcepted the axis in [-" << X(0).ndim()
-            << ", " << X(0).ndim() << "), got " << axis << ".";
-        y_dims_[axes32_[i]] = 1;
-    }
-
-    Y(0)->ReshapeLike(X(0));
-
     auto* dy = X(1).template data<T, Context>();
     auto* dx = Y(0)->template mutable_data<T, Context>();
 
@@ -153,26 +117,30 @@ void ReduceGradientOp<Context>::RunImpl() {
 
 template <class Context>
 void ReduceGradientOp<Context>::RunOnDevice() {
-    if (XIsType(X(0), int8_t)) {
-        RunImpl<int8_t>();
-    } else if (XIsType(X(0), uint8_t)) {
-        RunImpl<uint8_t>();
-    } else if (XIsType(X(0), int)) {
-        RunImpl<int>();
-    } else if (XIsType(X(0), int64_t)) {
-        RunImpl<int64_t>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), double)) {
-        RunImpl<double>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0), {
-            "int8", "uint8", "int32", "int64",
-            "float16", "float32", "float64",
-        });
+    y_dims_ = X(0).dims();
+    axes32_.assign(axes_.begin(), axes_.end());
+
+    if (axes32_.empty()) {
+        // Reduce to a Scalar if missing axes
+        for (int i = 0; i < X(0).ndim(); ++i)
+            axes32_.push_back(i);
     }
+
+    for (int i = 0; i < axes32_.size(); i++) {
+        int axis = axes32_[i];
+        axes32_[i] = axis < 0 ? axis + X(0).ndim() : axis;
+        CHECK(axes32_[i] >= 0 && axes32_[i] < X(0).ndim()) \
+            << "\nExcepted the axis in [-" << X(0).ndim()
+            << ", " << X(0).ndim() << "), got " << axis << ".";
+        y_dims_[axes32_[i]] = 1;
+    }
+
+    Y(0)->ReshapeLike(X(0));
+
+    DispatchHelper<TensorTypes
+        <int8_t, uint8_t, int, int64_t,
+            float16, float, double>
+    >::Call(this, X(0));
 }
 
 DEPLOY_CPU(Reduce);

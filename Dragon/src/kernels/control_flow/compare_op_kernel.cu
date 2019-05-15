@@ -153,8 +153,8 @@ __global__ void _GreaterEqualHalf(
         bool*                   y, \
         CUDAContext*            ctx) { \
         IMPL \
-            << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(count), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             count, a, b, y \
         ); \
     }
@@ -167,8 +167,8 @@ __global__ void _GreaterEqualHalf(
         bool*                   y, \
         CUDAContext*            ctx) { \
         _##OP##Half \
-            << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(count), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             count, \
             reinterpret_cast<const half*>(a), \
             reinterpret_cast<const half*>(b), \

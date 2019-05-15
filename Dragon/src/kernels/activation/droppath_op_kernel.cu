@@ -44,8 +44,8 @@ template<> void DropPath<float, CUDAContext>(
     auto nthreads = rows * cols;
     auto thresh = 1.f - (1.f / scale);
     _DropPath
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads, cols, thresh, scale, x, mask, y
     );
 }
@@ -85,8 +85,8 @@ template<> void DropPath<float16, CUDAContext>(
     auto nthreads = rows * cols;
     auto thresh = 1.f - (1.f / scale);
     _DropPath
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads, cols,
         thresh,
         cast::to<half>(scale),

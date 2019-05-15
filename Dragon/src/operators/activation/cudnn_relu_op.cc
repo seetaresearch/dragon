@@ -40,15 +40,8 @@ void CuDNNReluOp<Context>::RunOnDevice() {
 
     Y(0)->ReshapeLike(X(0));
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0),
-            { "float32", "float16" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float, float16>>::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -92,15 +85,8 @@ void CuDNNReluGradientOp<Context>::RunOnDevice() {
 
     Y(0)->ReshapeLike(X(0));
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0),
-            { "float32", "float16" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float, float16>>::Call(this, X(0));
 }
 
 DEPLOY_CUDNN(Relu);

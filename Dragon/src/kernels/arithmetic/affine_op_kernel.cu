@@ -60,15 +60,15 @@ template<> void Affine<float, CUDAContext>(
     auto nthreads = outer_dim * axis_dim * inner_dim;
     if (beta != nullptr) {
         _Affine
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, axis_dim, inner_dim,
             x, alpha, beta, y
         );
     } else {
         _AffineNoBias
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, axis_dim, inner_dim, x, alpha, y
         );
     }
@@ -124,8 +124,8 @@ template<> void Affine<float16, CUDAContext>(
     auto nthreads = outer_dim * axis_dim * inner_dim;
     if (beta != nullptr) {
         _Affine
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, axis_dim, inner_dim,
             reinterpret_cast<const half*>(x),
             reinterpret_cast<const half*>(alpha),
@@ -134,8 +134,8 @@ template<> void Affine<float16, CUDAContext>(
         );
     } else {
         _AffineNoBias
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, axis_dim, inner_dim,
             reinterpret_cast<const half*>(x),
             reinterpret_cast<const half*>(alpha),
@@ -156,8 +156,8 @@ template <> void AffineGrad<float, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = outer_dim * axis_dim * inner_dim;
     _AffineNoBias
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads, axis_dim, inner_dim, dy, alpha, dx
     );
 }
@@ -174,8 +174,8 @@ template <> void AffineGrad<float16, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = outer_dim * axis_dim * inner_dim;
     _AffineNoBias
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads, axis_dim, inner_dim,
         reinterpret_cast<const half*>(dy),
         reinterpret_cast<const half*>(alpha),

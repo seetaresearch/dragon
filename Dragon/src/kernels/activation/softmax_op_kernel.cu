@@ -96,26 +96,26 @@ template<> void Softmax<float, CUDAContext>(
     auto num_preds = outer_dim * inner_dim;
     auto nelements = num_preds * axis_dim;
     _SoftmaxReduceMax
-        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(num_preds), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         num_preds, axis_dim, inner_dim, x, scale
     );
     _SoftmaxSub
-        << < CUDA_BLOCKS(nelements), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nelements), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nelements, axis_dim, inner_dim, scale, y
     );
 
     math::Exp(nelements, y, y, ctx);
 
     _SoftmaxReduceSum
-        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(num_preds), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         num_preds, axis_dim, inner_dim, y, scale
     );
     _SoftmaxDiv
-        << < CUDA_BLOCKS(nelements), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nelements), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nelements, axis_dim, inner_dim, scale, y
     );
 }
@@ -159,13 +159,13 @@ template<> void SoftmaxGrad<float, CUDAContext>(
     auto num_preds = outer_dim * inner_dim;
     auto nelements = num_preds * axis_dim;
     _SoftmaxDot
-        << < CUDA_BLOCKS(num_preds), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(num_preds), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         num_preds, axis_dim, inner_dim, dy, y, scale
     );
     _SoftmaxSub
-        << < CUDA_BLOCKS(nelements), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nelements), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nelements, axis_dim, inner_dim, scale, dx
     );
     math::Mul(nelements, dx, y, dx, ctx);

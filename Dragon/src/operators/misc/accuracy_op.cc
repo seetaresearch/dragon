@@ -24,7 +24,7 @@ void AccuracyOp<Context>::RunImpl() {
             const int label = target[i * inner_dim_ + j];
             for (int k = 0; k < ignore_.count(); k++)
                 if (label == ignore[k]) continue;
-            vector< pair<Tx, int> > vec;
+            vector<pair<Tx, int>> vec;
             for (int k = 0; k < axis_dim_; k++)
                 vec.push_back(
                     std::make_pair(
@@ -35,7 +35,7 @@ void AccuracyOp<Context>::RunImpl() {
                 vec.begin(),
                 vec.begin() + top_k_,
                 vec.end(),
-                std::greater< pair<Tx, int> >()
+                std::greater<pair<Tx, int>>()
             );
             for (int k = 0; k < top_k_; k++) {
                 if (vec[k].second == label) { acc++; break; }

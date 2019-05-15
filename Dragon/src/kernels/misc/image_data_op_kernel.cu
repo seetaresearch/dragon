@@ -76,14 +76,14 @@ template <> void ImageData<float, float, CUDAContext>(
     auto nthreads = N * C * H * W;
     if (data_format == "NCHW") {
         _ImageDataNCHW
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, C, H, W, mean, std, x, y
         );
     } else if (data_format == "NHWC") {
         _ImageDataNHWC
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, C, H, W, mean, std, x, y
        );
     } else {
@@ -107,14 +107,14 @@ template <> void ImageData<uint8_t, float, CUDAContext>(
     auto nthreads = N * C * H * W;
     if (data_format == "NCHW") {
         _ImageDataNCHW
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, C, H, W, mean, std, x, y
         );
     } else if (data_format == "NHWC") {
         _ImageDataNHWC
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, C, H, W, mean, std, x, y
        );
     } else {
@@ -191,15 +191,15 @@ template <> void ImageData<float, float16, CUDAContext>(
     auto nthreads = N * C * H * W;
     if (data_format == "NCHW") {
         _ImageDataHalfNCHW
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, C, H, W, mean, std,
             x, reinterpret_cast<half*>(y)
         );
     } else if (data_format == "NHWC") {
         _ImageDataHalfNHWC
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
            nthreads, C, H, W, mean, std,
            x, reinterpret_cast<half*>(y)
         );
@@ -222,15 +222,15 @@ template <> void ImageData<uint8_t, float16, CUDAContext>(
     auto nthreads = N * C * H * W;
     if (data_format == "NCHW") {
         _ImageDataHalfNCHW
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, C, H, W, mean, std,
             x, reinterpret_cast<half*>(y)
         );
     } else if (data_format == "NHWC") {
         _ImageDataHalfNHWC
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, C, H, W, mean, std,
             x, reinterpret_cast<half*>(y)
         );

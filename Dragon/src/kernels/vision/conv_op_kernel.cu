@@ -123,8 +123,8 @@ template <> void Im2Col2d<float, CUDAContext>(
     auto nthreads = C * out_h * out_w;
     if (data_format == "NCHW") {
          _Im2Col2dNCHW
-             << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                  0, ctx->cuda_stream() >> >(
+             <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                 0, ctx->cuda_stream() >>>(
             nthreads,
             H, W,
             out_h, out_w,
@@ -136,8 +136,8 @@ template <> void Im2Col2d<float, CUDAContext>(
         );
     } else if (data_format == "NHWC") {
         _Im2Col2dNHWC
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads,
             C, H, W,
             out_h, out_w,
@@ -286,8 +286,8 @@ template <> void Col2Im2d<float, CUDAContext>(
     const int nthreads = C * H * W;
     if (data_format == "NCHW") {
         _Col2Im2dNCHW
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads,
             H, W,
             out_h, out_w,
@@ -299,8 +299,8 @@ template <> void Col2Im2d<float, CUDAContext>(
         );
     } else if (data_format == "NHWC") {
         _Col2Im2dNHWC
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads,
             C, H, W,
             out_h, out_w,

@@ -145,28 +145,10 @@ void CropOp<Context>::RunOnDevice() {
     TENSOR_FROM_VEC(X_strides_, X(0).strides(), int);
     TENSOR_FROM_VEC(Y_dims_, Y_dims, int);
 
-    if (XIsType(X(0), bool)) {
-        RunImpl<bool>();
-    } else if (XIsType(X(0), int8_t)) {
-        RunImpl<int8_t>();
-    } else if (XIsType(X(0), uint8_t)) {
-        RunImpl<uint8_t>();
-    } else if (XIsType(X(0), int)) {
-        RunImpl<int>();
-    } else if (XIsType(X(0), int64_t)) {
-        RunImpl<int64_t>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), double)) {
-        RunImpl<double>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0), {
-            "bool", "int8", "uint8", "int32", "int64",
-                 "float16", "float32", "float64",
-        });
-    }
+    DispatchHelper<TensorTypes
+        <bool, int8_t, uint8_t, int, int64_t,
+               float16, float, double>
+    >::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -209,28 +191,10 @@ void CropGradientOp<Context>::RunOnDevice() {
     TENSOR_FROM_VEC(X_strides_, X(0).strides(), int);
     TENSOR_FROM_VEC(Y_dims_, Y_dims, int);
 
-    if (XIsType(X(0), bool)) {
-        RunImpl<bool>();
-    } else if (XIsType(X(0), int8_t)) {
-        RunImpl<int8_t>();
-    } else if (XIsType(X(0), uint8_t)) {
-        RunImpl<uint8_t>();
-    } else if (XIsType(X(0), int)) {
-        RunImpl<int>();
-    } else if (XIsType(X(0), int64_t)) {
-        RunImpl<int64_t>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), double)) {
-        RunImpl<double>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0), {
-            "bool", "int8", "uint8", "int32", "int64",
-                 "float16", "float32", "float64",
-        });
-    }
+    DispatchHelper<TensorTypes
+        <bool, int8_t, uint8_t, int, int64_t,
+               float16, float, double>
+    >::Call(this, X(0));
 }
 
 DEPLOY_CPU(Crop);

@@ -980,7 +980,7 @@ class Tensor(object):
         """
         raise NotImplementedError('Refer torch.ops.tensor.normal_')
 
-    def multinomial(self, num_samples, normalize=False):
+    def multinomial(self, num_samples, eps=0.):
         """Return a tensor where each row contains ``num_samples``,
            sampled from the multinomial distribution.
 
@@ -988,8 +988,8 @@ class Tensor(object):
         ----------
         num_samples : int
             The number of samples.
-        normalize : boolean, optional, default=False
-            Whether to normalize the inputs.
+        eps : float, optional, default=0.
+            The prob to a uniform sampling.
 
         Returns
         -------

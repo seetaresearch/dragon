@@ -120,8 +120,8 @@ template<> void MaxPool2d<float, CUDAContext>(
     auto nthreads = N * C * pool_h * pool_w;
     if (data_format == "NCHW") {
         _MaxPool2dNCHW
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads,
             C, H, W,
             pool_h, pool_w,
@@ -132,8 +132,8 @@ template<> void MaxPool2d<float, CUDAContext>(
         );
     } else if (data_format == "NHWC") {
         _MaxPool2dNHWC
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads,
             C, H, W,
             pool_h, pool_w,
@@ -256,8 +256,8 @@ template<> void AvgPool2d<float, CUDAContext>(
     auto nthreads = N * C * pool_h * pool_w;
     if (data_format == "NCHW") {
         _AvgPool2dNCHW
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads,
             C, H, W,
             pool_h, pool_w,
@@ -268,8 +268,8 @@ template<> void AvgPool2d<float, CUDAContext>(
         );
     } else if (data_format == "NHWC") {
         _AvgPool2dNHWC
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads,
             C, H, W,
             pool_h, pool_w,
@@ -392,8 +392,8 @@ template<> void MaxPool2dGrad<float, CUDAContext>(
     auto nthreads = N * C * H * W;
     if (data_format == "NCHW") {
         _MaxPool2dGrad_NCHW
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads,
             C, H, W,
             pool_h, pool_w,
@@ -404,8 +404,8 @@ template<> void MaxPool2dGrad<float, CUDAContext>(
         );
     } else if (data_format == "NHWC") {
         _MaxPool2dGradNHWC
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads,
             C, H, W,
             pool_h, pool_w,
@@ -531,8 +531,8 @@ template<> void AvgPool2dGrad<float, CUDAContext>(
     auto nthreads = N * C * H * W;
     if (data_format == "NCHW") {
         _AvgPool2dGradNCHW
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads,
             C, H, W,
             pool_h, pool_w,
@@ -543,8 +543,8 @@ template<> void AvgPool2dGrad<float, CUDAContext>(
         );
     } else if (data_format == "NHWC") {
         _AvgPool2dGradNHWC
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads,
             C, H, W,
             pool_h, pool_w,

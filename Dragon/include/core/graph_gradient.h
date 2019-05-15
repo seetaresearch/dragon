@@ -43,7 +43,7 @@ class GraphGradientMaker {
     bool CheckGrad(
         const OperatorDef&              forward_op,
         const Set<string>&              targets,
-        vector< pair<string, int> >&    gen_grads);
+        vector<pair<string, int>>&      gen_grads);
 
     string GetOperatorName();
 

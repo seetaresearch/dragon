@@ -81,15 +81,15 @@ template <> void NNResize<float, CUDAContext>(
     auto scale_w = (float)W / (float)out_w;
     if (data_format == "NCHW") {
         _NNResizeNCHW
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, C, H, W, out_h, out_w,
             scale_h, scale_w, x, y
         );
     } else if(data_format == "NHWC") {
         _NNResizeNHWC
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, C, H, W, out_h, out_w,
             scale_h, scale_w, x, y
         );
@@ -116,8 +116,8 @@ template <> void NNResize<float16, CUDAContext>(
     auto scale_w = (float)W / (float)out_w;
     if (data_format == "NCHW") {
         _NNResizeNCHW
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, C, H, W,
             out_h, out_w, scale_h, scale_w,
             reinterpret_cast<const half*>(x),
@@ -125,8 +125,8 @@ template <> void NNResize<float16, CUDAContext>(
         );
     } else if(data_format == "NHWC") {
         _NNResizeNHWC
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, C, H, W,
             out_h, out_w, scale_h, scale_w,
             reinterpret_cast<const half*>(x),
@@ -209,15 +209,15 @@ template <> void NNResizeGrad<float, CUDAContext>(
     auto scale_w = (float)W / (float)out_w;
     if (data_format == "NCHW") {
         _NNResizeGradNCHW
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, C, H, W, out_h, out_w,
             scale_h, scale_w, dy, dx
         );
     } else if(data_format == "NHWC") {
         _NNResizeGradNHWC 
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, C, H, W, out_h, out_w,
             scale_h, scale_w, dy, dx
         );

@@ -28,8 +28,8 @@ template<> void Elu<float, CUDAContext>(
     float*                  y,
     CUDAContext*            ctx) {
     _Elu
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, x, alpha, y
     );
 }
@@ -58,8 +58,8 @@ template<> void EluGrad<float, CUDAContext>(
     float*                  dx,
     CUDAContext*            ctx) {
     _EluGrad
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, alpha, dy, y, dx
     );
 }

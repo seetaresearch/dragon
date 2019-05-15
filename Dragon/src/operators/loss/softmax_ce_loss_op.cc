@@ -89,13 +89,8 @@ void SoftmaxCrossEntropyOp<Context>::RunOnDevice() {
     SoftmaxRun();
     loss_.ReshapeLike(X(0));
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(0), { "float32" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -161,13 +156,8 @@ void SoftmaxCrossEntropyGradientOp<Context>::RunOnDevice() {
 
     Y(0)->ReshapeLike(X(0));
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(0), { "float32" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 DEPLOY_CPU(SoftmaxCrossEntropy);

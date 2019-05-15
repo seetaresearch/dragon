@@ -52,15 +52,8 @@ void RNNParamSetOp<Context>::RunImpl() {
 
 template <class Context>
 void RNNParamSetOp<Context>::RunOnDevice() {
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0),
-            { "float32", "float16" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float, float16>>::Call(this, X(0));
 }
 
 DEPLOY_CPU(RNNParamSet);

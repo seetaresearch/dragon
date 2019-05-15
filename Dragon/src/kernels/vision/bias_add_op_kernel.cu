@@ -52,14 +52,14 @@ template<> void BiasAdd<float, CUDAContext>(
     auto nthreads = outer_dim * axis_dim * inner_dim;
     if (data_format == "NCHW") {
         _BiasAddNCHW
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, axis_dim, inner_dim, bias, y
         );
     } else if (data_format == "NHWC") {
         _BiasAddNHWC
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             nthreads, axis_dim, bias, y
         );
     } else {

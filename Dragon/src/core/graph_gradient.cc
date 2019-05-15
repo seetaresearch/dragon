@@ -7,7 +7,7 @@ namespace dragon {
 bool GraphGradientMaker::CheckGrad(
     const OperatorDef&              forward_op,
     const Set<string>&              targets,
-    vector< pair<string, int> >&    gen_grads) {
+    vector<pair<string, int>>&      gen_grads) {
     if (NoGradientRegistry()->Has(forward_op.type())) {
         for (auto& input : forward_op.input())
             blacklist_set_.insert(input);
@@ -81,7 +81,7 @@ void GraphGradientMaker::Make(
     for (int i = (int)forward_def.size() - 1; i >= 0; --i) {
         // Collect inputs & outputs, generate RAW grad ops
         const OperatorDef& op = *forward_def[i];
-        vector< pair<string, int> > gen_grads;
+        vector<pair<string, int>> gen_grads;
         bool is_skip = CheckGrad(op, targets_set, gen_grads);
         vector<string> g_outputs;
         for (auto& output : op.output()) {
@@ -214,7 +214,7 @@ void GraphGradientMaker::Make(
 GraphDef GraphGradientMaker::Share(const GraphDef& input_def) {
     Set<int> invalid_ops;
     Map<string, int> ref_count;
-    Map< string, pair<int, string> > ssa_map;
+    Map<string, pair<int, string>> ssa_map;
     // Count the refs for detecting leaf nodes
     for (int i = 0; i < input_def.op_size(); ++i) {
         const OperatorDef& op = input_def.op(i);

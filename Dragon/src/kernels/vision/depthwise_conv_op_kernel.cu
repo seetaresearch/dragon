@@ -144,8 +144,8 @@ template <> void DepthwiseConv2d<float, CUDAContext>(
     if (data_format == "NCHW") {
         if (kernel_h == 3 && kernel_w == 3) {
             _DepthwiseConv2dNCHW<float, 3, 3>
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 nthreads,
                 C, H, W,
                 out_h, out_w,
@@ -157,8 +157,8 @@ template <> void DepthwiseConv2d<float, CUDAContext>(
             );
         } else if (kernel_h == 5 && kernel_w == 5) {
             _DepthwiseConv2dNCHW<float, 5, 5>
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 nthreads,
                 C, H, W,
                 out_h, out_w,
@@ -170,8 +170,8 @@ template <> void DepthwiseConv2d<float, CUDAContext>(
             );
         } else if (kernel_h == 7 && kernel_w == 7) {
             _DepthwiseConv2dNCHW<float, 7, 7>
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 nthreads,
                 C, H, W,
                 out_h, out_w,
@@ -183,8 +183,8 @@ template <> void DepthwiseConv2d<float, CUDAContext>(
             );
        } else {
             _DepthwiseConv2dNCHW<float, -1, -1>
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 nthreads,
                 C, H, W,
                 out_h, out_w,
@@ -198,8 +198,8 @@ template <> void DepthwiseConv2d<float, CUDAContext>(
     } else if (data_format == "NHWC") {
         if (kernel_h == 3 && kernel_w == 3) {
             _DepthwiseConv2dNHWC<float, 3, 3>
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 nthreads,
                 C, H, W,
                 out_h, out_w,
@@ -211,8 +211,8 @@ template <> void DepthwiseConv2d<float, CUDAContext>(
             );
         } else if (kernel_h == 5 && kernel_w == 5) {
             _DepthwiseConv2dNHWC<float, 5, 5>
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 nthreads,
                 C, H, W,
                 out_h, out_w,
@@ -224,8 +224,8 @@ template <> void DepthwiseConv2d<float, CUDAContext>(
             );
         } else if (kernel_h == 7 && kernel_w == 7) {
             _DepthwiseConv2dNHWC<float, 7, 7>
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 nthreads,
                 C, H, W,
                 out_h, out_w,
@@ -237,8 +237,8 @@ template <> void DepthwiseConv2d<float, CUDAContext>(
             );
         } else {
             _DepthwiseConv2dNHWC<float, -1, -1>
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 nthreads,
                 C, H, W,
                 out_h, out_w,
@@ -394,8 +394,8 @@ template <> void DepthwiseConv2dGrad<float, CUDAContext>(
     if (data_format == "NCHW") {
         if (kernel_h == 3 && kernel_w == 3) {
             _DepthwiseConv2dGradNCHW<float, 3, 3>
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 nthreads,
                 C, H, W,
                 out_h, out_w,
@@ -407,8 +407,8 @@ template <> void DepthwiseConv2dGrad<float, CUDAContext>(
             );
         } else if (kernel_h == 5 && kernel_w == 5) {
             _DepthwiseConv2dGradNCHW<float, 5, 5>
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 nthreads,
                 C, H, W,
                 out_h, out_w,
@@ -420,8 +420,8 @@ template <> void DepthwiseConv2dGrad<float, CUDAContext>(
             );
         } else if (kernel_h == 7 && kernel_w == 7) {
             _DepthwiseConv2dGradNCHW<float, 7, 7>
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 nthreads,
                 C, H, W,
                 out_h, out_w,
@@ -433,8 +433,8 @@ template <> void DepthwiseConv2dGrad<float, CUDAContext>(
             );
         } else {
              _DepthwiseConv2dGradNCHW<float, -1, -1>
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 nthreads,
                 C, H, W,
                 out_h, out_w,
@@ -448,8 +448,8 @@ template <> void DepthwiseConv2dGrad<float, CUDAContext>(
     } else if (data_format == "NHWC") {
         if (kernel_h == 3 && kernel_w == 3) {
             _DepthwiseConv2dGradNHWC<float, 3, 3>
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 nthreads,
                 C, H, W,
                 out_h, out_w,
@@ -461,8 +461,8 @@ template <> void DepthwiseConv2dGrad<float, CUDAContext>(
             );
         } else if (kernel_h == 5 && kernel_w == 5) {
             _DepthwiseConv2dGradNHWC<float, 5, 5>
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 nthreads,
                 C, H, W,
                 out_h, out_w,
@@ -474,8 +474,8 @@ template <> void DepthwiseConv2dGrad<float, CUDAContext>(
             );
         } else if (kernel_h == 7 && kernel_w == 7) {
             _DepthwiseConv2dGradNHWC<float, 7, 7>
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 nthreads,
                 C, H, W,
                 out_h, out_w,
@@ -487,8 +487,8 @@ template <> void DepthwiseConv2dGrad<float, CUDAContext>(
             );
         } else {
              _DepthwiseConv2dGradNHWC<float, -1, -1>
-                << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-                     0, ctx->cuda_stream() >> >(
+                <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+                    0, ctx->cuda_stream() >>>(
                 nthreads,
                 C, H, W,
                 out_h, out_w,
@@ -634,8 +634,8 @@ template <> void DepthwiseConv2dWGrad<float, CUDAContext>(
     auto nblocks = C * kernel_h * kernel_w;
     if (data_format == "NCHW") {
         _DepthwiseConv2dWGradNCHW
-            << < nblocks, nthreads,
-                 0, ctx->cuda_stream() >> >(
+            <<< nblocks, nthreads,
+                0, ctx->cuda_stream() >>>(
             N, C, H, W,
             out_h, out_w,
             kernel_h, kernel_w,
@@ -646,8 +646,8 @@ template <> void DepthwiseConv2dWGrad<float, CUDAContext>(
        );
     } else if (data_format == "NHWC") {
         _DepthwiseConv2dWGradNHWC
-            << < nblocks, nthreads,
-                 0, ctx->cuda_stream() >> >(
+            <<< nblocks, nthreads,
+                0, ctx->cuda_stream() >>>(
             N, C, H, W,
             out_h, out_w,
             kernel_h, kernel_w,

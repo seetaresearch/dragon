@@ -39,8 +39,8 @@ template <> void AdamUpdate<float, CUDAContext>(
     float*                  v,
     CUDAContext*            ctx) {
     _AdamUpdate
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, lr, beta1, beta2, eps, g, m, v
     );
 }

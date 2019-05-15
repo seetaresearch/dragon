@@ -44,7 +44,6 @@ void SmoothL1LossOp<Context>::RunImpl() {
         normalizer = X(0).count();
     }
 
-    Y(0)->Reshape({});
     auto* y = Y(0)->template mutable_data<T, Context>();
     math::Sum(nelements, 1. / normalizer, err, y, ctx());
 }
@@ -53,13 +52,10 @@ template <class Context>
 void SmoothL1LossOp<Context>::RunOnDevice() {
     CHECK(X(0).count() == X(1).count());
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(0), { "float32" }
-        );
-    }
+    Y(0)->Reshape({});
+
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -110,13 +106,8 @@ void SmoothL1LossGradientOp<Context>::RunImpl() {
 
 template <class Context>
 void SmoothL1LossGradientOp<Context>::RunOnDevice() {
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(0), { "float32" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 DEPLOY_CPU(SmoothL1Loss);

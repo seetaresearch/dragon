@@ -83,8 +83,8 @@ __global__ void _CropGrad(
         T*                      y, \
         CUDAContext*            ctx) { \
         _##name \
-            << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(count), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             count, ndims, \
             x_strides, y_dims, \
             starts, x, y \

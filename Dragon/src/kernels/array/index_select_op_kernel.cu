@@ -115,8 +115,8 @@ template <> __global__ void _IndexSelectGrad<half>(
         CUDAContext*            ctx) { \
         auto nthreads = outer_dim * num_indices * inner_dim; \
         _IndexSelect \
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             nthreads, inner_dim, \
             axis_dim, num_indices, \
             indices, x, y \
@@ -135,8 +135,8 @@ template <> __global__ void _IndexSelectGrad<half>(
         CUDAContext*            ctx) { \
         auto nthreads = outer_dim * inner_dim; \
         _IndexSelectGrad \
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             nthreads, inner_dim, \
             axis_dim, num_indices, \
             indices, dy, dx \
@@ -170,8 +170,8 @@ template <> void IndexSelectGrad<float16, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = outer_dim * inner_dim;
     _IndexSelectGrad
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads, inner_dim,
         axis_dim, num_indices,
         indices,

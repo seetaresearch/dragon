@@ -42,7 +42,7 @@ class OpSchema {
         return *this; 
     }
 
-    OpSchema& Inplace(set<pair<int, int> > inplace);
+    OpSchema& Inplace(set<pair<int, int>> inplace);
     std::function<bool(int, int)> CheckInplace;
     bool AllowInplace() const { return allow_inplace_; }
 

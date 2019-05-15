@@ -54,7 +54,7 @@ OpSchema& OpSchema::NumOutputs(int n) {
     return NumOutputs(n, n);
 }
 
-OpSchema& OpSchema::Inplace(set< pair<int, int> > inplace) {
+OpSchema& OpSchema::Inplace(set<pair<int, int>> inplace) {
     CheckInplace = [inplace](int in, int out)->bool {
         return (inplace.count(std::make_pair(in, out)) > 0);
     };

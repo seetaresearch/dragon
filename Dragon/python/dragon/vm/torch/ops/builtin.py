@@ -987,7 +987,7 @@ def one_hot(input, depth):
     return module.forward(input)
 
 
-def multinomial(input, num_samples, out=None):
+def multinomial(input, num_samples, eps=0., out=None):
     """Return a tensor where each row contains ``num_samples``,
      sampled from the multinomial distribution.
 
@@ -997,8 +997,8 @@ def multinomial(input, num_samples, out=None):
         The input tensor.
     num_samples : int
         The number of samples.
-    normalize : boolean, optional, default=False
-        Whether to normalize the inputs.
+    eps : float, optional, default=0.
+        The prob to a uniform sampling.
 
     Returns
     -------
@@ -1008,9 +1008,11 @@ def multinomial(input, num_samples, out=None):
     """
     dev = MakeDevice(inputs=[input])
     key = 'Multinomial/{}' \
-          '/num_samples:{}'.format(dev, num_samples)
+          '/num_samples:{}' \
+          '/eps:{}'.format(dev, num_samples, eps)
     module = get_module(
         Multinomial, key, dev,
+        eps=eps,
         num_samples=num_samples,
     )
     return module.forward(input, out)

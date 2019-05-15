@@ -139,8 +139,8 @@ template<> __global__ void _BroadcastMaximumGrad<half>(
         T*                      y, \
         CUDAContext*            ctx) { \
         _##name \
-            << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(count), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             count, x1, x2, y \
         ); \
     }
@@ -155,8 +155,8 @@ template<> __global__ void _BroadcastMaximumGrad<half>(
         T*                      dx2, \
         CUDAContext*            ctx) { \
         _##name \
-            << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(count), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             count, x1, x2, dy, dx1, dx2 \
         ); \
     }
@@ -196,8 +196,8 @@ template <> void Maximum<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     _Maximum \
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count,
         reinterpret_cast<const half*>(x1),
         reinterpret_cast<const half*>(x2),
@@ -212,8 +212,8 @@ template <> void BroadcastMaximum<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     _BroadcastMaximum \
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count,
         reinterpret_cast<const half*>(x1),
         cast::to<half>(x2),
@@ -230,8 +230,8 @@ template <> void MaximumGrad<float16, CUDAContext>(
     float16*                dx2,
     CUDAContext*            ctx) {
     _MaximumGrad \
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count,
         reinterpret_cast<const half*>(x1),
         reinterpret_cast<const half*>(x2),
@@ -250,8 +250,8 @@ template <> void BroadcastMaximumGrad<float16, CUDAContext>(
     float16*                dx2,
     CUDAContext*            ctx) {
     _BroadcastMaximumGrad \
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count,
         reinterpret_cast<const half*>(x1),
         cast::to<half>(x2),

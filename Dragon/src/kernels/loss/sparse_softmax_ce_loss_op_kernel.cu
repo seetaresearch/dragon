@@ -59,8 +59,8 @@ template <> void SparseSoftmaxCrossEntropy<float, float, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropy
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads, axis_dim, inner_dim, nignores,
         ignore, prob, target, loss, flag
     );
@@ -81,8 +81,8 @@ template <> void SparseSoftmaxCrossEntropy<float, int64_t, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropy
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads, axis_dim, inner_dim, nignores,
         ignore, prob, target, loss, flag
     );
@@ -136,8 +136,8 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, float, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropyGrad
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads, axis_dim, inner_dim, nignores,
         ignore, prob, target, dx, flag
     );
@@ -158,8 +158,8 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, int64_t, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = outer_dim * inner_dim;
     _SparseSoftmaxCrossEntropyGrad
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         nthreads, axis_dim, inner_dim, nignores,
         ignore, prob, target, dx, flag
     );

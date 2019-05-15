@@ -32,13 +32,8 @@ void ConvTranspose2dOp<Context>::RunOnDevice() {
     for (int i = 0; i < num_axes_; i++)
         out_shape_[i] = X(0).dim(axis_ + i);
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(0), { "float32" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -76,13 +71,8 @@ void ConvTranspose2dGradientOp<Context>::RunOnDevice() {
     for (int i = 0; i < num_axes_; i++)
         out_shape_[i] = X(0).dim(axis_ + i);
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(0), { "float32" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 DEPLOY_CPU(ConvTranspose2d);

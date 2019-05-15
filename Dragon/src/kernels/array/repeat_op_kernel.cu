@@ -93,8 +93,8 @@ template<> __global__ void _RepeatGrad<half>(
         auto y_inner_dim = inner_dim * repeats; \
         auto nthreads = outer_dim * axis_dim * y_inner_dim; \
         _Repeat \
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             nthreads, axis_dim, \
             inner_dim, y_inner_dim, \
             x, y \
@@ -113,8 +113,8 @@ template<> __global__ void _RepeatGrad<half>(
         auto y_inner_dim = inner_dim * repeats; \
         auto nthreads = outer_dim * axis_dim * inner_dim; \
         _RepeatGrad \
-            << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(nthreads), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             nthreads, \
             axis_dim, \
             inner_dim, \
@@ -151,8 +151,8 @@ template<> void RepeatGrad<float16, CUDAContext>(
     auto y_inner_dim = inner_dim * repeats;
     auto nthreads = outer_dim * axis_dim * inner_dim;
     _RepeatGrad
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS, \
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS, \
+            0, ctx->cuda_stream() >>>(
         nthreads,
         axis_dim,
         inner_dim,

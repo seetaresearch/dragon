@@ -85,6 +85,8 @@ GraphBase* NewGraph(
     const GraphDef&             def,
     Workspace*                  ws);
 
+/* Macros */
+
 DECLARE_REGISTRY(
     GraphRegistry,
     GraphBase,

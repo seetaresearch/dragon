@@ -25,8 +25,8 @@ template<> void Tanh<float, CUDAContext>(
     float*                  y,
     CUDAContext*            ctx) {
     _Tanh
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, x, y
     );
 }
@@ -51,8 +51,8 @@ template<> void TanhGrad<float, CUDAContext>(
     float*                  dx,
     CUDAContext*            ctx) {
     _TanhGrad
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, dy, y, dx
     );
 }

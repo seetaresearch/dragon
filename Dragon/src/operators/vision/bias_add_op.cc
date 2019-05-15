@@ -43,13 +43,8 @@ void BiasAddOp<Context>::RunOnDevice() {
 
     Y(0)->ReshapeLike(X(0));
 
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(0), { "float32" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -102,13 +97,8 @@ void BiasAddGradientOp<Context>::RunOnDevice() {
 
     Y(1)->ReshapeLike(X(0));
 
-    if (XIsType(X(-1), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(-1), { "float32" }
-        );
-    }
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(-1));
 }
 
 DEPLOY_CPU(BiasAdd);

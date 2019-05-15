@@ -26,8 +26,8 @@ __global__ void _TypeA2B(
         Tb*                 b, \
         CUDAContext*        ctx) { \
         _TypeA2B \
-            << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(count), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             count, a, b \
         ); \
     }
@@ -66,8 +66,8 @@ template <> void TypeA2B<float16, float, CUDAContext>(
     float*                  b, 
     CUDAContext*            ctx) {
     _TypeA2B
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, reinterpret_cast<const half*>(a), b
     );
 }
@@ -89,8 +89,8 @@ template <> void TypeA2B<float, float16, CUDAContext>(
     float16*            b,
     CUDAContext*        ctx) {
     _TypeA2B
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, a, reinterpret_cast<half*>(b)
     );
 }
@@ -112,8 +112,8 @@ template <> void TypeA2B<float16, float16, CUDAContext>(
     float16*                b,
     CUDAContext*            ctx) {
     _TypeA2B
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count,
         reinterpret_cast<const half*>(a),
         reinterpret_cast<half*>(b)

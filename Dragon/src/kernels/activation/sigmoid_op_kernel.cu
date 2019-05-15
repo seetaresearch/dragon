@@ -25,8 +25,8 @@ template<> void Sigmoid<float, CUDAContext>(
     float*                  y,
     CUDAContext*            ctx) {
     _Sigmoid
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, x, y
     );
 }
@@ -51,8 +51,8 @@ template<> void SigmoidGrad<float, CUDAContext>(
     float*                  dx,
     CUDAContext*            ctx) {
     _SigmoidGrad
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, dy, y, dx
     );
 }

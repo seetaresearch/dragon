@@ -347,7 +347,7 @@ inline void CollectRoIs(
     const int                       canonical_level,
     const int                       canonical_scale,
     const T*                        rois,
-    vector< vector<int64_t> >&      roi_bins) {
+    vector<vec64_t>&                roi_bins) {
     const T* roi = rois;
     for (int i = 0; i < num_rois; ++i) {
         int bin_idx = roi_level(min_level, max_level,
@@ -360,7 +360,7 @@ inline void CollectRoIs(
 
 template <typename T>
 inline void DistributeRoIs(
-    const vector< vector<int64_t> >&    roi_bins,
+    const vector<vec64_t>&              roi_bins,
     const T*                            rois,
     vector<T*>                          outputs) {
     for (int i = 0; i < roi_bins.size(); i++) {

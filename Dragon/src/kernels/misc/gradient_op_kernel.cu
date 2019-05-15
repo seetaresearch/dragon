@@ -62,8 +62,8 @@ template <> __global__ void _GradientTwoSum<half2>(
         T*                      dx, \
         CUDAContext*            ctx) { \
         _GradientTwoSum \
-            << < CUDA_BLOCKS(count), CUDA_THREADS, \
-                 0, ctx->cuda_stream() >> >( \
+            <<< CUDA_BLOCKS(count), CUDA_THREADS, \
+                0, ctx->cuda_stream() >>>( \
             count, dy1, dy2, dx \
         ); \
     }
@@ -83,8 +83,8 @@ template <> void GradientTwoSum<float16, CUDAContext>(
     CUDAContext*            ctx) {
     if ((count & 1) == 0) {
         _GradientTwoSum
-            << < CUDA_BLOCKS(count >> 2), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(count >> 2), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             count >> 2,
             reinterpret_cast<const half2*>(dy1),
             reinterpret_cast<const half2*>(dy2),
@@ -92,8 +92,8 @@ template <> void GradientTwoSum<float16, CUDAContext>(
         );
     } else {
         _GradientTwoSum
-            << < CUDA_BLOCKS(count), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(count), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             count,
             reinterpret_cast<const half*>(dy1),
             reinterpret_cast<const half*>(dy2),

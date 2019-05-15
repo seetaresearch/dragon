@@ -29,8 +29,8 @@ template <> void MixedPrecL2Decay<float16, CUDAContext>(
     float*                  dx,
     CUDAContext*            ctx) {
     _MixedPrecL2DecayHalf
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count,
         alpha,
         reinterpret_cast<const half*>(w),
@@ -58,8 +58,8 @@ template <> void MixedPrecUpdate<float16, CUDAContext>(
     float16*                w,
     CUDAContext*            ctx) {
     _MixedPrecUpdateHalf
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count,
         updates,
         reinterpret_cast<half*>(w)

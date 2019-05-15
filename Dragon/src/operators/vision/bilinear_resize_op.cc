@@ -48,14 +48,9 @@ void BilinearResizeOp<Context>::RunOnDevice() {
     }
 
     Y(0)->Reshape(out_shape);
-    
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(0), { "float32" }
-        );
-    }
+
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 template <class Context> template <typename T>
@@ -90,14 +85,9 @@ void BilinearResizeGradientOp<Context>::RunImpl() {
 template <class Context>
 void BilinearResizeGradientOp<Context>::RunOnDevice() {
     Y(0)->ReshapeLike(X(0));
-    
-    if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else {
-        LOG(FATAL) << DTypeString(
-            X(0), { "float32" }
-        );
-    }
+
+    DispatchHelper<TensorTypes
+        <float>>::Call(this, X(0));
 }
 
 DEPLOY_CPU(BilinearResize);

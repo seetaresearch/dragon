@@ -48,16 +48,16 @@ template <> void Exp<float16, CUDAContext>(
     CUDAContext*            ctx) {
     if ((n & 1) == 0) {
         _ExpHalf2
-            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n >> 1,
             reinterpret_cast<const half2*>(x),
             reinterpret_cast<half2*>(y)
         );
     } else {
         _ExpHalf
-            << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n,
             reinterpret_cast<const half*>(x),
             reinterpret_cast<half*>(y)
@@ -94,16 +94,16 @@ template <> void Log<float16, CUDAContext>(
     CUDAContext*            ctx) {
     if ((n & 1) == 0) {
         _LogHalf2
-            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n >> 1,
             reinterpret_cast<const half2*>(x),
             reinterpret_cast<half2*>(y)
         );
     } else {
         _LogHalf
-            << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n,
             reinterpret_cast<const half*>(x),
             reinterpret_cast<half*>(y)
@@ -140,16 +140,16 @@ template <> void Inv<float16, CUDAContext>(
     CUDAContext*            ctx) {
     if ((n & 1) == 0) {
         _InvHalf2
-            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n >> 1,
             reinterpret_cast<const half2*>(x),
             reinterpret_cast<half2*>(y)
         );
     } else {
         _InvHalf
-            << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n,
             reinterpret_cast<const half*>(x),
             reinterpret_cast<half*>(y)
@@ -186,16 +186,16 @@ template <> void Sqrt<float16, CUDAContext>(
     CUDAContext*            ctx) {
     if ((n & 1) == 0) {
         _SqrtHalf2
-            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n >> 1,
             reinterpret_cast<const half2*>(x),
             reinterpret_cast<half2*>(y)
         );
     } else {
         _SqrtHalf
-            << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n,
             reinterpret_cast<const half*>(x),
             reinterpret_cast<half*>(y)
@@ -232,16 +232,16 @@ template <> void RSqrt<float16, CUDAContext>(
     CUDAContext*            ctx) {
     if ((n & 1) == 0) {
         _RSqrtHalf2
-            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n >> 1,
             reinterpret_cast<const half2*>(x),
             reinterpret_cast<half2*>(y)
         );
     } else {
         _RSqrtHalf
-            << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n,
             reinterpret_cast<const half*>(x),
             reinterpret_cast<half*>(y)
@@ -278,16 +278,16 @@ template <> void Square<float16, CUDAContext>(
     CUDAContext*            ctx) {
     if ((n & 1) == 0) {
         _SquareHalf2
-            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n >> 1,
             reinterpret_cast<const half2*>(x),
             reinterpret_cast<half2*>(y)
         );
     } else {
         _SquareHalf
-            << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n,
             reinterpret_cast<const half*>(x),
             reinterpret_cast<half*>(y)
@@ -330,16 +330,16 @@ template <> void Set<float16, CUDAContext>(
     }
     if ((n & 1) == 0) {
         _SetHalf<half2>
-            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n >> 1,
             cast::to<half2>(alpha),
             reinterpret_cast<half2*>(y)
         );
     } else {
         _SetHalf<float16>
-            << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n, alpha, y
         );
     }
@@ -380,8 +380,8 @@ template <> void Pow<float16, CUDAContext>(
     CHECK(alpha == 2.f) << "\nRequired power = 2";
     if ((n & 1) == 0) {
         _PowHalf2
-            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n >> 1,
             alpha,
             reinterpret_cast<const half2*>(x),
@@ -389,8 +389,8 @@ template <> void Pow<float16, CUDAContext>(
         );
     } else {
         _PowHalf
-            << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n,
             alpha,
             reinterpret_cast<const half*>(x),
@@ -487,16 +487,16 @@ template <> void AddScalar<float16, CUDAContext>(
     CUDAContext*            ctx) {
     if ((n & 1) == 0) {
         _AddScalarHalf2
-            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n >> 1,
             cast::to<half2>(alpha),
             reinterpret_cast<half2*>(y)
         );
     } else {
         _AddScalarHalf
-            << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n,
             cast::to<half>(alpha),
             reinterpret_cast<half*>(y)
@@ -546,8 +546,8 @@ template <> void InvStd<float16, CUDAContext>(
     CUDAContext*            ctx) {
     if ((n & 1) == 0) {
         _InvStdHalf2
-            << < CUDA_BLOCKS(n >> 1), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n >> 1), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n >> 1,
             cast::to<half2>(eps),
             reinterpret_cast<const half2*>(x),
@@ -555,8 +555,8 @@ template <> void InvStd<float16, CUDAContext>(
         );
     } else {
         _InvStdHalf
-            << < CUDA_BLOCKS(n), CUDA_THREADS,
-                 0, ctx->cuda_stream() >> >(
+            <<< CUDA_BLOCKS(n), CUDA_THREADS,
+                0, ctx->cuda_stream() >>>(
             n,
             cast::to<half>(eps),
             reinterpret_cast<const half*>(x),
@@ -668,8 +668,8 @@ __global__ void _DivHalf(
         CUDAContext*            ctx) { \
         if ((n & 1) == 0) { \
             _##name##Half2 \
-                << < CUDA_BLOCKS(n >> 1), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_BLOCKS(n >> 1), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 n >> 1, \
                 reinterpret_cast<const half2*>(a), \
                 reinterpret_cast<const half2*>(b), \
@@ -677,8 +677,8 @@ __global__ void _DivHalf(
             ); \
         } else { \
             _##name##Half \
-                << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 n, \
                 reinterpret_cast<const half*>(a), \
                 reinterpret_cast<const half*>(b), \
@@ -699,8 +699,8 @@ template <> void Div<float16, CUDAContext>(
     float16*                y,
     CUDAContext*            ctx) {
     _DivHalf
-        << < CUDA_BLOCKS(n), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(n), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         n,
         reinterpret_cast<const half*>(a),
         reinterpret_cast<const half*>(b),
@@ -884,8 +884,8 @@ __global__ void _ColBroadcastDivHalf(
         if (type == 0) { \
             /*! Row - BroadcastB */ \
             _RowBroadcast##name##Half<false> \
-                << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 n, cols, \
                 reinterpret_cast<const half*>(a), \
                 reinterpret_cast<const half*>(b), \
@@ -894,8 +894,8 @@ __global__ void _ColBroadcastDivHalf(
         } else if (type == 1) { \
             /*! Col - BroadcastB */ \
             _ColBroadcast##name##Half<false> \
-                << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 n, cols, \
                 reinterpret_cast<const half*>(a), \
                 reinterpret_cast<const half*>(b), \
@@ -904,8 +904,8 @@ __global__ void _ColBroadcastDivHalf(
         } else if (type == 2) { \
             /*! Row - BroadcastA */ \
             _RowBroadcast##name##Half<true> \
-                << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 n, cols, \
                 reinterpret_cast<const half*>(a), \
                 reinterpret_cast<const half*>(b), \
@@ -914,8 +914,8 @@ __global__ void _ColBroadcastDivHalf(
         } else if (type == 3) { \
             /*! Col - BroadcastA */ \
             _ColBroadcast##name##Half<true> \
-                << < CUDA_BLOCKS(n), CUDA_THREADS, \
-                     0, ctx->cuda_stream() >> >( \
+                <<< CUDA_BLOCKS(n), CUDA_THREADS, \
+                    0, ctx->cuda_stream() >>>( \
                 n, cols, \
                 reinterpret_cast<const half*>(a), \
                 reinterpret_cast<const half*>(b), \

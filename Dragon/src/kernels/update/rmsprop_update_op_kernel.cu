@@ -34,8 +34,8 @@ template <> void RMSPropUpdate<float, CUDAContext>(
     float*                  h,
     CUDAContext*            ctx) {
     _RMSPropUpdate
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, lr, decay, eps, g, h
     );
 }

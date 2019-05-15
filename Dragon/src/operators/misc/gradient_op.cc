@@ -18,35 +18,11 @@ void GradientGenerateOp<Context>::RunImpl() {
 
 template <class Context>
 void GradientGenerateOp<Context>::RunOnDevice() {
-    if (XIsType(X(0), bool)) {
-        RunImpl<bool>();
-    } else if (XIsType(X(0), int8_t)) {
-        RunImpl<int8_t>();
-    } else if (XIsType(X(0), uint8_t)) {
-        RunImpl<uint8_t>();
-    } else if (XIsType(X(0), int)) {
-        RunImpl<int>();
-    } else if (XIsType(X(0), int64_t)) {
-        RunImpl<int64_t>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), double)) {
-        RunImpl<double>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0), {
-            "bool", "int8", "uint8", "int32", "int64",
-            "float16", "float32", "float64",
-        });
-    }
+    DispatchHelper<TensorTypes
+        <bool, int8_t, uint8_t, int, int64_t,
+               float16, float, double>
+    >::Call(this, X(0));
 }
-
-DEPLOY_CPU(GradientGenerate);
-#ifdef WITH_CUDA
-DEPLOY_CUDA(GradientGenerate);
-#endif
-OPERATOR_SCHEMA(GradientGenerate);
 
 template <class Context> template <typename T>
 void GradientGatherOp<Context>::RunImpl() {
@@ -54,7 +30,7 @@ void GradientGatherOp<Context>::RunImpl() {
     auto* y = Y(0)->template mutable_data<T, Context>();
     if (indices.size() == 1) {
         auto* x = X(indices[0]).template data<T, Context>();
-        ctx()->template Copy<T, Context, Context>(count, y, x);
+        math::Copy(count, x, y, ctx());
     } else if(indices.size() == 2) {
         CHECK_EQ(count, X(indices[1]).count());
         auto* a = X(indices[0]).template data<T, Context>();
@@ -63,7 +39,7 @@ void GradientGatherOp<Context>::RunImpl() {
     } else {
         size_t i = 1;
         auto* x = X(indices[0]).template data<T, Context>();
-        ctx()->template Copy<T, Context, Context>(count, y, x);
+        math::Copy(count, x, y, ctx());
         while (i < indices.size()) {
             if (indices.size() - i >= 2) {
                 auto* a = X(indices[i]).template data<T, Context>();
@@ -84,33 +60,11 @@ void GradientGatherOp<Context>::RunOnDevice() {
     auto& Xi = X(indices[0]);
     Y(0)->ReshapeLike(Xi);
 
-    if (XIsType(Xi, int8_t)) {
-        RunImpl<int8_t>();
-    } else if (XIsType(Xi, uint8_t)) {
-        RunImpl<uint8_t>();
-    } else if (XIsType(Xi, int)) {
-        RunImpl<int>();
-    } else if (XIsType(Xi, int64_t)) {
-        RunImpl<int64_t>();
-    } else if (XIsType(Xi, float16)) {
-        RunImpl<float16>();
-    } else if (XIsType(Xi, float)) {
-        RunImpl<float>();
-    } else if (XIsType(Xi, double)) {
-        RunImpl<double>();
-    } else {
-        LOG(FATAL) << DTypeString(Xi, {
-            "int8", "uint8", "int32", "int64",
-            "float16", "float32", "float64",
-        });
-    }
+    DispatchHelper<TensorTypes
+        <int8_t, uint8_t, int, int64_t,
+            float16, float, double>
+    >::Call(this, Xi);
 }
-
-DEPLOY_CPU(GradientGather);
-#ifdef WITH_CUDA
-DEPLOY_CUDA(GradientGather);
-#endif
-OPERATOR_SCHEMA(GradientGather).NumOutputs(1);
 
 template <class Context> template <typename T>
 void GradientAddOp<Context>::RunImpl() {
@@ -124,36 +78,11 @@ void GradientAddOp<Context>::RunOnDevice() {
     CHECK_EQ(X(0).name(), Y(0)->name())
         << "\nRequires X(0) == Y(0).";
 
-    if (XIsType(X(0), int8_t)) {
-        RunImpl<int8_t>();
-    } else if (XIsType(X(0), uint8_t)) {
-        RunImpl<uint8_t>();
-    } else if (XIsType(X(0), int)) {
-        RunImpl<int>();
-    } else if (XIsType(X(0), int64_t)) {
-        RunImpl<int64_t>();
-    } else if (XIsType(X(0), float16)) {
-        RunImpl<float16>();
-    } else if (XIsType(X(0), float)) {
-        RunImpl<float>();
-    } else if (XIsType(X(0), double)) {
-        RunImpl<double>();
-    } else {
-        LOG(FATAL) << DTypeString(X(0), {
-            "int8", "uint8", "int32", "int64",
-            "float16", "float32", "float64",
-        });
-    }
+    DispatchHelper<TensorTypes
+        <int8_t, uint8_t, int, int64_t,
+            float16, float, double>
+    >::Call(this, X(0));
 }
-
-DEPLOY_CPU(GradientAdd);
-#ifdef WITH_CUDA
-DEPLOY_CUDA(GradientAdd);
-#endif
-
-OPERATOR_SCHEMA(GradientAdd)
-    .NumInputs(2).NumOutputs(1)
-    .Inplace({ { 0, 0 } });
 
 template <class Context>
 void StopGradientOp<Context>::RunOnDevice() {
@@ -163,14 +92,53 @@ void StopGradientOp<Context>::RunOnDevice() {
     }
 }
 
+DEPLOY_CPU(GradientGenerate);
+#ifdef WITH_CUDA
+DEPLOY_CUDA(GradientGenerate);
+#endif
+
+DEPLOY_CPU(GradientGather);
+#ifdef WITH_CUDA
+DEPLOY_CUDA(GradientGather);
+#endif
+
+DEPLOY_CPU(GradientAdd);
+#ifdef WITH_CUDA
+DEPLOY_CUDA(GradientAdd);
+#endif
+
 DEPLOY_CPU(StopGradient);
 #ifdef WITH_CUDA
 DEPLOY_CUDA(StopGradient);
 #endif
 
+OPERATOR_SCHEMA(GradientGenerate)
+     /* X(0), ... */
+    .NumInputs(1, INT_MAX)
+     /* Y(0), ... */
+    .NumOutputs(1, INT_MAX);
+
+OPERATOR_SCHEMA(GradientGather)
+     /* X(0), ... */
+    .NumInputs(1, INT_MAX)
+     /* Y */
+    .NumOutputs(1);
+
+OPERATOR_SCHEMA(GradientAdd)
+     /* X(0), X(1) */
+    .NumInputs(2)
+     /* Y */
+    .NumOutputs(1)
+     /* X(0) => Y */
+    .Inplace({ { 0, 0 } });
+
 OPERATOR_SCHEMA(StopGradient)
-    .NumInputs(1).NumOutputs(1)
-    .Inplace({ { 0, 0 } });;
+     /* X */
+    .NumInputs(1)
+     /* Y */
+    .NumOutputs(1)
+     /* X => Y */
+    .Inplace({ { 0, 0 } });
 
 NO_GRADIENT(StopGradient);
 

@@ -134,8 +134,8 @@ template<> void ROIAlign<float16, CUDAContext>(
     CUDAContext*            ctx) {
     auto nthreads = num_rois * C  * pool_h * pool_w;
     _ROIAlignHalf
-        << < CUDA_BLOCKS(nthreads), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >
+        <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>
         (nthreads, C, H, W, pool_h, pool_w,
             sampling_ratio, spatial_scale,
                 reinterpret_cast<const half*>(x), rois,

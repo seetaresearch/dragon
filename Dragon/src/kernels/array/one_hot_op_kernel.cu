@@ -32,8 +32,8 @@ template <> void OneHot<float, CUDAContext>(
     float*                  y,
     CUDAContext*            ctx) {
     _OneHot
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, depth, on_value, x, y
     );
 }
@@ -48,8 +48,8 @@ template <> void OneHot<int, CUDAContext>(
     int*                    y,
     CUDAContext*            ctx) {
     _OneHot
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, depth, on_value, x, y
     );
 }
@@ -64,8 +64,8 @@ template <> void OneHot<int64_t, CUDAContext>(
     int64_t*                y,
     CUDAContext*            ctx) {
     _OneHot
-        << < CUDA_BLOCKS(count), CUDA_THREADS,
-             0, ctx->cuda_stream() >> >(
+        <<< CUDA_BLOCKS(count), CUDA_THREADS,
+            0, ctx->cuda_stream() >>>(
         count, depth, on_value, x, y
     );
 }

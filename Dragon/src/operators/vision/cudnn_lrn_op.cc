@@ -14,10 +14,13 @@ void CuDNNLRNOp<Context>::RunImpl() {
         auto* y = Y(0)->template mutable_data<T, Context>();
 
         CUDNN_CHECK(cudnnLRNCrossChannelForward(
-            ctx()->cudnn_handle(), lrn_desc_,
+            ctx()->cudnn_handle(),
+            lrn_desc_,
             CUDNN_LRN_CROSS_CHANNEL_DIM1,
-            CuDNNType<T>::one, input_desc_, x,
-            CuDNNType<T>::zero, output_desc_, y
+            CuDNNType<T>::one,
+            input_desc_, x,
+            CuDNNType<T>::zero,
+            output_desc_, y
         ));
     } else {
         LOG(FATAL) << "Unknown DataFormat: " << data_format();
@@ -29,15 +32,8 @@ void CuDNNLRNOp<Context>::RunOnDevice() {
     Y(0)->ReshapeLike(X(0));
 
     if (this->mode_ == "ACROSS_CHANNELS") {
-        if (XIsType(X(0), float)) {
-            RunImpl<float>();
-        } else if (XIsType(X(0), float16)) {
-            RunImpl<float16>();
-        } else {
-            LOG(FATAL) << DTypeString(X(0),
-                { "float32", "float16" }
-            );
-        }
+        DispatchHelper<TensorTypes
+            <float, float16>>::Call(this, X(0));
     } else if (this->mode_ == "WITHIN_CHANNEL") {
         LRNOp<Context>::RunOnDevice();
     } else {
@@ -57,7 +53,8 @@ void CuDNNLRNGradientOp<Context>::RunImpl() {
         auto* dx = Y(0)->template mutable_data<T, Context>();
 
         CUDNN_CHECK(cudnnLRNCrossChannelBackward(
-            ctx()->cudnn_handle(), lrn_desc_,
+            ctx()->cudnn_handle(),
+            lrn_desc_,
             CUDNN_LRN_CROSS_CHANNEL_DIM1,
             CuDNNType<T>::one,
             input_desc_, y,
@@ -76,15 +73,8 @@ void CuDNNLRNGradientOp<Context>::RunOnDevice() {
     Y(0)->ReshapeLike(X(0));
 
     if (this->mode_ == "ACROSS_CHANNELS") {
-        if (XIsType(X(0), float)) {
-            RunImpl<float>();
-        } else if (XIsType(X(0), float16)) {
-            RunImpl<float16>();
-        } else {
-            LOG(FATAL) << DTypeString(X(0),
-                { "float32", "float16" }
-            );
-        }
+        DispatchHelper<TensorTypes
+            <float, float16>>::Call(this, X(0));
     } else if (this->mode_ == "WITHIN_CHANNEL") {
         LRNGradientOp<Context>::RunOnDevice();
     } else {
