@@ -17,6 +17,8 @@
 
 namespace dragon {
 
+class Tensor;
+
 namespace kernel {
 
 /*! activation.dropout */
@@ -258,37 +260,37 @@ void ClipGrad(
 template <typename T, class Context>
 void Maximum(
     const int               count,
-    const T*                x1,
-    const T*                x2,
+    const T*                a,
+    const T*                b,
     T*                      y,
     Context*                ctx);
 
 template <typename T, class Context>
 void BroadcastMaximum(
     const int               count,
-    const T*                x1,
-    const T                 x2,
+    const T*                a,
+    const T                 b,
     T*                      y,
     Context*                ctx);
 
 template <typename T, class Context>
 void MaximumGrad(
     const int               count,
-    const T*                x1,
-    const T*                x2,
+    const T*                a,
+    const T*                b,
     const T*                dy,
-    T*                      dx1,
-    T*                      dx2,
+    T*                      da,
+    T*                      db,
     Context*                ctx);
 
 template <typename T, class Context>
 void BroadcastMaximumGrad(
     const int               count,
-    const T*                x1,
-    const T                 x2,
+    const T*                a,
+    const T                 b,
     const T*                dy,
-    T*                      dx1,
-    T*                      dx2,
+    T*                      da,
+    T*                      db,
     Context*                ctx);
 
 /*! arithmetic.minimum */
@@ -296,37 +298,37 @@ void BroadcastMaximumGrad(
 template <typename T, class Context>
 void Minimum(
     const int               count,
-    const T*                x1,
-    const T*                x2,
+    const T*                a,
+    const T*                b,
     T*                      y,
     Context*                ctx);
 
 template <typename T, class Context>
 void BroadcastMinimum(
     const int               count,
-    const T*                x1,
-    const T                 x2,
+    const T*                a,
+    const T                 b,
     T*                      y,
     Context*                ctx);
 
 template <typename T, class Context>
 void MinimumGrad(
     const int               count,
-    const T*                x1,
-    const T*                x2,
+    const T*                a,
+    const T*                b,
     const T*                dy,
-    T*                      dx1,
-    T*                      dx2,
+    T*                      da,
+    T*                      db,
     Context*                ctx);
 
 template <typename T, class Context>
 void BroadcastMinimumGrad(
     const int               count,
-    const T*                x1,
-    const T                 x2,
+    const T*                a,
+    const T                 b,
     const T*                dy,
-    T*                      dx1,
-    T*                      dx2,
+    T*                      da,
+    T*                      db,
     Context*                ctx);
 
 /*! arithmetic.moments */
@@ -435,6 +437,38 @@ void IndexSelectGrad(
     const int64_t*          indices,
     const T*                dy,
     T*                      dx,
+    Context*                ctx);
+
+/*! array.masked_select */
+
+template <typename T, class Context>
+void MaskedSelect(
+    const int               count,
+    const uint8_t*          mask,
+    const T*                x,
+    Tensor*                 indices,
+    Tensor*                 scratch,
+    Tensor*                 y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void MaskedSelectGrad(
+    const int               count,
+    const int               num_indices,
+    const int64_t*          indices,
+    const T*                dy,
+    T*                      dx,
+    Context*                ctx);
+
+/*! array.non_zero */
+
+template <class Context>
+void UnravelIndex(
+    const int               count,
+    const int               ndims,
+    const int*              dims,
+    const int64_t*          x,
+    int64_t*                y,
     Context*                ctx);
 
 /*! array.pad */
@@ -602,6 +636,26 @@ void TransposeGrad(
     T*                      dx,
     Context*                ctx);
 
+/*! array.where */
+
+template <typename T, class Context>
+void Where(
+    const int               count,
+    const uint8_t*          mask,
+    const T*                a,
+    const T*                b,
+    T*                      y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void WhereGrad(
+    const int               count,
+    const uint8_t*          mask,
+    const T*                dy,
+    T*                      da,
+    T*                      db,
+    Context*                ctx);
+
 /*! control_flow.assgin */
 
 template <typename T, class Context>
@@ -618,7 +672,22 @@ void Assign(
 /*! control_flow.compare */
 
 template <typename T, class Context>
+void NotZero(
+    const int               count,
+    const T*                x,
+    bool*                   y,
+    Context*                ctx);
+
+template <typename T, class Context>
 void Equal(
+    const int               count,
+    const T*                a,
+    const T*                b,
+    bool*                   y,
+    Context*                ctx);
+
+template <typename T, class Context>
+void NotEqual(
     const int               count,
     const T*                a,
     const T*                b,
@@ -655,16 +724,6 @@ void GreaterEqual(
     const T*                a,
     const T*                b,
     bool*                   y,
-    Context*                ctx);
-
-/*! control_flow.masked_assign */
-
-template <typename T, class Context>
-void MaskedAssign(
-    const int               count,
-    const uint8_t*          mask,
-    const T*                x,
-    T*                      y,
     Context*                ctx);
 
 /*! loss.l1_loss */

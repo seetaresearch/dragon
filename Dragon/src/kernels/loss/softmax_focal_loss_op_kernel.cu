@@ -7,7 +7,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! SoftmaxFocalLoss <Tx = ?, Ty = ?, Device = CUDA> */
+/* <Tx = ?, Ty = ?, Device = CUDA> */
 
 template <typename Tx, typename Ty>
 __global__ void _SoftmaxFocalLoss(
@@ -48,7 +48,7 @@ __global__ void _SoftmaxFocalLoss(
     }
 }
 
-/*! SoftmaxFocalLoss <Tx = float32, Ty = float32, Device = CUDA> */
+/* <Tx = float32, Ty = float32, Device = CUDA> */
 
 template <> void SoftmaxFocalLoss<float, float, CUDAContext>(
     const int               outer_dim,
@@ -76,7 +76,7 @@ template <> void SoftmaxFocalLoss<float, float, CUDAContext>(
     );
 }
 
-/*! SoftmaxFocalLoss <Tx = float32, Ty = int64, Device = CUDA> */
+/* <Tx = float32, Ty = int64, Device = CUDA> */
 
 template <> void SoftmaxFocalLoss<float, int64_t, CUDAContext>(
     const int               outer_dim,
@@ -104,7 +104,7 @@ template <> void SoftmaxFocalLoss<float, int64_t, CUDAContext>(
     );
 }
 
-/*! SoftmaxFocalLossGrad <Tx = ?, Ty = ?, Device = CUDA> */
+/* <Tx = ?, Ty = ?, Device = CUDA> */
 
 template <typename Tx, typename Ty>
 __global__ void _SoftmaxFocalLossGrad(
@@ -160,7 +160,7 @@ __global__ void _SoftmaxFocalLossGrad(
     }
 }
 
-/*! SoftmaxFocalLossGrad <Tx = float32, Ty = float32, Device = CUDA> */
+/* <Tx = float32, Ty = float32, Device = CUDA> */
 
 template<> void SoftmaxFocalLossGrad<float, float, CUDAContext>(
     const int               outer_dim,
@@ -188,7 +188,7 @@ template<> void SoftmaxFocalLossGrad<float, float, CUDAContext>(
     );
 }
 
-/*! SoftmaxFocalLossGrad <Tx = float32, Ty = int64, Device = CUDA> */
+/* <Tx = float32, Ty = int64, Device = CUDA> */
 
 template<> void SoftmaxFocalLossGrad<float, int64_t, CUDAContext>(
     const int               outer_dim,

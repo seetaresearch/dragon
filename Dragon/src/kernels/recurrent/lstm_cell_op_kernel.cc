@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! LSTMCell <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <typename T>
 T _s(T x) { return T(1) / (T(1) + exp(-x)); }
@@ -34,7 +34,7 @@ template <> void LSTMCell<float, CPUContext>(
     }
 }
 
-/*! LSTMCellGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <> void LSTMCellGrad<float, CPUContext>(
     const int               N,

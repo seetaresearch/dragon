@@ -35,7 +35,7 @@ class OperatorHelper(object):
         'Relu', 'PRelu', 'Elu', 'SElu', 'Sigmoid', 'Tanh', 'Softmax',
         'Dropout', 'DropPath', 'DropBlock2d',
         'Add', 'Sub', 'Mul', 'Div', 'Clip', 'Log', 'Exp', 'Pow', 'Square', 'Sqrt',
-        'Accumulate', 'Affine', 'Copy', 'Compare', 'StopGradient', 'MPIBroadcast',
+        'Accumulate', 'Affine', 'Copy', 'StopGradient', 'MPIBroadcast',
         'BatchNorm', 'GroupNorm', 'L2Norm', 'LRN', 'BiasAdd',
     )
 
@@ -107,7 +107,13 @@ class OperatorHelper(object):
                 len(outputs[0].shape) < len(inputs[1].shape):
                     outputs[0].shape = inputs[1].shape
         except:
-            pass
+            try:
+                outputs[0].shape = inputs[1].shape[:]
+                if outputs[0].shape != inputs[0].shape and \
+                        len(outputs[0].shape) < len(inputs[0].shape):
+                    outputs[0].shape = inputs[0].shape
+            except:
+                pass
         return outputs
 
     @classmethod
@@ -391,16 +397,28 @@ class OperatorHelper(object):
     ###############################################
 
     @classmethod
+    def _apply_Where(cls, arguments, inputs, outputs):
+        return cls._apply_Maximum(arguments, inputs, outputs)
+
+    @classmethod
     def _apply_IndexSelect(cls, arguments, inputs, outputs):
         outputs[0].dtype = inputs[0].dtype
         axis = arguments['axis']
         try:
+            try: index_shape = inputs[1].shape[:]
+            except: index_shape = [None]
             outputs[0].shape = \
                 inputs[0].shape[:axis] + \
-                    inputs[1].shape[:] + \
-                        inputs[0].shape[axis + 1:]
+                    index_shape[:] + \
+                inputs[0].shape[axis + 1:]
         except:
             pass
+        return outputs
+
+    @classmethod
+    def _apply_MaskedSelect(cls, arguments, inputs, outputs):
+        outputs[0].dtype = inputs[0].dtype
+        outputs[0].shape = [None]
         return outputs
 
     @classmethod
@@ -778,6 +796,25 @@ class OperatorHelper(object):
         except:
             pass
         return outputs
+
+    @classmethod
+    def _apply_NonZero(cls, arguments, inputs, outputs):
+        outputs[0].dtype = 'int64'
+        try:
+            outputs[0].shape = [None, len(inputs[0].shape)]
+        except:
+            pass
+        return outputs
+
+    ###############################################
+    #                                             #
+    #                Control Flow                 #
+    #                                             #
+    ###############################################
+
+    @classmethod
+    def _apply_Compare(cls, arguments, inputs, outputs):
+        return cls._apply_Maximum(arguments, inputs, outputs)
 
     ###############################################
     #                                             #

@@ -52,7 +52,9 @@ DEPLOY_CUDA(Arange);
 #endif
 
 OPERATOR_SCHEMA(Arange)
-    .NumInputs(0).NumOutputs(1);
+    .NumInputs(0)
+     /* Y */
+    .NumOutputs(1);
 
 NO_GRADIENT(Arange);
 

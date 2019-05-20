@@ -114,7 +114,7 @@ LayerNorm = _norm_ops.LayerNorm
 InstanceNorm = _norm_ops.InstanceNorm
 L2Norm = _norm_ops.L2Norm
 
-# NDArray
+# Array
 Crop = _array_ops.Crop
 Reduce = _array_ops.Reduce
 Sum = _array_ops.Sum
@@ -130,7 +130,9 @@ Transpose = _array_ops.Transpose
 Repeat = _array_ops.Repeat
 Tile = _array_ops.Tile
 Pad = _array_ops.Pad
+Where = _array_ops.Where
 IndexSelect = _array_ops.IndexSelect
+MaskedSelect = _array_ops.MaskedSelect
 OneHot = _array_ops.OneHot
 Flatten = _array_ops.Flatten
 Reshape = _array_ops.Reshape
@@ -139,15 +141,17 @@ Squeeze = _array_ops.Squeeze
 Shape = _array_ops.Shape
 Arange = _array_ops.Arange
 Multinomial = _array_ops.Multinomial
+NonZero = _array_ops.NonZero
 
 # Control Flow
 Copy = _control_flow_ops.Copy
 Assign = _control_flow_ops.Assign
 MaskedAssign = _control_flow_ops.MaskedAssign
-Equal = _control_flow_ops.Equal
 Less = _control_flow_ops.Less
-LessEqual = _control_flow_ops.LessEqual
+Equal = _control_flow_ops.Equal
 Greater = _control_flow_ops.Greater
+LessEqual = _control_flow_ops.LessEqual
+NotEqual = _control_flow_ops.NotEqual
 GreaterEqual = _control_flow_ops.GreaterEqual
 
 # Misc

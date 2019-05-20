@@ -4,6 +4,8 @@
 #ifdef WITH_CUDA
 
 #include <cub/block/block_reduce.cuh>
+#include <cub/device/device_select.cuh>
+#include <cub/iterator/counting_input_iterator.cuh>
 
 #include "utils/cuda_device.h"
 

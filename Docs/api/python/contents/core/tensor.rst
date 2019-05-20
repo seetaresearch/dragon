@@ -64,7 +64,6 @@ List                              Brief
 `Tensor.__repr__`_                Return the information(name/shape).
 `Tensor.__getitem__`_             Return the value at the specific indices.
 `Tensor.__setitem__`_             Set the value at the specific indices.
-`Tensor.__call__`_                Return the expressions for displaying.
 ==============================    =============================================================================
 
 
@@ -95,7 +94,6 @@ API Reference
     .. automethod:: __repr__
     .. automethod:: __getitem__
     .. automethod:: __setitem__
-    .. automethod:: __call__
 
 .. _Tensor.Variable: #dragon.core.tensor.Tensor.Variable
 .. _Tensor.Placeholder: #dragon.core.tensor.Tensor.Placeholder

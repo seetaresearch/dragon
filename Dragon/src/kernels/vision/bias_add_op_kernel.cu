@@ -7,7 +7,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! BiasAdd <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _BiasAddNCHW(

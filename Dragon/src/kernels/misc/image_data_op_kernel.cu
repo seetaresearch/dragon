@@ -7,7 +7,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! ImageData <Tx = ?, Ty = ?, Device = CUDA> */
+/* <Tx = ?, Ty = ?, Device = CUDA> */
 
 template <typename Tx, typename Ty>
 __global__ void _ImageDataNCHW(
@@ -60,7 +60,7 @@ __global__ void _ImageDataNHWC(
     }
 }
 
-/*! ImageData <Tx = float32, Ty = float32, Device = CUDA> */
+/* <Tx = float32, Ty = float32, Device = CUDA> */
 
 template <> void ImageData<float, float, CUDAContext>(
     const int               N,
@@ -91,7 +91,7 @@ template <> void ImageData<float, float, CUDAContext>(
     }
 }
 
-/*! ImageData <Tx = uint8, Ty = float32, Device = CUDA> */
+/* <Tx = uint8, Ty = float32, Device = CUDA> */
 
 template <> void ImageData<uint8_t, float, CUDAContext>(
     const int               N,
@@ -122,7 +122,7 @@ template <> void ImageData<uint8_t, float, CUDAContext>(
     }
 }
 
-/*! ImageData <Tx = ?, Ty = float16, Device = CUDA> */
+/* <Tx = ?, Ty = float16, Device = CUDA> */
 
 template <typename Tx, typename Ty>
 __global__ void _ImageDataHalfNCHW(
@@ -175,7 +175,7 @@ __global__ void _ImageDataHalfNHWC(
     }
 }
 
-/*! ImageData <Tx = float32, Ty = float16, Device = CUDA> */
+/* <Tx = float32, Ty = float16, Device = CUDA> */
 
 template <> void ImageData<float, float16, CUDAContext>(
     const int               N,

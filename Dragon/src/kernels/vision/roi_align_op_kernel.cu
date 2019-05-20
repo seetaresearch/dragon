@@ -7,7 +7,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __device__ T _ROIAlignIntp(
@@ -106,10 +106,10 @@ __global__ void _ROIAlign(
 
         for (int iy = 0; iy < grid_h; iy++) {
             const T y = roi_hstart + ph * bin_h +
-                (T)(iy + .5f) * bin_h / (T)(grid_h);
+                (T)(iy + .5f) * bin_h / (T)grid_h;
             for (int ix = 0; ix < grid_w; ix++) {
                 const T x = roi_wstart + pw * bin_w +
-                    (T)(ix + .5f) * bin_w / (T)(grid_w);
+                    (T)(ix + .5f) * bin_w / (T)grid_w;
                 intp_val += _ROIAlignIntp(X, H, W, y, x);
             }
         }
@@ -143,7 +143,7 @@ template<> void ROIAlign<float, CUDAContext>(
     );
 }
 
-/*! <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __device__ void _ROIAlignIntpGrad(

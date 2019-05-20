@@ -425,7 +425,7 @@ def FeedTensor(
     ----------
     tensor : Tensor or str
         The tensor to feed.
-    array : number, list, tuple, or numpy.ndarray
+    array : array_like
         The values to feed.
     force_cpu : boolean, optional, default=False
         Whether force to feed to cpu context.

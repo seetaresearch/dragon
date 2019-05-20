@@ -129,9 +129,9 @@ OPERATOR_SCHEMA(BiasAddGradient)
 
 namespace {
 
-class GetBiasAddGradient final : public GradientMakerBase {
+class GradientMaker final : public GradientMakerBase {
  public:
-    GRADIENT_MAKER_CTOR(GetBiasAddGradient);
+    GRADIENT_MAKER_CTOR(GradientMaker);
     vector<OperatorDef> MakeDef() override {
         return SingleDef(def.type() + "Gradient", "",
             vector<string>({ I(1), GO(0) }),
@@ -142,6 +142,6 @@ class GetBiasAddGradient final : public GradientMakerBase {
 
 }  // namespace
 
-REGISTER_GRADIENT(BiasAdd, GetBiasAddGradient);
+REGISTER_GRADIENT(BiasAdd, GradientMaker);
 
 }  // namespace dragon

@@ -8,13 +8,13 @@ namespace dragon {
 
 template <class Context> template <typename T>
 void MaskedAssignOp<Context>::RunImpl() {
-    const T* x = nullptr;
+    T* x = nullptr;
     auto* mask = X(1).template raw_data<Context>();
     auto* y = Y(0)->template mutable_data<T, Context>();
 
     if (X(0).count() < Y(0)->count()) {
         int rows, cols;
-        auto* scratch = ws()
+        x = ws()
             ->template data<T, Context>
                 ({ Y(0)->count() })[0];
         auto* rx = X(0).template data<T, Context>();
@@ -23,14 +23,14 @@ void MaskedAssignOp<Context>::RunImpl() {
                     &rows, &cols)) {
             math::BroadcastSet(
                 rows, cols, 0,
-                rx, scratch, ctx()
+                rx, x, ctx()
             );
         } else if (utils::IsColwiseBroadcast(
                 Y(0)->dims(), X(0).dims(),
                     &rows, &cols)) {
             math::BroadcastSet(
                 rows, cols, 1,
-                rx, scratch, ctx()
+                rx, x, ctx()
             );
         } else {
             LOG(FATAL)
@@ -39,9 +39,9 @@ void MaskedAssignOp<Context>::RunImpl() {
                 << " to "
                 << Y(0)->DimString();
         }
-        x = scratch;
     } else if (X(0).count() == Y(0)->count()) {
-        x = X(0).template data<T, Context>();
+        x = const_cast<T*>(X(0)
+            .template data<T, Context>());
     } else {
         LOG(FATAL)
             << "Could not assign "
@@ -50,10 +50,10 @@ void MaskedAssignOp<Context>::RunImpl() {
             << Y(0)->DimString();
     }
 
-    kernel::MaskedAssign(
+    kernel::Where(
         Y(0)->count(),
         (const uint8_t*)mask,
-        x, y, ctx()
+        x, y, y, ctx()
     );
 }
 

@@ -38,6 +38,7 @@ class GradientMakerBase {
         const vector<string>&       g_outputs)
         : def(def), g_outputs_(g_outputs),
           g_inputs_(def.input_size()) {}
+
     virtual ~GradientMakerBase() {}
 
     virtual bool CopyDeviceOption() const { return true; }
@@ -45,9 +46,9 @@ class GradientMakerBase {
     virtual bool CopyArguments() const { return true; }
 
     virtual Gradient Make() {
-        vector<OperatorDef> new_defs = MakeDef();
+        auto new_defs = MakeDef();
         if (def.has_uid()) {
-            // Attach the anchor to the name if having UID
+            // Attach the anchor to name if having UID
             for (int i = 0; i < new_defs.size(); i++)
                 new_defs[i].set_name(def.name());
         } else {
@@ -57,14 +58,14 @@ class GradientMakerBase {
             for (int i = 0; i < new_defs.size(); i++)
                 new_defs[i].add_arg()->CopyFrom(anchor);
         }
-        return Gradient(new_defs, g_inputs_, DefaultValues());
+        return Gradient(new_defs, g_inputs_, defaults());
     };
 
     virtual vector<OperatorDef> MakeDef() {
         return vector<OperatorDef>();
     }
 
-    virtual vector<float> DefaultValues() {
+    virtual vector<float> defaults() {
         return vector<float>(g_outputs_.size(), 1.f);
     }
 
@@ -135,15 +136,17 @@ class SimpleGradientMaker final : public GradientMakerBase {
     GRADIENT_MAKER_CTOR(SimpleGradientMaker);
     vector<OperatorDef> MakeDef() override {
         vector<string> inputs, outputs;
-        for (const auto& input : def.input()) {
+        for (const auto& input : def.input())
             inputs.push_back(input);
-        }
-        inputs.push_back(GO(0));
-        for (int i = 0; i < def.input_size(); i++) {
+        for (int i = 0; i < def.input_size(); ++i)
             outputs.push_back(GI(i));
-        }
-        return SingleDef(def.type() +
-            "Gradient", "", inputs, outputs);
+        inputs.push_back(GO(0));
+        return SingleDef(
+            def.type() + "Gradient",
+            "",
+            inputs,
+            outputs
+        );
     }
 };
 
@@ -162,7 +165,8 @@ class InplaceGradientMaker final : public GradientMakerBase {
             def.type() + "Gradient",          /*!   OpType   */
             "",                               /*!   OpName   */
             vector<string>({ O(0), GO(0) }),  /*!   Inputs   */
-            vector<string>({ GI(0) }));       /*!   Outputs  */
+            vector<string>({ GI(0) })         /*!   Outputs  */
+        );
     }
 };
 

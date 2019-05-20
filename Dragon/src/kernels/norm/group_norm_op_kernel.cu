@@ -20,7 +20,7 @@ namespace kernel {
 #define L(x, i) __ldg(x + i)
 #define LF(x, i) __half2float(__ldg(x + i))
 
-/*! GroupNormForward <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename T>
 __global__ void _GroupNormFusedParams(
@@ -157,7 +157,7 @@ template<> __global__ void _GroupNormForwardNHWC<half, float>(
 #endif
 }
 
-/*! GroupNormBackward <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename Tx, typename Tp, StorageOrder kOrder>
 __global__ void _GroupNormWGrad(

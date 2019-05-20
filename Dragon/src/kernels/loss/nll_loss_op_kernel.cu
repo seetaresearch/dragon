@@ -7,7 +7,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! <Tx = float32, Ty = ?, Device = CUDA> */
+/* <Tx = float32, Ty = ?, Device = CUDA> */
 
 template <typename Tx, typename Ty>
 __global__ void _NLLLoss(
@@ -40,7 +40,7 @@ __global__ void _NLLLoss(
     }
 }
 
-/*! <Tx = float32, Ty = float32, Device = CUDA> */
+/* <Tx = float32, Ty = float32, Device = CUDA> */
 
 template <> void NLLLoss<float, float, CUDAContext>(
     const int               outer_dim,
@@ -62,7 +62,7 @@ template <> void NLLLoss<float, float, CUDAContext>(
      );
 }
 
-/*! <Tx = float32, Ty = int64, Device = CUDA> */
+/* <Tx = float32, Ty = int64, Device = CUDA> */
 
 template <> void NLLLoss<float, int64_t, CUDAContext>(
     const int               outer_dim,
@@ -84,7 +84,7 @@ template <> void NLLLoss<float, int64_t, CUDAContext>(
     );
 }
 
-/*! <Tx = ?, Ty = ?, Device = CUDA> */
+/* <Tx = ?, Ty = ?, Device = CUDA> */
 
 template <typename Tx, typename Ty>
 __global__ void _NLLLossGrad(
@@ -114,7 +114,7 @@ __global__ void _NLLLossGrad(
     }
 }
 
-/*! <Tx = float32, Ty = float32, Device = CUDA> */
+/* <Tx = float32, Ty = float32, Device = CUDA> */
 
 template<> void NLLLossGrad<float, float, CUDAContext>(
     const int               outer_dim,
@@ -136,7 +136,7 @@ template<> void NLLLossGrad<float, float, CUDAContext>(
     );
 }
 
-/*! <Tx = float32, Ty = int64, Device = CUDA> */
+/* <Tx = float32, Ty = int64, Device = CUDA> */
 
 template<> void NLLLossGrad<float, int64_t, CUDAContext>(
     const int               outer_dim,

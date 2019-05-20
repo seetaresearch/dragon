@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! BiasAdd <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void BiasAdd<float, CPUContext>(
     const int               outer_dim,

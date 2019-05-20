@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! ROIAlign <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <typename T>
 T _ROIAlignIntp(
@@ -115,7 +115,7 @@ template<> void ROIAlign<float, CPUContext>(
     }  // End n
 }
 
-/*! ROIAlign <T = float16, Device = CPU> */
+/* <T = float16, Device = CPU> */
 
 template<> void ROIAlign<float16, CPUContext>(
     const int               C,
@@ -133,7 +133,7 @@ template<> void ROIAlign<float16, CPUContext>(
     CPU_FP16_NOT_SUPPORTED;
 }
 
-/*! ROIAlignGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void ROIAlignGrad<float, CPUContext>(
     const int               C,

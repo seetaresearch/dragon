@@ -7,7 +7,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! GradientTwoSum <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename T>
 __global__ void _GradientTwoSum(
@@ -20,7 +20,7 @@ __global__ void _GradientTwoSum(
     }
 }
 
-/*! GradientTwoSum <T = float16, Device = CUDA> */
+/* <T = float16, Device = CUDA> */
 
 template <> __global__ void _GradientTwoSum<half>(
     const int               nthreads,

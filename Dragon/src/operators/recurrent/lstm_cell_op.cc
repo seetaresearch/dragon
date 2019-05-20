@@ -107,14 +107,14 @@ namespace {
 class GradientMaker final : public GradientMakerBase {
  public:
     GRADIENT_MAKER_CTOR(GradientMaker);
-    vector<OperatorDef> MakeDef() override{
+    vector<OperatorDef> MakeDef() override {
         return SingleDef(def.type() + "Gradient", "",
             vector<string>({ I(0), I(1), O(1), GO(0), GO(1) }),
             vector<string>({ GI(0), GI(1) })
         );
     }
-    // Fill zero for dCNext
-    vector<float> DefaultValues() override{
+    vector<float> defaults() override {
+        // Fill zero for dCNext
         return { 1.f, 0.f };
     }
 };

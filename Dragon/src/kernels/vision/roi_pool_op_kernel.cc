@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! ROIPool <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void ROIPool<float, CPUContext>(
     const int               C,
@@ -83,7 +83,7 @@ template<> void ROIPool<float, CPUContext>(
     }  // End n
 }
 
-/*! ROIPool <T = float16, Device = CPU> */
+/* <T = float16, Device = CPU> */
 
 template<> void ROIPool<float16, CPUContext>(
     const int               C,
@@ -101,7 +101,7 @@ template<> void ROIPool<float16, CPUContext>(
     CPU_FP16_NOT_SUPPORTED;
 }
 
-/*! ROIPoolGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void ROIPoolGrad<float, CPUContext>(
     const int               N,

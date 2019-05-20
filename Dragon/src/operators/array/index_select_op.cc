@@ -16,7 +16,7 @@ namespace dragon {
 template <class Context> template <typename T>
 void IndexSelectOp<Context>::RunImpl() {
     auto* x = X(0).template data<T, Context>();
-    auto* i = X(1).template mutable_data<int64_t, Context>();
+    auto* i = X(1).template data<int64_t, Context>();
     auto* y = Y(0)->template mutable_data<T, Context>();
 
     kernel::IndexSelect(
@@ -66,12 +66,6 @@ void IndexSelectGradientOp<Context>::RunImpl() {
     auto* i  = X(1).template data<int64_t, Context>();
     auto* dy = X(2).template data<T, Context>();
     auto* dx = Y(0)->template mutable_data<T, Context>();
-
-    math::Set(
-        X(0).count(),
-        cast::to<T>(0.f),
-        dx, ctx()
-    );
 
     kernel::IndexSelectGrad(
         outer_dim_,

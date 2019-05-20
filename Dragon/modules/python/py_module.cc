@@ -142,40 +142,44 @@ PYBIND11_MODULE(libdragon, m) {
             DeviceOption dst_ctx, src_ctx;
             dst_ctx.ParseFromString(dev1);
             src_ctx.ParseFromString(dev2);
-            Tensor* srcT = self->GetTensor(other);
-            Tensor* dstT = self->CreateTensor(name);
-            dstT->ReshapeLike(*srcT);
-            const TypeMeta& meta = srcT->meta();
+            auto* src = self->GetTensor(other);
+            auto* dst = self->CreateTensor(name);
+            const auto& meta = src->meta();
+            dst->ReshapeLike(*src);
             if (dst_ctx.device_type() == PROTO_CUDA) {
                 if (src_ctx.device_type() == PROTO_CUDA) {
                     // CUDA <- CUDA
                     CUDAContext::MemcpyEx<CUDAContext, CUDAContext>(
-                        srcT->nbytes(),
-                        dstT->raw_mutable_data<CUDAContext>(meta),
-                        srcT->raw_data<CUDAContext>(),
-                        src_ctx.device_id());
+                        src->nbytes(),
+                        dst->raw_mutable_data<CUDAContext>(meta),
+                        src->raw_data<CUDAContext>(),
+                        src_ctx.device_id()
+                    );
                 } else {
                     // CUDA <- CPU
                     CUDAContext::MemcpyEx<CUDAContext, CPUContext>(
-                        srcT->nbytes(),
-                        dstT->raw_mutable_data<CUDAContext>(meta),
-                        srcT->raw_data<CPUContext>(),
-                        dst_ctx.device_id());
+                        src->nbytes(),
+                        dst->raw_mutable_data<CUDAContext>(meta),
+                        src->raw_data<CPUContext>(),
+                        dst_ctx.device_id()
+                    );
                 }
             } else {
                 if (src_ctx.device_type() == PROTO_CUDA) {
                     // CPU <- CUDA
                     CUDAContext::MemcpyEx<CPUContext, CUDAContext>(
-                        srcT->nbytes(),
-                        dstT->raw_mutable_data<CPUContext>(meta),
-                        srcT->raw_data<CUDAContext>(),
-                        src_ctx.device_id());
+                        src->nbytes(),
+                        dst->raw_mutable_data<CPUContext>(meta),
+                        src->raw_data<CUDAContext>(),
+                        src_ctx.device_id()
+                    );
                 } else {
                     // CPU <- CPU
                     CPUContext::Memcpy<CUDAContext, CUDAContext>(
-                        srcT->nbytes(),
-                        dstT->raw_mutable_data<CPUContext>(meta),
-                        srcT->raw_data<CPUContext>());
+                        src->nbytes(),
+                        dst->raw_mutable_data<CPUContext>(meta),
+                        src->raw_data<CPUContext>()
+                    );
                 }
             }
         })
@@ -188,7 +192,7 @@ PYBIND11_MODULE(libdragon, m) {
             Tensor* tensor = self->GetTensor(name);
             CHECK_GT(tensor->count(), 0);
             vector<npy_intp> dims;
-            for (const auto dim : tensor->dims()) dims.push_back(dim);
+            for (auto dim : tensor->dims()) dims.push_back(dim);
             int npy_type = TypeMetaToNPY(tensor->meta());
             if (npy_type == -1) {
                 LOG(FATAL) << "Tensor(" + tensor->name() + ") "

@@ -16,7 +16,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! BatchNormBackwardTraining <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename Tx, typename Tp, StorageOrder kOrder>
 void _BatchNormInternalGrad(
@@ -68,7 +68,7 @@ void _BatchNormTrainingGrad(
     }
 }
 
-/*! BatchNormBackwardInference <T = ?, Device = CPU> */
+/* <T = ?, Device = CPU> */
 
 template <typename Tx, typename Tp, StorageOrder kOrder>
 void _BatchNormWGrad(

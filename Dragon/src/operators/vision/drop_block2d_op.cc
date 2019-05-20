@@ -38,8 +38,8 @@ void DropBlock2dOp<Context>::RunImpl() {
             ->ReshapeLike(X(0))
             ->template mutable_data<uint8_t, Context>();
 
-        auto* norm = ws()
-            ->CreateTensor(unique_name("norm"))
+        auto* scale = ws()
+            ->CreateTensor(unique_name("scale"))
             ->Reshape({})
             ->template mutable_data<float, CPUContext>();
 
@@ -82,14 +82,14 @@ void DropBlock2dOp<Context>::RunImpl() {
             (float*)buf[2], ctx()
         );
         normalizer = std::max(normalizer, 1.f);
-        norm[0] = normalizer = count / normalizer;
+        scale[0] = (float)count / normalizer;
 
         auto* x = X(0).template data<T, Context>();
         auto* y = Y(0)->template mutable_data<T, Context>();
 
         kernel::ApplyMask(
             count,
-            normalizer,
+            scale[0],
             x, mask,
             y, ctx()
         );
@@ -112,8 +112,8 @@ void DropBlock2dGradientOp<Context>::RunImpl() {
         ->GetTensor(unique_name("mask"))
         ->template data<uint8_t, Context>();
 
-    auto* norm = ws()
-        ->GetTensor(unique_name("norm"))
+    auto* scale = ws()
+        ->GetTensor(unique_name("scale"))
         ->template data<float, CPUContext>();
 
     auto* dy = X(1).template data<T, Context>();
@@ -124,7 +124,7 @@ void DropBlock2dGradientOp<Context>::RunImpl() {
     } else if (phase() == "TRAIN") {
         kernel::ApplyMask(
             Y(0)->count(),
-            norm[0],
+            scale[0],
             dy, mask,
             dx, ctx()
         );

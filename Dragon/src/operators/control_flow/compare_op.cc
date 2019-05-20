@@ -1,73 +1,109 @@
 #include "core/workspace.h"
 #include "utils/op_kernel.h"
+#include "utils/math_utils.h"
 #include "utils/math_functions.h"
 #include "operators/control_flow/compare_op.h"
 
 namespace dragon {
 
-using kernel::Equal;
-using kernel::Less;
-using kernel::Greater;
+template <class Context> template <typename T>
+void CompareOp<Context>::RunImpl() {
+    const T* a = nullptr, * b = nullptr;
 
-#define ELIGIBLE_DTYPES \
-    { "bool", "int8", "uint8", "int32", "int64", \
-           "float16", "float32", "float64" }
-
-#define DEFINE_TYPED_IMPL(Op) \
-    if (XIsType(X(0), bool)) Op##RunImpl<bool>(); \
-    else if (XIsType(X(0), int8_t)) Op##RunImpl<int8_t>(); \
-    else if (XIsType(X(0), uint8_t)) Op##RunImpl<uint8_t>(); \
-    else if (XIsType(X(0), int)) Op##RunImpl<int>(); \
-    else if (XIsType(X(0), int64_t)) Op##RunImpl<int64_t>(); \
-    else if (XIsType(X(0), float16)) Op##RunImpl<float16>(); \
-    else if (XIsType(X(0), float)) Op##RunImpl<float>(); \
-    else if (XIsType(X(0), double)) Op##RunImpl<double>(); \
-    else LOG(FATAL) << DTypeString(X(0), ELIGIBLE_DTYPES)
-
-#define DEFINE_OP_IMPL(Op) \
-    template <class Context> template <typename T> \
-    void CompareOp<Context>::Op##RunImpl() { \
-        auto* a = X(0).template data<T, Context>(); \
-        const T* b = nullptr; \
-        auto* y = Y(0)->template mutable_data<bool, Context>(); \
-        if (X(1).count() == 1) { \
-            auto* scratch = ws() \
-                ->template data<T, Context> \
-                    ({ X(0).count() })[0]; \
-            auto* bc = X(1).template data<T, CPUContext>(); \
-            math::Set(X(0).count(), bc[0], scratch, ctx()); \
-            b = scratch; \
-        } else { b = X(1).template data<T, Context>(); } \
-        kernel::Op(Y(0)->count(), a, b, y, ctx()); \
+    if (X(0).count() < X(1).count()) {
+        int rows, cols;
+        Y(0)->ReshapeLike(X(1));
+        a = ws()
+            ->template data<T, Context>
+                ({ X(1).count() })[0];
+        b = X(1).template data<T, Context>();
+        auto* ra = X(0).template data<T, Context>();
+        if (utils::IsRowwiseBroadcast(
+                X(0).dims(), X(1).dims(),
+                    &rows, &cols)) {
+            math::BroadcastSet(
+                rows, cols, 0, ra,
+                const_cast<T*>(a), ctx()
+            );
+        } else if (utils::IsColwiseBroadcast(
+                X(0).dims(), X(1).dims(),
+                    &rows, &cols)) {
+            math::BroadcastSet(
+                rows, cols, 1, ra,
+                const_cast<T*>(a), ctx()
+            );
+        } else {
+            LOG(FATAL)
+                << "Could not broadcast "
+                << X(0).DimString()
+                << " to "
+                << X(1).DimString();
+        }
+    } else if (X(0).count() > X(1).count()) {
+        int rows, cols;
+        Y(0)->ReshapeLike(X(0));
+        b = ws()
+            ->template data<T, Context>
+                ({ X(0).count() })[0];
+        a = X(0).template data<T, Context>();
+        auto* rb = X(1).template data<T, Context>();
+        if (utils::IsRowwiseBroadcast(
+                X(0).dims(), X(1).dims(),
+                    &rows, &cols)) {
+            math::BroadcastSet(
+                rows, cols, 0, rb,
+                const_cast<T*>(b), ctx()
+            );
+        } else if (utils::IsColwiseBroadcast(
+                X(0).dims(), X(1).dims(),
+                    &rows, &cols)) {
+            math::BroadcastSet(
+                rows, cols, 1, rb,
+                const_cast<T*>(b), ctx()
+            );
+        } else {
+            LOG(FATAL)
+                << "Could not broadcast "
+                << X(1).DimString()
+                << " to "
+                << X(0).DimString();
+        }
+    } else {
+        Y(0)->ReshapeLike(X(0));
+        a = X(0).template data<T, Context>();
+        b = X(1).template data<T, Context>();
     }
+
+    auto* y = Y(0)->template mutable_data<bool, Context>();
+
+    if (op_str_ == "EQ") {
+        kernel::Equal(Y(0)->count(), a, b, y, ctx());
+    } else if (op_str_ == "NE") {
+        kernel::NotEqual(Y(0)->count(), a, b, y, ctx());
+    } else if (op_str_ == "LT") {
+        kernel::Less(Y(0)->count(), a, b, y, ctx());
+    } else if (op_str_ == "GT") {
+        kernel::Greater(Y(0)->count(), a, b, y, ctx());
+    } else if (op_str_ == "LE") {
+        kernel::LessEqual(Y(0)->count(), a, b, y, ctx());
+    } else if (op_str_ == "GE") {
+        kernel::GreaterEqual(Y(0)->count(), a, b, y, ctx());
+    } else {
+        LOG(FATAL) << "Unknown Operation: " << op_str_;
+    }
+}
 
 template <class Context>
 void CompareOp<Context>::RunOnDevice() {
-    if (X(0).count() != X(1).count()) {
-        CHECK_EQ(X(1).count(), 1)
-            << "\nBoth A and B should have the same num of elements."
-            << "\nOr the B should be a Scalar."
-            << "\nDimensions of A and B are "
-            << X(0).DimString() << " and " << X(1).DimString();
+    DispatchHelper<TensorTypes
+        <bool, int8_t, uint8_t, int, int64_t,
+               float16, float, double>
+    >::Call(this, X(0));
+
+    if (to_uint8_) {
+        Y(0)->SetMeta(TypeStringToMeta("uint8"));
     }
-
-    Y(0)->ReshapeLike(X(0));
-
-    if (op_str_ == "EQ") { DEFINE_TYPED_IMPL(Equal); }
-    else if (op_str_ == "LT") { DEFINE_TYPED_IMPL(Less); }
-    else if (op_str_ == "GT") { DEFINE_TYPED_IMPL(Greater); }
-    else if (op_str_ == "LE") { DEFINE_TYPED_IMPL(LessEqual); }
-    else if (op_str_ == "GE") { DEFINE_TYPED_IMPL(GreaterEqual); }
-    else { LOG(FATAL) << "Unknown Operation: " << op_str_ << "."; }
-
-    if (to_uint8_) Y(0)->SetMeta(TypeMeta::Make<uint8_t>());
 }
-
-DEFINE_OP_IMPL(Equal);
-DEFINE_OP_IMPL(Less);
-DEFINE_OP_IMPL(LessEqual);
-DEFINE_OP_IMPL(Greater);
-DEFINE_OP_IMPL(GreaterEqual);
 
 DEPLOY_CPU(Compare);
 #ifdef WITH_CUDA
@@ -81,9 +117,5 @@ OPERATOR_SCHEMA(Compare)
     .NumOutputs(1);
 
 NO_GRADIENT(Compare);
-
-#undef ELIGIBLE_DTYPES
-#undef DEFINE_OP_IMPL
-#undef DEFINE_TYPED_IMPL
 
 }  // namespace dragon

@@ -4,7 +4,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! <Tx = ?, Ty = ?, Device = CPU> */
+/* <Tx = ?, Ty = ?, Device = CPU> */
 
 template <typename Tx, typename Ty>
 void _SparseSoftmaxCrossEntropy(
@@ -40,7 +40,7 @@ void _SparseSoftmaxCrossEntropy(
     }
 }
 
-/*! SparseSoftmaxCrossEntropy <Tx = float32, Ty = float32, Device = CPU> */
+/* <Tx = float32, Ty = float32, Device = CPU> */
 
 template <> void SparseSoftmaxCrossEntropy<float, float, CPUContext>(
     const int               outer_dim,
@@ -59,7 +59,7 @@ template <> void SparseSoftmaxCrossEntropy<float, float, CPUContext>(
     );
 }
 
-/*! <Tx = float32, Ty = int64, Device = CPU> */
+/* <Tx = float32, Ty = int64, Device = CPU> */
 
 template <> void SparseSoftmaxCrossEntropy<float, int64_t, CPUContext>(
     const int               outer_dim,
@@ -78,7 +78,7 @@ template <> void SparseSoftmaxCrossEntropy<float, int64_t, CPUContext>(
     );
 }
 
-/*! <Tx = ?, Ty = ?, Device = CPU> */
+/* <Tx = ?, Ty = ?, Device = CPU> */
 
 template <typename Tx, typename Ty>
 void _SparseSoftmaxCrossEntropyGrad(
@@ -112,7 +112,7 @@ void _SparseSoftmaxCrossEntropyGrad(
     }
 }
 
-/*! <Tx = float32, Ty = float32, Device = CPU> */
+/* <Tx = float32, Ty = float32, Device = CPU> */
 
 template<> void SparseSoftmaxCrossEntropyGrad<float, float, CPUContext>(
     const int               outer_dim,
@@ -131,7 +131,7 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, float, CPUContext>(
     );
 }
 
-/*! <Tx = float32, Ty = int64, Device = CPU> */
+/* <Tx = float32, Ty = int64, Device = CPU> */
 
 template<> void SparseSoftmaxCrossEntropyGrad<float, int64_t, CPUContext>(
     const int               outer_dim,

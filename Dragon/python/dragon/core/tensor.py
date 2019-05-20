@@ -462,7 +462,7 @@ class Tensor(object):
 
         Parameters
         ----------
-        item : int or slice
+        item : int, slice or Tensor
             The indices.
 
         Returns
@@ -471,17 +471,22 @@ class Tensor(object):
             The output tensor.
 
         """
-        starts, sizes = self._process_indices(item)
-        output = self.CreateOperator('Crop', self, starts=starts, sizes=sizes)
-        if self.shape is not None:
-            output_shape, squeeze_shape = self.shape[:], []
-            for ix in range(len(sizes)):
-                output_shape[ix] = sizes[ix]
-            for dim in output_shape:
-                if dim != -1: squeeze_shape.append(dim)
-            if len(squeeze_shape) == 0: output.shape = []
-            else: output.shape = squeeze_shape[:]
-        return output
+        if isinstance(item, Tensor):
+            return self.CreateOperator(
+                'MaskedSelect', [self, item],
+            )
+        else:
+            starts, sizes = self._process_indices(item)
+            output = self.CreateOperator('Crop', self, starts=starts, sizes=sizes)
+            if self.shape is not None:
+                output_shape, squeeze_shape = self.shape[:], []
+                for ix in range(len(sizes)):
+                    output_shape[ix] = sizes[ix]
+                for dim in output_shape:
+                    if dim != -1: squeeze_shape.append(dim)
+                if len(squeeze_shape) == 0: output.shape = []
+                else: output.shape = squeeze_shape[:]
+            return output
 
     def __setitem__(self, key, value):
         """Set the value at the specific indices.
@@ -774,11 +779,11 @@ class Tensor(object):
     ###############################################
 
     def set_value(self, new_value, **kwargs):
-        """Feed the values to C++ backend. [**Theano Style**]
+        """Feed values to the backend.
 
         Parameters
         ----------
-        new_value : number, list or numpy.ndarray
+        new_value : array_like
             The values to set.
 
         Returns
@@ -795,12 +800,12 @@ class Tensor(object):
         return self
 
     def get_value(self):
-        """Fetch the values from C++ backend. [**Theano Style**]
+        """Copy values from the backend.
 
         Returns
         -------
-        numpy.ndarray or number
-            The values of this tensor in the backend.
+        numpy.ndarray
+            The copied values.
 
         See Also
         --------
@@ -827,7 +832,7 @@ class Tensor(object):
         return self.CreateOperator('Copy', **arguments)
 
     def reshape(self, shape, **kwargs):
-        """Reshape the dimensions of input. [**Theano Style**]
+        """Reshape the dimensions of input.
 
         Parameters
         ----------
@@ -841,8 +846,7 @@ class Tensor(object):
 
         """
         if not isinstance(shape, (tuple, list)): shape = [shape]
-        return Tensor.CreateOperator(
-            'Reshape', inputs=self, shape=shape, **kwargs)
+        return self.CreateOperator('Reshape', inputs=self, shape=shape)
 
     def dimshuffle(self, *args, **kwargs):
         """Shuffle the dimensions. [**Theano Style**]

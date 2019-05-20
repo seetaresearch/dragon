@@ -134,6 +134,23 @@ class IndexSelect(BaseModule):
         return self.run(inputs, outputs)
 
 
+class MaskedSelect(BaseModule):
+    def __init__(self, key, dev, **kwargs):
+        super(MaskedSelect, self).__init__(key, dev, **kwargs)
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'MaskedSelect',
+            'arguments': {},
+        }
+
+    def forward(self, x, mask, y):
+        inputs = [x, mask]; self.unify_devices(inputs)
+        outputs = [y] if y else [self.register_output()]
+        return self.run(inputs, outputs)
+
+
 class Reduce(BaseModule):
     def __init__(self, key, dev, **kwargs):
         super(Reduce, self).__init__(key, dev, **kwargs)
@@ -324,6 +341,36 @@ class Repeat(BaseModule):
         outputs = [self.register_output()]
         callback = lambda A: self.update_args(A, times)
         return self.run(inputs, outputs, callback=callback)
+
+
+class NonZero(BaseModule):
+    def __init__(self, key, dev, **kwargs):
+        super(NonZero, self).__init__(key, dev, **kwargs)
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'NonZero',
+            'arguments': {},
+        }
+
+    def forward(self, x, y):
+        inputs = [x]; self.unify_devices(inputs)
+        outputs = [y] if y else [self.register_output()]
+        with no_grad(): return self.run(inputs, outputs)
+
+
+class Where(BaseModule):
+    def __init__(self, key, dev, **kwargs):
+        super(Where, self).__init__(key, dev, **kwargs)
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {'op_type': 'Where', 'arguments': {}}
+
+    def forward(self, condition, x, y):
+        self.unify_devices([condition, x, y])
+        return self.run([x, y, condition], [self.register_output()])
 
 
 class OneHot(BaseModule):

@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! AbsGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void AbsGrad<float, CPUContext>(
     const int               count,

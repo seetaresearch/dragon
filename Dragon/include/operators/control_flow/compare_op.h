@@ -27,7 +27,9 @@ class CompareOp final : public Operator<Context> {
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
+    template <typename T> void RunImpl();
     template <typename T> void EqualRunImpl();
+    template <typename T> void NotEqualRunImpl();
     template <typename T> void LessRunImpl();
     template <typename T> void LessEqualRunImpl();
     template <typename T> void GreaterRunImpl();

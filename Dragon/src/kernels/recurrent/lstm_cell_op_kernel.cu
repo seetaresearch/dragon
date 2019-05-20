@@ -7,7 +7,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! LSTMCell <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _LSTMCellAct(
@@ -70,7 +70,7 @@ template <> void LSTMCell<float, CUDAContext>(
     );
 }
 
-/*! LSTMCellGrad <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _LSTMCellGateGrad(

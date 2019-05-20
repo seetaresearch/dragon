@@ -7,7 +7,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Astype <Ta = ?, Tb = ?, Device = CUDA> */
+/* <Ta = ?, Tb = ?, Device = CUDA> */
 
 template <typename Ta, typename Tb>
 __global__ void _TypeA2B(
@@ -49,7 +49,7 @@ DEFINE_TYPE_A_TO_ALL(int64_t);
 DEFINE_TYPE_A_TO_ALL(float);
 DEFINE_TYPE_A_TO_ALL(double);
 
-/*! Astype <Ta = float16, Tb = float32, Device = CUDA> */
+/* <Ta = float16, Tb = float32, Device = CUDA> */
 
 template<> __global__ void _TypeA2B<half, float>(
     const int               nthreads,
@@ -72,7 +72,7 @@ template <> void TypeA2B<float16, float, CUDAContext>(
     );
 }
 
-/*! Astype <Ta = float32, Tb = float16, Device = CUDA> */
+/* <Ta = float32, Tb = float16, Device = CUDA> */
 
 template<> __global__ void _TypeA2B<float, half>(
     const int               nthreads,
@@ -95,7 +95,7 @@ template <> void TypeA2B<float, float16, CUDAContext>(
     );
 }
 
-/*! Astype <Ta = float16, Tb = float16, Device = CUDA> */
+/* <Ta = float16, Tb = float16, Device = CUDA> */
 
 template<> __global__ void _TypeA2B<half, half>(
     const int               nthreads,

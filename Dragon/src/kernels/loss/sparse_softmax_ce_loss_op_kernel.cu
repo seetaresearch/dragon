@@ -8,7 +8,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! <Tx = ?, Ty = ?, Device = CUDA> */
+/* <Tx = ?, Ty = ?, Device = CUDA> */
 
 template <typename Tx, typename Ty>
 __global__ void _SparseSoftmaxCrossEntropy(
@@ -44,7 +44,7 @@ __global__ void _SparseSoftmaxCrossEntropy(
     }
 }
 
-/*! <Tx = float32, Ty = float32, Device = CUDA> */
+/* <Tx = float32, Ty = float32, Device = CUDA> */
 
 template <> void SparseSoftmaxCrossEntropy<float, float, CUDAContext>(
     const int               outer_dim,
@@ -66,7 +66,7 @@ template <> void SparseSoftmaxCrossEntropy<float, float, CUDAContext>(
     );
 }
 
-/*! <Tx = float32, Ty = int64, Device = CUDA> */
+/* <Tx = float32, Ty = int64, Device = CUDA> */
 
 template <> void SparseSoftmaxCrossEntropy<float, int64_t, CUDAContext>(
     const int               outer_dim,
@@ -88,7 +88,7 @@ template <> void SparseSoftmaxCrossEntropy<float, int64_t, CUDAContext>(
     );
 }
 
-/*! <Tx = ?, Ty = ?, Device = CUDA> */
+/* <Tx = ?, Ty = ?, Device = CUDA> */
 
 template <typename Tx, typename Ty>
 __global__ void _SparseSoftmaxCrossEntropyGrad(
@@ -121,7 +121,7 @@ __global__ void _SparseSoftmaxCrossEntropyGrad(
     }
 }
 
-/*! <Tx = float32, Ty = float32, Device = CUDA> */
+/* <Tx = float32, Ty = float32, Device = CUDA> */
 
 template<> void SparseSoftmaxCrossEntropyGrad<float, float, CUDAContext>(
     const int               outer_dim,
@@ -143,7 +143,7 @@ template<> void SparseSoftmaxCrossEntropyGrad<float, float, CUDAContext>(
     );
 }
 
-/*! <Tx = float32, Ty = int64, Device = CUDA> */
+/* <Tx = float32, Ty = int64, Device = CUDA> */
 
 template<> void SparseSoftmaxCrossEntropyGrad<float, int64_t, CUDAContext>(
     const int               outer_dim,

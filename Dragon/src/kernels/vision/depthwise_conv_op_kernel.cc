@@ -4,7 +4,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! DepthwiseConv2d <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <typename T>
 void _DepthwiseConv2dNCHW(

@@ -69,26 +69,29 @@ class NumpyFetcher : public TensorFetcherBase {
     pybind11::object Fetch(const Tensor& tensor) override {
         CHECK_GT(tensor.count(), 0);
         vector<npy_intp> npy_dims;
-        for (const auto dim : tensor.dims()) npy_dims.push_back(dim);
+        for (auto dim : tensor.dims()) npy_dims.push_back(dim);
         int npy_type = TypeMetaToNPY(tensor.meta());
-        if (npy_type == -1) {
-            LOG(FATAL) <<  "The data type of Tensor(" +
-                tensor.name() + ") is unknown. Have you solved it ?";
-        }
+        CHECK(npy_type != -1)
+            << "\nThe data type of Tensor(" << tensor.name()
+            << ") is unknown. Have you solved it?";
         CHECK(tensor.memory()) << "\nIllegal memory access.";
         // Create a empty array with the same shape
-        PyObject* array = PyArray_SimpleNew(
+        auto* array = PyArray_SimpleNew(
             tensor.ndim(), npy_dims.data(), npy_type);
         // Copy the tensor data to the numpy array
         if (tensor.memory_state() == MixedMemory::STATE_AT_CUDA) {
-            CUDAContext::MemcpyEx<CPUContext, CUDAContext>(tensor.nbytes(),
-                     PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)),
-                                            tensor.raw_data<CUDAContext>(),
-                                             tensor.memory()->device_id());
+            CUDAContext::MemcpyEx<CPUContext, CUDAContext>(
+                tensor.nbytes(),
+                PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)),
+                tensor.raw_data<CUDAContext>(),
+                tensor.memory()->device_id()
+            );
         } else {
-            CPUContext::Memcpy<CPUContext, CPUContext>(tensor.nbytes(),
-                 PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)),
-                                        tensor.raw_data<CPUContext>());
+            CPUContext::Memcpy<CPUContext, CPUContext>(
+                tensor.nbytes(),
+                PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)),
+                tensor.raw_data<CPUContext>()
+            );
         }
         return pybind11::reinterpret_steal<pybind11::object>(array);
     }
@@ -108,31 +111,32 @@ class NumpyFeeder : public TensorFeederBase {
         const DeviceOption&         option,
         PyArrayObject*              original_array,
         Tensor*                     tensor) override {
-        PyArrayObject* array = PyArray_GETCONTIGUOUS(original_array);
-        const TypeMeta& meta = TypeNPYToMeta(PyArray_TYPE(array));
+        auto* array = PyArray_GETCONTIGUOUS(original_array);
+        const auto& meta = TypeNPYToMeta(PyArray_TYPE(array));
         if (meta.id() == 0) LOG(FATAL) << "Unsupported DType.";
         tensor->SetMeta(meta);
         int ndim = PyArray_NDIM(array);
-        npy_intp* npy_dims = PyArray_DIMS(array);
-        vector<int64_t> dims;
-        for (int i = 0; i < ndim; i++) dims.push_back(npy_dims[i]);
+        vec64_t dims(ndim);
+        auto* npy_dims = PyArray_DIMS(array);
+        for (int i = 0; i < ndim; i++) dims[i] = npy_dims[i];
         tensor->Reshape(dims);
         if (option.device_type() == PROTO_CUDA) {
 #ifdef WITH_CUDA
             CUDAContext::MemcpyEx<CUDAContext, CPUContext>(
-                                          tensor->nbytes(),
-                   tensor->raw_mutable_data<CUDAContext>(),
-                   static_cast<void*>(PyArray_DATA(array)),
-                                       option.device_id());
+                tensor->nbytes(),
+                tensor->raw_mutable_data<CUDAContext>(),
+                static_cast<void*>(PyArray_DATA(array)),
+                option.device_id()
+            );
 #else
             LOG(FATAL) << "CUDA was not compiled.";
 #endif
         } else {
-            auto* data = tensor->raw_mutable_data<CPUContext>();
             CPUContext::Memcpy<CPUContext, CPUContext>(
-                                      tensor->nbytes(),
+                tensor->nbytes(),
                 tensor->raw_mutable_data<CPUContext>(),
-              static_cast<void*>(PyArray_DATA(array)));
+                static_cast<void*>(PyArray_DATA(array))
+            );
         }
         Py_XDECREF(array);
     }

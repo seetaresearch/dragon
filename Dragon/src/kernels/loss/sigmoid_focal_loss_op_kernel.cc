@@ -4,7 +4,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! SigmoidFocalLoss <Tx = ?, Ty = ?, Device = CPU> */
+/* <Tx = ?, Ty = ?, Device = CPU> */
 
 template <typename Tx, typename Ty>
 void _SigmoidFocalLoss(
@@ -56,7 +56,7 @@ void _SigmoidFocalLoss(
     }
 }
 
-/*! SigmoidFocalLoss <Tx = float32, Ty = float32, Device = CPU> */
+/* <Tx = float32, Ty = float32, Device = CPU> */
 
 template <> void SigmoidFocalLoss<float, float, CPUContext>(
     const int               outer_dim,
@@ -78,7 +78,7 @@ template <> void SigmoidFocalLoss<float, float, CPUContext>(
     );
 }
 
-/*! SigmoidFocalLoss <Tx = float32, Ty = int64, Device = CPU> */
+/* <Tx = float32, Ty = int64, Device = CPU> */
 
 template <> void SigmoidFocalLoss<float, int64_t, CPUContext>(
     const int               outer_dim,
@@ -100,7 +100,7 @@ template <> void SigmoidFocalLoss<float, int64_t, CPUContext>(
     );
 }
 
-/*! SigmoidFocalLossGrad <Tx = ?, Ty = ?, Device = CPU> */
+/* <Tx = ?, Ty = ?, Device = CPU> */
 
 template <typename Tx, typename Ty>
 void _SigmoidFocalLossGrad(
@@ -153,7 +153,7 @@ void _SigmoidFocalLossGrad(
     }
 }
 
-/*! SigmoidFocalLossGrad <Tx = float32, Ty = float32, Device = CPU> */
+/* <Tx = float32, Ty = float32, Device = CPU> */
 
 template <> void SigmoidFocalLossGrad<float, float, CPUContext>(
     const int               outer_dim,
@@ -175,7 +175,7 @@ template <> void SigmoidFocalLossGrad<float, float, CPUContext>(
     );
 }
 
-/*! SigmoidFocalLossGrad <Tx = float32, Ty = int64_t, Device = CPU> */
+/* <Tx = float32, Ty = int64_t, Device = CPU> */
 
 template <> void SigmoidFocalLossGrad<float, int64_t, CPUContext>(
     const int               outer_dim,

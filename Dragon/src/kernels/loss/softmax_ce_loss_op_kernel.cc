@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! SoftmaxCrossEntropy <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <> void SoftmaxCrossEntropy<float, CPUContext>(
     const int               count,

@@ -23,8 +23,8 @@ from dragon.vm.torch.ops.modules.control_flow import (
 )
 
 from dragon.vm.torch.ops.modules.arithmetic import (
-    Fundamental, Log, Exp, Sqrt,
-    Accumulate,
+    Fundamental, Accumulate,
+    Log, Exp, Sqrt,
     MM, FullyConnected,
     Maximum, Minimum, Clamp,
 )
@@ -35,9 +35,11 @@ from dragon.vm.torch.ops.modules.init import (
 
 from dragon.vm.torch.ops.modules.array import (
     Reshape, Squeeze, UnSqueeze, Permute,
-    Indexing, IndexSelect,
-    Repeat, Concat, Stack,
-    Reduce, ArgReduce, OneHot, Multinomial,
+    Indexing, Repeat, Concat, Stack,
+    IndexSelect, MaskedSelect,
+    Reduce, ArgReduce,
+    NonZero, Where,
+    OneHot, Multinomial,
 )
 
 from dragon.vm.torch.ops.modules.update import (
@@ -50,17 +52,16 @@ from dragon.vm.torch.ops.modules.vision import (
 
 
 __all__ = [
-    'accumulate',
-    'add', 'sub', 'mul', 'div',
+    'add', 'sub', 'mul', 'div', 'accumulate',
     'maximum', 'minimum', 'clamp',
     'log', 'exp', 'sqrt',
     'mm', 'xw_plus_b',
     'squeeze', 'unsqueeze',
     'mean', 'sum', 'min', 'max', 'topk',
-    'argmin', 'argmax',
-    'gt', 'lt', 'eq', 'ge', 'le',
+    'nonzero', 'where', 'argmin', 'argmax',
+    'gt', 'lt', 'eq', 'ne', 'ge', 'le',
     'cat', 'stack', 'narrow',
-    'index_select',
+    'index_select', 'masked_select',
     'one_hot', 'multinomial',
     'rand', 'randn',
     'ones', 'ones_like',
@@ -525,6 +526,30 @@ def _assign(output, starts, sizes, input):
     return module.forward(input, output, starts, sizes)
 
 
+def where(condition, x, y):
+    """Select elements from either ``x`` or ``y``, depending on ``condition``.
+
+    Parameters
+    ----------
+    condition : dragon.vm.torch.Tensor
+        The byte condition tensor.
+    x : dragon.vm.torch.Tensor
+        The elements for *1*.
+    y : dragon.vm.torch.Tensor
+        The elements for *0*.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    dev = MakeDevice(inputs=[condition, x, y])
+    key = 'Where/{}'.format(dev)
+    module = get_module(Where, key, dev)
+    return module.forward(condition, x, y)
+
+
 def _masked_assign(output, mask, input):
     if not isinstance(input, Tensor):
         if isinstance(input, (tuple, list)):
@@ -569,7 +594,7 @@ def squeeze(input, dim=None, out=None):
 
 
 def unsqueeze(input, dim, out=None):
-    """Returns a tensor with a dimension of size 1 inserted at the specified position.
+    """Return a tensor with a dimension of size 1 inserted at the specified position.
 
     Parameters
     ----------
@@ -866,6 +891,27 @@ def eq(input, other, out=None):
     return _compare(input, other, 'EQ', out)
 
 
+def ne(input, other, out=None):
+    """Compute *input* != *other* element-wise.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    other : dragon.vm.torch.Tensor, number
+        The other tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output byte tensor.
+
+    """
+    return _compare(input, other, 'NE', out)
+
+
 def cat(seq, dim=0, out=None):
     """Concatenate the inputs along the given axis.
 
@@ -908,7 +954,7 @@ def stack(seq, dim=0, out=None):
         The output tensor.
 
     """
-    dev = MakeDevice(inputs=seq, outputs=[out] if out else [])
+    dev = MakeDevice(seq, [out] if out else [])
     key = 'Stack/{}/dim:{}'.format(dev, dim)
     module = get_module(Stack, key, dev, axis=dim)
     return module.forward(seq, out)
@@ -940,6 +986,30 @@ def index_select(input, dim, index, out=None):
     return module.forward(input, index, out)
 
 
+def masked_select(input, mask, out=None):
+    """Select the input values where mask is *1*.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The values.
+    mask : dragon.vm.torch.Tensor
+        The mask to select values.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    dev = MakeDevice([input, mask], [out] if out else [])
+    key = 'MaskedSelect/{}'.format(dev)
+    module = get_module(MaskedSelect, key, dev)
+    return module.forward(input, mask, out)
+
+
 def narrow(input, dimension, start, length):
     """Return a new tensor that is a narrowed version of input tensor.
 
@@ -963,6 +1033,28 @@ def narrow(input, dimension, start, length):
     sizes = list(input.shape[:]); starts = [0] * len(sizes)
     starts[dimension], sizes[dimension] = start, length
     return _index(input, starts, sizes)
+
+
+def nonzero(input, out=None):
+    """Return the indices of non-zero elements.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.FloatTensor
+        The output tensor.
+
+    """
+    dev = MakeDevice(inputs=[input])
+    key = 'NonZero/{}'.format(dev)
+    module = get_module(NonZero, key, dev)
+    return module.forward(input, out)
 
 
 def one_hot(input, depth):

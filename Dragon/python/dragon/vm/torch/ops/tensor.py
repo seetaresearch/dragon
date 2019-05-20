@@ -23,11 +23,12 @@ from dragon.vm.torch.ops.builtin import (
     _fundamental, _rfundamental,
     log, exp, sqrt, clamp,
     _reshape, squeeze, unsqueeze,
-    _permute, _repeat, narrow,
-    _index, index_select,
+    _permute, _repeat, narrow, _index,
     _assign, _masked_assign,
+    index_select, masked_select,
     mean, sum, max, min,
-    gt, lt, eq, ge, le,
+    gt, lt, eq, ne, ge, le,
+    where, nonzero,
 )
 
 
@@ -84,10 +85,14 @@ Tensor.ge = lambda *args, **kwargs: ge(*args, **kwargs)
 Tensor.lt = lambda *args, **kwargs: lt(*args, **kwargs)
 Tensor.le = lambda *args, **kwargs: le(*args, **kwargs)
 Tensor.eq = lambda *args, **kwargs: eq(*args, **kwargs)
-Tensor.index_select = lambda *args, **kwargs: index_select(*args, **kwargs)
+Tensor.ne = lambda *args, **kwargs: ne(*args, **kwargs)
+Tensor.nonzero = lambda *args, **kwargs: nonzero(*args, **kwargs)
+Tensor.where = lambda self, condition, y: where(condition, self, y)
 Tensor.narrow = lambda *args, **kwargs: narrow(*args, **kwargs)
 Tensor._index = lambda *args, **kwargs: _index(*args, **kwargs)
 Tensor._assign = lambda *args, **kwargs: _assign(*args, **kwargs)
+Tensor.index_select = lambda *args, **kwargs: index_select(*args, **kwargs)
+Tensor.masked_select = lambda *args, **kwargs: masked_select(*args, **kwargs)
 
 
 Tensor.half = lambda self: _type_to(self, dtype='float16', inplace=False)
@@ -104,5 +109,5 @@ Tensor.int = lambda self: _type_to(self, dtype='int32', inplace=False)
 Tensor.int_ = lambda self: _type_to(self, dtype='int32', inplace=True)
 Tensor.long = lambda self: _type_to(self, dtype='int64', inplace=False)
 Tensor.long_ = lambda self: _type_to(self, dtype='int64', inplace=True)
-Tensor.type = lambda self, dtype=None: _type_to(self, dtype=dtype) \
+Tensor.type = lambda self, dtype = None: _type_to(self, dtype=dtype) \
     if dtype is not None else 'torch.' + self._type2str()

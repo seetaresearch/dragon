@@ -18,7 +18,7 @@ import dragon.vm.torch.ops.tensor
 
 # Import Core Methods
 from dragon.vm.torch.tensor import *
-from dragon.vm.torch.c_api import Size, from_numpy
+from dragon.vm.torch.c_api import Size, from_numpy, device
 from dragon.vm.torch.serialization import save, load
 
 # Import Subpackages

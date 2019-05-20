@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! <Tx = ?, Ty = ?, Device = CPU> */
+/* <Tx = ?, Ty = ?, Device = CPU> */
 
 template <typename Tx, typename Ty>
 void _NLLLoss(
@@ -39,7 +39,7 @@ void _NLLLoss(
     }
 }
 
-/*! <Tx = float32, Ty = float32, Device = CPU> */
+/* <Tx = float32, Ty = float32, Device = CPU> */
 
 template <> void NLLLoss<float, float, CPUContext>(
     const int               outer_dim,
@@ -58,7 +58,7 @@ template <> void NLLLoss<float, float, CPUContext>(
     );
 }
 
-/*! <Tx = float32, Ty = int64, Device = CPU> */
+/* <Tx = float32, Ty = int64, Device = CPU> */
 
 template <> void NLLLoss<float, int64_t, CPUContext>(
     const int               outer_dim,
@@ -77,7 +77,7 @@ template <> void NLLLoss<float, int64_t, CPUContext>(
     );
 }
 
-/*! <Tx = ?, Ty = ?, Device = CPU> */
+/* <Tx = ?, Ty = ?, Device = CPU> */
 
 template <typename Tx, typename Ty>
 void _NLLLossGrad(
@@ -108,7 +108,7 @@ void _NLLLossGrad(
     }
 }
 
-/*! <Tx = float32, Ty = float32, Device = CPU> */
+/* <Tx = float32, Ty = float32, Device = CPU> */
 
 template<> void NLLLossGrad<float, float, CPUContext>(
     const int               outer_dim,
@@ -127,7 +127,7 @@ template<> void NLLLossGrad<float, float, CPUContext>(
     );
 }
 
-/*! <Tx = float32, Ty = int64, Device = CPU> */
+/* <Tx = float32, Ty = int64, Device = CPU> */
 
 template<> void NLLLossGrad<float, int64_t, CPUContext>(
     const int               outer_dim,

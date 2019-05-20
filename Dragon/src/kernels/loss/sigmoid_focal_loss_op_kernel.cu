@@ -7,7 +7,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! SigmoidFocalLoss <Tx = ?, Ty = ?, Device = CUDA> */
+/* <Tx = ?, Ty = ?, Device = CUDA> */
 
 template <typename Tx, typename Ty>
 __global__ void _SigmoidFocalLoss(
@@ -54,7 +54,7 @@ __global__ void _SigmoidFocalLoss(
     }
 }
 
-/*! SigmoidFocalLoss <Tx = float32, Ty = float32, Device = CUDA> */
+/* <Tx = float32, Ty = float32, Device = CUDA> */
 
 template <> void SigmoidFocalLoss<float, float, CUDAContext>(
     const int               outer_dim,
@@ -79,7 +79,7 @@ template <> void SigmoidFocalLoss<float, float, CUDAContext>(
     );
 }
 
-/*! SigmoidFocalLoss <Tx = float32, Ty = int64, Device = CUDA> */
+/* <Tx = float32, Ty = int64, Device = CUDA> */
 
 template <> void SigmoidFocalLoss<float, int64_t, CUDAContext>(
     const int               outer_dim,

@@ -1,8 +1,9 @@
 #ifdef WITH_CUDA
 
 #include "core/context_cuda.h"
+#include "utils/cast.h"
 #include "utils/op_kernel.h"
-#include "utils/cub_device.h"
+#include "utils/math_functions.h"
 
 namespace dragon {
 
@@ -134,6 +135,8 @@ template <> __global__ void _IndexSelectGrad<half>(
         T*                      dx, \
         CUDAContext*            ctx) { \
         auto nthreads = outer_dim * inner_dim; \
+        auto nelements = outer_dim * axis_dim * inner_dim; \
+        math::Set(nelements, cast::to<T>(0.f), dx, ctx); \
         _IndexSelectGrad \
             <<< CUDA_BLOCKS(nthreads), CUDA_THREADS, \
                 0, ctx->cuda_stream() >>>( \
@@ -169,6 +172,8 @@ template <> void IndexSelectGrad<float16, CUDAContext>(
     float16*                dx,
     CUDAContext*            ctx) {
     auto nthreads = outer_dim * inner_dim;
+    auto nelements = outer_dim * axis_dim * inner_dim;
+    math::Set(nelements, cast::to<float16>(0.f), dx, ctx);
     _IndexSelectGrad
         <<< CUDA_BLOCKS(nthreads), CUDA_THREADS,
             0, ctx->cuda_stream() >>>(

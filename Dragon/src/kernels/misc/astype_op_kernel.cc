@@ -6,7 +6,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! Astype <Ta = ?, Tb = ?, Device = CPU> */
+/* <Ta = ?, Tb = ?, Device = CPU> */
 
 template <typename Ta, typename Tb>
 void _TypeA2B(const int count, const Ta* a, Tb* b) {

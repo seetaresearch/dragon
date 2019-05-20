@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! SigmoidCrossEntropy <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <> void SigmoidCrossEntropy<float, CPUContext>(
     const int               count,
@@ -35,7 +35,7 @@ template <> void SigmoidCrossEntropy<float, CPUContext>(
     }
 }
 
-/*! SigmoidCrossEntropyGrad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template <> void SigmoidCrossEntropyGrad<float, CPUContext>(
     const int               count,

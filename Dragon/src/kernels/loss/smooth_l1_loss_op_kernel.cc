@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! SmoothL1 <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void SmoothL1<float, CPUContext>(
     const int               count,
@@ -27,7 +27,7 @@ template<> void SmoothL1<float, CPUContext>(
     }
 }
 
-/*! SmoothL1Grad <T = float32, Device = CPU> */
+/* <T = float32, Device = CPU> */
 
 template<> void SmoothL1Grad<float, CPUContext>(
     const int               count,

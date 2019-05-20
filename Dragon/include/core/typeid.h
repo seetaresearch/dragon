@@ -13,9 +13,9 @@
 #ifndef DRAGON_CORE_TYPEID_H_
 #define DRAGON_CORE_TYPEID_H_
 
+#include <map>
 #include <cstdlib>
 #include <iostream>
-#include <map>
 
 namespace dragon {
 
@@ -83,7 +83,7 @@ class TypeMeta {
     template <typename T>
     static void Ctor(void* ptr, size_t n) {
         T* typed_ptr = static_cast<T*>(ptr);
-        for (unsigned int i = 0; i < n; i++)
+        for (size_t i = 0; i < n; i++)
             new(typed_ptr + i) T;
     }
 
@@ -91,14 +91,14 @@ class TypeMeta {
     static void Copy(const void* src, void* dst, size_t n) {
         const T* typed_src = static_cast<const T*>(src);
         T* typed_dst = static_cast<T*>(dst);
-        for (unsigned int i = 0; i < n; i++)
+        for (size_t i = 0; i < n; ++i)
             typed_dst[i] = typed_src[i];
     }
 
     template <typename T>
     static void Dtor(void* ptr, size_t n) {
         T* typed_ptr = static_cast<T*>(ptr);
-        for (unsigned int i = 0; i < n; i++)
+        for (size_t i = 0; i < n; ++i)
             typed_ptr[i].~T();
     }
 
@@ -107,15 +107,22 @@ class TypeMeta {
 
     template <typename T>
     static typename FundMeta Make() {
-        return TypeMeta(Id<T>(), Itemsize<T>(),
-            nullptr, nullptr, nullptr);
+        return TypeMeta(
+            Id<T>(), Itemsize<T>(),
+            nullptr, nullptr, nullptr
+        );
     }
 
     template<typename T>
     static typename StructMeta Make() {
-        return TypeMeta(Id<T>(), Itemsize<T>(),
-            Ctor<T>, Copy<T>, Dtor<T>);
+        return TypeMeta(
+            Id<T>(), Itemsize<T>(),
+            Ctor<T>, Copy<T>, Dtor<T>
+        );
     }
+
+#undef FundMeta
+#undef StructMeta
 
  private:
     TypeMeta(

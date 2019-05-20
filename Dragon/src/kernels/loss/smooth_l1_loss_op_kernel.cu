@@ -7,7 +7,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! SmoothL1 <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _SmoothL1(
@@ -39,7 +39,7 @@ template<> void SmoothL1<float, CUDAContext>(
      );
 }
 
-/*! SmoothL1Grad <T = float32, Device = CUDA> */
+/* <T = float32, Device = CUDA> */
 
 template <typename T>
 __global__ void _SmoothL1Grad(

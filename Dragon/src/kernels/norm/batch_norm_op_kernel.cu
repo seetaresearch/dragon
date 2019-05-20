@@ -19,7 +19,7 @@ namespace kernel {
 
 #define L(x, i) __ldg(x + i)
 
-/*! BatchNormBackwardTraining <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename Tx, typename Tp, StorageOrder kOrder>
 __global__ void _BatchNormInternalGrad(
@@ -107,7 +107,7 @@ __global__ void _BatchNormTrainingGrad(
     }
 }
 
-/*! BatchNormBackwardInference <T = ?, Device = CUDA> */
+/* <T = ?, Device = CUDA> */
 
 template <typename Tx, typename Tp, StorageOrder kOrder>
 __global__ void _BatchNormWGrad(

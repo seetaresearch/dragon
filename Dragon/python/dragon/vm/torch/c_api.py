@@ -67,10 +67,11 @@ def from_numpy(data):
     """
     if not isinstance(data, numpy.ndarray):
         raise TypeError('The data should be a numpy.ndarray.')
-    if str(data.dtype) not in _mapping.TENSOR_TYPE_TO_TORCH_TENSOR:
-        raise ValueError('Unsupported type({}) to torch tensor.'.format(data.dtype))
+    tensor_types = _mapping.TENSOR_TYPE_TO_TORCH_TENSOR
+    if str(data.dtype) not in tensor_types:
+        raise ValueError('Unsupported data type: ' + str(data.dtype))
     module = importlib.import_module('dragon.vm.torch.tensor')
-    return getattr(module, _mapping.TENSOR_TYPE_TO_TORCH_TENSOR[str(data.dtype)])(data)
+    return getattr(module, tensor_types[str(data.dtype)])(data, copy=False)
 
 
 def from_dragon(tensor, own_storage=False):

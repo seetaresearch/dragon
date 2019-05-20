@@ -135,7 +135,9 @@ Array
 ===============    ======================================================================
 List               Brief
 ===============    ======================================================================
+`Where`_           Select elements from either *x* or *y*.
 `IndexSelect`_     Select the elements according to the indices along the given axis.
+`MaskedSelect`_    Select the the elements where *mask* is *1*.
 `Reduce`_          Reduce the inputs along the axis in given axes.
 `Sum`_             Compute the sum along the given axis.
 `Mean`_            Compute the mean along the given axis.
@@ -149,7 +151,7 @@ List               Brief
 `Repeat`_          Repeat the input along the given axis.
 `Transpose`_       Transpose the input according to the given permutations.
 `Tile`_            Tile the input according to the given multiples.
-`Pad`_             Pad the input according to the given paddings.
+`Pad`_             Pad the input according to the given sizes.
 `Crop`_            Crop the input according to the given starts and sizes.
 `OneHot`_          Generate the one-hot representation of inputs.
 `Flatten`_         Flatten the input along the given axes.
@@ -157,6 +159,7 @@ List               Brief
 `Squeeze`_         Remove the dimensions with size 1.
 `ExpandDims`_      Expand the new dimension with size 1 to specific axis.
 `Shape`_           Get the dynamic shape of a Tensor.
+`NonZero`_         Return the indices of non-zero elements.
 `Arange`_          Return evenly spaced values within a given interval.
 `Multinomial`_     Return indices sampled from the multinomial distribution.
 ===============    ======================================================================
@@ -170,6 +173,7 @@ List               Brief
 `Assign`_          Assign the *value* to *ref*.
 `MaskedAssign`_    Assign the *value* to *ref* where mask is *1*.
 `Equal`_           *Equal* Comparing between A and B.
+`NotEqual`_        *NotEqual* Comparing between A and B.
 `Less`_            *Less* Comparing between A and B.
 `LessEqual`_       *LessEqual* Comparing between A and B.
 `Greater`_         *Greater* Comparing between A and B.
@@ -284,7 +288,9 @@ List                 Brief
 .. _InstanceNorm: operators/norm.html#dragon.operators.norm.InstanceNorm
 .. _L2Norm: operators/norm.html#dragon.operators.norm.L2Norm
 
+.. _Where: operators/array.html#dragon.operators.array.Where
 .. _IndexSelect: operators/array.html#dragon.operators.array.IndexSelect
+.. _MaskedSelect: operators/array.html#dragon.operators.array.MaskedSelect
 .. _Crop: operators/array.html#dragon.operators.array.Crop
 .. _Reduce: operators/array.html#dragon.operators.array.Reduce
 .. _Sum: operators/array.html#dragon.operators.array.Sum
@@ -307,12 +313,14 @@ List                 Brief
 .. _ExpandDims: operators/array.html#dragon.operators.array.ExpandDims
 .. _Shape: operators/array.html#dragon.operators.array.Shape
 .. _Arange: operators/array.html#dragon.operators.array.Arange
+.. _NonZero: operators/array.html#dragon.operators.array.NonZero
 .. _Multinomial: operators/array.html#dragon.operators.array.Multinomial
 
 .. _Copy: operators/control_flow.html#dragon.operators.control_flow.Copy
 .. _Assign: operators/control_flow.html#dragon.operators.control_flow.Assign
 .. _MaskedAssign: operators/control_flow.html#dragon.operators.control_flow.MaskedAssign
 .. _Equal: operators/control_flow.html#dragon.operators.control_flow.Equal
+.. _NotEqual: operators/control_flow.html#dragon.operators.control_flow.NotEqual
 .. _Less: operators/control_flow.html#dragon.operators.control_flow.Less
 .. _LessEqual: operators/control_flow.html#dragon.operators.control_flow.LessEqual
 .. _Greater: operators/control_flow.html#dragon.operators.control_flow.Greater

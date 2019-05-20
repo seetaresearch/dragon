@@ -16,6 +16,30 @@ from __future__ import print_function
 from . import *
 
 
+@OpSchema.Inputs(1, 3)
+def Where(inputs, **kwargs):
+    """Select elements from either ``x`` or ``y``, depending on ``condition``.
+
+    Return the indices of *True* elements, if only the ``condition`` is given.
+
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
+
+    Parameters
+    ----------
+    inputs : sequence of Tensor
+        The ``x``, ``y``, and ``condition``.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    if isinstance(inputs, Tensor) or len(inputs) == 1:
+        return NonZero(inputs, **kwargs)
+    return Tensor.CreateOperator('Where', **ParseArgs(locals()))
+
+
 @OpSchema.Inputs(1)
 def IndexSelect(inputs, indices, axis=0, **kwargs):
     """Select the elements according to the indices along the given axis.
@@ -26,7 +50,7 @@ def IndexSelect(inputs, indices, axis=0, **kwargs):
     ----------
     inputs : Tensor
         The input tensor.
-    indices : Tensor
+    indices : sequence or Tensor
         The indices to select elements.
     axis : int, optional
         The axis of indices.
@@ -43,6 +67,31 @@ def IndexSelect(inputs, indices, axis=0, **kwargs):
     arguments['inputs'], arguments['indices'] = \
         [arguments['inputs'], indices], None
     return Tensor.CreateOperator('IndexSelect', **arguments)
+
+
+@OpSchema.Inputs(1)
+def MaskedSelect(inputs, mask, **kwargs):
+    """Select the the elements where ``mask`` is *1*.
+
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
+
+    Parameters
+    ----------
+    inputs : Tensor
+        The input tensor.
+    mask : Tensor
+        The mask, with the same size as ``inputs``.
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
+    """
+    arguments = ParseArgs(locals())
+    arguments['mask'] = None
+    arguments['inputs'] = [arguments['inputs'], mask]
+    return Tensor.CreateOperator('MaskedSelect', **arguments)
 
 
 @OpSchema.Inputs(1)
@@ -745,6 +794,26 @@ def Arange(start, stop=None, step=1, dtype='float32', **kwargs):
     arguments = ParseArgs(locals())
     arguments['dtype'] = arguments['dtype'].lower()
     return Tensor.CreateOperator('Arange', [], **arguments)
+
+
+@OpSchema.Inputs(1)
+def NonZero(inputs, **kwargs):
+    """Return the indices of non-zero elements.
+
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
+
+    Parameters
+    ----------
+    inputs : Tensor
+        The input tensor.
+
+    Returns
+    -------
+    Tensor
+        A *int64* tensor contains the indices.
+
+    """
+    return Tensor.CreateOperator('NonZero', **ParseArgs(locals()))
 
 
 @OpSchema.Inputs(1)

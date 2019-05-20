@@ -1,6 +1,6 @@
+#include "utils/cast.h"
 #include "utils/op_kernel.h"
 #include "utils/math_functions.h"
-#include "utils/omp_alternative.h"
 
 namespace dragon {
 
@@ -49,6 +49,8 @@ void _IndexSelectGrad(
     T*                      dx,
     CPUContext*             ctx) {
     int64_t x_offset, select_idx;
+    auto nelements = outer_dim * axis_dim * inner_dim;
+    math::Set(nelements, cast::to<T>(0.f), dx, ctx);
     for (int n = 0; n < outer_dim; ++n) {
         for (int i = 0; i < num_indices; ++i) {
             select_idx = indices[i];

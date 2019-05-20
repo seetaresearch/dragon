@@ -13,11 +13,11 @@ namespace kernel {
 template <typename T>
 __global__ void _Maximum(
     const int               nthreads,
-    const T*                x1,
-    const T*                x2,
+    const T*                a,
+    const T*                b,
     T*                      y) {
     CUDA_1D_KERNEL_LOOP(i, nthreads) {
-        y[i] = max(x1[i], x2[i]);
+        y[i] = max(a[i], b[i]);
     }
 }
 
@@ -25,12 +25,12 @@ __global__ void _Maximum(
 
 template<> __global__ void _Maximum<half>(
     const int               nthreads,
-    const half*             x1,
-    const half*             x2,
+    const half*             a,
+    const half*             b,
     half*                   y) {
     CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 530
-        y[i] = __hgt(x1[i], x2[i]) ? x1[i] : x2[i];
+        y[i] = __hgt(a[i], b[i]) ? a[i] : b[i];
 #endif
     }
 }
@@ -40,11 +40,11 @@ template<> __global__ void _Maximum<half>(
 template <typename T>
 __global__ void _BroadcastMaximum(
     const int               nthreads,
-    const T*                x1,
-    const T                 x2,
+    const T*                a,
+    const T                 b,
     T*                      y) {
     CUDA_1D_KERNEL_LOOP(i, nthreads) {
-        y[i] = max(x1[i], x2);
+        y[i] = max(a[i], b);
     }
 }
 
@@ -52,12 +52,12 @@ __global__ void _BroadcastMaximum(
 
 template<>  __global__ void _BroadcastMaximum<half>(
     const int               nthreads,
-    const half*             x1,
-    const half              x2,
+    const half*             a,
+    const half              b,
     half*                   y) {
     CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 530
-        y[i] = __hgt(x1[i], x2) ? x1[i] : x2;
+        y[i] = __hgt(a[i], b) ? a[i] : b;
 #endif
     }
 }
@@ -67,15 +67,16 @@ template<>  __global__ void _BroadcastMaximum<half>(
 template <typename T>
 __global__ void _MaximumGrad(
     const int               nthreads,
-    const T*                x1,
-    const T*                x2,
+    const T*                a,
+    const T*                b,
     const T*                dy,
-    T*                      dx1,
-    T*                      dx2) {
+    T*                      da,
+    T*                      db) {
+    const T kZero = T(0);
     CUDA_1D_KERNEL_LOOP(i, nthreads) {
-        const bool dy_to_dx1 = x1[i] > x2[i];
-        dx1[i] = dy_to_dx1 ? dy[i] : T(0);
-        dx2[i] = dy_to_dx1 ? T(0) : dy[i];
+        const bool dy_to_da = a[i] > b[i];
+        da[i] = dy_to_da ? dy[i] : kZero;
+        db[i] = dy_to_da ? kZero : dy[i];
     }
 }
 
@@ -83,18 +84,19 @@ __global__ void _MaximumGrad(
 
 template<> __global__ void _MaximumGrad<half>(
     const int               nthreads,
-    const half*             x1,
-    const half*             x2,
+    const half*             a,
+    const half*             b,
     const half*             dy,
-    half*                   dx1,
-    half*                   dx2) {
-    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+    half*                   da,
+    half*                   db) {
 #if __CUDA_ARCH__ >= 530
-        const bool dy_to_dx1 = __hgt(x1[i], x2[i]);
-        dx1[i] = dy_to_dx1 ? dy[i] : __float2half(0.f);
-        dx2[i] = dy_to_dx1 ? __float2half(0.f) : dy[i];
-#endif
+    const half kZero = __float2half(0.f);
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+        const bool dy_to_da = __hgt(a[i], b[i]);
+        da[i] = dy_to_da ? dy[i] : kZero;
+        db[i] = dy_to_da ? kZero : dy[i];
     }
+#endif
 }
 
 /* <T = ?, Device = CUDA> */
@@ -102,13 +104,14 @@ template<> __global__ void _MaximumGrad<half>(
 template <typename T>
 __global__ void _BroadcastMaximumGrad(
     const int               nthreads,
-    const T*                x1,
-    const T                 x2,
+    const T*                a,
+    const T                 b,
     const T*                dy,
-    T*                      dx1,
-    T*                      dx2) {
+    T*                      da,
+    T*                      db) {
+    const T kZero = T(0);
     CUDA_1D_KERNEL_LOOP(i, nthreads) {
-        dx1[i] = (x1[i] > x2) ? dy[i] : T(0);
+        da[i] = (a[i] > b) ? dy[i] : kZero;
     }
 }
 
@@ -116,17 +119,17 @@ __global__ void _BroadcastMaximumGrad(
 
 template<> __global__ void _BroadcastMaximumGrad<half>(
     const int               nthreads,
-    const half*             x1,
-    const half              x2,
+    const half*             a,
+    const half              b,
     const half*             dy,
-    half*                   dx1,
-    half*                   dx2) {
-    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+    half*                   da,
+    half*                   db) {
 #if __CUDA_ARCH__ >= 530
-        dx1[i] = __hgt(x1[i], x2) ?
-            dy[i] : __float2half(0.f);
-#endif
+    const half kZero = __float2half(0.f);
+    CUDA_1D_KERNEL_LOOP(i, nthreads) {
+        da[i] = __hgt(a[i], b) ? dy[i] : kZero;
     }
+#endif
 }
 
 /* Kernel Launchers */
@@ -134,30 +137,30 @@ template<> __global__ void _BroadcastMaximumGrad<half>(
 #define DEFINE_MAXIMUM_KERNEL_LAUNCHER(name, T, T2) \
     template <> void name<T, CUDAContext>( \
         const int               count, \
-        const T*                x1, \
-        const T2                x2, \
+        const T*                a, \
+        const T2                b, \
         T*                      y, \
         CUDAContext*            ctx) { \
         _##name \
             <<< CUDA_BLOCKS(count), CUDA_THREADS, \
                 0, ctx->cuda_stream() >>>( \
-            count, x1, x2, y \
+            count, a, b, y \
         ); \
     }
 
 #define DEFINE_MAXIMUM_GRAD_KERNEL_LAUNCHER(name, T, T2) \
     template <> void name<T, CUDAContext>( \
         const int               count, \
-        const T*                x1, \
-        const T2                x2, \
+        const T*                a, \
+        const T2                b, \
         const T*                dy, \
-        T*                      dx1, \
-        T*                      dx2, \
+        T*                      da, \
+        T*                      db, \
         CUDAContext*            ctx) { \
         _##name \
             <<< CUDA_BLOCKS(count), CUDA_THREADS, \
                 0, ctx->cuda_stream() >>>( \
-            count, x1, x2, dy, dx1, dx2 \
+            count, a, b, dy, da, db \
         ); \
     }
 
@@ -191,73 +194,73 @@ DEFINE_MAXIMUM_GRAD_KERNEL_LAUNCHER(BroadcastMaximumGrad, double, double);
 
 template <> void Maximum<float16, CUDAContext>(
     const int               count,
-    const float16*          x1,
-    const float16*          x2,
+    const float16*          a,
+    const float16*          b,
     float16*                y,
     CUDAContext*            ctx) {
     _Maximum \
         <<< CUDA_BLOCKS(count), CUDA_THREADS,
             0, ctx->cuda_stream() >>>(
         count,
-        reinterpret_cast<const half*>(x1),
-        reinterpret_cast<const half*>(x2),
+        reinterpret_cast<const half*>(a),
+        reinterpret_cast<const half*>(b),
         reinterpret_cast<half*>(y)
     );
 }
 
 template <> void BroadcastMaximum<float16, CUDAContext>(
     const int               count,
-    const float16*          x1,
-    const float16           x2,
+    const float16*          a,
+    const float16           b,
     float16*                y,
     CUDAContext*            ctx) {
     _BroadcastMaximum \
         <<< CUDA_BLOCKS(count), CUDA_THREADS,
             0, ctx->cuda_stream() >>>(
         count,
-        reinterpret_cast<const half*>(x1),
-        cast::to<half>(x2),
+        reinterpret_cast<const half*>(a),
+        cast::to<half>(b),
         reinterpret_cast<half*>(y)
     );
 }
 
 template <> void MaximumGrad<float16, CUDAContext>(
     const int               count,
-    const float16*          x1,
-    const float16*          x2,
+    const float16*          a,
+    const float16*          b,
     const float16*          dy,
-    float16*                dx1,
-    float16*                dx2,
+    float16*                da,
+    float16*                db,
     CUDAContext*            ctx) {
     _MaximumGrad \
         <<< CUDA_BLOCKS(count), CUDA_THREADS,
             0, ctx->cuda_stream() >>>(
         count,
-        reinterpret_cast<const half*>(x1),
-        reinterpret_cast<const half*>(x2),
+        reinterpret_cast<const half*>(a),
+        reinterpret_cast<const half*>(b),
         reinterpret_cast<const half*>(dy),
-        reinterpret_cast<half*>(dx1),
-        reinterpret_cast<half*>(dx2)
+        reinterpret_cast<half*>(da),
+        reinterpret_cast<half*>(db)
     );
 }
 
 template <> void BroadcastMaximumGrad<float16, CUDAContext>(
     const int               count,
-    const float16*          x1,
-    const float16           x2,
+    const float16*          a,
+    const float16           b,
     const float16*          dy,
-    float16*                dx1,
-    float16*                dx2,
+    float16*                da,
+    float16*                db,
     CUDAContext*            ctx) {
     _BroadcastMaximumGrad \
         <<< CUDA_BLOCKS(count), CUDA_THREADS,
             0, ctx->cuda_stream() >>>(
         count,
-        reinterpret_cast<const half*>(x1),
-        cast::to<half>(x2),
+        reinterpret_cast<const half*>(a),
+        cast::to<half>(b),
         reinterpret_cast<const half*>(dy),
-        reinterpret_cast<half*>(dx1),
-        reinterpret_cast<half*>(dx2)
+        reinterpret_cast<half*>(da),
+        reinterpret_cast<half*>(db)
     );
 }
 

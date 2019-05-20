@@ -5,7 +5,7 @@ namespace dragon {
 
 namespace kernel {
 
-/*! ImageData <Tx = ?, Ty = ?, Device = CPU> */
+/* <Tx = ?, Ty = ?, Device = CPU> */
 
 template <typename Tx, typename Ty>
 void _ImageDataNCHW(
@@ -55,7 +55,7 @@ void _ImageDataNHWC(
     }
 }
 
-/*! ImageData <Tx = float32, Ty = float32, Device = CPU> */
+/* <Tx = float32, Ty = float32, Device = CPU> */
 
 template <> void ImageData<float, float, CPUContext>(
     const int               N,
@@ -77,7 +77,7 @@ template <> void ImageData<float, float, CPUContext>(
     }
 }
 
-/*! ImageData <Tx = uint8, Ty = float32, Device = CPU> */
+/* <Tx = uint8, Ty = float32, Device = CPU> */
 
 template <> void ImageData<uint8_t, float, CPUContext>(
     const int               N,
@@ -99,7 +99,7 @@ template <> void ImageData<uint8_t, float, CPUContext>(
     }
 }
 
-/*! ImageData <Tx = float32, Ty = float16, Device = CPU> */
+/* <Tx = float32, Ty = float16, Device = CPU> */
 
 template <> void ImageData<float, float16, CPUContext>(
     const int               N,
@@ -115,7 +115,7 @@ template <> void ImageData<float, float16, CPUContext>(
     CPU_FP16_NOT_SUPPORTED;
 }
 
-/*! ImageData <Tx = uint8, Ty = float16, Device = CPU> */
+/* <Tx = uint8, Ty = float16, Device = CPU> */
 
 template <> void ImageData<uint8_t, float16, CPUContext>(
     const int               N,

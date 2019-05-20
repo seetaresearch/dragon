@@ -8,7 +8,7 @@ namespace dragon {
 
 namespace kernel {
 
-/* < Device = CUDA> */
+/* <Device = CUDA> */
 
 __global__ void _DropBlock2dNCHW(
     const int               nthreads,
