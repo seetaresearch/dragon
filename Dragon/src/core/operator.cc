@@ -9,17 +9,15 @@ namespace dragon {
 OperatorBase::OperatorBase(
     const OperatorDef&          def,
     Workspace*                  ws)
-        : def_(def), ws_(ws),
-          anchor_(def.name()),
-          dtype_("float32"),
-          data_format_("NCHW") {
+        : def_(def), ws_(ws), handle_(def.name()),
+          dtype_("float32"), data_format_("NCHW") {
     // Scan the defined arguments
     for (auto& arg : def_.arg()) {
         CHECK_GT(arg.name().size(), 0);
         CHECK_EQ(args_.count(arg.name()), 0);
         args_[arg.name()] = &arg;
-        if (arg.name() == "anchor") {
-            anchor_ = arg.s();
+        if (arg.name() == "handle") {
+            handle_ = arg.s();
         } else if (arg.name() == "dtype") {
             dtype_ = arg.s();
         } else if (arg.name() == "data_format") {
@@ -28,20 +26,18 @@ OperatorBase::OperatorBase(
     }
 
     // Set the inputs and outputs
-    string tensor_name; size_t ver_pos;
-    for (auto& e : def.input()) {
-        tensor_name = e;
+    string name; size_t ver_pos;
+    for (const auto& e : def.input()) {
+        name = e;
         if ((ver_pos = e.find("/ver:")) != string::npos)
-            tensor_name = e.substr(0, ver_pos);
-        auto* tensor = ws->GetTensor(tensor_name);
-        inputs_.push_back(tensor);
+            name = e.substr(0, ver_pos);
+        inputs_.push_back(ws->GetTensor(name));
     }
-    for (auto& e : def.output()) {
-        tensor_name = e;
+    for (const auto& e : def.output()) {
+        name = e;
         if ((ver_pos = e.find("/ver:")) != string::npos)
-            tensor_name = e.substr(0, ver_pos);
-        auto* tensor = ws->CreateTensor(tensor_name);
-        outputs_.push_back(tensor);
+            name = e.substr(0, ver_pos);
+        outputs_.push_back(ws->CreateTensor(name));
     }
 }
 
@@ -90,10 +86,10 @@ string OperatorBase::DTypeString(
     return ss.str();
 }
 
-/* Modify this operator according to the given def  */
+/* Modify operator according to the given def  */
 
 void OperatorBase::UpdateFrom(const OperatorDef& def) {
-    anchor_ = def.name();
+    handle_ = def.name();
     inputs_.resize(def.input_size());
     outputs_.resize(def.output_size());
     for (int i = 0; i < inputs_.size(); i++)
@@ -102,7 +98,7 @@ void OperatorBase::UpdateFrom(const OperatorDef& def) {
         outputs_[i] = ws()->CreateTensor(def.output(i));
 }
 
-/*! Create a operator instance from the factory  */
+/* Create an operator from the factory  */
 
 OperatorBase* TryCreateOperator(
     const string&               key,
@@ -127,7 +123,7 @@ OperatorBase* TryCreateOperator(
     }
 }
 
-/* New a operator from the raw def */
+/* New an operator from the raw def */
 
 OperatorBase* NewOperator(
     const OperatorDef&          def,
@@ -164,7 +160,7 @@ Gradient MakeGradientForOp(
         for (int i = 0; i < grad.ops.size(); ++i) {
             grad.ops[i].set_uid(
                 reference_def.uid() + "/grad" +
-                    (i > 0 ? (":" + std::to_string(i)) : "")
+                    (i > 0 ? (":" + str::to(i)) : "")
             );
         }
     }

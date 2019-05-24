@@ -68,7 +68,7 @@ void DropoutGradientOp<Context>::RunImpl() {
             dx, ctx()
         );
     } else {
-        LOG(FATAL) << "Incorrect Op phase: " << phase();
+        LOG(FATAL) << "Unknown Phase: " << phase();
     }
 }
 

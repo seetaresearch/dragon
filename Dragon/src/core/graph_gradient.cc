@@ -41,7 +41,7 @@ bool GraphGradientMaker::CheckGrad(
 
 string GraphGradientMaker::GetOperatorName() {
     if (op_prefix_.empty()) return "runtime";
-    return op_prefix_ + std::to_string(cur_op_idx_++) + op_suffix_;
+    return op_prefix_ + str::to(cur_op_idx_++) + op_suffix_;
 }
 
 void GraphGradientMaker::Make(
@@ -91,7 +91,7 @@ void GraphGradientMaker::Make(
             if (g_output.empty()) g_output = "NULL";
             g_outputs.emplace_back(g_output);
         }
-        Gradient grad = MakeGradientForOp(op, g_outputs);
+        auto grad = MakeGradientForOp(op, g_outputs);
 
         // Process the RAW grad ops
         vector<OperatorDef> gather_ops;
@@ -101,11 +101,11 @@ void GraphGradientMaker::Make(
             // Rename if necessary
             if (terms_.size() > 0) {
                 for (int i = 0; i < g_op.input_size(); ++i) {
-                    string* input = g_op.mutable_input(i);
+                    auto* input = g_op.mutable_input(i);
                     if (terms_.count(*input)) *input = terms_[*input];
                 }
                 for (int i = 0; i < g_op.output_size(); ++i) {
-                    string* output = g_op.mutable_output(i);
+                    auto* output = g_op.mutable_output(i);
                     if (terms_.count(*output)) *output = terms_[*output];
                 }
                 for (int i = 0; i < grad.g_inputs.size(); ++i) {
@@ -115,7 +115,7 @@ void GraphGradientMaker::Make(
             }
             // Split & gather grads for multi-used input
             for (int i = 0; i < g_op.output_size(); ++i) {
-                string* output = g_op.mutable_output(i);
+                auto* output = g_op.mutable_output(i);
                 int original_idx = -1;
                 for (int j = 0; j < grad.g_inputs.size(); ++j)
                     if (g_op.output(i) == grad.g_inputs[j]) original_idx = j;
@@ -126,11 +126,11 @@ void GraphGradientMaker::Make(
                     if (g_op.output(i) == input) output_in_inputs = true;
                 if (output_in_inputs) continue;
                 // Found a split branch
-                string original_name = op.input(original_idx);
+                auto original_name = op.input(original_idx);
                 if (inputs_count[original_name] > 1) {
                     // Split
-                    string split_name = *output + "_autosplit_"
-                        + std::to_string(grads_count[*output]++);
+                    auto split_name = *output + "_autosplit_"
+                        + str::to(grads_count[*output]++);
                     if (!is_skip) all_split_grads.insert(split_name);
                     // Gather
                     if (grads_count[*output] == inputs_count[original_name]) {
@@ -142,7 +142,7 @@ void GraphGradientMaker::Make(
                             gather_op.mutable_device_option()
                                 ->CopyFrom(g_op.device_option());
                         for (int j = 0; j < grads_count[*output]; j++) {
-                            string key = *output + "_autosplit_" + std::to_string(j);
+                            auto key = *output + "_autosplit_" + str::to(j);
                             if (all_split_grads.count(key)) gather_op.add_input(key);
                         }
                         gather_ops.emplace_back(gather_op);
@@ -219,7 +219,7 @@ GraphDef GraphGradientMaker::Share(const GraphDef& input_def) {
     for (int i = 0; i < input_def.op_size(); ++i) {
         const OperatorDef& op = input_def.op(i);
         // Ignore the non-gradient ops
-        if (op.type().find("Gradient") == string::npos) continue;
+        if (!str::find(op.type(), "Gradient")) continue;
         if (op.type() == "GradientGather") {
             invalid_ops.insert(i);
             if (ignore_grads_.count(op.output(0))) {
@@ -237,8 +237,8 @@ GraphDef GraphGradientMaker::Share(const GraphDef& input_def) {
             }
         }
         for (const auto& input : op.input())
-            if (input.find("grad") != string::npos)
-                    ref_count[input] += 1;
+            if (str::find(input, "grad"))
+                ref_count[input] += 1;
     }
 
     // Decompose the GradientGather in SSA format
@@ -247,7 +247,7 @@ GraphDef GraphGradientMaker::Share(const GraphDef& input_def) {
         if (invalid_ops.count(i)) continue;
         const OperatorDef& op = input_def.op(i);
         output_def.add_op()->CopyFrom(op);
-        if (op.type().find("Gradient") == string::npos) continue;
+        if (!str::find(op.type(), "Gradient")) continue;
         for (const auto& output : op.output()) {
             const auto& find_iter = ssa_map.find(output);
             if (find_iter != ssa_map.end()) {
@@ -277,7 +277,7 @@ GraphDef GraphGradientMaker::Share(const GraphDef& input_def) {
     auto get_temporary_grad = [&]() mutable {
         if (grads_pool.empty()) {
             return "/share/buffer/grad:" +
-                std::to_string(temporary_idx++);
+                str::to(temporary_idx++);
         } else {
             /*!
              * LIFO is more memory efficent than FIFO usually,
@@ -295,7 +295,7 @@ GraphDef GraphGradientMaker::Share(const GraphDef& input_def) {
     for (int i = 0; i < output_def.op_size(); ++i) {
         OperatorDef* op = output_def.mutable_op(i);
         // Ignore the non-gradient ops
-        if (op->type().find("Gradient") == string::npos) continue;
+        if (!str::find(op->type(), "Gradient")) continue;
         // GC to store the grads that have finished lifecycle
         vector<string> GC;
         // Inplace-aware

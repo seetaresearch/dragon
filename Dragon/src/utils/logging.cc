@@ -35,7 +35,7 @@ LogSeverity StrToLogSeverity(std::string level) {
 }
 
 std::string GenLogHashKey(const char* file, int line) {
-    return std::string(file) + std::to_string(line);
+    return std::string(file) + str::to(line);
 }
 
 int EveryNRegister(

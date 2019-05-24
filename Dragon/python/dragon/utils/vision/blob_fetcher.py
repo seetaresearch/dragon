@@ -55,9 +55,9 @@ class BlobFetcher(multiprocessing.Process):
         im, labels = self.Q_in.get()
         im_blob = numpy.zeros(shape=([self._batch_size] + list(im.shape)), dtype='uint8')
         label_blob = numpy.zeros((self._batch_size, len(labels)), dtype='int64')
-        for ix in range(self._batch_size):
-            im_blob[ix, :, :, :], label_blob[ix, :] = im, labels
-            if ix != self._batch_size - 1: im, labels = self.Q_in.get()
+        for i in range(self._batch_size):
+            im_blob[i, :, :, :], label_blob[i, :] = im, labels
+            if i != self._batch_size - 1: im, labels = self.Q_in.get()
         return im_blob, label_blob
 
     def run(self):

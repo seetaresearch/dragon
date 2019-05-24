@@ -241,9 +241,9 @@ string Workspace::GetDummyName(
     while (1) {
         index = dmap[required_name]++;
         accepted_name = index ? base_name + "_" +
-            std::to_string(index) + suffix :
+            str::to(index) + suffix :
             zero_based ? required_name :
-                base_name + "_" + std::to_string(
+                base_name + "_" + str::to(
                     dmap[required_name]++) + suffix;
         if (remote_workspaces_.empty()) break;
         if (!HasTensor(accepted_name)) break;

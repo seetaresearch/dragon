@@ -15,7 +15,7 @@ void ConvOpBase<Context>::ComputeOutShape() {
         if (!Transposed()) {
             auto idm = x_shape_[axis_ + i];
             auto dk = dilation_[i] * (kshape_[i] - 1) + 1;
-            if (padding_.find("SAME") == string::npos) {
+            if (!str::find(padding_, "SAME")) {
                 // Explicit pads
                 auto odm = (
                     idm + pad_l_[i] + pad_r_[i] - dk
@@ -38,7 +38,7 @@ void ConvOpBase<Context>::ComputeOutShape() {
         } else {
             auto idm = x_shape_[axis_ + i];
             auto dk = dilation_[i] * (kshape_[i] - 1) + 1;
-            if (padding_.find("SAME") == string::npos) {
+            if (!str::find(padding_, "SAME")) {
                 // Explicit pads
                 auto odm = stride_[i] * (idm - 1
                     ) + dk - pad_l_[i] - pad_r_[i];

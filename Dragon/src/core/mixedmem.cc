@@ -153,7 +153,7 @@ const Map<string, string> MixedMemory::info() const {
                         << "but got invalid mem pointer.";
     }
     s2s["device_type"] = _state_;
-    s2s["device_id"] = std::to_string(ptr_device_);
+    s2s["device_id"] = str::to(ptr_device_);
     return s2s;
 }
 

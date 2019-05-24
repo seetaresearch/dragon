@@ -72,4 +72,4 @@ void AddProtoMethods(pybind11::module& m) {
 
 }  // namespace dragon
 
-#endif DRAGON_PYTHON_PY_PROTO_H_
+#endif // DRAGON_PYTHON_PY_PROTO_H_

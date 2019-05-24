@@ -34,28 +34,19 @@ class DataReader(multiprocessing.Process):
         ----------
         source : str
             The path of database.
-        multiple_nodes: boolean, optional, default=False
-            Whether to split data for multiple parallel nodes.
         shuffle : bool, optional, default=False
             Whether to shuffle the data.
         num_chunks : int, optional, default=2048
             The number of chunks to split.
-        chunk_size : int, optional, default=-1
-            The size(MB) of each chunk.
 
         """
         super(DataReader, self).__init__()
         self._source = kwargs.get('source', '')
-        self._multiple_nodes = kwargs.get('multiple_nodes', False)
         self._use_shuffle = kwargs.get('shuffle', False)
-        self._use_instance_chunk = kwargs.get('instance_chunk', False)
         self._num_chunks = kwargs.get('num_chunks', 2048)
-        self._chunk_size = kwargs.get('chunk_size', -1)
-
         self._part_idx, self._num_parts = 0, 1
-        self._cur_idx, self._cur_chunk_idx = 0, 0
-        self._random_seed = _cfg.GetRandomSeed()
-
+        self._cursor, self._chunk_cursor = 0, 0
+        self._rng_seed = _cfg.GetRandomSeed()
         self.Q_out = None
         self.daemon = True
 
@@ -70,13 +61,13 @@ class DataReader(multiprocessing.Process):
         """
         return self._db.value()
 
-    def redirect(self, target_idx):
+    def redirect(self, target):
         """Redirect to the target position.
 
         Parameters
         ----------
-        target_idx : int
-            The key of instance in ``LMDB``.
+        target : int
+            The key of the record.
 
         Returns
         -------
@@ -84,17 +75,17 @@ class DataReader(multiprocessing.Process):
 
         Notes
         -----
-        The redirection reopens the ``LMDB``.
+        The redirection reopens the database.
 
         You can drop caches by ``echo 3 > /proc/sys/vm/drop_caches``.
 
-        This will disturb getting stuck when ``Database Size`` >> ``RAM Size``.
+        This will disturb getting stuck when *Database Size* >> *RAM Size*.
 
         """
         self._db.close()
         self._db.open(self._source)
-        self._cur_idx = target_idx
-        self._db.set(str(self._cur_idx).zfill(self._zfill))
+        self._cursor = target
+        self._db.set(str(target).zfill(self._zfill))
 
     def reset(self):
         """Reset the cursor and environment.
@@ -104,21 +95,18 @@ class DataReader(multiprocessing.Process):
         None
 
         """
-        if self._multiple_nodes or self._use_shuffle:
-            if self._use_shuffle:
-                self._perm = numpy.random.permutation(
-                    self._num_shuffle_parts)
-            self._cur_chunk_idx = 0
-            self._start_idx = int(self._part_idx * self._num_shuffle_parts + self._perm[self._cur_chunk_idx])
-            self._start_idx = int(self._start_idx * self._chunk_size)
-            if self._start_idx >= self._num_entries: self.next_chunk()
-            self._end_idx = self._start_idx + self._chunk_size
-            self._end_idx = min(self._num_entries, self._end_idx)
+        if self._num_parts > 1 or self._use_shuffle:
+            self._chunk_cursor = 0
+            self._part_idx = (self._part_idx + 1) % self._num_parts
+            if self._use_shuffle: self._perm = numpy.random.permutation(self._perm_size)
+            self._head = self._part_idx * self._perm_size + self._perm[self._chunk_cursor]
+            self._tail = self._head * self._chunk_size
+            if self._head >= self._num_entries: self.next_chunk()
+            self._tail = self._head + self._chunk_size
+            self._tail = min(self._num_entries, self._tail)
         else:
-            self._start_idx = 0
-            self._end_idx = self._num_entries
-
-        self.redirect(self._start_idx)
+            self._head, self._tail = 0, self._num_entries
+        self.redirect(self._head)
 
     def next_record(self):
         """Step the cursor of records.
@@ -128,8 +116,8 @@ class DataReader(multiprocessing.Process):
         None
 
         """
-        self._cur_idx += 1
         self._db.next()
+        self._cursor += 1
 
     def next_chunk(self):
         """Step the cursor of shuffling chunks.
@@ -139,16 +127,17 @@ class DataReader(multiprocessing.Process):
         None
 
         """
-        self._cur_chunk_idx += 1
-        if self._cur_chunk_idx >= self._num_shuffle_parts: self.reset()
+        self._chunk_cursor += 1
+        if self._chunk_cursor >= self._perm_size: self.reset()
         else:
-            self._start_idx = self._part_idx * self._num_shuffle_parts + self._perm[self._cur_chunk_idx]
-            self._start_idx = self._start_idx * self._chunk_size
-            if self._start_idx >= self._num_entries: self.next_chunk()
+            self._head = self._part_idx * self._perm_size + self._perm[self._chunk_cursor]
+            self._head = self._head * self._chunk_size
+            if self._head >= self._num_entries:
+                self.next_chunk()
             else:
-                self._end_idx = self._start_idx + self._chunk_size
-                self._end_idx = min(self._num_entries, self._end_idx)
-            self.redirect(self._start_idx)
+                self._tail = self._head + self._chunk_size
+                self._tail = min(self._num_entries, self._tail)
+            self.redirect(self._head)
 
     def run(self):
         """Start the process.
@@ -158,44 +147,42 @@ class DataReader(multiprocessing.Process):
         None
 
         """
-        # fix seed
-        numpy.random.seed(self._random_seed)
+        # Fix seed
+        numpy.random.seed(self._rng_seed)
 
-        # init db
+        # Init db
         self._db = _db.LMDB()
         self._db.open(self._source)
         self._zfill = self._db.zfill()
         self._num_entries = self._db.num_entries()
-        self._epoch_size = int(self._num_entries / self._num_parts + 1)
+
+        epoch_size = self._num_entries // self._num_parts + 1
 
         if self._use_shuffle:
-            if self._chunk_size == 1:
-                # Each chunk has at most 1 record (Naive Shuffle)
-                self._chunk_size, self._num_shuffle_parts = \
-                    1, int(self._num_entries / self._num_parts) + 1
+            if self._num_chunks <= 0:
+                # Each chunk has at most 1 record (Record-Wise)
+                self._chunk_size, self._perm_size = 1, epoch_size
             else:
-                if self._use_shuffle and self._chunk_size == -1:
-                    # Search a optimal chunk size by chunks (Chunk Shuffle)
-                    max_chunk_size = self._db._total_size / ((self._num_chunks * (1 << 20)))
-                    min_chunk_size = 1
-                    while min_chunk_size * 2 < max_chunk_size: min_chunk_size *= 2
-                    self._chunk_size = min_chunk_size
-                    self._num_shuffle_parts = int(math.ceil(self._db._total_size * 1.1 /
-                                                 (self._num_parts * self._chunk_size << 20)))
-                    self._chunk_size = int(self._num_entries / self._num_shuffle_parts / self._num_parts + 1)
-                    limit = (self._num_parts - 0.5) * self._num_shuffle_parts * self._chunk_size
-                    if self._num_entries <= limit:
-                        # Roll back to naive shuffle
-                        self._chunk_size, self._num_shuffle_parts = \
-                            1, int(self._num_entries / self._num_parts) + 1
+                # Search a optimal chunk size (Chunk-Wise)
+                min_size, max_size = \
+                    1, self._db._total_size * 1.0 \
+                        / ((self._num_chunks * (1 << 20)))
+                while min_size * 2 < max_size: min_size *= 2
+                self._perm_size = int(math.ceil(
+                    self._db._total_size * 1.1 /
+                        (self._num_parts * min_size << 20)))
+                self._chunk_size = int(
+                    self._num_entries * 1.0 /
+                        (self._perm_size * self._num_parts) + 1)
+                limit = (self._num_parts - 0.5) * self._perm_size * self._chunk_size
+                if self._num_entries <= limit:
+                    # Roll back to Record-Wise shuffle
+                    self._chunk_size, self._perm_size = 1, epoch_size
         else:
-            # Each chunk has at most K records
-            # Note that if ``shuffle`` and ``multiple_nodes`` are all *False*,
-            # ``chunk_size`` and ``num_shuffle_parts`` are meaningless
-            self._chunk_size = int(self._num_entries / self._num_parts) + 1
-            self._num_shuffle_parts = 1
+            # One chunk has at most K records
+            self._chunk_size, self._perm_size = epoch_size, 1
 
-        self._perm = numpy.arange(self._num_shuffle_parts)
+        self._perm = numpy.arange(self._perm_size)
 
         # Init env
         self.reset()
@@ -204,7 +191,7 @@ class DataReader(multiprocessing.Process):
         while True:
             self.Q_out.put(self.element())
             self.next_record()
-            if self._cur_idx >= self._end_idx:
-                if self._multiple_nodes or \
-                    self._use_shuffle: self.next_chunk()
+            if self._cursor >= self._tail:
+                if self._num_parts > 1 or self._use_shuffle:
+                    self.next_chunk()
                 else: self.reset()

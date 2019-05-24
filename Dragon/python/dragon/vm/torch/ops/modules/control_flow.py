@@ -66,10 +66,10 @@ class Assign(BaseModule):
             'op_type': 'Assign',
             'arguments': {
                 'starts_desc': [
-                    '${{ANCHOR}}/starts[{}]'.format(n)
+                    '${{HANDLE}}/starts[{}]'.format(n)
                         for n in range(self.nstarts)],
                 'sizes_desc': [
-                    '${{ANCHOR}}/sizes[{}]'.format(n)
+                    '${{HANDLE}}/sizes[{}]'.format(n)
                         for n in range(self.nsizes)],
             },
         }

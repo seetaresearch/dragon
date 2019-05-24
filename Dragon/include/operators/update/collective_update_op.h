@@ -28,7 +28,7 @@ class CollectiveUpdateOp final
         Workspace*              ws)
         : MPIOpBase<Context>(def, ws),
           mode_(OpArg<string>("mode", "")) {
-        if (mode_.find("NCCL") != string::npos) InitNCCL();
+        if (str::find(mode_, "NCCL")) InitNCCL();
     }
     USE_OPERATOR_FUNCTIONS;
     USE_MPI_FUNCTIONS;
@@ -37,7 +37,7 @@ class CollectiveUpdateOp final
         /*  TODO(PhyscalX): Temporarily disable it,
                             to avoid a unhandled error. */
 #ifdef WITH_NCCL
-        if (mode_.find("NCCL") != string::npos) {
+        if (str::find(mode_, "NCCL")) {
             /* ncclCommDestroy(nccl_comm); */
         }
 #endif

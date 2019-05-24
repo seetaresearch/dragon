@@ -39,18 +39,39 @@ class GraphBase {
         const string&           exclude,
         int                     stream_id = 0) = 0;
 
-    /*! \brief Return the name of this graph */
+    /*! \brief Return the graph name */
     string name() const { return name_; }
+
+    /*! \brief Return the defined running phase */
+    const string& phase() const { return phase_; }
+
+    /*! \brief Return the argument map */
+    const Map<std::string, const Argument*>& args() { return args_; }
+
+    /*! \brief Return the specified argument */
+    const Argument& arg(const string& name) { return *(args_[name]); }
+
+    /*! \brief Return the stored raw def */
+    const GraphDef& def() const { return def_; }
+
+    /*! \brief Return the stored opt def */
+    const GraphDef& opt_def() const { return opt_def_; }
+
+    /*! \brief Return the parent workspace */
+    Workspace* ws() const { return ws_; }
 
  protected:
     /*! \brief Store the name and running phase */
     string name_, phase_;
 
     /*! \brief Store the defined arguments */
-    Map<string, Argument> args_;
+    Map<string, const Argument*> args_;
 
     /*! \brief Store the parent workspace */
     Workspace* ws_;
+
+    /*! \brief Store the def */
+    GraphDef def_, opt_def_;
 };
 
 class Graph : public GraphBase {
@@ -71,9 +92,6 @@ class Graph : public GraphBase {
         const string&           include,
         const string&           exclude,
         int                     stream_id = 0) override;
-
-    /*! \brief Return the parent workspace */
-    Workspace* ws() const { return ws_; }
 
  protected:
     /*! \brief Store the internal operators */

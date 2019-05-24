@@ -5,6 +5,18 @@
 .. toctree::
    :hidden:
 
+
+Workspace
+---------
+
+==============================    =============================================================================
+List                              Brief
+==============================    =============================================================================
+`Workspace(object)`_              A wrapper for the C implemented workspace.
+`get_default_workspace`_          Return the current default workspace.
+`reset_default_workspace`_        Reset the global default workspace.
+==============================    =============================================================================
+
 Tensor
 ------
 
@@ -41,20 +53,14 @@ List                              Brief
 `RunGraph`_                       Run the specific graph.
 ==============================    =============================================================================
 
-Misc
-----
+I/O
+---
 
 ==============================    =============================================================================
 List                              Brief
 ==============================    =============================================================================
 `Snapshot`_                       Snapshot tensors into a binary file.
 `Restore`_                        Restore tensors from a binary file.
-`SwitchWorkspace`_                Switch to the specific Workspace.
-`MoveWorkspace`_                  Move the source workspace into the target workspace.
-`ResetWorkspace`_                 Reset the specific workspace.
-`ClearWorkspace`_                 Clear the specific workspace.
-`LogMetaGraph`_                   Log the meta graph.
-`ExportMetaGraph`_                Export the meta graph into a file under specific folder.
 ==============================    =============================================================================
 
 API Reference
@@ -63,12 +69,15 @@ API Reference
 .. automodule:: dragon.core.workspace
     :members:
     :undoc-members:
-    :show-inheritance:
 
-.. _SwitchWorkspace: #dragon.core.workspace.SwitchWorkspace
-.. _MoveWorkspace: #dragon.core.workspace.MoveWorkspace
-.. _ResetWorkspace: #dragon.core.workspace.ResetWorkspace
-.. _ClearWorkspace: #dragon.core.workspace.ClearWorkspace
+.. autoclass:: Workspace
+    :members:
+
+    .. automethod:: __init__
+
+.. _Workspace(object): #dragon.core.workspace.Workspace
+.. _get_default_workspace: #dragon.core.workspace.get_default_workspace
+.. _reset_default_workspace: #dragon.core.workspace.reset_default_workspace
 .. _CreateGraph: #dragon.core.workspace.CreateGraph
 .. _HasTensor: #dragon.core.workspace.HasTensor
 .. _GetTensorName: #dragon.core.workspace.GetTensorName
@@ -81,8 +90,5 @@ API Reference
 .. _RunGraph: #dragon.core.workspace.RunGraph
 .. _Snapshot: #dragon.core.workspace.Snapshot
 .. _Restore: #dragon.core.workspace.Restore
-.. _LogMetaGraph: #dragon.core.workspace.LogMetaGraph
-.. _ExportMetaGraph: #dragon.core.workspace.ExportMetaGraph
 
 .. _theano.function(*args, **kwargs): ../vm/theano/compile.html#dragon.vm.theano.compile.function.function
-.. _config.ExportMetaGraph(prefix): ../config.html#dragon.config.ExportMetaGraph

@@ -30,7 +30,7 @@ inline void LoadCaffeModel(
         const auto& layer_name = layer.name();
         auto prefix = layer_name + "/param:";
         for (int j = 0; j < layer.blobs_size(); j++) {
-            auto tensor_name = prefix + std::to_string(j);
+            auto tensor_name = prefix + str::to(j);
             if (!ws->HasTensor(tensor_name)) {
                 LOG(WARNING)
                     << "Tensor(" << tensor_name << ") "

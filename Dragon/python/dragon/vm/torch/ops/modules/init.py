@@ -45,7 +45,7 @@ class Fill(_InitModule):
                 'dtype': self.dtype,
                 'value': float(self.value),
                 'dims_desc': [
-                    '${{ANCHOR}}/dims[{}]'.format(n)
+                    '${{HANDLE}}/dims[{}]'.format(n)
                         for n in range(self.ndim)
                 ],
             },
@@ -67,7 +67,7 @@ class RandomNormal(_InitModule):
                 'mean': float(self.mean),
                 'std': float(self.std),
                 'dims_desc': [
-                    '${{ANCHOR}}/dims[{}]'.format(n)
+                    '${{HANDLE}}/dims[{}]'.format(n)
                         for n in range(self.ndim)
                 ],
             },
@@ -89,7 +89,7 @@ class RandomUniform(_InitModule):
                 'low': float(self.low),
                 'high': float(self.high),
                 'dims_desc': [
-                    '${{ANCHOR}}/dims[{}]'.format(n)
+                    '${{HANDLE}}/dims[{}]'.format(n)
                         for n in range(self.ndim)
                 ],
             },

@@ -24,7 +24,7 @@ void CuDNNDropoutOp<Context>::RunImpl() {
             std::lock_guard<std::mutex> lk(CUDAContext::mutex());
             auto* states_tensor = ws()->CreateTensor(
                 "/share/cudnn/dropout:" +
-                std::to_string(rng_seed_) + "/states");
+                    str::to(rng_seed_) + "/states");
             if (states_tensor->count() > 0) {
                 auto* states = states_tensor->template
                     mutable_data<uint8_t, Context>();
@@ -95,7 +95,7 @@ void CuDNNDropoutGradientOp<Context>::RunImpl() {
             std::lock_guard<std::mutex> lk(CUDAContext::mutex());
             auto* states_tensor = ws()->CreateTensor(
                 "/share/cudnn/dropout:" +
-                std::to_string(rng_seed_) + "/states");
+                    str::to(rng_seed_) + "/states");
             if (states_tensor->count() > 0) {
                 auto* states = states_tensor->template
                     mutable_data<uint8_t, Context>();

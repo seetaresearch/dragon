@@ -214,13 +214,6 @@ PYBIND11_MODULE(libdragon, m) {
             return self->GetTensor(name);
         }, pybind11::return_value_policy::reference_internal)
 
-        /*! \brief Return the filler type of a tensor */
-        .def("GetFillerType", [](
-            Workspace*                  self,
-            const string&               name) {
-            return self->GetFiller(name)->type();
-        })
-
         /* \brief Set an alias for the tensor */
         .def("SetTensorAlias", [](
             Workspace*                  self,
@@ -311,12 +304,14 @@ PYBIND11_MODULE(libdragon, m) {
                 << "\nFailed to parse the GraphDef.";
             auto* graph = self->CreateGraph(graph_def);
             if (verbose) {
-                // It is not a good design to print the debug string
-                auto* T = self->CreateTensor(
-                    "/graph_def/optimized/" + graph->name());
-                if (T->count() > 0) {
-                    auto* data = T->mutable_data<string, CPUContext>();
-                    std::cout << data[0] << std::endl;
+                bool could_be_serialized = true;
+                const auto& def = graph->opt_def();
+                for (auto& op : def.op())
+                    if (op.type() == "GivenTensorFill")
+                        could_be_serialized = false;
+                if (could_be_serialized) {
+                    // It is not a good design to print the debug string
+                    std::cout << def.DebugString() << std::endl;
                 }
             }
             // Return the graph name may be different from the def

@@ -32,7 +32,7 @@ class Resize2d(BaseModule):
                 'fx': self.fx, 'fy': self.fy,
                 'data_format': 'NCHW',
                 'dsize_desc': [
-                    '${{ANCHOR}}/dsize[{}]'.format(n)
+                    '${{HANDLE}}/dsize[{}]'.format(n)
                         for n in range(2)
                 ],
             },

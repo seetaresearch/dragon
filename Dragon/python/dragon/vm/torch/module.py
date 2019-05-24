@@ -24,6 +24,7 @@ import dragon
 import warnings
 from collections import OrderedDict
 
+from dragon import config as _cfg
 from dragon.core import scope as _scope
 from dragon.core import logging as _logging
 from dragon.core import proto_utils as _proto_utils
@@ -310,6 +311,7 @@ class Module(object):
         return self._module_key
 
     def _gen_module_def(self):
+        rng_seed = _cfg.GetGlobalOptions()['random_seed']
         self._module_def = \
             _proto_utils.MakeCXXOperatorDef(
                 name='runtime',
@@ -318,7 +320,9 @@ class Module(object):
                 device_option=_proto_utils.
                     GetDeviceOption(
                         self._device.type,
-                            self._device.index),
+                        self._device.index,
+                        rng_seed=rng_seed,
+                ),
                 **self.op_meta['arguments']
             )
 

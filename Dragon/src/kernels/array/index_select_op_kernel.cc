@@ -18,18 +18,18 @@ void _IndexSelect(
     const T*                x,
     T*                      y,
     CPUContext*             ctx) {
-    int64_t x_offset, select_idx;
+    int64_t x_ofs, select_idx;
     for (int n = 0; n < outer_dim; ++n) {
         for (int i = 0; i < num_indices; ++i) {
             select_idx = indices[i];
             select_idx = select_idx >= 0 ?
                 select_idx : select_idx + axis_dim;
-            x_offset = (
+            x_ofs = (
                 n * axis_dim + select_idx
                     ) * inner_dim;
             math::Copy(
                 inner_dim,
-                x + x_offset,
+                x + x_ofs,
                 y, ctx
             ); y += inner_dim;
         }
@@ -48,7 +48,7 @@ void _IndexSelectGrad(
     const T*                dy,
     T*                      dx,
     CPUContext*             ctx) {
-    int64_t x_offset, select_idx;
+    int64_t x_ofs, select_idx;
     auto nelements = outer_dim * axis_dim * inner_dim;
     math::Set(nelements, cast::to<T>(0.f), dx, ctx);
     for (int n = 0; n < outer_dim; ++n) {
@@ -56,13 +56,13 @@ void _IndexSelectGrad(
             select_idx = indices[i];
             select_idx = select_idx >= 0 ?
                 select_idx : select_idx + axis_dim;
-            x_offset = (
+            x_ofs = (
                 n * axis_dim + select_idx
                     ) * inner_dim;
             math::Add(
                 inner_dim,
-                dy, dx + x_offset,
-                dx + x_offset, ctx
+                dy, dx + x_ofs,
+                dx + x_ofs, ctx
             ); dy += inner_dim;
         }
     }

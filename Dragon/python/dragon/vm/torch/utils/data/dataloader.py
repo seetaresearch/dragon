@@ -21,7 +21,7 @@ class _DataLoaderIter(object):
         self.loader = loader
 
     def __len__(self):
-        return len(self.loader.batch.Q_level_3.qsize())
+        return len(self.loader.batch.Q3.qsize())
 
     def __next__(self):
         return self.loader.batch.get()
@@ -33,28 +33,28 @@ class _DataLoaderIter(object):
 
 
 class DataLoader(object):
-    def __init__(self,
-        dataset, batch_size=1, shuffle=False,
-            partition=False, multiple_nodes=False,
-                 num_chunks=2048, chunk_size=-1):
+    def __init__(
+        self,
+        dataset,
+        batch_size=1,
+        shuffle=False,
+        num_chunks=2048,
+        phase='TRAIN',
+    ):
         """A MPI-Aware DataLoader. Forked from ``dragon.utils.vision``.
 
         Parameters
         ----------
         dataset : torch.utils.data.dataset.Dataset
             The dataset.
-        batch_size : int
-            The batch size. Divided by n mpi-nodes if ``partition`` is True.
-        shuffle : boolean
+        batch_size : int, optional, default=1
+            The batch size.
+        shuffle : boolean, optional, default=False
             Whether to shuffle the data.
-        partition : boolean
-            Whether to partition batch. Default is ``False``.
-        multiple_nodes: boolean
-            Whether to split data for multiple parallel nodes.
-        num_chunks : int
-            The number of chunks to split. Default is ``2048``.
-        chunk_size : int
-            The size(MB) of each chunk. Default is -1 (Refer ``num_chunks``).
+        num_chunks : int, optional, default=2048
+            The number of chunks to split.
+        phase : {'TRAIN', 'TEST'}, optional
+            The optional running phase.
 
         """
         self.dataset = dataset
@@ -65,12 +65,10 @@ class DataLoader(object):
                 n_transformers = dataset.transform.n_transformers
         self.batch = _Batch(**{
             'source': dataset.database,
-            'multiple_nodes': multiple_nodes,
             'shuffle': shuffle,
             'num_chunks': num_chunks,
-            'chunk_size': chunk_size,
+            'phase': phase,
             'batch_size': batch_size,
-            'partition': partition,
             'transform': dataset.transform,
             'color_space': dataset.color_space,
             'num_transformers': n_transformers,
@@ -80,7 +78,7 @@ class DataLoader(object):
         return _DataLoaderIter(self)
 
     def __len__(self):
-        return self.batch.Q_level_3.qsize()
+        return self.batch.Q3.qsize()
 
     def next(self):
         return self.batch.get()

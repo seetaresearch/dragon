@@ -8,59 +8,57 @@ namespace dragon {
 /* Default constructor of <GraphBase> */
 
 GraphBase::GraphBase(const GraphDef& def, Workspace* ws)
-    : name_(def.name()), ws_(ws) {
-    for (auto arg : def.arg()) {
+    : def_(def), ws_(ws), name_(def.name()), phase_("TEST") {
+    // Scan the defined arguments
+    for (auto& arg : def_.arg()) {
         CHECK_GT(arg.name().size(), 0);
         CHECK_EQ(args_.count(arg.name()), 0);
-        args_[arg.name()] = arg;
+        args_[arg.name()] = &arg;
+        if (arg.name() == "phase") phase_ = arg.s();
     }
 
-    Set<string> known_tensors;
-
-    // Topo-check for a graph
+    // Collect outputs
+    Set<string> outputs;
     for (const auto& op : def.op()) {
-        // Check inputs
         for (const auto& in : op.input())
-            CHECK(known_tensors.count(in) || ws_->HasTensor(in))
+            CHECK(outputs.count(in) || ws_->HasTensor(in))
                 << "\nInput: " << in << " for op: "
                 << op.name() << " is unknown.";
-        // Add outputs
-        for (const auto& out : op.output()) known_tensors.insert(out);
+        for (const auto& out : op.output()) outputs.insert(out);
     }
 
-    // Check for all solving targets
-    Set<string> objective_targets;
+    // Check targets
+    Set<string> targets;
     for (const auto& target : def.output()) {
-        CHECK(known_tensors.count(target) ||
-              ws_->HasTensor(target))
+        CHECK(outputs.count(target) || ws_->HasTensor(target))
             << "\nTarget: " << target
-            << " does not exist in computional graph.";
-        objective_targets.insert(target);
+            << " does not exist in the graph.";
+        targets.insert(target);
     }
 
-    // Check for all gradients
+    // Check gradients
     for (const auto& gradient : def.gradient()) {
         const auto& cost = gradient.cost();
         const auto& wrt = gradient.wrt();
-        CHECK(known_tensors.count(cost) || ws_->HasTensor(cost))
+        CHECK(outputs.count(cost) || ws_->HasTensor(cost))
             << "\nTarget: " << cost
-            << "_grad does not exist in computional graph.";
-        CHECK(known_tensors.count(wrt) || ws_->HasTensor(wrt))
+            << "does not exist in the graph.";
+        CHECK(outputs.count(wrt) || ws_->HasTensor(wrt))
             << "\nTarget: " << wrt
-            << "_grad does not exist in computional graph.";
-        CHECK_GT(objective_targets.count(cost), 0)
-            << "\nTo solve d(" << cost << ")/d(" << wrt << "), "
-            << "must set " << cost
-            << "\nas a objective tensor to solve before derivating it.";
+            << "does not exist in the graph.";
+        CHECK_GT(targets.count(cost), 0)
+            << "\nTo solve d(" << cost << ")/d(" << wrt << "),\n"
+            << cost << " should be set as a target.";
     }
 }
 
 /* Create a graph from the optimized def */
 
 bool Graph::Create(const GraphDef& def, Workspace* ws) {
+    this->opt_def_ = def;  // Store for debugging
     bool has_device_option = def.has_device_option();
     for (int i = 0; i < def.op_size(); i++) {
-        OperatorDef op_def(def.op(i));
+        auto op_def(def.op(i));
         LOG(DEBUG) << "Create Operator " << op_def.name()
                    << ": " << op_def.type();
         // Inherit device option if necessary
@@ -75,8 +73,7 @@ bool Graph::Create(const GraphDef& def, Workspace* ws) {
             arg.set_name("do_sync");
             arg.set_i(1); op_def.add_arg()->CopyFrom(arg);
         }
-        OperatorBase* op = NewOperator(op_def, ws);
-        ops_.push_back(op);
+        ops_.push_back(NewOperator(op_def, ws));
     }
     return true;
 }
@@ -89,14 +86,14 @@ Graph::Graph(const GraphDef& def, Workspace* ws)
     GraphDef opt_def = def;
     GraphOptimizer graph_optim(ws);
     GraphGradientMaker gradient_maker;
-    Map< string, vec32_t > subgraph_indices;
+    Map<string, vec32_t> subgraph_indices;
     int opt = 3;  // defaults: O3
-    if (this->args_.count("optimization_level"))
-        opt = this->args_["optimization_level"].i();
+    if (args().count("optimization_level"))
+        opt = arg("optimization_level").i();
     if (opt >= 1) opt_def = graph_optim.PruneNodes(def);
     if (opt >= 2) opt_def = graph_optim.AddInplace(opt_def);
     if (opt >= 3) {
-        if (this->args_["phase"].s() == "TRAIN") {
+        if (phase() == "TRAIN") {
             opt_def = graph_optim.MirrorStage(
                 opt_def, subgraph_indices);
             opt_def = gradient_maker.Share(opt_def);
@@ -105,23 +102,10 @@ Graph::Graph(const GraphDef& def, Workspace* ws)
         }
     }
 
-    // Try to store the final graph as a tensor for visualization
-    bool could_be_serialized = true;
-    for (auto& op : opt_def.op())
-        if (op.type() == "GivenTensorFill")
-            could_be_serialized = false;
-    if (could_be_serialized) {
-        ws_->CreateTensor(
-            "/graph_def/optimized/" + opt_def.name())
-            ->Reshape({ 1 })
-            ->mutable_data<string, CPUContext>()[0]
-            = opt_def.DebugString();
-    }
-
     // Create
     Create(opt_def, ws);
 
-    // Recomputing-aware
+    // Recomputation and SubGraph
     if (subgraph_indices.size() > 0) {
         Map<string, vector<OperatorBase*>> subgraph;
         for (const auto& it : subgraph_indices) {
@@ -141,11 +125,13 @@ bool Graph::Run(
     int                         stream_id) {
     LOG(DEBUG) << "Run Graph: " << name();
     for (auto op : ops_) {
-        if (!include.empty())
-            if (op->type().find(include) == string::npos) continue;
-        if (!exclude.empty())
-            if (op->type().find(exclude) != string::npos) continue;
-        op->SwitchToPhase(this->args_["phase"].s());
+        if (!include.empty() &&
+            !str::find(op->type(), include)
+            ) continue;
+        if (!exclude.empty() &&
+            str::find(op->type(), exclude)
+            ) continue;
+        op->SwitchToPhase(phase());
         LOG(DEBUG) << "$ Before Operator: " << op->name();
         op->Run(stream_id);
         LOG(DEBUG) << "$ After Operator: " << op->name();

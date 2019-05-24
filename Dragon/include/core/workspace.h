@@ -45,13 +45,13 @@ class Workspace {
     void Clear();
 
     /*! \brief Merge from a external workspace */
-    void MergeFrom(Workspace* ws);
+    void MergeFrom(Workspace*);
 
     /*! \brief Query the real name of specified tensor */
-    string GetTensorName(const string& name) const;
+    string GetTensorName(const string&) const;
 
     /*! \brief Try to serach the specified tensor in this workspace */
-    Tensor* TryGetTensor(const string& name, bool use_remote = true) const;
+    Tensor* TryGetTensor(const string&, bool = true) const;
 
     /*! \brief Whether the specified tensor is in this workspace */
     bool HasTensor(const string& name, bool use_remote = true) const {
@@ -59,22 +59,22 @@ class Workspace {
     }
 
     /*! \brief Create the specified tensor */
-    Tensor* CreateTensor(const string& name);
+    Tensor* CreateTensor(const string&);
 
     /*! \brief Return the specified tensor */
-    Tensor* GetTensor(const string& name, bool use_remote = true) const;
+    Tensor* GetTensor(const string&, bool = true) const;
 
     /*! \brief Reset the specified tensor */
-    void ResetTensor(const string& name);
+    void ResetTensor(const string&);
 
     /* \brief Whether the specified filler is in this workspace */
-    bool HasFiller(const string& name, bool use_remote = true) const;
+    bool HasFiller(const string&, bool = true) const;
 
     /*! \brief Create the specified filler */
-    void CreateFiller(const TensorFillerProto& filler);
+    void CreateFiller(const TensorFillerProto&);
 
     /*! \brief Return the specified filler */
-    const TensorFillerProto* GetFiller(const string& name) const;
+    const TensorFillerProto* GetFiller(const string&) const;
 
     /*! \brief Create temporal data segments */
     template <class Context>
@@ -103,16 +103,16 @@ class Workspace {
     }
 
     /*! \brief Create a operator in this workspace */
-    OperatorBase* CreateOperator(const OperatorDef& def);
+    OperatorBase* CreateOperator(const OperatorDef&);
 
     /*! \brief Run the specified persistent operator */
-    void RunOperator(const OperatorDef& def);
+    void RunOperator(const OperatorDef&);
 
     /*! \brief Try to run the operator in a adaptive mode */
-    void RunOperatorOnce(const OperatorDef& def);
+    void RunOperatorOnce(const OperatorDef&);
 
     /*! \brief Create a Graph in this workspace */
-    GraphBase* CreateGraph(const GraphDef& def);
+    GraphBase* CreateGraph(const GraphDef&);
 
     /*! \brief Run the specifed graph by name and rules */
     void RunGraph(

@@ -23,6 +23,11 @@ namespace dragon {
 
 namespace str {
 
+template <typename T>
+inline std::string to(T val) {
+    return std::to_string(val);
+}
+
 inline std::vector<std::string> split(
     const std::string&              str,
     const std::string&              c) {
@@ -35,6 +40,12 @@ inline std::vector<std::string> split(
     }
     ret.push_back(temp);
     return ret;
+}
+
+inline bool find(
+    const std::string&              str,
+    const std::string&              pattern) {
+    return str.find(pattern) != std::string::npos;
 }
 
 inline std::string replace_first(

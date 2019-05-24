@@ -36,10 +36,10 @@ class Indexing(BaseModule):
             'op_type': 'Crop',
             'arguments': {
                 'starts_desc': [
-                    '${{ANCHOR}}/starts[{}]'.format(n)
+                    '${{HANDLE}}/starts[{}]'.format(n)
                         for n in range(self.nstarts)],
                 'sizes_desc': [
-                    '${{ANCHOR}}/sizes[{}]'.format(n)
+                    '${{HANDLE}}/sizes[{}]'.format(n)
                         for n in range(self.nsizes)],
             },
         }
@@ -231,7 +231,7 @@ class Reshape(BaseModule):
             'op_type': 'Reshape',
             'arguments': {
                 'dims_desc': [
-                    '${{ANCHOR}}/dims[{}]'.format(n)
+                    '${{HANDLE}}/dims[{}]'.format(n)
                         for n in range(self.ndim)
                 ],
             },
@@ -298,7 +298,7 @@ class Permute(BaseModule):
         self.op_meta = {
             'op_type': 'Transpose',
             'arguments': {
-                'perm_desc': ['${{ANCHOR}}/perm[{}]'.format(n)
+                'perm_desc': ['${{HANDLE}}/perm[{}]'.format(n)
                     for n in range(self.nperm)],
             },
         }
@@ -326,7 +326,7 @@ class Repeat(BaseModule):
             'op_type': 'Tile',
             'arguments': {
                 'multiples_desc': [
-                    '${{ANCHOR}}/multiples[{}]'.format(n)
+                    '${{HANDLE}}/multiples[{}]'.format(n)
                         for n in range(self.ntimes)
                 ],
             },

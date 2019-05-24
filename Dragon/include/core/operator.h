@@ -48,13 +48,13 @@ class OperatorBase {
     /*! \brief Return the number of outputs */
     int YSize() { return (int)outputs_.size(); }
 
-    /*! \brief Modify this operator according to the given def  */
+    /*! \brief Modify operator according to the given def  */
     void UpdateFrom(const OperatorDef& def);
 
     /*! \brief Switch the internal running phase */
     void SwitchToPhase(const string& phase) { phase_ = phase; }
 
-    /*! \brief Run this operator on the specified stream */
+    /*! \brief Run operator on the specified stream */
     virtual void Run(int stream_id = 0) { NOT_IMPLEMENTED; }
 
     /*! \brief Fusion this operator into the specified graph */
@@ -69,18 +69,18 @@ class OperatorBase {
     /*! \brief Return the current running phase */
     const string& phase() const { return phase_; }
 
-    /*! \brief Return the anchor name of this operator */
-    const string& anchor() const { return anchor_; }
+    /*! \brief Return the resource handle */
+    const string& handle() const { return handle_; }
 
-    /*! \brief Return the data type of this operator */
+    /*! \brief Return the data type */
     const string& dtype() const { return dtype_; }
 
-    /*! \brief Return the data format of this operator */
+    /*! \brief Return the data format */
     const string& data_format() const { return data_format_; }
 
     /*! \brief Return the unique name in this operator */
     const string unique_name(const string& name) const {
-        return "/mnt/" + anchor_ + "/" + name;
+        return "/mnt/" + handle_ + "/" + name;
     }
 
     /*! \brief Return the parent workspace */
@@ -94,7 +94,7 @@ class OperatorBase {
     template <typename T>
     vector<T> Args(const string& name);
 
-    /*! \brief Return the argument map of this operator */
+    /*! \brief Return the argument map */
     const Map<std::string, const Argument*>& args() { return args_; }
 
     /*! \brief Return the specified argument */
@@ -102,7 +102,7 @@ class OperatorBase {
 
     typedef Map<string, vector<OperatorBase*>> SubGraph;
 
-    /*! \brief Return the recomputing subgraph of this operator */
+    /*! \brief Return the recomputing subgraph */
     SubGraph& subgraph() { return subgraph_; }
 
     /*! \brief Set the given recomputing subgraph */
@@ -110,29 +110,38 @@ class OperatorBase {
         subgraph_ = subgraph;
     }
 
-    /*! \brief Return the stored operator def */
+    /*! \brief Return the stored def */
     const OperatorDef& def() const { return def_; }
 
-    /*! \brief Return the debug string of the stored operator def */
+    /*! \brief Return the debug string of stored def */
     string DebugString() const { return def_.DebugString(); }
 
     /*! \brief Return the dtype string according to given tensor */
-    string DTypeString(
-        const Tensor&           tensor,
-        const Set<string>&      dtypes) const;
+    string DTypeString(const Tensor&, const Set<string>&) const;
 
     /* \brief Return the dtype string according to given type */
-    string DTypeString(
-        const string&           dtype,
-        const Set<string>&      dtypes) const;
+    string DTypeString(const string&, const Set<string>&) const;
 
  protected:
+    /*! \brief Store the parent workspace */
     Workspace* ws_;
+
+    /*! \brief Store the def */
     OperatorDef def_;
+
+    /*! \brief Store the recomputing subgraph */
     SubGraph subgraph_;
-    string phase_, anchor_;
+    
+    /*! \brief Store the phase and handle */
+    string phase_, handle_;
+
+    /*! \brief Store the data type and format */
     string dtype_, data_format_;
+
+    /*! \brief Store the pointer of inputs and outputs */
     vector<Tensor*> inputs_, outputs_;
+
+    /*! \brief Store the defined arguments */
     Map<string, const Argument*> args_;
 };
 
@@ -236,7 +245,7 @@ OperatorBase* NewOperator(
     using OperatorBase::name; \
     using OperatorBase::type; \
     using OperatorBase::phase; \
-    using OperatorBase::anchor; \
+    using OperatorBase::handle; \
     using OperatorBase::dtype; \
     using OperatorBase::data_format; \
     using OperatorBase::unique_name; \
@@ -432,7 +441,7 @@ DEFINE_TENSOR_TYPES_DISPATCHER(TensorTypes, RunImpl);
             << arg##_desc_.size() << ")."; \
         auto* arg##T = ws()->GetTensor( \
             str::replace_first(arg##_desc_[i], \
-                "${ANCHOR}", anchor())); \
+                "${HANDLE}", handle())); \
         CHECK(arg##T->template IsType<type>()) \
             << "\nThe type of " << #arg << " should be " << #type << "."; \
         CHECK_EQ(arg##T->count(), 1) \

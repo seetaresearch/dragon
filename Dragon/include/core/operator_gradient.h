@@ -48,15 +48,16 @@ class GradientMakerBase {
     virtual Gradient Make() {
         auto new_defs = MakeDef();
         if (def.has_uid()) {
-            // Attach the anchor to name if having UID
+            // Attach the handle to name if having UID
             for (int i = 0; i < new_defs.size(); i++)
                 new_defs[i].set_name(def.name());
         } else {
             // Otherwise, just put it into the arguments
-            Argument anchor;
-            anchor.set_name("anchor"); anchor.set_s(def.name());
+            Argument arg;
+            arg.set_name("handle");
+            arg.set_s(def.name());
             for (int i = 0; i < new_defs.size(); i++)
-                new_defs[i].add_arg()->CopyFrom(anchor);
+                new_defs[i].add_arg()->CopyFrom(arg);
         }
         return Gradient(new_defs, g_inputs_, defaults());
     };

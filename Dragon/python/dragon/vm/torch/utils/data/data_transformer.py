@@ -13,9 +13,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import numpy as np
-import numpy.random as npr
-from multiprocessing import Process
+import numpy
+import multiprocessing
 
 import dragon.config as config
 import dragon.vm.caffe.proto.caffe_pb2 as pb
@@ -26,7 +25,7 @@ except ImportError as e:
     print('Failed to import cv2. Error: {0}'.format(str(e)))
 
 
-class DataTransformer(Process):
+class DataTransformer(multiprocessing.Process):
     """DataTransformer is deployed to queue transformed images from `DataReader`_.
 
     Nearly all common image augmentation methods are supported.
@@ -37,11 +36,11 @@ class DataTransformer(Process):
 
         Parameters
         ----------
-        transform : lambda
+        transform : lambda, optional
             The transforms.
-        color_space : str
+        color_space : {'RGB', 'BGR'}, optional
             The color space.
-        pack : boolean
+        pack : boolean, optional, default=False
             Pack the images automatically.
 
         """
@@ -49,7 +48,7 @@ class DataTransformer(Process):
         self.transform = transform
         self.color_space = color_space
         self.pack = pack
-        self._random_seed = config.GetRandomSeed()
+        self._rng_seed = config.GetRandomSeed()
         self.Q_in = self.Q_out = None
         self.daemon = True
 
@@ -70,7 +69,7 @@ class DataTransformer(Process):
         # Decode
         datum = pb.Datum()
         datum.ParseFromString(serialized)
-        im = np.fromstring(datum.data, np.uint8)
+        im = numpy.fromstring(datum.data, numpy.uint8)
         if datum.encoded is True:
             im = cv2.imdecode(im, -1)
         else:
@@ -94,7 +93,7 @@ class DataTransformer(Process):
         None
 
         """
-        npr.seed(self._random_seed)
+        numpy.random.seed(self._rng_seed)
         while True:
             serialized = self.Q_in.get()
             im, label = self.get(serialized)
@@ -103,5 +102,5 @@ class DataTransformer(Process):
                     self.Q_out.put((im[ix], label))
             else:
                 if len(im.shape) == 3 and self.pack:
-                    im = np.expand_dims(im, axis=0)
+                    im = numpy.expand_dims(im, axis=0)
                 self.Q_out.put((im, label))

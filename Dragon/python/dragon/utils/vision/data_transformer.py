@@ -74,7 +74,7 @@ class DataTransformer(multiprocessing.Process):
         self._max_rand_scale = kwargs.get('max_random_scale', 1.0)
         self._force_color = kwargs.get('force_color', False)
         self._phase = kwargs.get('phase', 'TRAIN')
-        self._random_seed = _cfg.GetRandomSeed()
+        self._rng_seed = _cfg.GetRandomSeed()
         self.Q_in = self.Q_out = None
         self.daemon = True
 
@@ -186,7 +186,7 @@ class DataTransformer(multiprocessing.Process):
 
         """
         # Fix the random seed
-        numpy.random.seed(self._random_seed)
+        numpy.random.seed(self._rng_seed)
 
         # Run!
         while True:

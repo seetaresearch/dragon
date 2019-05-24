@@ -28,19 +28,18 @@ class BlobFetcher(Process):
 
         Parameters
         ----------
-        batch_size : int
-            The size of a training batch.
-        partition : boolean
-            Whether to partition batch. Default is ``False``.
-        prefetch : int
-            The prefetch count. Default is ``5``.
+        batch_size : int, optional, default=128
+            The size of a mini-batch.
+        partition : bool, optional, default=False
+            Whether to partition batch for parallelism.
+        prefetch : int, optional, default=5
+            The prefetch count.
 
         """
         super(BlobFetcher, self).__init__()
         self._batch_size = kwargs.get('batch_size', 100)
         self._partition  = kwargs.get('partition', False)
-        if self._partition:
-            self._batch_size = int(self._batch_size / kwargs['group_size'])
+        if self._partition: self._batch_size //= kwargs['group_size']
         self.Q_in = self.Q_out = None
         self.daemon = True
 
@@ -53,15 +52,12 @@ class BlobFetcher(Process):
             The blob of image and labels.
 
         """
-        # fill blobs
         im, labels = self.Q_in.get()
         im_blob = np.zeros(shape=([self._batch_size] + list(im.shape)), dtype=im.dtype)
         label_blob = np.zeros((self._batch_size, len(labels)), dtype=np.int64)
-        for ix in range(0, self._batch_size):
-            im_blob[ix, :, :, :], label_blob[ix, :] = im, labels
-            if ix != self._batch_size - 1: im, labels = self.Q_in.get()
-
-        # mean subtraction & numerical scale
+        for i in range(0, self._batch_size):
+            im_blob[i, :, :, :], label_blob[i, :] = im, labels
+            if i != self._batch_size - 1: im, labels = self.Q_in.get()
         im_blob = im_blob.astype(np.float32)
         return im_blob, label_blob
 
@@ -73,5 +69,4 @@ class BlobFetcher(Process):
         None
 
         """
-        while True:
-            self.Q_out.put(self.get())
+        while True: self.Q_out.put(self.get())

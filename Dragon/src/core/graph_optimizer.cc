@@ -13,7 +13,7 @@ GraphDef GraphOptimizer::PruneNodes(const GraphDef& input_def) {
     dag_.clear(); colored_.clear();
     // Build DAG
     for (int i = 0; i < input_def.op_size(); ++i) {
-        const OperatorDef& op = input_def.op(i);
+        const auto& op = input_def.op(i);
         for (const auto& v : op.output()) {
             vector<string> sp_u;
             if (!op.input_size()) sp_u.resize(op.output_size());
@@ -36,8 +36,8 @@ GraphDef GraphOptimizer::PruneNodes(const GraphDef& input_def) {
 
     // Forward dyeing through connected path for all gradients
     for (const auto& gradient : input_def.gradient()) {
-        string u = gradient.cost() + "_grad";
-        string v = gradient.wrt() + "_grad";
+        auto u = gradient.cost() + "_grad";
+        auto v = gradient.wrt() + "_grad";
         if (ws_->HasTensor(u)) u = ws_->GetTensor(u)->name();
         if (ws_->HasTensor(v)) v = ws_->GetTensor(v)->name();
         visited_.clear();
@@ -111,7 +111,7 @@ GraphDef GraphOptimizer::AddInplace(const GraphDef& input_def) {
     dag_.clear(); renamed_.clear();
     // Build DAG
     for (int i = 0; i < input_def.op_size(); ++i) {
-        const OperatorDef& op = input_def.op(i);
+        const auto& op = input_def.op(i);
         for (const auto& v : op.output()) {
             vector<string> sp_u;
             if (!op.input_size()) sp_u.resize(op.output_size());
@@ -142,7 +142,7 @@ GraphDef GraphOptimizer::AddInplace(const GraphDef& input_def) {
 
     // Rename to create in-place
     for (int i = 0; i < input_def.op_size(); ++i) {
-        const OperatorDef& op = input_def.op(i);
+        const auto& op = input_def.op(i);
         for (int j = 0; j < op.input_size(); ++j) {
             if (whitelist.count(op.input(j)) == 0 &&
                 renamed_.count(op.input(j)) &&
@@ -172,7 +172,7 @@ GraphDef GraphOptimizer::AddInplace(const GraphDef& input_def) {
 
 GraphDef GraphOptimizer::MirrorStage(
     const GraphDef&                  input_def,
-    Map<string, vec32_t >&       op_indices) {
+    Map<string, vec32_t>&            op_indices) {
     GraphDef output_def(input_def);
     Map<string, set<int>> fake_op_indices;
     Map<string, string> rename_map;
@@ -180,7 +180,7 @@ GraphDef GraphOptimizer::MirrorStage(
 
     // Check mirror stage
     for (const auto& op : input_def.op()) {
-        if (op.type().find("Gradient") != string::npos) continue;
+        if (str::find(op.type(), "Gradient")) continue;
         bool mirror_stage = false;
         for (auto& arg : op.arg())
             if (arg.name() == "mirror_stage")
@@ -194,8 +194,8 @@ GraphDef GraphOptimizer::MirrorStage(
     // Allocate the temporal buffers
     string v2_name, version_name;
     for (int i = 0; i < input_def.op_size(); ++i) {
-        const OperatorDef& op = input_def.op(i);
-        OperatorDef* op_v2 = output_def.mutable_op(i);
+        const auto& op = input_def.op(i);
+        auto* op_v2 = output_def.mutable_op(i);
         vector<string> used_buffers;
         for (int j = 0; j < op.input_size(); ++j) {
             const auto& it = rename_map.find(op.input(j));
@@ -217,24 +217,25 @@ GraphDef GraphOptimizer::MirrorStage(
                     continue;
                 }
                 for (int k = 0; k < GRAPH_TEPORAL_OUTPUT_MAX_SIZE; ++k) {
-                    v2_name = "/share/buffer/symbol:" + std::to_string(k);
+                    v2_name = "/share/buffer/symbol:" + str::to(k);
                     for (const auto& buffer : used_buffers)
-                        if (buffer.find(v2_name) != string::npos) { v2_name.clear(); }
+                        if (str::find(buffer, v2_name)) { v2_name.clear(); }
                     if (!v2_name.empty()) { used_buffers.emplace_back(v2_name); break; }
                 }
                 CHECK(!v2_name.empty()) << "\nNo enough buffers for outputs.";
                 ws_->CreateTensor(v2_name)->set_version(0);
-                version_name = "/ver:" + std::to_string(versions[v2_name]++);
-                *op_v2->mutable_output(j) = rename_map[op.output(j)] =
-                              v2_name + version_name;
+                version_name = "/ver:" + str::to(versions[v2_name]++);
+                *op_v2->mutable_output(j) = 
+                    rename_map[op.output(j)] =
+                        v2_name + version_name;
             }
         }
     }
 
     // Plan the minimum recomputing ops for temporal buffers
     for (int i = 0; i < input_def.op_size(); ++i) {
-        const OperatorDef& input_op = input_def.op(i);
-        const OperatorDef& output_op = output_def.op(i);
+        const auto& input_op = input_def.op(i);
+        const auto& output_op = output_def.op(i);
 
         /* ----------------------------------------------------------
          *
@@ -244,7 +245,7 @@ GraphDef GraphOptimizer::MirrorStage(
          *
          * ---------------------------------------------------------- */
 
-        set<int> minimum_ops = {i};
+        set<int> minimum_ops = { i };
         for (int j = 0; j < input_op.input_size(); ++j) {
             if (input_op.input(j) != output_op.input(j)) {
                 for (auto idx : fake_op_indices[input_op.input(j)])
@@ -270,86 +271,91 @@ GraphDef GraphOptimizer::MirrorStage(
 /* Allocate the buffer for outputs (-O3) */
 
 GraphDef GraphOptimizer::SimulateGC(const GraphDef& input_def) {
-    GraphDef output_def(input_def);
-    Set<string> targets;
+    Set<string> blacklist;
     Map<string, int> ref_count;
     Map<string, string> rename_map;
 
-    Set<string> dimension_ops = {
-        "Shape", "Reshape", "Flatten",
-            "ExpandDims", "Squeeze",
-    }, blacklist_outputs, star_ops = {
-        "Reshape", "Crop", "NNResize",
-            "BilinearResize",
+    static Set<string> dim_ops = {
+        "Shape",
+        "Squeeze",
+        "Reshape",
+        "Flatten",
+        "ExpandDims",
+    }, star_ops = {
+        "Crop",
+        "Reshape",
+        "NNResize",
+        "BilinearResize",
     };
 
-    // Prepare the Outputs Pool
+    // Prepare the pool
     int temporary_idx = 0;
-    std::deque<string> outputs_pool;
+    std::deque<string> pool;
     auto get_temporary_output = [&]() mutable {
-        if (outputs_pool.empty()) {
+        if (pool.empty()) {
             return "/share/buffer/output:" +
-                std::to_string(temporary_idx++);
+                str::to(temporary_idx++);
         } else {
-            string temporary_output = outputs_pool.back();
-            outputs_pool.pop_back();
+            auto temporary_output = pool.back();
+            pool.pop_back();
             return temporary_output;
         }
     };
 
     // Count the references
     for (const auto& op : input_def.op()) {
-        for (auto& input : op.input())
+        for (const auto& input : op.input())
             ref_count[input] += 1;
-        if (dimension_ops.count(op.type()))
-            blacklist_outputs.insert(op.input(0));
+        if (dim_ops.count(op.type()))
+            blacklist.insert(op.input(0));
         if (star_ops.count(op.type())) {
             for (const auto& arg : op.arg())
                 if (arg.name() == "shape_like")
-                    blacklist_outputs.insert(arg.s());
+                    blacklist.insert(
+                        ws_->GetTensorName(arg.s())
+                    );
         }
     }
 
     // We should preserve the targets
-    for (auto& e : input_def.output()) targets.insert(e);
+    for (auto& e : input_def.output()) blacklist.insert(e);
 
     // Rewritten the inputs and outputs
-    string ori_name; bool inplace_flag;
+    auto output_def(input_def);
+    string name; bool inplace_flag;
     for (int i = 0; i < input_def.op_size(); ++i) {
         vector<string> GC;
-        const OperatorDef& op = input_def.op(i);
-        OperatorDef* op_v2 = output_def.mutable_op(i);
+        const auto& op = input_def.op(i);
+        auto* op_v2 = output_def.mutable_op(i);
 
         // Ignore the init operators
         if (op.input_size() == 0) continue;
 
         // Analyze the inputs
         for (int j = 0; j < op.input_size(); ++j) {
-            ori_name = op.input(j);
-            if (rename_map.count(ori_name)) {
+            name = op.input(j);
+            if (rename_map.count(name)) {
                 *op_v2->mutable_input(j) =
-                    rename_map[ori_name];
+                    rename_map[name];
             }
-            ref_count[ori_name]--;
-            if (ref_count[ori_name] == 0 && op_v2->input(j).find(
-                "/share/buffer/output:") != string::npos)
+            ref_count[name]--;
+            if (ref_count[name] == 0 && str::find(
+                op_v2->input(j), "/share/buffer/output:"))
                     GC.push_back(op_v2->input(j));
         }
 
         // Allocate the buffers
-        if (!dimension_ops.count(op.type())) {
+        if (!dim_ops.count(op.type())) {
             for (int j = 0; j < op.output_size(); ++j) {
+                name = op.output(j);
                 inplace_flag = false;
-                ori_name = op.output(j);
-                if (targets.count(ori_name) ||
-                        blacklist_outputs.count(ori_name))
-                            continue;
+                if (blacklist.count(name)) continue;
                 for (const auto& input : op.input())
-                    if (ori_name == input) inplace_flag = true; 
+                    if (name == input) inplace_flag = true;
                 if (inplace_flag) {
                     *op_v2->mutable_output(j) = op_v2->input(j);
                 } else {
-                    rename_map[ori_name] =
+                    rename_map[name] =
                         *op_v2->mutable_output(j) =
                             get_temporary_output();
                 }
@@ -357,7 +363,7 @@ GraphDef GraphOptimizer::SimulateGC(const GraphDef& input_def) {
         }
 
         // Update the pool from GC
-        for (auto& e : GC) outputs_pool.emplace_back(e);
+        for (const auto& e : GC) pool.emplace_back(e);
     }
 
     return output_def;
@@ -377,8 +383,8 @@ void GraphOptimizer::ForwardPruneTraversal(
     }
     visited_[u] = false;
     for (int i = 0; i < dag_[u].childs.size(); ++i) {
-        string v = dag_[u].childs[i];
-        vector<string> new_path(path);
+        auto v = dag_[u].childs[i];
+        auto new_path(path);
         new_path.push_back(v);
         if (v == leaf) {
             for (const auto& node : new_path)
@@ -394,7 +400,7 @@ void GraphOptimizer::ForwardPruneTraversal(
 void GraphOptimizer::BackwardPruneTraversal(const string& v) {
     colored_[v] = true;
     for (int i = 0; i < dag_[v].parents.size(); ++i) {
-        string u = dag_[v].parents[i];
+        auto u = dag_[v].parents[i];
         if (colored_.count(u)) continue;
         BackwardPruneTraversal(u);
     }

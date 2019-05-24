@@ -73,7 +73,7 @@ def fetch_initializer(initializer):
 def fetch_argument(op_def, desc, ws):
     if sys.version_info >= (3, 0):
         desc = desc.decode('utf-8')
-    desc = desc.replace('${ANCHOR}', op_def.name)
+    desc = desc.replace('${HANDLE}', op_def.name)
     argument_value = ws.FetchTensor(desc)
     if argument_value.size == 1:
         return argument_value.flatten()[0]

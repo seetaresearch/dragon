@@ -17,7 +17,7 @@ namespace dragon {
             for (int i = 0; i < 2; i++) \
                 kshape_[i] = X(0).dim(i + 2); \
         } \
-        if (padding_.find("SAME") != string::npos) { \
+        if (str::find(padding_, "SAME")) { \
             for (int i = 0; i < 2; i++) { \
                 auto idm = X(0).dim(i + 2); \
                 int64_t odm = (idm + stride_[i] - 1 \
@@ -38,7 +38,7 @@ namespace dragon {
             for (int i = 0; i < 2; i++) \
                 kshape_[i] = X(0).dim(i + 1); \
         } \
-        if (padding_.find("SAME") != string::npos) { \
+        if (str::find(padding_, "SAME")) { \
             for (int i = 0; i < 2; i++) { \
                 auto idm = X(0).dim(i + 1); \
                 int64_t odm = (idm + stride_[i] - 1 \
@@ -55,7 +55,7 @@ namespace dragon {
     } else { \
         LOG(FATAL) << "Unknown DataFormat: " << data_format(); \
     } \
-    if (padding_.find("SAME") == string::npos) { \
+    if (!str::find(padding_, "SAME")) { \
         /*! Case 1: infer output shape with explicit pads */ \
         if (ceil_mode_) { \
             pool_h_ = ceil( \

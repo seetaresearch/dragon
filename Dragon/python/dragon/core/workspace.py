@@ -38,22 +38,22 @@ from dragon.core import proto_utils as _proto_utils
 
 
 class TensorPool(object):
-    """We apply the TensorPool to manage the reused tensors.
+    """A wrapper to manage the reused tensors.
 
-    Tensors with the same scope in the pool will be reused by turns,
-    which speeds up the whole system by reducing the unnecessary deconstructing.
+    Tensors with the same scope will be reused by turns,
+    and thus, unnecessary deconstructing is reduced.
 
-    Heuristically, we have used 5 pools with different scopes:
+    Heuristically, five pools with different scopes are used:
 
-    * scope(Leaf): A Pool to reuse leaf tensors.
+    * *${LEAF}*: A pool to reuse leaf tensors.
 
-    * scope(NumPy): A pool to reuse leaf tensors from numpy.
+    * *${NUMPY}*: A pool to reuse leaf tensors from numpy.
 
-    * scope(Join): A pool to reuse RT(runtime) tensors required by forward-backward.
+    * *${JOIN}*: A pool to reuse RT(runtime) tensors required by forward-backward.
 
-    * scope(Detach): A pool to reuse RT(runtime) tensors required by forward only.
+    * *${DETACH}*: A pool to reuse RT(runtime) tensors required by forward-pass only.
 
-    * scope(Reference): A pool to reuse reshaped tensors(sharing contents).
+    * *${REFERENCE}*: A pool to reuse reshaped tensors(sharing contents).
 
     """
     def __init__(self):
@@ -61,6 +61,19 @@ class TensorPool(object):
         self._scope2keys = defaultdict(deque)
 
     def get(self, scope='${DETACH}'):
+        """Return a unique name under the specified scope.
+
+        Parameters
+        ----------
+        scope : str, optional, default='${DETACH}'
+            The optional
+
+        Returns
+        -------
+        str
+            The unique name can be used.
+
+        """
         try:
             return self._scope2keys[scope].popleft()
         except:
@@ -71,6 +84,14 @@ class TensorPool(object):
             return self._scope2keys[scope].popleft()
 
     def put(self, name):
+        """Collect a unique name.
+
+        Parameters
+        ----------
+        name : str
+            The name to collect.
+
+        """
         if '${POOL}' in name:
             scope, _ = name[8:].split('/')
             self._scope2keys[scope].append(name)
@@ -79,13 +100,14 @@ class TensorPool(object):
 
 
 class OperatorPool(object):
-    """Operators whose gradients is required will hold a resource handle,
-    which is also called ``Anchor`` in the backend.
+    """A wrapper to manage the resource handle of operators.
 
-    We apply this pool to collect the handles according to the type of operator,
-    as the mem size of temporal resources varies greatly.
+    Operators whose gradients is required will hold a resource handle.
 
-    The resource handle will be released after the gradient flow automatically.
+    We collect the handles according to the type of operator,
+    as the size of resources varies greatly.
+
+    Handle will be released after the backward-pass automatically.
 
     """
     def __init__(self):
@@ -93,6 +115,19 @@ class OperatorPool(object):
         self._type2keys = defaultdict(deque)
 
     def get(self, op_type):
+        """Return a unique handle according to the op type.
+
+        Parameters
+        ----------
+        op_type : str
+            The type of the operator.
+
+        Returns
+        -------
+        str
+            The unique handle can be used.
+
+        """
         try:
             return self._type2keys[op_type].popleft()
         except:
@@ -102,13 +137,21 @@ class OperatorPool(object):
                         domain='Operator', zero_based=False))
             return self._type2keys[op_type].popleft()
 
-    def put(self, op_name):
-        op_type, _ = op_name[8:].split('_')
-        self._type2keys[op_type].append(op_name)
+    def put(self, handle):
+        """Collect a unique handle.
+
+        Parameters
+        ----------
+        name : str
+            The name to collect.
+
+        """
+        op_type, _ = handle[8:].split('_')
+        self._type2keys[op_type].append(handle)
 
 
 class Workspace(_C.Workspace):
-    """A wrapper for the C implemented workspace.
+    """A wrapper for the C++ implemented workspace.
 
     This class is a fusion of *Workspace*, *Pool* and *tf.Graph*.
 
@@ -116,20 +159,41 @@ class Workspace(_C.Workspace):
 
     """
     def __init__(self, name=''):
+        """Construct a Workspace instance.
+
+        Parameters
+        ----------
+        name : str, optional, default=''
+            The optional workspace name.
+
+        Returns
+        -------
+        Workspace
+            A new workspace.
+
+        """
         super(Workspace, self).__init__(name)
         self._ref_objects = []
         self._collections = {}
         self.tensor_pool = TensorPool()
         self.operator_pool = OperatorPool()
 
-    def get_collection_ref(self, name):
-        coll_list = self._collections.get(name, None)
-        if coll_list is None:
-            coll_list = []
-            self._collections[name] = coll_list
-        return coll_list
-
     def get_collection(self, name, scope=None):
+        """Return the specified collection.
+
+        Parameters
+        ----------
+        name : str
+            The key to the collection.
+        scope : str, optional
+            The optional regex keyword.
+
+        Returns
+        -------
+        list
+            The collection list.
+
+        """
         coll_list = self._collections.get(name, None)
         if coll_list is None:
             return []
@@ -143,13 +207,61 @@ class Workspace(_C.Workspace):
                     filter_coll_list.append(item)
             return filter_coll_list
 
+    def get_collection_ref(self, name):
+        """Return the reference of specified collection.
+
+        Parameters
+        ----------
+        name : str
+            The key to the collection.
+
+        Returns
+        -------
+        list
+            The collection list.
+
+        """
+        coll_list = self._collections.get(name, None)
+        if coll_list is None:
+            coll_list = []
+            self._collections[name] = coll_list
+        return coll_list
+
     def add_to_collection(self, name, value):
+        """Add the value to the specified collection.
+
+        Parameters
+        ----------
+        name : str
+            The key to the collection.
+        value : object
+            The value object.
+
+        Returns
+        -------
+        None
+
+        """
         if name not in self._collections:
             self._collections[name] = [value]
         else:
             self._collections[name].append(value)
 
     def add_to_collections(self, names, value):
+        """Add the value to the specified collections.
+
+        Parameters
+        ----------
+        name : sequence of str
+            The key to the collections.
+        value : object
+            The value object.
+
+        Returns
+        -------
+        None
+
+        """
         for name in names:
             self.add_to_collection(name, value)
 
@@ -246,12 +358,21 @@ def CreateGraph(graph_def):
         The graph name to run.
 
     """
-    LogMetaGraph(graph_def)
-    ExportMetaGraph(graph_def)
     options = _cfg.GetGlobalOptions()
+    if options['log_meta_graph']: print(graph_def)
+    if options['export_meta_graph']:
+        if not os.path.exists(options['export_meta_graph']):
+            try:
+                os.makedirs(options['export_meta_graph'])
+            except Exception:
+                raise ValueError('The given prefix is invalid.')
+        path = os.path.join(
+            options['export_meta_graph'],
+                graph_def.name + '.metatxt')
+        with open(path, 'w') as f: f.write(str(graph_def))
+        _logging.info('Export meta graph to: {}'.format(path))
     return get_default_workspace().CreateGraph(
-        _stringify_proto(graph_def),
-            options['log_optimized_graph'])
+        _stringify_proto(graph_def), options['log_optimized_graph'])
 
 
 def RunOperator(op_def, verbose=False):
@@ -330,28 +451,6 @@ def CreateFiller(filler_def):
     filler_def = filler_def if isinstance(filler_def, str) \
         else filler_def.SerializePartialToString()
     get_default_workspace().CreateFiller(filler_def)
-
-
-def GetFillerType(tensor):
-    """Get the filler type of specific tensor.
-
-    It is useful if you want to tag some tensors,
-
-    e.g. tag with ``numpy``, and get to initialize them lazily.
-
-    Parameters
-    ----------
-    tensor : Tensor or str
-        The tensor to query.
-
-    Returns
-    -------
-    str
-        The filler type.
-
-    """
-    tensor = _stringify_tensor(tensor)
-    return get_default_workspace().GetFillerType(tensor)
 
 
 def GetTensorName(tensor):
@@ -585,54 +684,6 @@ def Backward(
     )
 
 
-def LogMetaGraph(graph_def):
-    """Log the meta graph.
-
-    Parameters
-    ----------
-    graph_def : GraphDef
-        The definition of meta graph.
-
-    Returns
-    -------
-    None
-
-    """
-    options = _cfg.GetGlobalOptions()
-    if options['log_meta_graph']: print(graph_def)
-
-
-def ExportMetaGraph(graph_def):
-    """Export the meta graph into a file under specific folder.
-
-    You can set the exporting prefix by `config.ExportMetaGraph(prefix)`_.
-
-    Parameters
-    ----------
-    graph_def : GraphDef
-        The definition of meta graph.
-
-    Returns
-    -------
-    None
-
-    """
-    options = _cfg.GetGlobalOptions()
-    if options['export_meta_graph']:
-        if not os.path.exists(options['export_meta_graph']):
-            try:
-                os.makedirs(options['export_meta_graph'])
-            except Exception:
-                raise ValueError('The given prefix is invalid.')
-
-        path = os.path.join(
-            options['export_meta_graph'],
-                graph_def.name + '.metatxt')
-
-        with open(path, 'w') as f: f.write(str(graph_def))
-        _logging.info('Export meta graph into: {}'.format(path))
-
-
 def Snapshot(
     tensors,
     filename,
@@ -662,10 +713,6 @@ def Snapshot(
     Returns
     -------
     None
-
-    Notes
-    -----
-
 
     """
     file_path = prefix + filename + suffix
@@ -709,7 +756,6 @@ def Restore(binary_file, format='pickle'):
     """
     assert os.path.exists(binary_file), \
         'Binary file({}) does not exist.'.format(binary_file)
-
     if format == 'pickle':
         try:
             state_dict = pickle.load(open(binary_file, 'rb'))

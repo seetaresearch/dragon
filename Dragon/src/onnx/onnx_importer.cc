@@ -59,7 +59,7 @@ ONNXImporterReturns ONNXBackend::ConvPoolNodeImporter(
     auto mode = attributes.get<string>("auto_pad");
     auto* padding = attributes.AddRewrittenAttribute("padding");
     // SAME, SAME_LOWER, or SAME_UPPER
-    if (mode.find("SAME") != string::npos) padding->set_s(mode);
+    if (str::find(mode, "SAME")) padding->set_s(mode);
     else padding->set_s("VALID");  // Use explicit pads
     attributes.remove("auto_pad");
 
@@ -77,7 +77,7 @@ ONNXImporterReturns ONNXBackend::ConvPoolNodeImporter(
     // Determine the op type
     OperatorDef* op_def = returns.GetOp(0);
     auto ks = attributes.get<ONNX_INTS>("kernel_shape");
-    *(op_def->mutable_type()) += (std::to_string(ks.size()) + "d");
+    *(op_def->mutable_type()) += (str::to(ks.size()) + "d");
 
     return returns;
 }
@@ -329,7 +329,7 @@ ONNXImporterReturns ONNXBackend::LpNormNodeImporter(
 
     // Determine the "p", i.e. op type
     auto p = attributes.get<int64_t>("p", 2);
-    node.set_op_type("L" + std::to_string(p) + "Norm");
+    node.set_op_type("L" + str::to(p) + "Norm");
     attributes.remove("p");
 
     auto* num_axes = attributes.AddRewrittenAttribute("num_axes");
