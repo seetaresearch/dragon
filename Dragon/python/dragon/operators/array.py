@@ -52,7 +52,7 @@ def IndexSelect(inputs, indices, axis=0, **kwargs):
         The input tensor.
     indices : sequence or Tensor
         The indices to select elements.
-    axis : int, optional
+    axis : int, optional, default=0
         The axis of indices.
 
     Returns
@@ -156,14 +156,12 @@ def Crop(
 
 
 @OpSchema.Inputs(1)
-def Slice(inputs, axis=0, num_outputs=1, slice_points=None, **kwargs):
+def Slice(inputs, axis=0, num_slices=1, slice_points=None, **kwargs):
     """Slice the inputs into several parts along the given axis.
 
     All dimensions except the specified ``axis`` should be same.
 
     The number of ``slice_points`` should be *len(X.shape) - 1*.
-
-    if ``slice_points`` is *None*, dimension of axis should be divided by ``num_outputs``.
 
     **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
 
@@ -171,10 +169,10 @@ def Slice(inputs, axis=0, num_outputs=1, slice_points=None, **kwargs):
     ----------
     inputs : Tensor
         The input tensor.
-    axis : int, optional
+    axis : int, optional, default=0
         The axis to slice, can be negative.
-    num_outputs : int, optional
-        The optional number number of slices.
+    num_slices: int, optional, default=1
+        The optional number of slices.
     slice_points : sequence of int, optional
         The optional slice points.
 
@@ -184,9 +182,12 @@ def Slice(inputs, axis=0, num_outputs=1, slice_points=None, **kwargs):
         The outputs.
 
     """
-    if slice_points is not None and len(slice_points) > 0:
-        num_outputs = len(slice_points) + 1
-    return Tensor.CreateOperator('Slice', **ParseArgs(locals()))
+    arguments = ParseArgs(locals())
+    if slice_points is not None:
+        arguments['num_outputs'] = len(slice_points) + 1
+    else:
+        arguments['num_outputs'] = num_slices
+    return Tensor.CreateOperator('Slice', **arguments)
 
 
 @OpSchema.Inputs(1, INT_MAX)
@@ -201,7 +202,7 @@ def Stack(inputs, axis=0, **kwargs):
     ----------
     inputs : sequence of Tensor
         The inputs.
-    axis : int
+    axis : int, optional, default=0
         The axis to stack, can be negative.
 
     Returns
@@ -225,7 +226,7 @@ def Concat(inputs, axis=0, **kwargs):
     ----------
     inputs : sequence of Tensor
         The inputs.
-    axis : int
+    axis : int, optional, default=0
         The axis to concatenate, can be negative.
 
     Returns
@@ -235,6 +236,30 @@ def Concat(inputs, axis=0, **kwargs):
 
     """
     return Tensor.CreateOperator('Concat', **ParseArgs(locals()))
+
+
+@OpSchema.Inputs(1)
+def ChannelShuffle(inputs, axis=0, group=1, **kwargs):
+    """Shuffle channels between groups along the given axis. `[Zhang et.al, 2017] <https://arxiv.org/abs/1707.01083>`_.
+
+    **Type Constraints**: (*bool*, *int8*, *uint8*, *int32*, *int64*, *float16*, *float32*, *float64*)
+
+    Parameters
+    ----------
+    inputs : Tensor
+        The inputs.
+    axis : int, optional, default=0
+        The axis of channels, can be negative.
+    group : int, optional, default=1
+        The number of groups.
+
+    Returns
+    -------
+    Tensor
+        The output tensor.
+
+    """
+    return Tensor.CreateOperator('ChannelShuffle', **ParseArgs(locals()))
 
 
 @OpSchema.Inputs(1)
@@ -411,9 +436,9 @@ def ArgMin(inputs, axis=None, top_k=1, keep_dims=False, **kwargs):
         The input tensor.
     axis : int, optional
         The axis to compute, can be negative.
-    top_k : int, optional
+    top_k : int, optional, default=1
         The top k results to keep.
-    keep_dims : bool, optional
+    keep_dims : bool, optional, default=False
         Whether to keep dims after computing.
 
     Returns
@@ -439,9 +464,9 @@ def Min(inputs, axis=None, top_k=1, keep_dims=False, **kwargs):
         The input tensor.
     axis : int, optional
         The axis to compute, can be negative.
-    top_k : int, optional
+    top_k : int, optional, default=1
         The top k results to keep.
-    keep_dims : bool, optional
+    keep_dims : bool, optional, default=False
         Whether to keep dims after computing.
 
     Returns
@@ -494,7 +519,7 @@ def Repeat(inputs, axis=None, repeats=1, **kwargs):
         The input tensor.
     axis : int, optional
         The axis to repeat.
-    repeats : int or Tensor, optional
+    repeats : int or Tensor, optional, default=1
         The magnitude of repeating.
 
     Returns
@@ -586,11 +611,11 @@ def OneHot(inputs, depth, on_value=1, off_value=0, **kwargs):
     inputs : Tensor
         The input tensor.
     depth : int
-        The depth of one-hot representation.
-    on_value : int, optional
-        The value when ``indices[j] = i``.
-    off_value : int, optional
-        The value when ``indices[j] != i``.
+        The depth of representation.
+    on_value : int, optional, default=1
+        The value when *indices[j]* = *i*.
+    off_value : int, optional, default=0
+        The value when *indices[j]* != *i*.
 
     Returns
     -------
@@ -613,12 +638,12 @@ def Flatten(inputs, axis=0, num_axes=-1, keep_axes=None, **kwargs):
     ----------
     inputs : Tensor
         The input tensor.
-    axis : int, optional
+    axis : int, optional, default=0
         The start axis to flatten, can be negative.
-    num_axes : int, optional
-        The number of axes to flatten. Default is ``-1`` (Along all axes).
+    num_axes : int, optional, default=-1
+        The number of axes to flatten.
     keep_axes : int, optional
-        The number of axes to keep. Default is ``None`` (Disabled).
+        The number of axes to keep.
 
     Returns
     -------

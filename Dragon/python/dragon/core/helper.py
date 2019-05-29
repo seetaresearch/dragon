@@ -33,7 +33,7 @@ class OperatorHelper(object):
         # Following operators is the simplest case:
         # Input(0) => Output(0), shape and data type unchanged.
         'Relu', 'PRelu', 'Elu', 'SElu', 'Sigmoid', 'Tanh', 'Softmax',
-        'Dropout', 'DropPath', 'DropBlock2d',
+        'Dropout', 'DropPath', 'DropBlock2d', 'ChannelShuffle',
         'Add', 'Sub', 'Mul', 'Div', 'Clip', 'Log', 'Exp', 'Pow', 'Square', 'Sqrt',
         'Accumulate', 'Affine', 'Copy', 'StopGradient', 'MPIBroadcast',
         'BatchNorm', 'GroupNorm', 'L2Norm', 'LRN', 'BiasAdd',

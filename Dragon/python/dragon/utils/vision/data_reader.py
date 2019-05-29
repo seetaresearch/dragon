@@ -120,7 +120,7 @@ class DataReader(multiprocessing.Process):
         self._cursor += 1
 
     def next_chunk(self):
-        """Step the cursor of shuffling chunks.
+        """Step the cursor of chunks.
 
         Returns
         -------
@@ -166,7 +166,7 @@ class DataReader(multiprocessing.Process):
                 # Search a optimal chunk size (Chunk-Wise)
                 min_size, max_size = \
                     1, self._db._total_size * 1.0 \
-                        / ((self._num_chunks * (1 << 20)))
+                        / (self._num_chunks * (1 << 20))
                 while min_size * 2 < max_size: min_size *= 2
                 self._perm_size = int(math.ceil(
                     self._db._total_size * 1.1 /

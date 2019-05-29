@@ -40,7 +40,7 @@ class TypeMeta {
 
     TypeMeta(const TypeMeta& src)
         : id_(src.id_), itemsize_(src.itemsize_),
-        ctor_(src.ctor_), copy_(src.copy_), dtor_(src.dtor_) {}
+          ctor_(src.ctor_), copy_(src.copy_), dtor_(src.dtor_) {}
 
     TypeMeta& operator = (const TypeMeta& src) {
         if (this == &src) return *this;

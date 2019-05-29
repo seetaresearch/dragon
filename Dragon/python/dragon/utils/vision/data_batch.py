@@ -45,8 +45,8 @@ class DataBatch(object):
             The number of chunks to split.
         padding : int, optional, default=0
             The zero-padding size.
-        fill_value : int, optional, default=127
-            The value to fill when padding is valid.
+        fill_value : int or sequence, optional, default=127
+            The value(s) to fill for padding or cutout.
         crop_size : int, optional, default=0
             The cropping size.
         cutout_size : int, optional, default=0

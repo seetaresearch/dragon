@@ -106,6 +106,32 @@ class Stack(BaseModule):
         return self.run(inputs, outputs)
 
 
+class Chunk(BaseModule):
+    """This module imports the *SliceOp* from backend.
+
+    Slice the inputs into several parts along the given axis.
+
+    """
+    def __init__(self, key, dev, **kwargs):
+        super(Chunk, self).__init__(key, dev, **kwargs)
+        self.axis = kwargs.get('axis', 0)
+        self.chunks = kwargs.get('chunks', 1)
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'Slice',
+            'arguments': {
+                'axis': self.axis,
+            },
+        }
+
+    def forward(self, x):
+        inputs = [x]; self.unify_devices(inputs)
+        outputs = [self.register_output() for _ in range(self.chunks)]
+        return self.run(inputs, outputs)
+
+
 class IndexSelect(BaseModule):
     """This module imports the *IndexSelectOp* from backend.
 
@@ -313,6 +339,28 @@ class Permute(BaseModule):
         outputs = [self.register_output()]
         callback = lambda A: self.update_args(A, perm)
         return self.run(inputs, outputs, callback=callback)
+
+
+class ChannelShuffle(BaseModule):
+    def __init__(self, key, dev, **kwargs):
+        super(ChannelShuffle, self).__init__(key, dev, **kwargs)
+        self.axis = kwargs.get('axis', 0)
+        self.group = kwargs.get('group', 1)
+        self.register_op()
+
+    def register_op(self):
+        self.op_meta = {
+            'op_type': 'ChannelShuffle',
+            'arguments': {
+                'axis': self.axis,
+                'group': self.group,
+            },
+        }
+
+    def forward(self, x, y):
+        inputs = [x]; self.unify_devices(inputs)
+        outputs = [y] if y else [self.register_output()]
+        return self.run(inputs, outputs)
 
 
 class Repeat(BaseModule):

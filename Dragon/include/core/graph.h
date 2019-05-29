@@ -21,23 +21,16 @@ namespace dragon {
 class GraphBase {
  public:
     /*! \brief Default constructor */
-    GraphBase(
-        const GraphDef&         def,
-        Workspace*              ws);
+    GraphBase(const GraphDef&, Workspace*);
 
     /*! \brief Default deconstructor */
     virtual ~GraphBase() {}
 
     /*! \brief Create a graph from the optimized def */
-    virtual bool Create(
-        const GraphDef&         def,
-        Workspace*              ws) = 0;
+    virtual bool Create(const GraphDef&, Workspace*) = 0;
 
     /*! \brief Run the graph once synchronously */
-    virtual bool Run(
-        const string&           include,
-        const string&           exclude,
-        int                     stream_id = 0) = 0;
+    virtual bool Run(const string&, const string&, int = 0) = 0;
 
     /*! \brief Return the graph name */
     string name() const { return name_; }
@@ -46,7 +39,7 @@ class GraphBase {
     const string& phase() const { return phase_; }
 
     /*! \brief Return the argument map */
-    const Map<std::string, const Argument*>& args() { return args_; }
+    const Map<string, const Argument*>& args() { return args_; }
 
     /*! \brief Return the specified argument */
     const Argument& arg(const string& name) { return *(args_[name]); }
@@ -83,15 +76,10 @@ class Graph : public GraphBase {
     virtual ~Graph() { for (auto* op : ops_) delete op; }
 
     /*! \brief Create a graph from the optimized def */
-    bool Create(
-        const GraphDef&         def,
-        Workspace*              ws) override;
+    bool Create(const GraphDef&, Workspace*) override;
 
     /*! \brief Run the graph once synchronously */
-    bool Run(
-        const string&           include,
-        const string&           exclude,
-        int                     stream_id = 0) override;
+    bool Run(const string&, const string&, int = 0) override;
 
  protected:
     /*! \brief Store the internal operators */
@@ -99,9 +87,7 @@ class Graph : public GraphBase {
 };
 
 /*! \brief Create a graph from the raw def */
-GraphBase* NewGraph(
-    const GraphDef&             def,
-    Workspace*                  ws);
+GraphBase* NewGraph(const GraphDef&, Workspace*);
 
 /* Macros */
 

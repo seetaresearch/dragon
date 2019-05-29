@@ -126,6 +126,7 @@ ArgMin = _array_ops.ArgMin
 Slice = _array_ops.Slice
 Stack = _array_ops.Stack
 Concat = _array_ops.Concat
+ChannelShuffle = _array_ops.ChannelShuffle
 Transpose = _array_ops.Transpose
 Repeat = _array_ops.Repeat
 Tile = _array_ops.Tile

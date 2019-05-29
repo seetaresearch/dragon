@@ -10,7 +10,7 @@
  * ------------------------------------------------------------
  */
 
-#ifndef DRAGON_PYTHON_PY_CONIFG_H_
+#ifndef DRAGON_PYTHON_PY_CONFIG_H_
 #define DRAGON_PYTHON_PY_CONFIG_H_
 
 #include "py_dragon.h"

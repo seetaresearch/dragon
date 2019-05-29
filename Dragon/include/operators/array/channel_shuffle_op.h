@@ -10,49 +10,47 @@
  * ------------------------------------------------------------
  */
 
-#ifndef DRAGON_OPERATORS_ARRAY_SLICE_OP_H_
-#define DRAGON_OPERATORS_ARRAY_SLICE_OP_H_
+#ifndef DRAGON_OPERATORS_ARRAY_CHANNEL_SHUFFLE_OP_H_
+#define DRAGON_OPERATORS_ARRAY_CHANNEL_SHUFFLE_OP_H_
 
 #include "core/operator.h"
 
 namespace dragon {
 
 template <class Context>
-class SliceOp final : public Operator<Context> {
+class ChannelShuffleOp final: public Operator<Context> {
  public:
-     SliceOp(const OperatorDef& def, Workspace* ws)
-         : Operator<Context>(def, ws),
-           axis_(OpArg<int64_t>("axis", 0)),
-           points_(OpArgs<int64_t>("slice_points")) {}
+    ChannelShuffleOp(const OperatorDef& def, Workspace* ws)
+        : Operator<Context>(def, ws),
+          axis_(OpArg<int64_t>("axis", 0)),
+          group_(OpArg<int64_t>("group", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunImpl();
 
  protected:
-    vec64_t points_, sections_;
     int64_t outer_dim_, inner_dim_;
-    int64_t axis_, axis_dim_, slice_dim_, N_;
+    int64_t axis_, axis_dim_, group_;
 };
 
 template <class Context>
-class SliceGradientOp final : public Operator<Context> {
+class ChannelShuffleGradientOp final: public Operator<Context> {
  public:
-    SliceGradientOp(const OperatorDef& def, Workspace* ws)
+    ChannelShuffleGradientOp(const OperatorDef& def, Workspace* ws)
         : Operator<Context>(def, ws),
           axis_(OpArg<int64_t>("axis", 0)),
-          points_(OpArgs<int64_t>("slice_points")) {}
+          group_(OpArg<int64_t>("group", 1)) {}
     USE_OPERATOR_FUNCTIONS;
 
     void RunOnDevice() override;
     template <typename T> void RunImpl();
 
  protected:
-    vec64_t points_, sections_;
     int64_t outer_dim_, inner_dim_;
-    int64_t axis_, axis_dim_, slice_dim_, N_;
+    int64_t axis_, axis_dim_, group_;
 };
 
 }  // namespace dragon
 
-#endif  // DRAGON_OPERATORS_ARRAY_SLICE_OP_H_
+#endif  // DRAGON_OPERATORS_ARRAY_CHANNEL_SHUFFLE_OP_H_

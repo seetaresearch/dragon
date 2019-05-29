@@ -31,7 +31,7 @@ class Workspace;
 class OperatorBase {
  public:
     /*! \brief Default constructor */
-    OperatorBase(const OperatorDef& def, Workspace* ws);
+    OperatorBase(const OperatorDef&, Workspace*);
 
     /*! \brief Default deconstructor */
     virtual ~OperatorBase() {}
@@ -49,7 +49,7 @@ class OperatorBase {
     int YSize() { return (int)outputs_.size(); }
 
     /*! \brief Modify operator according to the given def  */
-    void UpdateFrom(const OperatorDef& def);
+    void UpdateFrom(const OperatorDef&);
 
     /*! \brief Switch the internal running phase */
     void SwitchToPhase(const string& phase) { phase_ = phase; }
@@ -95,7 +95,7 @@ class OperatorBase {
     vector<T> Args(const string& name);
 
     /*! \brief Return the argument map */
-    const Map<std::string, const Argument*>& args() { return args_; }
+    const Map<string, const Argument*>& args() { return args_; }
 
     /*! \brief Return the specified argument */
     const Argument& arg(const string& name) { return *(args_[name]); }
@@ -212,12 +212,11 @@ class Operator : public OperatorBase {
 #ifndef WITH_MPI
         return true;
 #else
-        vec32_t allow_ranks =
-            OperatorBase::Args<int>("mpi_ranks");
-        if (allow_ranks.empty()) return true;
+        auto ranks = OperatorBase::Args<int>("mpi_ranks");
+        if (ranks.empty()) return true;
         int cur_rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &cur_rank);
-        for (auto mpi_rank : allow_ranks)
+        for (auto mpi_rank : ranks)
             if (cur_rank == mpi_rank) return true;
         return false;
 #endif
@@ -225,10 +224,7 @@ class Operator : public OperatorBase {
 };
 
 /*! \brief New a operator from the raw def */
-
-OperatorBase* NewOperator(
-    const OperatorDef&          def,
-    Workspace*                  ws);
+OperatorBase* NewOperator(const OperatorDef&, Workspace*);
 
 /* Macros */
 

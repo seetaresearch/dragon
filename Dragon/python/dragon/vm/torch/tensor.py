@@ -355,7 +355,7 @@ class Tensor(object):
 
         Parameters
         ----------
-        other : dragon.vm.torch.Tensor, number
+        other : dragon.vm.torch.Tensor or number
             The other tensor.
 
         Returns
@@ -371,7 +371,7 @@ class Tensor(object):
 
         Parameters
         ----------
-        other : dragon.vm.torch.Tensor, number
+        other : dragon.vm.torch.Tensor or number
             The other tensor.
 
         Returns
@@ -387,7 +387,7 @@ class Tensor(object):
 
         Parameters
         ----------
-        other : dragon.vm.torch.Tensor, number
+        other : dragon.vm.torch.Tensor or number
             The other tensor.
 
         Returns
@@ -403,7 +403,7 @@ class Tensor(object):
 
         Parameters
         ----------
-        other : dragon.vm.torch.Tensor, number
+        other : dragon.vm.torch.Tensor or number
             The other tensor.
 
         Returns
@@ -419,7 +419,7 @@ class Tensor(object):
 
         Parameters
         ----------
-        other : dragon.vm.torch.Tensor, number
+        other : dragon.vm.torch.Tensor or number
             The other tensor.
 
         Returns
@@ -846,6 +846,24 @@ class Tensor(object):
 
         """
         raise NotImplementedError('Refer torch.ops.tensor.repeat')
+
+    def chunk(self, chunks, dim=0):
+        """Split self into several parts along the given axis.
+
+        Parameters
+        ----------
+        chunks : int
+            The number of chunks to split.
+        dim : int, optional
+            The dim to split.
+
+        Returns
+        -------
+        sequence of dragon.vm.torch.Tensor
+            The output chunks.
+
+        """
+        raise NotImplementedError('Refer torch.ops.tensor.chunk')
 
     def nonzero(self):
         """Return the indices of non-zero elements.

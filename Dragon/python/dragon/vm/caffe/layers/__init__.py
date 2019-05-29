@@ -84,7 +84,6 @@ from .common import (
     FlattenLayer,
     ConcatLayer,
     NormalizeLayer,
-    InstanceNormLayer,
     TileLayer,
     ReductionLayer,
     ExpandDimsLayer,

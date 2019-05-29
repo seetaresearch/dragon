@@ -27,13 +27,13 @@ class ImageDataOp final : public Operator<Context> {
         if (mean_vec_.size() > 0) {
             CHECK_EQ((int)mean_vec_.size(), 3);
             auto* mean = mean_.Reshape({ 3 })
-                ->mutable_data<float, CPUContext>();
+                ->template mutable_data<float, CPUContext>();
             for (int i = 0; i < 3; ++i) mean[i] = mean_vec_[i];
         }
         if (std_vec_.size() > 0) {
             CHECK_EQ((int)std_vec_.size(), 3);
             auto* std = std_.Reshape({ 3 })
-                ->mutable_data<float, CPUContext>();
+                ->template mutable_data<float, CPUContext>();
             for (int i = 0; i < 3; ++i) std[i] = std_vec_[i];
         }
     }

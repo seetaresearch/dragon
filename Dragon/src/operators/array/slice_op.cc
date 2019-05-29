@@ -12,9 +12,16 @@ namespace dragon {
        << ", " << Input.ndim() << "), got " \
        << OpArg<int64_t>("axis", 0) << "."; \
     if (points_.empty()) { \
-        CHECK_EQ(X(0).dim(axis_) % N_, 0) \
-            << "\nSelected dim is " << X(0).dim(axis_) \
-            << ", can't be sliced into " << N_ << " parts."; \
+        auto dim = (X(0).dim(axis_) + N_ - 1) / N_; \
+        sections_ = vec64_t(N_, dim); \
+        sections_[N_ - 1] = X(0).dim(axis_) - dim * (N_ - 1); \
+    } else { \
+        int64_t slice_ofs = 0; \
+        sections_ = vec64_t(N_); \
+        for (int i = 0; i < N_; i++) \
+            sections_[i] = i < N_ - 1 ? \
+                points_[i] - slice_ofs : \
+                    axis_dim_ - slice_ofs; \
     }
 
 template <class Context> template <typename T>
@@ -24,16 +31,11 @@ void SliceOp<Context>::RunImpl() {
     auto* x = X(0).template data<T, Context>();
 
     for (int i = 0; i < N_; i++) {
-        if (!points_.empty()) {
-            slice_dim_ = i < N_ - 1 ?
-                points_[i] - slice_ofs :
-                    axis_dim_ - slice_ofs;
-        }
+        slice_dim_ = sections_[i];
 
-        CHECK(slice_dim_ > 0 &&
-              slice_ofs + slice_dim_ <= axis_dim_)
-          << "\nIllegal slicing points: "
-          << Tensor::DimString(points_)
+        CHECK(slice_dim_ > 0)
+          << "\nIllegal slicing sections: "
+          << Tensor::DimString(sections_)
           << " for dimension: " << axis_dim_;
 
         out_shape[axis_] = slice_dim_;
@@ -77,16 +79,11 @@ void SliceGradientOp<Context>::RunImpl() {
     auto* dx = Y(0)->template mutable_data<T, Context>();
 
     for (int i = 0; i < N_; i++) {
-        if (!points_.empty()) {
-            slice_dim_ = i < N_ - 1 ?
-                points_[i] - slice_ofs :
-                    axis_dim_ - slice_ofs;
-        }
+        slice_dim_ = sections_[i];
 
-        CHECK(slice_dim_ > 0 &&
-              slice_ofs + slice_dim_ <= axis_dim_)
+        CHECK(slice_dim_ > 0)
             << "\nIllegal slicing points: "
-            << Tensor::DimString(points_)
+            << Tensor::DimString(sections_)
             << " for dimension: " << axis_dim_;
 
         if (X(i + 1).name() != "NULL") {

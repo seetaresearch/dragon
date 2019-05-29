@@ -27,20 +27,16 @@ def LMDBData(**kwargs):
         The path of database.
     shuffle : bool, optional, default=False
         Whether to shuffle the data.
-    node_step: bool
-        Whether to split data for multiple parallel nodes.
     num_chunks : int, optional, default=2048
         The number of chunks to split.
-    chunk_size : int, optional, default=-1
-        The size(MB) of each chunk.
-    mean_values : list, optional
-        The mean value of each image channel.
-    scale : float, optional, default=1.
-        The scale performed after mean subtraction.
     padding : int, optional, default=0
         The zero-padding size.
+    fill_value : int or sequence, optional, default=127
+        The value(s) to fill for padding or cutout.
     crop_size : int, optional, default=0
         The cropping size.
+    cutout_size : int, optional, default=0
+        The square size to cutout.
     mirror : bool, optional, default=False
         Whether to mirror(flip horizontally) images.
     color_augmentation : bool, optional, default=False

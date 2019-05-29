@@ -34,9 +34,9 @@ from dragon.vm.torch.ops.modules.init import (
 )
 
 from dragon.vm.torch.ops.modules.array import (
-    Reshape, Squeeze, UnSqueeze, Permute,
-    Indexing, Repeat, Concat, Stack,
-    IndexSelect, MaskedSelect,
+    Reshape, Squeeze, UnSqueeze, Permute, 
+    ChannelShuffle, Repeat, Concat, Stack, Chunk,
+    Indexing, IndexSelect, MaskedSelect,
     Reduce, ArgReduce,
     NonZero, Where,
     OneHot, Multinomial,
@@ -60,7 +60,8 @@ __all__ = [
     'mean', 'sum', 'min', 'max', 'topk',
     'nonzero', 'where', 'argmin', 'argmax',
     'gt', 'lt', 'eq', 'ne', 'ge', 'le',
-    'cat', 'stack', 'narrow',
+    'cat', 'stack', 'chunk',
+    'narrow', 'channel_shuffle',
     'index_select', 'masked_select',
     'one_hot', 'multinomial',
     'rand', 'randn',
@@ -422,7 +423,7 @@ def _reshape(input, shape, shape_like=None):
 
 
 def _permute(input, perm):
-    dev = MakeDevice(inputs=[input]); nperm = len(perm)
+    dev, nperm = MakeDevice([input]), len(perm)
     key = 'Permute/{}/nperm:{}'.format(dev, nperm)
     module = get_module(Permute, key, dev, nperm=nperm)
     return module.forward(input, perm)
@@ -576,7 +577,9 @@ def squeeze(input, dim=None, out=None):
 
     Parameters
     ----------
-    dim : int
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int, optional
         The optional dim to remove.
     out : dragon.vm.torch.Tensor, optional
         The output tensor.
@@ -598,6 +601,8 @@ def unsqueeze(input, dim, out=None):
 
     Parameters
     ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
     dim : int
         The dim to remove.
     out : dragon.vm.torch.Tensor, optional
@@ -856,7 +861,7 @@ def le(input, other, out=None):
     ----------
     input : dragon.vm.torch.Tensor
         The input tensor.
-    other : dragon.vm.torch.Tensor, number
+    other : dragon.vm.torch.Tensor or number
         The other tensor.
     out : dragon.vm.torch.Tensor, optional
         The optional output tensor.
@@ -877,7 +882,7 @@ def eq(input, other, out=None):
     ----------
     input : dragon.vm.torch.Tensor
         The input tensor.
-    other : dragon.vm.torch.Tensor, number
+    other : dragon.vm.torch.Tensor or number
         The other tensor.
     out : dragon.vm.torch.Tensor, optional
         The optional output tensor.
@@ -898,7 +903,7 @@ def ne(input, other, out=None):
     ----------
     input : dragon.vm.torch.Tensor
         The input tensor.
-    other : dragon.vm.torch.Tensor, number
+    other : dragon.vm.torch.Tensor or number
         The other tensor.
     out : dragon.vm.torch.Tensor, optional
         The optional output tensor.
@@ -930,7 +935,7 @@ def cat(seq, dim=0, out=None):
         The output tensor.
 
     """
-    dev = MakeDevice(inputs=seq, outputs=[out] if out else [])
+    dev = MakeDevice(seq, [out] if out else [])
     key = 'Concat/{}/dim:{}'.format(dev, dim)
     module = get_module(Concat, key, dev, axis=dim)
     return module.forward(seq, out)
@@ -943,7 +948,7 @@ def stack(seq, dim=0, out=None):
     ----------
     seq : sequence of dragon.vm.torch.Tensor
         The sequence.
-    dim : int, optional
+    dim : int, optional, default=0
         The dim to stack.
     out : dragon.vm.torch.Tensor, optional
         The optional output tensor.
@@ -958,6 +963,60 @@ def stack(seq, dim=0, out=None):
     key = 'Stack/{}/dim:{}'.format(dev, dim)
     module = get_module(Stack, key, dev, axis=dim)
     return module.forward(seq, out)
+
+
+def channel_shuffle(input, dim=0, group=1, out=None):
+    """Shuffle channels between groups along the given axis.
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    dim : int, optional, default=0
+        The axis of channels.
+    group : int, optional, default=1
+        The number of groups.
+    out : dragon.vm.torch.Tensor, optional
+        The output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The new tensor.
+
+    """
+    dev = MakeDevice([input])
+    key = 'ChannelShuffle/{}/dim:{}/group:{}'.format(dev, dim, group)
+    module = get_module(
+        ChannelShuffle, key, dev, 
+        axis=dim,
+        group=group,
+    )
+    return module.forward(input, out)
+
+
+def chunk(tensor, chunks, dim=0):
+    """Split the input into several parts along the given axis.
+
+    Parameters
+    ----------
+    tensor : dragon.vm.torch.Tensor
+        The input to split.
+    chunks : int
+        The number of chunks to split.
+    dim : int, optional, default=0
+        The dim to split.
+
+    Returns
+    -------
+    sequence of dragon.vm.torch.Tensor
+        The output chunks.
+
+    """
+    dev = MakeDevice([tensor])
+    key = 'Chunk/{}/chunks:{}/dim:{}'.format(dev, chunks, dim)
+    module = get_module(Chunk, key, dev, axis=dim, chunks=chunks)
+    return module.forward(tensor)
 
 
 def index_select(input, dim, index, out=None):
@@ -1047,7 +1106,7 @@ def nonzero(input, out=None):
 
     Returns
     -------
-    dragon.vm.torch.FloatTensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
@@ -1069,7 +1128,7 @@ def one_hot(input, depth):
 
     Returns
     -------
-    dragon.vm.torch.FloatTensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
@@ -1137,7 +1196,7 @@ def zeros(*sizes, **kwargs):
 
     Returns
     -------
-    vm.torch.FloatTensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
@@ -1158,7 +1217,7 @@ def zeros_like(input, out=None, **kwargs):
 
     Returns
     -------
-    vm.torch.FloatTensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
@@ -1180,7 +1239,7 @@ def ones(*sizes, **kwargs):
 
     Returns
     -------
-    vm.torch.FloatTensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
@@ -1201,7 +1260,7 @@ def ones_like(input, out=None, **kwargs):
 
     Returns
     -------
-    vm.torch.FloatTensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
@@ -1223,7 +1282,7 @@ def rand(*sizes, **kwargs):
 
     Returns
     -------
-    vm.torch.FloatTensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
@@ -1244,7 +1303,7 @@ def randn(*sizes, **kwargs):
 
     Returns
     -------
-    vm.torch.FloatTensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """

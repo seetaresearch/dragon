@@ -14,8 +14,8 @@ Data
 ====================    =============================================================================
 List                    Brief
 ====================    =============================================================================
-`DataLayer`_            The implementation of ``DataLayer``.
-`MemoryDataLayer`_      The implementation of ``MemoryDataLayer``.
+`DataLayer`_            The implementation of *DataLayer*.
+`MemoryDataLayer`_      The implementation of *MemoryDataLayer*.
 ====================    =============================================================================
 
 Vision
@@ -24,16 +24,16 @@ Vision
 ==============================      =============================================================================
 List                                Brief
 ==============================      =============================================================================
-`ConvolutionLayer`_                 The implementation of ``ConvolutionLayer``.
-`DepthwiseConvolutionLayer`_        The implementation of ``DepthwiseConvolutionLayer``.
-`DeconvolutionLayer`_               The implementation of ``DeconvolutionLayer``.
-`PoolingLayer`_                     The implementation of ``PoolingLayer``.
-`ROIPoolingLayer`_                  The implementation of ``ROIPoolingLayer``.
-`ROIAlignLayer`_                    The implementation of ``ROIAlignLayer``.
-`LRNLayer`_                         The implementation of ``LRNLayer``.
-`NNResizeLayer`_                    The implementation of ``NNResizeLayer``.
-`BilinearResizeLayer`_              The implementation of ``BilinearResizeLayer``.
-`DropBlockLayer`_                   The implementation of ``DropBlockLayer``.
+`ConvolutionLayer`_                 The implementation of *ConvolutionLayer*.
+`DepthwiseConvolutionLayer`_        The implementation of *DepthwiseConvolutionLayer*.
+`DeconvolutionLayer`_               The implementation of *DeconvolutionLayer*.
+`PoolingLayer`_                     The implementation of *PoolingLayer*.
+`ROIPoolingLayer`_                  The implementation of *ROIPoolingLayer*.
+`ROIAlignLayer`_                    The implementation of *ROIAlignLayer*.
+`LRNLayer`_                         The implementation of *LRNLayer*.
+`NNResizeLayer`_                    The implementation of *NNResizeLayer*.
+`BilinearResizeLayer`_              The implementation of *BilinearResizeLayer*.
+`DropBlockLayer`_                   The implementation of *DropBlockLayer*.
 ==============================      =============================================================================
 
 
@@ -43,14 +43,14 @@ Neuron
 ====================    =============================================================================
 List                    Brief
 ====================    =============================================================================
-`ReLULayer`_            The implementation of ``ReLULayer``.
-`PReLULayer`_           The implementation of ``PReLULayer``.
-`ELULayer`_             The implementation of ``ELULayer``.
-`SELULayer`_            The implementation of ``SELULayer``.
-`SigmoidLayer`_         The implementation of ``SigmoidLayer``.
-`TanHLayer`_            The implementation of ``TanHLayer``.
-`DropoutLayer`_         The implementation of ``DropoutLayer``.
-`PowerLayer`_           The implementation of ``PowerLayer``.
+`ReLULayer`_            The implementation of *ReLULayer*.
+`PReLULayer`_           The implementation of *PReLULayer*.
+`ELULayer`_             The implementation of *ELULayer*.
+`SELULayer`_            The implementation of *SELULayer*.
+`SigmoidLayer`_         The implementation of *SigmoidLayer*.
+`TanHLayer`_            The implementation of *TanHLayer*.
+`DropoutLayer`_         The implementation of *DropoutLayer*.
+`PowerLayer`_           The implementation of *PowerLayer*.
 ====================    =============================================================================
 
 Common
@@ -59,31 +59,30 @@ Common
 ========================    =============================================================================
 List                        Brief
 ========================    =============================================================================
-`InnerProductLayer`_        The implementation of ``InnerProductLayer``.
-`AccuracyLayer`_            The implementation of ``AccuracyLayer``.
-`PythonLayer`_              The implementation of ``PythonLayer``.
-`EltwiseLayer`_             The implementation of ``EltwiseLayer``
-`AddLayer`_                 The extended implementation of ``EltwiseLayer``.
-`ConcatLayer`_              The implementation of ``ConcatLayer``.
-`SliceLayer`_               The implementation of ``SliceLayer``.
-`CropLayer`_                The implementation of ``CropLayer``.
-`ReshapeLayer`_             The implementation of ``ReshapeLayer``.
-`PermuteLayer`_             The implementation of ``PermuteLayer``.
-`FlattenLayer`_             The implementation of ``FlattenLayer``.
-`GatherLayer`_              The extended implementation for ``GatherOp``.
-`SoftmaxLayer`_             The implementation of ``SoftmaxLayer``.
-`ArgMaxLayer`_              The implementation of ``ArgMaxLayer``.
-`BatchNormLayer`_           The implementation of ``BatchNormLayer``.
-`GroupNormLayer`_           The implementation of ``GroupNormLayer``.
-`InstanceNormLayer`_        The implementation of ``InstanceNormLayer``.
-`ScaleLayer`_               The implementation of ``ScaleLayer``.
-`BNLayer`_                  The implementation of ``BNLayer``.
-`GNLayer`_                  The implementation of ``GNLayer``.
-`NormalizeLayer`_           The implementation of ``NormalizeLayer``.
-`TileLayer`_                The extended implementation of ``TileLayer``.
-`ExpandDimsLayer`_          The implementation of ``ExpandDimsLayer``.
-`StopGradientLayer`_        The implementation of ``StopGradientLayer``.
-`ProposalLayer`_            The implementation of ``ProposalLayer``.
+`InnerProductLayer`_        The implementation of *InnerProductLayer*.
+`AccuracyLayer`_            The implementation of *AccuracyLayer*.
+`PythonLayer`_              The implementation of *PythonLayer*.
+`EltwiseLayer`_             The implementation of *EltwiseLayer*
+`AddLayer`_                 The extended implementation of *EltwiseLayer*.
+`ConcatLayer`_              The implementation of *ConcatLayer*.
+`SliceLayer`_               The implementation of *SliceLayer*.
+`CropLayer`_                The implementation of *CropLayer*.
+`ReshapeLayer`_             The implementation of *ReshapeLayer*.
+`PermuteLayer`_             The implementation of *PermuteLayer*.
+`FlattenLayer`_             The implementation of *FlattenLayer*.
+`GatherLayer`_              The extended implementation for *GatherOp*.
+`SoftmaxLayer`_             The implementation of *SoftmaxLayer*.
+`ArgMaxLayer`_              The implementation of *ArgMaxLayer*.
+`BatchNormLayer`_           The implementation of *BatchNormLayer*.
+`GroupNormLayer`_           The implementation of *GroupNormLayer*.
+`ScaleLayer`_               The implementation of *ScaleLayer*.
+`BNLayer`_                  The implementation of *BNLayer*.
+`GNLayer`_                  The implementation of *GNLayer*.
+`NormalizeLayer`_           The implementation of *NormalizeLayer*.
+`TileLayer`_                The extended implementation of *TileLayer*.
+`ExpandDimsLayer`_          The implementation of *ExpandDimsLayer*.
+`StopGradientLayer`_        The implementation of *StopGradientLayer*.
+`ProposalLayer`_            The implementation of *ProposalLayer*.
 ========================    =============================================================================
 
 Loss
@@ -92,12 +91,12 @@ Loss
 =================================     =============================================================================
 List                                  Brief
 =================================     =============================================================================
-`SoftmaxWithLossLayer`_               The implementation of ``SoftmaxWithLossLayer``.
-`SigmoidCrossEntropyLossLayer`_       The implementation of ``SigmoidCrossEntropyLossLayer``.
-`L2LossLayer`_                        The implementation of ``L2LossLayer``.
-`SmoothL1LossLayer`_                  The implementation of ``SmoothL1LossLayer``.
-`SigmoidWithFocalLossLayer`_          The implementation of ``SigmoidWithFocalLossLayer``.
-`SoftmaxWithFocalLossLayer`_          The implementation of ``SoftmaxWithFocalLossLayer``.
+`SoftmaxWithLossLayer`_               The implementation of *SoftmaxWithLossLayer*.
+`SigmoidCrossEntropyLossLayer`_       The implementation of *SigmoidCrossEntropyLossLayer*.
+`L2LossLayer`_                        The implementation of *L2LossLayer*.
+`SmoothL1LossLayer`_                  The implementation of *SmoothL1LossLayer*.
+`SigmoidWithFocalLossLayer`_          The implementation of *SigmoidWithFocalLossLayer*.
+`SoftmaxWithFocalLossLayer`_          The implementation of *SoftmaxWithFocalLossLayer*.
 =================================     =============================================================================
 
 MPI
@@ -106,8 +105,8 @@ MPI
 =================================     =============================================================================
 List                                  Brief
 =================================     =============================================================================
-`MPIBroadcastLayer`_                  The implementation of ``MPIBroadcastLayer``
-`MPIGatherLayer`_                     The implementation of ``MPIGatherLayer``
+`MPIBroadcastLayer`_                  The implementation of *MPIBroadcastLayer*
+`MPIGatherLayer`_                     The implementation of *MPIGatherLayer*
 =================================     =============================================================================
 
 
@@ -188,7 +187,6 @@ API Reference
 .. _ArgMaxLayer: #dragon.vm.caffe.layers.common.ArgMaxLayer
 .. _BatchNormLayer: #dragon.vm.caffe.layers.common.BatchNormLayer
 .. _GroupNormLayer: #dragon.vm.caffe.layers.common.GroupNormLayer
-.. _InstanceNormLayer: #dragon.vm.caffe.layers.common.InstanceNormLayer
 .. _ScaleLayer: #dragon.vm.caffe.layers.common.ScaleLayer
 .. _BNLayer: #dragon.vm.caffe.layers.common.BNLayer
 .. _GNLayer: #dragon.vm.caffe.layers.common.GNLayer

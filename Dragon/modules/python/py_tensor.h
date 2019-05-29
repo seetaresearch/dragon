@@ -11,7 +11,7 @@
  */
 
 #ifndef DRAGON_PYTHON_PY_TENSOR_H_
-#define DRAGON_PYTHON_PY_TENOSR_H_
+#define DRAGON_PYTHON_PY_TENSOR_H_
 
 #include "py_dragon.h"
 

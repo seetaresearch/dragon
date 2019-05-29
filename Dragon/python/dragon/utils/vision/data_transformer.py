@@ -43,8 +43,8 @@ class DataTransformer(multiprocessing.Process):
         ----------
         padding : int, optional, default=0
             The zero-padding size.
-        fill_value : int, optional, default=127
-            The value to fill when padding is valid.
+        fill_value : int or sequence, optional, default=127
+            The value(s) to fill for padding or cutout.
         crop_size : int, optional, default=0
             The cropping size.
         cutout_size : int, optional, default=0
@@ -92,7 +92,7 @@ class DataTransformer(multiprocessing.Process):
             The tuple image and labels.
 
         """
-        # decode
+        # Decode
         datum = _proto_def.Datum()
         datum.ParseFromString(serialized)
         im = numpy.fromstring(datum.data, numpy.uint8)
@@ -115,13 +115,14 @@ class DataTransformer(multiprocessing.Process):
 
         # Padding
         if self._padding > 0:
-            pad_img = numpy.empty((
+            pad_im = numpy.empty((
                 im.shape[0] + 2 * self._padding,
-                im.shape[1] + 2 * self._padding, im.shape[2]), dtype=im.dtype)
-            pad_img.fill(self._fill_value)
-            pad_img[self._padding : self._padding + im.shape[0],
-                    self._padding : self._padding + im.shape[1], :] = im
-            im = pad_img
+                im.shape[1] + 2 * self._padding, im.shape[2]
+            ), dtype=im.dtype)
+            pad_im[:] = self._fill_value
+            pad_im[self._padding : self._padding + im.shape[0],
+                   self._padding : self._padding + im.shape[1], :] = im
+            im = pad_im
 
         # Random crop
         if self._crop_size > 0:

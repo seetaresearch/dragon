@@ -378,6 +378,18 @@ void ArgMin(
     T*                      values,
     Context*                ctx);
 
+/*! array.channel_shuffle */
+
+template <typename T, class Context>
+void ChannelShuffle(
+    const int               outer_dim,
+    const int               inner_dim,
+    const int               axis_dim,
+    const int               group,
+    const T*                x,
+    T*                      y,
+    Context*                ctx);
+
 /*! array.concat */
 
 template <typename T, class Context>

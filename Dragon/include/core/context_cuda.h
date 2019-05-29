@@ -346,7 +346,7 @@ class CUDAContext {
     void FinishDeviceCompution() { CUDA_NOT_COMPILED; }
 
     /*! \brief Malloc the memory */
-    static void* New(size_t nbytes) { CUDA_NOT_COMPILED; }
+    static void* New(size_t nbytes) { return nullptr; }
 
     /*! \brief Zero-Reset the memory */
     static void Memset(

@@ -132,37 +132,38 @@ List                  Brief
 
 Array
 -----
-===============    ======================================================================
-List               Brief
-===============    ======================================================================
-`Where`_           Select elements from either *x* or *y*.
-`IndexSelect`_     Select the elements according to the indices along the given axis.
-`MaskedSelect`_    Select the the elements where *mask* is *1*.
-`Reduce`_          Reduce the inputs along the axis in given axes.
-`Sum`_             Compute the sum along the given axis.
-`Mean`_            Compute the mean along the given axis.
-`Max`_             Compute the values of maximum elements along the given axis.
-`ArgMax`_          Compute the indices of maximum elements along the given axis.
-`Min`_             Compute the values of minimum elements along the given axis.
-`ArgMin`_          Compute the indices of minimum elements along the given axis.
-`Slice`_           Slice the inputs into several parts along the given axis.
-`Stack`_           Stack the inputs along the given axis.
-`Concat`_          Concatenate the inputs along the given axis.
-`Repeat`_          Repeat the input along the given axis.
-`Transpose`_       Transpose the input according to the given permutations.
-`Tile`_            Tile the input according to the given multiples.
-`Pad`_             Pad the input according to the given sizes.
-`Crop`_            Crop the input according to the given starts and sizes.
-`OneHot`_          Generate the one-hot representation of inputs.
-`Flatten`_         Flatten the input along the given axes.
-`Reshape`_         Reshape the dimensions of input.
-`Squeeze`_         Remove the dimensions with size 1.
-`ExpandDims`_      Expand the new dimension with size 1 to specific axis.
-`Shape`_           Get the dynamic shape of a Tensor.
-`NonZero`_         Return the indices of non-zero elements.
-`Arange`_          Return evenly spaced values within a given interval.
-`Multinomial`_     Return indices sampled from the multinomial distribution.
-===============    ======================================================================
+==================    ======================================================================
+List                  Brief
+==================    ======================================================================
+`Where`_              Select elements from either *x* or *y*.
+`IndexSelect`_        Select the elements according to the indices along the given axis.
+`MaskedSelect`_       Select the the elements where *mask* is *1*.
+`Reduce`_             Reduce the inputs along the axis in given axes.
+`Sum`_                Compute the sum along the given axis.
+`Mean`_               Compute the mean along the given axis.
+`Max`_                Compute the values of maximum elements along the given axis.
+`ArgMax`_             Compute the indices of maximum elements along the given axis.
+`Min`_                Compute the values of minimum elements along the given axis.
+`ArgMin`_             Compute the indices of minimum elements along the given axis.
+`Slice`_              Slice the inputs into several parts along the given axis.
+`Stack`_              Stack the inputs along the given axis.
+`Concat`_             Concatenate the inputs along the given axis.
+`ChannelShuffle`_     Shuffle channels between groups along the given axis. `[Zhang et.al, 2017] <https://arxiv.org/abs/1707.01083>`_.
+`Repeat`_             Repeat the input along the given axis.
+`Transpose`_          Transpose the input according to the given permutations.
+`Tile`_               Tile the input according to the given multiples.
+`Pad`_                Pad the input according to the given sizes.
+`Crop`_               Crop the input according to the given starts and sizes.
+`OneHot`_             Generate the one-hot representation of inputs.
+`Flatten`_            Flatten the input along the given axes.
+`Reshape`_            Reshape the dimensions of input.
+`Squeeze`_            Remove the dimensions with size 1.
+`ExpandDims`_         Expand the new dimension with size 1 to specific axis.
+`Shape`_              Get the dynamic shape of a Tensor.
+`NonZero`_            Return the indices of non-zero elements.
+`Arange`_             Return evenly spaced values within a given interval.
+`Multinomial`_        Return indices sampled from the multinomial distribution.
+==================    ======================================================================
 
 Control Flow
 ------------
@@ -302,6 +303,7 @@ List                 Brief
 .. _Slice: operators/array.html#dragon.operators.array.Slice
 .. _Stack: operators/array.html#dragon.operators.array.Stack
 .. _Concat: operators/array.html#dragon.operators.array.Concat
+.. _ChannelShuffle: operators/array.html#dragon.operators.array.ChannelShuffle
 .. _Transpose: operators/array.html#dragon.operators.array.Transpose
 .. _Repeat: operators/array.html#dragon.operators.array.Repeat
 .. _Tile: operators/array.html#dragon.operators.array.Tile

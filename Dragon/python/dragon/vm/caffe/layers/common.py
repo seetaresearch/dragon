@@ -370,28 +370,6 @@ class GroupNormLayer(_Layer):
         return _ops.GroupNorm(inputs, **self.arguments)
 
 
-class InstanceNormLayer(_Layer):
-    """The implementation of *InstanceNormLayer*.
-
-    Introduced by `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_
-
-    Parameters
-    ----------
-    eps : float
-        Refer ``InstanceNormParameter.eps``.
-
-    """
-    def __init__(self, LayerParameter):
-        super(InstanceNormLayer, self).__init__(LayerParameter)
-        self.arguments = {
-            'axis': 1,
-            'eps': LayerParameter.instance_norm_param.eps,
-        }
-
-    def LayerSetup(self, bottom):
-        return _ops.InstanceNorm(bottom, **self.arguments)
-
-
 class ScaleLayer(_Layer):
     """The implementation of *ScaleLayer*.
 

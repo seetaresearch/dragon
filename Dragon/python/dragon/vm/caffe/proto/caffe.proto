@@ -416,18 +416,13 @@ message LayerParameter {
   optional MPIParameter mpi_param = 153;
   optional PermuteParameter permute_param = 154;
   optional NormalizeParameter normalize_param = 155;
-  optional ParallelParameter parallel_param = 157;
-  optional ResizeParameter resize_param = 158;
-  optional ExpandDimsParameter expand_dims_param = 159;
-  optional ProposalParameter proposal_param = 160;
-  optional BatchRenormParameter batch_renorm_param = 161;
-  optional DenseConcatParameter dense_concat_param = 163;
-  optional FocalLossParameter focal_loss_param = 164;
-  optional GatherParameter gather_param = 165;
-  optional InstanceNormParameter instance_norm_param = 166;
-  optional GroupNormParameter group_norm_param = 167;
-  optional DropBlockParameter drop_block_param = 168;
-  optional CastParameter cast_param = 169;
+  optional ResizeParameter resize_param = 156;
+  optional ExpandDimsParameter expand_dims_param = 157;
+  optional ProposalParameter proposal_param = 158;
+  optional FocalLossParameter focal_loss_param = 159;
+  optional GroupNormParameter group_norm_param = 160;
+  optional DropBlockParameter drop_block_param = 161;
+  optional CastParameter cast_param = 163;
 }
 
 // Message that stores parameters used to apply transformation
@@ -690,6 +685,10 @@ message DataParameter {
   // Prefetch queue (Number of batches to prefetch to host memory, increase if
   // data access bandwidth varies).
   optional uint32 prefetch = 10 [default = 5];
+  // Whether to shuffle the data.
+  optional bool shuffle = 11 [default = false];
+  // The number of chunks to shuffle.
+  optional int32 num_chunks = 12 [default = 2048];
 }
 
 message DropoutParameter {
@@ -1462,12 +1461,6 @@ message NormalizeParameter {
   optional float eps = 4 [default = 1e-5];
 }
 
-message ParallelParameter {
-    optional bool multiple_nodes = 1 [default = false];
-    optional bool shuffle = 2 [default = false];
-    optional bool partition = 3 [default = false];
-}
-
 message ResizeParameter {
     optional BlobShape shape = 1;
     optional float fx = 2 [default = -1.0];
@@ -1492,37 +1485,15 @@ message ProposalParameter {
   optional int32 canonical_level = 11 [default = 4];
 }
 
-message BatchRenormParameter {
-  optional bool use_global_stats = 1;
-  optional float moving_average_fraction = 2 [default = 0.9];
-  optional float eps = 3 [default = 1e-5];
-  optional float r_max = 4 [default = 3.0];
-  optional float d_max = 5 [default = 5.0];
-  optional float t_delta = 6 [default = 0.001];
-}
-
-message DenseConcatParameter {
-  optional int32 axis = 1 [default = 1];
-  optional int32 growth_rate = 2 [default = 0];
-}
-
 message FocalLossParameter {
   optional float alpha = 1 [default = 0.25];
   optional float gamma = 2 [default = 2.0];
   optional int32 neg_id = 3 [default = 0];
 }
 
-message GatherParameter {
-  optional int32 axis = 1 [default = 0];
-}
-
-message InstanceNormParameter {
-  optional float eps = 1 [default = 1e-5];
-}
-
 message GroupNormParameter {
   optional float eps = 1 [default = 1e-5];
-  optional int32 group = 2 [default = 32]; // The group size
+  optional int32 group = 2 [default = 32];
 }
 
 message DropBlockParameter {

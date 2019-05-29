@@ -23,7 +23,7 @@ from dragon.vm.torch.ops.builtin import (
     _fundamental, _rfundamental,
     log, exp, sqrt, clamp,
     _reshape, squeeze, unsqueeze,
-    _permute, _repeat, narrow, _index,
+    _permute, _repeat, chunk, narrow, _index,
     _assign, _masked_assign,
     index_select, masked_select,
     mean, sum, max, min,
@@ -76,6 +76,7 @@ Tensor.view = lambda self, *shape: _reshape(self, shape)
 Tensor.view_as = lambda *args, **kwargs: _reshape(*args, **kwargs)
 Tensor.permute = lambda self, *dims: _permute(self, dims)
 Tensor.repeat = lambda self, *args: _repeat(self, args)
+Tensor.chunk = lambda *args, **kwargs: chunk(*args, **kwargs)
 Tensor.mean = lambda *args, **kwargs: mean(*args, **kwargs)
 Tensor.sum = lambda *args, **kwargs: sum(*args, **kwargs)
 Tensor.max = lambda *args, **kwargs: max(*args, **kwargs)

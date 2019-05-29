@@ -1,5 +1,3 @@
-## General
-
 # Compiled Object files
 *.slo
 *.lo
@@ -7,13 +5,15 @@
 *.cuo
 
 # Compiled Dynamic libraries
-# *.so
+*.so
+*.dll
 *.dylib
 
 # Compiled Static libraries
 *.lai
 *.la
-#*.a
+*.a
+*.lib
 
 # Compiled python
 *.pyc
@@ -39,6 +39,9 @@ __pycache__
 
 # QtCreator files
 *.user
+
+# VSCode files
+.vscode
 
 # PyCharm files
 .idea

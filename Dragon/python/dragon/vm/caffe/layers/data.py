@@ -30,11 +30,15 @@ class DataLayer(_Layer):
         The path of database. Refer `DataParameter.source`_.
     prefetch: int
         The prefetch count. Refer `DataParameter.prefetch`_.
+    shuffle : boolean
+        Whether to shuffle the data. Refer ``DataParameter.shuffle``.
+    nun_chunks : int
+        The number of chunks to shuffle. Refer ``DataParameter.num_chunks``.
     batch_size : int
         The size of a mini-batch. Refer `DataParameter.batch_size`_.
     phase : Phase
         The phase of layer. Refer `LayerParameter.phase`_.
-    mirrow : boolean
+    mirror : boolean
         Whether to randomly mirror. Refer `TransformationParameter.mirror`_.
     crop_size : int
         The crop size. Refer `TransformationParameter.crop_size`_.
@@ -62,11 +66,12 @@ class DataLayer(_Layer):
         param = LayerParameter.data_param
         memory_param = LayerParameter.memory_data_param
         transform_param = LayerParameter.transform_param
-        parallel_param = LayerParameter.parallel_param
 
         self.arguments = {
             'source': param.source,
             'prefetch': param.prefetch,
+            'shuffle': param.shuffle,
+            'num_chunks': param.num_chunks,
             'batch_size': param.batch_size,
             'phase': {0: 'TRAIN', 1: 'TEST'}[int(LayerParameter.phase)],
             'mirror': transform_param.mirror,
@@ -76,9 +81,6 @@ class DataLayer(_Layer):
             'padding': transform_param.padding,
             'min_random_scale': transform_param.min_random_scale,
             'max_random_scale': transform_param.max_random_scale,
-            'shuffle': parallel_param.shuffle,
-            'multiple_nodes': parallel_param.multiple_nodes,
-            'partition': parallel_param.partition,
             'dtype': {0: 'float32', 1: 'float16'}[memory_param.dtype],
             'data_format': 'NCHW',
         }
