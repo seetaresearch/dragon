@@ -1,0 +1,127 @@
+#ifdef USE_CUDNN
+
+#include "dragon/core/workspace.h"
+#include "dragon/operators/activation/dropout_op.h"
+
+#if CUDNN_VERSION_MIN(7, 0, 0)
+
+namespace dragon {
+
+template <class Context>
+template <typename T>
+void CuDNNDropoutOp<Context>::DoRunWithType() {
+  auto &X = Input(0), *Y = Output(0, {0});
+
+  CHECK(this->use_scale_) << "\nCuDNN only supports the scaled dropout.";
+  CuDNNSetTensorDesc<T>(&input_desc_, X.dims());
+
+  if (phase() == "TEST") {
+    Y->ReshapeLike(X)->CopyFrom(X, ctx());
+  } else if (phase() == "TRAIN") {
+    // Initialize the dropout states
+    if (!states_initialized_) {
+      states_initialized_ = true;
+      size_t states_size;
+      CUDNN_CHECK(
+          cudnnDropoutGetStatesSize(ctx()->cudnn_handle(), &states_size));
+      std::lock_guard<std::mutex> lk(CUDAContext::mutex());
+      auto* X_states = ws()->CreateTensor(
+          "/share/cudnn/dropout:" + str::to(rng_seed_) + "/states");
+      if (X_states->count() > 0) {
+        CUDNN_CHECK(cudnnRestoreDropoutDescriptor(
+            dropout_desc_,
+            ctx()->cudnn_handle(),
+            this->prob(),
+            X_states->template mutable_data<uint8_t, Context>(),
+            states_size,
+            rng_seed_));
+      } else {
+        X_states->Reshape({states_size});
+        CUDNN_CHECK(cudnnSetDropoutDescriptor(
+            dropout_desc_,
+            ctx()->cudnn_handle(),
+            this->prob(),
+            X_states->template mutable_data<uint8_t, Context>(),
+            states_size,
+            rng_seed_));
+      }
+    }
+
+    // Allocate the reserve buffer
+    size_t reserve_size;
+    CUDNN_CHECK(cudnnDropoutGetReserveSpaceSize(input_desc_, &reserve_size));
+    Buffer("mask")->Reshape({reserve_size});
+
+    CUDNN_CHECK(cudnnDropoutForward(
+        ctx()->cudnn_handle(),
+        dropout_desc_,
+        input_desc_,
+        X.template data<T, Context>(),
+        input_desc_,
+        Y->ReshapeLike(X)->template mutable_data<T, Context>(),
+        Buffer("mask")->template mutable_data<uint8_t, Context>(),
+        reserve_size));
+  } else {
+    LOG(FATAL) << "Unknown Phase: " << phase();
+  }
+}
+
+template <class Context>
+template <typename T>
+void CuDNNDropoutGradientOp<Context>::DoRunWithType() {
+  auto &dY = Input(0), *dX = Output(0);
+  CuDNNSetTensorDesc<T>(&input_desc_, dY.dims());
+
+  if (phase() == "TEST") {
+    NOT_IMPLEMENTED;
+  } else if (phase() == "TRAIN") {
+    CHECK(this->use_scale_) << "\nCuDNN only supports the scaled dropout.";
+    // Initialize the dropout states
+    if (!states_initialized_) {
+      states_initialized_ = true;
+      size_t states_size;
+      CUDNN_CHECK(
+          cudnnDropoutGetStatesSize(ctx()->cudnn_handle(), &states_size));
+      std::lock_guard<std::mutex> lk(CUDAContext::mutex());
+      auto* X_states = ws()->CreateTensor(
+          "/share/cudnn/dropout:" + str::to(rng_seed_) + "/states");
+      if (X_states->count() > 0) {
+        CUDNN_CHECK(cudnnRestoreDropoutDescriptor(
+            dropout_desc_,
+            ctx()->cudnn_handle(),
+            this->prob(),
+            X_states->template mutable_data<uint8_t, Context>(),
+            states_size,
+            rng_seed_));
+      } else {
+        LOG(FATAL) << "Missing dropout states with seed: " << rng_seed_;
+      }
+    }
+
+    // Allocate the reserve buffer
+    size_t reserve_size;
+    CUDNN_CHECK(cudnnDropoutGetReserveSpaceSize(input_desc_, &reserve_size));
+    Buffer("mask")->Reshape({reserve_size});
+
+    CUDNN_CHECK(cudnnDropoutBackward(
+        ctx()->cudnn_handle(),
+        dropout_desc_,
+        input_desc_,
+        dY.template data<T, Context>(),
+        input_desc_,
+        dX->ReshapeLike(dY)->template mutable_data<T, Context>(),
+        Buffer("mask")->template mutable_data<uint8_t, Context>(),
+        reserve_size));
+  } else {
+    LOG(FATAL) << "Unknown Phase: " << phase();
+  }
+}
+
+DEPLOY_CUDNN(Dropout);
+DEPLOY_CUDNN(DropoutGradient);
+
+} // namespace dragon
+
+#endif // CUDNN_VERSION_MIN(7, 0, 0)
+
+#endif // USE_CUDNN

@@ -1,0 +1,13 @@
+l2
+==
+
+.. autofunction:: dragon.vm.tensorflow.keras.regularizers.l2
+
+.. raw:: html
+
+  <style>
+    h1:before {
+      content: "tf.keras.regularizers.";
+      color: #103d3e;
+    }
+  </style>

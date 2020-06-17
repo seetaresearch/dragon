@@ -1,6 +1,0 @@
-numpy
-six
-protobuf
-lmdb
-opencv-python
-Pillow

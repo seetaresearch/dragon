@@ -1,0 +1,44 @@
+FROM ubuntu:16.04
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  build-essential \
+  cmake \
+  git \
+  wget \
+  unzip \
+  ssh \
+  vim \
+  libnuma-dev \
+  libprotobuf-dev \
+  protobuf-compiler \
+  python3-pip \
+  python3-dev \
+  python3-pyqt4 \
+  python3-tk \ 
+  && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --no-cache-dir --upgrade setuptools wheel -i https://pypi.tuna.tsinghua.edu.cn/simple && \
+  pip3 install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple \
+  numpy \
+  protobuf \
+  kpl-dataset \
+  opencv-python \
+  Pillow
+
+RUN git clone --recursive https://github.com/seetaresearch/Dragon.git && \
+  mv Dragon/third_party/* /opt && rm -rf Dragon
+
+RUN git clone https://github.com/seetaresearch/Dragon.git && \
+  cd Dragon/dragon && mkdir build && cd build && \
+  cmake .. \
+  -DTHIRD_PARTY_DIR=/opt \
+  -DPYTHON_EXECUTABLE=/usr/bin/python3 \
+  -DUSE_CUDA=OFF \
+  -DUSE_CUDNN=OFF \
+  -DUSE_AVX2=OFF \
+  -DUSE_FMA=OFF && \
+  make install -j $(nproc) && \
+  cd .. && rm -rf build && \
+  python3 setup.py install
+
+RUN rm /usr/bin/python && ln -s /usr/bin/python3 /usr/bin/python && ln -s /usr/bin/pip3 /usr/bin/pip

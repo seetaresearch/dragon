@@ -1,15 +1,9 @@
-[submodule "DragonBoard"]
-	path = DragonBoard
-	url = git://github.com/seetaresearch/DragonBoard.git
-[submodule "DragonLair"]
-	path = DragonLair
-	url = https://github.com/seetaresearch/DragonLair.git
-[submodule "ThirdParty/eigen"]
-	path = ThirdParty/eigen
-	url = https://github.com/eigenteam/eigen-git-mirror.git
-[submodule "ThirdParty/cub"]
-	path = ThirdParty/cub
+[submodule "third_party/cub"]
+	path = third_party/cub
 	url = https://github.com/NVlabs/cub
-[submodule "ThirdParty/pybind11"]
-	path = ThirdParty/pybind11
+[submodule "third_party/eigen"]
+	path = third_party/eigen
+	url = https://gitlab.com/libeigen/eigen
+[submodule "third_party/pybind11"]
+	path = third_party/pybind11
 	url = https://github.com/pybind/pybind11

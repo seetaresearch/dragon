@@ -1,0 +1,26 @@
+syntax = "proto2";
+
+package dragon;
+
+message BlobShape {
+  repeated int64 dim = 1 [packed = true];
+}
+
+message BlobProto {
+  optional BlobShape shape = 7;
+  repeated float data = 5 [packed = true];
+  optional int32 num = 1 [default = 0];
+  optional int32 channels = 2 [default = 0];
+  optional int32 height = 3 [default = 0];
+  optional int32 width = 4 [default = 0];
+}
+
+message NetParameter {
+  optional string name = 1;
+  repeated LayerParameter layer = 100;
+}
+
+message LayerParameter {
+  optional string name = 1;
+  repeated BlobProto blobs = 7;
+}

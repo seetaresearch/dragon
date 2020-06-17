@@ -43,8 +43,13 @@ __pycache__
 # VSCode files
 .vscode
 
-# PyCharm files
+# IDEA files
 .idea
 
 # OSX dir files
 .DS_Store
+
+# Android files
+.gradle
+*.iml
+local.properties

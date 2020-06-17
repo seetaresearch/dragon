@@ -1,0 +1,121 @@
+/*!
+ * Copyright (c) 2017-present, SeetaTech, Co.,Ltd.
+ *
+ * Licensed under the BSD 2-Clause License.
+ * You should have received a copy of the BSD 2-Clause License
+ * along with the software. If not, See,
+ *
+ *    <https://opensource.org/licenses/BSD-2-Clause>
+ *
+ * ------------------------------------------------------------
+ */
+
+#ifndef DRAGON_UTILS_CUDNN_DEVICE_H_
+#define DRAGON_UTILS_CUDNN_DEVICE_H_
+
+#ifdef USE_CUDNN
+
+#include <cudnn.h>
+
+#include "dragon/core/types.h"
+
+namespace dragon {
+
+#define CUDNN_VERSION_MIN(major, minor, patch) \
+  (CUDNN_VERSION >= (major * 1000 + minor * 100 + patch))
+
+#define CUDNN_VERSION_MAX(major, minor, patch) \
+  (CUDNN_VERSION < (major * 1000 + minor * 100 + patch))
+
+#define CUDNN_CHECK(condition)                                             \
+  do {                                                                     \
+    cudnnStatus_t status = condition;                                      \
+    CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << "\n"                         \
+                                           << cudnnGetErrorString(status); \
+  } while (0)
+
+static const size_t CUDNN_CONV_WORKSPACE_LIMIT_BYTES = 64 * 1024 * 1024;
+
+#if CUDNN_VERSION_MIN(7, 0, 0)
+static const size_t CUDNN_CONV_NUM_FWD_ALGOS =
+    2 * CUDNN_CONVOLUTION_FWD_ALGO_COUNT;
+static const size_t CUDNN_CONV_NUM_BWD_FILTER_ALGOS =
+    2 * CUDNN_CONVOLUTION_BWD_FILTER_ALGO_COUNT;
+static const size_t CUDNN_CONV_NUM_BWD_DATA_ALGOS =
+    2 * CUDNN_CONVOLUTION_BWD_DATA_ALGO_COUNT;
+#else
+static const size_t CUDNN_CONV_NUM_FWD_ALGOS = 7;
+static const size_t CUDNN_CONV_NUM_BWD_FILTER_ALGOS = 4;
+static const size_t CUDNN_CONV_NUM_BWD_DATA_ALGOS = 5;
+#endif
+
+class Tensor;
+
+template <typename T>
+class CuDNNType;
+
+template <>
+class CuDNNType<float16> {
+ public:
+  static const cudnnDataType_t type = CUDNN_DATA_HALF;
+  static float oneval, zeroval;
+  static const void *one, *zero;
+  typedef float BNParamType;
+};
+
+template <>
+class CuDNNType<float> {
+ public:
+  static const cudnnDataType_t type = CUDNN_DATA_FLOAT;
+  static float oneval, zeroval;
+  static const void *one, *zero;
+  typedef float BNParamType;
+};
+
+template <>
+class CuDNNType<double> {
+ public:
+  static const cudnnDataType_t type = CUDNN_DATA_DOUBLE;
+  static double oneval, zeroval;
+  static const void *one, *zero;
+  typedef double BNParamType;
+};
+
+/*! \brief Create a tensor desc */
+void CuDNNCreateTensorDesc(cudnnTensorDescriptor_t* desc);
+
+/*! \brief Destroy a tensor desc */
+void CuDNNDestroyTensorDesc(cudnnTensorDescriptor_t* desc);
+
+/*! \brief Set a tensor desc with dims */
+template <typename T>
+void CuDNNSetTensorDesc(cudnnTensorDescriptor_t* desc, const vec64_t& dims);
+
+/*! \brief Set a tensor desc with dims and strides */
+template <typename T>
+void CuDNNSetTensorDesc(
+    cudnnTensorDescriptor_t* desc,
+    const vec64_t& dims,
+    const vec64_t& strides);
+
+/*! \brief Set a tensor desc with dims, data format and group */
+template <typename T>
+void CuDNNSetTensorDesc(
+    cudnnTensorDescriptor_t* desc,
+    const vec64_t& dims,
+    const std::string& data_format,
+    const int64_t group = 1);
+
+/*! \brief Set a bias desc with expanding dimensions */
+template <typename T>
+void CuDNNSetBiasDesc(
+    cudnnTensorDescriptor_t* desc,
+    const int num_dims,
+    const int64_t num_elements,
+    const std::string& data_format);
+
+} // namespace dragon
+
+#endif // USE_CUDNN
+
+#endif // DRAGON_UTILS_CUDNN_DEVICE_H_

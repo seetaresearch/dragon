@@ -1,0 +1,47 @@
+FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
+
+RUN rm /etc/apt/sources.list.d/cuda.list && rm /etc/apt/sources.list.d/nvidia-ml.list && \
+  apt-get update && apt-get install -y --no-install-recommends \
+  build-essential \
+  cmake \
+  git \
+  wget \
+  unzip \
+  ssh \
+  vim \
+  libnuma-dev \
+  libprotobuf-dev \
+  protobuf-compiler \
+  python3-pip \
+  python3-dev \
+  python3-pyqt4 \
+  python3-tk \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --no-cache-dir --upgrade setuptools wheel -i https://pypi.tuna.tsinghua.edu.cn/simple && \
+  pip3 install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple \
+  numpy \
+  protobuf \
+  kpl-dataset \
+  opencv-python \
+  Pillow
+
+RUN git clone --recursive https://github.com/seetaresearch/Dragon.git && \
+  mv Dragon/third_party/* /opt && rm -rf Dragon
+
+RUN cd /opt/mpi && bash build.sh && rm -rf src *.gz && cp bin/mpirun /usr/bin
+
+RUN git clone https://github.com/seetaresearch/Dragon.git && \
+  cd Dragon/dragon && mkdir build && cd build && \
+  cmake .. \
+  -DTHIRD_PARTY_DIR=/opt \
+  -DPYTHON_EXECUTABLE=/usr/bin/python3 \
+  -DUSE_MPI=ON \
+  -DUSE_NCCL=ON \
+  -DUSE_AVX2=OFF \
+  -DUSE_FMA=OFF && \
+  make install -j $(nproc) && \
+  cd .. && rm -rf build && \
+  python3 setup.py install
+
+RUN rm /usr/bin/python && ln -s /usr/bin/python3 /usr/bin/python && ln -s /usr/bin/pip3 /usr/bin/pip

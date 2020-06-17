@@ -1,0 +1,12 @@
+[flake8]
+max-line-length = 120
+ignore = E741, # ambiguous variable name
+         F403, # ‘from module import *’ used; unable to detect undefined names
+         F405, # name may be undefined, or defined from star imports: module
+         F811, # redefinition of unused name from line N
+         F821, # undefined name
+         W503, # line break before binary operator
+         W504, # line break after binary operator
+# module imported but unused
+per-file-ignores = __init__.py: F401
+exclude = third_party, *_pb2.py

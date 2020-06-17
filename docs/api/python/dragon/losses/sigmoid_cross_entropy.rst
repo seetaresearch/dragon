@@ -1,0 +1,13 @@
+sigmoid_cross_entropy
+=====================
+
+.. autofunction:: dragon.losses.sigmoid_cross_entropy
+
+.. raw:: html
+
+  <style>
+    h1:before {
+      content: "dragon.losses.";
+      color: #103d3e;
+    }
+  </style>

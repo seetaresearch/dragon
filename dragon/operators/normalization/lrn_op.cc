@@ -1,0 +1,68 @@
+#include "dragon/operators/normalization/lrn_op.h"
+
+namespace dragon {
+
+template <class Context>
+template <typename T>
+void LRNOp<Context>::DoRunWithType() {
+  LOG(FATAL) << "Compile with CuDNN for LocalResponseNorm.";
+}
+
+template <class Context>
+void LRNOp<Context>::RunOnDevice() {
+  Output(0)->ReshapeLike(Input(0));
+  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+}
+
+template <class Context>
+template <typename T>
+void LRNGradientOp<Context>::DoRunWithType() {
+  LOG(FATAL) << "Compile with CuDNN for LocalResponseNorm.";
+}
+template <class Context>
+void LRNGradientOp<Context>::RunOnDevice() {
+  Output(0)->ReshapeLike(Input(-1));
+  DispatchHelper<FloatingTensorTypes>::Call(this, Input(-1));
+}
+
+DEPLOY_CPU(LRN);
+#ifdef USE_CUDA
+DEPLOY_CUDA(LRN);
+#endif
+
+DEPLOY_CPU(LRNGradient);
+#ifdef USE_CUDA
+DEPLOY_CUDA(LRNGradient);
+#endif
+
+OPERATOR_SCHEMA(LRN)
+    /* X */
+    .NumInputs(1)
+    /* Y */
+    .NumOutputs(1);
+
+OPERATOR_SCHEMA(LRNGradient)
+    /* X, Y, dY */
+    .NumInputs(3)
+    /* dX */
+    .NumOutputs(1);
+
+namespace {
+
+class GradientMaker final : public GradientMakerBase {
+ public:
+  GRADIENT_MAKER_CTOR(GradientMaker);
+  vector<OperatorDef> MakeDef() override {
+    return SingleDef(
+        def.type() + "Gradient",
+        "",
+        vector<string>({I(0), O(0), GO(0)}),
+        vector<string>({GI(0)}));
+  }
+};
+
+} // namespace
+
+REGISTER_GRADIENT(LRN, GradientMaker);
+
+} // namespace dragon

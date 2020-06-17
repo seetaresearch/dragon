@@ -1,0 +1,5 @@
+numpy
+protobuf
+kpl-dataset
+opencv-python
+Pillow
