@@ -26,10 +26,10 @@ class ReluOp : public Operator<Context> {
         max_value_(OpArg<float>("max_value", 0.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
+  void RunOnDevice() override;
+
   template <typename T>
   void DoRunWithType();
-
-  void RunOnDevice() override;
 
  protected:
   float alpha_, max_value_;
@@ -44,10 +44,10 @@ class ReluGradientOp : public Operator<Context> {
         max_value_(OpArg<float>("max_value", 0.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
+  void RunOnDevice() override;
+
   template <typename T>
   void DoRunWithType();
-
-  void RunOnDevice() override;
 
  protected:
   float alpha_, max_value_;

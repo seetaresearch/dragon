@@ -74,9 +74,6 @@ class DRAGON_API OperatorBase {
     return (int)outputs_.size();
   }
 
-  /*! \brief Whether the output is an alias of input */
-  bool IsInputOutputAlias(int i, int j);
-
   /*! \brief Return the value of the specified argument */
   template <typename T>
   T Arg(const string& name, const T& default_value);
@@ -256,24 +253,23 @@ OperatorBase* NewOperator(const OperatorDef&, Workspace*);
   name(const OperatorDef& def, Workspace* ws) : Operator<Context>(def, ws) {} \
   virtual ~name() {}
 
-#define USE_OPERATOR_BASE_FUNCTIONS       \
-  using OperatorBase::SwitchToPhase;      \
-  using OperatorBase::Input;              \
-  using OperatorBase::Output;             \
-  using OperatorBase::Buffer;             \
-  using OperatorBase::InputSize;          \
-  using OperatorBase::OutputSize;         \
-  using OperatorBase::IsInputOutputAlias; \
-  using OperatorBase::DebugString;        \
-  using OperatorBase::TypeString;         \
-  using OperatorBase::name;               \
-  using OperatorBase::type;               \
-  using OperatorBase::phase;              \
-  using OperatorBase::dtype;              \
-  using OperatorBase::data_format;        \
-  using OperatorBase::handle;             \
-  using OperatorBase::unique_name;        \
-  using OperatorBase::def;                \
+#define USE_OPERATOR_BASE_FUNCTIONS  \
+  using OperatorBase::SwitchToPhase; \
+  using OperatorBase::Input;         \
+  using OperatorBase::Output;        \
+  using OperatorBase::Buffer;        \
+  using OperatorBase::InputSize;     \
+  using OperatorBase::OutputSize;    \
+  using OperatorBase::DebugString;   \
+  using OperatorBase::TypeString;    \
+  using OperatorBase::name;          \
+  using OperatorBase::type;          \
+  using OperatorBase::phase;         \
+  using OperatorBase::dtype;         \
+  using OperatorBase::data_format;   \
+  using OperatorBase::handle;        \
+  using OperatorBase::unique_name;   \
+  using OperatorBase::def;           \
   using OperatorBase::ws
 
 #define USE_OPERATOR_FUNCTIONS        \

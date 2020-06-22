@@ -222,7 +222,7 @@ class Layer(module.Module):
             The optional variable name.
         shape : Sequence[int], optional
             The variable shape.
-        dtype : dragon.vm.tensorflow.dtypes.DType, optional
+        dtype : str, optional
             The optional data type.
         initializer : Union[callable, str], optional
             The optional initializer.

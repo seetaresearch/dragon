@@ -13,7 +13,7 @@ void CuDNNDropoutOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0, {0});
 
   CHECK(this->use_scale_) << "\nCuDNN only supports the scaled dropout.";
-  CuDNNSetTensorDesc<T>(&input_desc_, X.dims());
+  CuDNNSetTensorDesc<T>(&input_desc_, {X.count(), 1, 1, 1});
 
   if (phase() == "TEST") {
     Y->ReshapeLike(X)->CopyFrom(X, ctx());
@@ -36,7 +36,7 @@ void CuDNNDropoutOp<Context>::DoRunWithType() {
             states_size,
             rng_seed_));
       } else {
-        X_states->Reshape({states_size});
+        X_states->Reshape({(int64_t)states_size});
         CUDNN_CHECK(cudnnSetDropoutDescriptor(
             dropout_desc_,
             ctx()->cudnn_handle(),
@@ -47,10 +47,10 @@ void CuDNNDropoutOp<Context>::DoRunWithType() {
       }
     }
 
-    // Allocate the reserve buffer
+    // Allocate for the reserve space
     size_t reserve_size;
     CUDNN_CHECK(cudnnDropoutGetReserveSpaceSize(input_desc_, &reserve_size));
-    Buffer("mask")->Reshape({reserve_size});
+    auto* X_mask = Buffer("mask")->Reshape({(int64_t)reserve_size});
 
     CUDNN_CHECK(cudnnDropoutForward(
         ctx()->cudnn_handle(),
@@ -59,7 +59,7 @@ void CuDNNDropoutOp<Context>::DoRunWithType() {
         X.template data<T, Context>(),
         input_desc_,
         Y->ReshapeLike(X)->template mutable_data<T, Context>(),
-        Buffer("mask")->template mutable_data<uint8_t, Context>(),
+        X_mask->template mutable_data<uint8_t, Context>(),
         reserve_size));
   } else {
     LOG(FATAL) << "Unknown Phase: " << phase();
@@ -67,10 +67,15 @@ void CuDNNDropoutOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
+void CuDNNDropoutOp<Context>::RunOnDevice() {
+  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+}
+
+template <class Context>
 template <typename T>
 void CuDNNDropoutGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0);
-  CuDNNSetTensorDesc<T>(&input_desc_, dY.dims());
+  CuDNNSetTensorDesc<T>(&input_desc_, {dY.count(), 1, 1, 1});
 
   if (phase() == "TEST") {
     NOT_IMPLEMENTED;
@@ -98,10 +103,11 @@ void CuDNNDropoutGradientOp<Context>::DoRunWithType() {
       }
     }
 
-    // Allocate the reserve buffer
+    // Check the reserve space
     size_t reserve_size;
     CUDNN_CHECK(cudnnDropoutGetReserveSpaceSize(input_desc_, &reserve_size));
-    Buffer("mask")->Reshape({reserve_size});
+    auto* X_mask = Buffer("mask");
+    CHECK_EQ(X_mask->size(), reserve_size);
 
     CUDNN_CHECK(cudnnDropoutBackward(
         ctx()->cudnn_handle(),
@@ -110,11 +116,16 @@ void CuDNNDropoutGradientOp<Context>::DoRunWithType() {
         dY.template data<T, Context>(),
         input_desc_,
         dX->ReshapeLike(dY)->template mutable_data<T, Context>(),
-        Buffer("mask")->template mutable_data<uint8_t, Context>(),
+        X_mask->template mutable_data<uint8_t, Context>(),
         reserve_size));
   } else {
     LOG(FATAL) << "Unknown Phase: " << phase();
   }
+}
+
+template <class Context>
+void CuDNNDropoutGradientOp<Context>::RunOnDevice() {
+  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
 DEPLOY_CUDNN(Dropout);

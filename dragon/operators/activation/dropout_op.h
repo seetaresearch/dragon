@@ -79,6 +79,8 @@ class CuDNNDropoutOp final : public DropoutOp<Context> {
     CUDNN_CHECK(cudnnDestroyDropoutDescriptor(dropout_desc_));
   }
 
+  void RunOnDevice() override;
+
   template <typename T>
   void DoRunWithType();
 
@@ -105,6 +107,8 @@ class CuDNNDropoutGradientOp final : public DropoutGradientOp<Context> {
     CuDNNDestroyTensorDesc(&input_desc_);
     CUDNN_CHECK(cudnnDestroyDropoutDescriptor(dropout_desc_));
   }
+
+  void RunOnDevice() override;
 
   template <typename T>
   void DoRunWithType();

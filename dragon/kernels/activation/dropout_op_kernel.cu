@@ -40,28 +40,31 @@ __global__ void _ApplyMask<half>(
 template <typename T>
 __global__ void _Dropout(
     const int nthreads,
-    const T prob,
+    const uint32_t threshold,
     const T scale,
     const T* x,
+    const uint32_t* r,
     uint8_t* mask,
     T* y) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    y[i] = x[i] * (T)(mask[i] = (y[i] > prob)) * scale;
+    y[i] = x[i] * (T)(mask[i] = (r[i] > threshold)) * scale;
   }
 }
 
 template <>
 __global__ void _Dropout<half>(
     const int nthreads,
-    const half prob,
+    const uint32_t threshold,
     const half scale,
     const half* x,
+    const uint32_t* r,
     uint8_t* mask,
     half* y) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 530
-    const uint8_t m = mask[i] = __hgt(y[i], prob);
-    y[i] = __hmul(__hmul(x[i], scale), __float2half((float)m));
+    y[i] = __hmul(
+        __hmul(x[i], scale),
+        __float2half((float)(mask[i] = (r[i] > threshold))));
 #endif
   }
 }
@@ -94,13 +97,15 @@ void Dropout<float16, CUDAContext>(
     const float16* x,
     uint8_t* mask,
     float16* y,
+    uint32_t* scratch,
     CUDAContext* ctx) {
-  math::RandomUniform(count, 0.f, 1.f, y, ctx);
+  math::RandomUniform(count, 0.f, 1.f, scratch, ctx);
   _Dropout<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
       count,
-      cast::to<half>(prob),
+      static_cast<uint32_t>(UINT_MAX * prob),
       cast::to<half>(scale),
       reinterpret_cast<const half*>(x),
+      scratch,
       mask,
       reinterpret_cast<half*>(y));
 }
@@ -125,15 +130,16 @@ void Dropout<float16, CUDAContext>(
       const T* x,                                                            \
       uint8_t* mask,                                                         \
       T* y,                                                                  \
+      uint32_t* scratch,                                                     \
       CUDAContext* ctx) {                                                    \
-    math::RandomUniform(count, 0.f, 1.f, y, ctx);                            \
+    math::RandomUniform(count, 0.f, 1.f, scratch, ctx);                      \
+    auto threshold = static_cast<uint32_t>(UINT_MAX * prob);                 \
     _Dropout<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(   \
-        count, cast::to<T>(prob), cast::to<T>(scale), x, mask, y);           \
+        count, threshold, cast::to<T>(scale), x, scratch, mask, y);          \
   }
 
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
-
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

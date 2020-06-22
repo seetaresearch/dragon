@@ -18,4 +18,3 @@ from dragon.vm.tensorflow.core.framework.framework_lib import *
 from dragon.vm.tensorflow.core.ops import losses
 from dragon.vm.tensorflow.core.ops import nn
 from dragon.vm.tensorflow.core.ops.standard_ops import *
-from dragon.vm.tensorflow.core.training import training as train

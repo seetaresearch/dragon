@@ -57,7 +57,6 @@ void _DropPath<float16>(
 DEFINE_KERNEL_LAUNCHER(float16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
-
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

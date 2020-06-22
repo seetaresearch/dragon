@@ -83,10 +83,6 @@ Tensor* OperatorBase::Buffer(const string& name) {
   return ws()->CreateTensor(unique_name(name));
 }
 
-bool OperatorBase::IsInputOutputAlias(int i, int j) {
-  return ((void*)&Input(i) == (void*)Output(j));
-}
-
 string OperatorBase::TypeString(const Tensor& tensor, const Set<string>& types)
     const {
   std::stringstream ss;

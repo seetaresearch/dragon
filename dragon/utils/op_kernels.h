@@ -38,6 +38,7 @@ void Dropout(
     const T* x,
     uint8_t* mask,
     T* y,
+    uint32_t* scratch,
     Context* ctx);
 
 /* activation.drop_block */

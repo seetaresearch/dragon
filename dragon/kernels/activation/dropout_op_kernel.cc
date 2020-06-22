@@ -82,6 +82,7 @@ void _Dropout<float16>(
       const T* x,                                                            \
       uint8_t* mask,                                                         \
       T* y,                                                                  \
+      uint32_t* scratch,                                                     \
       CPUContext* ctx) {                                                     \
     _Dropout(count, cast::to<T>(prob), cast::to<T>(scale), x, mask, y, ctx); \
   }
@@ -89,7 +90,6 @@ void _Dropout<float16>(
 DEFINE_KERNEL_LAUNCHER(float16);
 DEFINE_KERNEL_LAUNCHER(float);
 DEFINE_KERNEL_LAUNCHER(double);
-
 #undef DEFINE_KERNEL_LAUNCHER
 
 } // namespace kernel

@@ -60,6 +60,8 @@ class CuDNNTanhOp final : public TanhOp<Context> {
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
   }
 
+  void RunOnDevice() override;
+
   template <typename T>
   void DoRunWithType();
 
@@ -84,6 +86,8 @@ class CuDNNTanhGradientOp final : public TanhGradientOp<Context> {
     CuDNNDestroyTensorDesc(&input_desc_);
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
   }
+
+  void RunOnDevice() override;
 
   template <typename T>
   void DoRunWithType();

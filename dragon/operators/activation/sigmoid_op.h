@@ -60,6 +60,8 @@ class CuDNNSigmoidOp final : public SigmoidOp<Context> {
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
   }
 
+  void RunOnDevice() override;
+
   template <typename T>
   void DoRunWithType();
 
@@ -84,6 +86,8 @@ class CuDNNSigmoidGradientOp final : public SigmoidGradientOp<Context> {
     CUDNN_CHECK(cudnnDestroyTensorDescriptor(input_desc_));
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
   }
+
+  void RunOnDevice() override;
 
   template <typename T>
   void DoRunWithType();

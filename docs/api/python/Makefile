@@ -63,16 +63,6 @@ debughtml:
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/python."
 
-deployhtml:
-	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/python
-	rm -rf $(BUILDDIR)/doctrees
-	rm -rf $(BUILDDIR)/python/_sources
-	rm -rf $(BUILDDIR)/python/.buildinfo
-	rm -rf $(BUILDDIR)/python/objects.inv
-	rm -rf $(BUILDDIR)/python/py-modindex.html
-	@echo
-	@echo "Build finished. The HTML pages are in $(BUILDDIR)/python."
-
 dirhtml:
 	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
 	@echo

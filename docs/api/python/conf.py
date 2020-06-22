@@ -5,7 +5,7 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#      <https://opensource.org/licenses/BSD-2-Clause>
+#    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
 
@@ -47,22 +47,23 @@ author = 'Ting Pan\\\\tingpan@seetatech.com'
 
 # HTML
 html_theme = 'seeta'
-html_title = ""
-html_short_title = ""
+html_title = ''
+html_short_title = ''
 html_logo = '../_static/images/dragon.png'
 html_favicon = '../_static/favicon.ico'
-html_scaled_image_link = False
+html_copy_source = False
 html_show_sourcelink = False
 html_show_sphinx = False
 html_show_copyright = False
+html_scaled_image_link = False
 html_theme_options = {
     'navbar_links': {
         'Install': path_to('../../install', 1),
         'API': [
-            ('C++', path_to('../cpp', 1)),
+            ('C++', path_to('../cc', 1)),
             ('Python', path_to('', 1))
         ],
-        'Github': 'https://github.com/seetaresearch/Dragon',
+        'Github': 'https://github.com/seetaresearch/dragon',
     },
     'navbar_logo_link': path_to('../..', 1),
     'sidebar_title': 'Python v0.3.0',
@@ -70,7 +71,7 @@ html_theme_options = {
     'breadcrumb_links': [
         ('Dragon', path_to('../..', 1)),
         ('API', path_to('../../versions', 1)),
-        ('Python', path_to('../../api/python', 1)),
+        ('Python', path_to('', 1)),
     ],
 }
 html_sidebars = {

@@ -121,7 +121,6 @@ class Optimizer(updater.Updater):
 
         # Increase the iterations.
         self._iterations += 1
-
         return self
 
     def _create_hypers(self):

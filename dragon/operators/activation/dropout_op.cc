@@ -30,6 +30,7 @@ void DropoutOp<Context>::DoRunWithType() {
         X.template data<T, Context>(),
         Buffer("mask")->template mutable_data<uint8_t, Context>(),
         Y->ReshapeLike(X)->template mutable_data<T, Context>(),
+        ws()->template data<uint32_t, Context>({X.count()})[0],
         ctx());
   } else {
     LOG(FATAL) << "Unknown Phase: " << phase();

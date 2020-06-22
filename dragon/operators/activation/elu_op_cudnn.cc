@@ -24,6 +24,11 @@ void CuDNNEluOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
+void CuDNNEluOp<Context>::RunOnDevice() {
+  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
+}
+
+template <class Context>
 template <typename T>
 void CuDNNEluGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
@@ -42,6 +47,11 @@ void CuDNNEluGradientOp<Context>::DoRunWithType() {
       CuDNNType<T>::zero,
       input_desc_,
       dX->ReshapeLike(Y)->template mutable_data<T, Context>()));
+}
+
+template <class Context>
+void CuDNNEluGradientOp<Context>::RunOnDevice() {
+  DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
 DEPLOY_CUDNN(Elu);

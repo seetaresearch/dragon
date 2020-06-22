@@ -69,6 +69,8 @@ class CuDNNEluOp final : public EluOp<Context> {
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
   }
 
+  void RunOnDevice() override;
+
   template <typename T>
   void DoRunWithType();
 
@@ -93,6 +95,8 @@ class CuDNNEluGradientOp final : public EluGradientOp<Context> {
     CuDNNDestroyTensorDesc(&input_desc_);
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(act_desc_));
   }
+
+  void RunOnDevice() override;
 
   template <typename T>
   void DoRunWithType();
