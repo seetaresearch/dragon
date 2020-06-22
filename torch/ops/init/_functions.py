@@ -22,19 +22,19 @@ class _Initializer(function.Function):
         self.ndim = kwargs.get('ndim', 0)
         self.dtype = kwargs.get('dtype', 'float32')
 
-    def feed(self, handle, shape):
+    def feed(self, ws, handle, shape):
         for i in range(self.ndim):
             self.feed_arg(
-                '{}/dims[{}]'
-                .format(handle, i),
+                ws,
+                '{}/dims[{}]'.format(handle, i),
                 shape[i], 'int64',
             )
 
     def forward(self, out, shape, shape_like=None):
         return self.dispatch(
             [] if shape_like is None else [shape_like], [out],
-            callback=lambda handle:
-                self.feed(handle, shape),
+            callback=lambda ws, handle:
+                self.feed(ws, handle, shape),
         )
 
 
@@ -56,19 +56,19 @@ class Arange(function.Function):
             }
         }
 
-    def feed(self, handle, slice_args):
+    def feed(self, ws, handle, slice_args):
         for i in range(len(slice_args)):
             self.feed_arg(
-                '{}/slice[{}]'
-                .format(handle, i),
+                ws,
+                '{}/slice[{}]'.format(handle, i),
                 slice_args[i], 'float32'
             )
 
     def forward(self, slice_args):
         return self.dispatch(
             [], [self.alloc()],
-            callback=lambda handle:
-            self.feed(handle, slice_args)
+            callback=lambda ws, handle:
+            self.feed(ws, handle, slice_args)
         )
 
 

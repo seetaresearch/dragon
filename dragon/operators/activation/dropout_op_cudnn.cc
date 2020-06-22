@@ -50,7 +50,7 @@ void CuDNNDropoutOp<Context>::DoRunWithType() {
     // Allocate for the reserve space
     size_t reserve_size;
     CUDNN_CHECK(cudnnDropoutGetReserveSpaceSize(input_desc_, &reserve_size));
-    auto* X_mask = Buffer("mask")->Reshape({(int64_t)reserve_size});
+    auto* X_mask = Buffer("X_mask")->Reshape({(int64_t)reserve_size});
 
     CUDNN_CHECK(cudnnDropoutForward(
         ctx()->cudnn_handle(),
@@ -106,7 +106,7 @@ void CuDNNDropoutGradientOp<Context>::DoRunWithType() {
     // Check the reserve space
     size_t reserve_size;
     CUDNN_CHECK(cudnnDropoutGetReserveSpaceSize(input_desc_, &reserve_size));
-    auto* X_mask = Buffer("mask");
+    auto* X_mask = Buffer("X_mask");
     CHECK_EQ(X_mask->size(), reserve_size);
 
     CUDNN_CHECK(cudnnDropoutBackward(

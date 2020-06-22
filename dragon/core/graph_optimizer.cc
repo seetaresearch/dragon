@@ -198,7 +198,7 @@ GraphDef GraphOptimizer::MirrorStage(
     const auto& output_op = output_def.op(i);
 
     /*
-     *  DP(v) = {DP(u) if input(u) != output(u) else {}} + {i}
+     * DP(v) = {DP(u) if input(u) != output(u) else {}} + {i}
      */
 
     set<int> minimum_ops = {i};

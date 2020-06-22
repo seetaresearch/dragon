@@ -58,16 +58,16 @@ class Assign(function.Function):
             },
         }
 
-    def feed(self, handle, starts, sizes):
+    def feed(self, ws, handle, starts, sizes):
         for i in range(self.ndim):
             self.feed_arg(
-                '{}/starts[{}]'
-                .format(handle, i),
+                ws,
+                '{}/starts[{}]'.format(handle, i),
                 starts[i], 'int64',
             )
             self.feed_arg(
-                '{}/sizes[{}]'
-                .format(handle, i),
+                ws,
+                '{}/sizes[{}]'.format(handle, i),
                 sizes[i], 'int64',
             )
 
@@ -75,8 +75,8 @@ class Assign(function.Function):
         self._check_device([input, out])
         return self.dispatch(
             [input], [out],
-            callback=lambda handle:
-                self.feed(handle, starts, sizes),
+            callback=lambda ws, handle:
+                self.feed(ws, handle, starts, sizes),
             no_grad=True,
             check_device=False,
         )
@@ -127,19 +127,19 @@ class ChannelNormalize(function.Function):
             }
         }
 
-    def feed(self, handle, perm):
+    def feed(self, ws, handle, perm):
         for i in range(self.ndim):
             self.feed_arg(
-                '{}/perm[{}]'
-                .format(handle, i),
+                ws,
+                '{}/perm[{}]'.format(handle, i),
                 perm[i], 'int64',
             )
 
     def forward(self, input, perm):
         return self.dispatch(
             [input], [self.alloc()],
-            callback=lambda handle:
-                self.feed(handle, perm),
+            callback=lambda ws, handle:
+                self.feed(ws, handle, perm),
         )
 
 
@@ -220,19 +220,19 @@ class Expand(function.Function):
             },
         }
 
-    def feed(self, handle, times):
+    def feed(self, ws, handle, times):
         for i in range(self.ndim):
             self.feed_arg(
-                '{}/dims[{}]'
-                .format(handle, i),
+                ws,
+                '{}/dims[{}]'.format(handle, i),
                 times[i], 'int64',
             )
 
     def forward(self, input, dims):
         return self.dispatch(
             [input], [self.alloc()],
-            callback=lambda handle:
-                self.feed(handle, dims),
+            callback=lambda ws, handle:
+                self.feed(ws, handle, dims),
         )
 
 
@@ -366,11 +366,11 @@ class Reshape(function.Function):
             },
         }
 
-    def feed(self, handle, shape):
+    def feed(self, ws, handle, shape):
         for i in range(self.ndim):
             self.feed_arg(
-                '{}/dims[{}]'
-                .format(handle, i),
+                ws,
+                '{}/dims[{}]'.format(handle, i),
                 shape[i], 'int64',
             )
 
@@ -378,8 +378,8 @@ class Reshape(function.Function):
         out = out if out else self.alloc()
         return self.dispatch(
             [input], [out],
-            callback=lambda handle:
-                self.feed(handle, shape),
+            callback=lambda ws, handle:
+                self.feed(ws, handle, shape),
         )
 
 
@@ -403,24 +403,24 @@ class Slice(function.Function):
             },
         }
 
-    def feed(self, handle, starts, sizes):
+    def feed(self, ws, handle, starts, sizes):
         for i in range(self.ndim):
             self.feed_arg(
-                '{}/starts[{}]'
-                .format(handle, i),
+                ws,
+                '{}/starts[{}]'.format(handle, i),
                 starts[i], 'int64',
             )
             self.feed_arg(
-                '{}/sizes[{}]'
-                .format(handle, i),
+                ws,
+                '{}/sizes[{}]'.format(handle, i),
                 sizes[i], 'int64',
             )
 
     def forward(self, input, starts, sizes):
         return self.dispatch(
             [input], [self.alloc()],
-            callback=lambda handle:
-                self.feed(handle, starts, sizes)
+            callback=lambda ws, handle:
+                self.feed(ws, handle, starts, sizes)
         )
 
 
@@ -496,19 +496,19 @@ class Tile(function.Function):
             },
         }
 
-    def feed(self, handle, times):
+    def feed(self, ws, handle, times):
         for i in range(self.ndim):
             self.feed_arg(
-                '{}/multiples[{}]'
-                .format(handle, i),
+                ws,
+                '{}/multiples[{}]'.format(handle, i),
                 times[i], 'int64',
             )
 
     def forward(self, input, times):
         return self.dispatch(
             [input], [self.alloc()],
-            callback=lambda handle:
-                self.feed(handle, times),
+            callback=lambda ws, handle:
+                self.feed(ws, handle, times),
         )
 
 
@@ -528,19 +528,19 @@ class Transpose(function.Function):
             },
         }
 
-    def feed(self, handle, perm):
+    def feed(self, ws, handle, perm):
         for i in range(self.ndim):
             self.feed_arg(
-                '{}/perm[{}]'
-                .format(handle, i),
+                ws,
+                '{}/perm[{}]'.format(handle, i),
                 perm[i], 'int64',
             )
 
     def forward(self, input, perm):
         return self.dispatch(
             [input], [self.alloc()],
-            callback=lambda handle:
-                self.feed(handle, perm),
+            callback=lambda ws, handle:
+                self.feed(ws, handle, perm),
         )
 
 

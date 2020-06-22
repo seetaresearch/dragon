@@ -164,7 +164,7 @@ class DRAGON_API UnifiedMemory {
   /*! \brief The binding cpu tensor for cnml */
   cnmlCpuTensor_t cnml_cpu_tensor_ = nullptr;
 
-  /*! \brief Tje binding mlu tensor for cnml */
+  /*! \brief The binding mlu tensor for cnml */
   cnmlTensor_t cnml_mlu_tensor_ = nullptr;
 };
 

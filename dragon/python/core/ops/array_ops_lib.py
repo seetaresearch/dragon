@@ -23,19 +23,19 @@ class Arange(Operator):
             }
         }
 
-    def feed(self, handle, slice_args):
+    def feed(self, ws, handle, slice_args):
         for i in range(len(slice_args)):
             self.feed_arg(
-                '{}/slice[{}]'
-                .format(handle, i),
+                ws,
+                '{}/slice[{}]'.format(handle, i),
                 slice_args[i], 'float32'
             )
 
     def forward(self, slice_args, trainable=False):
         output = self.dispatch(
             [], [self.alloc()],
-            callback=lambda handle:
-            self.feed(handle, slice_args)
+            callback=lambda ws, handle:
+            self.feed(ws, handle, slice_args)
         )
         output._requires_grad = trainable
         return output
@@ -109,19 +109,19 @@ class ChannelNormalize(Operator):
             }
         }
 
-    def feed(self, handle, perm):
+    def feed(self, ws, handle, perm):
         for i in range(self.ndim):
             self.feed_arg(
-                '{}/perm[{}]'
-                .format(handle, i),
+                ws,
+                '{}/perm[{}]'.format(handle, i),
                 perm[i], 'int64'
             )
 
     def forward(self, inputs, perm):
         return self.dispatch(
             inputs, [self.alloc()],
-            callback=lambda handle:
-            self.feed(handle, perm)
+            callback=lambda ws, handle:
+            self.feed(ws, handle, perm)
         )
 
 
@@ -199,19 +199,19 @@ class Expand(Operator):
             }
         }
 
-    def feed(self, handle, dims):
+    def feed(self, ws, handle, dims):
         for i, d in enumerate(dims):
             self.feed_arg(
-                '{}/dims[{}]'
-                .format(handle, i),
+                ws,
+                '{}/dims[{}]'.format(handle, i),
                 d, 'int64'
             )
 
     def forward(self, inputs, dims):
         return self.dispatch(
             inputs, [self.alloc()],
-            callback=lambda handle:
-            self.feed(handle, dims)
+            callback=lambda ws, handle:
+            self.feed(ws, handle, dims)
         )
 
 
@@ -301,8 +301,7 @@ class Moments(Operator):
         }
 
     def forward(self, inputs):
-        outputs = [self.alloc(), self.alloc()]
-        return self.dispatch(inputs, outputs)
+        return self.dispatch(inputs, [self.alloc(), self.alloc()])
 
 
 class Multinomial(Operator):
@@ -378,19 +377,19 @@ class Pad(Operator):
             }
         }
 
-    def feed(self, handle, pads):
+    def feed(self, ws, handle, pads):
         for i, e in enumerate(pads):
             self.feed_arg(
-                '{}/pads[{}]'
-                .format(handle, i),
+                ws,
+                '{}/pads[{}]'.format(handle, i),
                 e, 'int64'
             )
 
     def forward(self, inputs, pads):
         return self.dispatch(
             inputs, [self.alloc()],
-            callback=lambda handle:
-                self.feed(handle, pads)
+            callback=lambda ws, handle:
+                self.feed(ws, handle, pads)
         )
 
 
@@ -449,11 +448,11 @@ class Reshape(Operator):
             }
         }
 
-    def feed(self, handle, shape):
+    def feed(self, ws, handle, shape):
         for i, e in enumerate(shape):
             self.feed_arg(
-                '{}/dims[{}]'
-                .format(handle, i),
+                ws,
+                '{}/dims[{}]'.format(handle, i),
                 e, 'int64'
             )
 
@@ -461,8 +460,8 @@ class Reshape(Operator):
         outputs = [inputs[0] if inplace else self.alloc()]
         return self.dispatch(
             inputs, outputs,
-            callback=lambda handle:
-            self.feed(handle, shape)
+            callback=lambda ws, handle:
+            self.feed(ws, handle, shape)
         )
 
 
@@ -486,24 +485,24 @@ class Slice(Operator):
             }
         }
 
-    def feed(self, handle, starts, sizes):
+    def feed(self, ws, handle, starts, sizes):
         for i, e in enumerate(starts):
             self.feed_arg(
-                '{}/starts[{}]'
-                .format(handle, i),
+                ws,
+                '{}/starts[{}]'.format(handle, i),
                 e, 'int64'
             )
             self.feed_arg(
-                '{}/sizes[{}]'
-                .format(handle, i),
+                ws,
+                '{}/sizes[{}]'.format(handle, i),
                 sizes[i], 'int64'
             )
 
     def forward(self, inputs, starts, sizes):
         return self.dispatch(
             inputs, [self.alloc()],
-            callback=lambda handle:
-                self.feed(handle, starts, sizes)
+            callback=lambda ws, handle:
+                self.feed(ws, handle, starts, sizes)
         )
 
 
@@ -591,19 +590,19 @@ class Tile(Operator):
             }
         }
 
-    def feed(self, handle, multiples):
+    def feed(self, ws, handle, multiples):
         for i, d in enumerate(multiples):
             self.feed_arg(
-                '{}/multiples[{}]'
-                .format(handle, i),
+                ws,
+                '{}/multiples[{}]'.format(handle, i),
                 d, 'int64'
             )
 
     def forward(self, inputs, multiples):
         return self.dispatch(
             inputs, [self.alloc()],
-            callback=lambda handle:
-            self.feed(handle, multiples)
+            callback=lambda ws, handle:
+            self.feed(ws, handle, multiples)
         )
 
 
@@ -623,19 +622,19 @@ class Transpose(Operator):
             }
         }
 
-    def feed(self, handle, perm):
+    def feed(self, ws, handle, perm):
         for i in range(self.ndim):
             self.feed_arg(
-                '{}/perm[{}]'
-                .format(handle, i),
+                ws,
+                '{}/perm[{}]'.format(handle, i),
                 perm[i], 'int64'
             )
 
     def forward(self, inputs, perm):
         return self.dispatch(
             inputs, [self.alloc()],
-            callback=lambda handle:
-            self.feed(handle, perm)
+            callback=lambda ws, handle:
+            self.feed(ws, handle, perm)
         )
 
 

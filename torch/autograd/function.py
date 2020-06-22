@@ -17,7 +17,6 @@ import numpy
 
 from dragon.core.framework import config
 from dragon.core.framework import proto_util
-from dragon.core.framework import workspace
 from dragon.vm.torch import executor
 
 
@@ -64,13 +63,9 @@ class Function(object):
             pre_callback=callback,
         )
 
-    def feed_arg(self, name, value, dtype='int64'):
+    def feed_arg(self, ws, name, value, dtype='int64'):
         """Set the value of tensor argument."""
-        workspace.get_workspace().FeedTensor(
-            name,
-            numpy.array(value, dtype),
-            self._arg_device,
-        )
+        ws.FeedTensor(name, numpy.array(value, dtype), self._arg_device)
 
     @classmethod
     def instantiate(cls, device, **kwargs):

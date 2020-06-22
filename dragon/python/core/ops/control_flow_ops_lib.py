@@ -34,24 +34,24 @@ class Assign(Operator):
             },
         }
 
-    def feed(self, handle, starts, sizes):
+    def feed(self, ws, handle, starts, sizes):
         for i in range(self.ndim):
             self.feed_arg(
-                '{}/starts[{}]'
-                .format(handle, i),
+                ws,
+                '{}/starts[{}]'.format(handle, i),
                 starts[i], 'int64',
             )
             self.feed_arg(
-                '{}/sizes[{}]'
-                .format(handle, i),
+                ws,
+                '{}/sizes[{}]'.format(handle, i),
                 sizes[i], 'int64',
             )
 
-    def forward(self, inputs, starts, sizes):
+    def forward(self, ws, inputs, starts, sizes):
         return self.dispatch(
             [inputs[1]], [inputs[0]],
-            callback=lambda handle:
-                self.feed(handle, starts, sizes),
+            callback=lambda ws, handle:
+                self.feed(ws, handle, starts, sizes),
             no_grad=True,
         )
 

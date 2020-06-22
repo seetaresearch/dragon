@@ -9,19 +9,7 @@
 #
 # ------------------------------------------------------------
 
-"""The basic idea of directly run operators comes from ``caffe2``,
-it spends much more time on Python frontend than C++ backend,
-which should not be taken for running computation-intensive operators.
-
-We extend a new ``PERSISTENT`` engine, that hashes the arguments
-as many as possible, i.e., creates a operator once while running
-with arbitrary inputs and outputs many times.
-
-Note that it is still a challenge to persist the operators which
-take the argument with uncertain numerical bounds. In this case,
-our engine will still create lots of duplicates.
-
-"""
+"""Execute tensor operations. """
 
 from __future__ import absolute_import
 from __future__ import division
@@ -30,9 +18,9 @@ from __future__ import print_function
 from dragon.core.eager import backprop
 from dragon.core.eager.tensor import EagerTensor
 from dragon.core.framework import device_spec
+from dragon.core.framework import config
 from dragon.core.framework import context
 from dragon.core.framework import workspace
-from dragon.core.util import nest
 from dragon.core.util import six
 
 
@@ -43,15 +31,6 @@ def run_operator(
     no_grad=False,
     pre_callback=None,
 ):
-    inputs = nest.flatten(inputs)
-    outputs = nest.flatten(outputs)
-
-    if len(outputs) == 0:
-        raise ValueError(
-            'The number of <outputs> should be '
-            'at least 1. Got {}.'.format(len(outputs))
-        )
-
     requires_grad = False
     input_names, output_names = [], []
     tape = backprop.get_default_tape()
@@ -68,6 +47,7 @@ def run_operator(
         requires_grad = True
 
     # Allocate outputs.
+    cfg = config.config()
     ws = workspace.get_workspace()
     output_scope = context.get_eager_scope(requires_grad)
     gc = ws.collectors  # Garbage collectors
@@ -100,8 +80,8 @@ def run_operator(
 
     # Dispatch the computation.
     if pre_callback is not None:
-        pre_callback(op_def.name)
-    workspace.run_operator(op_def)
+        pre_callback(ws, op_def.name)
+    ws.RunOperator(op_def, cfg.graph_verbosity > 0)
 
     # Return the outputs.
     return outputs if len(outputs) > 1 else outputs[0]

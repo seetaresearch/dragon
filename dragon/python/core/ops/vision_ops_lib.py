@@ -43,8 +43,7 @@ class _ConvNd(Operator):
         }
 
     def forward(self, inputs):
-        outputs = [self.alloc()]
-        return self.dispatch(inputs, outputs)
+        return self.dispatch(inputs, [self.alloc()])
 
 
 class _PoolNd(Operator):
@@ -75,8 +74,7 @@ class _PoolNd(Operator):
         }
 
     def forward(self, inputs):
-        outputs = [self.alloc()]
-        return self.dispatch(inputs, outputs)
+        return self.dispatch(inputs, [self.alloc()])
 
 
 class BiasAdd(Operator):
@@ -184,25 +182,25 @@ class Resize(Operator):
             }
         }
 
-    def feed(self, handle, sizes, scales):
+    def feed(self, ws, handle, sizes, scales):
         for i in range(self.num_sizes):
             self.feed_arg(
-                '{}/sizes[{}]'
-                .format(handle, i),
+                ws,
+                '{}/sizes[{}]'.format(handle, i),
                 sizes[i], 'int64',
             )
         for i in range(self.num_scales):
             self.feed_arg(
-                '{}/scales[{}]'
-                .format(handle, i),
+                ws,
+                '{}/scales[{}]'.format(handle, i),
                 scales[i], 'float32',
             )
 
     def forward(self, inputs, sizes=None, scales=None):
         return self.dispatch(
             inputs, [self.alloc()],
-            callback=lambda handle:
-                self.feed(handle, sizes, scales)
+            callback=lambda ws, handle:
+                self.feed(ws, handle, sizes, scales)
         )
 
 

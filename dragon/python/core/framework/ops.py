@@ -68,13 +68,9 @@ class Operator(object):
             pre_callback=callback,
         )
 
-    def feed_arg(self, name, value, dtype='int64'):
-        """Set the value of tensors argument."""
-        workspace.get_workspace().FeedTensor(
-            name,
-            numpy.array(value, dtype),
-            self._arg_device,
-        )
+    def feed_arg(self, ws, name, value, dtype='int64'):
+        """Set the value of tensor argument."""
+        ws.FeedTensor(name, numpy.array(value, dtype), self._arg_device)
 
     @classmethod
     def instantiate(cls, **kwargs):

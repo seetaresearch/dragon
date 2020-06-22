@@ -236,14 +236,18 @@ PYBIND11_MODULE(libdragon_python, m) {
              const bool verbose) {
             GraphDef backward_ops;
             GraphGradientMaker maker;
-            for (auto& name : ignored_grads)
+            for (const auto& name : ignored_grads) {
               maker.add_ignored_grad(name);
-            for (auto& name : sources)
+            }
+            for (const auto& name : sources) {
               maker.add_hooked_grad(name + "_grad");
+            }
             maker.Make(forward_ops, targets, input_grads, backward_ops);
             py::gil_scoped_release g;
-            if (is_sharing) backward_ops = maker.Share(backward_ops);
-            for (auto& def : backward_ops.op()) {
+            if (is_sharing) {
+              backward_ops = maker.Share(backward_ops);
+            }
+            for (const auto& def : backward_ops.op()) {
               if (verbose) {
                 auto msg = string("\n") + def.DebugString();
                 msg.pop_back();
@@ -268,8 +272,9 @@ PYBIND11_MODULE(libdragon_python, m) {
                            << "Can't be used in C++.";
                 break;
               case 1: // CaffeModel
-                for (const auto& e : tensors)
-                  refs.emplace_back(self->GetTensor(e));
+                for (const auto& name : tensors) {
+                  refs.emplace_back(self->GetTensor(name));
+                }
                 SavaCaffeModel(filename, refs);
                 break;
               default:

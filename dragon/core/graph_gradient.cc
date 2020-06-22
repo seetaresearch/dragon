@@ -37,6 +37,7 @@ void GraphGradientMaker::Make(
   Map<string, int> inputs_count, grads_count;
   Set<string> all_split_grads, targets_set;
   Map<string, string> targets_to_grads;
+
   // PLAY for the forward
   for (auto* op : forward_ops) {
     if (NoGradientRegistry()->Has(op->type())) continue;
@@ -51,6 +52,7 @@ void GraphGradientMaker::Make(
       if (!input_in_outputs) inputs_count[input]++;
     }
   }
+
   // PLAY for the backward
   for (int i = 0; i < targets.size(); ++i) {
     // Set the gradient of targets
@@ -59,17 +61,19 @@ void GraphGradientMaker::Make(
     }
     targets_set.insert(targets[i]);
   }
-  for (int i = (int)forward_ops.size() - 1; i >= 0; --i) {
+
+  for (int op_idx = (int)forward_ops.size() - 1; op_idx >= 0; --op_idx) {
     // Collect inputs and outputs, generate raw gradient ops
-    const OperatorDef& op = *forward_ops[i];
+    const OperatorDef& op = *forward_ops[op_idx];
     vector<pair<string, int>> gen_grads;
     bool is_skip = CheckGrad(op, targets_set, gen_grads);
     vector<string> g_outputs;
-    for (auto& output : op.output()) {
+    for (const auto& output : op.output()) {
       string g_output = "";
-      if (inputs_to_grads_.count(output) > 0)
+      if (inputs_to_grads_.count(output) > 0) {
         g_output = inputs_to_grads_[output];
-      g_outputs.emplace_back(g_output);
+      }
+      g_outputs.push_back(g_output);
     }
     auto grad = MakeGradientForOp(op, g_outputs);
 
@@ -82,15 +86,21 @@ void GraphGradientMaker::Make(
       for (int i = 0; i < grad_op.output_size(); ++i) {
         auto* output = grad_op.mutable_output(i);
         int original_idx = -1;
-        for (int j = 0; j < grad.g_inputs.size(); ++j)
-          if (grad_op.output(i) == grad.g_inputs[j]) original_idx = j;
+        for (int j = 0; j < grad.g_inputs.size(); ++j) {
+          if (grad_op.output(i) == grad.g_inputs[j]) {
+            original_idx = j;
+          }
+        }
         // Ignore unused && in-placee GI
         if (original_idx == -1) continue;
         bool output_in_inputs = false;
-        for (const auto& input : grad_op.input())
-          if (grad_op.output(i) == input) output_in_inputs = true;
+        for (const auto& input : grad_op.input()) {
+          if (grad_op.output(i) == input) {
+            output_in_inputs = true;
+          }
+        }
         if (output_in_inputs) continue;
-        // Found a split branch
+        // Find a split branch
         const auto& original_name = op.input(original_idx);
         if (inputs_count[original_name] > 1) {
           // Split
@@ -120,7 +130,7 @@ void GraphGradientMaker::Make(
 
     // Now, append the required ops
     if (!is_skip) {
-      // 1) GradientGenerateOp
+      // GradientGenerateOp
       if (gen_grads.size() > 0) {
         vector<string> op_inputs, op_outputs;
         Argument arg_defaults;
@@ -141,15 +151,18 @@ void GraphGradientMaker::Make(
         }
         backward_def.add_op()->CopyFrom(generate_op);
       }
-      // 2) GradientOp
-      for (const auto& grad_op : grad.ops)
+      // GradientOp
+      for (const auto& grad_op : grad.ops) {
         backward_def.add_op()->CopyFrom(grad_op);
+      }
     }
-    // 3) GradientGatherOp
-    for (const auto& gather_op : gather_ops)
-      backward_def.add_op()->CopyFrom(gather_op);
 
-    // Done!
+    // GradientGatherOp
+    for (const auto& gather_op : gather_ops) {
+      backward_def.add_op()->CopyFrom(gather_op);
+    }
+
+    // Done
     if (!is_skip) {
       for (int i = 0; i < op.input_size(); ++i) {
         if (!grad.g_inputs[i].empty())
@@ -162,32 +175,40 @@ void GraphGradientMaker::Make(
 GraphDef GraphGradientMaker::Share(const GraphDef& input_def) {
   Set<int> invalid_ops;
   Map<string, int> ref_count;
-  Map<string, pair<int, string>> ssa_map;
-  // Count the refs for detecting leaf nodes
+  Map<string, pair<int, string>> gather_map;
+
   for (int op_idx = 0; op_idx < input_def.op_size(); ++op_idx) {
     const auto& op = input_def.op(op_idx);
     if (!str::find(op.type(), "Gradient")) continue;
+    // Flag the gathering gradients
     if (op.type() == "GradientGather") {
       invalid_ops.insert(op_idx);
       if (ignored_grads_.count(op.output(0))) {
-        for (const auto& input : op.input())
+        for (const auto& input : op.input()) {
           ignored_grads_.insert(input);
+        }
         continue;
       } else {
-        string head;
+        string first_input;
         for (const auto& input : op.input()) {
           if (!input.empty()) {
-            if (head.empty()) head = input;
-            ssa_map[input] = {op_idx, head};
+            if (first_input.empty()) first_input = input;
+            gather_map[input] = {op_idx, first_input};
           }
         }
       }
     }
-    for (const auto& input : op.input())
-      if (str::find(input, "grad")) ref_count[input] += 1;
+    // Count the references to detect leafs
+    for (const auto& input : op.input()) {
+      if (str::find(input, "grad")) {
+        ref_count[input] += 1;
+      }
+    }
   }
 
-  // Decompose the <GradientGather> in SSA format
+  // Decompose the <GradientGather> into <GradientAdd>
+  // This trick accumulates the split to target right after computing,
+  // which helps to reduce the total number of buffers.
   GraphDef output_def(input_def);
   output_def.clear_op();
   for (int op_idx = 0; op_idx < input_def.op_size(); ++op_idx) {
@@ -196,20 +217,20 @@ GraphDef GraphGradientMaker::Share(const GraphDef& input_def) {
     output_def.add_op()->CopyFrom(op);
     if (!str::find(op.type(), "Gradient")) continue;
     for (const auto& output : op.output()) {
-      const auto& find_iter = ssa_map.find(output);
-      if (find_iter != ssa_map.end()) {
+      const auto& find_iter = gather_map.find(output);
+      if (find_iter != gather_map.end()) {
         const auto& gather_op = input_def.op(find_iter->second.first);
-        auto acc_op(gather_op);
-        acc_op.clear_input();
+        auto add_op(gather_op);
+        add_op.clear_input();
         if (output != find_iter->second.second) {
-          acc_op.set_type("GradientAdd");
+          add_op.set_type("GradientAdd");
           // Make an in-place to avoid a new buffer
-          acc_op.add_input(gather_op.output(0));
+          add_op.add_input(gather_op.output(0));
           const auto& ref_iter = ref_count.find(gather_op.output(0));
           if (ref_iter != ref_count.end()) ref_iter->second++;
         }
-        acc_op.add_input(output);
-        output_def.add_op()->CopyFrom(acc_op);
+        add_op.add_input(output);
+        output_def.add_op()->CopyFrom(add_op);
       }
     }
   }

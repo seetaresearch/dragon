@@ -60,8 +60,7 @@ class _ConvNd(function.Function):
 
     def forward(self, input, weight, bias=None):
         inputs = [input, weight] + ([bias] if bias else [])
-        outputs = [self.alloc()]
-        return self.dispatch(inputs, outputs)
+        return self.dispatch(inputs, [self.alloc()])
 
 
 class _Loss(function.Function):
@@ -292,8 +291,7 @@ class GroupNorm(function.Function):
         }
 
     def forward(self, input, weight, bias):
-        inputs = [input, weight, bias]
-        return self.dispatch(inputs, [self.alloc()])
+        return self.dispatch([input, weight, bias], [self.alloc()])
 
 
 class L1Loss(_Loss):
@@ -396,19 +394,19 @@ class Pad(function.Function):
             }
         }
 
-    def feed(self, handle, pads):
+    def feed(self, ws, handle, pads):
         for i, e in enumerate(pads):
             self.feed_arg(
-                '{}/pads[{}]'
-                .format(handle, i),
+                ws,
+                '{}/pads[{}]'.format(handle, i),
                 e, 'int64'
             )
 
     def forward(self, input, pads):
         return self.dispatch(
             [input], [self.alloc()],
-            callback=lambda handle:
-                self.feed(handle, pads),
+            callback=lambda ws, handle:
+                self.feed(ws, handle, pads),
         )
 
 
@@ -524,25 +522,25 @@ class Resize(function.Function):
             }
         }
 
-    def feed(self, handle, sizes, scales):
+    def feed(self, ws, handle, sizes, scales):
         for i in range(self.num_sizes):
             self.feed_arg(
-                '{}/sizes[{}]'
-                .format(handle, i),
+                ws,
+                '{}/sizes[{}]'.format(handle, i),
                 sizes[i], 'int64',
             )
         for i in range(self.num_scales):
             self.feed_arg(
-                '{}/scales[{}]'
-                .format(handle, i),
+                ws,
+                '{}/scales[{}]'.format(handle, i),
                 scales[i], 'float32',
             )
 
     def forward(self, input, sizes=None, scales=None):
         return self.dispatch(
             [input], [self.alloc()],
-            callback=lambda handle:
-                self.feed(handle, sizes, scales)
+            callback=lambda ws, handle:
+                self.feed(ws, handle, sizes, scales)
         )
 
 

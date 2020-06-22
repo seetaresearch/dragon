@@ -23,11 +23,11 @@ class Initializer(Operator):
         self.ndim = kwargs.get('ndim', 0)
         self.dtype = kwargs.get('dtype', 'float32')
 
-    def feed(self, handle, shape):
+    def feed(self, ws, handle, shape):
         for i, e in enumerate(shape):
             self.feed_arg(
-                '{}/dims[{}]'
-                .format(handle, i),
+                ws,
+                '{}/dims[{}]'.format(handle, i),
                 e, 'int64'
             )
 
@@ -49,8 +49,8 @@ class Initializer(Operator):
         ]
         return self.dispatch(
             inputs, outputs,
-            callback=lambda handle:
-            self.feed(handle, shape)
+            callback=lambda ws, handle:
+            self.feed(ws, handle, shape)
         )
 
 
