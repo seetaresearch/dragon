@@ -15,7 +15,7 @@ from __future__ import print_function
 
 import numpy
 
-from dragon.core.autograph.tensor import RefTensor
+from dragon.core.autograph.tensor import TensorRef
 from dragon.core.eager import context as eager_context
 from dragon.core.eager.tensor import EagerTensor
 from dragon.core.framework import context
@@ -80,7 +80,7 @@ def constant(value, dtype=None, shape=None, name='Const'):
     if eager_context.executing_eagerly():
         return EagerTensor(value, name=name + ':0')
     else:
-        return RefTensor(
+        return TensorRef(
             name=workspace.get_dummy_name(name, ':0', 'Tensor'),
             shape=list(value.shape),
             dtype=str(value.dtype),

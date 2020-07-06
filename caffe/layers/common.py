@@ -455,8 +455,8 @@ class InnerProduct(Layer):
         param = layer_param.inner_product_param
         self.arguments = {
             'axis': param.axis,
-            'num_output': param.num_output,
-            'transW': not param.transpose,
+            'out_channels': param.num_output,
+            'transpose_w': not param.transpose,
         }
         # Add weights and biases
         self.add_blob(filler=self.get_filler(param, 'weight_filler'))
@@ -522,7 +522,7 @@ class Normalize(Layer):
         normalize_param {
             across_spatial: false
             channel_shared: false
-            eps: 1e-5
+            eps: 1e-12
             scale_filler: {
                 type: "constant"
                 value: 1
@@ -548,7 +548,7 @@ class Normalize(Layer):
         self.add_blob(filler=self.get_filler(param, 'scale_filler'), value=1)
 
     def __call__(self, bottom):
-        norm_out = [normalization_ops.l2_normalize(bottom, **self.l2norm_arguments)]
+        norm_out = [normalization_ops.lp_normalize(bottom, **self.l2norm_arguments)]
         norm_out += [blob['data'] for blob in self._blobs]
         return math_ops.affine(norm_out, **self.affine_arguments)
 

@@ -48,6 +48,12 @@ template <typename T, class Context>
 DRAGON_API void Dot(const int n, const T* a, const T* b, T* y, Context* ctx);
 
 template <typename T, class Context>
+DRAGON_API T Dot(const int n, const T* a, const T* b, Context* ctx);
+
+template <typename T, class Context>
+DRAGON_API void ASum(const int n, const T* x, T* y, Context* ctx);
+
+template <typename T, class Context>
 DRAGON_API T ASum(const int n, const T* x, Context* ctx);
 
 template <typename T, class Context>

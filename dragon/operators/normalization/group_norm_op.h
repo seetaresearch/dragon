@@ -42,9 +42,6 @@ class GroupNormOpBase : public Operator<Context> {
     // Check the channels and groups
     CHECK_EQ(C_ % G_, 0) << "\nThe " << C_ << " channels "
                          << "can not be split into " << G_ << " groups.";
-    if (G_ == C_ && X.ndim() == 2) {
-      LOG(WARNING) << "The 2d input will output all zeros.";
-    }
   }
 
  protected:

@@ -46,8 +46,8 @@ class RMSprop(Optimizer):
         weight_decay=0,
         momentum=0,
         centered=False,
-        scale_gradient=1.,
-        clip_gradient=-1.,
+        scale=1,
+        clip_norm=0,
     ):
         r"""Create a ``RMSprop`` optimizer.
 
@@ -61,14 +61,14 @@ class RMSprop(Optimizer):
             The initial value for :math:`\alpha`.
         eps : float, optional, default=1e-7
             The initial value for :math:`\epsilon`.
-        weight_decay : float, optional, default=-1.
-            The factor of L2 penalty.
+        weight_decay : float, optional, default=0
+            The L2 penalty factor to weight.
         momentum : float, optional, default=0
             The initial value for :math:`\text{momentum}`.
-        scale_gradient : float, optional, default=1.
-            The factor to scale gradients.
-        clip_gradient : float, optional, default=-1.
-            The norm thresh to clip gradients.
+        scale : float, optional, default=1
+            The scaling factor to gradient.
+        clip_norm : float, optional, default=0
+            The maximum L2 norm to clip gradient.
 
         """
         if not 0. <= lr:
@@ -85,18 +85,17 @@ class RMSprop(Optimizer):
             alpha=alpha,
             eps=eps,
             centered=centered,
+            scale=scale,
+            clip_norm=clip_norm,
             weight_decay=weight_decay,
-            scale_gradient=scale_gradient,
-            clip_gradient=clip_gradient,
         )
         super(RMSprop, self).__init__(params, defaults)
-        self._update_op_type = 'RMSPropUpdate'
         self._shared_args = {
             'lr': 'base_lr',
             'momentum': 'momentum',
             'alpha': 'decay',
             'eps': 'eps',
-            'weight_decay': 'l2_decay',
-            'clip_gradient': 'clip_gradient',
-            'scale_gradient': 'scale_gradient',
+            'scale': 'scale',
+            'clip_norm': 'clip_norm',
+            'weight_decay': 'weight_decay',
         }

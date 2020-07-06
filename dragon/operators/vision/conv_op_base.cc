@@ -10,10 +10,11 @@ namespace dragon {
 
 template <class Context>
 void ConvOpBase<Context>::ComputeOutShape() {
+  auto X_dims = Input(0).dims();
   out_shape_.clear();
   for (int i = 0; i < num_axes_; i++) {
     if (!Transposed()) {
-      auto idm = x_shape_[axis_ + i];
+      auto idm = X_dims[axis_ + i];
       auto dk = dilation_[i] * (kshape_[i] - 1) + 1;
       if (!str::find(padding_, "SAME")) {
         // Explicit pads
@@ -32,7 +33,7 @@ void ConvOpBase<Context>::ComputeOutShape() {
         } // SAME_LOWER or SAME
       }
     } else {
-      auto idm = x_shape_[axis_ + i];
+      auto idm = X_dims[axis_ + i];
       auto dk = dilation_[i] * (kshape_[i] - 1) + 1;
       if (!str::find(padding_, "SAME")) {
         // Explicit pads
@@ -79,13 +80,11 @@ template <class Context>
 template <typename T>
 void ConvOpBase<Context>::Wx(const T* x, const T* w, T* y, bool skip) {
   auto* col = x;
-
   if (!is_1x1_) {
     auto* scratch = ws()->template data<T, Context>({col_dim_})[0];
     if (!skip) Im2Col(x, scratch);
     col = scratch;
   }
-
   for (int g = 0; g < group_; g++) {
     if (data_format() == "NCHW") {
       math::Gemm(
@@ -95,10 +94,10 @@ void ConvOpBase<Context>::Wx(const T* x, const T* w, T* y, bool skip) {
           conv_out_dim_,
           kernel_dim_,
           1.f,
-          w + w_ofs_ * g,
-          col + col_ofs_ * g,
+          w + w_offset_ * g,
+          col + col_offset_ * g,
           0.f,
-          y + output_ofs_ * g,
+          y + out_offset_ * g,
           ctx());
     } else if (data_format() == "NHWC") {
       math::Gemm(
@@ -121,10 +120,11 @@ template <class Context>
 template <typename T>
 void ConvOpBase<Context>::Pb(const T* bias, T* y) {
   if (data_format() == "NCHW") {
-    kernel::BiasAdd(Input(0).dim(0), num_output_, out_dim_, y, bias, y, ctx());
+    kernel::BiasAdd(
+        Input(0).dim(0), out_channels_, out_dim_, y, bias, y, ctx());
   } else if (data_format() == "NHWC") {
     kernel::BiasAdd(
-        Input(0).dim(0) * out_dim_, num_output_, 1, y, bias, y, ctx());
+        Input(0).dim(0) * out_dim_, out_channels_, 1, y, bias, y, ctx());
   }
 }
 
@@ -141,10 +141,10 @@ void ConvOpBase<Context>::Dx(const T* dy, const T* w, T* dx) {
           conv_out_dim_,
           conv_out_channels_ / group_,
           1.f,
-          w + w_ofs_ * g,
-          dy + output_ofs_ * g,
+          w + w_offset_ * g,
+          dy + out_offset_ * g,
           0.f,
-          col + col_ofs_ * g,
+          col + col_offset_ * g,
           ctx());
     } else if (data_format() == "NHWC") {
       math::Gemm(
@@ -168,13 +168,11 @@ template <class Context>
 template <typename T>
 void ConvOpBase<Context>::Dw(const T* dy, const T* x, T* dw, bool accum) {
   auto* col = x;
-
   if (!is_1x1_) {
     auto* scratch = ws()->template data<T, Context>({col_dim_})[0];
     Im2Col(x, scratch);
     col = scratch;
   }
-
   for (int g = 0; g < group_; g++) {
     if (data_format() == "NCHW") {
       math::Gemm(
@@ -184,10 +182,10 @@ void ConvOpBase<Context>::Dw(const T* dy, const T* x, T* dw, bool accum) {
           kernel_dim_,
           conv_out_dim_,
           1.f,
-          dy + output_ofs_ * g,
-          col + col_ofs_ * g,
+          dy + out_offset_ * g,
+          col + col_offset_ * g,
           accum ? 1.f : 0.f,
-          dw + w_ofs_ * g,
+          dw + w_offset_ * g,
           ctx());
     } else if (data_format() == "NHWC") {
       math::Gemm(
@@ -211,10 +209,10 @@ template <typename T>
 void ConvOpBase<Context>::Db(const T* dy, T* db) {
   vec32_t dims, axes;
   if (data_format() == "NCHW") {
-    dims = {(int)Input(0).dim(0), (int)num_output_, (int)out_dim_};
+    dims = {(int)Input(0).dim(0), (int)out_channels_, (int)out_dim_};
     axes = {0, 2};
   } else if (data_format() == "NHWC") {
-    dims = {(int)Input(0).dim(0), (int)out_dim_, (int)num_output_};
+    dims = {(int)Input(0).dim(0), (int)out_dim_, (int)out_channels_};
     axes = {0, 1};
   }
   math::ReduceSum(3, dims.data(), 2, axes.data(), 1.f, dy, db, ctx());
@@ -223,15 +221,14 @@ void ConvOpBase<Context>::Db(const T* dy, T* db) {
 template <class Context>
 void ConvOpBase<Context>::Setup(int num_axes) {
   num_axes_ = num_axes;
-
-  auto at = [&](const vec64_t& vec, int i) {
-    return i < vec.size() ? vec[i] : vec[0];
-  };
-
   auto pads = OpArgs<int64_t>("pads");
   auto strides = OpArgs<int64_t>("strides");
   auto kshape = OpArgs<int64_t>("kernel_shape");
   auto dilations = OpArgs<int64_t>("dilations");
+
+  auto at = [&](const vec64_t& vec, int i) {
+    return i < vec.size() ? vec[i] : vec[0];
+  };
 
   for (int i = 0; i < num_axes; i++) {
     pad_l_.push_back(at(pads, i));
@@ -241,8 +238,9 @@ void ConvOpBase<Context>::Setup(int num_axes) {
   }
 
   if ((int64_t)pads.size() == (num_axes * 2)) {
-    for (int i = 0; i < num_axes; i++)
+    for (int i = 0; i < num_axes; i++) {
       pad_r_.push_back(pads[num_axes + i]);
+    }
   } else {
     pad_r_.assign(pad_l_.begin(), pad_l_.end());
   }
@@ -264,63 +262,56 @@ void ConvOpBase<Context>::Reshape(bool backward) {
   auto* Y_ref = backward ? &Input(-1) : Output(0);
 
   // Determine the in/out channels
-  channels_ = data_format() == "NCHW" ? X.dim(1) : X.dim(-1);
-  if (num_output_ <= 0) {
+  in_channels_ = data_format() == "NCHW" ? X.dim(1) : X.dim(-1);
+  if (out_channels_ <= 0) {
     // Infer the out channels from the weights shape
-    num_output_ = W.count() / channels_;
-    for (int i = 0; i < num_axes_; i++)
-      num_output_ /= kshape_[i];
-    CHECK_GT(num_output_, 0) << "\nFailed to infer the out channels "
-                             << "from weights: " << W.DimString();
+    out_channels_ = W.count() / (in_channels_ / group_);
+    for (int i = 0; i < num_axes_; i++) {
+      out_channels_ /= kshape_[i];
+    }
+    CHECK_GT(out_channels_, 0) << "\nFailed to infer the out channels "
+                               << "from weights: " << W.DimString();
   }
   if (Transposed()) {
-    conv_out_channels_ = channels_;
-    conv_in_channels_ = num_output_;
+    conv_out_channels_ = in_channels_;
+    conv_in_channels_ = out_channels_;
   } else {
-    conv_out_channels_ = num_output_;
-    conv_in_channels_ = channels_;
+    conv_out_channels_ = out_channels_;
+    conv_in_channels_ = in_channels_;
   }
 
   // Determine the weight and bias shape
   // Weight shape is assumed as NCHW format
   // whatever to compute the fans correctly
   w_shape_ = {conv_out_channels_, conv_in_channels_ / group_};
-  for (int i = 0; i < num_axes_; i++)
+  for (int i = 0; i < num_axes_; i++) {
     w_shape_.push_back(kshape_[i]);
-  b_shape_ = {num_output_};
+  }
+  b_shape_ = {out_channels_};
 
-  // Determine the Y shape
-  x_shape_ = X.dims();
+  // Determine the output shape
   ComputeOutShape();
   if (backward) {
     if (Output(0)->has_name()) Output(0)->ReshapeLike(X);
     if (Output(1)->has_name()) Output(1)->ReshapeLike(W);
-    if (Output(2)->has_name()) Output(2)->Reshape({num_output_});
+    if (Output(2)->has_name()) Output(2)->Reshape({out_channels_});
   } else {
+    vec64_t Y_dims{X.dim(0)};
     if (data_format() == "NCHW") {
-      y_shape_ = {X.dim(0), num_output_};
-      for (int i = 0; i < num_axes_; i++)
-        y_shape_.push_back(out_shape_[i]);
+      Y_dims.push_back(out_channels_);
+      for (int i = 0; i < num_axes_; i++) {
+        Y_dims.push_back(out_shape_[i]);
+      }
     } else if (data_format() == "NHWC") {
-      y_shape_ = {X.dim(0)};
-      for (int i = 0; i < num_axes_; i++)
-        y_shape_.push_back(out_shape_[i]);
-      y_shape_.push_back(num_output_);
+      for (int i = 0; i < num_axes_; i++) {
+        Y_dims.push_back(out_shape_[i]);
+      }
+      Y_dims.push_back(out_channels_);
     }
-    Output(0)->Reshape(y_shape_);
+    Output(0)->Reshape(Y_dims);
   }
 
-  // Determine the input shape for im2col/col2im
-  in_shape_.clear();
-  for (int i = 0; i < num_axes_; i++) {
-    if (Transposed()) {
-      in_shape_.push_back(Y_ref->dim(axis_ + i));
-    } else {
-      in_shape_.push_back(X.dim(axis_ + i));
-    }
-  }
-
-  // Determine the out spatial dim
+  // Determine the output dim
   auto end_axis = X.ndim() - 1;
   if (data_format() == "NCHW") {
     if (Transposed()) {
@@ -338,24 +329,30 @@ void ConvOpBase<Context>::Reshape(bool backward) {
     out_dim_ = Y_ref->count(axis_, end_axis);
   }
 
-  // Determine the misc
-  x_ofs_ = X.stride(0);
-  y_ofs_ = Y_ref->stride(0);
+  // Compute the miscellaneous
+  x_offset_ = X.stride(0);
+  y_offset_ = Y_ref->stride(0);
   kernel_dim_ = conv_in_channels_ / group_;
-  for (int i = 0; i < num_axes_; i++)
+  for (int i = 0; i < num_axes_; i++) {
     kernel_dim_ *= kshape_[i];
-  col_ofs_ = kernel_dim_ * conv_out_dim_;
-  w_ofs_ = conv_out_channels_ * kernel_dim_ / group_;
-  output_ofs_ = conv_out_channels_ * conv_out_dim_ / group_;
+  }
+  col_offset_ = kernel_dim_ * conv_out_dim_;
+  w_offset_ = conv_out_channels_ * kernel_dim_ / group_;
+  out_offset_ = conv_out_channels_ * conv_out_dim_ / group_;
 
-  // Determine the workspace size for col buffer
-  col_dim_ = kernel_dim_ * group_;
+  // Compute the arguments for im2col/col2im
+  in_shape_.clear();
   for (int i = 0; i < num_axes_; i++) {
     if (Transposed()) {
-      col_dim_ *= x_shape_[axis_ + i];
+      in_shape_.push_back(Y_ref->dim(axis_ + i));
+      out_shape_[i] = X.dim(axis_ + i);
     } else {
-      col_dim_ *= out_shape_[i];
+      in_shape_.push_back(X.dim(axis_ + i));
     }
+  }
+  col_dim_ = kernel_dim_ * group_;
+  for (int i = 0; i < num_axes_; i++) {
+    col_dim_ *= out_shape_[i];
   }
 }
 

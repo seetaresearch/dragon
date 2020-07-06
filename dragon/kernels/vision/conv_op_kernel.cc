@@ -30,8 +30,8 @@ void _Im2Col2dNCHW(
     const T* im,
     T* col) {
   int ih, iw;
-  const int im_ofs = H * W;
-  for (int c = 0; c < C; ++c, im += im_ofs) {
+  const int im_offset = H * W;
+  for (int c = 0; c < C; ++c, im += im_offset) {
     for (int kh = 0; kh < kernel_h; ++kh) {
       for (int kw = 0; kw < kernel_w; ++kw) {
         ih = -pad_h + kh * dilation_h;
@@ -117,8 +117,8 @@ void _Col2Im2dNCHW(
     const T* col,
     T* im) {
   int ih, iw;
-  const int im_ofs = H * W;
-  for (int c = 0; c < C; ++c, im += im_ofs) {
+  const int im_offset = H * W;
+  for (int c = 0; c < C; ++c, im += im_offset) {
     for (int kh = 0; kh < kernel_h; ++kh) {
       for (int kw = 0; kw < kernel_w; ++kw) {
         ih = -pad_h + kh * dilation_h;

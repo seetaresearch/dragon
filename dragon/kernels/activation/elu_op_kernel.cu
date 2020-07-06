@@ -53,14 +53,11 @@ __global__ void _EluGrad(
     const T* y,
     T* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-    dx[i] = dy[i] *
-        (
 #if __CUDA_ARCH__ >= 350
-                __ldg(y + i) > T(0) ? T(1) : alpha + __ldg(y + i)
+    dx[i] = dy[i] * (__ldg(y + i) > T(0) ? T(1) : alpha + __ldg(y + i));
 #else
-                y[i] > T(0) ? T(1) : (alpha + y[i])
+    dx[i] = dy[i] * (y[i] > T(0) ? T(1) : (alpha + y[i]));
 #endif
-        );
   }
 }
 

@@ -88,9 +88,7 @@ def l1_loss(inputs, reduction='mean', **kwargs):
     op_lib = loss_ops_lib.L1Loss
     if context.executing_eagerly():
         return op_lib  \
-            .instantiate(
-                reduction=args['reduction'],
-            ).apply(inputs)
+            .instantiate(reduction=args['reduction']).apply(inputs)
     else:
         return op_lib.blend(**args)
 

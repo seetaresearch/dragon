@@ -19,18 +19,18 @@ from dragon.vm.torch.autograd import function
 class ParamUpdate(function.Function):
     def __init__(self, key, dev, **kwargs):
         super(ParamUpdate, self).__init__(key, dev, **kwargs)
-        self.slot = kwargs.get('slot', '')
-        self.lr_mult = kwargs.get('lr_mult', 1.)
-        self.decay_mult = kwargs.get('decay_mult', 1.)
-        self.op_type = kwargs.get('op_type', 'Update')
+        self.op_type = kwargs.get('op_type', '')
+        self.op_handle = kwargs.get('op_handle', '')
+        self.lr_mult = kwargs.get('lr_mult', 1)
+        self.decay_mult = kwargs.get('decay_mult', 1)
 
     def attributes(self):
         return {
+            'name': self.op_handle,
             'op_type': self.op_type,
             'arguments': {
-                'lr_mult': self.lr_mult,
-                'decay_mult': self.decay_mult,
-                'slot': self.slot,
+                'lr_mult': float(self.lr_mult),
+                'decay_mult': float(self.decay_mult),
             },
         }
 
@@ -49,11 +49,8 @@ class GradAccumulate(function.Function):
 
     def attributes(self):
         return {
-            'op_type': 'Accumulate',
-            'arguments': {
-                'alpha': 1.,
-                'beta': 1.,
-            },
+            'op_type': 'Axpby',
+            'arguments': {'alpha': 1., 'beta': 1.},
         }
 
     def forward(self, grads):

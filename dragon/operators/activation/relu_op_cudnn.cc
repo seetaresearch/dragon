@@ -9,7 +9,6 @@ template <typename T>
 void CuDNNReluOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0, {0});
   CuDNNSetTensorDesc<T>(&input_desc_, X.dims());
-
 #if CUDNN_VERSION_MIN(5, 0, 0)
   CUDNN_CHECK(cudnnActivationForward(
       ctx()->cudnn_handle(),
@@ -47,7 +46,6 @@ template <typename T>
 void CuDNNReluGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
   CuDNNSetTensorDesc<T>(&input_desc_, Y.dims());
-
 #if CUDNN_VERSION_MIN(5, 0, 0)
   CUDNN_CHECK(cudnnActivationBackward(
       ctx()->cudnn_handle(),

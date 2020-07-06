@@ -213,7 +213,7 @@ DEFINE_BROADCAST_2ND_FUNC(Div, double, /);
   void _Colwise##name<TIn, true>(                                            \
       const int rows, const int cols, const TIn* a, const TIn* b, TOut* y) { \
     EigenArrayMap<TOut>(y, cols, rows) =                                     \
-        ConstEigenVectorArrayMap<TIn>(a, rows).colwise().replicate(cols)     \
+        ConstEigenVectorArrayMap2<TIn>(a, rows).colwise().replicate(cols)    \
             expr ConstEigenArrayMap<TIn>(b, cols, rows);                     \
   }                                                                          \
   template <>                                                                \
@@ -230,7 +230,7 @@ DEFINE_BROADCAST_2ND_FUNC(Div, double, /);
       const int rows, const int cols, const TIn* a, const TIn* b, TOut* y) { \
     EigenArrayMap<TOut>(y, cols, rows) =                                     \
         ConstEigenArrayMap<TIn>(a, cols, rows)                               \
-            expr ConstEigenVectorArrayMap<TIn>(b, rows)                      \
+            expr ConstEigenVectorArrayMap2<TIn>(b, rows)                     \
                 .colwise()                                                   \
                 .replicate(cols);                                            \
   }
@@ -273,36 +273,36 @@ DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(GreaterEqual, float, bool, >=);
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(GreaterEqual, double, bool, >=);
 #undef DEFINE_ROWWISE_COLWISE_BIANRY_FUNC
 
-#define DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(name, T, func)                    \
-  template <>                                                                \
-  void _Rowwise##name<T, true>(                                              \
-      const int rows, const int cols, const T* a, const T* b, T* y) {        \
-    EigenArrayMap<T>(y, cols, rows) =                                        \
-        ConstEigenVectorArrayMap<T>(a, cols).rowwise().replicate(rows).func( \
-            ConstEigenArrayMap<T>(b, cols, rows));                           \
-  }                                                                          \
-  template <>                                                                \
-  void _Colwise##name<T, true>(                                              \
-      const int rows, const int cols, const T* a, const T* b, T* y) {        \
-    EigenArrayMap<T>(y, cols, rows) =                                        \
-        ConstEigenVectorArrayMap<T>(a, rows).colwise().replicate(cols).func( \
-            ConstEigenArrayMap<T>(b, cols, rows));                           \
-  }                                                                          \
-  template <>                                                                \
-  void _Rowwise##name<T, false>(                                             \
-      const int rows, const int cols, const T* a, const T* b, T* y) {        \
-    EigenArrayMap<T>(y, cols, rows) =                                        \
-        ConstEigenArrayMap<T>(a, cols, rows)                                 \
-            .func(ConstEigenVectorArrayMap<T>(b, cols).rowwise().replicate(  \
-                rows));                                                      \
-  }                                                                          \
-  template <>                                                                \
-  void _Colwise##name<T, false>(                                             \
-      const int rows, const int cols, const T* a, const T* b, T* y) {        \
-    EigenArrayMap<T>(y, cols, rows) =                                        \
-        ConstEigenArrayMap<T>(a, cols, rows)                                 \
-            .func(ConstEigenVectorArrayMap<T>(b, rows).colwise().replicate(  \
-                cols));                                                      \
+#define DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(name, T, func)                     \
+  template <>                                                                 \
+  void _Rowwise##name<T, true>(                                               \
+      const int rows, const int cols, const T* a, const T* b, T* y) {         \
+    EigenArrayMap<T>(y, cols, rows) =                                         \
+        ConstEigenVectorArrayMap<T>(a, cols).rowwise().replicate(rows).func(  \
+            ConstEigenArrayMap<T>(b, cols, rows));                            \
+  }                                                                           \
+  template <>                                                                 \
+  void _Colwise##name<T, true>(                                               \
+      const int rows, const int cols, const T* a, const T* b, T* y) {         \
+    EigenArrayMap<T>(y, cols, rows) =                                         \
+        ConstEigenVectorArrayMap2<T>(a, rows).colwise().replicate(cols).func( \
+            ConstEigenArrayMap<T>(b, cols, rows));                            \
+  }                                                                           \
+  template <>                                                                 \
+  void _Rowwise##name<T, false>(                                              \
+      const int rows, const int cols, const T* a, const T* b, T* y) {         \
+    EigenArrayMap<T>(y, cols, rows) =                                         \
+        ConstEigenArrayMap<T>(a, cols, rows)                                  \
+            .func(ConstEigenVectorArrayMap<T>(b, cols).rowwise().replicate(   \
+                rows));                                                       \
+  }                                                                           \
+  template <>                                                                 \
+  void _Colwise##name<T, false>(                                              \
+      const int rows, const int cols, const T* a, const T* b, T* y) {         \
+    EigenArrayMap<T>(y, cols, rows) =                                         \
+        ConstEigenArrayMap<T>(a, cols, rows)                                  \
+            .func(ConstEigenVectorArrayMap2<T>(b, rows).colwise().replicate(  \
+                cols));                                                       \
   }
 
 DEFINE_ROWWISE_COLWISE_BIANRY_FUNC(Pow, float, pow);

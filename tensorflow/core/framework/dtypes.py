@@ -19,7 +19,31 @@ from __future__ import print_function
 
 import numpy as np
 
-from dragon.vm.tensorflow.core.proto import types_pb2
+# Predefine the type enumerations
+# to avoid to import the tensorflow proto
+DT_INVALID = 0
+DT_FLOAT = 1
+DT_DOUBLE = 2
+DT_INT32 = 3
+DT_UINT8 = 4
+DT_INT16 = 5
+DT_INT8 = 6
+DT_STRING = 7
+DT_COMPLEX64 = 8
+DT_INT64 = 9
+DT_BOOL = 10
+DT_QINT8 = 11
+DT_QUINT8 = 12
+DT_QINT32 = 13
+DT_BFLOAT16 = 14
+DT_QINT16 = 15
+DT_QUINT16 = 16
+DT_UINT16 = 17
+DT_COMPLEX128 = 18
+DT_HALF = 19
+DT_VARIANT = 21
+DT_UINT32 = 22
+DT_UINT64 = 23
 
 
 class DType(object):
@@ -69,8 +93,6 @@ class DType(object):
 
     * ``tf.qint32``: Quantized 32-bit signed integer.
 
-    * ``tf.resource``: Handle to a mutable resource.
-
     * ``tf.variant``: Values of arbitrary types.
 
     """
@@ -81,13 +103,12 @@ class DType(object):
         Parameters
         ----------
         type_enum : DataType
-            The ``types_pb2.DataType`` value.
+            The ``DataType`` value.
 
         """
         type_enum = int(type_enum)
-        if (type_enum not in types_pb2.DataType.values()
-                or type_enum == types_pb2.DT_INVALID):
-            raise TypeError('<type_enum> is not a valid types_pb2.DataType.')
+        if type_enum == DT_INVALID:
+            raise TypeError('<type_enum> is not a valid DataType.')
         self._type_enum = type_enum
 
     @property
@@ -106,8 +127,7 @@ class DType(object):
 
     @property
     def is_numpy_compatible(self):
-        return (self._type_enum != types_pb2.DT_RESOURCE and
-                self._type_enum != types_pb2.DT_RESOURCE_REF)
+        return self._type_enum in _TF_TO_NP
 
     @property
     def as_numpy_dtype(self):
@@ -230,55 +250,53 @@ dtype_range = {np.bool_: (False, True),
                np.float64: (-1, 1)}
 
 
-# Define standard wrappers for the types_pb2.DataType enum.
-resource = DType(types_pb2.DT_RESOURCE)
-float16 = DType(types_pb2.DT_HALF)
+# Define standard wrappers for the DataType enum.
+float16 = DType(DT_HALF)
 half = float16
-float32 = DType(types_pb2.DT_FLOAT)
-float64 = DType(types_pb2.DT_DOUBLE)
+float32 = DType(DT_FLOAT)
+float64 = DType(DT_DOUBLE)
 double = float64
-int32 = DType(types_pb2.DT_INT32)
-uint8 = DType(types_pb2.DT_UINT8)
-uint16 = DType(types_pb2.DT_UINT16)
-uint64 = DType(types_pb2.DT_UINT32)
-uint32 = DType(types_pb2.DT_UINT64)
-int16 = DType(types_pb2.DT_INT16)
-int8 = DType(types_pb2.DT_INT8)
-string = DType(types_pb2.DT_STRING)
-complex64 = DType(types_pb2.DT_COMPLEX64)
-complex128 = DType(types_pb2.DT_COMPLEX128)
-int64 = DType(types_pb2.DT_INT64)
-bool = DType(types_pb2.DT_BOOL)
-qint8 = DType(types_pb2.DT_QINT8)
-quint8 = DType(types_pb2.DT_QUINT8)
-qint16 = DType(types_pb2.DT_QINT16)
-quint16 = DType(types_pb2.DT_QUINT16)
-qint32 = DType(types_pb2.DT_QINT32)
-bfloat16 = DType(types_pb2.DT_BFLOAT16)
-variant = DType(types_pb2.DT_VARIANT)
+int32 = DType(DT_INT32)
+uint8 = DType(DT_UINT8)
+uint16 = DType(DT_UINT16)
+uint64 = DType(DT_UINT32)
+uint32 = DType(DT_UINT64)
+int16 = DType(DT_INT16)
+int8 = DType(DT_INT8)
+string = DType(DT_STRING)
+complex64 = DType(DT_COMPLEX64)
+complex128 = DType(DT_COMPLEX128)
+int64 = DType(DT_INT64)
+bool = DType(DT_BOOL)
+qint8 = DType(DT_QINT8)
+quint8 = DType(DT_QUINT8)
+qint16 = DType(DT_QINT16)
+quint16 = DType(DT_QUINT16)
+qint32 = DType(DT_QINT32)
+bfloat16 = DType(DT_BFLOAT16)
+variant = DType(DT_VARIANT)
 
-# Standard mappings between types_pb2.DataType values and string names.
+# Standard mappings between DataType values and string names.
 _TYPE_TO_STRING = {
-    types_pb2.DT_HALF: "float16",
-    types_pb2.DT_FLOAT: "float32",
-    types_pb2.DT_DOUBLE: "float64",
-    types_pb2.DT_INT32: "int32",
-    types_pb2.DT_UINT8: "uint8",
-    types_pb2.DT_UINT16: "uint16",
-    types_pb2.DT_INT16: "int16",
-    types_pb2.DT_INT8: "int8",
-    types_pb2.DT_STRING: "string",
-    types_pb2.DT_COMPLEX64: "complex64",
-    types_pb2.DT_COMPLEX128: "complex128",
-    types_pb2.DT_INT64: "int64",
-    types_pb2.DT_BOOL: "bool",
-    types_pb2.DT_QINT8: "qint8",
-    types_pb2.DT_QUINT8: "quint8",
-    types_pb2.DT_QINT16: "qint16",
-    types_pb2.DT_QUINT16: "quint16",
-    types_pb2.DT_QINT32: "qint32",
-    types_pb2.DT_BFLOAT16: "bfloat16",
-    types_pb2.DT_RESOURCE: "resource",
+    DT_HALF: "float16",
+    DT_FLOAT: "float32",
+    DT_DOUBLE: "float64",
+    DT_INT32: "int32",
+    DT_UINT8: "uint8",
+    DT_UINT16: "uint16",
+    DT_INT16: "int16",
+    DT_INT8: "int8",
+    DT_STRING: "string",
+    DT_COMPLEX64: "complex64",
+    DT_COMPLEX128: "complex128",
+    DT_INT64: "int64",
+    DT_BOOL: "bool",
+    DT_QINT8: "qint8",
+    DT_QUINT8: "quint8",
+    DT_QINT16: "qint16",
+    DT_QUINT16: "quint16",
+    DT_QINT32: "qint32",
+    DT_BFLOAT16: "bfloat16",
 }
 
 # Numpy representation for quantized dtypes.
@@ -314,51 +332,50 @@ _NP_TO_TF = {
 }
 
 _TF_TO_NP = {
-    types_pb2.DT_HALF: np.float16,
-    types_pb2.DT_FLOAT: np.float32,
-    types_pb2.DT_DOUBLE: np.float64,
-    types_pb2.DT_INT32: np.int32,
-    types_pb2.DT_UINT8: np.uint8,
-    types_pb2.DT_UINT16: np.uint16,
-    types_pb2.DT_INT16: np.int16,
-    types_pb2.DT_INT8: np.int8,
-    types_pb2.DT_STRING: np.object,
-    types_pb2.DT_COMPLEX64: np.complex64,
-    types_pb2.DT_COMPLEX128: np.complex128,
-    types_pb2.DT_INT64: np.int64,
-    types_pb2.DT_BOOL: np.bool,
-    types_pb2.DT_QINT8: _np_qint8,
-    types_pb2.DT_QUINT8: _np_quint8,
-    types_pb2.DT_QINT16: _np_qint16,
-    types_pb2.DT_QUINT16: _np_quint16,
-    types_pb2.DT_QINT32: _np_qint32,
-    types_pb2.DT_BFLOAT16: np.uint16,
+    DT_HALF: np.float16,
+    DT_FLOAT: np.float32,
+    DT_DOUBLE: np.float64,
+    DT_INT32: np.int32,
+    DT_UINT8: np.uint8,
+    DT_UINT16: np.uint16,
+    DT_INT16: np.int16,
+    DT_INT8: np.int8,
+    DT_STRING: np.object,
+    DT_COMPLEX64: np.complex64,
+    DT_COMPLEX128: np.complex128,
+    DT_INT64: np.int64,
+    DT_BOOL: np.bool,
+    DT_QINT8: _np_qint8,
+    DT_QUINT8: _np_quint8,
+    DT_QINT16: _np_qint16,
+    DT_QUINT16: _np_quint16,
+    DT_QINT32: _np_qint32,
+    DT_BFLOAT16: np.uint16,
 }
 
 _INTERN_TABLE = {
-    types_pb2.DT_HALF: float16,
-    types_pb2.DT_FLOAT: float32,
-    types_pb2.DT_DOUBLE: float64,
-    types_pb2.DT_INT32: int32,
-    types_pb2.DT_UINT8: uint8,
-    types_pb2.DT_UINT16: uint16,
-    types_pb2.DT_UINT32: uint32,
-    types_pb2.DT_UINT64: uint64,
-    types_pb2.DT_INT16: int16,
-    types_pb2.DT_INT8: int8,
-    types_pb2.DT_STRING: string,
-    types_pb2.DT_COMPLEX64: complex64,
-    types_pb2.DT_COMPLEX128: complex128,
-    types_pb2.DT_INT64: int64,
-    types_pb2.DT_BOOL: bool,
-    types_pb2.DT_QINT8: qint8,
-    types_pb2.DT_QUINT8: quint8,
-    types_pb2.DT_QINT16: qint16,
-    types_pb2.DT_QUINT16: quint16,
-    types_pb2.DT_QINT32: qint32,
-    types_pb2.DT_BFLOAT16: bfloat16,
-    types_pb2.DT_RESOURCE: resource,
-    types_pb2.DT_VARIANT: variant,
+    DT_HALF: float16,
+    DT_FLOAT: float32,
+    DT_DOUBLE: float64,
+    DT_INT32: int32,
+    DT_UINT8: uint8,
+    DT_UINT16: uint16,
+    DT_UINT32: uint32,
+    DT_UINT64: uint64,
+    DT_INT16: int16,
+    DT_INT8: int8,
+    DT_STRING: string,
+    DT_COMPLEX64: complex64,
+    DT_COMPLEX128: complex128,
+    DT_INT64: int64,
+    DT_BOOL: bool,
+    DT_QINT8: qint8,
+    DT_QUINT8: quint8,
+    DT_QINT16: qint16,
+    DT_QUINT16: quint16,
+    DT_QINT32: qint32,
+    DT_BFLOAT16: bfloat16,
+    DT_VARIANT: variant,
 }
 
 _STRING_TO_TF = {

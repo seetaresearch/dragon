@@ -122,7 +122,7 @@ class Layer(module.Module):
         """
         self._built = True
 
-    def forward(self, inputs, **kwargs):
+    def forward(self, inputs):
         """Method to define the forward operations.
 
         Parameters

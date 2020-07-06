@@ -1,21 +1,17 @@
-#include "dragon/operators/training/nesterov_update_op.h"
 #include "dragon/core/workspace.h"
+#include "dragon/operators/training/update_ops.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
 template <class Context>
-void NesterovUpdateOp<Context>::Compute(Tensor* dX) {
-  auto* m = ws()->CreateTensor("/mnt/" + slot() + "/m")
-                ->ReshapeLike(*dX)
-                ->template mutable_data<float, Context>();
-
+void NesterovUpdateOp<Context>::ComputeUpdate(Tensor* dX) {
   kernel::NesterovUpdate(
       dX->count(),
-      param("base_lr") * lr_mult(),
-      param("momentum"),
+      Parameter("base_lr") * this->lr_mult_,
+      Parameter("momentum"),
       dX->template mutable_data<float, Context>(),
-      m,
+      Slot("m")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
       ctx());
 }
 

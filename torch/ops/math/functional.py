@@ -44,8 +44,8 @@ def abs(input, out=None):
     return _unary_func(input, 'Abs', out)
 
 
-def accumulate(input, alpha=1., beta=1., out=None):
-    r"""Compute the element-wise accumulation from input to output.
+def axpby(input, alpha=1., beta=1., out=None):
+    r"""Compute the element-wise addition from input to output.
 
     .. math:: \text{out} = \alpha * \text{input} + \beta * \text{out}
 
@@ -66,7 +66,7 @@ def accumulate(input, alpha=1., beta=1., out=None):
         The output tensor.
 
     """
-    return _functions.Accumulate \
+    return _functions.Axpby \
         .instantiate(
             input.device,
             alpha=alpha,
@@ -555,7 +555,7 @@ def maximum(input, other, out=None):
     """
     input, other = utils \
         .remove_binary_scalar(input, other)
-    return _functions.Binary \
+    return _functions.BinaryFunc \
         .instantiate(
             input.device,
             op_type='Maximum',
@@ -584,28 +584,28 @@ def minimum(input, other, out=None):
     """
     input, other = utils \
         .remove_binary_scalar(input, other)
-    return _functions.Binary \
+    return _functions.BinaryFunc \
         .instantiate(
             input.device,
             op_type='Minimum',
         ).apply(input, other, out)
 
 
-def mm(input, mat2, transA=False, transB=False, out=None):
+def mm(input, mat2, transpose_a=False, transpose_b=False, out=None):
     r"""Compute matrix-matrix multiplication.
 
-    .. math:: \text{out} = AB
+    .. math:: \text{out} = a \times b
 
     Parameters
     ----------
     input : dragon.vm.torch.Tensor
-        The matrix :math:`A`.
+        The matrix :math:`a`.
     mat2 : dragon.vm.torch.Tensor
-        The matrix :math:`B`.
-    transA : bool, optional, default=False
-        **True** to transpose :math:`A` before computation.
-    transB : bool, optional, default=False
-        **True** to transpose :math:`B` before computation.
+        The matrix :math:`b`.
+    transpose_a : bool, optional, default=False
+        **True** to transpose :math:`a` before computation.
+    transpose_b : bool, optional, default=False
+        **True** to transpose :math:`b` before computation.
     out : dragon.vm.torch.Tensor, optional
         The optional output.
 
@@ -615,11 +615,11 @@ def mm(input, mat2, transA=False, transB=False, out=None):
         The output tensor.
 
     """
-    return _functions.MM \
+    return _functions.MatMul \
         .instantiate(
             utils.unify_devices([input, mat2]),
-            transA=transA,
-            transB=transB,
+            transpose_a=transpose_a,
+            transpose_b=transpose_b,
         ).apply(input, mat2, out)
 
 
@@ -922,17 +922,13 @@ def sub(input, value, out=None):
 def _binary_func(input, value, op_type='', out=None):
     """Generic binary function."""
     input, value = utils.remove_binary_scalar(input, value)
-    return _functions.Binary \
-        .instantiate(
-            input.device,
-            op_type=op_type,
-        ).apply(input, value, out)
+    return _functions.BinaryFunc \
+        .instantiate(input.device, op_type=op_type) \
+        .apply(input, value, out)
 
 
 def _unary_func(input, op_type='', out=None):
     """Generic unary function."""
-    return _functions.Unary \
-        .instantiate(
-            input.device,
-            op_type=op_type,
-        ).apply(input, out)
+    return _functions.UnaryFunc \
+        .instantiate(input.device, op_type=op_type) \
+        .apply(input, out)

@@ -69,9 +69,7 @@ def astype(self, dtype, inplace=False):
 
     """
     return array_ops_lib.Cast \
-        .instantiate(
-            dtype=dtype,
-        ).apply([self], inplace)
+        .instantiate(dtype=dtype).apply([self], inplace)
 
 
 def constant(self, value=0):
@@ -701,7 +699,7 @@ def uniform(self, low=0, high=1):
 
 def _binary_op(a, b, op_type, outputs=None):
     """Apply the general binary operation."""
-    return math_ops_lib.Binary \
+    return math_ops_lib.BinaryOp \
         .instantiate(op_type=op_type) \
         .apply(ops.remove_binary_scalar([a, b]), outputs)
 
@@ -710,7 +708,7 @@ def _masked_assign(ref, value, mask):
     """Apply the mask-assign operation."""
     value = ops.scalar_to_tensor(value, ref.dtype)
     return control_flow_ops_lib.MaskedAssign \
-        .instantiate().apply([ref, value], mask)
+        .instantiate().apply([ref, value, mask])
 
 
 def _masked_select(x, mask):
@@ -764,22 +762,20 @@ def _section_assign(ref, value, starts, sizes):
     """Apply the section-assign operation."""
     value = ops.scalar_to_tensor(value, ref.dtype)
     return control_flow_ops_lib.Assign \
-        .instantiate(
-            ndim=len(starts) if starts is not None else 0,
-        ).apply([ref, value], starts, sizes)
+        .instantiate(ndim=len(starts) if starts is not None else 0) \
+        .apply([ref, value], starts, sizes)
 
 
 def _section_select(x, starts, sizes):
     """Apply the section-select operation."""
     return array_ops_lib.Slice \
-        .instantiate(
-            ndim=len(starts),
-        ).apply([x], starts, sizes)
+        .instantiate(ndim=len(starts)).apply([x], starts, sizes)
 
 
 def _unary_op(x, op_type):
     """Apply the general unary operation."""
-    return math_ops_lib.Unary.instantiate(op_type=op_type).apply(x)
+    return math_ops_lib.UnaryOp \
+        .instantiate(op_type=op_type).apply([x])
 
 
 # Aliases
@@ -801,13 +797,15 @@ EagerTensor.__iadd__ = iadd
 EagerTensor.__idiv__ = idiv
 EagerTensor.__imul__ = imul
 EagerTensor.__isub__ = isub
+EagerTensor.__itruediv__ = idiv
 EagerTensor.__le__ = le
 EagerTensor.__lt__ = lt
 EagerTensor.__mul__ = mul
 EagerTensor.__neg__ = neg
+EagerTensor.__radd__ = radd
 EagerTensor.__rdiv__ = rdiv
 EagerTensor.__rmul__ = rmul
-EagerTensor.__rtruediv__ = rdiv
 EagerTensor.__rsub__ = rsub
+EagerTensor.__rtruediv__ = rdiv
 EagerTensor.__setitem__ = setitem
 EagerTensor.__sub__ = sub

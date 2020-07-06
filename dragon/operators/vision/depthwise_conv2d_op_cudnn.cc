@@ -12,14 +12,15 @@ template <typename T>
 void CuDNNDepthwiseConv2dOp<Context>::DoRunWithType() {
   auto &X = Input(0), &W = Input(1), *Y = Output(0);
 
-  group_ = channels_ = data_format() == "NCHW" ? X.dim(1) : X.dim(-1);
-  CHECK_EQ(channels_, num_output_) << "\nExcepted in/out channels unchanged.";
+  group_ = data_format() == "NCHW" ? X.dim(1) : X.dim(-1);
   ConvOpBase<Context>::Reshape();
+  CHECK_EQ(in_channels_, out_channels_)
+      << "\nExcepted in/out channels to be same.";
 
   TENSOR_FILL(W, w_shape_);
   kernel::DepthwiseConv2d(
       X.dim(0),
-      channels_,
+      in_channels_,
       in_shape_[0],
       in_shape_[1],
       out_shape_[0],
@@ -40,7 +41,7 @@ void CuDNNDepthwiseConv2dOp<Context>::DoRunWithType() {
 
   if (HasBias()) {
     TENSOR_FILL(Input(2), b_shape_);
-    CuDNNSetBiasDesc<T>(&bias_desc_, 4, num_output_, data_format());
+    CuDNNSetBiasDesc<T>(&bias_desc_, 4, out_channels_, data_format());
     CuDNNSetTensorDesc<T>(&output_desc_, Y->dims(), data_format());
     CUDNN_CHECK(cudnnAddTensor(
         ctx()->cudnn_handle(),
@@ -64,13 +65,13 @@ void CuDNNDepthwiseConv2dGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &W = Input(1), &dY = Input(2);
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
 
-  group_ = channels_ = data_format() == "NCHW" ? X.dim(1) : X.dim(-1);
+  group_ = data_format() == "NCHW" ? X.dim(1) : X.dim(-1);
   ConvOpBase<Context>::Reshape(true);
 
   if (dX->has_name()) {
     kernel::DepthwiseConv2dGrad(
         X.dim(0),
-        channels_,
+        in_channels_,
         in_shape_[0],
         in_shape_[1],
         out_shape_[0],
@@ -93,7 +94,7 @@ void CuDNNDepthwiseConv2dGradientOp<Context>::DoRunWithType() {
   if (dW->has_name()) {
     kernel::DepthwiseConv2dWGrad(
         X.dim(0),
-        channels_,
+        in_channels_,
         in_shape_[0],
         in_shape_[1],
         out_shape_[0],
@@ -115,7 +116,7 @@ void CuDNNDepthwiseConv2dGradientOp<Context>::DoRunWithType() {
 
   if (dB->has_name()) {
     CuDNNSetTensorDesc<T>(&input_desc_, Input(-1).dims(), data_format());
-    CuDNNSetBiasDesc<T>(&bias_desc_, 4, num_output_, data_format());
+    CuDNNSetBiasDesc<T>(&bias_desc_, 4, out_channels_, data_format());
     CUDNN_CHECK(cudnnConvolutionBackwardBias(
         ctx()->cudnn_handle(),
         CuDNNType<T>::one,

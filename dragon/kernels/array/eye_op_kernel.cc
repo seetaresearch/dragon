@@ -25,9 +25,9 @@ void _SetEye(const int n, const int m, const int k, T* y) {
       const int n, const int m, const int k, T* y, CPUContext* ctx) { \
     math::Set(n* m, cast::to<T>(0.f), y, ctx);                        \
     if (k > 0) {                                                      \
-      _SetEye(n - k, m, k, y);                                        \
+      if (m - k > 0) _SetEye(m - k, m, k, y);                         \
     } else {                                                          \
-      _SetEye(n + k, m, 0, y - k * m);                                \
+      if (n + k > 0) _SetEye(n + k, m, 0, y - k * m);                 \
     }                                                                 \
   }
 

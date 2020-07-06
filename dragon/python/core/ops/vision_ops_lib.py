@@ -32,7 +32,6 @@ class _ConvNd(Operator):
         return {
             'op_type': self.__class__.__name__,
             'arguments': {
-                'num_output': self.num_output,
                 'kernel_shape': self.kernel_shape,
                 'strides': self.strides,
                 'pads': self.pads,
@@ -113,7 +112,6 @@ class ConvTranspose2d(_ConvNd):
         return {
             'op_type': self.__class__.__name__,
             'arguments': {
-                'num_output': self.num_output,
                 'kernel_shape': self.kernel_shape,
                 'strides': self.strides,
                 'pads': self.pads,

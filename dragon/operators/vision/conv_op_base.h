@@ -25,7 +25,7 @@ class ConvOpBase : public Operator<Context> {
   ConvOpBase(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
         padding_(OpArg<string>("padding", "VALID")),
-        num_output_(OpArg<int64_t>("num_output", 0)),
+        out_channels_(OpArg<int64_t>("out_channels", 0)),
         group_(OpArg<int64_t>("group", 1)) {
     if (data_format() == "NCHW") {
       axis_ = 2;
@@ -42,18 +42,13 @@ class ConvOpBase : public Operator<Context> {
 
   vec64_t kshape_, stride_;
   vec64_t pad_l_, pad_r_, dilation_;
-  vec64_t in_shape_, out_shape_;
-  vec64_t x_shape_, y_shape_;
-  vec64_t w_shape_, b_shape_;
+  vec64_t in_shape_, w_shape_, b_shape_, out_shape_;
 
   string padding_;
-  int64_t is_1x1_, num_output_, group_;
+  int64_t group_;
   int64_t axis_, num_axes_;
-  int64_t channels_, out_dim_;
-  int64_t conv_in_channels_, conv_out_channels_;
-  int64_t conv_out_dim_, kernel_dim_, col_dim_;
-  int64_t col_ofs_, output_ofs_;
-  int64_t w_ofs_, x_ofs_, y_ofs_;
+  int64_t in_channels_, out_channels_, out_dim_;
+  int64_t x_offset_, w_offset_, y_offset_;
 
   DECLARE_ARGS_WITH_DESC(int64_t, output_shape);
   DECLARE_ARGS_WITH_DESC(int64_t, output_padding);
@@ -133,37 +128,42 @@ class ConvOpBase : public Operator<Context> {
       LOG(FATAL) << "ConvNd has not been implemented.";
     }
   }
+
+  int64_t is_1x1_;
+  int64_t kernel_dim_, col_dim_;
+  int64_t col_offset_, out_offset_;
+  int64_t conv_in_channels_, conv_out_channels_, conv_out_dim_;
 };
 
 DEFINE_ARGS_WITH_DESC(int64_t, ConvOpBase, output_shape);
 DEFINE_ARGS_WITH_DESC(int64_t, ConvOpBase, output_padding);
 
-#define USE_CONVOLUTION_FUNCTIONS         \
-  using ConvOpBase<Context>::Setup;       \
-  using ConvOpBase<Context>::Reshape;     \
-  using ConvOpBase<Context>::Transposed;  \
-  using ConvOpBase<Context>::HasBias;     \
-  using ConvOpBase<Context>::Wx;          \
-  using ConvOpBase<Context>::Pb;          \
-  using ConvOpBase<Context>::Dx;          \
-  using ConvOpBase<Context>::Dw;          \
-  using ConvOpBase<Context>::Db;          \
-  using ConvOpBase<Context>::kshape_;     \
-  using ConvOpBase<Context>::stride_;     \
-  using ConvOpBase<Context>::pad_l_;      \
-  using ConvOpBase<Context>::pad_r_;      \
-  using ConvOpBase<Context>::dilation_;   \
-  using ConvOpBase<Context>::group_;      \
-  using ConvOpBase<Context>::channels_;   \
-  using ConvOpBase<Context>::num_output_; \
-  using ConvOpBase<Context>::axis_;       \
-  using ConvOpBase<Context>::num_axes_;   \
-  using ConvOpBase<Context>::x_ofs_;      \
-  using ConvOpBase<Context>::y_ofs_;      \
-  using ConvOpBase<Context>::w_ofs_;      \
-  using ConvOpBase<Context>::w_shape_;    \
-  using ConvOpBase<Context>::b_shape_;    \
-  using ConvOpBase<Context>::in_shape_;   \
+#define USE_CONVOLUTION_FUNCTIONS           \
+  using ConvOpBase<Context>::Setup;         \
+  using ConvOpBase<Context>::Reshape;       \
+  using ConvOpBase<Context>::Transposed;    \
+  using ConvOpBase<Context>::HasBias;       \
+  using ConvOpBase<Context>::Wx;            \
+  using ConvOpBase<Context>::Pb;            \
+  using ConvOpBase<Context>::Dx;            \
+  using ConvOpBase<Context>::Dw;            \
+  using ConvOpBase<Context>::Db;            \
+  using ConvOpBase<Context>::kshape_;       \
+  using ConvOpBase<Context>::stride_;       \
+  using ConvOpBase<Context>::pad_l_;        \
+  using ConvOpBase<Context>::pad_r_;        \
+  using ConvOpBase<Context>::dilation_;     \
+  using ConvOpBase<Context>::group_;        \
+  using ConvOpBase<Context>::in_channels_;  \
+  using ConvOpBase<Context>::out_channels_; \
+  using ConvOpBase<Context>::axis_;         \
+  using ConvOpBase<Context>::num_axes_;     \
+  using ConvOpBase<Context>::x_offset_;     \
+  using ConvOpBase<Context>::w_offset_;     \
+  using ConvOpBase<Context>::y_offset_;     \
+  using ConvOpBase<Context>::in_shape_;     \
+  using ConvOpBase<Context>::w_shape_;      \
+  using ConvOpBase<Context>::b_shape_;      \
   using ConvOpBase<Context>::out_shape_
 
 } // namespace dragon

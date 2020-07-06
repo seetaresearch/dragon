@@ -47,7 +47,7 @@ class Assign(Operator):
                 sizes[i], 'int64',
             )
 
-    def forward(self, ws, inputs, starts, sizes):
+    def forward(self, inputs, starts, sizes):
         return self.dispatch(
             [inputs[1]], [inputs[0]],
             callback=lambda ws, handle:
@@ -75,5 +75,5 @@ class MaskedAssign(Operator):
     def attributes(self):
         return {'op_type': 'MaskedAssign', 'arguments': {}}
 
-    def forward(self, inputs, mask):
-        return self.dispatch([inputs[1], mask], [inputs[0]], no_grad=True)
+    def forward(self, inputs):
+        return self.dispatch(inputs[1:], [inputs[0]], no_grad=True)

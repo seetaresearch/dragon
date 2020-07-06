@@ -62,7 +62,6 @@ class Adam(optimizer.Optimizer):
 
         """
         super(Adam, self).__init__(name, **kwargs)
-        self._op_type = 'AdamUpdate'
         self._set_hyper('learning_rate', kwargs.get('lr', learning_rate), 'base_lr')
         self._set_hyper('beta_1', beta_1, 'beta1')
         self._set_hyper('beta_2', beta_2, 'beta2')

@@ -1,7 +1,7 @@
-accumulate
-==========
+axpby
+=====
 
-.. autofunction:: dragon.math.accumulate
+.. autofunction:: dragon.math.axpby
 
 .. raw:: html
 

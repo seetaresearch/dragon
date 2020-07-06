@@ -14,7 +14,7 @@
 #define DRAGON_UTILS_CUDA_DEVICE_H_
 
 #ifdef USE_CUDA
-#include <cublas.h>
+#include <cublas_v2.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <curand.h>

@@ -59,7 +59,6 @@ class RMSprop(optimizer.Optimizer):
 
         """
         super(RMSprop, self).__init__(name, **kwargs)
-        self._op_type = 'RMSPropUpdate'
         self._set_hyper('learning_rate', kwargs.get('lr', learning_rate), 'base_lr')
         self._set_hyper('rho', rho, 'decay')
         self._set_hyper('momentum', momentum, 'momentum')

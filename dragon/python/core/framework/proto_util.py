@@ -134,10 +134,14 @@ def make_operator_cdef(
     op_def = backend.OperatorDef()
     op_def.ParseFrom(
         make_operator_def(
-            op_type, inputs, outputs, name,
-            cache_key, device_option, arg, **kwargs
-        ).SerializeToString()
-    )
+            op_type,
+            inputs,
+            outputs,
+            name,
+            cache_key,
+            device_option,
+            arg,
+            **kwargs).SerializeToString())
     return op_def
 
 

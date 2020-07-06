@@ -20,9 +20,9 @@ __global__ void _SetEye(const int n, const int m, const int k, T* y) {
 
 template <>
 __global__ void _SetEye<half>(const int n, const int m, const int k, half* y) {
-  const half kZero = __float2half(1.f);
+  const half kOne = __float2half(1.f);
   CUDA_1D_KERNEL_LOOP(i, n) {
-    y[i * m + k + i] = kZero;
+    y[i * m + k + i] = kOne;
   }
 }
 
@@ -39,26 +39,34 @@ void Eye<float16, CUDAContext>(
     CUDAContext* ctx) {
   math::Set(n * m, cast::to<float16>(0.f), y, ctx);
   if (k > 0) {
-    _SetEye<<<CUDA_BLOCKS(n - k), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        n - k, m, k, reinterpret_cast<half*>(y));
+    if (m - k > 0) {
+      _SetEye<<<CUDA_BLOCKS(m - k), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+          m - k, m, k, reinterpret_cast<half*>(y));
+    }
   } else {
-    _SetEye<<<CUDA_BLOCKS(n + k), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
-        n + k, m, 0, reinterpret_cast<half*>(y - k * m));
+    if (n + k > 0) {
+      _SetEye<<<CUDA_BLOCKS(n + k), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+          n + k, m, 0, reinterpret_cast<half*>(y - k * m));
+    }
   }
 }
 
-#define DEFINE_KERNEL_LAUNCHER(T)                                           \
-  template <>                                                               \
-  void Eye<T, CUDAContext>(                                                 \
-      const int n, const int m, const int k, T* y, CUDAContext* ctx) {      \
-    math::Set(n* m, T(0), y, ctx);                                          \
-    if (k > 0) {                                                            \
-      _SetEye<<<CUDA_BLOCKS(n - k), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-          n - k, m, k, y);                                                  \
-    } else {                                                                \
-      _SetEye<<<CUDA_BLOCKS(n + k), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
-          n + k, m, 0, y - k * m);                                          \
-    }                                                                       \
+#define DEFINE_KERNEL_LAUNCHER(T)                                             \
+  template <>                                                                 \
+  void Eye<T, CUDAContext>(                                                   \
+      const int n, const int m, const int k, T* y, CUDAContext* ctx) {        \
+    math::Set(n* m, T(0), y, ctx);                                            \
+    if (k > 0) {                                                              \
+      if (m - k > 0) {                                                        \
+        _SetEye<<<CUDA_BLOCKS(m - k), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+            m - k, m, k, y);                                                  \
+      }                                                                       \
+    } else {                                                                  \
+      if (n + k > 0) {                                                        \
+        _SetEye<<<CUDA_BLOCKS(n + k), CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
+            n + k, m, 0, y - k * m);                                          \
+      }                                                                       \
+    }                                                                         \
   }
 
 DEFINE_KERNEL_LAUNCHER(bool);

@@ -64,9 +64,7 @@ void CastOp<Context>::RunOnDevice() {
     STORE_INPUT_SPEC(0);
     DISPATCH_WITH_TENSOR(Input(0));
   } else {
-    Buffer("X[" + std::to_string(0) + "]")
-        ->ReshapeLike(*Output(0))
-        ->set_meta(Output(0)->meta());
+    Buffer("X_spec:0")->ReshapeLike(*Output(0))->set_meta(Output(0)->meta());
     DISPATCH_WITH_TENSOR((*Output(0)));
   };
 }

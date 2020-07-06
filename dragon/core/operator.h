@@ -133,11 +133,6 @@ class DRAGON_API OperatorBase {
     return handle_;
   }
 
-  /*! \brief Return the unique name in this operator */
-  const string unique_name(const string& name) const {
-    return "/mnt/" + handle_ + "/" + name;
-  }
-
   /*! \brief Return the stored def */
   const OperatorDef& def() const {
     return def_;
@@ -268,7 +263,6 @@ OperatorBase* NewOperator(const OperatorDef&, Workspace*);
   using OperatorBase::dtype;         \
   using OperatorBase::data_format;   \
   using OperatorBase::handle;        \
-  using OperatorBase::unique_name;   \
   using OperatorBase::def;           \
   using OperatorBase::ws
 
@@ -277,17 +271,18 @@ OperatorBase* NewOperator(const OperatorDef&, Workspace*);
   using Operator<Context>::allow_run; \
   using Operator<Context>::ctx
 
-#define STORE_INPUT_SPEC(i)                                             \
-  *(ws()->CreateTensor(unique_name("Input[" + std::to_string(i) + "]")) \
-        ->ReshapeLike(Input(i))                                         \
+#define STORE_INPUT_SPEC(i)               \
+  *(Buffer("X_spec:" + std::to_string(i)) \
+        ->ReshapeLike(Input(i))           \
         ->set_meta(Input(i).meta()))
 
 #define RESTORE_INPUT_SPEC(i) \
-  *(ws()->GetTensor(unique_name("Input[" + std::to_string(i) + "]")))
+  *(ws()->GetTensor(          \
+      "/share/buffer/" + handle() + "/X_spec:" + std::to_string(i)))
 
 /* Dispatchers */
 
-#define XIsType(x, type) x.template IsType<type>()
+#define XIsType(X, type) X.template IsType<type>()
 
 template <typename... Types>
 struct TensorTypes {};

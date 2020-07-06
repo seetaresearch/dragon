@@ -83,7 +83,7 @@ class LpNormalize(Operator):
             }
         }
 
-    def forward(self, inputs):
+    def forward(self,inputs):
         return self.dispatch(inputs, [self.alloc()])
 
 
@@ -94,6 +94,7 @@ class LocalResponseNorm(Operator):
         self.alpha = kwargs.get('alpha', 0.0001)
         self.beta = kwargs.get('beta', 0.75)
         self.bias = kwargs.get('bias', 1.)
+        self.data_format = kwargs.get('data_format', 'NCHW')
 
     def attributes(self):
         return {
@@ -103,6 +104,7 @@ class LocalResponseNorm(Operator):
                 'alpha': self.alpha,
                 'beta': self.beta,
                 'bias': self.bias,
+                'data_format': self.data_format,
             }
         }
 

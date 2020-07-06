@@ -16,27 +16,6 @@ from __future__ import print_function
 from dragon.core.framework.ops import Operator
 
 
-class Accumulate(Operator):
-    def __init__(self, key, dev, **kwargs):
-        super(Accumulate, self).__init__(key, dev, **kwargs)
-        self.alpha = kwargs.get('alpha', 1.)
-        self.beta = kwargs.get('beta', 1.)
-
-    def attributes(self):
-        return {
-            'op_type': 'Accumulate',
-            'arguments': {
-                'alpha': self.alpha,
-                'beta': self.beta,
-            }
-        }
-
-    def forward(self, inputs, outputs=None):
-        if outputs is None:
-            outputs = [self.alloc() for _ in range(len(inputs))]
-        return self.dispatch(inputs, outputs, no_grad=True)
-
-
 class Affine(Operator):
     def __init__(self, key, dev, **kwargs):
         super(Affine, self).__init__(key, dev, **kwargs)
@@ -56,9 +35,30 @@ class Affine(Operator):
         return self.dispatch(inputs, [self.alloc()])
 
 
-class Binary(Operator):
+class Axpby(Operator):
     def __init__(self, key, dev, **kwargs):
-        super(Binary, self).__init__(key, dev, **kwargs)
+        super(Axpby, self).__init__(key, dev, **kwargs)
+        self.alpha = kwargs.get('alpha', 1.)
+        self.beta = kwargs.get('beta', 1.)
+
+    def attributes(self):
+        return {
+            'op_type': 'Axpby',
+            'arguments': {
+                'alpha': self.alpha,
+                'beta': self.beta,
+            }
+        }
+
+    def forward(self, inputs, outputs=None):
+        if outputs is None:
+            outputs = [self.alloc() for _ in range(len(inputs))]
+        return self.dispatch(inputs, outputs, no_grad=True)
+
+
+class BinaryOp(Operator):
+    def __init__(self, key, dev, **kwargs):
+        super(BinaryOp, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', '')
 
     def attributes(self):
@@ -95,37 +95,18 @@ class Clip(Operator):
         return self.dispatch(inputs, [self.alloc()])
 
 
-class Dot(Operator):
-    def __init__(self, key, dev, **kwargs):
-        super(Dot, self).__init__(key, dev, **kwargs)
-        self.transA = kwargs.get('transA', False)
-        self.transB = kwargs.get('transB', False)
-
-    def attributes(self):
-        return {
-            'op_type': 'Dot',
-            'arguments': {
-                'transA': self.transA,
-                'transB': self.transB,
-            }
-        }
-
-    def forward(self, inputs):
-        return self.dispatch(inputs, [self.alloc()])
-
-
 class FullyConnected(Operator):
     def __init__(self, key, dev, **kwargs):
         super(FullyConnected, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', 1)
-        self.transW = kwargs.get('transW', True)
+        self.transpose_w = kwargs.get('transpose_w', True)
 
     def attributes(self):
         return {
             'op_type': 'FullyConnected',
             'arguments': {
                 'axis': self.axis,
-                'transW': self.transW,
+                'transW': self.transpose_w,
             }
         }
 
@@ -133,18 +114,18 @@ class FullyConnected(Operator):
         return self.dispatch(inputs, [self.alloc()])
 
 
-class Matmul(Operator):
+class MatMul(Operator):
     def __init__(self, key, dev, **kwargs):
-        super(Matmul, self).__init__(key, dev, **kwargs)
-        self.transA = kwargs.get('transA', False)
-        self.transB = kwargs.get('transB', False)
+        super(MatMul, self).__init__(key, dev, **kwargs)
+        self.transpose_a = kwargs.get('transpose_a', False)
+        self.transpose_b = kwargs.get('transpose_b', False)
 
     def attributes(self):
         return {
-            'op_type': 'Matmul',
+            'op_type': 'MatMul',
             'arguments': {
-                'transA': self.transA,
-                'transB': self.transB,
+                'transA': self.transpose_a,
+                'transB': self.transpose_b,
             }
         }
 
@@ -152,9 +133,9 @@ class Matmul(Operator):
         return self.dispatch(inputs, [self.alloc()])
 
 
-class Unary(Operator):
+class UnaryOp(Operator):
     def __init__(self, key, dev, **kwargs):
-        super(Unary, self).__init__(key, dev, **kwargs)
+        super(UnaryOp, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', '')
 
     def attributes(self):

@@ -27,13 +27,13 @@ void _DepthwiseConv2dNCHW(
     T* y) {
   T sum_val;
   int ih, iw, xi, wi;
-  int yc_ofs, xc_start, yc_start;
+  int yc_offset, xc_start, yc_start;
   int ih_start, yh_start, iw_start;
   for (int n = 0; n < N; ++n) {
     for (int c = 0; c < C; ++c) {
-      yc_ofs = n * C + c;
-      xc_start = yc_ofs * H * W;
-      yc_start = yc_ofs * out_h;
+      yc_offset = n * C + c;
+      xc_start = yc_offset * H * W;
+      yc_start = yc_offset * out_h;
       for (int oh = 0; oh < out_h; ++oh) {
         ih_start = oh * stride_h - pad_h;
         yh_start = (yc_start + oh) * out_w;

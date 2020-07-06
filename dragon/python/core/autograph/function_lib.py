@@ -78,22 +78,22 @@ def add_phase(graph_def, targets):
     graph_def.arg.extend([proto_util.make_argument('phase', phase)])
 
 
-def add_update_ops(graph_def, updater):
+def add_update_ops(graph_def, optimizer):
     """Add the update operators for graph."""
-    if updater is None:
+    if optimizer is None:
         return
     grads, update_ops = [], []
-    extra_arguments = updater._extra_kwargs
-    extra_arguments['slot'] = updater._slot
+    extra_arguments = optimizer._extra_kwargs
+    extra_arguments['handle'] = optimizer._op_handle
     # Generate update operators according to the updater.
-    for e in updater._param_group:
+    for e in optimizer._param_group:
         (param, grad), arguments = e
         if workspace.has_tensor(grad):
             grads.append(grad)
             arguments = dict(arguments, **extra_arguments)
             update_ops.append(
                 proto_util.make_operator_def(
-                    op_type=updater._op_type,
+                    op_type=optimizer._op_type,
                     inputs=[grad],
                     outputs=[param],
                     name=OpDef.get_name(),
@@ -102,7 +102,7 @@ def add_update_ops(graph_def, updater):
         else:
             logging.info('Skip to update Tensor({}).'.format(param))
     # Insert a reduce op if the process group is found.
-    process_group = updater._process_group
+    process_group = optimizer._process_group
     if process_group is not None:
         update_ops.insert(
             0, proto_util.make_operator_def(
@@ -139,12 +139,15 @@ class Function(object):
 
         # Collect the forward operators.
         requires_grad = False
-        for output in outputs:
+        for i, output in enumerate(outputs):
             op_info.merge_from(output)
             op_info.add_target(output.id)
-            if output._grad is not None and \
-                    output._grad.required():
-                requires_grad = True
+            try:
+                grad_info = output._grad
+                if grad_info and grad_info.required():
+                    requires_grad = True
+            except AttributeError:
+                raise ValueError('Output[%d] is not a symbolic tensor.' % i)
 
         # Handle givens.
         if givens is not None:
@@ -169,23 +172,23 @@ class Function(object):
                 ])
                 del op_def.input[:len(op_def.input) // 2]
 
-        # Sort out the topology of states.
+        # Sort out the states.
         op_defs = sorted(op_info._defs.items(), key=lambda d: d[0])
         forward_ops = copy.deepcopy([v for k, v in op_defs])
 
         # Generate the backward operators.
         if requires_grad:
-            input_grads = {}
+            input_grads, grad_targets = {}, []
             for output in outputs:
-                if hasattr(output, '_grad'):
-                    grad_info = output._grad
-                    if grad_info is not None:
-                        if grad_info.input is not None:
-                            input_grads[output.id] = grad_info.input.id
+                grad_info = output._grad
+                if grad_info is not None:
+                    if grad_info.input is not None:
+                        input_grads[output.id] = output._grad.input.id
+                    grad_targets.append(output.id)
             forward_ops, gradient_ops, _ = \
                 grad_maker.GradientMaker.make(
                     forward_ops=forward_ops,
-                    targets=list(op_info._targets),
+                    targets=grad_targets,
                     input_grads=input_grads,
                 )
         else:

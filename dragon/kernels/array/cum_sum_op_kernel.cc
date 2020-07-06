@@ -53,11 +53,11 @@ void _CumSumReverse(
     CPUContext* ctx) {
   const int kStart = axis_dim - 1;
   for (int n = 0; n < outer_dim; ++n) {
-    const int n_ofs = n * axis_dim;
+    const int n_offset = n * axis_dim;
     for (int m = kStart; m >= 0; --m) {
-      const int nm_ofs = (n_ofs + m) * inner_dim;
+      const int nm_offset = (n_offset + m) * inner_dim;
       for (int k = 0; k < inner_dim; ++k) {
-        const int i = nm_ofs + k;
+        const int i = nm_offset + k;
         if (m < kStart) {
           const int j = i + inner_dim;
           y[i] = y[j] + x[exclusive ? j : i];

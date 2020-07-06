@@ -9,17 +9,17 @@
 #
 # ------------------------------------------------------------
 
-"""Define the SGD updaters."""
+"""The SGD optimizers."""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.training import updater
+from dragon.core.training import optimizer
 
 
-class SGD(updater.Updater):
-    r"""The updater which implements MomentumSGD algorithm.
+class SGD(optimizer.Optimizer):
+    r"""The optimizer to apply MomentumSGD algorithm.
     `[Polyak, 1964] <https://doi.org/10.1016/0041-5553(64)90137-5>`_.
 
     The **MomentumSGD** update is defined as:
@@ -46,8 +46,8 @@ class SGD(updater.Updater):
         })
 
 
-class Nesterov(updater.Updater):
-    r"""The updater which implements NesterovSGD algorithm.
+class Nesterov(optimizer.Optimizer):
+    r"""The optimizer to apply NesterovSGD algorithm.
     `[Sutskever et.al, 2013] <http://www.cs.toronto.edu/~hinton/absps/momentum.pdf>`_.
 
     The **NesterovSGD** update is defined as:
@@ -60,7 +60,7 @@ class Nesterov(updater.Updater):
     """
 
     def __init__(self, base_lr=0.01, momentum=0.9, **kwargs):
-        r"""Create a ``Nesterov`` updater.
+        r"""Create a ``Nesterov`` optimizer.
 
         Parameters
         ----------

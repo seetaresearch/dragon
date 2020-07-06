@@ -94,8 +94,8 @@ void GroupNormGradientOp<Context>::DoRunWithType() {
 template <class Context>
 void GroupNormGradientOp<Context>::RunOnDevice() {
   DetermineBaseArguments();
-
   Output(0)->ReshapeLike(Input(0));
+
   if (XIsType(Input(0), float)) {
     DoRunWithType<float, float>();
   } else if (XIsType(Input(0), float16)) {

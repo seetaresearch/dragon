@@ -80,7 +80,7 @@ Tensor* OperatorBase::Output(int i, const vec32_t& inputs) {
 }
 
 Tensor* OperatorBase::Buffer(const string& name) {
-  return ws()->CreateTensor(unique_name(name));
+  return ws()->CreateTensor("/share/buffer/" + handle_ + "/" + name);
 }
 
 string OperatorBase::TypeString(const Tensor& tensor, const Set<string>& types)

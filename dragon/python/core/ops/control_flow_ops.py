@@ -61,38 +61,36 @@ def assign(inputs, starts=None, sizes=None, **kwargs):
 
 @OpSchema.num_inputs(1, 2)
 def copy(inputs, **kwargs):
-    r"""Copy the value to ref.
-
-    .. math:: \text{Ref}[:] = \text{Value}[:]
+    """Copy the input.
 
     Examples:
 
     ```python
-    # Copy the content from ``x`` to ``xx``
+    # Copy ``x`` to ``y``
     x = dragon.ones(shape=(2, 3))
-    xx = dragon.zeros(shape=(2, 4))
-    dragon.copy([xx, x])
+    y = dragon.zeros(shape=(2, 4))
+    dragon.copy([x, y])
 
-    # Create a new tensor initialized from ``x``
-    xxx = dragon.copy(x)
+    # Copy to a new tensor from ``x``
+    y = dragon.copy(x)
     ```
 
     Parameters
     ----------
-    inputs : Sequence[dragon.Tensor]
-        The **ref** and **value**.
+    inputs : Union[dragon.Tensor, Sequence[dragon.Tensor]]
+        The input tensor.
 
     Returns
     -------
     dragon.Tensor
-        The **ref**.
+        The output tensor.
 
     """
     args = parse_args(locals())
-    inputs = nest.flatten(inputs)
-    if len(inputs) == 2:
-        args['inputs'] = [inputs[1]]
-        args['outputs'] = [inputs[0]]
+    args['inputs'] = nest.flatten(inputs)
+    if len(args['inputs']) == 2:
+        args['outputs'] = [args['inputs'][1]]
+        args['inputs'] = [args['inputs'][0]]
     else:
         args['outputs'] = None
     op_lib = control_flow_ops_lib.Copy
@@ -104,8 +102,8 @@ def copy(inputs, **kwargs):
         return op_lib.blend('Copy', **args)
 
 
-@OpSchema.num_inputs(2)
-def masked_assign(inputs, mask, **kwargs):
+@OpSchema.num_inputs(3)
+def masked_assign(inputs, **kwargs):
     r"""Assign the value to ref where mask is **1**.
 
     .. math::
@@ -118,24 +116,22 @@ def masked_assign(inputs, mask, **kwargs):
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The **ref** and **value**.
-    mask : dragon.Tensor
-        The mask, with the same size as **ref**.
+        The **ref**, **value** and **mask** tensor.
 
     Returns
     -------
     dragon.Tensor
-        The **ref**.
+        The **ref** tensor..
 
     """
     args = parse_args(locals())
     inputs[1] = ops.scalar_to_tensor(inputs[1], inputs[0].dtype)
     op_lib = control_flow_ops_lib.MaskedAssign
     if context.executing_eagerly():
-        return op_lib.instantiate().apply(inputs, mask)
+        return op_lib.instantiate().apply(inputs)
     else:
         args.update({
             'outputs': [args['inputs'][0]],
-            'inputs': [args['inputs'][1], mask],
+            'inputs': [args['inputs'][1:]],
         })
         return op_lib.blend(**args)

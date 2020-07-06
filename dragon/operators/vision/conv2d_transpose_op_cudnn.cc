@@ -71,8 +71,8 @@ void CuDNNConvTranspose2dOp<Context>::ResetDesc() {
           filter_desc_,
           CuDNNType<T>::type,
           format_,
-          channels_ / cudnn_group_,
-          num_output_ / group_,
+          in_channels_ / cudnn_group_,
+          out_channels_ / group_,
           kshape_[0],
           kshape_[1]));
 #else
@@ -80,14 +80,15 @@ void CuDNNConvTranspose2dOp<Context>::ResetDesc() {
           filter_desc_,
           CuDNNType<T>::type,
           format_,
-          channels_ / cudnn_group_,
-          num_output_ / group_,
+          in_channels_ / cudnn_group_,
+          out_channels_ / group_,
           kshape_[0],
           kshape_[1]));
 #endif
       // Determine the bias shape
       if (HasBias()) {
-        CuDNNSetBiasDesc<T>(&bias_desc_, X.ndim(), num_output_, data_format());
+        CuDNNSetBiasDesc<T>(
+            &bias_desc_, X.ndim(), out_channels_, data_format());
       }
     }
     // Set the conv configuration
@@ -180,16 +181,16 @@ void CuDNNConvTranspose2dOp<Context>::DoRunWithType() {
         ctx()->cudnn_handle(),
         CuDNNType<T>::one,
         filter_desc_,
-        w + w_ofs_ * g,
+        w + w_offset_ * g,
         input_desc_,
-        x + x_ofs_ * g,
+        x + x_offset_ * g,
         conv_desc_,
         fwd_algo_,
         scratch,
         cudnn_ws_nbytes_,
         CuDNNType<T>::zero,
         output_desc_,
-        y + y_ofs_ * g));
+        y + y_offset_ * g));
   }
 
   if (HasBias()) {
@@ -218,11 +219,11 @@ void CuDNNConvTranspose2dOp<Context>::RunOnDevice() {
   ConvOpBase<Context>::Reshape();
 
   if (data_format() == "NCHW") {
-    x_ofs_ = Input(0).stride(0) / cudnn_group_;
-    y_ofs_ = Output(0)->stride(0) / cudnn_group_;
+    x_offset_ = Input(0).stride(0) / cudnn_group_;
+    y_offset_ = Output(0)->stride(0) / cudnn_group_;
   } else if (data_format() == "NHWC") {
-    x_ofs_ = Input(0).dim(-1) / cudnn_group_;
-    y_ofs_ = Output(0)->dim(-1) / cudnn_group_;
+    x_offset_ = Input(0).dim(-1) / cudnn_group_;
+    y_offset_ = Output(0)->dim(-1) / cudnn_group_;
   }
 
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
@@ -293,8 +294,8 @@ void CuDNNConvTranspose2dGradientOp<Context>::ResetDesc() {
           filter_desc_,
           CuDNNType<T>::type,
           format_,
-          channels_ / cudnn_group_,
-          num_output_ / group_,
+          in_channels_ / cudnn_group_,
+          out_channels_ / group_,
           kshape_[0],
           kshape_[1]));
 #else
@@ -302,14 +303,15 @@ void CuDNNConvTranspose2dGradientOp<Context>::ResetDesc() {
           filter_desc,
           CuDNNType<T>::type,
           format_,
-          channels_ / cudnn_group_,
-          num_output_ / group_,
+          in_channels_ / cudnn_group_,
+          out_channels_ / group_,
           kshape_[0],
           kshape_[1]));
 #endif
       // Determine the bias shape
       if (HasBias()) {
-        CuDNNSetBiasDesc<T>(&bias_desc_, X.ndim(), num_output_, data_format());
+        CuDNNSetBiasDesc<T>(
+            &bias_desc_, X.ndim(), out_channels_, data_format());
       }
     }
     // Set the conv configuration
@@ -466,16 +468,16 @@ void CuDNNConvTranspose2dGradientOp<Context>::DoRunWithType() {
           ctx()->cudnn_handle(),
           CuDNNType<T>::one,
           input_desc_,
-          dy + y_ofs_ * g,
+          dy + y_offset_ * g,
           output_desc_,
-          x + x_ofs_ * g,
+          x + x_offset_ * g,
           conv_desc_,
           bwd_filter_algo_,
           scratch,
           cudnn_ws_nbytes_,
           CuDNNType<T>::zero,
           filter_desc_,
-          dw + w_ofs_ * g));
+          dw + w_offset_ * g));
     }
   }
 
@@ -487,16 +489,16 @@ void CuDNNConvTranspose2dGradientOp<Context>::DoRunWithType() {
           ctx()->cudnn_handle(),
           CuDNNType<T>::one,
           input_desc_,
-          dy + y_ofs_ * g,
+          dy + y_offset_ * g,
           filter_desc_,
-          w + w_ofs_ * g,
+          w + w_offset_ * g,
           conv_desc_,
           bwd_data_algo_,
           scratch,
           cudnn_ws_nbytes_,
           CuDNNType<T>::zero,
           output_desc_,
-          dx + x_ofs_ * g));
+          dx + x_offset_ * g));
     }
   }
 }
@@ -514,11 +516,11 @@ void CuDNNConvTranspose2dGradientOp<Context>::RunOnDevice() {
   ConvOpBase<Context>::Reshape(true);
 
   if (data_format() == "NCHW") {
-    x_ofs_ = Input(0).stride(0) / cudnn_group_;
-    y_ofs_ = Input(-1).stride(0) / cudnn_group_;
+    x_offset_ = Input(0).stride(0) / cudnn_group_;
+    y_offset_ = Input(-1).stride(0) / cudnn_group_;
   } else if (data_format() == "NHWC") {
-    x_ofs_ = Input(0).dim(-1) / cudnn_group_;
-    y_ofs_ = Input(-1).dim(-1) / cudnn_group_;
+    x_offset_ = Input(0).dim(-1) / cudnn_group_;
+    y_offset_ = Input(-1).dim(-1) / cudnn_group_;
   }
 
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(-1));

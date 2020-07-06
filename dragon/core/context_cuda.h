@@ -50,18 +50,18 @@ class CUDAObject {
          */
         if (stream) cudaStreamDestroy(stream);
       }
-      for (auto& e : cublas_handles_[i])
-        if (e) {
-          CUBLAS_CHECK(cublasDestroy_v2(e));
+      for (auto& handle : cublas_handles_[i])
+        if (handle) {
+          CUBLAS_CHECK(cublasDestroy(handle));
         }
 #ifdef USE_CUDNN
-      for (auto& e : cudnn_handles_[i])
-        if (e) {
-          CUDNN_CHECK(cudnnDestroy(e));
+      for (auto& handle : cudnn_handles_[i])
+        if (handle) {
+          CUDNN_CHECK(cudnnDestroy(handle));
         }
 #endif
 #ifdef USE_NCCL
-      for (auto& e : nccl_comms_[i]) {
+      for (auto& comm : nccl_comms_[i]) {
         /*!
          * Temporarily disable the comm destroying,
          * to avoid an unhandled error.
@@ -74,17 +74,18 @@ class CUDAObject {
   /*! \brief Return the specified cublas handle */
   cublasHandle_t cublas_handle(int device_id, int stream_id) {
     auto& handles = cublas_handles_[device_id];
-    if (handles.size() <= (unsigned)stream_id)
+    if (handles.size() <= (unsigned)stream_id) {
       handles.resize(stream_id + 1, nullptr);
+    }
     if (!handles[stream_id]) {
       CUDADeviceGuard guard(device_id);
-      CUBLAS_CHECK(cublasCreate_v2(&handles[stream_id]));
-      CUBLAS_CHECK(
-          cublasSetStream_v2(handles[stream_id], stream(device_id, stream_id)));
+      CUBLAS_CHECK(cublasCreate(&handles[stream_id]));
+      auto& handle = handles[stream_id];
+      CUBLAS_CHECK(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST));
+      CUBLAS_CHECK(cublasSetStream(handle, stream(device_id, stream_id)));
 #if CUDA_VERSION >= 9000
       if (TENSOR_CORE_AVAILABLE()) {
-        CUBLAS_CHECK(
-            cublasSetMathMode(handles[stream_id], CUBLAS_TENSOR_OP_MATH));
+        CUBLAS_CHECK(cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH));
       }
 #endif
     }
@@ -95,13 +96,14 @@ class CUDAObject {
 #ifdef USE_CUDNN
   cudnnHandle_t cudnn_handle(int device_id, int stream_id) {
     auto& handles = cudnn_handles_[device_id];
-    if (handles.size() <= (unsigned)stream_id)
+    if (handles.size() <= (unsigned)stream_id) {
       handles.resize(stream_id + 1, nullptr);
+    }
     if (!handles[stream_id]) {
       CUDADeviceGuard guard(device_id);
       CUDNN_CHECK(cudnnCreate(&handles[stream_id]));
-      CUDNN_CHECK(
-          cudnnSetStream(handles[stream_id], stream(device_id, stream_id)));
+      auto& handle = handles[stream_id];
+      CUDNN_CHECK(cudnnSetStream(handle, stream(device_id, stream_id)));
     }
     return handles[stream_id];
   }
@@ -144,7 +146,7 @@ class CUDAObject {
     if (!streams[stream_id]) {
       CUDADeviceGuard guard(device_id);
       unsigned int flags =
-          !stream_id ? cudaStreamDefault : cudaStreamNonBlocking;
+          stream_id == 0 ? cudaStreamDefault : cudaStreamNonBlocking;
       CUDA_CHECK(cudaStreamCreateWithFlags(&streams[stream_id], flags));
     }
     return streams[stream_id];

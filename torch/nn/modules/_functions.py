@@ -46,7 +46,6 @@ class _ConvNd(function.Function):
         return {
             'op_type': self.__class__.__name__,
             'arguments': {
-                'num_output': self.num_output,
                 'kernel_shape': self.kernel_shape,
                 'strides': self.strides,
                 'pads': self.pads,

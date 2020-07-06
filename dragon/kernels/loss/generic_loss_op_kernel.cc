@@ -35,21 +35,22 @@ void _BroadcastLossGrad<float16>(
 
 } // namespace
 
-#define DEFINE_KERNEL_LAUNCHER(T)                                   \
-  template <>                                                       \
-  void ReduceLoss<T, CPUContext>(                                   \
-      const int count,                                              \
-      const int num_masks,                                          \
-      const float normalizer,                                       \
-      const T* x,                                                   \
-      const int* mask,                                              \
-      T* y,                                                         \
-      CPUContext* ctx) {                                            \
-    float inv_scale = std::max(                                     \
-        1e-5F,                                                      \
-        num_masks > 0 ? (float)math::Sum(num_masks, 1.f, mask, ctx) \
-                      : normalizer);                                \
-    y[0] = math::Sum(count, 1.f / inv_scale, x, ctx);               \
+#define DEFINE_KERNEL_LAUNCHER(T)                         \
+  template <>                                             \
+  void ReduceLoss<T, CPUContext>(                         \
+      const int count,                                    \
+      const int num_masks,                                \
+      const float normalizer,                             \
+      const T* x,                                         \
+      const int* mask,                                    \
+      T* y,                                               \
+      CPUContext* ctx) {                                  \
+    float inv_scale = std::max(                           \
+        1e-5F,                                            \
+        num_masks > 0 && normalizer < 0.f                 \
+            ? (float)math::Sum(num_masks, 1.f, mask, ctx) \
+            : normalizer);                                \
+    y[0] = math::Sum(count, 1.f / inv_scale, x, ctx);     \
   }
 
 #define DEFINE_GRAD_KERNEL_LAUNCHER(T)                                   \
@@ -64,8 +65,9 @@ void _BroadcastLossGrad<float16>(
       CPUContext* ctx) {                                                 \
     float inv_scale = std::max(                                          \
         1e-5F,                                                           \
-        num_masks > 0 ? (float)math::Sum(num_masks, 1.f, mask, ctx)      \
-                      : normalizer);                                     \
+        num_masks > 0 && normalizer < 0.f                                \
+            ? (float)math::Sum(num_masks, 1.f, mask, ctx)                \
+            : normalizer);                                               \
     math::Scale(count, cast::to<float>(dy[0]) / inv_scale, dx, dx, ctx); \
   }                                                                      \
   template <>                                                            \

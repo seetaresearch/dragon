@@ -268,7 +268,7 @@ def leaky_relu(inputs, alpha=0.2, **kwargs):
 
 
 @OpSchema.num_inputs(1)
-def log_softmax(inputs, axis=1, **kwargs):
+def log_softmax(inputs, axis=-1, **kwargs):
     r"""Apply the composite of logarithm and softmax.
 
     The **LogSoftmax** function is defined as:
@@ -287,7 +287,7 @@ def log_softmax(inputs, axis=1, **kwargs):
     ----------
     inputs : dragon.Tensor
         The input tensor.
-    axis : int, optional, default=1
+    axis : int, optional, default=-1
         The axis to reduce.
 
     Returns
@@ -351,7 +351,7 @@ def prelu(inputs, channel_shared=False, data_format='NCHW', **kwargs):
     if context.executing_eagerly():
         return op_lib \
             .instantiate(data_format=data_format) \
-            .apply([inputs])
+            .apply(inputs)
     else:
         return op_lib.blend(**args)
 
@@ -373,7 +373,7 @@ def relu(inputs, **kwargs):
     Examples:
 
     ```python
-    x = dragon.constant([-1, 0, 1], 'float32')
+    x = dragon.constant([-1., 0., 1.])
     print(dragon.nn.relu(x, inplace=False))
     ```
 
@@ -449,10 +449,10 @@ def selu(inputs, alpha=1.67326, gamma=1.0507, **kwargs):
 
     .. math::
         \text{SELU}(x) = \gamma *
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            \alpha * (e^{x} - 1), & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                \alpha * (e^{x} - 1), & \text{ otherwise }
+            \end{cases}
 
     Examples:
 
@@ -561,9 +561,8 @@ def softmax(inputs, axis=-1, **kwargs):
     op_lib = activation_ops_lib.Softmax
     if context.executing_eagerly():
         return op_lib \
-            .instantiate(
-                axis=axis,
-            ).apply([inputs], inplace=inplace)
+            .instantiate(axis=axis) \
+            .apply([inputs], inplace=inplace)
     else:
         return op_lib.blend(**args)
 

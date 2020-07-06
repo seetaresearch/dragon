@@ -38,10 +38,10 @@ def batch_norm(
     .. math::
         y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
-    The moving average of stats are calculated as:
+    The running average of statistics are calculated as:
 
     .. math::
-        x_{moving} \leftarrow momentum * x_{moving} + (1 - momentum) * x_{stat}
+        x_{\text{running}} = \text{momentum} * x_{\text{running}} + (1 - \text{momentum}) * x_{\text{stat}}
 
     Note that the number of inputs should be **5**, i.e.,
     this operators is implemented into the fused version.
@@ -56,11 +56,11 @@ def batch_norm(
     axis : int, optional, default=-1
         The channel axis.
     momentum : float, optional, default=0.9
-        The momentum of moving average.
+        The momentum for running average.
     eps : float, optional, default=1e-5
-        The epsilon.
+        The value of :math:`\epsilon`.
     use_stats : int, optional, default=-1
-        Whether to use global stats.
+        Whether to use estimated statistics or not.
 
     Returns
     -------
@@ -168,7 +168,7 @@ def instance_norm(inputs, axis=-1, eps=1e-5, **kwargs):
 
 
 @OpSchema.num_inputs(1)
-def lp_normalize(inputs, axis=None, p=2, eps=1e-5, reduction='sum', **kwargs):
+def lp_normalize(inputs, axis=None, p=2, eps=1e-12, reduction='sum', **kwargs):
     r"""Apply the lp normalization.
 
     The **Lp-Normalization** is defined as:
@@ -200,7 +200,7 @@ def lp_normalize(inputs, axis=None, p=2, eps=1e-5, reduction='sum', **kwargs):
         The order of the normalization.
     axis : Union[int, Sequence[int]], optional
         The axis to compute the norm.
-    eps : float, optional, default=1e-5
+    eps : float, optional, default=1e-12
         The value of :math:`\epsilon`.
     reduction : {'sum', 'mean'}, optional
         The reduction method for norm.
@@ -326,9 +326,9 @@ def local_response_norm(
                 beta=args['beta'],
                 bias=args['bias'],
                 data_format=data_format,
-            ).apply(inputs)
+            ).apply([inputs])
     else:
-        return op_lib.blend(**args)
+        return op_lib.blend('LRN', **args)
 
 
 @OpSchema.num_inputs(5)
@@ -349,10 +349,10 @@ def sync_batch_norm(
     .. math::
         \text{out} = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
-    The moving average of statistics are calculated as:
+    The running average of statistics are calculated as:
 
     .. math::
-        x_{moving} \leftarrow momentum * x_{moving} + (1 - momentum) * x_{stat}
+        x_{\text{running}} = \text{momentum} * x_{\text{running}} + (1 - \text{momentum}) * x_{\text{stat}}
 
     Note that the number of inputs should be **5**, i.e.,
     this operators is implemented into the fused version.
@@ -367,11 +367,11 @@ def sync_batch_norm(
     axis : int, optional, default=-1
         The channel axis.
     momentum : float, optional, default=0.9
-        The momentum of moving average.
+        The momentum for average.
     eps : float, optional, default=1e-5
-        The epsilon.
+        The value of :math:`\epsilon`.
     use_stats : int, optional, default=-1
-        Whether to use global stats.
+        Whether to use estimated statistics or not.
     process_group : ProcessGroup, optional
         The group for communication.
 

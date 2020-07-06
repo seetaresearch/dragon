@@ -17,6 +17,8 @@ void SparseSoftmaxCrossEntropyOp<Context>::DoRunWithType() {
 
   CHECK_EQ(num_preds, Input(1).count())
       << "\nNumber of preds must match the number of targets.";
+  auto* X_prob = Buffer("prob")->ReshapeLike(X);
+  auto* prob = X_prob->template mutable_data<LogitType, Context>();
 
   auto scratches = ws()->template data<Context>({
       num_preds * sizeof(LogitType), // loss
@@ -24,10 +26,6 @@ void SparseSoftmaxCrossEntropyOp<Context>::DoRunWithType() {
   });
   auto* loss = static_cast<LogitType*>(scratches[0]);
   auto* mask = static_cast<int*>(scratches[1]);
-
-  auto* prob = Buffer("prob")
-                   ->ReshapeLike(X)
-                   ->template mutable_data<LogitType, Context>();
 
   kernel::Softmax(
       outer_dim,

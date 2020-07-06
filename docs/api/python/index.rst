@@ -14,15 +14,15 @@ For using it, import as follows:
 
 However, it will not help you much because you do not want to learn it.
 
-We have extended it with following programming styles:
+To resolve this matter, we are concerned to design diverse styles for you:
 
 Dragon
 ######
 
-  *Dragon* takes a very light-weight programming style.
+  *Dragon* is initially as a light-weight but professional style.
 
-  Our goal is to reduce unnecessary structures or interfaces. Therefore,
-  in addition to feed or fetch, the last thing is designing a function.
+  Native interfaces are encouraged to manipulate the backend engine
+  to perform the computation flexibly with data feeding or fetching.
 
   This style involves the following components:
 
@@ -38,15 +38,15 @@ Dragon
   * `dragon.math <dragon/math.html>`_
   * `dragon.metrics <dragon/metrics.html>`_
   * `dragon.nn <dragon/nn.html>`_
+  * `dragon.optimizers <dragon/optimizers.html>`_
   * `dragon.random <dragon/random.html>`_
-  * `dragon.updaters <dragon/updaters.html>`_
-  * `dragon.vision <dragon/vision.html>`_
   * `dragon.workspace <dragon/workspace.html>`_
+  * `dragon.vision <dragon/vision.html>`_
 
 Caffe
 #####
 
-  *Caffe* is one of the most famous deep learning framework for Computer Vision.
+  *Caffe* is the most famous framework for vision.
 
   Our work is very different from the official python wrappers, a.k.a,
   the *PyCaffe*, which comes from the exports of *BoostPython*
@@ -102,7 +102,7 @@ PyTorch
 
   *PyTorch* provides straight-forward operations on research prototyping.
 
-  To bridge it, our *JIT* traces and dispatches the expressions,
+  To bridge it, our *JIT* traces and dispatches the operations,
   as well as the rewriting of *GC* (Garbage Collection) to reuse
   the memories and operators by turns.
 
@@ -168,52 +168,52 @@ Modules
 .. only:: html
 
   `Module autograph <dragon/autograph.html>`_
-  : Public API for ``dragon.autograph`` namespace.
+  : Native API for ``dragon.autograph`` namespace.
 
   `Module bitwise <dragon/bitwise.html>`_
-  : Public API for ``dragon.bitwise`` namespace.
+  : Native API for ``dragon.bitwise`` namespace.
 
   `Module cuda <dragon/cuda.html>`_
-  : Public API for ``dragon.cuda`` namespace.
+  : Native API for ``dragon.cuda`` namespace.
 
   `Module distributed <dragon/distributed.html>`_
-  : Public API for ``dragon.distributed`` namespace.
+  : Native API for ``dragon.distributed`` namespace.
 
   `Module dlpack <dragon/dlpack.html>`_
-  : Public API for ``dragon.dlpack`` namespace.
+  : Native API for ``dragon.dlpack`` namespace.
 
   `Module io <dragon/io.html>`_
-  : Public API for ``dragon.io`` namespace.
+  : Native API for ``dragon.io`` namespace.
 
   `Module logging <dragon/logging.html>`_
-  : Public API for ``dragon.logging`` namespace.
+  : Native API for ``dragon.logging`` namespace.
 
   `Module losses <dragon/losses.html>`_
-  : Public API for ``dragon.losses`` namespace.
+  : Native API for ``dragon.losses`` namespace.
 
   `Module math <dragon/math.html>`_
-  : Public API for ``dragon.math`` namespace.
+  : Native API for ``dragon.math`` namespace.
 
   `Module metrics <dragon/metrics.html>`_
-  : Public API for ``dragon.metrics`` namespace.
+  : Native API for ``dragon.metrics`` namespace.
 
   `Module nn <dragon/nn.html>`_
-  : Public API for ``dragon.nn`` namespace.
+  : Native API for ``dragon.nn`` namespace.
+
+  `Module optimizers <dragon/optimizers.html>`_
+  : Native API for ``dragon.optimizers`` namespace.
 
   `Module random <dragon/random.html>`_
-  : Public API for ``dragon.random`` namespace.
+  : Native API for ``dragon.random`` namespace.
 
-  `Module updaters <dragon/updaters.html>`_
-  : Public API for ``dragon.updaters`` namespace.
+  `Module workspace <dragon/workspace.html>`_
+  : Native API for ``dragon.workspace`` namespace.
 
   `Module vision <dragon/vision.html>`_
-  : Public API for ``dragon.vision`` namespace.
+  : Native API for ``dragon.vision`` namespace.
 
   `Module workspace <dragon/workspace.html>`_
-  : Public API for ``dragon.workspace`` namespace.
-
-  `Module workspace <dragon/workspace.html>`_
-  : Public API for ``dragon.workspace`` namespace.
+  : Native API for ``dragon.workspace`` namespace.
 
   `Module vm.caffe <caffe.html>`_
   : Virtual API for ``caffe`` namespace.
@@ -317,10 +317,10 @@ Modules
   dragon/math
   dragon/metrics
   dragon/nn
+  dragon/optimizers
   dragon/random
-  dragon/updaters
-  dragon/vision
   dragon/workspace
+  dragon/vision
   caffe
   caffe/layers
   dali

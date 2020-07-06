@@ -26,7 +26,9 @@ namespace dragon {
           axes_(OpArgs<int64_t>("axes")),               \
           keep_dims_(OpArg<int64_t>("keep_dims", 0)) {} \
     USE_OPERATOR_FUNCTIONS;                             \
+                                                        \
     void RunOnDevice() override;                        \
+                                                        \
     template <typename T>                               \
     void DoRunWithType();                               \
                                                         \
@@ -41,7 +43,9 @@ namespace dragon {
    public:                                                  \
     SIMPLE_CTOR_DTOR(name##GradientOp);                     \
     USE_OPERATOR_FUNCTIONS;                                 \
+                                                            \
     void RunOnDevice() override;                            \
+                                                            \
     template <typename T>                                   \
     void DoRunWithType();                                   \
   };

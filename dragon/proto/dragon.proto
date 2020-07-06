@@ -10,61 +10,65 @@ package dragon;
 
 // Store the serialized Tensor objects.
 message TensorProto {
-    repeated int32 dims = 1;
-    enum DataType {
-        UNDEFINED = 0;
-        // Basic types.
-        FLOAT = 1;
-        INT32 = 2;
-        BYTE = 3;
-        STRING = 4;
+  repeated int32 dims = 1;
+  enum DataType {
+    UNDEFINED = 0;
+    // Basic types.
+    FLOAT = 1;
+    INT32 = 2;
+    BYTE = 3;
+    STRING = 4;
 
-        // Less-commonly used data types.
-        BOOL = 5;
-        UINT8 = 6;
-        INT8 = 7;
-        UINT16 = 8;
-        INT16 = 9;
-        INT64 = 10;
-        FLOAT16 = 12;
-        DOUBLE = 13;
-    }
-    optional DataType data_type = 2 [default = FLOAT];
-    // For float.
-    repeated float float_data = 3 [packed = true];
-    // For int32, uint8, int8, uint16, int16, bool, and float16
-    // Note about float16: in storage we will basically convert float16 byte-wise
-    // to unsigned short and then store them in the int32_data field.
-    repeated int32 int32_data = 4 [packed = true];
-    // For bytes.
-    optional bytes byte_data = 5;
-    // For strings.
-    repeated bytes string_data = 6;
-    // For double.
-    repeated double double_data = 9 [packed = true];
-    // For int64.
-    repeated int64 int64_data = 10 [packed = true];
-    // Store the raw data, contents are serialized as little-endian.
-    optional bytes raw_data = 13;
+    // Less-commonly used data types.
+    BOOL = 5;
+    UINT8 = 6;
+    INT8 = 7;
+    UINT16 = 8;
+    INT16 = 9;
+    INT64 = 10;
+    FLOAT16 = 12;
+    DOUBLE = 13;
+  }
+  optional DataType data_type = 2 [default = FLOAT];
+  // For float.
+  repeated float float_data = 3 [packed = true];
+  // For int32, uint8, int8, uint16, int16, bool, and float16
+  // Note about float16: in storage we will basically convert float16 byte-wise
+  // to unsigned short and then store them in the int32_data field.
+  repeated int32 int32_data = 4 [packed = true];
+  // For bytes.
+  optional bytes byte_data = 5;
+  // For strings.
+  repeated bytes string_data = 6;
+  // For double.
+  repeated double double_data = 9 [packed = true];
+  // For int64.
+  repeated int64 int64_data = 10 [packed = true];
+  // Store the raw data, contents are serialized as little-endian.
+  optional bytes raw_data = 13;
 
-    // Optionally, a name for the tensor.
-    optional string name = 7;
+  // Optionally, a name for the tensor.
+  optional string name = 7;
 }
 
 // Record the filler of Tensor.
 // This structure is kept for backward compatibility
 // with caffe1, which relies implicit initializer.
 message TensorFillerProto {
-    optional string tensor = 1;
-    optional string type = 2 [default = 'constant'];
-    optional float value = 3 [default = 0];
-    optional float low = 4 [default = 0];
-    optional float high = 5 [default = 1];
-    optional float mean = 6 [default = 0];
-    optional float std = 7 [default = 1];
-    optional float scale = 8 [default = 3];
-    enum VarianceNorm { FAN_IN = 0; FAN_OUT = 1; FAN_AVG=2; }
-    optional VarianceNorm variance_norm = 9 [default = FAN_IN];
+  optional string tensor = 1;
+  optional string type = 2 [default = 'constant'];
+  optional float value = 3 [default = 0];
+  optional float low = 4 [default = 0];
+  optional float high = 5 [default = 1];
+  optional float mean = 6 [default = 0];
+  optional float std = 7 [default = 1];
+  optional float scale = 8 [default = 3];
+  enum VarianceNorm {
+    FAN_IN = 0;
+    FAN_OUT = 1;
+    FAN_AVG = 2;
+  }
+  optional VarianceNorm variance_norm = 9 [default = FAN_IN];
 }
 
 // Store multiple TensorProto objects in one single proto.
@@ -74,99 +78,99 @@ message TensorProtos {
 
 // DeviceType that Dragon currently supports.
 enum DeviceTypeProto {
-    // The default device.
-    PROTO_CPU = 0;
-    // NVIDIA's CUDA Environment.
-    PROTO_CUDA = 1;
-    // CAMBRICON's CNML Environment.
-    PROTO_CNML = 2;
+  // The default device.
+  PROTO_CPU = 0;
+  // NVIDIA's CUDA Environment.
+  PROTO_CUDA = 1;
+  // CAMBRICON's CNML Environment.
+  PROTO_CNML = 2;
 }
 
 // Device-specific options.
 message DeviceOption {
-    // The type of device to dispatch executions.
-    optional DeviceTypeProto device_type = 1 [default = PROTO_CPU];
-    // The index of this device.
-    optional int32 device_id = 2 [default = 0];
-    // The random seed to start the random generator.
-    optional uint32 random_seed = 3 [default = 3];
+  // The type of device to dispatch executions.
+  optional DeviceTypeProto device_type = 1 [default = PROTO_CPU];
+  // The index of this device.
+  optional int32 device_id = 2 [default = 0];
+  // The random seed to start the random generator.
+  optional uint32 random_seed = 3 [default = 3];
 }
 
 // A named argument containing either singular float, integer and string
 // values, or repeated float, int and string arrays.
 message Argument {
-    // The name of this argument.
-    optional string name = 1;
+  // The name of this argument.
+  optional string name = 1;
 
-    // Store the float32 value.
-    optional float f = 2;
-    // Store the bool, int32, int64 value.
-    optional int64 i = 3;
-    // Store the string value.
-    optional bytes s = 4;
+  // Store the float32 value.
+  optional float f = 2;
+  // Store the bool, int32, int64 value.
+  optional int64 i = 3;
+  // Store the string value.
+  optional bytes s = 4;
 
-    // Store the float32 values.
-    repeated float floats = 7;
-    // Store the bool, int32, int64 values.
-    repeated int64 ints = 8;
-    // Store the string values.
-    repeated bytes strings = 9;
+  // Store the float32 values.
+  repeated float floats = 7;
+  // Store the bool, int32, int64 values.
+  repeated int64 ints = 8;
+  // Store the string values.
+  repeated bytes strings = 9;
 }
 
 // Operator Definition
 message OperatorDef {
-    // The name of inputs.
-    repeated string input = 1;
-    // The name of outputs.
-    repeated string output = 2;
+  // The name of inputs.
+  repeated string input = 1;
+  // The name of outputs.
+  repeated string output = 2;
 
-    // The optional name of this operator.
-    optional string name = 3;
-    // The operator type.
-    optional string type = 4;
-    // The arguments.
-    repeated Argument arg = 5;
+  // The optional name of this operator.
+  optional string name = 3;
+  // The operator type.
+  optional string type = 4;
+  // The arguments.
+  repeated Argument arg = 5;
 
-    // The device option that the operator should run under.
-    optional DeviceOption device_option = 6;
+  // The device option that the operator should run under.
+  optional DeviceOption device_option = 6;
 
-    // The optional unique key for this operator.
-    // Set it to persist operators in the eager mode.
-    optional string cache_key = 7;
+  // The optional unique key for this operator.
+  // Set it to persist operators in the eager mode.
+  optional string cache_key = 7;
 }
 
 // Record the gradient information
 message GradientProto {
-    // The derivative target.
-    optional string cost = 1;
-    // The target with respect to?
-    optional string wrt = 2;
-    // The external gradient
-    optional string external = 3;
+  // The derivative target.
+  optional string cost = 1;
+  // The target with respect to?
+  optional string wrt = 2;
+  // The external gradient
+  optional string external = 3;
 }
 
 // Graph Definition
 message GraphDef {
-    // The graph name.
-    optional string name = 1;
+  // The graph name.
+  optional string name = 1;
 
-    // The operators to execute.
-    repeated OperatorDef op = 2;
+  // The operators to execute.
+  repeated OperatorDef op = 2;
 
-    // The type of graph.
-    optional string graph_type = 3;
+  // The type of graph.
+  optional string graph_type = 3;
 
-    // The device option for this graph.
-    optional DeviceOption device_option = 5;
+  // The device option for this graph.
+  optional DeviceOption device_option = 5;
 
-    // The arguments.
-    repeated Argument arg = 6;
+  // The arguments.
+  repeated Argument arg = 6;
 
-    // The name of inputs.
-    repeated string input = 7;
-    // The name of outputs.
-    repeated string output = 8;
+  // The name of inputs.
+  repeated string input = 7;
+  // The name of outputs.
+  repeated string output = 8;
 
-    // The gradients information.
-    repeated GradientProto gradient = 9;
+  // The gradients information.
+  repeated GradientProto gradient = 9;
 }

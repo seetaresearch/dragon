@@ -18,7 +18,7 @@
 
 namespace dragon {
 
-#define DECLARE_SIMPLE_UNARY_OP(name)               \
+#define DECLARE_ELEMENTWISE_OP(name)                \
   template <class Context>                          \
   class name##Op final : public Operator<Context> { \
    public:                                          \
@@ -31,18 +31,23 @@ namespace dragon {
     void DoRunWithType();                           \
   };
 
-#define DECLARE_SIMPLE_BINARY_OP(name)              \
-  template <class Context>                          \
-  class name##Op final : public Operator<Context> { \
-   public:                                          \
-    SIMPLE_CTOR_DTOR(name##Op);                     \
-    USE_OPERATOR_FUNCTIONS;                         \
-                                                    \
-    void RunOnDevice() override;                    \
-                                                    \
-    template <typename T>                           \
-    void DoRunWithType();                           \
-  };
+template <class Context>
+class AxpbyOp final : public Operator<Context> {
+ public:
+  AxpbyOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws),
+        alpha_(OpArg<float>("alpha", 1.f)),
+        beta_(OpArg<float>("beta", 1.f)) {}
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override;
+
+  template <typename T>
+  void DoRunWithType(Tensor* X, Tensor* Y);
+
+ protected:
+  float alpha_, beta_;
+};
 
 inline vec32_t CheckOutputAliases(
     const Tensor& A,
@@ -64,87 +69,61 @@ inline vec32_t CheckOutputAliases(
   return available_aliases;
 }
 
-inline void IsBroadcast(
-    const Tensor& A,
-    const Tensor& B,
-    int& rows,
-    int& cols,
-    int& kind,
-    Tensor* Y = nullptr) {
-  kind = -2;
-  if (A.count() == B.count()) {
-    if (Y != nullptr) Y->ReshapeLike(A);
-    kind = -1;
-  } else if (B.count() < A.count()) {
-    if (Y != nullptr) Y->ReshapeLike(A);
-    if (utils::math::IsRowwiseBroadcast(A.dims(), B.dims(), &rows, &cols)) {
-      kind = 0;
-    } else if (utils::math::IsColwiseBroadcast(
-                   A.dims(), B.dims(), &rows, &cols)) {
-      kind = 1;
-    }
-  } else {
-    if (Y != nullptr) Y->ReshapeLike(B);
-    if (utils::math::IsRowwiseBroadcast(A.dims(), B.dims(), &rows, &cols)) {
-      kind = 2;
-    } else if (utils::math::IsColwiseBroadcast(
-                   A.dims(), B.dims(), &rows, &cols)) {
-      kind = 3;
-    }
-  }
-}
+// Unary ElementwiseOp
+DECLARE_ELEMENTWISE_OP(Abs);
+DECLARE_ELEMENTWISE_OP(Ceil);
+DECLARE_ELEMENTWISE_OP(Cos);
+DECLARE_ELEMENTWISE_OP(Exp);
+DECLARE_ELEMENTWISE_OP(Floor);
+DECLARE_ELEMENTWISE_OP(IsInf);
+DECLARE_ELEMENTWISE_OP(IsNaN);
+DECLARE_ELEMENTWISE_OP(Log);
+DECLARE_ELEMENTWISE_OP(Neg);
+DECLARE_ELEMENTWISE_OP(Invert);
+DECLARE_ELEMENTWISE_OP(Reciprocal);
+DECLARE_ELEMENTWISE_OP(Round);
+DECLARE_ELEMENTWISE_OP(Rsqrt);
+DECLARE_ELEMENTWISE_OP(Sign);
+DECLARE_ELEMENTWISE_OP(Sin);
+DECLARE_ELEMENTWISE_OP(Sqrt);
+DECLARE_ELEMENTWISE_OP(Square);
+DECLARE_ELEMENTWISE_OP(AbsGradient);
+DECLARE_ELEMENTWISE_OP(CosGradient);
+DECLARE_ELEMENTWISE_OP(ExpGradient);
+DECLARE_ELEMENTWISE_OP(LogGradient);
+DECLARE_ELEMENTWISE_OP(NegGradient);
+DECLARE_ELEMENTWISE_OP(ReciprocalGradient);
+DECLARE_ELEMENTWISE_OP(RsqrtGradient);
+DECLARE_ELEMENTWISE_OP(SignGradient);
+DECLARE_ELEMENTWISE_OP(SinGradient);
+DECLARE_ELEMENTWISE_OP(SqrtGradient);
+DECLARE_ELEMENTWISE_OP(SquareGradient);
 
-DECLARE_SIMPLE_UNARY_OP(Abs);
-DECLARE_SIMPLE_UNARY_OP(Ceil);
-DECLARE_SIMPLE_UNARY_OP(Cos);
-DECLARE_SIMPLE_UNARY_OP(Exp);
-DECLARE_SIMPLE_UNARY_OP(Floor);
-DECLARE_SIMPLE_UNARY_OP(IsInf);
-DECLARE_SIMPLE_UNARY_OP(IsNaN);
-DECLARE_SIMPLE_UNARY_OP(Log);
-DECLARE_SIMPLE_UNARY_OP(Neg);
-DECLARE_SIMPLE_UNARY_OP(Invert);
-DECLARE_SIMPLE_UNARY_OP(Reciprocal);
-DECLARE_SIMPLE_UNARY_OP(Round);
-DECLARE_SIMPLE_UNARY_OP(Rsqrt);
-DECLARE_SIMPLE_UNARY_OP(Sign);
-DECLARE_SIMPLE_UNARY_OP(Sin);
-DECLARE_SIMPLE_UNARY_OP(Sqrt);
-DECLARE_SIMPLE_UNARY_OP(Square);
-DECLARE_SIMPLE_UNARY_OP(AbsGradient);
-DECLARE_SIMPLE_UNARY_OP(CosGradient);
-DECLARE_SIMPLE_UNARY_OP(ExpGradient);
-DECLARE_SIMPLE_UNARY_OP(LogGradient);
-DECLARE_SIMPLE_UNARY_OP(NegGradient);
-DECLARE_SIMPLE_UNARY_OP(ReciprocalGradient);
-DECLARE_SIMPLE_UNARY_OP(RsqrtGradient);
-DECLARE_SIMPLE_UNARY_OP(SignGradient);
-DECLARE_SIMPLE_UNARY_OP(SinGradient);
-DECLARE_SIMPLE_UNARY_OP(SqrtGradient);
-DECLARE_SIMPLE_UNARY_OP(SquareGradient);
-#undef DECLARE_SIMPLE_UNARY_OP
+// Binary ElementwiseOp
+DECLARE_ELEMENTWISE_OP(Add);
+DECLARE_ELEMENTWISE_OP(Sub);
+DECLARE_ELEMENTWISE_OP(Mul);
+DECLARE_ELEMENTWISE_OP(Div);
+DECLARE_ELEMENTWISE_OP(Pow);
+DECLARE_ELEMENTWISE_OP(Dot);
+DECLARE_ELEMENTWISE_OP(Minimum);
+DECLARE_ELEMENTWISE_OP(Maximum);
+DECLARE_ELEMENTWISE_OP(Equal);
+DECLARE_ELEMENTWISE_OP(NotEqual);
+DECLARE_ELEMENTWISE_OP(Less);
+DECLARE_ELEMENTWISE_OP(LessEqual);
+DECLARE_ELEMENTWISE_OP(Greater);
+DECLARE_ELEMENTWISE_OP(GreaterEqual);
+DECLARE_ELEMENTWISE_OP(AddGradient);
+DECLARE_ELEMENTWISE_OP(SubGradient);
+DECLARE_ELEMENTWISE_OP(MulGradient);
+DECLARE_ELEMENTWISE_OP(DivGradient);
+DECLARE_ELEMENTWISE_OP(PowGradient);
+DECLARE_ELEMENTWISE_OP(DotGradient);
+DECLARE_ELEMENTWISE_OP(MinimumGradient);
+DECLARE_ELEMENTWISE_OP(MaximumGradient);
 
-DECLARE_SIMPLE_BINARY_OP(Add);
-DECLARE_SIMPLE_BINARY_OP(Sub);
-DECLARE_SIMPLE_BINARY_OP(Mul);
-DECLARE_SIMPLE_BINARY_OP(Div);
-DECLARE_SIMPLE_BINARY_OP(Pow);
-DECLARE_SIMPLE_BINARY_OP(Minimum);
-DECLARE_SIMPLE_BINARY_OP(Maximum);
-DECLARE_SIMPLE_BINARY_OP(Equal);
-DECLARE_SIMPLE_BINARY_OP(NotEqual);
-DECLARE_SIMPLE_BINARY_OP(Less);
-DECLARE_SIMPLE_BINARY_OP(LessEqual);
-DECLARE_SIMPLE_BINARY_OP(Greater);
-DECLARE_SIMPLE_BINARY_OP(GreaterEqual);
-DECLARE_SIMPLE_BINARY_OP(AddGradient);
-DECLARE_SIMPLE_BINARY_OP(SubGradient);
-DECLARE_SIMPLE_BINARY_OP(MulGradient);
-DECLARE_SIMPLE_BINARY_OP(DivGradient);
-DECLARE_SIMPLE_BINARY_OP(PowGradient);
-DECLARE_SIMPLE_BINARY_OP(MinimumGradient);
-DECLARE_SIMPLE_BINARY_OP(MaximumGradient);
-#undef DECLARE_SIMPLE_BINARY_OP
+#undef DECLARE_ELEMENTWISE_OP
 
 } // namespace dragon
 

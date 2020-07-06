@@ -108,11 +108,16 @@ DRAGON_API void Dot<float16, CPUContext>(
   CPU_FP16_NOT_SUPPORTED;
 }
 
-#define DEFINE_DOT_FUNC(T)                                               \
-  template <>                                                            \
-  DRAGON_API void Dot<T, CPUContext>(                                    \
-      int n, const T* a, const T* b, T* y, CPUContext* ctx) {            \
-    *y = ConstEigenVectorMap<T>(a, n).dot(ConstEigenVectorMap<T>(b, n)); \
+#define DEFINE_DOT_FUNC(T)                                                 \
+  template <>                                                              \
+  DRAGON_API void Dot<T, CPUContext>(                                      \
+      int n, const T* a, const T* b, T* y, CPUContext* ctx) {              \
+    *y = ConstEigenVectorMap<T>(a, n).dot(ConstEigenVectorMap<T>(b, n));   \
+  }                                                                        \
+  template <>                                                              \
+  DRAGON_API T Dot<T, CPUContext>(                                         \
+      int n, const T* a, const T* b, CPUContext* ctx) {                    \
+    return ConstEigenVectorMap<T>(a, n).dot(ConstEigenVectorMap<T>(b, n)); \
   }
 
 DEFINE_DOT_FUNC(float);
@@ -120,6 +125,11 @@ DEFINE_DOT_FUNC(double);
 #undef DEFINE_DOT_FUNC
 
 #define DEFINE_ASUM_FUNC(T)                                                    \
+  template <>                                                                  \
+  DRAGON_API void ASum<T, CPUContext>(                                         \
+      const int n, const T* x, T* y, CPUContext* ctx) {                        \
+    *y = ConstEigenVectorArrayMap<T>(x, n).abs().sum();                        \
+  }                                                                            \
   template <>                                                                  \
   DRAGON_API T ASum<T, CPUContext>(const int n, const T* x, CPUContext* ctx) { \
     return ConstEigenVectorArrayMap<T>(x, n).abs().sum();                      \

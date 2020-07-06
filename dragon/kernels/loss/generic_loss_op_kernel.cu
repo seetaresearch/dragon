@@ -152,15 +152,15 @@ __global__ void _ReduceLossGradWithMask<half>(
 template <typename T>
 __global__ void _BroadcastLossGrad(
     const int nthreads,
-    const int rows,
-    const int cols,
+    const int dim1,
+    const int dim2,
     const T* dy,
     T* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 350
-    dx[i] *= __ldg(dy + (i / rows) * cols + (i % cols));
+    dx[i] *= __ldg(dy + (i / dim1) * dim2 + (i % dim2));
 #else
-    dx[i] *= dy[(i / rows) * cols + (i % cols)];
+    dx[i] *= dy[(i / dim1) * dim2 + (i % dim2)];
 #endif
   }
 }
@@ -168,18 +168,18 @@ __global__ void _BroadcastLossGrad(
 template <>
 __global__ void _BroadcastLossGrad<half>(
     const int nthreads,
-    const int rows,
-    const int cols,
+    const int dim1,
+    const int dim2,
     const half* dy,
     half* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
 #if __CUDA_ARCH__ >= 350
     dx[i] = __float2half(
         __half2float(dx[i]) *
-        __half2float(__ldg(dy + (i / rows) * cols + (i % cols))));
+        __half2float(__ldg(dy + (i / dim1) * dim2 + (i % dim2))));
 #else
     dx[i] = __float2half(
-        __half2float(dx[i]) * __half2float(dy[(i / rows) * cols + (i % cols)]));
+        __half2float(dx[i]) * __half2float(dy[(i / dim1) * dim2 + (i % dim2)]));
 #endif
   }
 }
@@ -197,7 +197,7 @@ void ReduceLoss<float16, CUDAContext>(
     const int* mask,
     float16* y,
     CUDAContext* ctx) {
-  if (num_masks > 0) {
+  if (num_masks > 0 && normalizer < 0.f) {
     _ReduceLossWithMask<<<1, CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         num_masks,
         reinterpret_cast<const half*>(x),
@@ -221,7 +221,7 @@ void ReduceLossGrad<float16, CUDAContext>(
     const int* mask,
     float16* dx,
     CUDAContext* ctx) {
-  if (num_masks > 0) {
+  if (num_masks > 0 && normalizer < 0.f) {
     _ReduceMask<<<1, CUDA_THREADS, 0, ctx->cuda_stream()>>>(
         num_masks, const_cast<int*>(mask));
     _ReduceLossGradWithMask<<<
@@ -254,16 +254,15 @@ void BroadcastLossGrad<float16, CUDAContext>(
     const float16* dy,
     float16* dx,
     CUDAContext* ctx) {
-  auto rows = outer_dim * axis_dim, cols = inner_dim;
-  auto nthreads = rows * cols;
+  auto nthreads = outer_dim * axis_dim * inner_dim;
   _BroadcastLossGrad<<<
       CUDA_BLOCKS(nthreads),
       CUDA_THREADS,
       0,
       ctx->cuda_stream()>>>(
       nthreads,
-      rows,
-      cols,
+      axis_dim * inner_dim,
+      inner_dim,
       reinterpret_cast<const half*>(dy),
       reinterpret_cast<half*>(dx));
 } // BroadcastLossGrad
@@ -278,7 +277,7 @@ void BroadcastLossGrad<float16, CUDAContext>(
       const int* mask,                                                 \
       T* y,                                                            \
       CUDAContext* ctx) {                                              \
-    if (num_masks > 0) {                                               \
+    if (num_masks > 0 && normalizer < 0.f) {                           \
       _ReduceLossWithMask<<<1, CUDA_THREADS, 0, ctx->cuda_stream()>>>( \
           num_masks, x, mask, y);                                      \
     } else {                                                           \
@@ -297,7 +296,7 @@ void BroadcastLossGrad<float16, CUDAContext>(
       const int* mask,                                           \
       T* dx,                                                     \
       CUDAContext* ctx) {                                        \
-    if (num_masks > 0) {                                         \
+    if (num_masks > 0 && normalizer < 0.f) {                     \
       _ReduceMask<<<1, CUDA_THREADS, 0, ctx->cuda_stream()>>>(   \
           num_masks, const_cast<int*>(mask));                    \
       _ReduceLossGradWithMask<<<                                 \
@@ -322,13 +321,13 @@ void BroadcastLossGrad<float16, CUDAContext>(
       const T* dy,                                               \
       T* dx,                                                     \
       CUDAContext* ctx) {                                        \
-    auto rows = outer_dim * axis_dim, cols = inner_dim;          \
-    auto nthreads = rows * cols;                                 \
+    auto nthreads = outer_dim * axis_dim * inner_dim;            \
     _BroadcastLossGrad<<<                                        \
         CUDA_BLOCKS(nthreads),                                   \
         CUDA_THREADS,                                            \
         0,                                                       \
-        ctx->cuda_stream()>>>(nthreads, rows, cols, dy, dx);     \
+        ctx->cuda_stream()>>>(                                   \
+        nthreads, axis_dim * inner_dim, inner_dim, dy, dx);      \
   }
 
 DEFINE_KERNEL_LAUNCHER(float);

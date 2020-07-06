@@ -46,7 +46,7 @@ void _ResizeLinearNCHW(
   std::array<int, 4> idx = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, C, out_h, out_w};
   float h_in, w_in, u, v, t, b, tl, tr, bl, br;
-  int ti, bi, li, ri, ofs, h_max = H - 1, w_max = W - 1;
+  int ti, bi, li, ri, offset, h_max = H - 1, w_max = W - 1;
   for (int i = 0; i < count; ++i) {
     h_in = TransformCoordinate(idx[2], scale_h, align_corners);
     w_in = TransformCoordinate(idx[3], scale_w, align_corners);
@@ -54,11 +54,11 @@ void _ResizeLinearNCHW(
     bi = (h_in < h_max) ? std::ceil(h_in) : h_max;
     ri = (w_in < w_max) ? std::ceil(w_in) : w_max;
     v = h_in - ti, u = w_in - li;
-    ofs = (idx[0] * C + idx[1]) * H;
-    tl = (float)x[(ofs + ti) * W + li];
-    tr = (float)x[(ofs + ti) * W + ri];
-    bl = (float)x[(ofs + bi) * W + li];
-    br = (float)x[(ofs + bi) * W + ri];
+    offset = (idx[0] * C + idx[1]) * H;
+    tl = (float)x[(offset + ti) * W + li];
+    tr = (float)x[(offset + ti) * W + ri];
+    bl = (float)x[(offset + bi) * W + li];
+    br = (float)x[(offset + bi) * W + ri];
     t = tl + (tr - tl) * u;
     b = bl + (br - bl) * u;
     y[i] = static_cast<T>(t + (b - t) * v);
@@ -83,7 +83,7 @@ void _ResizeLinearNHWC(
   std::array<int, 4> idx = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, out_h, out_w, C};
   float h_in, w_in, u, v, t, b, tl, tr, bl, br;
-  int ti, bi, li, ri, ofs, h_max = H - 1, w_max = W - 1;
+  int ti, bi, li, ri, offset, h_max = H - 1, w_max = W - 1;
   for (int i = 0; i < count; ++i) {
     h_in = TransformCoordinate(idx[1], scale_h, align_corners);
     w_in = TransformCoordinate(idx[2], scale_w, align_corners);
@@ -91,11 +91,11 @@ void _ResizeLinearNHWC(
     bi = (h_in < h_max) ? std::ceil(h_in) : h_max;
     ri = (w_in < w_max) ? std::ceil(w_in) : w_max;
     v = h_in - ti, u = w_in - li;
-    ofs = idx[0] * H;
-    tl = (float)x[((ofs + ti) * W + li) * C + idx[3]];
-    tr = (float)x[((ofs + ti) * W + ri) * C + idx[3]];
-    bl = (float)x[((ofs + bi) * W + li) * C + idx[3]];
-    br = (float)x[((ofs + bi) * W + ri) * C + idx[3]];
+    offset = idx[0] * H;
+    tl = (float)x[((offset + ti) * W + li) * C + idx[3]];
+    tr = (float)x[((offset + ti) * W + ri) * C + idx[3]];
+    bl = (float)x[((offset + bi) * W + li) * C + idx[3]];
+    br = (float)x[((offset + bi) * W + ri) * C + idx[3]];
     t = tl + (tr - tl) * u;
     b = bl + (br - bl) * u;
     y[i] = static_cast<T>(t + (b - t) * v);
@@ -120,7 +120,7 @@ void _ResizeLinearGradNCHW(
   std::array<int, 4> idx = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, C, out_h, out_w};
   float h_in, w_in, u, v, dt, db, tl, tr, bl, br;
-  int ti, bi, li, ri, ofs, h_max = H - 1, w_max = W - 1;
+  int ti, bi, li, ri, offset, h_max = H - 1, w_max = W - 1;
   for (int i = 0; i < count; ++i) {
     h_in = TransformCoordinate(idx[2], scale_h, align_corners);
     w_in = TransformCoordinate(idx[3], scale_w, align_corners);
@@ -128,13 +128,13 @@ void _ResizeLinearGradNCHW(
     bi = (h_in < h_max) ? std::ceil(h_in) : h_max;
     ri = (w_in < w_max) ? std::ceil(w_in) : w_max;
     v = h_in - ti, u = w_in - li;
-    ofs = (idx[0] * C + idx[1]) * H;
+    offset = (idx[0] * C + idx[1]) * H;
     dt = (1.f - v) * static_cast<float>(dy[i]);
     db = v * static_cast<float>(dy[i]);
-    dx[(ofs + ti) * W + li] += (1.f - u) * dt; // tl
-    dx[(ofs + ti) * W + ri] += u * dt; // tr
-    dx[(ofs + bi) * W + li] += (1.f - u) * db; // bl
-    dx[(ofs + bi) * W + ri] += u * db; // br
+    dx[(offset + ti) * W + li] += (1.f - u) * dt; // tl
+    dx[(offset + ti) * W + ri] += u * dt; // tr
+    dx[(offset + bi) * W + li] += (1.f - u) * db; // bl
+    dx[(offset + bi) * W + ri] += u * db; // br
     utils::math::IncreaseIndexInDims(4, dims.data(), idx.data());
   }
 }
@@ -156,7 +156,7 @@ void _ResizeLinearGradNHWC(
   std::array<int, 4> idx = {0, 0, 0, 0};
   std::array<int, 4> dims = {N, out_h, out_w, C};
   float h_in, w_in, u, v, dt, db, tl, tr, bl, br;
-  int ti, bi, li, ri, ofs, h_max = H - 1, w_max = W - 1;
+  int ti, bi, li, ri, offset, h_max = H - 1, w_max = W - 1;
   for (int i = 0; i < count; ++i) {
     h_in = TransformCoordinate(idx[1], scale_h, align_corners);
     w_in = TransformCoordinate(idx[2], scale_w, align_corners);
@@ -164,13 +164,13 @@ void _ResizeLinearGradNHWC(
     bi = (h_in < h_max) ? std::ceil(h_in) : h_max;
     ri = (w_in < w_max) ? std::ceil(w_in) : w_max;
     v = h_in - ti, u = w_in - li;
-    ofs = idx[0] * H;
+    offset = idx[0] * H;
     dt = (1.f - v) * static_cast<float>(dy[i]);
     db = v * static_cast<float>(dy[i]);
-    dx[((ofs + ti) * W + li) * C + idx[3]] += (1.f - u) * dt; // tl
-    dx[((ofs + ti) * W + ri) * C + idx[3]] += u * dt; // tr
-    dx[((ofs + bi) * W + li) * C + idx[3]] += (1.f - u) * db; // bl
-    dx[((ofs + bi) * W + ri) * C + idx[3]] += u * db; // br
+    dx[((offset + ti) * W + li) * C + idx[3]] += (1.f - u) * dt; // tl
+    dx[((offset + ti) * W + ri) * C + idx[3]] += u * dt; // tr
+    dx[((offset + bi) * W + li) * C + idx[3]] += (1.f - u) * db; // bl
+    dx[((offset + bi) * W + ri) * C + idx[3]] += u * db; // br
     utils::math::IncreaseIndexInDims(4, dims.data(), idx.data());
   }
 }

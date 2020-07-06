@@ -30,9 +30,6 @@ vm.torch
   `abs(...) <torch/abs.html>`_
   : Compute the absolute value of input.
 
-  `accumulate(...) <torch/accumulate.html>`_
-  : Compute the element-wise accumulation from input to output.
-
   `add(...) <torch/add.html>`_
   : Compute the element-wise addition.
 
@@ -44,6 +41,9 @@ vm.torch
 
   `argmin(...) <torch/argmin.html>`_
   : Return the indices of minimum elements along the given axis.
+
+  `axpby(...) <torch/axpby.html>`_
+  : Compute the element-wise addition from input to output.
 
   `bitwise_not(...) <torch/bitwise_not.html>`_
   : Compute the element-wise NOT bitwise operation.
@@ -254,11 +254,11 @@ vm.torch
   :hidden:
 
   torch/abs
-  torch/accumulate
   torch/add
   torch/arange
   torch/argmax
   torch/argmin
+  torch/axpby
   torch/bitwise_not
   torch/bitwise_xor
   torch/cat

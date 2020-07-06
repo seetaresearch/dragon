@@ -1025,18 +1025,18 @@ void SGDUpdate(
     T* m,
     Context* ctx);
 
-/* training.op_base */
+/* training.mixed_prec_update */
 
 template <typename T, class Context>
-void MixedPrecL2Decay(
+void MixedPrecL2Penalty(
     const int count,
     const float alpha,
-    const T* w,
+    const T* x,
     float* dx,
     Context* ctx);
 
 template <typename T, class Context>
-void MixedPrecUpdate(const int count, const float* updates, T* w, Context* ctx);
+void MixedPrecUpdate(const int count, const float* dx, T* x, Context* ctx);
 
 /* vision.bias_add */
 

@@ -1,32 +1,24 @@
-#include "dragon/operators/training/adam_update_op.h"
 #include "dragon/core/workspace.h"
+#include "dragon/operators/training/update_ops.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
 template <class Context>
-void AdamUpdateOp<Context>::Compute(Tensor* dX) {
-  auto* m = ws()->CreateTensor("/mnt/" + slot() + "/m")
-                ->ReshapeLike(*dX)
-                ->template mutable_data<float, Context>();
-  auto* v = ws()->CreateTensor("/mnt/" + slot() + "/v")
-                ->ReshapeLike(*dX)
-                ->template mutable_data<float, Context>();
-
+void AdamUpdateOp<Context>::ComputeUpdate(Tensor* dX) {
   t_++;
-  auto beta1 = param("beta1");
-  auto beta2 = param("beta2");
+  auto beta1 = Parameter("beta1"), beta2 = Parameter("beta2");
   auto coef = sqrt(1.f - pow(beta2, t_)) / (1.f - pow(beta1, t_));
 
   kernel::AdamUpdate(
       dX->count(),
-      param("base_lr") * coef * lr_mult(),
+      Parameter("base_lr") * coef * this->lr_mult_,
       beta1,
       beta2,
-      param("eps"),
+      Parameter("eps"),
       dX->template mutable_data<float, Context>(),
-      m,
-      v,
+      Slot("m")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
+      Slot("v")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
       ctx());
 }
 

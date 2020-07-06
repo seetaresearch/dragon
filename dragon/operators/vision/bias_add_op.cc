@@ -59,9 +59,9 @@ void BiasAddGradientOp<Context>::DoRunWithType() {
       dB->Reshape({dY.dim(-1)});
     }
     math::ReduceSum(
-        3,
+        dims.size(),
         dims.data(),
-        2,
+        axes.size(),
         axes.data(),
         1.f,
         dY.template data<T, Context>(),

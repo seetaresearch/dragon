@@ -64,11 +64,14 @@ def arange(start, stop=None, step=1, dtype='int64', **kwargs):
     """
     args = parse_args(locals())
     args['dtype'] = args['dtype'].lower()
-    op_lib = array_ops_lib.Arange
     if stop is None:
-        args['slice'] = (start, step)
+        args['slice'] = (float(start), float(step))
     else:
-        args['slice'] = (start, stop, step)
+        args['slice'] = (float(start), float(stop), float(step))
+    args.pop('start')
+    args.pop('stop')
+    args.pop('step')
+    op_lib = array_ops_lib.Arange
     trainable = args.pop('trainable') if 'trainable' in args else False
     if context.executing_eagerly():
         return op_lib.instantiate(
@@ -269,6 +272,8 @@ def cast(inputs, dtype, **kwargs):
             .instantiate(dtype=dtype) \
             .apply([inputs], inplace=inplace)
     else:
+        if inputs.dtype == dtype:
+            return inputs
         if inplace:
             args['inputs'], args['outputs'] = [], [inputs]
         return op_lib.blend(**args)
@@ -627,16 +632,14 @@ def index_select(inputs, indices, axis=0, **kwargs):
         return op_lib.blend(**args)
 
 
-@OpSchema.num_inputs(1)
-def masked_select(inputs, mask, **kwargs):
+@OpSchema.num_inputs(2)
+def masked_select(inputs, **kwargs):
     """Select the elements where the given mask is **1**.
 
     Parameters
     ----------
-    inputs : dragon.Tensor
-        The input tensor.
-    mask : dragon.Tensor
-        The mask, with the same size as ``inputs``.
+    inputs : Sequence[dragon.Tensor]
+        The input and mask tensor.
 
     Returns
     -------
@@ -647,9 +650,8 @@ def masked_select(inputs, mask, **kwargs):
     args = parse_args(locals())
     op_lib = array_ops_lib.MaskedSelect
     if context.executing_eagerly():
-        return op_lib.instantiate().apply([inputs, mask])
+        return op_lib.instantiate().apply(inputs)
     else:
-        args['inputs'] = [args['inputs'], args.pop('mask')]
         return op_lib.blend(**args)
 
 
@@ -1047,7 +1049,7 @@ def pad(inputs, pads, mode='constant', value=0, **kwargs):
             .instantiate(
                 ndim=len(pads_begin),
                 value=args['value'],
-                mode=mode,
+                mode=args['mode'],
             ).apply([inputs], args['pads'])
     else:
         return op_lib.blend(**args)
@@ -1278,7 +1280,9 @@ def split(
         size_splits = None
     if slice_points is not None:
         if len(slice_points) + 1 != num_splits:
-            raise ValueError('Excepted %d values for <slice_points>.')
+            raise ValueError(
+                'Excepted %d values for <slice_points>.'
+                % len(slice_points))
     if context.executing_eagerly():
         return op_lib \
             .instantiate(

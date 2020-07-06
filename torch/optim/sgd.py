@@ -67,10 +67,10 @@ class SGD(Optimizer):
         lr=required,
         momentum=0,
         dampening=0,
-        weight_decay=-1.,
+        weight_decay=0,
         nesterov=False,
-        scale_gradient=1.,
-        clip_gradient=-1.,
+        scale=1,
+        clip_norm=0,
     ):
         r"""Create a ``SGD`` optimizer.
 
@@ -84,37 +84,37 @@ class SGD(Optimizer):
             The initial value for :math:`\text{momentum}`.
         dampening : float, optional, default=0
             The dampening for :math:`\text{momentum}`.
-        weight_decay : float, optional, default=-1.
-            The factor of L2 penalty.
+        weight_decay : float, optional, default=0
+            The L2 penalty factor to weight.
         nesterov : bool, optional, default=False
             **True** to switch to **NesterovSGD** optimizer.
-        scale_gradient : float, optional, default=1.
-            The factor to scale gradients.
-        clip_gradient : float, optional, default=-1.
-            The norm thresh to clip gradients.
+        scale : float, optional, default=1
+            The scaling factor to gradient.
+        clip_norm : float, optional, default=0
+            The maximum L2 norm to clip gradient.
 
         """
         if lr is not required and lr < 0.:
-            raise ValueError("Invalid learning rate: {}".format(lr))
+            raise ValueError('Invalid learning rate: {}'.format(lr))
         if momentum < 0.:
-            raise ValueError("Invalid momentum value: {}".format(momentum))
+            raise ValueError('Invalid momentum value: {}'.format(momentum))
         defaults = dict(
             lr=lr,
             momentum=momentum,
             dampening=dampening,
-            weight_decay=weight_decay,
             nesterov=nesterov,
-            scale_gradient=scale_gradient,
-            clip_gradient=clip_gradient,
+            scale=scale,
+            clip_norm=clip_norm,
+            weight_decay=weight_decay,
         )
         if nesterov and (momentum <= 0. or dampening != 0.):
-            raise ValueError("Nesterov momentum requires a momentum and zero dampening.")
+            raise ValueError('Nesterov momentum requires a momentum and zero dampening.')
         super(SGD, self).__init__(params, defaults)
-        self._update_op_type = 'NesterovUpdate' if nesterov else 'SGDUpdate'
+        self._op_type = ('Nesterov' if nesterov else 'SGD') + 'Update'
         self._shared_args = {
             'lr': 'base_lr',
             'momentum': 'momentum',
-            'weight_decay': 'l2_decay',
-            'clip_gradient': 'clip_gradient',
-            'scale_gradient': 'scale_gradient',
+            'scale': 'scale',
+            'clip_norm': 'clip_norm',
+            'weight_decay': 'weight_decay',
         }

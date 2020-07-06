@@ -9,12 +9,7 @@
 #
 # ------------------------------------------------------------
 
-"""Wrappers for the Workspace of C++ backend.
-
-Flexible API is provided to manage the global resources
-between the Python threads (quite different from C++).
-
-"""
+"""Generic interfaces of current default workspace."""
 
 from __future__ import absolute_import
 from __future__ import division

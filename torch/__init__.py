@@ -80,8 +80,8 @@ from dragon.vm.torch.ops.init.functional import uniform
 from dragon.vm.torch.ops.init.functional import zeros
 from dragon.vm.torch.ops.init.functional import zeros_like
 from dragon.vm.torch.ops.math.functional import abs
-from dragon.vm.torch.ops.math.functional import accumulate
 from dragon.vm.torch.ops.math.functional import add
+from dragon.vm.torch.ops.math.functional import axpby
 from dragon.vm.torch.ops.math.functional import bitwise_not
 from dragon.vm.torch.ops.math.functional import bitwise_xor
 from dragon.vm.torch.ops.math.functional import ceil

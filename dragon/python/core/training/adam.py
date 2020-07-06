@@ -9,17 +9,17 @@
 #
 # ------------------------------------------------------------
 
-"""Define the Adam updaters."""
+"""The Adam optimizers."""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.training import updater
+from dragon.core.training import optimizer
 
 
-class Adam(updater.Updater):
-    r"""The updater which implements Adam algorithm.
+class Adam(optimizer.Optimizer):
+    r"""The optimizer to apply Adam algorithm.
     `[Kingma & Ba, 2014] <https://arxiv.org/abs/1412.6980>`_.
 
     The **Adam** update is defined as:

@@ -420,7 +420,7 @@ class Tensor(types.TensorMetaclass):
             The constant contains the value.
 
         """
-        return RefTensor('', dtype=dtype)._from_constant(value, name)
+        return Tensor('', dtype=dtype)._from_constant(value, name)
 
     def _register_as(self, type, **kwargs):
         """Fill self with the specific type of filler."""
@@ -463,13 +463,12 @@ class Tensor(types.TensorMetaclass):
         """Convert the value to a tensor."""
         if not isinstance(value, numpy.ndarray):
             value = numpy.array(value, self.dtype if self.dtype else 'float32')
-        return RefTensor(
+        return TensorRef(
             name=workspace.get_dummy_name(
                 basename=context.get_name_scope() +
                         (name if name else 'Const'),
                 suffix=':0',
-                domain='Tensor'
-            ),
+                domain='Tensor'),
             shape=list(value.shape),
             dtype=str(value.dtype),
         ).set_value(value)
@@ -560,8 +559,8 @@ class Tensor(types.TensorMetaclass):
         return self.__div__(other)
 
 
-class RefTensor(object):
-    """Create a reference tensor not involved with name scope."""
+class TensorRef(object):
+    """Create a reference not involved with name scope."""
 
     def __new__(cls, name, shape=None, dtype=None):
         tensor = Tensor('', shape=shape, dtype=dtype)

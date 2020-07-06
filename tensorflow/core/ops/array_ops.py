@@ -19,7 +19,7 @@ from __future__ import print_function
 
 import numpy
 
-from dragon.core.autograph.tensor import RefTensor
+from dragon.core.autograph.tensor import TensorRef
 from dragon.core.framework import context
 from dragon.core.framework import workspace
 from dragon.core.ops import array_ops
@@ -477,7 +477,7 @@ def placeholder(dtype=None, shape=None, name=None):
 
     """
     # Construct a tensor from the explicit name
-    return RefTensor(
+    return TensorRef(
         workspace.get_dummy_name(
             context.get_name_scope() + name
             if name else 'Placeholder',

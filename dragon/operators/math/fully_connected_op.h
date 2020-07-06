@@ -22,7 +22,7 @@ class FullyConnectedOp final : public Operator<Context> {
  public:
   FullyConnectedOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        num_output_(OpArg<int64_t>("num_output", 0)),
+        out_channels_(OpArg<int64_t>("out_channels", 0)),
         transW_(OpArg<int64_t>("transW", 1)) {}
   USE_OPERATOR_FUNCTIONS;
 
@@ -32,7 +32,7 @@ class FullyConnectedOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  int64_t num_output_, transW_;
+  int64_t out_channels_, transW_;
 };
 
 template <class Context>
@@ -40,7 +40,7 @@ class FullyConnectedGradientOp final : public Operator<Context> {
  public:
   FullyConnectedGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        num_output_(OpArg<int64_t>("num_output", 0)),
+        out_channels_(OpArg<int64_t>("out_channels", 0)),
         transW_(OpArg<int64_t>("transW", 1)) {}
   USE_OPERATOR_FUNCTIONS;
 
@@ -50,7 +50,7 @@ class FullyConnectedGradientOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  int64_t num_output_, transW_;
+  int64_t out_channels_, transW_;
 };
 
 } // namespace dragon

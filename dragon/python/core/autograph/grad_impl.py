@@ -13,7 +13,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.autograph.tensor import RefTensor
+from dragon.core.autograph.tensor import TensorRef
 from dragon.core.eager import context
 from dragon.core.util import nest
 
@@ -120,19 +120,12 @@ def gradients(ys, xs, grad_ys=None):
         if grad_ys is not None:
             y._grad.set_input(grad_ys[i])
         for x in xs:
-            if not hasattr(x, '_grad') or \
-                    x._grad is None:
+            if not hasattr(x, '_grad') or x._grad is None:
                 x._grad = GradientInfo(x)
             y._grad.add_wrt(x.id)
             x._grad.add_cost(y)
             if i == 0:
-                dxs.append(
-                    RefTensor(
-                        name=x.id + '_grad',
-                        shape=x.shape,
-                        dtype=x.dtype,
-                    )
-                )
+                dxs.append(TensorRef(x.id + '_grad', x.shape, x.dtype))
 
     # Return the packed gradients.
     return dxs

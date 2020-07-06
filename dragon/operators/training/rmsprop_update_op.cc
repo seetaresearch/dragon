@@ -1,41 +1,34 @@
-#include "dragon/operators/training/rmsprop_update_op.h"
 #include "dragon/core/workspace.h"
+#include "dragon/operators/training/update_ops.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
 template <class Context>
-void RMSPropUpdateOp<Context>::Compute(Tensor* dX) {
-  auto* m = ws()->CreateTensor("/mnt/" + slot() + "/m")
-                ->ReshapeLike(*dX)
-                ->template mutable_data<float, Context>();
-  auto* v = ws()->CreateTensor("/mnt/" + slot() + "/v")
-                ->ReshapeLike(*dX)
-                ->template mutable_data<float, Context>();
-
+void RMSpropUpdateOp<Context>::ComputeUpdate(Tensor* dX) {
   kernel::RMSPropUpdate(
       dX->count(),
-      param("base_lr") * lr_mult(),
-      param("momentum"),
-      param("decay"),
-      param("eps"),
+      Parameter("base_lr") * this->lr_mult_,
+      Parameter("momentum"),
+      Parameter("decay"),
+      Parameter("eps"),
       dX->template mutable_data<float, Context>(),
-      m,
-      v,
+      Slot("m")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
+      Slot("v")->ReshapeLike(*dX)->template mutable_data<float, Context>(),
       ctx());
 }
 
-DEPLOY_CPU(RMSPropUpdate);
+DEPLOY_CPU(RMSpropUpdate);
 #ifdef USE_CUDA
-DEPLOY_CUDA(RMSPropUpdate);
+DEPLOY_CUDA(RMSpropUpdate);
 #endif
 
-OPERATOR_SCHEMA(RMSPropUpdate)
+OPERATOR_SCHEMA(RMSpropUpdate)
     /* dX */
     .NumInputs(1)
     /* X */
     .NumOutputs(1);
 
-NO_GRADIENT(RMSPropUpdate);
+NO_GRADIENT(RMSpropUpdate);
 
 } // namespace dragon

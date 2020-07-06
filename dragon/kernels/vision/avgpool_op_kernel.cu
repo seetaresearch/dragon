@@ -116,15 +116,13 @@ __global__ void _AvgPool2dGradNCHW(
     const T* dy,
     T* dx) {
   CUDA_1D_KERNEL_LOOP(xi, nthreads) {
-    const int w = xi % W;
-    const int h = (xi / W) % H;
+    const int w = xi % W + pad_w;
+    const int h = (xi / W) % H + pad_h;
     const int c = (xi / W / H) % C;
     const int n = xi / W / H / C;
 
-    const int phstart =
-        (h + pad_h < kernel_h) ? 0 : (h + pad_h - kernel_h) / stride_h + 1;
-    const int pwstart =
-        (w + pad_w < kernel_w) ? 0 : (w + pad_w - kernel_w) / stride_w + 1;
+    const int phstart = (h < kernel_h) ? 0 : (h - kernel_h) / stride_h + 1;
+    const int pwstart = (w < kernel_w) ? 0 : (w - kernel_w) / stride_w + 1;
     const int phend = min(h / stride_h + 1, out_h);
     const int pwend = min(w / stride_w + 1, out_w);
 
@@ -164,14 +162,12 @@ __global__ void _AvgPool2dGradNHWC(
     T* dx) {
   CUDA_1D_KERNEL_LOOP(xi, nthreads) {
     const int c = xi % C;
-    const int w = (xi / C) % W;
-    const int h = (xi / C / W) % H;
+    const int w = (xi / C) % W + pad_w;
+    const int h = (xi / C / W) % H + pad_h;
     const int n = xi / C / W / H;
 
-    const int phstart =
-        (h + pad_h < kernel_h) ? 0 : (h + pad_h - kernel_h) / stride_h + 1;
-    const int pwstart =
-        (w + pad_w < kernel_w) ? 0 : (w + pad_w - kernel_w) / stride_w + 1;
+    const int phstart = (h < kernel_h) ? 0 : (h - kernel_h) / stride_h + 1;
+    const int pwstart = (w < kernel_w) ? 0 : (w - kernel_w) / stride_w + 1;
     const int phend = min(h / stride_h + 1, out_h);
     const int pwend = min(w / stride_w + 1, out_w);
 

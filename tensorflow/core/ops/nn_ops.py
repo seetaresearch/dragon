@@ -18,7 +18,6 @@ import functools
 from dragon.core.framework import types
 from dragon.core.ops import activation_ops
 from dragon.core.ops import loss_ops
-from dragon.core.ops import math_ops
 from dragon.core.ops import normalization_ops
 from dragon.core.ops import vision_ops
 from dragon.core.util import nest
@@ -205,7 +204,6 @@ def convolution(
     return getattr(vision_ops, '{}{}d'.format(
         kwargs.get('conv_type', 'conv'), num_spatial_dims))(
             [input, filters],
-            num_output=filters.shape[0],
             kernel_shape=filters.shape[2:],
             strides=strides[start_axis:start_axis + num_spatial_dims],
             dilations=dilations[start_axis:start_axis + num_spatial_dims],
@@ -288,7 +286,6 @@ def conv_transpose(
 
     return getattr(vision_ops, 'conv{}d_transpose'.format(num_spatial_dims))(
         [input, filters],
-        num_output=filters.shape[1],
         kernel_shape=filters.shape[2:],
         strides=strides[start_axis:start_axis + num_spatial_dims],
         dilations=dilations[start_axis:start_axis + num_spatial_dims],
@@ -893,29 +890,6 @@ def sparse_softmax_cross_entropy_with_logits(
         [logits, labels],
         axis=dim,
         normalization='UNIT',
-        name=name,
-    )
-
-
-def xw_plus_b(x, weights, biases, name=None):
-    if weights.shape is None:
-        raise ValueError('weights must have a valid shape.')
-    else:
-        if len(weights.shape) != 2:
-            raise ValueError('weights must be a 2D Tensor')
-
-    if biases.shape is None:
-        raise ValueError('biases must a have a valid shape.')
-    else:
-        if len(biases.shape) != 1:
-            raise ValueError('biases must be a 1D Tensor')
-        if weights.shape[1] != biases.shape[0]:
-            raise ValueError('the shape of weights and biaes are incompatible.')
-
-    return math_ops.fully_connected(
-        [x, weights, biases],
-        num_output=weights.shape[1],
-        transW=False,
         name=name,
     )
 

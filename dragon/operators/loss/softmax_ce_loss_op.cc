@@ -15,9 +15,8 @@ void SoftmaxCrossEntropyOp<Context>::DoRunWithType() {
   auto inner_dim = X.count(axis + 1);
   auto num_preds = outer_dim * inner_dim;
 
-  CHECK_EQ(num_preds, Input(1).count())
+  CHECK_EQ(X.count(), Input(1).count())
       << "\nNumber of preds must match the number of targets.";
-
   Buffer("prob")->ReshapeLike(X);
 
   auto* loss = ws()->template data<T, Context>({X.count()})[0];

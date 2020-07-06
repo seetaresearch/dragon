@@ -8,12 +8,7 @@ template <class Context>
 template <typename T>
 void ConvTranspose2dOp<Context>::DoRunWithType() {
   auto &X = Input(0), &W = Input(1), *Y = Output(0);
-
   ConvOpBase<Context>::Reshape();
-  // Fix the output shape for im2col/col2im
-  for (int i = 0; i < num_axes_; i++) {
-    out_shape_[i] = X.dim(axis_ + i);
-  }
 
   TENSOR_FILL(W, w_shape_);
   auto* x = X.template data<T, Context>();
@@ -21,7 +16,7 @@ void ConvTranspose2dOp<Context>::DoRunWithType() {
   auto* y = Y->template mutable_data<T, Context>();
 
   for (int i = 0; i < X.dim(0); ++i) {
-    Dx(x + i * x_ofs_, w, y + i * y_ofs_);
+    Dx(x + i * x_offset_, w, y + i * y_offset_);
   }
 
   if (HasBias()) {
@@ -44,19 +39,14 @@ template <typename T>
 void ConvTranspose2dGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &W = Input(1), &dY = Input(2);
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
-
   ConvOpBase<Context>::Reshape(true);
-  // Fix the output shape for im2col/col2im
-  for (int i = 0; i < num_axes_; i++) {
-    out_shape_[i] = X.dim(axis_ + i);
-  }
 
   if (dX->has_name()) {
     auto* dy = dY.template data<T, Context>();
     auto* w = W.template data<T, Context>();
     auto* dx = dX->template mutable_data<T, Context>();
     for (int i = 0; i < X.dim(0); ++i) {
-      Wx(dy + i * y_ofs_, w, dx + i * x_ofs_);
+      Wx(dy + i * y_offset_, w, dx + i * x_offset_);
     }
   }
 
@@ -65,7 +55,7 @@ void ConvTranspose2dGradientOp<Context>::DoRunWithType() {
     auto* dy = dY.template data<T, Context>();
     auto* dw = dW->template mutable_data<T, Context>();
     for (int i = 0; i < X.dim(0); ++i) {
-      Dw(x + i * x_ofs_, dy + i * y_ofs_, dw, i > 0);
+      Dw(x + i * x_offset_, dy + i * y_offset_, dw, i > 0);
     }
   }
 

@@ -9,17 +9,17 @@
 #
 # ------------------------------------------------------------
 
-"""Define the RMSprop updater."""
+"""The RMSprop optimizers."""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.training import updater
+from dragon.core.training import optimizer
 
 
-class RMSProp(updater.Updater):
-    r"""The updater which implements RMSprop algorithm.
+class RMSprop(optimizer.Optimizer):
+    r"""The optimizer to apply RMSprop algorithm.
     `[Hinton et.al, 2013] <http://www.cs.utoronto.ca/~bonner/courses/2016s/csc321/lectures/lec6.pdf>`_.
 
     The **RMSprop** update is defined as:
@@ -43,7 +43,7 @@ class RMSProp(updater.Updater):
         eps=1e-8,
         **kwargs
     ):
-        r"""Create a ``RMSProp`` updater.
+        r"""Create a ``RMSProp`` optimizer.
 
         Parameters
         ----------
@@ -57,7 +57,7 @@ class RMSProp(updater.Updater):
             The initial value for :math:`\epsilon`.
 
         """
-        super(RMSProp, self).__init__(**kwargs)
+        super(RMSprop, self).__init__(**kwargs)
         self._init_set_defaults({
             'base_lr': base_lr,
             'momentum': momentum,

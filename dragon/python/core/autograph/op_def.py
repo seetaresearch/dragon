@@ -15,7 +15,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.autograph.tensor import RefTensor
+from dragon.core.autograph.tensor import TensorRef
 from dragon.core.autograph import op_spec
 from dragon.core.framework import context
 from dragon.core.framework import proto_util
@@ -76,26 +76,24 @@ class OpDef(object):
             outputs = []
             name_scope = context.get_name_scope()
             for i in range(num_outputs):
-                outputs.append(RefTensor(
+                outputs.append(TensorRef(
                     workspace.get_dummy_name(
                         name_scope + (name if name else op_type),
                         suffix=':{}'.format(i),
-                        domain='Tensor'))
-                )
+                        domain='Tensor')))
         else:
             outputs = nest.flatten(outputs)
             num_outputs = len(outputs)
 
         # Construct Def.
         op_idx, op_name = OpDef.get_index_and_name()
-        op_info._defs[op_idx] = \
-            proto_util.make_operator_def(
-                name=op_name,
-                op_type=op_type,
-                inputs=[input.id for input in inputs],
-                outputs=[output.id for output in outputs],
-                device_option=proto_util.get_default_device_option(),
-                **kwargs)
+        op_info._defs[op_idx] = proto_util.make_operator_def(
+            name=op_name,
+            op_type=op_type,
+            inputs=[input.id for input in inputs],
+            outputs=[output.id for output in outputs],
+            device_option=proto_util.get_default_device_option(),
+            **kwargs)
 
         # Blend the op for outputs.
         for output in outputs:

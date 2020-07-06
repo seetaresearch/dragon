@@ -716,8 +716,8 @@ def matmul(
     """
     return math_ops.matmul(
         [a, b],
-        transA=transpose_a,
-        transB=transpose_b,
+        transpose_a=transpose_a,
+        transpose_b=transpose_b,
         name=name,
     )
 

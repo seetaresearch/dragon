@@ -10,14 +10,15 @@ template <typename T>
 void DepthwiseConv2dOp<Context>::DoRunWithType() {
   auto &X = Input(0), &W = Input(1), *Y = Output(0);
 
-  group_ = channels_ = data_format() == "NCHW" ? X.dim(1) : X.dim(-1);
-  CHECK_EQ(channels_, num_output_) << "\nExcepted in/out channels unchanged.";
+  group_ = data_format() == "NCHW" ? X.dim(1) : X.dim(-1);
   ConvOpBase<Context>::Reshape();
+  CHECK_EQ(in_channels_, out_channels_)
+      << "\nExcepted in/out channels to be same.";
 
   TENSOR_FILL(W, w_shape_);
   kernel::DepthwiseConv2d(
       Input(0).dim(0),
-      channels_,
+      in_channels_,
       in_shape_[0],
       in_shape_[1],
       out_shape_[0],
@@ -54,13 +55,13 @@ void DepthwiseConv2dGradientOp<Context>::DoRunWithType() {
   auto &X = Input(0), &W = Input(1), &dY = Input(2);
   auto *dX = Output(0), *dW = Output(1), *dB = Output(2);
 
-  group_ = channels_ = data_format() == "NCHW" ? X.dim(1) : X.dim(-1);
+  group_ = data_format() == "NCHW" ? X.dim(1) : X.dim(-1);
   ConvOpBase<Context>::Reshape(true);
 
   if (dX->has_name()) {
     kernel::DepthwiseConv2dGrad(
         X.dim(0),
-        channels_,
+        in_channels_,
         in_shape_[0],
         in_shape_[1],
         out_shape_[0],
@@ -83,7 +84,7 @@ void DepthwiseConv2dGradientOp<Context>::DoRunWithType() {
   if (dW->has_name()) {
     kernel::DepthwiseConv2dWGrad(
         X.dim(0),
-        channels_,
+        in_channels_,
         in_shape_[0],
         in_shape_[1],
         out_shape_[0],

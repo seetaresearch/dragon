@@ -1,52 +1,53 @@
-#include "dragon/operators/training/update_op_base.h"
 #include "dragon/core/workspace.h"
-#include "dragon/utils/cast.h"
+#include "dragon/operators/training/update_ops.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {
 
 template <class Context>
-float UpdateOpBase<Context>::param(const string& name) const {
-  return ws()
-      ->GetTensor(slot_ + "/" + name)
-      ->template mutable_data<float, CPUContext>()[0];
+Tensor* UpdateOpBase<Context>::Slot(const string& name) {
+  return Buffer(Output(0)->name() + "/" + name);
+}
+
+template <class Context>
+float UpdateOpBase<Context>::Parameter(const string& name) const {
+  auto* P = ws()->GetTensor("/share/hyper/" + handle() + "/" + name);
+  return P->template mutable_data<float, CPUContext>()[0];
 }
 
 template <class Context>
 template <typename T>
-void UpdateOpBase<Context>::Process(Tensor* dX, Tensor* X) {
+void UpdateOpBase<Context>::AdjustGradient(Tensor* dX, Tensor* X) {
   // Scale
-  auto scale_factor = param("scale_gradient");
-  if (scale_factor != 1.f) {
+  auto scale = Parameter("scale");
+  if (scale != 1.f) {
     auto* dx = dX->template mutable_data<T, Context>();
-    math::Scale(dX->count(), scale_factor, dx, dx, ctx());
+    math::Scale(dX->count(), scale, dx, dx, ctx());
   }
   // Clip
-  auto clip_thresh = param("clip_gradient");
-  if (clip_thresh > 0.f) {
-    T sumsq_grad;
+  auto clip_norm = Parameter("clip_norm");
+  if (clip_norm > 0.f) {
     auto* dx = dX->template mutable_data<T, Context>();
-    math::Dot(dX->count(), dx, dx, &sumsq_grad, ctx());
-    auto l2_norm = sqrt(cast::to<float>(sumsq_grad));
-    if (l2_norm > clip_thresh) {
-      math::Scale(dX->count(), clip_thresh / l2_norm, dx, dx, ctx());
+    auto grad_norm = std::sqrt(math::Dot(dX->count(), dx, dx, ctx()));
+    if (grad_norm > clip_norm) {
+      math::Scale(dX->count(), clip_norm / grad_norm, dx, dx, ctx());
     }
   }
-  // L2 Decay
-  auto l2_decay = param("l2_decay") * decay_mult_;
-  if (l2_decay > 0) {
+  // Penalty
+  auto weight_decay = Parameter("weight_decay");
+  if (weight_decay > 0.f) {
     if (XIsType((*X), float16)) {
-      kernel::MixedPrecL2Decay(
+      kernel::MixedPrecL2Penalty(
           X->count(),
-          l2_decay,
+          weight_decay * decay_mult_,
           X->template data<float16, Context>(),
           dX->template mutable_data<float, Context>(),
           ctx());
     } else {
       math::Axpy(
           X->count(),
-          l2_decay,
+          weight_decay * decay_mult_,
           X->template data<T, Context>(),
           dX->template mutable_data<T, Context>(),
           ctx());
@@ -56,7 +57,7 @@ void UpdateOpBase<Context>::Process(Tensor* dX, Tensor* X) {
 
 template <class Context>
 template <typename T>
-void UpdateOpBase<Context>::Apply(Tensor* dX, Tensor* X) {
+void UpdateOpBase<Context>::ApplyUpdate(Tensor* dX, Tensor* X) {
   if (XIsType((*X), float16)) {
     kernel::MixedPrecUpdate(
         X->count(),
@@ -64,9 +65,9 @@ void UpdateOpBase<Context>::Apply(Tensor* dX, Tensor* X) {
         X->template mutable_data<float16, Context>(),
         ctx());
   } else {
-    math::Axpy(
+    math::Sub(
         X->count(),
-        -1.f,
+        X->template data<T, Context>(),
         dX->template data<T, Context>(),
         X->template mutable_data<T, Context>(),
         ctx());
@@ -85,19 +86,19 @@ void UpdateOpBase<Context>::RunOnDevice() {
       << "\nGot" << X->DimString() << " and " << dX.DimString();
 
   if (XIsType(dX, float)) {
-    Process<float>(&dX, X);
-    Compute(&dX);
-    Apply<float>(&dX, X);
+    AdjustGradient<float>(&dX, X);
+    ComputeUpdate(&dX);
+    ApplyUpdate<float>(&dX, X);
   } else if (XIsType(dX, float16)) {
-    auto* dX_fp32 = ws()->CreateTensor(dX.name() + "/fp32");
+    auto* dX_cast = ws()->CreateTensor(dX.name() + "[float32]");
     kernel::Cast(
         dX.count(),
         dX.template data<float16, Context>(),
-        dX_fp32->ReshapeLike(dX)->template mutable_data<float, Context>(),
+        dX_cast->ReshapeLike(dX)->template mutable_data<float, Context>(),
         ctx());
-    Process<float>(dX_fp32, X);
-    Compute(dX_fp32);
-    Apply<float>(dX_fp32, X);
+    AdjustGradient<float>(dX_cast, X);
+    ComputeUpdate(dX_cast);
+    ApplyUpdate<float>(dX_cast, X);
   } else {
     LOG(FATAL) << TypeString(dX, {"float16", "float32"});
   }

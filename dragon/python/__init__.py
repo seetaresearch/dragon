@@ -28,10 +28,10 @@ from dragon._api import losses
 from dragon._api import math
 from dragon._api import metrics
 from dragon._api import nn
+from dragon._api import optimizers
 from dragon._api import random
-from dragon._api import updaters
-from dragon._api import vision
 from dragon._api import workspace
+from dragon._api import vision
 
 # Virtual API
 from dragon import vm
@@ -56,7 +56,7 @@ from dragon.core.framework.context import name_scope
 from dragon.core.framework.workspace import get_workspace
 from dragon.core.framework.workspace import reset_workspace
 from dragon.core.ops import tensorbind_eager as _
-from dragon.core.ops import tensorbind_symbolic as _
+from dragon.core.ops import tensorbind_symbol as _
 from dragon.core.ops.array_ops import arange
 from dragon.core.ops.array_ops import broadcast_to
 from dragon.core.ops.array_ops import cast

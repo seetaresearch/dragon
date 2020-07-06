@@ -7,7 +7,6 @@ template <class Context>
 template <typename T>
 void ReluOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0, {0});
-
   if (max_value_ > 0.f) {
     kernel::ReluN(
         X.count(),
@@ -34,7 +33,6 @@ template <class Context>
 template <typename T>
 void ReluGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
-
   if (max_value_ > 0.f) {
     kernel::ReluNGrad(
         Y.count(),

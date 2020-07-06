@@ -9,9 +9,6 @@ dragon.math
   `abs(...) <math/abs.html>`_
   : Compute the absolute value of input.
 
-  `accumulate(...) <math/accumulate.html>`_
-  : Compute the element-wise accumulation from input to output.
-
   `add(...) <math/add.html>`_
   : Compute the element-wise addition.
 
@@ -23,6 +20,9 @@ dragon.math
 
   `argmin(...) <math/argmin.html>`_
   : Compute the indices of minimum elements along the given axis.
+
+  `axpby(...) <math/axpby.html>`_
+  : Compute the element-wise addition from input to output.
 
   `ceil(...) <math/ceil.html>`_
   : Compute the smallest integer not less than input.
@@ -96,9 +96,6 @@ dragon.math
   `moments(...) <math/moments.html>`_
   : Compute the mean and variance of input along the given axes.
 
-  `moving_average(...) <math/moving_average.html>`_
-  : Compute the moving average of input to output.
-
   `mul(...) <math/mul.html>`_
   : Compute the element-wise multiplication.
 
@@ -148,11 +145,11 @@ dragon.math
   :hidden:
 
   math/abs
-  math/accumulate
   math/add
   math/affine
   math/argmax
   math/argmin
+  math/axpby
   math/ceil
   math/clip
   math/cos
@@ -177,7 +174,6 @@ dragon.math
   math/min
   math/minimum
   math/moments
-  math/moving_average
   math/mul
   math/negative
   math/not_equal

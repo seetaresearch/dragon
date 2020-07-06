@@ -85,10 +85,8 @@ class Conv2d(layer.Layer):
         self.W_init = W_init
         self.b_init = b_init
         self.in_channels = in_channels
-
         self.W = None
         self.b = None
-
         if self.in_channels:
             self.build(None)
             self._built = True
@@ -116,7 +114,6 @@ class Conv2d(layer.Layer):
                 self.in_channels = inputs_shape[-1]
             else:
                 self.in_channels = inputs_shape[1]
-
         # Fake shape with ``channels_first`` format,
         # to indicate the backend to compute fans correctly.
         filter_shape = [self.n_filter, self.in_channels] + self.filter_size
@@ -135,10 +132,8 @@ class Conv2d(layer.Layer):
     def forward(self, inputs, **kwargs):
         data_format = conv_utils.convert_data_format(self.data_format)
         padding, pads = conv_utils.normalize_2d_args('padding', self.padding)
-
         outputs = vision_ops.conv2d(
             [inputs, self.W] + ([self.b] if self.b_init else []),
-            num_output=self.n_filter,
             kernel_shape=self.filter_size,
             strides=self.strides,
             pads=pads,
@@ -148,5 +143,4 @@ class Conv2d(layer.Layer):
         )
         if self.act:
             outputs = self.act(outputs)
-
         return outputs

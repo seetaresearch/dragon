@@ -5,7 +5,7 @@ namespace dragon {
 
 template <class Context>
 template <typename T>
-void MatmulOp<Context>::DoRunWithType() {
+void MatMulOp<Context>::DoRunWithType() {
   auto &A = Input(0), &B = Input(1), *Y = Output(0);
 
   CHECK_GE(A.ndim(), 2) << "\nTensor(" << A.name() + ") must be a matrix"
@@ -51,13 +51,13 @@ void MatmulOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void MatmulOp<Context>::RunOnDevice() {
+void MatMulOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
 template <typename T>
-void MatmulGradientOp<Context>::DoRunWithType() {
+void MatMulGradientOp<Context>::DoRunWithType() {
   auto &A = Input(0), &B = Input(1), &dY = Input(2);
   auto *dA = Output(0), *dB = Output(1);
 
@@ -154,32 +154,32 @@ void MatmulGradientOp<Context>::DoRunWithType() {
 }
 
 template <class Context>
-void MatmulGradientOp<Context>::RunOnDevice() {
+void MatMulGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Matmul);
+DEPLOY_CPU(MatMul);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Matmul);
+DEPLOY_CUDA(MatMul);
 #endif
 
-DEPLOY_CPU(MatmulGradient);
+DEPLOY_CPU(MatMulGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(MatmulGradient);
+DEPLOY_CUDA(MatMulGradient);
 #endif
 
-OPERATOR_SCHEMA(Matmul)
+OPERATOR_SCHEMA(MatMul)
     /* A, B */
     .NumInputs(2)
     /* Y */
     .NumOutputs(1);
 
-OPERATOR_SCHEMA(MatmulGradient)
+OPERATOR_SCHEMA(MatMulGradient)
     /* A, B, dY */
     .NumInputs(3)
     /* dA, dB */
     .NumOutputs(2);
 
-REGISTER_GRADIENT(Matmul, GenericGradientMaker);
+REGISTER_GRADIENT(MatMul, GenericGradientMaker);
 
 } // namespace dragon

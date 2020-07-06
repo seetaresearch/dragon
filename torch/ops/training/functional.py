@@ -23,25 +23,23 @@ def grad_accumulate(grads):
     if len(grads) == 0:
         return
     return _functions.GradAccumulate \
-        .instantiate(
-            grads[0].device,
-        ).apply(grads)
+        .instantiate(grads[0].device).apply(grads)
 
 
 def param_update(
     param,
     grad,
     op_type,
-    slot,
-    lr_mult=1.,
-    decay_mult=1.,
+    op_handle,
+    lr_mult=1,
+    decay_mult=1,
 ):
     """Apply the param update."""
     return _functions.ParamUpdate \
         .instantiate(
             param.device,
             op_type=op_type,
-            slot=slot,
+            op_handle=op_handle,
             lr_mult=lr_mult,
             decay_mult=decay_mult,
         ).apply(param, grad)

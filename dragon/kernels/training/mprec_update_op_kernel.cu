@@ -9,24 +9,19 @@ namespace kernel {
 
 namespace {
 
-__global__ void _MixedPrecL2DecayHalf(
+__global__ void _MixedPrecL2Penalty(
     const int nthreads,
     const float alpha,
-    const half* w,
+    const half* x,
     float* dx) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    dx[i] += __half2float(w[i]) * alpha;
-#endif
+    dx[i] += __half2float(x[i]) * alpha;
   }
 }
 
-__global__ void
-_MixedPrecUpdateHalf(const int nthreads, const float* updates, half* w) {
+__global__ void _MixedPrecUpdate(const int nthreads, const float* dx, half* x) {
   CUDA_1D_KERNEL_LOOP(i, nthreads) {
-#if __CUDA_ARCH__ >= 530
-    w[i] = __float2half(__half2float(w[i]) - updates[i]);
-#endif
+    x[i] = __float2half(__half2float(x[i]) - dx[i]);
   }
 }
 
@@ -35,30 +30,27 @@ _MixedPrecUpdateHalf(const int nthreads, const float* updates, half* w) {
 /* ------------------- Launcher Separator ------------------- */
 
 template <>
-void MixedPrecL2Decay<float16, CUDAContext>(
+void MixedPrecL2Penalty<float16, CUDAContext>(
     const int count,
     const float alpha,
-    const float16* w,
+    const float16* x,
     float* dx,
     CUDAContext* ctx) {
-  _MixedPrecL2DecayHalf<<<
+  _MixedPrecL2Penalty<<<
       CUDA_BLOCKS(count),
       CUDA_THREADS,
       0,
-      ctx->cuda_stream()>>>(count, alpha, reinterpret_cast<const half*>(w), dx);
+      ctx->cuda_stream()>>>(count, alpha, reinterpret_cast<const half*>(x), dx);
 }
 
 template <>
 void MixedPrecUpdate<float16, CUDAContext>(
     const int count,
-    const float* updates,
-    float16* w,
+    const float* dx,
+    float16* x,
     CUDAContext* ctx) {
-  _MixedPrecUpdateHalf<<<
-      CUDA_BLOCKS(count),
-      CUDA_THREADS,
-      0,
-      ctx->cuda_stream()>>>(count, updates, reinterpret_cast<half*>(w));
+  _MixedPrecUpdate<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
+      count, dx, reinterpret_cast<half*>(x));
 }
 
 } // namespace kernel

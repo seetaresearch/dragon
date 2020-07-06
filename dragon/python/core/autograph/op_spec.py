@@ -147,7 +147,7 @@ def cast_spec(args, inputs, outputs):
     outputs[0].dtype = args['dtype']
     try:
         outputs[0].shape = inputs[0].shape[:]
-    except TypeError:
+    except (TypeError, IndexError):
         pass
     return outputs
 
@@ -192,7 +192,10 @@ def conv_spec(args, inputs, outputs):
         out_shape = inputs[0].shape[:]
         channel_axis = 1 if args['data_format'] == 'NCHW' else -1
         spatial_axis = 2 if args['data_format'] == 'NCHW' else 1
-        out_shape[channel_axis] = args['num_output']
+        if 'out_channels' in args:
+            out_shape[channel_axis] = args['out_channels']
+        else:
+            out_shape[channel_axis] = inputs[1].shape[0]
         for i in range(len(out_shape) - 2):
             input_size = out_shape[i + spatial_axis]
             k = args['kernel_shape'][i]
@@ -219,7 +222,10 @@ def conv_transpose_spec(args, inputs, outputs):
         out_shape = inputs[0].shape[:]
         channel_axis = 1 if args['data_format'] == 'NCHW' else -1
         spatial_axis = 2 if args['data_format'] == 'NCHW' else 1
-        out_shape[channel_axis] = args['num_output']
+        if 'out_channels' in args:
+            out_shape[channel_axis] = args['out_channels']
+        else:
+            out_shape[channel_axis] = inputs[1].shape[1]
         for i in range(len(out_shape) - 2):
             k = args['kernel_shape'][i]
             s = args['strides'][i]
@@ -274,20 +280,16 @@ def depth_to_space_spec(args, inputs, outputs):
 @register('Dot')
 def dot_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
-    ta, tb = args['transA'], args['transB']
     try:
-        if len(inputs[0].shape) == 1:
+        a_shape, b_shape = inputs[0].shape[:], inputs[1].shape[:]
+        if len(a_shape) == 1 and len(b_shape) == 1:
             outputs[0].shape = []
-            return outputs
-    except TypeError:
-        pass
-    try:
-        if len(inputs[0].shape) >= 2 and len(inputs[1].shape) in (1, 2):
-            out_shape = inputs[0].shape[1:] if ta else inputs[0].shape[:-1]
-            if len(inputs[1].shape) == 2:
-                out_shape.append(inputs[1].shape[0] if tb else inputs[1].shape[1])
-            outputs[0].shape = out_shape
-            return outputs
+        elif len(a_shape) == 2 and len(b_shape) == 2:
+            outputs[0].shape = [a_shape[0], b_shape[1]]
+        elif len(a_shape) == 0 and len(b_shape) == 0:
+            outputs[0].shape = []
+        elif len(a_shape) >= 2 and len(b_shape) == 1:
+            outputs[0].shape = a_shape[:-1]
     except TypeError:
         pass
     return outputs
@@ -298,6 +300,7 @@ def dot_spec(args, inputs, outputs):
     'L1Loss',
     'L2Loss',
     'SigmoidCrossEntropy',
+    'SigmoidFocalLoss',
     'SmoothL1Loss',
 ])
 def eltwise_loss_spec(args, inputs, outputs):
@@ -426,22 +429,22 @@ def flatten_spec(args, inputs, outputs):
 @register('FullyConnected')
 def fully_connected_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
-    axis, num_output = args['axis'], args['num_output']
+    axis, out_channels = args['axis'], args.get('out_channels', None)
     while axis < 0:
         try:
             axis += len(inputs[0].shape)
         except TypeError:
             return outputs
     outputs[0].shape = [None] * (axis + 1)
-    if num_output is None:
+    if out_channels is None:
         try:
             if args['transW']:
-                num_output = inputs[1].shape[0]
+                out_channels = inputs[1].shape[0]
             else:
-                num_output = inputs[1].shape[1]
+                out_channels = inputs[1].shape[1]
         except (TypeError, IndexError):
-            num_output = None
-    outputs[0].shape[axis] = num_output
+            out_channels = None
+    outputs[0].shape[axis] = out_channels
     try:
         outputs[0].shape[:axis] = inputs[0].shape[:axis]
     except TypeError:
@@ -488,7 +491,7 @@ def index_select_spec(args, inputs, outputs):
     return outputs
 
 
-@register(['IsInf', 'InNaN'])
+@register(['IsInf', 'IsNaN'])
 def is_spec(args, inputs, outputs):
     _ = locals()
     outputs[0].dtype = 'bool'
@@ -507,7 +510,7 @@ def masked_select_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Matmul')
+@register('MatMul')
 def matmul_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
     ta, tb = args['transA'], args['transB']
@@ -758,7 +761,7 @@ def resize_spec(args, inputs, outputs):
 @register(['RoiPool', 'RoiAlign'])
 def roi_pool_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
-    pool_h, pool_w = args['pool_h'], args['pool_w']
+    pool_h, pool_w = args['pooled_h'], args['pooled_w']
     out_shape = None
     try:
         out_shape = inputs[0].shape[:]
@@ -814,7 +817,6 @@ def slice_spec(args, inputs, outputs):
 
 @register([
     'NLLLoss',
-    'SigmoidFocalLoss',
     'SoftmaxCrossEntropy',
     'SparseSoftmaxCrossEntropy',
 ])

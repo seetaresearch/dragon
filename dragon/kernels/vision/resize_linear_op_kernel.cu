@@ -61,17 +61,17 @@ __global__ void _ResizeLinearNCHW(
     const int ri = (w_in < W - 1) ? ceilf(w_in) : W - 1;
     const float u = w_in - li;
 
-    const int ofs = (n * C + c) * H;
+    const int offset = (n * C + c) * H;
 #if __CUDA_ARCH__ >= 350
-    const float tl = __ldg(x + ((ofs + ti) * W + li));
-    const float tr = __ldg(x + ((ofs + ti) * W + ri));
-    const float bl = __ldg(x + ((ofs + bi) * W + li));
-    const float br = __ldg(x + ((ofs + bi) * W + ri));
+    const float tl = __ldg(x + ((offset + ti) * W + li));
+    const float tr = __ldg(x + ((offset + ti) * W + ri));
+    const float bl = __ldg(x + ((offset + bi) * W + li));
+    const float br = __ldg(x + ((offset + bi) * W + ri));
 #else
-    const float tl = x[(ofs + ti) * W + li];
-    const float tr = x[(ofs + ti) * W + ri];
-    const float bl = x[(ofs + bi) * W + li];
-    const float br = x[(ofs + bi) * W + ri];
+    const float tl = x[(offset + ti) * W + li];
+    const float tr = x[(offset + ti) * W + ri];
+    const float bl = x[(offset + bi) * W + li];
+    const float br = x[(offset + bi) * W + ri];
 #endif
     const float t = tl + (tr - tl) * u;
     const float b = bl + (br - bl) * u;
@@ -109,11 +109,11 @@ __global__ void _ResizeLinearNCHW<half>(
     const int ri = (w_in < W - 1) ? ceilf(w_in) : W - 1;
     const float u = w_in - li;
 
-    const int ofs = (n * C + c) * H;
-    const float tl = __half2float(__ldg(x + ((ofs + ti) * W + li)));
-    const float tr = __half2float(__ldg(x + ((ofs + ti) * W + ri)));
-    const float bl = __half2float(__ldg(x + ((ofs + bi) * W + li)));
-    const float br = __half2float(__ldg(x + ((ofs + bi) * W + ri)));
+    const int offset = (n * C + c) * H;
+    const float tl = __half2float(__ldg(x + ((offset + ti) * W + li)));
+    const float tr = __half2float(__ldg(x + ((offset + ti) * W + ri)));
+    const float bl = __half2float(__ldg(x + ((offset + bi) * W + li)));
+    const float br = __half2float(__ldg(x + ((offset + bi) * W + ri)));
     const float t = tl + (tr - tl) * u;
     const float b = bl + (br - bl) * u;
 
@@ -151,17 +151,17 @@ __global__ void _ResizeLinearNHWC(
     const int ri = (w_in < W - 1) ? ceilf(w_in) : W - 1;
     const float u = w_in - li;
 
-    const int ofs = n * H;
+    const int offset = n * H;
 #if __CUDA_ARCH__ >= 350
-    const float tl = __ldg(x + (((ofs + ti) * W + li) * C + c));
-    const float tr = __ldg(x + (((ofs + ti) * W + ri) * C + c));
-    const float bl = __ldg(x + (((ofs + bi) * W + li) * C + c));
-    const float br = __ldg(x + (((ofs + bi) * W + ri) * C + c));
+    const float tl = __ldg(x + (((offset + ti) * W + li) * C + c));
+    const float tr = __ldg(x + (((offset + ti) * W + ri) * C + c));
+    const float bl = __ldg(x + (((offset + bi) * W + li) * C + c));
+    const float br = __ldg(x + (((offset + bi) * W + ri) * C + c));
 #else
-    const float tl = x[((ofs + ti) * W + li) * C + c];
-    const float tr = x[((ofs + ti) * W + ri) * C + c];
-    const float bl = x[((ofs + bi) * W + li) * C + c];
-    const float br = x[((ofs + bi) * W + ri) * C + c];
+    const float tl = x[((offset + ti) * W + li) * C + c];
+    const float tr = x[((offset + ti) * W + ri) * C + c];
+    const float bl = x[((offset + bi) * W + li) * C + c];
+    const float br = x[((offset + bi) * W + ri) * C + c];
 #endif
     const float t = tl + (tr - tl) * u;
     const float b = bl + (br - bl) * u;
@@ -199,11 +199,15 @@ __global__ void _ResizeLinearNHWC<half>(
     const int ri = (w_in < W - 1) ? ceilf(w_in) : W - 1;
     const float u = w_in - li;
 
-    const int ofs = n * H;
-    const float tl = __half2float(__ldg(x + (((ofs + ti) * W + li) * C + c)));
-    const float tr = __half2float(__ldg(x + (((ofs + ti) * W + ri) * C + c)));
-    const float bl = __half2float(__ldg(x + (((ofs + bi) * W + li) * C + c)));
-    const float br = __half2float(__ldg(x + (((ofs + bi) * W + ri) * C + c)));
+    const int offset = n * H;
+    const float tl =
+        __half2float(__ldg(x + (((offset + ti) * W + li) * C + c)));
+    const float tr =
+        __half2float(__ldg(x + (((offset + ti) * W + ri) * C + c)));
+    const float bl =
+        __half2float(__ldg(x + (((offset + bi) * W + li) * C + c)));
+    const float br =
+        __half2float(__ldg(x + (((offset + bi) * W + ri) * C + c)));
     const float t = tl + (tr - tl) * u;
     const float b = bl + (br - bl) * u;
 
@@ -249,11 +253,11 @@ __global__ void _ResizeLinearGradNCHW(
     const float db = v * ((float)dy[yi]);
 #endif
 
-    const int ofs = (n * C + c) * H;
-    atomicAdd(&dx[(ofs + ti) * W + li], (1.f - u) * dt);
-    atomicAdd(&dx[(ofs + ti) * W + ri], u * dt);
-    atomicAdd(&dx[(ofs + bi) * W + li], (1.f - u) * db);
-    atomicAdd(&dx[(ofs + bi) * W + ri], u * db);
+    const int offset = (n * C + c) * H;
+    atomicAdd(&dx[(offset + ti) * W + li], (1.f - u) * dt);
+    atomicAdd(&dx[(offset + ti) * W + ri], u * dt);
+    atomicAdd(&dx[(offset + bi) * W + li], (1.f - u) * db);
+    atomicAdd(&dx[(offset + bi) * W + ri], u * db);
   }
 }
 
@@ -290,11 +294,11 @@ __global__ void _ResizeLinearGradNCHW<half>(
     const float dt = (1.f - v) * __half2float(__ldg(dy + yi));
     const float db = v * __half2float(__ldg(dy + yi));
 
-    const int ofs = (n * C + c) * H;
-    atomicAdd(&dx[(ofs + ti) * W + li], (1.f - u) * dt);
-    atomicAdd(&dx[(ofs + ti) * W + ri], u * dt);
-    atomicAdd(&dx[(ofs + bi) * W + li], (1.f - u) * db);
-    atomicAdd(&dx[(ofs + bi) * W + ri], u * db);
+    const int offset = (n * C + c) * H;
+    atomicAdd(&dx[(offset + ti) * W + li], (1.f - u) * dt);
+    atomicAdd(&dx[(offset + ti) * W + ri], u * dt);
+    atomicAdd(&dx[(offset + bi) * W + li], (1.f - u) * db);
+    atomicAdd(&dx[(offset + bi) * W + ri], u * db);
 #endif
   }
 }
@@ -336,11 +340,11 @@ __global__ void _ResizeLinearGradNHWC(
     const float db = v * ((float)dy[yi]);
 #endif
 
-    const int ofs = n * H;
-    atomicAdd(&dx[((ofs + ti) * W + li) * C + c], (1.f - u) * dt);
-    atomicAdd(&dx[((ofs + ti) * W + ri) * C + c], u * dt);
-    atomicAdd(&dx[((ofs + bi) * W + li) * C + c], (1.f - u) * db);
-    atomicAdd(&dx[((ofs + bi) * W + ri) * C + c], u * db);
+    const int offset = n * H;
+    atomicAdd(&dx[((offset + ti) * W + li) * C + c], (1.f - u) * dt);
+    atomicAdd(&dx[((offset + ti) * W + ri) * C + c], u * dt);
+    atomicAdd(&dx[((offset + bi) * W + li) * C + c], (1.f - u) * db);
+    atomicAdd(&dx[((offset + bi) * W + ri) * C + c], u * db);
   }
 }
 

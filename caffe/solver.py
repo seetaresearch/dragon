@@ -9,7 +9,7 @@
 #
 # ------------------------------------------------------------
 
-"""Implementation for the ``Solver`` C++ class."""
+"""The solver to update parameters."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -19,9 +19,12 @@ import time
 
 from google.protobuf import text_format
 
-from dragon import updaters
 from dragon.core.autograph import def_function
 from dragon.core.framework import workspace
+from dragon.core.training.adam import Adam
+from dragon.core.training.rmsprop import RMSprop
+from dragon.core.training.sgd import SGD
+from dragon.core.training.sgd import Nesterov
 from dragon.vm.caffe.net import Net
 from dragon.vm.caffe.proto import caffe_pb2
 
@@ -47,10 +50,10 @@ class Solver(object):
         if self._param.iter_size > 1:
             raise NotImplementedError('GradientAccum is deprecated.')
         self._arguments = {
-            'scale_gradient': 1. / self._param.iter_size,
-            'clip_gradient': float(self._param.clip_gradients),
-            'l2_decay': float(self._param.weight_decay)
-            if str(self._param.regularization_type) == 'L2' else -1.,
+            'scale': 1. / self._param.iter_size,
+            'clip_norm': float(self._param.clip_gradients),
+            'weight_decay': float(self._param.weight_decay)
+            if str(self._param.regularization_type) == 'L2' else 0,
         }
         self._optimizer = None
         self._net, self._test_nets = None, []
@@ -415,7 +418,7 @@ class AdamSolver(Solver):
         self._arguments['beta1'] = self._param.momentum
         self._arguments['beta2'] = self._param.momentum2
         self._arguments['eps'] = self._param.delta
-        self._optimizer = updaters.Adam(**self._arguments)
+        self._optimizer = Adam(**self._arguments)
 
 
 class NesterovSolver(Solver):
@@ -447,7 +450,7 @@ class NesterovSolver(Solver):
         super(NesterovSolver, self).__init__(solver_file, is_root)
         self._arguments['base_lr'] = self._param.base_lr
         self._arguments['momentum'] = self._param.momentum
-        self._optimizer = updaters.Nesterov(**self._arguments)
+        self._optimizer = Nesterov(**self._arguments)
 
 
 class RMSPropSolver(Solver):
@@ -481,7 +484,7 @@ class RMSPropSolver(Solver):
         self._arguments['base_lr'] = self._param.base_lr
         self._arguments['decay'] = self._param.rms_decay
         self._arguments['eps'] = self._param.delta
-        self._optimizer = updaters.RMSProp(**self._arguments)
+        self._optimizer = RMSprop(**self._arguments)
 
 
 class SGDSolver(Solver):
@@ -513,4 +516,4 @@ class SGDSolver(Solver):
         super(SGDSolver, self).__init__(solver_file, is_root)
         self._arguments['base_lr'] = self._param.base_lr
         self._arguments['momentum'] = self._param.momentum
-        self._optimizer = updaters.SGD(**self._arguments)
+        self._optimizer = SGD(**self._arguments)

@@ -9,13 +9,13 @@
 #
 # ------------------------------------------------------------
 
-"""Implementation for the ``Layer`` C++ class."""
+"""The base layer class."""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.autograph.tensor import RefTensor
+from dragon.core.autograph.tensor import TensorRef
 from dragon.core.eager import context as eager_context
 from dragon.core.framework import context
 
@@ -76,8 +76,8 @@ class Layer(object):
         param_name = scoped_name + '/param:{}'.format(len(self._blobs))
 
         # Set the name explicitly.
-        variable = RefTensor(param_name)
-        variable_grad = RefTensor(param_name + '_grad')
+        variable = TensorRef(param_name)
+        variable_grad = TensorRef(param_name + '_grad')
 
         if filler is not None:
             variable._register_as(**filler)

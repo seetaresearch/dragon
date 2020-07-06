@@ -28,7 +28,7 @@ def bias_add(inputs, data_format='NCHW', **kwargs):
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor ``input`` and ``bias``.
+        The ``input`` and ``bias``.
     data_format : {'NCHW', 'NHWC'}, optional
         The optional data format.
 
@@ -53,7 +53,6 @@ def bias_add(inputs, data_format='NCHW', **kwargs):
 @OpSchema.num_inputs(2, 3)
 def conv2d(
     inputs,
-    num_output=None,
     kernel_shape=3,
     strides=1,
     pads=0,
@@ -65,24 +64,12 @@ def conv2d(
 ):
     r"""Apply the 2d convolution.
 
-    The spatial output dimension is computed as:
-
-    .. math::
-        \begin{cases}
-            \text{DK}_{size} = dilation *
-                (\text{K}_{size} - 1) + 1 \\
-            \text{Dim}_{out} = (\text{Dim}_{in} +
-                2 * pad - \text{DK}_{size}) / stride + 1
-        \end{cases}
-
     Set ``padding`` to **VALID** will use the value of ``pads``.
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
         The tensor ``x``, ``weight`` and ``bias``.
-    num_output : int, optional
-        The optional number of output channels.
     kernel_shape : Sequence[int], optional, default=3
         The shape of convolution kernel.
     strides : Sequence[int], optional, default=1
@@ -114,9 +101,7 @@ def conv2d(
             args[key] = _normalize_pads(args[key], 2)
         else:
             args[key] = _normalize_tuple(args[key], 2)
-
     op_lib = vision_ops_lib.Conv2d
-
     if context.executing_eagerly():
         weight_shape = inputs[1].shape
         return op_lib \
@@ -142,7 +127,6 @@ def conv2d(
 @ArgHelper.repeated_desc('output_shape')
 def conv2d_transpose(
     inputs,
-    num_output=None,
     kernel_shape=3,
     strides=1,
     pads=0,
@@ -156,24 +140,12 @@ def conv2d_transpose(
 ):
     r"""Apply the 2d deconvolution.
 
-    The spatial output dimension is computed as:
-
-    .. math::
-        \begin{cases}
-            \text{DK}_{size} = dilation *
-                (\text{K}_{size} - 1) + 1 \\
-            \text{Dim}_{out} = (\text{Dim}_{in} - 1) *
-                stride + \text{DK}_{size} - 2 * pad
-        \end{cases}
-
     Set ``padding`` to **VALID** will use the value of ``pads``.
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
         The tensor ``x``, ``weight`` and ``bias``.
-    num_output : int, optional
-        The optional number of output channels.
     kernel_shape : Sequence[int], optional, default=3
         The shape of convolution kernel.
     strides : Sequence[int], optional, default=1
@@ -200,7 +172,6 @@ def conv2d_transpose(
 
     """
     args = parse_args(locals())
-
     if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
         raise ValueError('Unsupported padding algorithm: %s' % padding)
     if data_format not in ('NCHW', 'NHWC'):
@@ -212,9 +183,7 @@ def conv2d_transpose(
             args[key] = _normalize_pads(args[key], 2)
         else:
             args[key] = _normalize_tuple(args[key], 2)
-
     op_lib = vision_ops_lib.ConvTranspose2d
-
     if context.executing_eagerly():
         weight_shape = inputs[1].shape
         return op_lib \
@@ -240,7 +209,6 @@ def conv2d_transpose(
 @OpSchema.num_inputs(2, 3)
 def depthwise_conv2d(
     inputs,
-    num_output=None,
     kernel_shape=3,
     strides=1,
     pads=0,
@@ -252,24 +220,12 @@ def depthwise_conv2d(
     r"""Apply the 2d depthwise convolution.
     `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
 
-    The spatial output dimension is computed as:
-
-    .. math::
-        \begin{cases}
-            \text{DK}_{size} = dilation *
-                (\text{K}_{size} - 1) + 1 \\
-            \text{Dim}_{out} = (\text{Dim}_{in} +
-                2 * pad - \text{DK}_{size}) / stride + 1
-        \end{cases}
-
     Set ``padding`` to **VALID** will use the value of ``pads``.
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
         The tensor ``x``, ``weight`` and ``bias``.
-    num_output : int, optional
-        The optional number of output channels.
     kernel_shape : Sequence[int], optional, default=3
         The size(s) of convolution kernel.
     strides : Sequence[int], optional, default=1
@@ -290,7 +246,6 @@ def depthwise_conv2d(
 
     """
     args = parse_args(locals())
-
     if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
         raise ValueError('Unsupported padding algorithm: %s' % padding)
     if data_format not in ('NCHW', 'NHWC'):
@@ -300,9 +255,7 @@ def depthwise_conv2d(
             args[key] = _normalize_pads(args[key], 2)
         else:
             args[key] = _normalize_tuple(args[key], 2)
-
     op_lib = vision_ops_lib.DepthwiseConv2d
-
     if context.executing_eagerly():
         weight_shape = inputs[1].shape
         return op_lib \
@@ -361,7 +314,7 @@ def depth_to_space(inputs, block_size, data_format='NCHW', **kwargs):
             .instantiate(
                 block_size=block_size,
                 data_format=data_format,
-            ).apply(inputs)
+            ).apply([inputs])
     else:
         return op_lib.blend(**args)
 
@@ -374,18 +327,12 @@ def pool2d(
     pads=0,
     padding='VALID',
     ceil_mode=False,
-    mode='MAX',
+    mode='max',
     data_format='NCHW',
     global_pooling=False,
     **kwargs
 ):
     r"""Apply the 2d pooling.
-
-    The spatial output dimension is computed as:
-
-    .. math::
-        \text{Dim}_{out} = (\text{Dim}_{in} +
-            2 * pad - \text{K}_{size}) / stride + 1
 
     Set ``padding`` to **VALID** will use the value of ``pads``.
 
@@ -410,7 +357,7 @@ def pool2d(
     data_format : {'NCHW', 'NHWC'}, optional
         The optional data format.
     global_pooling : bool, optional, default=False
-        Whether to use global pooling.
+        Whether to apply the global pooling.
 
     Returns
     -------
@@ -419,7 +366,6 @@ def pool2d(
 
     """
     args = parse_args(locals())
-
     if mode not in ('MAX', 'AVG'):
         raise ValueError('Unsupported pooling mode: %s' % mode)
     if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
@@ -431,9 +377,7 @@ def pool2d(
             args[key] = _normalize_pads(args[key], 2)
         else:
             args[key] = _normalize_tuple(args[key], 2)
-
     op_lib = vision_ops_lib.Pool2d
-
     if context.executing_eagerly():
         return op_lib \
             .instantiate(
@@ -445,7 +389,7 @@ def pool2d(
                 mode=mode,
                 data_format=data_format,
                 global_pooling=global_pooling,
-            ).apply(inputs)
+            ).apply([inputs])
     else:
         return op_lib.blend(**args)
 
@@ -526,7 +470,7 @@ def resize(
                 num_sizes=len(args['sizes']) if sizes is not None else 0,
                 num_scales=len(args['scales']) if scales is not None else 0,
                 data_format=data_format,
-            ).apply(inputs, args['sizes'], args['scales'])
+            ).apply([inputs], args['sizes'], args['scales'])
     else:
         return op_lib.blend(**args)
 
@@ -668,7 +612,7 @@ def space_to_depth(inputs, block_size, data_format='NCHW', **kwargs):
             .instantiate(
                 block_size=block_size,
                 data_format=data_format,
-            ).apply(inputs)
+            ).apply([inputs])
     else:
         return op_lib.blend(**args)
 

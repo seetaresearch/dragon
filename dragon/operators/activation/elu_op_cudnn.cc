@@ -11,7 +11,6 @@ template <typename T>
 void CuDNNEluOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0, {0});
   CuDNNSetTensorDesc<T>(&input_desc_, X.dims());
-
   CUDNN_CHECK(cudnnActivationForward(
       ctx()->cudnn_handle(),
       act_desc_,
@@ -33,7 +32,6 @@ template <typename T>
 void CuDNNEluGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
   CuDNNSetTensorDesc<T>(&input_desc_, Y.dims());
-
   CUDNN_CHECK(cudnnActivationBackward(
       ctx()->cudnn_handle(),
       act_desc_,

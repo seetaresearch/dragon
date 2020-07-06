@@ -50,7 +50,7 @@ void SpaceToDepthOp<Context>::DoRunWithType() {
   if (data_format() == "NCHW") {
     for (int i = 0; i < num_axes; i++) {
       perm.insert(perm.begin() + 1, perm.back());
-      perm.pop_back(); // CRD mode
+      perm.pop_back(); // DCR mode
     }
   }
 

@@ -24,9 +24,9 @@ from dragon.core.ops.array_ops import min
 from dragon.core.ops.array_ops import moments
 from dragon.core.ops.array_ops import sum
 from dragon.core.ops.math_ops import abs
-from dragon.core.ops.math_ops import accumulate
 from dragon.core.ops.math_ops import add
 from dragon.core.ops.math_ops import affine
+from dragon.core.ops.math_ops import axpby
 from dragon.core.ops.math_ops import ceil
 from dragon.core.ops.math_ops import clip
 from dragon.core.ops.math_ops import cos
@@ -45,7 +45,6 @@ from dragon.core.ops.math_ops import log
 from dragon.core.ops.math_ops import matmul
 from dragon.core.ops.math_ops import maximum
 from dragon.core.ops.math_ops import minimum
-from dragon.core.ops.math_ops import moving_average
 from dragon.core.ops.math_ops import mul
 from dragon.core.ops.math_ops import negative
 from dragon.core.ops.math_ops import not_equal

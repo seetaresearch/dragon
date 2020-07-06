@@ -211,7 +211,7 @@ void ComputeBinaryBroadcastStrides(
   Y_dims.resize(num_dims);
   int64_t A_stride = 1;
   int64_t B_stride = 1;
-  for (int i = 0; i < num_dims; ++i) {
+  for (int i = num_dims - 1; i >= 0; --i) {
     A_broadcast_strides[i] = A_broadcast_dims[i] == 1 ? 0 : A_stride;
     B_broadcast_strides[i] = B_broadcast_dims[i] == 1 ? 0 : B_stride;
     Y_dims[i] = std::max(A_broadcast_dims[i], B_broadcast_dims[i]);

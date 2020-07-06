@@ -1,7 +1,7 @@
-accumulate
-==========
+axpby
+=====
 
-.. autofunction:: dragon.vm.torch.accumulate
+.. autofunction:: dragon.vm.torch.axpby
 
 
 .. raw:: html

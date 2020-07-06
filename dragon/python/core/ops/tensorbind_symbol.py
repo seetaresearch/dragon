@@ -66,7 +66,9 @@ def astype(self, dtype, inplace=False):
     `dragon.cast(...)`_ : Cast the data type of input.
 
     """
-    inputs, outputs = ([], [self]) if inplace else ([self], [])
+    if self.dtype == dtype:
+        return self
+    inputs, outputs = ([], [self]) if inplace else ([self], None)
     return OpDef.apply('Cast', inputs, outputs, dtype=dtype)
 
 

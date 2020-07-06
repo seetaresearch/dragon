@@ -21,7 +21,7 @@ from dragon.core.eager import context as eager_context
 from dragon.core.framework import context
 from dragon.core.framework import types
 from dragon.core.framework import workspace
-from dragon.core.training import updater
+from dragon.core.training import optimizer as optimizer_v1
 from dragon.core.util import six
 from dragon.vm.tensorflow.core.framework import dtypes
 from dragon.vm.tensorflow.core.keras import initializers
@@ -29,7 +29,7 @@ from dragon.vm.tensorflow.core.keras.utils import generic_utils
 from dragon.vm.tensorflow.core.ops import variables
 
 
-class Optimizer(updater.Updater):
+class Optimizer(optimizer_v1.Optimizer):
     """The base class for optimizers."""
 
     BASE_WEIGHT_DECAY = 0.0001
@@ -46,9 +46,9 @@ class Optimizer(updater.Updater):
         self._init_set_name(name)
         super(Optimizer, self).__init__(
             name=self._name,
-            l2_decay=self.BASE_WEIGHT_DECAY,
+            weight_decay=self.BASE_WEIGHT_DECAY,
         )
-        allowed_kwargs = {'clipnorm', 'clipvalue', 'lr', 'decay'}
+        allowed_kwargs = {'scale', 'clipnorm', 'lr'}
         for k in kwargs:
             if k not in allowed_kwargs:
                 raise TypeError('Unexpected keyword argument:', str(k))
@@ -61,11 +61,12 @@ class Optimizer(updater.Updater):
         self._iterations = 0
 
         # Register the common hyper parameters.
+        if 'scale' in kwargs:
+            self._defaults['scale'] = kwargs.pop('scale')
         if 'clipnorm' in kwargs:
-            self._defaults['clip_gradient'] = kwargs.pop('clipnorm')
+            self._defaults['clip_norm'] = kwargs.pop('clipnorm')
         for k, v in self._defaults.items():
             self._set_hyper(k, v, k)
-
         self._hypers_created = False
 
     @property
@@ -196,7 +197,7 @@ class Optimizer(updater.Updater):
             else:
                 self._hyper[name] = value
         if alias and name not in self._alias:
-            self._alias[name] = self._slot + '/' + alias
+            self._alias[name] = '/share/hyper/%s/%s' % (self._op_handle, alias)
 
     def __getattr__(self, item):
         if item == 'lr':

@@ -106,11 +106,7 @@ class Dense(layer.Layer):
 
     def forward(self, inputs):
         outputs = math_ops.fully_connected(
-            [inputs, self.W] + ([self.b] if self.b_init else []),
-            num_output=self.n_units,
-            axis=1,
-            transW=True,
-        )
+            [inputs, self.W] + ([self.b] if self.b_init else []), axis=1)
         if self.act:
             outputs = self.act(outputs)
         return outputs

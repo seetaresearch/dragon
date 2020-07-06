@@ -16,7 +16,7 @@ void Conv2dOp<Context>::DoRunWithType() {
   auto* y = Y->template mutable_data<T, Context>();
 
   for (int i = 0; i < X.dim(0); ++i) {
-    Wx(x + i * x_ofs_, w, y + i * y_ofs_);
+    Wx(x + i * x_offset_, w, y + i * y_offset_);
   }
 
   if (HasBias()) {
@@ -46,7 +46,7 @@ void Conv2dGradientOp<Context>::DoRunWithType() {
     auto* w = W.template data<T, Context>();
     auto* dx = dX->template mutable_data<T, Context>();
     for (int i = 0; i < X.dim(0); ++i) {
-      Dx(dy + i * y_ofs_, w, dx + i * x_ofs_);
+      Dx(dy + i * y_offset_, w, dx + i * x_offset_);
     }
   }
 
@@ -55,7 +55,7 @@ void Conv2dGradientOp<Context>::DoRunWithType() {
     auto* x = X.template data<T, Context>();
     auto* dw = dW->template mutable_data<T, Context>();
     for (int i = 0; i < X.dim(0); ++i) {
-      Dw(dy + i * y_ofs_, x + i * x_ofs_, dw, i > 0);
+      Dw(dy + i * y_offset_, x + i * x_offset_, dw, i > 0);
     }
   }
 

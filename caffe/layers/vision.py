@@ -65,7 +65,7 @@ class Convolution(Layer):
         super(Convolution, self).__init__(layer_param)
         param = layer_param.convolution_param
         self.arguments = {
-            'num_output': param.num_output,
+            'out_channels': param.num_output,
             'kernel_shape': [int(e) for e in param.kernel_size],
             'strides': [int(e) for e in param.stride] if len(param.stride) > 0 else [1],
             'pads': [int(e) for e in param.pad] if len(param.pad) > 0 else [0],
@@ -187,7 +187,7 @@ class DepthwiseConv2d(Layer):
         super(DepthwiseConv2d, self).__init__(layer_param)
         param = layer_param.convolution_param
         self.arguments = {
-            'num_output': param.num_output,
+            'out_channels': param.num_output,
             'kernel_shape': [int(e) for e in param.kernel_size],
             'strides': [int(e) for e in param.stride] if len(param.stride) > 0 else [1],
             'pads': [int(e) for e in param.pad] if len(param.pad) > 0 else [0],

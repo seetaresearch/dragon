@@ -33,7 +33,6 @@ from dragon.vm.tensorflow.core.framework.dtypes import qint32
 from dragon.vm.tensorflow.core.framework.dtypes import qint8
 from dragon.vm.tensorflow.core.framework.dtypes import quint16
 from dragon.vm.tensorflow.core.framework.dtypes import quint8
-from dragon.vm.tensorflow.core.framework.dtypes import resource
 from dragon.vm.tensorflow.core.framework.dtypes import string
 from dragon.vm.tensorflow.core.framework.dtypes import uint16
 from dragon.vm.tensorflow.core.framework.dtypes import uint32

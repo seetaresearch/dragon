@@ -55,6 +55,10 @@ using ConstEigenVectorArrayMap =
     Eigen::Map<const Eigen::Array<T, Eigen::Dynamic, 1>>;
 
 template <typename T>
+using ConstEigenVectorArrayMap2 =
+    Eigen::Map<const Eigen::Array<T, 1, Eigen::Dynamic>>;
+
+template <typename T>
 using EigenArrayMap =
     Eigen::Map<Eigen::Array<T, Eigen::Dynamic, Eigen::Dynamic>>;
 

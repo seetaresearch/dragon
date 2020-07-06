@@ -9,7 +9,7 @@
 #
 # ------------------------------------------------------------
 
-"""Implementation for the ``Net`` C++ class."""
+"""The base net class."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -20,8 +20,8 @@ from google.protobuf import text_format
 
 from dragon.core.autograph import def_function
 from dragon.core.autograph import grad_impl
-from dragon.core.autograph.tensor import RefTensor
 from dragon.core.autograph.tensor import Tensor
+from dragon.core.autograph.tensor import TensorRef
 from dragon.core.framework import workspace
 from dragon.core.util import nest
 from dragon.vm.caffe import layers as layer_factory
@@ -84,17 +84,13 @@ class Net(object):
 
         if len(self._net_proto.input) > 0:
             shapes = self._net_proto.input_shape
-            for i, input in enumerate(self._net_proto.input):
+            for i, input_name in enumerate(self._net_proto.input):
                 shape = [e for e in shapes[i].dim] if i < len(shapes) else None
                 if input not in self._blobs:
-                    data = Tensor(input, shape=shape, dtype='float32').placeholder()
-                    self._blobs[input] = {
+                    data = Tensor(input_name, shape, 'float32').placeholder()
+                    self._blobs[input_name] = {
                         'data': data,
-                        'diff': RefTensor(
-                            data.id + '_grad',
-                            shape=shape,
-                            dtype=data.dtype
-                        ),
+                        'diff': TensorRef(data.id + '_grad', shape, data.dtype),
                     }
 
         for layer in self._net_proto.layer:
@@ -145,7 +141,7 @@ class Net(object):
             for i, blob in enumerate(layer._top):
                 self._blobs[blob] = {
                     'data': outputs[i],
-                    'diff': RefTensor(outputs[i].id + '_grad'),
+                    'diff': TensorRef(outputs[i].id + '_grad'),
                 }
                 self._net_outputs.add(blob)
 

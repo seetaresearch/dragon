@@ -19,18 +19,18 @@ from dragon.core.framework.ops import Operator
 class ParamUpdate(Operator):
     def __init__(self, key, dev, **kwargs):
         super(ParamUpdate, self).__init__(key, dev, **kwargs)
-        self.op_type = kwargs.get('op_type', 'ParamUpdate')
-        self.lr_mult = kwargs.get('lr_mult', 1.)
-        self.decay_mult = kwargs.get('decay_mult', 1.)
-        self.slot = kwargs.get('slot', '')
+        self.op_type = kwargs.get('op_type', '')
+        self.op_handle = kwargs.get('op_handle', '')
+        self.lr_mult = kwargs.get('lr_mult', 1)
+        self.decay_mult = kwargs.get('decay_mult', 1)
 
     def attributes(self):
         return {
+            'name': self.op_handle,
             'op_type': self.op_type,
             'arguments': {
-                'lr_mult': self.lr_mult,
-                'decay_mult': self.decay_mult,
-                'slot': self.slot,
+                'lr_mult': float(self.lr_mult),
+                'decay_mult': float(self.decay_mult),
             },
         }
 

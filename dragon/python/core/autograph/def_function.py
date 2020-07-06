@@ -29,7 +29,7 @@ from dragon.core.eager import context as eager_context
 from dragon.core.eager.tensor import EagerTensor
 from dragon.core.framework import context
 from dragon.core.framework import workspace
-from dragon.core.training import updater
+from dragon.core.training import optimizer
 from dragon.core.util import decorator
 from dragon.core.util import inspect
 from dragon.core.util import nest
@@ -265,7 +265,7 @@ class FunctionGuard(object):
                     dummies.append(obj)
             executables = [function_lib.create_function(inputs, outputs)]
             for obj in dummies:
-                if isinstance(obj, updater.Updater):
+                if isinstance(obj, optimizer.Optimizer):
                     executables.append(function_lib.create_function(updater=obj))
             self.inputs = inputs
             self.outputs = returns

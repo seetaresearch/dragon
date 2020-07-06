@@ -43,8 +43,8 @@ class Optimizer(object):
 
     """
 
-    # Store the global unique slot index.
-    _DEFAULT_UNIQUE_SLOT_ID = 0
+    # Store for the global unique handle
+    _DEFAULT_UNIQUE_HANDLE_INDEX = 0
 
     def __init__(self, params, defaults):
         """Create a ``Optimizer``.
@@ -69,7 +69,7 @@ class Optimizer(object):
             param_groups = [{'params': param_groups}]
         for param_group in param_groups:
             self.add_param_group(param_group)
-        self._update_op_type = None
+        self._op_type = self.__class__.__name__ + 'Update'
         self._process_group = distributed.get_group()
         self._shared_args = {}
 
@@ -113,8 +113,8 @@ class Optimizer(object):
         # A group inherits the defaults while using ``multiplier``
         param_group2 = {
             'params': [],
-            'lr_mult': 1.,
-            'decay_mult': 1.,
+            'lr_mult': 1,
+            'decay_mult': 1,
         }
         ```
 
@@ -124,25 +124,21 @@ class Optimizer(object):
             The param group to add.
 
         """
-        assert isinstance(param_group, dict), "Param group must be a dict."
+        if not isinstance(param_group, dict):
+            raise TypeError('Param group must be a dict.')
 
         params = param_group['params']
-
         if isinstance(params, Tensor):
             param_group['params'] = [params]
-        elif isinstance(params, set):
-            raise TypeError(
-                'Optimizer parameters need to be organized in ordered collections,'
-                '\nbut the ordering of tensors in sets will change between runs.'
-                '\nPlease use a list instead.'
-            )
+        elif isinstance(params, (set, dict)):
+            raise TypeError('Parameters should be organized in a sequence.')
         else:
             param_group['params'] = list(params)
 
         for param in param_group['params']:
             if not param.requires_grad:
                 raise ValueError(
-                    "Optimizing a Parameter that "
+                    "Optimizing a parameter that "
                     "doesn't require gradients."
                 )
 
@@ -155,17 +151,18 @@ class Optimizer(object):
             else:
                 param_group.setdefault(name, default)
 
-        if 'slot' not in param_group:
-            Optimizer._DEFAULT_UNIQUE_SLOT_ID += 1
-            param_group['slot'] = 'Optimizer/Slot:{}'.format(
-                Optimizer._DEFAULT_UNIQUE_SLOT_ID)
+        if 'name' not in param_group:
+            Optimizer._DEFAULT_UNIQUE_HANDLE_INDEX += 1
+            param_group['name'] = 'Optimizer_{}'.format(
+                Optimizer._DEFAULT_UNIQUE_HANDLE_INDEX)
 
         param_set = set()
         for group in self.param_groups:
             param_set.update(set(group['params']))
 
         if not param_set.isdisjoint(set(param_group['params'])):
-            raise ValueError("Some parameters appear in more than one parameter group")
+            raise ValueError('Some parameters appear in '
+                             'more than one parameter group.')
 
         self.param_groups.append(param_group)
 
@@ -224,7 +221,7 @@ class Optimizer(object):
 
     def _init_set_defaults(self, group):
         """Initialize the defaults into current workspace."""
-        template = group['slot'] + '/{}'
+        template = '/share/hyper/%s/{}' % group['name']
         for k, v in group.items():
             if k in self._shared_args:
                 workspace.feed_tensor(
@@ -256,10 +253,10 @@ class Optimizer(object):
         for p, g in zip(params, grads):
             training_funcs.param_update(
                 p, g,
-                slot=group['slot'],
-                op_type=self._update_op_type,
-                lr_mult=group.get('lr_mult', 1.),
-                decay_mult=group.get('decay_mult', 1.),
+                op_type=self._op_type,
+                op_handle=group['name'],
+                lr_mult=group.get('lr_mult', 1),
+                decay_mult=group.get('decay_mult', 1),
             )
 
     @staticmethod

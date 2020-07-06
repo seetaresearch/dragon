@@ -16,15 +16,15 @@ from __future__ import print_function
 from dragon.vm.torch.autograd import function
 
 
-class Accumulate(function.Function):
+class Axpby(function.Function):
     def __init__(self, key, dev, **kwargs):
-        super(Accumulate, self).__init__(key, dev, **kwargs)
+        super(Axpby, self).__init__(key, dev, **kwargs)
         self.alpha = kwargs.get('alpha', 1.)
         self.beta = kwargs.get('beta', 1.)
 
     def attributes(self):
         return {
-            'op_type': 'Accumulate',
+            'op_type': 'Axpby',
             'arguments': {
                 'alpha': self.alpha,
                 'beta': self.beta,
@@ -36,9 +36,9 @@ class Accumulate(function.Function):
         return self.dispatch([input], [out], no_grad=True)
 
 
-class Binary(function.Function):
+class BinaryFunc(function.Function):
     def __init__(self, key, dev, **kwargs):
-        super(Binary, self).__init__(key, dev, **kwargs)
+        super(BinaryFunc, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', '')
 
     def attributes(self):
@@ -73,9 +73,9 @@ class Clip(function.Function):
         return self.dispatch([input], [out])
 
 
-class Unary(function.Function):
+class UnaryFunc(function.Function):
     def __init__(self, key, dev, **kwargs):
-        super(Unary, self).__init__(key, dev, **kwargs)
+        super(UnaryFunc, self).__init__(key, dev, **kwargs)
         self.op_type = kwargs.get('op_type', '')
 
     def attributes(self):
@@ -86,18 +86,18 @@ class Unary(function.Function):
         return self.dispatch([input], [out])
 
 
-class MM(function.Function):
+class MatMul(function.Function):
     def __init__(self, key, dev, **kwargs):
-        super(MM, self).__init__(key, dev, **kwargs)
-        self.transA = kwargs.get('transA', False)
-        self.transB = kwargs.get('transB', False)
+        super(MatMul, self).__init__(key, dev, **kwargs)
+        self.transpose_a = kwargs.get('transpose_a', False)
+        self.transpose_b = kwargs.get('transpose_b', False)
 
     def attributes(self):
         return {
-            'op_type': 'Matmul',
+            'op_type': 'MatMul',
             'arguments': {
-                'transA': self.transA,
-                'transB': self.transB,
+                'transA': self.transpose_a,
+                'transB': self.transpose_b,
             },
         }
 

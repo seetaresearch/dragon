@@ -18,9 +18,9 @@
 namespace dragon {
 
 template <class Context>
-class MatmulOp final : public Operator<Context> {
+class MatMulOp final : public Operator<Context> {
  public:
-  MatmulOp(const OperatorDef& def, Workspace* ws)
+  MatMulOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
         transA_(OpArg<int64_t>("transA", 0)),
         transB_(OpArg<int64_t>("transB", 0)) {}
@@ -36,9 +36,9 @@ class MatmulOp final : public Operator<Context> {
 };
 
 template <class Context>
-class MatmulGradientOp final : public Operator<Context> {
+class MatMulGradientOp final : public Operator<Context> {
  public:
-  MatmulGradientOp(const OperatorDef& def, Workspace* ws)
+  MatMulGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
         transA_(OpArg<int64_t>("transA", 0)),
         transB_(OpArg<int64_t>("transB", 0)) {}

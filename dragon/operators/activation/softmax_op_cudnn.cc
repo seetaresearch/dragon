@@ -9,10 +9,8 @@ template <typename T>
 void CuDNNSoftmaxOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0, {0});
   CANONICALIZE_AXIS_WITH_TENSOR(X);
-
   CuDNNSetTensorDesc<T>(
       &input_desc_, {X.count(0, axis), X.dim(axis), X.count(axis + 1)});
-
   CUDNN_CHECK(cudnnSoftmaxForward(
       ctx()->cudnn_handle(),
       CUDNN_SOFTMAX_ACCURATE,
@@ -35,10 +33,8 @@ template <typename T>
 void CuDNNSoftmaxGradientOp<Context>::DoRunWithType() {
   auto &Y = Input(0), &dY = Input(1), *dX = Output(0);
   CANONICALIZE_AXIS_WITH_TENSOR(Y);
-
   CuDNNSetTensorDesc<T>(
       &input_desc_, {Y.count(0, axis), Y.dim(axis), Y.count(axis + 1)});
-
   CUDNN_CHECK(cudnnSoftmaxBackward(
       ctx()->cudnn_handle(),
       CUDNN_SOFTMAX_ACCURATE,

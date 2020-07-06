@@ -13,14 +13,14 @@ void FullyConnectedOp<Context>::DoRunWithType() {
 
   // Determine the number of output channels
   int64_t M = X.count(0, axis), K = X.count(axis), N;
-  if (num_output_ <= 0) {
+  if (out_channels_ <= 0) {
     // Infer the "N" from the weights shape
     N = W.count() / K;
     CHECK_GT(N, 0) << "\nFailed to infer the N from "
                    << "the weights shape: " << W.DimString();
   } else {
     // Use a fixed "N" from the argument
-    N = num_output_;
+    N = out_channels_;
   }
 
   vec64_t Y_dims(axis + 1);
@@ -82,14 +82,14 @@ void FullyConnectedGradientOp<Context>::DoRunWithType() {
 
   // Determine the number of output channels
   int64_t M = X.count(0, axis), K = X.count(axis), N;
-  if (num_output_ <= 0) {
+  if (out_channels_ <= 0) {
     // Infer the "N" from the weights shape
     N = W.count() / K;
     CHECK_GT(N, 0) << "\nFailed to infer the N from "
                    << "the weights shape: " << W.DimString();
   } else {
     // Use a fixed "N" from the argument
-    N = num_output_;
+    N = out_channels_;
   }
 
   if (dX->has_name()) {

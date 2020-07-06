@@ -14,28 +14,28 @@ void _Softmax(
     const int inner_dim,
     const T* x,
     T* y) {
-  int row_ofs, col_ofs, yi;
+  int row_offset, col_offset, yi;
   auto x_stride = axis_dim * inner_dim;
   for (int i = 0; i < outer_dim; ++i) {
-    row_ofs = i * axis_dim * inner_dim;
+    row_offset = i * axis_dim * inner_dim;
     for (int j = 0; j < inner_dim; ++j) {
-      col_ofs = row_ofs + j;
-      T val = x[col_ofs];
+      col_offset = row_offset + j;
+      T val = x[col_offset];
       for (int k = 1; k < axis_dim; ++k) {
-        yi = col_ofs + k * inner_dim;
+        yi = col_offset + k * inner_dim;
         val = std::max(val, x[yi]);
       }
       for (int k = 0; k < axis_dim; ++k) {
-        yi = col_ofs + k * inner_dim;
+        yi = col_offset + k * inner_dim;
         y[yi] = std::exp(x[yi] - val);
       }
-      val = y[col_ofs];
+      val = y[col_offset];
       for (int k = 1; k < axis_dim; ++k) {
-        yi = col_ofs + k * inner_dim;
+        yi = col_offset + k * inner_dim;
         val += y[yi];
       }
       for (int k = 0; k < axis_dim; ++k) {
-        yi = col_ofs + k * inner_dim;
+        yi = col_offset + k * inner_dim;
         y[yi] /= val;
       }
     }
@@ -60,19 +60,19 @@ void _SoftmaxGrad(
     const T* dy,
     const T* y,
     T* dx) {
-  int row_ofs, col_ofs, yi;
+  int row_offset, col_offset, yi;
   auto x_stride = axis_dim * inner_dim;
   for (int i = 0; i < outer_dim; ++i) {
-    row_ofs = i * axis_dim * inner_dim;
+    row_offset = i * axis_dim * inner_dim;
     for (int j = 0; j < inner_dim; ++j) {
-      col_ofs = row_ofs + j;
-      T val = dy[col_ofs] * y[col_ofs];
+      col_offset = row_offset + j;
+      T val = dy[col_offset] * y[col_offset];
       for (int k = 1; k < axis_dim; ++k) {
-        yi = col_ofs + k * inner_dim;
+        yi = col_offset + k * inner_dim;
         val += dy[yi] * y[yi];
       }
       for (int k = 0; k < axis_dim; ++k) {
-        yi = col_ofs + k * inner_dim;
+        yi = col_offset + k * inner_dim;
         dx[yi] = (dy[yi] - val) * y[yi];
       }
     }
