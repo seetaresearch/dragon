@@ -123,17 +123,14 @@ class Binding(object):
         if self._device_tensor is None:
             spec = device_spec.DeviceSpec('cuda', self.device_id)
             self._device_opt = spec.to_proto(serialized=True)
-            ws = workspace.get_workspace()
-            ref = EagerTensor(device=spec)  # Hack the constructor.
-            ref.__gc__ = ws.collectors.TENSOR
-            ref._id = ref.__gc__.alloc('${DLPACK}')
-            ref._impl = ws.CreateTensor(ref._id).FromPointer(
-                self._shape,
-                self._dtype,
-                self._device_opt,
-                self.device_buffer.ptr,
-            )
-            self._device_tensor = ref
+            current_ws = workspace.get_workspace()
+            tensor = EagerTensor(device=spec)  # Hack the constructor.
+            tensor._gc = current_ws.collectors.TENSOR
+            tensor._impl = current_ws.create_tensor(
+                tensor._gc.alloc('${DLPACK}')).FromPointer(
+                self._shape, self._dtype,
+                self._device_opt, self.device_buffer.ptr)
+            self._device_tensor = tensor
         return self._device_tensor._impl.ToDLPack(self._device_opt, True)
 
     @property
@@ -187,17 +184,14 @@ class Binding(object):
         if self._host_tensor is None:
             spec = device_spec.DeviceSpec('cpu')
             self._host_opt = spec.to_proto(serialized=True)
-            ws = workspace.get_workspace()
-            ref = EagerTensor(device=spec)  # Hack the constructor.
-            ref.__gc__ = ws.collectors.TENSOR
-            ref._id = ref.__gc__.alloc('${DLPACK}')
-            ref._impl = ws.CreateTensor(ref._id).FromPointer(
-                self._shape,
-                self._dtype,
-                self._host_opt,
-                self.host_buffer.ctypes.data,
-            )
-            self._host_tensor = ref
+            current_ws = workspace.get_workspace()
+            tensor = EagerTensor(device=spec)  # Hack the constructor.
+            tensor._gc = current_ws.collectors.TENSOR
+            tensor._impl = current_ws.create_tensor(
+                tensor._gc.alloc('${DLPACK}')).FromPointer(
+                self._shape, self._dtype,
+                self._host_opt, self.host_buffer.ctypes.data)
+            self._host_tensor = tensor
         return self._host_tensor._impl.ToDLPack(self._host_opt, True)
 
     @property

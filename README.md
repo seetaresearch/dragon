@@ -1,8 +1,8 @@
 <p align="center">
-    <img width="40%" src="http://dragon.seetatech.com/static/images/styles-dragon.png"/>
+    <img width="40%" src="https://dragon.seetatech.com/static/images/styles-dragon.png"/>
 </p>
 
-[Dragon](http://dragon.seetatech.com) is a **C**(Computation)**G**(Graph)**V**(Virtual)**M**(Machine) based distributed deep learning framework.
+[Dragon](https://dragon.seetatech.com) is a **C**(Computation)**G**(Graph)**V**(Virtual)**M**(Machine) based distributed deep learning framework.
 It fuses several modern frameworks and integrations together, powered by a unified engine.
 The computation between different programming styles is deterministic and reproduceable.
 
@@ -11,7 +11,7 @@ promoting internal interfaces. We will always learn from the AI community to evo
 
 ## Installation
 
-See the [install guide](http://dragon.seetatech.com/install) for the pip package
+See the [install guide](https://dragon.seetatech.com/install) for the pip package
 or how to build from source.
 
 ## License

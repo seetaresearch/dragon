@@ -30,9 +30,9 @@ class OpInfo(object):
         self._defs = dict()
         self._targets = set()
 
-    def add_def(self, idx, op_def):
+    def add_def(self, index, op_def):
         """Add a operator definition."""
-        self._defs[idx] = op_def
+        self._defs[index] = op_def
 
     def add_target(self, target):
         """Add an extra target relied by inputs."""
@@ -74,13 +74,14 @@ class OpDef(object):
         # Create outputs.
         if outputs is None:
             outputs = []
+            current_ws = workspace.get_workspace()
             name_scope = context.get_name_scope()
             for i in range(num_outputs):
                 outputs.append(TensorRef(
-                    workspace.get_dummy_name(
+                    current_ws.unique_name(
                         name_scope + (name if name else op_type),
                         suffix=':{}'.format(i),
-                        domain='Tensor')))
+                        namespace='Tensor')))
         else:
             outputs = nest.flatten(outputs)
             num_outputs = len(outputs)
@@ -124,13 +125,13 @@ class OpDef(object):
         return spec_func(arguments, inputs, outputs)
 
     @staticmethod
-    def get_index_and_name(prefix='Op'):
+    def get_index_and_name():
         """Return an unique op name and index."""
-        name = workspace.get_dummy_name(
-            prefix, domain='Operator', zero_based=False)
+        name = workspace.get_workspace().unique_name(
+            'Op', namespace='Op', zero_based=False)
         return int(name.split('_')[-1]), name
 
     @staticmethod
-    def get_name(prefix='Op'):
+    def get_name():
         """Return an unique op name."""
-        return OpDef.get_index_and_name(prefix)[1]
+        return OpDef.get_index_and_name()[1]

@@ -7,7 +7,7 @@ trace
 
   <style>
     h1:before {
-      content: "torch.nn.jit.";
+      content: "torch.jit.";
       color: #103d3e;
     }
   </style>

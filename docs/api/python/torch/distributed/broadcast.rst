@@ -7,7 +7,7 @@ broadcast
 
   <style>
     h1:before {
-      content: "torch.nn.distributed.";
+      content: "torch.distributed.";
       color: #103d3e;
     }
   </style>

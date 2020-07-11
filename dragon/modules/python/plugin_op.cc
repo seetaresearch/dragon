@@ -20,7 +20,6 @@ PythonPluginInferOp<Context>::PythonPluginInferOp(
       class_name_(OpArg<string>("class_name", "")),
       kwargs_str_((OpArg<string>("kwargs_str", ""))) {
   // Optimization for all python ops
-  if (!allow_run()) return;
   this->do_sync_ = false;
 
   // Initialize interpreter and load module

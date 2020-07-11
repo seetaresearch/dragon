@@ -18,7 +18,6 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.core.util import six
-from dragon.core.framework import types
 from dragon.core.framework import workspace
 from dragon.vm.tensorflow.core.framework import tensor_shape
 from dragon.vm.tensorflow.core.ops import array_ops
@@ -43,7 +42,7 @@ def Input(
     # Create a placeholder with determined ``batch_size``
     x = tf.keras.Input(shape=(8,), batch_size=8, dtype='float32')
 
-    # Create a placeholder aliasing an existing symbolic tensor
+    # Create a placeholder aliasing an existing tensor
     x = dragon.Tensor('x', shape=(8,), dtype='float32').variable()
     xx = tf.keras.Input(tensor=x)
     ```
@@ -59,7 +58,7 @@ def Input(
     dtype : str, optional
         The optional data type.
     tensor : dragon.Tensor, optional
-        The existing symbolic tensor aliased to the placeholder.
+        The existing tensor aliased to input.
 
     Returns
     -------
@@ -99,16 +98,9 @@ def Input(
     elif isinstance(shape, six.integer_types):
         shape = (shape,)
 
-    placeholder = \
-        array_ops.placeholder(
-            dtype=dtype,
-            shape=shape,
-            name=name if name else 'input',
-        )
-
+    placeholder = array_ops.placeholder(
+        dtype=dtype, shape=shape, name=name if name else 'input')
     if tensor is not None:
-        if not types.is_symbolic_tensor(tensor):
-            raise ValueError('Accepted a dragon.Tensor only.')
-        workspace.set_tensor_alias(tensor, placeholder.name)
+        workspace.get_workspace().register_alias(tensor, placeholder.id)
 
     return placeholder

@@ -56,7 +56,7 @@ class GraphOptimizer {
   void ForwardPrunePass(
       const string& u,
       const string& leaf,
-      const vector<string>& path);
+      const std::deque<string>& path);
 
   /*! \brief Pass from targets to remove unused nodes */
   void BackwardPrunePass(const string& v);

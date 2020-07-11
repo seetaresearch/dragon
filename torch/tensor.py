@@ -14,13 +14,13 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy
+import warnings
 
 from dragon.core.framework import config
 from dragon.core.framework import context
 from dragon.core.framework import mapping
 from dragon.core.framework import proto_util
 from dragon.core.framework import workspace
-from dragon.core.util import math_util
 from dragon.core.util import six
 from dragon.vm.torch import cpp
 
@@ -67,40 +67,24 @@ class Tensor(object):
 
     """
     def __init__(self, *args, **kwargs):
-        # Internal properties
-        self._id = kwargs.get('id', None)
+        self._tape = None
+        self._gc = kwargs.get('gc', None)
+        self._impl = kwargs.get('impl', None)
         self._device = kwargs.get('device', cpp.device())
         self._requires_grad = kwargs.get('requires_grad', False)
-        self._own_storage = kwargs.get('own_storage', True)
-        self._const_size = None  # Attribute to represent a leaf variable
-        self._ignored_grads = set()  # Blacklist of the non-gradient variables
-        self.__tape__ = None  # Instance tape to record operations
-        self.__accumulating__ = False  # Flag for gradient accumulating
-
-        # Constructor
         if len(args) == 0:
-            # >>> Empty tensor
-            if self._id is not None:
-                ws = workspace.get_workspace()
-                self.__gc__ = ws.collectors.TENSOR
-                self._impl = ws.CreateTensor(self._id)
-            else:
-                self.__gc__ = None
+            self._is_leaf = False
         elif len(args) == 1:
             if isinstance(args[0], (list, tuple)):
-                # >>> torch.Tensor(sequence)
                 dtype = kwargs.get('dtype', 'float32')
                 self._from_numpy(numpy.array(args[0], dtype=dtype), copy=False)
             elif isinstance(args[0], numpy.ndarray):
-                # >>> torch.Tensor(array)
                 self._from_numpy(args[0], copy=kwargs.get('copy', True))
             else:
-                # >>> torch.Tensor(size)
                 if not isinstance(args[0], six.integer_types):
                     raise ValueError('Excepted an integer as size.')
                 self._from_shape([args[0]], kwargs.get('dtype', 'float32'))
         else:
-            # >>> torch.Tensor(*sizes)
             if not all(isinstance(arg, six.integer_types) for arg in args):
                 raise ValueError('Excepted integer(s) as sizes.')
             self._from_shape(args, kwargs.get('dtype', 'float32'))
@@ -115,7 +99,7 @@ class Tensor(object):
             The data tensor.
 
         """
-        return Tensor(device=self.device, id=self._id, own_storage=False)
+        return Tensor(device=self.device, impl=self._impl)
 
     @property
     def dtype(self):
@@ -143,7 +127,7 @@ class Tensor(object):
 
     @property
     def grad(self):
-        """Return a grad reference if gradient had be computed.
+        """Return the grad of this tensor if computed.
 
         Returns
         -------
@@ -151,14 +135,11 @@ class Tensor(object):
             The grad tensor.
 
         """
-        grad_id = self._id + '_grad'
-        grad_impl = workspace.get_workspace().GetTensor(grad_id)
-        if grad_impl is None:
-            return None
-        grad_ref = Tensor(own_storage=False)
-        grad_ref._device = cpp.device(*self._impl.device)
-        grad_ref._id, grad_ref._impl = grad_id, grad_impl
-        return grad_ref
+        if self._requires_grad and self._gc:
+            impl = self._gc._workspace.GetTensor(self.id + '_grad')
+            if impl is not None:
+                return Tensor(device=self.device, impl=impl)
+        return None
 
     @property
     def grad_fn(self):
@@ -174,7 +155,19 @@ class Tensor(object):
             The identity.
 
         """
-        return self._id
+        return self._impl.name
+
+    @property
+    def is_leaf(self):
+        """Return whether tensor is a leaf.
+
+        Returns
+        -------
+        bool
+            **True** if this is a leaf tensor otherwise **False**.
+
+        """
+        return self._is_leaf or not self._requires_grad
 
     @property
     def requires_grad(self):
@@ -191,9 +184,6 @@ class Tensor(object):
     @requires_grad.setter
     def requires_grad(self, value):
         self._requires_grad = value
-        if self._const_size is not None:
-            self._ignored_grads = set() if value \
-                else {self._id + '_grad'}
 
     @property
     def shape(self):
@@ -206,6 +196,11 @@ class Tensor(object):
 
         """
         return self.size()
+
+    @property
+    def volatile(self):
+        warnings.warn('Attribute ``volatile`` was removed (always False).', stacklevel=2)
+        return False
 
     def abs(self):
         r"""Return a tensor with the absolute value.
@@ -268,18 +263,17 @@ class Tensor(object):
         """
         pass
 
-    def backward(self, gradient=None):
-        """Compute the gradients starting from this tensor.
-
-        If ``gradient`` is not provided, **ones** will be used instead.
+    def backward(self, gradient=None, retain_graph=False):
+        """Compute the derivatives of this tensor w.r.t. graph leaves.
 
         Parameters
-        ---------
+        ----------
         gradient : dragon.vm.torch.Tensor, optional
-            The optional input gradient.
+            The optional gradient of this tensor.
+        retain_graph : bool, optional, default=False
+            **False** to free the graph used to compute grad.
 
         """
-        pass
 
     def bitwise_not(self):
         r"""Compute the element-wise NOT bitwise operation.
@@ -546,9 +540,6 @@ class Tensor(object):
                 src._device.index
             ),
         )
-        # Transfer the const size if necessary
-        self._const_size = src.size() \
-            if self._const_size else None
         return self
 
     def cos(self):
@@ -1506,6 +1497,11 @@ class Tensor(object):
         """
         pass
 
+    def retain_grad(self):
+        """Retain grad for the non-leaf tensor."""
+        if self._tape:
+            self._tape.add_source(self.id)
+
     def round(self):
         r"""Return a tensor taken the round of elements.
 
@@ -1934,9 +1930,6 @@ class Tensor(object):
         """
         pass
 
-    def volatile(self):
-        pass
-
     def zero_(self):
         r"""Fill self with constant 0.
 
@@ -1954,20 +1947,16 @@ class Tensor(object):
         """Create impl from the numpy array."""
         ws = workspace.get_workspace()
         array = array.copy() if copy else array
-        self._const_size = array.size
-        self.__gc__ = ws.collectors.TENSOR
-        self._id = self.__gc__.alloc(context.get_eager_scope())
-        self._impl = ws.CreateTensor(self._id).FromNumpy(array)
-        self.requires_grad = self._requires_grad
+        self._gc, self._is_leaf = ws.collectors.TENSOR, True
+        self._impl = ws.create_tensor(self._gc.alloc(
+            context.get_eager_scope())).FromNumpy(array)
 
     def _from_shape(self, shape, dtype):
         """Create impl from the shape and data type."""
         ws = workspace.get_workspace()
-        self._const_size = math_util.prod(shape)
-        self.__gc__ = ws.collectors.TENSOR
-        self._id = self.__gc__.alloc(context.get_eager_scope())
-        self._impl = ws.CreateTensor(self._id).FromShape(shape, dtype)
-        self.requires_grad = self._requires_grad
+        self._gc, self._is_leaf = ws.collectors.TENSOR, True
+        self._impl = ws.create_tensor(self._gc.alloc(
+            context.get_eager_scope())).FromShape(shape, dtype)
 
     def _type2str(self):
         """Return the tensor type string."""
@@ -1977,12 +1966,10 @@ class Tensor(object):
         return self.add(other)
 
     def __del__(self):
-        if not self._requires_grad or self._const_size:
-            if self._own_storage and self._id:
-                # Always reuse the leaf variables or tensors
-                # that do not require grad.
-                # PyGC will detect them automatically.
-                self.__gc__.collect(self._id)
+        if self.is_leaf and self._gc:
+            # Always reuse the leaf tensors.
+            # PyGC will detect them automatically.
+            self._gc.collect(self.id)
 
     def __div__(self, other):
         return self.div(other)

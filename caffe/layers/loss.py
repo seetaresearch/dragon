@@ -30,13 +30,13 @@ class EuclideanLoss(Layer):
 
     ```python
     layer {
-        type: "EuclideanLoss"
-        bottom: "bbox_pred"
-        bottom: "bbox_target"
-        top: "bbox_loss"
-        loss_param {
-            normalization: BATCH_SIZE
-        }
+      type: "EuclideanLoss"
+      bottom: "bbox_pred"
+      bottom: "bbox_target"
+      top: "bbox_loss"
+      loss_param {
+        normalization: BATCH_SIZE
+      }
     }
     ```
 
@@ -67,13 +67,13 @@ class SigmoidCrossEntropyLoss(Layer):
 
     ```python
     layer {
-        type: "SigmoidCrossEntropyLoss"
-        bottom: "rpn_cls_score"
-        bottom: "rpn_labels"
-        top: "rpn_loss"
-        loss_param {
-            normalization: VALID
-        }
+      type: "SigmoidCrossEntropyLoss"
+      bottom: "rpn_cls_score"
+      bottom: "rpn_labels"
+      top: "rpn_loss"
+      loss_param {
+        normalization: VALID
+      }
     }
     ```
 
@@ -106,15 +106,15 @@ class SmoothL1Loss(Layer):
 
     ```python
     layer {
-        type: "SmoothL1Loss"
-        bottom: "bbox_pred"
-        bottom: "bbox_targets"
-        bottom: "bbox_inside_weights"
-        bottom: "bbox_outside_weights"
-        top: "bbox_loss"
-        loss_param {
-            normalization: BATCH_SIZE
-        }
+      type: "SmoothL1Loss"
+      bottom: "bbox_pred"
+      bottom: "bbox_targets"
+      bottom: "bbox_inside_weights"
+      bottom: "bbox_outside_weights"
+      top: "bbox_loss"
+      loss_param {
+        normalization: BATCH_SIZE
+      }
     }
     ```
 
@@ -155,15 +155,17 @@ class SoftmaxWithLoss(Layer):
 
     ```python
     layer {
-        type: "SoftmaxWithLoss"
-        bottom: "cls_score"
-        bottom: "labels"
-        top: "cls_loss"
-        softmax_param { axis: 1 }
-        loss_param {
-            ignore_label: -1
-            normalization: VALID
-        }
+      type: "SoftmaxWithLoss"
+      bottom: "cls_score"
+      bottom: "labels"
+      top: "cls_loss"
+      softmax_param {
+        axis: 1
+      }
+      loss_param {
+        ignore_label: -1
+        normalization: VALID
+      }
     }
     ```
 

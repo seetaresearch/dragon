@@ -88,8 +88,7 @@ def _save(obj, f, pickle_module, pickle_protocol):
 
 def save(obj, f, pickle_module=PICKLE_MODULE, pickle_protocol=DEFAULT_PROTOCOL):
     return _with_file_like(
-        f, "wb", lambda f: _save(obj, f, pickle_module, pickle_protocol)
-    )
+        f, "wb", lambda f: _save(obj, f, pickle_module, pickle_protocol))
 
 
 def _load(f, map_location=None, pickle_module=six.moves.pickle, file=None):

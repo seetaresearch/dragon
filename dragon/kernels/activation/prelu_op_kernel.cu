@@ -425,7 +425,7 @@ void PReluWGrad<float16, CUDAContext>(
           CUDA_THREADS,
           0,
           ctx->cuda_stream()>>>(
-          N * C * S,
+          N * S,
           C,
           S,
           reinterpret_cast<const half*>(dy),
@@ -437,7 +437,7 @@ void PReluWGrad<float16, CUDAContext>(
           CUDA_THREADS,
           0,
           ctx->cuda_stream()>>>(
-          N * C * S,
+          N * S,
           C,
           reinterpret_cast<const half*>(dy),
           reinterpret_cast<const half*>(x),
@@ -536,13 +536,13 @@ void PReluWGrad<float16, CUDAContext>(
             CUDA_2D_BLOCKS(C),                                               \
             CUDA_THREADS,                                                    \
             0,                                                               \
-            ctx->cuda_stream()>>>(N * C * S, C, S, dy, x, dw);               \
+            ctx->cuda_stream()>>>(N * S, C, S, dy, x, dw);                   \
       } else if (data_format == "NHWC") {                                    \
         _PReluWGradNHWC<<<                                                   \
             CUDA_2D_BLOCKS(C),                                               \
             CUDA_THREADS,                                                    \
             0,                                                               \
-            ctx->cuda_stream()>>>(N * C * S, C, dy, x, dw);                  \
+            ctx->cuda_stream()>>>(N * S, C, dy, x, dw);                      \
       } else {                                                               \
         LOG(FATAL) << "Unknown data format: " << data_format;                \
       }                                                                      \

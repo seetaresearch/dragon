@@ -15,10 +15,11 @@ from __future__ import print_function
 
 from dragon.core.framework import config
 from dragon.core.framework import device_spec
+from dragon.core.framework import mapping
 from dragon.core.util import tls
 
 
-def device(device_type, device_id=0):
+def device(device_type, device_index=0):
     """Context-manager to nest the the device spec.
 
     Examples:
@@ -32,7 +33,7 @@ def device(device_type, device_id=0):
     ----------
     device_type : {'cpu', 'gpu', 'cuda', 'cnml'}, required
         The type of device.
-    device_id : int, optional, default=0
+    device_index : int, optional, default=0
         The index of the device.
 
     Returns
@@ -41,13 +42,12 @@ def device(device_type, device_id=0):
         The current default device spec.
 
     """
-    device_type, device_id, device_type.lower(), device_id
-    assert device_type in ('cpu', 'gpu', 'cuda', 'cnml')
-    if device_type == 'gpu':
-        device_type = 'cuda'
+    device_type = device_type.lower()
+    if device_type not in mapping.DEVICE_STRING_TO_DEVICE_TYPE:
+        raise ValueError('Unsupported device type:', device_type)
     return _GLOBAL_DEVICE_STACK.get_controller({
-        'device_type': device_type,
-        'device_index': device_id,
+        'device_type': mapping.DEVICE_STRING_TO_DEVICE_TYPE[device_type],
+        'device_index': device_index,
     })
 
 
@@ -96,21 +96,6 @@ def name_scope(name):
     return _GLOBAL_NAME_STACK.get_controller(default)
 
 
-def graph_phase(phase):
-    """Context-manager to nest the the executing phase for graph.
-
-    Parameters
-    ----------
-    phase : {'TRAIN', 'TEST'}, required
-        The executing phase.
-
-    """
-    phase = phase.upper()
-    assert phase in ('TRAIN', 'TEST'), \
-        "Specified an unknown phase: " + phase
-    return _GLOBAL_PHASE_STACK.get_controller(phase)
-
-
 def get_device_info():
     """Return the device info in current nesting."""
     return _GLOBAL_DEVICE_STACK.get_default()
@@ -144,13 +129,7 @@ def get_name_scope():
     return ret if ret is not None else ''
 
 
-def get_graph_phase():
-    """Return the graph phase in current nesting."""
-    return _GLOBAL_PHASE_STACK.get_default()
-
-
 # Thread-local stack for nesting scope.
 _GLOBAL_DEVICE_STACK = tls.Stack()
 _GLOBAL_EAGER_STACK = tls.Stack([('${GRAPH}', '${DATA}')])
 _GLOBAL_NAME_STACK = tls.Stack()
-_GLOBAL_PHASE_STACK = tls.Stack()

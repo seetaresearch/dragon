@@ -247,7 +247,7 @@ class TestActivationOps(OpTestCase):
                     result = np.maximum(data1, 0.) + np.minimum(data1, 0.) * data2
                     grad1 = data1 * ((data1 > 0.) + (data1 < 0.) * data2)
                     grad2 = reduce_like(data1 * ((data1 < 0.) * data1), data2)
-                    self.assertEqual([y, dx, dw], [result, grad1, grad2.reshape((-1,))])
+                    self.assertEqual([y, dx, dw], [result, grad1, grad2.flatten()])
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_prelu_cuda(self):
@@ -831,19 +831,20 @@ class TestArrayOps(OpTestCase):
             self.test_stack()
 
     def test_tile(self):
-        entries = [(1, 1), (1, 2), (2, 1), (2, 2)]
+        entries = [(2,), (1, 1), (1, 2), (2, 1), (2, 2)]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                for multiples in entries:
+                for repeats in entries:
                     data = arange((2, 2))
-                    grad = np.tile(data, multiples)
                     x = new_tensor(data)
-                    dy = new_tensor(grad)
                     with dragon.GradientTape() as tape:
                         tape.watch(x)
-                        y = dragon.tile(x, multiples)
+                        y = dragon.tile(x, repeats)
+                    repeats = repeats + (1,) * (len(data.shape) - len(repeats))
+                    grad = np.tile(data, repeats)
+                    dy = new_tensor(grad)
                     dx = tape.gradient(y, [x], output_gradients=[dy])[0]
-                    self.assertEqual([y, dx], [grad, data * np.prod(multiples)])
+                    self.assertEqual([y, dx], [grad, data * np.prod(repeats)])
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_tile_cuda(self):
@@ -2784,7 +2785,8 @@ class TestTrainingOps(OpTestCase):
         self.adam = dragon.optimizers.Adam()
         self.nesterov = dragon.optimizers.Nesterov()
         self.rmsprop = dragon.optimizers.RMSprop()
-        self.sgd = dragon.optimizers.SGD()
+        self.sgd = dragon.optimizers.SGD(name='MyOptimizer')
+        self.sgd.base_lr = 0.01
 
     def test_adam_update(self):
         with execution_context().mode('EAGER_MODE'):
@@ -2798,7 +2800,7 @@ class TestTrainingOps(OpTestCase):
                 coef = math.sqrt(1 - math.pow(beta2, t)) / (1 - math.pow(beta1, t))
                 data4 = uniform((2, 3))
                 grad = new_tensor(data4)
-                self.adam._run_update(param, grad)
+                self.adam.apply_gradients([[param, grad]])
                 data2 = beta1 * data2 + (1 - beta1) * data4
                 data3 = beta2 * data3 + (1 - beta2) * np.square(data4)
                 data1 -= (lr * coef * data2 / (np.sqrt(data3) + eps))
@@ -2817,7 +2819,7 @@ class TestTrainingOps(OpTestCase):
             for i in range(2):
                 data3 = uniform((2, 3))
                 grad = new_tensor(data3)
-                self.nesterov._run_update(param, grad)
+                self.nesterov.apply_gradients([[param, grad]])
                 data2_new = momentum * data2 + lr * data3
                 data1 -= (1 + momentum) * data2_new - momentum * data2
                 data2 = data2_new
@@ -2838,7 +2840,7 @@ class TestTrainingOps(OpTestCase):
             for i in range(2):
                 data4 = uniform((2, 3))
                 grad = new_tensor(data4)
-                self.rmsprop._run_update(param, grad)
+                self.rmsprop.apply_gradients([[param, grad]])
                 data3 = decay * data3 + (1 - decay) * np.square(data4)
                 data2 = momentum * data2 + (lr * data4 / (np.sqrt(data3) + eps))
                 data1 -= data2
@@ -2857,7 +2859,7 @@ class TestTrainingOps(OpTestCase):
             for i in range(2):
                 data3 = uniform((2, 3))
                 grad = new_tensor(data3)
-                self.sgd._run_update(param, grad)
+                self.sgd.apply_gradients([[param, grad]])
                 data2 = momentum * data2 + lr * data3
                 data1 -= data2
                 self.assertEqual(param, data1)
@@ -3494,7 +3496,7 @@ def reduce_like(data, other, reduction='sum'):
 
 def uniform(shape, dtype='float32'):
     """Return the uniform data with given shape."""
-    return np.random.uniform(size=shape).astype(dtype)
+    return np.random.uniform(-1., 1., size=shape).astype(dtype)
 
 
 if __name__ == '__main__':

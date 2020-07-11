@@ -81,7 +81,8 @@ def constant(value, dtype=None, shape=None, name='Const'):
         return EagerTensor(value, name=name + ':0')
     else:
         return TensorRef(
-            name=workspace.get_dummy_name(name, ':0', 'Tensor'),
+            name=workspace.get_workspace().unique_name(
+                name, ':0', 'dragon.Tensor'),
             shape=list(value.shape),
             dtype=str(value.dtype),
         ).set_value(value)

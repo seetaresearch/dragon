@@ -18,8 +18,8 @@ dragon
   `class TensorSpec <dragon/TensorSpec.html>`_
   : Spec to describe properties of a tensor.
 
-  `class Workspace <dragon/Workspace_.html>`_
-  : Space to isolate computations that share resources.
+  `class Workspace <dragon/Workspace.html>`_
+  : Sandbox to isolate the resources and computations.
 
   Functions
   ---------
@@ -151,7 +151,7 @@ dragon
   : Return the identity of input with truncated gradient-flow.
 
   `tile(...) <dragon/tile.html>`_
-  : Tile the input according to the given multiples.
+  : Tile the input according to the given repeats.
 
   `transpose(...) <dragon/transpose.html>`_
   : Permute the dimensions of input.
@@ -217,7 +217,7 @@ dragon
   dragon/tile
   dragon/transpose
   dragon/where
-  dragon/Workspace_
+  dragon/Workspace
   dragon/zeros
   dragon/zeros_like
 

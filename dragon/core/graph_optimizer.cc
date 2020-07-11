@@ -39,14 +39,12 @@ GraphDef GraphOptimizer::PruneNodes(const GraphDef& input_def) {
     BackwardPrunePass(target);
   }
 
-  // Forward pass from gradients
-  for (const auto& gradient : input_def.gradient()) {
-    auto u = gradient.cost() + "_grad";
-    auto v = gradient.wrt() + "_grad";
-    if (ws_->HasTensor(u)) u = ws_->GetTensor(u)->name();
-    if (ws_->HasTensor(v)) v = ws_->GetTensor(v)->name();
-    visited_.clear();
-    ForwardPrunePass(u, v, vector<string>({u}));
+  for (const auto& grad_info : input_def.grad_info()) {
+    const auto u = grad_info.y() + "_grad";
+    for (const auto& x : grad_info.xs()) {
+      visited_.clear();
+      ForwardPrunePass(u, x + "_grad", std::deque<string>({u}));
+    }
   }
 
   // Select all colored operators
@@ -64,7 +62,6 @@ GraphDef GraphOptimizer::PruneNodes(const GraphDef& input_def) {
 
   // Generate the final op sequence
   map<int, OperatorDef> final_sequence;
-
   for (auto op_idx : selected_op_indices) {
     const auto& op = input_def.op(op_idx);
     auto new_op(input_def.op(op_idx));
@@ -308,11 +305,13 @@ GraphDef GraphOptimizer::SimulateGC(const GraphDef& input_def) {
 void GraphOptimizer::ForwardPrunePass(
     const string& u,
     const string& leaf,
-    const vector<string>& path) {
+    const std::deque<string>& path) {
   if (visited_.count(u)) {
-    if (visited_[u])
-      for (const auto& node : path)
+    if (visited_[u]) {
+      for (const auto& node : path) {
         visited_[node] = colored_[node] = true;
+      }
+    }
     return;
   }
   visited_[u] = false;
@@ -321,8 +320,9 @@ void GraphOptimizer::ForwardPrunePass(
     auto new_path(path);
     new_path.push_back(v);
     if (v == leaf) {
-      for (const auto& node : new_path)
+      for (const auto& node : new_path) {
         visited_[node] = colored_[node] = true;
+      }
       return;
     }
     ForwardPrunePass(v, leaf, new_path);

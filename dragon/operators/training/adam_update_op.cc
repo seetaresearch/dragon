@@ -9,7 +9,6 @@ void AdamUpdateOp<Context>::ComputeUpdate(Tensor* dX) {
   t_++;
   auto beta1 = Parameter("beta1"), beta2 = Parameter("beta2");
   auto coef = sqrt(1.f - pow(beta2, t_)) / (1.f - pow(beta1, t_));
-
   kernel::AdamUpdate(
       dX->count(),
       Parameter("base_lr") * coef * this->lr_mult_,

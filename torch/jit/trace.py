@@ -83,9 +83,10 @@ class FunctionGuard(object):
         symbols = self.inputs
         inputs, extra_args = self._function_spec \
             .canonicalize_inputs(*args, **kwargs)
+        current_ws = workspace.get_workspace()
         for sym, data in zip(symbols, inputs):
             if hasattr(data, 'id'):
-                workspace.set_tensor_alias(data.id, sym.id)
+                current_ws.register_alias(data.id, sym.id)
         return symbols, extra_args
 
     def __call__(self, *args, **kwargs):
@@ -125,7 +126,7 @@ class FunctionGuard(object):
             # In this case, we have the recorded IR.
             # Notify the backend to run directly.
             self.canonicalize_inputs(*args, **kwargs)
-            workspace.run_operator(self.defs)
+            workspace.get_workspace().run_operator(self.defs)
         return self.outputs
 
     def __get__(self, instance, owner):

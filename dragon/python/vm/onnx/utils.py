@@ -21,9 +21,9 @@ import numpy
 from dragon.core.autograph import function_lib
 from dragon.core.framework import workspace
 from dragon.core.proto import dragon_pb2
+from dragon.core.util import serialization
 from dragon.vm.onnx.frontend import graph_def_to_onnx_model
 from dragon.vm.onnx.helper import mapping
-from dragon.vm.onnx.serialization import save_model
 
 
 def export_from_graph(
@@ -40,7 +40,7 @@ def export_from_graph(
     enable_onnx_checker=True,
 ):
     """Export an onnx model from the graph."""
-    save_model(graph_def_to_onnx_model(
+    model = graph_def_to_onnx_model(
         graph_def=graph_def,
         input_names=input_names,
         output_names=output_names,
@@ -50,7 +50,8 @@ def export_from_graph(
         opset_version=opset_version,
         workspace=workspace,
         verbose=verbose,
-        enable_onnx_checker=enable_onnx_checker), f)
+        enable_onnx_checker=enable_onnx_checker)
+    serialization.save_bytes(serialization.serialize_proto(model), f)
 
 
 def import_to_function(model_path, explicit_inputs=False):

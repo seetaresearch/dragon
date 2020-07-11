@@ -19,7 +19,6 @@ ONNXImporterReturns ONNXBackend::ArgReduceImporter(
   auto node = NodeProto(onnx_node->node);
   auto onnx_node_v2 = ONNXNode(node);
   auto& attributes = onnx_node_v2.attributes;
-
   // Determine the operation
   auto* operation = attributes.AddRewrittenAttribute("operation");
   if (onnx_node->node.op_type() == "ArgMax") {
@@ -27,7 +26,6 @@ ONNXImporterReturns ONNXBackend::ArgReduceImporter(
   } else if (onnx_node->node.op_type() == "ArgMin") {
     operation->set_s("MIN");
   }
-
   return GenericImporter(&onnx_node_v2, ctx);
 }
 
@@ -37,17 +35,13 @@ ONNXImporterReturns ONNXBackend::ATenImporter(
   auto node = NodeProto(onnx_node->node);
   auto onnx_node_v2 = ONNXNode(node);
   auto& attributes = onnx_node_v2.attributes;
-
   auto op_type = attributes.get<string>("op_type", "");
-
   if (op_type.empty()) {
     LOG(FATAL) << "op_type is required to evolve "
                << "to the specific operator.";
   }
-
   node.set_op_type(op_type);
   attributes.remove("op_type");
-
   return GenericImporter(&onnx_node_v2, ctx);
 }
 
@@ -56,17 +50,13 @@ ONNXImporterReturns ONNXBackend::BatchNormImporter(
     const ConversionContext& ctx) {
   auto node = NodeProto(onnx_node->node);
   auto onnx_node_v2 = ONNXNode(node);
-
   auto& attributes = onnx_node_v2.attributes;
-
   // Enforce to NCHW format
   attributes.AddRewrittenAttribute("axis")->set_i(1);
-
   // Remove dummy attributes
   attributes.remove("consumed_inputs");
   attributes.remove("is_test");
   attributes.remove("spatial");
-
   return GenericImporter(&onnx_node_v2, ctx);
 }
 
@@ -74,12 +64,10 @@ ONNXImporterReturns ONNXBackend::CastImporter(
     ONNXNode* onnx_node,
     const ConversionContext& ctx) {
   auto& attributes = onnx_node->attributes;
-
   // Determine the dtype
   auto* dtype = attributes.AddRewrittenAttribute("dtype");
   auto onnx_dtype = attributes.get<int64_t>("to", TensorProto::UNDEFINED);
   auto supported_dtype = true;
-
   switch (onnx_dtype) {
     case ONNX_NAMESPACE::TensorProto::BOOL:
       dtype->set_s("bool");
@@ -138,11 +126,9 @@ ONNXImporterReturns ONNXBackend::CastImporter(
       supported_dtype = false;
       break;
   };
-
   CHECK(supported_dtype) << "\nCasting to " << dtype->s()
                          << " is not supported.";
   attributes.remove("to");
-
   return GenericImporter(onnx_node, ctx);
 }
 
@@ -151,17 +137,16 @@ ONNXImporterReturns ONNXBackend::ConvPoolImporter(
     const ConversionContext& ctx) {
   auto& attributes = onnx_node->attributes;
   const auto onnx_op_type = onnx_node->node.op_type();
-
   // Determine the padding
   auto mode = attributes.get<string>("auto_pad");
   auto* padding = attributes.AddRewrittenAttribute("padding");
   // SAME, SAME_LOWER, or SAME_UPPER
-  if (str::find(mode, "SAME"))
+  if (str::find(mode, "SAME")) {
     padding->set_s(mode);
-  else
+  } else {
     padding->set_s("VALID"); // Use explicit pads
+  }
   attributes.remove("auto_pad");
-
   // Determine the pooling mode
   if (onnx_op_type == "MaxPool") {
     attributes.AddRewrittenAttribute("mode")->set_s("MAX");
@@ -174,14 +159,11 @@ ONNXImporterReturns ONNXBackend::ConvPoolImporter(
     attributes.AddRewrittenAttribute("mode")->set_s("AVG");
     attributes.AddRewrittenAttribute("global_pooling")->set_i(1);
   }
-
   auto returns = GenericImporter(onnx_node, ctx);
-
   // Determine the op type
   OperatorDef* op_def = returns.GetOp(0);
   auto ks = attributes.get<ONNX_INTS>("kernel_shape");
   *(op_def->mutable_type()) += (str::to(ks.size() > 0 ? ks.size() : 2) + "d");
-
   return returns;
 }
 
@@ -194,11 +176,9 @@ ONNXImporterReturns ONNXBackend::GenericImporter(
   op_def->mutable_input()->MergeFrom(node.input());
   op_def->mutable_output()->MergeFrom(node.output());
   op_def->set_name(node.name());
-
   const auto onnx_op_type = node.op_type();
   op_def->set_type(
       get_default(get_renamed_nodes(), onnx_op_type, onnx_op_type));
-
   auto mapper = [&, this](const std::string& k) {
     const auto it = get_node_renamed_attrs().find(onnx_op_type);
     if (it != get_node_renamed_attrs().end()) {
@@ -224,18 +204,16 @@ ONNXImporterReturns ONNXBackend::GemmImporter(
   auto alpha = attributes.get<float>("alpha", 1.f);
   auto beta = attributes.get<float>("beta", 1.f);
   auto trans_a = attributes.get<int64_t>("transA", 0L);
-
+  // Remove the unsupported attributes
   if (alpha != 1.f || beta != 1.f) {
     LOG(FATAL) << "alpha/beta can not be set currently.";
   }
   if (trans_a) {
     LOG(FATAL) << "Tranposed A is not supported currently.";
   }
-
   attributes.remove("alpha");
   attributes.remove("beta");
   attributes.remove("transA");
-
   return GenericImporter(onnx_node, ctx);
 }
 
@@ -244,11 +222,9 @@ ONNXImporterReturns ONNXBackend::MaxRoiPoolImporter(
     const ConversionContext& ctx) {
   auto& attributes = onnx_node->attributes;
   auto pooled_shape = attributes.get<ONNX_INTS>("pooled_shape");
-
   attributes.AddRewrittenAttribute("pool_h")->set_i(pooled_shape.Get(0));
   attributes.AddRewrittenAttribute("pool_w")->set_i(pooled_shape.Get(1));
   attributes.remove("pooled_shape");
-
   return GenericImporter(onnx_node, ctx);
 }
 
@@ -258,18 +234,16 @@ ONNXImporterReturns ONNXBackend::ReshapeImporter(
   auto node = NodeProto(onnx_node->node);
   auto onnx_node_v2 = ONNXNode(node);
   auto& attributes = onnx_node_v2.attributes;
-
   attributes.remove("consumed_inputs");
-
   // Determine the dims
   auto* dims = attributes.AddRewrittenAttribute("dims");
-
   if (ctx.opset_version() < 5) {
     const auto& shape = attributes.get<ONNX_INTS>("shape");
     CHECK_GT(shape.size(), 0) << "\nExcepted the shape value";
     attributes.remove("shape");
-    for (auto d : shape)
+    for (auto d : shape) {
       dims->add_ints(d);
+    }
   } else {
     CHECK_EQ(node.input_size(), 2)
         << "\nExpectd 2 input in upsample after onnx version 5";
@@ -280,10 +254,10 @@ ONNXImporterReturns ONNXBackend::ReshapeImporter(
     Argument shape_dtype, shape_values;
     ONNXTensorToArgument(*shape_tensor, &shape_dtype, &shape_values);
     CHECK_GT(shape_values.ints_size(), 0) << "\nExcepted the shape value";
-    for (auto d : shape_values.ints())
+    for (auto d : shape_values.ints()) {
       dims->add_ints(d);
+    }
   }
-
   return GenericImporter(&onnx_node_v2, ctx);
 }
 
@@ -293,9 +267,7 @@ ONNXImporterReturns ONNXBackend::ResizeImporter(
   auto node = NodeProto(onnx_node->node);
   auto onnx_node_v2 = ONNXNode(node);
   auto& attributes = onnx_node_v2.attributes;
-
   attributes.remove("coordinate_transformation_mode");
-
   if (ctx.opset_version() >= 9) {
     node.mutable_input()->Clear();
     node.add_input(onnx_node->node.input(0));
@@ -307,21 +279,22 @@ ONNXImporterReturns ONNXBackend::ResizeImporter(
     const auto* scales_tensor = ctx.initializer().at(scales_name);
     ONNXTensorToArgument(*scales_tensor, &scales_dtype, &scale_values);
     auto* scales = attributes.AddRewrittenAttribute("scales");
-    for (auto d : scale_values.floats())
+    for (auto d : scale_values.floats()) {
       scales->add_floats(d);
+    }
     if (sizes_idx > 0) {
       Argument sizes_dtype, sizes_values;
       const auto& sizes_name = onnx_node->node.input(sizes_idx);
       const auto* sizes_tensor = ctx.initializer().at(sizes_name);
       ONNXTensorToArgument(*sizes_tensor, &sizes_dtype, &sizes_values);
       auto* sizes = attributes.AddRewrittenAttribute("sizes");
-      for (auto d : sizes_values.floats())
+      for (auto d : sizes_values.floats()) {
         sizes->add_ints(d);
+      }
     }
   } else {
     LOG(FATAL) << "Required opset >= 7";
   }
-
   return GenericImporter(&onnx_node_v2, ctx);
 }
 
@@ -330,12 +303,10 @@ ONNXImporterReturns ONNXBackend::RoiAlignImporter(
     const ConversionContext& ctx) {
   auto node = NodeProto(onnx_node->node);
   auto onnx_node_v2 = ONNXNode(node);
-
   // Remove the batch indices
   node.mutable_input()->Clear();
   node.add_input(onnx_node->node.input(0));
   node.add_input(onnx_node->node.input(1));
-
   return GenericImporter(&onnx_node_v2, ctx);
 }
 
@@ -345,19 +316,22 @@ ONNXImporterReturns ONNXBackend::TileImporter(
   auto node = NodeProto(onnx_node->node);
   auto onnx_node_v2 = ONNXNode(node);
   auto& attributes = onnx_node_v2.attributes;
-
-  // Determine the multiples from repeats
-  auto* multiples = attributes.AddRewrittenAttribute("multiples");
-  node.mutable_input()->Clear();
-  node.add_input(onnx_node->node.input(0));
-  const auto& repeats_name = onnx_node->node.input(1);
-  const auto* repeats_tensor = ctx.initializer().at(repeats_name);
-  Argument multiples_dtype, multiples_values;
-  ONNXTensorToArgument(*repeats_tensor, &multiples_dtype, &multiples_values);
-  CHECK_GT(multiples_values.ints_size(), 0) << "\nExcepted the repeats value";
-  for (auto d : multiples_values.ints())
-    multiples->add_ints(d);
-
+  if (ctx.opset_version() >= 6) {
+    // Determine repeats from repeats
+    auto* repeats = attributes.AddRewrittenAttribute("repeats");
+    node.mutable_input()->Clear();
+    node.add_input(onnx_node->node.input(0));
+    const auto& repeats_name = onnx_node->node.input(1);
+    const auto* repeats_tensor = ctx.initializer().at(repeats_name);
+    Argument repeats_dtype, repeats_values;
+    ONNXTensorToArgument(*repeats_tensor, &repeats_dtype, &repeats_values);
+    CHECK_GT(repeats_values.ints_size(), 0) << "\nExcepted the repeats value";
+    for (auto repeat : repeats_values.ints()) {
+      repeats->add_ints(repeat);
+    }
+  } else {
+    LOG(FATAL) << "Required opset >= 6";
+  }
   return GenericImporter(&onnx_node_v2, ctx);
 }
 

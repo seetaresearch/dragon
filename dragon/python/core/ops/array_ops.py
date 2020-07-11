@@ -1425,16 +1425,16 @@ def sum(inputs, axis=None, keep_dims=False, **kwargs):
 
 
 @OpSchema.num_inputs(1)
-@ArgHelper.repeated_desc(name='multiples')
-def tile(inputs, multiples, **kwargs):
-    r"""Tile the input according to the given multiples.
+@ArgHelper.repeated_desc(name='repeats')
+def tile(inputs, repeats, **kwargs):
+    r"""Tile the input according to the given repeats.
 
     Parameters
     ----------
     inputs : dragon.Tensor
         The input tensor.
-    multiples : Sequence[Union[int, dragon.Tensor]]
-        The multiple for each axis.
+    repeats : Sequence[Union[int, dragon.Tensor]]
+        The number of repetitions for each axis.
 
     Returns
     -------
@@ -1446,8 +1446,8 @@ def tile(inputs, multiples, **kwargs):
     op_lib = array_ops_lib.Tile
     if context.executing_eagerly():
         return op_lib \
-            .instantiate(ndim=len(args['multiples'])) \
-            .apply([inputs], args['multiples'])
+            .instantiate(ndim=len(args['repeats'])) \
+            .apply([inputs], args['repeats'])
     else:
         return op_lib.blend(**args)
 

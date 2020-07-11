@@ -3,9 +3,9 @@ Building Dragon Documentation
 
 This page will help you to build the following documentations:
 
-Dragon C++ API: http://dragon.seetatech.com/api/cc
+Dragon C++ API: https://dragon.seetatech.com/api/cc
 
-Dragon Python API: http://dragon.seetatech.com/api/python
+Dragon Python API: https://dragon.seetatech.com/api/python
 
 Build Documentation of C++ API
 ------------------------------

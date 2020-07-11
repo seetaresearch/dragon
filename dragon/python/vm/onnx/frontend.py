@@ -54,7 +54,7 @@ class DragonFrontend(object):
         constants=None,
         value_info=None,
         opset_version=None,
-        workspace=None,
+        ws=None,
         verbose=True,
     ):
         input_names = [] if input_names is None else input_names
@@ -79,12 +79,12 @@ class DragonFrontend(object):
         blob_aliases = {}
         for i, alias in enumerate(output_names):
             blob_aliases[graph_def.output[i]] = alias
-            workspace.SetTensorAlias(graph_def.output[i], alias)
+            ws.RegisterAlias(graph_def.output[i], alias)
             if graph_def.output[i] in value_info:
                 value_info[alias] = value_info[graph_def.output[i]]
         for i, alias in enumerate(input_names):
             blob_aliases[graph_def.input[i]] = alias
-            workspace.SetTensorAlias(graph_def.input[i], alias)
+            ws.RegisterAlias(graph_def.input[i], alias)
             if graph_def.input[i] in value_info:
                 value_info[alias] = value_info[graph_def.input[i]]
 
@@ -116,15 +116,14 @@ class DragonFrontend(object):
         for op in graph_def.op:
             # Get the shape of inputs and outputs.
             for name in itertools.chain(op.input, op.output):
-                tensor_impl = workspace.GetTensor(name)
-                if tensor_impl is not None:
-                    shapes[name] = tensor_impl.dims
+                impl = ws.GetTensor(name)
+                if impl is not None:
+                    shapes[name] = impl.dims
                 else:
                     shapes[name] = value_info[name][1]
 
             # Translate definition.
-            nodes, const_tensors = cls._translate(
-                op, opset_version, shapes, workspace)
+            nodes, const_tensors = cls._translate(op, opset_version, shapes, ws)
 
             # Rewritten for names.
             for node in nodes:
@@ -135,8 +134,7 @@ class DragonFrontend(object):
 
             # Directly convert outputs as const tensors if necessary.
             if None in nodes:
-                const_tensors = [helper.from_tensor(name, workspace)
-                                 for name in op.output]
+                const_tensors = [helper.from_tensor(name, ws) for name in op.output]
             else:
                 onnx_graph.node.extend(nodes)
 

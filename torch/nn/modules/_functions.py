@@ -40,7 +40,6 @@ class _ConvNd(function.Function):
         self.dilations = kwargs.get('dilations', 1)
         self.group = kwargs.get('group', None)
         self.output_padding = kwargs.get('output_padding', None)
-        self.padding = None if self.output_padding is None else 'SAME'
 
     def attributes(self):
         return {
@@ -50,7 +49,6 @@ class _ConvNd(function.Function):
                 'strides': self.strides,
                 'pads': self.pads,
                 'dilations': self.dilations,
-                'padding': self.padding,
                 'output_padding': self.output_padding,
                 'group': self.group,
                 'data_format': 'NCHW',
@@ -511,35 +509,29 @@ class Resize(function.Function):
                 'align_corners': self.align_corners,
                 'data_format': 'NCHW',
                 'sizes_descs': [
-                    '${{HANDLE}}/sizes[{}]'.format(n)
-                    for n in range(self.num_sizes)
-                ],
+                    '${{HANDLE}}/sizes[{}]'
+                    .format(n) for n in range(self.num_sizes)],
                 'scales_descs': [
-                    '${{HANDLE}}/scales[{}]'.format(n)
-                    for n in range(self.num_scales)
-                ],
+                    '${{HANDLE}}/scales[{}]'
+                    .format(n) for n in range(self.num_scales)],
             }
         }
 
     def feed(self, ws, handle, sizes, scales):
         for i in range(self.num_sizes):
             self.feed_arg(
-                ws,
-                '{}/sizes[{}]'.format(handle, i),
-                sizes[i], 'int64',
-            )
+                ws, '{}/sizes[{}]'.format(handle, i),
+                sizes[i], 'int64')
         for i in range(self.num_scales):
             self.feed_arg(
-                ws,
-                '{}/scales[{}]'.format(handle, i),
-                scales[i], 'float32',
-            )
+                ws, '{}/scales[{}]'.format(handle, i),
+                scales[i], 'float32')
 
     def forward(self, input, sizes=None, scales=None):
         return self.dispatch(
             [input], [self.alloc()],
             callback=lambda ws, handle:
-                self.feed(ws, handle, sizes, scales)
+                self.feed(ws, handle, sizes, scales),
         )
 
 

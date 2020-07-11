@@ -25,10 +25,8 @@ class _Initializer(function.Function):
     def feed(self, ws, handle, shape):
         for i in range(self.ndim):
             self.feed_arg(
-                ws,
-                '{}/dims[{}]'.format(handle, i),
-                shape[i], 'int64',
-            )
+                ws, '{}/dims[{}]'.format(handle, i),
+                shape[i], 'int64')
 
     def forward(self, out, shape, shape_like=None):
         return self.dispatch(
@@ -51,22 +49,19 @@ class Arange(function.Function):
                 'dtype': self.dtype,
                 'slice_descs': [
                     '${{HANDLE}}/slice[{}]'
-                    .format(n) for n in range(self.num_args)
-                ],
+                    .format(n) for n in range(self.num_args)],
             }
         }
 
     def feed(self, ws, handle, slice_args):
         for i in range(len(slice_args)):
             self.feed_arg(
-                ws,
-                '{}/slice[{}]'.format(handle, i),
-                slice_args[i], 'float32'
-            )
+                ws, '{}/slice[{}]'.format(handle, i),
+                slice_args[i], 'float32')
 
-    def forward(self, slice_args):
+    def forward(self, slice_args, out=None):
         return self.dispatch(
-            [], [self.alloc()],
+            [], [out if out else self.alloc()],
             callback=lambda ws, handle:
             self.feed(ws, handle, slice_args)
         )
@@ -85,8 +80,7 @@ class Eye(_Initializer):
                 'dtype': self.dtype,
                 'dims_descs': [
                     '${{HANDLE}}/dims[{}]'.format(n)
-                    for n in range(self.ndim)
-                ],
+                    for n in range(self.ndim)],
             },
         }
 
@@ -104,8 +98,7 @@ class Fill(_Initializer):
                 'value': float(self.value),
                 'dims_descs': [
                     '${{HANDLE}}/dims[{}]'.format(n)
-                    for n in range(self.ndim)
-                ],
+                    for n in range(self.ndim)],
             },
         }
 
@@ -125,8 +118,7 @@ class RandomNormal(_Initializer):
                 'std': float(self.std),
                 'dims_descs': [
                     '${{HANDLE}}/dims[{}]'.format(n)
-                    for n in range(self.ndim)
-                ],
+                    for n in range(self.ndim)],
             },
         }
 
@@ -146,7 +138,6 @@ class RandomUniform(_Initializer):
                 'high': float(self.high),
                 'dims_descs': [
                     '${{HANDLE}}/dims[{}]'.format(n)
-                    for n in range(self.ndim)
-                ],
+                    for n in range(self.ndim)],
             },
         }

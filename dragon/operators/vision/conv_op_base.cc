@@ -4,73 +4,69 @@
 
 namespace dragon {
 
-#define SAME_PADDING(A, B)   \
-  A[i] = padding_needed / 2; \
-  B[i] = padding_needed - A[i]
+#define DETERMINE_SAME_PADDING(l, r) \
+  if (padding_ != "SAME_UPPER") {    \
+    l[i] = pad_size / 2;             \
+    r[i] = pad_size - l[i];          \
+  } else {                           \
+    r[i] = pad_size / 2;             \
+    l[i] = pad_size - r[i];          \
+  }
 
 template <class Context>
 void ConvOpBase<Context>::ComputeOutShape() {
-  auto X_dims = Input(0).dims();
   out_shape_.clear();
-  for (int i = 0; i < num_axes_; i++) {
-    if (!Transposed()) {
-      auto idm = X_dims[axis_ + i];
-      auto dk = dilation_[i] * (kshape_[i] - 1) + 1;
-      if (!str::find(padding_, "SAME")) {
-        // Explicit pads
-        auto odm = (idm + pad_l_[i] + pad_r_[i] - dk) / stride_[i] + 1;
-        out_shape_.push_back(odm);
-      } else {
-        // Auto pads
-        int64_t odm = (idm + stride_[i] - 1) / (float)stride_[i];
-        auto padding_needed =
-            std::max(int64_t(0), (odm - 1) * stride_[i] + dk - idm);
-        out_shape_.push_back(odm);
-        if (padding_ == "SAME_UPPER") {
-          SAME_PADDING(pad_l_, pad_r_);
-        } else {
-          SAME_PADDING(pad_r_, pad_l_);
-        } // SAME_LOWER or SAME
+  vec64_t X_dims = Input(0).dims();
+  int64_t in_size, out_size, k_size, pad_size;
+  if (!Transposed()) {
+    for (int i = 0; i < num_axes_; i++) {
+      in_size = X_dims[axis_ + i];
+      k_size = dilation_[i] * (kshape_[i] - 1) + 1;
+      if (!str::find(padding_, "SAME")) { // Explicit pads
+        pad_size = pad_l_[i] + pad_r_[i];
+        out_size = (in_size + pad_size - k_size) / stride_[i] + 1;
+      } else { // Auto pads
+        out_size = (in_size + stride_[i] - 1) / stride_[i];
+        pad_size = (out_size - 1) * stride_[i] + k_size - in_size;
+        pad_size = std::max(pad_size, int64_t(0));
+        DETERMINE_SAME_PADDING(pad_l_, pad_r_);
+      }
+      out_shape_.push_back(out_size);
+    }
+  } else {
+    int num_output_padding;
+    output_padding(0, &num_output_padding);
+    CHECK(num_output_padding == 0 || num_output_padding == num_axes_)
+        << "\nExcepted 0 or " << num_axes_ << " ints for <output_padding>.";
+    if (!str::find(padding_, "SAME")) { // Explicit pads
+      for (int i = 0; i < num_axes_; i++) {
+        in_size = X_dims[axis_ + i];
+        k_size = dilation_[i] * (kshape_[i] - 1) + 1;
+        pad_size = pad_l_[i] + pad_r_[i];
+        out_size = stride_[i] * (in_size - 1) + k_size - pad_size;
+        if (num_output_padding > 0) out_size += output_padding(i);
+        out_shape_.push_back(out_size);
       }
     } else {
-      auto idm = X_dims[axis_ + i];
-      auto dk = dilation_[i] * (kshape_[i] - 1) + 1;
-      if (!str::find(padding_, "SAME")) {
-        // Explicit pads
-        auto odm = stride_[i] * (idm - 1) + dk - pad_l_[i] - pad_r_[i];
-        out_shape_.push_back(odm);
-      } else {
-        // Auto pads
-        int output_shape_size;
-        int output_padding_size;
-        output_shape(0, &output_shape_size);
-        output_padding(0, &output_padding_size);
-        CHECK(output_shape_size == 0 || output_shape_size == num_axes_)
-            << "Excepted 0 or " << num_axes_ << " ints for output shape.";
-        CHECK(output_padding_size == 0 || output_padding_size == num_axes_)
-            << "Excepted 0 or " << num_axes_ << " ints for output padding.";
-        int64_t padding_needed, odm;
-        if (output_padding_size) {
-          padding_needed = output_padding(i);
-          odm = stride_[i] * (idm - 1) + dk + padding_needed;
-        } else if (output_shape_size) {
-          odm = output_shape(i);
-          padding_needed = odm - (stride_[i] * (idm - 1) + dk);
-          CHECK_GE(padding_needed, 0)
-              << "\nThe output shape is incorrect."
-              << "\nWith the given stride and kernel, "
-              << "dimension of spatial axis " << i << " should be at least "
-              << odm - padding_needed << ".";
-        } else {
-          LOG(FATAL) << "Excepted the output padding or output shape "
-                     << "for \"SAME\" padding algorithm.";
-        }
-        out_shape_.push_back(odm);
-        if (padding_ == "SAME_UPPER") {
-          SAME_PADDING(pad_l_, pad_r_);
-        } else {
-          SAME_PADDING(pad_r_, pad_l_);
-        } // SAME_LOWER or SAME
+      // Auto pads
+      int num_output_shape;
+      output_shape(0, &num_output_shape);
+      CHECK(num_output_shape == num_axes_)
+          << "\nExcepted " << num_axes_ << " ints for <output_shape>.";
+      for (int i = 0; i < num_axes_; i++) {
+        in_size = X_dims[axis_ + i];
+        k_size = dilation_[i] * (kshape_[i] - 1) + 1;
+        out_size = output_shape(i);
+        pad_size = stride_[i] * (in_size - 1) + k_size;
+        if (num_output_padding > 0) pad_size += output_padding(i);
+        CHECK_GE(pad_size, out_size)
+            << "\nThe output shape is incorrect."
+            << "\nDimension of spatial axis " << i << " should be at most "
+            << pad_size << ".";
+        pad_size = stride_[i] * (in_size - 1) + k_size - out_size;
+        pad_size = std::max(pad_size, int64_t(0));
+        DETERMINE_SAME_PADDING(pad_l_, pad_r_);
+        out_shape_.push_back(out_size);
       }
     }
   }
@@ -373,7 +369,7 @@ INSTANTIATE_API(CUDAContext, float);
 INSTANTIATE_API(CUDAContext, double);
 #endif
 
-#undef SAME_PADDING
 #undef INSTANTIATE_API
+#undef DETERMINE_SAME_PADDING
 
 } // namespace dragon

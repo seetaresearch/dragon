@@ -74,7 +74,7 @@ class DLPackWrapper {
   }
 
   Tensor* From(py::object obj) {
-    CHECK(PyCapsule_CheckExact(obj.ptr())) << "\nExpected DLPack capsule";
+    CHECK(PyCapsule_CheckExact(obj.ptr())) << "\nExpected DLPack capsule.";
     auto* managed_tensor =
         (DLManagedTensor*)PyCapsule_GetPointer(obj.ptr(), "dltensor");
     CHECK(managed_tensor) << "\nInvalid DLPack capsule";

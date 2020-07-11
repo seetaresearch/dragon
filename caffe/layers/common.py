@@ -15,7 +15,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.autograph.tensor import Tensor
+from dragon.core.autograph.tensor import TensorRef
+from dragon.core.framework import context
+from dragon.core.framework import workspace
 from dragon.core.ops import activation_ops
 from dragon.core.ops import array_ops
 from dragon.core.ops import framework_ops
@@ -32,15 +34,15 @@ class Accuracy(Layer):
 
     ```python
     layer {
-        type: "Accuracy"
-        bottom: "ip2"
-        bottom: "label"
-        top: "acc"
-        accuracy_param {
-            axis: 1
-            top_k: 1
-            ignore_label: -1
-        }
+      type: "Accuracy"
+      bottom: "ip2"
+      bottom: "label"
+      top: "acc"
+      accuracy_param {
+        axis: 1
+        top_k: 1
+        ignore_label: -1
+      }
     }
     ```
 
@@ -67,13 +69,13 @@ class ArgMax(Layer):
 
     ```python
     layer {
-        type: "ArgMax"
-        bottom: "ip2"
-        top: "cls"
-        argmax_param {
-            top_k: 1
-            axis: 1
-        }
+      type: "ArgMax"
+      bottom: "ip2"
+      top: "cls"
+      argmax_param {
+        top_k: 1
+        axis: 1
+      }
     }
     ```
 
@@ -100,14 +102,14 @@ class BatchNorm(Layer):
 
     ```python
     layer {
-        type: "BatchNorm"
-        bottom: "conv1"
-        top: "conv1/bn"
-        batch_norm_param {
-            use_global_stats: False
-            moving_average_fraction: 0.9
-            eps: 1e-5
-        }
+      type: "BatchNorm"
+      bottom: "conv1"
+      top: "conv1/bn"
+      batch_norm_param {
+        use_global_stats: False
+        moving_average_fraction: 0.9
+        eps: 1e-5
+      }
     }
     ```
 
@@ -123,41 +125,25 @@ class BatchNorm(Layer):
             'eps': param.eps,
             'axis': 1,
         }
-        self.add_blob(value=1, no_grad=True)  # gamma
-        self.add_blob(value=0, no_grad=True)  # beta
         self.add_blob(value=0, no_grad=True)  # running_mean
         self.add_blob(value=1, no_grad=True)  # running_var
+        self.add_blob(value=1, no_grad=True)  # running_num_batches
+        self.add_blob(value=1, no_grad=True)  # fixed_gamma
+        self.add_blob(value=0, no_grad=True)  # fixed_beta
+        self._blobs[2]['data'].set_value([1.])
+        self._weight, self._bias = [blob['data'] for blob in self._blobs[3:5]]
+        del self._blobs[3:]  # Avoid to save the fixed blobs
+
+    def fuse_with_scale_layer(self, scale_layer):
+        self._weight = scale_layer._blobs[0]['data']
+        if len(scale_layer._blobs) == 2:
+            self._bias = scale_layer._blobs[1]['data']
+        scale_layer.__call__ = lambda *args, **kwargs: None
 
     def __call__(self, bottom):
-        inputs = [bottom] + [blob['data'] for blob in self._blobs]
+        inputs = [bottom, self._weight, self._bias] + \
+                 [blob['data'] for blob in self._blobs[:2]]
         return normalization_ops.batch_norm(inputs, **self.arguments)
-
-
-class Cast(Layer):
-    r"""Cast the data type of input.
-
-    Examples:
-
-    ```python
-    layer {
-        type: "Cast"
-        bottom: "ip2/fp16"
-        top: "ip2/fp32"
-        cast_param {
-            dtype: "float32"
-        }
-    }
-    ```
-
-    """
-
-    def __init__(self, layer_param):
-        super(Cast, self).__init__(layer_param)
-        param = layer_param.cast_param
-        self.arguments = {'dtype': param.dtype.lower()}
-
-    def __call__(self, bottom):
-        return array_ops.cast(bottom, **self.arguments)
 
 
 class Concat(Layer):
@@ -167,13 +153,13 @@ class Concat(Layer):
 
     ```python
     layer {
-        type: "Concat"
-        bottom: "conv2"
-        bottom: "conv1"
-        top: "conv2/fuse"
-        concat_param {
-            axis: 1
-        }
+      type: "Concat"
+      bottom: "conv2"
+      bottom: "conv1"
+      top: "conv2/fuse"
+      concat_param {
+        axis: 1
+      }
     }
     ```
 
@@ -194,15 +180,15 @@ class Crop(Layer):
 
     ```python
     layer {
-        type: "Crop"
-        bottom: "score"
-        bottom: "score/ref"
-        top: "score/crop"
-        crop_param {
-            axis: 2
-            offset: 5
-            offset: 10
-        }
+      type: "Crop"
+      bottom: "score"
+      bottom: "score/ref"
+      top: "score/crop"
+      crop_param {
+        axis: 2
+        offset: 5
+        offset: 10
+      }
     }
     ```
 
@@ -232,15 +218,15 @@ class Eltwise(Layer):
 
     ```python
     layer {
-        type: "Eltwise"
-        bottom: "conv2"
-        bottom: "conv1"
-        top: "conv2/fuse"
-        eltwise_param {
-            operation: SUM
-            coeff: 1.
-            coeff: 1.
-        }
+      type: "Eltwise"
+      bottom: "conv2"
+      bottom: "conv1"
+      top: "conv2/fuse"
+      eltwise_param {
+        operation: SUM
+        coeff: 1.
+        coeff: 1.
+      }
     }
     ```
 
@@ -250,9 +236,9 @@ class Eltwise(Layer):
         super(Eltwise, self).__init__(layer_param)
         param = layer_param.eltwise_param
         self.eltwise_op = {
-            0: math_ops.mul,      # MUL
-            1: math_ops.add,      # SUM
-            2: math_ops.maximum,  # MAX
+            0: math_ops.mul,
+            1: math_ops.add,
+            2: math_ops.maximum,
         }[param.operation]
         self.factors = [element for element in param.coeff]
 
@@ -273,13 +259,13 @@ class Flatten(Layer):
 
     ```python
     layer {
-        type: "Flatten"
-        bottom: "conv5"
-        top: "conv5/flatten"
-        flatten_param {
-            axis: 1
-            end_axis: -1
-        }
+      type: "Flatten"
+      bottom: "conv5"
+      top: "conv5/flatten"
+      flatten_param {
+        axis: 1
+        end_axis: -1
+      }
     }
     ```
 
@@ -296,141 +282,6 @@ class Flatten(Layer):
         return array_ops.flatten(bottom, **self.arguments)
 
 
-class FusedBatchNorm(Layer):
-    r"""Apply the fused batch normalization.
-    `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
-
-    Examples:
-
-    ```python
-    layer {
-        type: "FusedBatchNorm"
-        bottom: "conv1"
-        top: "conv1/bn"
-        batch_norm_param {
-            use_global_stats: False
-            moving_average_fraction: 0.9
-            eps: 1e-5
-        }
-        scale_param {
-            filler: {
-                type: "constant"
-                value: 1
-            }
-            bias_filler {
-                type: "constant"
-                value: 0
-            }
-        }
-    }
-    ```
-
-    """
-
-    def __init__(self, layer_param):
-        super(FusedBatchNorm, self).__init__(layer_param)
-        bn_param = layer_param.batch_norm_param
-        scale_param = layer_param.scale_param
-        self.arguments = {
-            'axis': 1,
-            'momentum': bn_param.moving_average_fraction,
-            'eps': bn_param.eps,
-            'use_stats': int(bn_param.use_global_stats)
-            if bn_param.HasField('use_global_stats') else -1,
-        }
-        self.add_blob(filler=self.get_filler(scale_param, 'filler'), value=1)  # gamma
-        self.add_blob(filler=self.get_filler(scale_param, 'bias_filler'))  # beta
-        self.add_blob(value=0, no_grad=True)  # running_mean
-        self.add_blob(value=1, no_grad=True)  # running_var
-
-    def __call__(self, bottom):
-        inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        return normalization_ops.batch_norm(inputs, **self.arguments)
-
-
-class FusedGroupNorm(Layer):
-    r"""Apply the fused group normalization.
-    `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
-
-    Examples:
-
-    ```python
-    layer {
-        type: "FusedGroupNorm"
-        bottom: "conv1"
-        top: "conv1/gn"
-        group_norm_param {
-            group: 32
-            eps: 1e-5
-        }
-        scale_param {
-            filler: {
-                type: "constant"
-                value: 1
-            }
-            bias_filler {
-                type: "constant"
-                value: 0
-            }
-        }
-    }
-    ```
-
-    """
-
-    def __init__(self, layer_param):
-        super(FusedGroupNorm, self).__init__(layer_param)
-        gn_param = layer_param.group_norm_param
-        scale_param = layer_param.scale_param
-        self.arguments = {
-            'axis': 1,
-            'group': gn_param.group,
-            'eps': gn_param.eps,
-        }
-        self.add_blob(filler=self.get_filler(scale_param, 'filler'), value=1)  # gamma
-        self.add_blob(filler=self.get_filler(scale_param, 'bias_filler'))  # beta
-
-    def __call__(self, bottom):
-        inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        return normalization_ops.group_norm(inputs, **self.arguments)
-
-
-class GroupNorm(Layer):
-    r"""Apply the group normalization.
-    `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
-
-    Examples:
-
-    ```python
-    layer {
-        type: "GroupNorm"
-        bottom: "conv1"
-        top: "conv1/gn"
-        group_norm_param {
-            group: 32
-            eps: 1e-5
-        }
-    }
-    ```
-
-    """
-
-    def __init__(self, layer_param):
-        super(GroupNorm, self).__init__(layer_param)
-        param = layer_param.group_norm_param
-        self.arguments = {
-            'axis': 1,
-            'group': param.group,
-            'eps': param.eps,
-        }
-        self.add_blob(value=1, no_grad=True)
-        self.add_blob(value=0, no_grad=True)
-
-    def __call__(self, bottom):
-        inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        return normalization_ops.group_norm(inputs, **self.arguments)
-
-
 class InnerProduct(Layer):
     r"""Compute the dense matrix multiplication along the given axes.
 
@@ -438,13 +289,13 @@ class InnerProduct(Layer):
 
     ```python
     layer {
-        type: "InnerProduct"
-        bottom: "conv5"
-        top: "ip1"
-        inner_product_param {
-            axis: 1
-            num_output: 1024
-        }
+      type: "InnerProduct"
+      bottom: "conv5"
+      top: "ip1"
+      inner_product_param {
+        axis: 1
+        num_output: 1024
+      }
     }
     ```
 
@@ -458,7 +309,6 @@ class InnerProduct(Layer):
             'out_channels': param.num_output,
             'transpose_w': not param.transpose,
         }
-        # Add weights and biases
         self.add_blob(filler=self.get_filler(param, 'weight_filler'))
         if param.bias_term:
             self.add_blob(filler=self.get_filler(param, 'bias_filler'))
@@ -475,15 +325,13 @@ class Input(Layer):
 
     ```python
     layer {
-        type: "Input"
-        top: "a"
-        top: "b"
-        input_param {
-            shape: { dim: 2 dim: 3 }
-            shape: { dim: 2 dim: 3 dim: 3 }
-            dtype: "float32"
-            dtype: "float64"
-        }
+      type: "Input"
+      top: "data1"
+      top: "data2"
+      input_param {
+        shape: { dim: 2 dim: 3 }
+        shape: { dim: 2 dim: 3 dim: 3 }
+      }
     }
     ```
 
@@ -492,20 +340,24 @@ class Input(Layer):
     def __init__(self, layer_param):
         super(Input, self).__init__(layer_param)
         param = layer_param.input_param
-        self.shapes, self.dtypes = [], []
+        self.blob_shapes = []
         for i in range(len(self.top)):
             if i < len(param.shape):
-                self.shapes.append([e for e in param.shape[i].dim])
+                self.blob_shapes.append([e for e in param.shape[i].dim])
             else:
-                self.shapes.append(None)
-            if i < len(param.dtype):
-                self.dtypes.append(param.dtype[i])
-            else:
-                self.dtypes.append('float32')
+                self.blob_shapes.append(None)
 
     def __call__(self, bottom):
-        return [Tensor(shape=self.shapes[i], dtype=self.dtypes[i])
-                for i in range(len(self.shapes))]
+        name_scope = context.get_name_scope()
+        current_ws = workspace.get_workspace()
+        return [TensorRef(
+            name=current_ws.unique_name(
+                name_scope + 'output',
+                suffix=':{}'.format(i),
+                namespace='Tensor'),
+            shape=self.blob_shapes[i],
+            dtype='float32',
+        ).placeholder() for i in range(len(self.blob_shapes))]
 
 
 class Normalize(Layer):
@@ -516,18 +368,18 @@ class Normalize(Layer):
 
     ```python
     layer {
-        type: "Normalize"
-        bottom: "conv4"
-        top: "conv4/norm"
-        normalize_param {
-            across_spatial: false
-            channel_shared: false
-            eps: 1e-12
-            scale_filler: {
-                type: "constant"
-                value: 1
-            }
+      type: "Normalize"
+      bottom: "conv4"
+      top: "conv4/norm"
+      normalize_param {
+        across_spatial: false
+        channel_shared: false
+        eps: 1e-12
+        scale_filler: {
+          type: "constant"
+          value: 1
         }
+      }
     }
     ```
 
@@ -560,15 +412,15 @@ class Permute(Layer):
 
     ```python
     layer {
-        type: "Permute"
-        bottom: "cls_score"
-        top: "cls_score/perm"
-        permute_param {
-            order: 0
-            order: 2
-            order: 3
-            order: 1
-        }
+      type: "Permute"
+      bottom: "cls_score"
+      top: "cls_score/perm"
+      permute_param {
+        order: 0
+        order: 2
+        order: 3
+        order: 1
+      }
     }
     ```
 
@@ -590,16 +442,16 @@ class Python(Layer):
 
     ```python
     layer {
-        type: "Python"
-        bottom: "cls_prob"
-        bottom: "bbox_pred"
-        bottom: "ims_info"
-        top: "rois"
-        python_param {
-            module: 'rpn.proposal_layer'
-            layer: 'ProposalLayer'
-            param_str: "'feat_stride': 16"
-        }
+      type: "Python"
+      bottom: "cls_prob"
+      bottom: "bbox_pred"
+      bottom: "ims_info"
+      top: "rois"
+      python_param {
+        module: 'rpn.proposal_layer'
+        layer: 'ProposalLayer'
+        param_str: "'feat_stride': 16"
+      }
     }
     ```
 
@@ -626,13 +478,13 @@ class Reduction(Layer):
 
     ```python
     layer {
-        type: "Reduction"
-        bottom: "entropy"
-        top: "loss"
-        reduction_param {
-            operation: SUM
-            axis: 1
-        }
+      type: "Reduction"
+      bottom: "entropy"
+      top: "loss"
+      reduction_param {
+        operation: SUM
+        axis: 1
+      }
     }
     ```
 
@@ -646,10 +498,7 @@ class Reduction(Layer):
                 raise ValueError('The negative axis can only be -1.')
         self.scale = param.coeff
         self.arguments = {'axis': [param.axis]}
-        self.reduction = {
-            1: array_ops.sum,
-            4: array_ops.mean,
-        }[param.operation]
+        self.reduction = {1: array_ops.sum, 4: array_ops.mean}[param.operation]
 
     def __call__(self, bottom):
         top = self.reduction(bottom, **self.arguments)
@@ -665,16 +514,16 @@ class Reshape(Layer):
 
     ```python
     layer {
-        type: "Reshape"
-        bottom: "bbox_pred/perm"
-        top: "bbox_pred/reshape"
-        reshape_param {
-            shape {
-                dim: 0
-                dim: -1
-                dim: 4
-            }
+      type: "Reshape"
+      bottom: "bbox_pred/perm"
+      top: "bbox_pred/reshape"
+      reshape_param {
+        shape {
+          dim: 0
+          dim: -1
+          dim: 4
         }
+      }
     }
     ```
 
@@ -696,22 +545,22 @@ class Scale(Layer):
 
     ```python
     layer {
-        type: "Scale"
-        bottom: "conv1/bn"
-        top: "conv1/scale"
-        scale_param {
-            axis: 1
-            num_axes: 1
-            bias_term: true
-            filler: {
-                type: "constant"
-                value: 1
-            }
-            bias_filler {
-                type: "constant"
-                value: 0
-            }
+      type: "Scale"
+      bottom: "conv1/bn"
+      top: "conv1/scale"
+      scale_param {
+        axis: 1
+        num_axes: 1
+        bias_term: true
+        filler: {
+          type: "constant"
+          value: 1
         }
+        bias_filler {
+          type: "constant"
+          value: 0
+        }
+      }
     }
     ```
 
@@ -721,7 +570,6 @@ class Scale(Layer):
         super(Scale, self).__init__(layer_param)
         param = layer_param.scale_param
         self.arguments = {'axis': param.axis, 'num_axes': param.num_axes}
-        # Add weights and biases
         self.add_blob(filler=self.get_filler(param, 'filler'), value=1)
         if param.bias_term:
             self.add_blob(filler=self.get_filler(param, 'bias_filler'))
@@ -738,16 +586,16 @@ class Slice(Layer):
 
     ```python
     layer {
-        type: "Slice"
-        bottom: "image"
-        top: "image/b"
-        top: "image/g"
-        top: "image/r"
-        slice_param {
-            axis: 1
-            slice_point: 1
-            slice_point: 2
-        }
+      type: "Slice"
+      bottom: "image"
+      top: "image/b"
+      top: "image/g"
+      top: "image/r"
+      slice_param {
+        axis: 1
+        slice_point: 1
+        slice_point: 2
+      }
     }
     ```
 
@@ -773,12 +621,12 @@ class Softmax(Layer):
 
     ```python
     layer {
-        type: "Softmax"
-        bottom: "cls_score"
-        top: "cls_prob"
-        softmax_param {
-            axis: 1
-        }
+      type: "Softmax"
+      bottom: "cls_score"
+      top: "cls_prob"
+      softmax_param {
+        axis: 1
+      }
     }
     ```
 
@@ -799,9 +647,9 @@ class StopGradient(Layer):
 
     ```python
     layer {
-        type: "StopGradient"
-        bottom: "res2c"
-        top: "res2c/frozen"
+      type: "StopGradient"
+      bottom: "res2c"
+      top: "res2c/frozen"
     }
     ```
 
@@ -815,22 +663,18 @@ class StopGradient(Layer):
 
 
 class Tile(Layer):
-    r"""Tile the input according to the given multiples.
+    r"""Repeat the input according to the given axis.
 
     Examples:
 
     ```python
     layer {
-        type: "Slice"
-        bottom: "conv2"
-        top: "conv2/dup"
+        type: "Tile"
+        bottom: "data"
+        top: "output"
         tile_param {
-            multiples: {
-                dim: 1
-                dim: 2
-                dim: 1
-                dim: 1
-            }
+          axis: 1
+          tiles: 2
         }
     }
     ```
@@ -840,7 +684,9 @@ class Tile(Layer):
     def __init__(self, layer_param):
         super(Tile, self).__init__(layer_param)
         param = layer_param.tile_param
-        self.arguments = {'multiples': [e for e in param.multiples.dim]}
+        repeats = [1] * (param.axis + 1)
+        repeats[param.axis] = param.tiles
+        self.arguments = {'repeats': repeats}
 
     def __call__(self, bottom):
         return array_ops.tile(bottom, **self.arguments)

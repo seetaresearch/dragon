@@ -20,9 +20,7 @@ void BiasAddOp<Context>::DoRunWithType() {
     LOG(FATAL) << "Unknown DataFormat: " << data_format();
   }
 
-  // Maybe fill the bias at the first time
   TENSOR_FILL(B, vec64_t({C}));
-
   kernel::BiasAdd(
       N,
       C,

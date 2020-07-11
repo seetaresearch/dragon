@@ -30,10 +30,10 @@ from dragon.core.framework import workspace
 class Operator(object):
     """Wrapper to unify the symbolic and eager operator abstraction."""
 
-    def __init__(self, key, dev, **kwargs):
+    def __init__(self, cache_key, device, **kwargs):
         self._def = None
-        self._cache_key = key
-        self._device = dev
+        self._cache_key = cache_key
+        self._device = device
         self._arg_device = proto_util.get_device_option('cpu')
         self._arg_device = self._arg_device.SerializeToString()
         self._seed = kwargs.get('seed', config.config().random_seed)
@@ -104,7 +104,7 @@ class Operator(object):
         """Generate the OpDef from attributes."""
         attributes = self.attributes()
         self._def = proto_util.make_operator_cdef(
-            name=attributes.get('name', 'GenericOp'),
+            name=attributes.get('name', 'Op'),
             cache_key=self._cache_key,
             op_type=attributes['op_type'],
             device_option=proto_util.get_device_option(
@@ -128,17 +128,9 @@ def new_leaf(shape, dtype, device, trainable=False):
 def remove_binary_scalar(inputs):
     """Remove the scalar for binary ops."""
     if types.is_tensor(inputs[0]):
-        # (Tensor, Number)
-        inputs[1] = scalar_to_tensor(
-            inputs[1],
-            inputs[0].dtype,
-        )
+        inputs[1] = scalar_to_tensor(inputs[1], inputs[0].dtype)
     else:
-        # (Number, Tensor)
-        inputs[0] = scalar_to_tensor(
-            inputs[0],
-            inputs[1].dtype,
-        )
+        inputs[0] = scalar_to_tensor(inputs[0], inputs[1].dtype)
     return inputs
 
 
@@ -153,15 +145,11 @@ def scalar_to_tensor(input, dtype):
             '<input> should be a python number, got {}.'
             .format(type(input).__name__)
         )
-    tid = '/share/scalar/{}/{}'.format(dtype, str(input))
-    if not workspace.has_tensor(tid):
-        workspace.feed_tensor(tid, numpy.array(input, dtype))
-    return EagerTensor(
-        id=tid,
-        dtype=dtype,
-        own_storage=False,
-        requires_grad=False,
-    )
+    name = '/share/scalar/{}/{}'.format(dtype, str(input))
+    ws = workspace.get_workspace()
+    if not ws.has_tensor(name):
+        ws.feed_tensor(name, numpy.array(input, dtype))
+    return EagerTensor(impl=ws.GetTensor(name), trainable=False)
 
 
 # Define a global dict to cache the operators.

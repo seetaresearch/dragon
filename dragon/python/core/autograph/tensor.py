@@ -21,6 +21,7 @@ from dragon.core.framework import context
 from dragon.core.framework import types
 from dragon.core.framework import workspace
 from dragon.core.proto import dragon_pb2
+from dragon.core.util import math_util
 from dragon.core.util import nest
 
 
@@ -45,11 +46,9 @@ class Tensor(types.TensorMetaclass):
             The optional data type.
 
         """
-        self._op = None
-        self._grad = None
-        self.name = name
-        self.shape = shape
-        self.dtype = dtype
+        self._op, self._grad = None, None
+        self._name, self._shape, self._dtype = None, None, None
+        self.name, self.shape, self.dtype = name, shape, dtype
 
     @property
     def dtype(self):
@@ -112,8 +111,8 @@ class Tensor(types.TensorMetaclass):
         if value != '':
             value = value if value else 'Tensor'
             name_scope = context.get_name_scope()
-            self._name = workspace.get_dummy_name(
-                name_scope + value, domain='Tensor')
+            self._name = workspace.get_workspace().unique_name(
+                name_scope + value, namespace='Tensor')
         else:
             # Set it manually for same cases
             self._name = value
@@ -142,8 +141,6 @@ class Tensor(types.TensorMetaclass):
             The shape.
 
         """
-        if not hasattr(self, '_shape'):
-            self._shape = None
         return self._shape
 
     @shape.setter
@@ -166,6 +163,22 @@ class Tensor(types.TensorMetaclass):
         else:
             self._shape = value
 
+    @property
+    def size(self):
+        """Return the total number of elements in this tensor.
+
+        Returns
+        -------
+        int
+            The total count of elements.
+
+        """
+        if self._shape is None:
+            return 0
+        if None in self._shape:
+            return numpy.inf
+        return math_util.prod(self._shape)
+
     def astype(self, dtype, inplace=False):
         """Cast the data type to a specific one.
 
@@ -186,7 +199,6 @@ class Tensor(types.TensorMetaclass):
         `dragon.cast(...)`_ : Cast the data type of input.
 
         """
-        pass
 
     def constant(self, value=0):
         r"""Register as a variable with constant initializer.
@@ -219,7 +231,6 @@ class Tensor(types.TensorMetaclass):
         `dragon.copy(...)`_ : Copy the value to ref.
 
         """
-        pass
 
     def get_value(self):
         """Copy the data from storage.
@@ -229,12 +240,7 @@ class Tensor(types.TensorMetaclass):
         numpy.ndarray
             The deep copied value.
 
-        See Also
-        --------
-        `dragon.workspace.fetch_tensor(...)`_ : Fetch the value of given tensor.
-
         """
-        pass
 
     def glorot_normal(self, scale=2.):
         r"""Register as a variable with glorot normal initializer.
@@ -326,7 +332,6 @@ class Tensor(types.TensorMetaclass):
         `dragon.reshape(...)`_ : Change the dimensions of input.
 
         """
-        pass
 
     def set_value(self, value):
         """Feed the const value to the storage.
@@ -341,12 +346,7 @@ class Tensor(types.TensorMetaclass):
         dragon.Tensor
             The self.
 
-        See Also
-        --------
-        `dragon.workspace.feed_tensor(...)`_ : Feed the value to the given tensor.
-
         """
-        pass
 
     def truncated_normal(self, mean=0, std=1):
         r"""Register as a variable with truncated normal initializer.
@@ -407,7 +407,7 @@ class Tensor(types.TensorMetaclass):
 
         Parameters
         ----------
-        value : Union[number, Sequence, numpy.ndarray]
+        value : array_like
             The value to convert.
         dtype: str, optional
             The optional data type.
@@ -420,16 +420,22 @@ class Tensor(types.TensorMetaclass):
             The constant contains the value.
 
         """
-        return Tensor('', dtype=dtype)._from_constant(value, name)
+        if not isinstance(value, numpy.ndarray):
+            value = numpy.array(value, dtype if dtype else 'float32')
+        return TensorRef(
+            name=workspace.get_workspace().unique_name(
+                name=context.get_name_scope() + (name if name else 'Const'),
+                suffix=':0',
+                namespace='Tensor'),
+            shape=list(value.shape),
+            dtype=str(value.dtype),
+        ).set_value(value)
 
     def _register_as(self, type, **kwargs):
         """Fill self with the specific type of filler."""
-        filler = dragon_pb2.TensorFillerProto()
-        filler.tensor = self.name
+        filler = dragon_pb2.FillerInfo()
         filler.type = type.lower()
-        if filler.type in ['placeholder', 'variable']:
-            pass
-        elif filler.type == 'constant':
+        if filler.type == 'constant':
             filler.value = kwargs['value'] if 'value' in kwargs else 0
         elif filler.type in ['normal', 'gaussian']:
             filler.mean = kwargs['mean'] if 'mean' in kwargs else 0
@@ -438,46 +444,59 @@ class Tensor(types.TensorMetaclass):
         elif filler.type == 'uniform':
             filler.low = kwargs['low'] if 'low' in kwargs else 0
             filler.high = kwargs['high'] if 'high' in kwargs else 1
-            filler.type = 'uniform'
-        elif filler.type in ['truncated_normal', 'truncatednormal']:
+        elif filler.type == 'truncated_normal':
             filler.mean = kwargs['mean'] if 'mean' in kwargs else 0
             filler.std = kwargs['std'] if 'std' in kwargs else 1
             filler.low = filler.mean - 2.0 * filler.std
             filler.high = filler.mean + 2.0 * filler.std
-            filler.type = 'truncated_normal'
-        elif filler.type == 'parameterized_truncated_normal':
-            filler.mean = kwargs['mean'] if 'mean' in kwargs else 0
-            filler.std = kwargs['std'] if 'std' in kwargs else 1
-            filler.low = kwargs['low'] if 'low' in kwargs else -2.0
-            filler.high = kwargs['high'] if 'high' in kwargs else 2.0
         elif filler.type in ['glorot_uniform', 'xavier']:
-            filler.scale = kwargs['scale'] if 'scale' in kwargs else 3.0
+            filler.scale = kwargs['scale'] if 'scale' in kwargs else 3
         elif filler.type in ['glorot_normal', 'msra']:
-            filler.scale = kwargs['scale'] if 'scale' in kwargs else 2.0
-        else:
-            raise ValueError('Unknown filler type: {}'.format(filler.type))
-        workspace.create_filler(filler)
+            filler.scale = kwargs['scale'] if 'scale' in kwargs else 2
+        workspace.get_workspace().create_tensor(self.name, filler)
         return self
 
-    def _from_constant(self, value, name=None):
-        """Convert the value to a tensor."""
-        if not isinstance(value, numpy.ndarray):
-            value = numpy.array(value, self.dtype if self.dtype else 'float32')
-        return TensorRef(
-            name=workspace.get_dummy_name(
-                basename=context.get_name_scope() +
-                        (name if name else 'Const'),
-                suffix=':0',
-                domain='Tensor'),
-            shape=list(value.shape),
-            dtype=str(value.dtype),
-        ).set_value(value)
-
     def __add__(self, other):
-        pass
+        r"""Compute the element-wise addition.
+
+        .. math:: \text{out} = \text{self} + \text{other}
+
+        Parameters
+        ----------
+        other : Union[dragon.Tensor, number]
+            The value to add.
+
+        Returns
+        -------
+        dragon.Tensor
+            The **y**.
+
+        See Also
+        --------
+        `dragon.math.add(...)`_ : Compute the element-wise addition.
+
+        """
 
     def __div__(self, other):
-        pass
+        r"""Compute the element-wise division.
+
+        .. math:: \text{out} = \text{self} \div \text{other}
+
+        Parameters
+        ----------
+        other : Union[dragon.Tensor, number]
+            The value to divide.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `dragon.math.div(...)`_ : Compute the element-wise division.
+
+        """
 
     def __float__(self):
         """Return a float python scalar.
@@ -491,13 +510,69 @@ class Tensor(types.TensorMetaclass):
         return float(self.get_value())
 
     def __ge__(self, other):
-        pass
+        r"""Compute element-wise greater-equal comparison.
+
+        .. math:: \text{out} = (\text{self} \geq \text{other})
+
+        Parameters
+        ----------
+        other : Union[dragon.Tensor, number]
+            The value to compare.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `dragon.math.greater_equal(...)`_ : Compute element-wise greater-equal comparison.
+
+        """
 
     def __getitem__(self, item):
-        pass
+        """Select the elements at the specific indices.
+
+        Parameters
+        ----------
+        item : Union[int, slice, dragon.Tensor]
+            The indices.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `dragon.slice(...)`_ : Select the elements according to the given sections.
+
+        See Also
+        --------
+        `dragon.masked_select(...)`_ : Select the elements where the given mask is 1.
+
+        """
 
     def __gt__(self, other):
-        pass
+        r"""Compute element-wise greater comparison.
+
+        .. math:: \text{out} = (\text{self} > \text{other})
+
+        Parameters
+        ----------
+        other : Union[dragon.Tensor, number]
+            The value to compare.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `dragon.math.greater(...)`_ : Compute element-wise greater comparison.
+
+        """
 
     def __hash__(self):
         return id(self)
@@ -513,20 +588,105 @@ class Tensor(types.TensorMetaclass):
         """
         return int(self.get_value())
 
-    def __lt__(self, other):
-        pass
-
     def __le__(self, other):
-        pass
+        r"""Compute element-wise less-equal comparison.
+
+        .. math:: \text{out} = (\text{self} \leq \text{other})
+
+        Parameters
+        ----------
+        other : Union[dragon.Tensor, number]
+            The value to compare.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `dragon.math.less_equal(...)`_ : Compute element-wise less-equal comparison.
+
+        """
+
+    def __lt__(self, other):
+        r"""Compute element-wise less comparison.
+
+        .. math:: \text{out} = (\text{self} < \text{other})
+
+        Parameters
+        ----------
+        other : Union[dragon.Tensor, number]
+            The value to compare.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `dragon.math.less(...)`_ : Compute element-wise less comparison.
+
+        """
 
     def __mul__(self, other):
-        pass
+        r"""Compute the element-wise multiplication.
+
+        .. math:: \text{out} = \text{self} \times \text{other}
+
+        Parameters
+        ----------
+        other : Union[dragon.Tensor, number]
+            The value to multiply.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `dragon.math.mul(...)`_ : Compute the element-wise multiplication.
+
+        """
 
     def __neg__(self):
-        pass
+        r"""Compute the element-wise negative.
+
+        .. math:: y = -x
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `dragon.math.negative(...)`_ : Compute the element-wise negative.
+
+        """
 
     def __radd__(self, other):
-        pass
+        r"""Compute the element-wise addition.
+
+        .. math:: \text{out} = \text{other} + \text{self}
+
+        Parameters
+        ----------
+        other : Union[dragon.Tensor, number]
+            The value to add.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `dragon.math.add(...)`_ : Compute the element-wise addition.
+
+        """
 
     def __repr__(self):
         shape_str = ('(' + ', '.join(
@@ -538,25 +698,108 @@ class Tensor(types.TensorMetaclass):
             .format(self.name, shape_str, self.dtype)
 
     def __rdiv__(self, other):
-        pass
+        r"""Compute the element-wise division.
+
+        .. math:: \text{out} = \text{other} \div \text{self}
+
+        Parameters
+        ----------
+        other : Union[dragon.Tensor, number]
+            The value to be divided.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `dragon.math.div(...)`_ : Compute the element-wise division.
+
+        """
 
     def __rmul__(self, other):
-        pass
+        r"""Compute the element-wise multiplication.
+
+        .. math:: \text{out} = \text{other} \times \text{self}
+
+        Parameters
+        ----------
+        other : Union[dragon.Tensor, number]
+            The value to multiply.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `dragon.math.mul(...)`_ : Compute the element-wise multiplication.
+
+        """
 
     def __rsub__(self, other):
-        pass
+        r"""Compute the element-wise subtraction.
 
-    def __rtruediv__(self, other):
-        return self.__div__(other)
+        .. math:: \text{out} = \text{other} - \text{self}
+
+        Parameters
+        ----------
+        other : Union[dragon.Tensor, number]
+            The value to be subtracted.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `dragon.math.sub(...)`_ : Compute the element-wise subtraction.
+
+        """
 
     def __setitem__(self, key, value):
-        pass
+        """Set the value at the specific indices.
+
+        Parameters
+        ----------
+        key : Union[int, slice, dragon.Tensor]
+            The indices.
+        value : number or dragon.Tensor
+            The value.
+
+        See Also
+        --------
+        `dragon.assign(...)`_ : Assign the value to ref.
+
+        See Also
+        --------
+        `dragon.masked_assign(...)`_ : Assign the value to ref where mask is 1.
+
+        """
 
     def __sub__(self, other):
-        pass
+        r"""Compute the element-wise subtraction.
 
-    def __truediv__(self, other):
-        return self.__div__(other)
+        .. math:: \text{out} = \text{self} - \text{value}
+
+        Parameters
+        ----------
+        other : Union[dragon.Tensor, number]
+            The value to subtract.
+
+        Returns
+        -------
+        dragon.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `dragon.math.sub(...)`_ : Compute the element-wise subtraction.
+
+        """
 
 
 class TensorRef(object):

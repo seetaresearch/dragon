@@ -41,14 +41,11 @@ OperatorBase::OperatorBase(const OperatorDef& def, Workspace* ws)
   }
 }
 
-template <class Context>
-Operator<Context>::Operator(const OperatorDef& def, Workspace* ws)
-    : OperatorBase(def, ws),
-      ctx_(def.device_option()),
-      do_sync_(OpArg<bool>("do_sync", false)),
-      allow_recomp_(OpArg<bool>("allow_recomp", false)) {
-  allow_run_ = (!(OutputSize() == 1 && !Output(0)->has_name()));
-}
+// template <class Context>
+// Operator<Context>::Operator(const OperatorDef& def, Workspace* ws)
+//     : OperatorBase(def, ws),
+//       ctx_(def.device_option()),
+//       do_sync_(OpArg<bool>("do_sync", false)) {}
 
 Tensor& OperatorBase::Input(int i) {
   CHECK_LT(i, (int)inputs_.size());
@@ -112,32 +109,32 @@ OperatorBase* OperatorBase::UpdateFrom(const OperatorDef& def) {
   handle_ = def.name();
   inputs_.resize(def.input_size());
   outputs_.resize(def.output_size());
-  for (int i = 0; i < inputs_.size(); i++)
+  for (int i = 0; i < inputs_.size(); i++) {
     inputs_[i] = ws()->GetTensor(def.input(i));
-  for (int i = 0; i < outputs_.size(); i++)
+  }
+  for (int i = 0; i < outputs_.size(); i++) {
     outputs_[i] = ws()->CreateTensor(def.output(i));
+  }
   return this;
 }
 
 template <class Context>
 void Operator<Context>::Prepare() {
-  string tensor_name;
-  size_t ver_pos;
-  int version;
   for (int i = 0; i < InputSize(); i++) {
     if (Input(i).version() >= 0) {
-      tensor_name = def().input(i);
-      ver_pos = tensor_name.find("/ver:");
-      version = std::atoi(tensor_name.substr(ver_pos + 5).c_str());
+      const auto& name = def().input(i);
+      auto ver_pos = name.find("/ver:");
+      auto version = std::atoi(name.substr(ver_pos + 5).c_str());
       if (version == Input(i).version()) continue;
       LOG(DEBUG) << "Excepted version of Tensor(" + Input(i).name() + ") "
                  << "is " << version << ", got " << Input(i).version()
                  << ". Recompute.";
       Tensor* flag = ws()->GetTensor("/share/flag/recomputing");
       flag->mutable_data<bool, CPUContext>()[0] = true;
-      vector<OperatorBase*>& chain = subgraph()[tensor_name];
-      for (auto* op : chain)
+      vector<OperatorBase*>& chain = subgraph()[name];
+      for (auto* op : chain) {
         op->Run(ctx()->stream_id());
+      }
       flag->mutable_data<bool, CPUContext>()[0] = false;
     }
   }
@@ -145,14 +142,11 @@ void Operator<Context>::Prepare() {
 
 template <class Context>
 void Operator<Context>::Release() {
-  string tensor_name;
-  size_t ver_pos;
-  int version;
   for (int i = 0; i < OutputSize(); i++) {
     if (Output(i)->version() >= 0) {
-      tensor_name = def().output(i);
-      ver_pos = tensor_name.find("/ver:");
-      version = std::atoi(tensor_name.substr(ver_pos + 5).c_str());
+      const auto& name = def().output(i);
+      auto ver_pos = name.find("/ver:");
+      auto version = std::atoi(name.substr(ver_pos + 5).c_str());
       Output(i)->set_version(version);
     }
   }
@@ -195,8 +189,7 @@ TryCreateOperator(const string& key, const OperatorDef& def, Workspace* ws) {
 
 OperatorBase* NewOperator(const OperatorDef& def, Workspace* ws) {
   auto* schema = OpSchemaRegistry::Schema(def.type());
-  if (schema) {
-    // Check the Inputs and Outputs if necessary
+  if (schema != nullptr) {
     CHECK(schema->Verify(def))
         << "\nOperator failed to pass the schema checking.";
   }
@@ -219,7 +212,7 @@ Gradient MakeGradientForOp(
                << "not implemented.";
   Gradient grad = maker->Make();
   OperatorDef reference_def(def);
-  // Map the cache key
+  // Set the cache key
   if (reference_def.has_cache_key()) {
     for (int i = 0; i < grad.ops.size(); ++i) {
       grad.ops[i].set_cache_key(

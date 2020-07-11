@@ -111,10 +111,10 @@ class LayerList(module.Module):
         return len(self._layers)
 
     def __repr__(self):
-        tmpstr = 'LayerList' + '(\n'
+        tmp_str = 'LayerList' + '(\n'
         for idx, layer in enumerate(self._layers):
-            modstr = layer.__repr__()
-            modstr = self._addindent(modstr, 2)
-            tmpstr = tmpstr + '  (' + str(idx) + '): ' + modstr + '\n'
-        tmpstr = tmpstr + ')'
-        return tmpstr
+            mod_str = layer.__repr__()
+            mod_str = self._add_indent(mod_str, 2)
+            tmp_str = tmp_str + '  (' + str(idx) + '): ' + mod_str + '\n'
+        tmp_str = tmp_str + ')'
+        return tmp_str

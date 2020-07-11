@@ -98,7 +98,7 @@ class Function(object):
         """Generate the OpDef from attributes."""
         attributes = self.attributes()
         self._def = proto_util.make_operator_cdef(
-            name=attributes.get('name', 'GenericOp'),
+            name=attributes.get('name', 'Op'),
             cache_key=self._cache_key,
             op_type=attributes['op_type'],
             device_option=proto_util.get_device_option(

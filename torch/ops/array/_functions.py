@@ -61,15 +61,11 @@ class Assign(function.Function):
     def feed(self, ws, handle, starts, sizes):
         for i in range(self.ndim):
             self.feed_arg(
-                ws,
-                '{}/starts[{}]'.format(handle, i),
-                starts[i], 'int64',
-            )
+                ws, '{}/starts[{}]'.format(handle, i),
+                starts[i], 'int64')
             self.feed_arg(
-                ws,
-                '{}/sizes[{}]'.format(handle, i),
-                sizes[i], 'int64',
-            )
+                ws, '{}/sizes[{}]'.format(handle, i),
+                sizes[i], 'int64')
 
     def forward(self, out, starts, sizes, input):
         self._check_device([input, out])
@@ -90,9 +86,7 @@ class Cast(function.Function):
     def attributes(self):
         return {
             'op_type': 'Cast',
-            'arguments': {
-                'dtype': self.dtype,
-            },
+            'arguments': {'dtype': self.dtype},
         }
 
     def forward(self, input, inplace=False):
@@ -122,18 +116,15 @@ class ChannelNormalize(function.Function):
                 'dtype': self.dtype,
                 'perm_descs': [
                     '${{HANDLE}}/perm[{}]'
-                    .format(n) for n in range(self.ndim)
-                ],
+                    .format(n) for n in range(self.ndim)],
             }
         }
 
     def feed(self, ws, handle, perm):
         for i in range(self.ndim):
             self.feed_arg(
-                ws,
-                '{}/perm[{}]'.format(handle, i),
-                perm[i], 'int64',
-            )
+                ws, '{}/perm[{}]'.format(handle, i),
+                perm[i], 'int64')
 
     def forward(self, input, perm):
         return self.dispatch(
@@ -171,9 +162,7 @@ class Concat(function.Function):
     def attributes(self):
         return {
             'op_type': 'Concat',
-            'arguments': {
-                'axis': self.axis,
-            },
+            'arguments': {'axis': self.axis},
         }
 
     def forward(self, seq, out=None):
@@ -215,18 +204,15 @@ class Expand(function.Function):
             'arguments': {
                 'dims_descs': [
                     '${{HANDLE}}/dims[{}]'
-                    .format(n) for n in range(self.ndim)
-                ],
+                    .format(n) for n in range(self.ndim)],
             },
         }
 
     def feed(self, ws, handle, times):
         for i in range(self.ndim):
             self.feed_arg(
-                ws,
-                '{}/dims[{}]'.format(handle, i),
-                times[i], 'int64',
-            )
+                ws, '{}/dims[{}]'.format(handle, i),
+                times[i], 'int64')
 
     def forward(self, input, dims):
         return self.dispatch(
@@ -361,18 +347,15 @@ class Reshape(function.Function):
             'arguments': {
                 'dims_descs': [
                     '${{HANDLE}}/dims[{}]'
-                    .format(n) for n in range(self.ndim)
-                ],
+                    .format(n) for n in range(self.ndim)],
             },
         }
 
     def feed(self, ws, handle, shape):
         for i in range(self.ndim):
             self.feed_arg(
-                ws,
-                '{}/dims[{}]'.format(handle, i),
-                shape[i], 'int64',
-            )
+                ws, '{}/dims[{}]'.format(handle, i),
+                shape[i], 'int64')
 
     def forward(self, input, shape, out=None):
         out = out if out else self.alloc()
@@ -394,27 +377,21 @@ class Slice(function.Function):
             'arguments': {
                 'starts_descs': [
                     '${{HANDLE}}/starts[{}]'
-                    .format(n) for n in range(self.ndim)
-                ],
+                    .format(n) for n in range(self.ndim)],
                 'sizes_descs': [
                     '${{HANDLE}}/sizes[{}]'
-                    .format(n) for n in range(self.ndim)
-                ],
+                    .format(n) for n in range(self.ndim)],
             },
         }
 
     def feed(self, ws, handle, starts, sizes):
         for i in range(self.ndim):
             self.feed_arg(
-                ws,
-                '{}/starts[{}]'.format(handle, i),
-                starts[i], 'int64',
-            )
+                ws, '{}/starts[{}]'.format(handle, i),
+                starts[i], 'int64')
             self.feed_arg(
-                ws,
-                '{}/sizes[{}]'.format(handle, i),
-                sizes[i], 'int64',
-            )
+                ws, '{}/sizes[{}]'.format(handle, i),
+                sizes[i], 'int64')
 
     def forward(self, input, starts, sizes):
         return self.dispatch(
@@ -489,19 +466,18 @@ class Tile(function.Function):
         return {
             'op_type': 'Tile',
             'arguments': {
-                'multiples_descs': [
-                    '${{HANDLE}}/multiples[{}]'
-                    .format(n) for n in range(self.ndim)
-                ],
+                'repeats_descs': [
+                    '${{HANDLE}}/repeats[{}]'
+                    .format(n) for n in range(self.ndim)],
             },
         }
 
-    def feed(self, ws, handle, times):
+    def feed(self, ws, handle, repeats):
         for i in range(self.ndim):
             self.feed_arg(
                 ws,
-                '{}/multiples[{}]'.format(handle, i),
-                times[i], 'int64',
+                '{}/repeats[{}]'.format(handle, i),
+                repeats[i], 'int64',
             )
 
     def forward(self, input, times):
@@ -523,18 +499,15 @@ class Transpose(function.Function):
             'arguments': {
                 'perm_descs': [
                     '${{HANDLE}}/perm[{}]'
-                    .format(n) for n in range(self.ndim)
-                ],
+                    .format(n) for n in range(self.ndim)],
             },
         }
 
     def feed(self, ws, handle, perm):
         for i in range(self.ndim):
             self.feed_arg(
-                ws,
-                '{}/perm[{}]'.format(handle, i),
-                perm[i], 'int64',
-            )
+                ws, '{}/perm[{}]'.format(handle, i),
+                perm[i], 'int64')
 
     def forward(self, input, perm):
         return self.dispatch(

@@ -46,13 +46,14 @@ class ParamUpdate(function.Function):
 class GradAccumulate(function.Function):
     def __init__(self, key, dev, **kwargs):
         super(GradAccumulate, self).__init__(key, dev, **kwargs)
+        self.momentum = kwargs.get('momentum', 1)
 
     def attributes(self):
         return {
             'op_type': 'Axpby',
-            'arguments': {'alpha': 1., 'beta': 1.},
+            'arguments': {'alpha': 1., 'beta': float(self.momentum)},
         }
 
     def forward(self, grads):
-        outputs = [grad.id + '[acc]' for grad in grads]
+        outputs = [grad.id + '[accum]' for grad in grads]
         return self.dispatch(grads, outputs, no_grad=True)

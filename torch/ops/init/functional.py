@@ -97,7 +97,7 @@ def eye(
     The rows and cols of matrix are determined by ``n`` and ``m``:
 
     ```python
-    print(torch.eye(2))     # [[1., 0.], [0., 1.]]
+    print(torch.eye(2))  # [[1., 0.], [0., 1.]]
     print(torch.eye(2, 3))  # [[1., 0., 0.], [0., 1., 0.]]
     ```
 
@@ -125,11 +125,8 @@ def eye(
     m = n if m is None else m
     out = utils.new_leaf([n, m], locals()) if out is None else out
     return _functions.Eye  \
-        .instantiate(
-            out.device,
-            ndim=2,
-            dtype=out.dtype,
-        ).apply(out, [n, m])
+        .instantiate(out.device, ndim=2, dtype=out.dtype) \
+        .apply(out, [n, m])
 
 
 def fill(out, shape, value):
@@ -144,11 +141,8 @@ def fill(out, shape, value):
 
 def fill_like(out, shape_like, value):
     return _functions.Fill  \
-        .instantiate(
-            out.device,
-            value=float(value),
-            dtype=out.dtype,
-        ).apply(out, [], shape_like)
+        .instantiate(out.device, value=float(value), dtype=out.dtype) \
+        .apply(out, [], shape_like)
 
 
 def normal(*size, **kwargs):

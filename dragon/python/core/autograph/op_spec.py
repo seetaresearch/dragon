@@ -190,24 +190,28 @@ def conv_spec(args, inputs, outputs):
     out_shape = None
     try:
         out_shape = inputs[0].shape[:]
+        num_axes = len(out_shape) - 2
         channel_axis = 1 if args['data_format'] == 'NCHW' else -1
         spatial_axis = 2 if args['data_format'] == 'NCHW' else 1
         if 'out_channels' in args:
             out_shape[channel_axis] = args['out_channels']
         else:
             out_shape[channel_axis] = inputs[1].shape[0]
-        for i in range(len(out_shape) - 2):
-            input_size = out_shape[i + spatial_axis]
-            k = args['kernel_shape'][i]
-            s = args['strides'][i]
-            pl, pr = args['pads'][i], args['pads'][i + 2]
-            dk, dp = (k - 1) + 1, pl + pr
-            if 'SAME' not in args['padding']:
-                out_shape[i + spatial_axis] = \
-                    int(float(input_size + dp - dk) / s) + 1
-            else:
-                out_shape[i + spatial_axis] = \
-                    int(float(input_size + s - 1) / s)
+        for i in range(num_axes):
+            try:
+                k = args['kernel_shape'][i]
+                s = args['strides'][i]
+                d = args['dilations'][i]
+                in_size = out_shape[i + spatial_axis]
+                k_size = d * (k - 1) + 1
+                if 'SAME' not in args['padding']:
+                    pad_size = args['pads'][i] + args['pads'][i + num_axes]
+                    out_size = (in_size + pad_size - k_size) // s + 1
+                else:
+                    out_size = (in_size + s - 1) // s
+            except IndexError:
+                out_size = None
+            out_shape[i + spatial_axis] = out_size
     except (TypeError, IndexError):
         pass
     outputs[0].shape = out_shape
@@ -220,30 +224,33 @@ def conv_transpose_spec(args, inputs, outputs):
     out_shape = None
     try:
         out_shape = inputs[0].shape[:]
+        num_axes = len(out_shape) - 2
         channel_axis = 1 if args['data_format'] == 'NCHW' else -1
         spatial_axis = 2 if args['data_format'] == 'NCHW' else 1
         if 'out_channels' in args:
             out_shape[channel_axis] = args['out_channels']
         else:
             out_shape[channel_axis] = inputs[1].shape[1]
-        for i in range(len(out_shape) - 2):
-            k = args['kernel_shape'][i]
-            s = args['strides'][i]
-            d = args['dilations'][i]
-            pl, pr = args['pads'][i], args['pads'][i + 2]
-            dk, dp = d * (k - 1) + 1, pl + pr
-            input_size = out_shape[i + spatial_axis]
-            if 'SAME' not in args['padding']:
-                out_shape[i + spatial_axis] = s * \
-                    (input_size - 1) + dk - dp
-            else:
-                out_shape[i + spatial_axis] = None
-                if args['output_padding'] is not None:
-                    out_shape[i + spatial_axis] = \
-                        s * (input_size - 1) + dk + \
-                        args['output_padding'][i]
-                elif args['output_shape'] is not None:
-                    out_shape[i + spatial_axis] = args['output_shape'][i]
+        for i in range(num_axes):
+            try:
+                k = args['kernel_shape'][i]
+                s = args['strides'][i]
+                d = args['dilations'][i]
+                in_size = out_shape[i + spatial_axis]
+                k_size = d * (k - 1) + 1
+                if 'SAME' not in args['padding']:
+                    pad_size = args['pads'][i] + args['pads'][i + num_axes]
+                    out_size = s * (in_size - 1) + k_size - pad_size
+                    if 'output_padding' in args and args['output_padding']:
+                        out_size += args['output_padding'][i]
+                else:
+                    if 'output_shape' in args and args['output_shape']:
+                        out_size = args['output_shape'][i]
+                    else:
+                        out_size = None
+            except IndexError:
+                out_size = None
+            out_shape[i + spatial_axis] = out_size
     except (TypeError, IndexError):
         pass
     outputs[0].shape = out_shape
@@ -606,21 +613,24 @@ def pool_spec(args, inputs, outputs):
     out_shape = None
     try:
         out_shape = inputs[0].shape[:]
+        num_axes = len(out_shape) - 2
         spatial_axis = 2 if args['data_format'] == 'NCHW' else 1
-        for i in range(len(out_shape) - 2):
-            k = args['kernel_shape'][i]
-            s = args['strides'][i]
-            pl, pr = args['pads'][i], args['pads'][i + 2]
+        for i in range(num_axes):
             if not args['global_pooling']:
-                floor_or_ceil = math.ceil if args['ceil_mode'] else math.floor
-                if 'SAME' not in args['padding']:
-                    in_size = out_shape[i + spatial_axis] + pl + pr
-                    out_size = int(floor_or_ceil(float(in_size - k) / s) + 1)
-                    out_shape[i + spatial_axis] = out_size
-                else:
+                try:
+                    k = args['kernel_shape'][i]
+                    s = args['strides'][i]
                     in_size = out_shape[i + spatial_axis]
-                    out_size = int(floor_or_ceil(float(in_size) / s))
-                    out_shape[i + spatial_axis] = out_size
+                    if 'SAME' not in args['padding']:
+                        floor_or_ceil = math.ceil if args['ceil_mode'] else math.floor
+                        pad_size = args['pads'][i] + args['pads'][i + num_axes]
+                        out_size = float(in_size + pad_size - k) / float(s) + 1
+                        out_size = floor_or_ceil(out_size)
+                    else:
+                        out_size = math.ceil(float(in_size) / float(s))
+                except IndexError:
+                    out_size = None
+                out_shape[i + spatial_axis] = out_size
             else:
                 out_shape[i + spatial_axis] = 1
     except (TypeError, IndexError):
@@ -959,14 +969,14 @@ def stack_spec(args, inputs, outputs):
 @register('Tile')
 def tile_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
-    multiples = args['multiples']
-    if multiples is not None:
+    repeats = args['repeats']
+    if repeats is not None:
         try:
             out_shape = inputs[0].shape[:]
-            for i, multiple in enumerate(multiples):
+            for i, size in enumerate(repeats):
                 if i < len(out_shape):
                     try:
-                        out_shape[i] *= multiple
+                        out_shape[i] *= size
                     except TypeError:
                         out_shape[i] = None
             outputs[0].shape = out_shape

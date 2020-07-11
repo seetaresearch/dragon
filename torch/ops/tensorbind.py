@@ -18,6 +18,7 @@ from __future__ import print_function
 from dragon.vm.torch.ops.array import functional as array_funcs
 from dragon.vm.torch.ops.math import functional as math_funcs
 from dragon.vm.torch.ops.init import functional as init_funcs
+from dragon.vm.torch import executor
 from dragon.vm.torch.tensor import Tensor
 
 
@@ -83,6 +84,24 @@ def add_(self, value):
 
     """
     return math_funcs.add(self, value, self)
+
+
+def backward(self, gradient=None, retain_graph=False):
+    """Compute the derivatives of this tensor w.r.t. graph leaves.
+
+    Parameters
+    ----------
+    gradient : dragon.vm.torch.Tensor, optional
+        The optional gradient of this tensor.
+    retain_graph : bool, optional, default=False
+        **False** to free the graph used to compute grad.
+
+    """
+    return executor.run_backward(
+        tensors=[self],
+        grad_tensors=None if gradient is None else [gradient],
+        retain_graph=retain_graph,
+    )
 
 
 def bitwise_not(self):
@@ -1638,6 +1657,7 @@ def _process_indices(item):
 Tensor.abs = abs
 Tensor.add = add
 Tensor.add_ = add_
+Tensor.backward = backward
 Tensor.bitwise_not = bitwise_not
 Tensor.bitwise_not_ = bitwise_not_
 Tensor.bitwise_xor = bitwise_xor

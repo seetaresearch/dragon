@@ -16,15 +16,14 @@ from __future__ import division
 from __future__ import print_function
 
 import time
-
 from google.protobuf import text_format
 
 from dragon.core.autograph import def_function
-from dragon.core.framework import workspace
 from dragon.core.training.adam import Adam
 from dragon.core.training.rmsprop import RMSprop
 from dragon.core.training.sgd import SGD
 from dragon.core.training.sgd import Nesterov
+from dragon.core.util import logging
 from dragon.vm.caffe.net import Net
 from dragon.vm.caffe.proto import caffe_pb2
 
@@ -99,8 +98,9 @@ class Solver(object):
             if self._current_step < len(self._param.stepvalue) \
                     and self.iter >= self._param.stepvalue[self._current_step]:
                 self._current_step = self._current_step + 1
-                print('MultiStep Status: Iteration {},  step = {}'
-                      .format(self.iter, self._current_step))
+                logging.info(
+                    'MultiStep Status: Iteration {}, step = {}'
+                    .format(self.iter, self._current_step))
                 new_lr = self._param.base_lr * \
                     pow(self._param.gamma, self._current_step)
                 self.base_lr = new_lr
@@ -112,8 +112,9 @@ class Solver(object):
             else:
                 if self._current_step + 1 < len(stage_iters):
                     self._current_step = self._current_step + 1
-                    print('MultiFixed Status: Iteration {}, stage = {}'
-                          .format(self.iter, self._current_step))
+                    logging.info(
+                        'MultiFixed Status: Iteration {}, stage = {}'
+                        .format(self.iter, self._current_step))
                     self.base_lr = stage_lrs[self._current_step]
         elif policy == 'inv':
             power = self._param.power
@@ -130,8 +131,7 @@ class Solver(object):
     def _apply_update(self):
         """Apply the weights update."""
         for blob in self.net._layer_blobs:
-            if blob.lr_multiplier > 0 and \
-                    blob.diff is not None:
+            if blob.lr_multiplier > 0 and blob.diff is not None:
                 self._optimizer.apply_gradients(
                     values_and_grads=[(blob.data, blob.diff)],
                     lr_mult=blob.lr_multiplier,
@@ -211,80 +211,18 @@ class Solver(object):
         """
         return self._test_nets
 
-    def one_step(self):
-        """One step run the train net.
-
-        Returns
-        -------
-        dict
-            The stats.
-
-        """
-        if self._param.test_interval and \
-                self.iter % self._param.test_interval == 0:
-            if (self.iter == 0 and
-                    self._param.test_initialization) or self.iter != 0:
-                for test_idx in range(len(self._test_nets)):
-                    self.test(test_idx)
-
-        # Forward, backward and compute loss.
-        run_time, stats = 0., {'loss': {'total': 0.}, 'iter': self.iter}
-        for i in range(self._param.iter_size):
-            tic = time.time()
-            self._net.forward_backward(return_outputs=False)
-            run_time += (time.time() - tic)
-            # Total loss.
-            for e in self.net.losses:
-                values = e.get_value().flatten()
-                if values.size == 1:
-                    stats['loss']['total'] += values[0]
-            # Partial loss.
-            for key in self.net.outputs:
-                values = self.net.blobs[key].data
-                values = values.get_value().flatten()
-                if values.size != 1:
-                    continue
-                if key not in stats['loss']:
-                    stats['loss'][key] = 0.
-                stats['loss'][key] += values[0]
-
-        # Apply Update.
-        self._get_learning_rate()
-        tic = time.time()
-        self._apply_update()
-        run_time += (time.time() - tic)
-        self.iter = self.iter + 1
-
-        # Snapshot.
-        if self._param.snapshot:
-            if self.iter % self._param.snapshot == 0:
-                self.snapshot()
-
-        # Average loss by the iter size.
-        for k in stats['loss'].keys():
-            stats['loss'][k] /= self._param.iter_size
-
-        # Misc stats.
-        stats['lr'] = self.base_lr
-        stats['time'] = run_time
-        return stats
-
     def snapshot(self):
         """Snapshot the parameters of train net."""
-        workspace.save(
-            tensors=[blob.data for blob in self.net._layer_blobs],
-            filename='_iter_%d' % self.iter,
-            prefix=self._param.snapshot_prefix,
-            suffix='.caffemodel',
-            format='caffe',
-        )
+        self._net.save(
+            '%s_iter_%d.caffemodel'
+            % (self._param.snapshot_prefix, self._iter))
 
-    def step(self, num_iterations):
+    def step(self, num_iterations=1):
         """Step the train net.
 
         Parameters
         ----------
-        num_iterations : int
+        num_iterations : int, optional, default=1
             The number of iterations to step.
 
         """
@@ -293,19 +231,18 @@ class Solver(object):
         loss_vec, smoothed_loss = [], 0.
 
         tic = time.time()
-
         while self.iter < stop_step:
             # Test if necessary.
-            if self._param.test_interval and \
-               self.iter % self._param.test_interval == 0:
-                if (self.iter == 0 and
-                        self._param.test_initialization) or self.iter != 0:
+            if self._is_root and self._param.test_interval > 0 and \
+                    self.iter % self._param.test_interval == 0:
+                if (self.iter == 0 and self._param.test_initialization) or \
+                        self.iter != 0:
                     for test_idx in range(len(self._test_nets)):
                         self.test(test_idx)
             # Forward, backward and compute loss.
             loss = 0.
             for i in range(self._param.iter_size):
-                self._net.forward_backward(return_outputs=False)
+                self._net.forward_backward()
                 if self._is_root:
                     for e in self.net.losses:
                         values = e.get_value().flatten()
@@ -322,24 +259,23 @@ class Solver(object):
                     idx = (self.iter - start_step) % self._param.average_loss
                     smoothed_loss += ((loss - loss_vec[idx]) / self._param.average_loss)
                     loss_vec[idx] = loss
-
             # Apply Update.
             self._get_learning_rate()
             self._apply_update()
-
-            # Display.
+            # Display iteration info.
             if self._is_root and self._param.display:
                 if self.iter % self._param.display == 0:
-                    print('Iteration %d, lr = %s, loss = %f, time = %.2fs' % (
-                        self.iter, str(self.base_lr), smoothed_loss, time.time() - tic))
+                    logging.info(
+                        'Iteration %d, lr = %s, loss = %f, time = %.2fs'
+                        % (self.iter, str(self.base_lr), smoothed_loss, time.time() - tic))
                     tic = time.time()
                     for idx, net_output in enumerate(self.net.outputs):
                         values = self.net.blobs[net_output].data.get_value().flatten()
                         for v in values:
-                            print(' ' * 10 + 'Train net output #{}({}): {}'
-                                  .format(idx, net_output, v))
+                            logging.info(
+                                ' ' * 10 + 'Train net output #{}({}): {}'
+                                .format(idx, net_output, v))
             self.iter = self.iter + 1
-
             # Snapshot if necessary.
             if self._param.snapshot:
                 if self.iter % self._param.snapshot == 0:
@@ -359,7 +295,7 @@ class Solver(object):
         test_iter = self._param.test_iter[test_idx]
 
         for iter in range(test_iter):
-            net.forward_backward(return_outputs=False)
+            net.forward()
             if not self._is_root:
                 continue
             if iter == 0:
@@ -376,27 +312,25 @@ class Solver(object):
                         test_score[i] += value
                         i += 1
 
-        if not self._is_root:
-            return
-
-        print('Iteration {}, Test net #{}'.format(self.iter, test_idx))
+        logging.info('Iteration {}, Test net #{}'.format(self.iter, test_idx))
         for i, score in enumerate(test_score):
-            print(' ' * 10 + 'Test net output #%d(%s): %.4f'
-                  % (i, output_id[i], score / test_iter))
+            logging.info(
+                ' ' * 10 + 'Test net output #%d(%s): %.4f'
+                % (i, output_id[i], score / test_iter))
 
 
 class AdamSolver(Solver):
     r"""The Adam solver.
     `[Kingma & Ba, 2014] <https://arxiv.org/abs/1412.6980>`_.
 
-    Following hyper parameters will be taken:
+    Examples:
 
     ```python
-    caffe_pb2.SolverParameter(
-        base_lr=0.,
-        momentum=0.,
-        momentum2=0.999,
-        delta=1e-8,
+    solver {
+      base_lr=0.001,
+      momentum=0.9,
+      momentum2=0.999,
+      delta=1e-8,
     )
     ```
 
@@ -425,13 +359,13 @@ class NesterovSolver(Solver):
     r"""The Nesterov-SGD solver.
     `[Sutskever et.al, 2013] <http://www.cs.toronto.edu/~hinton/absps/momentum.pdf>`_.
 
-    Following hyper parameters will be taken:
+    Examples:
 
     ```python
-    caffe_pb2.SolverParameter(
-        base_lr=0.,
-        momentum=0.,
-    )
+    solver {
+      base_lr: 0.01
+      momentum: 0.9
+    }
     ```
 
     """
@@ -457,13 +391,13 @@ class RMSPropSolver(Solver):
     r"""The RMSProp solver.
     `[Hinton et.al, 2013] <http://www.cs.utoronto.ca/~bonner/courses/2016s/csc321/lectures/lec6.pdf>`_.
 
-    Following hyper parameters will be taken:
+    Examples:
 
     ```python
-    caffe_pb2.SolverParameter(
-        base_lr=0.,
-        rms_decay=0.99,
-        delta=1e-8,
+    solver {
+      base_lr=0.01,
+      rms_decay=0.99,
+      delta=1e-8,
     )
     ```
 
@@ -491,12 +425,12 @@ class SGDSolver(Solver):
     r"""The Momentum-SGD solver.
     `[Polyak, 1964] <https://doi.org/10.1016/0041-5553(64)90137-5>`_.
 
-    Following hyper parameters will be taken:
+    Examples:
 
     ```python
-    caffe_pb2.SolverParameter(
-        base_lr=0.,
-        momentum=0.,
+    solver {
+      base_lr=0.01,
+      momentum=0.9,
     )
     ```
 

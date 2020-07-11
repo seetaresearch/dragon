@@ -24,6 +24,9 @@ namespace tensor {
 void RegisterModule(py::module& m) {
   /*! \brief Export the Tensor class */
   py::class_<Tensor>(m, "Tensor")
+      /*! \brief Return the tensor name */
+      .def_property_readonly("name", &Tensor::name)
+
       /*! \brief Return the number of dimensions */
       .def_property_readonly("ndim", &Tensor::ndim)
 
@@ -46,9 +49,9 @@ void RegisterModule(py::module& m) {
           "device",
           [](Tensor* self) {
             if (self->has_memory()) {
-              auto mem_info = self->memory()->info();
+              auto info = self->memory()->info();
               return std::tuple<string, int>(
-                  mem_info["device_type"], atoi(mem_info["device_id"].c_str()));
+                  info["device_type"], atoi(info["device_id"].c_str()));
             } else {
               return std::tuple<string, int>("Unknown", 0);
             }

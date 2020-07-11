@@ -16,14 +16,10 @@ from __future__ import print_function
 from dragon.vm.caffe.layers.common import Accuracy
 from dragon.vm.caffe.layers.common import ArgMax
 from dragon.vm.caffe.layers.common import BatchNorm
-from dragon.vm.caffe.layers.common import Cast
 from dragon.vm.caffe.layers.common import Concat
 from dragon.vm.caffe.layers.common import Crop
 from dragon.vm.caffe.layers.common import Eltwise
 from dragon.vm.caffe.layers.common import Flatten
-from dragon.vm.caffe.layers.common import FusedBatchNorm
-from dragon.vm.caffe.layers.common import FusedGroupNorm
-from dragon.vm.caffe.layers.common import GroupNorm
 from dragon.vm.caffe.layers.common import InnerProduct
 from dragon.vm.caffe.layers.common import Input
 from dragon.vm.caffe.layers.common import Normalize
@@ -46,12 +42,10 @@ from dragon.vm.caffe.layers.neuron import ELU
 from dragon.vm.caffe.layers.neuron import Power
 from dragon.vm.caffe.layers.neuron import PReLU
 from dragon.vm.caffe.layers.neuron import ReLU
-from dragon.vm.caffe.layers.neuron import SELU
 from dragon.vm.caffe.layers.neuron import Sigmoid
 from dragon.vm.caffe.layers.neuron import TanH
 from dragon.vm.caffe.layers.vision import Convolution
 from dragon.vm.caffe.layers.vision import Deconvolution
-from dragon.vm.caffe.layers.vision import DepthwiseConv2d
 from dragon.vm.caffe.layers.vision import LRN
 from dragon.vm.caffe.layers.vision import Pooling
 from dragon.vm.caffe.layers.vision import ROIAlign

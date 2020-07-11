@@ -28,6 +28,7 @@ from dragon.core.autograph.tensor import Tensor
 from dragon.core.eager import context as eager_context
 from dragon.core.eager.tensor import EagerTensor
 from dragon.core.framework import context
+from dragon.core.framework import device_spec
 from dragon.core.framework import workspace
 from dragon.core.training import optimizer
 from dragon.core.util import decorator
@@ -276,13 +277,16 @@ class FunctionGuard(object):
         executables = self.executables
         inputs, kwargs = self.canonicalize_inputs(*args, **kwargs)
         executables[0](*inputs, return_outputs=False, **kwargs)
-        _ = [func(return_outputs=False) for func in executables[1:]]
+        [func(return_outputs=False) for func in executables[1:]]
         outputs = []
-        for obj in self.outputs:
-            if isinstance(obj, Tensor):
-                outputs.append(EagerTensor(id=obj.id, own_storage=False))
+        current_ws = workspace.get_workspace()
+        for output in self.outputs:
+            if isinstance(output, Tensor):
+                impl = current_ws.GetTensor(output.id)
+                device = device_spec.DeviceSpec(*impl.device)
+                outputs.append(EagerTensor(impl=impl, device=device))
             else:
-                outputs.append(obj)
+                outputs.append(output)
         return outputs
 
     def __get__(self, instance, owner):

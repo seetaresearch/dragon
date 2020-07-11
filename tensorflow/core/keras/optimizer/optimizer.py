@@ -127,6 +127,7 @@ class Optimizer(optimizer_v1.Optimizer):
     def _create_hypers(self):
         if self._hypers_created:
             return
+        current_ws = workspace.get_workspace()
         for name, value in sorted(self._hyper.items()):
             if types.is_tensor(value) or callable(value):
                 pass
@@ -141,7 +142,7 @@ class Optimizer(optimizer_v1.Optimizer):
             hyper = self._hyper[name]
             alias = self._alias.get(name, None)
             if alias is not None:
-                workspace.set_tensor_alias(hyper, alias)
+                current_ws.register_alias(hyper, alias)
         self._hypers_created = True
 
     @staticmethod
@@ -173,10 +174,10 @@ class Optimizer(optimizer_v1.Optimizer):
     def _init_set_name(self, name, zero_based=True):
         """Set a name for sharing weights."""
         if not name:
-            self._name = workspace.get_dummy_name(
-                basename=generic_utils.to_snake_case(
+            self._name = workspace.get_workspace().unique_name(
+                name=generic_utils.to_snake_case(
                     self.__class__.__name__),
-                domain='Object',
+                namespace='Object',
                 zero_based=zero_based,
             )
         else:
@@ -188,7 +189,7 @@ class Optimizer(optimizer_v1.Optimizer):
             self._hyper[name] = value
         else:
             if types.is_tensor(self._hyper[name]):
-                workspace.feed_tensor(
+                workspace.get_workspace().feed_tensor(
                     self._hyper[name].id,
                     value,
                     dtype='float32',

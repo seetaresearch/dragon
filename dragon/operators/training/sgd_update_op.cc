@@ -10,7 +10,6 @@ void SGDUpdateOp<Context>::ComputeUpdate(Tensor* dX) {
   auto lr = Parameter("base_lr") * this->lr_mult_;
   if (last_lr_ > 0) correction_ = lr / last_lr_;
   last_lr_ = lr; // Record the last value
-
   kernel::SGDUpdate(
       dX->count(),
       lr,

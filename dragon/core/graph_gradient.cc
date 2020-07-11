@@ -4,23 +4,24 @@
 namespace dragon {
 
 bool GraphGradientMaker::CheckGrad(
-    const OperatorDef& forward_op,
+    const OperatorDef& op_def,
     const Set<string>& targets,
     vector<pair<string, int>>& gen_grads) {
-  if (NoGradientRegistry()->Has(forward_op.type())) {
-    for (auto& input : forward_op.input())
+  if (NoGradientRegistry()->Has(op_def.type())) {
+    for (auto& input : op_def.input()) {
       blacklist_set_.insert(input);
+    }
     return true;
   }
-  for (int i = 0; i < forward_op.output_size(); ++i) {
-    const auto& output = forward_op.output(i);
+  for (int i = 0; i < op_def.output_size(); ++i) {
+    const auto& output = op_def.output(i);
     if (!inputs_to_grads_.count(output)) {
       if (blacklist_set_.count(output)) return true;
       if (targets.count(output)) {
         // Consider to generate virtual gradient for targets
         gen_grads.push_back({output, i});
         inputs_to_grads_[output] = output + "_grad";
-      } else if (forward_op.output_size() == 1) {
+      } else if (op_def.output_size() == 1) {
         return true; // We can skip this op, obviously
       }
     }
@@ -30,7 +31,7 @@ bool GraphGradientMaker::CheckGrad(
 }
 
 void GraphGradientMaker::Make(
-    const vector<OperatorDef*>& forward_ops,
+    const vector<OperatorDef*>& op_defs,
     const vector<string>& targets,
     const vector<string>& input_grads,
     GraphDef& backward_def) {
@@ -39,11 +40,11 @@ void GraphGradientMaker::Make(
   Map<string, string> targets_to_grads;
 
   // PLAY for the forward
-  for (auto* op : forward_ops) {
-    if (NoGradientRegistry()->Has(op->type())) continue;
-    for (const auto& input : op->input()) {
+  for (auto* op_def : op_defs) {
+    if (NoGradientRegistry()->Has(op_def->type())) continue;
+    for (const auto& input : op_def->input()) {
       bool input_in_outputs = false;
-      for (auto& output : op->output())
+      for (auto& output : op_def->output())
         if (output == input) {
           input_in_outputs = true;
           break;
@@ -62,9 +63,9 @@ void GraphGradientMaker::Make(
     targets_set.insert(targets[i]);
   }
 
-  for (int op_idx = (int)forward_ops.size() - 1; op_idx >= 0; --op_idx) {
+  for (int op_idx = (int)op_defs.size() - 1; op_idx >= 0; --op_idx) {
     // Collect inputs and outputs, generate raw gradient ops
-    const OperatorDef& op = *forward_ops[op_idx];
+    const OperatorDef& op = *op_defs[op_idx];
     vector<pair<string, int>> gen_grads;
     bool is_skip = CheckGrad(op, targets_set, gen_grads);
     vector<string> g_outputs;
@@ -183,9 +184,9 @@ GraphDef GraphGradientMaker::Share(const GraphDef& input_def) {
     // Flag the gathering gradients
     if (op.type() == "GradientGather") {
       invalid_ops.insert(op_idx);
-      if (ignored_grads_.count(op.output(0))) {
+      if (empty_grads_.count(op.output(0))) {
         for (const auto& input : op.input()) {
-          ignored_grads_.insert(input);
+          empty_grads_.insert(input);
         }
         continue;
       } else {
@@ -200,7 +201,7 @@ GraphDef GraphGradientMaker::Share(const GraphDef& input_def) {
     }
     // Count the references to detect leafs
     for (const auto& input : op.input()) {
-      if (str::find(input, "grad")) {
+      if (str::endswith(input, "_grad")) {
         ref_count[input] += 1;
       }
     }
@@ -293,21 +294,17 @@ GraphDef GraphGradientMaker::Share(const GraphDef& input_def) {
 
     // Rewrite output gradients
     for (int i = 0; i < op->output_size(); ++i) {
+      if (str::startswith(op->type(), "Python")) continue;
       const string& output = op->output(i);
-      if (output.empty() || str::startswith(output, "/share/")) continue;
-      if (ignored_grads_.count(output) > 0) {
-        // Prune for non-trainable leafs
+      if (output.empty() || str::startswith(output, "/share/buffer")) continue;
+      if (empty_grads_.count(output) > 0) {
         *op->mutable_output(i) = "";
         continue;
       }
-      if (hooked_grads_.empty()) {
-        // Protection for leafs
-        if (ref_count.count(output) == 0) continue;
-      } else {
-        // Protection for sources
-        if (hooked_grads_.count(output) > 0) continue;
-      }
-      if (op->type() == "PythonPluginGradient") continue;
+      // Protection for leafs
+      if (ref_count.count(output) == 0) continue;
+      // Protection for sources and leafs
+      if (retained_grads_.count(output) > 0) continue;
       string new_output = output;
       if (inplace_flags[i] >= 0) {
         new_output = op->input(inplace_flags[i]);

@@ -17,16 +17,17 @@ from dragon.core.util import nest
 from dragon.vm.torch.ops.training import _functions
 
 
-def grad_accumulate(grads):
+def accumulate_grad(grads, momentum=1):
     """Accumulate the gradients."""
     grads = nest.flatten(grads)
     if len(grads) == 0:
         return
     return _functions.GradAccumulate \
-        .instantiate(grads[0].device).apply(grads)
+        .instantiate(grads[0].device, momentum=momentum) \
+        .apply(grads)
 
 
-def param_update(
+def update_param(
     param,
     grad,
     op_type,
@@ -34,7 +35,7 @@ def param_update(
     lr_mult=1,
     decay_mult=1,
 ):
-    """Apply the param update."""
+    """Apply the parameter update."""
     return _functions.ParamUpdate \
         .instantiate(
             param.device,

@@ -40,7 +40,6 @@ Dragon
   * `dragon.nn <dragon/nn.html>`_
   * `dragon.optimizers <dragon/optimizers.html>`_
   * `dragon.random <dragon/random.html>`_
-  * `dragon.workspace <dragon/workspace.html>`_
   * `dragon.vision <dragon/vision.html>`_
 
 Caffe
@@ -112,6 +111,7 @@ PyTorch
   This style involves the following components:
 
   * `torch <torch.html>`_
+  * `torch.autograd <torch/autograd.html>`_
   * `torch.distributed <torch/distributed.html>`_
   * `torch.jit <torch/jit.html>`_
   * `torch.nn <torch/nn.html>`_
@@ -206,14 +206,8 @@ Modules
   `Module random <dragon/random.html>`_
   : Native API for ``dragon.random`` namespace.
 
-  `Module workspace <dragon/workspace.html>`_
-  : Native API for ``dragon.workspace`` namespace.
-
   `Module vision <dragon/vision.html>`_
   : Native API for ``dragon.vision`` namespace.
-
-  `Module workspace <dragon/workspace.html>`_
-  : Native API for ``dragon.workspace`` namespace.
 
   `Module vm.caffe <caffe.html>`_
   : Virtual API for ``caffe`` namespace.
@@ -278,6 +272,9 @@ Modules
   `Module vm.torch <torch.html>`_
   : Virtual API for ``torch`` namespace.
 
+  `Module vm.torch.autograd <torch/autograd.html>`_
+  : Virtual API for ``torch.autograd`` namespace.
+
   `Module vm.torch.distributed <torch/distributed.html>`_
   : Virtual API for ``torch.distributed`` namespace.
 
@@ -319,7 +316,6 @@ Modules
   dragon/nn
   dragon/optimizers
   dragon/random
-  dragon/workspace
   dragon/vision
   caffe
   caffe/layers
@@ -343,6 +339,7 @@ Modules
   tensorrt
   tensorrt/backend
   torch
+  torch/autograd
   torch/distributed
   torch/jit
   torch/nn

@@ -25,7 +25,6 @@
 #include "dragon/core/workspace.h"
 #include "dragon/modules/python/types.h"
 #include "dragon/onnx/onnx_backend.h"
-#include "dragon/utils/caffemodel.h"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>

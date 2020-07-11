@@ -32,13 +32,13 @@ def from_dlpack(dlpack):
         The tensor with the dlpack data.
 
     """
-    ws = workspace.get_workspace()
-    ref = EagerTensor(device=None)  # Hack the constructor.
-    ref.__gc__ = ws.collectors.TENSOR
-    ref._id = ref.__gc__.alloc('${DLPACK}')
-    ref._impl = ws.CreateTensor(ref._id).FromDLPack(dlpack)
-    ref._device = device_spec.DeviceSpec(*ref._impl.device)
-    return ref
+    current_ws = workspace.get_workspace()
+    tensor = EagerTensor(device=None)
+    tensor._gc = current_ws.collectors.TENSOR
+    tensor._impl = current_ws.create_tensor(
+        tensor._gc.alloc('${DLPACK}')).FromDLPack(dlpack)
+    tensor._device = device_spec.DeviceSpec(*tensor._impl.device)
+    return tensor
 
 
 def to_dlpack(tensor, readonly=True):

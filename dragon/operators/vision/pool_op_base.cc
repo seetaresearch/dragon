@@ -5,9 +5,14 @@
 
 namespace dragon {
 
-#define SAME_PADDING(A, B)   \
-  A[i] = padding_needed / 2; \
-  B[i] = padding_needed - A[i]
+#define DETERMINE_SAME_PADDING(l, r) \
+  if (padding_ != "SAME_UPPER") {    \
+    l[i] = pad_size / 2;             \
+    r[i] = pad_size - l[i];          \
+  } else {                           \
+    r[i] = pad_size / 2;             \
+    l[i] = pad_size - r[i];          \
+  }
 
 template <class Context>
 void PoolOpBase<Context>::Setup(int num_axes) {
@@ -52,41 +57,27 @@ void PoolOpBase<Context>::ComputeOutShape() {
       kshape_[i] = in_dims_[i + 2];
   }
 
-  // Adjust the pads for SAME padding algorithm
-  if (str::find(padding_, "SAME")) {
-    for (int i = 0; i < num_axes_; i++) {
-      auto idm = in_dims_[i + 2];
-      int64_t odm = (idm + stride_[i] - 1) / (float)stride_[i];
-      auto padding_needed =
-          std::max((int64_t)0, (odm - 1) * stride_[i] + kshape_[i] - idm);
-      if (padding_ == "SAME_UPPER") {
-        SAME_PADDING(pad_l_, pad_r_);
-      } else {
-        SAME_PADDING(pad_r_, pad_l_);
-      } /*! SAME_LOWER or SAME */
-    }
-  }
-
   // Compute the output dimensions
   auto floor_or_ceil = ceil_mode_ > 0
       ? static_cast<float (*)(float)>(&std::ceil)
       : static_cast<float (*)(float)>(&std::floor);
-
   out_dims_ = in_dims_;
   out_shape_ = Input(0).dims();
-
+  int64_t in_size, k_size, pad_size;
   for (int i = 0; i < num_axes_; i++) {
-    auto in_dim = in_dims_[i + 2];
-    if (!str::find(padding_, "SAME")) {
-      // Explicit pads
-      in_dim += pad_l_[i] + pad_r_[i];
-      out_shape_[i + axis_] = out_dims_[i + 2] =
-          floor_or_ceil((in_dim - kshape_[i]) / (float)stride_[i]) + 1;
-    } else {
-      // Auto pads
-      out_shape_[i + axis_] = out_dims_[i + 2] =
-          floor_or_ceil(in_dim / (float)stride_[i]);
+    float out_size;
+    in_size = in_dims_[i + 2], k_size = kshape_[i];
+    if (!str::find(padding_, "SAME")) { // Explicit pads
+      pad_size = pad_l_[i] + pad_r_[i];
+      out_size = float(in_size + pad_size - k_size) / float(stride_[i]) + 1.f;
+      out_size = floor_or_ceil(out_size);
+    } else { // Auto pads
+      out_size = std::ceil(float(in_size) / float(stride_[i]));
+      pad_size = ((int64_t)out_size - 1) * stride_[i] + k_size - in_size;
+      pad_size = std::max(pad_size, int64_t(0));
+      DETERMINE_SAME_PADDING(pad_l_, pad_r_);
     }
+    out_shape_[i + axis_] = out_dims_[i + 2] = out_size;
   }
 }
 
@@ -95,6 +86,6 @@ template class PoolOpBase<CPUContext>;
 template class PoolOpBase<CUDAContext>;
 #endif
 
-#undef SAME_PADDING
+#undef DETERMINE_SAME_PADDING
 
 } // namespace dragon

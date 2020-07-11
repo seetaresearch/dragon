@@ -4,13 +4,13 @@
 
 namespace dragon {
 
-#define DEFINE_FILLER_OP_IMPL(name)                  \
-  template <class Context>                           \
-  template <typename T>                              \
-  void name##Op<Context>::DoRunWithType() {          \
-    unique_ptr<Filler<T, Context>> f;                \
-    f.reset(CreateFiller<T, Context>(this->proto_)); \
-    f->Fill(Output(0), ctx());                       \
+#define DEFINE_FILLER_OP_IMPL(name)                        \
+  template <class Context>                                 \
+  template <typename T>                                    \
+  void name##Op<Context>::DoRunWithType() {                \
+    unique_ptr<Filler<T, Context>> f;                      \
+    f.reset(CreateFiller<T, Context>(this->filler_info_)); \
+    f->Fill(Output(0), ctx());                             \
   }
 
 #define DISPATCH_WITH_TYPES(name, ...)                    \

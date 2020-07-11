@@ -119,8 +119,6 @@ DRAGON_API void DestroyGraphDef(GraphDef_t graph_def);
  * Model API
  */
 
-DRAGON_API void LoadCaffeModel(const std::string& model_file, Workspace_t ws);
-
 DRAGON_API void LoadONNXModel(
     const std::string& model_file,
     GraphDef_t init_graph,

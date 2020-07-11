@@ -237,7 +237,7 @@ class Module(object):
 
         Parameters
         ----------
-        state_dict : Dict
+        state_dict : dict
             The state dict.
         strict : bool, optional, default=True
             **True** to verify the names strictly.
@@ -474,7 +474,7 @@ class Module(object):
 
         Parameters
         ----------
-        destination : Dict, optional
+        destination : dict, optional
             The optional output dict.
         prefix : str, optional, default=''
             The prefix added to the name of states.
@@ -556,7 +556,7 @@ class Module(object):
         child_lines = []
         for key, module in self._modules.items():
             mod_str = repr(module)
-            mod_str = _addindent(mod_str, 2)
+            mod_str = _add_indent(mod_str, 2)
             child_lines.append('(' + key + '): ' + mod_str)
         lines = extra_lines + child_lines
         main_str = self._get_name() + '('
@@ -599,7 +599,7 @@ class Module(object):
                 object.__setattr__(self, key, value)
 
 
-def _addindent(s_, num_spaces):
+def _add_indent(s_, num_spaces):
     s = s_.split('\n')
     if len(s) == 1:
         return s_

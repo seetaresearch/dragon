@@ -23,14 +23,14 @@ from dragon.core.framework import workspace
 from dragon.core.ops import array_ops
 
 
-def add(self, value):
+def add(self, other):
     r"""Compute the element-wise addition.
 
-    .. math:: \text{out} = \text{self} + \text{value}
+    .. math:: \text{out} = \text{self} + \text{other}
 
     Parameters
     ----------
-    value : Union[dragon.Tensor, number]
+    other : Union[dragon.Tensor, number]
         The value to add.
 
     Returns
@@ -43,7 +43,7 @@ def add(self, value):
     `dragon.math.add(...)`_ : Compute the element-wise addition.
 
     """
-    return _binary_op(self, value, 'Add')
+    return _binary_op(self, other, 'Add')
 
 
 def astype(self, dtype, inplace=False):
@@ -89,14 +89,14 @@ def copy(self):
     return OpDef.apply('Copy', [self], [outputs])
 
 
-def div(self, value):
+def div(self, other):
     r"""Compute the element-wise division.
 
-    .. math:: \text{out} = \text{self} \div \text{value}
+    .. math:: \text{out} = \text{self} \div \text{other}
 
     Parameters
     ----------
-    value : Union[dragon.Tensor, number]
+    other : Union[dragon.Tensor, number]
         The value to divide.
 
     Returns
@@ -109,7 +109,7 @@ def div(self, value):
     `dragon.math.div(...)`_ : Compute the element-wise division.
 
     """
-    return _binary_op(self, value, 'Div')
+    return _binary_op(self, other, 'Div')
 
 
 def ge(self, other):
@@ -172,12 +172,8 @@ def get_value(self):
     numpy.ndarray
         The deep copied value.
 
-    See Also
-    --------
-    `dragon.workspace.fetch_tensor(...)`_ : Fetch the value of given tensor.
-
     """
-    return workspace.fetch_tensor(self)
+    return workspace.get_workspace().fetch_tensor(self)
 
 
 def gt(self, other):
@@ -249,14 +245,14 @@ def lt(self, other):
     return _binary_op(self, other, 'Less')
 
 
-def mul(self, value):
+def mul(self, other):
     r"""Compute the element-wise multiplication.
 
-    .. math:: \text{out} = \text{self} \times \text{value}
+    .. math:: \text{out} = \text{self} \times \text{other}
 
     Parameters
     ----------
-    value : Union[dragon.Tensor, number]
+    other : Union[dragon.Tensor, number]
         The value to multiply.
 
     Returns
@@ -269,7 +265,7 @@ def mul(self, value):
     `dragon.math.mul(...)`_ : Compute the element-wise multiplication.
 
     """
-    return _binary_op(self, value, 'Mul')
+    return _binary_op(self, other, 'Mul')
 
 
 def neg(self):
@@ -290,14 +286,14 @@ def neg(self):
     return _unary_op(self, 'Neg')
 
 
-def radd(self, value):
+def radd(self, other):
     r"""Compute the element-wise addition.
 
-    .. math:: \text{out} = \text{value} + \text{self}
+    .. math:: \text{out} = \text{other} + \text{self}
 
     Parameters
     ----------
-    value : Union[dragon.Tensor, number]
+    other : Union[dragon.Tensor, number]
         The value to add.
 
     Returns
@@ -310,17 +306,17 @@ def radd(self, value):
     `dragon.math.add(...)`_ : Compute the element-wise addition.
 
     """
-    return _binary_op(value, self, 'Add')
+    return _binary_op(other, self, 'Add')
 
 
-def rdiv(self, value):
+def rdiv(self, other):
     r"""Compute the element-wise division.
 
-    .. math:: \text{out} = \text{value} \div \text{self}
+    .. math:: \text{out} = \text{other} \div \text{self}
 
     Parameters
     ----------
-    value : Union[dragon.Tensor, number]
+    other : Union[dragon.Tensor, number]
         The value to be divided.
 
     Returns
@@ -333,7 +329,7 @@ def rdiv(self, value):
     `dragon.math.div(...)`_ : Compute the element-wise division.
 
     """
-    return _binary_op(value, self, 'Div')
+    return _binary_op(other, self, 'Div')
 
 
 def reshape(self, shape):
@@ -358,14 +354,14 @@ def reshape(self, shape):
         return array_ops.reshape(self, shape=shape)
 
 
-def rmul(self, value):
+def rmul(self, other):
     r"""Compute the element-wise multiplication.
 
-    .. math:: \text{out} = \text{value} \times \text{self}
+    .. math:: \text{out} = \text{other} \times \text{self}
 
     Parameters
     ----------
-    value : Union[dragon.Tensor, number]
+    other : Union[dragon.Tensor, number]
         The value to multiply.
 
     Returns
@@ -378,17 +374,17 @@ def rmul(self, value):
     `dragon.math.mul(...)`_ : Compute the element-wise multiplication.
 
     """
-    return _binary_op(value, self, 'Mul')
+    return _binary_op(other, self, 'Mul')
 
 
-def rsub(self, value):
+def rsub(self, other):
     r"""Compute the element-wise subtraction.
 
-    .. math:: \text{out} = \text{value} - \text{self}
+    .. math:: \text{out} = \text{other} - \text{self}
 
     Parameters
     ----------
-    value : Union[dragon.Tensor, number]
+    other : Union[dragon.Tensor, number]
         The value to be subtracted.
 
     Returns
@@ -401,7 +397,7 @@ def rsub(self, value):
     `dragon.math.sub(...)`_ : Compute the element-wise subtraction.
 
     """
-    return _binary_op(value, self, 'Sub')
+    return _binary_op(other, self, 'Sub')
 
 
 def setitem(self, key, value):
@@ -443,23 +439,19 @@ def set_value(self, value):
     dragon.Tensor
         The self.
 
-    See Also
-    --------
-    `dragon.workspace.feed_tensor(...)`_ : Feed the value to the given tensor.
-
     """
-    workspace.feed_tensor(self, value)
+    workspace.get_workspace().feed_tensor(self, value)
     return self
 
 
-def sub(self, value):
+def sub(self, other):
     r"""Compute the element-wise subtraction.
 
     .. math:: \text{out} = \text{self} - \text{value}
 
     Parameters
     ----------
-    value : Union[dragon.Tensor, number]
+    other : Union[dragon.Tensor, number]
         The value to subtract.
 
     Returns
@@ -472,7 +464,7 @@ def sub(self, value):
     `dragon.math.sub(...)`_ : Compute the element-wise subtraction.
 
     """
-    return _binary_op(self, value, 'Sub')
+    return _binary_op(self, other, 'Sub')
 
 
 def _binary_op(a, b, op_type):
@@ -570,3 +562,4 @@ Tensor.__rtruediv__ = rdiv
 Tensor.__rsub__ = rsub
 Tensor.__setitem__ = setitem
 Tensor.__sub__ = sub
+Tensor.__truediv__ = div

@@ -472,15 +472,14 @@ def squeeze_exporter(op_def, shape_dict, ws):
 @exporter.register('Tile')
 def tile_exporter(op_def, shape_dict, ws):
     node, const_tensors = exporter.translate(**locals())
-
     repeats = []
 
     for arg in op_def.arg:
-        if arg.name == 'multiples':
+        if arg.name == 'repeats':
             repeats = [e for e in arg.ints]
-        elif arg.name == 'multiples_desc':
+        elif arg.name == 'repeats_desc':
             repeats = helper.fetch_argument(op_def, arg, ws)
-        elif arg.name == 'multiples_descs':
+        elif arg.name == 'repeats_descs':
             repeats = helper.fetch_arguments(op_def, arg, ws)
 
     repeats = helper.from_array(

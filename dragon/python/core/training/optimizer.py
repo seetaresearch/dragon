@@ -112,7 +112,7 @@ class Optimizer(object):
         if extra is not None:
             self._defaults = dict(self._defaults, **extra)
         for k, v in self._defaults.items():
-            workspace.feed_tensor(
+            workspace.get_workspace().feed_tensor(
                 '/share/hyper/%s/%s' % (self._op_handle, k), v,
                 dtype='float32', enforce_cpu=True,
             )
@@ -140,14 +140,14 @@ class Optimizer(object):
     def __getattr__(self, item):
         defaults = self.__dict__.get('_defaults')
         if item in defaults:
-            return workspace.fetch_tensor(
+            return workspace.get_workspace().fetch_tensor(
                 '/share/hyper/%s/%s' % (self._op_handle, item))
         return self.__dict__[item]
 
     def __setattr__(self, key, value):
         defaults = self.__dict__.get('_defaults')
         if defaults is not None and key in defaults:
-            workspace.feed_tensor(
+            workspace.get_workspace().feed_tensor(
                 '/share/hyper/%s/%s' % (self._op_handle, key), value,
                 dtype='float32', enforce_cpu=True)
         else:

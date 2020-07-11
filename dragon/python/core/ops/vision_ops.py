@@ -157,7 +157,7 @@ def conv2d_transpose(
     group : int, optional, default=1
         The group size of convolution.
     output_padding : Sequence[Union[int, dragon.Tensor]], optional
-        The value padded to the right side.
+        The extra size padding to output.
     output_shape : Sequence[Union[int, dragon.Tensor]], optional
         The output shape for **SAME** padding.
     padding : {'VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'}, optional
@@ -176,7 +176,7 @@ def conv2d_transpose(
         raise ValueError('Unsupported padding algorithm: %s' % padding)
     if data_format not in ('NCHW', 'NHWC'):
         raise ValueError('Unsupported data format: %s' % data_format)
-    if output_padding is not None or output_shape is not None:
+    if output_shape is not None and 'SAME' not in padding:
         args['padding'] = 'SAME'
     for key in ('kernel_shape', 'strides', 'pads', 'dilations'):
         if key == 'pads':
@@ -327,7 +327,7 @@ def pool2d(
     pads=0,
     padding='VALID',
     ceil_mode=False,
-    mode='max',
+    mode='MAX',
     data_format='NCHW',
     global_pooling=False,
     **kwargs
@@ -366,7 +366,8 @@ def pool2d(
 
     """
     args = parse_args(locals())
-    if mode not in ('MAX', 'AVG'):
+    args['mode'] = mode.upper()
+    if args['mode'] not in ('MAX', 'AVG'):
         raise ValueError('Unsupported pooling mode: %s' % mode)
     if padding not in ('VALID', 'SAME', 'SAME_UPPER', 'SAME_LOWER'):
         raise ValueError('Unsupported padding algorithm: %s' % padding)
@@ -386,7 +387,7 @@ def pool2d(
                 pads=args['pads'],
                 padding=padding,
                 ceil_mode=ceil_mode,
-                mode=mode,
+                mode=args['mode'],
                 data_format=data_format,
                 global_pooling=global_pooling,
             ).apply([inputs])

@@ -10,25 +10,25 @@ __init__
 Methods
 -------
 
-accumulate_grad
-###############
-.. automethod:: dragon.vm.torch.optim.Optimizer.accumulate_grad
-   :noindex:
+accumulate
+##########
+.. automethod:: dragon.vm.torch.optim.Optimizer.accumulate
+  :noindex:
 
 add_param_group
 ###############
 .. automethod:: dragon.vm.torch.optim.Optimizer.add_param_group
-   :noindex:
+  :noindex:
 
 step
 ####
 .. automethod:: dragon.vm.torch.optim.Optimizer.step
-   :noindex:
+  :noindex:
 
 zero_grad
 #########
 .. automethod:: dragon.vm.torch.optim.Optimizer.zero_grad
-   :noindex:
+  :noindex:
 
 .. raw:: html
 

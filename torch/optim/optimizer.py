@@ -53,7 +53,7 @@ class Optimizer(object):
         ----------
         params : Sequence[dragon.vm.torch.nn.Parameter]
             The parameters to optimize.
-        defaults : Dict
+        defaults : dict
             The pre-defined default hyper-parameters.
 
         """
@@ -73,29 +73,39 @@ class Optimizer(object):
         self._process_group = distributed.get_group()
         self._shared_args = {}
 
-    def accumulate_grad(self):
-        """Accumulate all gradients.
+    def accumulate(self, momentum):
+        """Accumulate the gradient of params.
 
-        Call this method after a ``backward`` pass:
+        Call this method after each ``backward`` pass:
 
         ```python
-        x = torch.ones(1, 3, requires_grad=True)
-        for i in range(10):
-            y = x + 1
-            y.backward()
-            optimizer.accumulate_grad()
-        optimizer.step()
+        x = torch.ones(1, requires_grad=True)
+        optimizer = torch.optim.SGD([x], lr=0.1)
+        for epoch in range(2):
+            for step in range(3):
+                y = x + 1
+                y.backward()
+                # Note to zero the accumulation at the first step
+                optimizer.accumulate(momentum=1 if step > 0 else 1)
+            optimizer.step()
+        print(x)  # 0.4
         ```
+
+        Parameters
+        ----------
+        momentum : float, required
+            The momentum to the accumulated value.
 
         """
         grads = []
+        current_ws = workspace.get_workspace()
         for group in self.param_groups:
-            for p in group['params']:
-                g = self._steal_grad(p)
-                if g is not None:
-                    grads.append(g)
-                    p.__accumulating__ = True
-        training_funcs.grad_accumulate(grads)
+            group['_internal/grad_accum'] = True
+            for param in group['params']:
+                grad = self._steal_grad(current_ws, param)
+                if grad is not None:
+                    grads.append(grad)
+        training_funcs.accumulate_grad(grads, momentum)
 
     def add_param_group(self, param_group):
         """Add a new param group into the optimizer.
@@ -120,7 +130,7 @@ class Optimizer(object):
 
         Parameters
         ----------
-        param_group : Dict
+        param_group : dict
             The param group to add.
 
         """
@@ -137,10 +147,7 @@ class Optimizer(object):
 
         for param in param_group['params']:
             if not param.requires_grad:
-                raise ValueError(
-                    "Optimizing a parameter that "
-                    "doesn't require gradients."
-                )
+                raise ValueError("Optimize a parameter that doesn't require grad.")
 
         for name, default in self.defaults.items():
             if default is required and name not in param_group:
@@ -155,6 +162,9 @@ class Optimizer(object):
             Optimizer._DEFAULT_UNIQUE_HANDLE_INDEX += 1
             param_group['name'] = 'Optimizer_{}'.format(
                 Optimizer._DEFAULT_UNIQUE_HANDLE_INDEX)
+
+        if '_internal/grad_accum' not in param_group:
+            param_group['_internal/grad_accum'] = False
 
         param_set = set()
         for group in self.param_groups:
@@ -179,11 +189,13 @@ class Optimizer(object):
         ```
 
         """
+        current_ws = workspace.get_workspace()
         for group in self.param_groups:
-            self._run_updates(group)
+            self._run_updates(current_ws, group)
+            group['_internal/grad_accum'] = False
 
     def zero_grad(self, reset=False):
-        """Set all gradients to zeros.
+        """Set the gradient of params to zero.
 
         This method is not necessary usually, as we will overwrite
         the gradients in the next computation.
@@ -201,6 +213,7 @@ class Optimizer(object):
                 x += m2(x)
         optimizer.zero_grad(reset=True)
         x.backward()
+        optimizer.step()
         ```
 
         Parameters
@@ -209,37 +222,26 @@ class Optimizer(object):
             **True** to reset the memory instead of zeroing.
 
         """
+        current_ws = workspace.get_workspace()
         for group in self.param_groups:
-            for p in group['params']:
-                g = self._steal_grad(p, p.__accumulating__)
-                p.__accumulating__ = False
-                if g is not None:
-                    if reset:
-                        workspace.reset_tensor(g)
-                    else:
-                        g.zero_()
+            for param in group['params']:
+                grad = self._steal_grad(current_ws, param)
+                if grad is not None:
+                    current_ws.reset_tensor(grad) if reset else grad.zero_()
 
-    def _init_set_defaults(self, group):
-        """Initialize the defaults into current workspace."""
-        template = '/share/hyper/%s/{}' % group['name']
-        for k, v in group.items():
-            if k in self._shared_args:
-                workspace.feed_tensor(
-                    template.format(self._shared_args[k]),
-                    v, dtype='float32', enforce_cpu=True)
-
-    def _run_updates(self, group):
+    def _run_updates(self, ws, group):
         """Run updates for the parameter group."""
         # Collect params and grads.
         params, grads = [], []
+        grad_accum = group['_internal/grad_accum']
         for p in group['params']:
-            g = self._steal_grad(p, p.__accumulating__)
+            g = self._steal_grad(ws, p, grad_accum)
             if g is not None:
                 params.append(p)
                 grads.append(g)
 
         # Reset the shared defaults.
-        self._init_set_defaults(group)
+        self._reset_defaults(ws, group)
 
         # Accumulate grads from the current process group.
         if self._process_group is not None:
@@ -251,7 +253,7 @@ class Optimizer(object):
 
         # Apply the specific update.
         for p, g in zip(params, grads):
-            training_funcs.param_update(
+            training_funcs.update_param(
                 p, g,
                 op_type=self._op_type,
                 op_handle=group['name'],
@@ -259,16 +261,24 @@ class Optimizer(object):
                 decay_mult=group.get('decay_mult', 1),
             )
 
+    def _reset_defaults(self, ws, group):
+        """Reset the defaults to backend."""
+        template = '/share/hyper/%s/{}' % group['name']
+        for name, value in group.items():
+            if name in self._shared_args:
+                ws.feed_tensor(
+                    tensor=template.format(self._shared_args[name]),
+                    value=value,
+                    dtype='float32',
+                    enforce_cpu=True,
+                )
+
     @staticmethod
-    def _steal_grad(param, accumulating=False):
-        """Steal the grad tensor if existing."""
-        grad_id = param.id + ('_grad[acc]' if accumulating else '_grad')
-        if workspace.has_tensor(grad_id):
-            return Tensor(
-                id=grad_id,
-                own_storage=False,
-                device=param.device,
-            )
+    def _steal_grad(ws, param, grad_accum=False):
+        """Steal the grad from backend."""
+        impl = ws.GetTensor(param.id + ('_grad[accum]' if grad_accum else '_grad'))
+        if impl is not None:
+            return Tensor(device=param.device, impl=impl)
         return None
 
     def __repr__(self):

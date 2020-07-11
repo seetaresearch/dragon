@@ -478,11 +478,9 @@ def placeholder(dtype=None, shape=None, name=None):
     """
     # Construct a tensor from the explicit name
     return TensorRef(
-        workspace.get_dummy_name(
-            context.get_name_scope() + name
-            if name else 'Placeholder',
-            suffix=':0', domain='Tensor',
-        ),
+        workspace.get_workspace().unique_name(
+            context.get_name_scope() + name if name else 'Placeholder',
+            suffix=':0', namespace='Tensor'),
         dtype=str(dtype) if dtype else dtype,
         shape=shape,
     ).placeholder()
@@ -528,8 +526,8 @@ def shape(input, name=None):
 
     ```python
     x = tf.ones((2, 3))
-    print(x.shape)          # Return a sequence
-    print(tf.shape(x))      # Return a tensor
+    print(x.shape)  # Return a sequence
+    print(tf.shape(x))  # Return a tensor
     ```
 
     Parameters
@@ -686,11 +684,11 @@ def squeeze(input, axis=None, name=None):
 
     # Remove all matched dimensions if ``axis`` is None
     # Otherwise, only the specified axes will be removed
-    print(tf.squeeze(x).shape)          # (1, 2, 2, 1) -> (2, 2)
+    print(tf.squeeze(x).shape)  # (1, 2, 2, 1) -> (2, 2)
     print(tf.squeeze(x, axis=0).shape)  # (1, 2, 2, 1) -> (2, 2, 1)
 
     # A negative axis is the last-k axis
-    print(tf.squeeze(x, axis=3).shape)   # (1, 2, 2, 1) -> (1, 2, 2)
+    print(tf.squeeze(x, axis=3).shape)  # (1, 2, 2, 1) -> (1, 2, 2)
     print(tf.squeeze(x, axis=-1).shape)  # Equivalent
 
     # Also, ``axis`` could be a sequence of integers
@@ -716,7 +714,7 @@ def squeeze(input, axis=None, name=None):
 
 
 def tile(input, multiples, name=None):
-    return array_ops.tile(input, multiples=multiples, name=name)
+    return array_ops.tile(input, repeats=multiples, name=name)
 
 
 def transpose(a, perm=None, name=None):

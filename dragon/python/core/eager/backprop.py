@@ -13,7 +13,7 @@
 #
 # ------------------------------------------------------------
 
-"""Do back-propagation from the eager expressions."""
+"""Do back-propagation from the executed operations."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -35,12 +35,22 @@ class Tape(object):
         self._defs = []
         self._parent = parent
         self._watched = set()
+        self._empty_grads = set()
         self._gc = workspace.get_workspace().collectors
         self._retain_graph = False
+
+    @property
+    def empty_grads(self):
+        """Return the recorded empty grads."""
+        return list(self._empty_grads)
 
     def add_def(self, op_def):
         """Add a new def."""
         self._defs.append(op_def)
+
+    def add_empty_grad(self, tensor_id):
+        """Add an empty grad for optimization."""
+        self._empty_grads.add(tensor_id)
 
     def is_watched(self, tensor):
         """Return true if tensor is watched."""
@@ -53,7 +63,7 @@ class Tape(object):
     def __del__(self):
         """Release the resources."""
         for op_def in self._defs:
-            self._gc.OPERATOR.collect(op_def.name)
+            self._gc.OP.collect(op_def.name)
             for y in op_def.output:
                 if y not in op_def.input:
                     self._gc.TENSOR.collect(y)
@@ -113,36 +123,23 @@ class GradientTape(object):
                 self._pop_tape()
 
         # Collect gradient info.
-        inputs, outputs = [], []
-        targets, ignores = [], []
-        target = nest.flatten(target)
-        sources = nest.flatten(sources)
-        sources_is_watched = []
+        xs, ys, grad_ys = nest.flatten(sources), nest.flatten(target), []
         if output_gradients is not None:
-            output_gradients = nest.flatten(output_gradients)
-            for value, grad in zip(target, output_gradients):
-                if grad.shape != value.shape:
+            for tensor, grad_tensor in zip(ys, nest.flatten(output_gradients)):
+                if grad_tensor.shape != tensor.shape:
                     raise ValueError(
-                        'Except the dimensions of <output_gradient> is {}, '
-                        'got {}.'.format(value.shape, grad.shape)
-                    )
-                inputs.append(grad.id)
-        for t in target:
-            targets.append(t.id)
-        for s in sources:
-            sources_is_watched.append(self._tape.is_watched(s))
-            if not s.requires_grad and not sources_is_watched[-1]:
-                ignores.append(s.id + '_grad')
-            else:
-                outputs.append(s.id)
+                        'Excepted the dimensions of output gradient is {}, '
+                        'got {}.'.format(tensor.shape, grad_tensor.shape))
+                grad_ys.append(grad_tensor.id)
 
         # Run the gradient ops sequentially.
-        workspace.run_backward(
-            forward_ops=self._tape._defs,
-            targets=targets,
-            sources=outputs,
-            input_grads=inputs,
-            ignored_grads=ignores,
+        current_ws = workspace.get_workspace()
+        current_ws.run_backward(
+            op_defs=self._tape._defs,
+            targets=[y.id for y in ys],
+            sources=[x.id for x in xs],
+            input_grads=grad_ys,
+            empty_grads=self._tape.empty_grads,
         )
 
         # Remove the tape to release resources.
@@ -150,12 +147,7 @@ class GradientTape(object):
             self._tape = None
 
         # Pack the gradients.
-        return [_steal_grad_ref(s, w) for s, w
-                in zip(sources, sources_is_watched)]
-
-    def replay(self):
-        """Run the operators stored in the tape."""
-        workspace.run_operator(self._tape._defs)
+        return [_steal_grad(current_ws, x) for x in xs]
 
     def reset(self):
         """Destroy the tape and push a new one."""
@@ -187,8 +179,7 @@ class GradientTape(object):
         if self._tape is None:
             raise RuntimeError(
                 'GradientTape.gradient can only be called '
-                'once on non-persistent tapes.'
-            )
+                'once on non-persistent tapes.')
         for t in nest.flatten(tensor):
             self._tape.watch(t)
 
@@ -232,17 +223,13 @@ def pop_tape():
     _GLOBAL_TAPE_STACK.pop()
 
 
-def _steal_grad_ref(source, is_watched=False):
-    if not source.requires_grad and not is_watched:
+def _steal_grad(ws, source):
+    """Steal the grad from backend."""
+    impl = ws.GetTensor(source.id + '_grad')
+    if impl is None:
         return None
-    grad_id = source.id + '_grad'
-    grad_impl = workspace.get_workspace().GetTensor(grad_id)
-    if grad_impl is None:
-        return None
-    device = device_spec.DeviceSpec(*grad_impl.device)
-    grad_ref = EagerTensor(own_storage=False, device=device)
-    grad_ref._id, grad_ref._impl = grad_id, grad_impl
-    return grad_ref
+    device = device_spec.DeviceSpec(*impl.device)
+    return EagerTensor(impl=impl, device=device)
 
 
 # Define a global stack to store the tapes of current thread.

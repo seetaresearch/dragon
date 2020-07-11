@@ -147,9 +147,9 @@ class Module(object):
 
     def _init_set_name(self, name=None, zero_based=True):
         if name is None:
-            self._name = workspace.get_dummy_name(
-                basename=camel_to_snake(self.__class__.__name__),
-                domain='Object',
+            self._name = workspace.get_workspace().unique_name(
+                name=camel_to_snake(self.__class__.__name__),
+                namespace='Object',
                 zero_based=zero_based,
             )
         else:

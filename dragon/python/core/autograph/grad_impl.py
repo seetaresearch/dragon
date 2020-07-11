@@ -21,37 +21,26 @@ from dragon.core.util import nest
 class GradientInfo(object):
     """A class to store the known gradient relations."""
 
-    def __init__(self, parent):
-        self._parent = parent
-        self._cost, self._wrt = [], []
-        self._input = None
+    def __init__(self, y, grad_y=None):
+        self._y, self._grad_y, self._xs = y, grad_y, []
 
     @property
-    def cost(self):
-        return self._cost
+    def grad_y(self):
+        return self._grad_y
 
     @property
-    def input(self):
-        return self._input
+    def xs(self):
+        return self._xs
 
     @property
-    def wrt(self):
-        return self._wrt
+    def y(self):
+        return self._y
 
-    def add_cost(self, cost):
-        self._cost.append(cost)
-
-    def add_wrt(self, wrt):
-        self._wrt.append(wrt)
-
-    def make_pairs(self):
-        return [(self._parent.id, wrt) for wrt in self._wrt]
+    def add_x(self, x):
+        self._xs.append(x)
 
     def required(self):
-        return len(self._wrt) > 0
-
-    def set_input(self, input):
-        self._input = input
+        return len(self._xs) > 0
 
 
 def gradients(ys, xs, grad_ys=None):
@@ -112,18 +101,14 @@ def gradients(ys, xs, grad_ys=None):
     if grad_ys is not None:
         grad_ys = nest.flatten(grad_ys)
 
-    # Record the gradient info (cost, wrt, input),
+    # Record the gradient info (y, grad_y, xs),
     # then, generate the gradient references once.
     for i, y in enumerate(ys):
         if y._grad is None:
-            y._grad = GradientInfo(y)
-        if grad_ys is not None:
-            y._grad.set_input(grad_ys[i])
+            grad_y = grad_ys[i] if grad_ys is not None else None
+            y._grad = GradientInfo(y, grad_y)
         for x in xs:
-            if not hasattr(x, '_grad') or x._grad is None:
-                x._grad = GradientInfo(x)
-            y._grad.add_wrt(x.id)
-            x._grad.add_cost(y)
+            y._grad.add_x(x)
             if i == 0:
                 dxs.append(TensorRef(x.id + '_grad', x.shape, x.dtype))
 

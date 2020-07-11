@@ -15,11 +15,6 @@ gradient
 .. automethod:: dragon.GradientTape.gradient
   :noindex:
 
-replay
-######
-.. automethod:: dragon.GradientTape.replay
-  :noindex:
-
 reset
 #####
 .. automethod:: dragon.GradientTape.reset

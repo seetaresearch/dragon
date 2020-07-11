@@ -13,16 +13,7 @@
 #
 # ------------------------------------------------------------
 
-"""Gradient maker implemented in python.
-
-The basic idea of ``GradientMaker`` comes from ``caffe2``,
-Jia provided a simple way to bridge the Generator(Python) with OpScheme(C++).
-
-For the efficient C++ implementation, see,
-
-    <https://github.com/seetaresearch/Dragon/blob/master/Dragon/src/core/graph_gradient.cc>
-
-"""
+"""Python-implemented gradient maker."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -40,25 +31,25 @@ class GradientMaker(object):
     """Make def for the gradient based on rules."""
 
     @classmethod
-    def gen_def(cls, forward_op, g_outputs):
+    def gen_def(cls, op_def, g_outputs):
         """Generate the OperatorDef from forward op."""
-        g_ops, g_inputs, defaults = backend.CreateGradientDefs(
-            forward_op.SerializeToString(), g_outputs)
-        for idx, g_op in enumerate(g_ops):
+        grad_defs, g_inputs, defaults = backend.CreateGradientDefs(
+            op_def.SerializeToString(), g_outputs)
+        for i, grad_def in enumerate(grad_defs):
             new_def = dragon_pb2.OperatorDef()
-            new_def.ParseFromString(g_op)
-            g_ops[idx] = new_def
-        return g_ops, g_inputs, defaults
+            new_def.ParseFromString(grad_def)
+            grad_defs[i] = new_def
+        return grad_defs, g_inputs, defaults
 
     @classmethod
-    def check(cls, forward_op, inputs_to_grads, blacklist, targets):
+    def check(cls, op_def, inputs_to_grads, blacklist, targets):
         """Check if missing gradients. If missing, skip."""
-        if forward_op.type in backend.NO_GRADIENT_OPERATORS:
-            for input in forward_op.input:
+        if op_def.type in backend.NO_GRADIENT_OPERATORS:
+            for input in op_def.input:
                 blacklist.add(input)
             return True, None
         gen_grads = []
-        for idx, output in enumerate(forward_op.output):
+        for idx, output in enumerate(op_def.output):
             if output not in inputs_to_grads:
                 if output in blacklist:
                     return True, gen_grads
@@ -66,50 +57,43 @@ class GradientMaker(object):
                     # Consider to generate virtual gradient for targets.
                     gen_grads.append((output, idx))
                     inputs_to_grads[output] = output + '_grad'
-                elif len(forward_op.output) == 1:
+                elif len(op_def.output) == 1:
                     # We can skip this op, obviously.
                     return True, gen_grads
         # Pass, even if missing some grads.
         return False, gen_grads
 
     @classmethod
-    def make(cls, forward_ops, targets, input_grads=None):
-        """The making procedure."""
+    def make(cls, op_defs, targets, input_grads=None):
+        """Make the backward op defs."""
         inputs_to_grads = {} if input_grads is None else input_grads
         inputs_count, grads_count = defaultdict(int), defaultdict(int)
         all_split_grads, blacklist = set(), set()
 
-        backward_ops = []
-
-        # A DAG may not have any in-place operators.
-        is_dag = True
-
         # PLAY for the forward.
-        for forward_op in forward_ops:
-            if forward_op.type in backend.NO_GRADIENT_OPERATORS:
+        for op_def in op_defs:
+            if op_def.type in backend.NO_GRADIENT_OPERATORS:
                 continue
-            outputs = [o for o in forward_op.output]
-            for input in forward_op.input:
+            outputs = [output for output in op_def.output]
+            for input in op_def.input:
                 if input not in outputs:
                     # Avoid to count the duplicate input,
                     # (i.e. the in-place output).
                     inputs_count[input] += 1
-                else:
-                    is_dag = False
 
         # PLAY for the backward.
-        for forward_op in forward_ops[::-1]:
+        backward_defs = []
+        for op_def in op_defs[::-1]:
             # Collect inputs and outputs.
             is_skip, gen_grads = cls.check(
-                forward_op=forward_op,
+                op_def=op_def,
                 inputs_to_grads=inputs_to_grads,
                 blacklist=blacklist,
                 targets=targets,
             )
             # Missing grads are represented as ``None``.
-            g_outputs = [inputs_to_grads.get(name, '')
-                         for name in forward_op.output]
-            g_ops, g_inputs, defaults = cls.gen_def(forward_op, g_outputs)
+            g_outputs = [inputs_to_grads.get(name, '') for name in op_def.output]
+            grad_defs, g_inputs, defaults = cls.gen_def(op_def, g_outputs)
 
             # Append operators.
             if not is_skip:
@@ -127,17 +111,17 @@ class GradientMaker(object):
                         outputs=op_outputs,
                         defaults=values,
                     )
-                    if forward_op.HasField('device_option'):
-                        gen_op.device_option.CopyFrom(forward_op.device_option)
-                    backward_ops.append(gen_op)
+                    if op_def.HasField('device_option'):
+                        gen_op.device_option.CopyFrom(op_def.device_option)
+                    backward_defs.append(gen_op)
                 # GradientOp
-                for g_op in g_ops:
-                    g_op.name = OpDef.get_name()
-                    backward_ops.append(g_op)
+                for grad_def in grad_defs:
+                    grad_def.name = OpDef.get_name()
+                    backward_defs.append(grad_def)
 
             # Split and gather grads for multi-used input.
-            for g_op in g_ops:
-                for g_output_idx, g_output in enumerate(g_op.output):
+            for grad_def in grad_defs:
+                for g_output_idx, g_output in enumerate(grad_def.output):
                     original_idx = -1
                     for g_input_idx, g_input in enumerate(g_inputs):
                         if g_output == g_input:
@@ -145,10 +129,10 @@ class GradientMaker(object):
                     # Ignore un-used && in-placed GI(?).
                     if original_idx == -1:
                         continue
-                    if g_output in g_op.input:
+                    if g_output in grad_def.input:
                         continue
                     # Found a split branch.
-                    original_name = forward_op.input[original_idx]
+                    original_name = op_def.input[original_idx]
                     if inputs_count[original_name] > 1:
                         # Split.
                         split_name = g_output + '_autosplit_%d' % grads_count[g_output]
@@ -161,21 +145,21 @@ class GradientMaker(object):
                             for idx in range(grads_count[g_output]):
                                 if '%s_autosplit_%d' % (g_output, idx) in all_split_grads:
                                     split_inputs.append('%s_autosplit_%d' % (g_output, idx))
-                            gather_op = proto_util.make_operator_def(
+                            gather_def = proto_util.make_operator_def(
                                 name=OpDef.get_name(),
                                 op_type='GradientGather',
                                 inputs=split_inputs,
                                 outputs=[g_output],
                             )
-                            if g_op.HasField('device_option'):
-                                gather_op.device_option.CopyFrom(g_op.device_option)
-                            backward_ops.append(gather_op)
-                        g_op.output[g_output_idx] = split_name
+                            if grad_def.HasField('device_option'):
+                                gather_def.device_option.CopyFrom(grad_def.device_option)
+                            backward_defs.append(gather_def)
+                        grad_def.output[g_output_idx] = split_name
 
             # Done.
             if not is_skip:
-                for name, grad in zip(forward_op.input, g_inputs):
+                for name, grad in zip(op_def.input, g_inputs):
                     if grad != '':
                         inputs_to_grads[name] = grad
 
-        return forward_ops, backward_ops, is_dag
+        return backward_defs

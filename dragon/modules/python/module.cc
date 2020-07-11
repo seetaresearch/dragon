@@ -44,48 +44,38 @@ PYBIND11_MODULE(libdragon_python, m) {
       /*! \brief Return the name of stored graphs */
       .def_property_readonly("graphs", &Workspace::graphs)
 
-      /*! \brief Destory all the tensors */
-      .def("Clear", &Workspace::Clear)
-
-      /*! \brief Merge a external workspace into self */
+      /*! \brief Merge resources from another workspace */
       .def("MergeFrom", &Workspace::MergeFrom)
 
-      /*! \brief Return a unique dummy name */
-      .def("GetDummyName", &Workspace::GetDummyName)
+      /*! \brief Return an unique name */
+      .def("UniqueName", &Workspace::UniqueName)
 
-      /*! \brief Return the unique name of given tensor */
-      .def("GetTensorName", &Workspace::GetTensorName)
-
-      /*! \brief Reset a tensor with the given name */
+      /*! \brief Reset the tensor */
       .def("ResetTensor", &Workspace::ResetTensor)
 
-      /*! \brief Indicate whether the given tensor is existing */
+      /*! \brief Return whether the tensor is existing */
       .def(
           "HasTensor",
           [](Workspace* self, const string& name) {
             return self->HasTensor(name);
           })
 
-      /*! \brief Create a tensor with the given name */
+      /*! \brief Create the tensor */
       .def(
           "CreateTensor",
-          [](Workspace* self, const string& name) {
+          [](Workspace* self, const string& name, const string& filler_str) {
+            if (!filler_str.empty()) {
+              FillerInfo filler_info;
+              if (!filler_info.ParseFromString(filler_str)) {
+                LOG(FATAL) << "Failed to parse the FillerInfo.";
+              }
+              return self->CreateTensor(name, &filler_info);
+            }
             return self->CreateTensor(name);
           },
           py::return_value_policy::reference_internal)
 
-      /*! \brief Create a tensor from the specified filler */
-      .def(
-          "CreateFiller",
-          [](Workspace* self, const string& serialized) {
-            TensorFillerProto filler_proto;
-            if (!filler_proto.ParseFromString(serialized))
-              LOG(FATAL) << "Failed to parse the TensorFiller.";
-            self->CreateFiller(filler_proto);
-            self->CreateTensor(filler_proto.tensor());
-          })
-
-      /*! \brief Return the CXX Tensor reference */
+      /*! \brief Return the tensor */
       .def(
           "GetTensor",
           [](Workspace* self, const string& name) {
@@ -93,11 +83,11 @@ PYBIND11_MODULE(libdragon_python, m) {
           },
           py::return_value_policy::reference_internal)
 
-      /* \brief Set an alias for the tensor */
+      /* \brief Register an alias for the name */
       .def(
-          "SetTensorAlias",
+          "RegisterAlias",
           [](Workspace* self, const string& name, const string& alias) {
-            return self->ActivateAlias(name, alias);
+            return self->RegisterAlias(name, alias);
           })
 
       /*! \brief Copy the array data to tensor */
@@ -118,7 +108,7 @@ PYBIND11_MODULE(libdragon_python, m) {
                 dev, reinterpret_cast<PyArrayObject*>(value.ptr()), tensor);
           })
 
-      /*! \brief Copy the tensor data to the array */
+      /*! \brief Copy the tensor data to array */
       .def(
           "FetchTensor",
           [](Workspace* self, const string& name) {
@@ -142,7 +132,7 @@ PYBIND11_MODULE(libdragon_python, m) {
             }
           })
 
-      /*! \brief Run a operator from the def reference */
+      /*! \brief Run the operator */
       .def(
           "RunOperator",
           [](Workspace* self, OperatorDef* def, const bool verbose) {
@@ -156,7 +146,7 @@ PYBIND11_MODULE(libdragon_python, m) {
             self->RunOperator(*def);
           })
 
-      /*! \brief Run operators from the def reference */
+      /*! \brief Run the operators */
       .def(
           "RunOperator",
           [](Workspace* self, vector<OperatorDef*>& defs, const bool verbose) {
@@ -172,7 +162,7 @@ PYBIND11_MODULE(libdragon_python, m) {
             }
           })
 
-      /*! \brief Run a operator from the serialized def */
+      /*! \brief Run the operator from serialized def */
       .def(
           "RunOperator",
           [](Workspace* self, const string& serialized, const bool verbose) {
@@ -188,7 +178,7 @@ PYBIND11_MODULE(libdragon_python, m) {
             self->RunOperator(def);
           })
 
-      /*! \brief Create a graph from the serialized def */
+      /*! \brief Create the graph */
       .def(
           "CreateGraph",
           [](Workspace* self, const string& serialized, const bool verbose) {
@@ -213,89 +203,49 @@ PYBIND11_MODULE(libdragon_python, m) {
             return graph->name();
           })
 
-      /*! \brief Run an existing graph */
+      /*! \brief Run the graph */
       .def(
           "RunGraph",
           [](Workspace* self,
              const string& name,
-             const string& incl,
-             const string& excl) {
+             const string& include,
+             const string& exclude) {
             py::gil_scoped_release g;
-            self->RunGraph(name, incl, excl);
+            self->RunGraph(name, include, exclude);
           })
 
+      /*! \brief Run the backward */
       .def(
           "RunBackward",
           [](Workspace* self,
-             const vector<OperatorDef*>& forward_ops,
+             const vector<OperatorDef*>& op_defs,
              const vector<string>& targets,
              const vector<string>& sources,
              const vector<string>& input_grads,
-             const vector<string>& ignored_grads,
-             const bool is_sharing,
+             const vector<string>& empty_grads,
+             const bool retain_grads,
              const bool verbose) {
-            GraphDef backward_ops;
+            GraphDef graph_def;
             GraphGradientMaker maker;
-            for (const auto& name : ignored_grads) {
-              maker.add_ignored_grad(name);
+            for (const auto& name : empty_grads) {
+              maker.add_empty_grad(name);
             }
             for (const auto& name : sources) {
-              maker.add_hooked_grad(name + "_grad");
+              maker.add_retained_grad(name + "_grad");
             }
-            maker.Make(forward_ops, targets, input_grads, backward_ops);
+            maker.Make(op_defs, targets, input_grads, graph_def);
             py::gil_scoped_release g;
-            if (is_sharing) {
-              backward_ops = maker.Share(backward_ops);
+            if (!retain_grads) {
+              graph_def = maker.Share(graph_def);
             }
-            for (const auto& def : backward_ops.op()) {
+            for (const auto& op_def : graph_def.op()) {
               if (verbose) {
-                auto msg = string("\n") + def.DebugString();
+                auto msg = string("\n") + op_def.DebugString();
                 msg.pop_back();
                 PRINT(INFO)
                     << "op {" << str::replace_all(msg, "\n", "\n  ") << "\n}\n";
               }
-              self->RunOperator(def);
-            }
-          })
-
-      /*! \brief Serialize tensors into a binary file */
-      .def(
-          "Save",
-          [](Workspace* self,
-             const string& filename,
-             const vector<string>& tensors,
-             const int format) {
-            vector<Tensor*> refs;
-            switch (format) {
-              case 0: // Pickle
-                LOG(FATAL) << "Format depends on Pickle. "
-                           << "Can't be used in C++.";
-                break;
-              case 1: // CaffeModel
-                for (const auto& name : tensors) {
-                  refs.emplace_back(self->GetTensor(name));
-                }
-                SavaCaffeModel(filename, refs);
-                break;
-              default:
-                LOG(FATAL) << "Unknown format, code: " << format;
-            }
-          })
-
-      /*! \brief Load tensors from a binary file */
-      .def(
-          "Load",
-          [](Workspace* self, const string& filename, const int format) {
-            switch (format) {
-              case 0: // Pickle
-                LOG(FATAL) << "Format depends on Pickle. "
-                           << "Can't be used in C++.";
-                break;
-              case 1: // CaffeModel
-                LoadCaffeModel(filename, self);
-                break;
-              default:
-                LOG(FATAL) << "Unknown format, code: " << format;
+              self->RunOperator(op_def);
             }
           })
 

@@ -245,12 +245,12 @@ class Module(object):
             )
 
     @staticmethod
-    def _addindent(s_, numSpaces):
+    def _add_indent(s_, num_spaces):
         s = s_.split('\n')
         if len(s) == 1:
             return s_
         first = s.pop(0)
-        s = [(numSpaces * ' ') + line for line in s]
+        s = [(num_spaces * ' ') + line for line in s]
         s = '\n'.join(s)
         s = first + '\n' + s
         return s
@@ -297,9 +297,9 @@ class Module(object):
     def _set_name(self, name=None, zero_based=True):
         """Set the module name."""
         if name is None:
-            self._name = workspace.get_dummy_name(
-                basename=self.__class__.__name__.lower(),
-                domain='Object',
+            self._name = workspace.get_workspace().unique_name(
+                name=self.__class__.__name__.lower(),
+                namespace='Object',
                 zero_based=zero_based,
             )
         else:

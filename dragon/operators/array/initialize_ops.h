@@ -30,7 +30,7 @@ class InitializeOp : public Operator<Context> {
   void RunOnDevice() override;
 
  protected:
-  TensorFillerProto proto_;
+  FillerInfo filler_info_;
   DECLARE_ARGS_WITH_DESC(int64_t, dims);
 };
 
@@ -142,9 +142,9 @@ class RandomNormalOp final : public InitializeOp<Context> {
       : InitializeOp<Context>(def, ws) {
     auto mu = OpArg<float>("mean", 0.f);
     auto sigma = OpArg<float>("std", 1.f);
-    this->proto_.set_mean(mu);
-    this->proto_.set_std(sigma);
-    this->proto_.set_type("normal");
+    this->filler_info_.set_mean(mu);
+    this->filler_info_.set_std(sigma);
+    this->filler_info_.set_type("normal");
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -161,9 +161,9 @@ class RandomUniformOp final : public InitializeOp<Context> {
       : InitializeOp<Context>(def, ws) {
     auto low = OpArg<float>("low", -1.f);
     auto high = OpArg<float>("high", 1.f);
-    this->proto_.set_low(low);
-    this->proto_.set_high(high);
-    this->proto_.set_type("uniform");
+    this->filler_info_.set_low(low);
+    this->filler_info_.set_high(high);
+    this->filler_info_.set_type("uniform");
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -180,11 +180,11 @@ class TruncatedNormalOp final : public InitializeOp<Context> {
       : InitializeOp<Context>(def, ws) {
     auto mu = OpArg<float>("mean", 0.f);
     auto sigma = OpArg<float>("std", 1.f);
-    this->proto_.set_mean(mu);
-    this->proto_.set_std(sigma);
-    this->proto_.set_low(mu - 2 * sigma);
-    this->proto_.set_high(mu + 2 * sigma);
-    this->proto_.set_type("truncated_normal");
+    this->filler_info_.set_mean(mu);
+    this->filler_info_.set_std(sigma);
+    this->filler_info_.set_low(mu - 2 * sigma);
+    this->filler_info_.set_high(mu + 2 * sigma);
+    this->filler_info_.set_type("truncated_normal");
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -201,15 +201,15 @@ class GlorotNormalOp final : public InitializeOp<Context> {
       : InitializeOp<Context>(def, ws) {
     auto scale = OpArg<float>("scale", 2.f);
     auto mode = OpArg<string>("mode", "fan_in");
-    this->proto_.set_type("msra");
+    this->filler_info_.set_type("glorot_normal");
     if (mode == "fan_avg") {
-      this->proto_.set_variance_norm(TensorFillerProto_VarianceNorm_FAN_AVG);
+      this->filler_info_.set_variance_norm(FillerInfo_VarianceNorm_FAN_AVG);
     } else if (mode == "fan_out") {
-      this->proto_.set_variance_norm(TensorFillerProto_VarianceNorm_FAN_OUT);
+      this->filler_info_.set_variance_norm(FillerInfo_VarianceNorm_FAN_OUT);
     } else {
-      this->proto_.set_variance_norm(TensorFillerProto_VarianceNorm_FAN_IN);
+      this->filler_info_.set_variance_norm(FillerInfo_VarianceNorm_FAN_IN);
     }
-    this->proto_.set_scale(scale);
+    this->filler_info_.set_scale(scale);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -226,15 +226,15 @@ class GlorotUniformOp final : public InitializeOp<Context> {
       : InitializeOp<Context>(def, ws) {
     auto scale = OpArg<float>("scale", 3.f);
     auto mode = OpArg<string>("mode", "fan_in");
-    this->proto_.set_type("xavier");
+    this->filler_info_.set_type("glorot_uniform");
     if (mode == "fan_avg") {
-      this->proto_.set_variance_norm(TensorFillerProto_VarianceNorm_FAN_AVG);
+      this->filler_info_.set_variance_norm(FillerInfo_VarianceNorm_FAN_AVG);
     } else if (mode == "fan_out") {
-      this->proto_.set_variance_norm(TensorFillerProto_VarianceNorm_FAN_OUT);
+      this->filler_info_.set_variance_norm(FillerInfo_VarianceNorm_FAN_OUT);
     } else {
-      this->proto_.set_variance_norm(TensorFillerProto_VarianceNorm_FAN_IN);
+      this->filler_info_.set_variance_norm(FillerInfo_VarianceNorm_FAN_IN);
     }
-    this->proto_.set_scale(scale);
+    this->filler_info_.set_scale(scale);
   }
   USE_OPERATOR_FUNCTIONS;
 

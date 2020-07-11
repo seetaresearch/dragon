@@ -34,10 +34,6 @@ vm.caffe.layers
   `class Deconvolution <layers/Deconvolution.html>`_
   : Apply the n-dimension deconvolution.
 
-  `class DepthwiseConv2d <layers/DepthwiseConv2d.html>`_
-  : Apply the 2d depthwise convolution.
-  `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
-
   `class Dropout <layers/Dropout.html>`_
   : Set the elements of the input to zero randomly.
   `[Srivastava et.al, 2014] <http://jmlr.org/papers/v15/srivastava14a.html>`_.
@@ -57,18 +53,6 @@ vm.caffe.layers
 
   `class Flatten <layers/Flatten.html>`_
   : Flatten the input along the given axes.
-
-  `class FusedBatchNorm <layers/FusedBatchNorm.html>`_
-  : Apply the fused batch normalization.
-  `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
-
-  `class FusedGroupNorm <layers/FusedBatchNorm.html>`_
-  : Apply the fused group normalization.
-  `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
-
-  `class GroupNorm <layers/FusedBatchNorm.html>`_
-  : Apply the group normalization.
-  `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
 
   `class InnerProduct <layers/InnerProduct.html>`_
   : Compute the dense matrix multiplication along the given axes.
@@ -121,10 +105,6 @@ vm.caffe.layers
   `class Scale <layers/Scale.html>`_
   : Compute the affine transformation along the given axes.
 
-  `class SELU <layers/SELU.html>`_
-  : Apply the scaled exponential linear unit.
-  `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
-
   `class Sigmoid <layers/Sigmoid.html>`_
   : Apply the sigmoid function.
 
@@ -145,7 +125,7 @@ vm.caffe.layers
   : Apply the tanh function.
 
   `class Tile <layers/Tile.html>`_
-  : Tile the input according to the given multiples.
+  : Repeat the input according to the given axis.
 
 .. toctree::
   :hidden:
@@ -153,21 +133,16 @@ vm.caffe.layers
   layers/Accuracy
   layers/ArgMax
   layers/BatchNorm
-  layers/Cast
   layers/Concat
   layers/Convolution
   layers/Crop
   layers/Data
   layers/Deconvolution
-  layers/DepthwiseConv2d
   layers/Dropout
   layers/Eltwise
   layers/ELU
   layers/EuclideanLoss
   layers/Flatten
-  layers/FusedBatchNorm
-  layers/FusedGroupNorm
-  layers/GroupNorm
   layers/InnerProduct
   layers/Input
   layers/LRN
@@ -183,7 +158,6 @@ vm.caffe.layers
   layers/ROIAlign
   layers/ROIPooling
   layers/Scale
-  layers/SELU
   layers/Sigmoid
   layers/SigmoidCrossEntropyLoss
   layers/SmoothL1Loss

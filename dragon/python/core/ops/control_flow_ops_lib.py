@@ -37,15 +37,11 @@ class Assign(Operator):
     def feed(self, ws, handle, starts, sizes):
         for i in range(self.ndim):
             self.feed_arg(
-                ws,
-                '{}/starts[{}]'.format(handle, i),
-                starts[i], 'int64',
-            )
+                ws, '{}/starts[{}]'.format(handle, i),
+                starts[i], 'int64')
             self.feed_arg(
-                ws,
-                '{}/sizes[{}]'.format(handle, i),
-                sizes[i], 'int64',
-            )
+                ws, '{}/sizes[{}]'.format(handle, i),
+                sizes[i], 'int64')
 
     def forward(self, inputs, starts, sizes):
         return self.dispatch(

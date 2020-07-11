@@ -14,6 +14,7 @@ from __future__ import division as _division
 from __future__ import print_function as _print_function
 
 # Modules
+from dragon.vm.torch import autograd
 from dragon.vm.torch import jit
 from dragon.vm.torch import nn
 from dragon.vm.torch import onnx

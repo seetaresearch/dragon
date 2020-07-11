@@ -1,7 +1,6 @@
 #include "dragon/core/common.h"
 #include "dragon/modules/runtime/dragon_runtime.h"
 #include "dragon/onnx/onnx_backend.h"
-#include "dragon/utils/caffemodel.h"
 #include "dragon/utils/proto_utils.h"
 
 namespace dragon {
@@ -159,46 +158,6 @@ DRAGON_API void CreateGraphDef(GraphDef_t* graph_def) {
 
 DRAGON_API void DestroyGraphDef(GraphDef_t graph_def) {
   if (graph_def) delete graph_def;
-}
-
-void LoadCaffeModel(const string& model_file, Workspace_t ws) {
-  NetParameter net_param;
-  ReadProtoFromBinaryFile(model_file.c_str(), &net_param);
-  std::string scope = "";
-  LOG(INFO) << "Load Model: " << model_file << "......";
-  LOG(INFO) << "Format: Caffe";
-  for (int i = 0; i < net_param.layer_size(); i++) {
-    const LayerParameter& layer = net_param.layer(i);
-    const string& layer_name = layer.name();
-    string prefix = scope + layer_name + "/param:";
-    for (int j = 0; j < layer.blobs_size(); j++) {
-      string tensor_name = prefix + std::to_string(j);
-      if (!ws->HasTensor(tensor_name)) ws->CreateTensor(tensor_name);
-      BlobProto blob = layer.blobs(j);
-      vector<int64_t> dims;
-      for (auto dim : blob.shape().dim())
-        dims.push_back(dim);
-      Tensor* tensor = ws->GetTensor(tensor_name);
-      std::stringstream DimString;
-      if (dims.size() > 0) {
-        tensor->Reshape(dims);
-        CHECK_EQ(tensor->count(), blob.data_size())
-            << "Tensor(" << tensor_name << ") "
-            << "failed to load, except size:  " << tensor->count()
-            << ", loaded " << blob.data_size();
-        DimString << tensor->DimString();
-      } else {
-        tensor->Reshape(vector<int64_t>(1, blob.data_size()));
-        DimString << "(missing)";
-      }
-      float* Xdata = tensor->mutable_data<float, CPUContext>();
-      for (int idx = 0; idx < blob.data_size(); idx++)
-        Xdata[idx] = blob.data(idx);
-      LOG(INFO) << "Tensor(" << tensor_name << ") "
-                << "loaded, shape: " << DimString.str()
-                << ", size: " << blob.data_size();
-    }
-  }
 }
 
 void LoadONNXModel(

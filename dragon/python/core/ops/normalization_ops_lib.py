@@ -83,7 +83,7 @@ class LpNormalize(Operator):
             }
         }
 
-    def forward(self,inputs):
+    def forward(self, inputs):
         return self.dispatch(inputs, [self.alloc()])
 
 

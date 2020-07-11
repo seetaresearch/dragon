@@ -23,39 +23,29 @@ from dragon.vm.caffe.layer import Layer
 class Convolution(Layer):
     r"""Apply the n-dimension convolution.
 
-    The spatial output dimension is computed as:
-
-    .. math::
-        \begin{cases}
-            \text{DK}_{size} = dilation *
-                (\text{K}_{size} - 1) + 1 \\
-            \text{Dim}_{out} = (\text{Dim}_{in} +
-                2 * pad - \text{DK}_{size}) / stride + 1
-        \end{cases}
-
     Examples:
 
     ```python
     layer {
-        type: "Convolution"
-        bottom: "input"
-        top: "conv1"
-        convolution_param {
-            num_output: 32
-            bias_term: true
-            kernel_size: 3
-            pad: 1
-            stride: 1
-            dilation: 1
-            group: 1
-            weight_filler {
-                type: "xavier"
-            }
-            bias_filler {
-                type: "constant"
-                value: 0
-            }
+      type: "Convolution"
+      bottom: "input"
+      top: "conv1"
+      convolution_param {
+        num_output: 32
+        bias_term: true
+        kernel_size: 3
+        pad: 1
+        stride: 1
+        dilation: 1
+        group: 1
+        weight_filler {
+          type: "xavier"
         }
+        bias_filler {
+          type: "constant"
+          value: 0
+        }
+      }
     }
     ```
 
@@ -83,7 +73,6 @@ class Convolution(Layer):
         if param.HasField('pad_h'):
             assert param.HasField('pad_w')
             self.arguments['pads'] = [param.pad_h, param.pad_w]
-
         self.add_blob(filler=self.get_filler(param, 'weight_filler'))
         if param.bias_term:
             self.add_blob(filler=self.get_filler(param, 'bias_filler'))
@@ -96,39 +85,29 @@ class Convolution(Layer):
 class Deconvolution(Convolution):
     r"""Apply the 2d deconvolution.
 
-    The spatial output dimension is computed as:
-
-    .. math::
-        \begin{cases}
-            \text{DK}_{size} = dilation *
-                (\text{K}_{size} - 1) + 1 \\
-            \text{Dim}_{out} = (\text{Dim}_{in} - 1) *
-                stride + \text{DK}_{size} - 2 * pad
-        \end{cases}
-
     Examples:
 
     ```python
     layer {
-        type: "Deconvolution"
-        bottom: "conv5"
-        top: "conv5/upscale"
-        convolution_param {
-            num_output: 256
-            bias_term: true
-            kernel_size: 2
-            pad: 0
-            stride: 2
-            dilation: 1
-            group: 1
-            weight_filler {
-                type: "xavier"
-            }
-            bias_filler {
-                type: "constant"
-                value: 0
-            }
+      type: "Deconvolution"
+      bottom: "conv5"
+      top: "conv5/upscale"
+      convolution_param {
+        num_output: 256
+        bias_term: true
+        kernel_size: 2
+        pad: 0
+        stride: 2
+        dilation: 1
+        group: 1
+        weight_filler {
+          type: "xavier"
         }
+        bias_filler {
+          type: "constant"
+          value: 0
+        }
+      }
     }
     ```
 
@@ -142,77 +121,6 @@ class Deconvolution(Convolution):
         return vision_ops.conv2d_transpose(inputs, **self.arguments)
 
 
-class DepthwiseConv2d(Layer):
-    r"""Apply the 2d depthwise convolution.
-    `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
-
-    The spatial output dimension is computed as:
-
-    .. math::
-        \begin{cases}
-            \text{DK}_{size} = dilation *
-                (\text{K}_{size} - 1) + 1 \\
-            \text{Dim}_{out} = (\text{Dim}_{in} +
-                2 * pad - \text{DK}_{size}) / stride + 1
-        \end{cases}
-
-    Examples:
-
-    ```python
-    layer {
-        type: "DepthwiseConv2d"
-        bottom: "input"
-        top: "conv1"
-        convolution_param {
-            num_output: 32
-            bias_term: true
-            kernel_size: 3
-            pad: 1
-            stride: 1
-            dilation: 1
-            weight_filler {
-                type: "xavier"
-                variance_norm: FAN_OUT
-            }
-            bias_filler {
-                type: "constant"
-                value: 0
-            }
-        }
-    }
-    ```
-
-    """
-    def __init__(self, layer_param):
-        super(DepthwiseConv2d, self).__init__(layer_param)
-        param = layer_param.convolution_param
-        self.arguments = {
-            'out_channels': param.num_output,
-            'kernel_shape': [int(e) for e in param.kernel_size],
-            'strides': [int(e) for e in param.stride] if len(param.stride) > 0 else [1],
-            'pads': [int(e) for e in param.pad] if len(param.pad) > 0 else [0],
-            'padding': 'VALID',
-            'data_format': 'NCHW',
-        }
-        if param.HasField('kernel_h'):
-            assert param.HasField('kernel_w')
-            self.arguments['kernel_shape'] = [param.kernel_h, param.kernel_w]
-        if param.HasField('stride_h'):
-            assert param.HasField('stride_w')
-            self.arguments['strides'] = [param.stride_h, param.stride_w]
-        if param.HasField('pad_h'):
-            assert param.HasField('pad_w')
-            self.arguments['pads'] = [param.pad_h, param.pad_w]
-
-        self.add_blob(filler=self.get_filler(param, 'weight_filler'))
-        if param.bias_term:
-            self.add_blob(filler=self.get_filler(param, 'bias_filler'))
-
-    def __call__(self, bottom):
-        inputs = [bottom] + [blob['data'] for blob in self._blobs]
-        return vision_ops.depthwise_conv2d(inputs, **self.arguments)
-
-
 class LRN(Layer):
     r"""Apply the local response normalization.
     `[Krizhevsky et.al, 2012] <http://www.cs.toronto.edu/~hinton/absps/imagenet.pdf>`_.
@@ -221,15 +129,15 @@ class LRN(Layer):
 
     ```python
     layer {
-        type: "LRN"
-        bottom: "conv2"
-        top: "conv2/norm"
-        lrn_param {
-            local_size: 5
-            alpha: 1.
-            beta: 0.75
-            k: 1.
-        }
+      type: "LRN"
+      bottom: "conv2"
+      top: "conv2/norm"
+      lrn_param {
+        local_size: 5
+        alpha: 1.
+        beta: 0.75
+        k: 1.
+      }
     }
     ```
 
@@ -255,24 +163,18 @@ class LRN(Layer):
 class Pooling(Layer):
     r"""Apply the n-dimension pooling.
 
-    The spatial output dimension is computed as:
-
-    .. math::
-        \text{Dim}_{out} = (\text{Dim}_{in} +
-            2 * pad - \text{K}_{size}) / stride + 1
-
     Examples:
 
     ```python
     layer {
-        type: "Pooling"
-        bottom: "conv2"
-        top: "pool2"
-        pooling_param {
-            kernel_size: 3
-            stride: 2
-            pool: AVG
-        }
+      type: "Pooling"
+      bottom: "conv2"
+      top: "pool2"
+      pooling_param {
+        kernel_size: 3
+        stride: 2
+        pool: AVG
+      }
     }
     ```
 
@@ -311,14 +213,14 @@ class ROIAlign(Layer):
 
     ```python
     layer {
-        type: "ROIAlign"
-        bottom: "conv5_3"
-        top: "roi_pool4"
-        roi_pooling_param {
-            pooled_w: 7
-            pooled_h: 7
-            spatial_scale: 0.0625
-        }
+      type: "ROIAlign"
+      bottom: "conv5_3"
+      top: "roi_pool4"
+      roi_pooling_param {
+        pooled_w: 7
+        pooled_h: 7
+        spatial_scale: 0.0625
+      }
     }
     ```
 
@@ -345,14 +247,14 @@ class ROIPooling(Layer):
 
     ```python
     layer {
-        type: "ROIPooling"
-        bottom: "conv5_3"
-        top: "roi_pool4"
-        roi_pooling_param {
-            pooled_w: 7
-            pooled_h: 7
-            spatial_scale: 0.0625
-        }
+      type: "ROIPooling"
+      bottom: "conv5_3"
+      top: "roi_pool4"
+      roi_pooling_param {
+        pooled_w: 7
+        pooled_h: 7
+        spatial_scale: 0.0625
+      }
     }
     ```
 

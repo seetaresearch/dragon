@@ -84,9 +84,9 @@ class LayerMetaclass(object):
     def _init_set_name(self, name=None, zero_based=True):
         """Set the model name when necessary."""
         if name is None:
-            self._name = workspace.get_dummy_name(
-                basename=self.__class__.__name__.lower(),
-                domain='Object',
+            self._name = workspace.get_workspace().unique_name(
+                name=self.__class__.__name__.lower(),
+                namespace='Object',
                 zero_based=zero_based,
             )
         else:
@@ -378,21 +378,21 @@ class LayerList(Layer):
         return len(self._all_layers)
 
     def __repr__(self):
-        tmpstr = 'LayerList' + '(\n'
+        tmp_str = 'LayerList' + '(\n'
         for idx, layer in enumerate(self._all_layers):
-            modstr = layer.__repr__()
-            modstr = _addindent(modstr, 2)
-            tmpstr = tmpstr + '  (' + str(idx) + '): ' + modstr + '\n'
-        tmpstr = tmpstr + ')'
-        return tmpstr
+            mod_str = layer.__repr__()
+            mod_str = _add_indent(mod_str, 2)
+            tmp_str = tmp_str + '  (' + str(idx) + '): ' + mod_str + '\n'
+        tmp_str = tmp_str + ')'
+        return tmp_str
 
 
-def _addindent(s_, numSpaces):
+def _add_indent(s_, num_spaces):
     s = s_.split('\n')
     if len(s) == 1:
         return s_
     first = s.pop(0)
-    s = [(numSpaces * ' ') + line for line in s]
+    s = [(num_spaces * ' ') + line for line in s]
     s = '\n'.join(s)
     s = first + '\n' + s
     return s

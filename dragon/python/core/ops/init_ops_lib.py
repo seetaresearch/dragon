@@ -24,12 +24,10 @@ class Initializer(Operator):
         self.dtype = kwargs.get('dtype', 'float32')
 
     def feed(self, ws, handle, shape):
-        for i, e in enumerate(shape):
+        for i, dim in enumerate(shape):
             self.feed_arg(
-                ws,
-                '{}/dims[{}]'.format(handle, i),
-                e, 'int64'
-            )
+                ws, '{}/dims[{}]'.format(handle, i),
+                dim, 'int64')
 
     def forward(
         self,
@@ -39,18 +37,16 @@ class Initializer(Operator):
         trainable=False,
     ):
         inputs = [] if shape_like is None else [shape_like]
-        outputs = [
-            ops.new_leaf(
-                shape=shape,
-                dtype=self.dtype,
-                device=self.alloc(),
-                trainable=trainable,
-            ) if out is None else out
-        ]
+        outputs = [ops.new_leaf(
+            shape=shape,
+            dtype=self.dtype,
+            device=self.alloc(),
+            trainable=trainable,
+        ) if out is None else out]
         return self.dispatch(
             inputs, outputs,
             callback=lambda ws, handle:
-            self.feed(ws, handle, shape)
+                self.feed(ws, handle, shape),
         )
 
 
@@ -67,8 +63,7 @@ class Eye(Initializer):
                 'dtype': self.dtype,
                 'dims_descs': [
                     '${{HANDLE}}/dims[{}]'.format(n)
-                    for n in range(self.ndim)
-                ],
+                    for n in range(self.ndim)],
             },
         }
 
@@ -86,8 +81,7 @@ class Fill(Initializer):
                 'value': float(self.value),
                 'dims_descs': [
                     '${{HANDLE}}/dims[{}]'.format(n)
-                    for n in range(self.ndim)
-                ],
+                    for n in range(self.ndim)],
             },
         }
 
@@ -107,8 +101,7 @@ class GlorotNormal(Initializer):
                 'mode': self.mode.lower(),
                 'dims_descs': [
                     '${{HANDLE}}/dims[{}]'.format(n)
-                    for n in range(self.ndim)
-                ],
+                    for n in range(self.ndim)],
             },
         }
 
@@ -128,8 +121,7 @@ class GlorotUniform(Initializer):
                 'mode': self.mode.lower(),
                 'dims_descs': [
                     '${{HANDLE}}/dims[{}]'.format(n)
-                    for n in range(self.ndim)
-                ],
+                    for n in range(self.ndim)],
             },
         }
 
@@ -149,8 +141,7 @@ class RandomNormal(Initializer):
                 'std': float(self.std),
                 'dims_descs': [
                     '${{HANDLE}}/dims[{}]'.format(n)
-                    for n in range(self.ndim)
-                ],
+                    for n in range(self.ndim)],
             },
         }
 
@@ -170,8 +161,7 @@ class RandomUniform(Initializer):
                 'high': float(self.high),
                 'dims_descs': [
                     '${{HANDLE}}/dims[{}]'.format(n)
-                    for n in range(self.ndim)
-                ],
+                    for n in range(self.ndim)],
             },
         }
 
@@ -191,7 +181,6 @@ class TruncatedNormal(Initializer):
                 'std': float(self.std),
                 'dims_descs': [
                     '${{HANDLE}}/dims[{}]'.format(n)
-                    for n in range(self.ndim)
-                ],
+                    for n in range(self.ndim)],
             },
         }

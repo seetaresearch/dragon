@@ -104,9 +104,6 @@ class ConvTranspose2d(_ConvNd):
         super(ConvTranspose2d, self).__init__(key, dev, **kwargs)
         self.output_padding = kwargs.get('output_padding', None)
         self.output_shape = kwargs.get('output_shape', None)
-        if self.output_padding is not None or \
-                self.output_shape is not None:
-            self.padding = 'SAME'
 
     def attributes(self):
         return {
@@ -169,13 +166,11 @@ class Resize(Operator):
                 'mode': self.mode,
                 'align_corners': self.align_corners,
                 'sizes_descs': [
-                    '${{HANDLE}}/sizes[{}]'.format(n)
-                    for n in range(self.num_sizes)
-                ],
+                    '${{HANDLE}}/sizes[{}]'
+                    .format(n) for n in range(self.num_sizes)],
                 'scales_descs': [
-                    '${{HANDLE}}/scales[{}]'.format(n)
-                    for n in range(self.num_scales)
-                ],
+                    '${{HANDLE}}/scales[{}]'
+                    .format(n) for n in range(self.num_scales)],
                 'data_format': self.data_format,
             }
         }
@@ -183,22 +178,18 @@ class Resize(Operator):
     def feed(self, ws, handle, sizes, scales):
         for i in range(self.num_sizes):
             self.feed_arg(
-                ws,
-                '{}/sizes[{}]'.format(handle, i),
-                sizes[i], 'int64',
-            )
+                ws, '{}/sizes[{}]'.format(handle, i),
+                sizes[i], 'int64')
         for i in range(self.num_scales):
             self.feed_arg(
-                ws,
-                '{}/scales[{}]'.format(handle, i),
-                scales[i], 'float32',
-            )
+                ws, '{}/scales[{}]'.format(handle, i),
+                scales[i], 'float32')
 
     def forward(self, inputs, sizes=None, scales=None):
         return self.dispatch(
             inputs, [self.alloc()],
             callback=lambda ws, handle:
-                self.feed(ws, handle, sizes, scales)
+                self.feed(ws, handle, sizes, scales),
         )
 
 

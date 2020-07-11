@@ -92,7 +92,7 @@ class DataTransformer(multiprocessing.Process):
 
         Parameters
         ----------
-        example : Dict
+        example : dict
             The input example.
 
         Returns

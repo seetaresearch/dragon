@@ -23,7 +23,6 @@ from dragon.core.autograph.op_def import OpDef
 from dragon.core.autograph.op_def import OpInfo
 from dragon.core.autograph.tensor import Tensor
 from dragon.core.framework import config
-from dragon.core.framework import context
 from dragon.core.framework import proto_util
 from dragon.core.framework import workspace
 from dragon.core.proto import dragon_pb2
@@ -32,7 +31,7 @@ from dragon.core.util import nest
 
 
 def add_device_option(graph_def):
-    """Add the device option for graph."""
+    """Add the device option."""
     cfg = config.config()
     str2idx = {'cpu': 0, 'cuda': 1, 'cnml': 2}
     dev_opt = dragon_pb2.DeviceOption()
@@ -42,69 +41,66 @@ def add_device_option(graph_def):
     graph_def.device_option.CopyFrom(dev_opt)
 
 
-def add_gradient_info(graph_def, targets):
-    """Add the gradient info for graph."""
-    gradients = set()
+def add_grad_info(graph_def, targets):
+    """Add the gradient info."""
     for target in targets:
-        if target._grad is not None:
-            gradients.update(target._grad.make_pairs())
-    for (cost, wrt) in gradients:
-        gradient = dragon_pb2.GradientProto()
-        gradient.cost, gradient.wrt = str(cost), str(wrt)
-        graph_def.gradient.extend([gradient])
+        info = target._grad
+        if info is not None:
+            graph_def.grad_info.extend([
+                dragon_pb2.GradientInfo(
+                    y=info.y.id,
+                    xs=[x.id for x in info.xs])])
 
 
 def add_optimization(graph_def, level=None):
-    """Add the optimization attribute for graph."""
+    """Add the optimization argument."""
     cfg = config.config()
     if level is None:
         level = cfg.graph_optimization
     graph_def.arg.add().CopyFrom(
-        proto_util.make_argument(
-            'optimization_level', level))
+        proto_util.make_argument('optimization', level))
     graph_def.graph_type = cfg.graph_type
 
 
 def add_phase(graph_def, targets):
-    """Add the phase attribute for graph."""
-    phase = context.get_graph_phase()
-    if phase is None:
-        phase = 'TEST'
-        for target in targets:
-            if target._grad is not None and \
-                    target._grad.required():
+    """Add the phase argument."""
+    phase = 'TEST'
+    for target in targets:
+        try:
+            if target._grad and target._grad.required():
                 phase = 'TRAIN'
                 break
+        except AttributeError:
+            pass
     graph_def.arg.extend([proto_util.make_argument('phase', phase)])
 
 
-def add_update_ops(graph_def, optimizer):
-    """Add the update operators for graph."""
+def add_update_defs(graph_def, optimizer):
+    """Add the update defs."""
     if optimizer is None:
         return
-    grads, update_ops = [], []
+    grads, update_defs = [], []
     extra_arguments = optimizer._extra_kwargs
     extra_arguments['handle'] = optimizer._op_handle
-    # Generate update operators according to the updater.
-    for e in optimizer._param_group:
-        (param, grad), arguments = e
-        if workspace.has_tensor(grad):
+    # Generate op defs according to the collected updates
+    current_ws = workspace.get_workspace()
+    for (param, grad), arguments in optimizer._param_group:
+        if current_ws.has_tensor(grad):
             grads.append(grad)
             arguments = dict(arguments, **extra_arguments)
-            update_ops.append(
+            update_defs.append(
                 proto_util.make_operator_def(
                     op_type=optimizer._op_type,
                     inputs=[grad],
                     outputs=[param],
                     name=OpDef.get_name(),
-                    **arguments
-                ))
+                    **arguments))
         else:
             logging.info('Skip to update Tensor({}).'.format(param))
-    # Insert a reduce op if the process group is found.
+    # Insert a reduce def if the process group is found.
     process_group = optimizer._process_group
     if process_group is not None:
-        update_ops.insert(
+        update_defs.insert(
             0, proto_util.make_operator_def(
                 op_type='Collective',
                 inputs=grads,
@@ -115,7 +111,7 @@ def add_update_ops(graph_def, optimizer):
                 **process_group.arguments
             )
         )
-    graph_def.op.extend(update_ops)
+    graph_def.op.extend(update_defs)
 
 
 class Function(object):
@@ -128,16 +124,15 @@ class Function(object):
         self.graph_name = None  # Determined after creating
         self.inputs, self.outputs = None, None
 
-    def create(self, inputs=None, outputs=None, givens=None, updater=None):
+    def create(self, inputs=None, outputs=None, givens=None, optimizer=None):
         self.inputs = inputs = [] if inputs is None else nest.flatten(inputs)
         self.outputs = outputs = [] if outputs is None else nest.flatten(outputs)
 
-        if len(outputs) > 0 and updater is not None:
-            raise ValueError('Specific either <outputs> or <updater>, not both.')
+        if len(outputs) > 0 and optimizer is not None:
+            raise ValueError('Specific either <outputs> or <optimizer>, not both.')
 
+        # Collect the forward defs.
         op_info = OpInfo()
-
-        # Collect the forward operators.
         requires_grad = False
         for i, output in enumerate(outputs):
             op_info.merge_from(output)
@@ -149,7 +144,7 @@ class Function(object):
             except AttributeError:
                 raise ValueError('Output[%d] is not a symbolic tensor.' % i)
 
-        # Handle givens.
+        # Handle the replacements.
         if givens is not None:
             name_dict = {}
             for k, v in givens.items():
@@ -161,62 +156,61 @@ class Function(object):
                         'Excepted a Tensor, '
                         'got {}.'.format(type(v).__name__)
                     )
-            # Update original operators.
+            # Update the original defs.
             op_info = copy.deepcopy(op_info)
             for k in op_info._defs.keys():
                 op_def = op_info._defs[k]
                 op_def.input.extend([
                     name_dict[input]
                     if input in name_dict else input
-                    for input in op_def.input
-                ])
+                    for input in op_def.input])
                 del op_def.input[:len(op_def.input) // 2]
 
-        # Sort out the states.
+        # Sort out the forward defs.
         op_defs = sorted(op_info._defs.items(), key=lambda d: d[0])
-        forward_ops = copy.deepcopy([v for k, v in op_defs])
+        forward_defs = copy.deepcopy([v for k, v in op_defs])
 
-        # Generate the backward operators.
+        # Generate the backward defs.
         if requires_grad:
             input_grads, grad_targets = {}, []
             for output in outputs:
-                grad_info = output._grad
-                if grad_info is not None:
-                    if grad_info.input is not None:
-                        input_grads[output.id] = output._grad.input.id
+                info = output._grad
+                if info is not None:
+                    if info.grad_y is not None:
+                        input_grads[output.id] = info.grad_y.id
                     grad_targets.append(output.id)
-            forward_ops, gradient_ops, _ = \
-                grad_maker.GradientMaker.make(
-                    forward_ops=forward_ops,
-                    targets=grad_targets,
-                    input_grads=input_grads,
-                )
+            backward_defs = grad_maker.GradientMaker.make(
+                op_defs=forward_defs,
+                targets=grad_targets,
+                input_grads=input_grads,
+            )
         else:
-            gradient_ops = []
+            backward_defs = []
 
-        # Fill with all known graph elements.
-        self.graph_def.op.extend(forward_ops + gradient_ops)
+        # Fill graph elements.
+        self.graph_def.op.extend(forward_defs + backward_defs)
         self.graph_def.input.extend([input.name for input in inputs])
         self.graph_def.output.extend(list(op_info._targets))
 
         if len(outputs) > 0:
             add_device_option(self.graph_def)
             add_optimization(self.graph_def)
-            add_gradient_info(self.graph_def, outputs)
+            add_grad_info(self.graph_def, outputs)
             add_phase(self.graph_def, outputs)
-        elif updater is not None:
+        elif optimizer is not None:
             add_device_option(self.graph_def)
             add_optimization(self.graph_def, level=0)
-            add_update_ops(self.graph_def, updater)
+            add_update_defs(self.graph_def, optimizer)
 
         # Notify the backend to create and optimize.
-        self.graph_name = workspace.create_graph(self.graph_def)
+        current_ws = workspace.get_workspace()
+        self.graph_name = current_ws.create_graph(self.graph_def)
 
         # Bind a callback to run this graph.
         self.callback = lambda *args, **kwargs: \
-            workspace.run_graph(
-                graph=self.graph_name,
-                inputs=(inputs, args),
+            current_ws.run_graph(
+                name=self.graph_name,
+                inputs_and_values=(inputs, args),
                 outputs=outputs,
                 **kwargs
             )
@@ -273,15 +267,15 @@ class Function(object):
         add_phase(graph_def, self.outputs)
 
         # Notify the backend to create and optimize.
+        current_ws = workspace.get_workspace()
         self.graph_def = graph_def
-        self.graph_name = workspace.create_graph(graph_def)
+        self.graph_name = current_ws.create_graph(graph_def)
 
         # Bind a callback to run this graph.
-        callback_inputs = self.inputs if explicit_inputs else []
         self.callback = lambda *args, **kwargs: \
-            workspace.run_graph(
-                graph=self.graph_name,
-                inputs=(callback_inputs, args),
+            current_ws.run_graph(
+                name=self.graph_name,
+                inputs_and_values=(self.inputs if explicit_inputs else [], args),
                 outputs=self.outputs,
                 **kwargs
             )

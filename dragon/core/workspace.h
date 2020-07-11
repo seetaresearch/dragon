@@ -20,83 +20,63 @@ namespace dragon {
 class Workspace {
  public:
   /*! \brief Constructor */
-  explicit Workspace(const string& name) : name_(name) {
-    Initialize();
-  }
+  DRAGON_API explicit Workspace(const string& name);
 
-  /*! \brief Create some internal tensors */
-  DRAGON_API void Initialize();
-
-  /*! \brief Merge tensors from a external workspace */
+  /*! \brief Merge resources from other */
   DRAGON_API void MergeFrom(Workspace*);
 
-  /*! \brief Destory all the tensors */
-  DRAGON_API void Clear();
-
-  /* \brief Return a unique dummy name within this workspace */
-  DRAGON_API string GetDummyName(
-      const string& base_name,
+  /* \brief Return an unique name */
+  DRAGON_API string UniqueName(
+      const string& name,
       const string& suffix,
-      const string& domain = "",
-      bool zero_based = true);
+      const string& scope = "",
+      const bool zero_based = false);
 
-  /*! \brief Whether the specified tensor is in this workspace */
-  DRAGON_API bool HasTensor(const string& name, bool use_remote = true) const {
-    return TryGetTensor(name, use_remote) ? true : false;
+  /* \brief Register an alias for the target */
+  DRAGON_API void RegisterAlias(const string& target, const string& alias);
+
+  /*! \brief Return whether tensor is existing */
+  DRAGON_API bool HasTensor(const string& name, bool external = true) const {
+    return TryGetTensor(name, external) == nullptr ? false : true;
   }
 
-  /*! \brief Query the real name of specified tensor */
-  DRAGON_API string GetTensorName(const string&) const;
+  /*! \brief Create the tensor */
+  DRAGON_API Tensor* CreateTensor(const string&, FillerInfo* = nullptr);
 
-  /* \brief Activate an alias for the target */
-  DRAGON_API bool ActivateAlias(const string& name, const string& alias);
-
-  /*! \brief Create a tensor in this workspace */
-  DRAGON_API Tensor* CreateTensor(const string&);
-
-  /*! \brief Try to search the specified tensor in this workspace */
+  /*! \brief Try to return the tensor */
   DRAGON_API Tensor* TryGetTensor(const string&, bool = true) const;
 
-  /*! \brief Return the specified tensor */
+  /*! \brief Return the tensor */
   DRAGON_API Tensor* GetTensor(const string&, bool = true) const;
 
-  /*! \brief Reset the specified tensor */
+  /*! \brief Reset the tensor */
   DRAGON_API void ResetTensor(const string&);
 
-  /* \brief Whether the specified filler is existing */
-  DRAGON_API bool HasFiller(const string&) const;
+  /*! \brief Return the filler info */
+  DRAGON_API FillerInfo* GetFillerInfo(const string&);
 
-  /*! \brief Create a filler in this workspace */
-  DRAGON_API void CreateFiller(const TensorFillerProto&);
-
-  /*! \brief Return the specified filler */
-  DRAGON_API TensorFillerProto* GetFiller(const string&);
-
-  /*! \brief Create an operator in this workspace */
-  DRAGON_API OperatorBase* CreateOperator(const OperatorDef&);
-
-  /*! \brief Run an operator in this workspace */
+  /*! \brief Run the operator */
   DRAGON_API void RunOperator(const OperatorDef&);
 
-  /*! \brief Create a graph in this workspace */
+  /*! \brief Create the graph */
   DRAGON_API GraphBase* CreateGraph(const GraphDef&);
 
-  /*! \brief Run the specifed graph by name and rules */
+  /*! \brief Run the graph */
   DRAGON_API void RunGraph(
       const string& graph_name,
-      const string& incl = "",
-      const string& excl = "",
-      int stream_id = 0);
+      const string& include = "",
+      const string& exclude = "",
+      const int stream = 0);
 
-  /*! \brief Return the name of this workspace */
+  /*! \brief Return the workspace name */
   const string& name() {
     return name_;
   }
 
-  /*! \brief Return the name of stored tensors */
+  /*! \brief Return the name of cached tensors */
   DRAGON_API vector<string> tensors() const;
 
-  /*! \brief Return the name of stored graphs */
+  /*! \brief Return the name of cached graphs  */
   DRAGON_API vector<string> graphs() const;
 
   /*! \brief Provide a group of the shared byte data */
@@ -127,28 +107,28 @@ class Workspace {
   }
 
  private:
-  /*! \brief The unique workspace name */
+  /*! \brief The workspace name */
   string name_;
 
-  /*! \brief The dummy name indices */
-  Map<string, Map<string, int64_t>> dummy_name_map_;
-
-  /*! \brief Store the created tensors */
-  Map<string, unique_ptr<Tensor>> tensor_map_;
-
-  /*! \brief Store the external tensors */
+  /*! \brief The external tensors */
   Map<string, Tensor*> external_tensor_map_;
 
-  /*! \brief Store the registered tensor fillers */
-  Map<string, TensorFillerProto> tensor_filler_map_;
+  /*! \brief The unique indices */
+  Map<string, Map<string, int64_t>> unique_index_map_;
 
-  /*! \brief Store the active aliases */
-  Map<string, string> alias_active_map_;
+  /*! \brief The registered fillers */
+  Map<string, FillerInfo> filler_map_;
 
-  /*! \brief Store the registered operators for dynamic graph */
+  /*! \brief The registered aliases */
+  Map<string, string> alias_map_;
+
+  /*! \brief The cached tensors */
+  Map<string, unique_ptr<Tensor>> tensor_map_;
+
+  /*! \brief The cached operators */
   Map<string, unique_ptr<OperatorBase>> operator_map_;
 
-  /*! \brief Store the registered graphs for static graph */
+  /*! \brief The cached graphs */
   Map<string, unique_ptr<GraphBase>> graph_map_;
 };
 

@@ -17,6 +17,15 @@ from __future__ import print_function
 
 import numpy
 
+# Mapping to store the supported device types
+DEVICE_STRING_TO_DEVICE_TYPE = {
+    'cpu': 'cpu',
+    'gpu': 'cuda',
+    'cuda': 'cuda',
+    'cnml': 'cnml',
+}
+
+# Mapping to convert to the numpy type
 TENSOR_TYPE_TO_NP_TYPE = {
     'bool': numpy.bool,
     'int8': numpy.int8,
@@ -28,6 +37,7 @@ TENSOR_TYPE_TO_NP_TYPE = {
     'float64': numpy.float64,
 }
 
+# Mapping to convert to the torch tensor class name
 TENSOR_TYPE_TO_TORCH_TENSOR = {
     'bool': 'BoolTensor',
     'int8': 'CharTensor',

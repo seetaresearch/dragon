@@ -40,7 +40,7 @@ class DRAGON_API OperatorBase {
   }
 
   /*! \brief Run operator on the specified stream */
-  virtual void Run(int stream_id = 0) {
+  virtual void Run(int stream = 0) {
     NOT_IMPLEMENTED;
   }
 
@@ -154,12 +154,12 @@ class DRAGON_API OperatorBase {
   }
 
   /*! \brief Set the output aliases for in-place */
-  void set_output_aliases(const Map<string, Set<string>>& aliases_map) {
+  void set_output_aliases(const Map<string, Set<string>>& alias_map) {
     output_aliases_.resize(outputs_.size());
     for (int i = 0; i < outputs_.size(); ++i) {
-      auto aliases_iter = aliases_map.find(outputs_[i]->name());
-      if (aliases_iter != aliases_map.end()) {
-        output_aliases_[i] = aliases_iter->second;
+      const auto& it = alias_map.find(outputs_[i]->name());
+      if (it != alias_map.end()) {
+        output_aliases_[i] = it->second;
       } else {
         output_aliases_[i].clear();
       }
@@ -196,7 +196,10 @@ template <class Context>
 class DRAGON_API Operator : public OperatorBase {
  public:
   /*! \brief Default constructor */
-  Operator(const OperatorDef& def, Workspace* ws);
+  Operator(const OperatorDef& def, Workspace* ws)
+      : OperatorBase(def, ws),
+        ctx_(def.device_option()),
+        do_sync_(OperatorBase::Arg<bool>("do_sync", false)) {}
 
   /*! \brief Prepare the content of inputs */
   virtual void Prepare();
@@ -207,36 +210,32 @@ class DRAGON_API Operator : public OperatorBase {
   /*! \brief Coordinate the context of inputs and outputs */
   virtual void SwitchToDevice();
 
-  /*! \brief Implement the detailed execution */
+  /*! \brief The detailed execution on device */
   virtual void RunOnDevice() = 0;
 
-  /*! \brief Run this operator on the specified stream */
-  void Run(int stream_id = 0) final {
-    if (!allow_run_) return;
-    if (allow_recomp_) Prepare();
-    ctx()->SwitchToDevice(stream_id);
+  /*! \brief Run this operator */
+  void Run(int stream = 0) final {
+    Prepare();
+    ctx()->SwitchToDevice(stream);
     SwitchToDevice();
     RunOnDevice();
-    if (do_sync_ || stream_id > 0) {
+    if (do_sync_ || stream > 0) {
       ctx()->FinishDeviceComputation();
     }
-    if (allow_recomp_) Release();
+    Release();
   }
 
-  /*! \brief Return a bool indicating the run is available */
-  bool allow_run() const {
-    return allow_run_;
-  }
-
-  /*! \brief Return the internal context */
+  /*! \brief Return the context */
   Context* ctx() {
     return &ctx_;
   }
 
  protected:
-  /*! \brief Store the internal context */
+  /*! \brief The context */
   Context ctx_;
-  bool do_sync_, allow_run_, allow_recomp_;
+
+  /*! \brief The executing flags */
+  bool do_sync_;
 };
 
 /*! \brief New a operator from the raw def */
@@ -266,9 +265,8 @@ OperatorBase* NewOperator(const OperatorDef&, Workspace*);
   using OperatorBase::def;           \
   using OperatorBase::ws
 
-#define USE_OPERATOR_FUNCTIONS        \
-  USE_OPERATOR_BASE_FUNCTIONS;        \
-  using Operator<Context>::allow_run; \
+#define USE_OPERATOR_FUNCTIONS \
+  USE_OPERATOR_BASE_FUNCTIONS; \
   using Operator<Context>::ctx
 
 #define STORE_INPUT_SPEC(i)               \
@@ -342,46 +340,46 @@ DEFINE_TENSOR_TYPES_DISPATCHER(DoRunWithType);
 
 /* Fillers */
 
-#define TENSOR_FILL_WITH_TYPE(tensor, shape, type)                     \
-  if (tensor.count() == 0) {                                           \
-    CHECK(ws()->GetFiller(tensor.name()))                              \
-        << "\nTensor(" << tensor.name() << ") is empty. \n"            \
-        << "may be specify a filler for it?";                          \
-    tensor.Reshape(shape);                                             \
-    unique_ptr<Filler<type, Context>> filler(                          \
-        CreateFiller<type, Context>(*ws()->GetFiller(tensor.name()))); \
-    filler->Fill(&tensor, ctx());                                      \
-  } else {                                                             \
-    int64_t count = 1;                                                 \
-    for (int i = 0; i < shape.size(); i++)                             \
-      count *= shape[i];                                               \
-    CHECK_EQ(count, tensor.count())                                    \
-        << "\nExcepted Tensor(" << tensor.name() << ")'s "             \
-        << "size is " << count << ", \n"                               \
-        << "but now is " << tensor.count() << ", "                     \
-        << "did you feed the incorrect data before?";                  \
-    tensor.Reshape(shape);                                             \
+#define TENSOR_FILL_WITH_TYPE(tensor, shape, type)                        \
+  if (tensor.count() == 0) {                                              \
+    auto* filler_info = ws()->GetFillerInfo(tensor.name());               \
+    CHECK(filler_info) << "\nTensor(" << tensor.name() << ") is empty.\n" \
+                       << "May be specify a filler for it?";              \
+    tensor.Reshape(shape);                                                \
+    unique_ptr<Filler<type, Context>> filler(                             \
+        CreateFiller<type, Context>(*filler_info));                       \
+    filler->Fill(&tensor, ctx());                                         \
+  } else {                                                                \
+    int64_t count = 1;                                                    \
+    for (int i = 0; i < shape.size(); i++)                                \
+      count *= shape[i];                                                  \
+    CHECK_EQ(count, tensor.count())                                       \
+        << "\nExcepted Tensor(" << tensor.name() << ")'s "                \
+        << "size is " << count << ", \n"                                  \
+        << "but now is " << tensor.count() << ", "                        \
+        << "did you feed the incorrect data before?";                     \
+    tensor.Reshape(shape);                                                \
   }
 
-#define TENSOR_FILL(tensor, shape)                                  \
-  if (tensor.count() == 0) {                                        \
-    CHECK(ws()->GetFiller(tensor.name()))                           \
-        << "\nTensor(" << tensor.name() << ") is empty. \n"         \
-        << "Maybe specify a filler for it?";                        \
-    tensor.Reshape(shape);                                          \
-    unique_ptr<Filler<T, Context>> filler(                          \
-        CreateFiller<T, Context>(*ws()->GetFiller(tensor.name()))); \
-    filler->Fill(&tensor, ctx());                                   \
-  } else {                                                          \
-    int64_t count = 1;                                              \
-    for (int i = 0; i < shape.size(); i++)                          \
-      count *= shape[i];                                            \
-    CHECK_EQ(count, tensor.count())                                 \
-        << "\nExcepted Tensor(" << tensor.name() << ")'s "          \
-        << "size is " << count << ", \n"                            \
-        << "but now is " << tensor.count() << ", "                  \
-        << "did you feed the incorrect data before?";               \
-    tensor.Reshape(shape);                                          \
+#define TENSOR_FILL(tensor, shape)                                        \
+  if (tensor.count() == 0) {                                              \
+    auto* filler_info = ws()->GetFillerInfo(tensor.name());               \
+    CHECK(filler_info) << "\nTensor(" << tensor.name() << ") is empty.\n" \
+                       << "May be specify a filler for it?";              \
+    tensor.Reshape(shape);                                                \
+    unique_ptr<Filler<T, Context>> filler(                                \
+        CreateFiller<T, Context>(*filler_info));                          \
+    filler->Fill(&tensor, ctx());                                         \
+  } else {                                                                \
+    int64_t count = 1;                                                    \
+    for (int i = 0; i < shape.size(); i++)                                \
+      count *= shape[i];                                                  \
+    CHECK_EQ(count, tensor.count())                                       \
+        << "\nExcepted Tensor(" << tensor.name() << ")'s "                \
+        << "size is " << count << ", \n"                                  \
+        << "but now is " << tensor.count() << ", "                        \
+        << "did you feed the incorrect data before?";                     \
+    tensor.Reshape(shape);                                                \
   }
 
 /* Arguments */

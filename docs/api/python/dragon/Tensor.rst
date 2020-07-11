@@ -30,6 +30,10 @@ shape
 #####
 .. autoattribute:: dragon.Tensor.shape
 
+size
+#####
+.. autoattribute:: dragon.Tensor.size
+
 Methods
 -------
 

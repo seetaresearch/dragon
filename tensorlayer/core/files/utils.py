@@ -288,7 +288,6 @@ def _load_weights_from_hdf5_group(f, modules, skip=False):
     matched_info = []
     module_dict = {m.name: m for m in modules}
     module_names = [n.decode('utf8') for n in f.attrs["layer_names"]]
-
     for idx, name in enumerate(module_names):
         if name not in module_dict:
             if not skip:
@@ -300,7 +299,6 @@ def _load_weights_from_hdf5_group(f, modules, skip=False):
             value_names = [n.decode('utf8') for n in g.attrs['weight_names']]
             value_dict = dict((name, g[name]) for name in value_names)
             matched_info += _assign_weights_from_dict(weight_dict, value_dict, skip=True)
-
     return matched_info
 
 
@@ -327,6 +325,7 @@ def _save_weights_to_hdf5_group(f, modules):
 def _set_value(input, value):
     """Set the copied value to input."""
     if hasattr(input, 'id'):
-        workspace.feed_tensor(input.id, value, enforce_cpu=True)
+        workspace.get_workspace().feed_tensor(
+            input.id, value, enforce_cpu=True)
     else:
         raise ValueError('Input is not a legal tensor.')

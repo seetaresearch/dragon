@@ -51,26 +51,6 @@ message TensorProto {
   optional string name = 7;
 }
 
-// Record the filler of Tensor.
-// This structure is kept for backward compatibility
-// with caffe1, which relies implicit initializer.
-message TensorFillerProto {
-  optional string tensor = 1;
-  optional string type = 2 [default = 'constant'];
-  optional float value = 3 [default = 0];
-  optional float low = 4 [default = 0];
-  optional float high = 5 [default = 1];
-  optional float mean = 6 [default = 0];
-  optional float std = 7 [default = 1];
-  optional float scale = 8 [default = 3];
-  enum VarianceNorm {
-    FAN_IN = 0;
-    FAN_OUT = 1;
-    FAN_AVG = 2;
-  }
-  optional VarianceNorm variance_norm = 9 [default = FAN_IN];
-}
-
 // Store multiple TensorProto objects in one single proto.
 message TensorProtos {
   repeated TensorProto protos = 1;
@@ -139,16 +119,6 @@ message OperatorDef {
   optional string cache_key = 7;
 }
 
-// Record the gradient information
-message GradientProto {
-  // The derivative target.
-  optional string cost = 1;
-  // The target with respect to?
-  optional string wrt = 2;
-  // The external gradient
-  optional string external = 3;
-}
-
 // Graph Definition
 message GraphDef {
   // The graph name.
@@ -171,6 +141,33 @@ message GraphDef {
   // The name of outputs.
   repeated string output = 8;
 
-  // The gradients information.
-  repeated GradientProto gradient = 9;
+  // The info of gradients.
+  repeated GradientInfo grad_info = 9;
+}
+
+// Record the filler information.
+// This structure is kept for backward compatibility
+// with caffe, which relies the implicit initializer.
+message FillerInfo {
+  enum VarianceNorm {
+    FAN_IN = 0;
+    FAN_OUT = 1;
+    FAN_AVG = 2;
+  }
+  optional string type = 1 [default = 'constant'];
+  optional float value = 2 [default = 0];
+  optional float low = 3 [default = 0];
+  optional float high = 4 [default = 1];
+  optional float mean = 5 [default = 0];
+  optional float std = 6 [default = 1];
+  optional float scale = 7 [default = 3];
+  optional VarianceNorm variance_norm = 8 [default = FAN_IN];
+}
+
+// Record the gradient information.
+message GradientInfo {
+  // The derivative target.
+  optional string y = 1;
+  // The differentiated inputs.
+  repeated string xs = 2;
 }

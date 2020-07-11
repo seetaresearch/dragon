@@ -10,9 +10,9 @@ __init__
 Methods
 -------
 
-accumulate_grad
-###############
-.. automethod:: dragon.vm.torch.optim.Optimizer.accumulate_grad
+accumulate
+##########
+.. automethod:: dragon.vm.torch.optim.Optimizer.accumulate
 
 add_param_group
 ###############

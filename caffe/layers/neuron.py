@@ -32,12 +32,12 @@ class Dropout(Layer):
 
     ```python
     layer {
-        type: "Dropout"
-        bottom: "fc6"
-        top: "fc6"
-        dropout_param {
-            dropout_ratio: 0.5
-        }
+      type: "Dropout"
+      bottom: "fc6"
+      top: "fc6"
+      dropout_param {
+        dropout_ratio: 0.5
+      }
     }
     ```
 
@@ -73,12 +73,12 @@ class ELU(Layer):
 
     ```python
     layer {
-        type: "ELU"
-        bottom: "conv2"
-        top: "conv2"
-        elu_param {
-            alpha: 1.
-        }
+      type: "ELU"
+      bottom: "conv2"
+      top: "conv2"
+      elu_param {
+        alpha: 1.
+      }
     }
     ```
 
@@ -101,14 +101,14 @@ class Power(Layer):
 
     ```python
     layer {
-        type: "Power"
-        bottom: "x"
-        top: "y"
-        power_param {
-            scale: 1.
-            shift: 0.
-            power: 2.
-        }
+      type: "Power"
+      bottom: "x"
+      top: "y"
+      power_param {
+        scale: 1.
+        shift: 0.
+        power: 2.
+      }
     }
     ```
 
@@ -148,16 +148,16 @@ class PReLU(Layer):
 
     ```python
     layer {
-        type: "PReLU"
-        bottom: "conv2"
-        top: "conv2/relu"
-        prelu_param {
-            channel_shared: false
-            filler {
-                type: "constant"
-                value: 0.25
-            }
+      type: "PReLU"
+      bottom: "conv2"
+      top: "conv2/relu"
+      prelu_param {
+        channel_shared: false
+        filler {
+          type: "constant"
+          value: 0.25
         }
+      }
     }
     ```
 
@@ -194,12 +194,12 @@ class ReLU(Layer):
 
     ```python
     layer {
-        type: "ReLU"
-        bottom: "conv2"
-        top: "conv2/relu"
-        relu_param {
-           negative_slope: 0.
-        }
+      type: "ReLU"
+      bottom: "conv2"
+      top: "conv2/relu"
+      relu_param {
+        negative_slope: 0.
+      }
     }
     ```
 
@@ -215,38 +215,6 @@ class ReLU(Layer):
         return activation_ops.relu(bottom, **self.arguments)
 
 
-class SELU(Layer):
-    r"""Apply the scaled exponential linear unit.
-    `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
-
-    The **SELU** function is defined as:
-
-    .. math::
-        \text{SELU}(x) = 1.0507 *
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            1.6733 * (e^{x} - 1), & \text{ otherwise }
-        \end{cases}
-
-    Examples:
-
-    ```python
-    layer {
-        type: "SELU"
-        bottom: "conv2"
-        top: "conv2/relu"
-    }
-    ```
-
-    """
-
-    def __init__(self, layer_param):
-        super(SELU, self).__init__(layer_param)
-
-    def __call__(self, bottom):
-        return activation_ops.selu(bottom, **self.arguments)
-
-
 class Sigmoid(Layer):
     r"""Apply the sigmoid function.
 
@@ -258,9 +226,9 @@ class Sigmoid(Layer):
 
     ```python
     layer {
-        type: "Sigmoid"
-        bottom: "rpn_cls_score"
-        top: "rpn_cls_prob"
+      type: "Sigmoid"
+      bottom: "rpn_cls_score"
+      top: "rpn_cls_prob"
     }
     ```
 
@@ -284,9 +252,9 @@ class TanH(Layer):
 
     ```python
     layer {
-        type: "TanH"
-        bottom: "g/conv5"
-        top: "g/image"
+      type: "TanH"
+      bottom: "g/conv5"
+      top: "g/image"
     }
     ```
 

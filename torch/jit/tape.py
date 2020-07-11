@@ -34,32 +34,54 @@ class Tape(object):
     def __init__(self, retain_ops=False, retain_graph=False):
         self._defs = []
         self._operations = dict()
+        self._sources = set()
+        self._empty_grads = set()
         self.retain_ops = retain_ops
         self.retain_graph = retain_graph
 
     @property
     def defs(self):
-        """Return the recording defs."""
+        """Return the recorded defs."""
         return self._defs
 
     @property
+    def empty_grads(self):
+        """Return the recorded empty grads."""
+        return list(self._empty_grads)
+
+    @property
     def operations(self):
-        """Return the recording operations."""
+        """Return the recorded operations."""
         return self._operations
+
+    @property
+    def sources(self):
+        """Return the recorded empty grads."""
+        return list(self._sources)
 
     def add_def(self, op_def):
         """Add a new def."""
         self._defs.append(op_def)
+
+    def add_empty_grad(self, tensor_id):
+        """Add an empty grad for optimization."""
+        self._empty_grads.add(tensor_id)
 
     def add_operation(self, op_def):
         """Add a new operation."""
         uid = next(self.UID_GENERATOR)
         self._operations[uid] = op_def
 
+    def add_source(self, tensor_id):
+        """Add a source for optimization."""
+        self._sources.add(tensor_id)
+
     def merge_from(self, other):
         """Merge operations from another."""
         if other is not None:
             self._operations = {**self._operations, **other._operations}
+            self._sources = self._sources.union(other._sources)
+            self._empty_grads = self._empty_grads.union(other._empty_grads)
 
     def __enter__(self):
         """Enter the tape into the stack."""

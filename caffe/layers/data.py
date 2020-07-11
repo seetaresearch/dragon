@@ -33,8 +33,9 @@ class _DataPlugin(object):
 
     def forward(self, inputs, outputs):
         blobs = self.iterator.next()
+        current_ws = workspace.get_workspace()
         for i, blob in enumerate(blobs):
-            workspace.feed_tensor(outputs[i], blob)
+            current_ws.feed_tensor(outputs[i], blob)
 
 
 class Data(Layer):
@@ -44,42 +45,46 @@ class Data(Layer):
 
     ```python
     layer {
-        type: "Data"
-        top: "data"
-        top: "label"
-        include { phase: TRAIN }
-        data_param {
-            source: "/data/imagenet/train"
-            batch_size: 128
-            shuffle: true
-            num_chunks: 0
-            prefetch: 5
-        }
-        transform_param {
-            mirror: true
-            random_crop_size: 224
-            augment_color: true
-            mean_value: 104.00698793
-            mean_value: 116.66876762
-            mean_value: 122.67891434
-        }
+      type: "Data"
+      top: "data"
+      top: "label"
+      include {
+        phase: TRAIN
+      }
+      data_param {
+        source: "/data/train"
+        batch_size: 128
+        shuffle: true
+        num_chunks: 0
+        prefetch: 5
+      }
+      transform_param {
+        mirror: true
+        random_crop_size: 224
+        augment_color: true
+        mean_value: 104.00698793
+        mean_value: 116.66876762
+        mean_value: 122.67891434
+      }
     }
     layer {
-        type: "Data"
-        top: "data"
-        top: "label"
-        include { phase: TEST }
-        data_param {
-            source: "/data/imagenet/val"
-            batch_size: 100
-        }
-        transform_param {
-            resize: 256
-            crop_size: 224
-            mean_value: 104.00698793
-            mean_value: 116.66876762
-            mean_value: 122.67891434
-        }
+      type: "Data"
+      top: "data"
+      top: "label"
+      include {
+        phase: TEST
+      }
+      data_param {
+        source: "/data/val"
+        batch_size: 64
+      }
+      transform_param {
+        resize: 256
+        crop_size: 224
+        mean_value: 104.00698793
+        mean_value: 116.66876762
+        mean_value: 122.67891434
+      }
     }
     ```
 

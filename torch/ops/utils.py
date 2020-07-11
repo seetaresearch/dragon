@@ -34,23 +34,9 @@ def new_leaf(sizes, kwargs):
 def remove_binary_scalar(input, value):
     """Remove the python scalar for binary ops."""
     if isinstance(input, Tensor):
-        # (Tensor, Number)
-        return \
-            input, \
-            scalar_to_tensor(
-                value,
-                input.dtype,
-                input.device,
-            )
+        return input, scalar_to_tensor(value, input.dtype, input.device)
     else:
-        # (Number, Tensor)
-        return \
-            scalar_to_tensor(
-                input,
-                value.dtype,
-                value.device,
-            ), \
-            value
+        return scalar_to_tensor(input, value.dtype, value.device), value
 
 
 def scalar_to_tensor(input, dtype, device):
@@ -64,12 +50,11 @@ def scalar_to_tensor(input, dtype, device):
             '<input> should be a python number, got {}.'
             .format(type(input).__name__)
         )
-    tid = '/share/scalar/{}/{}'.format(dtype, str(input))
-    if not workspace.has_tensor(tid):
-        workspace.feed_tensor(tid, numpy.array(input, dtype=dtype))
-    t = Tensor(id=tid, dtype=dtype, device=device, own_storage=False)
-    t.requires_grad = False
-    return t
+    name = '/share/scalar/{}/{}'.format(dtype, str(input))
+    current_ws = workspace.get_workspace()
+    if not current_ws.has_tensor(name):
+        current_ws.feed_tensor(name, numpy.array(input, dtype=dtype))
+    return Tensor(device=device, impl=current_ws.GetTensor(name), requires_grad=False)
 
 
 def unify_devices(tensors, key='Inputs'):
@@ -78,13 +63,11 @@ def unify_devices(tensors, key='Inputs'):
     if len(set(types)) != 1:
         raise ValueError(
             '{} from different device type: [{}].'
-            .format(key, ', '.join(types))
-        )
+            .format(key, ', '.join(types)))
     if types[0] == 'cuda':
         indices = [t._device.index for t in tensors]
         if len(set(indices)) != 1:
             raise ValueError(
                 '{} from different cuda device: [{}].'
-                .format(key, ', '.join([str(d) for d in indices]))
-            )
+                .format(key, ', '.join([str(d) for d in indices])))
     return cpp.device(types[0], indices[0])

@@ -88,8 +88,8 @@ class Graph : public GraphBase {
 
   /*! \brief Default Destructor */
   virtual ~Graph() {
-    for (auto* op : ops_) {
-      delete op;
+    for (auto* cached_op : cached_ops_) {
+      delete cached_op;
     }
   }
 
@@ -100,8 +100,8 @@ class Graph : public GraphBase {
   bool Run(const string&, const string&, int = 0) override;
 
  protected:
-  /*! \brief Store the internal operators */
-  vector<OperatorBase*> ops_;
+  /*! \brief The cached operators */
+  vector<OperatorBase*> cached_ops_;
 
   /*! \brief Store the candidate output aliases */
   Map<string, Set<string>> output_aliases_;

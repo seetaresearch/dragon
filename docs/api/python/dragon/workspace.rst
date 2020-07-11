@@ -1,48 +1,44 @@
-dragon.workspace
-================
+Workspace
+=========
 
-.. only:: html
+.. autoclass:: dragon.Workspace
 
-  Functions
-  ---------
+__init__
+--------
+.. automethod:: dragon.Workspace.__init__
 
-  `feed_tensor(...) <workspace/feed_tensor.html>`_
-  : Copy the value to tensor.
+Methods
+-------
 
-  `fetch_tensor(...) <workspace/fetch_tensor.html>`_
-  : Return the value of tensor.
+as_default
+##########
+.. automethod:: dragon.Workspace.as_default
 
-  `has_tensor(...) <workspace/has_tensor.html>`_
-  : Return a bool indicating if tensor is in current workspace.
+feed_tensor
+###########
+.. automethod:: dragon.Workspace.feed_tensor
 
-  `load(...) <workspace/load.html>`_
-  : Load tensors from a binary file.
+fetch_tensor
+############
+.. automethod:: dragon.Workspace.fetch_tensor
 
-  `reset_tensor(...) <workspace/reset_tensor.html>`_
-  : Reset the memory of tensor.
+has_tensor
+##########
+.. automethod:: dragon.Workspace.has_tensor
 
-  `run_operator(...) <workspace/run_operator.html>`_
-  : Run the operators in current workspace.
+merge_from
+##########
+.. automethod:: dragon.Workspace.merge_from
 
-  `save(...) <workspace/save.html>`_
-  : Serialize tensors into a binary file.
-
-.. toctree::
-   :hidden:
-
-   workspace/feed_tensor
-   workspace/fetch_tensor
-   workspace/has_tensor
-   workspace/load
-   workspace/reset_tensor
-   workspace/run_operator
-   workspace/save
+reset_tensor
+############
+.. automethod:: dragon.Workspace.reset_tensor
 
 .. raw:: html
 
   <style>
-   h1:before {
-    content: "Module: ";
-    color: #103d3e;
-   }
+    h1:before {
+      content: "dragon.";
+      color: #103d3e;
+    }
   </style>
