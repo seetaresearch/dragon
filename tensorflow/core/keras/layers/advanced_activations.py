@@ -49,7 +49,7 @@ class ELU(Layer):
         Parameters
         ----------
         alpha : float, optional, default=0.3
-            The value of :math:`\alpha`.
+            The value to :math:`\alpha`.
 
         """
         super(ELU, self).__init__(**kwargs)
@@ -92,7 +92,7 @@ class LeakyReLU(Layer):
         Parameters
         ----------
         alpha : float, optional, default=0.3
-            The value of :math:`\alpha`.
+            The value to :math:`\alpha`.
 
         """
         super(LeakyReLU, self).__init__(**kwargs)
@@ -135,9 +135,9 @@ class ReLU(Layer):
         Parameters
         ----------
         max_value : number, optional
-            The value of :math:`v_{max}`.
+            The value to :math:`v_{max}`.
         negative_slope : float, optional, default=0.
-            The value of :math:`\alpha`.
+            The value to :math:`\alpha`.
 
         """
         super(ReLU, self).__init__(**kwargs)

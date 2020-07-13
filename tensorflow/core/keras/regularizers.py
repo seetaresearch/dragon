@@ -56,9 +56,9 @@ class L1L2(Regularizer):
         Parameters
         ----------
         l1 : float, optional, default=0.01
-            The value of :math:`\alpha`.
+            The value to :math:`\alpha`.
         l2 : float, optional, default=0.01
-            The value of :math:`\beta`.
+            The value to :math:`\beta`.
 
         """
         if l1 <= 0. or l2 <= 0.:
@@ -90,7 +90,7 @@ def l1(l=0.01):
     Parameters
     ----------
     l : float, optional, default=0.01
-        The value of :math:`\alpha`.
+        The value to :math:`\alpha`.
 
     Returns
     -------
@@ -111,9 +111,9 @@ def l1_l2(l1=0.01, l2=0.01):
     Parameters
     ----------
     l1 : float, optional, default=0.01
-        The value of :math:`\alpha`.
+        The value to :math:`\alpha`.
     l2 : float, optional, default=0.01
-        The value of :math:`\beta`.
+        The value to :math:`\beta`.
 
     Returns
     -------
@@ -134,7 +134,7 @@ def l2(l=0.01):
     Parameters
     ----------
     l : float, optional, default=0.01
-        The value of :math:`\beta`.
+        The value to :math:`\beta`.
 
     Returns
     -------

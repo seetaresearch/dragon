@@ -53,7 +53,7 @@ class ELU(Module):
         Parameters
         ----------
         alpha : float, optional, default=1.
-            The value of :math:`\alpha`.
+            The value to :math:`\alpha`.
         inplace : bool, optional, default=False
             Whether to do the operation in-place.
 

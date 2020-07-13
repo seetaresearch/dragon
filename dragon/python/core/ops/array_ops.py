@@ -25,7 +25,7 @@ from dragon.core.util import nest
 
 
 def arange(start, stop=None, step=1, dtype='int64', **kwargs):
-    r"""Return a tensor with evenly spaced values within a interval.
+    r"""Return a tensor of evenly spaced values within a interval.
 
     Specify ``start`` and ``stop`` to determine an interval:
 
@@ -537,7 +537,7 @@ def flatten(inputs, axis=0, num_axes=-1, keep_axes=None, **kwargs):
     Examples:
 
     ```python
-    x = dragon.Tensor(shape=[1, 2, 3, 4]).variable()
+    x = dragon.Tensor(shape=[1, 2, 3, 4]).constant()
     print(dragon.flatten(x, axis=1, num_axes=-1).shape)  # (1, 24)
     print(dragon.flatten(x, axis=1, num_axes=2).shape)  # (1, 6, 4)
     print(dragon.flatten(x, keep_axes=1))  # (24,)
@@ -634,7 +634,7 @@ def index_select(inputs, indices, axis=0, **kwargs):
 
 @OpSchema.num_inputs(2)
 def masked_select(inputs, **kwargs):
-    """Select the elements where the given mask is **1**.
+    """Select the elements of input where mask is 1.
 
     Parameters
     ----------
@@ -908,14 +908,14 @@ def multinomial(inputs, num_samples=1, eps=0., normalize=False, **kwargs):
 
 @OpSchema.num_inputs(1)
 def nonzero(inputs, **kwargs):
-    r"""Return the indices of non-zero elements.
+    r"""Return the index of non-zero elements.
 
-    .. math:: y = \{i, \text{ if } x[i] \text{ is True }\}
+    .. math:: \text{out} = \{i, \text{ if } \text{input}[i] \neq 0
 
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -938,8 +938,8 @@ def one_hot(inputs, depth, on_value=1, off_value=0, **kwargs):
     .. math::
         \text{out}[i][j] =
         \begin{cases}
-            \text{Val}_{off}, & \text{ if } x[i] \neq j \\
-            \text{Val}_{on}, & \text{ otherwise }
+            \text{off\_value}, & \text{ if } \text{input}[i] \neq j \\
+            \text{on\_value}, & \text{ otherwise }
         \end{cases}
 
     The max value of indices, i.e., the ``depth`` should be specified:

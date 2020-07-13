@@ -65,10 +65,6 @@ normal
 ######
 .. automethod:: dragon.Tensor.normal
 
-placeholder
-###########
-.. automethod:: dragon.Tensor.placeholder
-
 reshape
 #######
 .. automethod:: dragon.Tensor.reshape
@@ -85,20 +81,12 @@ uniform
 #######
 .. automethod:: dragon.Tensor.uniform
 
-variable
-########
-.. automethod:: dragon.Tensor.variable
-
 Overrides
 ---------
 
 __add__
 #######
 .. automethod:: dragon.Tensor.__add__
-
-__div__
-#######
-.. automethod:: dragon.Tensor.__div__
 
 __float__
 #########
@@ -140,10 +128,6 @@ __radd__
 ########
 .. automethod:: dragon.Tensor.__radd__
 
-__rdiv__
-########
-.. automethod:: dragon.Tensor.__rdiv__
-
 __rmul__
 ########
 .. automethod:: dragon.Tensor.__rmul__
@@ -160,24 +144,21 @@ __sub__
 #######
 .. automethod:: dragon.Tensor.__sub__
 
+__rtruediv__
+############
+.. automethod:: dragon.Tensor.__rtruediv__
+
+__truediv__
+############
+.. automethod:: dragon.Tensor.__truediv__
+
 .. _dragon.assign(...): assign.html
 .. _dragon.cast(...): cast.html
 .. _dragon.copy(...): copy.html
-.. _dragon.math.add(...): math/add.html
-.. _dragon.math.div(...): math/div.html
-.. _dragon.math.greater(...): math/greater.html
-.. _dragon.math.greater_equal(...): math/greater_equal.html
-.. _dragon.math.less(...): math/less.html
-.. _dragon.math.less_equal(...): math/less_equal.html
-.. _dragon.math.mul(...): math/mul.html
-.. _dragon.math.negative(...): math/negative.html
-.. _dragon.math.sub(...): math/sub.html
 .. _dragon.masked_assign(...): masked_assign.html
 .. _dragon.masked_select(...): masked_select.html
 .. _dragon.reshape(...): reshape.html
 .. _dragon.slice(...): slice.html
-.. _dragon.workspace.feed_tensor(...): workspace/feed_tensor.html
-.. _dragon.workspace.fetch_tensor(...): workspace/fetch_tensor.html
 
 .. raw:: html
 

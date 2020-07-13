@@ -77,7 +77,7 @@ class Tape(object):
         self._sources.add(tensor_id)
 
     def merge_from(self, other):
-        """Merge operations from another."""
+        """Merge operations from the other."""
         if other is not None:
             self._operations = {**self._operations, **other._operations}
             self._sources = self._sources.union(other._sources)

@@ -46,7 +46,7 @@ class TestTensor(unittest.TestCase):
         self.assertNotEqual(a.__hash__(), b.__hash__())
         self.assertNotEqual(a.__repr__(), b.__repr__())
         self.assertNotEqual(b.__repr__(), dragon.EagerTensor([2]).__repr__())
-        self.assertEqual(int(a.variable().placeholder().set_value(1)), 1)
+        self.assertEqual(int(a.constant().set_value(1)), 1)
         self.assertEqual(float(dragon.Tensor.convert_to(1)), 1.)
         self.assertEqual(int(b.set_value(1)), 1)
         self.assertEqual(float(b), 1.)
@@ -73,6 +73,8 @@ class TestTensor(unittest.TestCase):
         with dragon.name_scope(''):
             b.name = 'b'
             self.assertEqual(b.name, 'b')
+        b.requires_grad = True
+        self.assertEqual(b.requires_grad, True)
 
     def test_dlpack_converter(self):
         data = np.array([0., 1., 2.], 'float32')
@@ -101,13 +103,55 @@ class TestTensor(unittest.TestCase):
 class TestWorkspace(unittest.TestCase):
     """Test the workspace class."""
 
+    def test_clear(self):
+        w = dragon.Workspace()
+        with w.as_default():
+            x = dragon.EagerTensor(1)
+        self.assertEqual(x.size, 1)
+        w.clear()
+        self.assertEqual(x.size, 0)
+
+    def test_feed_tensor(self):
+        w = dragon.Workspace()
+        with w.as_default():
+            v1, v2 = dragon.EagerTensor(1), np.array(2)
+            x = dragon.Tensor('test_feed_tensor/x')
+            w.feed_tensor(x, v1)
+            self.assertEqual(int(x), 1)
+            w.feed_tensor(x, v2)
+            self.assertEqual(int(x), 2)
+
     def test_merge_form(self):
         w1, w2 = dragon.Workspace(), dragon.Workspace()
         with w1.as_default():
-            x = dragon.Tensor(str(id(w1))).set_value(0)
+            x = dragon.Tensor('test_merge_from/x').set_value(0)
         w2.merge_from(w1)
         with w2.as_default():
             self.assertEqual(int(x), 0)
+
+    def test_register_alias(self):
+        w = dragon.Workspace()
+        with w.as_default():
+            x = dragon.EagerTensor(1)
+            w.register_alias(x.id, 'test_register_alias/y')
+            self.assertEqual(int(w.fetch_tensor('test_register_alias/y')), 1)
+
+    def test_reset_tensor(self):
+        w = dragon.Workspace()
+        with w.as_default():
+            x = dragon.EagerTensor(1)
+            self.assertEqual(x.size, 1)
+            w.reset_tensor(x)
+            self.assertEqual(x.size, 0)
+
+    def test_reset_workspace(self):
+        w = dragon.Workspace()
+        with w.as_default():
+            try:
+                dragon.reset_workspace()
+            except AssertionError:
+                pass
+        dragon.reset_workspace()
 
 
 if __name__ == '__main__':

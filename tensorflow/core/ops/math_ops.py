@@ -846,7 +846,7 @@ def pow(x, y, name=None):
 
 
 def range(start, limit=None, delta=1, dtype='int64', name=None):
-    r"""Return a tensor with evenly spaced values within a interval.
+    r"""Return a tensor of evenly spaced values within a interval.
 
     Specify ``start`` and ``limit`` to determine an interval:
 

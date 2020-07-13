@@ -21,7 +21,7 @@ from dragon.vm.torch.optim.optimizer import Optimizer
 
 
 class RMSprop(Optimizer):
-    r"""The optimizer which implements RMSprop algorithm.
+    r"""The optimizer to apply RMSprop algorithm.
     `[Hinton et.al, 2013] <http://www.cs.utoronto.ca/~bonner/courses/2016s/csc321/lectures/lec6.pdf>`_.
 
     The **RMSprop** update is defined as:

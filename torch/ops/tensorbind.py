@@ -40,14 +40,14 @@ def abs(self):
     return math_funcs.abs(self)
 
 
-def add(self, value):
+def add(self, other):
     r"""Compute the element-wise addition.
 
-    .. math:: \text{out} = \text{self} + \text{value}
+    .. math:: \text{out} = \text{self} + \text{other}
 
     Parameters
     ----------
-    value : Union[dragon.vm.torch.Tensor, number]
+    other : Union[dragon.vm.torch.Tensor, number]
         The value to add.
 
     Returns
@@ -60,17 +60,17 @@ def add(self, value):
     `torch.add(...)`_ : Compute the element-wise addition.
 
     """
-    return math_funcs.add(self, value)
+    return math_funcs.add(self, other)
 
 
-def add_(self, value):
+def add_(self, other):
     r"""Compute the element-wise addition.
 
-    .. math:: \text{self} \mathrel{+}= \text{value}
+    .. math:: \text{self} \mathrel{+}= \text{other}
 
     Parameters
     ----------
-    value : Union[dragon.vm.torch.Tensor, number]
+    other : Union[dragon.vm.torch.Tensor, number]
         The value to add.
 
     Returns
@@ -83,7 +83,7 @@ def add_(self, value):
     `torch.add(...)`_ : Compute the element-wise addition.
 
     """
-    return math_funcs.add(self, value, self)
+    return math_funcs.add(self, other, self)
 
 
 def backward(self, gradient=None, retain_graph=False):
@@ -398,14 +398,14 @@ def cumsum(self, dim):
     return array_funcs.cumsum(self, dim)
 
 
-def div(self, value):
+def div(self, other):
     r"""Compute the element-wise division.
 
-    .. math:: \text{out} = \text{self} \div \text{value}
+    .. math:: \text{out} = \text{self} \div \text{other}
 
     Parameters
     ----------
-    value : Union[dragon.vm.torch.Tensor, number]
+    other : Union[dragon.vm.torch.Tensor, number]
         The value to divide.
 
     Returns
@@ -418,17 +418,17 @@ def div(self, value):
     `torch.div(...)`_ : Compute the element-wise division.
 
     """
-    return math_funcs.div(self, value)
+    return math_funcs.div(self, other)
 
 
-def div_(self, value):
+def div_(self, other):
     r"""Compute the element-wise division.
 
-    .. math:: \text{self} \mathrel{\div}= \text{value}
+    .. math:: \text{self} \mathrel{\div}= \text{other}
 
     Parameters
     ----------
-    value : Union[dragon.vm.torch.Tensor, number]
+    other : Union[dragon.vm.torch.Tensor, number]
         The value to be divided.
 
     Returns
@@ -441,7 +441,7 @@ def div_(self, value):
     `torch.div(...)`_ : Compute the element-wise division.
 
     """
-    return math_funcs.div(self, value, self)
+    return math_funcs.div(self, other, self)
 
 
 def double(self):
@@ -531,14 +531,14 @@ def expand(self, *sizes):
 
 
 def fill_(self, value):
-    r"""Fill with the given constant value.
+    r"""Fill self with a scalar value.
 
     .. math:: \text{self} \leftarrow \text{value}
 
     Parameters
     ----------
     value : number
-        The constant value.
+        The value to fill.
 
     Returns
     -------
@@ -633,6 +633,19 @@ def ge(self, other):
 
 
 def getitem(self, item):
+    """Select elements at the specific index.
+
+    Parameters
+    ----------
+    item : Union[int, slice, dragon.vm.torch.Tensor]
+        The index.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
     if isinstance(item, Tensor):
         return self.masked_select(item)
     else:
@@ -935,14 +948,14 @@ def min(self, dim=None, keepdim=False):
     return array_funcs.min(self, dim, keepdim)
 
 
-def mul(self, value):
+def mul(self, other):
     r"""Compute the element-wise multiplication.
 
-    .. math:: \text{out} = \text{self} \times \text{value}
+    .. math:: \text{out} = \text{self} \times \text{other}
 
     Parameters
     ----------
-    value : Union[dragon.vm.torch.Tensor, number]
+    other : Union[dragon.vm.torch.Tensor, number]
         The value to multiply.
 
     Returns
@@ -955,17 +968,17 @@ def mul(self, value):
     `torch.mul(...)`_ : Compute the element-wise multiplication.
 
     """
-    return math_funcs.mul(self, value)
+    return math_funcs.mul(self, other)
 
 
-def mul_(self, value):
+def mul_(self, other):
     r"""Compute the element-wise multiplication.
 
-    .. math:: \text{self} \mathrel{\times}= \text{value}
+    .. math:: \text{self} \mathrel{\times}= \text{other}
 
     Parameters
     ----------
-    value : Union[dragon.vm.torch.Tensor, number]
+    other : Union[dragon.vm.torch.Tensor, number]
         The value to multiply.
 
     Returns
@@ -978,7 +991,7 @@ def mul_(self, value):
     `torch.mul(...)`_ : Compute the element-wise multiplication.
 
     """
-    return math_funcs.mul(self, value, self)
+    return math_funcs.mul(self, other, self)
 
 
 def multinomial(self, num_samples, eps=0.):
@@ -1076,16 +1089,16 @@ def nonzero(self):
 
 
 def normal_(self, mean=0, std=1):
-    r"""Fill self with a normal distribution.
+    r"""Fill self from a normal distribution.
 
-    .. math:: \text{self} \leftarrow N(\mu, \sigma)
+    .. math:: \text{self} \sim \mathcal{N}(\mu, \sigma)
 
     Parameters
     ----------
     mean : number, optional, default=0
-        The value of :math:`\mu`.
+        The value to :math:`\mu`.
     std : number, optional, default=1
-        The value of :math:`\sigma`.
+        The value to :math:`\sigma`.
 
     Returns
     -------
@@ -1302,6 +1315,16 @@ def rsqrt_(self):
 
 
 def setitem(self, key, value):
+    """Set elements at the specific index.
+
+    Parameters
+    ----------
+    key : Union[int, slice, dragon.vm.torch.Tensor]
+        The index.
+    value : Union[dragon.vm.torch.Tensor, number]
+        The value to set.
+
+    """
     if isinstance(key, Tensor):
         return self.masked_fill_(key, value)
     else:
@@ -1464,14 +1487,14 @@ def sum(self, dim=None, keepdim=False):
     return array_funcs.sum(self, dim, keepdim)
 
 
-def sub(self, value):
+def sub(self, other):
     r"""Compute the element-wise subtraction.
 
-    .. math:: \text{out} = \text{self} - \text{value}
+    .. math:: \text{out} = \text{self} - \text{other}
 
     Parameters
     ----------
-    value : Union[dragon.vm.torch.Tensor, number]
+    other : Union[dragon.vm.torch.Tensor, number]
         The value to subtract.
 
     Returns
@@ -1484,17 +1507,17 @@ def sub(self, value):
     `torch.sub(...)`_ : Compute the element-wise subtraction.
 
     """
-    return math_funcs.sub(self, value)
+    return math_funcs.sub(self, other)
 
 
-def sub_(self, value):
+def sub_(self, other):
     r"""Compute the element-wise subtraction.
 
-    .. math:: \text{self} \mathrel{-}= \text{value}
+    .. math:: \text{self} \mathrel{-}= \text{other}
 
     Parameters
     ----------
-    value : Union[dragon.vm.torch.Tensor, number]
+    other : Union[dragon.vm.torch.Tensor, number]
         The value to be subtracted.
 
     Returns
@@ -1507,7 +1530,7 @@ def sub_(self, value):
     `torch.sub(...)`_ : Compute the element-wise subtraction.
 
     """
-    return math_funcs.sub(self, value, self)
+    return math_funcs.sub(self, other, self)
 
 
 def type(self, dtype=None):
@@ -1532,16 +1555,16 @@ def type(self, dtype=None):
 
 
 def uniform_(self, low=0, high=1):
-    r"""Fill self with a uniform distribution.
+    r"""Fill self from a uniform distribution.
 
-    .. math:: \text{self} \leftarrow U(\alpha, \beta)
+    .. math:: \text{self} \sim \mathcal{U}(\alpha, \beta)
 
     Parameters
     ----------
     low : number, optional, default=0
-        The value of :math:`\alpha`.
+        The value to :math:`\alpha`.
     high : number, optional, default=1
-        The value of :math:`\beta`.
+        The value to :math:`\beta`.
 
     Returns
     -------
@@ -1741,7 +1764,6 @@ Tensor.unsqueeze_ = unsqueeze_
 Tensor.where = where
 Tensor.__getitem__ = getitem
 Tensor.__radd__ = lambda self, value: math_funcs._binary_func(value, self, 'Add')
-Tensor.__rdiv__ = lambda self, value: math_funcs._binary_func(value, self, 'Div')
 Tensor.__rmul__ = lambda self, value: math_funcs._binary_func(value, self, 'Mul')
 Tensor.__rsub__ = lambda self, value: math_funcs._binary_func(value, self, 'Sub')
 Tensor.__rtruediv__ = lambda self, value: math_funcs._binary_func(value, self, 'Div')

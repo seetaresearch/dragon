@@ -90,7 +90,7 @@ class GlorotNormal(Initializer):
     def __init__(self, key, dev, **kwargs):
         super(GlorotNormal, self).__init__(key, dev, **kwargs)
         self.scale = kwargs.get('scale', 2.)
-        self.mode = kwargs.get('mode', 'FAN_IN')
+        self.mode = kwargs.get('mode', 'fan_in')
 
     def attributes(self):
         return {
@@ -110,7 +110,7 @@ class GlorotUniform(Initializer):
     def __init__(self, key, dev, **kwargs):
         super(GlorotUniform, self).__init__(key, dev, **kwargs)
         self.scale = kwargs.get('scale', 3.)
-        self.mode = kwargs.get('mode', 'FAN_IN')
+        self.mode = kwargs.get('mode', 'fan_in')
 
     def attributes(self):
         return {

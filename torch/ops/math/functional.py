@@ -54,9 +54,9 @@ def axpby(input, alpha=1., beta=1., out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     alpha : float, optional, default=1.
-        The value of :math:`\alpha`.
+        The value to :math:`\alpha`.
     beta : float, optional, default=1.
-        The value of :math:`\beta`.
+        The value to :math:`\beta`.
     out : dragon.vm.torch.Tensor, optional
         The optional output tensor.
 

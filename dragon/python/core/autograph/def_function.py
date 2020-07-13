@@ -255,7 +255,7 @@ class FunctionGuard(object):
                             )
                         shape = input_signature[i].shape
                         dtype = input_signature[i].dtype
-                    inputs.append(Tensor(name, shape, dtype).variable())
+                    inputs.append(Tensor(name, shape, dtype).constant())
             with context.name_scope('${%d}' % id(self)), eager_context.graph_mode():
                 returns = nest.flatten(self._python_function(*inputs))
             outputs, dummies = [], []

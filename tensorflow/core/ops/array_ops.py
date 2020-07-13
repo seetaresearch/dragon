@@ -183,9 +183,9 @@ def expand_dims(input, axis, name=None):
 
 
 def fill(dims, value=0, dtype=None, name=None):
-    r"""Return a tensor filled with the specific value.
+    r"""Return a tensor filled with the scalar value.
 
-    .. math:: y \leftarrow \text{Constant}
+    .. math:: \text{out} \leftarrow \text{value}
 
     Examples:
 
@@ -298,7 +298,7 @@ def identity(input, name=None):
 def ones(shape, dtype='float32', name=None):
     r"""Return a tensor filled with ones.
 
-    .. math:: y \leftarrow 1
+    .. math:: \text{out} \leftarrow 1
 
     ```python
     x = tf.ones(shape=(2, 3), dtype=tf.float32)
@@ -318,9 +318,9 @@ def ones(shape, dtype='float32', name=None):
 
 
 def ones_like(input, dtype='float32', name=None):
-    r"""Return a tensor shaping like another filled with ones.
+    r"""Return a tensor of ones with shape as the other.
 
-    .. math:: y \leftarrow 1
+    .. math:: \text{out} \leftarrow 1
 
     Examples:
 
@@ -349,14 +349,14 @@ def one_hot(
     off_value=0,
     name=None,
 ):
-    r"""Return the one-hot representation from indices.
+    r"""Return the one-hot representation for input.
 
     .. math::
-        y[i][j] =
-        \begin{cases}
-            \text{Val}_{off}, & \text{ if } \text{indices}[i] \neq j \\
-            \text{Val}_{on}, & \text{ otherwise }
-        \end{cases}
+        \text{out}[i][j] =
+            \begin{cases}
+                \text{off\_value}, & \text{ if } \text{input}[i] \neq j \\
+                \text{on\_value}, & \text{ otherwise }
+            \end{cases}
 
     The max value of indices, i.e., the ``depth`` should be specified:
 
@@ -374,7 +374,7 @@ def one_hot(
     Parameters
     ----------
     indices : dragon.Tensor
-        The tensor ``indices``.
+        The input tensor.
     depth : int
         The depth of representation.
     on_value : int, optional, default=1
@@ -390,7 +390,13 @@ def one_hot(
         The output tensor.
 
     """
-    return array_ops.one_hot(indices, depth, on_value, off_value, name=name)
+    return array_ops.one_hot(
+        indices,
+        depth=depth,
+        on_value=on_value,
+        off_value=off_value,
+        name=name,
+    )
 
 
 def pad(
@@ -483,7 +489,7 @@ def placeholder(dtype=None, shape=None, name=None):
             suffix=':0', namespace='Tensor'),
         dtype=str(dtype) if dtype else dtype,
         shape=shape,
-    ).placeholder()
+    ).constant()
 
 
 def reshape(tensor, shape, name=None):
@@ -752,7 +758,7 @@ def transpose(a, perm=None, name=None):
 def zeros(shape, dtype='float32', name=None):
     r"""Return a tensor filled with zeros.
 
-    .. math:: y \leftarrow 0
+    .. math:: \text{out} \leftarrow 0
 
     ```python
     x = tf.zeros(shape=(2, 3), dtype=tf.float32)
@@ -772,9 +778,9 @@ def zeros(shape, dtype='float32', name=None):
 
 
 def zeros_like(input, dtype='float32', name=None):
-    r"""Return a tensor shaping like another filled with zeros.
+    r"""Return a tensor of zeros with shape as the other.
 
-    .. math:: y \leftarrow 0
+    .. math:: \text{out} \leftarrow 0
 
     Examples:
 

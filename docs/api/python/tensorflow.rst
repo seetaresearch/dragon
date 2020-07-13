@@ -28,7 +28,7 @@ vm.tensorflow
   : Concatenate the values along the given axis.
 
   `constant(...) <tensorflow/constant.html>`_
-  : Return a tensor taking the value content.
+  : Return a tensor initialized from the value.
 
   `device(...) <tensorflow/device.html>`_
   : Context-manager to nest the the device spec.
@@ -40,7 +40,7 @@ vm.tensorflow
   : Return a tensor constructed as the identity matrix.
 
   `fill(...) <tensorflow/fill.html>`_
-  : Return a tensor filled with the specific value.
+  : Return a tensor filled with the scalar value.
 
   `gather(...) <tensorflow/gather.html>`_
   : Select the elements according to the indices along the given axis.
@@ -61,16 +61,16 @@ vm.tensorflow
   : Return a tensor filled with ones.
 
   `ones_like(...) <tensorflow/ones_like.html>`_
-  : Return a tensor shaping like another filled with ones.
+  : Return a tensor of ones with shape as the other.
 
   `one_hot(...) <tensorflow/one_hot.html>`_
-  : Return the one-hot representation from indices.
+  : Return the one-hot representation for input.
 
   `pad(...) <tensorflow/pad.html>`_
   : Pad the input according to the given sizes.
 
   `range(...) <tensorflow/range.html>`_
-  : Return a tensor with evenly spaced values within a interval.
+  : Return a tensor of evenly spaced values within a interval.
 
   `reshape(...) <tensorflow/reshape.html>`_
   : Change the dimensions of input.
@@ -94,7 +94,7 @@ vm.tensorflow
   : Return a tensor filled with zeros.
 
   `zeros_like(...) <tensorflow/zeros_like.html>`_
-  : Return a tensor shaping like another filled with zeros.
+  : Return a tensor of zeros with shape as the other.
 
 .. toctree::
   :hidden:

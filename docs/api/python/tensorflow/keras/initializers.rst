@@ -7,31 +7,31 @@ initializers
   -------
 
   `class Constant <initializers/Constant.html>`_
-  : Fill tensors with a scalar.
+  : Fill tensor with a scalar value.
 
   `class GlorotNormal <initializers/GlorotNormal.html>`_
-  : Fill tensors according to a glorot normal distribution.
+  : Fill tensor from a glorot normal distribution.
 
   `class GlorotUniform <initializers/GlorotUniform.html>`_
-  : Fill tensors according to a glorot uniform distribution.
+  : Fill tensor from a glorot uniform distribution.
 
   `class Initializer <initializers/GlorotUniform.html>`_
   : The basic Initializer.
 
   `class Ones <initializers/Ones.html>`_
-  : Fill tensors with ones.
+  : Fill tensor with ones.
 
   `class RandomNormal <initializers/RandomNormal.html>`_
-  : Fill tensors according to a random normal distribution.
+  : Fill tensor from a normal distribution.
 
   `class RandomUniform <initializers/RandomUniform.html>`_
-  : Fill tensors according to a random uniform distribution.
+  : Fill tensor from an uniform distribution.
 
   `class TruncatedNormal <initializers/TruncatedNormal.html>`_
-  : Fill tensors according to a truncated normal distribution.
+  : Fill tensor from a truncated normal distribution.
 
   `class VarianceScaling <initializers/VarianceScaling.html>`_
-  : Fill tensors with the random values adapting to shape.
+  : Fill tensor from a scaled random distribution.
 
   `class Zeros <initializers/Zeros.html>`_
   : Fill tensors with zeros.

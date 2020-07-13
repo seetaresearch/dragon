@@ -368,7 +368,7 @@ class Input(Layer):
                 namespace='Tensor'),
             shape=self.blob_shapes[i],
             dtype='float32',
-        ).placeholder() for i in range(len(self.blob_shapes))]
+        ).constant() for i in range(len(self.blob_shapes))]
 
 
 class Normalize(Layer):

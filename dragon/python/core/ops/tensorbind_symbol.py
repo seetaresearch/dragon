@@ -24,9 +24,7 @@ from dragon.core.ops import array_ops
 
 
 def add(self, other):
-    r"""Compute the element-wise addition.
-
-    .. math:: \text{out} = \text{self} + \text{other}
+    """Compute the element-wise addition.
 
     Parameters
     ----------
@@ -36,11 +34,7 @@ def add(self, other):
     Returns
     -------
     dragon.Tensor
-        The **y**.
-
-    See Also
-    --------
-    `dragon.math.add(...)`_ : Compute the element-wise addition.
+        The output tensor.
 
     """
     return _binary_op(self, other, 'Add')
@@ -90,9 +84,7 @@ def copy(self):
 
 
 def div(self, other):
-    r"""Compute the element-wise division.
-
-    .. math:: \text{out} = \text{self} \div \text{other}
+    """Compute the element-wise division.
 
     Parameters
     ----------
@@ -104,18 +96,12 @@ def div(self, other):
     dragon.Tensor
         The output tensor.
 
-    See Also
-    --------
-    `dragon.math.div(...)`_ : Compute the element-wise division.
-
     """
     return _binary_op(self, other, 'Div')
 
 
 def ge(self, other):
-    r"""Compute element-wise greater-equal comparison.
-
-    .. math:: \text{out} = (\text{self} \geq \text{other})
+    """Compute element-wise greater-equal comparison.
 
     Parameters
     ----------
@@ -127,34 +113,22 @@ def ge(self, other):
     dragon.Tensor
         The output tensor.
 
-    See Also
-    --------
-    `dragon.math.greater_equal(...)`_ : Compute element-wise greater-equal comparison.
-
     """
     return _binary_op(self, other, 'GreaterEqual')
 
 
 def getitem(self, item):
-    """Select the elements at the specific indices.
+    """Select elements at the specific index.
 
     Parameters
     ----------
     item : Union[int, slice, dragon.Tensor]
-        The indices.
+        The index.
 
     Returns
     -------
     dragon.Tensor
         The output tensor.
-
-    See Also
-    --------
-    `dragon.slice(...)`_ : Select the elements according to the given sections.
-
-    See Also
-    --------
-    `dragon.masked_select(...)`_ : Select the elements where the given mask is 1.
 
     """
     if isinstance(item, Tensor):
@@ -165,21 +139,19 @@ def getitem(self, item):
 
 
 def get_value(self):
-    """Copy the data from storage.
+    """Return the value of implementation.
 
     Returns
     -------
     numpy.ndarray
-        The deep copied value.
+        The deep-copied value.
 
     """
     return workspace.get_workspace().fetch_tensor(self)
 
 
 def gt(self, other):
-    r"""Compute element-wise greater comparison.
-
-    .. math:: \text{out} = (\text{self} > \text{other})
+    """Compute element-wise greater comparison.
 
     Parameters
     ----------
@@ -190,19 +162,13 @@ def gt(self, other):
     -------
     dragon.Tensor
         The output tensor.
-
-    See Also
-    --------
-    `dragon.math.greater(...)`_ : Compute element-wise greater comparison.
 
     """
     return _binary_op(self, other, 'Greater')
 
 
 def le(self, other):
-    r"""Compute element-wise less-equal comparison.
-
-    .. math:: \text{out} = (\text{self} \leq \text{other})
+    """Compute element-wise less-equal comparison.
 
     Parameters
     ----------
@@ -213,19 +179,13 @@ def le(self, other):
     -------
     dragon.Tensor
         The output tensor.
-
-    See Also
-    --------
-    `dragon.math.less_equal(...)`_ : Compute element-wise less-equal comparison.
 
     """
     return _binary_op(self, other, 'LessEqual')
 
 
 def lt(self, other):
-    r"""Compute element-wise less comparison.
-
-    .. math:: \text{out} = (\text{self} < \text{other})
+    """Compute element-wise less comparison.
 
     Parameters
     ----------
@@ -237,18 +197,12 @@ def lt(self, other):
     dragon.Tensor
         The output tensor.
 
-    See Also
-    --------
-    `dragon.math.less(...)`_ : Compute element-wise less comparison.
-
     """
     return _binary_op(self, other, 'Less')
 
 
 def mul(self, other):
-    r"""Compute the element-wise multiplication.
-
-    .. math:: \text{out} = \text{self} \times \text{other}
+    """Compute the element-wise multiplication.
 
     Parameters
     ----------
@@ -260,36 +214,24 @@ def mul(self, other):
     dragon.Tensor
         The output tensor.
 
-    See Also
-    --------
-    `dragon.math.mul(...)`_ : Compute the element-wise multiplication.
-
     """
     return _binary_op(self, other, 'Mul')
 
 
 def neg(self):
-    r"""Compute the element-wise negative.
-
-    .. math:: y = -x
+    """Compute the element-wise negative.
 
     Returns
     -------
     dragon.Tensor
         The output tensor.
 
-    See Also
-    --------
-    `dragon.math.negative(...)`_ : Compute the element-wise negative.
-
     """
     return _unary_op(self, 'Neg')
 
 
 def radd(self, other):
-    r"""Compute the element-wise addition.
-
-    .. math:: \text{out} = \text{other} + \text{self}
+    """Compute the element-wise addition.
 
     Parameters
     ----------
@@ -301,18 +243,12 @@ def radd(self, other):
     dragon.Tensor
         The output tensor.
 
-    See Also
-    --------
-    `dragon.math.add(...)`_ : Compute the element-wise addition.
-
     """
     return _binary_op(other, self, 'Add')
 
 
 def rdiv(self, other):
-    r"""Compute the element-wise division.
-
-    .. math:: \text{out} = \text{other} \div \text{self}
+    """Compute the element-wise division.
 
     Parameters
     ----------
@@ -323,10 +259,6 @@ def rdiv(self, other):
     -------
     dragon.Tensor
         The output tensor.
-
-    See Also
-    --------
-    `dragon.math.div(...)`_ : Compute the element-wise division.
 
     """
     return _binary_op(other, self, 'Div')
@@ -355,9 +287,7 @@ def reshape(self, shape):
 
 
 def rmul(self, other):
-    r"""Compute the element-wise multiplication.
-
-    .. math:: \text{out} = \text{other} \times \text{self}
+    """Compute the element-wise multiplication.
 
     Parameters
     ----------
@@ -369,18 +299,12 @@ def rmul(self, other):
     dragon.Tensor
         The output tensor.
 
-    See Also
-    --------
-    `dragon.math.mul(...)`_ : Compute the element-wise multiplication.
-
     """
     return _binary_op(other, self, 'Mul')
 
 
 def rsub(self, other):
-    r"""Compute the element-wise subtraction.
-
-    .. math:: \text{out} = \text{other} - \text{self}
+    """Compute the element-wise subtraction.
 
     Parameters
     ----------
@@ -392,31 +316,19 @@ def rsub(self, other):
     dragon.Tensor
         The output tensor.
 
-    See Also
-    --------
-    `dragon.math.sub(...)`_ : Compute the element-wise subtraction.
-
     """
     return _binary_op(other, self, 'Sub')
 
 
 def setitem(self, key, value):
-    """Set the value at the specific indices.
+    """Set elements at the specific index.
 
     Parameters
     ----------
     key : Union[int, slice, dragon.Tensor]
-        The indices.
-    value : number or dragon.Tensor
-        The value.
-
-    See Also
-    --------
-    `dragon.assign(...)`_ : Assign the value to ref.
-
-    See Also
-    --------
-    `dragon.masked_assign(...)`_ : Assign the value to ref where mask is 1.
+        The index.
+    value : Union[dragon.Tensor, number]
+        The value to set.
 
     """
     if isinstance(key, Tensor):
@@ -427,12 +339,12 @@ def setitem(self, key, value):
 
 
 def set_value(self, value):
-    """Feed the const value to storage.
+    """Set value to the implementation.
 
     Parameters
     ----------
     value : array_like
-        The const value.
+        The value to set.
 
     Returns
     -------
@@ -445,9 +357,7 @@ def set_value(self, value):
 
 
 def sub(self, other):
-    r"""Compute the element-wise subtraction.
-
-    .. math:: \text{out} = \text{self} - \text{value}
+    """Compute the element-wise subtraction.
 
     Parameters
     ----------
@@ -458,10 +368,6 @@ def sub(self, other):
     -------
     dragon.Tensor
         The output tensor.
-
-    See Also
-    --------
-    `dragon.math.sub(...)`_ : Compute the element-wise subtraction.
 
     """
     return _binary_op(self, other, 'Sub')
@@ -547,7 +453,6 @@ Tensor.get_value = get_value
 Tensor.reshape = reshape
 Tensor.set_value = set_value
 Tensor.__add__ = add
-Tensor.__div__ = div
 Tensor.__ge__ = ge
 Tensor.__getitem__ = getitem
 Tensor.__gt__ = gt
@@ -556,7 +461,6 @@ Tensor.__lt__ = lt
 Tensor.__mul__ = mul
 Tensor.__neg__ = neg
 Tensor.__radd__ = radd
-Tensor.__rdiv__ = rdiv
 Tensor.__rmul__ = rmul
 Tensor.__rtruediv__ = rdiv
 Tensor.__rsub__ = rsub

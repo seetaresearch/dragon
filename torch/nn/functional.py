@@ -1043,7 +1043,7 @@ def normalize(input, p=2, dim=1, eps=1e-12, out=None):
     dim : int, optional, default=1
         The dimension to reduce.
     eps : float, optional, default=1e-12
-        The value of :math:`\epsilon`.
+        The value to :math:`\epsilon`.
     out : dragon.vm.torch.Tensor, optional
         The optional output tensor.
 

@@ -58,7 +58,7 @@ def batch_norm(
     momentum : float, optional, default=0.9
         The momentum for running average.
     eps : float, optional, default=1e-5
-        The value of :math:`\epsilon`.
+        The value to :math:`\epsilon`.
     use_stats : int, optional, default=-1
         Whether to use estimated statistics or not.
 
@@ -111,7 +111,7 @@ def group_norm(inputs, axis=-1, group=32, eps=1e-5, **kwargs):
     group : int, optional, default=32
         The group size.
     eps : float, optional, default=1e-5
-        The value of :math:`\epsilon`.
+        The value to :math:`\epsilon`.
 
     Returns
     -------
@@ -156,7 +156,7 @@ def instance_norm(inputs, axis=-1, eps=1e-5, **kwargs):
     axis : int, optional, default=-1
         The channel axis.
     eps : float, optional, default=1e-5
-        The value of :math:`\epsilon`.
+        The value to :math:`\epsilon`.
 
     Returns
     -------
@@ -201,7 +201,7 @@ def lp_normalize(inputs, axis=None, p=2, eps=1e-12, reduction='sum', **kwargs):
     axis : Union[int, Sequence[int]], optional
         The axis to compute the norm.
     eps : float, optional, default=1e-12
-        The value of :math:`\epsilon`.
+        The value to :math:`\epsilon`.
     reduction : {'sum', 'mean'}, optional
         The reduction method for norm.
 
@@ -260,7 +260,7 @@ def layer_norm(inputs, axis=-1, eps=1e-5, **kwargs):
     axis : int, optional, default=-1
         The channel axis.
     eps : float, optional, default=1e-5
-        The value of :math:`\epsilon`.
+        The value to :math:`\epsilon`.
 
     Returns
     -------
@@ -369,7 +369,7 @@ def sync_batch_norm(
     momentum : float, optional, default=0.9
         The momentum for average.
     eps : float, optional, default=1e-5
-        The value of :math:`\epsilon`.
+        The value to :math:`\epsilon`.
     use_stats : int, optional, default=-1
         Whether to use estimated statistics or not.
     process_group : ProcessGroup, optional

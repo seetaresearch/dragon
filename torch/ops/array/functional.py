@@ -106,7 +106,7 @@ def assign(out, starts, sizes, input):
 
 
 def cast(input, dtype='float32', inplace=False):
-    """Cast the data type of input to another.
+    """Cast the data type of input.
 
     Parameters
     ----------

@@ -7,13 +7,13 @@ dragon
   -------
 
   `class EagerTensor <dragon/EagerTensor.html>`_
-  : Tensor abstraction under the eager execution.
+  : Tensor abstraction for eager executing.
 
   `class GradientTape <dragon/GradientTape.html>`_
   : Record the operations for auto differentiation.
 
   `class Tensor <dragon/Tensor.html>`_
-  : Tensor abstraction under the graph execution.
+  : Tensor abstraction for graph executing.
 
   `class TensorSpec <dragon/TensorSpec.html>`_
   : Spec to describe properties of a tensor.
@@ -25,10 +25,10 @@ dragon
   ---------
 
   `arange(...) <dragon/arange.html>`_
-  : Return a tensor with evenly spaced values within a interval.
+  : Return a tensor of evenly spaced values within a interval.
 
   `assign(...) <dragon/assign.html>`_
-  : Assign the value to ref.
+  : Assign the value to input.
 
   `broadcast_to(...) <dragon/broadcast_to.html>`_
   : Broadcast input according to a given shape.
@@ -46,10 +46,10 @@ dragon
   : Concatenate the inputs along the given axis.
 
   `constant(...) <dragon/constant.html>`_
-  : Return a tensor taking the value content.
+  : Return a tensor initialized from the value.
 
   `copy(...) <dragon/copy.html>`_
-  : Copy the value to ref.
+  : Copy the input.
 
   `create_function(...) <dragon/create_function.html>`_
   : Create a callable graph from the specified outputs.
@@ -70,10 +70,10 @@ dragon
   : Return a tensor constructed as the identity matrix.
 
   `eye_like(...) <dragon/eye_like.html>`_
-  :Return a tensor shaping like another constructed as the identity matrix.
+  :Return a tensor of identity matrix with shape as the other.
 
   `fill(...) <dragon/fill.html>`_
-  : Return a tensor filled with the specific value.
+  : Return a tensor filled with the scalar value.
 
   `flatten(...) <dragon/flatten.html>`_
   : Flatten the input along the given axes.
@@ -97,22 +97,22 @@ dragon
   : Load a shared library.
 
   `masked_assign(...) <dragon/masked_assign.html>`_
-  : Assign the value to ref where mask is **1**.
+  : Assign the value to input where mask is 1.
 
   `masked_select(...) <dragon/masked_select.html>`_
-  : Select the elements where the given mask is **1**.
+  : Select the elements of input where mask is 1.
 
   `name_scope(...) <dragon/name_scope.html>`_
   : Context-manager to nest the name as prefix for operations.
 
   `nonzero(...) <dragon/nonzero.html>`_
-  : Return the indices of non-zero elements.
+  : Return the index of non-zero elements.
 
   `ones(...) <dragon/ones.html>`_
   : Return a tensor filled with ones.
 
   `ones_like(...) <dragon/ones_like.html>`_
-  : Return a tensor shaping like another filled with ones.
+  : Return a tensor of ones with shape as the other.
 
   `one_hot(...) <dragon/one_hot.html>`_
   : Return the one-hot representation for input.
@@ -163,7 +163,7 @@ dragon
   : Return a tensor filled with zeros.
 
   `zeros_like(...) <dragon/zeros_like.html>`_
-  : Return a tensor shaping like another filled with zeros.
+  : Return a tensor of zeros with shape as the other.
 
 .. toctree::
   :hidden:

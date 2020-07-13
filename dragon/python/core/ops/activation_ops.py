@@ -202,7 +202,7 @@ def elu(inputs, alpha=1., **kwargs):
     inputs : dragon.Tensor
         The input tensor.
     alpha : float, optional, default=1.
-        The value of :math:`\alpha`.
+        The value to :math:`\alpha`.
 
     Returns
     -------
@@ -247,7 +247,7 @@ def leaky_relu(inputs, alpha=0.2, **kwargs):
     inputs : dragon.Tensor
         The input tensor.
     alpha : number, optional, default=0.2
-        The value of :math:`\alpha`.
+        The value to :math:`\alpha`.
 
     Returns
     -------
@@ -466,9 +466,9 @@ def selu(inputs, alpha=1.67326, gamma=1.0507, **kwargs):
     inputs : dragon.Tensor
         The input tensor.
     alpha : float, optional, default=1.67326
-        The value of :math:`\alpha`.
+        The value to :math:`\alpha`.
     gamma : float, optional, default=1.0507
-        The value of :math:`\gamma`.
+        The value to :math:`\gamma`.
 
     Returns
     -------

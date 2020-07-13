@@ -35,9 +35,9 @@ def random_normal(
     shape : Sequence[Union[int, dragon.Tensor]]
         The shape of the tensor.
     mean : number, optional, default=0
-        The value of :math:`\mu`.
+        The value to :math:`\mu`.
     stddev : number, optional, default=1
-        The value of :math:`\sigma`.
+        The value to :math:`\sigma`.
     dtype : str, optional
         The optional data type.
     seed : int, optional
@@ -74,9 +74,9 @@ def random_uniform(
     shape : Sequence[Union[int, dragon.Tensor]]
         The shape of the tensor.
     minval : number, optional, default=0
-        The value of :math:`\alpha`.
+        The value to :math:`\alpha`.
     maxval : number, optional, default=1
-        The value of :math:`\beta`.
+        The value to :math:`\beta`.
     dtype : str, optional
         The optional data type.
     seed : int, optional
@@ -114,9 +114,9 @@ def truncated_normal(
     shape : Sequence[Union[int, dragon.Tensor]]
         The shape of the tensor.
     mean : number, optional, default=0
-        The value of :math:`\mu`.
+        The value to :math:`\mu`.
     stddev : number, optional, default=1
-        The value of :math:`\sigma`.
+        The value to :math:`\sigma`.
     dtype : str, optional
         The optional data type.
     seed : int, optional

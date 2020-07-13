@@ -2706,7 +2706,7 @@ class TestTensorOps(OpTestCase):
                 for a_shape, b_shape in self.binary_test_shapes:
                     data1, data2 = arange(a_shape, 1), arange(b_shape)
                     a, b = new_tensor(data1), new_tensor(data2)
-                    self.assertEqual(a.__rdiv__(b), data2 / data1)
+                    self.assertEqual(a.__rtruediv__(b), data2 / data1)
 
     def test_reshape(self):
         entries = [(0, 0), (0, -1)]

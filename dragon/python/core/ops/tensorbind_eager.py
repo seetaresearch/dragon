@@ -26,9 +26,7 @@ from dragon.core.ops import math_ops_lib
 
 
 def add(self, other):
-    r"""Compute the element-wise addition.
-
-    .. math:: \text{out} = \text{self} + \text{value}
+    """Compute the element-wise addition.
 
     Parameters
     ----------
@@ -39,10 +37,6 @@ def add(self, other):
     -------
     dragon.EagerTensor
         The output tensor.
-
-    See Also
-    --------
-    `dragon.math.add(...)`_ : Compute the element-wise addition.
 
     """
     return _binary_op(self, other, 'Add')
@@ -73,14 +67,14 @@ def astype(self, dtype, inplace=False):
 
 
 def constant(self, value=0):
-    r"""Fill self with a constant value.
+    r"""Fill self with a scalar value.
 
     .. math:: \text{self} \leftarrow \text{value}
 
     Parameters
     ----------
     value : number, optional, default=0
-        The constant value.
+        The value to fill.
 
     Returns
     -------
@@ -115,9 +109,7 @@ def copy(self):
 
 
 def div(self, other):
-    r"""Compute the element-wise division.
-
-    .. math:: \text{out} = \text{self} \div \text{value}
+    """Compute the element-wise division.
 
     Parameters
     ----------
@@ -129,18 +121,12 @@ def div(self, other):
     dragon.EagerTensor
         The output tensor.
 
-    See Also
-    --------
-    `dragon.math.div(...)`_ : Compute the element-wise division.
-
     """
     return _binary_op(self, other, 'Div')
 
 
 def ge(self, other):
-    r"""Compute element-wise greater-equal comparison.
-
-    .. math:: \text{out} = (\text{self} \geq \text{other})
+    """Compute element-wise greater-equal comparison.
 
     Parameters
     ----------
@@ -152,34 +138,22 @@ def ge(self, other):
     dragon.EagerTensor
         The output tensor.
 
-    See Also
-    --------
-    `dragon.math.greater_equal(...)`_ : Compute element-wise greater-equal comparison.
-
     """
     return _binary_op(self, other, 'GreaterEqual')
 
 
 def getitem(self, item):
-    """Select the elements at the specific indices.
+    """Select elements at the specific index.
 
     Parameters
     ----------
     item : Union[int, slice, dragon.EagerTensor]
-        The indices.
+        The index.
 
     Returns
     -------
     dragon.EagerTensor
         The output tensor.
-
-    See Also
-    --------
-    `dragon.slice(...)`_ : Select the elements according to the given sections.
-
-    See Also
-    --------
-    `dragon.masked_select(...)`_ : Select the elements where the given mask is 1.
 
     """
     if isinstance(item, EagerTensor):
@@ -189,16 +163,16 @@ def getitem(self, item):
         return _section_select(self, starts, sizes)
 
 
-def glorot_normal(self, mode='FAN_IN', scale=2.):
+def glorot_normal(self, mode='fan_in', scale=2.0):
     r"""Fill self from a glorot normal distribution.
 
-    .. math:: \text{self} \leftarrow N(0, \sqrt{\frac{scale}{\text{FAN}}})
+    .. math:: \text{self} \sim \mathcal{N}(0, \sqrt{\frac{scale}{\text{fan}}})
 
     Parameters
     ----------
-    mode : {'FAN_IN, 'FAN_OUT', 'FAN_AVG'}, optional
+    mode : {'fan_in, 'fan_out', 'fan_avg'}, optional
         The mode to compute fans.
-    scale : number, optional, default=2.
+    scale : float, optional, default=2.0
         The scale factor of distribution.
 
     Returns
@@ -217,19 +191,17 @@ def glorot_normal(self, mode='FAN_IN', scale=2.):
         ).apply(shape, out=self)
 
 
-def glorot_uniform(self, mode='FAN_IN', scale=3.):
+def glorot_uniform(self, mode='fan_in', scale=3.0):
     r"""Fill self from a glorot uniform distribution.
 
-    .. math:: \text{self} \leftarrow U(
-                -\sqrt{\frac{scale}{\text{FAN}}},
-                \sqrt{\frac{scale}{\text{FAN}}}
-            )
+    .. math:: \text{self} \sim \mathcal{U}(-\sqrt{\frac{scale}{\text{fan}}},
+                                            \sqrt{\frac{scale}{\text{fan}}})
 
     Parameters
     ----------
-    mode : {'FAN_IN, 'FAN_OUT', 'FAN_AVG'}, optional
+    mode : {'fan_in, 'fan_out', 'fan_avg'}, optional
         The mode to compute fans.
-    scale : number, optional, default=3.
+    scale : float, optional, default=3.0
         The scale factor of distribution.
 
     Returns
@@ -249,9 +221,7 @@ def glorot_uniform(self, mode='FAN_IN', scale=3.):
 
 
 def gt(self, other):
-    r"""Compute element-wise greater comparison.
-
-    .. math:: \text{out} = (\text{self} > \text{other})
+    """Compute element-wise greater comparison.
 
     Parameters
     ----------
@@ -263,18 +233,12 @@ def gt(self, other):
     dragon.EagerTensor
         The output tensor.
 
-    See Also
-    --------
-    `dragon.math.greater(...)`_ : Compute element-wise greater comparison.
-
     """
     return _binary_op(self, other, 'Greater')
 
 
 def iadd(self, other):
-    r"""Compute the element-wise addition.
-
-    .. math:: \text{self} \mathrel{+}= \text{other}
+    """Compute the element-wise addition.
 
     Parameters
     ----------
@@ -286,18 +250,12 @@ def iadd(self, other):
     dragon.EagerTensor
         The self.
 
-    See Also
-    --------
-    `dragon.math.add(...)`_ : Compute the element-wise addition.
-
     """
     return _binary_op(self, other, 'Add', [self])
 
 
 def idiv(self, other):
-    r"""Compute the element-wise division.
-
-    .. math:: \text{self} \mathrel{\div}= \text{other}
+    """Compute the element-wise division.
 
     Parameters
     ----------
@@ -309,18 +267,12 @@ def idiv(self, other):
     dragon.EagerTensor
         The self.
 
-    See Also
-    --------
-    `dragon.math.div(...)`_ : Compute the element-wise division.
-
     """
     return _binary_op(self, other, 'Div', [self])
 
 
 def imul(self, other):
-    r"""Compute the element-wise multiplication.
-
-    .. math:: \text{self} \mathrel{\times}= \text{other}
+    """Compute the element-wise multiplication.
 
     Parameters
     ----------
@@ -332,18 +284,12 @@ def imul(self, other):
     dragon.EagerTensor
         The self.
 
-    See Also
-    --------
-    `dragon.math.mul(...)`_ : Compute the element-wise multiplication.
-
     """
     return _binary_op(self, other, 'Mul', [self])
 
 
 def isub(self, other):
-    r"""Compute the element-wise division.
-
-    .. math:: \text{self} \mathrel{-}= \text{other}
+    """Compute the element-wise subtraction.
 
     Parameters
     ----------
@@ -355,18 +301,12 @@ def isub(self, other):
     dragon.EagerTensor
         The self.
 
-    See Also
-    --------
-    `dragon.math.sub(...)`_ : Compute the element-wise subtraction.
-
     """
     return _binary_op(self, other, 'Sub', [self])
 
 
 def le(self, other):
-    r"""Compute element-wise less-equal comparison.
-
-    .. math:: \text{out} = (\text{self} \leq \text{other})
+    """Compute element-wise less-equal comparison.
 
     Parameters
     ----------
@@ -377,19 +317,13 @@ def le(self, other):
     -------
     dragon.EagerTensor
         The output tensor.
-
-    See Also
-    --------
-    `dragon.math.less_equal(...)`_ : Compute element-wise less-equal comparison.
 
     """
     return _binary_op(self, other, 'LessEqual')
 
 
 def lt(self, other):
-    r"""Compute element-wise less comparison.
-
-    .. math:: \text{out} = (\text{self} < \text{other})
+    """Compute element-wise less comparison.
 
     Parameters
     ----------
@@ -401,18 +335,12 @@ def lt(self, other):
     dragon.EagerTensor
         The output tensor.
 
-    See Also
-    --------
-    `dragon.math.less(...)`_ : Compute element-wise less comparison.
-
     """
     return _binary_op(self, other, 'Less')
 
 
 def mul(self, other):
-    r"""Compute the element-wise multiplication.
-
-    .. math:: \text{out} = \text{self} \times \text{other}
+    """Compute the element-wise multiplication.
 
     Parameters
     ----------
@@ -424,27 +352,17 @@ def mul(self, other):
     dragon.EagerTensor
         The output tensor.
 
-    See Also
-    --------
-    `dragon.math.mul(...)`_ : Compute the element-wise multiplication.
-
     """
     return _binary_op(self, other, 'Mul')
 
 
 def neg(self):
-    r"""Compute the element-wise negative.
-
-    .. math:: y = -x
+    """Compute the element-wise negative.
 
     Returns
     -------
     dragon.EagerTensor
         The output tensor.
-
-    See Also
-    --------
-    `dragon.math.negative(...)`_ : Compute the element-wise negative.
 
     """
     return _unary_op(self, 'Neg')
@@ -453,14 +371,14 @@ def neg(self):
 def normal(self, mean=0, std=1):
     r"""Fill self from a normal distribution.
 
-    .. math:: \text{self} \leftarrow N(\mu, \sigma)
+    .. math:: \text{self} \sim \mathcal{N}(\mu, \sigma)
 
     Parameters
     ----------
     mean : number, optional, default=0
-        The value of :math:`\mu`.
+        The value to :math:`\mu`.
     std : number, optional, default=1
-        The value of :math:`\sigma`.
+        The value to :math:`\sigma`.
 
     Returns
     -------
@@ -479,9 +397,7 @@ def normal(self, mean=0, std=1):
 
 
 def radd(self, other):
-    r"""Compute the element-wise addition.
-
-    .. math:: \text{out} = \text{other} + \text{self}
+    """Compute the element-wise addition.
 
     Parameters
     ----------
@@ -493,18 +409,12 @@ def radd(self, other):
     dragon.EagerTensor
         The output tensor.
 
-    See Also
-    --------
-    `dragon.math.add(...)`_ : Compute the element-wise addition.
-
     """
     return _binary_op(other, self, 'Add')
 
 
 def rdiv(self, other):
-    r"""Compute the element-wise division.
-
-    .. math:: \text{out} = \text{value} \div \text{self}
+    """Compute the element-wise division.
 
     Parameters
     ----------
@@ -515,10 +425,6 @@ def rdiv(self, other):
     -------
     dragon.EagerTensor
         The output tensor.
-
-    See Also
-    --------
-    `dragon.math.div(...)`_ : Compute the element-wise division.
 
     """
     return _binary_op(other, self, 'Div')
@@ -547,9 +453,7 @@ def reshape(self, shape):
 
 
 def rmul(self, other):
-    r"""Compute the element-wise multiplication.
-
-    .. math:: \text{out} = \text{other} \times \text{self}
+    """Compute the element-wise multiplication.
 
     Parameters
     ----------
@@ -561,18 +465,12 @@ def rmul(self, other):
     dragon.EagerTensor
         The output tensor.
 
-    See Also
-    --------
-    `dragon.math.mul(...)`_ : Compute the element-wise multiplication.
-
     """
     return _binary_op(other, self, 'Mul')
 
 
 def rsub(self, other):
-    r"""Compute the element-wise subtraction.
-
-    .. math:: \text{out} = \text{other} - \text{self}
+    """Compute the element-wise subtraction.
 
     Parameters
     ----------
@@ -584,31 +482,19 @@ def rsub(self, other):
     dragon.EagerTensor
         The output tensor.
 
-    See Also
-    --------
-    `dragon.math.sub(...)`_ : Compute the element-wise subtraction.
-
     """
     return _binary_op(other, self, 'Sub')
 
 
 def setitem(self, key, value):
-    """Set the value at the specific indices.
+    """Set elements at the specific index.
 
     Parameters
     ----------
     key : Union[int, slice, dragon.EagerTensor]
-        The indices.
-    value : number or dragon.EagerTensor
-        The value.
-
-    See Also
-    --------
-    `dragon.assign(...)`_ : Assign the value to ref.
-
-    See Also
-    --------
-    `dragon.masked_assign(...)`_ : Assign the value to ref where mask is 1.
+        The index.
+    value : Union[dragon.EagerTensor, number]
+        The value to set.
 
     """
     if isinstance(key, EagerTensor):
@@ -619,9 +505,7 @@ def setitem(self, key, value):
 
 
 def sub(self, other):
-    r"""Compute the element-wise subtraction.
-
-    .. math:: \text{out} = \text{self} - \text{other}
+    """Compute the element-wise subtraction.
 
     Parameters
     ----------
@@ -633,10 +517,6 @@ def sub(self, other):
     dragon.EagerTensor
         The output tensor.
 
-    See Also
-    --------
-    `dragon.math.sub(...)`_ : Compute the element-wise subtraction.
-
     """
     return _binary_op(self, other, 'Sub')
 
@@ -644,14 +524,14 @@ def sub(self, other):
 def truncated_normal(self, mean=0, std=1):
     r"""Fill self from a truncated normal distribution.
 
-    .. math:: \text{self} \leftarrow TN(\mu, \sigma, \mu - 2\sigma, \mu + 2\sigma)
+    .. math:: \text{self} \sim \mathcal{TN}(\mu, \sigma, \mu - 2\sigma, \mu + 2\sigma)
 
     Parameters
     ----------
     mean : number, optional, default=0
-        The value of :math:`\mu`.
+        The value to :math:`\mu`.
     std : number, optional, default=1
-        The value of :math:`\sigma`.
+        The value to :math:`\sigma`.
 
     Returns
     -------
@@ -672,14 +552,14 @@ def truncated_normal(self, mean=0, std=1):
 def uniform(self, low=0, high=1):
     r"""Fill self from a uniform distribution.
 
-    .. math:: \text{self} \leftarrow U(\alpha, \beta)
+    .. math:: \text{self} \sim \mathcal{U}(\alpha, \beta)
 
     Parameters
     ----------
     low : number, optional, default=0
-        The value of :math:`\alpha`.
+        The value to :math:`\alpha`.
     high : number, optional, default=1
-        The value of :math:`\beta`.
+        The value to :math:`\beta`.
 
     Returns
     -------
@@ -789,12 +669,10 @@ EagerTensor.reshape = reshape
 EagerTensor.truncated_normal = truncated_normal
 EagerTensor.uniform = uniform
 EagerTensor.__add__ = add
-EagerTensor.__div__ = div
 EagerTensor.__ge__ = ge
 EagerTensor.__getitem__ = getitem
 EagerTensor.__gt__ = gt
 EagerTensor.__iadd__ = iadd
-EagerTensor.__idiv__ = idiv
 EagerTensor.__imul__ = imul
 EagerTensor.__isub__ = isub
 EagerTensor.__itruediv__ = idiv
@@ -803,7 +681,6 @@ EagerTensor.__lt__ = lt
 EagerTensor.__mul__ = mul
 EagerTensor.__neg__ = neg
 EagerTensor.__radd__ = radd
-EagerTensor.__rdiv__ = rdiv
 EagerTensor.__rmul__ = rmul
 EagerTensor.__rsub__ = rsub
 EagerTensor.__rtruediv__ = rdiv

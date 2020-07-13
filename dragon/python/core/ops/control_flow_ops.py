@@ -26,23 +26,23 @@ from dragon.core.util import nest
 @ArgHelper.repeated_desc('starts')
 @ArgHelper.repeated_desc('sizes')
 def assign(inputs, starts=None, sizes=None, **kwargs):
-    r"""Assign the value to ref.
+    r"""Assign the value to input.
 
-    .. math:: \text{Ref}[start:start + size, ...] = \text{Value}
+    .. math:: \text{input}[\text{start}:\text{start} + \text{size}, ...] = \text{value}
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The **ref** and **value**.
+        The input and value tensor.
     starts : Sequence[Union[int, dragon.Tensor]], optional
-        The start pos of each dimension.
+        The start location for each dimension.
     sizes : Sequence[Union[int, dragon.Tensor]], optional
-        The size of each dimension.
+        The number of elements assigned from start.
 
     Returns
     -------
     dragon.Tensor
-        The **ref**.
+        The input tensor.
 
     """
     args = parse_args(locals())
@@ -104,24 +104,24 @@ def copy(inputs, **kwargs):
 
 @OpSchema.num_inputs(3)
 def masked_assign(inputs, **kwargs):
-    r"""Assign the value to ref where mask is **1**.
+    r"""Assign the value to input where mask is 1.
 
     .. math::
-        \text{Ref}[i] =
-        \begin{cases}
-            \text{Value}[i], & \text{ if } \text{Mask}[i] = 1 \\
-            \text{Ref}[i], & \text{ otherwise }
+        \text{input}[i] =
+            \begin{cases}
+                \text{value}[i], & \text{ if } \text{mask}[i] = 1 \\
+                \text{input}[i], & \text{ otherwise }
         \end{cases}
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The **ref**, **value** and **mask** tensor.
+        The input, value and mask tensor.
 
     Returns
     -------
     dragon.Tensor
-        The **ref** tensor..
+        The input tensor.
 
     """
     args = parse_args(locals())

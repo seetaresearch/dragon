@@ -27,7 +27,7 @@ def arange(
     device=None,
     requires_grad=False,
 ):
-    r"""Return a tensor with evenly spaced values within a interval.
+    """Return a tensor of evenly spaced values within a interval.
 
     Specify ``start`` and ``end`` to determine an interval:
 
@@ -79,7 +79,7 @@ def arange(
             device if device else cpp.device(),
             num_args=len(slice_args),
             dtype=dtype if dtype else 'int64',
-        ).apply(slice_args)
+        ).apply(slice_args, out)
     out.requires_grad = requires_grad
     return out
 
@@ -145,51 +145,21 @@ def fill_like(out, shape_like, value):
         .apply(out, [], shape_like)
 
 
-def normal(*size, **kwargs):
-    """Return a tensor with a normal distribution.
-
-    Parameters
-    ----------
-    size : int...
-        The size(s) indicating the out shape.
-    mean : number, optional, default=0
-        The mean of distribution.
-    std : number, optional, default=1
-        The stddev of distribution.
-    out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
-    dtype : str, optional, default='float32'
-        The optional data type.
-    device : dragon.vm.torch.device, optional
-        The optional device of returned tensor.
-    requires_grad : bool, optional, default=False
-        **True** to record gradient for returned tensor.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The output tensor.
-
-    """
-    out = kwargs.get('out', utils.new_leaf(size, kwargs))
-    return normal_fill(out, kwargs.get('mean', 0), kwargs.get('std', 1))
-
-
-def normal_fill(out, mean=0, std=1):
-    """Fill a tensor with a normal distribution."""
-    shape = out.shape
+def normal_fill(input, mean=0, std=1):
+    """Fill input from the normal distribution."""
+    shape = input.shape
     return _functions.RandomNormal \
         .instantiate(
-            out.device,
+            input.device,
             ndim=len(shape),
             mean=float(mean),
             std=float(std),
-            dtype=out.dtype,
-        ).apply(out, shape)
+            dtype=input.dtype,
+        ).apply(input, shape)
 
 
 def ones(*size, **kwargs):
-    r"""Return a tensor with value **1** filled.
+    r"""Return a tensor filled with ones.
 
     .. math:: \text{out} \leftarrow 1
 
@@ -217,7 +187,7 @@ def ones(*size, **kwargs):
 
 
 def ones_like(input, **kwargs):
-    r"""Return a tensor with value **1** filled, shape as input.
+    r"""Return a tensor of ones with shape as the other.
 
     .. math:: \text{out} \leftarrow 1
 
@@ -245,7 +215,7 @@ def ones_like(input, **kwargs):
 
 
 def rand(*size, **kwargs):
-    """Return a float tensor with a uniform distribution of U(0, 1).
+    """Return a tensor from the uniform distribution of U(0, 1).
 
     Parameters
     ----------
@@ -271,7 +241,7 @@ def rand(*size, **kwargs):
 
 
 def randn(*size, **kwargs):
-    """Return a float tensor with a normal distribution of N(0, 1).
+    """Return a tensor from the normal distribution of N(0, 1).
 
     Parameters
     ----------
@@ -296,51 +266,21 @@ def randn(*size, **kwargs):
     return normal_fill(out, 0, 1)
 
 
-def uniform(*size, **kwargs):
-    """Return a tensor with a normal distribution.
-
-    Parameters
-    ----------
-    size : int...
-        The size(s) indicating the out shape.
-    low : number, optional, default=0
-        The low bound of distribution.
-    high : number, optional, default=1
-        The high bound of distribution.
-    out : dragon.vm.torch.Tensor, optional
-        The optional output tensor.
-    dtype : str, optional, default='float32'
-        The optional data type.
-    device : dragon.vm.torch.device, optional
-        The optional device of returned tensor.
-    requires_grad : bool, optional, default=False
-        **True** to record gradient for returned tensor.
-
-    Returns
-    -------
-    dragon.vm.torch.Tensor
-        The output tensor.
-
-    """
-    out = kwargs.get('out', utils.new_leaf(size, kwargs))
-    return uniform_fill(out, kwargs.get('low', 0), kwargs.get('high', 1))
-
-
-def uniform_fill(out, low=0, high=1):
-    """Fill a tensor with a uniform distribution."""
-    shape = out.shape
+def uniform_fill(input, low=0, high=1):
+    """Fill input from the uniform distribution."""
+    shape = input.shape
     return _functions.RandomUniform \
         .instantiate(
-            out.device,
+            input.device,
             ndim=len(shape),
             low=float(low),
             high=float(high),
-            dtype=out.dtype,
-        ).apply(out, shape)
+            dtype=input.dtype,
+        ).apply(input, shape)
 
 
 def zeros(*size, **kwargs):
-    r"""Return a tensor with value **0** filled.
+    r"""Return a tensor filled with zeros.
 
     .. math:: \text{out} \leftarrow 0
 
@@ -368,7 +308,7 @@ def zeros(*size, **kwargs):
 
 
 def zeros_like(input, **kwargs):
-    r"""Return a tensor with value **0** filled, shape as input.
+    r"""Return a tensor of zeros with shape as the other.
 
     .. math:: \text{out} \leftarrow 0
 

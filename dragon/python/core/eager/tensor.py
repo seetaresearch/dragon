@@ -9,7 +9,7 @@
 #
 # ------------------------------------------------------------
 
-"""Define the eager tensor abstraction."""
+"""The eager executing tensor."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -23,10 +23,9 @@ from dragon.core.framework import workspace
 
 
 class EagerTensor(Tensor):
-    """Tensor abstraction under the eager execution.
+    """Tensor abstraction for eager executing.
 
-    This abstraction involves the garbage collection,
-    thus, life-cycle should be considered to avoid memory leak.
+    Examples:
 
     ```python
     # Create a tensor with shape and dtype
@@ -173,12 +172,12 @@ class EagerTensor(Tensor):
         return self._impl.size
 
     def astype(self, dtype, inplace=False):
-        """Cast the data type to a specific one.
+        """Cast to the specified data type.
 
         Parameters
         ----------
         dtype : str
-            The specific data type.
+            The data type to cast to.
         inplace : bool, optional, default=False
             Whether to do the cast in-place.
 
@@ -194,14 +193,14 @@ class EagerTensor(Tensor):
         """
 
     def constant(self, value=0):
-        r"""Fill self with a constant value.
+        r"""Fill self from a scalar value.
 
         .. math:: \text{self} \leftarrow \text{value}
 
         Parameters
         ----------
         value : number, optional, default=0
-            The constant value.
+            The value to fill.
 
         Returns
         -------
@@ -211,7 +210,7 @@ class EagerTensor(Tensor):
         """
 
     def copy(self):
-        """Return a tensor with containing data copied.
+        """Return a tensor with data copied.
 
         Returns
         -------
@@ -220,32 +219,32 @@ class EagerTensor(Tensor):
 
         See Also
         --------
-        `dragon.copy(...)`_ : Copy the value to ref.
+        `dragon.copy(...)`_ : Copy the input.
 
         """
 
     def get_value(self):
-        """Return the value from storage.
+        """Return the value of implementation.
 
         Returns
         -------
         numpy.ndarray
-            The shallow copied value.
+            The zero-copied value.
 
         """
         return self.numpy()
 
-    def glorot_normal(self, mode='FAN_IN', scale=2.):
+    def glorot_normal(self, mode='fan_in', scale=2.0):
         r"""Fill self from a glorot normal distribution.
 
-        .. math:: \text{self} \leftarrow N(0, \sqrt{\frac{scale}{\text{FAN}}})
+        .. math:: \text{self} \sim \mathcal{N}(0, \sqrt{\frac{scale}{\text{fan}}})
 
         Parameters
         ----------
-        mode : {'FAN_IN, 'FAN_OUT', 'FAN_AVG'}, optional
+        mode : {'fan_in, 'fan_out', 'fan_avg'}, optional
             The mode to compute fans.
-        scale : number, optional, default=2.
-            The scale factor of distribution.
+        scale : float, optional, default=2.0
+            The scale factor to distribution.
 
         Returns
         -------
@@ -254,20 +253,18 @@ class EagerTensor(Tensor):
 
         """
 
-    def glorot_uniform(self, mode='FAN_IN', scale=3.):
+    def glorot_uniform(self, mode='fan_in', scale=3.0):
         r"""Fill self from a glorot uniform distribution.
 
-        .. math:: \text{self} \leftarrow U(
-                    -\sqrt{\frac{scale}{\text{FAN}}},
-                    \sqrt{\frac{scale}{\text{FAN}}}
-                )
+        .. math:: \text{self} \sim \mathcal{U}(-\sqrt{\frac{scale}{\text{fan}}},
+                                                \sqrt{\frac{scale}{\text{fan}}})
 
         Parameters
         ----------
-        mode : {'FAN_IN, 'FAN_OUT', 'FAN_AVG'}, optional
+        mode : {'fan_in, 'fan_out', 'fan_avg'}, optional
             The mode to compute fans.
-        scale : number, optional, default=3.
-            The scale factor of distribution.
+        scale : float, optional, default=3.0
+            The scale factor to distribution.
 
         Returns
         -------
@@ -295,14 +292,14 @@ class EagerTensor(Tensor):
     def normal(self, mean=0, std=1):
         r"""Fill self from a normal distribution.
 
-        .. math:: \text{self} \leftarrow N(\mu, \sigma)
+        .. math:: \text{self} \sim \mathcal{N}(\mu, \sigma)
 
         Parameters
         ----------
         mean : number, optional, default=0
-            The value of :math:`\mu`.
+            The value to :math:`\mu`.
         std : number, optional, default=1
-            The value of :math:`\sigma`.
+            The value to :math:`\sigma`.
 
         Returns
         -------
@@ -331,12 +328,12 @@ class EagerTensor(Tensor):
         """
 
     def set_value(self, value):
-        """Map the value to storage.
+        """Set value to the implementation.
 
         Parameters
         ----------
         value : array_like
-            The value.
+            The value to set.
 
         Returns
         -------
@@ -352,14 +349,14 @@ class EagerTensor(Tensor):
     def truncated_normal(self, mean=0, std=1):
         r"""Fill self from a truncated normal distribution.
 
-        .. math:: \text{self} \leftarrow TN(\mu, \sigma, \mu - 2\sigma, \mu + 2\sigma)
+        .. math:: \text{self} \sim \mathcal{TN}(\mu, \sigma, \mu - 2\sigma, \mu + 2\sigma)
 
         Parameters
         ----------
         mean : number, optional, default=0
-            The value of :math:`\mu`.
+            The value to :math:`\mu`.
         std : number, optional, default=1
-            The value of :math:`\sigma`.
+            The value to :math:`\sigma`.
 
         Returns
         -------
@@ -369,16 +366,16 @@ class EagerTensor(Tensor):
         """
 
     def uniform(self, low=0, high=1):
-        self.self__ = r"""Fill self from a uniform distribution.
+        r"""Fill self from an uniform distribution.
 
-        .. math:: \text{self} \leftarrow U(\alpha, \beta)
+        .. math:: \text{self} \sim \mathcal{U}(\alpha, \beta)
 
         Parameters
         ----------
         low : number, optional, default=0
-            The value of :math:`\alpha`.
+            The value to :math:`\alpha`.
         high : number, optional, default=1
-            The value of :math:`\beta`.
+            The value to :math:`\beta`.
 
         Returns
         -------
@@ -404,9 +401,7 @@ class EagerTensor(Tensor):
             context.get_eager_scope())).FromShape(shape, dtype)
 
     def __add__(self, other):
-        r"""Compute the element-wise addition.
-
-        .. math:: \text{out} = \text{self} + \text{value}
+        """Compute the element-wise addition.
 
         Parameters
         ----------
@@ -418,10 +413,6 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The output tensor.
 
-        See Also
-        --------
-        `dragon.math.add(...)`_ : Compute the element-wise addition.
-
         """
 
     def __del__(self):
@@ -429,27 +420,6 @@ class EagerTensor(Tensor):
             # Always reuse the leaf tensors.
             # PyGC will detect them automatically.
             self._gc.collect(self.id)
-
-    def __div__(self, other):
-        r"""Compute the element-wise division.
-
-        .. math:: \text{out} = \text{self} \div \text{value}
-
-        Parameters
-        ----------
-        other : Union[dragon.EagerTensor, number]
-            The value to divide.
-
-        Returns
-        -------
-        dragon.EagerTensor
-            The output tensor.
-
-        See Also
-        --------
-        `dragon.math.div(...)`_ : Compute the element-wise division.
-
-        """
 
     def __float__(self):
         """Return a float python scalar.
@@ -463,9 +433,7 @@ class EagerTensor(Tensor):
         return float(self.numpy())
 
     def __ge__(self, other):
-        r"""Compute element-wise greater-equal comparison.
-
-        .. math:: \text{out} = (\text{self} \geq \text{other})
+        """Compute element-wise greater-equal comparison.
 
         Parameters
         ----------
@@ -476,40 +444,26 @@ class EagerTensor(Tensor):
         -------
         dragon.EagerTensor
             The output tensor.
-
-        See Also
-        --------
-        `dragon.math.greater_equal(...)`_ : Compute element-wise greater-equal comparison.
 
         """
 
     def __getitem__(self, item):
-        """Select the elements at the specific indices.
+        """Select elements at the specific index.
 
         Parameters
         ----------
         item : Union[int, slice, dragon.EagerTensor]
-            The indices.
+            The index.
 
         Returns
         -------
         dragon.EagerTensor
             The output tensor.
 
-        See Also
-        --------
-        `dragon.slice(...)`_ : Select the elements according to the given sections.
-
-        See Also
-        --------
-        `dragon.masked_select(...)`_ : Select the elements where the given mask is 1.
-
         """
 
     def __gt__(self, other):
-        r"""Compute element-wise greater comparison.
-
-        .. math:: \text{out} = (\text{self} > \text{other})
+        """Compute element-wise greater comparison.
 
         Parameters
         ----------
@@ -520,10 +474,6 @@ class EagerTensor(Tensor):
         -------
         dragon.EagerTensor
             The output tensor.
-
-        See Also
-        --------
-        `dragon.math.greater(...)`_ : Compute element-wise greater comparison.
 
         """
 
@@ -531,9 +481,7 @@ class EagerTensor(Tensor):
         return id(self)
 
     def __iadd__(self, other):
-        r"""Compute the element-wise addition.
-
-        .. math:: \text{self} \mathrel{+}= \text{other}
+        """Compute the element-wise addition.
 
         Parameters
         ----------
@@ -545,37 +493,10 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The self.
 
-        See Also
-        --------
-        `dragon.math.add(...)`_ : Compute the element-wise addition.
-
-        """
-
-    def __idiv__(self, other):
-        r"""Compute the element-wise division.
-
-        .. math:: \text{self} \mathrel{\div}= \text{other}
-
-        Parameters
-        ----------
-        other : Union[dragon.EagerTensor, number]
-            The value to divide.
-
-        Returns
-        -------
-        dragon.EagerTensor
-            The self.
-
-        See Also
-        --------
-        `dragon.math.div(...)`_ : Compute the element-wise division.
-
         """
 
     def __imul__(self, other):
-        r"""Compute the element-wise multiplication.
-
-        .. math:: \text{self} \mathrel{\times}= \text{other}
+        """Compute the element-wise multiplication.
 
         Parameters
         ----------
@@ -587,27 +508,21 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The self.
 
-        See Also
-        --------
-        `dragon.math.mul(...)`_ : Compute the element-wise multiplication.
-
         """
 
     def __int__(self):
-        """Return a int python scalar.
+        """Return a integer python scalar.
 
         Returns
         -------
         int
-            The int value.
+            The integer value.
 
         """
         return int(self.__float__())
 
     def __isub__(self, other):
-        r"""Compute the element-wise division.
-
-        .. math:: \text{self} \mathrel{-}= \text{other}
+        """Compute the element-wise subtraction.
 
         Parameters
         ----------
@@ -619,16 +534,10 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The self.
 
-        See Also
-        --------
-        `dragon.math.sub(...)`_ : Compute the element-wise subtraction.
-
         """
 
     def __le__(self, other):
-        r"""Compute element-wise less-equal comparison.
-
-        .. math:: \text{out} = (\text{self} \leq \text{other})
+        """Compute element-wise less-equal comparison.
 
         Parameters
         ----------
@@ -639,17 +548,11 @@ class EagerTensor(Tensor):
         -------
         dragon.EagerTensor
             The output tensor.
-
-        See Also
-        --------
-        `dragon.math.less_equal(...)`_ : Compute element-wise less-equal comparison.
 
         """
 
     def __lt__(self, other):
-        r"""Compute element-wise less comparison.
-
-        .. math:: \text{out} = (\text{self} < \text{other})
+        """Compute element-wise less comparison.
 
         Parameters
         ----------
@@ -661,16 +564,10 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The output tensor.
 
-        See Also
-        --------
-        `dragon.math.less(...)`_ : Compute element-wise less comparison.
-
         """
 
     def __mul__(self, other):
-        r"""Compute the element-wise multiplication.
-
-        .. math:: \text{out} = \text{self} \times \text{other}
+        """Compute the element-wise multiplication.
 
         Parameters
         ----------
@@ -682,32 +579,20 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The output tensor.
 
-        See Also
-        --------
-        `dragon.math.mul(...)`_ : Compute the element-wise multiplication.
-
         """
 
     def __neg__(self):
-        r"""Compute the element-wise negative.
-
-        .. math:: y = -x
+        """Compute the element-wise negative.
 
         Returns
         -------
         dragon.EagerTensor
             The output tensor.
 
-        See Also
-        --------
-        `dragon.math.negative(...)`_ : Compute the element-wise negative.
-
         """
 
     def __radd__(self, other):
-        r"""Compute the element-wise addition.
-
-        .. math:: \text{out} = \text{other} + \text{self}
+        """Compute the element-wise addition.
 
         Parameters
         ----------
@@ -718,10 +603,6 @@ class EagerTensor(Tensor):
         -------
         dragon.EagerTensor
             The output tensor.
-
-        See Also
-        --------
-        `dragon.math.add(...)`_ : Compute the element-wise addition.
 
         """
 
@@ -738,10 +619,8 @@ class EagerTensor(Tensor):
             .format(shape_str, self.dtype, str(self._device))
         return content_str + meta_str
 
-    def __rdiv__(self, other):
-        r"""Compute the element-wise division.
-
-        .. math:: \text{out} = \text{value} \div \text{self}
+    def __rtruediv__(self, other):
+        """Compute the element-wise division.
 
         Parameters
         ----------
@@ -753,16 +632,10 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The output tensor.
 
-        See Also
-        --------
-        `dragon.math.div(...)`_ : Compute the element-wise division.
-
         """
 
     def __rmul__(self, other):
-        r"""Compute the element-wise multiplication.
-
-        .. math:: \text{out} = \text{other} \times \text{self}
+        """Compute the element-wise multiplication.
 
         Parameters
         ----------
@@ -774,16 +647,10 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The output tensor.
 
-        See Also
-        --------
-        `dragon.math.mul(...)`_ : Compute the element-wise multiplication.
-
         """
 
     def __rsub__(self, other):
-        r"""Compute the element-wise subtraction.
-
-        .. math:: \text{out} = \text{other} - \text{self}
+        """Compute the element-wise subtraction.
 
         Parameters
         ----------
@@ -795,36 +662,22 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The output tensor.
 
-        See Also
-        --------
-        `dragon.math.sub(...)`_ : Compute the element-wise subtraction.
-
         """
 
     def __setitem__(self, key, value):
-        """Set the value at the specific indices.
+        """Set elements at the specific index.
 
         Parameters
         ----------
         key : Union[int, slice, dragon.EagerTensor]
-            The indices.
-        value : number or dragon.EagerTensor
-            The value.
-
-        See Also
-        --------
-        `dragon.assign(...)`_ : Assign the value to ref.
-
-        See Also
-        --------
-        `dragon.masked_assign(...)`_ : Assign the value to ref where mask is 1.
+            The index.
+        value : Union[dragon.EagerTensor, number]
+            The value to set.
 
         """
 
     def __sub__(self, other):
-        r"""Compute the element-wise subtraction.
-
-        .. math:: \text{out} = \text{self} - \text{other}
+        """Compute the element-wise subtraction.
 
         Parameters
         ----------
@@ -836,8 +689,19 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The output tensor.
 
-        See Also
-        --------
-        `dragon.math.sub(...)`_ : Compute the element-wise subtraction.
+        """
+
+    def __truediv__(self, other):
+        """Compute the element-wise division.
+
+        Parameters
+        ----------
+        other : Union[dragon.EagerTensor, number]
+            The value to divide.
+
+        Returns
+        -------
+        dragon.EagerTensor
+            The output tensor.
 
         """

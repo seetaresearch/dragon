@@ -259,7 +259,7 @@ class Function(object):
 
         """
         self.outputs = [Tensor(name) for name in graph_def.output]
-        self.inputs = [Tensor(name).variable() for name in graph_def.input]
+        self.inputs = [Tensor(name).constant() for name in graph_def.input]
 
         # Fill with all known graph elements.
         add_device_option(graph_def)
@@ -294,7 +294,7 @@ def create_function(inputs=None, outputs=None, givens=None, updater=None):
     Tensors that catch any operators can be used to create a graph:
 
     ```python
-    x = dragon.Tensor('x', dtype='float32').variable()
+    x = dragon.Tensor('x', dtype='float32').constant()
     y = x * 2
     f = dragon.create_function(outputs=y)
     ```
@@ -316,12 +316,12 @@ def create_function(inputs=None, outputs=None, givens=None, updater=None):
     Specify ``givens`` to substitute tensors before creating:
 
     ```python
-    x = dragon.Tensor('x', dtype='float32').variable()
+    x = dragon.Tensor('x', dtype='float32').constant()
     y = x * 2
     foo = dragon.create_function(outputs=y)
 
     # "bar" takes "x2" as input, and also writes to "y"
-    x2 = dragon.Tensor('x2', dtype='float32').variable()
+    x2 = dragon.Tensor('x2', dtype='float32').constant()
     bar = dragon.create_function(outputs=y, givens={x: x2})
     ```
 

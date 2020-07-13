@@ -43,7 +43,7 @@ def Input(
     x = tf.keras.Input(shape=(8,), batch_size=8, dtype='float32')
 
     # Create a placeholder aliasing an existing tensor
-    x = dragon.Tensor('x', shape=(8,), dtype='float32').variable()
+    x = dragon.Tensor('x', shape=(8,), dtype='float32').constant()
     xx = tf.keras.Input(tensor=x)
     ```
 

@@ -26,6 +26,10 @@ id
 ###
 .. autoattribute:: dragon.vm.torch.Tensor.id
 
+is_leaf
+#######
+.. autoattribute:: dragon.vm.torch.Tensor.is_leaf
+
 requires_grad
 #############
 .. autoattribute:: dragon.vm.torch.Tensor.requires_grad
@@ -340,6 +344,10 @@ reshape
 reshape\_
 #########
 .. automethod:: dragon.vm.torch.Tensor.reshape_
+
+retain_grad
+###########
+.. automethod:: dragon.vm.torch.Tensor.retain_grad
 
 round
 #####

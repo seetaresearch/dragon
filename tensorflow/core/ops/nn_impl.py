@@ -116,7 +116,7 @@ def l2_normalize(x, axis=None, epsilon=1e-12, name=None):
     axis : Union[int, Sequence[int]], optional
         The axis to compute norm.
     epsilon : float, optional, default=1e-5
-        The value of :math:`\epsilon`.
+        The value to :math:`\epsilon`.
     name : str, optional
         A optional name for the operation.
 

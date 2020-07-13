@@ -19,5 +19,4 @@ from __future__ import print_function
 
 from dragon.vm.tensorflow.core.ops.losses import loss_reduction
 
-
 Reduction = loss_reduction.Reduction

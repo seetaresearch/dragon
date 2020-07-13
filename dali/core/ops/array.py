@@ -110,7 +110,7 @@ class Reshape(object):
     reshape1 = dali.ops.Reshape(shape=(2, 3))
     y = reshape1(inputs['x'])
 
-    # Reshape to the shape given by another tensor
+    # Reshape to the shape of other tensor
     reshape2 = dali.ops.Reshape()
     z = reshape2(inputs['x'], inputs['x_shape'])
     ```

@@ -13,13 +13,13 @@ dragon.random
   : Return a tensor initialized from the glorot uniform distribution.
 
   `multinomial(...) <random/multinomial.html>`_
-  : Return a tensor with indices sampled from multinomial distribution.
+  : Return a tensor with indices sampled from the multinomial distribution.
 
   `normal(...) <random/normal.html>`_
   : Return a tensor initialized from the normal distribution.
 
   `normal_like(...) <random/normal_like.html>`_
-  : Return a tensor shaping like another initialized from the normal distribution.
+  : Return a tensor initialized from the normal distribution with shape as the other.
 
   `set_seed(...) <random/set_seed.html>`_
   : Set the global random seed.
@@ -31,7 +31,7 @@ dragon.random
   : Return a tensor initialized from the uniform distribution.
 
   `uniform_like(...) <random/uniform_like.html>`_
-  : Return a tensor shaping like another initialized from the uniform distribution.
+  : Return a tensor initialized from the uniform distribution with shape as the other.
 
 .. toctree::
   :hidden:

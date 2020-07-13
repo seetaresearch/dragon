@@ -92,10 +92,6 @@ __add__
 #######
 .. automethod:: dragon.EagerTensor.__add__
 
-__div__
-#######
-.. automethod:: dragon.EagerTensor.__div__
-
 __float__
 #########
 .. automethod:: dragon.EagerTensor.__float__
@@ -116,10 +112,6 @@ __iadd__
 ########
 .. automethod:: dragon.EagerTensor.__iadd__
 
-__idiv__
-########
-.. automethod:: dragon.EagerTensor.__idiv__
-
 __imul__
 ########
 .. automethod:: dragon.EagerTensor.__imul__
@@ -131,6 +123,10 @@ __int__
 __isub__
 ########
 .. automethod:: dragon.EagerTensor.__isub__
+
+__itruediv__
+############
+.. automethod:: dragon.EagerTensor.__itruediv__
 
 __le__
 ######
@@ -152,10 +148,6 @@ __radd__
 ########
 .. automethod:: dragon.EagerTensor.__radd__
 
-__rdiv__
-########
-.. automethod:: dragon.EagerTensor.__rdiv__
-
 __rmul__
 ########
 .. automethod:: dragon.EagerTensor.__rmul__
@@ -163,6 +155,10 @@ __rmul__
 __rsub__
 ########
 .. automethod:: dragon.EagerTensor.__rsub__
+
+__rtruediv__
+############
+.. automethod:: dragon.EagerTensor.__rtruediv__
 
 __setitem__
 ###########
@@ -172,18 +168,13 @@ __sub__
 #######
 .. automethod:: dragon.EagerTensor.__sub__
 
+__truediv__
+###########
+.. automethod:: dragon.EagerTensor.__truediv__
+
 .. _dragon.assign(...): assign.html
 .. _dragon.cast(...): cast.html
 .. _dragon.copy(...): copy.html
-.. _dragon.math.add(...): math/add.html
-.. _dragon.math.div(...): math/div.html
-.. _dragon.math.greater(...): math/greater.html
-.. _dragon.math.greater_equal(...): math/greater_equal.html
-.. _dragon.math.less(...): math/less.html
-.. _dragon.math.less_equal(...): math/less_equal.html
-.. _dragon.math.mul(...): math/mul.html
-.. _dragon.math.negative(...): math/negative.html
-.. _dragon.math.sub(...): math/sub.html
 .. _dragon.masked_assign(...): masked_assign.html
 .. _dragon.masked_select(...): masked_select.html
 .. _dragon.reshape(...): reshape.html

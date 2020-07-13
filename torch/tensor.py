@@ -171,7 +171,7 @@ class Tensor(object):
 
     @property
     def requires_grad(self):
-        """Return a bool report whether the grad is required.
+        """Return whether the grad is required.
 
         Returns
         -------
@@ -199,6 +199,14 @@ class Tensor(object):
 
     @property
     def volatile(self):
+        """Return whether this tensor is volatile.
+
+        Returns
+        -------
+        bool
+            **True** if volatile otherwise **False**.
+
+        """
         warnings.warn('Attribute ``volatile`` was removed (always False).', stacklevel=2)
         return False
 
@@ -217,16 +225,15 @@ class Tensor(object):
         `torch.abs(...)`_ : Compute the absolute value of input.
 
         """
-        pass
 
-    def add(self, value):
+    def add(self, other):
         r"""Compute the element-wise addition.
 
-        .. math:: \text{out} = \text{self} + \text{value}
+        .. math:: \text{out} = \text{self} + \text{other}
 
         Parameters
         ----------
-        value : Union[dragon.vm.torch.Tensor, number]
+        other : Union[dragon.vm.torch.Tensor, number]
             The value to add.
 
         Returns
@@ -239,16 +246,15 @@ class Tensor(object):
         `torch.add(...)`_ : Compute the element-wise addition.
 
         """
-        pass
 
-    def add_(self, value):
+    def add_(self, other):
         r"""Compute the element-wise addition.
 
-        .. math:: \text{self} \mathrel{+}= \text{value}
+        .. math:: \text{self} \mathrel{+}= \text{other}
 
         Parameters
         ----------
-        value : Union[dragon.vm.torch.Tensor, number]
+        other : Union[dragon.vm.torch.Tensor, number]
             The value to add.
 
         Returns
@@ -261,7 +267,6 @@ class Tensor(object):
         `torch.add(...)`_ : Compute the element-wise addition.
 
         """
-        pass
 
     def backward(self, gradient=None, retain_graph=False):
         """Compute the derivatives of this tensor w.r.t. graph leaves.
@@ -290,7 +295,6 @@ class Tensor(object):
         `torch.bitwise_not(...)`_ : Compute the element-wise NOT bitwise operation.
 
         """
-        pass
 
     def bitwise_not_(self):
         r"""Compute the element-wise NOT bitwise operation.
@@ -307,7 +311,6 @@ class Tensor(object):
         `torch.bitwise_not(...)`_ : Compute the element-wise NOT bitwise operation.
 
         """
-        pass
 
     def bitwise_xor(self, other):
         r"""Compute the element-wise XOR bitwise operation.
@@ -329,7 +332,6 @@ class Tensor(object):
         `torch.bitwise_xor(...)`_ : Compute the element-wise XOR bitwise operation.
 
         """
-        pass
 
     def bitwise_xor_(self, other):
         r"""Compute the element-wise XOR bitwise operation.
@@ -351,7 +353,6 @@ class Tensor(object):
         `torch.bitwise_xor(...)`_ : Compute the element-wise XOR bitwise operation.
 
         """
-        pass
 
     def bool(self):
         """Return a bool tensor with the same data.
@@ -362,7 +363,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def bool_(self):
         """Cast to a bool tensor.
@@ -373,7 +373,6 @@ class Tensor(object):
             The self.
 
         """
-        pass
 
     def byte(self):
         """Return an uint8 tensor with the same data.
@@ -384,7 +383,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def byte_(self):
         """Cast to an uint8 tensor.
@@ -395,7 +393,6 @@ class Tensor(object):
             The self.
 
         """
-        pass
 
     def ceil(self):
         r"""Return a tensor taken the ceil of elements.
@@ -412,7 +409,6 @@ class Tensor(object):
         `torch.ceil(...)`_ : Compute the smallest integer not less than input.
 
         """
-        pass
 
     def ceil_(self):
         r"""Set to the ceil of elements.
@@ -429,7 +425,6 @@ class Tensor(object):
         `torch.ceil(...)`_ : Compute the smallest integer not less than input.
 
         """
-        pass
 
     def char(self):
         """Return an int8 tensor with the same data.
@@ -440,7 +435,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def char_(self):
         """Cast to an int8 tensor.
@@ -451,7 +445,6 @@ class Tensor(object):
             The self.
 
         """
-        pass
 
     def chunk(self, chunks, dim=0):
         """Split self into several parts along the given dim.
@@ -469,7 +462,6 @@ class Tensor(object):
             The output chunks.
 
         """
-        pass
 
     def clamp(self, min=None, max=None):
         """Return a tensor with elements clamped into a range.
@@ -491,7 +483,6 @@ class Tensor(object):
         `torch.clamp(...)`_ : Compute the clipped input according to the given bounds.
 
         """
-        pass
 
     def clamp_(self, min=None, max=None):
         """Clamp elements into the a range.
@@ -513,7 +504,6 @@ class Tensor(object):
         `torch.clamp(...)`_ : Compute the clipped input according to the given bounds.
 
         """
-        pass
 
     def copy_(self, src):
         """Copy the elements into this tensor.
@@ -557,7 +547,6 @@ class Tensor(object):
         `torch.cos(...)`_ : Compute the cos of input.
 
         """
-        pass
 
     def cpu(self):
         """Switch the internal storage on cpu memory.
@@ -611,7 +600,6 @@ class Tensor(object):
         `torch.cumsum(...)`_ : Compute the cumulative sum of elements along the given axis.
 
         """
-        pass
 
     def detach(self):
         """Return a data reference detaching the grad.
@@ -635,14 +623,14 @@ class Tensor(object):
         """
         return self._impl.ndim
 
-    def div(self, value):
+    def div(self, other):
         r"""Compute the element-wise division.
 
-        .. math:: \text{out} = \text{self} \div \text{value}
+        .. math:: \text{out} = \text{self} \div \text{other}
 
         Parameters
         ----------
-        value : Union[dragon.vm.torch.Tensor, number]
+        other : Union[dragon.vm.torch.Tensor, number]
             The value to divide.
 
         Returns
@@ -655,16 +643,15 @@ class Tensor(object):
         `torch.div(...)`_ : Compute the element-wise division.
 
         """
-        pass
 
-    def div_(self, value):
+    def div_(self, other):
         r"""Compute the element-wise division.
 
-        .. math:: \text{self} \mathrel{\div}= \text{value}
+        .. math:: \text{self} \mathrel{\div}= \text{other}
 
         Parameters
         ----------
-        value : Union[dragon.vm.torch.Tensor, number]
+        other : Union[dragon.vm.torch.Tensor, number]
             The value to be divided.
 
         Returns
@@ -677,7 +664,6 @@ class Tensor(object):
         `torch.div(...)`_ : Compute the element-wise division.
 
         """
-        pass
 
     def double(self):
         """Return a float64 tensor with the same data.
@@ -688,7 +674,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def double_(self):
         """Cast to a float64 tensor.
@@ -699,7 +684,6 @@ class Tensor(object):
             The self.
 
         """
-        pass
 
     def eq(self, other):
         r"""Compute the element-wise equal comparison.
@@ -721,7 +705,6 @@ class Tensor(object):
         `torch.eq(...)`_ : Compute the element-wise equal comparison.
 
         """
-        pass
 
     def exp(self):
         r"""Compute the exponential.
@@ -738,7 +721,6 @@ class Tensor(object):
         `torch.exp(...)`_ : Compute the exponential of input.
 
         """
-        pass
 
     def expand(self, *sizes):
         """Return a tensor with elements broadcast.
@@ -758,10 +740,9 @@ class Tensor(object):
         `torch.expand(...)`_ : Broadcast input according to given sizes.
 
         """
-        pass
 
     def expand_as(self, other):
-        """Return a tensor with elements broadcast like another.
+        """Return a tensor with elements broadcast like the other.
 
         Parameters
         ----------
@@ -781,14 +762,14 @@ class Tensor(object):
         return self.expand(*other.size())
 
     def fill_(self, value):
-        r"""Fill with the given constant value.
+        r"""Fill self with a scalar value.
 
         .. math:: \text{self} \leftarrow \text{value}
 
         Parameters
         ----------
         value : number
-            The constant value.
+            The value to fill.
 
         Returns
         -------
@@ -796,7 +777,6 @@ class Tensor(object):
             The self.
 
         """
-        pass
 
     def float(self):
         """Return a float32 tensor with the same data.
@@ -807,7 +787,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def float_(self):
         """Cast to a float32 tensor.
@@ -818,7 +797,6 @@ class Tensor(object):
             The self.
 
         """
-        pass
 
     def floor(self):
         r"""Return a tensor taken the floor of elements.
@@ -835,7 +813,6 @@ class Tensor(object):
         `torch.floor(...)`_ : Compute the largest integer not greater than input.
 
         """
-        pass
 
     def floor_(self):
         r"""Set to the floor of elements.
@@ -852,7 +829,6 @@ class Tensor(object):
         `torch.floor(...)`_ : Compute the largest integer not greater than input.
 
         """
-        pass
 
     def ge(self, other):
         r"""Compute the element-wise greater-equal comparison.
@@ -874,7 +850,6 @@ class Tensor(object):
         `torch.ge(...)`_ : Compute the element-wise greater-equal comparison.
 
         """
-        pass
 
     def gt(self, other):
         r"""Compute the element-wise greater comparison.
@@ -896,7 +871,6 @@ class Tensor(object):
         `torch.gt(...)`_ : Compute the element-wise greater comparison.
 
         """
-        pass
 
     def half(self):
         """Return a float16 tensor with the same data.
@@ -907,7 +881,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def half_(self):
         """Cast to a float16 tensor.
@@ -918,7 +891,6 @@ class Tensor(object):
             The self.
 
         """
-        pass
 
     def index_select(self, dim, index):
         """Select the elements along the given dim using index.
@@ -936,7 +908,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def int(self):
         """Return an int32 tensor with the same data.
@@ -947,7 +918,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def int_(self):
         """Cast to an int32 tensor.
@@ -958,10 +928,9 @@ class Tensor(object):
             The self.
 
         """
-        pass
 
     def is_floating_point(self):
-        """Whether the data type is floating.
+        """Return whether the data type is floating.
 
         Floating types contains: (*float16*, *float32*, *float64*)
 
@@ -993,7 +962,6 @@ class Tensor(object):
         `torch.le(...)`_ : Compute the element-wise less-equal comparison.
 
         """
-        pass
 
     def log(self):
         r"""Compute the natural logarithm.
@@ -1006,7 +974,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def logsumexp(self, dim, keepdim=False):
         r"""Apply the composite of log, sum, and exp.
@@ -1026,7 +993,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def long(self):
         """Return an int64 tensor with the same data.
@@ -1037,7 +1003,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def long_(self):
         """Cast to an int64 tensor.
@@ -1048,7 +1013,6 @@ class Tensor(object):
             The self.
 
         """
-        pass
 
     def lt(self, other):
         r"""Compute the element-wise less comparison.
@@ -1070,7 +1034,6 @@ class Tensor(object):
         `torch.lt(...)`_ : Compute the element-wise less comparison.
 
         """
-        pass
 
     def masked_fill_(self, mask, value):
         r"""Fill self with the given value where ``mask`` is **1**.
@@ -1095,7 +1058,6 @@ class Tensor(object):
             The self.
 
         """
-        pass
 
     def max(self, dim=None, keepdim=False):
         """Compute the max value of elements along the given axis.
@@ -1113,7 +1075,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def masked_select(self, mask):
         """Select the elements where mask is **1**.
@@ -1129,7 +1090,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def mean(self, dim=None, keepdim=False):
         """Compute the mean value of elements along the given axis.
@@ -1147,7 +1107,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def min(self, dim=None, keepdim=False):
         """Compute the min value of elements along the given axis.
@@ -1165,16 +1124,15 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
-    def mul(self, value):
+    def mul(self, other):
         r"""Compute the element-wise multiplication.
 
-        .. math:: \text{out} = \text{self} \times \text{value}
+        .. math:: \text{out} = \text{self} \times \text{other}
 
         Parameters
         ----------
-        value : Union[dragon.vm.torch.Tensor, number]
+        other : Union[dragon.vm.torch.Tensor, number]
             The value to multiply.
 
         Returns
@@ -1187,16 +1145,15 @@ class Tensor(object):
         `torch.mul(...)`_ : Compute the element-wise multiplication.
 
         """
-        pass
 
-    def mul_(self, value):
+    def mul_(self, other):
         r"""Compute the element-wise multiplication.
 
-        .. math:: \text{self} \mathrel{\times}= \text{value}
+        .. math:: \text{self} \mathrel{\times}= \text{other}
 
         Parameters
         ----------
-        value : Union[dragon.vm.torch.Tensor, number]
+        other : Union[dragon.vm.torch.Tensor, number]
             The value to multiply.
 
         Returns
@@ -1209,7 +1166,6 @@ class Tensor(object):
         `torch.mul(...)`_ : Compute the element-wise multiplication.
 
         """
-        pass
 
     def multinomial(self, num_samples, eps=0.):
         """Return a tensor where each row contains ``num_samples``,
@@ -1228,7 +1184,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def narrow(self, dimension, start, length):
         """Return a new tensor that is a narrowed version of input tensor.
@@ -1248,7 +1203,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def ndimension(self):
         """Alias for ``Tensor.dim()``.
@@ -1281,7 +1235,6 @@ class Tensor(object):
         `torch.ne(...)`_ : Compute the element-wise not-equal comparison.
 
         """
-        pass
 
     def neg(self):
         r"""Compute the element-wise negative.
@@ -1298,7 +1251,6 @@ class Tensor(object):
         `torch.neg(...)`_ : Compute the element-wise negative.
 
         """
-        pass
 
     def nonzero(self):
         """Return the indices of non-zero elements.
@@ -1309,19 +1261,18 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def normal_(self, mean=0, std=1):
-        r"""Fill self with a normal distribution.
+        r"""Fill self from a normal distribution.
 
-        .. math:: \text{self} \leftarrow N(\mu, \sigma)
+        .. math:: \text{self} \sim \mathcal{N}(\mu, \sigma)
 
         Parameters
         ----------
         mean : number, optional, default=0
-            The value of :math:`\mu`.
+            The value to :math:`\mu`.
         std : number, optional, default=1
-            The value of :math:`\sigma`.
+            The value to :math:`\sigma`.
 
         Returns
         -------
@@ -1329,7 +1280,6 @@ class Tensor(object):
             The self.
 
         """
-        pass
 
     def numel(self):
         """Return the total number of elements.
@@ -1359,7 +1309,7 @@ class Tensor(object):
         return self._impl.ToNumpy(readonly)
 
     def one_(self):
-        r"""Fill with constant 1.
+        r"""Fill self with ones.
 
         .. math:: \text{self} \leftarrow 1
 
@@ -1369,7 +1319,7 @@ class Tensor(object):
             The self.
 
         """
-        self.fill_(1)
+        return self.fill_(1)
 
     def permute(self, *dims):
         """Return a new tensor with the specific order of dimensions.
@@ -1385,7 +1335,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def pow(self, exponent):
         """Compute the power.
@@ -1405,7 +1354,6 @@ class Tensor(object):
         `torch.pow(...)`_ : Compute the power of input.
 
         """
-        pass
 
     def reciprocal(self):
         r"""Compute the reciprocal.
@@ -1422,7 +1370,6 @@ class Tensor(object):
         `torch.reciprocal(...)`_ : Compute the reciprocal of input.
 
         """
-        pass
 
     def reciprocal_(self):
         r"""Compute the reciprocal.
@@ -1439,7 +1386,6 @@ class Tensor(object):
         `torch.reciprocal(...)`_ : Compute the reciprocal of input.
 
         """
-        pass
 
     def repeat(self, *sizes):
         """Repeat elements along the specified dimensions.
@@ -1455,7 +1401,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def reshape(self, shape):
         """Return a tensor with the same data but a different shape.
@@ -1475,7 +1420,6 @@ class Tensor(object):
         `torch.reshape(...)`_ : Change the shape of input.
 
         """
-        pass
 
     def reshape_(self, shape):
         """Change into a new shape with the same data.
@@ -1495,7 +1439,6 @@ class Tensor(object):
         `torch.reshape(...)`_ : Change the shape of input.
 
         """
-        pass
 
     def retain_grad(self):
         """Retain grad for the non-leaf tensor."""
@@ -1517,7 +1460,6 @@ class Tensor(object):
         `torch.round(...)`_ : Compute the nearest integer of input.
 
         """
-        pass
 
     def round_(self):
         r"""Set to the round of elements.
@@ -1534,7 +1476,6 @@ class Tensor(object):
         `torch.round(...)`_ : Compute the nearest integer of input.
 
         """
-        pass
 
     def rsqrt(self):
         r"""Compute the reciprocal square root.
@@ -1551,7 +1492,6 @@ class Tensor(object):
         `torch.rsqrt(...)`_ : Compute the square root of input.
 
         """
-        pass
 
     def rsqrt_(self):
         r"""Compute the reciprocal square root.
@@ -1568,7 +1508,6 @@ class Tensor(object):
         `torch.rsqrt(...)`_ : Compute the square root of input.
 
         """
-        pass
 
     def sign(self):
         r"""Return a tensor taken the sign indication of elements.
@@ -1591,7 +1530,6 @@ class Tensor(object):
         `torch.sign(...)`_ : Compute the sign indication of input.
 
         """
-        pass
 
     def sign_(self):
         r"""Set to the sign indication of elements.
@@ -1614,7 +1552,6 @@ class Tensor(object):
         `torch.sign(...)`_ : Compute the sign indication of input.
 
         """
-        pass
 
     def sin(self):
         r"""Compute the sin.
@@ -1631,7 +1568,6 @@ class Tensor(object):
         `torch.sin(...)`_ : Compute the sin of input.
 
         """
-        pass
 
     def size(self, axis=None):
         """Return the size of this tensor.
@@ -1665,7 +1601,6 @@ class Tensor(object):
         `torch.sqrt(...)`_ : Compute the square root of input.
 
         """
-        pass
 
     def sqrt_(self):
         r"""Compute the square root.
@@ -1682,7 +1617,6 @@ class Tensor(object):
         `torch.sqrt(...)`_ : Compute the square root of input.
 
         """
-        pass
 
     def squeeze(self, dim=None):
         """Return a tensor with dimensions of size 1 removed.
@@ -1698,7 +1632,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def squeeze_(self, dim=None):
         """Inplace version of ``Tensor.squeeze()``.
@@ -1714,7 +1647,6 @@ class Tensor(object):
             The self.
 
         """
-        pass
 
     def sum(self, dim=None, keepdim=False):
         """Compute the sum value of elements along the given axis.
@@ -1732,16 +1664,15 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
-    def sub(self, value):
+    def sub(self, other):
         r"""Compute the element-wise subtraction.
 
-        .. math:: \text{out} = \text{self} - \text{value}
+        .. math:: \text{out} = \text{self} - \text{other}
 
         Parameters
         ----------
-        value : Union[dragon.vm.torch.Tensor, number]
+        other : Union[dragon.vm.torch.Tensor, number]
             The value to subtract.
 
         Returns
@@ -1754,16 +1685,15 @@ class Tensor(object):
         `torch.sub(...)`_ : Compute the element-wise subtraction.
 
         """
-        pass
 
-    def sub_(self, value):
+    def sub_(self, other):
         r"""Compute the element-wise subtraction.
 
-        .. math:: \text{self} \mathrel{-}= \text{value}
+        .. math:: \text{self} \mathrel{-}= \text{other}
 
         Parameters
         ----------
-        value : Union[dragon.vm.torch.Tensor, number]
+        other : Union[dragon.vm.torch.Tensor, number]
             The value to be subtracted.
 
         Returns
@@ -1776,7 +1706,6 @@ class Tensor(object):
         `torch.sub(...)`_ : Compute the element-wise subtraction.
 
         """
-        pass
 
     def type(self, dtype=None):
         """Return the data type.
@@ -1794,19 +1723,18 @@ class Tensor(object):
             The data type or new tensor.
 
         """
-        pass
 
     def uniform_(self, low=0, high=1):
-        r"""Fill self with a uniform distribution.
+        r"""Fill self from a uniform distribution.
 
-        .. math:: \text{self} \leftarrow U(\alpha, \beta)
+        .. math:: \text{self} \sim \mathcal{U}(\alpha, \beta)
 
         Parameters
         ----------
         low : number, optional, default=0
-            The value of :math:`\alpha`.
+            The value to :math:`\alpha`.
         high : number, optional, default=1
-            The value of :math:`\beta`.
+            The value to :math:`\beta`.
 
         Returns
         -------
@@ -1814,7 +1742,6 @@ class Tensor(object):
             The self.
 
         """
-        pass
 
     def unsqueeze(self, dim):
         """Return a tensor with dimensions of size 1 inserted.
@@ -1830,7 +1757,6 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def unsqueeze_(self, dim):
         """In-place version of ``Tensor.unsqueeze()``.
@@ -1846,7 +1772,6 @@ class Tensor(object):
             The self.
 
         """
-        pass
 
     def view(self, *shape):
         """Return a tensor with the same data but a different shape.
@@ -1928,10 +1853,9 @@ class Tensor(object):
             The output tensor.
 
         """
-        pass
 
     def zero_(self):
-        r"""Fill self with constant 0.
+        r"""Fill self with zeros.
 
         .. math:: \text{self} \leftarrow 0
 
@@ -1941,7 +1865,7 @@ class Tensor(object):
             The self.
 
         """
-        self.fill_(0)
+        return self.fill_(0)
 
     def _from_numpy(self, array, copy):
         """Create impl from the numpy array."""
@@ -1963,6 +1887,19 @@ class Tensor(object):
         return mapping.TENSOR_TYPE_TO_TORCH_TENSOR[self.dtype]
 
     def __add__(self, other):
+        """Compute the element-wise addition.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to add.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
         return self.add(other)
 
     def __del__(self):
@@ -1971,63 +1908,215 @@ class Tensor(object):
             # PyGC will detect them automatically.
             self._gc.collect(self.id)
 
-    def __div__(self, other):
-        return self.div(other)
-
     def __float__(self):
-        """Return a float python scalar."""
-        if self.numel() == 1:
-            return float(self.numpy())
-        raise TypeError('Only size-1 array can be converted to Python scalars.')
+        """Return a float python scalar.
+
+        Returns
+        -------
+        float
+            The float value.
+
+        """
+        return float(self.numpy())
 
     def __ge__(self, other):
+        """Compute the element-wise greater-equal comparison.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compare.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
         return self.ge(other)
 
     def __getitem__(self, item):
-        pass
+        """Select elements at the specific index.
+
+        Parameters
+        ----------
+        item : Union[int, slice, dragon.vm.torch.Tensor]
+            The index.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
 
     def __gt__(self, other):
+        """Compute the element-wise greater comparison.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compare.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
         return self.gt(other)
 
     def __hash__(self):
         return id(self)
 
     def __iadd__(self, other):
+        """Compute the element-wise addition.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to add.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The self.
+
+        """
         return self.add_(other)
 
-    def __idiv__(self, other):
-        return self.div_(other)
-
     def __imul__(self, other):
+        """Compute the element-wise multiplication.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to multiply.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The self.
+
+        """
         return self.mul_(other)
 
     def __int__(self):
-        """Return a int python scalar."""
+        """Return an integer python scalar.
+
+        Returns
+        -------
+        int
+            The integer value.
+
+        """
         return int(self.__float__())
 
     def __isub__(self, other):
+        """Compute the element-wise subtraction.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to be subtracted.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The self.
+
+        """
         return self.sub_(other)
 
     def __itruediv__(self, other):
+        """Compute the element-wise division.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to be divided.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The self.
+
+        """
         return self.div_(other)
 
     def __le__(self, other):
+        """Compute the element-wise less-equal comparison.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compare.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
         return self.le(other)
 
     def __lt__(self, other):
+        """Compute the element-wise less comparison.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to compare.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
         return self.lt(other)
 
     def __mul__(self, other):
+        """Compute the element-wise multiplication.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to multiply.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
         return self.mul(other)
 
     def __neg__(self):
+        """Compute the element-wise negative.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
         return self.neg()
 
     def __radd__(self, other):
-        pass
+        """Compute the element-wise addition.
 
-    def __rdiv__(self, other):
-        pass
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to add.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
 
     def __repr__(self):
         np_data = self.numpy()
@@ -2044,61 +2133,146 @@ class Tensor(object):
         return format_str + meta_info
 
     def __rmul__(self, other):
-        pass
+        """Compute the element-wise multiplication.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to multiply.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
 
     def __rsub__(self, other):
-        pass
+        """Compute the element-wise subtraction.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to be subtracted.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
 
     def __rtruediv__(self, other):
-        pass
+        """Compute the element-wise division.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to be divided.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
 
     def __truediv__(self, other):
+        """Compute the element-wise division.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to divide.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
         return self.div(other)
 
     def __setitem__(self, key, value):
-        pass
+        """Set elements at the specific index.
+
+        Parameters
+        ----------
+        key : Union[int, slice, dragon.vm.torch.Tensor]
+            The index.
+        value : Union[dragon.vm.torch.Tensor, number]
+            The value to set.
+
+        """
 
     def __sub__(self, other):
+        """Compute the element-wise subtraction.
+
+        Parameters
+        ----------
+        other : Union[dragon.vm.torch.Tensor, number]
+            The value to subtract.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
         return self.sub(other)
 
 
 class BoolTensor(object):
+    """The bool tensor."""
+
     def __new__(cls, *args, **kwargs):
         kwargs['dtype'] = 'bool'
         return Tensor(*args, **kwargs)
 
 
 class ByteTensor(object):
+    """The uint8 tensor."""
+
     def __new__(cls, *args, **kwargs):
         kwargs['dtype'] = 'uint8'
         return Tensor(*args, **kwargs)
 
 
 class CharTensor(object):
+    """The int8 tensor."""
+
     def __new__(cls, *args, **kwargs):
         kwargs['dtype'] = 'int8'
         return Tensor(*args, **kwargs)
 
 
 class DoubleTensor(object):
+    """The float64 tensor."""
+
     def __new__(cls, *args, **kwargs):
         kwargs['dtype'] = 'float64'
         return Tensor(*args, **kwargs)
 
 
 class FloatTensor(object):
+    """The float32 tensor."""
+
     def __new__(cls, *args, **kwargs):
         kwargs['dtype'] = 'float32'
         return Tensor(*args, **kwargs)
 
 
 class HalfTensor(object):
+    """The float16 tensor."""
+
     def __new__(cls, *args, **kwargs):
         kwargs['dtype'] = 'float16'
         return Tensor(*args, **kwargs)
 
 
 class IntTensor(object):
+    """The int32 tensor."""
+
     def __new__(cls, *args, **kwargs):
         kwargs['dtype'] = 'int32'
         return Tensor(*args, **kwargs)

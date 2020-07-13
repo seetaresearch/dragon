@@ -23,7 +23,7 @@ from dragon.core.framework import workspace
 
 
 def constant(value, dtype=None, shape=None, name='Const'):
-    r"""Return a tensor taking the value content.
+    """Return a tensor initialized from the value.
 
     Examples:
 
@@ -47,7 +47,7 @@ def constant(value, dtype=None, shape=None, name='Const'):
     Returns
     -------
     dragon.Tensor
-        The constant tensor.
+        The output tensor.
 
     """
     if dtype is not None:
@@ -82,7 +82,7 @@ def constant(value, dtype=None, shape=None, name='Const'):
     else:
         return TensorRef(
             name=workspace.get_workspace().unique_name(
-                name, ':0', 'dragon.Tensor'),
+                name, ':0', 'Tensor'),
             shape=list(value.shape),
             dtype=str(value.dtype),
         ).set_value(value)

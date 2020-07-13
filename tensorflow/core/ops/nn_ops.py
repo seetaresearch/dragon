@@ -493,7 +493,7 @@ def elu(features, alpha=1., name=None, **kwargs):
     features : dragon.Tensor
         The tensor :math:`x`.
     alpha : float, optional, default=1.
-        The value of :math:`\alpha`.
+        The value to :math:`\alpha`.
     name : str, optional
         A optional name for the operation.
 
@@ -527,7 +527,7 @@ def leaky_relu(features, alpha=0.2, name=None, **kwargs):
     features : dragon.Tensor
         The input tensor.
     alpha : number, optional, default=0.2
-        The value of :math:`\alpha`.
+        The value to :math:`\alpha`.
     name : str, optional
         A optional name for the operation.
 

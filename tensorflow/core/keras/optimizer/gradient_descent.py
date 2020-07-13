@@ -21,7 +21,7 @@ from dragon.vm.tensorflow.core.keras.optimizer import optimizer
 
 
 class SGD(optimizer.Optimizer):
-    r"""The optimizer which implements SGD algorithm.
+    r"""The optimizer to apply SGD algorithm.
 
     Following SGD algorithms are supported:
 

@@ -144,9 +144,9 @@ def axpby(inputs, outputs=None, alpha=1., beta=1., **kwargs):
     outputs : Union[dragon.Tensor, Sequence[dragon.Tensor]], optional
         The tensor :math:`y`.
     alpha : number, optional, default=1.
-        The value of :math:`\alpha`.
+        The value to :math:`\alpha`.
     beta : number, optional, default=1.
-        The value of :math:`\beta`.
+        The value to :math:`\beta`.
 
     Returns
     -------
@@ -301,9 +301,9 @@ def clip(inputs, low=None, high=None, **kwargs):
     inputs : dragon.Tensor
         The tensor :math:`x`.
     low : number, optional
-        The value of :math:`\text{low}`.
+        The value to :math:`\text{low}`.
     high : number, optional
-        The value of :math:`\text{high}`.
+        The value to :math:`\text{high}`.
 
     Returns
     -------

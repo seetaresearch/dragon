@@ -261,7 +261,7 @@ class Workspace(backend.Workspace):
         return self.HasTensor(_stringify_object(tensor))
 
     def merge_from(self, other):
-        """Merge resources from another workspace.
+        """Merge resources from the other.
 
         The ``other`` will not be reset until ``self`` is reset.
         Carefulness should be taken to associate with the workspaces.

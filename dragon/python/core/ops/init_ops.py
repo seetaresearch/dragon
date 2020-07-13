@@ -27,7 +27,7 @@ from dragon.core.ops.utils import parse_args
 
 
 def constant(value, dtype=None, shape=None, name=None):
-    r"""Return a tensor taking the value content.
+    r"""Return a tensor initialized from the value.
 
     Examples:
 
@@ -40,7 +40,7 @@ def constant(value, dtype=None, shape=None, name=None):
     Parameters
     ----------
     value : array_like
-        The constant value.
+        The value to initialize from.
     dtype : str, optional
         The optional data type.
     shape : Sequence[int], optional
@@ -68,7 +68,7 @@ def constant(value, dtype=None, shape=None, name=None):
 
 
 def eye(n, m=None, k=0, dtype='float32', **kwargs):
-    r"""Return a tensor constructed as the identity matrix.
+    """Return a tensor constructed as the identity matrix.
 
     The rows and cols of matrix are determined by ``n`` and ``m``:
 
@@ -131,7 +131,7 @@ def eye(n, m=None, k=0, dtype='float32', **kwargs):
 
 @OpSchema.num_inputs(1)
 def eye_like(other, k=0, dtype='float32', **kwargs):
-    r"""Return a tensor shaping like another constructed as the identity matrix.
+    """Return a tensor of identity matrix with shape as the other.
 
     The rows and cols of matrix are hinted by the input tensor:
 
@@ -183,14 +183,14 @@ def eye_like(other, k=0, dtype='float32', **kwargs):
 
 @ArgHelper.repeated_desc(name='shape', name_v2='dims')
 def fill(shape, value=0, dtype=None, **kwargs):
-    r"""Return a tensor filled with the specific value.
+    r"""Return a tensor filled with the scalar value.
 
-    .. math:: y \leftarrow \text{value}
+    .. math:: \text{out} \leftarrow \text{value}
 
     Parameters
     ----------
     shape : Sequence[Union[int, dragon.Tensor]]
-        The shape of the tensor.
+        The tensor shape.
     value : number, optional, default=0
         The value to fill.
     dtype : str, optional, default='float32'
@@ -224,21 +224,19 @@ def fill(shape, value=0, dtype=None, **kwargs):
 
 
 @ArgHelper.repeated_desc(name='shape', name_v2='dims')
-def glorot_normal(shape, scale=2, mode='FAN_IN', dtype='float32', **kwargs):
+def glorot_normal(shape, scale=2.0, mode='fan_in', dtype='float32', **kwargs):
     r"""Return a tensor initialized from the glorot normal distribution.
 
-    The **GlorotNormal** distribution is defined as:
-
-    .. math:: X \sim N(0, \sqrt{\frac{scale}{\text{FAN}}})
+    .. math:: \text{out} \sim \mathcal{N}(0, \sqrt{\frac{scale}{\text{fan}}})
 
     Parameters
     ----------
     shape : Sequence[Union[int, dragon.Tensor]]
-        The shape of the tensor.
-    scale : number, optional, default=2
-        The scale factor of distribution.
-    mode : {'FAN_IN', 'FAN_OUT', 'FAN_AVG'}, optional
-        The mode to compute the normalizer.
+        The tensor shape.
+    mode : {'fan_in', 'fan_out', 'fan_avg'}, optional
+        The mode to compute fans.
+    scale : float, optional, default=2.0
+        The scale factor to distribution.
     dtype : str, optional, default='float32'
         The optional data type.
 
@@ -266,25 +264,21 @@ def glorot_normal(shape, scale=2, mode='FAN_IN', dtype='float32', **kwargs):
 
 
 @ArgHelper.repeated_desc(name='shape', name_v2='dims')
-def glorot_uniform(shape, scale=3, mode='FAN_IN', dtype='float32', **kwargs):
+def glorot_uniform(shape, mode='fan_in', scale=3.0, dtype='float32', **kwargs):
     r"""Return a tensor initialized from the glorot uniform distribution.
 
-    The **GlorotUniform** distribution is defined as:
-
     .. math::
-        X \sim U(
-            -\sqrt{\frac{scale}{\text{FAN}}},
-             \sqrt{\frac{scale}{\text{FAN}}}
-            )
+        \text{out} \sim \mathcal{U}(-\sqrt{\frac{scale}{\text{fan}}},
+                                     \sqrt{\frac{scale}{\text{fan}}})
 
     Parameters
     ----------
     shape : Sequence[Union[int, dragon.Tensor]]
-        The shape of the tensor.
-    scale : number, optional, default=3
-        The scale factor of distribution.
-    mode : {'FAN_IN', 'FAN_OUT', 'FAN_AVG'}, optional
-        The mode to compute the normalizer.
+        The tensor shape.
+    mode : {'fan_in', 'fan_out', 'fan_avg'}, optional
+        The mode to compute fans.
+    scale : float, optional, default=3.0
+        The scale factor to distribution.
     dtype : str, optional, default='float32'
         The optional data type.
 
@@ -315,7 +309,7 @@ def glorot_uniform(shape, scale=3, mode='FAN_IN', dtype='float32', **kwargs):
 def ones(shape, dtype='float32', **kwargs):
     r"""Return a tensor filled with ones.
 
-    .. math:: y \leftarrow 1
+    .. math:: \text{out} \leftarrow 1
 
     ```python
     x = dragon.ones(shape=(2, 3), dtype='float32')
@@ -324,7 +318,7 @@ def ones(shape, dtype='float32', **kwargs):
     Parameters
     ----------
     shape : Sequence[Union[int, dragon.Tensor]]
-        The shape of the tensor.
+        The tensor shape.
     dtype : str, optional, default='float32'
         The optional data type.
 
@@ -338,9 +332,9 @@ def ones(shape, dtype='float32', **kwargs):
 
 
 def ones_like(other, dtype='float32', **kwargs):
-    r"""Return a tensor shaping like another filled with ones.
+    r"""Return a tensor of ones with shape as the other.
 
-    .. math:: y \leftarrow 1
+    .. math:: \text{out} \leftarrow 1
 
     Examples:
 
@@ -384,18 +378,16 @@ def ones_like(other, dtype='float32', **kwargs):
 def random_normal(shape, mean=0, std=1, dtype='float32', **kwargs):
     r"""Return a tensor initialized from the normal distribution.
 
-    The **RandomNormal** distribution is defined as:
-
-    .. math:: X \sim N(\mu, \sigma)
+    .. math:: \text{out} \sim \mathcal{N}(\mu, \sigma)
 
     Parameters
     ----------
     shape : Sequence[Union[int, dragon.Tensor]]
-        The shape of the tensor.
+        The tensor shape.
     mean : number, optional, default=0
-        The value of :math:`\mu`.
+        The value to :math:`\mu`.
     std : number, optional, default=1
-        The value of :math:`\sigma`.
+        The value to :math:`\sigma`.
     dtype : str, optional, default='float32'
         The optional data type.
 
@@ -424,20 +416,18 @@ def random_normal(shape, mean=0, std=1, dtype='float32', **kwargs):
 
 @OpSchema.num_inputs(1)
 def random_normal_like(other, mean=0, std=1, dtype='float32', **kwargs):
-    r"""Return a tensor shaping like another initialized from the normal distribution.
+    r"""Return a tensor initialized from the normal distribution with shape as the other.
 
-    The **RandomNormal** distribution is defined as:
-
-    .. math:: X \sim N(\mu, \sigma)
+    .. math:: \text{out} \sim \mathcal{N}(\mu, \sigma)
 
     Parameters
     ----------
     other : dragon.Tensor
         The tensor to hint the shape.
     mean : number, optional, default=0
-        The value of :math:`\mu`.
+        The value to :math:`\mu`.
     std : number, optional, default=1
-        The value of :math:`\sigma`.
+        The value to :math:`\sigma`.
     dtype : str, optional, default='float32'
         The optional data type.
 
@@ -472,18 +462,16 @@ def random_normal_like(other, mean=0, std=1, dtype='float32', **kwargs):
 def random_uniform(shape, low=-1, high=1, dtype='float32', **kwargs):
     r"""Return a tensor initialized from the uniform distribution.
 
-    The **RandomUniform** distribution is defined as:
-
-    .. math:: X \sim U(\alpha, \beta)
+    .. math:: \text{out} \sim \mathcal{U}(\alpha, \beta)
 
     Parameters
     ----------
     shape : Sequence[Union[int, dragon.Tensor]]
-        The shape of the tensor.
+        The tensor shape.
     low : number, optional, default=-1
-        The value of :math:`\alpha`.
+        The value to :math:`\alpha`.
     high : number, optional, default=1
-        The value of :math:`\beta`.
+        The value to :math:`\beta`.
     dtype : str, optional, default='float32'
         The optional data type.
 
@@ -511,20 +499,18 @@ def random_uniform(shape, low=-1, high=1, dtype='float32', **kwargs):
 
 @OpSchema.num_inputs(1)
 def random_uniform_like(other, low=-1, high=1, dtype='float32', **kwargs):
-    r"""Return a tensor shaping like another initialized from the uniform distribution.
+    r"""Return a tensor initialized from the uniform distribution with shape as the other.
 
-    The **RandomUniform** distribution is defined as:
-
-    .. math:: X \sim U(\alpha, \beta)
+    .. math:: \text{out} \sim \mathcal{U}(\alpha, \beta)
 
     Parameters
     ----------
     other : dragon.Tensor
         The tensor to hint the shape.
     low : number, optional, default=-1
-        The value of :math:`\alpha`.
+        The value to :math:`\alpha`.
     high : number, optional, default=1
-        The value of :math:`\beta`.
+        The value to :math:`\beta`.
     dtype : str, optional, default='float32'
         The optional data type.
 
@@ -558,18 +544,16 @@ def random_uniform_like(other, low=-1, high=1, dtype='float32', **kwargs):
 def truncated_normal(shape, mean=0, std=1, dtype='float32', **kwargs):
     r"""Return a tensor initialized from the truncated normal distribution.
 
-    The **TruncatedNormal** distribution is defined as:
-
-    .. math:: X \sim TN(\mu, \sigma, \mu - 2\sigma, \mu + 2\sigma)
+    .. math:: \text{out} \sim \mathcal{TN}(\mu, \sigma, \mu - 2\sigma, \mu + 2\sigma)
 
     Parameters
     ----------
     shape : Sequence[Union[int, dragon.Tensor]]
-        The shape of the tensor.
+        The tensor shape.
     mean : number, optional, default=0
-        The value of :math:`\mu`.
+        The value to :math:`\mu`.
     std : number, optional, default=1
-        The value of :math:`\sigma`.
+        The value to :math:`\sigma`.
     dtype : str, optional, default='float32'
         The optional data type.
 
@@ -599,7 +583,7 @@ def truncated_normal(shape, mean=0, std=1, dtype='float32', **kwargs):
 def zeros(shape, dtype='float32', **kwargs):
     r"""Return a tensor filled with zeros.
 
-    .. math:: y \leftarrow 0
+    .. math:: \text{out} \leftarrow 0
 
     ```python
     x = dragon.zeros(shape=(2, 3), dtype='float32')
@@ -608,7 +592,7 @@ def zeros(shape, dtype='float32', **kwargs):
     Parameters
     ----------
     shape : Sequence[Union[int, dragon.Tensor]]
-        The shape of the tensor.
+        The tensor shape.
     dtype : str, optional, default='float32'
         The optional data type.
 
@@ -623,9 +607,9 @@ def zeros(shape, dtype='float32', **kwargs):
 
 @OpSchema.num_inputs(1)
 def zeros_like(other, dtype='float32', **kwargs):
-    r"""Return a tensor shaping like another filled with zeros.
+    r"""Return a tensor of zeros with shape as the other.
 
-    .. math:: y \leftarrow 0
+    .. math:: \text{out} \leftarrow 0
 
     Examples:
 

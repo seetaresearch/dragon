@@ -47,7 +47,7 @@ def elu(x, alpha=1., **kwargs):
     x : dragon.Tensor
         The tensor :math:`x`.
     alpha : float, optional, default=1.
-        The value of :math:`\alpha`.
+        The value to :math:`\alpha`.
 
     Returns
     -------
@@ -141,7 +141,7 @@ def relu(x, alpha=0, max_value=None, **kwargs):
     alpha : number, optional, default=0
         The valve of :math:`\alpha`.
     max_value : number, optional
-        The value of :math:`v_{max}`.
+        The value to :math:`v_{max}`.
 
     """
     if max_value is not None:

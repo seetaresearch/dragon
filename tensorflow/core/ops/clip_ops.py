@@ -42,9 +42,9 @@ def clip_by_value(
     t : dragon.Tensor
         The tensor :math:`x`.
     clip_value_min : number, optional
-        The value of :math:`\text{low}`.
+        The value to :math:`\text{low}`.
     clip_value_max : number, optional
-        The value of :math:`\text{high}`.
+        The value to :math:`\text{high}`.
     name : str, optional
         A optional name for the operation.
 

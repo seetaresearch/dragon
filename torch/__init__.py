@@ -43,7 +43,6 @@ from dragon.vm.torch.ops import tensorbind as _
 from dragon.vm.torch.ops.array.functional import argmax
 from dragon.vm.torch.ops.array.functional import argmin
 from dragon.vm.torch.ops.array.functional import assign
-from dragon.vm.torch.ops.array.functional import cast
 from dragon.vm.torch.ops.array.functional import cat
 from dragon.vm.torch.ops.array.functional import channel_normalize
 from dragon.vm.torch.ops.array.functional import channel_shuffle
@@ -72,12 +71,10 @@ from dragon.vm.torch.ops.array.functional import unsqueeze
 from dragon.vm.torch.ops.array.functional import where
 from dragon.vm.torch.ops.init.functional import arange
 from dragon.vm.torch.ops.init.functional import eye
-from dragon.vm.torch.ops.init.functional import normal
 from dragon.vm.torch.ops.init.functional import ones
 from dragon.vm.torch.ops.init.functional import ones_like
 from dragon.vm.torch.ops.init.functional import rand
 from dragon.vm.torch.ops.init.functional import randn
-from dragon.vm.torch.ops.init.functional import uniform
 from dragon.vm.torch.ops.init.functional import zeros
 from dragon.vm.torch.ops.init.functional import zeros_like
 from dragon.vm.torch.ops.math.functional import abs

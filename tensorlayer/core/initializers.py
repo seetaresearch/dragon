@@ -50,9 +50,9 @@ class Initializer(object):
 
 
 class Constant(Initializer):
-    r"""Fill tensors with a scalar value.
+    r"""Fill tensor with a scalar value.
 
-    .. math:: y \leftarrow \text{Value}
+    .. math:: \text{tensor} \leftarrow \text{value}
 
     """
 
@@ -78,32 +78,30 @@ class Constant(Initializer):
 
 
 class GlorotNormal(Initializer):
-    r"""Fill tensors according to a glorot normal distribution.
+    r"""Fill tensor from a glorot normal distribution.
 
-    The **GlorotNormal** distribution is defined as:
-
-    .. math:: X \sim N(0, \sqrt{\frac{\text{scale}}{\text{FAN}}})
+    .. math:: \text{tensor} \sim \mathcal{N}(0, \sqrt{\frac{\text{scale}}{\text{fan}}})
 
     """
 
-    def __init__(self, scale=2., mode='FAN_IN'):
+    def __init__(self, mode='fan_in', scale=2.0):
         """Create a ``GlorotNormal`` initializer.
 
         Parameters
         ----------
-        scale : float, optional, default=2.
-            The scale factor of distribution.
-        mode : {'FAN_IN', 'FAN_OUT', 'FAN_AVG'}, optional
-            The mode to compute the normalizer.
+        mode : {'fan_in', 'fan_out', 'fan_avg'}, optional
+            The mode to compute the fans.
+        scale : float, optional, default=2.0
+            The scale factor to distribution.
 
         """
-        self.scale, self.mode = scale, mode
+        self.mode, self.scale = mode, scale
 
     def __call__(self, shape, dtype='float32', **kwargs):
         return self._getter(
             init_ops.glorot_normal,
-            scale=self.scale,
             mode=self.mode,
+            scale=self.scale,
             shape=shape,
             dtype=dtype,
             **kwargs
@@ -111,37 +109,32 @@ class GlorotNormal(Initializer):
 
 
 class GlorotUniform(Initializer):
-    r"""Fill tensors according to a glorot uniform distribution.
+    r"""Fill tensor from a glorot uniform distribution.
 
-    The **GlorotUniform** distribution is defined as:
-
-    .. math::
-        X \sim U(
-            -\sqrt{\frac{\text{scale}}{\text{FAN}}},
-             \sqrt{\frac{\text{scale}}{\text{FAN}}}
-            )
+    .. math:: \text{tensor} \sim \mathcal{U}(-\sqrt{\frac{\text{scale}}{\text{fan}}},
+                                              \sqrt{\frac{\text{scale}}{\text{fan}}})
 
     """
 
-    def __init__(self, scale=3., mode='FAN_IN'):
+    def __init__(self, mode='fan_in', scale=3.0):
         """Create a ``GlorotUniform`` initializer.
 
         Parameters
         ----------
-        scale : float, optional, default=3.
-            The scale factor of distribution.
-        mode : {'FAN_IN', 'FAN_OUT', 'FAN_AVG'}, optional
-            The mode to compute the normalizer.
+        mode : {'fan_in', 'fan_out', 'fan_avg'}, optional
+            The mode to compute the fans.
+        scale : float, optional, default=3.0
+            The scale factor to distribution.
 
         """
         super(GlorotUniform, self).__init__()
-        self.scale, self.mode = scale, mode
+        self.mode, self.scale = mode, scale
 
     def __call__(self, shape, dtype='float32', **kwargs):
         return self._getter(
             init_ops.glorot_uniform,
-            scale=self.scale,
             mode=self.mode,
+            scale=self.scale,
             shape=shape,
             dtype=dtype,
             **kwargs
@@ -149,14 +142,14 @@ class GlorotUniform(Initializer):
 
 
 class Ones(Initializer):
-    r"""Fill tensors with ones.
+    r"""Fill tensor with ones.
 
-    .. math:: y \leftarrow 0
+    .. math:: \text{tensor} \leftarrow 1
 
     """
 
     def __init__(self):
-        """Create a ``Zeros`` initializer."""
+        """Create a ``Ones`` initializer."""
         super(Ones, self).__init__()
 
     def __call__(self, shape, dtype='float32', **kwargs):
@@ -170,11 +163,9 @@ class Ones(Initializer):
 
 
 class RandomNormal(Initializer):
-    r"""Fill tensors according to a random normal distribution.
+    r"""Fill tensor from a normal distribution.
 
-    The **RandomNormal** distribution is defined as:
-
-    .. math:: X \sim N(\mu, \sigma)
+    .. math:: \text{tensor} \sim \mathcal{N}(\mu, \sigma)
 
     """
 
@@ -184,9 +175,9 @@ class RandomNormal(Initializer):
         Parameters
         ----------
         mean : number, optional, default=0.
-            The value of :math:`\mu`.
+            The value to :math:`\mu`.
         stddev : number, optional, default=0.05
-            The value of :math:`\sigma`.
+            The value to :math:`\sigma`.
 
         """
         self.mean, self.stddev = mean, stddev
@@ -203,11 +194,9 @@ class RandomNormal(Initializer):
 
 
 class RandomUniform(Initializer):
-    r"""Fill tensors according to a random uniform distribution.
+    r"""Fill tensors from an uniform distribution.
 
-    The **RandomUniform** distribution is defined as:
-
-    .. math:: X \sim U(\alpha, \beta)
+    .. math:: \text{tensor} \sim \mathcal{U}(\alpha, \beta)
 
     """
 
@@ -217,9 +206,9 @@ class RandomUniform(Initializer):
         Parameters
         ----------
         minval : number, optional, default=-0.05
-            The value of :math:`\alpha`.
+            The value to :math:`\alpha`.
         maxval : number, optional, default=0.05
-            The value of :math:`\beta`.
+            The value to :math:`\beta`.
 
         """
         self.minval, self.maxval = minval, maxval
@@ -236,12 +225,9 @@ class RandomUniform(Initializer):
 
 
 class TruncatedNormal(Initializer):
-    r"""Fill tensors according to a truncated normal distribution.
+    r"""Fill tensor from a truncated normal distribution.
 
-    The **TruncatedNormal** distribution is defined as:
-
-    .. math::
-        X \sim TN(\mu, \sigma, \mu - 2\sigma, \mu + 2\sigma)
+    .. math:: \text{tensor} \sim \mathcal{TN}(\mu, \sigma, \mu - 2\sigma, \mu + 2\sigma)
 
     """
 
@@ -251,9 +237,9 @@ class TruncatedNormal(Initializer):
         Parameters
         ----------
         mean : number, optional, default=0.
-            The value of :math:`\mu`.
+            The value to :math:`\mu`.
         stddev : number, optional, default=0.05
-            The value of :math:`\sigma`.
+            The value to :math:`\sigma`.
 
         """
         self.mean, self.stddev = mean, stddev
@@ -270,9 +256,9 @@ class TruncatedNormal(Initializer):
 
 
 class Zeros(Initializer):
-    r"""Fill tensors with zeros.
+    r"""Fill tensor with zeros.
 
-    .. math:: y \leftarrow 1
+    .. math:: \text{tensor} \leftarrow 0
 
     """
 

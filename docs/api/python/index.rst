@@ -71,13 +71,10 @@ TensorFlow
   * `tensorflow <tensorflow.html>`_
   * `tensorflow.bitwise <tensorflow/bitwise.html>`_
   * `tensorflow.dtypes <tensorflow/dtypes.html>`_
-  * `tensorflow.initializers <tensorflow/initializers.html>`_
   * `tensorflow.keras <tensorflow/keras.html>`_
   * `tensorflow.linalg <tensorflow/linalg.html>`_
-  * `tensorflow.losses <tensorflow/losses.html>`_
   * `tensorflow.math <tensorflow/math.html>`_
   * `tensorflow.nn <tensorflow/nn.html>`_
-  * `tensorflow.optimizers <tensorflow/optimizers.html>`_
   * `tensorflow.random <tensorflow/random.html>`_
 
 TensorLayer
@@ -233,26 +230,17 @@ Modules
   `Module vm.tensorflow.dtypes <tensorflow/dtypes.html>`_
   : Virtual API for ``tensorflow.dtypes`` namespace.
 
-  `Module vm.tensorflow.initializers <tensorflow/initializers.html>`_
-  : Virtual API for ``tensorflow.initializers`` namespace.
-
   `Module vm.tensorflow.keras <tensorflow/keras.html>`_
   : Virtual API for ``tensorflow.keras`` namespace.
 
   `Module vm.tensorflow.linalg <tensorflow/linalg.html>`_
   : Virtual API for ``tensorflow.linalg`` namespace.
 
-  `Module vm.tensorflow.losses <tensorflow/losses.html>`_
-  : Virtual API for ``tensorflow.losses`` namespace.
-
   `Module vm.tensorflow.math <tensorflow/math.html>`_
   : Virtual API for ``tensorflow.math`` namespace.
 
   `Module vm.tensorflow.nn <tensorflow/nn.html>`_
   : Virtual API for ``tensorflow.nn`` namespace.
-
-  `Module vm.tensorflow.optimizers <tensorflow/optimizers.html>`_
-  : Virtual API for ``tensorflow.optimizers`` namespace.
 
   `Module vm.tensorflow.random <tensorflow/random.html>`_
   : Virtual API for ``tensorflow.random`` namespace.
@@ -325,13 +313,10 @@ Modules
   tensorflow
   tensorflow/bitwise
   tensorflow/dtypes
-  tensorflow/initializers
   tensorflow/keras
   tensorflow/linalg
-  tensorflow/losses
   tensorflow/math
   tensorflow/nn
-  tensorflow/optimizers
   tensorflow/random
   tensorlayer/initializers
   tensorlayer/layers

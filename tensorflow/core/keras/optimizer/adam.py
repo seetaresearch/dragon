@@ -21,7 +21,7 @@ from dragon.vm.tensorflow.core.keras.optimizer import optimizer
 
 
 class Adam(optimizer.Optimizer):
-    r"""The optimizer which implements Adam algorithm.
+    r"""The optimizer to apply Adam algorithm.
     `[Kingma & Ba, 2014] <https://arxiv.org/abs/1412.6980>`_.
 
     The **Adam** update is defined as:

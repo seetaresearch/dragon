@@ -26,6 +26,16 @@ class Loss(object):
     """The base class for loss criterion."""
 
     def __init__(self, reduction=losses_utils.Reduction.MEAN, name=None):
+        """Create a ``Loss`` criterion.
+
+        Parameters
+        ----------
+        reduction : {'none', 'sum', 'mean', 'valid'}, optional
+            The reduction method.
+        name : str, optional
+            A optional name for the operation.
+
+        """
         losses_utils.Reduction.validate(reduction)
         self.reduction = reduction
         self.name = name

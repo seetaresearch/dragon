@@ -34,7 +34,7 @@ vm.torch
   : Compute the element-wise addition.
 
   `arange(...) <torch/arange.html>`_
-  : Return a tensor with evenly spaced values within a interval.
+  : Return a tensor of evenly spaced values within a interval.
 
   `argmax(...) <torch/argmax.html>`_
   : Return the indices of maximum elements along the given axis.
@@ -163,14 +163,11 @@ vm.torch
   `nonzero(...) <torch/nonzero.html>`_
   : Return the indices of non-zero elements.
 
-  `normal(...) <torch/normal.html>`_
-  : Return a tensor with a normal distribution.
-
   `ones(...) <torch/ones.html>`_
-  : Return a tensor with value 1 filled.
+  : Return a tensor filled with ones.
 
   `ones_like(...) <torch/ones_like.html>`_
-  : Return a tensor with value 1 filled, shape as input.
+  : Return a tensor of ones with shape as the other.
 
   `one_hot(...) <torch/one_hot.html>`_
   : Return the one-hot representation for input.
@@ -182,10 +179,10 @@ vm.torch
   : Compute the power of input.
 
   `rand(...) <torch/rand.html>`_
-  : Return a float tensor with a uniform distribution of U(0, 1).
+  : Return a tensor from the uniform distribution of U(0, 1).
 
   `randn(...) <torch/randn.html>`_
-  : Return a float tensor with a normal distribution of N(0, 1).
+  : Return a tensor from the normal distribution of N(0, 1).
 
   `reciprocal(...) <torch/reciprocal.html>`_
   : Compute the reciprocal of input.
@@ -235,9 +232,6 @@ vm.torch
   `topk_acc(...) <torch/topk_acc.html>`_
   : Compute the top-k accuracy according to the label.
 
-  `uniform(...) <torch/uniform.html>`_
-  : Return a tensor with a normal distribution.
-
   `unsqueeze(...) <torch/unsqueeze.html>`_
   : Expand the dimensions of input with size 1.
 
@@ -245,10 +239,10 @@ vm.torch
   : Select the elements from two branches under the condition.
 
   `zeros(...) <torch/zeros.html>`_
-  : Return a tensor with value 0 filled.
+  : Return a tensor filled with zeros.
 
   `zeros_like(...) <torch/zeros_like.html>`_
-  : Return a tensor with value 0s filled, shape as input.
+  : Return a tensor of zeros with shape as the other.
 
 .. toctree::
   :hidden:
@@ -301,7 +295,6 @@ vm.torch
   torch/ne
   torch/no_grad
   torch/nonzero
-  torch/normal
   torch/ones
   torch/ones_like
   torch/one_hot
@@ -328,7 +321,6 @@ vm.torch
   torch/tensor
   torch/topk
   torch/topk_acc
-  torch/uniform
   torch/unsqueeze
   torch/where
   torch/zeros_like
