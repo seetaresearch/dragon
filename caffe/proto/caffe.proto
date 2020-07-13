@@ -38,7 +38,6 @@ message Datum {
   repeated float float_data = 6;
   // If true data contains an encoded image that need to be decoded
   optional bool encoded = 7 [default = false];
-  repeated int32 labels = 8;
 }
 
 message FillerParameter {
@@ -438,14 +437,6 @@ message TransformationParameter {
   optional bool force_color = 6 [default = false];
   // Force the decoded image to have 1 color channels.
   optional bool force_gray = 7 [default = false];
-  // Distort the color?
-  optional bool augment_color = 9 [default = false];
-  // Target size.
-  optional uint32 resize = 10 [default = 0];
-  // Padding size.
-  optional uint32 padding = 11 [default = 0];
-  // Crop size during scale jittering
-  optional uint32 random_crop_size = 12 [default = 0];
 }
 
 // Message that stores parameters shared by loss layers
@@ -676,11 +667,7 @@ message DataParameter {
   optional bool force_encoded_color = 9 [default = false];
   // Prefetch queue (Number of batches to prefetch to host memory, increase if
   // data access bandwidth varies).
-  optional uint32 prefetch = 10 [default = 5];
-  // Whether to shuffle the data.
-  optional bool shuffle = 11 [default = false];
-  // The number of chunks to shuffle.
-  optional int32 num_chunks = 12 [default = 2048];
+  optional uint32 prefetch = 10 [default = 4];
 }
 
 message DropoutParameter {

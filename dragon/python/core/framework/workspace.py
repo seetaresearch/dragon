@@ -120,6 +120,20 @@ class Workspace(backend.Workspace):
         """
         return _GLOBAL_DEFAULT_WORKSPACE_STACK.get_controller(self)
 
+    def clear(self):
+        """Clear the cached tensors, operators and graphs.
+
+        Call this method before deleting to free cached resources certainly:
+
+        ```python
+        my_workspace = dragon.Workspace()
+        my_workspace.clear()
+        del my_workspace
+        ```
+
+        """
+        self.Clear()
+
     def create_graph(self, graph_def):
         """Create the graph.
 
@@ -425,7 +439,7 @@ def reset_workspace():
     """Reset the current default workspace."""
     if not _GLOBAL_DEFAULT_WORKSPACE_STACK.is_cleared():
         raise AssertionError(
-            "Do not use reset_default() to clear "
+            "Do not use reset_workspace() to clear "
             "nested workspaces.\nIf you need a cleared workspace, "
             "exit the nesting and create a new workspace.")
     _GLOBAL_DEFAULT_WORKSPACE_STACK.reset()
@@ -457,6 +471,8 @@ class _DefaultWorkspaceStack(tls.Stack):
 
     def reset(self):
         super(_DefaultWorkspaceStack, self).reset()
+        if self._global_default_workspace is not None:
+            self._global_default_workspace.clear()
         self._global_default_workspace = None
 
     @contextlib.contextmanager

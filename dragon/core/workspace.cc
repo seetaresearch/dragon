@@ -29,6 +29,23 @@ void Workspace::MergeFrom(Workspace* other) {
   }
 }
 
+void Workspace::Clear() {
+  // Following resources usually take large memory blob.
+  // It's necessary to clear them manually if workspace referenced
+  // by the frontend GC circularly.
+  graph_map_.clear();
+  operator_map_.clear();
+  for (const auto& it : tensor_map_) {
+    // The tensor pointer may be referenced by the frontend.
+    // Reset memory only to avoid the dangling pointer.
+    it.second->Reset();
+  }
+  // Reinitialize the tensor flags
+  GetTensor("/share/flag/recomputing")
+      ->Reshape({})
+      ->mutable_data<bool, CPUContext>()[0] = false;
+}
+
 Tensor* Workspace::TryGetTensor(const string& name, bool external) const {
   // Check the alias firstly
   const auto& alias_it = alias_map_.find(name);

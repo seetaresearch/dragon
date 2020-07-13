@@ -54,14 +54,14 @@ class Data(Layer):
       data_param {
         source: "/data/train"
         batch_size: 128
+        prefetch: 4
+      }
+      image_data_param {
         shuffle: true
-        num_chunks: 0
-        prefetch: 5
       }
       transform_param {
         mirror: true
-        random_crop_size: 224
-        augment_color: true
+        crop_size: 224
         mean_value: 104.00698793
         mean_value: 116.66876762
         mean_value: 122.67891434
@@ -79,7 +79,6 @@ class Data(Layer):
         batch_size: 64
       }
       transform_param {
-        resize: 256
         crop_size: 224
         mean_value: 104.00698793
         mean_value: 116.66876762
@@ -92,20 +91,16 @@ class Data(Layer):
 
     def __init__(self, layer_param):
         super(Data, self).__init__(layer_param)
-        param = layer_param.data_param
+        data_param = layer_param.data_param
+        image_data_param = layer_param.image_data_param
         transform_param = layer_param.transform_param
         self.data_args = {
-            'source': param.source,
-            'prefetch': param.prefetch,
-            'shuffle': param.shuffle,
-            'num_chunks': param.num_chunks,
-            'batch_size': param.batch_size,
+            'source': data_param.source,
+            'batch_size': data_param.batch_size,
+            'prefetch': data_param.prefetch,
+            'shuffle': image_data_param.shuffle,
             'phase': {0: 'TRAIN', 1: 'TEST'}[int(layer_param.phase)],
-            'resize': transform_param.resize,
-            'padding': transform_param.padding,
             'crop_size': transform_param.crop_size,
-            'random_crop_size': transform_param.random_crop_size,
-            'augment_color': transform_param.augment_color,
             'mirror': transform_param.mirror,
         }
         self.norm_args = {

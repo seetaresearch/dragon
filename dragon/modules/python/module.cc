@@ -47,6 +47,9 @@ PYBIND11_MODULE(libdragon_python, m) {
       /*! \brief Merge resources from another workspace */
       .def("MergeFrom", &Workspace::MergeFrom)
 
+      /*! \brief Clear the cached resources */
+      .def("Clear", &Workspace::Clear)
+
       /*! \brief Return an unique name */
       .def("UniqueName", &Workspace::UniqueName)
 
@@ -73,7 +76,7 @@ PYBIND11_MODULE(libdragon_python, m) {
             }
             return self->CreateTensor(name);
           },
-          py::return_value_policy::reference_internal)
+          py::return_value_policy::reference)
 
       /*! \brief Return the tensor */
       .def(
@@ -81,7 +84,7 @@ PYBIND11_MODULE(libdragon_python, m) {
           [](Workspace* self, const string& name) {
             return self->TryGetTensor(name);
           },
-          py::return_value_policy::reference_internal)
+          py::return_value_policy::reference)
 
       /* \brief Register an alias for the name */
       .def(

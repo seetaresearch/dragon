@@ -14,6 +14,10 @@ as_default
 ##########
 .. automethod:: dragon.Workspace.as_default
 
+clear
+#####
+.. automethod:: dragon.Workspace.clear
+
 feed_tensor
 ###########
 .. automethod:: dragon.Workspace.feed_tensor

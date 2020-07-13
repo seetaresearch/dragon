@@ -25,6 +25,9 @@ class Workspace {
   /*! \brief Merge resources from other */
   DRAGON_API void MergeFrom(Workspace*);
 
+  /*! \brief Clear the cached resources */
+  DRAGON_API void Clear();
+
   /* \brief Return an unique name */
   DRAGON_API string UniqueName(
       const string& name,

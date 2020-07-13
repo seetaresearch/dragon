@@ -102,9 +102,7 @@ class DataIterator(object):
             The optional running phase.
         batch_size : int, optional, default=128
             The size of a mini-batch.
-        partition : bool, optional, default=False
-            Whether to partition batch for parallelism.
-        prefetch : int, optional, default=5
+        prefetch : int, optional, default=4
             The prefetch count.
         num_transformers : int, optional, default=-1
             The number of transformers to process image.
@@ -122,12 +120,10 @@ class DataIterator(object):
             rank = distributed.get_rank(process_group)
 
         # Configuration.
-        self._prefetch = kwargs.get('prefetch', 5)
+        self._prefetch = kwargs.get('prefetch', 4)
         self._num_readers = kwargs.get('num_readers', 1)
         self._num_transformers = kwargs.get('num_transformers', -1)
         self._batch_size = kwargs.get('batch_size', 128)
-        if kwargs.get('partition', False):
-            self._batch_size //= group_size
         self.daemon = True
 
         # Io-Aware Policy.

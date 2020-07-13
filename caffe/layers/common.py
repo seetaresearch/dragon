@@ -127,7 +127,7 @@ class BatchNorm(Layer):
         }
         self.add_blob(value=0, no_grad=True)  # running_mean
         self.add_blob(value=1, no_grad=True)  # running_var
-        self.add_blob(value=1, no_grad=True)  # running_num_batches
+        self.add_blob(value=1, no_grad=True)  # running_num
         self.add_blob(value=1, no_grad=True)  # fixed_gamma
         self.add_blob(value=0, no_grad=True)  # fixed_beta
         self._blobs[2]['data'].set_value([1.])
@@ -139,6 +139,17 @@ class BatchNorm(Layer):
         if len(scale_layer._blobs) == 2:
             self._bias = scale_layer._blobs[1]['data']
         scale_layer.__call__ = lambda *args, **kwargs: None
+
+    def from_proto(self, proto):
+        super(BatchNorm, self).from_proto(proto)
+        current_ws = workspace.get_workspace()
+        running_num = float(current_ws.fetch_tensor(self._blobs[2]['data']))
+        if running_num != 1:
+            running_mean = current_ws.fetch_tensor(self._blobs[0]['data'])
+            running_var = current_ws.fetch_tensor(self._blobs[1]['data'])
+            current_ws.feed_tensor(self._blobs[0]['data'], running_mean / running_num)
+            current_ws.feed_tensor(self._blobs[1]['data'], running_var / running_num)
+            current_ws.feed_tensor(self._blobs[2]['data'], [1], dtype='float32')
 
     def __call__(self, bottom):
         inputs = [bottom, self._weight, self._bias] + \

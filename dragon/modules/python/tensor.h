@@ -157,7 +157,7 @@ void RegisterModule(py::module& m) {
             self->raw_mutable_data<CPUContext>();
             return self;
           },
-          py::return_value_policy::reference_internal)
+          py::return_value_policy::reference)
 
       /*! \brief Construct from an external pointer */
       .def(
@@ -192,7 +192,7 @@ void RegisterModule(py::module& m) {
             if (self->ExternalDeleter) self->ExternalDeleter();
             return self;
           },
-          py::return_value_policy::reference_internal)
+          py::return_value_policy::reference)
 
       /*! \brief Construct from a numpy array */
       .def(
@@ -219,7 +219,7 @@ void RegisterModule(py::module& m) {
             self->ExternalDeleter = [array]() -> void { Py_XDECREF(array); };
             return self;
           },
-          py::return_value_policy::reference_internal)
+          py::return_value_policy::reference)
 
       /*! \brief Construct from a dlpack tensor */
       .def(
@@ -227,7 +227,7 @@ void RegisterModule(py::module& m) {
           [](Tensor* self, py::object object) {
             return DLPackWrapper(self).From(object);
           },
-          py::return_value_policy::reference_internal)
+          py::return_value_policy::reference)
 
       /*! \brief Switch memory to the cpu context */
       .def(
