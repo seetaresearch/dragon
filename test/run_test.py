@@ -19,6 +19,7 @@ import subprocess
 import argparse
 
 TESTS_AND_SOURCES = [
+    ('dragon/core/test_device', 'dragon.core'),
     ('dragon/core/test_framework', 'dragon.core'),
     ('dragon/core/test_ops', 'dragon.core'),
 ]

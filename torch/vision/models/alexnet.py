@@ -12,7 +12,6 @@
 #    <https://github.com/pytorch/vision/blob/master/torchvision/models/alexnet.py>
 #
 # ------------------------------------------------------------
-
 """Recommend hyper-parameters:
 
 Nesterov-SGD, batch_size: 256, base_lr: 0.01, weight_decay: 0.0005

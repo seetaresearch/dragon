@@ -12,7 +12,6 @@
 #    <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/eager/def_function.py>
 #
 # ------------------------------------------------------------
-
 """Utilities to define a graph function with decorator."""
 
 from __future__ import absolute_import
@@ -267,7 +266,7 @@ class FunctionGuard(object):
             executables = [function_lib.create_function(inputs, outputs)]
             for obj in dummies:
                 if isinstance(obj, optimizer.Optimizer):
-                    executables.append(function_lib.create_function(updater=obj))
+                    executables.append(function_lib.create_function(optimizer=obj))
             self.inputs = inputs
             self.outputs = returns
             self.executables = executables

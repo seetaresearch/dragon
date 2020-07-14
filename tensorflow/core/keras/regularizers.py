@@ -12,7 +12,6 @@
 #    <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/keras/regularizers.py>
 #
 # ------------------------------------------------------------
-
 """Built-in regularizers."""
 
 from __future__ import absolute_import

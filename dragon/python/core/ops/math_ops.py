@@ -8,6 +8,7 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""The math ops."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -25,7 +26,7 @@ from dragon.core.ops.utils import parse_args
 def abs(inputs, **kwargs):
     r"""Compute the absolute value of input.
 
-    .. math:: \text{out} = \left| x \right|
+    .. math:: \text{out} = \left| \text{input} \right|
 
     Examples:
 
@@ -37,7 +38,7 @@ def abs(inputs, **kwargs):
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -57,7 +58,7 @@ def abs(inputs, **kwargs):
 def add(inputs, **kwargs):
     r"""Compute the element-wise addition.
 
-    .. math:: \text{out} = a + b
+    .. math:: \text{out} = \text{input1} + \text{input2}
 
     Examples:
 
@@ -71,7 +72,7 @@ def add(inputs, **kwargs):
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor :math:`a` and :math:`b`.
+        The input1 and input2 tensor.
 
     Returns
     -------
@@ -105,7 +106,7 @@ def affine(inputs, axis=1, num_axes=1, **kwargs):
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The **x**, **W** and **b**.
+        The tensor **x**, **W** and **b**.
     axis : int, optional, default=1
         The start axis, can be negative.
     num_axes : int, optional, default=1
@@ -114,7 +115,7 @@ def affine(inputs, axis=1, num_axes=1, **kwargs):
     Returns
     -------
     dragon.Tensor
-        The **y**.
+        The output tensor.
 
     """
     args = parse_args(locals())
@@ -133,16 +134,16 @@ def affine(inputs, axis=1, num_axes=1, **kwargs):
 def axpby(inputs, outputs=None, alpha=1., beta=1., **kwargs):
     r"""Compute the element-wise addition from input to output.
 
-    .. math:: y = \alpha x + \beta y
+    .. math:: \text{out} = \alpha * \text{input} + \beta * \text{out}
 
     If ``outputs`` is not provided, **zeros** will be used instead.
 
     Parameters
     ----------
     inputs : Union[dragon.Tensor, Sequence[dragon.Tensor]]
-        The tensor :math:`x`.
+        The input tensor(s).
     outputs : Union[dragon.Tensor, Sequence[dragon.Tensor]], optional
-        The tensor :math:`y`.
+        The output tensor(s).
     alpha : number, optional, default=1.
         The value to :math:`\alpha`.
     beta : number, optional, default=1.
@@ -151,7 +152,7 @@ def axpby(inputs, outputs=None, alpha=1., beta=1., **kwargs):
     Returns
     -------
     Union[dragon.Tensor, Sequence[dragon.Tensor]]
-        The tensor :math:`y`.
+        The output tensor(s).
 
     """
     args = parse_args(locals())
@@ -175,7 +176,7 @@ def axpby(inputs, outputs=None, alpha=1., beta=1., **kwargs):
 def bitwise_and(inputs, **kwargs):
     r"""Compute the element-wise AND bitwise operation.
 
-    .. math:: \text{out} = a \mathbin{\&} b
+    .. math:: \text{out} = \text{input1} \mathbin{\&} \text{input2}
 
     Examples:
 
@@ -189,7 +190,7 @@ def bitwise_and(inputs, **kwargs):
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor :math:`a` and :math:`b`.
+        The input1 and input2 tensor.
 
     Returns
     -------
@@ -204,7 +205,7 @@ def bitwise_and(inputs, **kwargs):
 def bitwise_or(inputs, **kwargs):
     r"""Compute the element-wise OR bitwise operation.
 
-    .. math:: \text{out} = a \mathbin{|} b
+    .. math:: \text{out} = \text{input1} \mathbin{|} \text{input2}
 
     Examples:
 
@@ -218,7 +219,7 @@ def bitwise_or(inputs, **kwargs):
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor :math:`a` and :math:`b`.
+        The input1 and input2 tensor.
 
     Returns
     -------
@@ -233,7 +234,7 @@ def bitwise_or(inputs, **kwargs):
 def bitwise_xor(inputs, **kwargs):
     r"""Compute the element-wise XOR bitwise operation.
 
-    .. math:: \text{out} = a \oplus b
+    .. math:: \text{out} = \text{input1} \oplus \text{input2}
 
     Examples:
 
@@ -247,7 +248,7 @@ def bitwise_xor(inputs, **kwargs):
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor :math:`a` and :math:`b`.
+        The input1 and input2 tensor.
 
     Returns
     -------
@@ -262,7 +263,7 @@ def bitwise_xor(inputs, **kwargs):
 def ceil(inputs, **kwargs):
     r"""Compute the smallest integer not less than input.
 
-    .. math:: \text{out} = \lceil x \rceil
+    .. math:: \text{out} = \lceil \text{input} \rceil
 
     Examples:
 
@@ -274,7 +275,7 @@ def ceil(inputs, **kwargs):
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -294,12 +295,12 @@ def ceil(inputs, **kwargs):
 def clip(inputs, low=None, high=None, **kwargs):
     r"""Compute the clipped input according to the given bounds.
 
-    .. math:: \text{out} = \min(\max(x, \text{low}), \text{high})
+    .. math:: \text{out} = \min(\max(\text{input}, \text{low}), \text{high})
 
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
     low : number, optional
         The value to :math:`\text{low}`.
     high : number, optional
@@ -331,7 +332,7 @@ def clip(inputs, low=None, high=None, **kwargs):
 def cos(inputs, **kwargs):
     r"""Compute the cos of input.
 
-    .. math:: \text{out} = \cos(x)
+    .. math:: \text{out} = \cos(\text{input})
 
     Examples:
 
@@ -343,7 +344,7 @@ def cos(inputs, **kwargs):
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -363,7 +364,7 @@ def cos(inputs, **kwargs):
 def div(inputs, **kwargs):
     r"""Compute the element-wise division.
 
-    .. math:: \text{out} = a \div b
+    .. math:: \text{out} = \text{input1} \div \text{input2}
 
     Examples:
 
@@ -377,7 +378,7 @@ def div(inputs, **kwargs):
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor :math:`a` and :math:`b`.
+        The input1 and input2 tensor.
 
     Returns
     -------
@@ -398,37 +399,37 @@ def div(inputs, **kwargs):
 def dot(inputs, **kwargs):
     r"""Compute the dot product.
 
-    .. math:: \text{out} = a \cdot b
+    .. math:: \text{out} = \text{input1} \cdot \text{input2}
 
-    If ``rank(a)`` == ``rank(b)`` == 1, compute vector product:
+    If ``rank(input1)`` == ``rank(input2)`` == 1, compute vector product:
 
     ```python
-    x = dragon.ones((2,))
-    y = dragon.ones((2,))
-    print(dragon.math.dot([x, y]))  # 2.0
+    a = dragon.ones((2,))
+    b = dragon.ones((2,))
+    print(dragon.math.dot([a, b]))  # 2.0
     ```
 
-    If ``rank(a)`` == ``rank(b)`` == 2, compute matrix multiplication:
+    If ``rank(input1)`` == ``rank(input2)`` == 2, compute matrix multiplication:
 
     ```python
-    x = dragon.ones((2, 3))
-    y = dragon.ones((3, 2))
-    print(dragon.math.dot([x, y]))  # [[[3. 3.], [3. 3.]]]
-    print(dragon.math.matmul([x, y]))  # Equivalent
+    a = dragon.ones((2, 3))
+    b = dragon.ones((3, 2))
+    print(dragon.math.dot([a, b]))  # [[[3. 3.], [3. 3.]]]
+    print(dragon.math.matmul([a, b]))  # Equivalent
     ```
 
-    If ``rank(a)`` >= 2, ``rank(b)`` == 1, compute matrix-vector multiplication:
+    If ``rank(input1)`` >= 2, ``rank(input2)`` == 1, compute matrix-vector multiplication:
 
     ```python
-    x = dragon.ones((2, 3))
-    y = dragon.ones((3,))
-    print(dragon.math.dot([x, y]))  # [[3. 3.]]
+    a = dragon.ones((2, 3))
+    b = dragon.ones((3,))
+    print(dragon.math.dot([a, b]))  # [[3. 3.]]
     ```
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor :math:`a` and :math:`b`.
+        The input1 and input2 tensor.
 
     Returns
     -------
@@ -448,7 +449,7 @@ def dot(inputs, **kwargs):
 def equal(inputs, **kwargs):
     r"""Compute the element-wise equal comparison.
 
-    .. math:: \text{out} = (a == b)
+    .. math:: \text{out} = (\text{input1} == \text{input2})
 
     Examples:
 
@@ -463,7 +464,7 @@ def equal(inputs, **kwargs):
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor :math:`a` and :math:`b`.
+        The input1 and input2 tensor.
 
     Returns
     -------
@@ -484,7 +485,7 @@ def equal(inputs, **kwargs):
 def exp(inputs, **kwargs):
     r"""Compute the exponential of input.
 
-    .. math:: \text{out} = e^{x}
+    .. math:: \text{out} = \exp(\text{input})
 
     Examples:
 
@@ -496,7 +497,7 @@ def exp(inputs, **kwargs):
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -516,7 +517,7 @@ def exp(inputs, **kwargs):
 def floor(inputs, **kwargs):
     r"""Compute the largest integer not greater than input.
 
-    .. math:: \text{out} = \lfloor x \rfloor
+    .. math:: \text{out} = \lfloor \text{input} \rfloor
 
     Examples:
 
@@ -528,7 +529,7 @@ def floor(inputs, **kwargs):
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -587,7 +588,7 @@ def fully_connected(inputs, axis=1, transpose_w=True, **kwargs):
 def greater(inputs, **kwargs):
     r"""Compute the element-wise greater comparison.
 
-    .. math:: \text{out} = (a > b)
+    .. math:: \text{out} = (\text{input1} > \text{input2})
 
     Examples:
 
@@ -602,7 +603,7 @@ def greater(inputs, **kwargs):
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor :math:`a` and :math:`b`.
+        The input1 and input2 tensor.
 
     Returns
     -------
@@ -623,7 +624,7 @@ def greater(inputs, **kwargs):
 def greater_equal(inputs, **kwargs):
     r"""Compute the element-wise greater-equal comparison.
 
-    .. math:: \text{out} = (a >= b)
+    .. math:: \text{out} = (\text{input1} >= \text{input2})
 
     Examples:
 
@@ -638,7 +639,7 @@ def greater_equal(inputs, **kwargs):
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor :math:`a` and :math:`b`.
+        The input1 and input2 tensor.
 
     Returns
     -------
@@ -659,7 +660,7 @@ def greater_equal(inputs, **kwargs):
 def invert(inputs, **kwargs):
     r"""Invert each bit of input.
 
-    .. math:: \text{out} = \,\,\sim x
+    .. math:: \text{out} = \,\,\sim \text{input}
 
     Examples:
 
@@ -676,7 +677,7 @@ def invert(inputs, **kwargs):
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -696,7 +697,7 @@ def invert(inputs, **kwargs):
 def is_inf(inputs, **kwargs):
     r"""Check if the elements of input are infinite.
 
-    .. math:: \text{out} = \text{isinf}(x)
+    .. math:: \text{out} = \text{isinf}(\text{input})
 
     Examples:
 
@@ -708,7 +709,7 @@ def is_inf(inputs, **kwargs):
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -728,7 +729,7 @@ def is_inf(inputs, **kwargs):
 def is_nan(inputs, **kwargs):
     r"""Check if the elements of input are NaN.
 
-    .. math:: \text{out} = \text{isnan}(x)
+    .. math:: \text{out} = \text{isnan}(\text{input})
 
     Examples:
 
@@ -740,7 +741,7 @@ def is_nan(inputs, **kwargs):
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -760,7 +761,7 @@ def is_nan(inputs, **kwargs):
 def log(inputs, **kwargs):
     r"""Compute the logarithm of input.
 
-    .. math:: \text{out} = \log(x)
+    .. math:: \text{out} = \log(\text{input})
 
     Examples:
 
@@ -772,7 +773,7 @@ def log(inputs, **kwargs):
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -792,7 +793,7 @@ def log(inputs, **kwargs):
 def less(inputs, **kwargs):
     r"""Compute the element-wise less comparison.
 
-    .. math:: \text{out} = (a < b)
+    .. math:: \text{out} = (\text{input1} < \text{input2})
 
     Examples:
 
@@ -807,7 +808,7 @@ def less(inputs, **kwargs):
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor :math:`a` and :math:`b`.
+        The input1 and input2 tensor.
 
     Returns
     -------
@@ -828,7 +829,7 @@ def less(inputs, **kwargs):
 def less_equal(inputs, **kwargs):
     r"""Compute the element-wise less-equal comparison.
 
-    .. math:: \text{out} = (a <= b)
+    .. math:: \text{out} = (\text{input1} <= \text{input2})
 
     Examples:
 
@@ -843,7 +844,7 @@ def less_equal(inputs, **kwargs):
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor :math:`a` and :math:`b`.
+        The input1 and input2 tensor.
 
     Returns
     -------
@@ -864,7 +865,7 @@ def less_equal(inputs, **kwargs):
 def matmul(inputs, transpose_a=False, transpose_b=False, **kwargs):
     r"""Compute the matrix multiplication.
 
-    .. math:: \text{out} = a \times b
+    .. math:: y = a \times b
 
     The rank of ``a`` and ``b`` should be equal and >= 2:
 
@@ -922,12 +923,12 @@ def matmul(inputs, transpose_a=False, transpose_b=False, **kwargs):
 def maximum(inputs, **kwargs):
     r"""Compute the maximum value of given two inputs.
 
-    .. math:: \text{out} = \max(a, b)
+    .. math:: \text{out} = \max(\text{input1}, \text{input2})
 
     Parameters
     ----------
     inputs : Sequence[Union[dragon.Tensor, number]]
-        The tensor :math:`a` and :math:`b`.
+        The input1 and input2 tensor.
 
     Returns
     -------
@@ -948,12 +949,12 @@ def maximum(inputs, **kwargs):
 def minimum(inputs, **kwargs):
     r"""Compute the minimum value of given two inputs.
 
-    .. math:: \text{out} = \min(a, b)
+    .. math:: \text{out} = \min(\text{input1}, \text{input2})
 
     Parameters
     ----------
     inputs : Sequence[Union[dragon.Tensor, number]]
-        The tensor :math:`a` and :math:`b`.
+        The input1 and input2 tensor.
 
     Returns
     -------
@@ -974,7 +975,7 @@ def minimum(inputs, **kwargs):
 def mul(inputs, **kwargs):
     r"""Compute the element-wise multiplication.
 
-    .. math:: \text{out} = a \times b
+    .. math:: \text{out} = \text{input1} \times \text{input2}
 
     Examples:
 
@@ -988,7 +989,7 @@ def mul(inputs, **kwargs):
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor :math:`a` and :math:`b`.
+        The input1 and input2 tensor.
 
     Returns
     -------
@@ -1009,7 +1010,7 @@ def mul(inputs, **kwargs):
 def negative(inputs, **kwargs):
     r"""Compute the element-wise negative.
 
-    .. math:: \text{out} = -x
+    .. math:: \text{out} = -\text{input}
 
     ```python
     x = dragon.constant([-1, 0, 1])
@@ -1019,7 +1020,7 @@ def negative(inputs, **kwargs):
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -1039,7 +1040,7 @@ def negative(inputs, **kwargs):
 def not_equal(inputs, **kwargs):
     r"""Compute the element-wise not-equal comparison.
 
-    .. math:: \text{out} = (a \neq b)
+    .. math:: \text{out} = (\text{input1} \neq \text{input2})
 
     Examples:
 
@@ -1054,7 +1055,7 @@ def not_equal(inputs, **kwargs):
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor :math:`a` and :math:`b`.
+        The input1 and input2 tensor.
 
     Returns
     -------
@@ -1075,7 +1076,7 @@ def not_equal(inputs, **kwargs):
 def pow(inputs, **kwargs):
     r"""Compute the power of input.
 
-    .. math:: \text{out} = x^{y}
+    .. math:: \text{out} = \text{input}^{\text{exponent}}
 
     The two inputs should be broadcast to each other:
 
@@ -1089,7 +1090,7 @@ def pow(inputs, **kwargs):
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor :math:`x` and :math:`y`.
+        The input and exponent tensor.
 
     Returns
     -------
@@ -1110,7 +1111,7 @@ def pow(inputs, **kwargs):
 def reciprocal(inputs, **kwargs):
     r"""Compute the reciprocal of input.
 
-    .. math:: \text{out} = \frac{1}{x}
+    .. math:: \text{out} = \frac{1}{\text{input}}
 
     Examples:
 
@@ -1122,7 +1123,7 @@ def reciprocal(inputs, **kwargs):
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -1142,7 +1143,7 @@ def reciprocal(inputs, **kwargs):
 def round(inputs, **kwargs):
     r"""Compute the nearest integer of input.
 
-    .. math:: \text{out} = \lfloor x \rceil
+    .. math:: \text{out} = \lfloor \text{input} \rceil
 
     Examples:
 
@@ -1154,7 +1155,7 @@ def round(inputs, **kwargs):
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -1174,7 +1175,7 @@ def round(inputs, **kwargs):
 def rsqrt(inputs, **kwargs):
     r"""Compute the reciprocal square root of input.
 
-    .. math:: \text{out} = \frac{1}{\sqrt{x}}
+    .. math:: \text{out} = \frac{1}{\sqrt{\text{input}}}
 
     Examples:
 
@@ -1186,7 +1187,7 @@ def rsqrt(inputs, **kwargs):
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -1207,11 +1208,11 @@ def sign(inputs, **kwargs):
     r"""Compute the sign indication of input.
 
     .. math::
-        \text{out}_{i} =
+        \text{out}[i] =
             \begin{cases}
-                -1, & \text{ if } x_{i} < 0 \\
-                 0, & \text{ if } x_{i} = 0 \\
-                 1, & \text{ if } x_{i} > 0
+                -1, & \text{ if } \text{input}[i] < 0 \\
+                 0, & \text{ if } \text{input}[i] = 0 \\
+                 1, & \text{ if } \text{input}[i] > 0
             \end{cases}
 
     Examples:
@@ -1224,7 +1225,7 @@ def sign(inputs, **kwargs):
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -1244,7 +1245,7 @@ def sign(inputs, **kwargs):
 def sin(inputs, **kwargs):
     r"""Compute the sin of input.
 
-    .. math:: \text{out} = \sin(x)
+    .. math:: \text{out} = \sin(\text{input})
 
     Examples:
 
@@ -1256,7 +1257,7 @@ def sin(inputs, **kwargs):
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -1276,7 +1277,7 @@ def sin(inputs, **kwargs):
 def sqrt(inputs, **kwargs):
     r"""Compute the square root of input.
 
-    .. math:: \text{out} = \sqrt{x}
+    .. math:: \text{out} = \sqrt{\text{input}}
 
     Examples:
 
@@ -1288,7 +1289,7 @@ def sqrt(inputs, **kwargs):
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -1308,7 +1309,7 @@ def sqrt(inputs, **kwargs):
 def square(inputs, **kwargs):
     r"""Compute the square of input.
 
-    .. math:: \text{out} = x^{2}
+    .. math:: \text{out} = \text{input}^{2}
 
     Examples:
 
@@ -1320,7 +1321,7 @@ def square(inputs, **kwargs):
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -1340,7 +1341,7 @@ def square(inputs, **kwargs):
 def sub(inputs, **kwargs):
     r"""Compute the element-wise subtraction.
 
-    .. math:: \text{out} = a - b
+    .. math:: \text{out} = \text{input1} - \text{input2}
 
     Examples:
 
@@ -1354,7 +1355,7 @@ def sub(inputs, **kwargs):
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor :math:`a` and :math:`b`.
+        The input1 and input2 tensor.
 
     Returns
     -------

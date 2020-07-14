@@ -9,7 +9,6 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
 """ResNet for ImageNet.
 
 # Reference:

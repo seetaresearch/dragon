@@ -12,7 +12,6 @@
 #    <https://github.com/pytorch/vision/blob/master/torchvision/models/inception.py>
 #
 # ------------------------------------------------------------
-
 """We remove the aux-loss branch, comparing to the one in original model zoo.
 
 Recommend hyper-parameters:

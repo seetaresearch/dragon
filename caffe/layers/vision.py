@@ -8,8 +8,7 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
-"""The implementation of the vision layers."""
+"""The vision layers."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -184,8 +183,9 @@ class Pooling(Layer):
         super(Pooling, self).__init__(layer_param)
         param = layer_param.pooling_param
         self.arguments = {
-            'data_format': 'NCHW',
+            'ceil_mode': True,
             'mode': {0: 'MAX', 1: 'AVG'}[param.pool],
+            'data_format': 'NCHW',
             'global_pooling': param.global_pooling,
         }
         if not param.HasField('kernel_h'):

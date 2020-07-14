@@ -8,6 +8,7 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""The random ops."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -26,9 +27,7 @@ def random_normal(
 ):
     r"""Return a tensor initialized from normal distribution.
 
-    The **Normal** distribution is defined as:
-
-    .. math:: X \sim N(\mu, \sigma)
+    .. math:: \text{out} \sim \mathcal{N}(\mu, \sigma)
 
     Parameters
     ----------
@@ -65,9 +64,7 @@ def random_uniform(
 ):
     r"""Return a tensor initialized from the uniform distribution.
 
-    The **Uniform** distribution is defined as:
-
-    .. math:: X \sim U(\alpha, \beta)
+    .. math:: \text{out} \sim \mathcal{U}(\alpha, \beta)
 
     Parameters
     ----------
@@ -104,10 +101,8 @@ def truncated_normal(
 ):
     r"""Return a tensor initialized from the truncated normal distribution.
 
-    The **TruncatedNormal** distribution is defined as:
-
     .. math::
-        X \sim TN(\mu, \sigma, \mu - 2\sigma, \mu + 2\sigma)
+        \text{out} \sim \mathcal{TN}(\mu, \sigma, \mu - 2\sigma, \mu + 2\sigma)
 
     Parameters
     ----------

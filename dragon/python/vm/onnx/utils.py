@@ -8,7 +8,6 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
 """Utilities to a too simple ONNX exporting or importing."""
 
 from __future__ import absolute_import

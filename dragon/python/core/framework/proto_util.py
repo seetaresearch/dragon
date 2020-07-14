@@ -8,7 +8,6 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
 """Define some helpful protocol buffer makers here."""
 
 from __future__ import absolute_import
@@ -101,10 +100,9 @@ def make_operator_def(
     arg=None,
     **kwargs
 ):
-    op_def = dragon_pb2.OperatorDef()
-    op_def.type, op_def.name = op_type, name
-    op_def.input.extend([str(tensor) for tensor in inputs])
-    op_def.output.extend([str(tensor) for tensor in outputs])
+    op_def = dragon_pb2.OperatorDef(type=op_type, name=name)
+    op_def.input.extend(inputs)
+    op_def.output.extend(outputs)
     if device_option is not None:
         op_def.device_option.CopyFrom(device_option)
     if 'random_seed' in kwargs:

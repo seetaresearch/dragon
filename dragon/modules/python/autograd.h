@@ -23,19 +23,18 @@ namespace autograd {
 
 void RegisterModule(py::module& m) {
   m.def(
-      "CreateGradientDefs",
-      [](const string& forward_def, const vector<string>& g_outputs) {
+      "CreateGradientDef",
+      [](const string& def_str, const vector<string>& grad_outputs) {
         OperatorDef def;
-        if (!def.ParseFromString(forward_def))
-          LOG(FATAL) << "Failed to parse the OperatorDef.";
-        if (!GradientRegistry()->Has(def.type()))
-          LOG(FATAL) << def.type() << "Op has no gradients.";
-        Gradient grad = MakeGradientForOp(def, g_outputs);
-        vector<py::bytes> grad_ops;
-        for (const auto& e : grad.ops)
-          grad_ops.push_back(e.SerializeAsString());
+        CHECK(def.ParseFromString(def_str))
+            << "\nFailed to parse the OperatorDef.";
+        GradientPack pack = MakeGradientForOp(def, grad_outputs);
+        vector<py::bytes> grad_defs;
+        for (const auto& op_def : pack.grad_defs) {
+          grad_defs.push_back(op_def.SerializeAsString());
+        }
         return std::tuple<vector<py::bytes>, vector<string>, vector<float>>(
-            grad_ops, grad.g_inputs, grad.defaults);
+            grad_defs, pack.grad_inputs, pack.defaults);
       });
 }
 

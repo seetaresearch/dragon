@@ -8,8 +8,7 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
-"""The implementation of the data layers."""
+"""The data layers."""
 
 from __future__ import absolute_import
 from __future__ import division

@@ -12,7 +12,6 @@
 #    <https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py>
 #
 # ------------------------------------------------------------
-
 """We add the zero-init-bn, comparing to the one in original model zoo.
 
 For more about zero-init, See,

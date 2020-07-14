@@ -8,6 +8,7 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""The loss ops."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -284,10 +285,10 @@ def smooth_l1_loss(inputs, beta=1., reduction='mean', **kwargs):
 
     .. math::
         \text{SmoothL1Loss}(x, y) =
-        \begin{cases}
-            0.5 * (x - y)^{2} / beta, & \text{ if } |x - y| < beta \\
-            |x - y| - 0.5 * beta, & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                0.5 * (x - y)^{2} / beta, & \text{ if } |x - y| < beta \\
+                |x - y| - 0.5 * beta, & \text{ otherwise }
+            \end{cases}
 
     Parameters
     ----------

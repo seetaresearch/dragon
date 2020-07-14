@@ -25,10 +25,10 @@ def leaky_relu(x, alpha=0.2, name="leaky_relu", **kwargs):
 
     .. math::
         \text{LeakyReLU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            \alpha * x, & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                \alpha * x, & \text{ otherwise }
+            \end{cases}
 
     Examples:
 

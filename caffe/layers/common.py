@@ -8,8 +8,7 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
-"""The implementation of the common layers."""
+"""The common layers."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -627,6 +626,10 @@ class Slice(Layer):
 
 class Softmax(Layer):
     r"""Apply the softmax function.
+
+    The **Softmax** function is defined as:
+
+    .. math:: \text{Softmax}(x_{i}) = \frac{\exp(x_{i})}{\sum_{j} \exp(x_{j})}
 
     Examples:
 

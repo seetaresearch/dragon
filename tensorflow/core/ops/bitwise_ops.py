@@ -12,6 +12,7 @@
 #    <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/bitwise_ops.py>
 #
 # ------------------------------------------------------------
+"""The bitwise ops."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -23,7 +24,7 @@ from dragon.core.ops import math_ops
 def bitwise_and(x, y, name=None):
     r"""Compute the element-wise AND bitwise operation.
 
-    .. math:: \text{out} = x \mathbin{\&} y
+    .. math:: \text{out} = \text{input1} \mathbin{\&} \text{input2}
 
     Examples:
 
@@ -37,9 +38,9 @@ def bitwise_and(x, y, name=None):
     Parameters
     ----------
     x : dragon.Tensor
-        The tensor :math:`x`.
+        The input1 tensor.
     y : dragon.Tensor
-        The tensor :math:`y`.
+        The input2 tensor.
     name : str, optional
         A optional name for the operation.
 
@@ -55,7 +56,7 @@ def bitwise_and(x, y, name=None):
 def bitwise_or(x, y, name=None):
     r"""Compute the element-wise OR bitwise operation.
 
-    .. math:: \text{out} = x \mathbin{|} y
+    .. math:: \text{out} = \text{input1} \mathbin{|} \text{input2}
 
     Examples:
 
@@ -69,9 +70,9 @@ def bitwise_or(x, y, name=None):
     Parameters
     ----------
     x : dragon.Tensor
-        The tensor :math:`x`.
+        The input1 tensor.
     y : dragon.Tensor
-        The tensor :math:`y`.
+        The input2 tensor.
     name : str, optional
         A optional name for the operation.
 
@@ -87,7 +88,7 @@ def bitwise_or(x, y, name=None):
 def bitwise_xor(x, y, name=None):
     r"""Compute the element-wise XOR bitwise operation.
 
-    .. math:: \text{out} = x \oplus y
+    .. math:: \text{out} = \text{input1} \oplus \text{input2}
 
     Examples:
 
@@ -101,9 +102,9 @@ def bitwise_xor(x, y, name=None):
     Parameters
     ----------
     x : dragon.Tensor
-        The tensor :math:`x`.
+        The input1 tensor.
     y : dragon.Tensor
-        The tensor :math:`y`.
+        The input2 tensor.
     name : str, optional
         A optional name for the operation.
 
@@ -119,7 +120,7 @@ def bitwise_xor(x, y, name=None):
 def invert(x, name=None):
     r"""Invert each bit of input.
 
-    .. math:: \text{out} = \,\,\sim x
+    .. math:: \text{out} = \,\,\sim \text{input}
 
     Examples:
 
@@ -136,7 +137,7 @@ def invert(x, name=None):
     Parameters
     ----------
     x : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
     name : str, optional
         A optional name for the operation.
 

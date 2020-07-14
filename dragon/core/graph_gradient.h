@@ -19,14 +19,14 @@ namespace dragon {
 
 class DRAGON_API GraphGradientMaker {
  public:
-  /*! \brief Generate a backward graph from the forward ops */
+  /*! \brief Generate graph def from the op defs */
   void Make(
       const vector<OperatorDef*>& op_defs,
       const vector<string>& targets,
       const vector<string>& input_grads,
       GraphDef& graph_def);
 
-  /*! \brief Rewrite a graph to share the intermediate grads */
+  /*! \brief Rewrite graph def to share the intermediate grads */
   GraphDef Share(const GraphDef& input_def);
 
   /*! \brief Add an empty gradient */
@@ -45,7 +45,7 @@ class DRAGON_API GraphGradientMaker {
   }
 
  private:
-  /*! \brief Check the missing grads of backward procedure */
+  /*! \brief Check the missing grads */
   bool CheckGrad(
       const OperatorDef& op_def,
       const Set<string>& targets,
@@ -59,9 +59,6 @@ class DRAGON_API GraphGradientMaker {
 
   /*! \brief The mapping from input to grad */
   Map<string, string> inputs_to_grads_;
-
-  /*! \brief The non-gradient outputs */
-  Set<string> blacklist_set_;
 
   /*! \brief The gradients should be retained */
   Set<string> retained_grads_;

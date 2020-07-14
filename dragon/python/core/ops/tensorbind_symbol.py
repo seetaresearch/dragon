@@ -8,7 +8,6 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
 """Bind tensor methods executed symbolically."""
 
 from __future__ import absolute_import

@@ -12,6 +12,7 @@
 #    <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/linalg_ops.py>
 #
 # ------------------------------------------------------------
+"""The linalg ops."""
 
 from __future__ import absolute_import
 from __future__ import division

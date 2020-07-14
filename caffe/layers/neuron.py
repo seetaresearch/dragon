@@ -8,8 +8,7 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
-"""The implementation of the neuron layers."""
+"""The neuron layers."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -64,10 +63,10 @@ class ELU(Layer):
 
     .. math::
         \text{ELU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            \alpha * (e^{x} - 1), & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                \alpha * (\exp(x) - 1), & \text{ otherwise }
+            \end{cases}
 
     Examples:
 
@@ -185,10 +184,10 @@ class ReLU(Layer):
 
     .. math::
         \text{ReLU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            0, & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                0, & \text{ otherwise }
+            \end{cases}
 
     Examples:
 
@@ -220,7 +219,7 @@ class Sigmoid(Layer):
 
     The **Sigmoid** function is defined as:
 
-    .. math:: \text{Sigmoid}(x) = \frac{1}{1 + e^{-x}}
+    .. math:: \text{Sigmoid}(x) = \frac{1}{1 + \exp(-x)}
 
     Examples:
 
@@ -246,7 +245,7 @@ class TanH(Layer):
 
     The **Tanh** function is defined as:
 
-    .. math:: \text{Tanh}(x) = \frac{e^{x} - e^{-x}}{e^{x} + e^{-x}}
+    .. math:: \text{Tanh}(x) = \frac{\exp(x) - \exp(-x)}{\exp(x) + \exp(-x)}
 
     Examples:
 

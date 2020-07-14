@@ -24,10 +24,11 @@ class DropBlock2d(Module):
     The **DropBlock** function is defined as:
 
     .. math::
-        \text{DropBlock}(x) = x \cdot \text{Bernoulli}(\alpha\cdot\gamma) \\
-        \quad \\ \text{where}\quad \gamma =
-            \frac{keep\_prob}{block\_size^{n}}
-            \frac{feat\_size^{n}}{(feat\_size - block\_size + 1)^n}
+        \text{DropBlock}(x_{ijk} =
+            x_{ijk} * (r_{ik} \sim \mathcal{B}(1, \alpha\gamma)) \\ \quad \\
+                \text{where}\quad \gamma =
+                    \frac{\text{keep\_prob}}{\text{block\_size}^{n}}
+                    \frac{\text{feat\_size}^{n}}{(\text{feat\_size} - \text{block\_size} + 1)^n}
 
     Examples:
 
@@ -94,7 +95,7 @@ class Dropout(Module):
 
     The **Dropout** function is defined as:
 
-    .. math:: \text{Dropout}(x) = x * \text{Bernoulli}(p=1 - prob)
+    .. math:: \text{Dropout}(x) = x * (r \sim \mathcal{B}(1, 1 - \text{prob}))
 
     Examples:
 
@@ -140,7 +141,7 @@ class DropPath(Module):
 
     The **DropPath** function is defined as:
 
-    .. math:: \text{DropPath}(x) = x * \text{Bernoulli}(p=1 - prob)
+    .. math:: \text{DropPath}(x_{ij}) = x_{ij} * (r_{i} \sim \mathcal{B}(1, 1 - \text{prob}))
 
     Examples:
 

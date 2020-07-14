@@ -8,6 +8,7 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""The nn ops implementation."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -140,8 +141,8 @@ def moments(x, axes=None, keepdims=False, name=None):
 
     .. math::
         \begin{cases}
-            \text{Mean}(x) = \frac{1}{n}\sum(x) \\
-            \text{Variance}(x) = \frac{1}{n}\sum(x - \text{Mean}(x))^{2}
+            \text{mean} = \frac{1}{n}\sum(\text{input}) \\
+            \text{variance} = \frac{1}{n}\sum(\text{input} - \text{mean})^{2}
         \end{cases}
 
     The argument ``axis`` could be negative or **None**:
@@ -164,7 +165,7 @@ def moments(x, axes=None, keepdims=False, name=None):
     Parameters
     ----------
     x : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
     axes : Union[int, Sequence[int]], optional
         The axis to reduce.
     keepdims : bool, optional, default=False

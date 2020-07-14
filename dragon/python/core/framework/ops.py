@@ -8,7 +8,6 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
 """Utilities to fly an operator."""
 
 from __future__ import absolute_import

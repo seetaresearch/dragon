@@ -8,7 +8,6 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
 """Define the helper for creating symbolic operators."""
 
 from __future__ import absolute_import
@@ -87,14 +86,16 @@ class OpDef(object):
             num_outputs = len(outputs)
 
         # Construct Def.
-        op_idx, op_name = OpDef.get_index_and_name()
-        op_info._defs[op_idx] = proto_util.make_operator_def(
-            name=op_name,
-            op_type=op_type,
-            inputs=[input.id for input in inputs],
-            outputs=[output.id for output in outputs],
-            device_option=proto_util.get_default_device_option(),
-            **kwargs)
+        op_index, op_name = OpDef.get_index_and_name()
+        op_info.add_def(
+            op_index, proto_util.make_operator_def(
+                name=op_name,
+                op_type=op_type,
+                inputs=[input.id for input in inputs],
+                outputs=[output.id for output in outputs],
+                device_option=proto_util.get_default_device_option(),
+                **kwargs
+            ))
 
         # Blend the op for outputs.
         for output in outputs:

@@ -202,33 +202,36 @@ OperatorBase* NewOperator(const OperatorDef& def, Workspace* ws) {
   return TryCreateOperator(def.type(), mutable_def, ws);
 }
 
-Gradient MakeGradientForOp(
+GradientPack MakeGradientForOp(
     const OperatorDef& def,
-    const vector<string>& g_outputs) {
-  unique_ptr<GradientMakerBase> maker(
-      GradientRegistry()->Create(def.type(), def, g_outputs));
-  if (maker.get() == nullptr)
-    LOG(FATAL) << "Gradient maker for operator " << def.type()
-               << "not implemented.";
-  Gradient grad = maker->Make();
+    const vector<string>& grad_outputs) {
+  CHECK(GradientRegistry()->Has(def.type()))
+      << "\nNo GradientMaker registered for " << def.type() << "Op.";
   OperatorDef reference_def(def);
-  // Set the cache key
+  unique_ptr<GradientMakerBase> maker(
+      GradientRegistry()->Create(def.type(), def, grad_outputs));
+  GradientPack pack = maker->Make();
+  // Copy cache key
   if (reference_def.has_cache_key()) {
-    for (int i = 0; i < grad.ops.size(); ++i) {
-      grad.ops[i].set_cache_key(
+    for (int i = 0; i < pack.grad_defs.size(); ++i) {
+      pack.grad_defs[i].set_cache_key(
           reference_def.cache_key() + "/grad" +
           (i > 0 ? (":" + str::to(i)) : ""));
     }
   }
   // Copy device option and arguments
-  if (maker->CopyDeviceOption() && def.has_device_option())
-    for (auto& grad_def : grad.ops)
+  if (maker->CopyDeviceOption() && def.has_device_option()) {
+    for (auto& grad_def : pack.grad_defs) {
       grad_def.mutable_device_option()->CopyFrom(def.device_option());
+    }
+  }
   // Copy arguments
-  if (maker->CopyArguments() && def.arg_size())
-    for (auto& grad_def : grad.ops)
+  if (maker->CopyArguments() && def.arg_size()) {
+    for (auto& grad_def : pack.grad_defs) {
       grad_def.mutable_arg()->MergeFrom(reference_def.arg());
-  return grad;
+    }
+  }
+  return pack;
 }
 
 /* Operator Registry */

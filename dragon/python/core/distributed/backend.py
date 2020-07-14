@@ -12,7 +12,6 @@
 #    <https://github.com/pytorch/pytorch/blob/master/torch/distributed/distributed_c10d.py>
 #
 # ------------------------------------------------------------
-
 """Distributed utilities equipped with Python."""
 
 from __future__ import absolute_import

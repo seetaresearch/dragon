@@ -29,10 +29,10 @@ class ELU(Layer):
 
     .. math::
         \text{ELU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            \alpha * (e^{x} - 1), & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                \alpha * (\exp(x) - 1), & \text{ otherwise }
+            \end{cases}
 
     Examples:
 
@@ -72,10 +72,10 @@ class LeakyReLU(Layer):
 
     .. math::
         \text{LeakyReLU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            \alpha * x, & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                \alpha * x, & \text{ otherwise }
+            \end{cases}
 
     Examples:
 
@@ -160,10 +160,10 @@ class SELU(Layer):
 
     .. math::
         \text{SELU}(x) = 1.0507 *
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            1.67326 * (e^{x} - 1), & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                1.67326 * (\exp(x) - 1), & \text{ otherwise }
+            \end{cases}
 
     Examples:
 
@@ -188,7 +188,7 @@ class Softmax(Layer):
 
     The **Softmax** function is defined as:
 
-    .. math:: \text{Softmax}(x) = \frac{e^{x_{i}}}{\sum e^{x_{j}}}
+    .. math:: \text{Softmax}(x_{i}) = \frac{\exp(x_{i})}{\sum_{j} \exp(x_{j})}
 
     Examples:
 

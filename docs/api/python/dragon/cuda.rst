@@ -3,6 +3,12 @@ dragon.cuda
 
 .. only:: html
 
+  Classes
+  -------
+
+  `class Stream <cuda/Stream.html>`_
+  : The CUDA stream wrapper.
+
   Functions
   ---------
 
@@ -10,10 +16,7 @@ dragon.cuda
   : Return the index of current selected device.
 
   `enable_cudnn(...) <cuda/enable_cudnn.html>`_
-  : Activate the CuDNN engine.
-
-  `enable_cudnn_benchmark(...) <cuda/enable_cudnn_benckmark.html>`_
-  : Activate the CuDNN benchmark.
+  : Enable the CuDNN library.
 
   `get_device_capability(...) <cuda/get_device_capability.html>`_
   : Return the capability of specified device.
@@ -28,18 +31,18 @@ dragon.cuda
   : Set the current device.
 
   `synchronize(...) <cuda/synchronize.html>`_
-  : Synchronize the specified cuda stream.
+  : Synchronize a specified CUDA stream.
 
 .. toctree::
   :hidden:
 
   cuda/current_device
   cuda/enable_cudnn
-  cuda/enable_cudnn_benchmark
   cuda/get_device_capability
   cuda/is_available
   cuda/set_default_device
   cuda/set_device
+  cuda/Stream
   cuda/synchronize
 
 .. raw:: html

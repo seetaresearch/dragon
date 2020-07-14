@@ -74,17 +74,17 @@ def axpby(input, alpha=1., beta=1., out=None):
         ).apply(input, out)
 
 
-def add(input, value, out=None):
+def add(input, other, out=None):
     r"""Compute the element-wise addition.
 
-    .. math:: \text{out} = \text{input} + \text{value}
+    .. math:: \text{out} = \text{input} + \text{other}
 
     Parameters
     ----------
     input : dragon.vm.torch.Tensor
         The input tensor.
-    value : Union[dragon.vm.torch.Tensor, number]
-        The value to add.
+    other : Union[dragon.vm.torch.Tensor, number]
+        The tensor to add.
     out : dragon.vm.torch.Tensor, optional
         The optional output tensor.
 
@@ -94,13 +94,13 @@ def add(input, value, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, value, 'Add', out)
+    return _binary_func(input, other, 'Add', out)
 
 
 def bitwise_not(input, out=None):
     r"""Compute the element-wise NOT bitwise operation.
 
-    .. math:: \text{out} = \,\,\sim x
+    .. math:: \text{out} = \,\,\sim \text{input}
 
     Examples:
 
@@ -117,7 +117,7 @@ def bitwise_not(input, out=None):
     Parameters
     ----------
     input : dragon.vm.torch.Tensor
-        The tensor :math:`x`.
+        The input tensor.
     out : dragon.vm.torch.Tensor, optional
         The optional output tensor.
 
@@ -165,7 +165,7 @@ def bitwise_xor(input, other, out=None):
 def ceil(input, out=None):
     r"""Compute the smallest integer not less than input.
 
-    .. math:: \text{out} = \lceil x \rceil
+    .. math:: \text{out} = \lceil \text{input} \rceil
 
     Examples:
 
@@ -248,17 +248,17 @@ def cos(input, out=None):
     return _unary_func(input, 'Cos', out)
 
 
-def div(input, value, out=None):
+def div(input, other, out=None):
     r"""Compute the element-wise division.
 
-    .. math:: \text{out} = \text{input} \div \text{value}
+    .. math:: \text{out} = \text{input} \div \text{other}
 
     Parameters
     ----------
     input : dragon.vm.torch.Tensor
         The input tensor.
-    value : Union[dragon.vm.torch.Tensor, number]
-        The value to divide.
+    other : Union[dragon.vm.torch.Tensor, number]
+        The tensor to divide.
     out : dragon.vm.torch.Tensor, optional
         The optional output tensor.
 
@@ -268,20 +268,20 @@ def div(input, value, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, value, 'Div', out)
+    return _binary_func(input, other, 'Div', out)
 
 
 def eq(input, other, out=None):
     r"""Compute the element-wise equal comparison.
 
-    .. math:: \text{out} = (\text{input} = \text{other})
+    .. math:: \text{out} = (\text{input} == \text{other})
 
     Parameters
     ----------
     input : dragon.vm.torch.Tensor
         The input tensor.
     other : Union[dragon.vm.torch.Tensor, number]
-        The value to compare.
+        The tensor to compare.
     out : dragon.vm.torch.Tensor, optional
         The optional output tensor.
 
@@ -297,7 +297,7 @@ def eq(input, other, out=None):
 def exp(input, out=None):
     r"""Compute the exponential of input.
 
-    .. math:: \text{out} = e^{\text{input}}
+    .. math:: \text{out} = \exp(\text{input})
 
     Parameters
     ----------
@@ -318,7 +318,7 @@ def exp(input, out=None):
 def floor(input, out=None):
     r"""Compute the largest integer not greater than input.
 
-    .. math:: \text{out} = \lfloor x \rfloor
+    .. math:: \text{out} = \lfloor \text{input} \rfloor
 
     Examples:
 
@@ -353,7 +353,7 @@ def ge(input, other, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     other : Union[dragon.vm.torch.Tensor, number]
-        The value to compare.
+        The tensor to compare.
     out : dragon.vm.torch.Tensor, optional
         The optional output tensor.
 
@@ -376,7 +376,7 @@ def gt(input, other, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     other : Union[dragon.vm.torch.Tensor, number]
-        The value to compare.
+        The tensor to compare.
     out : dragon.vm.torch.Tensor, optional
         The optional output tensor.
 
@@ -392,7 +392,7 @@ def gt(input, other, out=None):
 def isinf(input):
     r"""Check if the elements of input are infinite.
 
-    .. math:: \text{out} = \text{isinf}(x)
+    .. math:: \text{out} = \text{isinf}(\text{input})
 
     Examples:
 
@@ -418,7 +418,7 @@ def isinf(input):
 def isnan(input):
     r"""Check if the elements of input are NaN.
 
-    .. math:: \text{out} = \text{isnan}(x)
+    .. math:: \text{out} = \text{isnan}(\text{input})
 
     Examples:
 
@@ -451,7 +451,7 @@ def le(input, other, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     other : Union[dragon.vm.torch.Tensor, number]
-        The value to compare.
+        The tensor to compare.
     out : dragon.vm.torch.Tensor, optional
         The optional output tensor.
 
@@ -488,7 +488,7 @@ def log(input, out=None):
 def logsumexp(input, dim, keepdim=False, out=None):
     r"""Apply the composite of log, sum, and exp to input.
 
-    .. math:: \text{LogSumExp}(x)_{i} = \log\sum_{j}\exp(x_{ij})
+    .. math:: \text{out}_{i} = \log\sum_{j}\exp(\text{input}_{ij})
 
     Parameters
     ----------
@@ -520,7 +520,7 @@ def lt(input, other, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     other : Union[dragon.vm.torch.Tensor, number]
-        The value to compare.
+        The tensor to compare.
     out : dragon.vm.torch.Tensor, optional
         The optional output tensor.
 
@@ -594,7 +594,7 @@ def minimum(input, other, out=None):
 def mm(input, mat2, transpose_a=False, transpose_b=False, out=None):
     r"""Compute matrix-matrix multiplication.
 
-    .. math:: \text{out} = a \times b
+    .. math:: y = a \times b
 
     Parameters
     ----------
@@ -623,17 +623,17 @@ def mm(input, mat2, transpose_a=False, transpose_b=False, out=None):
         ).apply(input, mat2, out)
 
 
-def mul(input, value, out=None):
+def mul(input, other, out=None):
     r"""Compute the element-wise multiplication.
 
-    .. math:: \text{out} = \text{input} \times \text{value}
+    .. math:: \text{out} = \text{input} \times \text{other}
 
     Parameters
     ----------
     input : dragon.vm.torch.Tensor
         The input tensor.
-    value : Union[dragon.vm.torch.Tensor, number]
-        The value to multiply.
+    other : Union[dragon.vm.torch.Tensor, number]
+        The tensor to multiply.
     out : dragon.vm.torch.Tensor, optional
         The optional output tensor.
 
@@ -643,7 +643,7 @@ def mul(input, value, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, value, 'Mul', out)
+    return _binary_func(input, other, 'Mul', out)
 
 
 def ne(input, other, out=None):
@@ -656,7 +656,7 @@ def ne(input, other, out=None):
     input : dragon.vm.torch.Tensor
         The input tensor.
     other : Union[dragon.vm.torch.Tensor, number]
-        The value to compare.
+        The tensor to compare.
     out : dragon.vm.torch.Tensor, optional
         The optional output tensor.
 
@@ -693,7 +693,7 @@ def neg(input, out=None):
 def pow(input, exponent, out=None):
     r"""Compute the power of input.
 
-    .. math:: \text{out} = x^{y}
+    .. math:: \text{out} = \text{input}^{\text{exponent}}
 
     The two inputs should be broadcast to each other:
 
@@ -707,9 +707,9 @@ def pow(input, exponent, out=None):
     Parameters
     ----------
     input : Union[dragon.vm.torch.Tensor, number]
-        The input tensor :math:`x`.
+        The input tensor.
     exponent : Union[dragon.vm.torch.Tensor, number]
-        The exponent value :math:`y`.
+        The exponent tensor.
     out : dragon.vm.torch.Tensor, optional
         The optional output tensor.
 
@@ -810,11 +810,11 @@ def sign(input, out=None):
     r"""Compute the sign indication of input.
 
     .. math::
-        \text{out}_{i} =
+        \text{out}[i] =
             \begin{cases}
-                -1, & \text{ if } \text{input}_{i} < 0 \\
-                 0, & \text{ if } \text{input}_{i} = 0 \\
-                 1, & \text{ if } \text{input}_{i} > 0
+                -1, & \text{ if } \text{input}[i] < 0 \\
+                 0, & \text{ if } \text{input}[i] = 0 \\
+                 1, & \text{ if } \text{input}[i] > 0
             \end{cases}
 
     Examples:
@@ -896,17 +896,17 @@ def sqrt(input, out=None):
     return _unary_func(input, 'Sqrt', out)
 
 
-def sub(input, value, out=None):
+def sub(input, other, out=None):
     r"""Compute the element-wise subtraction.
 
-    .. math:: \text{out} = \text{input} - \text{value}
+    .. math:: \text{out} = \text{input} - \text{other}
 
     Parameters
     ----------
     input : dragon.vm.torch.Tensor
         The input tensor.
-    value : Union[dragon.vm.torch.Tensor, number]
-        The value to subtract.
+    other : Union[dragon.vm.torch.Tensor, number]
+        The tensor to subtract.
     out : dragon.vm.torch.Tensor, optional
         The optional output tensor.
 
@@ -916,7 +916,7 @@ def sub(input, value, out=None):
         The output tensor.
 
     """
-    return _binary_func(input, value, 'Sub', out)
+    return _binary_func(input, other, 'Sub', out)
 
 
 def _binary_func(input, value, op_type='', out=None):

@@ -8,8 +8,7 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
-"""List the exported CXX API."""
+"""List the exported C++ API."""
 
 from __future__ import absolute_import
 from __future__ import division

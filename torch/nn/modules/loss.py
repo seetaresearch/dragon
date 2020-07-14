@@ -379,10 +379,10 @@ class SmoothL1Loss(_Loss):
 
     .. math::
         \text{SmoothL1Loss}(x, y) =
-        \begin{cases}
-            0.5 * (x - y)^{2} / beta, & \text{ if } |x - y| < beta \\
-            |x - y| - 0.5 * beta, & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                0.5 * (x - y)^{2} / beta, & \text{ if } |x - y| < beta \\
+                |x - y| - 0.5 * beta, & \text{ otherwise }
+            \end{cases}
 
     Examples:
 

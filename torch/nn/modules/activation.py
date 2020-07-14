@@ -28,10 +28,10 @@ class ELU(Module):
 
     .. math::
         \text{ELU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            alpha * (e^{x} - 1), & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                \alpha * (\exp(x) - 1), & \text{ otherwise }
+            \end{cases}
 
     Examples:
 
@@ -130,10 +130,10 @@ class LeakyReLU(Module):
 
     .. math::
         \text{LeakyReLU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            slope * x, & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                slope * x, & \text{ otherwise }
+            \end{cases}
 
     Examples:
 
@@ -177,7 +177,7 @@ class LogSoftmax(Module):
 
     The **LogSoftmax** function is defined as:
 
-    .. math:: \text{LogSoftmax}(x) = \log(\frac{e^{x_{i}}}{\sum e^{x_{j}}})
+    .. math:: \text{LogSoftmax}(x) = \log(\frac{\exp(x_{i})}{\sum \exp(x_{j})})
 
     Examples:
 
@@ -215,10 +215,10 @@ class PReLU(Module):
 
     .. math::
         \text{PReLU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            weight * x, & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                weight * x, & \text{ otherwise }
+            \end{cases}
 
     Examples:
 
@@ -264,10 +264,10 @@ class ReLU(Module):
 
     .. math::
         \text{ReLU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            0, & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                0, & \text{ otherwise }
+            \end{cases}
 
     Examples:
 
@@ -350,10 +350,10 @@ class SELU(Module):
 
     .. math::
         \text{SELU}(x) = 1.0507 *
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            1.67326 * (e^{x} - 1), & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                1.67326 * (\exp(x) - 1), & \text{ otherwise }
+            \end{cases}
 
     Examples:
 
@@ -390,7 +390,7 @@ class Sigmoid(Module):
 
     The **Sigmoid** function is defined as:
 
-    .. math:: \text{Sigmoid}(x) = \frac{1}{1 + e^{-x}}
+    .. math:: \text{Sigmoid}(x) = \frac{1}{1 + \exp(-x)}
 
     Examples:
 
@@ -427,7 +427,7 @@ class Softmax(Module):
 
     The **Softmax** function is defined as:
 
-    .. math:: \text{Softmax}(x) = \frac{e^{x_{i}}}{\sum e^{x_{j}}}
+    .. math:: \text{Softmax}(x_{i}) = \frac{\exp(x_{i})}{\sum_{j} \exp(x_{j})}
 
     Examples:
 
@@ -469,7 +469,7 @@ class Tanh(Module):
 
     The **Tanh** function is defined as:
 
-    .. math:: \text{Tanh}(x) = \frac{e^{x} - e^{-x}}{e^{x} + e^{-x}}
+    .. math:: \text{Tanh}(x) = \frac{\exp(x) - \exp(-x)}{\exp(x) + \exp(-x)}
 
     Examples:
 

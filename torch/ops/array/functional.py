@@ -655,10 +655,10 @@ def one_hot(input, depth):
 
     .. math::
         \text{out}[i][j] =
-        \begin{cases}
-            \text{Val}_{off}, & \text{ if } \text{input}[i] \neq j \\
-            \text{Val}_{on}, & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                0, & \text{ if } \text{input}[i] \neq j \\
+                1, & \text{ otherwise }
+            \end{cases}
 
     Parameters
     ----------
@@ -1007,10 +1007,10 @@ def where(condition, x, y):
 
     .. math::
         \text{out}[i] =
-        \begin{cases}
-            \text{x}[i] & \text{ if } \text{cond}[i] \text{ is True } \\
-            \text{y}[i], & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                \text{x}[i] & \text{ if } \text{cond}[i] \text{ is True } \\
+                \text{y}[i], & \text{ otherwise }
+            \end{cases}
 
     Parameters
     ----------

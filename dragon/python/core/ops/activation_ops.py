@@ -8,6 +8,7 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""The activation ops."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -30,7 +31,7 @@ def dropout(inputs, prob=0.5, scale=True, **kwargs):
 
     The **Dropout** function is defined as:
 
-    .. math:: \text{Dropout}(x) = x * \text{Bernoulli}(p=1 - prob)
+    .. math:: \text{Dropout}(x) = x * (r \sim \mathcal{B}(1, 1 - \text{prob}))
 
     Examples:
 
@@ -85,10 +86,11 @@ def drop_block2d(
     The **DropBlock** function is defined as:
 
     .. math::
-        \text{DropBlock}(x) = x \cdot \text{Bernoulli}(\alpha\cdot\gamma) \\
-        \quad \\ \text{where}\quad \gamma =
-            \frac{keep\_prob}{block\_size^{n}}
-            \frac{feat\_size^{n}}{(feat\_size - block\_size + 1)^n}
+        \text{DropBlock}(x_{ijk} =
+            x_{ijk} * (r_{ik} \sim \mathcal{B}(1, \alpha\gamma)) \\ \quad \\
+                \text{where}\quad \gamma =
+                    \frac{\text{keep\_prob}}{\text{block\_size}^{n}}
+                    \frac{\text{feat\_size}^{n}}{(\text{feat\_size} - \text{block\_size} + 1)^n}
 
     Set the ``decrement`` to schedule ``keep_prob`` from **1.0**.
 
@@ -103,7 +105,7 @@ def drop_block2d(
     keep_prob : Union[float, dragon.Tensor], optional, default=0.9
         The keeping prob.
     alpha : float, optional, default=1.
-        The scale factor to :math:`\gamma`.
+        The value to :math:`\gamma`.
     decrement : float, optional, default=0.
         The decrement value to ``keep_prob``.
     data_format : {'NCHW', 'NHWC'}, optional
@@ -141,7 +143,7 @@ def drop_path(inputs, prob=0.2, increment=0., **kwargs):
 
     The **DropPath** function is defined as:
 
-    .. math:: \text{DropPath}(x) = x * \text{Bernoulli}(p=1 - prob)
+    .. math:: \text{DropPath}(x_{ij}) = x_{ij} * (r_{i} \sim \mathcal{B}(1, 1 - \text{prob}))
 
     Set the ``increment`` to schedule ``prob`` from **0.0** after each run.
 
@@ -185,10 +187,10 @@ def elu(inputs, alpha=1., **kwargs):
 
     .. math::
         \text{ELU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            \alpha * (e^{x} - 1), & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                \alpha * (\exp(x) - 1), & \text{ otherwise }
+            \end{cases}
 
     Examples:
 
@@ -230,10 +232,10 @@ def leaky_relu(inputs, alpha=0.2, **kwargs):
 
     .. math::
         \text{LeakyReLU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            \alpha * x, & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                \alpha * x, & \text{ otherwise }
+            \end{cases}
 
     Examples:
 
@@ -273,7 +275,7 @@ def log_softmax(inputs, axis=-1, **kwargs):
 
     The **LogSoftmax** function is defined as:
 
-    .. math:: \text{LogSoftmax}(x) = \log(\frac{e^{x_{i}}}{\sum e^{x_{j}}})
+    .. math:: \text{LogSoftmax}(x) = \log(\frac{\exp(x_{i})}{\sum \exp(x_{j})})
 
     The argument ``axis`` could be negative:
 
@@ -318,10 +320,10 @@ def prelu(inputs, channel_shared=False, data_format='NCHW', **kwargs):
 
     .. math::
         \text{PReLU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            weight * x, & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                weight * x, & \text{ otherwise }
+            \end{cases}
 
     Examples:
 
@@ -365,10 +367,10 @@ def relu(inputs, **kwargs):
 
     .. math::
         \text{ReLU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            0, & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                0, & \text{ otherwise }
+            \end{cases}
 
     Examples:
 
@@ -451,7 +453,7 @@ def selu(inputs, alpha=1.67326, gamma=1.0507, **kwargs):
         \text{SELU}(x) = \gamma *
             \begin{cases}
                 x, & \text{ if } x \geq 0 \\
-                \alpha * (e^{x} - 1), & \text{ otherwise }
+                \alpha * (\exp(x) - 1), & \text{ otherwise }
             \end{cases}
 
     Examples:
@@ -496,7 +498,7 @@ def sigmoid(inputs, **kwargs):
 
     The **Sigmoid** function is defined as:
 
-    .. math:: \text{Sigmoid}(x) = \frac{1}{1 + e^{-x}}
+    .. math:: \text{Sigmoid}(x) = \frac{1}{1 + \exp(-x)}
 
     Examples:
 
@@ -533,7 +535,7 @@ def softmax(inputs, axis=-1, **kwargs):
 
     The **Softmax** function is defined as:
 
-    .. math:: \text{Softmax}(x) = \frac{e^{x_{i}}}{\sum e^{x_{j}}}
+    .. math:: \text{Softmax}(x_{i}) = \frac{\exp(x_{i})}{\sum_{j} \exp(x_{j})}
 
     The argument ``axis`` could be negative:
 
@@ -569,11 +571,11 @@ def softmax(inputs, axis=-1, **kwargs):
 
 @OpSchema.num_inputs(1)
 def tanh(inputs, **kwargs):
-    r"""Apply the tanh function.
+    r"""Compute the tanh of input.
 
     The **Tanh** function is defined as:
 
-    .. math:: \text{Tanh}(x) = \frac{e^{x} - e^{-x}}{e^{x} + e^{-x}}
+    .. math:: \text{Tanh}(x) = \frac{\exp(x) - \exp(-x)}{\exp(x) + \exp(-x)}
 
     Examples:
 

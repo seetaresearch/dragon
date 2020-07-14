@@ -20,22 +20,22 @@
 
 namespace dragon {
 
-struct Gradient {
-  Gradient(
-      const vector<OperatorDef>& ops,
-      const vector<string>& g_inputs,
+struct GradientPack {
+  GradientPack(
+      const vector<OperatorDef>& grad_defs,
+      const vector<string>& grad_inputs,
       const vector<float>& defaults)
-      : ops(ops), g_inputs(g_inputs), defaults(defaults) {}
+      : grad_defs(grad_defs), grad_inputs(grad_inputs), defaults(defaults) {}
 
-  vector<OperatorDef> ops;
-  vector<string> g_inputs;
+  vector<OperatorDef> grad_defs;
+  vector<string> grad_inputs;
   vector<float> defaults;
 };
 
 class GradientMakerBase {
  public:
-  GradientMakerBase(const OperatorDef& def, const vector<string>& g_outputs)
-      : def(def), g_inputs_(def.input_size()), g_outputs_(g_outputs) {}
+  GradientMakerBase(const OperatorDef& def, const vector<string>& grad_outputs)
+      : def(def), grad_inputs_(def.input_size()), grad_outputs_(grad_outputs) {}
 
   virtual ~GradientMakerBase() {}
 
@@ -49,21 +49,23 @@ class GradientMakerBase {
     return true;
   }
 
-  virtual Gradient Make() {
+  virtual GradientPack Make() {
     auto new_defs = MakeDef();
     if (def.has_cache_key()) {
       // Attach the handle to name if having cache key
-      for (size_t i = 0; i < new_defs.size(); i++)
+      for (size_t i = 0; i < new_defs.size(); i++) {
         new_defs[i].set_name(def.name());
+      }
     } else {
       // Otherwise, just put it into the arguments
       Argument arg;
       arg.set_name("handle");
       arg.set_s(def.name());
-      for (size_t i = 0; i < new_defs.size(); i++)
+      for (size_t i = 0; i < new_defs.size(); i++) {
         new_defs[i].add_arg()->CopyFrom(arg);
+      }
     }
-    return Gradient(new_defs, g_inputs_, defaults());
+    return GradientPack(new_defs, grad_inputs_, defaults());
   };
 
   virtual vector<OperatorDef> MakeDef() {
@@ -84,26 +86,26 @@ class GradientMakerBase {
   }
 
   string GI(const int i) {
-    if (i >= int(g_inputs_.size())) return "";
-    g_inputs_[i] = def.input(i) + "_grad";
-    return g_inputs_[i];
+    if (i >= int(grad_inputs_.size())) return "";
+    grad_inputs_[i] = def.input(i) + "_grad";
+    return grad_inputs_[i];
   }
 
   const string GO(const int i) const {
-    return i < int(g_outputs_.size()) ? g_outputs_[i] : "";
+    return i < int(grad_outputs_.size()) ? grad_outputs_[i] : "";
   }
 
   virtual vector<float> defaults() {
-    return vector<float>(g_outputs_.size(), 1.f);
+    return vector<float>(grad_outputs_.size(), 1.f);
   }
 
  protected:
   const OperatorDef& def;
-  vector<string> g_inputs_;
-  const vector<string>& g_outputs_;
+  vector<string> grad_inputs_;
+  const vector<string>& grad_outputs_;
 };
 
-DRAGON_API Gradient
+DRAGON_API GradientPack
 MakeGradientForOp(const OperatorDef& op_def, const vector<string>& g_outputs);
 
 #define GRADIENT_MAKER_CTOR(name)                              \

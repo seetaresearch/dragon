@@ -47,9 +47,7 @@ class _Merge(Layer):
 
 
 class Add(_Merge):
-    r"""The layer to add a sequence of inputs.
-
-    .. math:: \text{out} = \sum(x)
+    """The layer to add a sequence of inputs.
 
     Examples:
 
@@ -75,7 +73,7 @@ class Add(_Merge):
 
 
 class Concatenate(_Merge):
-    r"""The layer to concatenate a sequence of inputs.
+    """The layer to concatenate a sequence of inputs.
 
     Examples:
 
@@ -103,7 +101,7 @@ class Concatenate(_Merge):
 
 
 class Maximum(_Merge):
-    r"""The layer to compute the minimum of a sequence of inputs.
+    """The layer to compute the minimum of a sequence of inputs.
 
     Examples:
 
@@ -126,7 +124,7 @@ class Maximum(_Merge):
 
 
 class Minimum(_Merge):
-    r"""The layer to compute the minimum of a sequence of inputs.
+    """The layer to compute the minimum of a sequence of inputs.
 
     Examples:
 
@@ -149,9 +147,7 @@ class Minimum(_Merge):
 
 
 class Multiply(_Merge):
-    r"""The layer to multiply a sequence of inputs.
-
-    .. math:: \text{out} = \prod(x)
+    """The layer to multiply a sequence of inputs.
 
     Examples:
 
@@ -174,9 +170,7 @@ class Multiply(_Merge):
 
 
 class Subtract(_Merge):
-    r"""The layer to subtract two inputs.
-
-    .. math:: \text{out} = x - y
+    """The layer to subtract two inputs.
 
     Examples:
 

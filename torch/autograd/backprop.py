@@ -8,7 +8,6 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
 """Do back-propagation from the executed functions."""
 
 from __future__ import absolute_import

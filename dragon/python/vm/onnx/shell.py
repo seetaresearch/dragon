@@ -8,7 +8,6 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
 """Toolkit for manipulating the onnx api."""
 
 from __future__ import absolute_import

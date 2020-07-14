@@ -96,16 +96,11 @@ void RegisterModule(py::module& m) {
   });
 
   /*! \brief Activate the CuDNN engine */
-  m.def("cudaEnableDNN", [](bool enabled) {
+  m.def("cudaEnableDNN", [](bool enabled, bool benchmark) {
 #ifdef USE_CUDA
-    CUDAContext::object()->cudnn_enabled_ = enabled;
-#endif
-  });
-
-  /*! \brief Activate the CuDNN benchmark */
-  m.def("cudaEnableDNNBenchmark", [](bool enabled) {
-#ifdef USE_CUDA
-    CUDAContext::object()->cudnn_benchmark_ = enabled;
+    auto* cuda_object = CUDAContext::object();
+    cuda_object->cudnn_enabled_ = enabled;
+    cuda_object->cudnn_benchmark_ = benchmark;
 #endif
   });
 

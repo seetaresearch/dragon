@@ -8,7 +8,6 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
 """Translate the graph abstraction to a python function."""
 
 from __future__ import absolute_import
@@ -288,7 +287,7 @@ class Function(object):
             if len(kwargs) > 0 else self.callback(*args)
 
 
-def create_function(inputs=None, outputs=None, givens=None, updater=None):
+def create_function(inputs=None, outputs=None, givens=None, optimizer=None):
     """Create a callable graph from specified outputs.
 
     Tensors that catch any operators can be used to create a graph:
@@ -325,37 +324,36 @@ def create_function(inputs=None, outputs=None, givens=None, updater=None):
     bar = dragon.create_function(outputs=y, givens={x: x2})
     ```
 
-    Specify ``updater`` to make a graph applying SGD updates:
+    Specify ``optimizer`` to make a graph applying parameter updates:
 
     ```python
     x = dragon.Tensor('x', dtype='float32').set_value(1)
     x_grad = dragon.Tensor('x_grad', dtype='float32').set_value(1)
 
-    # Define a updater to catch the operators
-    updater = dragon.updaters.SGD(base_lr=0.01)
-    updater.apply_gradients(values_and_grads=[(x, x_grad)])
+    optimizer = dragon.optimizers.SGD(base_lr=0.01)
+    optimizer.apply_gradients(values_and_grads=[(x, x_grad)])
 
     # Compute x -= 0.01 * x_grad
-    train_step = dragon.create_function(updater=updater)
+    train_step = dragon.create_function(optimizer=optimizer)
     train_step()
-    print(x.get_value())
+    print(x.get_value())  # 0.99
     ```
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor], optional
-        The inputs to feed.
+        The input tensors.
     outputs : Sequence[dragon.Tensor], optional
-        The outputs to fetch.
+        The output tensors.
     givens : Dict[dragon.Tensor, dragon.Tensor], optional
-        The substitutions to apply.
-    updater : Updater, optional
-        The optional updater.
+        The optional substitutions.
+    optimizer : dragon.optimizers.Optimizer, optional
+        The optional optimizer.
 
     Returns
     -------
-    Function
+    callable
         The callable function.
 
     """
-    return Function().create(inputs, outputs, givens, updater)
+    return Function().create(inputs, outputs, givens, optimizer)

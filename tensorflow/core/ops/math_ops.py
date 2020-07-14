@@ -12,6 +12,7 @@
 #    <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/math_ops.py>
 #
 # ------------------------------------------------------------
+"""The math ops."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -25,7 +26,7 @@ from dragon.core.ops import math_ops
 def abs(x, name=None):
     r"""Compute the absolute value of input.
 
-    .. math:: \text{out} = \left| x \right|
+    .. math:: \text{out} = \left| \text{input} \right|
 
     Examples:
 
@@ -52,7 +53,7 @@ def abs(x, name=None):
 def add(x, y, name=None):
     r"""Compute the element-wise addition.
 
-    .. math:: \text{out} = x + y
+    .. math:: \text{out} = \text{input1} + \text{input2}
 
     ```python
     x = tf.constant(1)
@@ -64,9 +65,9 @@ def add(x, y, name=None):
     Parameters
     ----------
     x : dragon.Tensor
-        The input tensor.
+        The input1 tensor.
     y : dragon.Tensor
-        The tensor :math:`y`.
+        The input2 tensor.
     name : str, optional
         A optional name for the operation.
 
@@ -82,7 +83,7 @@ def add(x, y, name=None):
 def add_n(inputs, name=None):
     r"""Compute the element-wise sum on a sequence of inputs.
 
-    .. math:: \text{out} = \sum(x)
+    .. math:: \text{out} = \sum(\text{input}_{i})
 
     Examples:
 
@@ -214,7 +215,7 @@ def cast(x, dtype, name=None):
 def ceil(x, name=None):
     r"""Compute the smallest integer not less than input.
 
-    .. math:: \text{out} = \lceil x \rceil
+    .. math:: \text{out} = \lceil \text{input} \rceil
 
     Examples:
 
@@ -242,7 +243,7 @@ def ceil(x, name=None):
 def cos(x, name=None):
     r"""Compute the cos of input.
 
-    .. math:: \text{out} = \cos(x)
+    .. math:: \text{out} = \cos(\text{input})
 
     Examples:
 
@@ -327,7 +328,7 @@ def cumsum(x, axis=0, exclusive=False, reverse=False, name=None):
 def divide(x, y, name=None):
     r"""Compute the element-wise division.
 
-    .. math:: \text{out} = x \div y
+    .. math:: \text{out} = \text{input1} \div \text{input2}
 
     Examples:
 
@@ -341,9 +342,9 @@ def divide(x, y, name=None):
     Parameters
     ----------
     x : dragon.Tensor
-        The input tensor.
+        The input1 tensor.
     y : dragon.Tensor
-        The tensor :math:`y`.
+        The input2 tensor.
     name : str, optional
         A optional name for the operation.
 
@@ -359,7 +360,7 @@ def divide(x, y, name=None):
 def equal(x, y, name=None):
     r"""Compute the element-wise equal comparison.
 
-    .. math:: \text{out} = (x == y)
+    .. math:: \text{out} = (\text{input1} == \text{input2})
 
     Examples:
 
@@ -374,9 +375,9 @@ def equal(x, y, name=None):
     Parameters
     ----------
     x : dragon.Tensor
-        The input tensor.
+        The input1 tensor.
     y : dragon.Tensor
-        The tensor :math:`y`.
+        The input2 tensor.
     name : str, optional
         A optional name for the operation.
 
@@ -392,7 +393,7 @@ def equal(x, y, name=None):
 def exp(x, name=None):
     r"""Compute the exponential of input.
 
-    .. math:: \text{out} = e^{x}
+    .. math:: \text{out} = \exp(\text{input})
 
     Examples:
 
@@ -420,7 +421,7 @@ def exp(x, name=None):
 def floor(x, name=None):
     r"""Compute the largest integer not greater than input.
 
-    .. math:: \text{out} = \lfloor x \rfloor
+    .. math:: \text{out} = \lfloor \text{input} \rfloor
 
     Examples:
 
@@ -448,7 +449,7 @@ def floor(x, name=None):
 def greater(x, y, name=None):
     r"""Compute the element-wise greater comparison.
 
-    .. math:: \text{out} = (x > y)
+    .. math:: \text{out} = (\text{input1} > \text{input2})
 
     Examples:
 
@@ -463,9 +464,9 @@ def greater(x, y, name=None):
     Parameters
     ----------
     x : dragon.Tensor
-        The input tensor.
+        The input1 tensor.
     y : dragon.Tensor
-        The tensor :math:`y`.
+        The input2 tensor.
     name : str, optional
         A optional name for the operation.
 
@@ -481,7 +482,7 @@ def greater(x, y, name=None):
 def greater_equal(x, y, name=None):
     r"""Compute the element-wise greater-equal comparison.
 
-    .. math:: \text{out} = (x >= y)
+    .. math:: \text{out} = (\text{input1} >= \text{input2})
 
     Examples:
 
@@ -496,9 +497,9 @@ def greater_equal(x, y, name=None):
     Parameters
     ----------
     x : dragon.Tensor
-        The input tensor.
+        The input1 tensor.
     y : dragon.Tensor
-        The tensor :math:`y`.
+        The input2 tensor.
     name : str, optional
         A optional name for the operation.
 
@@ -514,7 +515,7 @@ def greater_equal(x, y, name=None):
 def is_inf(x, name=None):
     r"""Check if the elements of input are infinite.
 
-    .. math:: \text{out} = \text{isinf}(x)
+    .. math:: \text{out} = \text{isinf}(\text{input})
 
     Examples:
 
@@ -542,7 +543,7 @@ def is_inf(x, name=None):
 def is_nan(x, name=None):
     r"""Check if the elements of input are NaN.
 
-    .. math:: \text{out} = \text{isnan}(x)
+    .. math:: \text{out} = \text{isnan}(\text{input})
 
     Examples:
 
@@ -570,7 +571,7 @@ def is_nan(x, name=None):
 def less(x, y, name=None):
     r"""Compute the element-wise less comparison.
 
-    .. math:: \text{out} = (x < y)
+    .. math:: \text{out} = (\text{input1} < \text{input2})
 
     Examples:
 
@@ -585,9 +586,9 @@ def less(x, y, name=None):
     Parameters
     ----------
     x : dragon.Tensor
-        The input tensor.
+        The input1 tensor.
     y : dragon.Tensor
-        The tensor :math:`y`.
+        The input2 tensor.
     name : str, optional
         A optional name for the operation.
 
@@ -603,7 +604,7 @@ def less(x, y, name=None):
 def less_equal(x, y, name=None):
     r"""Compute the element-wise less-equal comparison.
 
-    .. math:: \text{out} = (x <= y)
+    .. math:: \text{out} = (\text{input1} <= \text{input2})
 
     Examples:
 
@@ -618,9 +619,9 @@ def less_equal(x, y, name=None):
     Parameters
     ----------
     x : dragon.Tensor
-        The input tensor.
+        The input1 tensor.
     y : dragon.Tensor
-        The tensor :math:`y`.
+        The input2 tensor.
     name : str, optional
         A optional name for the operation.
 
@@ -636,7 +637,7 @@ def less_equal(x, y, name=None):
 def log(x, name=None):
     r"""Compute the logarithm of input.
 
-    .. math:: \text{out} = \log(x)
+    .. math:: \text{out} = \log(\text{input})
 
     Examples:
 
@@ -670,7 +671,7 @@ def matmul(
 ):
     r"""Compute the matrix multiplication.
 
-    .. math:: \text{out} = a \times b
+    .. math:: y = a \times b
 
     The rank of ``a`` and ``b`` should be equal and >= 2:
 
@@ -725,7 +726,7 @@ def matmul(
 def multiply(x, y, name=None):
     r"""Compute the element-wise multiplication.
 
-    .. math:: \text{out} = x \times y
+    .. math:: \text{out} = \text{input1} \times \text{input2}
 
     Examples:
 
@@ -739,9 +740,9 @@ def multiply(x, y, name=None):
     Parameters
     ----------
     x : dragon.Tensor
-        The input tensor.
+        The input1 tensor.
     y : dragon.Tensor
-         The tensor :math:`y`.
+        The input2 tensor.
     name : str, optional
         A optional name for the operation.
 
@@ -757,7 +758,7 @@ def multiply(x, y, name=None):
 def negative(x, name=None):
     r"""Compute the element-wise negative.
 
-    .. math:: \text{out} = -x
+    .. math:: \text{out} = -\text{input}
 
     ```python
     x = tf.constant([-1, 0, 1])
@@ -783,7 +784,7 @@ def negative(x, name=None):
 def not_equal(x, y, name=None):
     r"""Compute the element-wise not-equal comparison.
 
-    .. math:: \text{out} = (x != y)
+    .. math:: \text{out} = (\text{input1} != \text{input2})
 
     Examples:
 
@@ -798,9 +799,9 @@ def not_equal(x, y, name=None):
     Parameters
     ----------
     x : dragon.Tensor
-        The input tensor.
+        The input1 tensor.
     y : dragon.Tensor
-        The tensor :math:`y`.
+        The input2 tensor.
     name : str, optional
         A optional name for the operation.
 
@@ -816,7 +817,7 @@ def not_equal(x, y, name=None):
 def pow(x, y, name=None):
     r"""Compute the power of input.
 
-    .. math:: \text{out} = x^{y}
+    .. math:: \text{out} = \text{input}^{\text{exponent}}
 
     The two inputs should be broadcast to each other:
 
@@ -830,9 +831,9 @@ def pow(x, y, name=None):
     Parameters
     ----------
     x : Union[dragon.Tensor, number]
-        The input tensor :math:`x`.
+        The input tensor.
     y : Union[dragon.Tensor, number]
-        The input tensor :math:`y`.
+        The exponent tensor.
     name : str, optional
         A optional name for the operation.
 
@@ -897,7 +898,7 @@ def range(start, limit=None, delta=1, dtype='int64', name=None):
 def reciprocal(x, name=None):
     r"""Compute the reciprocal of input.
 
-    .. math:: \text{out} = \frac{1}{x}
+    .. math:: \text{out} = \frac{1}{\text{input}}
 
     Examples:
 
@@ -1099,7 +1100,7 @@ def reduce_sum(input_tensor, axis=None, keepdims=False, name=None):
 def round(x, name=None):
     r"""Compute the nearest integer of input.
 
-    .. math:: \text{out} = \lfloor x \rceil
+    .. math:: \text{out} = \lfloor \text{input} \rceil
 
     Examples:
 
@@ -1127,7 +1128,7 @@ def round(x, name=None):
 def rsqrt(x, name=None):
     r"""Compute the reciprocal square root of input.
 
-    .. math:: \text{out} = \frac{1}{\sqrt{x}}
+    .. math:: \text{out} = \frac{1}{\sqrt{\text{input}}}
 
     Examples:
 
@@ -1153,11 +1154,9 @@ def rsqrt(x, name=None):
 
 
 def sigmoid(x, name=None, **kwargs):
-    r"""Apply the sigmoid function.
+    r"""Compute the sigmoid function.
 
-    The **Sigmoid** function is defined as:
-
-    .. math:: \text{Sigmoid}(x) = \frac{1}{1 + e^{-x}}
+    .. math:: \text{out} = \frac{1}{1 + \exp(-\text{input})}
 
     Examples:
 
@@ -1186,11 +1185,11 @@ def sign(x, name=None):
     r"""Compute the sign indication of input.
 
     .. math::
-        \text{out}_{i} =
+        \text{out}[i] =
             \begin{cases}
-                -1, & \text{ if } x_{i} < 0 \\
-                 0, & \text{ if } x_{i} = 0 \\
-                 1, & \text{ if } x_{i} > 0
+                -1, & \text{ if } \text{input}[i] < 0 \\
+                 0, & \text{ if } \text{input}[i] = 0 \\
+                 1, & \text{ if } \text{input}[i] > 0
             \end{cases}
 
     Examples:
@@ -1219,7 +1218,7 @@ def sign(x, name=None):
 def sin(x, name=None):
     r"""Compute the sin of input.
 
-    .. math:: \text{out} = \sin(x)
+    .. math:: \text{out} = \sin(\text{input})
 
     Examples:
 
@@ -1247,7 +1246,7 @@ def sin(x, name=None):
 def sqrt(x, name=None):
     r"""Compute the square root of input.
 
-    .. math:: \text{out} = \sqrt{x}
+    .. math:: \text{out} = \sqrt{\text{input}}
 
     Examples:
 
@@ -1275,7 +1274,7 @@ def sqrt(x, name=None):
 def square(x, name=None):
     r"""Compute the square of input.
 
-    .. math:: \text{out} = x^{2}
+    .. math:: \text{out} = \text{input}^{2}
 
     Examples:
 
@@ -1303,7 +1302,7 @@ def square(x, name=None):
 def subtract(x, y, name=None):
     r"""Compute the element-wise subtraction.
 
-    .. math:: \text{out} = x - y
+    .. math:: \text{out} = \text{input1} - \text{input2}
 
     Examples:
 
@@ -1317,9 +1316,9 @@ def subtract(x, y, name=None):
     Parameters
     ----------
     x : dragon.Tensor
-        The input tensor.
+        The input1 tensor.
     y : dragon.Tensor
-         The tensor :math:`y`.
+        The input2 tensor.
     name : str, optional
         A optional name for the operation.
 
@@ -1333,11 +1332,10 @@ def subtract(x, y, name=None):
 
 
 def tanh(x, name=None, **kwargs):
-    r"""Apply the tanh function.
+    r"""Compute the tanh of input.
 
-    The **Tanh** function is defined as:
-
-    .. math:: \text{Tanh}(x) = \frac{e^{x} - e^{-x}}{e^{x} + e^{-x}}
+    .. math:: \text{out} = \frac{\exp(\text{input}) - \exp(-\text{input})}
+                                {\exp(\text{input}) + \exp(-\text{input})}
 
     Examples:
 

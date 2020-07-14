@@ -24,6 +24,41 @@ from dragon.core.testing.unittest.common_utils import run_tests
 from dragon.core.testing.unittest.common_utils import TEST_CUDA
 
 
+class TestGradientTape(unittest.TestCase):
+    """Test the gradient tape."""
+
+    def test_pop_push(self):
+        with dragon.GradientTape() as tape:
+            tape.reset()
+            try:
+                tape._pop_tape()
+            except ValueError:
+                pass
+            try:
+                with tape.stop_recording():
+                    pass
+            except ValueError:
+                pass
+            tape._push_tape()
+            with tape.stop_recording():
+                tape._tape = None
+                try:
+                    tape.watch(self)
+                except RuntimeError:
+                    pass
+                self.assertEqual(tape._recording, False)
+            try:
+                tape._tape = None
+                with tape.stop_recording():
+                    pass
+            except ValueError:
+                pass
+            try:
+                tape._push_tape()
+            except ValueError:
+                pass
+
+
 class TestTensor(unittest.TestCase):
     """Test the tensor class."""
 

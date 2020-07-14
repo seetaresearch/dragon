@@ -30,10 +30,10 @@ def elu(x, alpha=1., **kwargs):
 
     .. math::
         \text{ELU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            \alpha * (e^{x} - 1), & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                \alpha * (\exp(x) - 1), & \text{ otherwise }
+            \end{cases}
 
     Examples:
 
@@ -45,7 +45,7 @@ def elu(x, alpha=1., **kwargs):
     Parameters
     ----------
     x : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
     alpha : float, optional, default=1.
         The value to :math:`\alpha`.
 
@@ -63,7 +63,7 @@ def exponential(x):
 
     The **Exponential** function is defined as:
 
-    .. math:: \text{out} = e^{x}
+    .. math:: \text{Exp}(x) = \exp(x)
 
     Examples:
 
@@ -75,7 +75,7 @@ def exponential(x):
     Parameters
     ----------
     x : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -139,7 +139,7 @@ def relu(x, alpha=0, max_value=None, **kwargs):
     x : dragon.Tensor
         The input tensor.
     alpha : number, optional, default=0
-        The valve of :math:`\alpha`.
+        The value to :math:`\alpha`.
     max_value : number, optional
         The value to :math:`v_{max}`.
 
@@ -159,10 +159,10 @@ def selu(x, **kwargs):
 
     .. math::
         \text{SELU}(x) = 1.0507 *
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            1.67326 * (e^{x} - 1), & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                1.67326 * (\exp(x) - 1), & \text{ otherwise }
+            \end{cases}
 
     Examples:
 
@@ -174,7 +174,7 @@ def selu(x, **kwargs):
     Parameters
     ----------
     x : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
 
     Returns
     -------
@@ -190,7 +190,7 @@ def sigmoid(x, **kwargs):
 
     The **Sigmoid** function is defined as:
 
-    .. math:: \text{Sigmoid}(x) = \frac{1}{1 + e^{-x}}
+    .. math:: \text{Sigmoid}(x) = \frac{1}{1 + \exp(-x)}
 
     Examples:
 
@@ -218,7 +218,7 @@ def softmax(x, axis=-1, **kwargs):
 
     The **Softmax** function is defined as:
 
-    .. math:: \text{Softmax}(x) = \frac{e^{x_{i}}}{\sum e^{x_{j}}}
+    .. math:: \text{Softmax}(x_{i}) = \frac{\exp(x_{i})}{\sum_{j} \exp(x_{j})}
 
     Examples:
 
@@ -230,7 +230,7 @@ def softmax(x, axis=-1, **kwargs):
     Parameters
     ----------
     x : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
     axis : int, optional, default=-1
         The axis to reduce.
 
@@ -248,7 +248,7 @@ def tanh(x, **kwargs):
 
     The **Tanh** function is defined as:
 
-    .. math:: \text{Tanh}(x) = \frac{e^{x} - e^{-x}}{e^{x} + e^{-x}}
+    .. math:: \text{Tanh}(x) = \frac{\exp{x} - \exp(-x)}{\exp(x) + \exp(-x)}
 
     Examples:
 
@@ -281,5 +281,4 @@ def get(identifier):
     else:
         raise TypeError(
             'Could not interpret activation function identifier: {}.'
-            .format(repr(identifier))
-        )
+            .format(repr(identifier)))

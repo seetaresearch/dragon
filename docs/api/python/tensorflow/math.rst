@@ -100,7 +100,7 @@ vm.tensorflow.math
   : Compute the reciprocal square root of input.
 
   `sigmoid(...) <math/sigmoid.html>`_
-  : Apply the sigmoid function.
+  : Compute the sigmoid function.
 
   `sign(...) <math/sign.html>`_
   : Compute the sign indication of input.
@@ -118,7 +118,7 @@ vm.tensorflow.math
   : Compute the element-wise subtraction.
 
   `tanh(...) <math/tanh.html>`_
-  : Apply the tanh function.
+  : Compute the tanh of input.
 
 .. toctree::
   :hidden:

@@ -8,7 +8,6 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
 """Import the Keras API for TensorFlow."""
 
 from __future__ import absolute_import

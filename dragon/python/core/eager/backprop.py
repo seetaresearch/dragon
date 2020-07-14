@@ -12,7 +12,6 @@
 #       <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/eager/backprop.py>
 #
 # ------------------------------------------------------------
-
 """Do back-propagation from the executed operations."""
 
 from __future__ import absolute_import
@@ -115,9 +114,8 @@ class GradientTape(object):
         # Check the pushed tape.
         if self._tape is None:
             raise RuntimeError(
-                'GradientTape.gradient can only be called '
-                'once on non-persistent tapes.'
-            )
+                'GradientTape.gradient(...) can only be called '
+                'once on non-persistent tapes.')
         if self._recording:
             if not self._persistent:
                 self._pop_tape()

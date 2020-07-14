@@ -8,7 +8,6 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
 """The optimizer to update parameters."""
 
 from __future__ import absolute_import

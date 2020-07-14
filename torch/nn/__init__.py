@@ -8,7 +8,6 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
 """The List of nn components."""
 
 from __future__ import absolute_import as _absolute_import

@@ -562,10 +562,10 @@ def elu(input, alpha=1., inplace=False):
 
     .. math::
         \text{ELU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            alpha * (e^{x} - 1), & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                \alpha * (\exp(x) - 1), & \text{ otherwise }
+            \end{cases}
 
     See Also
     --------
@@ -576,7 +576,7 @@ def elu(input, alpha=1., inplace=False):
     input : dragon.vm.torch.Tensor
         The input tensor.
     alpha : float, optional, default=1.
-        The value of alpha.
+        The value to :math:`\alpha`.
     inplace : bool, optional, default=False
         Whether to do the operation in-place.
 
@@ -743,10 +743,10 @@ def leaky_relu(input, negative_slope=0.01, inplace=False):
 
     .. math::
         \text{LeakyReLU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            slope * x, & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                slope * x, & \text{ otherwise }
+            \end{cases}
 
     See Also
     --------
@@ -849,7 +849,7 @@ def log_softmax(input, dim):
 
     The **LogSoftmax** function is defined as:
 
-    .. math:: \text{LogSoftmax}(x) = \log(\frac{e^{x_{i}}}{\sum e^{x_{j}}})
+    .. math:: \text{LogSoftmax}(x) = \log(\frac{\exp(x_{i})}{\sum \exp(x_{j})})
 
     Parameters
     ----------
@@ -1146,10 +1146,10 @@ def relu(input, inplace=False):
 
     .. math::
         \text{ReLU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            0, & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                0, & \text{ otherwise }
+            \end{cases}
 
     Parameters
     ----------
@@ -1175,10 +1175,10 @@ def relu6(input, inplace=False):
 
     .. math::
         \text{ReLU-6}(x) =
-        \begin{cases}
-            \min(x, 6), & \text{ if } x \geq 0 \\
-            0, & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                \min(x, 6), & \text{ if } x \geq 0 \\
+                0, & \text{ otherwise }
+            \end{cases}
 
     Parameters
     ----------
@@ -1207,10 +1207,10 @@ def selu(input, inplace=False):
 
     .. math::
         \text{SELU}(x) = 1.0507 *
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            1.67326 * (e^{x} - 1), & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                1.67326 * (\exp(x) - 1), & \text{ otherwise }
+            \end{cases}
 
     Parameters
     ----------
@@ -1233,7 +1233,7 @@ def sigmoid(input, inplace=False):
 
     The **Sigmoid** function is defined as:
 
-    .. math:: \text{Sigmoid}(x) = \frac{1}{1 + e^{-x}}
+    .. math:: \text{Sigmoid}(x) = \frac{1}{1 + \exp(-x)}
 
     Parameters
     ----------
@@ -1325,10 +1325,10 @@ def smooth_l1_loss(
 
     .. math::
         \text{SmoothL1Loss}(x, y) =
-        \begin{cases}
-            0.5 * (x - y)^{2} / beta, & \text{ if } |x - y| < beta \\
-            |x - y| - 0.5 * beta, & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                0.5 * (x - y)^{2} / beta, & \text{ if } |x - y| < beta \\
+                |x - y| - 0.5 * beta, & \text{ otherwise }
+            \end{cases}
 
     Parameters
     ----------
@@ -1368,7 +1368,7 @@ def softmax(input, dim, inplace=False):
 
     The **Softmax** function is defined as:
 
-    .. math:: \text{Softmax}(x) = \frac{e^{x_{i}}}{\sum e^{x_{j}}}
+    .. math:: \text{Softmax}(x_{i}) = \frac{\exp(x_{i})}{\sum_{j} \exp(x_{j})}
 
     Parameters
     ----------
@@ -1513,7 +1513,7 @@ def tanh(input, inplace=False):
 
     The **Tanh** function is defined as:
 
-    .. math:: \text{Tanh}(x) = \frac{e^{x} - e^{-x}}{e^{x} + e^{-x}}
+    .. math:: \text{Tanh}(x) = \frac{\exp(x) - \exp(-x)}{\exp(x) + \exp(-x)}
 
     Parameters
     ----------

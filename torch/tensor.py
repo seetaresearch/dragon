@@ -1036,14 +1036,14 @@ class Tensor(object):
         """
 
     def masked_fill_(self, mask, value):
-        r"""Fill self with the given value where ``mask`` is **1**.
+        r"""Fill self with the value where mask is 1.
 
         .. math::
-            \text{Ref}[i] =
-            \begin{cases}
-                \text{Value}[i], & \text{ if } \text{Mask}[i] = 1 \\
-                \text{Ref}[i], & \text{ otherwise }
-            \end{cases}
+            \text{self}[i] =
+                \begin{cases}
+                    \text{value}[i], & \text{ if } \text{mask}[i] = 1 \\
+                    \text{self}[i], & \text{ otherwise }
+                \end{cases}
 
         Parameters
         ----------
@@ -1513,11 +1513,11 @@ class Tensor(object):
         r"""Return a tensor taken the sign indication of elements.
 
         .. math::
-            \text{out}_{i} =
+            \text{out}[i] =
                 \begin{cases}
-                    -1, & \text{ if } \text{self}_{i} < 0 \\
-                     0, & \text{ if } \text{self}_{i} = 0 \\
-                     1, & \text{ if } \text{self}_{i} > 0
+                    -1, & \text{ if } \text{self}[i] < 0 \\
+                     0, & \text{ if } \text{self}[i] = 0 \\
+                     1, & \text{ if } \text{self}[i] > 0
                 \end{cases}
 
         Returns
@@ -1535,11 +1535,11 @@ class Tensor(object):
         r"""Set to the sign indication of elements.
 
         .. math::
-            \text{self}_{i} =
+            \text{self}[i] =
                 \begin{cases}
-                    -1, & \text{ if } \text{self}_{i} < 0 \\
-                     0, & \text{ if } \text{self}_{i} = 0 \\
-                     1, & \text{ if } \text{self}_{i} > 0
+                    -1, & \text{ if } \text{self}[i] < 0 \\
+                     0, & \text{ if } \text{self}[i] = 0 \\
+                     1, & \text{ if } \text{self}[i] > 0
                 \end{cases}
 
         Returns
@@ -1835,10 +1835,10 @@ class Tensor(object):
 
         .. math::
             \text{out}[i] =
-            \begin{cases}
-                \text{self}[i] & \text{ if } cond[i] \text{ is True } \\
-                y[i], & \text{ otherwise }
-            \end{cases}
+                \begin{cases}
+                    \text{self}[i] & \text{ if } cond[i] \text{ is True } \\
+                    y[i], & \text{ otherwise }
+                \end{cases}
 
         Parameters
         ----------

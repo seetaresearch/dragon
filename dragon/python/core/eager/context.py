@@ -12,7 +12,6 @@
 #    <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/eager/context.py>
 #
 # ------------------------------------------------------------
-
 """State management for eager execution."""
 
 from __future__ import absolute_import

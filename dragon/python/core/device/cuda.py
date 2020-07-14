@@ -8,7 +8,6 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
 """CUDA utilities."""
 
 from __future__ import absolute_import
@@ -20,7 +19,17 @@ from dragon.core.framework import config
 
 
 class Stream(backend.CudaStream):
+    """The CUDA stream wrapper."""
+
     def __init__(self, device_index):
+        """Create a ``Stream``.
+
+        Parameters
+        ----------
+        device_index : int, required
+            The device index of stream.
+
+        """
         super(Stream, self).__init__(device_index)
 
     @property
@@ -36,7 +45,7 @@ class Stream(backend.CudaStream):
         return super(Stream, self).ptr
 
     def synchronize(self):
-        """Synchronize the stream."""
+        """Wait for the dispatched kernels to complete."""
         self.Synchronize()
 
 
@@ -52,38 +61,28 @@ def current_device():
     return backend.cudaGetDevice()
 
 
-def enable_cudnn(enabled=True):
-    """Activate the CuDNN engine.
+def enable_cudnn(enabled=True, benchmark=False):
+    """Enable the CuDNN library.
 
     Parameters
     ----------
     enabled : bool, optional, default=True
-        **True** to activate CuDNN.
+        **True** to enable the CuDNN.
+    benchmark : bool, optional, default=False
+        **True** to select algorithms according to benchmark.
 
     """
-    return backend.cudaEnableDNN(enabled)
+    return backend.cudaEnableDNN(enabled, benchmark)
 
 
-def enable_cudnn_benchmark(enabled=True):
-    """Activate the CuDNN benchmark.
-
-    Parameters
-    ----------
-    enabled : bool, optional, default=True
-        **True** to activate CuDNN benchmark.
-
-    """
-    return backend.cudaEnableDNNBenchmark(enabled)
-
-
-def get_device_capability(device_id=None):
+def get_device_capability(device_index=None):
     """Return the capability of specified device.
 
-    If ``device_id`` is **None**, the current device will be selected.
+    If ``device_index`` is **None**, the current device will be selected.
 
     Parameters
     ----------
-    device_id : int, optional
+    device_index : int, optional
         The device index.
 
     Returns
@@ -92,8 +91,8 @@ def get_device_capability(device_id=None):
         The major and minor number.
 
     """
-    device_id = device_id if device_id else -1
-    return backend.cudaGetDeviceCapability(device_id)
+    device_index = device_index if device_index else -1
+    return backend.cudaGetDeviceCapability(device_index)
 
 
 def is_available():
@@ -144,18 +143,18 @@ def set_device(device_index=0):
     return backend.cudaSetDevice(device_index)
 
 
-def synchronize(device_id=None, stream_id=0):
-    """Synchronize the specified stream.
+def synchronize(device_index=None, stream_index=0):
+    """Synchronize a specified CUDA stream.
 
-    If ``device_id`` is **None**, the current device will be selected.
+    If ``device_index`` is **None**, the current device will be selected.
 
     Parameters
     ----------
-    device_id : int, optional
+    device_index : int, optional
         The device index.
-    stream_id : int, optional, default=0
+    stream_index : int, optional, default=0
         The stream index.
 
     """
-    device_id = device_id if device_id else -1
-    return backend.cudaStreamSynchronize(device_id, stream_id)
+    device_index = device_index if device_index else -1
+    return backend.cudaStreamSynchronize(device_index, stream_index)

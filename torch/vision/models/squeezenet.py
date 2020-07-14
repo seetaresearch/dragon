@@ -12,7 +12,6 @@
 #    <https://github.com/pytorch/vision/blob/master/torchvision/models/squeezenet.py>
 #
 # ------------------------------------------------------------
-
 """Recommend hyper-parameters:
 
 Nesterov-SGD, batch_size: 512, base_lr: 0.04, weight_decay: 0.0002

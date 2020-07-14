@@ -24,7 +24,7 @@ class Registry {
 
   ObjType* Create(const SrcType& key, Args... args) {
     CHECK(registry_.count(key))
-        << "\nKey(" << key << ") has not registered yet.";
+        << "\nKey(" << key << ") has not registered.";
     return registry_[key](args...);
   }
 

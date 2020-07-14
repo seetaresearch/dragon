@@ -8,6 +8,7 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""The nn ops."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -147,17 +148,7 @@ def convolution(
     name=None,
     **kwargs
 ):
-    r"""Apply the n-dimension convolution.
-
-    The spatial output dimension is computed as:
-
-    .. math::
-        \begin{cases}
-            \text{DK}_{size} = dilation *
-                (\text{K}_{size} - 1) + 1 \\
-            \text{Dim}_{out} = (\text{Dim}_{in} +
-                2 * pad - \text{DK}_{size}) / stride + 1
-        \end{cases}
+    """Apply the n-dimension convolution.
 
     Parameters
     ----------
@@ -223,17 +214,7 @@ def conv_transpose(
     dilations=None,
     name=None,
 ):
-    r"""Apply the n-dimension deconvolution.
-
-    The spatial output dimension is computed as:
-
-    .. math::
-        \begin{cases}
-            \text{DK}_{size} = dilation *
-                (\text{K}_{size} - 1) + 1 \\
-            \text{Dim}_{out} = (\text{Dim}_{in} - 1) *
-                stride + \text{DK}_{size} - 2 * pad
-        \end{cases}
+    """Apply the n-dimension deconvolution.
 
     Parameters
     ----------
@@ -306,17 +287,7 @@ def conv2d(
     dilations=None,
     name=None,
 ):
-    r"""Apply the 2d convolution.
-
-    The spatial output dimension is computed as:
-
-    .. math::
-        \begin{cases}
-            \text{DK}_{size} = dilation *
-                (\text{K}_{size} - 1) + 1 \\
-            \text{Dim}_{out} = (\text{Dim}_{in} +
-                2 * pad - \text{DK}_{size}) / stride + 1
-        \end{cases}
+    """Apply the 2d convolution.
 
     Parameters
     ----------
@@ -354,17 +325,7 @@ def conv2d_transpose(
     dilations=None,
     name=None,
 ):
-    r"""Apply the 2d deconvolution.
-
-    The spatial output dimension is computed as:
-
-    .. math::
-        \begin{cases}
-            \text{DK}_{size} = dilation *
-                (\text{K}_{size} - 1) + 1 \\
-            \text{Dim}_{out} = (\text{Dim}_{in} - 1) *
-                stride + \text{DK}_{size} - 2 * pad
-        \end{cases}
+    """Apply the 2d deconvolution.
 
     Parameters
     ----------
@@ -403,18 +364,8 @@ def depthwise_conv2d(
     dilations=None,
     name=None,
 ):
-    r"""Apply the 2d depthwise convolution.
+    """Apply the 2d depthwise convolution.
     `[Chollet, 2016] <https://arxiv.org/abs/1610.02357>`_.
-
-    The spatial output dimension is computed as:
-
-    .. math::
-        \begin{cases}
-            \text{DK}_{size} = dilation *
-                (\text{K}_{size} - 1) + 1 \\
-            \text{Dim}_{out} = (\text{Dim}_{in} +
-                2 * pad - \text{DK}_{size}) / stride + 1
-        \end{cases}
 
     Parameters
     ----------
@@ -483,10 +434,10 @@ def elu(features, alpha=1., name=None, **kwargs):
 
     .. math::
         \text{ELU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            \alpha * (e^{x} - 1), & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                \alpha * (\exp(x) - 1), & \text{ otherwise }
+            \end{cases}
 
     Parameters
     ----------
@@ -517,10 +468,10 @@ def leaky_relu(features, alpha=0.2, name=None, **kwargs):
 
     .. math::
         \text{LeakyReLU}(x) =
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            \alpha * x, & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                \alpha * x, & \text{ otherwise }
+            \end{cases}
 
     Parameters
     ----------
@@ -598,7 +549,7 @@ def log_softmax(logits, axis=-1, name=None):
 
     The **LogSoftmax** function is defined as:
 
-    .. math:: \text{LogSoftmax}(x) = \log(\frac{e^{x_{i}}}{\sum e^{x_{j}}})
+    .. math:: \text{LogSoftmax}(x) = \log(\frac{\exp(x_{i})}{\sum \exp(x_{j})})
 
     The argument ``axis`` could be negative:
 
@@ -795,10 +746,10 @@ def selu(features, name=None, **kwargs):
 
     .. math::
         \text{SELU}(x) = 1.0507 *
-        \begin{cases}
-            x, & \text{ if } x \geq 0 \\
-            1.67326 * (e^{x} - 1), & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                x, & \text{ if } x \geq 0 \\
+                1.67326 * (\exp(x) - 1), & \text{ otherwise }
+            \end{cases}
 
     Examples:
 
@@ -836,7 +787,7 @@ def softmax(logits, axis=-1, name=None, **kwargs):
 
     The **Softmax** function is defined as:
 
-    .. math:: \text{Softmax}(x) = \frac{e^{x_{i}}}{\sum e^{x_{j}}}
+    .. math:: \text{Softmax}(x_{i}) = \frac{\exp(x_{i})}{\sum_{j} \exp(x_{j})}
 
     The argument ``axis`` could be negative:
 

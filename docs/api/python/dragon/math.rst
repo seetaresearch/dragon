@@ -139,7 +139,7 @@ dragon.math
   : Compute the sum value of elements along the given axis.
 
   `tanh(...) <math/tanh.html>`_
-  : Compute the tanh result of input.
+  : Compute the tanh of input.
 
 .. toctree::
   :hidden:

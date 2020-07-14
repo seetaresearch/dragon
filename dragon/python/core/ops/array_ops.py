@@ -8,6 +8,7 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""The array ops."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -814,8 +815,8 @@ def moments(inputs, axis=None, keep_dims=False, **kwargs):
 
     .. math::
         \begin{cases}
-            \text{Mean}(x) = \frac{1}{n}\sum(x) \\
-            \text{Variance}(x) = \frac{1}{n}\sum(x - \text{Mean}(x))^{2}
+            \text{mean} = \frac{1}{n}\sum(\text{input}) \\
+            \text{variance} = \frac{1}{n}\sum(x - \text{mean}(\text{input}))^{2}
         \end{cases}
 
     The argument ``axis`` could be negative or **None**:
@@ -910,7 +911,7 @@ def multinomial(inputs, num_samples=1, eps=0., normalize=False, **kwargs):
 def nonzero(inputs, **kwargs):
     r"""Return the index of non-zero elements.
 
-    .. math:: \text{out} = \{i, \text{ if } \text{input}[i] \neq 0
+    .. math:: \text{out} = \{i\}, \text{ if } \text{input}[i] \neq 0
 
     Parameters
     ----------
@@ -937,10 +938,10 @@ def one_hot(inputs, depth, on_value=1, off_value=0, **kwargs):
 
     .. math::
         \text{out}[i][j] =
-        \begin{cases}
-            \text{off\_value}, & \text{ if } \text{input}[i] \neq j \\
-            \text{on\_value}, & \text{ otherwise }
-        \end{cases}
+            \begin{cases}
+                \text{off\_value}, & \text{ if } \text{input}[i] \neq j \\
+                \text{on\_value}, & \text{ otherwise }
+            \end{cases}
 
     The max value of indices, i.e., the ``depth`` should be specified:
 
@@ -958,7 +959,7 @@ def one_hot(inputs, depth, on_value=1, off_value=0, **kwargs):
     Parameters
     ----------
     inputs : dragon.Tensor
-        The tensor :math:`x`.
+        The input tensor.
     depth : int
         The depth of representation.
     on_value : int, optional, default=1
@@ -1497,18 +1498,18 @@ def where(inputs, **kwargs):
     r"""Select the elements from two branches under the condition.
 
     .. math::
-        y[i] =
-        \begin{cases}
-            a[i] & \text{ if } \text{cond}[i] \text{ is True } \\
-            b[i], & \text{ otherwise }
-        \end{cases}
+        \text{out}[i] =
+            \begin{cases}
+                \text{input1}[i]  & \text{ if } \text{condition}[i] \text{ is True } \\
+                \text{input2}[i], & \text{ otherwise }
+            \end{cases}
 
-    Return the indices of **True** elements, if only the ``cond`` is given.
+    Return the index of **True** elements, if only the ``condition`` is given.
 
     Parameters
     ----------
     inputs : Sequence[dragon.Tensor]
-        The tensor :math:`a`, :math:`b`, and :math:`\text{cond}`.
+        The input1, input2 and condition tensor.
 
     Returns
     -------
@@ -1517,7 +1518,7 @@ def where(inputs, **kwargs):
 
     See Also
     --------
-    `dragon.nonzero(...)`_ : Return the indices of non-zero elements.
+    `dragon.nonzero(...)`_ : Return the index of non-zero elements.
 
     """
     if types.is_tensor(inputs) or len(inputs) == 1:
