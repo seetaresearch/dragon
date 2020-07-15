@@ -18,5 +18,4 @@ from dragon.vm.tensorflow.core.framework.constant_op import *
 from dragon.vm.tensorflow.core.framework.dtypes import *
 from dragon.vm.tensorflow.core.framework.ops import device
 from dragon.vm.tensorflow.core.framework.ops import convert_to_tensor
-from dragon.vm.tensorflow.core.framework.tensor_shape import Dimension
 from dragon.vm.tensorflow.core.framework.tensor_shape import TensorShape

@@ -209,7 +209,7 @@ def cast(x, dtype, name=None):
         The output tensor.
 
     """
-    return array_ops.cast(x, dtype=str(dtype), name=name)
+    return array_ops.cast(x, dtype=dtype, name=name)
 
 
 def ceil(x, name=None):
@@ -890,7 +890,7 @@ def range(start, limit=None, delta=1, dtype='int64', name=None):
         start=start,
         stop=limit,
         step=delta,
-        dtype=str(dtype),
+        dtype=dtype,
         name=name,
     )
 

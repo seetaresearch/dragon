@@ -17,16 +17,26 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.framework import tensor_spec
 from dragon.vm.tensorflow.core.framework import dtypes
 from dragon.vm.tensorflow.core.framework import tensor_shape
 
 
-class TensorSpec(tensor_spec.TensorSpec):
+class TensorSpec(object):
     """Spec to describe properties of a tensor."""
 
-    def __init__(self, shape, dtype=dtypes.float32, name=None):
-        """Create a ``TensorSpec``."""
+    def __init__(self, shape, dtype='float32', name=None):
+        """Create a TensorSpec.
+
+        Parameters
+        ----------
+        shape : Sequence[int], required
+            The dimensions.
+        dtype : str, optional, default='float32'
+            The optional data type.
+        name : str, optional
+            The optional name.
+
+        """
         self._shape = tensor_shape.TensorShape(shape)
         try:
             self._shape_tuple = tuple(self._shape.as_list())
@@ -45,7 +55,7 @@ class TensorSpec(tensor_spec.TensorSpec):
             The data type.
 
         """
-        return self._dtype.name
+        return str(self._dtype)
 
     @property
     def name(self):
@@ -70,3 +80,29 @@ class TensorSpec(tensor_spec.TensorSpec):
 
         """
         return self._shape.as_list()
+
+    def is_compatible_with(self, spec_or_tensor):
+        """Return a bool whether given the spec is compatible.
+
+        Returns
+        -------
+        bool
+            **True** if compatible otherwise **False**.
+
+        """
+        def dtype_is_compatible_with(spec_or_tensor):
+            return self.dtype == spec_or_tensor.dtype
+
+        def shape_is_compatible_with(spec_or_tensor):
+            shape = spec_or_tensor.shape
+            if self._shape is not None and shape is not None:
+                if len(self.shape) != len(shape):
+                    return False
+            for x_dim, y_dim in zip(self.shape, shape):
+                if x_dim != y_dim:
+                    return False
+            return True
+
+        return \
+            dtype_is_compatible_with(spec_or_tensor) and \
+            shape_is_compatible_with(spec_or_tensor)

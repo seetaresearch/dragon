@@ -27,17 +27,17 @@ from dragon.core.util import nest
 class Tensor(types.TensorMetaclass):
     """Tensor abstraction for graph executing."""
 
-    def __init__(self, name=None, shape=None, dtype=None):
+    def __init__(self, shape=None, dtype=None, name=None):
         """Create a ``Tensor``.
 
         Parameters
         ----------
-        name : str, optional
-            The optional tensor name.
-        shape : sequence, optional
+        shape : Sequence[int], optional
             The optional tensor shape.
         dtype : str, optional
             The optional data type.
+        name : str, optional
+            The optional tensor name.
 
         """
         self._op, self._grad = None, None
@@ -66,7 +66,7 @@ class Tensor(types.TensorMetaclass):
             The data type to set.
 
         """
-        self._dtype = value
+        self._dtype = str(value) if value else value
 
     @property
     def id(self):
@@ -131,8 +131,8 @@ class Tensor(types.TensorMetaclass):
 
         Returns
         -------
-        Sequence[int]
-            The shape.
+        Tuple[int]
+            The tensor shape.
 
         """
         return self._shape
@@ -150,10 +150,9 @@ class Tensor(types.TensorMetaclass):
         if value is not None:
             if not nest.is_sequence(value):
                 raise TypeError(
-                    'The <shape> should be a Sequence. '
-                    'Got {}.'.format(type(value))
-                )
-            self._shape = nest.flatten(value)
+                    'The <shape> should be a sequence. Got {}.'
+                    .format(type(value).__name__))
+            self._shape = tuple(nest.flatten(value))
         else:
             self._shape = value
 
@@ -475,7 +474,7 @@ class Tensor(types.TensorMetaclass):
 
         Parameters
         ----------
-        item : Union[int, slice, dragon.Tensor]
+        item : Union[slice, int, dragon.Tensor]
             The index.
 
         Returns
@@ -643,7 +642,7 @@ class Tensor(types.TensorMetaclass):
 
         Parameters
         ----------
-        key : Union[int, slice, dragon.Tensor]
+        key : Union[slice, int, dragon.Tensor]
             The index.
         value : Union[dragon.Tensor, number]
             The value to set.
@@ -685,6 +684,6 @@ class TensorRef(object):
     """Create a reference not involved with name scope."""
 
     def __new__(cls, name, shape=None, dtype=None):
-        tensor = Tensor('', shape=shape, dtype=dtype)
-        tensor._name = name
-        return tensor
+        tensor_ref = Tensor(shape=shape, dtype=dtype, name='')
+        tensor_ref._name = name
+        return tensor_ref

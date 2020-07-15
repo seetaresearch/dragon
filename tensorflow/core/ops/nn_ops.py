@@ -56,12 +56,11 @@ def avg_pool(
         The output tensor.
 
     """
-    num_total_dims = input.get_shape().ndims
-    if num_total_dims is None:
+    if input.shape is not None:
+        num_total_dims = len(input.shape)
+    else:
         num_total_dims = len(ksize)
     num_spatial_dims = num_total_dims - 2
-
-    # Make default parameters
     data_format = data_format if data_format else 'NHWC'
     start_axis = 2 if data_format.startswith('NC') else 1
     normalize_spatial_args = \
@@ -74,7 +73,6 @@ def avg_pool(
     ksize = normalize_spatial_args('ksize', ksize)
     strides = normalize_spatial_args('strides', strides)
     padding, pads = normalize_spatial_args('padding', padding)
-
     return getattr(vision_ops, 'pool{}d'.format(num_spatial_dims))(
         [input],
         kernel_shape=ksize.shape[start_axis:start_axis + num_spatial_dims],
@@ -173,12 +171,11 @@ def convolution(
         The output tensor.
 
     """
-    num_total_dims = filters.get_shape().ndims
-    if num_total_dims is None:
-        raise ValueError('Rank of `filters` must be determined.')
+    if filters.shape is not None:
+        num_total_dims = len(filters.shape)
+    else:
+        raise ValueError('Rank of <filters> must be determined.')
     num_spatial_dims = num_total_dims - 2
-
-    # Make default parameters
     data_format = data_format if data_format else 'NHWC'
     start_axis = 2 if data_format.startswith('NC') else 1
     normalize_spatial_args = \
@@ -191,7 +188,6 @@ def convolution(
     strides = normalize_spatial_args('strides', strides)
     dilations = normalize_spatial_args('dilations', dilations)
     padding, pads = normalize_spatial_args('padding', padding)
-
     return getattr(vision_ops, '{}{}d'.format(
         kwargs.get('conv_type', 'conv'), num_spatial_dims))(
             [input, filters],
@@ -241,14 +237,13 @@ def conv_transpose(
         The output tensor.
 
     """
-    num_total_dims = filters.get_shape().ndims
-    if num_total_dims is None:
-        num_total_dims = input.get_shape().ndims
-    if num_total_dims is None:
-        raise ValueError("rank of input or filters must be known.")
+    if filters.shape is not None:
+        num_total_dims = len(filters.shape)
+    elif input.shape is not None:
+        num_total_dims = len(input.shape)
+    else:
+        raise ValueError('Rank of <input> or <filters> must be known.')
     num_spatial_dims = num_total_dims - 2
-
-    # Make default parameters
     data_format = data_format if data_format else 'NHWC'
     start_axis = 2 if data_format.startswith('NC') else 1
     normalize_spatial_args = \
@@ -264,7 +259,6 @@ def conv_transpose(
     if padding == 'SAME' and output_shape is None:
         raise ValueError('Excepted <output_shape> for same padding.')
     output_shape = normalize_spatial_args('output_shape', output_shape)
-
     return getattr(vision_ops, 'conv{}d_transpose'.format(num_spatial_dims))(
         [input, filters],
         kernel_shape=filters.shape[2:],
@@ -608,12 +602,11 @@ def max_pool(
         The output tensor.
 
     """
-    num_total_dims = input.get_shape().ndims
-    if num_total_dims is None:
+    if input.shape is not None:
+        num_total_dims = len(input.shape)
+    else:
         num_total_dims = len(ksize)
     num_spatial_dims = num_total_dims - 2
-
-    # Make default parameters
     data_format = data_format if data_format else 'NHWC'
     start_axis = 2 if data_format.startswith('NC') else 1
     normalize_spatial_args = \
@@ -626,7 +619,6 @@ def max_pool(
     ksize = normalize_spatial_args('ksize', ksize)
     strides = normalize_spatial_args('strides', strides)
     padding, pads = normalize_spatial_args('padding', padding)
-
     return getattr(vision_ops, 'pool{}d'.format(num_spatial_dims))(
         [input],
         kernel_shape=ksize[start_axis:start_axis + num_spatial_dims],

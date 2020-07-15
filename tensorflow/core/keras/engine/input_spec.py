@@ -78,8 +78,7 @@ def assert_input_compatibility(input_spec, inputs, layer_name):
         raise ValueError(
             'Layer ' + layer_name + ' expects ' +
             str(len(input_spec)) + ' inputs, '
-            'but it received ' + str(len(inputs)) + ' input tensors.'
-        )
+            'but it received ' + str(len(inputs)) + ' input tensors.')
     # For each pair of input and spec.
     for input_index, (x, spec) in enumerate(zip(inputs, input_spec)):
         if spec is None:

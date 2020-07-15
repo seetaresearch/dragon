@@ -20,9 +20,10 @@ import os
 from dragon.core.autograph import grad_maker
 from dragon.core.autograph.op_def import OpDef
 from dragon.core.autograph.op_def import OpInfo
-from dragon.core.autograph.tensor import Tensor
+from dragon.core.autograph.tensor import TensorRef
 from dragon.core.framework import config
 from dragon.core.framework import proto_util
+from dragon.core.framework import types
 from dragon.core.framework import workspace
 from dragon.core.proto import dragon_pb2
 from dragon.core.util import logging
@@ -107,9 +108,7 @@ def add_update_defs(graph_def, optimizer):
                 name=OpDef.get_name(),
                 operation='MEAN',
                 communication='ALLREDUCE',
-                **process_group.arguments
-            )
-        )
+                **process_group.arguments))
     graph_def.op.extend(update_defs)
 
 
@@ -147,14 +146,11 @@ class Function(object):
         if givens is not None:
             name_dict = {}
             for k, v in givens.items():
-                if isinstance(v, Tensor):
+                if types.is_symbolic_tensor(v):
                     name_dict[k.id] = v.id
                     op_info.merge_from(v)
                 else:
-                    raise ValueError(
-                        'Excepted a Tensor, '
-                        'got {}.'.format(type(v).__name__)
-                    )
+                    raise ValueError('Excepted a Tensor, got {}.'.format(type(v).__name__))
             # Update the original defs.
             op_info = copy.deepcopy(op_info)
             for k in op_info._defs.keys():
@@ -257,8 +253,8 @@ class Function(object):
             The self.
 
         """
-        self.outputs = [Tensor(name) for name in graph_def.output]
-        self.inputs = [Tensor(name).constant() for name in graph_def.input]
+        self.outputs = [TensorRef(name) for name in graph_def.output]
+        self.inputs = [TensorRef(name).constant() for name in graph_def.input]
 
         # Fill with all known graph elements.
         add_device_option(graph_def)
@@ -293,7 +289,7 @@ def create_function(inputs=None, outputs=None, givens=None, optimizer=None):
     Tensors that catch any operators can be used to create a graph:
 
     ```python
-    x = dragon.Tensor('x', dtype='float32').constant()
+    x = dragon.Tensor(dtype='float32').constant()
     y = x * 2
     f = dragon.create_function(outputs=y)
     ```
@@ -315,20 +311,20 @@ def create_function(inputs=None, outputs=None, givens=None, optimizer=None):
     Specify ``givens`` to substitute tensors before creating:
 
     ```python
-    x = dragon.Tensor('x', dtype='float32').constant()
+    x = dragon.Tensor(dtype='float32').constant()
     y = x * 2
     foo = dragon.create_function(outputs=y)
 
     # "bar" takes "x2" as input, and also writes to "y"
-    x2 = dragon.Tensor('x2', dtype='float32').constant()
+    x2 = dragon.Tensor(dtype='float32').constant()
     bar = dragon.create_function(outputs=y, givens={x: x2})
     ```
 
     Specify ``optimizer`` to make a graph applying parameter updates:
 
     ```python
-    x = dragon.Tensor('x', dtype='float32').set_value(1)
-    x_grad = dragon.Tensor('x_grad', dtype='float32').set_value(1)
+    x = dragon.Tensor(dtype='float32').set_value(1)
+    x_grad = dragon.Tensor(dtype='float32').set_value(1)
 
     optimizer = dragon.optimizers.SGD(base_lr=0.01)
     optimizer.apply_gradients(values_and_grads=[(x, x_grad)])

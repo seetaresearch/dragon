@@ -67,7 +67,7 @@ class OpTestCase(unittest.TestCase):
                     dtype = symbols[i][1].dtype
                     shape = symbols[i][1].shape
                     super(OpTestCase, self).assertEqual(dtype, str(values[i].dtype))
-                    super(OpTestCase, self).assertEqual(shape, list(shape))
+                    super(OpTestCase, self).assertEqual(shape, values[i].shape)
                 inputs[symbols[i][0]] = values[i]
         first = inputs[:num_first] if num_first > 1 else inputs[0]
         second = inputs[num_first:len(inputs)] if num_second > 1 else inputs[num_first]
@@ -239,7 +239,7 @@ class TestActivationOps(OpTestCase):
                 for x_shape, w_shape, data_format in entries:
                     data1 = uniform(x_shape)
                     data2 = np.ones(w_shape, 'float32') * 0.25
-                    x, w = new_tensor(data1), new_tensor(data2)
+                    x, w = new_tensor(data1), new_tensor(data2.flatten())
                     with dragon.GradientTape() as tape:
                         tape.watch([x, w])
                         y = dragon.nn.prelu([x, w], data_format=data_format)
@@ -632,7 +632,7 @@ class TestArrayOps(OpTestCase):
                     tape.watch(x)
                     y = dragon.masked_select([x, x > 2])
                 dx = tape.gradient(y, [x], output_gradients=[y])[0]
-                self.assertEqual([y, dx], [data[data > 2], grad])
+                self.assertEqual([y, dx], [data[data > 2], grad], test_symbols=False)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_masked_select_cuda(self):
@@ -645,7 +645,8 @@ class TestArrayOps(OpTestCase):
                 data = arange((2, 3))
                 x = new_tensor(data)
                 y = dragon.nonzero(x > 2)
-                self.assertEqual(y, np.stack(np.nonzero(data > 2), axis=1))
+                self.assertEqual(
+                    y, np.stack(np.nonzero(data > 2), axis=1), test_symbols=False)
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_non_zero_cuda(self):
@@ -699,7 +700,7 @@ class TestArrayOps(OpTestCase):
                         tape.watch(x)
                         y = dragon.repeat(x, axis, repeats)
                     grad = arange(y.shape)
-                    grad_shape = y.shape[:-1] + [y.shape[-1] // 2, 2]
+                    grad_shape = y.shape[:-1] + (y.shape[-1] // 2, 2)
                     dy = new_tensor(grad)
                     dx = tape.gradient(y, [x], output_gradients=[dy])[0]
                     self.assertEqual(
@@ -2271,8 +2272,8 @@ class TestNormalizationOps(OpTestCase):
                     data4, data5 = arange(w_shape) * .1, arange(w_shape, 1) * .1
                     data6 = uniform(x_shape)
                     x = new_tensor(data1)
-                    w, b = new_tensor(data2), new_tensor(data3)
-                    rm, rv = new_tensor(data4), new_tensor(data5)
+                    w, b = new_tensor(data2.flatten()), new_tensor(data3.flatten())
+                    rm, rv = new_tensor(data4.flatten()), new_tensor(data5.flatten())
                     with dragon.GradientTape() as tape:
                         tape.watch([x, w, b])
                         y = dragon.nn.batch_norm(
@@ -2330,7 +2331,7 @@ class TestNormalizationOps(OpTestCase):
                     data2, data3 = arange(w_shape, 1) * .1, arange(w_shape) * .1
                     data6 = arange(x_shape) * .1
                     x = new_tensor(data1)
-                    w, b = new_tensor(data2), new_tensor(data3)
+                    w, b = new_tensor(data2.flatten()), new_tensor(data3.flatten())
                     with dragon.GradientTape() as tape:
                         tape.watch([x, w, b])
                         y = dragon.nn.group_norm(
@@ -2374,7 +2375,7 @@ class TestNormalizationOps(OpTestCase):
                     data2, data3 = arange(w_shape, 1) * .1, arange(w_shape) * .1
                     data6 = arange(x_shape) * 10.
                     x = new_tensor(data1)
-                    w, b = new_tensor(data2), new_tensor(data3)
+                    w, b = new_tensor(data2.flatten()), new_tensor(data3.flatten())
                     with dragon.GradientTape() as tape:
                         tape.watch([x, w, b])
                         y = dragon.nn.instance_norm([x, w, b], axis=axis, eps=eps)
@@ -2417,7 +2418,7 @@ class TestNormalizationOps(OpTestCase):
                     data2, data3 = arange(w_shape, 1) * .1, arange(w_shape) * .1
                     data6 = arange(x_shape) * 10.
                     x = new_tensor(data1)
-                    w, b = new_tensor(data2), new_tensor(data3)
+                    w, b = new_tensor(data2.flatten()), new_tensor(data3.flatten())
                     with dragon.GradientTape() as tape:
                         tape.watch([x, w, b])
                         y = dragon.nn.layer_norm([x, w, b], axis=axis, eps=eps)
@@ -2587,7 +2588,7 @@ class TestTensorOps(OpTestCase):
                 grad[data > 2] = 1
                 grad *= data
                 x = new_tensor(data)
-                self.assertEqual(x[x > 2], data[data > 2])
+                self.assertEqual(x[x > 2], data[data > 2], test_symbols=False)
                 entries = [0,
                            slice(None, None, None),
                            slice(0, None, None),
@@ -2885,13 +2886,13 @@ class TestVisionOps(OpTestCase):
             with execution_context().mode(execution):
                 for x_shape, b_shape, data_format in entries:
                     data1, data2 = arange(x_shape), arange(b_shape)
-                    x, w = new_tensor(data1), new_tensor(data2)
+                    x, b = new_tensor(data1), new_tensor(data2.flatten())
                     with dragon.GradientTape() as tape:
-                        tape.watch([x, w])
-                        y = dragon.nn.bias_add([x, w], data_format)
-                    dx, dw = tape.gradient(y, [x, w], output_gradients=[x])
+                        tape.watch([x, b])
+                        y = dragon.nn.bias_add([x, b], data_format)
+                    dx, db = tape.gradient(y, [x, b], output_gradients=[x])
                     self.assertEqual(
-                        [y, dx, dw],
+                        [y, dx, db],
                         [data1 + data2, data1, reduce_like(data1, data2).flatten()])
 
     @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
@@ -3422,7 +3423,7 @@ def new_tensor(data):
     """Create a new tensor for current execution."""
     if execution_context().executing_eagerly():
         return dragon.EagerTensor(data, copy=True)
-    return dragon.Tensor(None, data.shape, str(data.dtype)).set_value(data)
+    return dragon.Tensor(data.shape, str(data.dtype)).set_value(data)
 
 
 def process_indices(item):

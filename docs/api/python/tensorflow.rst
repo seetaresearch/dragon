@@ -9,6 +9,9 @@ vm.tensorflow
   `class GradientTape <tensorflow/GradientTape.html>`_
   : Record the operations for auto differentiation.
 
+  `class TensorShape <tensorflow/TensorShape.html>`_
+  : Represent the a sequence of dimensions.
+
   `class TensorSpec <tensorflow/TensorSpec.html>`_
   : Spec to describe properties of a tensor.
 
@@ -124,6 +127,7 @@ vm.tensorflow
   tensorflow/slice
   tensorflow/split
   tensorflow/squeeze
+  tensorflow/TensorShape
   tensorflow/TensorSpec
   tensorflow/transpose
   tensorflow/zeros

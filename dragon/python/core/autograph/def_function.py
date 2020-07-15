@@ -254,7 +254,7 @@ class FunctionGuard(object):
                             )
                         shape = input_signature[i].shape
                         dtype = input_signature[i].dtype
-                    inputs.append(Tensor(name, shape, dtype).constant())
+                    inputs.append(Tensor(shape, dtype, name).constant())
             with context.name_scope('${%d}' % id(self)), eager_context.graph_mode():
                 returns = nest.flatten(self._python_function(*inputs))
             outputs, dummies = [], []
@@ -328,8 +328,8 @@ def function(func=None, input_signature=None):
 
     ```python
     @dragon.function(input_signature=[
-        dragon.TensorSpec(shape=[], dtype='float32'),
-        dragon.TensorSpec(shape=[], dtype='float32')
+        dragon.Tensor(shape=[], dtype='float32'),
+        dragon.Tensor(shape=[], dtype='float32'),
     ])
     def foo(x, y):
         return dragon.math.add([x + y, x])
@@ -341,8 +341,8 @@ def function(func=None, input_signature=None):
     ----------
     func : callable, optional
         The function to be compiled.
-    input_signature : Sequence[dragon.TensorSpec], optional
-        The specs to hint the input info.
+    input_signature : Sequence[dragon.Tensor], optional
+        The tensors to hint the input info.
 
     Returns
     -------

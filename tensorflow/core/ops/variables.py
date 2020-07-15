@@ -43,27 +43,21 @@ class Variable(VariableMetaclass, EagerTensor):
     ):
         """Create a ``Variable``."""
         super(Variable, self).__init__(trainable=trainable)
-
         name = name if name else 'Variable'
         self._name = context.get_name_scope() + name + ':0'
-
         # Determine th value.
         if isinstance(initial_value, EagerTensor):
             initial_value = initial_value.numpy()
         elif isinstance(initial_value, Tensor):
             initial_value = initial_value.get_value()
-
         # Determine the data type.
         if not isinstance(initial_value, numpy.ndarray):
-            initial_value = numpy.array(
-                initial_value, str(dtype) if dtype else dtype)
+            initial_value = numpy.array(initial_value, dtype if dtype else dtype)
         elif dtype is not None:
-            initial_value = initial_value.astype(str(dtype))
-
+            initial_value = initial_value.astype(dtype)
         # Determine the tensor shape.
         if shape is not None:
             initial_value = initial_value.reshape(shape)
-
         self._from_numpy(initial_value, copy=False)
 
     @property
@@ -96,7 +90,6 @@ def get_default_initializer(name, shape=None, dtype=dtypes.float32):
     # Defaults: float32.
     if dtype is None:
         dtype = dtypes.float32
-
     # Xavier for float16, float32, float64.
     if dtype.is_floating:
         initializer = init_ops.glorot_uniform_initializer()

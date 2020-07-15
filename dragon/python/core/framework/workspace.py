@@ -180,7 +180,7 @@ class Workspace(backend.Workspace):
 
         ```python
         # Define a named tensor to feed
-        x = dragon.Tensor('x')
+        x = dragon.Tensor(name='x')
         dragon.get_workspace().feed_tensor(x, 0)
 
         # Feed by specifying a tensor name

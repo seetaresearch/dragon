@@ -52,9 +52,9 @@ def constant(value, dtype=None, shape=None, name='Const'):
     """
     if dtype is not None:
         if isinstance(value, numpy.ndarray):
-            value = value.astype(str(dtype))
+            value = value.astype(dtype)
         else:
-            value = numpy.array(value, str(dtype))
+            value = numpy.array(value, dtype)
     else:
         if not isinstance(value, numpy.ndarray):
             value = numpy.array(value)

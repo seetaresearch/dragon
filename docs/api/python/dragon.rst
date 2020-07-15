@@ -15,9 +15,6 @@ dragon
   `class Tensor <dragon/Tensor.html>`_
   : Tensor abstraction for graph executing.
 
-  `class TensorSpec <dragon/TensorSpec.html>`_
-  : Spec to describe properties of a tensor.
-
   `class Workspace <dragon/Workspace.html>`_
   : Sandbox to isolate the resources and computations.
 
@@ -213,7 +210,6 @@ dragon
   dragon/stack
   dragon/stop_gradient
   dragon/Tensor
-  dragon/TensorSpec
   dragon/tile
   dragon/transpose
   dragon/where

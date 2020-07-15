@@ -43,8 +43,8 @@ def Input(
     x = tf.keras.Input(shape=(8,), batch_size=8, dtype='float32')
 
     # Create a placeholder aliasing an existing tensor
-    x = dragon.Tensor('x', shape=(8,), dtype='float32').constant()
-    xx = tf.keras.Input(tensor=x)
+    x = dragon.Tensor(shape=(8,), dtype='float32').constant()
+    y = tf.keras.Input(tensor=x)
     ```
 
     Parameters
@@ -69,38 +69,29 @@ def Input(
     if 'batch_shape' in kwargs:
         batch_shape = kwargs.pop('batch_shape')
         if shape and batch_shape:
-            raise ValueError(
-                'Specify <shape> or '
-                '<batch_shape>, not both.'
-            )
+            raise ValueError('Specify <shape> or <batch_shape>, not both.')
         shape = batch_shape
     else:
         if shape is not None:
             shape = (batch_size,) + tuple(shape)
-
     if kwargs:
         raise ValueError('Unrecognized keyword arguments:', kwargs.keys())
-
     if dtype is None:
         if tensor is not None:
             dtype = tensor.dtype
         else:
             dtype = 'float32'
-
     if shape is None:
         if tensor is None:
             raise ValueError('Specify either <shape> or <tensor>.')
         else:
             shape = tensor.shape
-
     if isinstance(shape, tensor_shape.TensorShape):
         shape = tuple(shape.as_list())
     elif isinstance(shape, six.integer_types):
         shape = (shape,)
-
     placeholder = array_ops.placeholder(
         dtype=dtype, shape=shape, name=name if name else 'input')
     if tensor is not None:
         workspace.get_workspace().register_alias(tensor, placeholder.id)
-
     return placeholder

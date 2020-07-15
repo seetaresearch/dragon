@@ -7,7 +7,10 @@ vm.torch
   #######
 
   `class device <torch/device.html>`_
-  : Represent the device where tensor will be allocated.
+  : Represent the device spec.
+
+  `class dtype <torch/device.html>`_
+  : The basic data type.
 
   `class enable_grad <torch/enable_grad.html>`_
   : Context-manager to enable gradient calculation.
@@ -265,6 +268,7 @@ vm.torch
   torch/cumsum
   torch/device
   torch/div
+  torch/dtype
   torch/empty
   torch/enable_grad
   torch/eq

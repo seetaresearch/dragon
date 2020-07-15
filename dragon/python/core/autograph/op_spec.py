@@ -41,7 +41,7 @@ def arange_spec(args, inputs, outputs):
     else:
         start, stop, step = slice_args
     try:
-        outputs[0].shape = [int(round((stop - start) / step))]
+        outputs[0].shape = (int(math.ceil((stop - start) / step)),)
     except TypeError:
         pass
     return outputs
@@ -53,30 +53,37 @@ def arg_reduce_spec(args, inputs, outputs):
     axis, top_k = args['axis'], args['top_k']
     if args['keep_dims']:
         if axis is None:
-            outputs[0].shape = [1]
+            outputs[0].shape = (1,)
         else:
             try:
-                outputs[0].shape = inputs[0].shape[:]
-                if axis < len(outputs[0].shape):
-                    outputs[0].shape[axis] = top_k
-            except TypeError:
+                out_shape = list(inputs[0].shape[:])
+                out_shape[axis] = top_k
+                outputs[0].shape = out_shape
+            except (TypeError, IndexError):
                 pass
     else:
         if axis is None:
             if top_k > 1:
-                outputs[0].shape = [top_k]
+                outputs[0].shape = (top_k,)
             else:
-                outputs[0].shape = []
+                outputs[0].shape = ()
         else:
             try:
-                outputs[0].shape = inputs[0].shape[:]
-                if axis < len(outputs[0].shape):
+                out_shape = list(inputs[0].shape[:])
+                if axis < len(out_shape):
                     if top_k > 1:
-                        outputs[0].shape[axis] = top_k
+                        out_shape[axis] = top_k
                     else:
-                        del outputs[0].shape[axis]
-            except TypeError:
+                        del out_shape[axis]
+                outputs[0].shape = out_shape
+            except (TypeError, IndexError):
                 pass
+    return outputs
+
+
+@register(['Assign', 'MaskedAssign'])
+def assign_spec(args, inputs, outputs):
+    _ = locals()
     return outputs
 
 
@@ -158,7 +165,7 @@ def concat_spec(args, inputs, outputs):
     out_shape = None
     for input in inputs:
         if out_shape is None and input.shape is not None:
-            out_shape = input.shape[:]
+            out_shape = list(input.shape[:])
     try:
         for i in range(len(out_shape)):
             for input in inputs:
@@ -188,7 +195,7 @@ def conv_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
     out_shape = None
     try:
-        out_shape = inputs[0].shape[:]
+        out_shape = list(inputs[0].shape[:])
         num_axes = len(out_shape) - 2
         channel_axis = 1 if args['data_format'] == 'NCHW' else -1
         spatial_axis = 2 if args['data_format'] == 'NCHW' else 1
@@ -212,7 +219,7 @@ def conv_spec(args, inputs, outputs):
                 out_size = None
             out_shape[i + spatial_axis] = out_size
     except (TypeError, IndexError):
-        pass
+        out_shape = None
     outputs[0].shape = out_shape
     return outputs
 
@@ -222,7 +229,7 @@ def conv_transpose_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
     out_shape = None
     try:
-        out_shape = inputs[0].shape[:]
+        out_shape = list(inputs[0].shape[:])
         num_axes = len(out_shape) - 2
         channel_axis = 1 if args['data_format'] == 'NCHW' else -1
         spatial_axis = 2 if args['data_format'] == 'NCHW' else 1
@@ -251,7 +258,7 @@ def conv_transpose_spec(args, inputs, outputs):
                 out_size = None
             out_shape[i + spatial_axis] = out_size
     except (TypeError, IndexError):
-        pass
+        out_shape = None
     outputs[0].shape = out_shape
     return outputs
 
@@ -261,7 +268,7 @@ def depth_to_space_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
     try:
         bs = args['block_size']
-        out_shape = inputs[0].shape[:]
+        out_shape = list(inputs[0].shape[:])
         num_axes = len(out_shape) - 2
         if len(out_shape) < 3:
             return outputs
@@ -326,7 +333,7 @@ def expand_spec(args, inputs, outputs):
     if shape is None:
         return outputs
     try:
-        in_shape, out_shape = inputs[0].shape[:], shape[:]
+        in_shape, out_shape = list(inputs[0].shape[:]), list(shape[:])
         if len(shape) < len(in_shape):
             num_keep = len(in_shape) - len(shape)
             out_shape = in_shape[:num_keep] + out_shape
@@ -347,7 +354,7 @@ def expand_dims_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
     axes = [] if args['axes'] is None else args['axes']
     try:
-        out_shape = inputs[0].shape[:] + [0] * len(axes)
+        out_shape = list(inputs[0].shape[:]) + [0] * len(axes)
         out_rank = len(out_shape)
         for axis in axes:
             while axis < 0:
@@ -364,7 +371,7 @@ def expand_dims_spec(args, inputs, outputs):
                     break
                 out_shape[i] = inputs[0].shape[j]
                 j += 1
-        outputs[0].shape = list(filter(lambda x: x != 0, out_shape))
+        outputs[0].shape = tuple(filter(lambda x: x != 0, out_shape))
     except TypeError:
         pass
     return outputs
@@ -402,7 +409,7 @@ def flatten_spec(args, inputs, outputs):
     else:
         out_shape = None
     try:
-        in_shape = inputs[0].shape[:]
+        in_shape = list(inputs[0].shape[:])
         if keep_axes is not None:
             if len(in_shape) <= keep_axes:
                 out_shape[:len(in_shape)] = in_shape
@@ -422,10 +429,7 @@ def flatten_spec(args, inputs, outputs):
                 num_flatten = math_util.prod(in_shape[axis:axis + num_axes])
             except TypeError:
                 num_flatten = None
-            out_shape = \
-                in_shape[: axis] + \
-                [num_flatten] + \
-                in_shape[axis + num_axes:]
+            out_shape = in_shape[: axis] + [num_flatten] + in_shape[axis + num_axes:]
     except (TypeError, IndexError):
         pass
     outputs[0].shape = out_shape
@@ -441,7 +445,7 @@ def fully_connected_spec(args, inputs, outputs):
             axis += len(inputs[0].shape)
         except TypeError:
             return outputs
-    outputs[0].shape = [None] * (axis + 1)
+    out_shape = [None] * (axis + 1)
     if out_channels is None:
         try:
             if args['transW']:
@@ -450,11 +454,12 @@ def fully_connected_spec(args, inputs, outputs):
                 out_channels = inputs[1].shape[1]
         except (TypeError, IndexError):
             out_channels = None
-    outputs[0].shape[axis] = out_channels
     try:
-        outputs[0].shape[:axis] = inputs[0].shape[:axis]
-    except TypeError:
+        out_shape[axis] = out_channels
+        out_shape[:axis] = inputs[0].shape[:axis]
+    except (TypeError, IndexError):
         pass
+    outputs[0].shape = out_shape
     return outputs
 
 
@@ -467,11 +472,12 @@ def channel_normalize_spec(args, inputs, outputs):
     try:
         if perm is None:
             perm = list(range((len(inputs[0].shape))))
-        outputs[0].shape = inputs[0].shape[:]
+        out_shape = list(inputs[0].shape[:])
         for i, axis in enumerate(perm):
-            outputs[0].shape[i] = inputs[0].shape[axis]
+            out_shape[i] = inputs[0].shape[axis]
     except (TypeError, IndexError):
-        outputs[0].shape = None
+        out_shape = None
+    outputs[0].shape = out_shape
     return outputs
 
 
@@ -512,7 +518,7 @@ def is_spec(args, inputs, outputs):
 def masked_select_spec(args, inputs, outputs):
     _ = locals()
     outputs[0].dtype = inputs[0].dtype
-    outputs[0].shape = [None]
+    outputs[0].shape = (None,)
     return outputs
 
 
@@ -522,8 +528,8 @@ def matmul_spec(args, inputs, outputs):
     ta, tb = args['transA'], args['transB']
     out_shape = None
     try:
-        b_shape = inputs[1].shape[:]
-        a_shape = out_shape = inputs[0].shape[:]
+        b_shape = list(inputs[1].shape[:])
+        a_shape = out_shape = list(inputs[0].shape[:])
         out_shape[-2] = a_shape[-1] if ta else a_shape[-2]
         out_shape[-1] = b_shape[-2] if tb else b_shape[-1]
     except TypeError:
@@ -538,7 +544,7 @@ def moments_spec(args, inputs, outputs):
         inputs[0].dtype if inputs[0].dtype == 'float64' else 'float32'
     axes, keep_dims = args['axes'], args['keep_dims']
     try:
-        out_shape = inputs[0].shape[:]
+        out_shape = list(inputs[0].shape[:])
         for axis in axes:
             if axis < len(out_shape):
                 out_shape[axis] = 1
@@ -550,7 +556,7 @@ def moments_spec(args, inputs, outputs):
             out_shape = squeezed_shape
     except TypeError:
         out_shape = None
-    outputs[0].shape = outputs[1].shape = out_shape if axes else []
+    outputs[0].shape = outputs[1].shape = out_shape if axes else ()
     return outputs
 
 
@@ -570,7 +576,7 @@ def non_zero_spec(args, inputs, outputs):
     _ = locals()
     outputs[0].dtype = 'int64'
     try:
-        outputs[0].shape = [None, len(inputs[0].shape)]
+        outputs[0].shape = (None, len(inputs[0].shape))
     except TypeError:
         pass
     return outputs
@@ -580,8 +586,7 @@ def non_zero_spec(args, inputs, outputs):
 def one_hot_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
     try:
-        outputs[0].shape = inputs[0].shape[:]
-        outputs[0].shape.append(args['depth'])
+        outputs[0].shape = inputs[0].shape[:] + (args['depth'],)
     except TypeError:
         pass
     return outputs
@@ -593,14 +598,14 @@ def pad_spec(args, inputs, outputs):
     pads, num_dims = args['pads'], len(args['pads']) // 2
     out_shape = None
     try:
-        out_shape = inputs[0].shape[:]
+        out_shape = list(inputs[0].shape[:])
         for i in range(num_dims):
             if i < len(out_shape):
                 try:
                     out_shape[i] += (pads[i] + pads[i + num_dims])
                 except TypeError:
                     out_shape[i] = None
-    except TypeError:
+    except (TypeError, IndexError):
         pass
     outputs[0].shape = out_shape
     return outputs
@@ -654,22 +659,22 @@ def reduce_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
     axes, keep_dims = args['axes'], args['keep_dims']
     if axes is None:
-        output_shape = []
+        outputs[0].shape = ()
     else:
         try:
-            output_shape = inputs[0].shape[:]
+            out_shape = list(inputs[0].shape[:])
             for axis in axes:
-                if axis < len(output_shape):
-                    output_shape[axis] = 1
+                if axis < len(out_shape):
+                    out_shape[axis] = 1
             if not keep_dims:
                 squeezed_shape = []
-                for d in output_shape:
+                for d in out_shape:
                     if d != 1:
                         squeezed_shape.append(d)
-                output_shape = squeezed_shape
-        except TypeError:
-            output_shape = None
-    outputs[0].shape = output_shape
+                out_shape = squeezed_shape
+            outputs[0].shape = out_shape
+        except (TypeError, IndexError):
+            pass
     return outputs
 
 
@@ -680,19 +685,20 @@ def repeat_spec(args, inputs, outputs):
     if axis is None:
         try:
             num_elements = math_util.prod(inputs[0].shape[:])
-            outputs[0].shape = [num_elements * repeats]
+            outputs[0].shape = (num_elements * repeats,)
         except TypeError:
-            outputs[0].shape = [None]
+            outputs[0].shape = (None,)
     else:
         try:
-            outputs[0].shape = inputs[0].shape[:]
+            out_shape = list(inputs[0].shape[:])
         except TypeError:
             return outputs
-        if axis < len(outputs[0].shape):
+        if axis < len(out_shape):
             try:
-                outputs[0].shape[axis] *= repeats
+                out_shape[axis] *= repeats
             except TypeError:
-                outputs[0].shape[axis] = None
+                out_shape[axis] = None
+        outputs[0].shape = out_shape
     return outputs
 
 
@@ -739,29 +745,29 @@ def resize_spec(args, inputs, outputs):
        'scales_descs' in args:
         return outputs
     try:
-        out_dims = inputs[0].shape[:]
-        num_axes = len(out_dims) - 2
-        axis = len(out_dims) - 2 if args['data_format'] == 'NCHW' else 1
+        out_shape = list(inputs[0].shape[:])
+        num_axes = len(out_shape) - 2
+        axis = len(out_shape) - 2 if args['data_format'] == 'NCHW' else 1
         try:
             for i in range(num_axes):
                 j = axis + i
                 if args['sizes'] is not None:
                     if len(args['sizes']) == 1:
-                        out_dims[j] = args['sizes'][0]
+                        out_shape[j] = args['sizes'][0]
                     elif len(args['sizes']) == num_axes:
-                        out_dims[j] = args['sizes'][i]
+                        out_shape[j] = args['sizes'][i]
                     else:
-                        out_dims[j] = args['sizes'][j]
+                        out_shape[j] = args['sizes'][j]
                 elif args['scales'] is not None:
                     if len(args['scales']) == 1:
-                        out_dims[j] = int(out_dims[j] * args['scales'][0])
+                        out_shape[j] = int(out_shape[j] * args['scales'][0])
                     elif len(args['scales']) == num_axes:
-                        out_dims[j] = int(out_dims[j] * args['scales'][i])
+                        out_shape[j] = int(out_shape[j] * args['scales'][i])
                     else:
-                        out_dims[j] = int(out_dims[j] * args['sizes'][j])
+                        out_shape[j] = int(out_shape[j] * args['sizes'][j])
         except IndexError:
             return outputs
-        outputs[0].shape = out_dims
+        outputs[0].shape = out_shape
     except TypeError:
         pass
     return outputs
@@ -773,7 +779,7 @@ def roi_pool_spec(args, inputs, outputs):
     pool_h, pool_w = args['pooled_h'], args['pooled_w']
     out_shape = None
     try:
-        out_shape = inputs[0].shape[:]
+        out_shape = list(inputs[0].shape[:])
         out_shape[2:4] = pool_h, pool_w
         try:
             out_shape[0] = inputs[1].shape[0]
@@ -833,11 +839,12 @@ def softmax_loss_spec(args, inputs, outputs):
     outputs[0].dtype = 'float32'
     axis, reduction = args['axis'], args['reduction']
     if reduction != 'NONE':
-        outputs[0].shape = []
+        outputs[0].shape = ()
     else:
         try:
-            outputs[0].shape = inputs[0].shape[:]
-            outputs[0].shape.pop(axis)
+            out_shape = list(inputs[0].shape[:])
+            out_shape.pop(axis)
+            outputs[0].shape = out_shape
         except (TypeError, IndexError):
             pass
     return outputs
@@ -848,7 +855,7 @@ def space_to_depth_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
     try:
         bs = args['block_size']
-        out_shape = inputs[0].shape[:]
+        out_shape = list(inputs[0].shape[:])
         num_axes = len(out_shape) - 2
         if len(out_shape) < 3:
             return outputs
@@ -885,14 +892,14 @@ def split_spec(args, inputs, outputs):
         try:
             if axis >= len(inputs[0].shape[:]):
                 return outputs
-            outputs[i].shape = inputs[0].shape[:]
+            out_shape = list(inputs[0].shape[:])
         except TypeError:
             return outputs
         if size_splits is not None:
             try:
-                outputs[i].shape[axis] = size_splits[i]
+                out_shape[axis] = size_splits[i]
             except IndexError:
-                outputs[i].shape[axis] = None
+                return outputs
         elif slice_points is not None:
             try:
                 if i < len(outputs) - 1:
@@ -900,14 +907,18 @@ def split_spec(args, inputs, outputs):
                     slice_offset += slice_dim
                 else:
                     slice_dim = inputs[0].shape[axis] - slice_offset
+                out_shape[axis] = slice_dim
             except (TypeError, IndexError):
-                slice_dim = None
-            outputs[i].shape[axis] = slice_dim
+                return outputs
         else:
             try:
-                outputs[i].shape[axis] //= num_outputs
-            except TypeError:
-                outputs[i].shape[axis] = None
+                slice_dim = (out_shape[axis] + num_outputs - 1) // num_outputs
+                if i == num_outputs - 1:
+                    slice_dim = out_shape[axis] - slice_dim * (num_outputs - 1)
+                out_shape[axis] = slice_dim
+            except (TypeError, IndexError):
+                return outputs
+        outputs[i].shape = out_shape
     return outputs
 
 
@@ -941,7 +952,7 @@ def stack_spec(args, inputs, outputs):
     out_shape = None
     for input in inputs:
         if out_shape is None and input.shape is not None:
-            out_shape = input.shape[:]
+            out_shape = list(input.shape[:])
     try:
         for i in range(len(out_shape)):
             for input in inputs:
@@ -971,7 +982,7 @@ def tile_spec(args, inputs, outputs):
     repeats = args['repeats']
     if repeats is not None:
         try:
-            out_shape = inputs[0].shape[:]
+            out_shape = list(inputs[0].shape[:])
             for i, size in enumerate(repeats):
                 if i < len(out_shape):
                     try:
@@ -993,9 +1004,10 @@ def transpose_spec(args, inputs, outputs):
     try:
         if perm is None:
             perm = list(range(((len(inputs[0].shape)) - 1), -1, -1))
-        outputs[0].shape = inputs[0].shape[:]
+        out_shape = list(inputs[0].shape[:])
         for i, axis in enumerate(perm):
-            outputs[0].shape[i] = inputs[0].shape[axis]
+            out_shape[i] = inputs[0].shape[axis]
+        outputs[0].shape = out_shape
     except (TypeError, IndexError):
         outputs[0].shape = None
     return outputs

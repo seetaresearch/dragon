@@ -83,20 +83,17 @@ class Dense(Layer):
         if not (dtype.is_floating or dtype.is_complex):
             raise TypeError(
                 'Unable to build `Dense` layer with non-floating point '
-                'dtype %s' % (dtype,)
-            )
+                'dtype %s' % (dtype,))
         if self.input_dim is None:
             input_shape = tensor_shape.TensorShape(input_shape)
-            if tensor_shape.dimension_value(input_shape[-1]) is None:
+            if input_shape[-1] is None:
                 raise ValueError(
                     'The last dimension of the inputs should be defined.\n'
-                    'Or you should specify <input_dim> in the constructor.'
-                )
-            last_dim = tensor_shape.dimension_value(input_shape[-1])
+                    'Or you should specify <input_dim> in the constructor.')
+            last_dim = input_shape[-1]
         else:
             last_dim = self.input_dim
         self.input_spec = InputSpec(min_ndim=2, axes={-1: last_dim})
-
         self.kernel = self.add_weight(
             'kernel',
             shape=[last_dim, self.units],

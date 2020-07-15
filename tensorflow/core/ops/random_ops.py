@@ -50,7 +50,7 @@ def random_normal(
         The output tensor.
 
     """
-    _, dtype, init_fn = seed, str(dtype), init_ops.random_normal
+    _, dtype, init_fn = seed, dtype, init_ops.random_normal
     return init_fn(shape, mean, stddev, dtype=dtype, name=name)
 
 
@@ -87,7 +87,7 @@ def random_uniform(
         The output tensor.
 
     """
-    _, dtype, init_fn = seed, str(dtype), init_ops.random_uniform
+    _, dtype, init_fn = seed, dtype, init_ops.random_uniform
     return init_fn(shape, minval, maxval, dtype=dtype, name=name)
 
 
@@ -125,5 +125,5 @@ def truncated_normal(
         The output tensor.
 
     """
-    _, dtype, init_fn = seed, str(dtype), init_ops.truncated_normal
+    _, dtype, init_fn = seed, dtype, init_ops.truncated_normal
     return init_fn(shape, mean, stddev, dtype=dtype, name=name)

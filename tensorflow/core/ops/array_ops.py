@@ -217,12 +217,7 @@ def fill(dims, value=0, dtype=None, name=None):
             dtype = 'int32'
         elif dtype == numpy.float64:
             dtype = 'float32'
-    return init_ops.fill(
-        shape=dims,
-        value=value,
-        dtype=str(dtype),
-        name=name,
-    )
+    return init_ops.fill(shape=dims, value=value, dtype=dtype, name=name)
 
 
 def gather(params, indices, axis=0, name=None):
@@ -315,7 +310,7 @@ def ones(shape, dtype='float32', name=None):
         A optional name for the operation.
 
     """
-    return init_ops.fill(shape, value=1, dtype=str(dtype), name=name)
+    return init_ops.fill(shape, value=1, dtype=dtype, name=name)
 
 
 def ones_like(input, dtype='float32', name=None):
@@ -340,7 +335,7 @@ def ones_like(input, dtype='float32', name=None):
         A optional name for the operation.
 
     """
-    return init_ops.ones_like(input, dtype=str(dtype), name=name)
+    return init_ops.ones_like(input, dtype=dtype, name=name)
 
 
 def one_hot(
@@ -488,13 +483,13 @@ def placeholder(dtype=None, shape=None, name=None):
         workspace.get_workspace().unique_name(
             context.get_name_scope() + name if name else 'Placeholder',
             suffix=':0', namespace='Tensor'),
-        dtype=str(dtype) if dtype else dtype,
+        dtype=dtype if dtype else dtype,
         shape=shape,
     ).constant()
 
 
 def reshape(tensor, shape, name=None):
-    r"""Change the dimensions of input.
+    """Change the dimensions of input.
 
     Examples:
 
@@ -527,7 +522,7 @@ def reshape(tensor, shape, name=None):
 
 
 def shape(input, name=None):
-    r"""Return the shape of input.
+    """Return the shape of input.
 
     Examples:
 
@@ -641,7 +636,7 @@ def split(
     axis=0,
     name=None,
 ):
-    r"""Split input into chunks along the given axis.
+    """Split input into chunks along the given axis.
 
     Either number or size of splits will be accepted:
 
@@ -775,7 +770,7 @@ def zeros(shape, dtype='float32', name=None):
         A optional name for the operation.
 
     """
-    return init_ops.fill(shape, value=0., dtype=str(dtype), name=name)
+    return init_ops.fill(shape, value=0., dtype=dtype, name=name)
 
 
 def zeros_like(input, dtype='float32', name=None):
@@ -800,4 +795,4 @@ def zeros_like(input, dtype='float32', name=None):
         A optional name for the operation.
 
     """
-    return init_ops.zeros_like(input, dtype=str(dtype), name=name)
+    return init_ops.zeros_like(input, dtype=dtype, name=name)

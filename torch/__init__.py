@@ -24,6 +24,7 @@ from dragon.vm.torch import vision
 # Classes
 from dragon.vm.torch.autograd import Variable
 from dragon.vm.torch.cpp import device
+from dragon.vm.torch.cpp import dtype
 from dragon.vm.torch.cpp import Size
 from dragon.vm.torch.tensor import ByteTensor
 from dragon.vm.torch.tensor import CharTensor
@@ -116,3 +117,21 @@ from dragon.vm.torch.serialization import load
 from dragon.vm.torch.serialization import save
 from dragon.vm.torch.tensor import empty
 from dragon.vm.torch.tensor import tensor
+
+# Aliases
+bool = dtype('bool')
+int8 = dtype('int8')
+uint8 = dtype('uint8')
+int16 = short = dtype('int16')
+int32 = int = dtype('int32')
+int64 = long = dtype('int64')
+qint8 = dtype('qint8')
+quint8 = dtype('quint8')
+qint32 = dtype('qint32')
+bfloat16 = dtype('bfloat16')
+float16 = half = dtype('float16')
+float32 = float = dtype('float32')
+float64 = double = dtype('float64')
+complex32 = dtype('complex32')
+complex64 = dtype('complex64')
+complex128 = dtype('complex128')

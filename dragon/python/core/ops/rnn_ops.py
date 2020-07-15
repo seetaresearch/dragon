@@ -18,7 +18,7 @@ import itertools
 import numpy
 import warnings
 
-from dragon.core.autograph.tensor import Tensor
+from dragon.core.autograph.tensor import TensorRef
 from dragon.core.eager import context
 from dragon.core.eager.tensor import EagerTensor
 from dragon.core.framework import config
@@ -191,7 +191,7 @@ class RNNModule(object):
             self._weights_count += int(numpy.prod(shape))
         # Create the flat float32 weights.
         self._weights = EagerTensor(shape=[self._weights_count], trainable=True)
-        self._weights_ref = Tensor(self._weights.name)
+        self._weights_ref = TensorRef(self._weights.name)
 
     def _uniform_init(self, shape, dtype='float32'):
         stdv = 1. / numpy.sqrt(self.hidden_size)

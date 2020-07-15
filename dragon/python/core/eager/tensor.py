@@ -144,15 +144,15 @@ class EagerTensor(Tensor):
 
     @property
     def shape(self):
-        """Return the shape of this tensor.
+        """Return tensor shape.
 
         Returns
         -------
-        Sequence[int]
-            The shape.
+        Tuple[int]
+            The tensor shape.
 
         """
-        return self._impl.dims
+        return tuple(self._impl.dims)
 
     @shape.setter
     def shape(self, value):
@@ -451,7 +451,7 @@ class EagerTensor(Tensor):
 
         Parameters
         ----------
-        item : Union[int, slice, dragon.EagerTensor]
+        item : Union[slice, int, dragon.EagerTensor]
             The index.
 
         Returns
@@ -668,7 +668,7 @@ class EagerTensor(Tensor):
 
         Parameters
         ----------
-        key : Union[int, slice, dragon.EagerTensor]
+        key : Union[slice, int, dragon.EagerTensor]
             The index.
         value : Union[dragon.EagerTensor, number]
             The value to set.

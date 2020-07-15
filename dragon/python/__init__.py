@@ -39,7 +39,6 @@ from dragon import vm
 from dragon.core.autograph.tensor import Tensor
 from dragon.core.eager.tensor import EagerTensor
 from dragon.core.eager.backprop import GradientTape
-from dragon.core.framework.tensor_spec import TensorSpec
 from dragon.core.framework.workspace import Workspace
 
 # Function

@@ -97,7 +97,7 @@ class BatchNormalization(Layer):
         input_shape = tensor_shape.TensorShape(input_shape)
         if not input_shape.ndims:
             raise ValueError('Input has undefined rank:', input_shape)
-        param_shape = [input_shape.dims[self.axis].value]
+        param_shape = [input_shape.dims[self.axis]]
         self.input_spec = InputSpec(
             # Each layer should adapt to the:
             #  1) The number of dimensions.

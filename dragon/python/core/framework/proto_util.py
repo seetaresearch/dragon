@@ -36,7 +36,7 @@ if sys.version_info >= (3, 0):
             argument.i = value
         elif type(value) is bytes:
             argument.s = value
-        elif type(value) is str:
+        elif isinstance(value, str):
             argument.s = str.encode(value)
         elif isinstance(value, Message):
             argument.s = value.SerializeToString()
@@ -63,7 +63,7 @@ else:
             argument.f = value
         elif type(value) in (bool, int, long, numpy.int64):
             argument.i = value
-        elif type(value) is str:
+        elif isinstance(value, str):
             argument.s = value
         elif type(value) is unicode:
             argument.s = str(value)

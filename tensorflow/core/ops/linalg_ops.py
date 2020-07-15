@@ -48,4 +48,4 @@ def eye(num_rows, num_columns=None, dtype='float32', name=None):
         The output tensor.
 
     """
-    return init_ops.eye(num_rows, num_columns, dtype=str(dtype), name=name)
+    return init_ops.eye(num_rows, num_columns, dtype=dtype, name=name)

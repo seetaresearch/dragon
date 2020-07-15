@@ -58,8 +58,8 @@ from dragon.vm.tensorflow.core.framework.dtypes import variant
 from dragon.vm.tensorflow.core.framework.ops import convert_to_tensor
 from dragon.vm.tensorflow.core.framework.ops import device
 from dragon.vm.tensorflow.core.framework.ops import name_scope
-from dragon.vm.tensorflow.core.framework.tensor_spec import TensorSpec
 from dragon.vm.tensorflow.core.framework.tensor_shape import TensorShape
+from dragon.vm.tensorflow.core.framework.tensor_spec import TensorSpec
 from dragon.vm.tensorflow.core.module.module import Module
 from dragon.vm.tensorflow.core.ops.array_ops import broadcast_to
 from dragon.vm.tensorflow.core.ops.array_ops import concat

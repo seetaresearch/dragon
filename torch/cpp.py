@@ -58,7 +58,7 @@ class Size(tuple):
 
 
 class device(object):
-    """Represent the device where tensor will be allocated."""
+    """Represent the device spec."""
 
     def __init__(self, type='cpu', index=0):
         """Create a ``device``.
@@ -98,6 +98,57 @@ class device(object):
 
     def __repr__(self):
         return 'device(type={}, index={})'.format(self.type, self.index)
+
+
+class dtype(str):
+    """The basic data type.
+
+    Following data types are defined:
+
+    * ``torch.float16`` or ``torch.half``: 16-bit half-precision floating-point.
+
+    * ``torch.float32`` or ``torch.float``: 32-bit single-precision floating-point.
+
+    * ``torch.float64`` or ``torch.double``: 64-bit double-precision floating-point.
+
+    * ``torch.bfloat16``: 16-bit truncated floating-point.
+
+    * ``torch.complex32``: 32-bit single-precision complex.
+
+    * ``torch.complex64``: 64-bit single-precision complex.
+
+    * ``torch.complex128``: 128-bit double-precision complex.
+
+    * ``torch.int8``: 8-bit signed integer.
+
+    * ``torch.uint8``: 8-bit unsigned integer.
+
+    * ``torch.int16`` or ``torch.short``: 16-bit signed integer.
+
+    * ``torch.int32`` or ``torch.int``: 32-bit signed integer.
+
+    * ``torch.int64`` or ``torch.long``: 64-bit signed integer.
+
+    * ``torch.bool``: Boolean.
+
+    * ``torch.qint8``: Quantized 8-bit signed integer.
+
+    * ``torch.quint8``: Quantized 8-bit unsigned integer.
+
+    * ``torch.qint32``: Quantized 32-bit signed integer.
+
+    """
+
+    def __init__(self, s):
+        """Create a ``dtype``.
+
+        Parameters
+        ----------
+        s : str
+            The data type descriptor.
+
+        """
+        super(dtype, self).__init__()
 
 
 def from_numpy(array):

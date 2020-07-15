@@ -146,7 +146,7 @@ def getitem(self, item):
 
     Parameters
     ----------
-    item : Union[int, slice, dragon.EagerTensor]
+    item : Union[slice, int, dragon.EagerTensor]
         The index.
 
     Returns
@@ -490,7 +490,7 @@ def setitem(self, key, value):
 
     Parameters
     ----------
-    key : Union[int, slice, dragon.EagerTensor]
+    key : Union[slice, int, dragon.EagerTensor]
         The index.
     value : Union[dragon.EagerTensor, number]
         The value to set.

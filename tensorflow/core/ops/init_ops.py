@@ -79,7 +79,7 @@ class Constant(Initializer):
             The output tensor.
 
         """
-        dtype = str(self.dtype) if dtype is None else str(dtype)
+        dtype = str(self.dtype) if dtype is None else dtype
         return init_ops.fill(shape, value=self.value, dtype=dtype)
 
 
@@ -125,7 +125,7 @@ class RandomNormal(Initializer):
             shape=shape,
             mean=self.mean,
             std=self.stddev,
-            dtype=str(self.dtype) if dtype is None else str(dtype),
+            dtype=str(self.dtype) if dtype is None else dtype,
         )
 
 
@@ -167,12 +167,12 @@ class RandomUniform(Initializer):
             The output tensor.
 
         """
-        dtype = str(self.dtype) if dtype is None else str(dtype)
+        dtype = str(self.dtype) if dtype is None else dtype
         return init_ops.random_uniform(
             shape=shape,
             low=self.minval,
             high=self.maxval,
-            dtype=str(self.dtype) if dtype is None else str(dtype),
+            dtype=str(self.dtype) if dtype is None else dtype,
         )
 
 
@@ -218,7 +218,7 @@ class TruncatedNormal(Initializer):
             shape=shape,
             mean=self.mean,
             std=self.stddev,
-            dtype=str(self.dtype) if dtype is None else str(dtype),
+            dtype=str(self.dtype) if dtype is None else dtype,
         )
 
 
@@ -280,14 +280,14 @@ class VarianceScaling(Initializer):
                 shape=shape,
                 mode=self.mode,
                 scale=self.scale * 2.0,
-                dtype=str(self.dtype) if dtype is None else str(dtype)
+                dtype=str(self.dtype) if dtype is None else dtype
             )
         else:
             return init_ops.glorot_uniform(
                 shape=shape,
                 mode=self.mode,
                 scale=self.scale * 3.0,
-                dtype=str(self.dtype) if dtype is None else str(dtype)
+                dtype=str(self.dtype) if dtype is None else dtype
             )
 
 
@@ -374,8 +374,8 @@ class Ones(Initializer):
             The output tensor.
 
         """
-        dtype = str(self.dtype) if dtype is None else str(dtype)
-        return init_ops.fill(shape, value=1, dtype=str(dtype))
+        dtype = str(self.dtype) if dtype is None else dtype
+        return init_ops.fill(shape, value=1, dtype=dtype)
 
 
 class Zeros(Initializer):
@@ -412,7 +412,7 @@ class Zeros(Initializer):
             The output tensor.
 
         """
-        dtype = str(self.dtype) if dtype is None else str(dtype)
+        dtype = str(self.dtype) if dtype is None else dtype
         return init_ops.fill(shape, value=0, dtype=dtype)
 
 

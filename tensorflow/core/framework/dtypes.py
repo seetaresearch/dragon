@@ -12,6 +12,7 @@
 #    <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/framework/dtypes.py>
 #
 # ------------------------------------------------------------
+"""Data type utilities."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -45,8 +46,34 @@ DT_VARIANT = 21
 DT_UINT32 = 22
 DT_UINT64 = 23
 
+# Mappings between string names and enum values.
+_STRING_TO_ENUM = {
+    'float16': DT_HALF,
+    'float32': DT_FLOAT,
+    'float64': DT_DOUBLE,
+    'int8': DT_INT8,
+    'uint8': DT_UINT8,
+    'int16': DT_INT16,
+    'uint16': DT_UINT16,
+    'int32': DT_INT32,
+    'uint32': DT_UINT32,
+    'int64': DT_INT64,
+    'uint64': DT_UINT64,
+    'string': DT_STRING,
+    'complex64': DT_COMPLEX64,
+    'complex128': DT_COMPLEX128,
+    'bool': DT_BOOL,
+    'qint8': DT_QINT8,
+    'quint8': DT_QUINT8,
+    'qint16': DT_QINT16,
+    'quint16': DT_QUINT16,
+    'qint32': DT_QINT32,
+    'bfloat16': DT_BFLOAT16,
+    'variant': DT_VARIANT,
+}
 
-class DType(object):
+
+class DType(str):
     """The basic data type.
 
     Following data types are defined:
@@ -97,78 +124,196 @@ class DType(object):
 
     """
 
-    def __init__(self, type_enum):
+    def __init__(self, value):
         """Create a ``DType``.
 
         Parameters
         ----------
-        type_enum : DataType
-            The ``DataType`` value.
+        value : str
+            The string name.
 
         """
-        type_enum = int(type_enum)
-        if type_enum == DT_INVALID:
-            raise TypeError('<type_enum> is not a valid DataType.')
-        self._type_enum = type_enum
-
-    @property
-    def base_dtype(self):
-        return self
-
-    @property
-    def real_dtype(self):
-        base = self.base_dtype
-        if base == complex64:
-            return float32
-        elif base == complex128:
-            return float64
-        else:
-            return self
-
-    @property
-    def is_numpy_compatible(self):
-        return self._type_enum in _TF_TO_NP
+        super(DType, self).__init__()
+        self._name = value
+        self._type_enum = _STRING_TO_ENUM[value]
 
     @property
     def as_numpy_dtype(self):
+        """Return as the number of numpy data type.
+
+        Returns
+        -------
+        type
+            The data type number.
+
+        """
         return _TF_TO_NP[self._type_enum]
 
     @property
     def as_datatype_enum(self):
+        """Return as the enum value of data type.
+
+        Returns
+        -------
+        int
+            The enum value.
+
+        """
         return self._type_enum
 
     @property
+    def base_dtype(self):
+        """Return the non-referenced data type.
+
+        Returns
+        -------
+        dragon.vm.tensorflow.dtypes.DType
+            The data type.
+
+        """
+        return self
+
+    @property
+    def is_numpy_compatible(self):
+        """Return whether this data type is compatible with numpy.
+
+        Returns
+        -------
+        bool
+            **True** if compatible otherwise **False**.
+
+        """
+        return self._type_enum in _TF_TO_NP
+
+    @property
     def is_bool(self):
+        """Return whether this is a boolean type.
+
+        Returns
+        -------
+        bool
+            **True** if this is a boolean type otherwise **False**.
+
+        """
         return self.base_dtype == bool
 
     @property
+    def is_complex(self):
+        """Return whether this is a complex type.
+
+        Returns
+        -------
+        bool
+            **True** if this is a complex type otherwise **False**.
+
+        """
+        return self.base_dtype in (complex64, complex128)
+
+    @property
+    def is_floating(self):
+        """Return whether this is a floating type.
+
+        Returns
+        -------
+        bool
+            **True** if this is a floating type otherwise **False**.
+
+        """
+        return (self.is_numpy_compatible and
+                issubclass(self.as_numpy_dtype, np.floating))
+
+    @property
     def is_integer(self):
+        """Return whether this is a integer type.
+
+        Returns
+        -------
+        bool
+            **True** if this is a integer type otherwise **False**.
+
+        """
         return (self.is_numpy_compatible and
                 not self.is_quantized and
                 issubclass(self.as_numpy_dtype, np.integer))
 
     @property
-    def is_floating(self):
-        return self.is_numpy_compatible and \
-            issubclass(self.as_numpy_dtype, np.floating)
-
-    @property
-    def is_complex(self):
-        return self.base_dtype in (complex64, complex128)
-
-    @property
     def is_quantized(self):
+        """Return whether this is a quantized type.
+
+        Returns
+        -------
+        bool
+            **True** if this is a quantized type otherwise **False**.
+
+        """
         return self.base_dtype in [qint8, quint8, qint16, quint16, qint32, bfloat16]
 
     @property
     def is_unsigned(self):
+        """Return whether this is an unsigned type.
+
+        Returns
+        -------
+        bool
+            **True** if this is an unsigned type otherwise **False**.
+
+        """
         try:
             return self.min == 0
         except TypeError:
             return False
 
     @property
+    def limits(self, clip_negative=True):
+        """Return the numerical limits.
+
+        Parameters
+        ----------
+        clip_negative : bool, optional, default=True
+            **True** to return positive limits only.
+
+        Returns
+        -------
+        Tuple[number, number]
+            The limits.
+
+        """
+        min, max = dtype_range[self.as_numpy_dtype]
+        if clip_negative:
+            min = 0
+        return min, max
+
+    @property
+    def max(self):
+        """Return the max representable value.
+
+        Returns
+        -------
+        number
+            The max representable value.
+
+        """
+        if (self.is_quantized or self.base_dtype in
+                (bool, string, complex64, complex128)):
+            raise TypeError('Cannot find maximum value of %s.' % self)
+        try:
+            return np.finfo(self.as_numpy_dtype()).max
+        except (TypeError, ValueError):
+            try:
+                return np.iinfo(self.as_numpy_dtype()).max
+            except (TypeError, ValueError):
+                raise TypeError('Cannot find maximum value of %s.' % self)
+
+    @property
     def min(self):
+        """Return the min representable value.
+
+        Returns
+        -------
+        number
+            The min representable value
+
+        """
         if (self.is_quantized or self.base_dtype in
                 (bool, string, complex64, complex128)):
             raise TypeError("Cannot find minimum value of %s." % self)
@@ -181,26 +326,49 @@ class DType(object):
                 raise TypeError("Cannot find minimum value of %s." % self)
 
     @property
-    def max(self):
-        if (self.is_quantized or self.base_dtype in
-                (bool, string, complex64, complex128)):
-            raise TypeError("Cannot find maximum value of %s." % self)
-        try:
-            return np.finfo(self.as_numpy_dtype()).max
-        except (TypeError, ValueError):
-            try:
-                return np.iinfo(self.as_numpy_dtype()).max
-            except (TypeError, ValueError):
-                raise TypeError("Cannot find maximum value of %s." % self)
+    def name(self):
+        """Return the type name.
+
+        Returns
+        -------
+        str
+            The type name.
+
+        """
+        return self._name
 
     @property
-    def limits(self, clip_negative=True):
-        min, max = dtype_range[self.as_numpy_dtype]
-        if clip_negative:
-            min = 0
-        return min, max
+    def real_dtype(self):
+        """Return the data type of real part.
+
+        Returns
+        -------
+        dragon.vm.tensorflow.dtypes.DType
+            The data type of real part.
+
+        """
+        base = self.base_dtype
+        if base == complex64:
+            return float32
+        elif base == complex128:
+            return float64
+        else:
+            return self
 
     def is_compatible_with(self, other):
+        """Return whether this data type can be converted as the other.
+
+        Parameters
+        ----------
+        other : dragon.vm.tensorflow.dtypes.DType
+            The referring data type.
+
+        Returns
+        -------
+        bool
+            **True** if compatible otherwise **False**.
+
+        """
         other = as_dtype(other)
         return self._type_enum in (
             other.as_datatype_enum, other.base_dtype.as_datatype_enum)
@@ -217,16 +385,11 @@ class DType(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    @property
-    def name(self):
-        """Returns the string name for this `DType`."""
-        return _TYPE_TO_STRING[self._type_enum]
-
     def __int__(self):
         return self._type_enum
 
     def __str__(self):
-        return self.name
+        return self._name
 
     def __repr__(self):
         return "tf." + self.name
@@ -235,69 +398,45 @@ class DType(object):
         return self._type_enum
 
 
-# Define data type range of numpy dtype
-dtype_range = {np.bool_: (False, True),
-               np.bool8: (False, True),
-               np.uint8: (0, 255),
-               np.uint16: (0, 65535),
-               np.int8: (-128, 127),
-               np.int16: (-32768, 32767),
-               np.int64: (-2 ** 63, 2 ** 63 - 1),
-               np.uint64: (0, 2 ** 64 - 1),
-               np.int32: (-2 ** 31, 2 ** 31 - 1),
-               np.uint32: (0, 2 ** 32 - 1),
-               np.float32: (-1, 1),
-               np.float64: (-1, 1)}
-
-
-# Define standard wrappers for the DataType enum.
-float16 = DType(DT_HALF)
-half = float16
-float32 = DType(DT_FLOAT)
-float64 = DType(DT_DOUBLE)
-double = float64
-int32 = DType(DT_INT32)
-uint8 = DType(DT_UINT8)
-uint16 = DType(DT_UINT16)
-uint64 = DType(DT_UINT32)
-uint32 = DType(DT_UINT64)
-int16 = DType(DT_INT16)
-int8 = DType(DT_INT8)
-string = DType(DT_STRING)
-complex64 = DType(DT_COMPLEX64)
-complex128 = DType(DT_COMPLEX128)
-int64 = DType(DT_INT64)
-bool = DType(DT_BOOL)
-qint8 = DType(DT_QINT8)
-quint8 = DType(DT_QUINT8)
-qint16 = DType(DT_QINT16)
-quint16 = DType(DT_QUINT16)
-qint32 = DType(DT_QINT32)
-bfloat16 = DType(DT_BFLOAT16)
-variant = DType(DT_VARIANT)
-
-# Standard mappings between DataType values and string names.
-_TYPE_TO_STRING = {
-    DT_HALF: "float16",
-    DT_FLOAT: "float32",
-    DT_DOUBLE: "float64",
-    DT_INT32: "int32",
-    DT_UINT8: "uint8",
-    DT_UINT16: "uint16",
-    DT_INT16: "int16",
-    DT_INT8: "int8",
-    DT_STRING: "string",
-    DT_COMPLEX64: "complex64",
-    DT_COMPLEX128: "complex128",
-    DT_INT64: "int64",
-    DT_BOOL: "bool",
-    DT_QINT8: "qint8",
-    DT_QUINT8: "quint8",
-    DT_QINT16: "qint16",
-    DT_QUINT16: "quint16",
-    DT_QINT32: "qint32",
-    DT_BFLOAT16: "bfloat16",
+# Range of numpy dtype
+dtype_range = {
+    np.bool_: (False, True),
+    np.bool8: (False, True),
+    np.uint8: (0, 255),
+    np.uint16: (0, 65535),
+    np.int8: (-128, 127),
+    np.int16: (-32768, 32767),
+    np.int64: (-2 ** 63, 2 ** 63 - 1),
+    np.uint64: (0, 2 ** 64 - 1),
+    np.int32: (-2 ** 31, 2 ** 31 - 1),
+    np.uint32: (0, 2 ** 32 - 1),
+    np.float32: (-1, 1),
+    np.float64: (-1, 1),
 }
+
+# Define standard wrappers for the string name.
+float16 = half = DType('float16')
+float32 = DType('float32')
+float64 = double = DType('float64')
+int32 = DType('int32')
+uint8 = DType('uint8')
+uint16 = DType('uint16')
+uint64 = DType('uint32')
+uint32 = DType('uint64')
+int16 = DType('int16')
+int8 = DType('int8')
+string = DType('string')
+complex64 = DType('complex64')
+complex128 = DType('complex128')
+int64 = DType('int64')
+bool = DType('bool')
+qint8 = DType('qint8')
+quint8 = DType('quint8')
+qint16 = DType('qint16')
+quint16 = DType('quint16')
+qint32 = DType('qint32')
+bfloat16 = DType('bfloat16')
+variant = DType('variant')
 
 # Numpy representation for quantized dtypes.
 _np_qint8 = np.dtype([("qint8", np.int8)])
@@ -379,7 +518,7 @@ _INTERN_TABLE = {
 }
 
 _STRING_TO_TF = {
-    value: _INTERN_TABLE[key] for key, value in _TYPE_TO_STRING.items()
+    key: _INTERN_TABLE[value] for key, value in _STRING_TO_ENUM.items()
 }
 
 _ANY_TO_TF = {}
@@ -404,16 +543,13 @@ def as_dtype(type_value):
     """
     if isinstance(type_value, DType):
         return type_value
-
     if isinstance(type_value, np.dtype):
         try:
             return _NP_TO_TF[type_value.type]
         except KeyError:
             pass
-
     try:
         return _ANY_TO_TF[type_value]
     except KeyError:
         pass
-
     raise TypeError("Cannot convert value %r to a TensorFlow DType." % type_value)

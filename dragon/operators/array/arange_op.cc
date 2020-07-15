@@ -21,7 +21,7 @@ void ArangeOp<Context>::DoRunWithType() {
 
   // Determine the generating range
   // Values are in a half-open interval: [start, stop)
-  auto count = (int64_t)std::round((stop - start) / step);
+  auto count = (int64_t)std::ceil((stop - start) / step);
   CHECK_GT(count, 0) << "\nInvalid generating range: "
                      << "[" << start << ", " << stop << ") with step = " << step
                      << ".";

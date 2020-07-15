@@ -1940,7 +1940,7 @@ class Tensor(object):
 
         Parameters
         ----------
-        item : Union[int, slice, dragon.vm.torch.Tensor]
+        item : Union[slice, int, dragon.vm.torch.Tensor]
             The index.
 
         Returns
@@ -2198,7 +2198,7 @@ class Tensor(object):
 
         Parameters
         ----------
-        key : Union[int, slice, dragon.vm.torch.Tensor]
+        key : Union[slice, int, dragon.vm.torch.Tensor]
             The index.
         value : Union[dragon.vm.torch.Tensor, number]
             The value to set.

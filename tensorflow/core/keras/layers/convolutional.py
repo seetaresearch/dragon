@@ -72,13 +72,11 @@ class Conv(Layer):
     def build(self, input_shape):
         input_shape = tensor_shape.TensorShape(input_shape)
         channel_axis = self._get_channel_axis()
-        if input_shape.dims[channel_axis].value is None:
+        if input_shape.dims[channel_axis] is None:
             raise ValueError(
                 'The channel dimension of the input '
-                'should be determined, got None.'
-            )
+                'should be determined, got None.')
         input_dim = int(input_shape[channel_axis])
-
         # Assume that kernel is packed into NCHW format
         # for computing the fans correctly
         if self.filters > 0:
@@ -86,7 +84,6 @@ class Conv(Layer):
         else:
             self.filters = input_dim
             kernel_shape = (input_dim, 1) + self.kernel_size
-
         self.kernel = self.add_weight(
             name='kernel',
             shape=kernel_shape,
@@ -106,7 +103,6 @@ class Conv(Layer):
             )
         else:
             self.bias = None
-
         self.built = True
 
     def call(self, inputs):
@@ -280,17 +276,15 @@ class Conv2DTranspose(Conv2D):
     def build(self, input_shape):
         input_shape = tensor_shape.TensorShape(input_shape)
         channel_axis = self._get_channel_axis()
-        if input_shape.dims[channel_axis].value is None:
+        if input_shape.dims[channel_axis] is None:
             raise ValueError(
                 'The channel dimension of the inputs '
                 'should be determined, got None.'
             )
         input_dim = int(input_shape[channel_axis])
-
         # Assume that kernel is packed into NCHW format,
         # for computing the fans correctly.
         kernel_shape = (input_dim, self.filters) + self.kernel_size
-
         self.kernel = self.add_weight(
             name='kernel',
             shape=kernel_shape,
@@ -310,7 +304,6 @@ class Conv2DTranspose(Conv2D):
             )
         else:
             self.bias = None
-
         self.built = True
 
     def call(self, inputs):
@@ -320,11 +313,9 @@ class Conv2DTranspose(Conv2D):
             h_axis, w_axis = 2, 3
         else:
             h_axis, w_axis = 1, 2
-
         height, width = inputs_shape[h_axis], inputs_shape[w_axis]
         kernel_h, kernel_w = self.kernel_size
         stride_h, stride_w = self.strides
-
         if self.output_padding is None:
             out_pad_h = out_pad_w = None
         else:
@@ -349,7 +340,6 @@ class Conv2DTranspose(Conv2D):
             output_shape = (batch_size, self.filters, out_height, out_width)
         else:
             output_shape = (batch_size, out_height, out_width, self.filters)
-
         outputs = nn_ops.conv_transpose(
             input=inputs,
             filters=self.kernel,
