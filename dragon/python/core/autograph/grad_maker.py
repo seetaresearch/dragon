@@ -7,10 +7,6 @@
 #
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
-# Codes are based on:
-#
-#    <https://github.com/caffe2/caffe2/blob/master/caffe2/python/core.py>
-#
 # ------------------------------------------------------------
 """Simple gradient maker implementation."""
 

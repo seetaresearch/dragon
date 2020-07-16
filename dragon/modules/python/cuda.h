@@ -67,7 +67,7 @@ class CudaStream {
 };
 
 void RegisterModule(py::module& m) {
-  /*! \brief Reporting if CUDA is available */
+  /*! \brief Return whether CUDA driver is sufficient */
   m.def("cudaIsDriverSufficient", []() {
 #ifdef USE_CUDA
     int count;
@@ -79,8 +79,8 @@ void RegisterModule(py::module& m) {
 #endif
   });
 
-  /*! \brief Reporting if CUDA is available */
-  m.def("cudaIsNCCLSufficient", []() {
+  /*! \brief Return whether NCCL is available */
+  m.def("ncclIsAvailable", []() {
 #ifdef USE_NCCL
 #ifdef USE_CUDA
     int count;

@@ -80,4 +80,4 @@ def run_operator(
     ws.run_operator(op_def)
 
     # Return the outputs.
-    return outputs if len(outputs) > 1 else outputs[0]
+    return outputs[0] if len(outputs) == 1 else outputs

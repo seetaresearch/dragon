@@ -15,7 +15,7 @@ vm.caffe
   `[Sutskever et.al, 2013] <http://www.cs.toronto.edu/~hinton/absps/momentum.pdf>`_.
 
   `class Net <caffe/Net.html>`_
-  : The abstraction ``caffe.Net``.
+  : The base net class to connect layers.
 
   `class RMSPropSolver <caffe/RMSPropSolver.html>`_
   : The RMSProp solver.

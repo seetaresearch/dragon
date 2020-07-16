@@ -8,7 +8,7 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Utilities to fly an operator."""
+"""Wrapper and utilities for operator."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -27,7 +27,7 @@ from dragon.core.framework import workspace
 
 
 class Operator(object):
-    """Wrapper to unify the symbolic and eager operator abstraction."""
+    """The operator wrapper."""
 
     def __init__(self, cache_key, device, **kwargs):
         self._def = None
@@ -46,8 +46,14 @@ class Operator(object):
         return self.__call__(*args, **kwargs)
 
     def attributes(self):
-        """Define the attributes to generate OpDef."""
-        return {}
+        """Define the attributes to generate OpDef.
+
+        Returns
+        -------
+        dict
+            The attribute dict.
+
+        """
 
     @classmethod
     def blend(cls, op_type=None, **kwargs):
@@ -97,7 +103,6 @@ class Operator(object):
 
     def forward(self, *inputs, **kwargs):
         """Define the execution."""
-        pass
 
     def _gen_def(self):
         """Generate the OpDef from attributes."""
@@ -142,8 +147,7 @@ def scalar_to_tensor(input, dtype):
     except (TypeError, ValueError):
         raise ValueError(
             '<input> should be a python number, got {}.'
-            .format(type(input).__name__)
-        )
+            .format(type(input).__name__))
     name = '/share/scalar/{}/{}'.format(dtype, str(input))
     ws = workspace.get_workspace()
     if not ws.has_tensor(name):

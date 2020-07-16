@@ -8,31 +8,13 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""The nest utility."""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 from dragon.core.util import six
-
-
-def is_sequence(input):
-    """Return a bool indicating whether input is a sequence.
-
-    Parameters
-    ----------
-    input
-        The input object.
-
-    Returns
-    -------
-    bool
-        **True** if input is a sequence otherwise **False**.
-
-    """
-    return \
-        isinstance(input, six.collections_abc.Sequence) and \
-        not isinstance(input, six.string_types)
 
 
 def is_nested(input):
@@ -50,6 +32,24 @@ def is_nested(input):
 
     """
     return is_sequence(input) or isinstance(input, dict)
+
+
+def is_sequence(input):
+    """Return a bool indicating whether input is a sequence.
+
+    Parameters
+    ----------
+    input
+        The input object.
+
+    Returns
+    -------
+    bool
+        **True** if input is a sequence otherwise **False**.
+
+    """
+    return (isinstance(input, six.collections_abc.Sequence) and
+            not isinstance(input, six.string_types))
 
 
 def flatten(input):
@@ -84,7 +84,7 @@ def flatten(input):
     return output_list
 
 
-def flatten_with_tuple_paths(input):
+def flatten_with_paths(input):
     """Return a flat list, yield as *(paths, element)*.
 
     Parameters
@@ -94,14 +94,14 @@ def flatten_with_tuple_paths(input):
 
     Returns
     -------
-    List[Tuple[Tuple, Object]]
+    List[Tuple[Tuple, object]]
         The flat list of input.
 
     """
-    return list(zip(yield_flat_paths(input), flatten(input)))
+    return list(zip(yield_flatten_paths(input), flatten(input)))
 
 
-def yield_flat_paths(input):
+def yield_flatten_paths(input):
     """Yield paths for nested structure.
 
     Parameters
@@ -115,27 +115,29 @@ def yield_flat_paths(input):
         The iterator of paths.
 
     """
-    for k, _ in _yield_flat_up_to(input, input, is_nested):
+    for k, _ in _yield_flatten_up_to(input, input, is_nested):
         yield k
 
 
-def _yield_flat_up_to(shallow_tree, input_tree, is_seq, path=()):
+def _yield_flatten_up_to(shallow_tree, input_tree, is_seq, path=()):
+    """Return the tuple of path and element for iterable."""
     if not is_seq(shallow_tree):
-        yield (path, input_tree)
+        yield path, input_tree
     else:
         input_tree = dict(_yield_sorted_items(input_tree))
         for shallow_key, shallow_subtree in _yield_sorted_items(shallow_tree):
-            subpath = path + (shallow_key,)
+            sub_path = path + (shallow_key,)
             input_subtree = input_tree[shallow_key]
-            for leaf_path, leaf_value in _yield_flat_up_to(
+            for leaf_path, leaf_value in _yield_flatten_up_to(
                     shallow_subtree,
                     input_subtree,
                     is_seq,
-                    path=subpath):
+                    path=sub_path):
                 yield leaf_path, leaf_value
 
 
 def _yield_sorted_items(iterable):
+    """Return the sorted iterable."""
     if isinstance(iterable, six.collections_abc.Mapping):
         for key in sorted(iterable):
             yield key, iterable[key]

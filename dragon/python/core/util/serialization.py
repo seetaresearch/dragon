@@ -15,7 +15,6 @@ from __future__ import print_function
 
 from typing import cast
 from typing import IO
-from typing import Optional
 from typing import Text
 
 
@@ -44,8 +43,8 @@ def serialize_proto(proto):
         return b''
     elif isinstance(proto, bytes):
         return proto
-    elif hasattr(proto, 'SerializeToString') and \
-            callable(proto.SerializeToString):
+    elif (hasattr(proto, 'SerializeToString') and
+          callable(proto.SerializeToString)):
         result = proto.SerializeToString()
         return result
     else:
@@ -57,16 +56,11 @@ def serialize_proto(proto):
 def deserialize_proto(s, proto):
     """Deserialize the protocol buffer object."""
     if not isinstance(s, bytes):
-        raise ValueError(
-            'Excepted serialized bytes, got type: {}'.format(type(s)))
+        raise ValueError('Excepted serialized bytes, got: {}'.format(type(s)))
     if not (hasattr(proto, 'ParseFromString') and
             callable(proto.ParseFromString)):
         raise ValueError(
             'No <ParseFromString> method. Type is {}'
             .format(type(proto)))
-    decoded = cast(Optional[int], proto.ParseFromString(s))
-    if decoded is not None and decoded != len(s):
-        raise RuntimeError(
-            'Protobuf decoding consumed too few bytes: {} out of {}'
-            .format(decoded, len(s)))
+    proto.ParseFromString(s)
     return proto

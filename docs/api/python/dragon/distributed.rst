@@ -13,10 +13,13 @@ dragon.distributed
   : Broadcast the input from root node in a group.
 
   `is_initialized(...) <distributed/is_initialized.html>`_
-  : Whether the distributed environment has initialized.
+  : Return whether the distributed environment is initialized.
 
-  `init(...) <distributed/init.html>`_
-  : Initialize the distributed environment.
+  `is_mpi_available(...) <distributed/is_mpi_available.html>`_
+  : Return whether the MPI backend is available.
+
+  `is_nccl_available(...) <distributed/is_nccl_available.html>`_
+  : Return whether the NCCL backend is available.
 
   `get_backend(...) <distributed/get_backend.html>`_
   : Return the backend of given process group.
@@ -38,8 +41,9 @@ dragon.distributed
   
   distributed/all_reduce
   distributed/broadcast
-  distributed/init
   distributed/is_initialized
+  distributed/is_mpi_available
+  distributed/is_nccl_available
   distributed/get_backend
   distributed/get_group
   distributed/get_rank

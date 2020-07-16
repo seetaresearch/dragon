@@ -66,6 +66,7 @@ class Tensor(object):
     ```
 
     """
+
     def __init__(self, *args, **kwargs):
         self._tape = None
         self._gc = kwargs.get('gc', None)

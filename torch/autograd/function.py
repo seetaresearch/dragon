@@ -39,8 +39,14 @@ class Function(object):
         return self.__call__(*args, **kwargs)
 
     def attributes(self):
-        """Define the attributes to generate OpDef."""
-        return {}
+        """Define the attributes to generate OpDef.
+
+        Returns
+        -------
+        dict
+            The attribute dict.
+
+        """
 
     def dispatch(
         self,
@@ -92,7 +98,6 @@ class Function(object):
 
     def forward(self, *inputs, **kwargs):
         """Define the execution."""
-        raise RuntimeError('The base function can not be called.')
 
     def _gen_def(self):
         """Generate the OpDef from attributes."""

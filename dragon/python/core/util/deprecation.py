@@ -84,10 +84,7 @@ def not_installed(package=''):
     """Return a dummy function for the package that is not installed."""
     def dummy_fn(*args, **kwargs):
         _ = locals()
-        raise ImportError(
-            'Package <%s> is required but not installed.'
-            % package
-        )
+        raise ImportError('Package <%s> is required but not installed.' % package)
     return dummy_fn
 
 
@@ -98,7 +95,4 @@ class NotInstalled(object):
         self._package = package
 
     def __getattr__(self, item):
-        raise ImportError(
-            'Package <%s> is required but not installed.'
-            % self._package
-        )
+        raise ImportError('Package <%s> is required but not installed.' % self._package)

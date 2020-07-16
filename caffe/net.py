@@ -35,7 +35,7 @@ class Blob(object):
 
 
 class Net(object):
-    """The abstraction ``caffe.Net``.
+    """The base net class to connect layers.
 
     This class accepts a network file, and an optional parameter file.
     Besides, a phase tag is required to compute gradients or not:
@@ -193,7 +193,7 @@ class Net(object):
         current_ws = workspace.get_workspace()
         for name, blob in diffs.items():
             current_ws.feed_tensor(self.blobs[name].diff, blob)
-        self._forward_backward_impl(return_outputs=False, stage='backward')
+        self._forward_backward_impl(executing_stage='backward')
 
     def copy_from(self, other):
         """Copy layers from the other.
@@ -228,7 +228,7 @@ class Net(object):
         current_ws = workspace.get_workspace()
         for name, blob in inputs.items():
             current_ws.feed_tensor(self._blobs[name]['data'], blob)
-        self._forward_backward_impl(return_outputs=False, stage='forward')
+        self._forward_backward_impl(executing_stage='forward')
         return lambda: dict(
             (output, current_ws.fetch_tensor(self.blobs[output].data))
             for output in self.outputs)
@@ -250,7 +250,7 @@ class Net(object):
         current_ws = workspace.get_workspace()
         for name, blob in inputs.items():
             current_ws.feed_tensor(self._blobs[name]['data'], blob)
-        self._forward_backward_impl(return_outputs=False)
+        self._forward_backward_impl()
         return lambda: dict(
             (output, current_ws.fetch_tensor(self.blobs[output].data))
             for output in self.outputs)

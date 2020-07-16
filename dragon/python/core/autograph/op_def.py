@@ -110,12 +110,7 @@ class OpDef(object):
         )
 
         # Return the outputs.
-        if num_outputs > 1:
-            return outputs
-        elif num_outputs == 1:
-            return outputs[0]
-        else:
-            return None
+        return outputs[0] if num_outputs == 1 else outputs
 
     @staticmethod
     def add_spec(op_type, arguments, inputs, outputs):

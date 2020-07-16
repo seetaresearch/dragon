@@ -77,8 +77,6 @@ def add_phase(graph_def, targets):
 
 def add_update_defs(graph_def, optimizer):
     """Add the update defs."""
-    if optimizer is None:
-        return
     grads, update_defs = [], []
     extra_arguments = optimizer._extra_kwargs
     extra_arguments['handle'] = optimizer._op_handle

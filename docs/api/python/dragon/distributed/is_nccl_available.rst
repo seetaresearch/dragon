@@ -1,7 +1,7 @@
-init
-====
+is_nccl_available
+=================
 
-.. autofunction:: dragon.distributed.init
+.. autofunction:: dragon.distributed.is_nccl_available
 
 .. raw:: html
 

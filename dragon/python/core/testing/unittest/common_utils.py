@@ -21,6 +21,7 @@ import dragon
 
 parser = argparse.ArgumentParser(add_help=False)
 TEST_CUDA = dragon.cuda.is_available()
+TEST_MPI = dragon.distributed.is_mpi_available()
 
 
 def run_tests(argv=None):

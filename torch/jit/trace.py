@@ -104,8 +104,7 @@ class FunctionGuard(object):
                                 'When <example_inputs> is provided, '
                                 'only define arguments covered by it.\n'
                                 'Got %d inputs(s) and %d argument(s).'
-                                % (len(input_signature),
-                                   self._function_spec.num_inputs)
+                                % (len(input_signature), self._function_spec.num_inputs)
                             )
                         if input_signature[i] is not None:
                             inputs.append(Tensor(

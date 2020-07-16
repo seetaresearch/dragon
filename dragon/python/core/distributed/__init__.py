@@ -13,7 +13,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.distributed.backend import init
 from dragon.core.distributed.backend import is_initialized
 from dragon.core.distributed.backend import get_backend
 from dragon.core.distributed.backend import get_group

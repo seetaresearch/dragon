@@ -32,8 +32,17 @@ namespace mpi {
   } while (0)
 
 void RegisterModule(py::module& m) {
+  /*! \brief Return whether MPI is available */
+  m.def("mpiIsAvailable", []() {
+#ifdef USE_MPI
+    return true;
+#else
+    return false;
+#endif
+  });
+
   /*! \brief Initialize the MPI environment */
-  m.def("MPIInit", []() {
+  m.def("mpiInitialize", []() {
 #ifdef USE_MPI
     // Enabling the multi-threads for Python is meaningless
     // While we will still hold this interface here
@@ -53,7 +62,7 @@ void RegisterModule(py::module& m) {
   });
 
   /*! \brief Return the world rank of current node */
-  m.def("MPIRank", []() {
+  m.def("mpiWorldRank", []() {
 #ifdef USE_MPI
     int world_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -64,7 +73,7 @@ void RegisterModule(py::module& m) {
   });
 
   /*! \brief Return the world size of current node */
-  m.def("MPISize", []() {
+  m.def("mpiWorldSize", []() {
 #ifdef USE_MPI
     int world_size;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -74,8 +83,8 @@ void RegisterModule(py::module& m) {
 #endif
   });
 
-  /*! \brief Create a MPI group from the nodes */
-  m.def("MPICreateGroup", [](const vec32_t& ranks, bool verbose = false) {
+  /*! \brief Create a MPI group from the ranks */
+  m.def("mpiCreateGroup", [](const vec32_t& ranks, bool verbose = false) {
 #ifdef USE_MPI
     // Skip the empty ranks to avoid asserting
     if (ranks.empty()) return vector<long>();
@@ -125,7 +134,7 @@ void RegisterModule(py::module& m) {
   });
 
   /*! \brief Finalize the MPI environment */
-  m.def("MPIFinalize", []() {
+  m.def("mpiFinalize", []() {
 #ifdef USE_MPI
     MPI_Finalize();
 #else

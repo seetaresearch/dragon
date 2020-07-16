@@ -37,14 +37,14 @@ class Backend(object):
             raise ValueError('Backend name must be a string, but got: {}'.format(name))
         value = getattr(Backend, name.upper(), Backend.UNDEFINED)
         if value == 'AUTO':
-            if _b.cudaIsNCCLSufficient():
+            if is_nccl_available():
                 return Backend.NCCL
             return Backend.MPI
         elif value == 'NCCL':
-            if not _b.cudaIsNCCLSufficient():
+            if not is_nccl_available():
                 raise ValueError('NCCL backend is not available.')
         elif value == Backend.UNDEFINED:
-            raise ValueError("Invalid backend: '{}'".format(name))
+            raise ValueError('Invalid backend:', name)
         return value
 
 
@@ -58,10 +58,12 @@ class ProcessGroup(object):
             self._backend = Backend('AUTO')
         else:
             self._backend = Backend(backend)
+        # Stored for executing the collective ops.
         self._arguments = {
-            # Stored for executing the collective ops.
-            'comm': self._comm, 'group': self._handle,
-            'backend': self._backend, 'ranks': self._ranks,
+            'comm': self._comm,
+            'group': self._handle,
+            'backend': self._backend,
+            'ranks': self._ranks,
         }
 
     @property
@@ -130,29 +132,43 @@ class ProcessGroup(object):
         return _GLOBAL_PROCESS_GROUP_STACK.get_controller(self)
 
     def __repr__(self):
-        return '%s:%d' % (self._backend, self._handle)
-
-
-def init():
-    """Init the distributed env."""
-    if is_initialized():
-        # ATTENTION: MPI env can only be initialized once per process.
-        return
-    _b.MPIInit()
-    global _GLOBAL_MPI_CONTEXT
-    _GLOBAL_MPI_CONTEXT = _MPIContext()
+        return '{}:{}'.format(self._backend, self._handle)
 
 
 def is_initialized():
-    """Whether the distributed env has initialized.
+    """Return whether the distributed environment is initialized.
 
     Returns
     -------
     bool
-        **True** if env has initialized otherwise **False**.
+        **True** if initialized otherwise **False**.
 
     """
     return _GLOBAL_MPI_CONTEXT is not None
+
+
+def is_mpi_available():
+    """Return whether the MPI backend is available.
+
+    Returns
+    -------
+    bool
+        **True** if available otherwise **False**.
+
+    """
+    return _b.mpiIsAvailable()
+
+
+def is_nccl_available():
+    """Return whether the NCCL backend is available.
+
+    Returns
+    -------
+    bool
+        **True** if available otherwise **False**.
+
+    """
+    return _b.ncclIsAvailable()
 
 
 def get_backend(group):
@@ -201,12 +217,12 @@ def get_rank(group=None):
         The rank.
 
     """
-    init()
-    world_rank = _b.MPIRank()
+    _maybe_initialize()
+    world_rank = _b.mpiWorldRank()
     if group is not None:
-        for idx, rank in enumerate(group.ranks):
+        for i, rank in enumerate(group.ranks):
             if rank == world_rank:
-                return idx
+                return i
     return world_rank
 
 
@@ -219,8 +235,8 @@ def get_world_size():
         The world size.
 
     """
-    init()
-    return _b.MPISize()
+    _maybe_initialize()
+    return _b.mpiWorldSize()
 
 
 def new_group(ranks=None, backend=None, verbose=False):
@@ -247,17 +263,27 @@ def new_group(ranks=None, backend=None, verbose=False):
     if ranks is None:
         return ProcessGroup(None, None, None, backend)
     else:
-        init()
+        _maybe_initialize()
         ranks = nest.flatten(ranks)
-        comm, handle = _b.MPICreateGroup(ranks, verbose)
+        comm, handle = _b.mpiCreateGroup(ranks, verbose)
         return ProcessGroup(ranks, comm, handle, backend)
+
+
+def _maybe_initialize():
+    """Maybe initialize the distributed environment."""
+    if is_initialized():
+        # ATTENTION: MPI env can only be initialized once per process.
+        return
+    _b.mpiInitialize()
+    global _GLOBAL_MPI_CONTEXT
+    _GLOBAL_MPI_CONTEXT = _MPIContext()
 
 
 class _MPIContext(object):
     """Context to finalize mpi under destruction."""
 
     def __del__(self):
-        _b.MPIFinalize()
+        _b.mpiFinalize()
 
 
 _GLOBAL_MPI_CONTEXT = None

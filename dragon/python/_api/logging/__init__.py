@@ -16,7 +16,9 @@ from __future__ import print_function as _print_function
 from dragon.core.util.logging import debug
 from dragon.core.util.logging import error
 from dragon.core.util.logging import fatal
+from dragon.core.util.logging import get_verbosity
 from dragon.core.util.logging import info
+from dragon.core.util.logging import log
 from dragon.core.util.logging import set_directory
 from dragon.core.util.logging import set_verbosity
 from dragon.core.util.logging import warning

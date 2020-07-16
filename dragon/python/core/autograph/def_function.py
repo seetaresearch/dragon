@@ -82,10 +82,7 @@ def class_method_to_instance_method(original_function, instance):
     return decorator.make_decorator(
         original_function.python_function,
         type(original_function)(
-            decorator.make_decorator(
-                bound_method,
-                bound_method_wrapper,
-            ),
+            decorator.make_decorator(bound_method, bound_method_wrapper),
             input_signature=original_function.input_signature,
         ),
     )
@@ -138,17 +135,7 @@ class FunctionSpec(object):
                 raise ValueError(
                     'When <input_signature> is provided, '
                     'only pass arguments covered by it.\n'
-                    'Received %d argument(s).' % len(args)
-                )
-            for arg in kwargs.keys():
-                index = self._args_to_indices.get(arg, None)
-                if index is not None and \
-                        index >= len(self._input_signature):
-                    raise ValueError(
-                        'When <input_signature> is provided, '
-                        'only pass arguments covered by it.\n'
-                        'Received argument <%s>.' % arg
-                    )
+                    'Received %d argument(s).' % len(args))
         # Determine the args from kwargs and default-values.
         if not kwargs:
             # The simplest case: args only.
@@ -167,7 +154,7 @@ class FunctionSpec(object):
                 index = self._args_to_indices.get(arg, None)
                 if index is not None:
                     arg_indices_to_values[index] = value
-                elif arg in extra_args:
+                else:
                     extra_args[arg] = value
             args2 = tuple(arg_indices_to_values[key]
                           for key in sorted(arg_indices_to_values))
@@ -250,8 +237,7 @@ class FunctionGuard(object):
                                 'When <input_signature> is provided, '
                                 'only define arguments covered by it.\n'
                                 'Got %d signature(s) and %d argument(s).'
-                                % (len(input_signature), self._function_spec.num_inputs)
-                            )
+                                % (len(input_signature), self._function_spec.num_inputs))
                         shape = input_signature[i].shape
                         dtype = input_signature[i].dtype
                     inputs.append(Tensor(shape, dtype, name).constant())
@@ -263,22 +249,23 @@ class FunctionGuard(object):
                     outputs.append(obj)
                 else:
                     dummies.append(obj)
-            executables = [function_lib.create_function(inputs, outputs)]
+            executables = [function_lib.create_function(outputs=outputs)]
             for obj in dummies:
                 if isinstance(obj, optimizer.Optimizer):
                     executables.append(function_lib.create_function(optimizer=obj))
             self.inputs = inputs
             self.outputs = returns
             self.executables = executables
-
         # In this case, we have compiled executables.
         # Notify the backend to run directly.
         executables = self.executables
         inputs, kwargs = self.canonicalize_inputs(*args, **kwargs)
-        executables[0](*inputs, return_outputs=False, **kwargs)
+        current_ws = workspace.get_workspace()
+        for input, value in zip(self.inputs, inputs):
+            current_ws.feed_tensor(input, value)
+        executables[0](return_outputs=False, **kwargs)
         [func(return_outputs=False) for func in executables[1:]]
         outputs = []
-        current_ws = workspace.get_workspace()
         for output in self.outputs:
             if isinstance(output, Tensor):
                 impl = current_ws.GetTensor(output.id)
@@ -286,7 +273,7 @@ class FunctionGuard(object):
                 outputs.append(EagerTensor(impl=impl, device=device))
             else:
                 outputs.append(output)
-        return outputs
+        return outputs[0] if len(outputs) == 1 else outputs
 
     def __get__(self, instance, owner):
         """Override to patch the instance methods."""

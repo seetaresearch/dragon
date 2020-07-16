@@ -15,8 +15,14 @@ dragon.logging
   `fatal(...) <logging/fatal.html>`_
   : Log message at the FATAL level.
 
+  `get_verbosity(...) <logging/get_verbosity.html>`_
+  : Return the current logging level.
+
   `info(...) <logging/info.html>`_
   : Log message at the INFO level.
+
+  `log(...) <logging/log.html>`_
+  : Log message at the given level.
 
   `set_directory(...) <logging/set_directory.html>`_
   : Set the directory for logging files.
@@ -33,7 +39,9 @@ dragon.logging
   logging/debug
   logging/error
   logging/fatal
+  logging/get_verbosity
   logging/info
+  logging/log
   logging/set_directory
   logging/set_verbosity
   logging/warning
