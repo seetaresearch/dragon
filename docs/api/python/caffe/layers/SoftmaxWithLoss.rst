@@ -1,7 +1,7 @@
 SoftmaxWithLoss
 ===============
 
-.. autoclass:: dragon.vm.caffe.layers.SoftmaxWithLoss
+.. autoclass:: dragon.vm.caffe.core.layers.SoftmaxWithLoss
 
 .. raw:: html
 

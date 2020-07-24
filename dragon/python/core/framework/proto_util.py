@@ -5,10 +5,10 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Define some helpful protocol buffer makers here."""
+"""Protocol buffer utilities."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -28,6 +28,7 @@ from dragon.core.proto import dragon_pb2
 
 if sys.version_info >= (3, 0):
     def make_argument(key, value):
+        """Make an argument."""
         argument = dragon_pb2.Argument()
         argument.name = key
         if type(value) is float:
@@ -57,6 +58,7 @@ if sys.version_info >= (3, 0):
         return argument
 else:
     def make_argument(key, value):
+        """Make an argument."""
         argument = dragon_pb2.Argument()
         argument.name = key
         if type(value) is float:
@@ -100,6 +102,7 @@ def make_operator_def(
     arg=None,
     **kwargs
 ):
+    """Make an operator def."""
     op_def = dragon_pb2.OperatorDef(type=op_type, name=name)
     op_def.input.extend(inputs)
     op_def.output.extend(outputs)
@@ -119,7 +122,7 @@ def make_operator_def(
     return op_def
 
 
-def make_operator_cdef(
+def make_operator_def_cpp(
     op_type,
     inputs=(),
     outputs=(),
@@ -129,6 +132,7 @@ def make_operator_cdef(
     arg=None,
     **kwargs
 ):
+    """Make an operator def with cpp implementation."""
     op_def = backend.OperatorDef()
     op_def.ParseFrom(
         make_operator_def(
@@ -144,6 +148,7 @@ def make_operator_cdef(
 
 
 def make_device_option(device_type, device_id, rng_seed=None):
+    """Make a device option."""
     dev_opt = dragon_pb2.DeviceOption()
     dev_opt.device_type = device_type
     dev_opt.device_id = device_id
@@ -158,13 +163,14 @@ _PREDEFINED_DEVICE_OPTION_DICT = {}
 
 
 for i in range(_PREDEFINED_DEVICE_LIMITS):
-    for device, identify in _PREDEFINED_DEVICE_DICT.items():
+    for device, identifier in _PREDEFINED_DEVICE_DICT.items():
         _PREDEFINED_DEVICE_OPTION_DICT[(device, i)] = \
-            make_device_option(identify, i)
+            make_device_option(identifier, i)
 
 
-def get_device_option(device_type, device_id=0, rng_seed=None):
-    ctx = (device_type, device_id)
+def get_device_option(device_type, device_index=0, rng_seed=None):
+    """Return the device option."""
+    ctx = (device_type, device_index)
     option = _PREDEFINED_DEVICE_OPTION_DICT[ctx]
     if rng_seed is not None:
         option_copy = copy.deepcopy(option)
@@ -174,16 +180,18 @@ def get_device_option(device_type, device_id=0, rng_seed=None):
 
 
 def get_default_device_option():
-    dev_info = context.get_device_info()
-    if dev_info is not None:
+    """Return the default device option."""
+    device_info = context.get_device_info()
+    if device_info is not None:
         return get_device_option(
-            dev_info['device_type'],
-            dev_info['device_index'],
+            device_info['device_type'],
+            device_info['device_index'],
         )
     return None
 
 
 def get_global_device_option():
+    """Return the global device option."""
     cfg = config.config()
     return get_device_option(
         cfg.device_type,

@@ -1,7 +1,7 @@
 Softmax
 =======
 
-.. autoclass:: dragon.vm.caffe.layers.Softmax
+.. autoclass:: dragon.vm.caffe.core.layers.Softmax
 
 .. raw:: html
 

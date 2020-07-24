@@ -5,11 +5,11 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # Codes are based on:
 #
-#    <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/array_ops.py>
+#     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/array_ops.py>
 #
 # ------------------------------------------------------------
 """The array ops."""
@@ -221,7 +221,7 @@ def fill(dims, value=0, dtype=None, name=None):
 
 
 def gather(params, indices, axis=0, name=None):
-    """Select the elements according to the indices along the given axis.
+    """Select the elements according to the index along the given axis.
 
     ``indices`` could be a **int64** tensor or a sequence with integers:
 
@@ -234,7 +234,7 @@ def gather(params, indices, axis=0, name=None):
     More than one axis could be specified for ``indices``:
 
     ```python
-    # The number of ``axis`` should less than rank(indices)
+    # The number of ``axis`` should less than ``rank(indices)``
     # And these axes should be continuous
     print(tf.gather(x, [0, 1], axis=[0, 1]))
     ```
@@ -348,23 +348,23 @@ def one_hot(
     r"""Return the one-hot representation for input.
 
     .. math::
-        \text{out}[i][j] =
+        \text{out}_{ij} =
             \begin{cases}
-                \text{off\_value}, & \text{ if } \text{input}[i] \neq j \\
+                \text{off\_value}, & \text{ if } \text{input}_{i} \neq j \\
                 \text{on\_value}, & \text{ otherwise }
             \end{cases}
 
-    The max value of indices, i.e., the ``depth`` should be specified:
+    The max value of input, i.e., the ``depth`` should be specified:
 
     ```python
-    indices = tf.constant([0, 1, 2, 3], tf.int64)
-    print(tf.one_hot(indices, depth=5))  # depth >= 4 will be ok
+    x = tf.constant([0, 1, 2, 3], tf.int64)
+    print(tf.one_hot(x, depth=5))  # depth >= 4 will be ok
     ```
 
     You can also set the ``on_value`` or ``off_value``:
 
     ```python
-    print(tf.one_hot(indices, depth=4, on_value=2, off_value=3))
+    print(tf.one_hot(x, depth=4, on_value=2, off_value=3))
     ```
 
     Parameters

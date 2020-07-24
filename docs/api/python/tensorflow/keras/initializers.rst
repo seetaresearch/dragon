@@ -36,10 +36,17 @@ initializers
   `class Zeros <initializers/Zeros.html>`_
   : Fill tensors with zeros.
 
+  Functions
+  ---------
+
+  `get(...) <initializers/get.html>`_
+  : Return the initializer callable by identifier.
+
 .. toctree::
   :hidden:
 
   initializers/Constant
+  initializers/get
   initializers/GlorotNormal
   initializers/GlorotUniform
   initializers/Initializer

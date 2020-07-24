@@ -5,10 +5,10 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Simple gradient maker implementation."""
+"""Simple gradient maker."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -48,7 +48,7 @@ class GradientMaker(object):
                 if output in targets:
                     gen_grads.append((output, i))
                     inputs_to_grads[output] = output + '_grad'
-        return maybe_skip and len(gen_grads) == 0, gen_grads
+        return maybe_skip and len(gen_grads) == 0 and len(op_def.output) == 1, gen_grads
 
     @classmethod
     def make(cls, op_defs, targets, input_grads=None):

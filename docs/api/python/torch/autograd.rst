@@ -3,6 +3,12 @@ vm.torch.autograd
 
 .. only:: html
 
+  Classes
+  -------
+
+  `class Function <autograd/Function.html>`_
+  : Dispatch the tensor operation.
+
   Functions
   ---------
 
@@ -13,6 +19,7 @@ vm.torch.autograd
   :hidden:
 
   autograd/backward
+  autograd/Function
 
 .. raw:: html
 

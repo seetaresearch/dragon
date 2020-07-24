@@ -1,7 +1,7 @@
 Data
 ====
 
-.. autoclass:: dragon.vm.caffe.layers.Data
+.. autoclass:: dragon.vm.caffe.core.layers.Data
 
 .. raw:: html
 

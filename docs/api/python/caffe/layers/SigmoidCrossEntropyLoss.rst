@@ -1,7 +1,7 @@
 SigmoidCrossEntropyLoss
 =======================
 
-.. autoclass:: dragon.vm.caffe.layers.SigmoidCrossEntropyLoss
+.. autoclass:: dragon.vm.caffe.core.layers.SigmoidCrossEntropyLoss
 
 .. raw:: html
 

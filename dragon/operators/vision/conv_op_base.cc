@@ -6,11 +6,11 @@ namespace dragon {
 
 #define DETERMINE_SAME_PADDING(l, r) \
   if (padding_ != "SAME_UPPER") {    \
-    l[i] = pad_size / 2;             \
-    r[i] = pad_size - l[i];          \
-  } else {                           \
-    r[i] = pad_size / 2;             \
+    r[i] = pad_size >> 1;            \
     l[i] = pad_size - r[i];          \
+  } else {                           \
+    l[i] = pad_size >> 1;            \
+    r[i] = pad_size - l[i];          \
   }
 
 template <class Context>

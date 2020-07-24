@@ -1,7 +1,7 @@
 Tile
 ====
 
-.. autoclass:: dragon.vm.caffe.layers.Tile
+.. autoclass:: dragon.vm.caffe.core.layers.Tile
 
 .. raw:: html
 

@@ -1,7 +1,7 @@
 ELU
 ===
 
-.. autoclass:: dragon.vm.caffe.layers.ELU
+.. autoclass:: dragon.vm.caffe.core.layers.ELU
 
 .. raw:: html
 

@@ -5,10 +5,10 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""The loss ops."""
+"""Loss ops."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -340,7 +340,7 @@ def softmax_cross_entropy(inputs, axis=1, reduction='mean', **kwargs):
     inputs : Sequence[dragon.Tensor]
         The tensor ``logit`` and ``target``.
     axis : int, optional, default=1
-        The axis to apply softmax, can be negative.
+        The axis to reduce, can be negative.
     reduction : {'none', 'sum', 'mean'}, optional
         The reduction method.
 
@@ -390,7 +390,7 @@ def sparse_softmax_cross_entropy(
     inputs : Sequence[dragon.Tensor]
         The tensor ``logit`` and ``label``.
     axis : int, optional, default=1
-        The axis to apply softmax, can be negative.
+        The axis to reduce, can be negative.
     ignore_index : int, optional
         The label index to ignore.
     reduction : {'none', 'sum', 'mean', 'valid'}, optional

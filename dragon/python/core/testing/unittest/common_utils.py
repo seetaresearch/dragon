@@ -5,9 +5,10 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""Common unittest utilities."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -19,7 +20,10 @@ import unittest
 import argparse
 import dragon
 
+# The global argument parser
 parser = argparse.ArgumentParser(add_help=False)
+
+# The optional testing flags
 TEST_CUDA = dragon.cuda.is_available()
 TEST_MPI = dragon.distributed.is_mpi_available()
 

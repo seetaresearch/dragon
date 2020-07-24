@@ -1,7 +1,7 @@
 ROIAlign
 ========
 
-.. autoclass:: dragon.vm.caffe.layers.ROIAlign
+.. autoclass:: dragon.vm.caffe.core.layers.ROIAlign
 
 .. raw:: html
 

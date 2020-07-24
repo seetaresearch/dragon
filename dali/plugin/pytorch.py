@@ -5,7 +5,7 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
 
@@ -13,12 +13,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.vm.dali.core import iterator
-from dragon.vm.torch import cpp
-from dragon.vm.torch.tensor import Tensor
+from dragon.vm import dali
+from dragon.vm import torch
 
 
-class DALIGenericIterator(iterator.Iterator):
+class DALIGenericIterator(dali.Iterator):
     """The general DALI iterator for ``vm.torch`` package."""
 
     def __init__(self, pipeline):
@@ -54,12 +53,12 @@ class DALIGenericIterator(iterator.Iterator):
     @staticmethod
     def new_device(device_type, device_index):
         """Return a new device abstraction."""
-        return cpp.device(device_type, device_index)
+        return torch.device(device_type, device_index)
 
     @staticmethod
     def new_tensor(shape, dtype, device):
         """Return a new tensor abstraction."""
-        return Tensor(*shape, dtype=dtype, device=device)
+        return torch.Tensor(*shape, dtype=dtype, device=device)
 
     def __next__(self):
         """Return the next batch of data.

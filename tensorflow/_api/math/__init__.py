@@ -5,7 +5,7 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
 
@@ -52,5 +52,6 @@ from dragon.vm.tensorflow.core.ops.math_ops import square
 from dragon.vm.tensorflow.core.ops.math_ops import subtract
 from dragon.vm.tensorflow.core.ops.math_ops import tanh
 from dragon.vm.tensorflow.core.ops.nn import l2_normalize
+from dragon.vm.tensorflow.core.ops.nn import top_k
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

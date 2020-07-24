@@ -1,7 +1,7 @@
 Concat
 ======
 
-.. autoclass:: dragon.vm.caffe.layers.Concat
+.. autoclass:: dragon.vm.caffe.core.layers.Concat
 
 .. raw:: html
 

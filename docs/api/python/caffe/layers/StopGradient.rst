@@ -1,7 +1,7 @@
 StopGradient
 ============
 
-.. autoclass:: dragon.vm.caffe.layers.StopGradient
+.. autoclass:: dragon.vm.caffe.core.layers.StopGradient
 
 .. raw:: html
 

@@ -5,10 +5,10 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""The rnn ops."""
+"""RNN ops."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -16,7 +16,6 @@ from __future__ import print_function
 
 import itertools
 import numpy
-import warnings
 
 from dragon.core.autograph.tensor import TensorRef
 from dragon.core.eager import context
@@ -41,8 +40,6 @@ class RNNModule(object):
         dropout=0,
         name=None,
     ):
-        if dropout > 0 and num_layers == 1:
-            warnings.warn("Add dropout to single-layer RNN is meaningless.")
         self.mode = mode.lower()
         self.num_gates = {'lstm': 4, 'gru': 3}.get(self.mode, 1)
         self.input_size = input_size
@@ -122,7 +119,7 @@ class RNNModule(object):
         init_fn = getattr(self, '_{}_init'.format(initializer))
         param_shape = getattr(self, '_{}_shape'.format(type))[si][:]
         param_shape[0] //= self.num_gates  # Gate-Agnostic
-        self._param_set(li, pi, type, init_fn(param_shape))
+        self._set_parameter(li, pi, type, init_fn(param_shape))
 
     @property
     def weights(self):
@@ -133,6 +130,7 @@ class RNNModule(object):
 
     @classmethod
     def _orthogonal_init(cls, shape, gain=1, dtype='float32'):
+        """The orthogonal initializer."""
         num_rows = 1
         for dim in shape[:-1]:
             num_rows *= dim
@@ -148,24 +146,8 @@ class RNNModule(object):
             q = q.T
         return gain * q.reshape(shape).astype(dtype)
 
-    def _param_set(self, layer_id, param_id, param_type, param):
-        if isinstance(param, numpy.ndarray):
-            param = EagerTensor(param, copy=False)
-        else:
-            raise ValueError('Excepted a numpy array.')
-        return rnn_ops_lib.RNNParamSet \
-            .instantiate(
-                layer_id=layer_id,
-                param_id=param_id,
-                param_type=param_type,
-                mode=self.mode,
-                input_size=self.input_size,
-                hidden_size=self.hidden_size,
-                num_layers=self.num_layers,
-                num_directions=self.num_directions,
-            ).apply([self._weights, param])
-
     def _register_parameters(self):
+        """Register and flatten the parameters."""
         if self.mode == 'lstm':
             gate_size = 4 * self.hidden_size
         elif self.mode == 'gru':
@@ -193,12 +175,30 @@ class RNNModule(object):
         self._weights = EagerTensor(shape=[self._weights_count], trainable=True)
         self._weights_ref = TensorRef(self._weights.name)
 
+    def _set_parameter(self, layer_id, param_id, param_type, param):
+        """Set parameter to the flatten weights."""
+        if isinstance(param, numpy.ndarray):
+            param = EagerTensor(param, copy=False)
+        return rnn_ops_lib.RNNParamSet \
+            .instantiate(
+                layer_id=layer_id,
+                param_id=param_id,
+                param_type=param_type,
+                mode=self.mode,
+                input_size=self.input_size,
+                hidden_size=self.hidden_size,
+                num_layers=self.num_layers,
+                num_directions=self.num_directions,
+            ).apply([self._weights, param])
+
     def _uniform_init(self, shape, dtype='float32'):
+        """The uniform initializer."""
         stdv = 1. / numpy.sqrt(self.hidden_size)
         return numpy.random.uniform(-stdv, stdv, shape).astype(dtype)
 
     @classmethod
     def _zero_init(cls, shape, dtype='float32'):
+        """The zero initializer."""
         return numpy.zeros(shape, dtype=dtype)
 
     def __call__(self, *args, **kwargs):

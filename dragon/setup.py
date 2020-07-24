@@ -69,6 +69,8 @@ def configure():
     shutil.copytree('../tensorrt/python', 'dragon/vm/tensorrt')
     # Copy "torch" => "dragon.vm.torch"
     shutil.copytree('../torch', 'dragon/vm/torch')
+    # Copy "torchvision" => "dragon.vm.torchvision"
+    shutil.copytree('../torchvision', 'dragon/vm/torchvision')
     # Copy the pre-built libraries.
     os.makedirs('dragon/lib')
     for src, dest in find_libraries().items():
@@ -144,7 +146,7 @@ setuptools.setup(
     version=version,
     description='Dragon: A Computation Graph Virtual Machine '
                 'Based Deep Learning Framework',
-    url='https://github.com/seetaresearch/Dragon',
+    url='https://github.com/seetaresearch/dragon',
     author='SeetaTech',
     license='BSD 2-Clause',
     packages=find_packages(),

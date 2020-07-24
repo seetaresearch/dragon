@@ -46,7 +46,7 @@ vm.tensorflow
   : Return a tensor filled with the scalar value.
 
   `gather(...) <tensorflow/gather.html>`_
-  : Select the elements according to the indices along the given axis.
+  : Select the elements according to the index along the given axis.
 
   `function(...) <tensorflow/function.html>`_
   : Create a callable graph from the python function.

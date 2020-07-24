@@ -77,9 +77,14 @@ vm.tensorflow.nn
   `softmax(...) <nn/softmax.html>`_
   : Apply the softmax function.
 
+  `softmax_cross_entropy_with_logits(...) <nn/softmax_cross_entropy_with_logits.html>`_
+  : Compute the softmax cross entropy with contiguous labels.
+
   `space_to_depth(...) <nn/space_to_depth.html>`_
   : Rearrange blocks of spatial data into depth.
-  
+
+  `sparse_softmax_cross_entropy_with_logits(...) <nn/sparse_softmax_cross_entropy_with_logits.html>`_
+  : Compute the softmax cross entropy with sparse labels.
 
 .. toctree::
   :hidden:
@@ -105,7 +110,9 @@ vm.tensorflow.nn
   nn/relu6
   nn/selu
   nn/softmax
+  nn/softmax_cross_entropy_with_logits
   nn/space_to_depth
+  nn/sparse_softmax_cross_entropy_with_logits
 
 .. raw:: html
 

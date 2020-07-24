@@ -40,10 +40,10 @@ vm.torch
   : Return a tensor of evenly spaced values within a interval.
 
   `argmax(...) <torch/argmax.html>`_
-  : Return the indices of maximum elements along the given axis.
+  : Return the index of maximum elements along the given dimension.
 
   `argmin(...) <torch/argmin.html>`_
-  : Return the indices of minimum elements along the given axis.
+  : Return the index of minimum elements along the given dimension.
 
   `axpby(...) <torch/axpby.html>`_
   : Compute the element-wise addition from input to output.
@@ -77,7 +77,7 @@ vm.torch
   : Compute the cos of input.
 
   `cumsum(...) <torch/cumsum.html>`_
-  : Compute the cumulative sum of elements along the given axis.
+  : Compute the cumulative sum of elements along the given dimension.
 
   `div(...) <torch/div.html>`_
   : Compute the element-wise division.
@@ -90,9 +90,6 @@ vm.torch
 
   `exp(...) <torch/exp.html>`_
   : Compute the exponential of input.
-
-  `expand(...) <torch/expand.html>`_
-  : Broadcast input according to given sizes.
 
   `eye(...) <torch/eye.html>`_
   : Return a tensor constructed as the identity matrix.
@@ -134,16 +131,16 @@ vm.torch
   : Select the input elements where mask is 1.
 
   `max(...) <torch/max.html>`_
-  : Compute the max value of elements along the given axis.
+  : Compute the max value of elements along the given dimension.
 
   `maximum(...) <torch/maximum.html>`_
   : Compute the maximum value of inputs.
 
   `mean(...) <torch/mean.html>`_
-  : Compute the mean value of elements along the given axis.
+  : Compute the mean value of elements along the given dimension.
 
   `min(...) <torch/min.html>`_
-  : Compute the min value of elements along the given axis.
+  : Compute the min value of elements along the given dimension.
 
   `minimum(...) <torch/minimum.html>`_
   : Compute the minimum value of inputs.
@@ -164,7 +161,7 @@ vm.torch
   : Compute the element-wise not-equal comparison.
 
   `nonzero(...) <torch/nonzero.html>`_
-  : Return the indices of non-zero elements.
+  : Return the index of non-zero elements.
 
   `ones(...) <torch/ones.html>`_
   : Return a tensor filled with ones.
@@ -224,16 +221,13 @@ vm.torch
   : Compute the element-wise subtraction.
 
   `sum(...) <torch/sum.html>`_
-  : Compute the sum value of elements along the given axis.
+  : Compute the sum value of elements along the given dimension.
 
   `tensor(...) <torch/tensor.html>`_
   : Create a tensor initializing the content from data.
 
   `topk(...) <torch/topk.html>`_
-  : Return the k largest/smallest values and indices along the given axis.
-
-  `topk_acc(...) <torch/topk_acc.html>`_
-  : Compute the top-k accuracy according to the label.
+  : Return the top-K largest or smallest elements along the given dimension.
 
   `unsqueeze(...) <torch/unsqueeze.html>`_
   : Expand the dimensions of input with size 1.
@@ -273,7 +267,6 @@ vm.torch
   torch/enable_grad
   torch/eq
   torch/exp
-  torch/expand
   torch/eye
   torch/floor
   torch/from_numpy
@@ -324,7 +317,6 @@ vm.torch
   torch/Tensor_
   torch/tensor
   torch/topk
-  torch/topk_acc
   torch/unsqueeze
   torch/where
   torch/zeros_like

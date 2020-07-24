@@ -159,7 +159,7 @@ Name                     Supported Reference
 `TfIdfVectorizer`_
 `ThresholdedRelu`_
 `Tile`_                  |v|       :func:`dragon.tile`
-`TopK`_
+`TopK`_                  |v|       :func:`dragon.math.top_k`
 `Transpose`_             |v|       :func:`dragon.transpose`
 `Unique`_
 `Unsqueeze`_             |v|       :func:`dragon.unsqueeze`

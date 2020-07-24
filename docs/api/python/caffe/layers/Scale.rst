@@ -1,7 +1,7 @@
 Scale
 =====
 
-.. autoclass:: dragon.vm.caffe.layers.Scale
+.. autoclass:: dragon.vm.caffe.core.layers.Scale
 
 .. raw:: html
 

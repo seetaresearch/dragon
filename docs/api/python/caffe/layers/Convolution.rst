@@ -1,7 +1,7 @@
 Convolution
 ===========
 
-.. autoclass:: dragon.vm.caffe.layers.Convolution
+.. autoclass:: dragon.vm.caffe.core.layers.Convolution
 
 .. raw:: html
 

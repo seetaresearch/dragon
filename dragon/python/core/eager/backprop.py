@@ -5,11 +5,11 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # Codes are based on:
 #
-#       <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/eager/backprop.py>
+#     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/eager/backprop.py>
 #
 # ------------------------------------------------------------
 """Do back-propagation from the executed operations."""
@@ -37,11 +37,32 @@ class Tape(object):
         self._empty_grads = set()
         self._gc = workspace.get_workspace().collectors
         self._retain_graph = False
+        self._retain_op_handles = False
 
     @property
     def empty_grads(self):
         """Return the recorded empty grads."""
         return list(self._empty_grads)
+
+    @property
+    def retain_graph(self):
+        """Return whether to retain the graph."""
+        return self._retain_graph
+
+    @retain_graph.setter
+    def retain_graph(self, value):
+        """Set to retain the graph."""
+        self._retain_graph = value
+
+    @property
+    def retain_op_handles(self):
+        """Return whether to retain the op handles."""
+        return self._retain_op_handles
+
+    @retain_op_handles.setter
+    def retain_op_handles(self, value):
+        """Set to retain the op handles."""
+        self._retain_op_handles = value
 
     def add_def(self, op_def):
         """Add a new def."""

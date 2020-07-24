@@ -1,7 +1,7 @@
 Reduction
 =========
 
-.. autoclass:: dragon.vm.caffe.layers.Reduction
+.. autoclass:: dragon.vm.caffe.core.layers.Reduction
 
 .. raw:: html
 

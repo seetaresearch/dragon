@@ -1,7 +1,7 @@
 EuclideanLoss
 =============
 
-.. autoclass:: dragon.vm.caffe.layers.EuclideanLoss
+.. autoclass:: dragon.vm.caffe.core.layers.EuclideanLoss
 
 .. raw:: html
 

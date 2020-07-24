@@ -1,7 +1,7 @@
 Python
 ======
 
-.. autoclass:: dragon.vm.caffe.layers.Python
+.. autoclass:: dragon.vm.caffe.core.layers.Python
 
 .. raw:: html
 

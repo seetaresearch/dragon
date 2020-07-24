@@ -1,7 +1,7 @@
 Deconvolution
 =============
 
-.. autoclass:: dragon.vm.caffe.layers.Deconvolution
+.. autoclass:: dragon.vm.caffe.core.layers.Deconvolution
 
 .. raw:: html
 

@@ -1,7 +1,7 @@
 Eltwise
 ========
 
-.. autoclass:: dragon.vm.caffe.layers.Eltwise
+.. autoclass:: dragon.vm.caffe.core.layers.Eltwise
 
 .. raw:: html
 

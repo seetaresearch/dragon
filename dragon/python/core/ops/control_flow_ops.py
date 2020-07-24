@@ -5,10 +5,10 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""The control flow ops."""
+"""Control flow ops."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -108,10 +108,10 @@ def masked_assign(inputs, **kwargs):
     r"""Assign the value to input where mask is 1.
 
     .. math::
-        \text{input}[i] =
+        \text{input}_{i} =
             \begin{cases}
-                \text{value}[i], & \text{ if } \text{mask}[i] = 1 \\
-                \text{input}[i], & \text{ otherwise }
+                \text{value}_{i}, & \text{ if } \text{mask}_{i} = 1 \\
+                \text{input}_{i}, & \text{ otherwise }
         \end{cases}
 
     Parameters

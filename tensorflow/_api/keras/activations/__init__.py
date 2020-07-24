@@ -5,7 +5,7 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
 
@@ -14,6 +14,7 @@ from __future__ import division as _division
 from __future__ import print_function as _print_function
 
 from dragon.vm.tensorflow.core.keras.activations import elu
+from dragon.vm.tensorflow.core.keras.activations import get
 from dragon.vm.tensorflow.core.keras.activations import exponential
 from dragon.vm.tensorflow.core.keras.activations import linear
 from dragon.vm.tensorflow.core.keras.activations import relu

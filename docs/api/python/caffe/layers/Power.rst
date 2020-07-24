@@ -1,7 +1,7 @@
 Power
 =====
 
-.. autoclass:: dragon.vm.caffe.layers.Power
+.. autoclass:: dragon.vm.caffe.core.layers.Power
 
 .. raw:: html
 

@@ -5,10 +5,10 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""The init ops."""
+"""Init ops."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -69,7 +69,9 @@ def constant(value, dtype=None, shape=None, name=None):
 
 
 def eye(n, m=None, k=0, dtype='float32', **kwargs):
-    """Return a tensor constructed as the identity matrix.
+    r"""Return a tensor constructed as the identity matrix.
+
+    .. math:: \text{out} \leftarrow \text{diag}(1, 1, ..., 1)
 
     The rows and cols of matrix are determined by ``n`` and ``m``:
 
@@ -132,7 +134,9 @@ def eye(n, m=None, k=0, dtype='float32', **kwargs):
 
 @OpSchema.num_inputs(1)
 def eye_like(other, k=0, dtype='float32', **kwargs):
-    """Return a tensor of identity matrix with shape as the other.
+    r"""Return a tensor of identity matrix with shape as the other.
+
+    .. math:: \text{out} \leftarrow \text{diag}(1, 1, ..., 1)
 
     The rows and cols of matrix are hinted by the input tensor:
 
@@ -207,9 +211,9 @@ def fill(shape, value=0, dtype=None, **kwargs):
     args['value'] = float(value)
     if dtype is None:
         args['dtype'] = str(numpy.array(value).dtype)
-        if dtype == numpy.int64:
+        if args['dtype'] == 'int64':
             args['dtype'] = 'int32'
-        elif dtype == numpy.float64:
+        elif args['dtype'] == 'float64':
             args['dtype'] = 'float32'
     trainable = args.pop('trainable') if 'trainable' in args else False
     op_lib = init_ops_lib.Fill
@@ -228,7 +232,7 @@ def fill(shape, value=0, dtype=None, **kwargs):
 def glorot_normal(shape, scale=2.0, mode='fan_in', dtype='float32', **kwargs):
     r"""Return a tensor initialized from the glorot normal distribution.
 
-    .. math:: \text{out} \sim \mathcal{N}(0, \sqrt{\frac{scale}{\text{fan}}})
+    .. math:: \text{out} \sim \mathcal{N}(0, \frac{scale}{\text{fan}})
 
     Parameters
     ----------
@@ -379,7 +383,7 @@ def ones_like(other, dtype='float32', **kwargs):
 def random_normal(shape, mean=0, std=1, dtype='float32', **kwargs):
     r"""Return a tensor initialized from the normal distribution.
 
-    .. math:: \text{out} \sim \mathcal{N}(\mu, \sigma)
+    .. math:: \text{out} \sim \mathcal{N}(\mu, \sigma^{2})
 
     Parameters
     ----------
@@ -419,7 +423,7 @@ def random_normal(shape, mean=0, std=1, dtype='float32', **kwargs):
 def random_normal_like(other, mean=0, std=1, dtype='float32', **kwargs):
     r"""Return a tensor initialized from the normal distribution with shape as the other.
 
-    .. math:: \text{out} \sim \mathcal{N}(\mu, \sigma)
+    .. math:: \text{out} \sim \mathcal{N}(\mu, \sigma^{2})
 
     Parameters
     ----------
@@ -545,7 +549,7 @@ def random_uniform_like(other, low=-1, high=1, dtype='float32', **kwargs):
 def truncated_normal(shape, mean=0, std=1, dtype='float32', **kwargs):
     r"""Return a tensor initialized from the truncated normal distribution.
 
-    .. math:: \text{out} \sim \mathcal{TN}(\mu, \sigma, \mu - 2\sigma, \mu + 2\sigma)
+    .. math:: \text{out} \sim \mathcal{TN}(\mu, \sigma^{2}, \mu - 2\sigma, \mu + 2\sigma)
 
     Parameters
     ----------

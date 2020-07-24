@@ -5,10 +5,10 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""The array ops library."""
+"""Array ops library."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -53,19 +53,16 @@ class Arange(Operator):
 class ArgReduce(Operator):
     def __init__(self, key, dev, **kwargs):
         super(ArgReduce, self).__init__(key, dev, **kwargs)
+        self.op_type = kwargs.get('op_type', 'ArgMax')
         self.axis = kwargs.get('axis', None)
-        self.top_k = kwargs.get('top_k', 1)
         self.keep_dims = kwargs.get('keep_dims', True)
-        self.operation = kwargs.get('operation', 'MAX')
 
     def attributes(self):
         return {
-            'op_type': 'ArgReduce',
+            'op_type': self.op_type,
             'arguments': {
                 'axis': self.axis,
-                'top_k': self.top_k,
                 'keep_dims': self.keep_dims,
-                'operation': self.operation,
             }
         }
 
@@ -613,6 +610,29 @@ class Transpose(Operator):
             callback=lambda ws, handle:
                 self.feed(ws, handle, perm),
         )
+
+
+class TopK(Operator):
+    def __init__(self, key, dev, **kwargs):
+        super(TopK, self).__init__(key, dev, **kwargs)
+        self.k = kwargs.get('k', 1)
+        self.axis = kwargs.get('axis', None)
+        self.largest = kwargs.get('largest', True)
+        self.sorted = kwargs.get('sorted', True)
+
+    def attributes(self):
+        return {
+            'op_type': 'TopK',
+            'arguments': {
+                'k': self.k,
+                'axis': self.axis,
+                'largest': self.largest,
+                'sorted': self.sorted,
+            }
+        }
+
+    def forward(self, inputs):
+        return self.dispatch(inputs, [self.alloc(), self.alloc()], no_grad=True)
 
 
 class Where(Operator):

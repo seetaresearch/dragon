@@ -1,7 +1,7 @@
 InnerProduct
 ============
 
-.. autoclass:: dragon.vm.caffe.layers.InnerProduct
+.. autoclass:: dragon.vm.caffe.core.layers.InnerProduct
 
 .. raw:: html
 

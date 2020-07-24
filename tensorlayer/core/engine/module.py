@@ -6,7 +6,7 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
 
@@ -243,17 +243,6 @@ class Module(object):
                 "Saving format should be in ('hdf5', 'npz', 'pkl', 'npz_dict').\n"
                 "Format <%s> is not supported." % format
             )
-
-    @staticmethod
-    def _add_indent(s_, num_spaces):
-        s = s_.split('\n')
-        if len(s) == 1:
-            return s_
-        first = s.pop(0)
-        s = [(num_spaces * ' ') + line for line in s]
-        s = '\n'.join(s)
-        s = first + '\n' + s
-        return s
 
     @staticmethod
     def _dedupe_weights(weights):

@@ -5,11 +5,11 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # Codes are based on:
 #
-#    <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/keras/losses.py>
+#     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/keras/losses.py>
 #
 # ------------------------------------------------------------
 
@@ -19,6 +19,7 @@ from __future__ import print_function
 
 from dragon.core.framework import context
 from dragon.core.ops import loss_ops
+from dragon.core.util import six
 from dragon.vm.tensorflow.core.keras.utils import losses_utils
 
 
@@ -501,3 +502,29 @@ def sparse_categorical_crossentropy(
         reduction=reduction,
         ignore_index=ignore_index,
     )
+
+
+def get(identifier):
+    """Return the loss callable by identifier.
+
+    Parameters
+    ----------
+    identifier : Union[callable, str]
+        The identifier.
+
+    Returns
+    -------
+    callable
+        The loss callable.
+
+    """
+    if identifier is None:
+        return None
+    elif callable(identifier):
+        return identifier
+    elif isinstance(identifier, six.string_types):
+        return globals()[identifier]
+    else:
+        raise TypeError(
+            'Could not interpret loss identifier: {}.'
+            .format(repr(identifier)))

@@ -5,7 +5,7 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
 
@@ -23,6 +23,7 @@ from dragon.core.ops.array_ops import mean
 from dragon.core.ops.array_ops import min
 from dragon.core.ops.array_ops import moments
 from dragon.core.ops.array_ops import sum
+from dragon.core.ops.array_ops import top_k
 from dragon.core.ops.math_ops import abs
 from dragon.core.ops.math_ops import add
 from dragon.core.ops.math_ops import affine

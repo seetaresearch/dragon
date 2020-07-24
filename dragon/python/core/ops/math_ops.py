@@ -5,10 +5,10 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""The math ops."""
+"""Math ops."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -1208,11 +1208,11 @@ def sign(inputs, **kwargs):
     r"""Compute the sign indication of input.
 
     .. math::
-        \text{out}[i] =
+        \text{out}_[i] =
             \begin{cases}
-                -1, & \text{ if } \text{input}[i] < 0 \\
-                 0, & \text{ if } \text{input}[i] = 0 \\
-                 1, & \text{ if } \text{input}[i] > 0
+                -1, & \text{ if } \text{input}_{i} < 0 \\
+                 0, & \text{ if } \text{input}_{i} = 0 \\
+                 1, & \text{ if } \text{input}_{i} > 0
             \end{cases}
 
     Examples:

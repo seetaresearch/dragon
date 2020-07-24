@@ -5,11 +5,11 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # Codes are based on:
 #
-#    <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/framework/dtypes.py>
+#     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/framework/dtypes.py>
 #
 # ------------------------------------------------------------
 """Data type utilities."""
@@ -390,9 +390,6 @@ class DType(str):
 
     def __str__(self):
         return self._name
-
-    def __repr__(self):
-        return "tf." + self.name
 
     def __hash__(self):
         return self._type_enum

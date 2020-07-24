@@ -1,7 +1,7 @@
 ReLU
 ====
 
-.. autoclass:: dragon.vm.caffe.layers.ReLU
+.. autoclass:: dragon.vm.caffe.core.layers.ReLU
 
 .. raw:: html
 

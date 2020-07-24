@@ -106,8 +106,7 @@ endif()
 # ---[ Command - Protobuf
 file(GLOB_RECURSE PROTO_FILES
   ${PROJECT_SOURCE_DIR}/python/*.proto
-  ${PROJECT_SOURCE_DIR}/../caffe/*.proto
-  ${PROJECT_SOURCE_DIR}/../tensorflow/*.proto)
+  ${PROJECT_SOURCE_DIR}/../caffe/*.proto)
 protobuf_generate_python(${PROTO_FILES})
 
 # ---[ Command - Strip

@@ -5,10 +5,10 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""The array ops."""
+"""Array ops."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -84,14 +84,8 @@ def arange(start, stop=None, step=1, dtype='int64', **kwargs):
 
 
 @OpSchema.num_inputs(1)
-def argmax(
-    inputs,
-    axis=None,
-    top_k=1,
-    keep_dims=False,
-    **kwargs
-):
-    """Compute the indices of maximum elements along the given axis.
+def argmax(inputs, axis=None, keep_dims=False, **kwargs):
+    """Compute the index of maximum elements along the given axis.
 
     The argument ``axis`` could be negative or **None**:
 
@@ -113,15 +107,13 @@ def argmax(
         The input tensor.
     axis : int, optional
         The axis to reduce.
-    top_k : int, optional, default=1
-        The top k results to keep.
     keep_dims : bool, optional, default=False
         Keep the reduced dimension or not.
 
     Returns
     -------
     dragon.Tensor
-        The indices of elements.
+        The index of maximum elements.
 
     """
     args = parse_args(locals())
@@ -129,24 +121,17 @@ def argmax(
     if context.executing_eagerly():
         return op_lib \
             .instantiate(
-                operation='MAX',
+                op_type='ArgMax',
                 axis=axis,
-                top_k=top_k,
                 keep_dims=keep_dims,
             ).apply([inputs])
     else:
-        return op_lib.blend(operation='MAX', **args)
+        return op_lib.blend('ArgMax', **args)
 
 
 @OpSchema.num_inputs(1)
-def argmin(
-    inputs,
-    axis=None,
-    top_k=1,
-    keep_dims=False,
-    **kwargs
-):
-    """Compute the indices of minimum elements along the given axis.
+def argmin(inputs, axis=None, keep_dims=False, **kwargs):
+    """Compute the index of minimum elements along the given axis.
 
     The argument ``axis`` could be negative or **None**:
 
@@ -168,15 +153,13 @@ def argmin(
         The input tensor.
     axis : int, optional
         The axis to reduce.
-    top_k : int, optional, default=1
-        The top k results to keep.
     keep_dims : bool, optional, default=False
         Keep the reduced dimension or not.
 
     Returns
     -------
     dragon.Tensor
-        The indices of elements.
+        The index of minimum elements.
 
     """
     args = parse_args(locals())
@@ -184,13 +167,12 @@ def argmin(
     if context.executing_eagerly():
         return op_lib \
             .instantiate(
-                operation='MIN',
+                op_type='ArgMin',
                 axis=axis,
-                top_k=top_k,
                 keep_dims=keep_dims,
             ).apply([inputs])
     else:
-        return op_lib.blend(operation='MIN', **args)
+        return op_lib.blend('ArgMin', **args)
 
 
 @OpSchema.num_inputs(1)
@@ -576,10 +558,10 @@ def flatten(inputs, axis=0, num_axes=-1, keep_axes=None, **kwargs):
 
 
 @OpSchema.num_inputs(1)
-def index_select(inputs, indices, axis=0, **kwargs):
-    """Select the elements according to the indices along the given axis.
+def index_select(inputs, index, axis=0, **kwargs):
+    """Select the elements according to the index along the given axis.
 
-    ``indices`` could be a **int64** tensor or a sequence with integers:
+    ``index`` could be a **int64** tensor or a sequence with integers:
 
     ```python
     x = dragon.constant([[1, 2, 3], [4, 5, 6]])
@@ -587,10 +569,10 @@ def index_select(inputs, indices, axis=0, **kwargs):
     print(dragon.index_select(x, dragon.constant([0, 1], 'int64')))
     ```
 
-    More than one axis could be specified for ``indices``:
+    More than one axis could be specified for ``index``:
 
     ```python
-    # The number of ``axis`` should less than rank(indices)
+    # The number of ``axis`` should less than ``rank(index)``
     # And these axes should be continuous
     print(dragon.index_select(x, [0, 1], axis=[0, 1]))
     ```
@@ -599,10 +581,10 @@ def index_select(inputs, indices, axis=0, **kwargs):
     ----------
     inputs : dragon.Tensor
         The input tensor.
-    indices : Union[Sequence[int], dragon.Tensor]
-        The indices to select elements.
+    index : Union[Sequence[int], dragon.Tensor]
+        The index to select elements.
     axis : Union[int, Sequence[int]], optional, default=0
-        The axis where the indices aligned.
+        The axis where the index aligned.
 
     Returns
     -------
@@ -617,18 +599,18 @@ def index_select(inputs, indices, axis=0, **kwargs):
         raise ValueError('The <axis> should be a continuous sequence.')
     op_lib = array_ops_lib.IndexSelect
     if context.executing_eagerly():
-        if not types.is_eager_tensor(indices):
-            indices = EagerTensor(indices, dtype='int64')
+        if not types.is_eager_tensor(index):
+            index = EagerTensor(index, dtype='int64')
         return op_lib \
             .instantiate(
                 axis=axes[0],
                 num_axes=len(axes),
-            ).apply([inputs, indices])
+            ).apply([inputs, index])
     else:
-        if not isinstance(indices, Tensor):
-            indices = Tensor.convert_to(indices, 'int64')
-        args['inputs'], args['indices'] = \
-            [args['inputs'], indices], None
+        if not isinstance(index, Tensor):
+            index = Tensor.convert_to(index, 'int64')
+        args['inputs'], args['index'] = \
+            [args['inputs'], index], None
         args['axis'], args['num_axes'] = axes[0], len(axes)
         return op_lib.blend(**args)
 
@@ -869,7 +851,7 @@ def moments(inputs, axis=None, keep_dims=False, **kwargs):
 
 @OpSchema.num_inputs(1)
 def multinomial(inputs, num_samples=1, eps=0., normalize=False, **kwargs):
-    """Return a tensor with indices sampled from **Multinomial** distribution.
+    """Return a tensor with index sampled from multinomial distribution.
 
     If ``normalize`` is **True**, negative input is accepted,
     and will be normalized by a **Softmax** function.
@@ -911,7 +893,7 @@ def multinomial(inputs, num_samples=1, eps=0., normalize=False, **kwargs):
 def nonzero(inputs, **kwargs):
     r"""Return the index of non-zero elements.
 
-    .. math:: \text{out} = \{i\}, \text{ if } \text{input}[i] \neq 0
+    .. math:: \text{out} = \{i\}, \text{ if } \text{input}_{i} \neq 0
 
     Parameters
     ----------
@@ -937,23 +919,23 @@ def one_hot(inputs, depth, on_value=1, off_value=0, **kwargs):
     r"""Return the one-hot representation for input.
 
     .. math::
-        \text{out}[i][j] =
+        \text{out}_{ij} =
             \begin{cases}
-                \text{off\_value}, & \text{ if } \text{input}[i] \neq j \\
+                \text{off\_value}, & \text{ if } \text{input}_{i} \neq j \\
                 \text{on\_value}, & \text{ otherwise }
             \end{cases}
 
-    The max value of indices, i.e., the ``depth`` should be specified:
+    The max value of input, i.e., the ``depth`` should be specified:
 
     ```python
-    indices = dragon.constant([0, 1, 2, 3], dtype='int64')
-    print(dragon.one_hot(indices, depth=5))  # depth >= 4 will be ok
+    x = dragon.constant([0, 1, 2, 3], dtype='int64')
+    print(dragon.one_hot(x, depth=5))  # depth >= 4 will be ok
     ```
 
     You can also set the ``on_value`` or ``off_value``:
 
     ```python
-    print(dragon.one_hot(indices, depth=4, on_value=2, off_value=3))
+    print(dragon.one_hot(x, depth=4, on_value=2, off_value=3))
     ```
 
     Parameters
@@ -1493,15 +1475,69 @@ def transpose(inputs, perm=None, **kwargs):
         return op_lib.blend(**args)
 
 
+@OpSchema.num_inputs(1)
+def top_k(inputs, k=1, axis=None, largest=True, sorted=True, **kwargs):
+    """Return the top-K largest or smallest elements along the given axis.
+
+    If ``axis`` is not given, the last axis is chosen:
+
+    ```python
+    x = dragon.constant([[1, 2, 3], [3, 2, 1]])
+    value1, index1 = dragon.math.top_k(x, k=2)
+    value2, index2 = dragon.math.top_k(x, k=2, axis=1)  # Equivalent
+    ```
+
+    If ``largest`` is **False**, the k smallest elements are returned:
+
+    ```python
+    x = dragon.constant([[1, 2, 3], [3, 2, 1]])
+    _, index1 = dragon.math.top_k(x, largest=False)
+    _, index2 = dragon.math.top_k(-x, largest=True)  # Equivalent
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    k : int, optional, default=1
+        The number of top elements to select.
+    axis : int, optional
+        The axis to reduce.
+    largest : bool, optional, default=True
+        Return largest or smallest elements.
+    sorted : bool, optional
+        Whether to return in the sorted order.
+
+    Returns
+    -------
+    Sequence[dragon.vm.torch.Tensor]
+        The value and index tensor.
+
+    """
+    args = parse_args(locals())
+    op_lib = array_ops_lib.TopK
+    if context.executing_eagerly():
+        return op_lib \
+            .instantiate(
+                k=k,
+                axis=axis,
+                largest=largest,
+                sorted=sorted,
+            ).apply([inputs])
+    else:
+        args['num_outputs'] = 2
+        return op_lib.blend(**args)
+
+
 @OpSchema.num_inputs(1, 3)
 def where(inputs, **kwargs):
     r"""Select the elements from two branches under the condition.
 
     .. math::
-        \text{out}[i] =
+        \text{out}_{i} =
             \begin{cases}
-                \text{input1}[i]  & \text{ if } \text{condition}[i] \text{ is True } \\
-                \text{input2}[i], & \text{ otherwise }
+                \text{input1}_{i}, & \text{ if } \text{condition}_{i} \\
+                \text{input2}_{i}, & \text{ otherwise }
             \end{cases}
 
     Return the index of **True** elements, if only the ``condition`` is given.

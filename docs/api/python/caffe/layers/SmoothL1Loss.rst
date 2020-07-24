@@ -1,7 +1,7 @@
 SmoothL1Loss
 ============
 
-.. autoclass:: dragon.vm.caffe.layers.SmoothL1Loss
+.. autoclass:: dragon.vm.caffe.core.layers.SmoothL1Loss
 
 .. raw:: html
 

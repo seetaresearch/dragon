@@ -1,6 +1,7 @@
 FROM ubuntu:16.04
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN \
+  apt-get update && apt-get install -y --no-install-recommends \
   build-essential \
   cmake \
   git \
@@ -8,6 +9,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   unzip \
   ssh \
   vim \
+  libudev-dev \
+  libz-dev \
   libnuma-dev \
   libprotobuf-dev \
   protobuf-compiler \
@@ -17,7 +20,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   python3-tk \ 
   && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --no-cache-dir --upgrade setuptools wheel -i https://pypi.tuna.tsinghua.edu.cn/simple && \
+RUN \
+  pip3 install --no-cache-dir --upgrade setuptools wheel -i https://pypi.tuna.tsinghua.edu.cn/simple && \
   pip3 install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple \
   numpy \
   protobuf \
@@ -25,11 +29,13 @@ RUN pip3 install --no-cache-dir --upgrade setuptools wheel -i https://pypi.tuna.
   opencv-python \
   Pillow
 
-RUN git clone --recursive https://github.com/seetaresearch/Dragon.git && \
-  mv Dragon/third_party/* /opt && rm -rf Dragon
+RUN \
+  git clone --recursive https://github.com/seetaresearch/dragon.git && \
+  mv dragon/third_party/* /opt && rm -rf dragon
 
-RUN git clone https://github.com/seetaresearch/Dragon.git && \
-  cd Dragon/dragon && mkdir build && cd build && \
+RUN \
+  git clone https://github.com/seetaresearch/dragon.git && \
+  cd dragon/dragon && mkdir build && cd build && \
   cmake .. \
   -DTHIRD_PARTY_DIR=/opt \
   -DPYTHON_EXECUTABLE=/usr/bin/python3 \

@@ -1,7 +1,7 @@
 BatchNorm
 =========
 
-.. autoclass:: dragon.vm.caffe.layers.BatchNorm
+.. autoclass:: dragon.vm.caffe.core.layers.BatchNorm
 
 .. raw:: html
 

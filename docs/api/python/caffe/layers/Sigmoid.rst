@@ -1,7 +1,7 @@
 Sigmoid
 =======
 
-.. autoclass:: dragon.vm.caffe.layers.Sigmoid
+.. autoclass:: dragon.vm.caffe.core.layers.Sigmoid
 
 .. raw:: html
 

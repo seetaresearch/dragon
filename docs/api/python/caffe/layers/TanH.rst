@@ -1,7 +1,7 @@
 TanH
 ====
 
-.. autoclass:: dragon.vm.caffe.layers.TanH
+.. autoclass:: dragon.vm.caffe.core.layers.TanH
 
 .. raw:: html
 

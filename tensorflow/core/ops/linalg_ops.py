@@ -5,11 +5,11 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # Codes are based on:
 #
-#    <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/linalg_ops.py>
+#     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/linalg_ops.py>
 #
 # ------------------------------------------------------------
 """The linalg ops."""
@@ -23,6 +23,8 @@ from dragon.core.ops import init_ops
 
 def eye(num_rows, num_columns=None, dtype='float32', name=None):
     r"""Return a tensor constructed as the identity matrix.
+
+    .. math:: \text{out} \leftarrow \text{diag}(1, 1, ..., 1)
 
     Matrix shape are determined by ``num_rows`` and ``num_columns``:
 

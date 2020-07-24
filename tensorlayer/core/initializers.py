@@ -6,7 +6,7 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
 
@@ -80,7 +80,7 @@ class Constant(Initializer):
 class GlorotNormal(Initializer):
     r"""Fill tensor from a glorot normal distribution.
 
-    .. math:: \text{tensor} \sim \mathcal{N}(0, \sqrt{\frac{\text{scale}}{\text{fan}}})
+    .. math:: \text{tensor} \sim \mathcal{N}(0, \frac{\text{scale}}{\text{fan}})
 
     """
 
@@ -165,7 +165,7 @@ class Ones(Initializer):
 class RandomNormal(Initializer):
     r"""Fill tensor from a normal distribution.
 
-    .. math:: \text{tensor} \sim \mathcal{N}(\mu, \sigma)
+    .. math:: \text{tensor} \sim \mathcal{N}(\mu, \sigma^{2})
 
     """
 
@@ -227,7 +227,7 @@ class RandomUniform(Initializer):
 class TruncatedNormal(Initializer):
     r"""Fill tensor from a truncated normal distribution.
 
-    .. math:: \text{tensor} \sim \mathcal{TN}(\mu, \sigma, \mu - 2\sigma, \mu + 2\sigma)
+    .. math:: \text{tensor} \sim \mathcal{TN}(\mu, \sigma^{2}, \mu - 2\sigma, \mu + 2\sigma)
 
     """
 

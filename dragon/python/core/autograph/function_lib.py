@@ -5,7 +5,7 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
 """Translate the graph abstraction to a python function."""
@@ -62,16 +62,9 @@ def add_optimization(graph_def, level=None):
     graph_def.graph_type = cfg.graph_type
 
 
-def add_phase(graph_def, targets):
+def add_phase(graph_def, requires_grad):
     """Add the phase argument."""
-    phase = 'TEST'
-    for target in targets:
-        try:
-            if target._grad and target._grad.required():
-                phase = 'TRAIN'
-                break
-        except AttributeError:
-            pass
+    phase = 'TRAIN' if requires_grad else 'TEST'
     graph_def.arg.extend([proto_util.make_argument('phase', phase)])
 
 
@@ -189,7 +182,7 @@ class Function(object):
             add_device_option(self.graph_def)
             add_optimization(self.graph_def)
             add_grad_info(self.graph_def, outputs)
-            add_phase(self.graph_def, outputs)
+            add_phase(self.graph_def, requires_grad)
         elif optimizer is not None:
             add_device_option(self.graph_def)
             add_optimization(self.graph_def, level=0)

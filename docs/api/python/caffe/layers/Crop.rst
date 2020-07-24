@@ -1,7 +1,7 @@
 Crop
 ====
 
-.. autoclass:: dragon.vm.caffe.layers.Crop
+.. autoclass:: dragon.vm.caffe.core.layers.Crop
 
 .. raw:: html
 

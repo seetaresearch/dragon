@@ -16,10 +16,10 @@ vm.tensorflow.math
   : Compute the element-wise sum on a sequence of inputs.
 
   `argmax(...) <math/argmax.html>`_
-  : Compute the indices of maximum elements along the given axis.
+  : Compute the index of maximum elements along the given axis.
 
   `argmin(...) <math/argmin.html>`_
-  : Compute the indices of minimum elements along the given axis.
+  : Compute the index of minimum elements along the given axis.
 
   `ceil(...) <math/ceil.html>`_
   : Compute the smallest integer not less than input.
@@ -120,6 +120,9 @@ vm.tensorflow.math
   `tanh(...) <math/tanh.html>`_
   : Compute the tanh of input.
 
+  `top_k(...) <math/top_k.html>`_
+  : Return the top-K largest elements along the last axis.
+
 .. toctree::
   :hidden:
 
@@ -161,6 +164,7 @@ vm.tensorflow.math
   math/square
   math/subtract
   math/tanh
+  math/top_k
 
 .. raw:: html
 

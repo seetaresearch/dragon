@@ -5,7 +5,7 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
 """The eager executing tensor."""
@@ -19,6 +19,7 @@ import numpy
 from dragon.core.autograph.tensor import Tensor
 from dragon.core.framework import context
 from dragon.core.framework import workspace
+from dragon.core.util import string
 
 
 class EagerTensor(Tensor):
@@ -115,7 +116,7 @@ class EagerTensor(Tensor):
             The tensor name.
 
         """
-        return self._name or self._impl.id
+        return self._name or self._impl.name
 
     @name.setter
     def name(self, value):
@@ -236,7 +237,7 @@ class EagerTensor(Tensor):
     def glorot_normal(self, mode='fan_in', scale=2.0):
         r"""Fill self from a glorot normal distribution.
 
-        .. math:: \text{self} \sim \mathcal{N}(0, \sqrt{\frac{scale}{\text{fan}}})
+        .. math:: \text{self} \sim \mathcal{N}(0, \frac{scale}{\text{fan}})
 
         Parameters
         ----------
@@ -291,7 +292,7 @@ class EagerTensor(Tensor):
     def normal(self, mean=0, std=1):
         r"""Fill self from a normal distribution.
 
-        .. math:: \text{self} \sim \mathcal{N}(\mu, \sigma)
+        .. math:: \text{self} \sim \mathcal{N}(\mu, \sigma^{2})
 
         Parameters
         ----------
@@ -348,7 +349,7 @@ class EagerTensor(Tensor):
     def truncated_normal(self, mean=0, std=1):
         r"""Fill self from a truncated normal distribution.
 
-        .. math:: \text{self} \sim \mathcal{TN}(\mu, \sigma, \mu - 2\sigma, \mu + 2\sigma)
+        .. math:: \text{self} \sim \mathcal{TN}(\mu, \sigma^{2}, \mu - 2\sigma, \mu + 2\sigma)
 
         Parameters
         ----------
@@ -448,11 +449,6 @@ class EagerTensor(Tensor):
 
     def __getitem__(self, item):
         """Select elements at the specific index.
-
-        Parameters
-        ----------
-        item : Union[slice, int, dragon.EagerTensor]
-            The index.
 
         Returns
         -------
@@ -607,16 +603,18 @@ class EagerTensor(Tensor):
 
     def __repr__(self):
         array = self.numpy()
-        content_str, shape = str(array), array.shape
-        del array  # DECREF
-        if len(shape) == 0:
-            return content_str
+        if len(array.shape) == 0:
+            return str(array)
         shape_str = ('(' + ', '.join(
-            [str(dim) for dim in shape])) + \
-            (',)' if len(shape) == 1 else ')')
-        meta_str = '\nEagerTensor(shape={}, dtype={}, device={})' \
-            .format(shape_str, self.dtype, str(self._device))
-        return content_str + meta_str
+            [str(dim) for dim in array.shape])) + \
+            (',)' if len(array.shape) == 1 else ')')
+        suffix_str = ', shape=%s, dtype=%s' % (shape_str, self.dtype)
+        if self._device and self._device.type != 'cpu':
+            suffix_str += ', device=%s' % str(self._device)
+        debug_str = string.array_to_string(
+            array, prefix='Tensor(', suffix=suffix_str + ')')
+        del array  # DECREF
+        return string.add_indent(debug_str, 7)
 
     def __rtruediv__(self, other):
         """Compute the element-wise division.
@@ -664,16 +662,7 @@ class EagerTensor(Tensor):
         """
 
     def __setitem__(self, key, value):
-        """Set elements at the specific index.
-
-        Parameters
-        ----------
-        key : Union[slice, int, dragon.EagerTensor]
-            The index.
-        value : Union[dragon.EagerTensor, number]
-            The value to set.
-
-        """
+        """Set elements at the specific index."""
 
     def __sub__(self, other):
         """Compute the element-wise subtraction.

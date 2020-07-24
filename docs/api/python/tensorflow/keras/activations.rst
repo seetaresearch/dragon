@@ -13,6 +13,9 @@ activations
   `exponential(...) <activations/exponential.html>`_
   : Apply the exponential activation to input.
 
+  `get(...) <activations/get.html>`_
+  : Return the activation callable by identifier.
+
   `linear(...) <activations/linear.html>`_
   : Apply the linear activation to input.
 
@@ -38,6 +41,7 @@ activations
 
   activations/elu
   activations/exponential
+  activations/get
   activations/linear
   activations/relu
   activations/selu

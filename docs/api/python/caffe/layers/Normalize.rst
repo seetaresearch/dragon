@@ -1,7 +1,7 @@
 Normalize
 =========
 
-.. autoclass:: dragon.vm.caffe.layers.Normalize
+.. autoclass:: dragon.vm.caffe.core.layers.Normalize
 
 .. raw:: html
 

@@ -113,9 +113,6 @@ vm.torch.nn.functional
   `softmax(...) <functional/softmax.html>`_
   : Apply the softmax function to input.
 
-  `softmax_cross_entropy_with_logits(...) <functional/softmax_cross_entropy_with_logits.html>`_
-  : Compute the softmax cross entropy with contiguous targets.
-
   `sync_batch_norm(...) <functional/sync_batch_norm.html>`_
   : Apply the sync batch normalization to input.
   `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
@@ -168,7 +165,6 @@ vm.torch.nn.functional
   functional/sigmoid_focal_loss
   functional/smooth_l1_loss
   functional/softmax
-  functional/softmax_cross_entropy_with_logits
   functional/sync_batch_norm
   functional/tanh
   functional/upsample

@@ -1,7 +1,7 @@
 ArgMax
 ======
 
-.. autoclass:: dragon.vm.caffe.layers.ArgMax
+.. autoclass:: dragon.vm.caffe.core.layers.ArgMax
 
 .. raw:: html
 

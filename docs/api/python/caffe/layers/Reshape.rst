@@ -1,7 +1,7 @@
 Reshape
 =======
 
-.. autoclass:: dragon.vm.caffe.layers.Reshape
+.. autoclass:: dragon.vm.caffe.core.layers.Reshape
 
 .. raw:: html
 

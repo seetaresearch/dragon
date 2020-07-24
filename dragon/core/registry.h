@@ -5,7 +5,7 @@
  * You should have received a copy of the BSD 2-Clause License
  * along with the software. If not, See,
  *
- *    <https://opensource.org/licenses/BSD-2-Clause>
+ *     <https://opensource.org/licenses/BSD-2-Clause>
  *
  * ------------------------------------------------------------
  */
@@ -23,8 +23,7 @@ class Registry {
   typedef std::function<ObjType*(Args...)> Creator;
 
   ObjType* Create(const SrcType& key, Args... args) {
-    CHECK(registry_.count(key))
-        << "\nKey(" << key << ") has not registered.";
+    CHECK(registry_.count(key)) << "\nKey(" << key << ") has not registered.";
     return registry_[key](args...);
   }
 

@@ -13,22 +13,6 @@ bool AlmostEqual(double a, double b) {
   return (fabs(a - b) < kEps);
 }
 
-ONNXImporterReturns ONNXBackend::ArgReduceImporter(
-    ONNXNode* onnx_node,
-    const ConversionContext& ctx) {
-  auto node = NodeProto(onnx_node->node);
-  auto onnx_node_v2 = ONNXNode(node);
-  auto& attributes = onnx_node_v2.attributes;
-  // Determine the operation
-  auto* operation = attributes.AddRewrittenAttribute("operation");
-  if (onnx_node->node.op_type() == "ArgMax") {
-    operation->set_s("MAX");
-  } else if (onnx_node->node.op_type() == "ArgMin") {
-    operation->set_s("MIN");
-  }
-  return GenericImporter(&onnx_node_v2, ctx);
-}
-
 ONNXImporterReturns ONNXBackend::ATenImporter(
     ONNXNode* onnx_node,
     const ConversionContext& ctx) {

@@ -1,7 +1,7 @@
 ROIPooling
 ==========
 
-.. autoclass:: dragon.vm.caffe.layers.ROIPooling
+.. autoclass:: dragon.vm.caffe.core.layers.ROIPooling
 
 .. raw:: html
 

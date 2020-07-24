@@ -154,9 +154,6 @@ vm.torch.nn
     : Apply a multi-layer Elman RNN.
     `[Elman, 1990] <https://doi.org/10.1016>`_.
 
-    `class SCEWithLogitsLoss <nn/SCEWithLogitsLoss.html>`_
-    : Compute the softmax cross entropy with contiguous targets.
-
     `class SELU <nn/SELU.html>`_
     : Apply the scaled exponential linear unit.
     `[Klambauer et.al, 2017] <https://arxiv.org/abs/1706.02515>`_.
@@ -239,7 +236,6 @@ vm.torch.nn
     nn/ReplicationPad1d
     nn/ReplicationPad2d
     nn/ReplicationPad3d
-    nn/SCEWithLogitsLoss
     nn/RNN
     nn/SELU
     nn/Sigmoid

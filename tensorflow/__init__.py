@@ -5,9 +5,10 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""An Open Source Machine Learning Framework for Everyone."""
 
 from __future__ import absolute_import as _absolute_import
 from __future__ import division as _division
@@ -16,6 +17,7 @@ from __future__ import print_function as _print_function
 import os as _os
 import sys as _sys
 
+# Modules
 from dragon.vm.tensorflow._api import bitwise
 from dragon.vm.tensorflow._api import dtypes
 from dragon.vm.tensorflow._api import keras
@@ -26,7 +28,13 @@ from dragon.vm.tensorflow._api import random
 from dragon.vm.tensorflow._api.keras import initializers
 from dragon.vm.tensorflow._api.keras import losses
 from dragon.vm.tensorflow._api.keras import optimizers
+
+# Classes
 from dragon.vm.tensorflow.core.eager.backprop import GradientTape
+from dragon.vm.tensorflow.core.framework.tensor_shape import TensorShape
+from dragon.vm.tensorflow.core.framework.tensor_spec import TensorSpec
+
+# Functions
 from dragon.vm.tensorflow.core.eager.def_function import function
 from dragon.vm.tensorflow.core.framework.constant_op import constant
 from dragon.vm.tensorflow.core.framework.dtypes import as_dtype
@@ -58,8 +66,6 @@ from dragon.vm.tensorflow.core.framework.dtypes import variant
 from dragon.vm.tensorflow.core.framework.ops import convert_to_tensor
 from dragon.vm.tensorflow.core.framework.ops import device
 from dragon.vm.tensorflow.core.framework.ops import name_scope
-from dragon.vm.tensorflow.core.framework.tensor_shape import TensorShape
-from dragon.vm.tensorflow.core.framework.tensor_spec import TensorSpec
 from dragon.vm.tensorflow.core.module.module import Module
 from dragon.vm.tensorflow.core.ops.array_ops import broadcast_to
 from dragon.vm.tensorflow.core.ops.array_ops import concat
@@ -106,7 +112,7 @@ from dragon.vm.tensorflow.core.ops.math_ops import tanh
 from dragon.vm.tensorflow.core.ops.gradients_impl import gradients
 from dragon.vm.tensorflow.core.ops.variables import Variable
 
-# API-Module
+# Attributes
 _API_MODULES = [dtypes, keras]
 _current_module = _sys.modules[__name__]
 for _API_MODULE in _API_MODULES:
@@ -115,3 +121,4 @@ for _API_MODULE in _API_MODULES:
         __path__ = [_api_dir]
     elif _api_dir not in __path__:
         __path__.append(_api_dir)
+__all__ = [_s for _s in dir() if not _s.startswith('_')]

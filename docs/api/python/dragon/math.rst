@@ -16,10 +16,10 @@ dragon.math
   : Compute the affine transformation along the given axes.
 
   `argmax(...) <math/argmax.html>`_
-  : Compute the indices of maximum elements along the given axis.
+  : Compute the index of maximum elements along the given axis.
 
   `argmin(...) <math/argmin.html>`_
-  : Compute the indices of minimum elements along the given axis.
+  : Compute the index of minimum elements along the given axis.
 
   `axpby(...) <math/axpby.html>`_
   : Compute the element-wise addition from input to output.
@@ -141,6 +141,9 @@ dragon.math
   `tanh(...) <math/tanh.html>`_
   : Compute the tanh of input.
 
+  `top_k(...) <math/top_k.html>`_
+  : Return the top-K largest or smallest elements along the given axis.
+
 .. toctree::
   :hidden:
 
@@ -189,6 +192,7 @@ dragon.math
   math/sub
   math/sum
   math/tanh
+  math/top_k
 
 .. raw:: html
 

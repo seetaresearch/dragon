@@ -5,7 +5,7 @@
  * You should have received a copy of the BSD 2-Clause License
  * along with the software. If not, See,
  *
- *    <https://opensource.org/licenses/BSD-2-Clause>
+ *     <https://opensource.org/licenses/BSD-2-Clause>
  *
  * ------------------------------------------------------------
  */
@@ -219,24 +219,24 @@ void Arange(
     T* y,
     Context* ctx);
 
-/* array.argreduce */
+/* array.argmax */
 
 template <typename T, class Context>
 void ArgMax(
     const int outer_dim,
     const int inner_dim,
     const int axis_dim,
-    const int top_k,
     const T* x,
     int64_t* y,
     Context* ctx);
+
+/* array.argmin */
 
 template <typename T, class Context>
 void ArgMin(
     const int outer_dim,
     const int inner_dim,
     const int axis_dim,
-    const int top_k,
     const T* x,
     int64_t* y,
     Context* ctx);
@@ -285,7 +285,7 @@ void Concat(
     T* y,
     Context* ctx);
 
-/* array.cum_sum */
+/* array.cumsum */
 
 template <typename T, class Context>
 void CumSum(
@@ -523,6 +523,20 @@ void TransposeGrad(
     const int64_t* y_dims,
     const T* dy,
     T* dx,
+    Context* ctx);
+
+/* array.top_k */
+
+template <typename T, class Context>
+void TopK(
+    const int outer_dim,
+    const int inner_dim,
+    const int axis_dim,
+    const int top_k,
+    const int largest,
+    const T* x,
+    T* value,
+    int64_t* index,
     Context* ctx);
 
 /* control_flow.assgin */

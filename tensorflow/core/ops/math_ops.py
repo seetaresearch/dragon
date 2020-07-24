@@ -5,11 +5,11 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # Codes are based on:
 #
-#    <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/math_ops.py>
+#     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/math_ops.py>
 #
 # ------------------------------------------------------------
 """The math ops."""
@@ -115,7 +115,7 @@ def add_n(inputs, name=None):
 
 
 def argmax(input, axis=None, name=None):
-    """Compute the indices of maximum elements along the given axis.
+    """Compute the index of maximum elements along the given axis.
 
     The argument ``axis`` could be negative or **None**:
 
@@ -143,14 +143,14 @@ def argmax(input, axis=None, name=None):
     Returns
     -------
     dragon.Tensor
-        The indices of elements.
+        The index of maximum elements.
 
     """
     return array_ops.argmax(input, axis=axis, name=name)
 
 
 def argmin(input, axis=None, name=None):
-    """Compute the indices of minimum elements along the given axis.
+    """Compute the index of minimum elements along the given axis.
 
     The argument ``axis`` could be negative or **None**:
 
@@ -178,7 +178,7 @@ def argmin(input, axis=None, name=None):
     Returns
     -------
     dragon.Tensor
-        The indices of elements.
+        The index of minimum elements.
 
     """
     return array_ops.argmin(input, axis=axis, name=name)
@@ -1185,11 +1185,11 @@ def sign(x, name=None):
     r"""Compute the sign indication of input.
 
     .. math::
-        \text{out}[i] =
+        \text{out}_{i} =
             \begin{cases}
-                -1, & \text{ if } \text{input}[i] < 0 \\
-                 0, & \text{ if } \text{input}[i] = 0 \\
-                 1, & \text{ if } \text{input}[i] > 0
+                -1, & \text{ if } \text{input}_{i} < 0 \\
+                 0, & \text{ if } \text{input}_{i} = 0 \\
+                 1, & \text{ if } \text{input}_{i} > 0
             \end{cases}
 
     Examples:

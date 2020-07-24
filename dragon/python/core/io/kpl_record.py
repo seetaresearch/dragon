@@ -5,7 +5,7 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
 """Utilities for KPLRecord."""
@@ -38,8 +38,6 @@ except ImportError:
     ReadOnlyDataset = deprecation.not_installed('kpl-dataset')
     WriteOnlyDataset = deprecation.not_installed('kpl-dataset')
 
-from dragon.core.util import six
-
 
 class KPLRecordProtocol(object):
     """Create a protocol for KPLRecord."""
@@ -62,9 +60,7 @@ class KPLRecordProtocol(object):
     @classmethod
     def get_message(cls, descriptor):
         """Return the message from string descriptor."""
-        if isinstance(descriptor, six.string_types):
-            return getattr(KPLRecordMessage, descriptor.upper())
-        return descriptor
+        return getattr(KPLRecordMessage, descriptor.upper())
 
 
 class KPLRecordWriter(object):
@@ -126,7 +122,7 @@ class KPLRecordWriter(object):
 
         Parameters
         ----------
-        example : Union[bytes, float, int, List, Dict]
+        example : dict
             The data corresponding to protocol.
 
         """

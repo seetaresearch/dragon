@@ -1,7 +1,7 @@
 Dropout
 =======
 
-.. autoclass:: dragon.vm.caffe.layers.Dropout
+.. autoclass:: dragon.vm.caffe.core.layers.Dropout
 
 .. raw:: html
 

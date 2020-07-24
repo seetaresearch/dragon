@@ -113,10 +113,11 @@ PyTorch
   * `torch.jit <torch/jit.html>`_
   * `torch.nn <torch/nn.html>`_
   * `torch.nn.functional <torch/nn/functional.html>`_
+  * `torch.nn.init <torch/nn/init.html>`_
   * `torch.onnx <torch/onnx.html>`_
   * `torch.optim <torch/optim.html>`_
-  * `torch.vision.ops <torch/vision/ops.html>`_
   * `torch.utils.dlpack <torch/utils/dlpack.html>`_
+  * `torchvision.ops <torchvision/ops.html>`_
 
 Integrations
 ------------
@@ -275,17 +276,20 @@ Modules
   `Module vm.torch.nn.functional <torch/nn/functional.html>`_
   : Virtual API for ``torch.nn.functional`` namespace.
 
+  `Module vm.torch.nn.init <torch/nn/init.html>`_
+  : Virtual API for ``torch.nn.init`` namespace.
+
   `Module vm.torch.onnx <torch/onnx.html>`_
   : Virtual API for ``torch.onnx`` namespace.
 
   `Module vm.torch.optim <torch/optim.html>`_
   : Virtual API for ``torch.optim`` namespace.
 
-  `Module vm.torch.vision.ops <torch/vision/ops.html>`_
-  : Virtual API for ``torch.vision.ops`` namespace.
-
   `Module vm.torch.utils.dlpack <torch/utils/dlpack.html>`_
   : Virtual API for ``torch.utils.dlpack`` namespace.
+
+  `Module vm.torchvision.ops <torchvision/ops.html>`_
+  : Virtual API for ``torchvision.ops`` namespace.
 
 .. toctree::
   :hidden:
@@ -329,7 +333,8 @@ Modules
   torch/jit
   torch/nn
   torch/nn/functional
+  torch/nn/init
   torch/onnx
   torch/optim
-  torch/vision/ops
   torch/utils/dlpack
+  torchvision/ops

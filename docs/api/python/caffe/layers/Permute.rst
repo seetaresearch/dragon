@@ -1,7 +1,7 @@
 Permute
 =======
 
-.. autoclass:: dragon.vm.caffe.layers.Permute
+.. autoclass:: dragon.vm.caffe.core.layers.Permute
 
 .. raw:: html
 

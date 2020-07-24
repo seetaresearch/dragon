@@ -91,6 +91,7 @@ html_sidebars = {
     'tensorrt/**': ['localtoc.html'],
     'torch': ['localtoc.html'],
     'torch/**': ['localtoc.html'],
+    'torchvision/**': ['localtoc.html'],
     '_modules/**': ['localtoc.html'],
     'search': ['localtoc.html'],
 }

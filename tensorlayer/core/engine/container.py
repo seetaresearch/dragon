@@ -6,7 +6,7 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
 
@@ -14,6 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from dragon.core.util import string
 from dragon.vm.tensorlayer.core.engine import module
 
 
@@ -114,7 +115,7 @@ class LayerList(module.Module):
         tmp_str = 'LayerList' + '(\n'
         for idx, layer in enumerate(self._layers):
             mod_str = layer.__repr__()
-            mod_str = self._add_indent(mod_str, 2)
+            mod_str = string.add_indent(mod_str, 2)
             tmp_str = tmp_str + '  (' + str(idx) + '): ' + mod_str + '\n'
         tmp_str = tmp_str + ')'
         return tmp_str

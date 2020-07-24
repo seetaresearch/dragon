@@ -21,7 +21,7 @@ bool GraphGradientMaker::CheckGrad(
       }
     }
   }
-  return maybe_skip && gen_grads.empty();
+  return maybe_skip && gen_grads.empty() && op_def.output_size() == 1;
 }
 
 void GraphGradientMaker::Make(

@@ -5,7 +5,7 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
 """The random ops."""
@@ -27,7 +27,7 @@ def random_normal(
 ):
     r"""Return a tensor initialized from normal distribution.
 
-    .. math:: \text{out} \sim \mathcal{N}(\mu, \sigma)
+    .. math:: \text{out} \sim \mathcal{N}(\mu, \sigma^{2})
 
     Parameters
     ----------
@@ -102,7 +102,7 @@ def truncated_normal(
     r"""Return a tensor initialized from the truncated normal distribution.
 
     .. math::
-        \text{out} \sim \mathcal{TN}(\mu, \sigma, \mu - 2\sigma, \mu + 2\sigma)
+        \text{out} \sim \mathcal{TN}(\mu, \sigma^{2}, \mu - 2\sigma, \mu + 2\sigma)
 
     Parameters
     ----------

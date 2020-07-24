@@ -5,10 +5,10 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Bind tensor methods executed symbolically."""
+"""Bind tensor methods that executed symbolically."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -133,7 +133,7 @@ def getitem(self, item):
     if isinstance(item, Tensor):
         return _masked_select(self, item)
     else:
-        starts, sizes = _process_indices(item)
+        starts, sizes = _process_index(item)
         return _section_select(self, starts, sizes)
 
 
@@ -333,7 +333,7 @@ def setitem(self, key, value):
     if isinstance(key, Tensor):
         _masked_assign(self, value, key)
     else:
-        starts, sizes = _process_indices(key)
+        starts, sizes = _process_index(key)
         _section_assign(self, value, starts, sizes)
 
 
@@ -389,43 +389,39 @@ def _masked_select(x, mask):
     return OpDef.apply('MaskedSelect', [x, mask])
 
 
-def _process_indices(item):
-    """Process and normalize the indices."""
+def _process_index(item):
+    """Process and normalize the index."""
     if not isinstance(item, (slice, tuple)):
-        # >>> value[?]
         if not isinstance(item, int):
             raise ValueError('The index should be a integer.')
         item = (item,)
     if not isinstance(item, tuple):
-        # >>> value[?:?]
         item = tuple([item])
     starts, sizes = [], []
-    for ix, it in enumerate(item):
-        if isinstance(it, slice):
-            if it.start is None:
+    for i, ele in enumerate(item):
+        if isinstance(ele, slice):
+            if ele.start is None:
                 starts.append(0)
             else:
-                starts.append(it.start)
-            if it.stop is None:
+                starts.append(ele.start)
+            if ele.stop is None:
                 sizes.append(-1)
             else:
-                sizes.append(it.stop - starts[-1])
+                sizes.append(ele.stop - starts[-1])
                 if sizes[-1] == 0:
                     raise ValueError(
                         'The starts and ends of axis {} '
                         'can not be equal, got {}:{}.'
-                        .format(ix, starts[-1], it.stop)
-                    )
-            if it.step is not None:
+                        .format(i, starts[-1], ele.stop))
+            if ele.step is not None:
                 raise NotImplementedError
-        elif isinstance(it, int):
-            starts.append(it)
+        elif isinstance(ele, int):
+            starts.append(ele)
             sizes.append(0)
         else:
             raise TypeError(
-                'Unsupported type of indices: {}'
-                .format(type(it).__name__)
-            )
+                'Unsupported type of index: {}'
+                .format(type(ele)))
     return starts, sizes
 
 

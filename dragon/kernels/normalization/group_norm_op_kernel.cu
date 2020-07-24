@@ -1,11 +1,3 @@
-/*!
- * Codes are based on:
- *
- *    <https://github.com/pytorch/pytorch/blob/master/caffe2/operators/group_norm_op.cu>
- *
- * ------------------------------------------------------------
- */
-
 #ifdef USE_CUDA
 
 #include "dragon/core/memory.h"

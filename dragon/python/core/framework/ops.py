@@ -5,7 +5,7 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
 """Wrapper and utilities for operator."""
@@ -17,7 +17,7 @@ from __future__ import print_function
 import numpy
 
 from dragon.core.autograph.op_def import OpDef
-from dragon.core.eager import executor
+from dragon.core.eager import execute
 from dragon.core.eager.tensor import EagerTensor
 from dragon.core.framework import config
 from dragon.core.framework import proto_util
@@ -38,15 +38,15 @@ class Operator(object):
         self._seed = kwargs.get('seed', config.config().random_seed)
 
     def alloc(self):
-        """Return a device spec."""
+        """Return the executing device to create an output tensor."""
         return self._device.copy()
 
     def apply(self, *args, **kwargs):
-        """An alias of ``self.__call__(...)``"""
+        """Apply this operator to inputs."""
         return self.__call__(*args, **kwargs)
 
     def attributes(self):
-        """Define the attributes to generate OpDef.
+        """Return the operator attributes.
 
         Returns
         -------
@@ -65,7 +65,7 @@ class Operator(object):
         """Dispatch the execution."""
         if self._def is None:
             self._gen_def()
-        return executor.run_operator(
+        return execute.run_operator(
             op_def=self._def,
             inputs=inputs,
             outputs=outputs,
@@ -79,7 +79,7 @@ class Operator(object):
 
     @classmethod
     def instantiate(cls, **kwargs):
-        """Return a cached operator instance."""
+        """Return an instance of this operator."""
 
         def keygen(cls, device, **kwargs):
             """Generate a cache key from device and attributes."""
@@ -107,7 +107,7 @@ class Operator(object):
     def _gen_def(self):
         """Generate the OpDef from attributes."""
         attributes = self.attributes()
-        self._def = proto_util.make_operator_cdef(
+        self._def = proto_util.make_operator_def_cpp(
             name=attributes.get('name', 'Op'),
             cache_key=self._cache_key,
             op_type=attributes['op_type'],

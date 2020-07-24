@@ -1,7 +1,7 @@
 Flatten
 ========
 
-.. autoclass:: dragon.vm.caffe.layers.Flatten
+.. autoclass:: dragon.vm.caffe.core.layers.Flatten
 
 .. raw:: html
 

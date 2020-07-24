@@ -5,7 +5,7 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
 """The nn ops."""
@@ -18,6 +18,7 @@ import functools
 
 from dragon.core.framework import types
 from dragon.core.ops import activation_ops
+from dragon.core.ops import array_ops
 from dragon.core.ops import loss_ops
 from dragon.core.ops import normalization_ops
 from dragon.core.ops import vision_ops
@@ -807,34 +808,95 @@ def softmax(logits, axis=-1, name=None, **kwargs):
     return activation_ops.softmax(logits, axis=axis, name=name, **kwargs)
 
 
-def softmax_cross_entropy_with_logits(
-    _sentinel=None,
-    labels=None,
-    logits=None,
-    dim=-1,
-    name=None,
-):
+def softmax_cross_entropy_with_logits(labels, logits, name=None):
+    """Compute the softmax cross entropy with contiguous labels.
+
+    Examples:
+
+    ```python
+    labels = tf.constant([[0., 1., ], [1., 0.]], dtype=tf.float32)
+    logits = tf.constant([[0.5, 0.5], [0.3, 0.7]], dtype=tf.float32)
+    print(tf.nn.softmax_cross_entropy_with_logits(labels, logits))  # [0.6931472, 0.9130153]
+    ```
+
+    Parameters
+    ----------
+    labels : dragon.Tensor
+        The label tensor.
+    logits : dragon.Tensor
+        The logit tensor.
+    name : str, optional
+        A optional name for the operation.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
     return loss_ops.softmax_cross_entropy(
         [logits, labels],
-        axis=dim,
-        normalization='UNIT',
+        axis=-1,
+        reduction='none',
         name=name,
     )
 
 
-def sparse_softmax_cross_entropy_with_logits(
-    _sentinel=None,
-    labels=None,
-    logits=None,
-    dim=-1,
-    name=None,
-):
+def sparse_softmax_cross_entropy_with_logits(labels, logits, name=None):
+    """Compute the softmax cross entropy with sparse labels.
+
+    Examples:
+
+    ```python
+    labels = tf.constant([1, 0], dtype=tf.int64)
+    logits = tf.constant([[0.5, 0.5], [0.3, 0.7]], dtype=tf.float32)
+    print(tf.nn.sparse_softmax_cross_entropy_with_logits(labels, logits))  # [0.6931472, 0.9130153]
+    ```
+
+    Parameters
+    ----------
+    labels : dragon.Tensor
+        The label tensor.
+    logits : dragon.Tensor
+        The logit tensor.
+    name : str, optional
+        A optional name for the operation.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
     return loss_ops.sparse_softmax_cross_entropy(
         [logits, labels],
-        axis=dim,
-        normalization='UNIT',
+        axis=-1,
+        reduction='none',
         name=name,
     )
+
+
+def top_k(input, k=1, sorted=True, name=None):
+    """Return the top-K largest elements along the last axis.
+
+    Parameters
+    ----------
+    input : dragon.Tensor
+        The input tensor.
+    k : int, optional, default=1
+        The number of top elements to select.
+    sorted : bool, optional
+        Whether to return in the sorted order.
+    name : str, optional
+        A optional name for the operation.
+
+    Returns
+    -------
+    Sequence[dragon.vm.torch.Tensor]
+        The value and index tensor.
+
+    """
+    return array_ops.top_k(input, k=k, sorted=sorted, name=name)
 
 
 def _normalize_spatial_args(

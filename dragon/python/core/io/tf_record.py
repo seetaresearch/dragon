@@ -5,7 +5,7 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
 """Utilities for TFRecord."""
@@ -108,8 +108,7 @@ class TFRecordExample(object):
 
         def mask_crc32(value):
             crc = zlib.crc32(bytes(value))
-            if crc < 0:
-                crc = crc & 0xffffffff
+            crc = crc & 0xffffffff if crc < 0 else crc
             crc = numpy.array(crc, 'uint32')
             crc = (crc >> 15) | (crc << 17).astype('uint32')
             return int((crc + 0xa282ead8).astype('uint32'))
@@ -220,8 +219,7 @@ class TFRecordWriter(object):
             self._data_writer.write(example.serialize_to())
             self._index_writer.write(
                 str(current) + ' ' +
-                str(self._data_writer.tell() - current) + '\n'
-            )
+                str(self._data_writer.tell() - current) + '\n')
             self._examples += 1
             self._maybe_new_shard()
         else:

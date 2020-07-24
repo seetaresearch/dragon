@@ -1,7 +1,7 @@
 PReLU
 =====
 
-.. autoclass:: dragon.vm.caffe.layers.PReLU
+.. autoclass:: dragon.vm.caffe.core.layers.PReLU
 
 .. raw:: html
 

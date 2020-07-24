@@ -5,11 +5,11 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # Codes are based on:
 #
-#    <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/init_ops.py>
+#     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/init_ops.py>
 #
 # ------------------------------------------------------------
 """The init ops."""
@@ -40,7 +40,6 @@ class Initializer(object):
             The output tensor.
 
         """
-        raise NotImplementedError
 
 
 class Constant(Initializer):
@@ -86,7 +85,7 @@ class Constant(Initializer):
 class RandomNormal(Initializer):
     r"""Fill tensor from a normal distribution.
 
-    .. math:: \text{tensor} \sim \mathcal{N}(\mu, \sigma)
+    .. math:: \text{tensor} \sim \mathcal{N}(\mu, \sigma^{2})
 
     """
 
@@ -179,7 +178,7 @@ class RandomUniform(Initializer):
 class TruncatedNormal(Initializer):
     r"""Fill tensor from a truncated normal distribution.
 
-    .. math:: \text{tensor} \sim \mathcal{TN}(\mu, \sigma, \mu - 2\sigma, \mu + 2\sigma)
+    .. math:: \text{tensor} \sim \mathcal{TN}(\mu, \sigma^{2}, \mu - 2\sigma, \mu + 2\sigma)
 
     """
 
@@ -294,7 +293,7 @@ class VarianceScaling(Initializer):
 class GlorotNormal(VarianceScaling):
     r"""Fill tensor from a glorot normal distribution.
 
-    .. math:: \text{tensor} \sim \mathcal{N}(0, \sqrt{\frac{2}{\text{fan\_avg}}})
+    .. math:: \text{tensor} \sim \mathcal{N}(0, \frac{2}{\text{fan\_avg}})
 
     """
 

@@ -5,11 +5,11 @@
  * You should have received a copy of the BSD 2-Clause License
  * along with the software. If not, See,
  *
- *    <https://opensource.org/licenses/BSD-2-Clause>
+ *     <https://opensource.org/licenses/BSD-2-Clause>
  *
  * Codes are based on:
  *
- *    <https://github.com/pytorch/pytorch/blob/master/caffe2/onnx/backend.h>
+ *     <https://github.com/pytorch/pytorch/blob/master/caffe2/onnx/backend.h>
  *
  * ------------------------------------------------------------
  */
@@ -160,10 +160,6 @@ struct ONNXNode {
 class ONNXBackend {
  public:
   void BuildTensorFillOp(const TensorProto& onnx_tensor, OperatorDef* op_def);
-
-  ONNXImporterReturns ArgReduceImporter(
-      ONNXNode* onnx_node,
-      const ConversionContext& ctx);
 
   ONNXImporterReturns ATenImporter(
       ONNXNode* onnx_node,

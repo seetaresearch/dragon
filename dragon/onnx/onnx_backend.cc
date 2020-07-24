@@ -144,8 +144,6 @@ ONNXImporterReturns ONNXBackend::ONNXNodeToOps(
 
 const Map<string, string>& ONNXBackend::get_renamed_nodes() const {
   const static Map<string, string> kRenamedNodes{
-      {"ArgMax", "ArgReduce"},
-      {"ArgMin", "ArgReduce"},
       {"AveragePool", "Pool"},
       {"BatchNormalization", "BatchNorm"},
       {"Gemm", "FullyConnected"},
@@ -163,8 +161,6 @@ const Map<string, string>& ONNXBackend::get_renamed_nodes() const {
 const Map<string, ONNXBackend::SpecialNodeConverter>&
 ONNXBackend::get_special_nodes() const {
   const static Map<string, ONNXBackend::SpecialNodeConverter> kSpecialNodes = {
-      {"ArgMax", &ONNXBackend::ArgReduceImporter},
-      {"ArgMin", &ONNXBackend::ArgReduceImporter},
       {"ATen", &ONNXBackend::ATenImporter},
       {"AveragePool", &ONNXBackend::ConvPoolImporter},
       {"BatchNormalization", &ONNXBackend::BatchNormImporter},

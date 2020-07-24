@@ -88,7 +88,7 @@ dragon
   : Context-manager set the graph execution mode.
 
   `index_select(...) <dragon/index_select.html>`_
-  : Select the elements according to the indices along the given axis.
+  : Select the elements according to the index along the given axis.
 
   `load_library(...) <dragon/load_library.html>`_
   : Load a shared library.

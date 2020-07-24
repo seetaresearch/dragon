@@ -5,11 +5,11 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # Codes are based on:
 #
-#    <https://github.com/onnx/onnx-tensorrt/blob/master/onnx_tensorrt/backend.py>
+#     <https://github.com/onnx/onnx-tensorrt/blob/master/onnx_tensorrt/backend.py>
 #
 # ------------------------------------------------------------
 
@@ -35,7 +35,7 @@ except ImportError:
 
 from dragon.core.device import cuda
 from dragon.core.util import six
-from dragon.vm.onnx import helper as onnx_helper
+from dragon.vm.onnx.core import helper as onnx_helper
 from dragon.vm.tensorrt.core import engine
 from dragon.vm.tensorrt.core.engine import trt
 from dragon.vm.tensorrt.core.engine import TRT_LOGGER

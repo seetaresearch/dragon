@@ -5,9 +5,10 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""A Computation Graph Virtual Machine Based Deep Learning Framework."""
 
 from __future__ import absolute_import as _absolute_import
 from __future__ import division as _division
@@ -16,7 +17,7 @@ from __future__ import print_function as _print_function
 import os as _os
 import sys as _sys
 
-# Public API
+# Modules
 from dragon._api import autograph
 from dragon._api import bitwise
 from dragon._api import cuda
@@ -31,17 +32,15 @@ from dragon._api import nn
 from dragon._api import optimizers
 from dragon._api import random
 from dragon._api import vision
-
-# Virtual API
 from dragon import vm
 
-# Class
+# Classes
 from dragon.core.autograph.tensor import Tensor
 from dragon.core.eager.tensor import EagerTensor
 from dragon.core.eager.backprop import GradientTape
 from dragon.core.framework.workspace import Workspace
 
-# Function
+# Functions
 from dragon.backend import load_library
 from dragon.core.autograph.def_function import function
 from dragon.core.autograph.function_lib import create_function
@@ -95,7 +94,7 @@ from dragon.core.ops.init_ops import zeros_like
 # Version
 from dragon.version import version as __version__
 
-# API-Module
+# Attributes
 _API_MODULE = autograph
 _current_module = _sys.modules[__name__]
 _api_dir = _os.path.dirname(_os.path.dirname(_API_MODULE.__file__))
@@ -103,3 +102,4 @@ if not hasattr(_current_module, '__path__'):
     __path__ = [_api_dir]
 elif _api_dir not in __path__:
     __path__.append(_api_dir)
+__all__ = [_s for _s in dir() if not _s.startswith('_')]

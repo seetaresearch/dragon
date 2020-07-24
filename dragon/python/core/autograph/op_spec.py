@@ -5,10 +5,10 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Define the describing spec for symbolic operators."""
+"""Spec for symbolic operators."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -47,34 +47,28 @@ def arange_spec(args, inputs, outputs):
     return outputs
 
 
-@register('ArgReduce')
+@register(['ArgMax', 'ArgMin'])
 def arg_reduce_spec(args, inputs, outputs):
     outputs[0].dtype = 'int64'
-    axis, top_k = args['axis'], args['top_k']
+    axis = args['axis']
     if args['keep_dims']:
         if axis is None:
             outputs[0].shape = (1,)
         else:
             try:
                 out_shape = list(inputs[0].shape[:])
-                out_shape[axis] = top_k
+                out_shape[axis] = 1
                 outputs[0].shape = out_shape
             except (TypeError, IndexError):
                 pass
     else:
         if axis is None:
-            if top_k > 1:
-                outputs[0].shape = (top_k,)
-            else:
-                outputs[0].shape = ()
+            outputs[0].shape = ()
         else:
             try:
                 out_shape = list(inputs[0].shape[:])
                 if axis < len(out_shape):
-                    if top_k > 1:
-                        out_shape[axis] = top_k
-                    else:
-                        del out_shape[axis]
+                    del out_shape[axis]
                 outputs[0].shape = out_shape
             except (TypeError, IndexError):
                 pass
@@ -1010,6 +1004,22 @@ def transpose_spec(args, inputs, outputs):
         outputs[0].shape = out_shape
     except (TypeError, IndexError):
         outputs[0].shape = None
+    return outputs
+
+
+@register('TopK')
+def top_k_spec(args, inputs, outputs):
+    outputs[0].dtype = inputs[0].dtype
+    outputs[1].dtype = 'int64'
+    k, axis = args['k'], args['axis']
+    axis = -1 if axis is None else axis
+    try:
+        out_shape = list(inputs[0].shape[:])
+        out_shape[axis] = k
+        outputs[0].shape = out_shape
+        outputs[1].shape = out_shape
+    except (TypeError, IndexError):
+        pass
     return outputs
 
 

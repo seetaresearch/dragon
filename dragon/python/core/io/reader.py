@@ -5,7 +5,7 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
 
@@ -137,6 +137,18 @@ class DataReader(multiprocessing.Process):
 
     def run(self):
         """Start the process."""
+        self._init_dataset()
+        # Persist a loop to read examples.
+        while True:
+            self.q_out.put(self.next_example())
+            if self._example_cursor >= self._end:
+                if self._num_parts > 1 or self._shuffle:
+                    self.next_chunk()
+                else:
+                    self.reset()
+
+    def _init_dataset(self):
+        """Initialize the dataset."""
         numpy.random.seed(self._seed)
 
         # Instantiate the dataset here to avoid a fork of process.
@@ -163,12 +175,3 @@ class DataReader(multiprocessing.Process):
         # Reset the layout of permutation.
         self._perm = numpy.arange(self._perm_size)
         self.reset()
-
-        # Persist a loop to read examples.
-        while True:
-            self.q_out.put(self.next_example())
-            if self._example_cursor >= self._end:
-                if self._num_parts > 1 or self._shuffle:
-                    self.next_chunk()
-                else:
-                    self.reset()

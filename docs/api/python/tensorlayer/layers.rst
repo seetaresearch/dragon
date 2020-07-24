@@ -55,7 +55,7 @@ vm.tensorlayer.layers
 
   Functions
   ---------
-  `Input(...) <layer/Input.html>`_
+  `Input(...) <layers/Input.html>`_
   : Create a placeholder as input.
 
 .. toctree::

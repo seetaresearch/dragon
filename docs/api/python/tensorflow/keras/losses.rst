@@ -33,6 +33,9 @@ losses
   `categorical_crossentropy(...) <losses/categorical_crossentropy.html>`_
   : Compute the categorical cross entropy with contiguous targets.
 
+  `get(...) <losses/get.html>`_
+  : Return the loss callable by identifier.
+
   `mean_absolute_error(...) <losses/mean_absolute_error.html>`_
   : Compute the reduced element-wise absolute value difference.
 
@@ -49,6 +52,7 @@ losses
   losses/binary_crossentropy
   losses/CategoricalCrossentropy
   losses/categorical_crossentropy
+  losses/get
   losses/Loss
   losses/MeanAbsoluteError
   losses/MeanSquaredError

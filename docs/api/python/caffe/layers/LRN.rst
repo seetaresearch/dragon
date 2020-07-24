@@ -1,7 +1,7 @@
 LRN
 ====
 
-.. autoclass:: dragon.vm.caffe.layers.LRN
+.. autoclass:: dragon.vm.caffe.core.layers.LRN
 
 .. raw:: html
 

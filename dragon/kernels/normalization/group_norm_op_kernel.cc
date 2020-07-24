@@ -1,11 +1,3 @@
-/*!
- * Codes are based on:
- *
- *    <https://github.com/pytorch/pytorch/blob/master/caffe2/operators/group_norm_op.cc>
- *
- * ------------------------------------------------------------
- */
-
 #include "dragon/core/memory.h"
 #include "dragon/utils/eigen_utils.h"
 #include "dragon/utils/math_functions.h"

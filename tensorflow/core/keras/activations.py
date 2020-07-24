@@ -5,11 +5,11 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # Codes are based on:
 #
-#    <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/keras/activations.py>
+#     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/keras/activations.py>
 #
 # ------------------------------------------------------------
 
@@ -248,7 +248,7 @@ def tanh(x, **kwargs):
 
     The **Tanh** function is defined as:
 
-    .. math:: \text{Tanh}(x) = \frac{\exp{x} - \exp(-x)}{\exp(x) + \exp(-x)}
+    .. math:: \text{Tanh}(x) = \frac{\exp(x) - \exp(-x)}{\exp(x) + \exp(-x)}
 
     Examples:
 
@@ -272,13 +272,26 @@ def tanh(x, **kwargs):
 
 
 def get(identifier):
+    """Return the activation callable by identifier.
+
+    Parameters
+    ----------
+    identifier : Union[callable, str]
+        The identifier.
+
+    Returns
+    -------
+    callable
+        The activation callable.
+
+    """
     if identifier is None:
         return linear
     elif callable(identifier):
         return identifier
     elif isinstance(identifier, six.string_types):
-        return globals()[identifier]()
+        return globals()[identifier]
     else:
         raise TypeError(
-            'Could not interpret activation function identifier: {}.'
+            'Could not interpret activation identifier: {}.'
             .format(repr(identifier)))

@@ -5,7 +5,7 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
 """Constant mappings."""
@@ -34,16 +34,4 @@ TENSOR_TYPE_TO_NP_TYPE = {
     'float16': numpy.float16,
     'float32': numpy.float32,
     'float64': numpy.float64,
-}
-
-# Mapping to convert to the torch tensor class name
-TENSOR_TYPE_TO_TORCH_TENSOR = {
-    'bool': 'BoolTensor',
-    'int8': 'CharTensor',
-    'uint8': 'ByteTensor',
-    'int32': 'IntTensor',
-    'int64': 'LongTensor',
-    'float16': 'HalfTensor',
-    'float32': 'FloatTensor',
-    'float64': 'DoubleTensor',
 }

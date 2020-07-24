@@ -94,6 +94,10 @@ train
 #####
 .. automethod:: dragon.vm.torch.nn.Module.train
 
+zero_grad
+#########
+.. automethod:: dragon.vm.torch.nn.Module.zero_grad
+
 .. raw:: html
 
   <style>

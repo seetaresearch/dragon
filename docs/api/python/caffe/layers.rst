@@ -10,14 +10,11 @@ vm.caffe.layers
   : Compute the top-k accuracy.
 
   `class ArgMax <layers/ArgMax.html>`_
-  : Compute the indices of maximum elements along the given axis.
+  : Compute the index of maximum elements along the given axis.
 
   `class BatchNorm <layers/BatchNorm.html>`_
   : Apply the batch normalization.
   `[Ioffe & Szegedy, 2015] <https://arxiv.org/abs/1502.03167>`_.
-
-  `class Cast <layers/Cast.html>`_
-  : Cast the data type of input.
 
   `class Concat <layers/Concat.html>`_
   : Concatenate the inputs along the given axis.
@@ -44,9 +41,6 @@ vm.caffe.layers
   `class ELU <layers/ELU.html>`_
   : Apply the exponential linear unit.
   `[Clevert et.al, 2015] <https://arxiv.org/abs/1511.07289>`_.
-
-  `class ExpandDims <layers/ExpandDims.html>`_
-  : Expand a new dimension with size **1** at the given axis.
 
   `class EuclideanLoss <layers/EuclideanLoss.html>`_
   : Compute the element-wise squared error.

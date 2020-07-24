@@ -1,7 +1,7 @@
 Input
 =====
 
-.. autoclass:: dragon.vm.caffe.layers.Input
+.. autoclass:: dragon.vm.caffe.core.layers.Input
 
 .. raw:: html
 

@@ -1,7 +1,7 @@
 Accuracy
 ========
 
-.. autoclass:: dragon.vm.caffe.layers.Accuracy
+.. autoclass:: dragon.vm.caffe.core.layers.Accuracy
 
 .. raw:: html
 

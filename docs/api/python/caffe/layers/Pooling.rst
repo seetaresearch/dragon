@@ -1,7 +1,7 @@
 Pooling
 =======
 
-.. autoclass:: dragon.vm.caffe.layers.Pooling
+.. autoclass:: dragon.vm.caffe.core.layers.Pooling
 
 .. raw:: html
 

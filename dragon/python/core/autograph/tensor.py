@@ -5,7 +5,7 @@
 # You should have received a copy of the BSD 2-Clause License
 # along with the software. If not, See,
 #
-#    <https://opensource.org/licenses/BSD-2-Clause>
+#     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
 """The graph executing tensor."""
@@ -238,7 +238,7 @@ class Tensor(types.TensorMetaclass):
     def glorot_normal(self, mode='fan_in', scale=2.0):
         r"""Register self to initialize from a glorot uniform distribution.
 
-        .. math:: \text{self} \sim \mathcal{N}(0, \sqrt{\frac{scale}{\text{fan}}})
+        .. math:: \text{self} \sim \mathcal{N}(0, \frac{scale}{\text{fan}})
 
         Parameters
         ----------
@@ -279,7 +279,7 @@ class Tensor(types.TensorMetaclass):
     def normal(self, mean=0, std=1):
         r"""Register self to initialize from a normal distribution.
 
-        .. math:: \text{self} \sim \mathcal{N}(\mu, \sigma)
+        .. math:: \text{self} \sim \mathcal{N}(\mu, \sigma^{2})
 
         Parameters
         ----------
@@ -333,7 +333,7 @@ class Tensor(types.TensorMetaclass):
     def truncated_normal(self, mean=0, std=1):
         r"""Register self to initialize from a truncated normal distribution.
 
-        .. math:: \text{self} \sim \mathcal{TN}(\mu, \sigma, \mu - 2\sigma, \mu + 2\sigma)
+        .. math:: \text{self} \sim \mathcal{TN}(\mu, \sigma^{2}, \mu - 2\sigma, \mu + 2\sigma)
 
         Parameters
         ----------
@@ -472,11 +472,6 @@ class Tensor(types.TensorMetaclass):
     def __getitem__(self, item):
         """Select elements at the specific index.
 
-        Parameters
-        ----------
-        item : Union[slice, int, dragon.Tensor]
-            The index.
-
         Returns
         -------
         dragon.Tensor
@@ -589,8 +584,8 @@ class Tensor(types.TensorMetaclass):
                 for dim in self.shape]) +
             (',)' if len(self.shape) == 1 else ')')) \
             if self.shape is not None else 'None'
-        return 'Tensor("{}", shape={}, dtype={})' \
-            .format(self.name, shape_str, self.dtype)
+        return ('Tensor("{}", shape={}, dtype={})'
+                .format(self.name, shape_str, self.dtype))
 
     def __rtruediv__(self, other):
         """Compute the element-wise division.
@@ -638,16 +633,7 @@ class Tensor(types.TensorMetaclass):
         """
 
     def __setitem__(self, key, value):
-        """Set elements at the specific index.
-
-        Parameters
-        ----------
-        key : Union[slice, int, dragon.Tensor]
-            The index.
-        value : Union[dragon.Tensor, number]
-            The value to set.
-
-        """
+        """Set elements at the specific index."""
 
     def __sub__(self, other):
         """Compute the element-wise subtraction.
