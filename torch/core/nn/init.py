@@ -66,7 +66,7 @@ def calculate_gain(nonlinearity, param=None):
                 raise ValueError("Negative slope {} is not a valid number".format(param))
         return math.sqrt(2.0 / (1 + negative_slope ** 2))
     else:
-        raise ValueError('Unsupported nonlinearity:', nonlinearity)
+        raise ValueError('Unsupported nonlinearity: ' + nonlinearity)
 
 
 def constant_(tensor, val):

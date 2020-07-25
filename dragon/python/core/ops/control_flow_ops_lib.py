@@ -62,7 +62,7 @@ class Copy(Operator):
 
     def forward(self, inputs, outputs):
         outputs = outputs if outputs else [self.alloc()]
-        return self.dispatch(inputs, outputs)
+        return self.dispatch(inputs, outputs, no_grad=True)
 
 
 class MaskedAssign(Operator):

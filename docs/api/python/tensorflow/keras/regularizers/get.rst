@@ -1,7 +1,7 @@
-l1
-==
+get
+===
 
-.. autofunction:: dragon.vm.tensorflow.keras.regularizers.l1
+.. autofunction:: dragon.vm.tensorflow.keras.regularizers.get
 
 .. raw:: html
 

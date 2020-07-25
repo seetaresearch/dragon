@@ -37,11 +37,7 @@ class ParamUpdate(function.Function):
 
     def forward(self, param, grad):
         self._check_device([param, grad])
-        return self.dispatch(
-            [grad], [param],
-            no_grad=True,
-            check_device=False,
-        )
+        return self.dispatch([grad], [param], no_grad=True)
 
 
 class GradAccumulate(function.Function):

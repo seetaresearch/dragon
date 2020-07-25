@@ -53,7 +53,8 @@ class Axpby(Operator):
 
     def forward(self, inputs, outputs=None):
         if outputs is None:
-            outputs = [self.alloc() for _ in range(len(inputs))]
+            outputs = [None] * len(inputs)
+        outputs = [self.alloc(out) for out in outputs]
         return self.dispatch(inputs, outputs, no_grad=True)
 
 
@@ -65,12 +66,8 @@ class BinaryOp(Operator):
     def attributes(self):
         return {'op_type': self.op_type, 'arguments': {}}
 
-    def forward(self, inputs, outputs=None):
-        if outputs is None:
-            outputs = [self.alloc()]
-        else:
-            outputs[0]._device = self.alloc()
-        return self.dispatch(inputs, outputs)
+    def forward(self, inputs, outputs=(None,)):
+        return self.dispatch(inputs, [self.alloc(outputs[0])])
 
 
 class Clip(Operator):

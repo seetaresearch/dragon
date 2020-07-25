@@ -211,7 +211,7 @@ class Workspace(backend.Workspace):
             dtype = value.dtype if dtype is None else dtype
         if hasattr(tensor, 'dtype') and tensor.dtype is not None:
             if tensor.dtype not in mapping.TENSOR_TYPE_TO_NP_TYPE:
-                raise TypeError('Unsupported data type:', tensor.dtype)
+                raise TypeError('Unsupported data type: ' + tensor.dtype)
             dtype = mapping.TENSOR_TYPE_TO_NP_TYPE[tensor.dtype]
         # Determine the copying device option
         if enforce_cpu is True:

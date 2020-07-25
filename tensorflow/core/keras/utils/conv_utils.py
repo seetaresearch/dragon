@@ -30,7 +30,7 @@ def convert_data_format(data_format, ndim):
         elif ndim == 5:
             return 'NDHWC'
         else:
-            raise ValueError('Input rank not supported:', ndim)
+            raise ValueError('Input rank not supported: ' + ndim)
     elif data_format == 'channels_first':
         if ndim == 3:
             return 'NCW'
@@ -39,9 +39,9 @@ def convert_data_format(data_format, ndim):
         elif ndim == 5:
             return 'NCDHW'
         else:
-            raise ValueError('Input rank not supported:', ndim)
+            raise ValueError('Input rank not supported: ' + ndim)
     else:
-        raise ValueError('Invalid data_format:', data_format)
+        raise ValueError('Invalid data_format: ' + data_format)
 
 
 def deconv_output_length(
@@ -94,8 +94,7 @@ def normalize_padding(value):
         if value not in {'valid', 'same'}:
             raise ValueError(
                 'Excepted <padding> in "valid", "same".\n'
-                'Received: ' + str(value)
-            )
+                'Received: ' + str(value))
     return value
 
 

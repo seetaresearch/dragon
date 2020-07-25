@@ -6,8 +6,14 @@ regularizers
   Classes
   -------
 
+  `class L1 <regularizers/L1.html>`_
+  : The L1 regularizer.
+
   `class L1L2 <regularizers/L1L2.html>`_
   : The L1L2 regularizer.
+
+  `class L2 <regularizers/L1.html>`_
+  : The L1 regularizer.
 
   `class Regularizer <regularizers/Regularizer.html>`_
   : The base regularizer class.
@@ -15,23 +21,20 @@ regularizers
   Functions
   ---------
 
-  `l1(...) <regularizers/l1.html>`_
-  : Create a L1 regularizer.
+  `get(...) <regularizers/get.html>`_
+  : Return the regularizer callable by identifier.
 
   `l1_l2(...) <regularizers/l1_l2.html>`_
   : Create a L1L2 regularizer.
 
-  `l2(...) <regularizers/l2.html>`_
-  : Create a L2 regularizer.
-
-
 .. toctree::
   :hidden:
 
-  regularizers/l1
+  regularizers/get
+  regularizers/L1
   regularizers/L1L2
   regularizers/l1_l2
-  regularizers/l2
+  regularizers/L2
   regularizers/Regularizer
 
 .. raw:: html

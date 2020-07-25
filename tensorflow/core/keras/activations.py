@@ -7,10 +7,6 @@
 #
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
-# Codes are based on:
-#
-#     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/keras/activations.py>
-#
 # ------------------------------------------------------------
 
 from __future__ import absolute_import
@@ -18,6 +14,7 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.core.util import six
+from dragon.vm.tensorflow.core.keras.utils import generic_utils
 from dragon.vm.tensorflow.core.ops import math_ops
 from dragon.vm.tensorflow.core.ops import nn
 
@@ -272,7 +269,7 @@ def tanh(x, **kwargs):
 
 
 def get(identifier):
-    """Return the activation callable by identifier.
+    """Return the activation function by identifier.
 
     Parameters
     ----------
@@ -282,7 +279,7 @@ def get(identifier):
     Returns
     -------
     callable
-        The activation callable.
+        The activation function.
 
     """
     if identifier is None:
@@ -290,8 +287,9 @@ def get(identifier):
     elif callable(identifier):
         return identifier
     elif isinstance(identifier, six.string_types):
-        return globals()[identifier]
+        return generic_utils.deserialize_keras_object(
+            identifier, globals(), 'activation')
     else:
         raise TypeError(
-            'Could not interpret activation identifier: {}.'
-            .format(repr(identifier)))
+            'Could not interpret the activation identifier: {}.'
+            .format(identifier))

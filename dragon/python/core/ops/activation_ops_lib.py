@@ -26,7 +26,7 @@ class Activation(Operator):
         return {'op_type': self.op_type, 'arguments': {}}
 
     def forward(self, inputs, inplace=False):
-        outputs = [inputs[0] if inplace else self.alloc()]
+        outputs = [self.alloc(inputs[0]) if inplace else self.alloc()]
         return self.dispatch(inputs, outputs)
 
 
@@ -46,7 +46,7 @@ class Dropout(Activation):
         }
 
 
-class DropBlock2d(Operator):
+class DropBlock2d(Activation):
     def __init__(self, key, dev, **kwargs):
         super(DropBlock2d, self).__init__(key, dev, **kwargs)
         self.block_size = kwargs.get('block_size', 7)
@@ -66,10 +66,6 @@ class DropBlock2d(Operator):
                 'data_format': self.data_format,
             },
         }
-
-    def forward(self, inputs, inplace=False):
-        outputs = [inputs[0] if inplace else self.alloc()]
-        return self.dispatch(inputs, outputs)
 
 
 class DropPath(Activation):
@@ -96,9 +92,7 @@ class Elu(Activation):
     def attributes(self):
         return {
             'op_type': 'Elu',
-            'arguments': {
-                'alpha': float(self.alpha),
-            }
+            'arguments': {'alpha': float(self.alpha)},
         }
 
 
@@ -110,9 +104,7 @@ class PRelu(Operator):
     def attributes(self):
         return {
             'op_type': 'PRelu',
-            'arguments': {
-                'data_format': self.data_format,
-            }
+            'arguments': {'data_format': self.data_format},
         }
 
     def forward(self, inputs):
@@ -127,9 +119,7 @@ class Relu(Activation):
     def attributes(self):
         return {
             'op_type': 'Relu',
-            'arguments': {
-                'alpha': float(self.alpha),
-            }
+            'arguments': {'alpha': float(self.alpha)},
         }
 
 
@@ -140,9 +130,7 @@ class Relu6(Activation):
     def attributes(self):
         return {
             'op_type': 'Relu',
-            'arguments': {
-                'max_value': 6.,
-            }
+            'arguments': {'max_value': 6.},
         }
 
 
@@ -170,7 +158,5 @@ class Softmax(Activation):
     def attributes(self):
         return {
             'op_type': 'Softmax',
-            'arguments': {
-                'axis': self.axis,
-            }
+            'arguments': {'axis': self.axis},
         }

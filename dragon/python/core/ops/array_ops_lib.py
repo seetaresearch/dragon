@@ -14,6 +14,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from dragon.core.framework import device_spec
 from dragon.core.framework.ops import Operator
 
 
@@ -41,13 +42,14 @@ class Arange(Operator):
                 slice_args[i], 'float32')
 
     def forward(self, slice_args, trainable=False):
-        output = self.dispatch(
+        out = self.dispatch(
             [], [self.alloc()],
             callback=lambda ws, handle:
-            self.feed(ws, handle, slice_args)
+                self.feed(ws, handle, slice_args),
+            no_grad=True,
         )
-        output._requires_grad = trainable
-        return output
+        out._requires_grad = trainable
+        return out
 
 
 class ArgReduce(Operator):
@@ -85,7 +87,7 @@ class Cast(Operator):
         if inputs[0].dtype == self.dtype:
             return inputs[0]
         if inplace:
-            return self.dispatch([], inputs, no_grad=True)
+            return self.dispatch([], [self.alloc(inputs[0])], no_grad=True)
         return self.dispatch(inputs, [self.alloc()])
 
 
@@ -122,7 +124,7 @@ class ChannelNormalize(Operator):
         return self.dispatch(
             inputs, [self.alloc()],
             callback=lambda ws, handle:
-            self.feed(ws, handle, perm)
+                self.feed(ws, handle, perm),
         )
 
 
@@ -225,7 +227,7 @@ class ExpandDims(Operator):
         }
 
     def forward(self, inputs, inplace=False):
-        outputs = [inputs[0] if inplace else self.alloc()]
+        outputs = [self.alloc(inputs[0]) if inplace else self.alloc()]
         return self.dispatch(inputs, outputs)
 
 
@@ -247,7 +249,7 @@ class Flatten(Operator):
         }
 
     def forward(self, inputs, inplace=False):
-        outputs = [inputs[0] if inplace else self.alloc()]
+        outputs = [self.alloc(inputs[0]) if inplace else self.alloc()]
         return self.dispatch(inputs, outputs)
 
 
@@ -447,11 +449,10 @@ class Reshape(Operator):
                 e, 'int64')
 
     def forward(self, inputs, shape, inplace=False):
-        outputs = [inputs[0] if inplace else self.alloc()]
         return self.dispatch(
-            inputs, outputs,
+            inputs, [self.alloc(inputs[0]) if inplace else self.alloc()],
             callback=lambda ws, handle:
-            self.feed(ws, handle, shape)
+                self.feed(ws, handle, shape),
         )
 
 
@@ -493,12 +494,13 @@ class Slice(Operator):
 class Shape(Operator):
     def __init__(self, key, dev, **kwargs):
         super(Shape, self).__init__(key, dev, **kwargs)
+        self._device = device_spec.DeviceSpec()
 
     def attributes(self):
         return {'op_type': 'Shape', 'arguments': {}}
 
     def forward(self, inputs):
-        return self.dispatch(inputs, [self.alloc()])
+        return self.dispatch(inputs, [self.alloc()], no_grad=True)
 
 
 class Split(Operator):
@@ -535,7 +537,7 @@ class Squeeze(Operator):
         }
 
     def forward(self, inputs, inplace=False):
-        outputs = [inputs[0] if inplace else self.alloc()]
+        outputs = [self.alloc(inputs[0]) if inplace else self.alloc()]
         return self.dispatch(inputs, outputs)
 
 

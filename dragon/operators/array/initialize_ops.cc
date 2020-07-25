@@ -35,8 +35,9 @@ void InitializeOp<Context>::RunOnDevice() {
     vec64_t out_shape;
     int ndims;
     dims(0, &ndims);
-    for (int i = 0; i < ndims; i++)
+    for (int i = 0; i < ndims; i++) {
       out_shape.push_back(dims(i));
+    }
     Output(0)->Reshape(out_shape);
   }
 }

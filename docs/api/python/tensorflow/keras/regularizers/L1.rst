@@ -1,0 +1,17 @@
+L1
+==
+
+.. autoclass:: dragon.vm.tensorflow.keras.regularizers.L1
+
+__init__
+--------
+.. automethod:: dragon.vm.tensorflow.keras.regularizers.L1.__init__
+
+.. raw:: html
+
+  <style>
+    h1:before {
+      content: "tf.keras.regularizers.";
+      color: #103d3e;
+    }
+  </style>

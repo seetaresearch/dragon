@@ -37,8 +37,11 @@ class Operator(object):
         self._arg_device = self._arg_device.SerializeToString()
         self._seed = kwargs.get('seed', config.config().random_seed)
 
-    def alloc(self):
-        """Return the executing device to create an output tensor."""
+    def alloc(self, out=None):
+        """Return or bind the executing device to output tensor."""
+        if out is not None:
+            out._device = self._device.copy()
+            return out
         return self._device.copy()
 
     def apply(self, *args, **kwargs):
@@ -122,11 +125,6 @@ class Operator(object):
     def __call__(self, *args, **kwargs):
         """Call the ``self.forward(...)``."""
         return self.forward(*args, **kwargs)
-
-
-def new_leaf(shape, dtype, device, trainable=False):
-    """Return a leaf resource."""
-    return EagerTensor(**locals())
 
 
 def remove_binary_scalar(inputs):

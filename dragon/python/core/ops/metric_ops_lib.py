@@ -23,7 +23,7 @@ class Metric(Operator):
         self.reduction = kwargs.get('reduction', 'MEAN')
 
     def forward(self, inputs):
-        return self.dispatch(inputs, [self.alloc()])
+        return self.dispatch(inputs, [self.alloc()], no_grad=True)
 
 
 class Accuracy(Metric):

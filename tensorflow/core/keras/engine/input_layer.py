@@ -75,7 +75,7 @@ def Input(
         if shape is not None:
             shape = (batch_size,) + tuple(shape)
     if kwargs:
-        raise ValueError('Unrecognized keyword arguments:', kwargs.keys())
+        raise ValueError('Unrecognized keyword arguments: ' + kwargs.keys())
     if dtype is None:
         if tensor is not None:
             dtype = tensor.dtype

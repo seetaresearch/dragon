@@ -34,8 +34,7 @@ class ArgReduce(function.Function):
         }
 
     def forward(self, input, out=None):
-        outputs = [out] if out else [self.alloc()]
-        return self.dispatch([input], outputs, no_grad=True)
+        return self.dispatch([input], [self.alloc(out)], no_grad=True)
 
 
 class Assign(function.Function):
@@ -148,8 +147,7 @@ class ChannelShuffle(function.Function):
         }
 
     def forward(self, input, out=None):
-        out = out if out else self.alloc()
-        return self.dispatch([input], [out])
+        return self.dispatch([input], [self.alloc(out)])
 
 
 class Concat(function.Function):
@@ -164,8 +162,7 @@ class Concat(function.Function):
         }
 
     def forward(self, seq, out=None):
-        out = out if out else self.alloc()
-        return self.dispatch(seq, [out])
+        return self.dispatch(seq, [self.alloc(out)])
 
 
 class Cumulative(function.Function):
@@ -187,8 +184,7 @@ class Cumulative(function.Function):
         }
 
     def forward(self, input, out=None):
-        out = out if out else self.alloc()
-        return self.dispatch([input], [out])
+        return self.dispatch([input], [self.alloc(out)])
 
 
 class Expand(function.Function):
@@ -235,9 +231,8 @@ class IndexSelect(function.Function):
             },
         }
 
-    def forward(self, input, indices, out=None):
-        out = out if out else self.alloc()
-        return self.dispatch([input, indices], [out])
+    def forward(self, input, index, out=None):
+        return self.dispatch([input, index], [self.alloc(out)])
 
 
 class MaskedAssign(function.Function):
@@ -248,7 +243,7 @@ class MaskedAssign(function.Function):
         return {'op_type': 'MaskedAssign', 'arguments': {}}
 
     def forward(self, out, mask, input):
-        return self.dispatch([input, mask], [out])
+        return self.dispatch([input, mask], [self.alloc(out)])
 
 
 class MaskedSelect(function.Function):
@@ -259,8 +254,7 @@ class MaskedSelect(function.Function):
         return {'op_type': 'MaskedSelect', 'arguments': {}}
 
     def forward(self, input, mask, out=None):
-        out = out if out else self.alloc()
-        return self.dispatch([input, mask], [out])
+        return self.dispatch([input, mask], [self.alloc(out)])
 
 
 class Multinomial(function.Function):
@@ -280,8 +274,7 @@ class Multinomial(function.Function):
         }
 
     def forward(self, input, out=None):
-        out = out if out else self.alloc()
-        return self.dispatch([input], [out], no_grad=True)
+        return self.dispatch([input], [self.alloc(out)], no_grad=True)
 
 
 class NonZero(function.Function):
@@ -292,8 +285,7 @@ class NonZero(function.Function):
         return {'op_type': 'NonZero', 'arguments': {}}
 
     def forward(self, input, out=None):
-        out = out if out else self.alloc()
-        return self.dispatch([input], [out], no_grad=True)
+        return self.dispatch([input], [self.alloc(out)], no_grad=True)
 
 
 class OneHot(function.Function):
@@ -330,8 +322,7 @@ class Reduce(function.Function):
         }
 
     def forward(self, input, out=None):
-        out = out if out else self.alloc()
-        return self.dispatch([input], [out])
+        return self.dispatch([input], [self.alloc(out)])
 
 
 class Reshape(function.Function):
@@ -356,9 +347,8 @@ class Reshape(function.Function):
                 shape[i], 'int64')
 
     def forward(self, input, shape, out=None):
-        out = out if out else self.alloc()
         return self.dispatch(
-            [input], [out],
+            [input], [self.alloc(out)],
             callback=lambda ws, handle:
                 self.feed(ws, handle, shape),
         )
@@ -433,8 +423,7 @@ class Stack(function.Function):
         }
 
     def forward(self, seq, out=None):
-        out = out if out else self.alloc()
-        return self.dispatch(seq, [out])
+        return self.dispatch(seq, [self.alloc(out)])
 
 
 class Squeeze(function.Function):
@@ -451,8 +440,7 @@ class Squeeze(function.Function):
         }
 
     def forward(self, input, out=None):
-        out = out if out else self.alloc()
-        return self.dispatch([input], [out])
+        return self.dispatch([input], [self.alloc(out)])
 
 
 class Tile(function.Function):
@@ -534,8 +522,8 @@ class TopK(function.Function):
             }
         }
 
-    def forward(self, input, outputs=None):
-        outputs = [self.alloc(), self.alloc()] if outputs is None else outputs
+    def forward(self, input, outputs=(None, None)):
+        outputs = [self.alloc(outputs[0]), self.alloc(outputs[1])]
         return self.dispatch([input], outputs, no_grad=True)
 
 
@@ -553,8 +541,7 @@ class UnSqueeze(function.Function):
         }
 
     def forward(self, input, out=None):
-        out = out if out else self.alloc()
-        return self.dispatch([input], [out])
+        return self.dispatch([input], [self.alloc(out)])
 
 
 class Where(function.Function):

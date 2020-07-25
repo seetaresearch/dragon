@@ -7,10 +7,6 @@
 #
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
-# Codes are based on:
-#
-#     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/keras/losses.py>
-#
 # ------------------------------------------------------------
 
 from __future__ import absolute_import
@@ -20,6 +16,7 @@ from __future__ import print_function
 from dragon.core.framework import context
 from dragon.core.ops import loss_ops
 from dragon.core.util import six
+from dragon.vm.tensorflow.core.keras.utils import generic_utils
 from dragon.vm.tensorflow.core.keras.utils import losses_utils
 
 
@@ -523,8 +520,9 @@ def get(identifier):
     elif callable(identifier):
         return identifier
     elif isinstance(identifier, six.string_types):
-        return globals()[identifier]
+        return generic_utils.deserialize_keras_object(
+            identifier, globals(), 'loss')
     else:
         raise TypeError(
-            'Could not interpret loss identifier: {}.'
-            .format(repr(identifier)))
+            'Could not interpret the loss identifier: {}.'
+            .format(identifier))

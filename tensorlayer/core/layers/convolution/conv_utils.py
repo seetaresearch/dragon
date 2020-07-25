@@ -26,7 +26,7 @@ def convert_data_format(data_format):
     elif data_format == 'channels_first':
         return 'NCHW'
     else:
-        raise ValueError('Invalid data_format:', data_format)
+        raise ValueError('Invalid data_format: ' + data_format)
 
 
 def normalize_data_format(value):

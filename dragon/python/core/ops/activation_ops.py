@@ -61,10 +61,8 @@ def dropout(inputs, prob=0.5, scale=True, **kwargs):
     op_lib = activation_ops_lib.Dropout
     if context.executing_eagerly():
         return op_lib \
-            .instantiate(
-                prob=args['prob'],
-                scale=scale,
-            ).apply([inputs], inplace=inplace)
+            .instantiate(prob=args['prob'], scale=scale) \
+            .apply([inputs], inplace=inplace)
     else:
         return op_lib.blend(**args)
 

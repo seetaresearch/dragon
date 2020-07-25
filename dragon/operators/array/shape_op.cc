@@ -4,12 +4,7 @@ namespace dragon {
 
 template <class Context>
 void ShapeOp<Context>::RunOnDevice() {
-  Output(0)->Reshape({Input(0).ndim()});
-
-  auto* y = Output(0)->template mutable_data<int64_t, CPUContext>();
-
-  for (int i = 0; i < Input(0).ndim(); i++)
-    y[i] = Input(0).dim(i);
+  Output(0)->template CopyFrom<int64_t>(Input(0).dims());
 }
 
 DEPLOY_CPU(Shape);

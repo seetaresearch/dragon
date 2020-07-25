@@ -14,7 +14,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.framework import ops
 from dragon.core.framework.ops import Operator
 
 
@@ -30,25 +29,17 @@ class Initializer(Operator):
                 ws, '{}/dims[{}]'.format(handle, i),
                 dim, 'int64')
 
-    def forward(
-        self,
-        shape,
-        out=None,
-        shape_like=None,
-        trainable=False,
-    ):
-        inputs = [] if shape_like is None else [shape_like]
-        outputs = [ops.new_leaf(
-            shape=shape,
-            dtype=self.dtype,
-            device=self.alloc(),
-            trainable=trainable,
-        ) if out is None else out]
-        return self.dispatch(
-            inputs, outputs,
+    def forward(self, shape, shape_as=None, out=None, trainable=None):
+        out = self.dispatch(
+            [] if shape_as is None else [shape_as],
+            [self.alloc(out)],
             callback=lambda ws, handle:
                 self.feed(ws, handle, shape),
+            no_grad=True,
         )
+        if trainable is not None:
+            out._requires_grad = trainable
+        return out
 
 
 class Eye(Initializer):

@@ -115,11 +115,8 @@ def eye(n, m=None, k=0, dtype='float32', **kwargs):
         if types.is_tensor(m):
             m = int(m.get_value())
         return op_lib \
-            .instantiate(
-                k=k,
-                ndim=2,
-                dtype=dtype,
-            ).apply([n, m], trainable=trainable)
+            .instantiate(k=k, ndim=2, dtype=dtype) \
+            .apply([n, m], trainable=trainable)
     else:
         args['n'] = args['m'] = None
         if types.is_tensor(n) or types.is_tensor(m):
@@ -173,14 +170,8 @@ def eye_like(other, k=0, dtype='float32', **kwargs):
     op_lib = init_ops_lib.Eye
     if context.executing_eagerly():
         return op_lib \
-            .instantiate(
-                k=k,
-                dtype=dtype,
-            ).apply(
-                shape=[],
-                shape_like=other,
-                trainable=trainable,
-            )
+            .instantiate(k=k, dtype=dtype) \
+            .apply([], other, trainable=trainable)
     else:
         args.pop('other')
         return op_lib.blend(inputs=[other], **args)
@@ -366,14 +357,8 @@ def ones_like(other, dtype='float32', **kwargs):
     op_lib = init_ops_lib.Fill
     if context.executing_eagerly():
         return op_lib \
-            .instantiate(
-                value=1,
-                dtype=dtype,
-            ).apply(
-                shape=[],
-                shape_like=other,
-                trainable=trainable,
-            )
+            .instantiate(value=1, dtype=dtype) \
+            .apply([], other, trainable=trainable)
     else:
         args.pop('other')
         return op_lib.blend(inputs=[other], value=1., **args)
@@ -453,11 +438,7 @@ def random_normal_like(other, mean=0, std=1, dtype='float32', **kwargs):
                 mean=args['mean'],
                 std=args['std'],
                 dtype=dtype,
-            ).apply(
-                shape=[],
-                shape_like=other,
-                trainable=trainable,
-            )
+            ).apply([], other, trainable=trainable)
     else:
         args.pop('other')
         return op_lib.blend(inputs=[other], **args)
@@ -535,11 +516,7 @@ def random_uniform_like(other, low=-1, high=1, dtype='float32', **kwargs):
                 low=args['low'],
                 high=args['high'],
                 dtype=dtype,
-            ).apply(
-                shape=[],
-                shape_like=other,
-                trainable=trainable,
-            )
+            ).apply([], other, trainable=trainable)
     else:
         args.pop('other')
         return op_lib.blend(inputs=[other], **args)
@@ -641,14 +618,8 @@ def zeros_like(other, dtype='float32', **kwargs):
     op_lib = init_ops_lib.Fill
     if context.executing_eagerly():
         return op_lib \
-            .instantiate(
-                value=0,
-                dtype=dtype,
-            ).apply(
-                shape=[],
-                shape_like=other,
-                trainable=trainable,
-            )
+            .instantiate(value=0, dtype=dtype) \
+            .apply([], other, trainable=trainable)
     else:
         args.pop('other')
         return op_lib.blend(inputs=[other], value=0., **args)

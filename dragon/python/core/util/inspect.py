@@ -85,6 +85,16 @@ def getfullargspec(obj):
     return _getfullargspec(target)
 
 
+def isclass(object):
+    """Decorator-aware replacement for ``inspect.isclass``."""
+    return _inspect.isclass(decorator.unwrap(object)[1])
+
+
+def isfunction(object):
+    """Decorator-aware replacement for ``inspect.isfunction``."""
+    return _inspect.isfunction(decorator.unwrap(object)[1])
+
+
 def ismethod(object):
     """Decorator-aware replacement for ``inspect.ismethod``."""
     return _inspect.ismethod(decorator.unwrap(object)[1])

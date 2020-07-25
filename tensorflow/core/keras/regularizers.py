@@ -7,16 +7,15 @@
 #
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
-# Codes are based on:
-#
-#     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/keras/regularizers.py>
-#
 # ------------------------------------------------------------
 """Built-in regularizers."""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+
+from dragon.core.util import six
+from dragon.vm.tensorflow.core.keras.utils import generic_utils
 
 
 class Regularizer(object):
@@ -36,8 +35,31 @@ class Regularizer(object):
             The output tensor.
 
         """
-        x.__regularizer__ = self
+        x._regularizer = self
         return x
+
+
+class L1(Regularizer):
+    r"""The L1 regularizer.
+
+    The **L1** regularizer is defined as:
+
+    .. math:: loss_{reg} = loss + \alpha|w|
+
+    """
+
+    def __init__(self, l1=0.01):
+        r"""Create a ``L1`` regularizer.
+
+        Parameters
+        ----------
+        l1 : float, optional, default=0.01
+            The value to :math:`\alpha`.
+
+        """
+        if l1 <= 0.:
+            raise ValueError('<l1> should be greater than 0.')
+        self.l1 = l1
 
 
 class L1L2(Regularizer):
@@ -65,39 +87,27 @@ class L1L2(Regularizer):
         self.l1, self.l2 = l1, l2
 
 
-def get(identifier):
-    """Return a regularizer from the identifier."""
-    if identifier is None:
-        return None
-    elif callable(identifier):
-        return identifier
-    else:
-        raise ValueError(
-            'Could not interpret regularizer identifier:',
-            identifier,
-        )
+class L2(Regularizer):
+    r"""The L2 regularizer.
 
+    The **L2** regularizer is defined as:
 
-# Aliases
-def l1(l=0.01):
-    r"""Create a L1 regularizer.
-
-    The **L1** regularizer is defined as:
-
-    .. math:: loss_{reg} = loss + \alpha|w|
-
-    Parameters
-    ----------
-    l : float, optional, default=0.01
-        The value to :math:`\alpha`.
-
-    Returns
-    -------
-    dragon.vm.tensorflow.keras.regularizers.Regularizer
-        The regularizer.
+    .. math:: loss_{reg} = loss + \frac{\beta}{2}|w|_{2}
 
     """
-    return L1L2(l1=l)
+
+    def __init__(self, l2=0.01):
+        r"""Create a ``L2`` regularizer.
+
+        Parameters
+        ----------
+        l1 : float, optional, default=0.01
+            The value to :math:`\alpha`.
+
+        """
+        if l2 <= 0.:
+            raise ValueError('<l2> should be greater than 0.')
+        self.l2 = l2
 
 
 def l1_l2(l1=0.01, l2=0.01):
@@ -123,22 +133,35 @@ def l1_l2(l1=0.01, l2=0.01):
     return L1L2(l1=l1, l2=l2)
 
 
-def l2(l=0.01):
-    r"""Create a L2 regularizer.
+# Aliases
+l1 = L1
+l2 = L2
 
-    The **L2** regularizer is defined as:
 
-    .. math:: loss_{reg} = loss + \frac{\beta}{2}|w|_{2}
+def get(identifier):
+    """Return the regularizer callable by identifier.
 
     Parameters
     ----------
-    l : float, optional, default=0.01
-        The value to :math:`\beta`.
+    identifier : Union[callable, str]
+        The identifier.
 
     Returns
     -------
-    dragon.vm.tensorflow.keras.regularizers.Regularizer
-        The regularizer.
+    callable
+        The activation callable.
 
     """
-    return L1L2(l2=l)
+    if identifier is None:
+        return None
+    elif callable(identifier):
+        return identifier
+    elif isinstance(identifier, six.string_types):
+        if identifier == 'l1_l2':
+            return L1L2(l1=0.01, l2=0.01)
+        return generic_utils.deserialize_keras_object(
+            identifier, globals(), 'regularizer')
+    else:
+        raise TypeError(
+            'Could not interpret the regularizer identifier: {}.'
+            .format(identifier))

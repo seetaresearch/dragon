@@ -7,10 +7,6 @@
 #
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
-# Codes are based on:
-#
-#     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/keras/utils/losses_utils.py>
-#
 # ------------------------------------------------------------
 
 from __future__ import absolute_import

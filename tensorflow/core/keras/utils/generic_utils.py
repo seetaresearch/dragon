@@ -19,6 +19,32 @@ from __future__ import print_function
 
 import re
 
+from dragon.core.util import inspect
+from dragon.core.util import six
+
+
+def deserialize_keras_object(
+    identifier,
+    module_objects,
+    printable_module_name='object',
+):
+    """Deserialize the keras object."""
+    if isinstance(identifier, six.string_types):
+        object_name = identifier
+        obj = module_objects.get(object_name)
+        if obj is None:
+            raise ValueError(
+                'Unknown ' + printable_module_name + ': ' + object_name)
+        if inspect.isclass(obj):
+            return obj()
+        return obj
+    elif inspect.isfunction(identifier):
+        return identifier
+    else:
+        raise TypeError(
+            'Could not interpret the {} identifier: {}.'
+            .format(printable_module_name, identifier))
+
 
 def to_snake_case(name):
     """Convert the name from camel-style to snake-style."""

@@ -40,7 +40,7 @@ class Backend(object):
             if not is_nccl_available():
                 raise ValueError('NCCL backend is not available.')
         elif value == Backend.UNDEFINED:
-            raise ValueError('Invalid backend:', name)
+            raise ValueError('Invalid backend: ' + name)
         return value
 
 

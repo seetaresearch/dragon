@@ -7,10 +7,6 @@
 #
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
-# Codes are based on:
-#
-#     <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/keras/optimizer_v2/optimizer.py>
-#
 # ------------------------------------------------------------
 
 from __future__ import absolute_import
@@ -51,7 +47,7 @@ class Optimizer(optimizer_v1.Optimizer):
         allowed_kwargs = {'scale', 'clipnorm', 'lr'}
         for k in kwargs:
             if k not in allowed_kwargs:
-                raise TypeError('Unexpected keyword argument:', str(k))
+                raise TypeError('Unexpected keyword argument: ' + str(k))
             if kwargs[k] < 0:
                 raise ValueError("Expected {} >= 0, received: {}".format(k, kwargs[k]))
 
@@ -109,15 +105,17 @@ class Optimizer(optimizer_v1.Optimizer):
             for g, v in grads_and_vars:
                 if g is not None:
                     decay_mult = 0.
-                    if hasattr(v, '__regularizer__'):
-                        decay_mult = v.__regularizer__.l2 / self.BASE_WEIGHT_DECAY
+                    regularizer = getattr(v, '_regularizer', None)
+                    if regularizer is not None:
+                        decay_mult = regularizer.l2 / self.BASE_WEIGHT_DECAY
                     self._run_update(v, g, decay_mult=decay_mult)
         else:
             # Store for the lazy compilation.
             for g, v in grads_and_vars:
                 decay_mult = 0.
-                if hasattr(v, '__regularizer__'):
-                    decay_mult = v.__regularizer__.l2 / self.BASE_WEIGHT_DECAY
+                regularizer = getattr(v, '_regularizer', None)
+                if regularizer is not None:
+                    decay_mult = regularizer.l2 / self.BASE_WEIGHT_DECAY
                 self._add_update(v, g, decay_mult=decay_mult)
 
         # Increase the iterations.

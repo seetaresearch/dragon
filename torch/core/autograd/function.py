@@ -70,15 +70,23 @@ class Function(object):
         self._arg_device = self._arg_device.SerializeToString()
         self._seed = kwargs.get('seed', config.config().random_seed)
 
-    def alloc(self):
-        """Return the executing device to create an output tensor.
+    def alloc(self, out=None):
+        """Return or bind the executing device to output tensor.
+
+        Parameters
+        ----------
+        out : dragon.vm.torch.Tensor, optional
+            The optional output tensor.
 
         Returns
         -------
-        dragon.vm.torch.device
-            The device spec.
+        Union[dragon.vm.torch.device, dragon.vm.torch.Tensor]
+            The executing device or output tensor.
 
         """
+        if out is not None:
+            out._device = self._device.copy()
+            return out
         return self._device.copy()
 
     def apply(self, *args, **kwargs):
@@ -106,7 +114,7 @@ class Function(object):
         """Dispatch the execution."""
         if self._def is None:
             self._gen_def()
-        if check_device:
+        if len(inputs) > 1 and check_device:
             self._check_device(inputs)
         return execute.run_operator(
             op_def=self._def,

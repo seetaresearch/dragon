@@ -18,6 +18,7 @@ from __future__ import division
 from __future__ import print_function
 
 from dragon.core.util import six
+from dragon.vm.tensorflow.core.keras.utils import generic_utils
 from dragon.vm.tensorflow.core.ops.init_ops import Constant
 from dragon.vm.tensorflow.core.ops.init_ops import GlorotNormal
 from dragon.vm.tensorflow.core.ops.init_ops import GlorotUniform
@@ -60,8 +61,9 @@ def get(identifier):
     elif callable(identifier):
         return identifier
     elif isinstance(identifier, six.string_types):
-        return globals()[identifier]
+        return generic_utils.deserialize_keras_object(
+            identifier, globals(), 'initializer')
     else:
         raise TypeError(
-            'Could not interpret initializer identifier: {}.'
-            .format(repr(identifier)))
+            'Could not interpret the initializer identifier: {}.'
+            .format(identifier))

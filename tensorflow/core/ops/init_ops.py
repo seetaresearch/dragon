@@ -249,7 +249,7 @@ class VarianceScaling(Initializer):
             raise ValueError('<scale> must be positive float.')
         mode = mode.lower()
         if mode not in {'fan_in', 'fan_out', 'fan_avg'}:
-            raise ValueError('Invalid <mode> argument:', mode)
+            raise ValueError('Invalid <mode> argument: ' + mode)
         distribution = distribution.lower()
         if distribution not in {'normal', 'uniform'}:
             raise ValueError("Invalid `distribution` argument:", distribution)
@@ -434,10 +434,12 @@ def glorot_normal_initializer(dtype='float32'):
 
 
 # Aliases
-zeros_initializer = Zeros
-ones_initializer = Ones
-constant_initializer = Constant
-random_uniform_initializer = RandomUniform
-random_normal_initializer = RandomNormal
-truncated_normal_initializer = TruncatedNormal
+zeros_initializer = zero = zeros = Zeros
+ones_initializer = one = ones = Ones
+constant_initializer = constant = Constant
+random_uniform_initializer = uniform = random_uniform = RandomUniform
+random_normal_initializer = normal = random_normal = RandomNormal
+truncated_normal_initializer = truncated_normal = TruncatedNormal
 variance_scaling_initializer = VarianceScaling
+glorot_normal = GlorotNormal
+glorot_uniform = GlorotUniform

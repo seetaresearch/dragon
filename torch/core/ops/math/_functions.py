@@ -33,8 +33,7 @@ class Axpby(function.Function):
         }
 
     def forward(self, input, out=None):
-        out = out if out else self.alloc()
-        return self.dispatch([input], [out], no_grad=True)
+        return self.dispatch([input], [self.alloc(out)], no_grad=True)
 
 
 class BinaryFunc(function.Function):
@@ -46,8 +45,7 @@ class BinaryFunc(function.Function):
         return {'op_type': self.op_type, 'arguments': {}}
 
     def forward(self, input, value, out=None):
-        out = out if out else self.alloc()
-        return self.dispatch([input, value], [out])
+        return self.dispatch([input, value], [self.alloc(out)])
 
 
 class Clip(function.Function):
@@ -70,8 +68,7 @@ class Clip(function.Function):
         }
 
     def forward(self, input, out=None):
-        out = out if out else self.alloc()
-        return self.dispatch([input], [out])
+        return self.dispatch([input], [self.alloc(out)])
 
 
 class UnaryFunc(function.Function):
@@ -83,8 +80,7 @@ class UnaryFunc(function.Function):
         return {'op_type': self.op_type, 'arguments': {}}
 
     def forward(self, input, out=None):
-        out = out if out else self.alloc()
-        return self.dispatch([input], [out])
+        return self.dispatch([input], [self.alloc(out)])
 
 
 class MatMul(function.Function):
@@ -103,5 +99,4 @@ class MatMul(function.Function):
         }
 
     def forward(self, mat1, mat2, out=None):
-        out = out if out else self.alloc()
-        return self.dispatch([mat1, mat2], [out])
+        return self.dispatch([mat1, mat2], [self.alloc(out)])

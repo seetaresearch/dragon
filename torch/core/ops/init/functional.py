@@ -121,7 +121,7 @@ def eye(
 
     Returns
     -------
-    dragon.Tensor
+    dragon.vm.torch.Tensor
         The output tensor.
 
     """
@@ -143,7 +143,7 @@ def fill(out, shape, value):
 
 
 def fill_like(out, shape_like, value):
-    return _functions.Fill  \
+    return _functions.Fill \
         .instantiate(out.device, value=float(value), dtype=out.dtype) \
         .apply(out, [], shape_like)
 

@@ -44,7 +44,7 @@ def device(device_type, device_index=0):
     """
     device_type = device_type.lower()
     if device_type not in mapping.DEVICE_STRING_TO_DEVICE_TYPE:
-        raise ValueError('Unsupported device type:', device_type)
+        raise ValueError('Unsupported device type: ' + device_type)
     return _GLOBAL_DEVICE_STACK.get_controller({
         'device_type': mapping.DEVICE_STRING_TO_DEVICE_TYPE[device_type],
         'device_index': device_index,

@@ -34,6 +34,7 @@ class _Initializer(function.Function):
             [] if shape_like is None else [shape_like], [out],
             callback=lambda ws, handle:
                 self.feed(ws, handle, shape),
+            no_grad=True,
         )
 
 
@@ -62,9 +63,10 @@ class Arange(function.Function):
 
     def forward(self, slice_args, out=None):
         return self.dispatch(
-            [], [out if out else self.alloc()],
+            [], [self.alloc(out)],
             callback=lambda ws, handle:
-            self.feed(ws, handle, slice_args)
+                self.feed(ws, handle, slice_args),
+            no_grad=True,
         )
 
 

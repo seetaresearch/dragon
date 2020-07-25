@@ -576,7 +576,7 @@ def uniform(self, low=0, high=1):
         ).apply(shape, out=self)
 
 
-def _binary_op(a, b, op_type, outputs=None):
+def _binary_op(a, b, op_type, outputs=(None,)):
     """Apply the general binary operation."""
     return math_ops_lib.BinaryOp \
         .instantiate(op_type=op_type) \

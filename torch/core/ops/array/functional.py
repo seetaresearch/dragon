@@ -943,7 +943,7 @@ def topk(input, k, dim=None, largest=True, sorted=True, out=None):
             axis=dim,
             largest=largest,
             sorted=sorted,
-        ).apply(input, out)
+        ).apply(input, out if out else (None, None))
 
 
 def unsqueeze(input, dim, out=None):

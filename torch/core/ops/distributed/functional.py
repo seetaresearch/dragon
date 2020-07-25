@@ -42,7 +42,7 @@ def all_reduce(tensor, op='SUM', group=None):
     if group is None:
         raise ValueError('<group> is required.')
     if op not in ('MEAN', 'SUM'):
-        raise ValueError('Unsupported reduce op:', op)
+        raise ValueError('Unsupported reduce op: ' + op)
     tensors = nest.flatten(tensor)
     return _functions.Collective \
         .instantiate(

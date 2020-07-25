@@ -340,8 +340,7 @@ class LpNormalize(function.Function):
         }
 
     def forward(self, input, out=None):
-        out = out if out else self.alloc()
-        return self.dispatch([input], [out])
+        return self.dispatch([input], [self.alloc(out)])
 
 
 class LSTMCell(function.Function):
@@ -564,11 +563,7 @@ class RNNParamSet(function.Function):
         }
 
     def forward(self, param, weights):
-        return self.dispatch(
-            [param], [weights],
-            no_grad=True,
-            check_device=False,
-        )
+        return self.dispatch([param], [weights], no_grad=True)
 
 
 class SigmoidCrossEntropy(_Loss):

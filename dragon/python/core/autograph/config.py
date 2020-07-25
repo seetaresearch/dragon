@@ -39,7 +39,7 @@ def set_execution(execution='GRAPH_MODE'):
 
     """
     if execution not in ('GRAPH_MODE', 'EAGER_MODE'):
-        raise ValueError('Unsupported execution mode:', execution)
+        raise ValueError('Unsupported execution: ' + execution)
     config.config().graph_execution = execution
 
 
@@ -75,7 +75,7 @@ def set_scheduler(scheduler='SIMPLE'):
 
     """
     if scheduler not in ('SIMPLE', 'FUSION'):
-        raise ValueError('Unsupported scheduler type:', scheduler)
+        raise ValueError('Unsupported scheduler: ' + scheduler)
     if scheduler == 'SIMPLE':
         config.config().graph_type = ''
     elif scheduler == 'FUSION':

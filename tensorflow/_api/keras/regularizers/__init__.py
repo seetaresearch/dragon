@@ -14,12 +14,15 @@ from __future__ import division as _division
 from __future__ import print_function as _print_function
 
 # Classes
+from dragon.vm.tensorflow.core.keras.regularizers import L1
+from dragon.vm.tensorflow.core.keras.regularizers import l1
 from dragon.vm.tensorflow.core.keras.regularizers import L1L2
+from dragon.vm.tensorflow.core.keras.regularizers import L2
+from dragon.vm.tensorflow.core.keras.regularizers import l2
 from dragon.vm.tensorflow.core.keras.regularizers import Regularizer
 
 # Functions
-from dragon.vm.tensorflow.core.keras.regularizers import l1
+from dragon.vm.tensorflow.core.keras.regularizers import get
 from dragon.vm.tensorflow.core.keras.regularizers import l1_l2
-from dragon.vm.tensorflow.core.keras.regularizers import l2
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

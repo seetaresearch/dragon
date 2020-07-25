@@ -46,7 +46,7 @@ def all_reduce(inputs, operation='MEAN', group=None, **kwargs):
     if group is None:
         raise ValueError('<group> is required.')
     if operation not in ('MEAN', 'SUM'):
-        raise ValueError('Unsupported reduce op:', operation)
+        raise ValueError('Unsupported reduce op: ' + operation)
     args.update(group.arguments)
     args.pop('group')
     op_lib = distributed_ops_lib.Collective
