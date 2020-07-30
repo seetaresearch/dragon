@@ -26,11 +26,10 @@ class TestJit(unittest.TestCase):
     @torch.jit.trace(example_inputs=[
         torch.Tensor(1, dtype=torch.int64),
         torch.Tensor(1, dtype=torch.int64),
-        torch.Tensor(1, dtype=torch.int64),
     ])
-    def func1(self, a, b, c=0, **kwargs):
+    def func1(self, a, b, **kwargs):
         _ = kwargs
-        return a + b + c
+        return a + b
 
     def test_trace(self):
         @torch.jit.trace(example_inputs=[None, None])
@@ -57,7 +56,7 @@ class TestJit(unittest.TestCase):
         self.assertEqual(func3(a, b).numpy().tolist(), [4, 6])
         self.assertEqual(func5(a, b).numpy().tolist(), [4, 6])
         self.assertEqual(m(a, b).numpy().tolist(), [4, 6])
-        self.assertEqual(self.func1(a, b, c=c).numpy().tolist(), [5, 7])
+        self.assertEqual(self.func1(a, b, c=c).numpy().tolist(), [4, 6])
         try:
             func4(a, b)
         except ValueError:

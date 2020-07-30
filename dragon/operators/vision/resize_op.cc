@@ -199,7 +199,8 @@ void ResizeGradientOp<Context>::RunOnDevice() {
   } else if (XIsType(Input(0), double)) {
     DoRunWithTypeAndCast<double>();
   } else {
-    LOG(FATAL) << TypeString(Input(0), {"float16", "float32", "float64"});
+    LOG(FATAL) << MessageForUnsupported(
+        types::to_string(Input(0).meta()), {"float16", "float32", "float64"});
   };
 }
 

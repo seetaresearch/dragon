@@ -114,7 +114,8 @@ void BatchNormOp<Context>::RunOnDevice() {
       InferenceImpl<float, float>();
     }
   } else {
-    LOG(FATAL) << TypeString(Input(0), {"float32"});
+    LOG(FATAL) << MessageForUnsupported(
+        types::to_string(Input(0).meta()), {"float32"});
   }
 }
 
@@ -190,7 +191,8 @@ void BatchNormGradientOp<Context>::RunOnDevice() {
       InferenceImpl<float, float>();
     }
   } else {
-    LOG(FATAL) << TypeString(Input(0), {"float32"});
+    LOG(FATAL) << MessageForUnsupported(
+        types::to_string(Input(0).meta()), {"float32"});
   }
 }
 

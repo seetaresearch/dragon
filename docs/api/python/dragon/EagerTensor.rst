@@ -24,7 +24,7 @@ name
 
 ndim
 ####
-.. autoattribute:: dragon.EagerTensor.name
+.. autoattribute:: dragon.EagerTensor.ndim
 
 shape
 #####

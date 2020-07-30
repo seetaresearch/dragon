@@ -27,12 +27,12 @@ DEFAULT_PROTOCOL = PICKLE_MODULE.HIGHEST_PROTOCOL
 
 
 def save(obj, f, pickle_module=PICKLE_MODULE, pickle_protocol=DEFAULT_PROTOCOL):
-    """Save a pickle object.
+    """Save an object using pickle.
 
     Parameters
     ----------
-    obj : object_like
-        The object to pickle.
+    obj : Any
+        The object to serialize.
     f : file_like
         The file object or file name.
     pickle_module : module, optional
@@ -41,11 +41,12 @@ def save(obj, f, pickle_module=PICKLE_MODULE, pickle_protocol=DEFAULT_PROTOCOL):
         The optional pickle protocol.
 
     """
-    return _with_file_like(f, 'wb', lambda f: _save(obj, f, pickle_module, pickle_protocol))
+    return _with_file_like(
+        f, 'wb', lambda f: _save(obj, f, pickle_module, pickle_protocol))
 
 
 def load(f, pickle_module=PICKLE_MODULE):
-    """Load a pickle object.
+    """Load an object using pickle.
 
     Parameters
     ----------
@@ -53,6 +54,11 @@ def load(f, pickle_module=PICKLE_MODULE):
         The file object or file name.
     pickle_module : module
         The optional pickle module.
+
+    Returns
+    -------
+    Any
+        The deserialized object.
 
     """
     try:

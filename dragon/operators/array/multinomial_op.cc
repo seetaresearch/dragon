@@ -60,7 +60,7 @@ void MultinomialOp<Context>::DoRunWithType() {
 
 template <class Context>
 void MultinomialOp<Context>::RunOnDevice() {
-  ctx()->set_stream_id(0); // Enforce the default stream
+  ctx()->set_stream(0); // Enforce the default stream
   DispatchHelper<TensorTypes<float, double>>::Call(this, Input(0));
 }
 

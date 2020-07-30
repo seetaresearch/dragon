@@ -3,6 +3,9 @@ message(STATUS "Build module: ${CMAKE_CURRENT_LIST_DIR}")
 
 # ---[ Defines
 add_definitions(-DBUILD_RUNTIME)
+if (USE_MPI)
+  remove_definitions(-DUSE_MPI)
+endif()
 
 # ---[ Sources
 set(MODULE_INCLUDES "")

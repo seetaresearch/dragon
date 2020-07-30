@@ -1,7 +1,9 @@
 FROM ubuntu:16.04
 
 RUN \
-  apt-get update && apt-get install -y --no-install-recommends \
+  apt-get update && apt-get install -y \
+  --no-install-recommends \
+  --allow-change-held-packages \
   build-essential \
   cmake \
   git \
@@ -17,7 +19,7 @@ RUN \
   python3-pip \
   python3-dev \
   python3-pyqt4 \
-  python3-tk \ 
+  python3-tk \
   && rm -rf /var/lib/apt/lists/*
 
 RUN \

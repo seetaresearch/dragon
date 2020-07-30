@@ -1,4 +1,4 @@
-#include "dragon/core/common.h"
+#include "dragon/core/workspace.h"
 #include "dragon/modules/runtime/dragon_runtime.h"
 #include "dragon/onnx/onnx_backend.h"
 #include "dragon/utils/proto_utils.h"
@@ -9,7 +9,7 @@ std::mutex g_mutex;
 Map<string, unique_ptr<Workspace>> g_workspaces;
 Map<string, vector<string>> sub_workspaces;
 
-Workspace* CreateWorkspace(const string& name) {
+Workspace_t CreateWorkspace(const string& name) {
   std::unique_lock<std::mutex> lock(g_mutex);
   LOG(INFO) << "Create the Workspace(" << name << ").";
   if (g_workspaces.count(name)) return g_workspaces[name].get();
@@ -19,7 +19,7 @@ Workspace* CreateWorkspace(const string& name) {
   return g_workspaces[name].get();
 }
 
-Workspace* ResetWorkspace(const string& name) {
+Workspace_t ResetWorkspace(const string& name) {
   std::unique_lock<std::mutex> lock(g_mutex);
   CHECK(g_workspaces.count(name))
       << "\nWorkspace(" << name << ") does not exist."
@@ -34,19 +34,19 @@ Workspace* ResetWorkspace(const string& name) {
   return g_workspaces[name].get();
 }
 
-Workspace* ResetWorkspace(Workspace_t ws) {
+Workspace_t ResetWorkspace(Workspace_t ws) {
   CHECK(ws) << "\nGiven workspace is invalid.";
   return ResetWorkspace(ws->name());
 }
 
-void MoveWorkspace(Workspace_t dst, Workspace_t src) {
+void MoveWorkspace(Workspace_t dest, Workspace_t src) {
   std::unique_lock<std::mutex> lock(g_mutex);
   CHECK(src) << "\nGiven source workspace is invalid.";
-  CHECK(dst) << "\nGiven destination workspace is invalid.";
-  dst->MergeFrom(src);
-  sub_workspaces[dst->name()].push_back(src->name());
+  CHECK(dest) << "\nGiven destination workspace is invalid.";
+  dest->MergeFrom(src);
+  sub_workspaces[dest->name()].push_back(src->name());
   LOG(INFO) << "Move the Workspace(" << src->name() << ") "
-            << "into the Workspace(" << dst->name() << ").";
+            << "into the Workspace(" << dest->name() << ").";
 }
 
 void DestroyWorkspace(const string& name) {
@@ -63,27 +63,25 @@ void DestroyWorkspace(Workspace_t ws) {
   return DestroyWorkspace(ws->name());
 }
 
-string
-CreateGraph(const GraphDef_t graph_def, const Device& device, Workspace_t ws) {
-  auto graph_def_copy(*graph_def);
-  // Overwritten device options
-  DeviceOption* device_option = graph_def_copy.mutable_device_option();
+string CreateGraph(const GraphDef_t def, const Device& device, Workspace_t ws) {
+  auto def_v2(*def);
+  auto* device_option = def_v2.mutable_device_option();
   device_option->set_device_type((DeviceTypeProto)device.device_type());
   device_option->set_device_id(device.device_id());
-  auto* graph = ws->CreateGraph(graph_def_copy);
+  auto* graph = ws->CreateGraph(def_v2);
   if (!graph) LOG(FATAL) << "Can not create the graph.";
   return graph->name();
 }
 
 std::string
-CreateGraph(const string& graph_file, const Device& device, Workspace_t ws) {
+CreateGraph(const string& file, const Device& device, Workspace_t ws) {
   GraphDef graph_def;
-  ParseProtoFromText(graph_file.c_str(), &graph_def);
+  ParseProtoFromText(file.c_str(), &graph_def);
   return CreateGraph(&graph_def, device, ws);
 }
 
-void RunGraph(const string& graph_name, Workspace_t ws, const int stream_id) {
-  ws->RunGraph(graph_name, "", "", stream_id);
+void RunGraph(const string& name, Workspace_t ws, int stream) {
+  ws->RunGraph(name, "", "", stream);
 }
 
 void CreateTensor(const string& name, Workspace_t ws) {
@@ -148,34 +146,38 @@ void FeedTensor(
         tensor->raw_mutable_data<CPUContext>(),
         static_cast<const void*>(data));
   } else {
-    LOG(FATAL) << "Unknown device type.";
+    LOG(FATAL) << "Unsupported device type.";
   }
 }
 
-DRAGON_API void CreateGraphDef(GraphDef_t* graph_def) {
-  *graph_def = new GraphDef();
+void CreateGraphDef(GraphDef_t* def) {
+  *def = new GraphDef();
 }
 
-DRAGON_API void DestroyGraphDef(GraphDef_t graph_def) {
-  if (graph_def) delete graph_def;
+void DestroyGraphDef(GraphDef_t def) {
+  if (def) {
+    delete def;
+  }
 }
 
 void LoadONNXModel(
     const string& model_file,
-    GraphDef_t init_graph,
-    GraphDef_t pred_graph,
+    GraphDef_t init_def,
+    GraphDef_t pred_def,
     vector<string>& inputs,
     vector<string>& outputs) {
   LOG(INFO) << "Load Model: " << model_file << "......";
   LOG(INFO) << "Format: ONNX";
   onnx::ONNXBackend onnx_backend;
-  onnx_backend.Prepare(model_file, init_graph, pred_graph);
+  onnx_backend.Prepare(model_file, init_def, pred_def);
   inputs.clear();
   outputs.clear();
-  for (const auto& e : pred_graph->input())
-    inputs.emplace_back(e);
-  for (const auto& e : pred_graph->output())
-    outputs.emplace_back(e);
+  for (const auto& input : pred_def->input()) {
+    inputs.push_back(input);
+  }
+  for (const auto& output : pred_def->output()) {
+    outputs.push_back(output);
+  }
 }
 
 #define INSTANTIATE_API(T)                \

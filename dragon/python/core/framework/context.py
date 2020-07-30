@@ -52,14 +52,14 @@ def device(device_type, device_index=0):
 
 
 def eager_scope(data='${DATA}', graph='${GRAPH}'):
-    """Context-manager to nest the domain for eager resources.
+    """Context-manager to nest the namespace for eager resources.
 
     Parameters
     ----------
     data : str, optional, default='${DATA}'
-        The domain for resources traced by python.
+        The namespace for resources traced by python.
     graph : str, optional, default='${GRAPH}'
-        The domain for resources traced by graph.
+        The namespace for resources traced by graph.
 
     """
     domain_tuple = (graph, data)

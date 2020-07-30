@@ -130,7 +130,7 @@ void RegisterModule(py::module& m) {
 #ifdef USE_CUDA
     if (device_id < 0) device_id = CUDAContext::current_device();
     auto stream = CUDAContext::object()->stream(device_id, stream_id);
-    CUDAContext::SyncStream(stream);
+    CUDAContext::SynchronizeStream(stream);
 #endif
   });
 

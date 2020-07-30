@@ -52,7 +52,8 @@ void ChannelNormalizeOp<Context>::DoRunWithType() {
   } else if (dtype() == "float64") {
     DoRunWithTypeAndCast<T, double>();
   } else {
-    LOG(FATAL) << TypeString(dtype(), {"float16", "float32", "float64"});
+    LOG(FATAL) << MessageForUnsupported(
+        dtype(), {"float16", "float32", "float64"});
   }
 }
 

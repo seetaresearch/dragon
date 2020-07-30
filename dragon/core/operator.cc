@@ -41,12 +41,6 @@ OperatorBase::OperatorBase(const OperatorDef& def, Workspace* ws)
   }
 }
 
-// template <class Context>
-// Operator<Context>::Operator(const OperatorDef& def, Workspace* ws)
-//     : OperatorBase(def, ws),
-//       ctx_(def.device_option()),
-//       do_sync_(OpArg<bool>("do_sync", false)) {}
-
 Tensor& OperatorBase::Input(int i) {
   CHECK_LT(i, (int)inputs_.size());
   CHECK_GE(i, -(int)inputs_.size());
@@ -80,27 +74,17 @@ Tensor* OperatorBase::Buffer(const string& name) {
   return ws()->CreateTensor("/share/buffer/" + handle_ + "/" + name);
 }
 
-string OperatorBase::TypeString(const Tensor& tensor, const Set<string>& types)
-    const {
+string OperatorBase::MessageForUnsupported(
+    const string& value,
+    const vector<string>& support_values,
+    const string& entry) const {
   std::stringstream ss;
-  ss << "Unsupported type of Tensor(" << tensor.name()
-     << "): " << types::to_string(tensor.meta()) << "\n";
+  ss << "Unsupported " << entry << ": " << value << "\n";
   ss << "<" << type() << "Op>"
-     << " supports the following types: {\n";
-  for (auto& type : types)
-    ss << "  * " << type << ",\n";
-  ss << "}";
-  return ss.str();
-}
-
-string OperatorBase::TypeString(const string& dtype, const Set<string>& types)
-    const {
-  std::stringstream ss;
-  ss << "Unsupported type: " << dtype << "\n";
-  ss << "<" << type() << "Op>"
-     << " supports the following types: {\n";
-  for (auto& type : types)
-    ss << "  * " << type << ",\n";
+     << " supports the following " << entry << "(s): {\n";
+  for (const auto& support_value : support_values) {
+    ss << "  * " << support_value << ",\n";
+  }
   ss << "}";
   return ss.str();
 }
@@ -133,7 +117,7 @@ void Operator<Context>::Prepare() {
       flag->mutable_data<bool, CPUContext>()[0] = true;
       vector<OperatorBase*>& chain = subgraph()[name];
       for (auto* op : chain) {
-        op->Run(ctx()->stream_id());
+        op->Run(ctx()->stream());
       }
       flag->mutable_data<bool, CPUContext>()[0] = false;
     }
@@ -156,12 +140,12 @@ template <class Context>
 void Operator<Context>::SwitchToDevice() {
   for (auto* tensor : inputs_) {
     if (tensor->has_name()) {
-      tensor->SwitchToDevice(ctx()->device_id());
+      tensor->SwitchToDevice(ctx()->device());
     }
   }
   for (auto* tensor : outputs_) {
     if (tensor->has_name()) {
-      tensor->SwitchToDevice(ctx()->device_id());
+      tensor->SwitchToDevice(ctx()->device());
     }
   }
 }

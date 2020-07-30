@@ -24,10 +24,19 @@
 #define TLS_OBJECT __declspec(thread)
 #endif
 
+// Disable the copy and assignment operator for a class
+#define DISABLE_COPY_AND_ASSIGN(classname) \
+  classname(const classname&) = delete;    \
+  classname& operator=(const classname&) = delete
+
+// Concatenate two strings
 #define CONCATENATE_IMPL(s1, s2) s1##s2
 #define CONCATENATE(s1, s2) CONCATENATE_IMPL(s1, s2)
+
+// Return a anonymous variable name using line number
 #define ANONYMOUS_VARIABLE(str) CONCATENATE(str, __LINE__)
-#define NOT_IMPLEMENTED \
-  LOG(FATAL) << "This module has not been implemented yet."
+
+// Throw a fatal logging for not implemented function
+#define NOT_IMPLEMENTED LOG(FATAL) << "This function is not implemented."
 
 #endif // DRAGON_UTILS_MARCROS_H_

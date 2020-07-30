@@ -20,44 +20,45 @@
 namespace dragon {
 
 typedef enum {
-  NCHW,
-  NHWC,
+  NCHW = 0,
+  NHWC = 1,
 } StorageOrder;
 
+/*!
+ * \brief Memory to manage both the host and device data.
+ */
 class DRAGON_API UnifiedMemory {
  public:
-  typedef enum {
-    /*! \brief The initial state */
-    UNINITIALIZED,
-    /*! \brief Memory could be modified by CPUContext last time */
-    STATE_AT_CPU,
-    /*! \brief Memory could be modified by CUDAContext last time */
-    STATE_AT_CUDA,
-    /*! \brief Memory could be modified by CNMLContext last time */
-    STATE_AT_CNML,
-    /*! \brief The synced state  */
-    SYNCED,
-  } State;
+  /*!
+   * \brief The device-aware state for data mutation.
+   */
+  enum State {
+    /*! \brief Initial state */
+    UNINITIALIZED = 0,
+    /*! \brief Data is mutable to cpu */
+    STATE_AT_CPU = 1,
+    /*! \brief Data is mutable to cuda */
+    STATE_AT_CUDA = 2,
+    /*! \brief Data is mutable to cnml */
+    STATE_AT_CNML = 3,
+    /*! \brief Data is synced between host and device */
+    SYNCED = 4,
+  };
 
-  /*! \brief Default Constructor */
-  UnifiedMemory() : cpu_ptr_(nullptr), cuda_ptr_(nullptr), cnml_ptr_(nullptr) {}
+  /*! \brief Default constructor */
+  UnifiedMemory() {}
 
-  /*! \brief Constructor with the known meta and size */
-  UnifiedMemory(const TypeMeta& meta, size_t size)
-      : meta_(meta),
-        size_(size),
-        cpu_ptr_(nullptr),
-        cuda_ptr_(nullptr),
-        cnml_ptr_(nullptr) {}
+  /*! \brief Constructor with the type meta and size */
+  UnifiedMemory(const TypeMeta& meta, size_t size) : meta_(meta), size_(size) {}
 
   /*! \brief Destructor */
   ~UnifiedMemory();
 
-  /*! \brief Switch to the specified device */
-  void SwitchToDevice(int device_id);
+  /*! \brief Switch to the given device */
+  void SwitchToDevice(int device);
 
-  /*! \brief Switch to the specified cuda device */
-  void SwitchToCUDADevice(int device_id);
+  /*! \brief Switch to the given cuda device */
+  void SwitchToCUDADevice(int device);
 
   /*! \brief Involve the state to CPUContext */
   void ToCPU(size_t size = 0);
@@ -65,9 +66,9 @@ class DRAGON_API UnifiedMemory {
   /*! \brief Involve the state to CUDAContext */
   void ToCUDA(size_t size = 0);
 
-  /*! \brief Return the device index */
-  int device_id() const {
-    return device_id_;
+  /*! \brief Return the memory state */
+  State state() const {
+    return state_;
   }
 
   /*! \brief Return the total number of bytes */
@@ -75,9 +76,9 @@ class DRAGON_API UnifiedMemory {
     return size_;
   }
 
-  /*! \brief Return the number of chunks */
-  size_t nchunks() const {
-    return nchunks_;
+  /*! \brief Return the number of memory chunks */
+  size_t num_chunks() const {
+    return num_chunks_;
   }
 
   /*! \brief Return the storage order */
@@ -85,30 +86,30 @@ class DRAGON_API UnifiedMemory {
     return order_;
   }
 
-  /*! \brief Return the memory state */
-  State state() const {
-    return state_;
+  /*! \brief Return the device index */
+  int device() const {
+    return device_id_;
   }
 
-  /*! \brief Return a string to describe the internal structure */
+  /*! \brief Return the data info */
   Map<string, string> info() const;
 
-  /*! \brief Return the const data pointer on CPUContext */
+  /*! \brief Return the const cpu data */
   const void* cpu_data(size_t size = 0);
 
-  /*! \brief Return the const data pointer on CUDAContext */
+  /*! \brief Return the const cuda data */
   const void* cuda_data(size_t size = 0);
 
-  /*! \brief Return the const data pointer on CNMLContext */
+  /*! \brief Return the const cnml data */
   const void* cnml_data();
 
-  /*! \brief Return the mutable data pointer on CPUContext */
+  /*! \brief Return the mutable cpu data */
   void* mutable_cpu_data(size_t size = 0);
 
-  /*! \brief Return the mutable data pointer on CUDAContext */
+  /*! \brief Return the mutable cuda data */
   void* mutable_cuda_data(size_t size = 0);
 
-  /*! \brief Return the mutable data pointer on CNMLContext */
+  /*! \brief Return the mutable cnml data */
   void* mutable_cnml_data();
 
   /*! \brief Return the binding cnml cpu tensor */
@@ -117,15 +118,15 @@ class DRAGON_API UnifiedMemory {
   /*! \brief Return the binding cnml mlu tensor */
   cnmlTensor_t& cnml_mlu_tensor();
 
-  /*! \brief Allocate the mlu device memory */
+  /*! \brief Allocate the mlu device data */
   void* malloc_cnml_data();
 
-  /*! \brief Copy the mlu device memory to the host */
+  /*! \brief Copy the mlu device data to host */
   void fetch_cnml_data(void** data);
 
-  /*! \brief Set the chunks of this memory */
-  void set_nchunks(size_t nchunks) {
-    nchunks_ = nchunks;
+  /*! \brief Set the number of data chunks */
+  void set_num_chunks(size_t num_chunks) {
+    num_chunks_ = num_chunks;
   }
 
   /*! \brief Set the storage order */
@@ -133,39 +134,47 @@ class DRAGON_API UnifiedMemory {
     order_ = order;
   }
 
-  /*! \brief Set the cpu data pointer from external context */
+  /*! \brief Set to use an external block of cpu data */
   void set_cpu_data(void* cpu_ptr, size_t size);
 
-  /*! \brief Set the cuda data pointer from external context */
-  void set_cuda_data(void* cuda_ptr, size_t size, int device_id);
+  /*! \brief Set to use an extenral block of cuda data */
+  void set_cuda_data(void* cuda_ptr, size_t size, int device);
 
  private:
-  /*! \brief The type meta */
-  TypeMeta meta_;
+  /*! \brief The data state */
+  State state_ = UNINITIALIZED;
 
   /*! \brief The size and number of chunks */
-  size_t size_ = 0, nchunks_ = 1;
+  size_t size_ = 0, num_chunks_ = 1;
+
+  /*! \brief The type meta */
+  TypeMeta meta_;
 
   /*! \brief The storage order */
   StorageOrder order_ = NCHW;
 
-  /*! \brief The current state */
-  State state_ = UNINITIALIZED;
+  /*! \brief The device index */
+  int device_id_ = 0;
 
-  /*! \brief The data pointers */
-  void *cpu_ptr_, *cuda_ptr_, *cnml_ptr_;
+  /*! \brief The cpu data pointer */
+  void* cpu_ptr_ = nullptr;
+
+  /*! \brief The cuda data pointer */
+  void* cuda_ptr_ = nullptr;
+
+  /*! \brief The cnml data pointer */
+  void* cnml_ptr_ = nullptr;
 
   /*! \brief The ownership of data pointers */
   int own_cpu_ptr_ = 1, own_cuda_ptr_ = 1;
-
-  /*! \brief The device index */
-  int device_id_ = 0;
 
   /*! \brief The binding cpu tensor for cnml */
   cnmlCpuTensor_t cnml_cpu_tensor_ = nullptr;
 
   /*! \brief The binding mlu tensor for cnml */
   cnmlTensor_t cnml_mlu_tensor_ = nullptr;
+
+  DISABLE_COPY_AND_ASSIGN(UnifiedMemory);
 };
 
 } // namespace dragon

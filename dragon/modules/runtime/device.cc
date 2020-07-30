@@ -3,28 +3,33 @@
 
 namespace dragon {
 
-int type_from_string(std::string type) {
-  if (type == "CPU") {
+namespace {
+
+int type_from_string(const std::string& device_type) {
+  if (device_type == "CPU") {
     return 0;
-  } else if (type == "GPU") {
+  } else if (device_type == "GPU") {
     return 1;
-  } else if (type == "CUDA") {
+  } else if (device_type == "CUDA") {
     return 1;
   }
-  LOG(FATAL) << "Unknown device type: " << type << ", "
-             << "known device types: "
-             << "CPU, "
-             << "GPU, "
-             << "CUDA";
+  LOG(FATAL) << "Unsupported device type: " << device_type << "\n"
+             << "Following device types are supported: {"
+             << "  * CPU\n"
+             << "  * GPU\n"
+             << "  * CUDA\n"
+             << "}";
   return -1;
 }
 
+} // namespace
+
 Device::Device() : device_type_(0), device_id_(0) {}
 
-Device::Device(std::string device_type, int device_id)
+Device::Device(const std::string& device_type, int device_id)
     : device_type_(type_from_string(device_type)), device_id_(device_id) {}
 
-Device::Device(std::string device_type)
+Device::Device(const std::string& device_type)
     : device_type_(type_from_string(device_type)), device_id_(0) {}
 
 } // namespace dragon

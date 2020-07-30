@@ -23,7 +23,8 @@ void LSTMCellOp<Context>::RunOnDevice() {
   if (XIsType(Input(0), float)) {
     DoRunWithType<float>();
   } else {
-    LOG(FATAL) << TypeString(Input(0), {"float32"});
+    LOG(FATAL) << MessageForUnsupported(
+        types::to_string(Input(0).meta()), {"float32"});
   }
 }
 
@@ -60,7 +61,8 @@ void LSTMCellGradientOp<Context>::RunOnDevice() {
   if (XIsType(Input(0), float)) {
     DoRunWithType<float>();
   } else {
-    LOG(FATAL) << TypeString(Input(0), {"float32"});
+    LOG(FATAL) << MessageForUnsupported(
+        types::to_string(Input(0).meta()), {"float32"});
   }
 }
 

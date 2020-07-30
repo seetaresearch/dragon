@@ -100,7 +100,8 @@ void UpdateOpBase<Context>::RunOnDevice() {
     ComputeUpdate(dX_cast);
     ApplyUpdate<float>(dX_cast, X);
   } else {
-    LOG(FATAL) << TypeString(dX, {"float16", "float32"});
+    LOG(FATAL) << MessageForUnsupported(
+        types::to_string(dX.meta()), {"float16", "float32"});
   }
 }
 

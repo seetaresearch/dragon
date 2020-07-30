@@ -60,7 +60,8 @@ void GroupNormOp<Context>::RunOnDevice() {
   } else if (XIsType(Input(0), float16)) {
     DoRunWithType<float16, float>();
   } else {
-    LOG(FATAL) << TypeString(Input(0), {"float32", "float16"});
+    LOG(FATAL) << MessageForUnsupported(
+        types::to_string(Input(0).meta()), {"float16", "float32"});
   }
 }
 
@@ -101,7 +102,8 @@ void GroupNormGradientOp<Context>::RunOnDevice() {
   } else if (XIsType(Input(0), float16)) {
     DoRunWithType<float16, float>();
   } else {
-    LOG(FATAL) << TypeString(Input(0), {"float16", "float32"});
+    LOG(FATAL) << MessageForUnsupported(
+        types::to_string(Input(0).meta()), {"float16", "float32"});
   }
 }
 

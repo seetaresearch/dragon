@@ -3,27 +3,43 @@ Building Dragon Documentation
 
 This page will help you to build the following documentations:
 
-Dragon C++ API: https://dragon.seetatech.com/api/cc
+Python API: https://dragon.seetatech.com/api/python
 
-Dragon Python API: https://dragon.seetatech.com/api/python
+C++ API: https://dragon.seetatech.com/api/cc
 
-Build Documentation of C++ API
-------------------------------
+Requirements
+------------
+
+- sphinx >= 3.0.2
 
 ```bash
-cd dragon/docs/api/cc
-doxygen Doxyfile
+pip install sphinx
 ```
 
-Then, open the ```docs/api/cc/html/index.html``` in your browser.
+- sphinx_seeta_theme
+
+```bash
+pip install sphinx_seeta_theme
+```
+
+- doxygen (C++ API only)
+
+See: http://www.doxygen.org/download.html
 
 Build Documentation of Python API
 ---------------------------------
 
 ```bash
-pip install sphinx_seeta_theme
-cd dragon/docs/api/python
-make html
+cd dragon/docs/api/python && make html
 ```
 
-Then, open the ```docs/api/python/index.html``` in your browser.
+Then, open the ``docs/_build/api/python/index.html`` in your browser.
+
+Build Documentation of C++ API
+------------------------------
+
+```bash
+cd dragon/docs/api/cc && make doxygen && make html
+```
+
+Then, open the ``docs/_build/api/cc/index.html`` in your browser.

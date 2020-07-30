@@ -13,8 +13,6 @@
 #ifndef DRAGON_CORE_CONTEXT_CUDA_H_
 #define DRAGON_CORE_CONTEXT_CUDA_H_
 
-/* NVIDIA CUDA Environment */
-
 #include "dragon/core/common.h"
 #include "dragon/utils/cuda_device.h"
 #include "dragon/utils/cudnn_device.h"
@@ -164,11 +162,23 @@ class CUDAObject {
 
   bool cudnn_enabled_ = true;
   bool cudnn_benchmark_ = false;
+
+ private:
+  DISABLE_COPY_AND_ASSIGN(CUDAObject);
 };
 
+/*!
+ * \brief The cuda device context.
+ */
 class DRAGON_API CUDAContext {
  public:
-  /*! \brief Default Constructor */
+  /*! \brief Default constructor */
+  CUDAContext() : device_id_(0), random_seed_(DEFAULT_RNG_SEED) {}
+
+  /*! \brief Constructor with the device index */
+  explicit CUDAContext(int device) : device_id_(device) {}
+
+  /*! \brief Constructor with the device option */
   explicit CUDAContext(const DeviceOption& option)
       : device_id_(option.device_id()),
         random_seed_(
@@ -177,104 +187,97 @@ class DRAGON_API CUDAContext {
     CHECK_EQ(option.device_type(), PROTO_CUDA);
   }
 
-  /*! \brief Constructor with the specified device index */
-  explicit CUDAContext(int device_id = 0)
-      : device_id_(device_id), random_seed_(DEFAULT_RNG_SEED) {}
-
-  /*! \brief Alloc the memory */
-  static void* New(size_t nbytes) {
+  /*! \brief Allocate a block of memory */
+  static void* New(size_t size) {
     void* data;
-    cudaMalloc(&data, nbytes);
-    CHECK(data) << "\nAllocate cuda memory with " << nbytes << " bytes failed.";
+    cudaMalloc(&data, size);
+    CHECK(data) << "\nAllocate cuda memory with " << size << " bytes failed.";
     return data;
   }
 
-  /*! \brief Zero-Reset the memory */
-  static void Memset(size_t nbytes, void* ptr) {
+  /*! \brief Set a memory block to the given value */
+  static void Memset(size_t n, void* ptr, int value = 0) {
     auto stream = object()->default_stream();
-    CUDA_CHECK(cudaMemsetAsync(ptr, 0, nbytes, stream));
-    SyncStream(stream);
+    CUDA_CHECK(cudaMemsetAsync(ptr, value, n, stream));
+    SynchronizeStream(stream);
   }
 
-  /*! \brief Copy the memory */
+  /*! \brief Set a memory block to the given value asynchronously */
+  void MemsetAsync(size_t n, void* ptr, int value = 0) {
+    CUDA_CHECK(cudaMemsetAsync(ptr, value, n, cuda_stream()));
+  }
+
+  /*! \brief Copy a memory block to the destination */
   template <class DestContext, class SrcContext>
-  static void Memcpy(size_t nbytes, void* dest, const void* src) {
-    Memcpy<DestContext, SrcContext>(nbytes, dest, src, current_device());
+  static void Memcpy(size_t n, void* dest, const void* src) {
+    Memcpy<DestContext, SrcContext>(n, dest, src, current_device());
   }
 
-  /*! \brief Copy the memory using specific stream */
+  /*! \brief Copy a memory block to the destination using given device */
   template <class DestContext, class SrcContext>
-  static void
-  Memcpy(size_t nbytes, void* dest, const void* src, int device_id) {
-    auto stream = object()->default_stream(device_id);
-    CUDA_CHECK(cudaMemcpyAsync(dest, src, nbytes, cudaMemcpyDefault, stream));
-    SyncStream(stream);
+  static void Memcpy(size_t n, void* dest, const void* src, int device) {
+    auto stream = object()->default_stream(device);
+    CUDA_CHECK(cudaMemcpyAsync(dest, src, n, cudaMemcpyDefault, stream));
+    SynchronizeStream(stream);
   }
 
-  /*! \brief Synchronize the specified cuda stream */
-  static void SyncStream(cudaStream_t stream) {
+  /*! \brief Copy a memory block to the destination asynchronously */
+  template <class DestContext, class SrcContext>
+  void MemcpyAsync(size_t n, void* dest, const void* src) {
+    CUDA_CHECK(cudaMemcpyAsync(dest, src, n, cudaMemcpyDefault, cuda_stream()));
+  }
+
+  /*! \brief Synchronize the given stream */
+  static void SynchronizeStream(cudaStream_t stream) {
     cudaStreamSynchronize(stream);
-    auto error = cudaGetLastError();
-    CHECK_EQ(error, cudaSuccess)
-        << "\nCUDA Error: " << cudaGetErrorString(error);
+    auto err = cudaGetLastError();
+    CHECK_EQ(err, cudaSuccess) << "\nCUDA Error: " << cudaGetErrorString(err);
   }
 
-  /*! \brief Free the memory */
-  static void Delete(void* data) {
-    cudaFree(data);
+  /*! \brief Deallocate a memory block */
+  static void Delete(void* ptr) {
+    cudaFree(ptr);
   }
 
-  /*! \brief Zero-Reset the memory asynchronously */
-  void MemsetAsync(size_t nbytes, void* ptr) {
-    CUDA_CHECK(cudaMemsetAsync(ptr, 0, nbytes, cuda_stream()));
-  }
-
-  /*! \brief Copy the memory asynchronously */
-  template <class DestContext, class SrcContext>
-  void MemcpyAsync(size_t nbytes, void* dest, const void* src) {
-    CUDA_CHECK(
-        cudaMemcpyAsync(dest, src, nbytes, cudaMemcpyDefault, cuda_stream()));
-  }
-
-  /*! \brief Switch to the device with the given stream */
-  void SwitchToDevice(const int stream_id) {
-    CUDA_CHECK(cudaSetDevice(device_id_));
-    stream_id_ = stream_id;
-  }
-
-  /*! \brief Switch to the device of this context */
+  /*! \brief Switch to the device in current thread */
   void SwitchToDevice() {
     SwitchToDevice(0);
   }
 
-  /*! \brief Copy the memory with given type asynchronously */
+  /*! \brief Switch to the device and select given stream in current thread */
+  void SwitchToDevice(int stream) {
+    CUDA_CHECK(cudaSetDevice(device_id_));
+    stream_id_ = stream;
+  }
+
+  /*! \brief Copy a typed memory block to the destination */
   template <typename T, class DestContext, class SrcContext>
   void Copy(int n, T* dest, const T* src) {
     if (dest == src) return;
     MemcpyAsync<SrcContext, DestContext>(n * sizeof(T), dest, src);
   }
 
-  /*! \brief Synchronize the dispatched operations */
+  /*! \brief Wait for the dispatched computation to complete */
   void FinishDeviceComputation() {
-    SyncStream(cuda_stream());
+    SynchronizeStream(cuda_stream());
   }
 
-  /*! \brief Return the internal cuda stream */
+  /*! \brief Return the cuda stream */
   cudaStream_t cuda_stream() {
     return cuda_stream(device_id_, stream_id_);
   }
 
   /*! \brief Return the specified cuda stream */
-  cudaStream_t cuda_stream(int device_id, int stream_id) {
-    return object()->stream(device_id, stream_id);
+  cudaStream_t cuda_stream(int device, int stream) {
+    return object()->stream(device, stream);
   }
 
-  /*! \brief Return the internal cublas handle */
+  /*! \brief Return the cublas handle */
   cublasHandle_t cublas_handle() {
     return object()->cublas_handle(device_id_, stream_id_);
   }
 
-  /*! \brief Return the internal cuda random generator */
+  /*! \brief Return the curand generator */
   curandGenerator_t& curand_generator() {
     if (!curand_generator_) {
       CUDADeviceGuard guard(device_id_);
@@ -287,16 +290,21 @@ class DRAGON_API CUDAContext {
     return curand_generator_;
   }
 
-  /*! \brief Return the internal cudnn handle */
+  /*! \brief Return the cudnn handle */
 #ifdef USE_CUDNN
   cudnnHandle_t cudnn_handle() {
     return object()->cudnn_handle(device_id_, stream_id_);
   }
 #endif
 
-  /*! \brief Return the device index of this context */
-  int device_id() const {
+  /*! \brief Return the device index */
+  int device() const {
     return device_id_;
+  }
+
+  /*! \brief Return the stream index */
+  int stream() const {
+    return stream_id_;
   }
 
   /*! \brief Return the device index of current thread */
@@ -304,18 +312,13 @@ class DRAGON_API CUDAContext {
     return CUDA_GET_DEVICE();
   }
 
-  /*! \brief Return the stream id */
-  int stream_id() const {
-    return stream_id_;
-  }
-
-  /*! \brief Return the global context locker */
+  /*! \brief Return the shared context mutex */
   static std::mutex& mutex();
 
-  /*! \brief Return the thread local cuda object */
+  /*! \brief Return the thread-local cuda object */
   static CUDAObject* object();
 
-  /*! \brief Return the internal random generator */
+  /*! \brief Return the random generator */
   std::mt19937* rand_generator() {
     if (!rand_generator_.get()) {
       rand_generator_.reset(new std::mt19937(random_seed_));
@@ -323,9 +326,9 @@ class DRAGON_API CUDAContext {
     return rand_generator_.get();
   }
 
-  /*! \brief Set the stream id */
-  void set_stream_id(int stream_id) {
-    stream_id_ = stream_id;
+  /*! \brief Set the stream index */
+  void set_stream(int stream) {
+    stream_id_ = stream;
   }
 
  private:
@@ -338,46 +341,51 @@ class DRAGON_API CUDAContext {
 
 class DRAGON_API CUDAContext {
  public:
-  /*! \brief Default Constructor */
+  /*! \brief Default constructor */
+  explicit CUDAContext() {
+    CUDA_NOT_COMPILED;
+  }
+
+  /*! \brief Constructor with the device index */
+  explicit CUDAContext(int device) {
+    CUDA_NOT_COMPILED;
+  }
+
+  /*! \brief Constructor with the device option */
   explicit CUDAContext(const DeviceOption& option) {
     CUDA_NOT_COMPILED;
   }
 
-  /*! \brief Constructor with the specified device id */
-  explicit CUDAContext(const int device_id = 0) {
-    CUDA_NOT_COMPILED;
-  }
-
-  /*! \brief Alloc the memory */
+  /*! \brief Allocate a block of memory */
   static void* New(size_t nbytes) {
     CUDA_NOT_COMPILED;
     return nullptr;
   }
 
-  /*! \brief Zero-Reset the memory */
-  static void Memset(size_t nbytes, void* ptr) {
+  /*! \brief Set a memory block to the given value */
+  static void Memset(size_t nbytes, void* ptr, int value = 0) {
     CUDA_NOT_COMPILED;
   }
 
-  /*! \brief Copy the memory */
+  /*! \brief Set a memory block to the given value asynchronously */
+  void MemsetAsync(size_t nbytes, void* ptr, int value = 0) {
+    CUDA_NOT_COMPILED;
+  }
+
+  /*! \brief Copy a memory block to the destination */
   template <class DestContext, class SrcContext>
   static void Memcpy(size_t nbytes, void* dest, const void* src) {
     CUDA_NOT_COMPILED;
   }
 
-  /*! \brief Copy the memory using specific stream */
+  /*! \brief Copy a memory block to the destination using given device */
   template <class DestContext, class SrcContext>
   static void Memcpy(size_t nbytes, void* dst, const void* src, int device_id) {
     CUDA_NOT_COMPILED;
   }
 
-  /*! \brief Free the memory */
-  static void Delete(void* data) {
-    CUDA_NOT_COMPILED;
-  }
-
-  /*! \brief Zero-Reset the memory asynchronously */
-  void MemsetAsync(size_t nbytes, void* ptr) {
+  /*! \brief Deallocate a memory block */
+  static void Delete(void* ptr) {
     CUDA_NOT_COMPILED;
   }
 
@@ -387,23 +395,23 @@ class DRAGON_API CUDAContext {
     CUDA_NOT_COMPILED;
   }
 
-  /*! \brief Switch to the device with the given stream */
-  void SwitchToDevice(int stream_id) {
-    CUDA_NOT_COMPILED;
-  }
-
-  /*! \brief Switch to the device of this context */
+  /*! \brief Switch to the device in current thread */
   void SwitchToDevice() {
     CUDA_NOT_COMPILED;
   }
 
-  /*! \brief Synchronize the dispatched operations */
+  /*! \brief Switch to the device and select given stream in current thread */
+  void SwitchToDevice(int stream_id) {
+    CUDA_NOT_COMPILED;
+  }
+
+  /*! \brief Wait for the dispatched computation to complete */
   void FinishDeviceComputation() {
     CUDA_NOT_COMPILED;
   }
 
-  /*! \brief Return the device index of this context */
-  int device_id() const {
+  /*! \brief Return the device index */
+  int device() const {
     return 0;
   }
 
@@ -412,13 +420,10 @@ class DRAGON_API CUDAContext {
     return 0;
   }
 
-  /*! \brief Return the stream id */
-  int stream_id() const {
+  /*! \brief Return the stream index */
+  int stream() const {
     return 0;
   }
-
-  /*! \brief Set the stream id */
-  void set_stream_id(int stream_id) {}
 };
 
 #endif // USE_CUDA

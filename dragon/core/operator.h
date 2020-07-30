@@ -28,29 +28,29 @@ class DRAGON_API OperatorBase {
  public:
   typedef Map<string, vector<OperatorBase*>> SubGraph;
 
-  /*! \brief Default constructor */
+  /*! \brief Constructor with the def and workspace */
   OperatorBase(const OperatorDef&, Workspace*);
 
-  /*! \brief Default Destructor */
+  /*! \brief Destructor */
   virtual ~OperatorBase() {}
 
-  /*! \brief Fusion this operator into the specified graph */
-  virtual void Fusion(void* graph) {
+  /*! \brief Update operator from the given def  */
+  OperatorBase* UpdateFrom(const OperatorDef&);
+
+  /*! \brief Fusion operator into the given graph */
+  virtual void Fuse(void* graph) {
     NOT_IMPLEMENTED;
   }
 
-  /*! \brief Run operator on the specified stream */
+  /*! \brief Run operator on the given stream */
   virtual void Run(int stream = 0) {
     NOT_IMPLEMENTED;
   }
 
-  /*! \brief Switch the internal running phase */
+  /*! \brief Switch to the given executing phase */
   void SwitchToPhase(const string& phase) {
     phase_ = phase;
   }
-
-  /*! \brief Update operator according to a new def  */
-  OperatorBase* UpdateFrom(const OperatorDef&);
 
   /*! \brief Return the input tensor */
   Tensor& Input(int i);
@@ -61,7 +61,7 @@ class DRAGON_API OperatorBase {
   /*! \brief Return the output tensor with input aliases */
   Tensor* Output(int i, const vec32_t& inputs);
 
-  /*! \brief Return the unique named buffer */
+  /*! \brief Return the buffer tensor */
   Tensor* Buffer(const string& name);
 
   /*! \brief Return the number of inputs */
@@ -74,31 +74,26 @@ class DRAGON_API OperatorBase {
     return (int)outputs_.size();
   }
 
-  /*! \brief Return the value of the specified argument */
+  /*! \brief Return the value of single argument */
   template <typename T>
   T Arg(const string& name, const T& default_value);
 
-  /*! \brief Return the values of the specified argument */
+  /*! \brief Return the value of repeated argument */
   template <typename T>
   vector<T> Args(const string& name);
 
-  /*! \brief Return the debug string of stored def */
-  string DebugString() const {
-    return def_.DebugString();
-  }
-
-  /*! \brief Return the debug string of tensor type */
-  string TypeString(const Tensor&, const Set<string>&) const;
-
-  /* \brief Return the debug string of given type */
-  string TypeString(const string&, const Set<string>&) const;
+  /*! \brief Return the message for supported value */
+  string MessageForUnsupported(
+      const string& value,
+      const vector<string>& support_values,
+      const string& entry = "type") const;
 
   /*! \brief Return the specified argument */
   const Argument& arg(const string& name) {
     return *(args_[name]);
   }
 
-  /*! \brief Return the argument map */
+  /*! \brief Return all the arguments */
   const Map<string, const Argument*>& args() {
     return args_;
   }
@@ -113,7 +108,7 @@ class DRAGON_API OperatorBase {
     return def_.type();
   }
 
-  /*! \brief Return the current running phase */
+  /*! \brief Return the running phase */
   const string& phase() const {
     return phase_;
   }
@@ -190,12 +185,17 @@ class DRAGON_API OperatorBase {
 
   /*! \brief Store the defined arguments */
   Map<string, const Argument*> args_;
+
+  DISABLE_COPY_AND_ASSIGN(OperatorBase);
 };
 
+/*!
+ * \brief The base operator class with context.
+ */
 template <class Context>
 class DRAGON_API Operator : public OperatorBase {
  public:
-  /*! \brief Default constructor */
+  /*! \brief Constructor with the def and workspace */
   Operator(const OperatorDef& def, Workspace* ws)
       : OperatorBase(def, ws),
         ctx_(def.device_option()),
@@ -247,22 +247,21 @@ OperatorBase* NewOperator(const OperatorDef&, Workspace*);
   name(const OperatorDef& def, Workspace* ws) : Operator<Context>(def, ws) {} \
   virtual ~name() {}
 
-#define USE_OPERATOR_BASE_FUNCTIONS  \
-  using OperatorBase::SwitchToPhase; \
-  using OperatorBase::Input;         \
-  using OperatorBase::Output;        \
-  using OperatorBase::Buffer;        \
-  using OperatorBase::InputSize;     \
-  using OperatorBase::OutputSize;    \
-  using OperatorBase::DebugString;   \
-  using OperatorBase::TypeString;    \
-  using OperatorBase::name;          \
-  using OperatorBase::type;          \
-  using OperatorBase::phase;         \
-  using OperatorBase::dtype;         \
-  using OperatorBase::data_format;   \
-  using OperatorBase::handle;        \
-  using OperatorBase::def;           \
+#define USE_OPERATOR_BASE_FUNCTIONS          \
+  using OperatorBase::SwitchToPhase;         \
+  using OperatorBase::Input;                 \
+  using OperatorBase::Output;                \
+  using OperatorBase::Buffer;                \
+  using OperatorBase::InputSize;             \
+  using OperatorBase::OutputSize;            \
+  using OperatorBase::MessageForUnsupported; \
+  using OperatorBase::name;                  \
+  using OperatorBase::type;                  \
+  using OperatorBase::phase;                 \
+  using OperatorBase::dtype;                 \
+  using OperatorBase::data_format;           \
+  using OperatorBase::handle;                \
+  using OperatorBase::def;                   \
   using OperatorBase::ws
 
 #define USE_OPERATOR_FUNCTIONS \
@@ -298,41 +297,40 @@ using AllTensorTypes =
 template <typename Sizes, typename... Args>
 struct DispatchHelper;
 
-#define DEFINE_TENSOR_TYPES_DISPATCHER(func)                              \
-  template <typename T, typename... Types, typename... Args>              \
-  struct DispatchHelper<TensorTypes<T, Types...>, Args...> {              \
-    template <typename Op>                                                \
-    static void Call(Op* op, const TypeMeta& meta, string& types) {       \
-      if (meta.Match<T>()) return op->template func<T, Args...>();        \
-      types += "  * " + types::to_string<T>() + ",\n";                    \
-      return DispatchHelper<TensorTypes<Types...>, Args...>::Call(        \
-          op, meta, types);                                               \
-    }                                                                     \
-    template <typename Op>                                                \
-    static void Call(Op* op) {                                            \
-      string types;                                                       \
-      return Call(op, types::to_meta(op->dtype()), types);                \
-    }                                                                     \
-    template <typename Op>                                                \
-    static void Call(Op* op, const Tensor& tensor) {                      \
-      string types;                                                       \
-      return Call(op, tensor.meta(), types);                              \
-    }                                                                     \
-  };                                                                      \
-  template <typename... Args>                                             \
-  struct DispatchHelper<TensorTypes<>, Args...> {                         \
-    template <typename Op>                                                \
-    static void Call(Op* op, const TypeMeta& meta, string& types) {       \
-      LOG(FATAL) << "Unsupported tensor type: " << types::to_string(meta) \
-                 << "\n"                                                  \
-                 << "<" << op->type() << "Op>"                            \
-                 << " supports the following types: {\n"                  \
-                 << types << "}";                                         \
-    }                                                                     \
-    template <typename Op>                                                \
-    static void Call(Op* op, const Tensor& tensor) {                      \
-      return Call(op, tensor.meta(), "");                                 \
-    }                                                                     \
+#define DEFINE_TENSOR_TYPES_DISPATCHER(func)                               \
+  template <typename T, typename... Types, typename... Args>               \
+  struct DispatchHelper<TensorTypes<T, Types...>, Args...> {               \
+    template <typename Op>                                                 \
+    static void Call(Op* op, const TypeMeta& meta, string& types) {        \
+      if (meta.Match<T>()) return op->template func<T, Args...>();         \
+      types += "  * " + types::to_string<T>() + ",\n";                     \
+      return DispatchHelper<TensorTypes<Types...>, Args...>::Call(         \
+          op, meta, types);                                                \
+    }                                                                      \
+    template <typename Op>                                                 \
+    static void Call(Op* op) {                                             \
+      string types;                                                        \
+      return Call(op, types::to_meta(op->dtype()), types);                 \
+    }                                                                      \
+    template <typename Op>                                                 \
+    static void Call(Op* op, const Tensor& tensor) {                       \
+      string types;                                                        \
+      return Call(op, tensor.meta(), types);                               \
+    }                                                                      \
+  };                                                                       \
+  template <typename... Args>                                              \
+  struct DispatchHelper<TensorTypes<>, Args...> {                          \
+    template <typename Op>                                                 \
+    static void Call(Op* op, const TypeMeta& meta, string& types) {        \
+      LOG(FATAL) << "Unsupported type: " << types::to_string(meta) << "\n" \
+                 << "<" << op->type() << "Op>"                             \
+                 << " supports the following type(s): {\n"                 \
+                 << types << "}";                                          \
+    }                                                                      \
+    template <typename Op>                                                 \
+    static void Call(Op* op, const Tensor& tensor) {                       \
+      return Call(op, tensor.meta(), "");                                  \
+    }                                                                      \
   };
 
 DEFINE_TENSOR_TYPES_DISPATCHER(DoRunWithType);

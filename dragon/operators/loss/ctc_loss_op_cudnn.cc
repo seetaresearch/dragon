@@ -85,7 +85,8 @@ void CuDNNCTCLossOp<Context>::RunOnDevice() {
     CUDNN_CHECK(cudnnSetCTCLossDescriptor(ctc_desc_, CUDNN_DATA_FLOAT));
     DoRunWithType<float>();
   } else {
-    LOG(FATAL) << TypeString(Input(0), {"float32"});
+    LOG(FATAL) << MessageForUnsupported(
+        types::to_string(Input(0).meta()), {"float32"});
   }
 }
 

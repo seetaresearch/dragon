@@ -28,8 +28,8 @@ try:
 except ImportError:
     from dragon.core.util import deprecation
     onnx = deprecation.NotInstalled('onnx')
-    Backend = deprecation.NotInstalled('onnx')
-    BackendRep = deprecation.NotInstalled('onnx')
+    Backend = object
+    BackendRep = object
     Device = deprecation.NotInstalled('onnx')
     DeviceType = deprecation.NotInstalled('onnx')
 

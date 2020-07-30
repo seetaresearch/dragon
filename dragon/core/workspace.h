@@ -17,55 +17,58 @@
 
 namespace dragon {
 
-class Workspace {
+/*!
+ * \brief Sandbox to isolate the resources and computations.
+ */
+class DRAGON_API Workspace {
  public:
-  /*! \brief Constructor */
-  DRAGON_API explicit Workspace(const string& name);
+  /*! \brief Constructor with the name */
+  explicit Workspace(const string& name);
 
   /*! \brief Merge resources from other */
-  DRAGON_API void MergeFrom(Workspace*);
+  void MergeFrom(Workspace* other);
 
   /*! \brief Clear the cached resources */
-  DRAGON_API void Clear();
+  void Clear();
 
   /* \brief Return an unique name */
-  DRAGON_API string UniqueName(
+  string UniqueName(
       const string& name,
       const string& suffix,
       const string& scope = "",
       const bool zero_based = false);
 
   /* \brief Register an alias for the target */
-  DRAGON_API void RegisterAlias(const string& target, const string& alias);
+  void RegisterAlias(const string& target, const string& alias);
 
   /*! \brief Return whether tensor is existing */
-  DRAGON_API bool HasTensor(const string& name, bool external = true) const {
+  bool HasTensor(const string& name, bool external = true) const {
     return TryGetTensor(name, external) == nullptr ? false : true;
   }
 
   /*! \brief Create the tensor */
-  DRAGON_API Tensor* CreateTensor(const string&, FillerInfo* = nullptr);
+  Tensor* CreateTensor(const string&, FillerInfo* = nullptr);
 
   /*! \brief Try to return the tensor */
-  DRAGON_API Tensor* TryGetTensor(const string&, bool = true) const;
+  Tensor* TryGetTensor(const string&, bool = true) const;
 
   /*! \brief Return the tensor */
-  DRAGON_API Tensor* GetTensor(const string&, bool = true) const;
+  Tensor* GetTensor(const string&, bool = true) const;
 
   /*! \brief Reset the tensor */
-  DRAGON_API void ResetTensor(const string&);
+  void ResetTensor(const string&);
 
   /*! \brief Return the filler info */
-  DRAGON_API FillerInfo* GetFillerInfo(const string&);
+  FillerInfo* GetFillerInfo(const string&);
 
   /*! \brief Run the operator */
-  DRAGON_API void RunOperator(const OperatorDef&);
+  void RunOperator(const OperatorDef&);
 
   /*! \brief Create the graph */
-  DRAGON_API GraphBase* CreateGraph(const GraphDef&);
+  GraphBase* CreateGraph(const GraphDef&);
 
   /*! \brief Run the graph */
-  DRAGON_API void RunGraph(
+  void RunGraph(
       const string& graph_name,
       const string& include = "",
       const string& exclude = "",
@@ -77,12 +80,12 @@ class Workspace {
   }
 
   /*! \brief Return the name of cached tensors */
-  DRAGON_API vector<string> tensors() const;
+  vector<string> tensors() const;
 
   /*! \brief Return the name of cached graphs  */
-  DRAGON_API vector<string> graphs() const;
+  vector<string> graphs() const;
 
-  /*! \brief Provide a group of the shared byte data */
+  /*! \brief Return a group of the shared raw data */
   template <class Context>
   vector<void*> data(const vector<size_t>& segments) {
     int64_t nbytes = 0;
@@ -96,7 +99,7 @@ class Workspace {
     return ret;
   }
 
-  /*! \brief Provide a group of shared typed data */
+  /*! \brief Return a group of shared typed data */
   template <typename T, class Context>
   vector<T*> data(const vector<int64_t>& segments) {
     vector<size_t> segments_in_byte;
@@ -133,6 +136,8 @@ class Workspace {
 
   /*! \brief The cached graphs */
   Map<string, unique_ptr<GraphBase>> graph_map_;
+
+  DISABLE_COPY_AND_ASSIGN(Workspace);
 };
 
 } // namespace dragon

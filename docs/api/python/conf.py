@@ -8,7 +8,6 @@
 #    <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-
 """Sphinx configuration for Python API."""
 
 from __future__ import absolute_import
@@ -43,7 +42,9 @@ napoleon_use_rtype = False
 # Project
 project = 'dragon'
 copyright = 'Copyright (c) 2017-present, SeetaTech, Co.,Ltd'
-author = 'Ting Pan\\\\tingpan@seetatech.com'
+author = 'SeetaTech'
+with open('../../../dragon/version.txt', 'r') as f:
+    version = f.read().strip()
 
 # HTML
 html_theme = 'seeta'
@@ -60,17 +61,18 @@ html_theme_options = {
     'navbar_links': {
         'Install': path_to('../../install', 1),
         'API': [
-            ('C++', path_to('../cc', 1)),
-            ('Python', path_to('', 1))
+            ('master', path_to('../../api/python', 1)),
+            ('versions...', path_to('../../versions', 1)),
         ],
         'Github': 'https://github.com/seetaresearch/dragon',
     },
     'navbar_logo_link': path_to('../..', 1),
-    'sidebar_title': 'Python v0.3.0',
+    'sidebar_title': 'Python v{}'.format(version),
     'sidebar_title_link': path_to('../../versions', 1),
     'breadcrumb_links': [
         ('Dragon', path_to('../..', 1)),
         ('API', path_to('../../versions', 1)),
+        ('Dragon v{}'.format(version.replace('a0', '-a0')), path_to('../../api', 1)),
         ('Python', path_to('', 1)),
     ],
 }

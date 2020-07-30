@@ -72,6 +72,9 @@ class GraphOptimizer {
 
   /* \brief Store the count of references */
   Map<string, int> reference_count_;
+
+ private:
+  DISABLE_COPY_AND_ASSIGN(GraphOptimizer);
 };
 
 } // namespace dragon

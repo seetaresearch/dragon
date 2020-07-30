@@ -149,7 +149,7 @@ class CollectiveOpBase : public Operator<Context> {
 
   ncclComm_t nccl_comm() {
     auto ret = CUDAContext::object()->nccl_comm(
-        this->ctx()->template device_id(),
+        this->ctx()->template device(),
         group_str_,
         nullptr,
         comm_size_,
@@ -162,7 +162,7 @@ class CollectiveOpBase : public Operator<Context> {
       }
       Broadcast((uint8_t*)&comm_uuid, sizeof(comm_uuid));
       ret = CUDAContext::object()->nccl_comm(
-          this->ctx()->template device_id(),
+          this->ctx()->template device(),
           group_str_,
           &comm_uuid,
           comm_size_,

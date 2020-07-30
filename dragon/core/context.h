@@ -17,15 +17,18 @@
 
 namespace dragon {
 
+/*!
+ * \brief The cpu device context.
+ */
 class DRAGON_API CPUContext {
  public:
   /*! \brief Default Constructor */
-  explicit CPUContext() : random_seed_(3) {}
+  CPUContext() : random_seed_(3) {}
 
-  /*! \brief Constructor with the specified random seed */
+  /*! \brief Constructor with the random seed */
   explicit CPUContext(unsigned int random_seed) : random_seed_(random_seed) {}
 
-  /*! \brief Constructor with the specified device option */
+  /*! \brief Constructor with the device option */
   explicit CPUContext(const DeviceOption& option)
       : random_seed_(
             option.has_random_seed() ? option.random_seed()
@@ -34,74 +37,74 @@ class DRAGON_API CPUContext {
   /*! \brief Destructor */
   virtual ~CPUContext() {}
 
-  /*! \brief Alloc the memory */
-  static void* New(size_t nbytes) {
-    void* data = malloc(nbytes);
-    CHECK(data) << "\nAllocate memory with " << nbytes << " bytes failed.";
+  /*! \brief Allocate a block of memory */
+  static void* New(size_t size) {
+    void* data = malloc(size);
+    CHECK(data) << "\nAllocate memory with " << size << " bytes failed.";
     return data;
   }
 
-  /*! \brief Zero-Reset the memory */
-  static void Memset(size_t nbytes, void* ptr) {
-    memset(ptr, 0, nbytes);
+  /*! \brief Set a memory block to the given value */
+  static void Memset(size_t n, void* ptr, int value = 0) {
+    memset(ptr, value, n);
   }
 
-  /*! \brief Copy the memory */
+  /*! \brief Set a memory block to the given value asynchronously */
+  void MemsetAsync(size_t n, void* ptr, int value) {
+    memset(ptr, value, n);
+  }
+
+  /*! \brief Copy a memory block to the destination */
   template <class DestContext, class SrcContext>
-  static void Memcpy(size_t nbytes, void* dest, const void* src) {
-    memcpy(dest, src, nbytes);
+  static void Memcpy(size_t n, void* dest, const void* src) {
+    memcpy(dest, src, n);
   }
 
-  /*! \brief Free the memory */
-  static void Delete(void* data) {
-    free(data);
-  }
-
-  /*! \brief Zero-Reset the memory asynchronously */
-  void MemsetAsync(size_t nbytes, void* ptr) {
-    memset(ptr, 0, nbytes);
-  }
-
-  /*! \brief Copy the memory asynchronously */
+  /*! \brief Copy a memory block to the destination asynchronously */
   template <class DestContext, class SrcContext>
-  void MemcpyAsync(size_t nbytes, void* dest, const void* src) {
-    memcpy(dest, src, nbytes);
+  void MemcpyAsync(size_t n, void* dest, const void* src) {
+    memcpy(dest, src, n);
   }
 
-  /*! \brief Switch to the device of this context */
+  /*! \brief Deallocate a memory block */
+  static void Delete(void* ptr) {
+    free(ptr);
+  }
+
+  /*! \brief Switch to the device in current thread */
   void SwitchToDevice() {}
 
-  /*! \brief Switch to the device with the given stream */
-  void SwitchToDevice(const int stream_id) {}
+  /*! \brief Switch to the device and select given stream in current thread */
+  void SwitchToDevice(int stream) {}
 
-  /*! \brief Copy the memory with given type asynchronously */
+  /*! \brief Copy a typed memory block to the destination */
   template <typename T, class DestContext, class SrcContext>
-  void Copy(int n, T* dest, const T* src) {
+  static void Copy(int n, T* dest, const T* src) {
     if (dest == src) return;
     if (std::is_fundamental<T>::value) {
       Memcpy<DestContext, SrcContext>(
           n * sizeof(T), (void*)dest, (const void*)src);
     } else {
-      for (int i = 0; i < n; i++) {
+      for (int i = 0; i < n; ++i) {
         dest[i] = src[i];
       }
     }
   }
 
-  /*! \brief Synchronize the dispatched operations */
+  /*! \brief Wait for the dispatched computation to complete */
   void FinishDeviceComputation() {}
 
   /*! \brief Return the device index */
-  int device_id() const {
+  int device() const {
     return 0;
   }
 
   /*! \brief Return the stream index */
-  int stream_id() const {
+  int stream() const {
     return 0;
   }
 
-  /*! \brief Return the internal random generator */
+  /*! \brief Return the random generator */
   std::mt19937* rand_generator() {
     if (!rand_generator_.get()) {
       rand_generator_.reset(new std::mt19937(random_seed_));
@@ -110,13 +113,13 @@ class DRAGON_API CPUContext {
   }
 
   /*! \brief Set the stream index */
-  void set_stream_id(int stream_id) {}
+  void set_stream(int stream) {}
 
  private:
-  /*! \brief Store the random seed */
+  /*! \brief The random seed */
   unsigned int random_seed_;
 
-  /*! \brief Store the internal random generator */
+  /*! \brief The random generator */
   unique_ptr<std::mt19937> rand_generator_;
 };
 

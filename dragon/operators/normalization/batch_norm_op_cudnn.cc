@@ -90,7 +90,8 @@ void CuDNNBatchNormOp<Context>::RunOnDevice() {
   } else if (XIsType(Input(0), float16)) {
     DoRunWithType<float16>();
   } else {
-    LOG(FATAL) << TypeString(Input(0), {"float32", "float16"});
+    LOG(FATAL) << MessageForUnsupported(
+        types::to_string(Input(0).meta()), {"float16", "float32"});
   }
 }
 
@@ -156,10 +157,12 @@ void CuDNNBatchNormGradientOp<Context>::RunOnDevice() {
       TrainingImpl<float16>();
     } else {
       // We will support it some day -:)
-      LOG(FATAL) << TypeString(Input(0), {"float32"});
+      LOG(FATAL) << MessageForUnsupported(
+          types::to_string(Input(0).meta()), {"float32"});
     }
   } else {
-    LOG(FATAL) << TypeString(Input(0), {"float16", "float32"});
+    LOG(FATAL) << MessageForUnsupported(
+        types::to_string(Input(0).meta()), {"float16", "float32"});
   }
 }
 

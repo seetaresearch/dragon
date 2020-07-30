@@ -95,7 +95,8 @@ void RoiAlignGradientOp<Context>::RunOnDevice() {
   } else if (XIsType(Input(1), double)) {
     DoRunWithTypeAndCast<double>();
   } else {
-    LOG(FATAL) << TypeString(Input(1), {"float16", "float32", "float64"});
+    LOG(FATAL) << MessageForUnsupported(
+        types::to_string(Input(1).meta()), {"float16", "float32", "float64"});
   };
 }
 

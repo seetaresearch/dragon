@@ -50,7 +50,7 @@ class DLPackWrapper {
         } else {
           data = memory->mutable_cuda_data(nbytes);
         }
-        ctx.device_id = memory->device_id();
+        ctx.device_id = memory->device();
         ctx.device_type = DLDeviceType::kDLGPU;
         break;
       }

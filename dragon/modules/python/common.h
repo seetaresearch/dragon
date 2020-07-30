@@ -69,7 +69,7 @@ class NumpyFetcher : public TensorFetcherBase {
           tensor.nbytes(),
           PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)),
           tensor.raw_data<CUDAContext>(),
-          tensor.memory()->device_id());
+          tensor.memory()->device());
     } else {
       CPUContext::Memcpy<CPUContext, CPUContext>(
           tensor.nbytes(),

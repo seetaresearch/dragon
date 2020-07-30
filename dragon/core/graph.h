@@ -18,26 +18,32 @@
 
 namespace dragon {
 
+/*!
+ * \brief The base graph class.
+ */
 class DRAGON_API GraphBase {
  public:
-  /*! \brief Default constructor */
-  GraphBase(const GraphDef&, Workspace*);
+  /*! \brief Constructor with the def and workspace */
+  GraphBase(const GraphDef& def, Workspace* ws);
 
-  /*! \brief Default Destructor */
+  /*! \brief Destructor */
   virtual ~GraphBase() {}
 
-  /*! \brief Create a graph from the optimized def */
-  virtual bool Create(const GraphDef&, Workspace*) = 0;
+  /*! \brief Create graph in the workspace */
+  virtual bool Create(const GraphDef& def) = 0;
 
-  /*! \brief Run the graph once synchronously */
-  virtual bool Run(const string&, const string&, int = 0) = 0;
+  /*! \brief Run graph on the given stream */
+  virtual bool Run(
+      int stream = 0,
+      const string& include = "",
+      const string& exclude = "") = 0;
 
   /*! \brief Return the graph name */
   const string& name() const {
     return name_;
   }
 
-  /*! \brief Return the defined running phase */
+  /*! \brief Return the executing phase */
   const string& phase() const {
     return phase_;
   }
@@ -47,19 +53,19 @@ class DRAGON_API GraphBase {
     return *(args_[name]);
   }
 
-  /*! \brief Return the argument map */
+  /*! \brief Return all the arguments */
   const Map<string, const Argument*>& args() {
     return args_;
   }
 
-  /*! \brief Return the stored raw def */
+  /*! \brief Return the graph def */
   const GraphDef& def() const {
     return def_;
   }
 
-  /*! \brief Return the stored opt def */
-  const GraphDef& opt_def() const {
-    return opt_def_;
+  /*! \brief Return the optimized graph def */
+  const GraphDef& optimized_def() const {
+    return optimized_def_;
   }
 
   /*! \brief Return the parent workspace */
@@ -68,42 +74,53 @@ class DRAGON_API GraphBase {
   }
 
  protected:
-  /*! \brief Store the name and running phase */
+  /*! \brief The name and executing phase */
   string name_, phase_;
 
-  /*! \brief Store the defined arguments */
+  /*! \brief The defined arguments */
   Map<string, const Argument*> args_;
 
-  /*! \brief Store the parent workspace */
+  /*! \brief The parent workspace */
   Workspace* ws_;
 
-  /*! \brief Store the graph definition */
-  GraphDef def_, opt_def_;
+  /*! \brief The graph definition */
+  GraphDef def_;
+
+  /*! \brief The optimized graph definition */
+  GraphDef optimized_def_;
+
+  DISABLE_COPY_AND_ASSIGN(GraphBase);
 };
 
+/*!
+ * \brief Graph to execute operators sequentially.
+ */
 class Graph : public GraphBase {
  public:
-  /*! \brief Default constructor */
+  /*! \brief Constructor with the def and workspace */
   Graph(const GraphDef& def, Workspace* ws);
 
-  /*! \brief Default Destructor */
+  /*! \brief Destructor */
   virtual ~Graph() {
     for (auto* cached_op : cached_ops_) {
       delete cached_op;
     }
   }
 
-  /*! \brief Create a graph from the optimized def */
-  bool Create(const GraphDef&, Workspace*) override;
+  /*! \brief Create graph in the workspace */
+  bool Create(const GraphDef& def) override;
 
-  /*! \brief Run the graph once synchronously */
-  bool Run(const string&, const string&, int = 0) override;
+  /*! \brief Run graph on the given stream */
+  bool Run(
+      int stream = 0,
+      const string& include = "",
+      const string& exclude = "") override;
 
  protected:
   /*! \brief The cached operators */
   vector<OperatorBase*> cached_ops_;
 
-  /*! \brief Store the candidate output aliases */
+  /*! \brief The candidate output aliases */
   Map<string, Set<string>> output_aliases_;
 };
 

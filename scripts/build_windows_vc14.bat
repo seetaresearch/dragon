@@ -1,32 +1,42 @@
-:: #############################################################################
-:: Example command to build on Windows for Visual Studio 2015 (VC14).
-:: #############################################################################
+:: ##############################################################
+:: Command file to build on Windows for Visual Studio 2015 (VC14)
+:: ##############################################################
 
 @echo off
 setlocal
 
-SET ORIGINAL_DIR=%cd%
-SET REPO_ROOT=%~dp0%..
-SET DRAGON_ROOT=%REPO_ROOT%\dragon
-SET THIRD_PARTY_DIR=%REPO_ROOT%\third_party
-SET CMAKE_GENERATOR="Visual Studio 14 2015 Win64"
+:: Build variables
+set ORIGINAL_DIR=%cd%
+set REPO_ROOT=%~dp0%..
+set DRAGON_ROOT=%REPO_ROOT%\dragon
+set THIRD_PARTY_DIR=%REPO_ROOT%\third_party
+set CMAKE_GENERATOR="Visual Studio 14 2015 Win64"
 
 :: Build options
-SET BUILD_PYTHON=ON
-SET BUILD_RUNTIME=OFF
+set BUILD_PYTHON=ON
+set BUILD_RUNTIME=OFF
+
+:: Optional libraries
+set USE_CUDA=ON
+set USE_CUDNN=ON
+set USE_OPENMP=ON
+set USE_AVX=ON
+set USE_AVX2=ON
+set USE_FMA=ON
 
 :: Protobuf SDK options
-SET PROTOBUF_SDK_ROOT_DIR=%THIRD_PARTY_DIR%\protobuf
+set PROTOBUF_SDK_ROOT_DIR=%THIRD_PARTY_DIR%\protobuf
 
 :: Protobuf Compiler options
-:: Set the protobuf compiler(i.e., protoc) if necessary
-:: If not, a compiler in the sdk or environment will be used
-SET PROTOBUF_PROTOC_EXECUTABLE=%PROTOBUF_SDK_ROOT_DIR%\bin\protoc
+:: Set the protobuf compiler(i.e., protoc) if necessary.
+:: If not, a compiler in the sdk or environment will be used.
+set PROTOBUF_PROTOC_EXECUTABLE=%PROTOBUF_SDK_ROOT_DIR%\bin\protoc
 
 :: Python options
-:: Set your python "interpreter" if necessary
-:: If not, a default interpreter will be used
-:: SET PYTHON_EXECUTABLE=X:/Anaconda3/python
+:: Set your python "interpreter" if necessary.
+:: If not, a default interpreter will be used.
+:: set PYTHON_EXECUTABLE=X:/Anaconda3/python
+
 if %BUILD_PYTHON% == ON (
   if NOT DEFINED PYTHON_EXECUTABLE (
     for /F %%i in ('python -c "import sys;print(sys.executable)"') do (set PYTHON_EXECUTABLE=%%i)
@@ -47,6 +57,12 @@ cmake .. ^
   -G%CMAKE_GENERATOR% ^
   -DBUILD_PYTHON=%BUILD_PYTHON% ^
   -DBUILD_RUNTIME=%BUILD_RUNTIME% ^
+  -USE_CUDA==%USE_CUDA% ^
+  -USE_CUDNN==%USE_CUDNN% ^
+  -USE_OPENMP==%USE_OPENMP% ^
+  -USE_AVX==%USE_AVX% ^
+  -USE_AVX2==%USE_AVX2% ^
+  -USE_FMA==%USE_FMA% ^
   -DTHIRD_PARTY_DIR=%THIRD_PARTY_DIR% ^
   -DPROTOBUF_SDK_ROOT_DIR=%PROTOBUF_SDK_ROOT_DIR% ^
   -DPROTOBUF_PROTOC_EXECUTABLE=%PROTOBUF_PROTOC_EXECUTABLE% ^

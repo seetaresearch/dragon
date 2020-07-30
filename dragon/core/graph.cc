@@ -1,3 +1,5 @@
+#include <regex>
+
 #include "dragon/core/graph.h"
 #include "dragon/core/graph_gradient.h"
 #include "dragon/core/graph_optimizer.h"
@@ -46,8 +48,8 @@ GraphBase::GraphBase(const GraphDef& def, Workspace* ws)
   }
 }
 
-bool Graph::Create(const GraphDef& def, Workspace* ws) {
-  this->opt_def_ = def; // Store for debugging
+bool Graph::Create(const GraphDef& def) {
+  this->optimized_def_ = def; // Store for debugging
   bool has_device_option = def.has_device_option();
   for (int i = 0; i < def.op_size(); i++) {
     auto op_def(def.op(i));
@@ -63,7 +65,7 @@ bool Graph::Create(const GraphDef& def, Workspace* ws) {
       arg.set_i(1);
       op_def.add_arg()->CopyFrom(arg);
     }
-    cached_ops_.push_back(NewOperator(op_def, ws));
+    cached_ops_.push_back(NewOperator(op_def, ws_));
     cached_ops_.back()->set_output_aliases(output_aliases_);
   }
   return true;
@@ -71,25 +73,25 @@ bool Graph::Create(const GraphDef& def, Workspace* ws) {
 
 Graph::Graph(const GraphDef& def, Workspace* ws) : GraphBase(def, ws) {
   // Apply the optimizations
-  GraphDef opt_def = def;
-  GraphOptimizer graph_optim(ws);
+  GraphDef def_v2(def);
+  GraphOptimizer graph_optimizer(ws);
   GraphGradientMaker gradient_maker;
   Map<string, vec32_t> subgraph_indices;
-  int opt = 3; // defaults: O3
+  int opt = 3; // default: O3
   if (args().count("optimization")) opt = arg("optimization").i();
-  if (opt >= 1) opt_def = graph_optim.PruneNodes(def);
-  if (opt >= 2) graph_optim.AddInplace(opt_def, output_aliases_);
+  if (opt >= 1) def_v2 = graph_optimizer.PruneNodes(def);
+  if (opt >= 2) graph_optimizer.AddInplace(def_v2, output_aliases_);
   if (opt >= 3) {
     if (phase() == "TRAIN") {
-      opt_def = graph_optim.MirrorStage(opt_def, subgraph_indices);
-      opt_def = gradient_maker.Share(opt_def);
+      def_v2 = graph_optimizer.MirrorStage(def_v2, subgraph_indices);
+      def_v2 = gradient_maker.Share(def_v2);
     } else {
-      opt_def = graph_optim.SimulateGC(opt_def);
+      def_v2 = graph_optimizer.SimulateGC(def_v2);
     }
   }
 
   // Create
-  Create(opt_def, ws);
+  Create(def_v2);
 
   // Recomputation and SubGraph
   if (subgraph_indices.size() > 0) {
@@ -105,11 +107,14 @@ Graph::Graph(const GraphDef& def, Workspace* ws) : GraphBase(def, ws) {
   }
 }
 
-bool Graph::Run(const string& include, const string& exclude, int stream) {
+bool Graph::Run(int stream, const string& include, const string& exclude) {
+  unique_ptr<std::regex> regex_incl, regex_excl;
+  if (!include.empty()) regex_incl.reset(new std::regex(include));
+  if (!exclude.empty()) regex_excl.reset(new std::regex(exclude));
   LOG(DEBUG) << "Run Graph: " << name();
   for (auto* op : cached_ops_) {
-    if (!include.empty() && !str::find(op->type(), include)) continue;
-    if (!exclude.empty() && str::find(op->type(), exclude)) continue;
+    if (regex_incl && !regex_match(op->type(), *regex_incl)) continue;
+    if (regex_excl && regex_match(op->type(), *regex_excl)) continue;
     op->SwitchToPhase(phase());
     LOG(DEBUG) << "Run Op: " << op->name();
     op->Run(stream);

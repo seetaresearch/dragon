@@ -111,7 +111,8 @@ void SyncBatchNormOp<Context>::RunOnDevice() {
       this->template InferenceImpl<float, float>();
     }
   } else {
-    LOG(FATAL) << TypeString(Input(0), {"float32"});
+    LOG(FATAL) << MessageForUnsupported(
+        types::to_string(Input(0).meta()), {"float32"});
   }
 }
 
@@ -195,7 +196,8 @@ void SyncBatchNormGradientOp<Context>::RunOnDevice() {
       this->template InferenceImpl<float, float>();
     }
   } else {
-    LOG(FATAL) << TypeString(Input(0), {"float32"});
+    LOG(FATAL) << MessageForUnsupported(
+        types::to_string(Input(0).meta()), {"float32"});
   }
 }
 

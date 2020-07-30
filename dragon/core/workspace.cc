@@ -128,7 +128,7 @@ void Workspace::RunGraph(
     const int stream) {
   CHECK(graph_map_.count(name))
       << "\nGraph(" << name << ") is not in current workspace.";
-  graph_map_[name]->Run(include, exclude, stream);
+  graph_map_[name]->Run(stream, include, exclude);
 }
 
 void Workspace::RegisterAlias(const string& target, const string& alias) {

@@ -124,23 +124,24 @@ template <class Context>
 void CollectiveOp<Context>::RunOnDevice() {
   if (communication_ == "ALLREDUCE") {
     for (int i = 0; i < InputSize(); i++) {
-      if (XIsType(Input(i), int8_t)) {
+      auto& X = Input(i);
+      if (XIsType(X, int8_t)) {
         AllReduceDispatcher<int8_t>(&Input(i));
-      } else if (XIsType(Input(i), uint8_t)) {
+      } else if (XIsType(X, uint8_t)) {
         AllReduceDispatcher<uint8_t>(&Input(i));
-      } else if (XIsType(Input(i), int)) {
+      } else if (XIsType(X, int)) {
         AllReduceDispatcher<int>(&Input(i));
-      } else if (XIsType(Input(i), int64_t)) {
+      } else if (XIsType(X, int64_t)) {
         AllReduceDispatcher<int64_t>(&Input(i));
-      } else if (XIsType(Input(i), float16)) {
+      } else if (XIsType(X, float16)) {
         AllReduceDispatcher<float16>(&Input(i));
-      } else if (XIsType(Input(i), float)) {
+      } else if (XIsType(X, float)) {
         AllReduceDispatcher<float>(&Input(i));
-      } else if (XIsType(Input(i), double)) {
+      } else if (XIsType(X, double)) {
         AllReduceDispatcher<double>(&Input(i));
       } else {
-        LOG(FATAL) << TypeString(
-            Input(i),
+        LOG(FATAL) << MessageForUnsupported(
+            types::to_string(X.meta()),
             {"int8",
              "uint8",
              "int32",
@@ -152,25 +153,26 @@ void CollectiveOp<Context>::RunOnDevice() {
     }
   } else if (communication_ == "BROADCAST") {
     for (int i = 0; i < InputSize(); i++) {
-      if (XIsType(Input(i), bool)) {
+      auto& X = Input(i);
+      if (XIsType(X, bool)) {
         BroadcastDispatcher<bool>(&Input(i));
-      } else if (XIsType(Input(i), int8_t)) {
+      } else if (XIsType(X, int8_t)) {
         BroadcastDispatcher<int8_t>(&Input(i));
-      } else if (XIsType(Input(i), uint8_t)) {
+      } else if (XIsType(X, uint8_t)) {
         BroadcastDispatcher<uint8_t>(&Input(i));
-      } else if (XIsType(Input(i), int)) {
+      } else if (XIsType(X, int)) {
         BroadcastDispatcher<int>(&Input(i));
-      } else if (XIsType(Input(i), int64_t)) {
+      } else if (XIsType(X, int64_t)) {
         BroadcastDispatcher<int64_t>(&Input(i));
-      } else if (XIsType(Input(i), float16)) {
+      } else if (XIsType(X, float16)) {
         BroadcastDispatcher<float16>(&Input(i));
-      } else if (XIsType(Input(i), float)) {
+      } else if (XIsType(X, float)) {
         BroadcastDispatcher<float>(&Input(i));
-      } else if (XIsType(Input(i), double)) {
+      } else if (XIsType(X, double)) {
         BroadcastDispatcher<double>(&Input(i));
       } else {
-        LOG(FATAL) << TypeString(
-            Input(i),
+        LOG(FATAL) << MessageForUnsupported(
+            types::to_string(X.meta()),
             {"bool",
              "int8",
              "uint8",

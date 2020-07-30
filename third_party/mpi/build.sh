@@ -16,7 +16,6 @@ INSTALL_PATH=$(cd "$(dirname "$0")/..";pwd)
 
 if [ $USE_CUDA_AWARE -eq 1 ];then 
 echo "Build with cuda...."
-read -p "Press any key to continue." var
 ./configure CFLAGS=-fPIC \
             CXXFLAGS=-fPIC \
             --with-cuda \
@@ -29,7 +28,6 @@ read -p "Press any key to continue." var
             --prefix=$INSTALL_PATH
 else 
 echo "Build without cuda...."
-read -p "Press any key to continue." var
 ./configure CFLAGS=-fPIC \
             CXXFLAGS=-fPIC \
             --with-pic=PIC \

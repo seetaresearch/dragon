@@ -12,7 +12,7 @@ regularizers
   `class L1L2 <regularizers/L1L2.html>`_
   : The L1L2 regularizer.
 
-  `class L2 <regularizers/L1.html>`_
+  `class L2 <regularizers/L2.html>`_
   : The L1 regularizer.
 
   `class Regularizer <regularizers/Regularizer.html>`_

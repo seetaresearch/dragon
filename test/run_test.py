@@ -40,7 +40,7 @@ SOURCES = [t[1] for t in TESTS_AND_SOURCES]
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Run the unittests',
+        description='run the unittests',
         epilog='where TESTS is any of: {}'.format(', '.join(TESTS)))
     parser.add_argument(
         '-v',

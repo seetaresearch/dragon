@@ -191,9 +191,12 @@ PYBIND11_MODULE(libdragon_python, m) {
             auto* graph = self->CreateGraph(graph_def);
             if (verbose) {
               bool could_be_serialized = true;
-              const auto& def = graph->opt_def();
-              for (auto& op : def.op())
-                if (op.type() == "GivenTensorFill") could_be_serialized = false;
+              const auto& def = graph->optimized_def();
+              for (auto& op : def.op()) {
+                if (op.type() == "GivenTensorFill") {
+                  could_be_serialized = false;
+                }
+              }
               if (could_be_serialized) {
                 auto msg = string("\n") + def.DebugString();
                 msg.pop_back();

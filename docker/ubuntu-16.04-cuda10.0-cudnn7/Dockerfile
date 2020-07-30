@@ -2,7 +2,9 @@ FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu16.04
 
 RUN \
   rm /etc/apt/sources.list.d/cuda.list && \
-  apt-get update && apt-get install -y --no-install-recommends \
+  apt-get update && apt-get install -y \
+  --no-install-recommends \
+  --allow-change-held-packages \
   build-essential \
   cmake \
   git \

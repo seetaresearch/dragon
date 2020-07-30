@@ -529,7 +529,7 @@ def as_dtype(type_value):
 
     Parameters
     ----------
-    type_value : object
+    type_value : Any
         The data type.
 
     Returns

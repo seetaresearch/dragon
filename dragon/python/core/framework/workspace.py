@@ -105,7 +105,7 @@ class Workspace(backend.Workspace):
         return self._collectors
 
     def as_default(self):
-        """Switch ``self`` as the default workspace.
+        """Switch this workspace as the default.
 
         Call this method with the **with** keyword.
 
@@ -114,7 +114,7 @@ class Workspace(backend.Workspace):
         Returns
         -------
         dragon.Workspace
-            The ``self``.
+            This workspace.
 
         """
         return _GLOBAL_DEFAULT_WORKSPACE_STACK.get_controller(self)
@@ -273,7 +273,7 @@ class Workspace(backend.Workspace):
         Returns
         -------
         dragon.Workspace
-            The ``self``.
+            This workspace.
 
         """
         self.MergeFrom(other)
@@ -302,7 +302,7 @@ class Workspace(backend.Workspace):
             The tensor to reset.
 
         """
-        return self.ResetTensor(_stringify_object(tensor))
+        self.ResetTensor(_stringify_object(tensor))
 
     def run_backward(
         self,
@@ -487,8 +487,7 @@ _GLOBAL_DEFAULT_WORKSPACE_STACK = _DefaultWorkspaceStack()
 # Predefined graph executing stages.
 _PREDEFINED_GRAPH_EXECUTING_STAGES = {
     'default': {'include': '', 'exclude': ''},
-    'forward': {'include': '', 'exclude': 'Gradient'},
-    'backward': {'include': 'Gradient', 'exclude': 'Generate'},
-    'backward_v2': {'include': 'Gradient', 'exclude': ''},
-    'external_grads': {'include': '', 'exclude': 'Generate'},
+    'forward': {'include': '', 'exclude': '.*Gradient.*'},
+    'backward': {'include': '.*Gradient.*', 'exclude': 'GradientGenerate'},
+    'backward_v2': {'include': '.*Gradient.*', 'exclude': ''},
 }

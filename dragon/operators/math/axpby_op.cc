@@ -45,8 +45,8 @@ void AxpbyOp<Context>::RunOnDevice() {
     } else if (XIsType(X, double)) {
       DoRunWithType<double>(&X, Y);
     } else
-      LOG(FATAL) << TypeString(
-          X,
+      LOG(FATAL) << MessageForUnsupported(
+          types::to_string(X.meta()),
           {"int8", "uint8", "int32", "int64", "float16", "float32", "float64"});
   }
 }

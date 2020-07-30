@@ -82,7 +82,8 @@ void SparseSoftmaxCrossEntropyOp<Context>::RunOnDevice() {
     } else if (XIsType(Input(1), int64_t)) {
       DoRunWithType<float, int64_t>();
     } else {
-      LOG(FATAL) << TypeString(Input(1), {"float32", "int64"});
+      LOG(FATAL) << MessageForUnsupported(
+          types::to_string(Input(1).meta()), {"float32", "int64"});
     }
   } else if (XIsType(Input(0), double)) {
     if (XIsType(Input(1), double)) {
@@ -90,10 +91,12 @@ void SparseSoftmaxCrossEntropyOp<Context>::RunOnDevice() {
     } else if (XIsType(Input(1), int64_t)) {
       DoRunWithType<double, int64_t>();
     } else {
-      LOG(FATAL) << TypeString(Input(1), {"float64", "int64"});
+      LOG(FATAL) << MessageForUnsupported(
+          types::to_string(Input(1).meta()), {"float64", "int64"});
     }
   } else {
-    LOG(FATAL) << TypeString(Input(0), {"float32", "float64"});
+    LOG(FATAL) << MessageForUnsupported(
+        types::to_string(Input(0).meta()), {"float32", "float64"});
   }
 }
 
@@ -152,7 +155,8 @@ void SparseSoftmaxCrossEntropyGradientOp<Context>::RunOnDevice() {
     } else if (XIsType(Input(1), int64_t)) {
       DoRunWithType<float, int64_t>();
     } else {
-      LOG(FATAL) << TypeString(Input(1), {"float32", "int64"});
+      LOG(FATAL) << MessageForUnsupported(
+          types::to_string(Input(1).meta()), {"float32", "int64"});
     }
   } else if (XIsType(Input(0), double)) {
     if (XIsType(Input(1), double)) {
@@ -160,10 +164,12 @@ void SparseSoftmaxCrossEntropyGradientOp<Context>::RunOnDevice() {
     } else if (XIsType(Input(1), int64_t)) {
       DoRunWithType<double, int64_t>();
     } else {
-      LOG(FATAL) << TypeString(Input(1), {"float64", "int64"});
+      LOG(FATAL) << MessageForUnsupported(
+          types::to_string(Input(1).meta()), {"float64", "int64"});
     }
   } else {
-    LOG(FATAL) << TypeString(Input(0), {"float32", "float64"});
+    LOG(FATAL) << MessageForUnsupported(
+        types::to_string(Input(0).meta()), {"float32", "float64"});
   }
 }
 
