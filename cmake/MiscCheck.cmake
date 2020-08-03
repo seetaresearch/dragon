@@ -1,7 +1,7 @@
 include(CheckCXXCompilerFlag)
 
-# ---[ Check if CXX11 is supported
-set(CMAKE_CXX_STANDARD 11)
+# ---[ Check if CXX14 is supported
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # ---[ Use ``-fPIC`` for all compilers
@@ -30,7 +30,7 @@ if (MSVC)
   endif()
 else()  # GNU, Clang, AppleClang
   set(CMAKE_ORIGIN)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -std=c++11")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -std=c++14")
   if (USE_NATIVE_ARCH)
     check_cxx_compiler_flag("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
     if (COMPILER_SUPPORTS_MARCH_NATIVE)

@@ -4,8 +4,6 @@
 
 #ifdef USE_CUDNN
 
-#if CUDNN_VERSION_MIN(5, 0, 0)
-
 namespace dragon {
 
 template <class Context>
@@ -170,7 +168,5 @@ DEPLOY_CUDNN(BatchNorm);
 DEPLOY_CUDNN(BatchNormGradient);
 
 } // namespace dragon
-
-#endif // CUDNN_VERSION_MIN(5, 0, 0)
 
 #endif // USE_CUDNN

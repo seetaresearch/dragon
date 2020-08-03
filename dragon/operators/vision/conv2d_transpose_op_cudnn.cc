@@ -66,7 +66,6 @@ void CuDNNConvTranspose2dOp<Context>::ResetDesc() {
       }
     }
     if (filter_changed) {
-#if CUDNN_VERSION_MIN(5, 0, 0)
       CUDNN_CHECK(cudnnSetFilter4dDescriptor(
           filter_desc_,
           CuDNNType<T>::type,
@@ -75,16 +74,6 @@ void CuDNNConvTranspose2dOp<Context>::ResetDesc() {
           out_channels_ / group_,
           kshape_[0],
           kshape_[1]));
-#else
-      CUDNN_CHECK(cudnnSetFilter4dDescriptor_v4(
-          filter_desc_,
-          CuDNNType<T>::type,
-          format_,
-          in_channels_ / cudnn_group_,
-          out_channels_ / group_,
-          kshape_[0],
-          kshape_[1]));
-#endif
       // Determine the bias shape
       if (HasBias()) {
         CuDNNSetBiasDesc<T>(
@@ -94,9 +83,34 @@ void CuDNNConvTranspose2dOp<Context>::ResetDesc() {
     // Set the conv configuration
     SetConvDesc<T>();
     // Get or search the appropriate algorithm
-    if (CUDAContext::object()->cudnn_benchmark_) {
+    if (CUDAContext::objects().cudnn_benchmark_) {
       exhaustive_search_ = true;
     } else {
+#if CUDNN_VERSION_MIN(7, 0, 0)
+      int num_valid_algos;
+      constexpr int num_algos = CUDNN_CONV_NUM_BWD_DATA_ALGOS;
+      cudnnConvolutionBwdDataAlgoPerf_t stats[num_algos];
+      CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm_v7(
+          ctx()->cudnn_handle(),
+          filter_desc_,
+          input_desc_,
+          conv_desc_,
+          output_desc_,
+          num_algos,
+          &num_valid_algos,
+          stats));
+      bool algo_is_found = false;
+      for (int i = 0; i < num_valid_algos; ++i) {
+        if (stats[i].memory <= CUDNN_CONV_WORKSPACE_LIMIT_BYTES) {
+          fwd_algo_ = stats[i].algo;
+          algo_is_found = true;
+          break;
+        }
+      }
+      CHECK(algo_is_found)
+          << "\nNo algorithms available for <cudnnConvolutionBackwardData> "
+          << "under the current desc and workspace limit.";
+#else
       CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm(
           ctx()->cudnn_handle(),
           filter_desc_,
@@ -106,6 +120,7 @@ void CuDNNConvTranspose2dOp<Context>::ResetDesc() {
           CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT,
           CUDNN_CONV_WORKSPACE_LIMIT_BYTES,
           &fwd_algo_));
+#endif // CUDNN_VERSION_MIN(7, 0, 0)
     }
     cudnn_ws_nbytes_ = SIZE_MAX; // Request a new size
   }
@@ -134,11 +149,9 @@ void CuDNNConvTranspose2dOp<Context>::DoRunWithType() {
     scratch =
         ws()->template data<Context>({CUDNN_CONV_WORKSPACE_LIMIT_BYTES})[0];
     auto algo = algo_cache_.get(X.dims(), W.dims(), compute_type_, [&]() {
-      int returned_algo_count;
-      std::array<
-          cudnnConvolutionBwdDataAlgoPerf_t,
-          CUDNN_CONV_NUM_BWD_DATA_ALGOS>
-          stat;
+      int num_valid_algos;
+      constexpr int num_algos = CUDNN_CONV_NUM_BWD_DATA_ALGOS;
+      cudnnConvolutionBwdDataAlgoPerf_t stats[num_algos];
       CUDNN_CHECK(cudnnFindConvolutionBackwardDataAlgorithmEx(
           ctx()->cudnn_handle(),
           filter_desc_,
@@ -148,12 +161,12 @@ void CuDNNConvTranspose2dOp<Context>::DoRunWithType() {
           conv_desc_,
           output_desc_,
           y,
-          CUDNN_CONV_NUM_BWD_DATA_ALGOS,
-          &returned_algo_count,
-          stat.data(),
+          num_algos,
+          &num_valid_algos,
+          stats,
           scratch,
           CUDNN_CONV_WORKSPACE_LIMIT_BYTES));
-      return FwdAlgoWithCost(stat[0].algo, stat[0].time);
+      return FwdAlgoWithCost(stats[0].algo, stats[0].time);
     });
     exhaustive_search_ = false;
     fwd_algo_ = std::get<0>(algo);
@@ -274,6 +287,7 @@ template <class Context>
 template <typename T>
 void CuDNNConvTranspose2dGradientOp<Context>::ResetDesc() {
   auto &X = Input(0), &W = Input(1), &dY = Input(-1);
+  auto *dX = Output(0), *dW = Output(1);
   bool input_changed = (X.dims() != input_dims_);
   bool filter_changed = (W.dims() != filter_dims_);
   if (input_changed || filter_changed) {
@@ -289,7 +303,6 @@ void CuDNNConvTranspose2dGradientOp<Context>::ResetDesc() {
       }
     }
     if (filter_changed) {
-#if CUDNN_VERSION_MIN(5, 0, 0)
       CUDNN_CHECK(cudnnSetFilter4dDescriptor(
           filter_desc_,
           CuDNNType<T>::type,
@@ -298,16 +311,6 @@ void CuDNNConvTranspose2dGradientOp<Context>::ResetDesc() {
           out_channels_ / group_,
           kshape_[0],
           kshape_[1]));
-#else
-      CUDNN_CHECK(cudnnSetFilter4dDescriptor_v4(
-          filter_desc,
-          CuDNNType<T>::type,
-          format_,
-          in_channels_ / cudnn_group_,
-          out_channels_ / group_,
-          kshape_[0],
-          kshape_[1]));
-#endif
       // Determine the bias shape
       if (HasBias()) {
         CuDNNSetBiasDesc<T>(
@@ -317,28 +320,84 @@ void CuDNNConvTranspose2dGradientOp<Context>::ResetDesc() {
     // Set the conv configuration
     SetConvDesc<T>();
     // Get the appropriate algorithm
-    if (CUDAContext::object()->cudnn_benchmark_) {
+    if (CUDAContext::objects().cudnn_benchmark_) {
       exhaustive_search_data_ = true;
       exhaustive_search_filter_ = true;
     } else {
-      CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(
-          ctx()->cudnn_handle(),
-          input_desc_,
-          output_desc_,
-          conv_desc_,
-          filter_desc_,
-          CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT,
-          CUDNN_CONV_WORKSPACE_LIMIT_BYTES,
-          &bwd_filter_algo_));
-      CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(
-          ctx()->cudnn_handle(),
-          input_desc_,
-          filter_desc_,
-          conv_desc_,
-          output_desc_,
-          CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
-          CUDNN_CONV_WORKSPACE_LIMIT_BYTES,
-          &bwd_data_algo_));
+      if (dW->has_name()) {
+#if CUDNN_VERSION_MIN(7, 0, 0)
+        int num_valid_algos;
+        constexpr int num_algos = CUDNN_CONV_NUM_BWD_FILTER_ALGOS;
+        cudnnConvolutionBwdFilterAlgoPerf_t stats[num_algos];
+        CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm_v7(
+            ctx()->cudnn_handle(),
+            input_desc_,
+            output_desc_,
+            conv_desc_,
+            filter_desc_,
+            num_algos,
+            &num_valid_algos,
+            stats));
+        bool algo_is_found = false;
+        for (int i = 0; i < num_valid_algos; ++i) {
+          if (stats[i].memory <= CUDNN_CONV_WORKSPACE_LIMIT_BYTES) {
+            bwd_filter_algo_ = stats[i].algo;
+            algo_is_found = true;
+            break;
+          }
+        }
+        CHECK(algo_is_found)
+            << "\nNo algorithms available for <cudnnConvolutionBackwardFilter> "
+            << "under the current desc and workspace limit.";
+#else
+        CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(
+            ctx()->cudnn_handle(),
+            input_desc_,
+            output_desc_,
+            conv_desc_,
+            filter_desc_,
+            CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT,
+            CUDNN_CONV_WORKSPACE_LIMIT_BYTES,
+            &bwd_filter_algo_));
+#endif // CUDNN_VERSION_MIN(7, 0, 0)
+      }
+      if (dX->has_name()) {
+#if CUDNN_VERSION_MIN(7, 0, 0)
+        int num_valid_algos;
+        constexpr int num_algos = CUDNN_CONV_NUM_FWD_ALGOS;
+        cudnnConvolutionFwdAlgoPerf_t stats[num_algos];
+        CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm_v7(
+            ctx()->cudnn_handle(),
+            input_desc_,
+            filter_desc_,
+            conv_desc_,
+            output_desc_,
+            num_algos,
+            &num_valid_algos,
+            stats));
+        bool algo_is_found = false;
+        for (int i = 0; i < num_valid_algos; ++i) {
+          if (stats[i].memory <= CUDNN_CONV_WORKSPACE_LIMIT_BYTES) {
+            bwd_data_algo_ = stats[i].algo;
+            algo_is_found = true;
+            break;
+          }
+        }
+        CHECK(algo_is_found)
+            << "\nNo algorithms available for <cudnnConvolutionForward> "
+            << "under the current desc and workspace limit.";
+#else
+        CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(
+            ctx()->cudnn_handle(),
+            input_desc_,
+            filter_desc_,
+            conv_desc_,
+            output_desc_,
+            CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
+            CUDNN_CONV_WORKSPACE_LIMIT_BYTES,
+            &bwd_data_algo_));
+#endif // CUDNN_VERSION_MIN(7, 0, 0)
+      }
     }
     cudnn_ws_nbytes_ = SIZE_MAX; // Request a new size
   }
@@ -364,11 +423,9 @@ void CuDNNConvTranspose2dGradientOp<Context>::DoRunWithType() {
     dw = dW->template mutable_data<T, Context>();
     auto algo =
         filter_algo_cache_.get(X.dims(), W.dims(), compute_type_, [&]() {
-          int returned_algo_count;
-          std::array<
-              cudnnConvolutionBwdFilterAlgoPerf_t,
-              CUDNN_CONV_NUM_BWD_FILTER_ALGOS>
-              stat;
+          int num_valid_algos;
+          constexpr int num_algos = CUDNN_CONV_NUM_BWD_FILTER_ALGOS;
+          cudnnConvolutionBwdFilterAlgoPerf_t stats[num_algos];
           CUDNN_CHECK(cudnnFindConvolutionBackwardFilterAlgorithmEx(
               ctx()->cudnn_handle(),
               input_desc_,
@@ -378,12 +435,12 @@ void CuDNNConvTranspose2dGradientOp<Context>::DoRunWithType() {
               conv_desc_,
               filter_desc_,
               dw,
-              CUDNN_CONV_NUM_BWD_FILTER_ALGOS,
-              &returned_algo_count,
-              stat.data(),
+              num_algos,
+              &num_valid_algos,
+              stats,
               scratch,
               CUDNN_CONV_WORKSPACE_LIMIT_BYTES));
-          return BwdFilterAlgoWithCost(stat[0].algo, stat[0].time);
+          return BwdFilterAlgoWithCost(stats[0].algo, stats[0].time);
         });
     exhaustive_search_filter_ = false;
     bwd_filter_algo_ = std::get<0>(algo);
@@ -395,8 +452,9 @@ void CuDNNConvTranspose2dGradientOp<Context>::DoRunWithType() {
     w = W.template data<T, Context>();
     dx = dX->template mutable_data<T, Context>();
     auto algo = data_algo_cache_.get(X.dims(), W.dims(), compute_type_, [&]() {
-      int returned_algo_count;
-      std::array<cudnnConvolutionFwdAlgoPerf_t, CUDNN_CONV_NUM_FWD_ALGOS> stat;
+      int num_valid_algos;
+      constexpr int num_algos = CUDNN_CONV_NUM_FWD_ALGOS;
+      cudnnConvolutionFwdAlgoPerf_t stats[num_algos];
       CUDNN_CHECK(cudnnFindConvolutionForwardAlgorithmEx(
           ctx()->cudnn_handle(),
           input_desc_,
@@ -406,12 +464,12 @@ void CuDNNConvTranspose2dGradientOp<Context>::DoRunWithType() {
           conv_desc_,
           output_desc_,
           dx,
-          CUDNN_CONV_NUM_FWD_ALGOS,
-          &returned_algo_count,
-          stat.data(),
+          num_algos,
+          &num_valid_algos,
+          stats,
           scratch,
           CUDNN_CONV_WORKSPACE_LIMIT_BYTES));
-      return BwdDataAlgoWithCost(stat[0].algo, stat[0].time);
+      return BwdDataAlgoWithCost(stats[0].algo, stats[0].time);
     });
     exhaustive_search_data_ = false;
     bwd_data_algo_ = std::get<0>(algo);

@@ -9,10 +9,9 @@ std::mutex& CUDAContext::mutex() {
   return m;
 }
 
-CUDAObject* CUDAContext::object() {
-  static TLS_OBJECT CUDAObject* cuda_object_;
-  if (!cuda_object_) cuda_object_ = new CUDAObject();
-  return cuda_object_;
+CUDAObjects& CUDAContext::objects() {
+  static thread_local CUDAObjects cuda_objects_;
+  return cuda_objects_;
 }
 
 #endif // USE_CUDA

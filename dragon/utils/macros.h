@@ -17,13 +17,6 @@
 #define DRAGON_API
 #endif
 
-// Avoid using of "thread_local" for VS2013 or older Xcode
-#if defined(__clang__) || defined(__GNUC__)
-#define TLS_OBJECT __thread
-#else
-#define TLS_OBJECT __declspec(thread)
-#endif
-
 // Disable the copy and assignment operator for a class
 #define DISABLE_COPY_AND_ASSIGN(classname) \
   classname(const classname&) = delete;    \

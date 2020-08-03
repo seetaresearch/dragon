@@ -49,11 +49,6 @@ foreach(_proto ${ARGN})
       -I=${_proto_dir}
       --cpp_out=${PROTOBUF_DLLEXPORT_STRING}${_proto_dir}
       ${_proto})
-  if (MSVC)
-    string(REPLACE ".proto" ".pb.h" _pb_h "${_proto}")
-    string(REPLACE ".proto" ".pb.cc" _pb_cc "${_proto}")
-    protobuf_remove_constexpr(${_pb_h} ${_pb_cc})
-  endif()
 endforeach()
 endfunction()
 
@@ -69,11 +64,6 @@ foreach(_proto ${ARGN})
       -I=${_proto_dir}
       --cpp_out=${PROTOBUF_DLLEXPORT_STRING}${_proto_dir}
       ${_proto})
-  if (MSVC)
-    string(REPLACE ".proto" ".pb.h" _pb_h "${_proto}")
-    string(REPLACE ".proto" ".pb.cc" _pb_cc "${_proto}")
-    protobuf_remove_constexpr(${_pb_h} ${_pb_cc})
-  endif()
 endforeach()
 endfunction()
 

@@ -98,9 +98,9 @@ void RegisterModule(py::module& m) {
   /*! \brief Activate the CuDNN engine */
   m.def("cudaEnableDNN", [](bool enabled, bool benchmark) {
 #ifdef USE_CUDA
-    auto* cuda_object = CUDAContext::object();
-    cuda_object->cudnn_enabled_ = enabled;
-    cuda_object->cudnn_benchmark_ = benchmark;
+    auto& cuda_objects = CUDAContext::objects();
+    cuda_objects.cudnn_enabled_ = enabled;
+    cuda_objects.cudnn_benchmark_ = benchmark;
 #endif
   });
 
@@ -129,7 +129,7 @@ void RegisterModule(py::module& m) {
   m.def("cudaStreamSynchronize", [](int device_id, int stream_id) {
 #ifdef USE_CUDA
     if (device_id < 0) device_id = CUDAContext::current_device();
-    auto stream = CUDAContext::object()->stream(device_id, stream_id);
+    auto stream = CUDAContext::objects().stream(device_id, stream_id);
     CUDAContext::SynchronizeStream(stream);
 #endif
   });

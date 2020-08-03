@@ -34,19 +34,19 @@ namespace dragon {
                                            << cudnnGetErrorString(status); \
   } while (0)
 
-static const size_t CUDNN_CONV_WORKSPACE_LIMIT_BYTES = 64 * 1024 * 1024;
+constexpr size_t CUDNN_CONV_WORKSPACE_LIMIT_BYTES = 64 * 1024 * 1024;
 
 #if CUDNN_VERSION_MIN(7, 0, 0)
-static const size_t CUDNN_CONV_NUM_FWD_ALGOS =
+constexpr size_t CUDNN_CONV_NUM_FWD_ALGOS =
     2 * CUDNN_CONVOLUTION_FWD_ALGO_COUNT;
-static const size_t CUDNN_CONV_NUM_BWD_FILTER_ALGOS =
+constexpr size_t CUDNN_CONV_NUM_BWD_FILTER_ALGOS =
     2 * CUDNN_CONVOLUTION_BWD_FILTER_ALGO_COUNT;
-static const size_t CUDNN_CONV_NUM_BWD_DATA_ALGOS =
+constexpr size_t CUDNN_CONV_NUM_BWD_DATA_ALGOS =
     2 * CUDNN_CONVOLUTION_BWD_DATA_ALGO_COUNT;
 #else
-static const size_t CUDNN_CONV_NUM_FWD_ALGOS = 7;
-static const size_t CUDNN_CONV_NUM_BWD_FILTER_ALGOS = 4;
-static const size_t CUDNN_CONV_NUM_BWD_DATA_ALGOS = 5;
+constexpr size_t CUDNN_CONV_NUM_FWD_ALGOS = 7;
+constexpr size_t CUDNN_CONV_NUM_BWD_FILTER_ALGOS = 4;
+constexpr size_t CUDNN_CONV_NUM_BWD_DATA_ALGOS = 5;
 #endif
 
 class Tensor;

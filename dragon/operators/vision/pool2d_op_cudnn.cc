@@ -13,7 +13,6 @@ void CuDNNPool2dOp<Context>::DoRunWithType() {
   CuDNNSetTensorDesc<T>(&input_desc_, X.dims(), data_format());
   CuDNNSetTensorDesc<T>(&output_desc_, out_shape_, data_format());
 
-#if CUDNN_VERSION_MIN(5, 0, 0)
   CUDNN_CHECK(cudnnSetPooling2dDescriptor(
       pool_desc_,
       pool_mode_,
@@ -24,18 +23,6 @@ void CuDNNPool2dOp<Context>::DoRunWithType() {
       pad_l_[1],
       stride_[0],
       stride_[1]));
-#else
-  CUDNN_CHECK(cudnnSetPooling2dDescriptor_v4(
-      pool_desc_,
-      pool_mode_,
-      CUDNN_PROPAGATE_NAN,
-      kshape_[0],
-      kshape_[1],
-      pad_l_[0],
-      pad_l_[1],
-      stride_[0],
-      stride_[1]));
-#endif
 
   CUDNN_CHECK(cudnnPoolingForward(
       ctx()->cudnn_handle(),
@@ -63,7 +50,6 @@ void CuDNNPool2dGradientOp<Context>::DoRunWithType() {
   CuDNNSetTensorDesc<T>(&input_desc_, dY.dims(), data_format());
   CuDNNSetTensorDesc<T>(&output_desc_, X.dims(), data_format());
 
-#if CUDNN_VERSION_MIN(5, 0, 0)
   CUDNN_CHECK(cudnnSetPooling2dDescriptor(
       pool_desc_,
       pool_mode_,
@@ -74,18 +60,6 @@ void CuDNNPool2dGradientOp<Context>::DoRunWithType() {
       pad_l_[1],
       stride_[0],
       stride_[1]));
-#else
-  CUDNN_CHECK(cudnnSetPooling2dDescriptor_v4(
-      pool_desc_,
-      pool_mode_,
-      CUDNN_PROPAGATE_NAN,
-      kshape_[0],
-      kshape_[1],
-      pad_l_[0],
-      pad_l_[1],
-      stride_[0],
-      stride_[1]));
-#endif
 
   CUDNN_CHECK(cudnnPoolingBackward(
       ctx()->cudnn_handle(),

@@ -20,6 +20,8 @@ if (USE_CUDA)
   if (MSVC)
     # Suppress all warnings for msvc compiler
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -w")
+  else()
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
   endif()
 endif()
 if (USE_TENSORRT)

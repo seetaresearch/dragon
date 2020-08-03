@@ -19,8 +19,6 @@ namespace dragon {
 
 #ifdef USE_CUDNN
 
-#if CUDNN_VERSION_MIN(5, 0, 0)
-
 class CuDNNTensorDescs {
  public:
   CuDNNTensorDescs(int num_descs) {
@@ -173,8 +171,6 @@ class CuDNNRecurrentGradientOp final : public CuDNNRecurrentOpBase<Context> {
   template <typename T>
   void DoRunWithType();
 };
-
-#endif // CUDNN_VERSION_MIN(5, 0, 0)
 
 #endif // USE_CUDNN
 

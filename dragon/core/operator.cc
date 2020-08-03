@@ -158,7 +158,7 @@ TryCreateOperator(const string& key, const OperatorDef& def, Workspace* ws) {
     case PROTO_CUDA:
 #ifdef USE_CUDNN
       if (CUDNNOperatorRegistry()->Has(key) &&
-          CUDAContext::object()->cudnn_enabled_) {
+          CUDAContext::objects().cudnn_enabled_) {
         return CUDNNOperatorRegistry()->Create(key, def, ws);
       }
 #endif

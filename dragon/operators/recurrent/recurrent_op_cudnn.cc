@@ -4,8 +4,6 @@
 #include "dragon/core/workspace.h"
 #include "dragon/utils/filler.h"
 
-#if CUDNN_VERSION_MIN(5, 0, 0)
-
 namespace dragon {
 
 template <class Context>
@@ -56,7 +54,7 @@ void CuDNNRecurrentOpBase<Context>::ResetDesc() {
 
   // Setup RNN
 #if CUDNN_VERSION_MIN(7, 0, 0)
-  CUDNN_CHECK(cudnnSetRNNDescriptor(
+  CUDNN_CHECK(cudnnSetRNNDescriptor_v6(
       ctx()->cudnn_handle(),
       rnn_desc_,
       hidden_size_,
@@ -322,7 +320,5 @@ DEPLOY_CUDNN(Recurrent);
 DEPLOY_CUDNN(RecurrentGradient);
 
 } // namespace dragon
-
-#endif // CUDNN_VERSION_MIN(5, 0, 0)
 
 #endif // USE_CUDNN

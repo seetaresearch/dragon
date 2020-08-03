@@ -8,6 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""Command line to run tests."""
 
 from __future__ import absolute_import
 from __future__ import division

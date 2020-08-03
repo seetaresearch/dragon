@@ -138,16 +138,15 @@ class BuildExtension(_build_ext):
                     self.compiler.set_executable('compiler_so', nvcc)
                     if isinstance(cflags, dict):
                         cflags = cflags['nvcc']
-                    cflags = \
-                        COMMON_NVCC_FLAGS + \
-                        ['--compiler-options', "'-fPIC'"] + \
-                        cflags + _get_cuda_arch_flags(cflags)
+                    cflags = (COMMON_NVCC_FLAGS +
+                              ['--compiler-options', "'-fPIC'"] +
+                              cflags + _get_cuda_arch_flags(cflags))
                 else:
                     if isinstance(cflags, dict):
                         cflags = cflags['cxx']
                     cflags += COMMON_CC_FLAGS
                 if not any(flag.startswith('-std=') for flag in cflags):
-                    cflags.append('-std=c++11')
+                    cflags.append('-std=c++14')
                 original_compile(obj, src, ext, cc_args, cflags, pp_opts)
             finally:
                 self.compiler.set_executable('compiler_so', original_compiler)
@@ -328,6 +327,7 @@ def _get_cuda_arch_flags(cflags=None):
         '5.0', '5.2', '5.3',
         '6.0', '6.1', '6.2',
         '7.0', '7.2', '7.5',
+        '8.0',
     ]
     valid_arch_strings = supported_arches + [s + "+PTX" for s in supported_arches]
     capability = _cuda.get_device_capability()
@@ -365,6 +365,6 @@ CUDA_HOME = _find_cuda()
 CUDNN_HOME = _os.environ.get('CUDNN_HOME') or _os.environ.get('CUDNN_PATH')
 COMMON_CC_FLAGS = ['-Wno-sign-compare', '-Wno-unused-variable', '-Wno-reorder']
 COMMON_MSVC_FLAGS = ['/EHsc', '/wd4819', '/wd4244', '/wd4251', '/wd4275', '/wd4800', '/wd4996']
-COMMON_NVCC_FLAGS = ['-w'] if IS_WINDOWS else []
+COMMON_NVCC_FLAGS = ['-w'] if IS_WINDOWS else ['-std=c++14']
 COMMON_LINK_LIBRARIES = ['protobuf'] if IS_WINDOWS else []
 DLLIMPORT_STR = '__declspec(dllimport)' if IS_WINDOWS else ''

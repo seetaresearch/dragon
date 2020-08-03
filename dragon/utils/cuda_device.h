@@ -32,16 +32,16 @@ namespace dragon {
 #ifdef USE_CUDA
 
 /*! \brief The number of cuda threads to use */
-const int CUDA_THREADS = 256;
+constexpr int CUDA_THREADS = 256;
 
 /*! \brief The maximum number of blocks to use in the default kernel call */
-const int CUDA_MAX_BLOCKS = 4096;
+constexpr int CUDA_MAX_BLOCKS = 4096;
 
 /*! \brief The maximum number of devices in a single machine */
-const int CUDA_MAX_DEVICES = 16;
+constexpr int CUDA_MAX_DEVICES = 16;
 
 /*! \brief The maximum number of tensor dimsensions */
-const int CUDA_TENSOR_MAX_DIMS = 8;
+constexpr int CUDA_TENSOR_MAX_DIMS = 8;
 
 #define CUDA_VERSION_MIN(major, minor, patch) \
   (CUDA_VERSION >= (major * 1000 + minor * 100 + patch))

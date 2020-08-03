@@ -21,10 +21,10 @@ namespace dragon {
 
 #ifdef USE_CUDA
 
-class CUDAObject {
+class CUDAObjects {
  public:
   /*! \brief Default Constructor */
-  CUDAObject() {
+  CUDAObjects() {
     for (int i = 0; i < CUDA_MAX_DEVICES; i++) {
       cuda_streams_[i] = vector<cudaStream_t>();
       cublas_handles_[i] = vector<cublasHandle_t>();
@@ -38,7 +38,7 @@ class CUDAObject {
   }
 
   /*! \brief Destructor */
-  ~CUDAObject() {
+  ~CUDAObjects() {
     for (int i = 0; i < CUDA_MAX_DEVICES; i++) {
       for (int j = 0; j < cuda_streams_[i].size(); j++) {
         auto& stream = cuda_streams_[i][j];
@@ -164,7 +164,7 @@ class CUDAObject {
   bool cudnn_benchmark_ = false;
 
  private:
-  DISABLE_COPY_AND_ASSIGN(CUDAObject);
+  DISABLE_COPY_AND_ASSIGN(CUDAObjects);
 };
 
 /*!
@@ -197,7 +197,7 @@ class DRAGON_API CUDAContext {
 
   /*! \brief Set a memory block to the given value */
   static void Memset(size_t n, void* ptr, int value = 0) {
-    auto stream = object()->default_stream();
+    auto stream = objects().default_stream();
     CUDA_CHECK(cudaMemsetAsync(ptr, value, n, stream));
     SynchronizeStream(stream);
   }
@@ -216,7 +216,7 @@ class DRAGON_API CUDAContext {
   /*! \brief Copy a memory block to the destination using given device */
   template <class DestContext, class SrcContext>
   static void Memcpy(size_t n, void* dest, const void* src, int device) {
-    auto stream = object()->default_stream(device);
+    auto stream = objects().default_stream(device);
     CUDA_CHECK(cudaMemcpyAsync(dest, src, n, cudaMemcpyDefault, stream));
     SynchronizeStream(stream);
   }
@@ -269,12 +269,12 @@ class DRAGON_API CUDAContext {
 
   /*! \brief Return the specified cuda stream */
   cudaStream_t cuda_stream(int device, int stream) {
-    return object()->stream(device, stream);
+    return objects().stream(device, stream);
   }
 
   /*! \brief Return the cublas handle */
   cublasHandle_t cublas_handle() {
-    return object()->cublas_handle(device_id_, stream_id_);
+    return objects().cublas_handle(device_id_, stream_id_);
   }
 
   /*! \brief Return the curand generator */
@@ -293,7 +293,7 @@ class DRAGON_API CUDAContext {
   /*! \brief Return the cudnn handle */
 #ifdef USE_CUDNN
   cudnnHandle_t cudnn_handle() {
-    return object()->cudnn_handle(device_id_, stream_id_);
+    return objects().cudnn_handle(device_id_, stream_id_);
   }
 #endif
 
@@ -315,8 +315,8 @@ class DRAGON_API CUDAContext {
   /*! \brief Return the shared context mutex */
   static std::mutex& mutex();
 
-  /*! \brief Return the thread-local cuda object */
-  static CUDAObject* object();
+  /*! \brief Return the thread-local cuda objects */
+  static CUDAObjects& objects();
 
   /*! \brief Return the random generator */
   std::mt19937* rand_generator() {

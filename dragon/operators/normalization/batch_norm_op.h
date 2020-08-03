@@ -144,8 +144,6 @@ class SyncBatchNormGradientOp : public BatchNormGradientOp<Context> {
 
 #ifdef USE_CUDNN
 
-#if CUDNN_VERSION_MIN(5, 0, 0)
-
 template <class Context>
 class CuDNNBatchNormOp final : public BatchNormOpBase<Context> {
  public:
@@ -210,8 +208,6 @@ class CuDNNBatchNormGradientOp final : public BatchNormGradientOp<Context> {
   cudnnTensorDescriptor_t input_desc_, bn_desc_;
   cudnnBatchNormMode_t bn_mode_;
 };
-
-#endif // CUDNN_VERSION_MIN(5, 0, 0)
 
 #endif // USE_CUDNN
 
