@@ -12,30 +12,36 @@ Properties
 
 base_lr
 #######
-.. autoattribute:: dragon.vm.caffe.AdamSolver.base_lr
+.. autoattribute:: dragon.vm.caffe.Solver.base_lr
+  :noindex:
 
 iter
 ####
-.. autoattribute:: dragon.vm.caffe.AdamSolver.iter
+.. autoattribute:: dragon.vm.caffe.Solver.iter
+  :noindex:
 
 net
 ###
-.. autoattribute:: dragon.vm.caffe.AdamSolver.net
+.. autoattribute:: dragon.vm.caffe.Solver.net
+  :noindex:
 
 test_nets
 #########
-.. autoattribute:: dragon.vm.caffe.AdamSolver.test_nets
+.. autoattribute:: dragon.vm.caffe.Solver.test_nets
+  :noindex:
 
 Methods
 -------
 
 snapshot
 ########
-.. automethod:: dragon.vm.caffe.AdamSolver.snapshot
+.. automethod:: dragon.vm.caffe.Solver.snapshot
+  :noindex:
 
 step
 ########
-.. automethod:: dragon.vm.caffe.AdamSolver.step
+.. automethod:: dragon.vm.caffe.Solver.step
+  :noindex:
 
 .. raw:: html
 

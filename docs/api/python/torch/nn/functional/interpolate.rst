@@ -3,6 +3,8 @@ interpolate
 
 .. autofunction:: dragon.vm.torch.nn.functional.interpolate
 
+.. _torch.nn.Upsample(...): ../Upsample.html
+
 .. raw:: html
 
   <style>

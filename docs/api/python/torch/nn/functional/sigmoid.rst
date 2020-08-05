@@ -3,6 +3,8 @@ sigmoid
 
 .. autofunction:: dragon.vm.torch.nn.functional.sigmoid
 
+.. _torch.nn.Sigmoid(...): ../Sigmoid.html
+
 .. raw:: html
 
   <style>

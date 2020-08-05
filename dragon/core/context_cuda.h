@@ -40,24 +40,6 @@ class CUDAObjects {
   /*! \brief Destructor */
   ~CUDAObjects() {
     for (int i = 0; i < CUDA_MAX_DEVICES; i++) {
-      for (int j = 0; j < cuda_streams_[i].size(); j++) {
-        auto& stream = cuda_streams_[i][j];
-        /*!
-         * Do not check the stream destroying,
-         * error code 29 (driver shutting down) is inevitable.
-         */
-        if (stream) cudaStreamDestroy(stream);
-      }
-      for (auto& handle : cublas_handles_[i])
-        if (handle) {
-          CUBLAS_CHECK(cublasDestroy(handle));
-        }
-#ifdef USE_CUDNN
-      for (auto& handle : cudnn_handles_[i])
-        if (handle) {
-          CUDNN_CHECK(cudnnDestroy(handle));
-        }
-#endif
 #ifdef USE_NCCL
       for (auto& comm : nccl_comms_[i]) {
         /*!
@@ -66,6 +48,22 @@ class CUDAObjects {
          */
       }
 #endif
+#ifdef USE_CUDNN
+      for (auto& handle : cudnn_handles_[i]) {
+        if (handle) CUDNN_CHECK(cudnnDestroy(handle));
+      }
+#endif
+      for (auto& handle : cublas_handles_[i]) {
+        if (handle) CUBLAS_CHECK(cublasDestroy(handle));
+      }
+      for (int j = 0; j < cuda_streams_[i].size(); j++) {
+        auto& stream = cuda_streams_[i][j];
+        /*!
+         * Do not check the stream destroying,
+         * error code 29 (driver shutting down) is inevitable.
+         */
+        if (stream) cudaStreamDestroy(stream);
+      }
     }
   }
 

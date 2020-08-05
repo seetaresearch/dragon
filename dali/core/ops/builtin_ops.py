@@ -16,9 +16,10 @@ from __future__ import print_function
 try:
     from nvidia.dali import ops
 except ImportError:
-    ops = None
+    from dragon.core.util import deprecation
+    ops = deprecation.not_installed('nvidia.dali')
 
-from dragon.vm.dali.core import context
+from dragon.vm.dali.core.framework import context
 
 
 class ExternalSource(object):
@@ -42,7 +43,7 @@ class ExternalSource(object):
 
     """
 
-    def __new__(cls):
+    def __new__(cls, **kwargs):
         """Create a ``ExternalSource`` operator.
 
         Returns
@@ -51,4 +52,4 @@ class ExternalSource(object):
             The operator.
 
         """
-        return ops.ExternalSource(device=context.get_device_type())
+        return ops.ExternalSource(device=context.get_device_type(), **kwargs)

@@ -3,6 +3,8 @@ upsample_bilinear
 
 .. autofunction:: dragon.vm.torch.nn.functional.upsample_bilinear
 
+.. _torch.nn.UpsamplingBilinear2d(...): ../UpsamplingBilinear2d.html
+
 .. raw:: html
 
   <style>

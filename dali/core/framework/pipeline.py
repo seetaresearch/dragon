@@ -15,7 +15,7 @@ from __future__ import print_function
 
 try:
     from nvidia.dali import pipeline
-    from dragon.vm.dali.core import context
+    from dragon.vm.dali.core.framework import context
 
     class Pipeline(pipeline.Pipeline):
         """The base pipeline class to define operations.
@@ -151,6 +151,8 @@ except ImportError:
             """
             self._batch_size = batch_size
             self._num_threads = num_threads
+            self._seed = seed
+            self._prefetch_queue_depth = prefetch_queue_depth
 
         @property
         def batch_size(self):

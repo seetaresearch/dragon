@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.AvgPool2d.__init__
 
+.. _torch.nn.functional.avg_pool2d(...): functional/avg_pool2d.html
+
 .. raw:: html
 
   <style>

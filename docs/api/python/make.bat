@@ -20,7 +20,6 @@ if "%1" == "help" (
 	:help
 	echo.Please use `make ^<target^>` where ^<target^> is one of
 	echo.  html       to make standalone HTML files
-	echo.  debughtml  to make debugging HTML files
 	echo.  latex      to make LaTeX files, you can set PAPER=a4 or PAPER=letter
 	echo.  latexpdf   to make LaTeX files and run them through pdflatex
 	goto end
@@ -56,14 +55,6 @@ if errorlevel 9009 (
 :sphinx_ok
 
 if "%1" == "html" (
-	%SPHINXBUILD% -b html %ALLSPHINXOPTS% %BUILDDIR%
-	if errorlevel 1 exit /b 1
-	echo.
-	echo.Build finished. The HTML pages are in %BUILDDIR%.
-	goto end
-)
-
-if "%1" == "debughtml" (
 	%SPHINXBUILD% -b html -j %NUMBER_OF_PROCESSORS% %ALLSPHINXOPTS% %BUILDDIR%
 	if errorlevel 1 exit /b 1
 	echo.

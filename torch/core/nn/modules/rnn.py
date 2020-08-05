@@ -7,11 +7,8 @@
 #
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
-# Codes are based on:
-#
-#     <https://github.com/pytorch/pytorch/blob/master/torch/nn/modules/rnn.py>
-#
 # ------------------------------------------------------------
+"""RNN modules."""
 
 from __future__ import absolute_import
 from __future__ import division

@@ -3,6 +3,8 @@ upsample
 
 .. autofunction:: dragon.vm.torch.nn.functional.upsample
 
+.. _torch.nn.Upsample(...): ../Upsample.html
+
 .. raw:: html
 
   <style>

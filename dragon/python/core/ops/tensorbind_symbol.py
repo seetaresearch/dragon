@@ -35,6 +35,10 @@ def add(self, other):
     dragon.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `dragon.math.add(...)`_
+
     """
     return _binary_op(self, other, 'Add')
 
@@ -56,7 +60,7 @@ def astype(self, dtype, inplace=False):
 
     See Also
     --------
-    `dragon.cast(...)`_ : Cast the data type of input.
+    `dragon.cast(...)`_
 
     """
     if self.dtype == dtype:
@@ -75,7 +79,7 @@ def copy(self):
 
     See Also
     --------
-    `dragon.copy(...)`_ : Copy the value to ref.
+    `dragon.copy(...)`_
 
     """
     outputs = [Tensor(shape=self.shape, dtype=self.dtype)]
@@ -95,6 +99,10 @@ def div(self, other):
     dragon.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `dragon.math.div(...)`_
+
     """
     return _binary_op(self, other, 'Div')
 
@@ -111,6 +119,10 @@ def ge(self, other):
     -------
     dragon.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `dragon.math.greater_equal(...)`_
 
     """
     return _binary_op(self, other, 'GreaterEqual')
@@ -162,6 +174,10 @@ def gt(self, other):
     dragon.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `dragon.math.greater(...)`_
+
     """
     return _binary_op(self, other, 'Greater')
 
@@ -178,6 +194,10 @@ def le(self, other):
     -------
     dragon.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `dragon.math.less_equal(...)`_
 
     """
     return _binary_op(self, other, 'LessEqual')
@@ -196,6 +216,10 @@ def lt(self, other):
     dragon.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `dragon.math.less(...)`_
+
     """
     return _binary_op(self, other, 'Less')
 
@@ -213,6 +237,10 @@ def mul(self, other):
     dragon.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `dragon.math.mul(...)`_
+
     """
     return _binary_op(self, other, 'Mul')
 
@@ -224,6 +252,10 @@ def neg(self):
     -------
     dragon.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `dragon.math.negative(...)`_
 
     """
     return _unary_op(self, 'Neg')
@@ -242,6 +274,10 @@ def radd(self, other):
     dragon.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `dragon.math.add(...)`_
+
     """
     return _binary_op(other, self, 'Add')
 
@@ -258,6 +294,10 @@ def rdiv(self, other):
     -------
     dragon.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `dragon.math.div(...)`_
 
     """
     return _binary_op(other, self, 'Div')
@@ -278,7 +318,7 @@ def reshape(self, shape):
 
     See Also
     --------
-    `dragon.reshape(...)`_ : Change the dimensions of input.
+    `dragon.reshape(...)`_
 
     """
     with context.graph_mode():
@@ -298,6 +338,10 @@ def rmul(self, other):
     dragon.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `dragon.math.mul(...)`_
+
     """
     return _binary_op(other, self, 'Mul')
 
@@ -314,6 +358,10 @@ def rsub(self, other):
     -------
     dragon.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `dragon.math.sub(...)`_
 
     """
     return _binary_op(other, self, 'Sub')
@@ -367,6 +415,10 @@ def sub(self, other):
     -------
     dragon.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `dragon.math.sub(...)`_
 
     """
     return _binary_op(self, other, 'Sub')

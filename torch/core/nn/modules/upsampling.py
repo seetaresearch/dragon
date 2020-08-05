@@ -8,6 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""Upsampling modules."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -27,6 +28,10 @@ class Upsample(Module):
     y = torch.nn.Upsample(size=6)(x)  # Shape: (1, 2, 6, 6)
     z = torch.nn.UpSample(scale_factor=2)(x)  # Shape: (1, 2, 6, 8)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.interpolate(...)`_
 
     """
 
@@ -89,6 +94,10 @@ class UpsamplingBilinear2d(Upsample):
     z = torch.nn.UpsamplingBilinear2d(scale_factor=2)(x)  # Shape: (1, 2, 6, 8)
     ```
 
+    See Also
+    --------
+    `torch.nn.functional.interpolate(...)`_
+
     """
 
     def __init__(self, size=None, scale_factor=None):
@@ -116,6 +125,10 @@ class UpsamplingNearest2d(Upsample):
     y = torch.nn.UpsamplingNearest2d(size=6)(x)  # Shape: (1, 2, 6, 6)
     z = torch.nn.UpsamplingNearest2d(scale_factor=2)(x)  # Shape: (1, 2, 6, 8)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.interpolate(...)`_
 
     """
 

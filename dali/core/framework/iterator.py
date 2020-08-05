@@ -26,7 +26,7 @@ from dragon.core.device import cuda
 from dragon.core.eager.tensor import EagerTensor
 from dragon.core.framework import device_spec
 from dragon.core.framework import workspace
-from dragon.vm.dali.core import types
+from dragon.vm.dali.core.framework import types
 
 
 class Iterator(object):

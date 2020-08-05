@@ -1554,7 +1554,7 @@ def where(inputs, **kwargs):
 
     See Also
     --------
-    `dragon.nonzero(...)`_ : Return the index of non-zero elements.
+    dragon.nonzero()
 
     """
     if types.is_tensor(inputs) or len(inputs) == 1:

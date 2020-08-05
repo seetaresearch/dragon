@@ -3,6 +3,8 @@ nll_loss
 
 .. autofunction:: dragon.vm.torch.nn.functional.nll_loss
 
+.. _torch.nn.NLLLoss(...): ../NLLLoss.html
+
 .. raw:: html
 
   <style>

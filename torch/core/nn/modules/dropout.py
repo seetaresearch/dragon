@@ -8,6 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""Dropout modules."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -37,6 +38,10 @@ class DropBlock2d(Module):
     m = torch.nn.DropBlock2d(block_size=3)
     y = m(x)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.drop_block2d(...)`_
 
     """
 
@@ -114,6 +119,10 @@ class Dropout(Module):
     z = m(x)
     ```
 
+    See Also
+    --------
+    `torch.nn.functional.dropout(...)`_
+
     """
 
     def __init__(self, p=0.5, inplace=False):
@@ -154,6 +163,10 @@ class DropPath(Module):
     m = torch.nn.DropPath()
     y = m(x)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.drop_path(...)`_
 
     """
 

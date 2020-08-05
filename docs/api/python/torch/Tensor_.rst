@@ -479,6 +479,7 @@ zero\_
 .. _torch.mul(...): mul.html
 .. _torch.ne(...): ne.html
 .. _torch.neg(...): neg.html
+.. _torch.nonzero(...): nonzero.html
 .. _torch.pow(...): pow.html
 .. _torch.reciprocal(...): reciprocal.html
 .. _torch.reshape(...): reshape.html
@@ -487,8 +488,12 @@ zero\_
 .. _torch.sign(...): sign.html
 .. _torch.sin(...): sin.html
 .. _torch.sqrt(...): sqrt.html
+.. _torch.squeeze(...): squeeze.html
 .. _torch.sub(...): sub.html
+.. _torch.sum(...): sum.html
 .. _torch.topk(...): topk.html
+.. _torch.unsqueeze(...): unsqueeze.html
+.. _torch.where(...): where.html
 
 .. raw:: html
 

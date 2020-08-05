@@ -189,7 +189,7 @@ class Tensor(types.TensorMetaclass):
 
         See Also
         --------
-        `dragon.cast(...)`_ : Cast the data type of input.
+        `dragon.cast(...)`_
 
         """
 
@@ -208,6 +208,10 @@ class Tensor(types.TensorMetaclass):
         dragon.Tensor
             The self.
 
+        See Also
+        --------
+        `dragon.fill(...)`_
+
         """
         return self._register_as('constant', value=value)
 
@@ -221,7 +225,7 @@ class Tensor(types.TensorMetaclass):
 
         See Also
         --------
-        `dragon.copy(...)`_ : Copy the input.
+        `dragon.copy(...)`_
 
         """
 
@@ -252,6 +256,10 @@ class Tensor(types.TensorMetaclass):
         dragon.Tensor
             The self.
 
+        See Also
+        --------
+        `dragon.random.glorot_normal(...)`_
+
         """
         return self._register_as('glorot_normal', mode=mode, scale=scale)
 
@@ -273,6 +281,10 @@ class Tensor(types.TensorMetaclass):
         dragon.Tensor
             The self.
 
+        See Also
+        --------
+        `dragon.random.glorot_uniform(...)`_
+
         """
         return self._register_as('glorot_uniform', mode=mode, scale=scale)
 
@@ -293,6 +305,10 @@ class Tensor(types.TensorMetaclass):
         dragon.Tensor
             The self.
 
+        See Also
+        --------
+        `dragon.random.normal(...)`_
+
         """
         return self._register_as('normal', mean=mean, std=std)
 
@@ -311,7 +327,7 @@ class Tensor(types.TensorMetaclass):
 
         See Also
         --------
-        `dragon.reshape(...)`_ : Change the dimensions of input.
+        `dragon.reshape(...)`_
 
         """
 
@@ -347,6 +363,10 @@ class Tensor(types.TensorMetaclass):
         dragon.Tensor
             The self.
 
+        See Also
+        --------
+        `dragon.random.truncated_normal(...)`_
+
         """
         return self._register_as('truncated_normal', mean=mean, std=std)
 
@@ -366,6 +386,10 @@ class Tensor(types.TensorMetaclass):
         -------
         dragon.Tensor
             The self.
+
+        See Also
+        --------
+        `dragon.random.uniform(...)`_
 
         """
         return self._register_as('uniform', low=low, high=high)
@@ -441,6 +465,10 @@ class Tensor(types.TensorMetaclass):
         dragon.Tensor
             The output tensor.
 
+        See Also
+        --------
+        `dragon.math.add(...)`_
+
         """
 
     def __float__(self):
@@ -467,6 +495,10 @@ class Tensor(types.TensorMetaclass):
         dragon.Tensor
             The output tensor.
 
+        See Also
+        --------
+        `dragon.math.greater_equal(...)`_
+
         """
 
     def __getitem__(self, item):
@@ -491,6 +523,10 @@ class Tensor(types.TensorMetaclass):
         -------
         dragon.Tensor
             The output tensor.
+
+        See Also
+        --------
+        `dragon.math.greater(...)`_
 
         """
 
@@ -521,6 +557,10 @@ class Tensor(types.TensorMetaclass):
         dragon.Tensor
             The output tensor.
 
+        See Also
+        --------
+        `dragon.math.less_equal(...)`_
+
         """
 
     def __lt__(self, other):
@@ -535,6 +575,10 @@ class Tensor(types.TensorMetaclass):
         -------
         dragon.Tensor
             The output tensor.
+
+        See Also
+        --------
+        `dragon.math.less(...)`_
 
         """
 
@@ -551,6 +595,10 @@ class Tensor(types.TensorMetaclass):
         dragon.Tensor
             The output tensor.
 
+        See Also
+        --------
+        `dragon.math.mul(...)`_
+
         """
 
     def __neg__(self):
@@ -560,6 +608,10 @@ class Tensor(types.TensorMetaclass):
         -------
         dragon.Tensor
             The output tensor.
+
+        See Also
+        --------
+        `dragon.math.negative(...)`_
 
         """
 
@@ -575,6 +627,10 @@ class Tensor(types.TensorMetaclass):
         -------
         dragon.Tensor
             The output tensor.
+
+        See Also
+        --------
+        `dragon.math.add(...)`_
 
         """
 
@@ -600,6 +656,10 @@ class Tensor(types.TensorMetaclass):
         dragon.Tensor
             The output tensor.
 
+        See Also
+        --------
+        `dragon.math.div(...)`_
+
         """
 
     def __rmul__(self, other):
@@ -615,6 +675,10 @@ class Tensor(types.TensorMetaclass):
         dragon.Tensor
             The output tensor.
 
+        See Also
+        --------
+        `dragon.math.mul(...)`_
+
         """
 
     def __rsub__(self, other):
@@ -629,6 +693,10 @@ class Tensor(types.TensorMetaclass):
         -------
         dragon.Tensor
             The output tensor.
+
+        See Also
+        --------
+        `dragon.math.sub(...)`_
 
         """
 
@@ -648,6 +716,10 @@ class Tensor(types.TensorMetaclass):
         dragon.Tensor
             The output tensor.
 
+        See Also
+        --------
+        `dragon.math.sub(...)`_
+
         """
 
     def __truediv__(self, other):
@@ -662,6 +734,10 @@ class Tensor(types.TensorMetaclass):
         -------
         dragon.Tensor
             The output tensor.
+
+        See Also
+        --------
+        `dragon.math.div(...)`_
 
         """
 

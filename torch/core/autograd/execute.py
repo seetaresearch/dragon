@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Execute tensor operations. """
+"""Execute tensor operations."""
 
 from __future__ import absolute_import
 from __future__ import division

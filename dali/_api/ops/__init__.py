@@ -13,24 +13,24 @@ from __future__ import absolute_import as _absolute_import
 from __future__ import division as _division
 from __future__ import print_function as _print_function
 
-from dragon.vm.dali.core.ops.array import Cast
-from dragon.vm.dali.core.ops.array import Pad
-from dragon.vm.dali.core.ops.array import Reshape
-from dragon.vm.dali.core.ops.builtin import ExternalSource
-from dragon.vm.dali.core.ops.color import BrightnessContrast
-from dragon.vm.dali.core.ops.color import Hsv
-from dragon.vm.dali.core.ops.crop import RandomBBoxCrop
-from dragon.vm.dali.core.ops.crop import Slice
-from dragon.vm.dali.core.ops.decoder import ImageDecoder
-from dragon.vm.dali.core.ops.decoder import ImageDecoderRandomCrop
-from dragon.vm.dali.core.ops.fused import CropMirrorNormalize
-from dragon.vm.dali.core.ops.geometric import BbFlip
-from dragon.vm.dali.core.ops.paste import BBoxPaste
-from dragon.vm.dali.core.ops.paste import Paste
-from dragon.vm.dali.core.ops.random import CoinFlip
-from dragon.vm.dali.core.ops.random import Uniform
-from dragon.vm.dali.core.ops.reader import KPLRecordReader
-from dragon.vm.dali.core.ops.reader import TFRecordReader
-from dragon.vm.dali.core.ops.resize import Resize
+from dragon.vm.dali.core.ops.bbox_ops import BbFlip
+from dragon.vm.dali.core.ops.bbox_ops import BBoxPaste
+from dragon.vm.dali.core.ops.builtin_ops import ExternalSource
+from dragon.vm.dali.core.ops.decoder_ops import ImageDecoder
+from dragon.vm.dali.core.ops.decoder_ops import ImageDecoderRandomCrop
+from dragon.vm.dali.core.ops.generic_ops import Cast
+from dragon.vm.dali.core.ops.generic_ops import Pad
+from dragon.vm.dali.core.ops.generic_ops import Reshape
+from dragon.vm.dali.core.ops.generic_ops import Slice
+from dragon.vm.dali.core.ops.image_ops import BrightnessContrast
+from dragon.vm.dali.core.ops.image_ops import CropMirrorNormalize
+from dragon.vm.dali.core.ops.image_ops import Hsv
+from dragon.vm.dali.core.ops.image_ops import Paste
+from dragon.vm.dali.core.ops.image_ops import RandomBBoxCrop
+from dragon.vm.dali.core.ops.image_ops import Resize
+from dragon.vm.dali.core.ops.random_ops import CoinFlip
+from dragon.vm.dali.core.ops.random_ops import Uniform
+from dragon.vm.dali.core.ops.reader_ops import KPLRecordReader
+from dragon.vm.dali.core.ops.reader_ops import TFRecordReader
 
 __all__ = [_s for _s in dir() if not _s.startswith('_')]

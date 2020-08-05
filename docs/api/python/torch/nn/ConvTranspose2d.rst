@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.ConvTranspose2d.__init__
 
+.. _torch.nn.functional.conv_transpose2d(...): functional/conv_transpose2d.html
+
 .. raw:: html
 
   <style>

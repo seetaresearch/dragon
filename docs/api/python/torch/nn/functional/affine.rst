@@ -3,6 +3,8 @@ affine
 
 .. autofunction:: dragon.vm.torch.nn.functional.affine
 
+.. _torch.nn.Affine(...): ../Affine.html
+
 .. raw:: html
 
   <style>

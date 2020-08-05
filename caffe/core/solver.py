@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""The solver to update parameters."""
+"""The solver to optimize parameters."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -28,7 +28,7 @@ from dragon.vm.caffe.core.proto import caffe_pb2
 
 
 class Solver(object):
-    """The abstraction ``caffe.Solver``."""
+    """The base solver class to optimize parameters."""
 
     def __init__(self, solver_file, is_root=True):
         """Create a ``Solver``.
@@ -330,7 +330,7 @@ class AdamSolver(Solver):
       momentum=0.9,
       momentum2=0.999,
       delta=1e-8,
-    )
+    }
     ```
 
     """
@@ -397,7 +397,7 @@ class RMSPropSolver(Solver):
       base_lr=0.01,
       rms_decay=0.99,
       delta=1e-8,
-    )
+    }
     ```
 
     """
@@ -430,13 +430,13 @@ class SGDSolver(Solver):
     solver {
       base_lr=0.01,
       momentum=0.9,
-    )
+    }
     ```
 
     """
 
     def __init__(self, solver_file, is_root=True):
-        """Create a `SGDSolver``.
+        """Create a ``SGDSolver``.
 
         Parameters
         ----------

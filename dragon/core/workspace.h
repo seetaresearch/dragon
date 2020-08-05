@@ -47,29 +47,29 @@ class DRAGON_API Workspace {
   }
 
   /*! \brief Create the tensor */
-  Tensor* CreateTensor(const string&, FillerInfo* = nullptr);
+  Tensor* CreateTensor(const string& name, FillerInfo* filler = nullptr);
 
   /*! \brief Try to return the tensor */
-  Tensor* TryGetTensor(const string&, bool = true) const;
+  Tensor* TryGetTensor(const string& name, bool external = true) const;
 
   /*! \brief Return the tensor */
-  Tensor* GetTensor(const string&, bool = true) const;
+  Tensor* GetTensor(const string& name, bool external = true) const;
 
   /*! \brief Reset the tensor */
-  void ResetTensor(const string&);
+  void ResetTensor(const string& name);
 
   /*! \brief Return the filler info */
-  FillerInfo* GetFillerInfo(const string&);
+  FillerInfo* GetFillerInfo(const string& name);
 
   /*! \brief Run the operator */
-  void RunOperator(const OperatorDef&);
+  void RunOperator(const OperatorDef& def);
 
   /*! \brief Create the graph */
-  GraphBase* CreateGraph(const GraphDef&);
+  GraphBase* CreateGraph(const GraphDef& def);
 
   /*! \brief Run the graph */
   void RunGraph(
-      const string& graph_name,
+      const string& name,
       const string& include = "",
       const string& exclude = "",
       const int stream = 0);
@@ -88,28 +88,30 @@ class DRAGON_API Workspace {
   /*! \brief Return a group of the shared raw data */
   template <class Context>
   vector<void*> data(const vector<size_t>& segments) {
-    int64_t nbytes = 0;
-    vector<void*> ret(segments.size());
-    for (auto& segment : segments)
-      nbytes += (int64_t)segment;
-    auto* T = CreateTensor("/share/data")->Reshape({nbytes});
-    ret[0] = T->template mutable_data<uint8_t, Context>();
-    for (int i = 1; i < segments.size(); i++)
-      ret[i] = (uint8_t*)ret[i - 1] + segments[i - 1];
-    return ret;
+    vector<void*> group(segments.size());
+    auto total_bytes = std::accumulate(segments.begin(), segments.end(), 0);
+    group[0] = CreateTensor("/share/data")
+                   ->Reshape({(int64_t)total_bytes})
+                   ->template mutable_data<uint8_t, Context>();
+    for (int i = 1; i < segments.size(); ++i) {
+      group[i] = (uint8_t*)group[i - 1] + segments[i - 1];
+    }
+    return group;
   }
 
   /*! \brief Return a group of shared typed data */
   template <typename T, class Context>
   vector<T*> data(const vector<int64_t>& segments) {
-    vector<size_t> segments_in_byte;
-    vector<T*> ret(segments.size());
-    for (const auto& e : segments)
-      segments_in_byte.emplace_back(e * sizeof(T));
-    auto ret_in_byte = data<Context>(segments_in_byte);
-    for (int i = 0; i < segments.size(); i++)
-      ret[i] = (T*)ret_in_byte[i];
-    return ret;
+    vector<T*> group(segments.size());
+    vector<size_t> segments_v2;
+    for (const auto size : segments) {
+      segments_v2.push_back(size * sizeof(T));
+    }
+    auto group_v2 = data<Context>(segments_v2);
+    for (int i = 0; i < segments.size(); ++i) {
+      group[i] = (T*)group_v2[i];
+    }
+    return group;
   }
 
  private:

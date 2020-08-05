@@ -3,6 +3,8 @@ avg_pool2d
 
 .. autofunction:: dragon.vm.torch.nn.functional.avg_pool2d
 
+.. _torch.nn.AvgPool2d(...): ../AvgPool2d.html
+
 .. raw:: html
 
   <style>

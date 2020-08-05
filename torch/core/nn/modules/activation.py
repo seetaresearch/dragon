@@ -8,6 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""Activation modules."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -43,7 +44,7 @@ class ELU(Module):
 
     See Also
     --------
-    `torch.nn.functional.elu(...)`_ - Apply the exponential linear unit to input.
+    `torch.nn.functional.elu(...)`_
 
     """
 
@@ -145,7 +146,7 @@ class LeakyReLU(Module):
 
     See Also
     --------
-    `torch.nn.functional.leaky_relu(...)`_ - Apply the leaky rectified linear unit.
+    `torch.nn.functional.leaky_relu(...)`_
 
     """
 
@@ -186,6 +187,10 @@ class LogSoftmax(Module):
     x = torch.randn(2, 3)
     y = m(x)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.log_softmax(...)`_
 
     """
 
@@ -234,6 +239,11 @@ class PReLU(Module):
     mm =  torch.nn.PReLU(num_parameters=3)
     z = mm(x)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.prelu(...)`_
+
     """
 
     def __init__(self, num_parameters=1, init=0.25):
@@ -279,6 +289,10 @@ class ReLU(Module):
     y = m(x)
     ```
 
+    See Also
+    --------
+    `torch.nn.functional.relu(...)`_
+
     """
 
     def __init__(self, inplace=False):
@@ -321,6 +335,10 @@ class ReLU6(Module):
     x = torch.tensor([-2, 0, 2, 4, 6, 8], 'float32')
     y = m(x)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.relu6(...)`_
 
     """
 
@@ -365,6 +383,10 @@ class SELU(Module):
     y = m(x)
     ```
 
+    See Also
+    --------
+    `torch.nn.functional.selu(...)`_
+
     """
 
     def __init__(self, inplace=False):
@@ -402,6 +424,10 @@ class Sigmoid(Module):
     y = m(x)
     ```
 
+    See Also
+    --------
+    `torch.nn.functional.sigmoid(...)`_
+
     """
 
     def __init__(self, inplace=False):
@@ -438,6 +464,10 @@ class Softmax(Module):
     x = torch.randn(2, 3)
     y = m(x)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.softmax(...)`_
 
     """
 
@@ -478,6 +508,10 @@ class Tanh(Module):
     x = torch.randn(2, 3)
     y = m(x)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.tanh(...)`_
 
     """
 

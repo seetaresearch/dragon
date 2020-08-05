@@ -3,6 +3,8 @@ linear
 
 .. autofunction:: dragon.vm.torch.nn.functional.linear
 
+.. _torch.nn.Linear(...): ../Linear.html
+
 .. raw:: html
 
   <style>

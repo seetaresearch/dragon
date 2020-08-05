@@ -7,11 +7,8 @@
 #
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
-# Codes are based on:
-#
-#     <https://github.com/pytorch/pytorch/blob/master/torch/nn/modules/loss.py>
-#
 # ------------------------------------------------------------
+"""Loss modules."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -68,6 +65,10 @@ class CTCLoss(_Loss):
     loss = m(logits, labels)
     ```
 
+    See Also
+    --------
+    `torch.nn.functional.ctc_loss(...)`_
+
     """
 
     def __init__(self, padding_mask=-1, reduction='mean'):
@@ -106,6 +107,10 @@ class NLLLoss(_WeightedLoss):
     m2 = torch.nn.NLLLoss()
     loss = m2(m1(torch.randn(2, 2)), torch.tensor([0, 1]))
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.nll_loss(...)`_
 
     """
 
@@ -154,6 +159,10 @@ class BCEWithLogitsLoss(_WeightedLoss):
     m = torch.nn.BCEWithLogitsLoss()
     loss = m(torch.randn(2, 1), torch.tensor([0., 1.], 'float32'))
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.binary_cross_entropy_with_logits(...)`_
 
     """
 
@@ -204,6 +213,10 @@ class CrossEntropyLoss(_WeightedLoss):
     targets = torch.tensor([0, 1])
     loss = m(logits, targets)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.cross_entropy(...)`_
 
     """
 
@@ -257,6 +270,10 @@ class L1Loss(_Loss):
     loss = m(torch.ones(2, 3), torch.zeros(2, 3))
     ```
 
+    See Also
+    --------
+    `torch.nn.functional.l1_loss(...)`_
+
     """
 
     def __init__(self, size_average=None, reduce=None, reduction='mean'):
@@ -291,6 +308,10 @@ class MSELoss(_Loss):
     m = torch.nn.MSELoss()
     loss = m(torch.ones(2, 3) * 2, torch.zeros(2, 3))
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.mse_loss(...)`_
 
     """
 
@@ -332,6 +353,10 @@ class SmoothL1Loss(_Loss):
     m = torch.nn.SmoothL1Loss(beta=0.11)
     loss = m(torch.ones(2, 3), torch.zeros(2, 3))
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.smooth_l1_loss(...)`_
 
     """
 
@@ -383,6 +408,10 @@ class SigmoidFocalLoss(_WeightedLoss):
     targets = torch.tensor([0, 1])
     loss = m(logits, targets)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.sigmoid_focal_loss(...)`_
 
     """
 

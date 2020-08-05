@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.Tanh.__init__
 
+.. _torch.nn.functional.tanh(...): functional/tanh.html
+
 .. raw:: html
 
   <style>

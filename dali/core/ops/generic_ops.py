@@ -16,11 +16,12 @@ from __future__ import print_function
 try:
     from nvidia.dali import ops
 except ImportError:
-    ops = None
+    from dragon.core.util import deprecation
+    ops = deprecation.not_installed('nvidia.dali')
 
 from dragon.core.util import six
-from dragon.vm.dali.core import context
-from dragon.vm.dali.core import types
+from dragon.vm.dali.core.framework import context
+from dragon.vm.dali.core.framework import types
 
 
 class Cast(object):
@@ -35,7 +36,7 @@ class Cast(object):
 
     """
 
-    def __new__(cls, dtype):
+    def __new__(cls, dtype, **kwargs):
         """Create a ``Cast`` operator.
 
         Parameters
@@ -54,6 +55,7 @@ class Cast(object):
         return ops.Cast(
             dtype=dtype,
             device=context.get_device_type(),
+            **kwargs
         )
 
 
@@ -74,7 +76,7 @@ class Pad(object):
 
     """
 
-    def __new__(cls, axes=(0, 1), fill_value=0., align=None):
+    def __new__(cls, axes=(0, 1), fill_value=0., align=None, **kwargs):
         """Create a ``Pad`` operator.
 
         Parameters
@@ -97,6 +99,7 @@ class Pad(object):
             fill_value=fill_value,
             align=align,
             device=context.get_device_type(),
+            **kwargs
         )
 
 
@@ -117,7 +120,7 @@ class Reshape(object):
 
     """
 
-    def __new__(cls, shape=None):
+    def __new__(cls, shape=None, **kwargs):
         """Create a ``Reshape`` operator.
 
         Parameters
@@ -134,4 +137,59 @@ class Reshape(object):
         return ops.Reshape(
             shape=shape,
             device=context.get_device_type(),
+            **kwargs
+        )
+
+
+class Slice(object):
+    """Select an interval of elements from input.
+
+    Examples:
+
+    ```python
+    slice = dali.ops.Slice(
+        # Axis of intervals
+        axes=[1, 0],
+        # Whether the begin of interval is normalized
+        # in a range of [0.0, 1.0]
+        normalized_anchor=True,
+        # Whether the size of interval is normalized
+        # in a range of [0.0, 1.0]
+        normalized_shape=True,
+    )
+
+    y = slice(inputs['x'], crop_begin, crop_size)
+    ```
+
+    """
+
+    def __new__(
+        cls,
+        axes=(1, 0),
+        normalized_anchor=True,
+        normalized_shape=True,
+        **kwargs
+    ):
+        """Create a ``Slice`` operator.
+
+        Parameters
+        ----------
+        axes : Sequence[int], optional
+            The axis to select.
+        normalized_anchor : bool, optional, default=True
+            Whether the begin of interval is normalized.
+        normalized_shape : bool, optional, default=True
+            Whether the size of interval is normalized.
+
+        Returns
+        -------
+        nvidia.dali.ops.Slice
+            The operator.
+
+        """
+        return ops.Slice(
+            axes=axes,
+            normalized_anchor=normalized_anchor,
+            device=context.get_device_type(),
+            **kwargs
         )

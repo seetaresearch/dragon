@@ -39,11 +39,12 @@ def affine(input, weight, bias=None):
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.Affine(...)`_
+
     """
-    return _functions.Affine \
-        .instantiate(
-            input.device,
-        ).apply(input, weight, bias)
+    return _functions.Affine.instantiate(input.device).apply(input, weight, bias)
 
 
 def avg_pool2d(
@@ -81,6 +82,10 @@ def avg_pool2d(
     -------
     dragon.vm.torch.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `torch.nn.AvgPool2d(...)`_
 
     """
     return _pool(
@@ -138,6 +143,10 @@ def batch_norm(
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.BatchNorm2d(...)`_
+
     """
     return _functions.BatchNorm \
         .instantiate(
@@ -180,6 +189,10 @@ def binary_cross_entropy_with_logits(
     -------
     dragon.vm.torch.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `torch.nn.BCEWithLogitsLoss(...)`_
 
     """
     if size_average is not None or reduce is not None:
@@ -236,6 +249,10 @@ def conv2d(
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.Conv2d(...)`_
+
     """
     return _conv(
         _nd_util=utils._pair,
@@ -290,6 +307,10 @@ def conv_transpose2d(
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.ConvTranspose2d(...)`_
+
     """
     return _conv_transpose(
         _nd_util=utils._pair,
@@ -335,6 +356,10 @@ def cross_entropy(
     dragon.vm.torch.Tensor
         The loss.
 
+    See Also
+    --------
+    `torch.nn.CrossEntropyLoss(...)`_
+
     """
     if size_average is not None or reduce is not None:
         reduction = _reduction.legacy_get_string(size_average, reduce)
@@ -367,6 +392,10 @@ def ctc_loss(input, target, padding_mask=-1, reduction='mean'):
     -------
     dragon.vm.torch.Tensor
         The loss.
+
+    See Also
+    --------
+    `torch.nn.CTCLoss(...)`_
 
     """
     prob = softmax(input, 2)
@@ -408,6 +437,10 @@ def depthwise_conv2d(
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.DepthwiseConv2d(...)`_
+
     """
     return _conv(
         _nd_util=utils._pair,
@@ -439,6 +472,10 @@ def dropout(input, p=0.5, training=True, inplace=False):
     -------
     dragon.vm.torch.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `torch.nn.Dropout(...)`_
 
     """
     if not training:
@@ -494,6 +531,10 @@ def drop_block2d(
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.DropBlock2d(...)`_
+
     """
     if not training:
         return input
@@ -543,6 +584,10 @@ def drop_path(
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.DropPath(...)`_
+
     """
     if not training:
         return input
@@ -570,7 +615,7 @@ def elu(input, alpha=1., inplace=False):
 
     See Also
     --------
-    `torch.nn.ELU`_ - Apply the exponential linear unit.
+    `torch.nn.ELU(...)`_
 
     Parameters
     ----------
@@ -588,10 +633,8 @@ def elu(input, alpha=1., inplace=False):
 
     """
     return _functions.Elu \
-        .instantiate(
-            input.device,
-            alpha=alpha,
-        ).apply(input, inplace=inplace)
+        .instantiate(input.device, alpha=alpha) \
+        .apply(input, inplace=inplace)
 
 
 def group_norm(input, weight, bias, groups=32, eps=1e-5):
@@ -620,6 +663,10 @@ def group_norm(input, weight, bias, groups=32, eps=1e-5):
     -------
     dragon.vm.torch.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `torch.nn.GroupNorm(...)`_
 
     """
     return _functions.GroupNorm \
@@ -679,6 +726,10 @@ def interpolate(
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.Upsample(...)`_
+
     """
     if size is not None:
         size = nest.flatten(size)
@@ -725,16 +776,18 @@ def l1_loss(
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.L1Loss(...)`_
+
     """
     if size_average is not None or reduce is not None:
         reduction = _reduction.legacy_get_string(size_average, reduce)
     else:
         reduction = reduction
     return _functions.L1Loss \
-        .instantiate(
-            input.device,
-            reduction=reduction,
-        ).apply([input, target])
+        .instantiate(input.device, reduction=reduction) \
+        .apply([input, target])
 
 
 def leaky_relu(input, negative_slope=0.01, inplace=False):
@@ -748,10 +801,6 @@ def leaky_relu(input, negative_slope=0.01, inplace=False):
                 x, & \text{ if } x \geq 0 \\
                 slope * x, & \text{ otherwise }
             \end{cases}
-
-    See Also
-    --------
-    `torch.nn.LeakyReLU`_ - Apply the leaky rectified linear unit.
 
     Parameters
     ----------
@@ -767,12 +816,14 @@ def leaky_relu(input, negative_slope=0.01, inplace=False):
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.LeakyReLU(...)`_
+
     """
     return _functions.Relu \
-        .instantiate(
-            input.device,
-            alpha=float(negative_slope),
-        ).apply(input, inplace=inplace)
+        .instantiate(input.device, alpha=float(negative_slope)) \
+        .apply(input, inplace=inplace)
 
 
 def linear(input, weight, bias=None):
@@ -794,11 +845,12 @@ def linear(input, weight, bias=None):
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.Linear(...)`_
+
     """
-    return _functions.Linear \
-        .instantiate(
-            input.device,
-        ).apply(input, weight, bias)
+    return _functions.Linear.instantiate(input.device).apply(input, weight, bias)
 
 
 def local_response_norm(input, size, alpha=1e-4, beta=0.75, k=1.):
@@ -811,10 +863,6 @@ def local_response_norm(input, size, alpha=1e-4, beta=0.75, k=1.):
         y_{i} = x_{i}\left(k + \frac{\alpha}{n}
             \sum_{j=\max(0, i-n/2)}^{\min(N-1,i+n/2)}x_{j}^2
         \right)^{-\beta}
-
-    See Also
-    --------
-    `torch.nn.LocalResponseNorm`_ - Apply the local response normalization.
 
     Parameters
     ----------
@@ -833,6 +881,10 @@ def local_response_norm(input, size, alpha=1e-4, beta=0.75, k=1.):
     -------
     dragon.vm.torch.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `torch.nn.LocalResponseNorm(...)`_
 
     """
     return _functions.LocalResponseNorm \
@@ -864,6 +916,10 @@ def log_softmax(input, dim):
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.LogSoftmax(...)`_
+
     """
     return input - input.logsumexp(dim, keepdim=True)
 
@@ -883,11 +939,12 @@ def lstm_cell(input, cx):
     sequence of dragon.vm.torch.Tensor
         The **h** and **c**.
 
+    See Also
+    --------
+    `torch.nn.LSTMCell(...)`_
+
     """
-    return _functions.LSTMCell \
-        .instantiate(
-            input.device,
-        ).apply(input, cx)
+    return _functions.LSTMCell.instantiate(input.device).apply(input, cx)
 
 
 def max_pool2d(
@@ -925,6 +982,10 @@ def max_pool2d(
     -------
     dragon.vm.torch.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `torch.nn.MaxPool2d(...)`_
 
     """
     return _pool(
@@ -966,16 +1027,18 @@ def mse_loss(
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.MSELoss(...)`_
+
     """
     if size_average is not None or reduce is not None:
         reduction = _reduction.legacy_get_string(size_average, reduce)
     else:
         reduction = reduction
     return _functions.L2Loss \
-        .instantiate(
-            input.device,
-            reduction=reduction,
-        ).apply([input, target])
+        .instantiate(input.device, reduction=reduction) \
+        .apply([input, target])
 
 
 def nll_loss(
@@ -1014,6 +1077,10 @@ def nll_loss(
     -------
     dragon.vm.torch.Tensor
         The loss.
+
+    See Also
+    --------
+    `torch.nn.NLLLoss(...)`_
 
     """
     if size_average is not None or reduce is not None:
@@ -1089,6 +1156,12 @@ def pad(input, pad, mode='constant', value=0):
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.ConstantPad2d(...)`_,
+    `torch.nn.ReflectionPad2d(...)`_,
+    `torch.nn.ReplicationPad2d(...)`_
+
     """
     ndim = input.ndimension()
     pads_begin, pads_end = [0] * ndim, [0] * ndim
@@ -1132,11 +1205,12 @@ def prelu(input, weight):
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.PReLU(...)`_
+
     """
-    return _functions.PRelu \
-        .instantiate(
-            input.device,
-        ).apply(input, weight)
+    return _functions.PRelu.instantiate(input.device).apply(input, weight)
 
 
 def relu(input, inplace=False):
@@ -1163,6 +1237,10 @@ def relu(input, inplace=False):
     -------
     dragon.vm.torch.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `torch.nn.ReLU(...)`_
 
     """
     return leaky_relu(input, 0., inplace=inplace)
@@ -1193,11 +1271,14 @@ def relu6(input, inplace=False):
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.ReLU6(...)`_
+
     """
     return _functions.Relu6 \
-        .instantiate(
-            input.device,
-        ).apply(input, inplace=inplace)
+        .instantiate(input.device) \
+        .apply(input, inplace=inplace)
 
 
 def selu(input, inplace=False):
@@ -1225,6 +1306,10 @@ def selu(input, inplace=False):
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.SELU(...)`_
+
     """
     return _activation(input, inplace, 'Selu')
 
@@ -1247,6 +1332,10 @@ def sigmoid(input, inplace=False):
     -------
     dragon.vm.torch.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `torch.nn.Sigmoid(...)`_
 
     """
     return _activation(input, inplace, 'Sigmoid')
@@ -1295,6 +1384,10 @@ def sigmoid_focal_loss(
     -------
     dragon.vm.torch.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `torch.nn.SigmoidFocalLoss(...)`_
 
     """
     if size_average is not None or reduce is not None:
@@ -1351,6 +1444,10 @@ def smooth_l1_loss(
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.SmoothL1Loss(...)`_
+
     """
     if size_average is not None or reduce is not None:
         reduction = _reduction.legacy_get_string(size_average, reduce)
@@ -1385,12 +1482,14 @@ def softmax(input, dim, inplace=False):
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.Softmax(...)`_
+
     """
     return _functions.Softmax \
-        .instantiate(
-            input.device,
-            axis=dim,
-        ).apply(input, inplace=inplace)
+        .instantiate(input.device, axis=dim) \
+        .apply(input, inplace=inplace)
 
 
 def sync_batch_norm(
@@ -1447,6 +1546,10 @@ def sync_batch_norm(
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.SyncBatchNorm(...)`_
+
     """
     if process_group is None:
         raise ValueError('<process_group> is required.')
@@ -1479,6 +1582,10 @@ def tanh(input, inplace=False):
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.Tanh(...)`_
+
     """
     return _activation(input, inplace, 'Tanh')
 
@@ -1496,8 +1603,8 @@ def upsample(
 
     ```python
     x = torch.ones((1, 2, 3, 4))
-    y = F.interpolate(x, size=6)  # Shape: (1, 2, 6, 6)
-    z = F.interpolate(x, scale_factor=2)  # Shape: (1, 2, 6, 8)
+    y = F.upsample(x, size=6)  # Shape: (1, 2, 6, 6)
+    z = F.upsample(x, scale_factor=2)  # Shape: (1, 2, 6, 8)
     ```
 
     Set ``align_corners`` to determine the input coordinates in linear ``mode``:
@@ -1532,6 +1639,10 @@ def upsample(
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.Upsample(...)`_
+
     """
     return interpolate(input, size, scale_factor, mode, align_corners)
 
@@ -1560,6 +1671,10 @@ def upsample_bilinear(input, size=None, scale_factor=None):
     -------
     dragon.vm.torch.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `torch.nn.UpsamplingBilinear2d(...)`_
 
     """
     return interpolate(input, size, scale_factor, 'linear', align_corners=True)
@@ -1590,16 +1705,18 @@ def upsample_nearest(input, size=None, scale_factor=None):
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.nn.UpsamplingNearest2d(...)`_
+
     """
     return interpolate(input, size, scale_factor, 'nearest')
 
 
 def _activation(input, inplace=False, _op_type=''):
     return _functions._Activation \
-        .instantiate(
-            input.device,
-            op_type=_op_type,
-        ).apply(input, inplace=inplace)
+        .instantiate(input.device, op_type=_op_type) \
+        .apply(input, inplace=inplace)
 
 
 def _conv(

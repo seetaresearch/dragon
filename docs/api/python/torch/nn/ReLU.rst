@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.ReLU.__init__
 
+.. _torch.nn.functional.relu(...): functional/relu.html
+
 .. raw:: html
 
   <style>

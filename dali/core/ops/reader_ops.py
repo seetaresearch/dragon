@@ -19,16 +19,16 @@ import os
 
 try:
     from nvidia.dali import ops
-    from nvidia.dali import tfrecord as tfrec
+    from nvidia.dali import tfrecord
 except ImportError:
     from dragon.core.util import deprecation
     ops = deprecation.NotInstalled('nvidia.dali')
-    tfrec = deprecation.NotInstalled('nvidia.dali')
+    tfrecord = deprecation.NotInstalled('nvidia.dali')
 
 from dragon.core.io import reader
 from dragon.core.io import kpl_record
-from dragon.vm.dali.core import context
-from dragon.vm.dali.core.ops.builtin import ExternalSource
+from dragon.vm.dali.core.framework import context
+from dragon.vm.dali.core.ops.builtin_ops import ExternalSource
 
 
 class KPLRecordReader(object):
@@ -73,6 +73,7 @@ class KPLRecordReader(object):
         num_shards=1,
         shuffle_after_epoch=False,
         shuffle_chunks=0,
+        **kwargs
     ):
         """Create a ``KPLRecordReader``.
 
@@ -100,6 +101,7 @@ class KPLRecordReader(object):
             num_parts=num_shards,
             shuffle=shuffle_after_epoch,
             num_chunks=shuffle_chunks,
+            **kwargs
         )
         self._buffer = self._reader.q_out = mp.Queue(
             self._prefetch_depth * self._batch_size)
@@ -186,6 +188,7 @@ class TFRecordReader(object):
         num_shards=1,
         random_shuffle=False,
         initial_fill=1024,
+        **kwargs
     ):
         """Create a ``TFRecordReader``.
 
@@ -217,6 +220,7 @@ class TFRecordReader(object):
             features=features,
             random_shuffle=random_shuffle,
             initial_fill=initial_fill,
+            **kwargs
         )
 
     @staticmethod
@@ -232,7 +236,10 @@ class TFRecordReader(object):
         if features_file is None:
             raise FileNotFoundError('File <FEATURES> is missing.')
         with open(os.path.join(path, features_file), 'r') as f:
-            features = eval(f.read().replace('tf.', 'tfrec.'))
+            features = f.read()
+            features = features.replace('tf.', 'tfrecord.')
+            features = features.replace('tf.io.', 'tfrecord.')
+            features = eval(features)
         data_files.sort()
         index_files.sort()
         data = [os.path.join(path, e) for e in data_files]

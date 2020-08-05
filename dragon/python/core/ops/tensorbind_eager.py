@@ -58,7 +58,7 @@ def astype(self, dtype, inplace=False):
 
     See Also
     --------
-    `dragon.cast(...)`_ : Cast the data type of input.
+    `dragon.cast(...)`_
 
     """
     return array_ops_lib.Cast \
@@ -80,6 +80,10 @@ def constant(self, value=0):
     dragon.EagerTensor
         The self.
 
+    See Also
+    --------
+    `dragon.fill(...)`_
+
     """
     shape = self.shape
     return init_ops_lib.Fill \
@@ -100,7 +104,7 @@ def copy(self):
 
     See Also
     --------
-    `dragon.copy(...)`_ : Copy the value to ref.
+    `dragon.copy(...)`_
 
     """
     return control_flow_ops_lib.Copy \
@@ -120,6 +124,10 @@ def div(self, other):
     dragon.EagerTensor
         The output tensor.
 
+    See Also
+    --------
+    `dragon.math.div(...)`_
+
     """
     return _binary_op(self, other, 'Div')
 
@@ -136,6 +144,10 @@ def ge(self, other):
     -------
     dragon.EagerTensor
         The output tensor.
+
+    See Also
+    --------
+    `dragon.math.greater_equal(...)`_
 
     """
     return _binary_op(self, other, 'GreaterEqual')
@@ -179,6 +191,10 @@ def glorot_normal(self, mode='fan_in', scale=2.0):
     dragon.EagerTensor
         The self.
 
+    See Also
+    --------
+    `dragon.random.glorot_normal(...)`_
+
     """
     shape = self.shape
     return init_ops_lib.GlorotNormal \
@@ -208,6 +224,10 @@ def glorot_uniform(self, mode='fan_in', scale=3.0):
     dragon.EagerTensor
         The self.
 
+    See Also
+    --------
+    `dragon.random.glorot_uniform(...)`_
+
     """
     shape = self.shape
     return init_ops_lib.GlorotUniform \
@@ -232,6 +252,10 @@ def gt(self, other):
     dragon.EagerTensor
         The output tensor.
 
+    See Also
+    --------
+    `dragon.math.greater(...)`_
+
     """
     return _binary_op(self, other, 'Greater')
 
@@ -248,6 +272,10 @@ def iadd(self, other):
     -------
     dragon.EagerTensor
         The self.
+
+    See Also
+    --------
+    `dragon.math.add(...)`_
 
     """
     return _binary_op(self, other, 'Add', [self])
@@ -266,6 +294,10 @@ def idiv(self, other):
     dragon.EagerTensor
         The self.
 
+    See Also
+    --------
+    `dragon.math.div(...)`_
+
     """
     return _binary_op(self, other, 'Div', [self])
 
@@ -282,6 +314,10 @@ def imul(self, other):
     -------
     dragon.EagerTensor
         The self.
+
+    See Also
+    --------
+    `dragon.math.mul(...)`_
 
     """
     return _binary_op(self, other, 'Mul', [self])
@@ -300,6 +336,10 @@ def isub(self, other):
     dragon.EagerTensor
         The self.
 
+    See Also
+    --------
+    `dragon.math.sub(...)`_
+
     """
     return _binary_op(self, other, 'Sub', [self])
 
@@ -316,6 +356,10 @@ def le(self, other):
     -------
     dragon.EagerTensor
         The output tensor.
+
+    See Also
+    --------
+    `dragon.math.less_equal(...)`_
 
     """
     return _binary_op(self, other, 'LessEqual')
@@ -334,6 +378,10 @@ def lt(self, other):
     dragon.EagerTensor
         The output tensor.
 
+    See Also
+    --------
+    `dragon.math.less(...)`_
+
     """
     return _binary_op(self, other, 'Less')
 
@@ -351,6 +399,10 @@ def mul(self, other):
     dragon.EagerTensor
         The output tensor.
 
+    See Also
+    --------
+    `dragon.math.mul(...)`_
+
     """
     return _binary_op(self, other, 'Mul')
 
@@ -362,6 +414,10 @@ def neg(self):
     -------
     dragon.EagerTensor
         The output tensor.
+
+    See Also
+    --------
+    `dragon.math.negative(...)`_
 
     """
     return _unary_op(self, 'Neg')
@@ -383,6 +439,10 @@ def normal(self, mean=0, std=1):
     -------
     dragon.EagerTensor
         The self.
+
+    See Also
+    --------
+    `dragon.random.normal(...)`_
 
     """
     shape = self.shape
@@ -408,6 +468,10 @@ def radd(self, other):
     dragon.EagerTensor
         The output tensor.
 
+    See Also
+    --------
+    `dragon.math.add(...)`_
+
     """
     return _binary_op(other, self, 'Add')
 
@@ -424,6 +488,10 @@ def rdiv(self, other):
     -------
     dragon.EagerTensor
         The output tensor.
+
+    See Also
+    --------
+    `dragon.math.div(...)`_
 
     """
     return _binary_op(other, self, 'Div')
@@ -444,7 +512,7 @@ def reshape(self, shape):
 
     See Also
     --------
-    `dragon.reshape(...)`_ : Change the dimensions of input.
+    `dragon.reshape(...)`_
 
     """
     with context.eager_mode():
@@ -464,6 +532,10 @@ def rmul(self, other):
     dragon.EagerTensor
         The output tensor.
 
+    See Also
+    --------
+    `dragon.math.mul(...)`_
+
     """
     return _binary_op(other, self, 'Mul')
 
@@ -480,6 +552,10 @@ def rsub(self, other):
     -------
     dragon.EagerTensor
         The output tensor.
+
+    See Also
+    --------
+    `dragon.math.sub(...)`_
 
     """
     return _binary_op(other, self, 'Sub')
@@ -516,6 +592,10 @@ def sub(self, other):
     dragon.EagerTensor
         The output tensor.
 
+    See Also
+    --------
+    `dragon.math.sub(...)`_
+
     """
     return _binary_op(self, other, 'Sub')
 
@@ -536,6 +616,10 @@ def truncated_normal(self, mean=0, std=1):
     -------
     dragon.EagerTensor
         The self.
+
+    See Also
+    --------
+    `dragon.random.truncated_normal(...)`_
 
     """
     shape = self.shape
@@ -564,6 +648,10 @@ def uniform(self, low=0, high=1):
     -------
     dragon.EagerTensor
         The self.
+
+    See Also
+    --------
+    `dragon.random.uniform(...)`_
 
     """
     shape = self.shape

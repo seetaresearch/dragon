@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.Sigmoid.__init__
 
+.. _torch.nn.functional.sigmoid(...): functional/sigmoid.html
+
 .. raw:: html
 
   <style>

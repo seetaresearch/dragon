@@ -3,6 +3,8 @@ cross_entropy
 
 .. autofunction:: dragon.vm.torch.nn.functional.cross_entropy
 
+.. _torch.nn.CrossEntropyLoss(...): ../CrossEntropyLoss.html
+
 .. raw:: html
 
   <style>

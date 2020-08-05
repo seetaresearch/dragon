@@ -25,6 +25,9 @@ vm.caffe
   : The Momentum-SGD solver.
   `[Polyak, 1964] <https://doi.org/10.1016/0041-5553(64)90137-5>`_.
 
+  `class Solver <caffe/Solver.html>`_
+  : The base solver class to optimize parameters.
+
 .. toctree::
   :hidden:
 
@@ -33,6 +36,7 @@ vm.caffe
   caffe/Net
   caffe/RMSPropSolver
   caffe/SGDSolver
+  caffe/Solver
 
 .. raw:: html
 

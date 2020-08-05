@@ -3,6 +3,8 @@ sigmoid_focal_loss
 
 .. autofunction:: dragon.vm.torch.nn.functional.sigmoid_focal_loss
 
+.. _torch.nn.SigmoidFocalLoss(...): ../SigmoidFocalLoss.html
+
 .. raw:: html
 
   <style>

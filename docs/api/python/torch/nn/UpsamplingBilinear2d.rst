@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.UpsamplingBilinear2d.__init__
 
+.. _torch.nn.functional.interpolate(...): functional/interpolate.html
+
 .. raw:: html
 
   <style>

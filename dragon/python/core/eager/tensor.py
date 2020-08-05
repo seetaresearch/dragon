@@ -188,7 +188,7 @@ class EagerTensor(Tensor):
 
         See Also
         --------
-        `dragon.cast(...)`_ : Cast the data type of input.
+        `dragon.cast(...)`_
 
         """
 
@@ -207,6 +207,10 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The self.
 
+        See Also
+        --------
+        `dragon.fill(...)`_
+
         """
 
     def copy(self):
@@ -219,7 +223,7 @@ class EagerTensor(Tensor):
 
         See Also
         --------
-        `dragon.copy(...)`_ : Copy the input.
+        `dragon.copy(...)`_
 
         """
 
@@ -251,6 +255,10 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The self.
 
+        See Also
+        --------
+        `dragon.random.glorot_normal(...)`_
+
         """
 
     def glorot_uniform(self, mode='fan_in', scale=3.0):
@@ -270,6 +278,10 @@ class EagerTensor(Tensor):
         -------
         dragon.EagerTensor
             The self.
+
+        See Also
+        --------
+        `dragon.random.glorot_uniform(...)`_
 
         """
 
@@ -306,6 +318,10 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The self.
 
+        See Also
+        --------
+        `dragon.random.normal(...)`_
+
         """
 
     def reshape(self, shape):
@@ -323,7 +339,7 @@ class EagerTensor(Tensor):
 
         See Also
         --------
-        `dragon.reshape(...)`_ : Change the dimensions of input.
+        `dragon.reshape(...)`_
 
         """
 
@@ -363,6 +379,10 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The self.
 
+        See Also
+        --------
+        `dragon.random.truncated_normal(...)`_
+
         """
 
     def uniform(self, low=0, high=1):
@@ -381,6 +401,10 @@ class EagerTensor(Tensor):
         -------
         dragon.EagerTensor
             The self.
+
+        See Also
+        --------
+        `dragon.random.uniform(...)`_
 
         """
 
@@ -412,6 +436,10 @@ class EagerTensor(Tensor):
         -------
         dragon.EagerTensor
             The output tensor.
+
+        See Also
+        --------
+        `dragon.math.add(...)`_
 
         """
 
@@ -445,6 +473,10 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The output tensor.
 
+        See Also
+        --------
+        `dragon.math.greater_equal(...)`_
+
         """
 
     def __getitem__(self, item):
@@ -470,6 +502,10 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The output tensor.
 
+        See Also
+        --------
+        `dragon.math.greater(...)`_
+
         """
 
     def __hash__(self):
@@ -488,6 +524,10 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The self.
 
+        See Also
+        --------
+        `dragon.math.add(...)`_
+
         """
 
     def __imul__(self, other):
@@ -502,6 +542,10 @@ class EagerTensor(Tensor):
         -------
         dragon.EagerTensor
             The self.
+
+        See Also
+        --------
+        `dragon.math.mul(...)`_
 
         """
 
@@ -529,6 +573,10 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The self.
 
+        See Also
+        --------
+        `dragon.math.sub(...)`_
+
         """
 
     def __le__(self, other):
@@ -543,6 +591,10 @@ class EagerTensor(Tensor):
         -------
         dragon.EagerTensor
             The output tensor.
+
+        See Also
+        --------
+        `dragon.math.less_equal(...)`_
 
         """
 
@@ -559,6 +611,10 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The output tensor.
 
+        See Also
+        --------
+        `dragon.math.less(...)`_
+
         """
 
     def __mul__(self, other):
@@ -574,6 +630,10 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The output tensor.
 
+        See Also
+        --------
+        `dragon.math.mul(...)`_
+
         """
 
     def __neg__(self):
@@ -583,6 +643,10 @@ class EagerTensor(Tensor):
         -------
         dragon.EagerTensor
             The output tensor.
+
+        See Also
+        --------
+        `dragon.math.negative(...)`_
 
         """
 
@@ -598,6 +662,10 @@ class EagerTensor(Tensor):
         -------
         dragon.EagerTensor
             The output tensor.
+
+        See Also
+        --------
+        `dragon.math.add(...)`_
 
         """
 
@@ -629,6 +697,10 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The output tensor.
 
+        See Also
+        --------
+        `dragon.math.div(...)`_
+
         """
 
     def __rmul__(self, other):
@@ -643,6 +715,10 @@ class EagerTensor(Tensor):
         -------
         dragon.EagerTensor
             The output tensor.
+
+        See Also
+        --------
+        `dragon.math.mul(...)`_
 
         """
 
@@ -677,6 +753,10 @@ class EagerTensor(Tensor):
         dragon.EagerTensor
             The output tensor.
 
+        See Also
+        --------
+        `dragon.math.sub(...)`_
+
         """
 
     def __truediv__(self, other):
@@ -691,5 +771,9 @@ class EagerTensor(Tensor):
         -------
         dragon.EagerTensor
             The output tensor.
+
+        See Also
+        --------
+        `dragon.math.div(...)`_
 
         """

@@ -3,6 +3,8 @@ selu
 
 .. autofunction:: dragon.vm.torch.nn.functional.selu
 
+.. _torch.nn.SELU(...): ../SELU.html
+
 .. raw:: html
 
   <style>

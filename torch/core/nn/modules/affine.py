@@ -8,6 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""Affine modules."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -25,8 +26,6 @@ class Affine(Module):
     .. math:: y = Ax + b
 
     This transform is often taken as a post-processing of normalization.
-    Specially, a trained ``BatchNorm`` can be fused to this under some
-    fine-tune settings, such as detection and segmentation.
 
     Examples:
 
@@ -45,6 +44,10 @@ class Affine(Module):
     x4d = torch.ones(3, 5, 2, 2)
     y4d = m(x4d)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.affine(...)`_
 
     """
 

@@ -21,6 +21,7 @@ from dragon.vm.caffe.core.solver import AdamSolver
 from dragon.vm.caffe.core.solver import NesterovSolver
 from dragon.vm.caffe.core.solver import RMSPropSolver
 from dragon.vm.caffe.core.solver import SGDSolver
+from dragon.vm.caffe.core.solver import Solver
 
 # Functions
 from dragon.vm.caffe.core.net_spec import to_proto

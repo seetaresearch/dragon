@@ -3,7 +3,7 @@ elu
 
 .. autofunction:: dragon.vm.torch.nn.functional.elu
 
-.. _torch.nn.ELU: ../ELU.html
+.. _torch.nn.ELU(...): ../ELU.html
 
 .. raw:: html
 

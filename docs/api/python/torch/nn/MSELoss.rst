@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.MSELoss.__init__
 
+.. _torch.nn.functional.mse_loss(...): functional/mse_loss.html
+
 .. raw:: html
 
   <style>

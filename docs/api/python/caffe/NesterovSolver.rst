@@ -12,30 +12,36 @@ Properties
 
 base_lr
 #######
-.. autoattribute:: dragon.vm.caffe.NesterovSolver.base_lr
+.. autoattribute:: dragon.vm.caffe.Solver.base_lr
+  :noindex:
 
 iter
 ####
-.. autoattribute:: dragon.vm.caffe.NesterovSolver.iter
+.. autoattribute:: dragon.vm.caffe.Solver.iter
+  :noindex:
 
 net
 ###
-.. autoattribute:: dragon.vm.caffe.NesterovSolver.net
+.. autoattribute:: dragon.vm.caffe.Solver.net
+  :noindex:
 
 test_nets
 #########
-.. autoattribute:: dragon.vm.caffe.NesterovSolver.test_nets
+.. autoattribute:: dragon.vm.caffe.Solver.test_nets
+  :noindex:
 
 Methods
 -------
 
 snapshot
 ########
-.. automethod:: dragon.vm.caffe.NesterovSolver.snapshot
+.. automethod:: dragon.vm.caffe.Solver.snapshot
+  :noindex:
 
 step
 ########
-.. automethod:: dragon.vm.caffe.NesterovSolver.step
+.. automethod:: dragon.vm.caffe.Solver.step
+  :noindex:
 
 .. raw:: html
 

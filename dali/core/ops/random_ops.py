@@ -16,7 +16,8 @@ from __future__ import print_function
 try:
     from nvidia.dali import ops
 except ImportError:
-    ops = None
+    from dragon.core.util import deprecation
+    ops = deprecation.not_installed('nvidia.dali')
 
 
 class CoinFlip(object):
@@ -31,7 +32,7 @@ class CoinFlip(object):
 
     """
 
-    def __new__(cls, probability=0.5):
+    def __new__(cls, probability=0.5, **kwargs):
         """Create a ``CoinFlip`` operator.
 
         Parameters
@@ -45,11 +46,11 @@ class CoinFlip(object):
             The operator.
 
         """
-        return ops.CoinFlip(probability=probability)
+        return ops.CoinFlip(probability=probability, **kwargs)
 
 
 class Uniform(object):
-    """Sample values from a uniform distribution.
+    """Sample values from an uniform distribution.
 
     Examples:
 
@@ -60,7 +61,7 @@ class Uniform(object):
 
     """
 
-    def __new__(cls, range=(-1., 1.)):
+    def __new__(cls, range=(-1., 1.), **kwargs):
         """Create an ``Uniform`` operator.
 
         Parameters
@@ -74,4 +75,4 @@ class Uniform(object):
             The operator.
 
         """
-        return ops.Uniform(range=range)
+        return ops.Uniform(range=range, **kwargs)

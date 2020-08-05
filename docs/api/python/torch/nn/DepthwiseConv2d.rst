@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.DepthwiseConv2d.__init__
 
+.. _torch.nn.functional.depthwise_conv2d(...): functional/depthwise_conv2d.html
+
 .. raw:: html
 
   <style>

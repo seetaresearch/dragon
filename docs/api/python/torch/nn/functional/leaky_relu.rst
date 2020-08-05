@@ -3,7 +3,7 @@ leaky_relu
 
 .. autofunction:: dragon.vm.torch.nn.functional.leaky_relu
 
-.. _torch.nn.LeakyReLU: ../LeakyReLU.html
+.. _torch.nn.LeakyReLU(...): ../LeakyReLU.html
 
 .. raw:: html
 

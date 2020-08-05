@@ -8,6 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""Padding modules."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -69,7 +70,12 @@ class ConstantPad1d(_ConstantPadNd):
     y = m(x)  # (1, 2) -> (1, 4)
     ```
 
+    See Also
+    --------
+    `torch.nn.functional.pad(...)`_
+
     """
+
     def __init__(self, padding, value):
         """Create a ``ConstantPad1d`` module.
 
@@ -99,6 +105,10 @@ class ConstantPad2d(_ConstantPadNd):
     x = torch.randn(1, 2, 2)
     y = m(x)  # (1, 2, 2) -> (1, 4, 4)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.pad(...)`_
 
     """
 
@@ -132,6 +142,10 @@ class ConstantPad3d(_ConstantPadNd):
     y = m(x)  # (1, 2, 2, 2) -> (1, 4, 4, 4)
     ```
 
+    See Also
+    --------
+    `torch.nn.functional.pad(...)`_
+
     """
 
     def __init__(self, padding, value):
@@ -164,6 +178,10 @@ class ReflectionPad1d(_ReflectionPadNd):
     y = m(x)  # (1, 4) -> (1, 6)
     ```
 
+    See Also
+    --------
+    `torch.nn.functional.pad(...)`_
+
     """
 
     def __init__(self, padding):
@@ -193,6 +211,10 @@ class ReflectionPad2d(_ReflectionPadNd):
     x = torch.randn(1, 4, 4)
     y = m(x)  # (1, 4, 4) -> (1, 6, 6)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.pad(...)`_
 
     """
 
@@ -224,6 +246,10 @@ class ReflectionPad3d(_ReflectionPadNd):
     y = m(x)  # (1, 4, 4, 4) -> (1, 6, 6, 6)
     ```
 
+    See Also
+    --------
+    `torch.nn.functional.pad(...)`_
+
     """
 
     def __init__(self, padding):
@@ -253,6 +279,10 @@ class ReplicationPad1d(_ReplicationPadNd):
     x = torch.randn(1, 4)
     y = m(x)  # (1, 4) -> (1, 6)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.pad(...)`_
 
     """
 
@@ -284,6 +314,10 @@ class ReplicationPad2d(_ReplicationPadNd):
     y = m(x)  # (1, 4, 4) -> (1, 6, 6)
     ```
 
+    See Also
+    --------
+    `torch.nn.functional.pad(...)`_
+
     """
 
     def __init__(self, padding):
@@ -314,6 +348,10 @@ class ReplicationPad3d(_ReplicationPadNd):
     y = m(x)  # (1, 4, 4, 4) -> (1, 6, 6, 6)
     ```
 
+    See Also
+    --------
+    `torch.nn.functional.pad(...)`_
+
     """
 
     def __init__(self, padding):
@@ -343,6 +381,10 @@ class ZeroPad2d(ConstantPad2d):
     x = torch.randn(1, 2, 2)
     y = m(x)  # (1, 2, 2) -> (1, 4, 4)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.pad(...)`_
 
     """
 

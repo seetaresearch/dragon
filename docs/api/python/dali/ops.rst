@@ -13,19 +13,22 @@ vm.dali.ops
   : Transform bounding boxes to match the ``Paste`` operator.
 
   `class BrightnessContrast <ops/BrightnessContrast.html>`_
-  : Adjust the brightness and contrast.
+  : Adjust the brightness and contrast of image.
 
   `class Cast <ops/Cast.html>`_
   : Cast the data type of input.
 
+  `class CoinFlip <ops/CoinFlip.html>`_
+  : Sample values from a bernoulli distribution.
+
   `class CropMirrorNormalize <ops/CropMirrorNormalize.html>`_
-  : Crop and normalize input with the horizontal flip.
+  : Crop and normalize image with the horizontal flip.
 
   `class ExternalSource <ops/Cast.html>`_
   : Create a placeholder providing data from feeding.
 
   `class Hsv <ops/Hsv.html>`_
-  : Adjust the hue and saturation.
+  : Adjust the hue and saturation of image.
 
   `class ImageDecoder <ops/ImageDecoder.html>`_
   : Decode image from bytes.
@@ -40,7 +43,7 @@ vm.dali.ops
   : Copy image into a larger canvas.
 
   `class RandomBBoxCrop <ops/RandomBBoxCrop.html>`_
-  : Return a valid crop restricted by bounding boxes.
+  : Return an valid image crop restricted by bounding boxes.
 
   `class Reshape <ops/Reshape.html>`_
   : Change the dimensions of input.
@@ -58,7 +61,7 @@ vm.dali.ops
   : Read examples from the tf-record file.
 
   `class Uniform <ops/Uniform.html>`_
-  : Select an interval of elements from input.
+  : Sample values from an uniform distribution.
 
 .. toctree::
   :hidden:

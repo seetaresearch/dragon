@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.BatchNorm3d.__init__
 
+.. _torch.nn.functional.batch_norm(...): functional/batch_norm.html
+
 .. raw:: html
 
   <style>

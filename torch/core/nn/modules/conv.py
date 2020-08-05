@@ -8,6 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""Convolution modules."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -90,17 +91,7 @@ class _ConvNd(Module):
 
 
 class Conv2d(_ConvNd):
-    r"""Apply the 2d convolution.
-
-    The spatial output dimension is computed as:
-
-    .. math::
-        \begin{cases}
-            \text{DK}_{size} = dilation *
-                (\text{K}_{size} - 1) + 1 \\
-            \text{Dim}_{out} = (\text{Dim}_{in} +
-                2 * pad - \text{DK}_{size}) / stride + 1
-        \end{cases}
+    """Apply the 2d convolution.
 
     Examples:
 
@@ -109,6 +100,10 @@ class Conv2d(_ConvNd):
     x = torch.ones(2, 2, 4, 4)
     y = m(x)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.conv2d(...)`_
 
     """
 
@@ -171,17 +166,7 @@ class Conv2d(_ConvNd):
 
 
 class ConvTranspose2d(_ConvNd):
-    r"""Apply the 2d deconvolution.
-
-    The spatial output dimension is computed as:
-
-    .. math::
-        \begin{cases}
-            \text{DK}_{size} = dilation *
-                (\text{K}_{size} - 1) + 1 \\
-            \text{Dim}_{out} = (\text{Dim}_{in} - 1) *
-                stride + \text{DK}_{size} - 2 * pad
-        \end{cases}
+    """Apply the 2d deconvolution.
 
     Examples:
 
@@ -190,6 +175,10 @@ class ConvTranspose2d(_ConvNd):
     x = torch.ones(2, 2, 4, 4)
     y = m(x)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.conv_transpose2d(...)`_
 
     """
 
@@ -256,17 +245,7 @@ class ConvTranspose2d(_ConvNd):
 
 
 class DepthwiseConv2d(Conv2d):
-    r"""Apply the 2d depthwise convolution.
-
-    The spatial output dimension is computed as:
-
-    .. math::
-        \begin{cases}
-            \text{DK}_{size} = dilation *
-                (\text{K}_{size} - 1) + 1 \\
-            \text{Dim}_{out} = (\text{Dim}_{in} +
-                2 * pad - \text{DK}_{size}) / stride + 1
-        \end{cases}
+    """Apply the 2d depthwise convolution.
 
     Examples:
 
@@ -275,6 +254,10 @@ class DepthwiseConv2d(Conv2d):
     x = torch.ones(2, 3, 4, 4)
     y = m(x)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.depthwise_conv2d(...)`_
 
     """
 

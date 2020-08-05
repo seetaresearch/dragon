@@ -3,6 +3,8 @@ drop_path
 
 .. autofunction:: dragon.vm.torch.nn.functional.drop_path
 
+.. _torch.nn.DropPath(...): ../DropPath.html
+
 .. raw:: html
 
   <style>

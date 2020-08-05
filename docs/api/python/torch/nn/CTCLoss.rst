@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.CTCLoss.__init__
 
+.. _torch.nn.functional.ctc_loss(...): functional/ctc_loss.html
+
 .. raw:: html
 
   <style>

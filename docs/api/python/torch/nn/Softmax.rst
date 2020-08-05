@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.Softmax.__init__
 
+.. _torch.nn.functional.softmax(...): functional/softmax.html
+
 .. raw:: html
 
   <style>

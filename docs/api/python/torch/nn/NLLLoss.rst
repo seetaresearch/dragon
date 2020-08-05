@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.NLLLoss.__init__
 
+.. _torch.nn.functional.nll_loss(...): functional/nll_loss.html
+
 .. raw:: html
 
   <style>

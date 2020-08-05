@@ -33,7 +33,7 @@ def abs(self):
 
     See Also
     --------
-    `torch.abs(...)`_ : Compute the absolute value of input.
+    `torch.abs(...)`_
 
     """
     return math_funcs.abs(self)
@@ -56,7 +56,7 @@ def add(self, other):
 
     See Also
     --------
-    `torch.add(...)`_ : Compute the element-wise addition.
+    `torch.add(...)`_
 
     """
     return math_funcs.add(self, other)
@@ -79,7 +79,7 @@ def add_(self, other):
 
     See Also
     --------
-    `torch.add(...)`_ : Compute the element-wise addition.
+    `torch.add(...)`_
 
     """
     return math_funcs.add(self, other, self)
@@ -102,7 +102,7 @@ def argmax(self, dim=None, keepdim=False):
 
     See Also
     --------
-    `torch.argmax(...)`_ : Return the index of maximum elements along the given dimension.
+    `torch.argmax(...)`_
 
     """
     return array_funcs.argmax(self, dim, keepdim)
@@ -125,7 +125,7 @@ def argmin(self, dim=None, keepdim=False):
 
     See Also
     --------
-    `torch.argmin(...)`_ : Return the index of minimum elements along the given dimension.
+    `torch.argmin(...)`_
 
     """
     return array_funcs.argmin(self, dim, keepdim)
@@ -161,7 +161,7 @@ def bitwise_not(self):
 
     See Also
     --------
-    `torch.bitwise_not(...)`_ : Compute the element-wise NOT bitwise operation.
+    `torch.bitwise_not(...)`_
 
     """
     return math_funcs.bitwise_not(self)
@@ -179,7 +179,7 @@ def bitwise_not_(self):
 
     See Also
     --------
-    `torch.bitwise_not(...)`_ : Compute the element-wise NOT bitwise operation.
+    `torch.bitwise_not(...)`_
 
     """
     return math_funcs.bitwise_not(self, self)
@@ -202,7 +202,7 @@ def bitwise_xor(self, other):
 
     See Also
     --------
-    `torch.bitwise_xor(...)`_ : Compute the element-wise XOR bitwise operation.
+    `torch.bitwise_xor(...)`_
 
     """
     return math_funcs.bitwise_xor(self, other)
@@ -225,7 +225,7 @@ def bitwise_xor_(self, other):
 
     See Also
     --------
-    `torch.bitwise_xor(...)`_ : Compute the element-wise XOR bitwise operation.
+    `torch.bitwise_xor(...)`_
 
     """
     return math_funcs.bitwise_xor(self, other, self)
@@ -291,7 +291,7 @@ def ceil(self):
 
     See Also
     --------
-    `torch.ceil(...)`_ : Compute the smallest integer not less than input.
+    `torch.ceil(...)`_
 
     """
     return math_funcs.ceil(self)
@@ -309,7 +309,7 @@ def ceil_(self):
 
     See Also
     --------
-    `torch.ceil(...)`_ : Compute the smallest integer not less than input.
+    `torch.ceil(...)`_
 
     """
     return math_funcs.ceil(self, self)
@@ -375,7 +375,7 @@ def clamp(self, min=None, max=None):
 
     See Also
     --------
-    `torch.clamp(...)`_ : Compute the clipped input according to the given bounds.
+    `torch.clamp(...)`_
 
     """
     return math_funcs.clamp(self, min, max)
@@ -398,7 +398,7 @@ def clamp_(self, min=None, max=None):
 
     See Also
     --------
-    `torch.clamp(...)`_ : Compute the clipped input according to the given bounds.
+    `torch.clamp(...)`_
 
     """
     return math_funcs.clamp(self, min, max, self)
@@ -416,7 +416,7 @@ def cos(self):
 
     See Also
     --------
-    `torch.cos(...)`_ : Compute the cos of input.
+    `torch.cos(...)`_
 
     """
     return math_funcs.cos(self)
@@ -437,7 +437,7 @@ def cumsum(self, dim):
 
     See Also
     --------
-    `torch.cumsum(...)`_ : Compute the cumulative sum of elements along the given dimension.
+    `torch.cumsum(...)`_
 
     """
     return array_funcs.cumsum(self, dim)
@@ -460,7 +460,7 @@ def div(self, other):
 
     See Also
     --------
-    `torch.div(...)`_ : Compute the element-wise division.
+    `torch.div(...)`_
 
     """
     return math_funcs.div(self, other)
@@ -483,7 +483,7 @@ def div_(self, other):
 
     See Also
     --------
-    `torch.div(...)`_ : Compute the element-wise division.
+    `torch.div(...)`_
 
     """
     return math_funcs.div(self, other, self)
@@ -530,7 +530,7 @@ def eq(self, other):
 
     See Also
     --------
-    `torch.eq(...)`_ : Compute the element-wise equal comparison.
+    `torch.eq(...)`_
 
     """
     return math_funcs.eq(self, other)
@@ -548,7 +548,7 @@ def exp(self):
 
     See Also
     --------
-    `torch.exp(...)`_ : Compute the exponential of input.
+    `torch.exp(...)`_
 
     """
     return math_funcs.exp(self)
@@ -569,7 +569,7 @@ def expand(self, *sizes):
 
     See Also
     --------
-    `torch.expand(...)`_ : Broadcast input according to given sizes.
+    `torch.expand(...)`_
 
     """
     return array_funcs.expand(self, sizes)
@@ -630,7 +630,7 @@ def floor(self):
 
     See Also
     --------
-    `torch.floor(...)`_ : Compute the largest integer not greater than input.
+    `torch.floor(...)`_
 
     """
     return math_funcs.floor(self)
@@ -648,7 +648,7 @@ def floor_(self):
 
     See Also
     --------
-    `torch.floor(...)`_ : Compute the largest integer not greater than input.
+    `torch.floor(...)`_
 
     """
     return math_funcs.floor(self, self)
@@ -671,7 +671,7 @@ def ge(self, other):
 
     See Also
     --------
-    `torch.ge(...)`_ : Compute the element-wise greater-equal comparison.
+    `torch.ge(...)`_
 
     """
     return math_funcs.ge(self, other)
@@ -715,7 +715,7 @@ def gt(self, other):
 
     See Also
     --------
-    `torch.gt(...)`_ : Compute the element-wise greater comparison.
+    `torch.gt(...)`_
 
     """
     return math_funcs.gt(self, other)
@@ -805,7 +805,7 @@ def le(self, other):
 
     See Also
     --------
-    `torch.le(...)`_ : Compute the element-wise less-equal comparison.
+    `torch.le(...)`_
 
     """
     return math_funcs.le(self, other)
@@ -887,7 +887,7 @@ def lt(self, other):
 
     See Also
     --------
-    `torch.lt(...)`_ : Compute the element-wise less comparison.
+    `torch.lt(...)`_
 
     """
     return math_funcs.lt(self, other)
@@ -1010,7 +1010,7 @@ def mul(self, other):
 
     See Also
     --------
-    `torch.mul(...)`_ : Compute the element-wise multiplication.
+    `torch.mul(...)`_
 
     """
     return math_funcs.mul(self, other)
@@ -1033,7 +1033,7 @@ def mul_(self, other):
 
     See Also
     --------
-    `torch.mul(...)`_ : Compute the element-wise multiplication.
+    `torch.mul(...)`_
 
     """
     return math_funcs.mul(self, other, self)
@@ -1097,7 +1097,7 @@ def ne(self, other):
 
     See Also
     --------
-    `torch.ne(...)`_ : Compute the element-wise not-equal comparison.
+    `torch.ne(...)`_
 
     """
     return math_funcs.ne(self, other)
@@ -1115,19 +1115,25 @@ def neg(self):
 
     See Also
     --------
-    `torch.neg(...)`_ : Compute the element-wise negative.
+    `torch.neg(...)`_
 
     """
     return math_funcs.neg(self)
 
 
 def nonzero(self):
-    """Return the index of non-zero elements.
+    r"""Return the index of non-zero elements.
+
+    .. math:: \text{out} = \{i\}, \text{ if } \text{self}_{i} \neq 0
 
     Returns
     -------
     dragon.vm.torch.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `torch.nonzero(...)`_
 
     """
     return array_funcs.nonzero(self)
@@ -1186,7 +1192,7 @@ def pow(self, exponent):
 
     See Also
     --------
-    `torch.pow(...)`_ : Compute the power of input.
+    `torch.pow(...)`_
 
     """
     return math_funcs.pow(self, exponent)
@@ -1204,7 +1210,7 @@ def reciprocal(self):
 
     See Also
     --------
-    `torch.reciprocal(...)`_ : Compute the reciprocal of input.
+    `torch.reciprocal(...)`_
 
     """
     return math_funcs.reciprocal(self)
@@ -1222,7 +1228,7 @@ def reciprocal_(self):
 
     See Also
     --------
-    `torch.reciprocal(...)`_ : Compute the reciprocal of input.
+    `torch.reciprocal(...)`_
 
     """
     return math_funcs.reciprocal(self, self)
@@ -1260,7 +1266,7 @@ def reshape(self, shape):
 
     See Also
     --------
-    `torch.reshape(...)`_ : Change the shape of input.
+    `torch.reshape(...)`_
 
     """
     return array_funcs.reshape(self, shape)
@@ -1281,7 +1287,7 @@ def reshape_(self, shape):
 
     See Also
     --------
-    `torch.reshape(...)`_ : Change the shape of input.
+    `torch.reshape(...)`_
 
     """
     return array_funcs.reshape(self, shape, self)
@@ -1299,7 +1305,7 @@ def round(self):
 
     See Also
     --------
-    `torch.round(...)`_ : Compute the nearest integer of input.
+    `torch.round(...)`_
 
     """
     return math_funcs.round(self)
@@ -1317,7 +1323,7 @@ def round_(self):
 
     See Also
     --------
-    `torch.round(...)`_ : Compute the nearest integer of input.
+    `torch.round(...)`_
 
     """
     return math_funcs.round(self, self)
@@ -1335,7 +1341,7 @@ def rsqrt(self):
 
     See Also
     --------
-    `torch.rsqrt(...)`_ : Compute the square root of input.
+    `torch.rsqrt(...)`_
 
     """
     return math_funcs.rsqrt(self)
@@ -1353,7 +1359,7 @@ def rsqrt_(self):
 
     See Also
     --------
-    `torch.rsqrt(...)`_ : Compute the square root of input.
+    `torch.rsqrt(...)`_
 
     """
     return math_funcs.rsqrt(self, self)
@@ -1395,7 +1401,7 @@ def sign(self):
 
     See Also
     --------
-    `torch.sign(...)`_ : Compute the sign indication of input.
+    `torch.sign(...)`_
 
     """
     return math_funcs.sign(self)
@@ -1419,7 +1425,7 @@ def sign_(self):
 
     See Also
     --------
-    `torch.sign(...)`_ : Compute the sign indication of input.
+    `torch.sign(...)`_
 
     """
     return math_funcs.sign(self, self)
@@ -1437,7 +1443,7 @@ def sin(self):
 
     See Also
     --------
-    `torch.sin(...)`_ : Compute the sin of input.
+    `torch.sin(...)`_
 
     """
     return math_funcs.sin(self)
@@ -1455,7 +1461,7 @@ def sqrt(self):
 
     See Also
     --------
-    `torch.sqrt(...)`_ : Compute the square root of input.
+    `torch.sqrt(...)`_
 
     """
     return math_funcs.sqrt(self)
@@ -1473,7 +1479,7 @@ def sqrt_(self):
 
     See Also
     --------
-    `torch.sqrt(...)`_ : Compute the square root of input.
+    `torch.sqrt(...)`_
 
     """
     return math_funcs.sqrt(self, self)
@@ -1492,12 +1498,16 @@ def squeeze(self, dim=None):
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.squeeze(...)`_
+
     """
     return array_funcs.squeeze(self, dim)
 
 
 def squeeze_(self, dim=None):
-    """Inplace version of ``Tensor.squeeze()``.
+    """Remove the dimensions with size 1.
 
     Parameters
     ----------
@@ -1508,6 +1518,10 @@ def squeeze_(self, dim=None):
     -------
     dragon.vm.torch.Tensor
         The self.
+
+    See Also
+    --------
+    `torch.squeeze(...)`_
 
     """
     return array_funcs.squeeze(self, dim, self)
@@ -1527,6 +1541,10 @@ def sum(self, dim=None, keepdim=False):
     -------
     dragon.vm.torch.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `torch.sum(...)`_
 
     """
     return array_funcs.sum(self, dim, keepdim)
@@ -1549,7 +1567,7 @@ def sub(self, other):
 
     See Also
     --------
-    `torch.sub(...)`_ : Compute the element-wise subtraction.
+    `torch.sub(...)`_
 
     """
     return math_funcs.sub(self, other)
@@ -1572,7 +1590,7 @@ def sub_(self, other):
 
     See Also
     --------
-    `torch.sub(...)`_ : Compute the element-wise subtraction.
+    `torch.sub(...)`_
 
     """
     return math_funcs.sub(self, other, self)
@@ -1599,7 +1617,7 @@ def topk(self, k, dim=None, largest=True, sorted=True):
 
     See Also
     --------
-    `torch.topk(...)`_ : Return the top-K largest or smallest elements along the given dimension.
+    `torch.topk(...)`_
 
     """
     return array_funcs.topk(self, k, dim, largest, sorted)
@@ -1660,12 +1678,16 @@ def unsqueeze(self, dim):
     dragon.vm.torch.Tensor
         The output tensor.
 
+    See Also
+    --------
+    `torch.unsqueeze(...)`_
+
     """
     return array_funcs.unsqueeze(self, dim)
 
 
 def unsqueeze_(self, dim):
-    """In-place version of ``Tensor.unsqueeze()``.
+    """Insert the dimensions of size 1.
 
     Parameters
     ----------
@@ -1676,6 +1698,10 @@ def unsqueeze_(self, dim):
     -------
     dragon.vm.torch.Tensor
         The self.
+
+    See Also
+    --------
+    `torch.unsqueeze(...)`_
 
     """
     return array_funcs.unsqueeze(self, dim, self)
@@ -1702,6 +1728,10 @@ def where(self, condition, y):
     -------
     dragon.vm.torch.Tensor
         The output tensor.
+
+    See Also
+    --------
+    `torch.where(...)`_
 
     """
     return array_funcs.where(condition, self, y)

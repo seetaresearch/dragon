@@ -175,8 +175,23 @@ __truediv__
 .. _dragon.assign(...): assign.html
 .. _dragon.cast(...): cast.html
 .. _dragon.copy(...): copy.html
+.. _dragon.fill(...): fill.html
 .. _dragon.masked_assign(...): masked_assign.html
 .. _dragon.masked_select(...): masked_select.html
+.. _dragon.math.add(...): math/add.html
+.. _dragon.math.div(...): math/div.html
+.. _dragon.math.greater(...): math/greater.html
+.. _dragon.math.greater_equal(...): math/greater_equal.html
+.. _dragon.math.less(...): math/less.html
+.. _dragon.math.less_equal(...): math/less_equal.html
+.. _dragon.math.mul(...): math/mul.html
+.. _dragon.math.negative(...): math/negative.html
+.. _dragon.math.sub(...): math/sub.html
+.. _dragon.random.glorot_normal(...): random/glorot_normal.html
+.. _dragon.random.glorot_uniform(...): random/glorot_uniform.html
+.. _dragon.random.normal(...): random/normal.html
+.. _dragon.random.truncated_normal(...): random/truncated_normal.html
+.. _dragon.random.uniform(...): random/uniform.html
 .. _dragon.reshape(...): reshape.html
 .. _dragon.slice(...): slice.html
 

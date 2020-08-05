@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.SigmoidFocalLoss.__init__
 
+.. _torch.nn.functional.sigmoid_focal_loss(...): functional/sigmoid_focal_loss.html
+
 .. raw:: html
 
   <style>

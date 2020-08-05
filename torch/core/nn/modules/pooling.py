@@ -8,6 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""Pooling modules."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -58,6 +59,10 @@ class AvgPool2d(_PoolNd):
     x = torch.ones(2, 2, 4, 4)
     y = m(x)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.avg_pool2d(...)`_
 
     """
 
@@ -120,6 +125,10 @@ class MaxPool2d(_PoolNd):
     x = torch.ones(2, 2, 4, 4)
     y = m(x)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.max_pool2d(...)`_
 
     """
 

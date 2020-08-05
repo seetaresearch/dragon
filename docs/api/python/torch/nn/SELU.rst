@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.SELU.__init__
 
+.. _torch.nn.functional.selu(...): functional/selu.html
+
 .. raw:: html
 
   <style>

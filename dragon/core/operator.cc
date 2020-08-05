@@ -179,10 +179,10 @@ OperatorBase* NewOperator(const OperatorDef& def, Workspace* ws) {
   }
   OperatorDef mutable_def(def);
   // Heuristically make each random seed slightly different
-  static unsigned int op_seed_uuid = 0;
+  static unsigned int seed_offset = 0;
   mutable_def.mutable_device_option()->set_random_seed(
-      op_seed_uuid + def.device_option().random_seed());
-  op_seed_uuid = (op_seed_uuid + 1) % UINT32_MAX;
+      seed_offset + def.device_option().random_seed());
+  seed_offset = (seed_offset + 1) % UINT32_MAX;
   return TryCreateOperator(def.type(), mutable_def, ws);
 }
 

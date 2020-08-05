@@ -8,6 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""BatchNorm modules."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -89,10 +90,14 @@ class BatchNorm1d(_BatchNorm):
     .. math::
         y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
-    The moving average of stats are calculated as:
+    The running average of statistics are calculated as:
 
     .. math::
-        x_{moving} \leftarrow (1 - momentum) * x_{moving} + momentum * x_{stat}
+        x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} + \text{momentum} * x_{\text{stat}}
+
+    See Also
+    --------
+    `torch.nn.functional.batch_norm(...)`_
 
     """
 
@@ -136,10 +141,14 @@ class BatchNorm2d(_BatchNorm):
     .. math::
         y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
-    The moving average of stats are calculated as:
+    The running average of statistics are calculated as:
 
     .. math::
-        x_{moving} \leftarrow (1 - momentum) * x_{moving} + momentum * x_{stat}
+        x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} + \text{momentum} * x_{\text{stat}}
+
+    See Also
+    --------
+    `torch.nn.functional.batch_norm(...)`_
 
     """
 
@@ -183,10 +192,14 @@ class BatchNorm3d(_BatchNorm):
     .. math::
         y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
-    The moving average of stats are calculated as:
+    The running average of statistics are calculated as:
 
     .. math::
-        x_{moving} \leftarrow (1 - momentum) * x_{moving} + momentum * x_{stat}
+        x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} + \text{momentum} * x_{\text{stat}}
+
+    See Also
+    --------
+    `torch.nn.functional.batch_norm(...)`_
 
     """
 
@@ -230,14 +243,18 @@ class SyncBatchNorm(_BatchNorm):
     .. math::
         y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
-    The moving average of stats are calculated as:
+    The running average of statistics are calculated as:
 
     .. math::
-        x_{moving} \leftarrow (1 - momentum) * x_{moving} + momentum * x_{stat}
+        x_{\text{running}} = (1 - \text{momentum}) * x_{\text{running}} + \text{momentum} * x_{\text{stat}}
 
-    Additionally, you can specify ``process_group`` to perform synchronization.
+    Additionally, specify ``process_group`` to perform synchronization.
 
     If not, value returning from ``dragon.distributed.get_group(...)`` will be used.
+
+    See Also
+    --------
+    `torch.nn.functional.batch_norm(...)`_
 
     """
 

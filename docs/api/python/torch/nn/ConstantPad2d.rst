@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.ConstantPad2d.__init__
 
+.. _torch.nn.functional.pad(...): functional/pad.html
+
 .. raw:: html
 
   <style>

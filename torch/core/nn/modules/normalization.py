@@ -8,6 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""Normalization modules."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -38,6 +39,10 @@ class GroupNorm(Module):
     x = torch.randn(2, 4)
     y = m(x)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.group_norm(...)`_
 
     """
 
@@ -123,7 +128,7 @@ class LocalResponseNorm(Module):
 
     See Also
     --------
-    `torch.nn.functional.local_response_norm(...)`_ - Apply the local response normalization to input.
+    `torch.nn.functional.local_response_norm(...)`_
 
     """
 

@@ -16,11 +16,12 @@ from __future__ import print_function
 try:
     from nvidia.dali import ops
 except ImportError:
-    ops = None
+    from dragon.core.util import deprecation
+    ops = deprecation.not_installed('nvidia.dali')
 
 from dragon.core.util import six
-from dragon.vm.dali.core import context
-from dragon.vm.dali.core import types
+from dragon.vm.dali.core.framework import context
+from dragon.vm.dali.core.framework import types
 
 
 class ImageDecoder(object):
@@ -40,6 +41,7 @@ class ImageDecoder(object):
         output_type='BGR',
         host_memory_padding=8388608,
         device_memory_padding=16777216,
+        **kwargs
     ):
         """Create a ``ImageDecoder`` operator.
 
@@ -65,6 +67,7 @@ class ImageDecoder(object):
             host_memory_padding=host_memory_padding,
             device_memory_padding=device_memory_padding,
             device=context.get_device_type(mixed=True),
+            **kwargs
         )
 
 
@@ -93,6 +96,7 @@ class ImageDecoderRandomCrop(object):
         random_area=(0.08, 1.),
         random_aspect_ratio=(0.75, 1.33),
         num_attempts=10,
+        **kwargs
     ):
         """Create a ``ImageDecoderRandomCrop`` operator.
 
@@ -127,4 +131,5 @@ class ImageDecoderRandomCrop(object):
             random_aspect_ratio=random_aspect_ratio,
             num_attempts=num_attempts,
             device=context.get_device_type(mixed=True),
+            **kwargs
         )

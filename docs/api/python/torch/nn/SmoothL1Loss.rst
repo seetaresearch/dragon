@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.SmoothL1Loss.__init__
 
+.. _torch.nn.functional.smooth_l1_loss(...): functional/smooth_l1_loss.html
+
 .. raw:: html
 
   <style>

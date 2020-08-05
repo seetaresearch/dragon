@@ -7,6 +7,7 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.GroupNorm.__init__
 
+.. _torch.nn.functional.group_norm(...): functional/group_norm.html
 
 .. raw:: html
 

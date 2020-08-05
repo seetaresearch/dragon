@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.MaxPool2d.__init__
 
+.. _torch.nn.functional.max_pool2d(...): functional/max_pool2d.html
+
 .. raw:: html
 
   <style>

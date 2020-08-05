@@ -8,6 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""Linear modules."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -33,6 +34,10 @@ class Linear(Module):
     x = torch.ones(2, 2)
     y = m(x)
     ```
+
+    See Also
+    --------
+    `torch.nn.functional.linear(...)`_
 
     """
 

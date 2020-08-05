@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.Dropout.__init__
 
+.. _torch.nn.functional.dropout(...): functional/dropout.html
+
 .. raw:: html
 
   <style>

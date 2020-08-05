@@ -33,9 +33,9 @@ source_suffix = '.rst'
 # Extension
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinxcontrib.katex',
+    'sphinx_seeta_theme.ext.viewcode',
 ]
 napoleon_use_rtype = False
 

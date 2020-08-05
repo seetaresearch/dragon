@@ -3,6 +3,8 @@ l1_loss
 
 .. autofunction:: dragon.vm.torch.nn.functional.l1_loss
 
+.. _torch.nn.L1Loss(...): ../L1Loss.html
+
 .. raw:: html
 
   <style>

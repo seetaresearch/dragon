@@ -3,6 +3,8 @@ softmax
 
 .. autofunction:: dragon.vm.torch.nn.functional.softmax
 
+.. _torch.nn.Softmax(...): ../Softmax.html
+
 .. raw:: html
 
   <style>

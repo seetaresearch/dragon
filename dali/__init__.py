@@ -22,32 +22,32 @@ import sys as _sys
 from dragon.vm.dali._api import ops
 
 # Classes
-from dragon.vm.dali.core.iterator import Iterator
-from dragon.vm.dali.core.pipeline import Pipeline
+from dragon.vm.dali.core.framework.iterator import Iterator
+from dragon.vm.dali.core.framework.pipeline import Pipeline
 
 # Functions
-from dragon.vm.dali.core.context import device
-from dragon.vm.dali.core.context import get_device_type
-from dragon.vm.dali.core.context import get_distributed_info
+from dragon.vm.dali.core.framework.context import device
+from dragon.vm.dali.core.framework.context import get_device_type
+from dragon.vm.dali.core.framework.context import get_distributed_info
 
 # Enums
-from dragon.vm.dali.core.types import BOOL
-from dragon.vm.dali.core.types import BGR
-from dragon.vm.dali.core.types import FLOAT
-from dragon.vm.dali.core.types import FLOAT32
-from dragon.vm.dali.core.types import FLOAT64
-from dragon.vm.dali.core.types import INT8
-from dragon.vm.dali.core.types import INT32
-from dragon.vm.dali.core.types import INT64
-from dragon.vm.dali.core.types import INTERP_TRIANGULAR
-from dragon.vm.dali.core.types import NCHW
-from dragon.vm.dali.core.types import NHWC
-from dragon.vm.dali.core.types import RGB
-from dragon.vm.dali.core.types import STRING
-from dragon.vm.dali.core.types import UINT8
-from dragon.vm.dali.core.types import UINT16
-from dragon.vm.dali.core.types import UINT32
-from dragon.vm.dali.core.types import UINT64
+from dragon.vm.dali.core.framework.types import BOOL
+from dragon.vm.dali.core.framework.types import BGR
+from dragon.vm.dali.core.framework.types import FLOAT
+from dragon.vm.dali.core.framework.types import FLOAT32
+from dragon.vm.dali.core.framework.types import FLOAT64
+from dragon.vm.dali.core.framework.types import INT8
+from dragon.vm.dali.core.framework.types import INT32
+from dragon.vm.dali.core.framework.types import INT64
+from dragon.vm.dali.core.framework.types import INTERP_TRIANGULAR
+from dragon.vm.dali.core.framework.types import NCHW
+from dragon.vm.dali.core.framework.types import NHWC
+from dragon.vm.dali.core.framework.types import RGB
+from dragon.vm.dali.core.framework.types import STRING
+from dragon.vm.dali.core.framework.types import UINT8
+from dragon.vm.dali.core.framework.types import UINT16
+from dragon.vm.dali.core.framework.types import UINT32
+from dragon.vm.dali.core.framework.types import UINT64
 
 # Attributes
 _API_MODULE = ops

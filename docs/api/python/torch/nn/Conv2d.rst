@@ -7,6 +7,8 @@ __init__
 --------
 .. automethod:: dragon.vm.torch.nn.Conv2d.__init__
 
+.. _torch.nn.functional.conv2d(...): functional/conv2d.html
+
 .. raw:: html
 
   <style>

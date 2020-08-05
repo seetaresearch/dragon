@@ -221,7 +221,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.abs(...)`_ : Compute the absolute value of input.
+        `torch.abs(...)`_
 
         """
 
@@ -242,7 +242,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.add(...)`_ : Compute the element-wise addition.
+        `torch.add(...)`_
 
         """
 
@@ -263,7 +263,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.add(...)`_ : Compute the element-wise addition.
+        `torch.add(...)`_
 
         """
 
@@ -284,7 +284,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.argmax(...)`_ : Return the index of maximum elements along the given dimension.
+        `torch.argmax(...)`_
 
         """
 
@@ -305,7 +305,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.argmin(...)`_ : Return the index of minimum elements along the given dimension.
+        `torch.argmin(...)`_
 
         """
 
@@ -333,7 +333,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.bitwise_not(...)`_ : Compute the element-wise NOT bitwise operation.
+        `torch.bitwise_not(...)`_
 
         """
 
@@ -349,7 +349,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.bitwise_not(...)`_ : Compute the element-wise NOT bitwise operation.
+        `torch.bitwise_not(...)`_
 
         """
 
@@ -370,7 +370,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.bitwise_xor(...)`_ : Compute the element-wise XOR bitwise operation.
+        `torch.bitwise_xor(...)`_
 
         """
 
@@ -391,7 +391,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.bitwise_xor(...)`_ : Compute the element-wise XOR bitwise operation.
+        `torch.bitwise_xor(...)`_
 
         """
 
@@ -447,7 +447,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.ceil(...)`_ : Compute the smallest integer not less than input.
+        `torch.ceil(...)`_
 
         """
 
@@ -463,7 +463,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.ceil(...)`_ : Compute the smallest integer not less than input.
+        `torch.ceil(...)`_
 
         """
 
@@ -521,7 +521,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.clamp(...)`_ : Compute the clipped input according to the given bounds.
+        `torch.clamp(...)`_
 
         """
 
@@ -542,7 +542,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.clamp(...)`_ : Compute the clipped input according to the given bounds.
+        `torch.clamp(...)`_
 
         """
 
@@ -585,7 +585,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.cos(...)`_ : Compute the cos of input.
+        `torch.cos(...)`_
 
         """
 
@@ -638,7 +638,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.cumsum(...)`_ : Compute the cumulative sum of elements along the given dimension.
+        `torch.cumsum(...)`_
 
         """
 
@@ -681,7 +681,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.div(...)`_ : Compute the element-wise division.
+        `torch.div(...)`_
 
         """
 
@@ -702,7 +702,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.div(...)`_ : Compute the element-wise division.
+        `torch.div(...)`_
 
         """
 
@@ -743,7 +743,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.eq(...)`_ : Compute the element-wise equal comparison.
+        `torch.eq(...)`_
 
         """
 
@@ -759,7 +759,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.exp(...)`_ : Compute the exponential of input.
+        `torch.exp(...)`_
 
         """
 
@@ -778,7 +778,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.expand(...)`_ : Broadcast input according to given sizes.
+        `torch.expand(...)`_
 
         """
 
@@ -797,7 +797,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.expand(...)`_ : Broadcast input according to given sizes.
+        `torch.expand(...)`_
 
         """
         return self.expand(*other.size())
@@ -851,7 +851,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.floor(...)`_ : Compute the largest integer not greater than input.
+        `torch.floor(...)`_
 
         """
 
@@ -867,7 +867,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.floor(...)`_ : Compute the largest integer not greater than input.
+        `torch.floor(...)`_
 
         """
 
@@ -888,7 +888,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.ge(...)`_ : Compute the element-wise greater-equal comparison.
+        `torch.ge(...)`_
 
         """
 
@@ -909,7 +909,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.gt(...)`_ : Compute the element-wise greater comparison.
+        `torch.gt(...)`_
 
         """
 
@@ -1000,7 +1000,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.le(...)`_ : Compute the element-wise less-equal comparison.
+        `torch.le(...)`_
 
         """
 
@@ -1072,7 +1072,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.lt(...)`_ : Compute the element-wise less comparison.
+        `torch.lt(...)`_
 
         """
 
@@ -1183,7 +1183,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.mul(...)`_ : Compute the element-wise multiplication.
+        `torch.mul(...)`_
 
         """
 
@@ -1204,7 +1204,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.mul(...)`_ : Compute the element-wise multiplication.
+        `torch.mul(...)`_
 
         """
 
@@ -1273,7 +1273,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.ne(...)`_ : Compute the element-wise not-equal comparison.
+        `torch.ne(...)`_
 
         """
 
@@ -1289,17 +1289,23 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.neg(...)`_ : Compute the element-wise negative.
+        `torch.neg(...)`_
 
         """
 
     def nonzero(self):
-        """Return the index of non-zero elements.
+        r"""Return the index of non-zero elements.
+
+        .. math:: \text{out} = \{i\}, \text{ if } \text{self}_{i} \neq 0
 
         Returns
         -------
         dragon.vm.torch.Tensor
             The output tensor.
+
+        See Also
+        --------
+        `torch.nonzero(...)`_
 
         """
 
@@ -1392,7 +1398,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.pow(...)`_ : Compute the power of input.
+        `torch.pow(...)`_
 
         """
 
@@ -1408,7 +1414,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.reciprocal(...)`_ : Compute the reciprocal of input.
+        `torch.reciprocal(...)`_
 
         """
 
@@ -1424,7 +1430,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.reciprocal(...)`_ : Compute the reciprocal of input.
+        `torch.reciprocal(...)`_
 
         """
 
@@ -1458,7 +1464,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.reshape(...)`_ : Change the shape of input.
+        `torch.reshape(...)`_
 
         """
 
@@ -1477,7 +1483,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.reshape(...)`_ : Change the shape of input.
+        `torch.reshape(...)`_
 
         """
 
@@ -1498,7 +1504,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.round(...)`_ : Compute the nearest integer of input.
+        `torch.round(...)`_
 
         """
 
@@ -1514,7 +1520,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.round(...)`_ : Compute the nearest integer of input.
+        `torch.round(...)`_
 
         """
 
@@ -1530,7 +1536,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.rsqrt(...)`_ : Compute the square root of input.
+        `torch.rsqrt(...)`_
 
         """
 
@@ -1546,7 +1552,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.rsqrt(...)`_ : Compute the square root of input.
+        `torch.rsqrt(...)`_
 
         """
 
@@ -1568,7 +1574,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.sign(...)`_ : Compute the sign indication of input.
+        `torch.sign(...)`_
 
         """
 
@@ -1590,7 +1596,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.sign(...)`_ : Compute the sign indication of input.
+        `torch.sign(...)`_
 
         """
 
@@ -1606,7 +1612,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.sin(...)`_ : Compute the sin of input.
+        `torch.sin(...)`_
 
         """
 
@@ -1639,7 +1645,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.sqrt(...)`_ : Compute the square root of input.
+        `torch.sqrt(...)`_
 
         """
 
@@ -1655,7 +1661,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.sqrt(...)`_ : Compute the square root of input.
+        `torch.sqrt(...)`_
 
         """
 
@@ -1672,10 +1678,14 @@ class Tensor(object):
         dragon.vm.torch.Tensor
             The output tensor.
 
+        See Also
+        --------
+        `torch.squeeze(...)`_
+
         """
 
     def squeeze_(self, dim=None):
-        """Inplace version of ``Tensor.squeeze()``.
+        """Remove the dimensions with size 1.
 
         Parameters
         ----------
@@ -1686,6 +1696,10 @@ class Tensor(object):
         -------
         dragon.vm.torch.Tensor
             The self.
+
+        See Also
+        --------
+        `torch.squeeze(...)`_
 
         """
 
@@ -1703,6 +1717,10 @@ class Tensor(object):
         -------
         dragon.vm.torch.Tensor
             The output tensor.
+
+        See Also
+        --------
+        `torch.sum(...)`_
 
         """
 
@@ -1723,7 +1741,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.sub(...)`_ : Compute the element-wise subtraction.
+        `torch.sub(...)`_
 
         """
 
@@ -1744,7 +1762,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.sub(...)`_ : Compute the element-wise subtraction.
+        `torch.sub(...)`_
 
         """
 
@@ -1769,7 +1787,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.topk(...)`_ : Return the top-K largest or smallest elements along the given dimension.
+        `torch.topk(...)`_
 
         """
 
@@ -1822,10 +1840,14 @@ class Tensor(object):
         dragon.vm.torch.Tensor
             The output tensor.
 
+        See Also
+        --------
+        `torch.unsqueeze(...)`_
+
         """
 
     def unsqueeze_(self, dim):
-        """In-place version of ``Tensor.unsqueeze()``.
+        """Insert the dimensions of size 1.
 
         Parameters
         ----------
@@ -1836,6 +1858,10 @@ class Tensor(object):
         -------
         dragon.vm.torch.Tensor
             The self.
+
+        See Also
+        --------
+        `torch.unsqueeze(...)`_
 
         """
 
@@ -1854,7 +1880,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.reshape(...)`_ : Change the shape of input.
+        `torch.reshape(...)`_
 
         """
         return self.reshape(shape)
@@ -1874,7 +1900,7 @@ class Tensor(object):
 
         See Also
         --------
-        `torch.reshape(...)`_ : Change the shape of input.
+        `torch.reshape(...)`_
 
         """
         return self.reshape_(shape)
@@ -1917,6 +1943,10 @@ class Tensor(object):
         -------
         dragon.vm.torch.Tensor
             The output tensor.
+
+        See Also
+        --------
+        `torch.where(...)`_
 
         """
 

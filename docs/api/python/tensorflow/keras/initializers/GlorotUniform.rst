@@ -12,7 +12,8 @@ Methods
 
 __call__
 ########
-.. automethod:: dragon.vm.tensorflow.keras.initializers.GlorotUniform.__call__
+.. automethod:: dragon.vm.tensorflow.keras.initializers.VarianceScaling.__call__
+  :noindex:
 
 .. raw:: html
 

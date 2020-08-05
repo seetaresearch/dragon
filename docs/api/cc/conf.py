@@ -35,14 +35,7 @@ master_doc = 'index'
 source_suffix = '.rst'
 
 # Extension
-extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.napoleon',
-    'sphinxcontrib.katex',
-    'breathe',
-]
-napoleon_use_rtype = False
+extensions = ['sphinx.ext.autodoc', 'sphinxcontrib.katex', 'breathe']
 
 # Project
 project = 'dragon'

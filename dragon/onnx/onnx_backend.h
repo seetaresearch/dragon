@@ -71,7 +71,7 @@ class ConversionContext {
   const int opset_version_;
 };
 
-typedef struct {
+struct ONNXImporterReturns {
   vector<OperatorDef> ops;
 
   OperatorDef* AddOp() {
@@ -83,7 +83,7 @@ typedef struct {
     CHECK_LT(index, ops.size());
     return &ops[index];
   }
-} ONNXImporterReturns;
+};
 
 class ONNXAttributes {
  public:

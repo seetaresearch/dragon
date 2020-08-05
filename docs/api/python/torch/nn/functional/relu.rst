@@ -3,6 +3,8 @@ relu
 
 .. autofunction:: dragon.vm.torch.nn.functional.relu
 
+.. _torch.nn.ReLU(...): ../ReLU.html
+
 .. raw:: html
 
   <style>

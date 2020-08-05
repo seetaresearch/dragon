@@ -3,6 +3,8 @@ prelu
 
 .. autofunction:: dragon.vm.torch.nn.functional.prelu
 
+.. _torch.nn.PReLU(...): ../PReLU.html
+
 .. raw:: html
 
   <style>
