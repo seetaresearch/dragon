@@ -51,6 +51,5 @@ class GradAccumulate(function.Function):
             'arguments': {'alpha': 1., 'beta': float(self.momentum)},
         }
 
-    def forward(self, grads):
-        outputs = [grad.id + '[accum]' for grad in grads]
-        return self.dispatch(grads, outputs, no_grad=True)
+    def forward(self, grad):
+        return self.dispatch([grad], [grad.id + '[accum]'], no_grad=True)

@@ -14,18 +14,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from dragon.core.util import nest
 from dragon.vm.torch.core.ops.training import _functions
 
 
-def accumulate_grad(grads, momentum=1):
-    """Accumulate the gradients."""
-    grads = nest.flatten(grads)
-    if len(grads) == 0:
-        return
+def accumulate_grad(grad, momentum=1):
+    """Accumulate the gradient."""
     return _functions.GradAccumulate \
-        .instantiate(grads[0].device, momentum=momentum) \
-        .apply(grads)
+        .instantiate(grad.device, momentum=momentum).apply(grad)
 
 
 def update_param(

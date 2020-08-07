@@ -97,15 +97,13 @@ class Optimizer(object):
             The momentum to the accumulated value.
 
         """
-        grads = []
         current_ws = workspace.get_workspace()
         for group in self.param_groups:
             group['_internal/grad_accum'] = True
             for param in group['params']:
                 grad = self._steal_grad(current_ws, param)
                 if grad is not None:
-                    grads.append(grad)
-        training_funcs.accumulate_grad(grads, momentum)
+                    training_funcs.accumulate_grad(grad)
 
     def add_param_group(self, param_group):
         """Add a new param group into the optimizer.

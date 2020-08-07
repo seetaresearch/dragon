@@ -172,15 +172,15 @@ DEPLOY_CUDA(Greater);
 DEPLOY_CUDA(GreaterEqual);
 #endif
 
-OPERATOR_SCHEMA(Ceil).NumInputs(1).NumOutputs(1).Inplace({{0, 0}});
-OPERATOR_SCHEMA(Floor).NumInputs(1).NumOutputs(1).Inplace({{0, 0}});
-OPERATOR_SCHEMA(Round).NumInputs(1).NumOutputs(1).Inplace({{0, 0}});
-OPERATOR_SCHEMA(Sign).NumInputs(1).NumOutputs(1).Inplace({{0, 0}});
-OPERATOR_SCHEMA(Sqrt).NumInputs(1).NumOutputs(1).Inplace({{0, 0}});
-OPERATOR_SCHEMA(Rsqrt).NumInputs(1).NumOutputs(1).Inplace({{0, 0}});
-OPERATOR_SCHEMA(Exp).NumInputs(1).NumOutputs(1).Inplace({{0, 0}});
-OPERATOR_SCHEMA(Log).NumInputs(1).NumOutputs(1).Inplace({{0, 0}});
-OPERATOR_SCHEMA(Invert).NumInputs(1).NumOutputs(1).Inplace({{0, 0}});
+OPERATOR_SCHEMA(Ceil).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
+OPERATOR_SCHEMA(Floor).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
+OPERATOR_SCHEMA(Round).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
+OPERATOR_SCHEMA(Sign).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
+OPERATOR_SCHEMA(Sqrt).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
+OPERATOR_SCHEMA(Rsqrt).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
+OPERATOR_SCHEMA(Exp).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
+OPERATOR_SCHEMA(Log).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
+OPERATOR_SCHEMA(Invert).NumInputs(1).NumOutputs(1).AllowInplace({{0, 0}});
 OPERATOR_SCHEMA(Sin).NumInputs(1).NumOutputs(1);
 OPERATOR_SCHEMA(Cos).NumInputs(1).NumOutputs(1);
 OPERATOR_SCHEMA(Square).NumInputs(1).NumOutputs(1);

@@ -567,10 +567,6 @@ def expand(self, *sizes):
     dragon.vm.torch.Tensor
         The output tensor.
 
-    See Also
-    --------
-    `torch.expand(...)`_
-
     """
     return array_funcs.expand(self, sizes)
 

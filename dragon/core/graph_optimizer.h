@@ -32,45 +32,42 @@ class GraphOptimizer {
   /*! \brief Default constructor */
   GraphOptimizer(Workspace* ws) : ws_(ws) {}
 
-  /*! \brief Build the DAG resources for given def */
-  void BuildDAG(const GraphDef& input_def);
+  /*! \brief Build the DAG */
+  void BuildDAG(const GraphDef& graph);
 
-  /*! \brief Prune the redundant nodes (-O1) */
-  GraphDef PruneNodes(const GraphDef& input_def);
+  /*! \brief Eliminate the unused outputs and operators */
+  GraphDef EliminateUnused(const GraphDef& graph);
 
-  /*! \brief Add the inplace for outputs (-O2) */
-  void AddInplace(
-      const GraphDef& input_def,
+  /*! \brief Plan the inplace for inputs */
+  void PlanInplace(
+      const GraphDef& graph,
       Map<string, Set<string>>& output_aliases);
 
-  /*! \brief Plan the recomputing for inputs (-O3) */
-  GraphDef MirrorStage(
-      const GraphDef& input_def,
-      Map<string, vec32_t>& op_indices);
+  /*! \brief Plan the checkpoint for inputs */
+  GraphDef PlanCheckpoint(
+      const GraphDef& graph,
+      Map<string, vec32_t>& subgraph_indices);
 
-  /*! \brief Allocate the buffer for outputs (-O3) */
-  GraphDef SimulateGC(const GraphDef& input_def);
+  /*! \brief Allocate the shared buffer for outputs */
+  GraphDef SimulateGC(const GraphDef& graph);
 
  protected:
-  /*! \brief Pass from gradients to remove unused nodes */
-  void ForwardPrunePass(
-      const string& u,
-      const string& leaf,
-      const std::deque<string>& path);
+  /*! \brief Remote the unused nodes from a sink to all sources */
+  void EliminateUnusedNode(const string& sink);
 
-  /*! \brief Pass from targets to remove unused nodes */
-  void BackwardPrunePass(const string& v);
+  /*! \brief Remote the unused nodes from a source to a sink */
+  void EliminateUnusedNode(const string& source, const string& sink);
 
-  /* \brief Store the workspace of parent graph */
+  /* \brief The graph workspace */
   Workspace* ws_;
 
-  /* \brief Store the DAG */
-  Map<string, Node> dag_;
+  /* \brief The graph nodes */
+  Map<string, Node> nodes_;
 
-  /* \brief Store the traversal flags */
-  Map<string, bool> visited_, colored_;
+  /* \brief The traversal flags */
+  Map<string, bool> visited_, used_;
 
-  /* \brief Store the count of references */
+  /* \brief The reference count */
   Map<string, int> reference_count_;
 
  private:

@@ -65,8 +65,7 @@ class _BatchNorm(Module):
                .format(**self.__dict__)
 
     def forward(self, input):
-        training = self.training or \
-            not self.track_running_stats
+        training = self.training or not self.track_running_stats
         return F.batch_norm(
             input, *self.inputs,
             training=training,

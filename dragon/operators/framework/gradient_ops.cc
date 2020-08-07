@@ -122,7 +122,7 @@ OPERATOR_SCHEMA(GradientAdd)
     /* Y */
     .NumOutputs(1)
     /* X1 => Y */
-    .Inplace({{0, 0}});
+    .AllowInplace({{0, 0}});
 
 OPERATOR_SCHEMA(StopGradient)
     /* X */
@@ -130,7 +130,7 @@ OPERATOR_SCHEMA(StopGradient)
     /* Y */
     .NumOutputs(1)
     /* X => Y */
-    .Inplace({{0, 0}});
+    .AllowInplace({{0, 0}});
 
 NO_GRADIENT(StopGradient);
 

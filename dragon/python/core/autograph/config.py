@@ -50,11 +50,11 @@ def set_optimization(level=1):
 
     * level = ``0``: Do nothing.
 
-    * level = ``1``: Prune the redundant nodes.
+    * level = ``1``: Eliminate the unused outputs and operators.
 
-    * level = ``2``: Add the inplace to outputs.
+    * level = ``2``: Apply inplace to the inputs if available.
 
-    * level = ``3``: Allocate the buffer for outputs.
+    * level = ``3``: Allocate shared buffer for the outputs.
 
     Parameters
     ----------

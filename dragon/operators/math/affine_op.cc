@@ -151,7 +151,7 @@ OPERATOR_SCHEMA(Affine)
     /* Y */
     .NumOutputs(1)
     /* X => Y */
-    .Inplace({{0, 0}});
+    .AllowInplace({{0, 0}});
 
 OPERATOR_SCHEMA(AffineGradient)
     /* X, W, dY */
@@ -159,7 +159,7 @@ OPERATOR_SCHEMA(AffineGradient)
     /* dX, dW, dB */
     .NumOutputs(3)
     /* dY => dX */
-    .Inplace({{2, 0}});
+    .AllowInplace({{2, 0}});
 
 namespace {
 

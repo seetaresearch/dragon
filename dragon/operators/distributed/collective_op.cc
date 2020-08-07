@@ -193,7 +193,7 @@ DEPLOY_CPU(Collective);
 DEPLOY_CUDA(Collective);
 #endif
 
-OPERATOR_SCHEMA(Collective);
+OPERATOR_SCHEMA(Collective).AllowInplace([](int, int) -> bool { return true; });
 
 } // namespace dragon
 

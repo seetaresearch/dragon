@@ -207,16 +207,16 @@ OPERATOR_SCHEMA(Div)
     .NumInputs(2)
     /* Y */
     .NumOutputs(1)
-    /* A => Y */
-    .Inplace({{0, 0}, {1, 0}});
+    /* A => Y, B => Y */
+    .AllowInplace({{0, 0}, {1, 0}});
 
 OPERATOR_SCHEMA(DivGradient)
     /* A, B, dY */
     .NumInputs(3)
     /* dA, dB */
     .NumOutputs(2)
-    /* dY => dA */
-    .Inplace({{2, 0}, {2, 1}});
+    /* dY => dA, dY => dB */
+    .AllowInplace({{2, 0}, {2, 1}});
 
 REGISTER_GRADIENT(Div, GenericGradientMaker);
 

@@ -79,12 +79,12 @@ Graph::Graph(const GraphDef& def, Workspace* ws) : GraphBase(def, ws) {
   Map<string, vec32_t> subgraph_indices;
   int opt = 3; // default: O3
   if (args().count("optimization")) opt = arg("optimization").i();
-  if (opt >= 1) def_v2 = graph_optimizer.PruneNodes(def);
-  if (opt >= 2) graph_optimizer.AddInplace(def_v2, output_aliases_);
+  if (opt >= 1) def_v2 = graph_optimizer.EliminateUnused(def);
+  if (opt >= 2) graph_optimizer.PlanInplace(def_v2, output_aliases_);
   if (opt >= 3) {
     if (phase() == "TRAIN") {
-      def_v2 = graph_optimizer.MirrorStage(def_v2, subgraph_indices);
-      def_v2 = gradient_maker.Share(def_v2);
+      def_v2 = graph_optimizer.PlanCheckpoint(def_v2, subgraph_indices);
+      def_v2 = gradient_maker.Optimize(def_v2);
     } else {
       def_v2 = graph_optimizer.SimulateGC(def_v2);
     }
@@ -98,8 +98,8 @@ Graph::Graph(const GraphDef& def, Workspace* ws) : GraphBase(def, ws) {
     Map<string, vector<OperatorBase*>> subgraph;
     for (const auto& it : subgraph_indices) {
       subgraph[it.first] = vector<OperatorBase*>();
-      for (const auto& idx : subgraph_indices[it.first])
-        subgraph[it.first].push_back(cached_ops_[idx]);
+      for (auto op_idx : subgraph_indices[it.first])
+        subgraph[it.first].push_back(cached_ops_[op_idx]);
     }
     for (auto* op : cached_ops_) {
       op->set_subgraph(subgraph);

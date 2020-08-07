@@ -69,7 +69,7 @@ OPERATOR_SCHEMA(Reshape)
     /* Y */
     .NumOutputs(1)
     /* X => Y */
-    .Inplace({{0, 0}});
+    .AllowInplace({{0, 0}});
 
 OPERATOR_SCHEMA(ReshapeGradient)
     /* dY */
@@ -77,7 +77,7 @@ OPERATOR_SCHEMA(ReshapeGradient)
     /* dX */
     .NumOutputs(1)
     /* dY => dX */
-    .Inplace({{0, 0}});
+    .AllowInplace({{0, 0}});
 
 REGISTER_GRADIENT(Reshape, SimpleGradientMaker);
 

@@ -30,7 +30,7 @@ OPERATOR_SCHEMA(SignGradient)
     /* dX */
     .NumOutputs(1)
     /* dY => dX */
-    .Inplace({{0, 0}});
+    .AllowInplace({{0, 0}});
 
 REGISTER_GRADIENT(Sign, SimpleGradientMaker);
 

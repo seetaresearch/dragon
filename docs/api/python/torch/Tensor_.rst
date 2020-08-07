@@ -470,7 +470,6 @@ zero\_
 .. _torch.div(...): div.html
 .. _torch.eq(...): eq.html
 .. _torch.exp(...): exp.html
-.. _torch.expand(...): expand.html
 .. _torch.floor(...): floor.html
 .. _torch.ge(...): ge.html
 .. _torch.gt(...): gt.html

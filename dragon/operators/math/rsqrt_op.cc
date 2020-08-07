@@ -32,7 +32,7 @@ OPERATOR_SCHEMA(RsqrtGradient)
     /* dX */
     .NumOutputs(1)
     /* dY => dX */
-    .Inplace({{1, 0}});
+    .AllowInplace({{1, 0}});
 
 REGISTER_GRADIENT(Rsqrt, InplaceGradientMaker);
 

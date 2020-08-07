@@ -20,6 +20,9 @@
 
 namespace dragon {
 
+/*!
+ * \brief Class to record the schema of operator.
+ */
 class DRAGON_API OpSchema {
  public:
   /*! \brief Default constructor */
@@ -27,14 +30,11 @@ class DRAGON_API OpSchema {
     Init();
   }
 
-  /*! \brief Constructor with defined spec */
+  /*! \brief Constructor with the defined spec */
   OpSchema(const string& op_type, const string& file, const int line)
       : op_type_(op_type), file_(file), line_(line) {
     Init();
   }
-
-  /*! \brief Check if the in-place setting is matched */
-  std::function<bool(int, int)> CheckInplace = nullptr;
 
   /*! \brief Set a fixed number of inputs */
   OpSchema& NumInputs(int n);
@@ -48,11 +48,17 @@ class DRAGON_API OpSchema {
   /*! \brief Set the min and max number of outputs */
   OpSchema& NumOutputs(int min_num, int max_num);
 
-  /*! \brief Set the in-place setting */
-  OpSchema& Inplace(set<pair<int, int>> inplace);
+  /*! \brief Set the rule to allow inplace with a group of indices */
+  OpSchema& AllowInplace(set<pair<int, int>> inplace);
 
-  /*! \brief Verify if the def matches the schema  */
+  /*! \brief Set the rule to allow inplace with a function */
+  OpSchema& AllowInplace(std::function<bool(int, int)> inplace);
+
+  /*! \brief Check if the given def matches this schema */
   bool Verify(const OperatorDef& def) const;
+
+  /*! \brief Check if the inplace is allowed */
+  std::function<bool(int, int)> CheckInplace = [](int, int) { return false; };
 
  private:
   /*! \brief Initialize the default settings */

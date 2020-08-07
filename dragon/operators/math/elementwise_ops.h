@@ -43,7 +43,7 @@ class AxpbyOp final : public Operator<Context> {
   void RunOnDevice() override;
 
   template <typename T>
-  void DoRunWithType(Tensor* X, Tensor* Y);
+  void DoRunWithType();
 
  protected:
   float alpha_, beta_;

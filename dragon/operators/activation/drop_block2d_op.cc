@@ -129,7 +129,7 @@ OPERATOR_SCHEMA(DropBlock2d)
     /* Y */
     .NumOutputs(1)
     /* X => Y */
-    .Inplace({{0, 0}});
+    .AllowInplace({{0, 0}});
 
 DEPLOY_CPU(DropBlock2dGradient);
 #ifdef USE_CUDA
@@ -142,7 +142,7 @@ OPERATOR_SCHEMA(DropBlock2dGradient)
     /* dX */
     .NumOutputs(1)
     /* dY => dX */
-    .Inplace({{0, 0}});
+    .AllowInplace({{0, 0}});
 
 REGISTER_GRADIENT(DropBlock2d, SimpleGradientMaker);
 

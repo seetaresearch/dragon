@@ -19,15 +19,15 @@ namespace dragon {
 
 class DRAGON_API GraphGradientMaker {
  public:
-  /*! \brief Generate graph def from the op defs */
+  /*! \brief Generate graph from the executed ops */
   void Make(
-      const vector<OperatorDef*>& op_defs,
+      const vector<OperatorDef*>& ops,
       const vector<string>& targets,
       const vector<string>& input_grads,
-      GraphDef& graph_def);
+      GraphDef& graph);
 
-  /*! \brief Rewrite graph def to share the intermediate grads */
-  GraphDef Share(const GraphDef& input_def);
+  /*! \brief Eliminate the unused and make sharing of outputs */
+  GraphDef Optimize(const GraphDef& graph);
 
   /*! \brief Add an empty gradient */
   void add_empty_grad(const string& name) {
@@ -47,14 +47,14 @@ class DRAGON_API GraphGradientMaker {
  private:
   /*! \brief Check the missing grads */
   bool CheckGrad(
-      const OperatorDef& op_def,
+      const OperatorDef& op,
       const Set<string>& targets,
       vector<pair<string, int>>& gen_grads);
 
   /*! \brief Return a dummy operator name */
   string GetOperatorName() {
     if (op_prefix_.empty()) return "GradientOp";
-    return op_prefix_ + str::to(op_index_++);
+    return op_prefix_ + str::to(op_idx_++);
   }
 
   /*! \brief The mapping from input to grad */
@@ -70,7 +70,7 @@ class DRAGON_API GraphGradientMaker {
   string op_prefix_;
 
   /*! \brief The counter of op name */
-  int64_t op_index_ = 0;
+  int64_t op_idx_ = 0;
 };
 
 } // namespace dragon

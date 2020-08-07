@@ -146,10 +146,8 @@ def cat(seq, dim=0, out=None):
 
     """
     return _functions.Concat \
-        .instantiate(
-            seq[0].device,
-            axis=dim,
-        ).apply(seq, out)
+        .instantiate(seq[0].device, axis=dim) \
+        .apply(seq, out)
 
 
 def channel_normalize(
@@ -618,10 +616,7 @@ def nonzero(input, out=None):
         The output tensor.
 
     """
-    return _functions.NonZero \
-        .instantiate(
-            input.device,
-        ).apply(input, out)
+    return _functions.NonZero.instantiate(input.device).apply(input, out)
 
 
 def one_hot(input, depth):
@@ -647,8 +642,7 @@ def one_hot(input, depth):
         The output tensor.
 
     """
-    return _functions.OneHot \
-        .instantiate(input.device, depth=depth).apply(input)
+    return _functions.OneHot.instantiate(input.device, depth=depth).apply(input)
 
 
 def permute(input, dims):
@@ -715,18 +709,14 @@ def reshape(input, shape, out=None):
     """
     shape = nest.flatten(shape)
     return _functions.Reshape \
-        .instantiate(
-            input.device,
-            ndim=len(shape),
-        ).apply(input, shape, out)
+        .instantiate(input.device, ndim=len(shape)) \
+        .apply(input, shape, out)
 
 
 def slice(input, starts, sizes):
     return _functions.Slice \
-        .instantiate(
-            input.device,
-            ndim=len(starts),
-        ).apply(input, starts, sizes)
+        .instantiate(input.device, ndim=len(starts)) \
+        .apply(input, starts, sizes)
 
 
 def split(tensor, split_size_or_sections, dim=0):
@@ -1015,9 +1005,8 @@ def where(condition, x, y):
 
     """
     return _functions.Where \
-        .instantiate(
-            utils.unify_devices([condition, x, y]),
-        ).apply(condition, x, y)
+        .instantiate(utils.unify_devices([condition, x, y])) \
+        .apply(condition, x, y)
 
 
 def _arg_reduce(input, op_type, dim=None, keepdim=False, out=None):

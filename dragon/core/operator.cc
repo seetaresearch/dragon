@@ -173,10 +173,7 @@ TryCreateOperator(const string& key, const OperatorDef& def, Workspace* ws) {
 
 OperatorBase* NewOperator(const OperatorDef& def, Workspace* ws) {
   auto* schema = OpSchemaRegistry::Schema(def.type());
-  if (schema != nullptr) {
-    CHECK(schema->Verify(def))
-        << "\nOperator failed to pass the schema checking.";
-  }
+  if (schema != nullptr) CHECK(schema->Verify(def));
   OperatorDef mutable_def(def);
   // Heuristically make each random seed slightly different
   static unsigned int seed_offset = 0;

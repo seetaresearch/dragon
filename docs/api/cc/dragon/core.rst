@@ -18,6 +18,9 @@ dragon/core
   `class Operator <core/Operator.html>`_
   : The base operator class with context.
 
+  `class OpSchema <core/OpSchema.html>`_
+  : Class to record the schema of operator.
+
   `class Tensor <core/Tensor.html>`_
   : The base tensor class, manage memory or not.
 
@@ -37,6 +40,7 @@ dragon/core
   core/CUDAContext
   core/Graph
   core/Operator
+  core/OpSchema
   core/Tensor
   core/TypeMeta
   core/UnifiedMemory

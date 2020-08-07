@@ -776,10 +776,6 @@ class Tensor(object):
         dragon.vm.torch.Tensor
             The output tensor.
 
-        See Also
-        --------
-        `torch.expand(...)`_
-
         """
 
     def expand_as(self, other):
@@ -794,10 +790,6 @@ class Tensor(object):
         -------
         dragon.vm.torch.Tensor
             The output tensor.
-
-        See Also
-        --------
-        `torch.expand(...)`_
 
         """
         return self.expand(*other.size())

@@ -54,7 +54,7 @@ OPERATOR_SCHEMA(Elu)
     /* Y */
     .NumOutputs(1)
     /* X => Y */
-    .Inplace({{0, 0}});
+    .AllowInplace({{0, 0}});
 
 OPERATOR_SCHEMA(EluGradient)
     /* Y, dY */
@@ -62,7 +62,7 @@ OPERATOR_SCHEMA(EluGradient)
     /* dX */
     .NumOutputs(1)
     /* dY => dX */
-    .Inplace({{1, 0}});
+    .AllowInplace({{1, 0}});
 
 REGISTER_GRADIENT(Elu, InplaceGradientMaker);
 

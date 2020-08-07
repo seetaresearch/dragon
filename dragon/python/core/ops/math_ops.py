@@ -130,7 +130,7 @@ def affine(inputs, axis=1, num_axes=1, **kwargs):
         return op_lib.blend(**args)
 
 
-@OpSchema.num_inputs(1, 2147483647)
+@OpSchema.num_inputs(1)
 def axpby(inputs, outputs=None, alpha=1., beta=1., **kwargs):
     r"""Compute the element-wise addition from input to output.
 
@@ -140,10 +140,10 @@ def axpby(inputs, outputs=None, alpha=1., beta=1., **kwargs):
 
     Parameters
     ----------
-    inputs : Union[dragon.Tensor, Sequence[dragon.Tensor]]
-        The input tensor(s).
-    outputs : Union[dragon.Tensor, Sequence[dragon.Tensor]], optional
-        The output tensor(s).
+    inputs : dragon.Tensor
+        The input tensor.
+    outputs : dragon.Tensor, optional
+        The output tensor.
     alpha : number, optional, default=1.
         The value to :math:`\alpha`.
     beta : number, optional, default=1.
@@ -151,23 +151,17 @@ def axpby(inputs, outputs=None, alpha=1., beta=1., **kwargs):
 
     Returns
     -------
-    Union[dragon.Tensor, Sequence[dragon.Tensor]]
-        The output tensor(s).
+    dragon.Tensor
+        The output tensor.
 
     """
     args = parse_args(locals())
     args['alpha'], args['beta'] = float(alpha), float(beta)
-    if types.is_tensor(inputs):
-        inputs = [inputs]
-    if outputs is not None and types.is_tensor(outputs):
-        args['outputs'] = [outputs]
     op_lib = math_ops_lib.Axpby
     if context.executing_eagerly():
         return op_lib \
-            .instantiate(
-                alpha=args['alpha'],
-                beta=args['beta'],
-            ).apply(inputs, args['outputs'])
+            .instantiate(alpha=args['alpha'], beta=args['beta']) \
+            .apply([inputs], [outputs])
     else:
         return op_lib.blend(**args)
 

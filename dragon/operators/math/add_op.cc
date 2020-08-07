@@ -107,16 +107,16 @@ OPERATOR_SCHEMA(Add)
     .NumInputs(2)
     /* Y */
     .NumOutputs(1)
-    /* A => Y */
-    .Inplace({{0, 0}, {1, 0}});
+    /* A => Y, B => Y */
+    .AllowInplace({{0, 0}, {1, 0}});
 
 OPERATOR_SCHEMA(AddGradient)
     /* dY */
     .NumInputs(1)
     /* dA, dB */
     .NumOutputs(2)
-    /* dY => dA */
-    .Inplace({{0, 0}, {0, 1}});
+    /* dY => dA, dY => dB */
+    .AllowInplace({{0, 0}, {0, 1}});
 
 REGISTER_GRADIENT(Add, SimpleGradientMaker);
 

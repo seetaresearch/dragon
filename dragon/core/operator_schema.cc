@@ -14,15 +14,13 @@ bool OpSchema::Verify(const OperatorDef& def) const {
                << " is not in range [min=" << min_output_
                << ", max=" << max_output_ << "]";
   }
-  if (CheckInplace != nullptr) {
-    for (int i = 0; i < def.input_size(); ++i) {
-      if (def.input(i).empty()) continue;
-      for (int j = 0; j < def.output_size(); ++j) {
-        if (def.output(j).empty()) continue;
-        if (def.input(i) == def.output(j) && !CheckInplace(i, j)) {
-          LOG(FATAL) << header << "Input(" << i << ") and Output(" << j << ") "
-                     << "can not be set to inplace.";
-        }
+  for (int i = 0; i < def.input_size(); ++i) {
+    if (def.input(i).empty()) continue;
+    for (int j = 0; j < def.output_size(); ++j) {
+      if (def.output(j).empty()) continue;
+      if (def.input(i) == def.output(j) && !CheckInplace(i, j)) {
+        LOG(FATAL) << header << "Input(" << i << ") and Output(" << j << ") "
+                   << "can not be set to inplace.";
       }
     }
   }
@@ -49,7 +47,12 @@ OpSchema& OpSchema::NumOutputs(int min_num, int max_num) {
   return *this;
 }
 
-OpSchema& OpSchema::Inplace(set<pair<int, int>> inplace) {
+OpSchema& OpSchema::AllowInplace(std::function<bool(int, int)> inplace) {
+  CheckInplace = inplace;
+  return *this;
+}
+
+OpSchema& OpSchema::AllowInplace(set<pair<int, int>> inplace) {
   CheckInplace = [inplace](int in, int out) -> bool {
     return (inplace.count(std::make_pair(in, out)) > 0);
   };

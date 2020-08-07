@@ -78,7 +78,7 @@ class GradientMaker(object):
             if not is_skip:
                 for input, grad_input in zip(op_def.input, grad_inputs):
                     inputs_to_grads[input] = grad_input
-                # Add def for ``GradientGenerateOp``
+                # Add ``GradientGenerateOp``
                 if len(gen_grads) > 0:
                     inputs, outputs, values = [], [], []
                     for name, i in gen_grads:
@@ -94,7 +94,7 @@ class GradientMaker(object):
                         device_option=op_def.device_option
                         if op_def.HasField('device_option') else None)
                     backward_defs.append(gen_op)
-                # Add def for ``GradientOp``
+                # Add ``GradientOp``
                 for grad_def in grad_defs:
                     grad_def.name = OpDef.get_name()
                     backward_defs.append(grad_def)

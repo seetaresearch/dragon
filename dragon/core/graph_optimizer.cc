@@ -7,140 +7,141 @@
 
 namespace dragon {
 
-void GraphOptimizer::BuildDAG(const GraphDef& input_def) {
-  dag_.clear();
-  colored_.clear();
+void GraphOptimizer::BuildDAG(const GraphDef& graph) {
+  nodes_.clear();
   reference_count_.clear();
-  for (int i = 0; i < input_def.op_size(); ++i) {
-    const auto& op = input_def.op(i);
-    for (const auto& u : op.input()) {
-      reference_count_[u] += 1;
+  for (int i = 0; i < graph.op_size(); ++i) {
+    const auto& op = graph.op(i);
+    for (const auto& in : op.input()) {
+      reference_count_[in] += 1;
     }
-    for (const auto& v : op.output()) {
-      vector<string> u_set(op.input().begin(), op.input().end());
-      if (u_set.empty()) u_set.resize(op.output_size());
-      for (const auto& u : u_set) {
-        dag_[v].parents.push_back(u);
-        dag_[u].childs.push_back(v);
-        dag_[v].op_idx = i;
+    for (const auto& out : op.output()) {
+      if (op.input().empty()) {
+        nodes_[""].childs.push_back(out);
+        nodes_[out].parents.push_back("");
+      } else {
+        for (const auto& in : op.input()) {
+          nodes_[in].childs.push_back(out);
+          nodes_[out].parents.push_back(in);
+        }
       }
-      dag_[v].op_def = op;
+      nodes_[out].op_idx = i;
+      nodes_[out].op_def = op;
     }
   }
 }
 
-GraphDef GraphOptimizer::PruneNodes(const GraphDef& input_def) {
+GraphDef GraphOptimizer::EliminateUnused(const GraphDef& graph) {
   // Initialization
-  BuildDAG(input_def);
+  BuildDAG(graph);
+  used_.clear();
 
-  // Backward pass from targets
-  for (const auto& target : input_def.output()) {
-    if (colored_[target]) continue;
-    BackwardPrunePass(target);
+  // Eliminate the unused nodes
+  for (const auto& out : graph.output()) {
+    EliminateUnusedNode(out);
   }
-
-  for (const auto& grad_info : input_def.grad_info()) {
-    const auto u = grad_info.y() + "_grad";
+  for (const auto& grad_info : graph.grad_info()) {
+    const auto grad_y = grad_info.y() + "_grad";
     for (const auto& x : grad_info.xs()) {
       visited_.clear();
-      ForwardPrunePass(u, x + "_grad", std::deque<string>({u}));
+      EliminateUnusedNode(grad_y, x + "_grad");
     }
   }
 
-  // Select all colored operators
+  // Select the used operators
   set<int> selected_op_indices;
-  for (auto it : colored_) {
-    if (dag_[it.first].op_idx == -1) continue;
-    selected_op_indices.insert(dag_[it.first].op_idx);
+  for (auto it : used_) {
+    if (nodes_[it.first].op_idx == -1) continue;
+    selected_op_indices.insert(nodes_[it.first].op_idx);
   }
 
-  // Remove the tensors that can not be produced
+  // Prepare the registered placeholders
   Set<string> outputs;
   for (const auto& name : ws_->tensors()) {
     outputs.insert(name);
   }
 
-  // Generate the final op sequence
-  map<int, OperatorDef> final_sequence;
+  // Rewrite graph
+  GraphDef graph_v2(graph);
+  graph_v2.clear_op();
   for (auto op_idx : selected_op_indices) {
-    const auto& op = input_def.op(op_idx);
-    auto new_op(input_def.op(op_idx));
+    const auto& op = graph.op(op_idx);
+    auto* op_v2 = graph_v2.add_op();
+    op_v2->CopyFrom(op);
     // Rewrite inputs
     for (int i = 0; i < op.input_size(); ++i) {
-      const auto& input = op.input(i);
-      if (!colored_[input] || outputs.count(input) == 0)
-        *new_op.mutable_input(i) = "";
+      const auto& in = op.input(i);
+      if (!used_[in] || outputs.count(in) == 0) {
+        *op_v2->mutable_input(i) = "";
+      }
     }
     // Rewrite outputs
     for (int i = 0; i < op.output_size(); ++i) {
-      const auto& output = op.output(i);
-      if (!colored_[output]) {
-        *new_op.mutable_output(i) = "";
+      const auto& out = op.output(i);
+      if (!used_[out]) {
+        *op_v2->mutable_output(i) = "";
       } else {
-        outputs.insert(output);
+        outputs.insert(out);
       }
     }
     // Rewrite hand-craft cases
     if (op.type() == "AffineGradient") {
-      if (new_op.output(1).empty()) *new_op.mutable_input(0) = "";
+      if (op_v2->output(1).empty()) *op_v2->mutable_input(0) = "";
     } else if (op.type() == "MulGradient") {
-      if (new_op.output(0).empty()) *new_op.mutable_input(1) = "";
-      if (new_op.output(1).empty()) *new_op.mutable_input(0) = "";
+      if (op_v2->output(0).empty()) *op_v2->mutable_input(1) = "";
+      if (op_v2->output(1).empty()) *op_v2->mutable_input(0) = "";
     } else if (op.type() == "DivGradient") {
-      if (new_op.output(1).empty()) {
-        *new_op.mutable_input(0) = "";
-        if (new_op.output(0).empty()) *new_op.mutable_input(1) = "";
+      if (op_v2->output(1).empty()) {
+        *op_v2->mutable_input(0) = "";
+        if (op_v2->output(0).empty()) *op_v2->mutable_input(1) = "";
       }
     }
-    // Push into the final sequence
-    final_sequence[op_idx].CopyFrom(new_op);
   }
-
-  // Done!
-  GraphDef output_def(input_def);
-  output_def.clear_op();
-  for (auto it : final_sequence)
-    output_def.add_op()->CopyFrom(it.second);
-  return output_def;
+  return graph_v2;
 }
 
-void GraphOptimizer::AddInplace(
-    const GraphDef& input_def,
+void GraphOptimizer::PlanInplace(
+    const GraphDef& graph,
     Map<string, Set<string>>& output_aliases) {
   // Initialization
-  BuildDAG(input_def);
+  BuildDAG(graph);
 
-  // Generate runtime aliases map
-  for (auto& u_iter : reference_count_) {
-    if (u_iter.second == 1 && !u_iter.first.empty() &&
-        dag_[u_iter.first].childs.size() > 0) {
-      const auto& u = u_iter.first;
-      const auto& v0 = dag_[u].childs[0];
-      const auto& op_def = dag_[v0].op_def;
-      const auto* op_schema = OpSchemaRegistry::Schema(op_def.type());
-      for (int i = 0; i < op_def.input_size(); ++i)
-        for (int j = 0; j < op_def.output_size(); ++j)
-          if (op_schema->CheckInplace != nullptr && op_def.input(i) == u &&
-              op_schema->CheckInplace(i, j))
-            output_aliases[op_def.output(j)].insert(u);
+  // Generate aliases map to apply in-place
+  for (const auto& iter : reference_count_) {
+    const auto& in = iter.first;
+    if (iter.second == 1 && !in.empty() && nodes_[in].childs.size() > 0) {
+      const auto& op = nodes_[nodes_[in].childs[0]].op_def;
+      const auto* schema = OpSchemaRegistry::Schema(op.type());
+      for (int i = 0; i < op.input_size(); ++i) {
+        if (op.input(i) == in) {
+          for (int j = 0; j < op.output_size(); ++j) {
+            if (schema->CheckInplace(i, j)) {
+              output_aliases[op.output(j)].insert(in);
+            }
+          }
+        }
+      }
     }
   }
 }
 
-GraphDef GraphOptimizer::MirrorStage(
-    const GraphDef& input_def,
-    Map<string, vec32_t>& op_indices) {
-  GraphDef output_def(input_def);
-  Map<string, set<int>> fake_op_indices;
+GraphDef GraphOptimizer::PlanCheckpoint(
+    const GraphDef& graph,
+    Map<string, vec32_t>& subgraph_indices) {
+  GraphDef graph_v2(graph);
+  Map<string, set<int>> op_indices;
   Map<string, string> rename_map;
   Map<string, int> versions;
 
-  // Check mirror stage
-  for (const auto& op : input_def.op()) {
+  // Check the mirror stage setting
+  for (const auto& op : graph.op()) {
     if (str::find(op.type(), "Gradient")) continue;
     bool mirror_stage = false;
-    for (auto& arg : op.arg())
-      if (arg.name() == "mirror_stage") mirror_stage |= (bool)arg.i();
+    for (auto& arg : op.arg()) {
+      if (arg.name() == "mirror_stage") {
+        mirror_stage |= (bool)arg.i();
+      }
+    }
     if (mirror_stage) {
       // We only assume X(0) can be recomputed
       rename_map[op.input(0)] = "placeholder";
@@ -149,24 +150,25 @@ GraphDef GraphOptimizer::MirrorStage(
 
   // Allocate the temporal buffers
   string v2_name, version_name;
-  for (int op_idx = 0; op_idx < input_def.op_size(); ++op_idx) {
-    const auto& op = input_def.op(op_idx);
-    auto* new_op = output_def.mutable_op(op_idx);
+  for (int op_idx = 0; op_idx < graph.op_size(); ++op_idx) {
+    const auto& op = graph.op(op_idx);
+    auto* op_v2 = graph_v2.mutable_op(op_idx);
     vector<string> used_buffers;
     for (int i = 0; i < op.input_size(); ++i) {
       const auto& it = rename_map.find(op.input(i));
       if (it != rename_map.end() && it->second != "placeholder") {
-        *new_op->mutable_input(i) = it->second;
+        *op_v2->mutable_input(i) = it->second;
         used_buffers.emplace_back(it->second);
       }
     }
     for (int i = 0; i < op.output_size(); ++i) {
       bool inplace_flag = false;
-      for (const auto& u : op.input())
-        if (u == op.output(i)) inplace_flag = true;
+      for (const auto& in : op.input()) {
+        if (in == op.output(i)) inplace_flag = true;
+      }
       if (rename_map.count(op.output(i))) {
         if (inplace_flag && rename_map[op.output(i)] != "placeholder") {
-          *new_op->mutable_output(i) = rename_map[op.output(i)];
+          *op_v2->mutable_output(i) = rename_map[op.output(i)];
           continue;
         }
         for (int j = 0; j < GRAPH_TEMPORAL_OUTPUT_MAX_SIZE; ++j) {
@@ -183,45 +185,42 @@ GraphDef GraphOptimizer::MirrorStage(
         CHECK(!v2_name.empty()) << "\nNo enough buffers for outputs.";
         ws_->CreateTensor(v2_name)->set_version(0);
         version_name = "/ver:" + str::to(versions[v2_name]++);
-        *new_op->mutable_output(i) = rename_map[op.output(i)] =
+        *op_v2->mutable_output(i) = rename_map[op.output(i)] =
             v2_name + version_name;
       }
     }
   }
 
-  // Plan the minimum recomputing ops for temporal buffers
-  for (int i = 0; i < input_def.op_size(); ++i) {
-    const auto& input_op = input_def.op(i);
-    const auto& output_op = output_def.op(i);
-
-    /*
-     * DP(v) = {DP(u) if input(u) != output(u) else {}} + {i}
-     */
-
-    set<int> minimum_ops = {i};
-    for (int j = 0; j < input_op.input_size(); ++j) {
-      if (input_op.input(j) != output_op.input(j)) {
-        for (auto idx : fake_op_indices[input_op.input(j)])
-          minimum_ops.insert(idx);
+  // Determine the recomputing ops for temporal buffers
+  for (int i = 0; i < graph.op_size(); ++i) {
+    const auto &op = graph.op(i), &op_v2 = graph_v2.op(i);
+    set<int> recomputing_ops = {i};
+    for (int j = 0; j < op.input_size(); ++j) {
+      if (op.input(j) != op_v2.input(j)) {
+        for (auto op_idx : op_indices[op.input(j)]) {
+          recomputing_ops.insert(op_idx);
+        }
       }
     }
-    for (const auto& output : input_op.output()) {
-      for (auto idx : minimum_ops)
-        fake_op_indices[output].insert(idx);
+    for (const auto& out : op.output()) {
+      for (auto op_idx : recomputing_ops) {
+        op_indices[out].insert(op_idx);
+      }
     }
   }
 
   // Bind to the renamed tensors
   for (const auto& it : rename_map) {
-    for (auto op_idx : fake_op_indices[it.first])
-      op_indices[it.second].push_back(op_idx);
+    for (auto op_idx : op_indices[it.first]) {
+      subgraph_indices[it.second].push_back(op_idx);
+    }
   }
 
-  // Done!
-  return output_def;
+  // Done
+  return graph_v2;
 }
 
-GraphDef GraphOptimizer::SimulateGC(const GraphDef& input_def) {
+GraphDef GraphOptimizer::SimulateGC(const GraphDef& graph) {
   Set<string> blacklist = {""};
   Map<string, int> ref_count;
   Map<string, string> rename_map;
@@ -241,42 +240,39 @@ GraphDef GraphOptimizer::SimulateGC(const GraphDef& input_def) {
   };
 
   // Count the references
-  for (const auto& op : input_def.op()) {
-    for (const auto& input : op.input())
-      ref_count[input] += 1;
+  for (const auto& op : graph.op()) {
+    for (const auto& in : op.input()) {
+      ref_count[in] += 1;
+    }
   }
 
-  // We should preserve the targets
-  for (auto& e : input_def.output()) {
-    blacklist.insert(e);
+  // Preserve the graph outputs
+  for (auto& out : graph.output()) {
+    blacklist.insert(out);
   }
 
-  // Rewritten the inputs and outputs
-  auto output_def(input_def);
-  for (int op_idx = 0; op_idx < input_def.op_size(); ++op_idx) {
-    const auto& op = input_def.op(op_idx);
-    auto* new_op = output_def.mutable_op(op_idx);
-
+  // Rewrite the inputs and outputs
+  auto graph_v2(graph);
+  for (int op_idx = 0; op_idx < graph.op_size(); ++op_idx) {
+    const auto& op = graph.op(op_idx);
+    auto* op_v2 = graph_v2.mutable_op(op_idx);
     // Ignore the init ops
     if (op.input_size() == 0) continue;
-
-    // We need to collect the dead buffers
-    // Reuse them when current operator is done
+    // We need to collect the dead buffers.
+    // Reuse them when current operator is done.
     vector<string> dead_buffers;
-
     // Rewrite inputs
     for (int i = 0; i < op.input_size(); ++i) {
       const auto& name = op.input(i);
       if (rename_map.count(name)) {
-        *new_op->mutable_input(i) = rename_map[name];
+        *op_v2->mutable_input(i) = rename_map[name];
       }
       ref_count[name]--;
       if (ref_count[name] == 0 &&
-          str::startswith(new_op->input(i), "/share/buffer/output:")) {
-        dead_buffers.push_back(new_op->input(i));
+          str::startswith(op_v2->input(i), "/share/buffer/output:")) {
+        dead_buffers.push_back(op_v2->input(i));
       }
     }
-
     // Rewrite outputs
     if (!star_ops.count(op.type())) {
       for (int i = 0; i < op.output_size(); ++i) {
@@ -286,55 +282,49 @@ GraphDef GraphOptimizer::SimulateGC(const GraphDef& input_def) {
         for (const auto& input : op.input())
           if (name == input) inplace_flag = true;
         if (inplace_flag) {
-          *new_op->mutable_output(i) = new_op->input(i);
+          *op_v2->mutable_output(i) = op_v2->input(i);
         } else {
-          rename_map[name] = *new_op->mutable_output(i) = get_buffer();
+          rename_map[name] = *op_v2->mutable_output(i) = get_buffer();
         }
       }
     }
-
     // Update the pool
     for (auto& buffer : dead_buffers) {
       pool.emplace_back(buffer);
     }
   }
-
-  return output_def;
+  return graph_v2;
 }
 
-void GraphOptimizer::ForwardPrunePass(
-    const string& u,
-    const string& leaf,
-    const std::deque<string>& path) {
-  if (visited_.count(u)) {
-    if (visited_[u]) {
-      for (const auto& node : path) {
-        visited_[node] = colored_[node] = true;
-      }
-    }
-    return;
-  }
-  visited_[u] = false;
-  for (int i = 0; i < dag_[u].childs.size(); ++i) {
-    auto v = dag_[u].childs[i];
-    auto new_path(path);
-    new_path.push_back(v);
-    if (v == leaf) {
-      for (const auto& node : new_path) {
-        visited_[node] = colored_[node] = true;
-      }
+void GraphOptimizer::EliminateUnusedNode(
+    const string& source,
+    const string& sink) {
+  if (visited_.count(source)) return;
+  visited_[source] = false;
+  for (const auto& next : nodes_[source].childs) {
+    if (next == sink) {
+      visited_[next] = used_[next] = true;
+      visited_[source] = used_[source] = true;
       return;
     }
-    ForwardPrunePass(v, leaf, new_path);
+    EliminateUnusedNode(next, sink);
+    if (visited_[next]) {
+      visited_[source] = used_[source] = true;
+    }
   }
 }
 
-void GraphOptimizer::BackwardPrunePass(const string& v) {
-  colored_[v] = true;
-  for (int i = 0; i < dag_[v].parents.size(); ++i) {
-    auto u = dag_[v].parents[i];
-    if (colored_.count(u)) continue;
-    BackwardPrunePass(u);
+void GraphOptimizer::EliminateUnusedNode(const string& sink) {
+  std::queue<const string*> q;
+  q.push(&sink);
+  while (!q.empty()) {
+    const auto& source = *q.front();
+    q.pop();
+    used_[source] = true;
+    for (const auto& last : nodes_[source].parents) {
+      if (used_.count(last)) continue;
+      q.push(&last);
+    }
   }
 }
 

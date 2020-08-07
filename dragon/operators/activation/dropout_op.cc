@@ -84,7 +84,7 @@ OPERATOR_SCHEMA(Dropout)
     /* Y */
     .NumOutputs(1)
     /* X => Y */
-    .Inplace({{0, 0}});
+    .AllowInplace({{0, 0}});
 
 OPERATOR_SCHEMA(DropoutGradient)
     /* dY */
@@ -92,7 +92,7 @@ OPERATOR_SCHEMA(DropoutGradient)
     /* dX */
     .NumOutputs(1)
     /* dY => dX */
-    .Inplace({{0, 0}});
+    .AllowInplace({{0, 0}});
 
 REGISTER_GRADIENT(Dropout, SimpleGradientMaker);
 

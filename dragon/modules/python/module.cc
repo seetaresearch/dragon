@@ -242,7 +242,7 @@ PYBIND11_MODULE(libdragon_python, m) {
             maker.Make(op_defs, targets, input_grads, graph_def);
             py::gil_scoped_release g;
             if (!retain_grads) {
-              graph_def = maker.Share(graph_def);
+              graph_def = maker.Optimize(graph_def);
             }
             for (const auto& op_def : graph_def.op()) {
               if (verbose) {

@@ -89,7 +89,7 @@ OPERATOR_SCHEMA(BiasAdd)
     /* Y */
     .NumOutputs(1)
     /* X => Y */
-    .Inplace({{0, 0}});
+    .AllowInplace({{0, 0}});
 
 OPERATOR_SCHEMA(BiasAddGradient)
     /* dY */
@@ -97,7 +97,7 @@ OPERATOR_SCHEMA(BiasAddGradient)
     /* dX, dB */
     .NumOutputs(2)
     /* dY => dX */
-    .Inplace({{0, 0}});
+    .AllowInplace({{0, 0}});
 
 REGISTER_GRADIENT(BiasAdd, SimpleGradientMaker);
 

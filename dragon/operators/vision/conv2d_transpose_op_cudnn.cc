@@ -287,7 +287,6 @@ template <class Context>
 template <typename T>
 void CuDNNConvTranspose2dGradientOp<Context>::ResetDesc() {
   auto &X = Input(0), &W = Input(1), &dY = Input(-1);
-  auto *dX = Output(0), *dW = Output(1);
   bool input_changed = (X.dims() != input_dims_);
   bool filter_changed = (W.dims() != filter_dims_);
   if (input_changed || filter_changed) {
@@ -324,8 +323,8 @@ void CuDNNConvTranspose2dGradientOp<Context>::ResetDesc() {
       exhaustive_search_data_ = true;
       exhaustive_search_filter_ = true;
     } else {
-      if (dW->has_name()) {
 #if CUDNN_VERSION_MIN(7, 0, 0)
+      {
         int num_valid_algos;
         constexpr int num_algos = CUDNN_CONV_NUM_BWD_FILTER_ALGOS;
         cudnnConvolutionBwdFilterAlgoPerf_t stats[num_algos];
@@ -349,20 +348,8 @@ void CuDNNConvTranspose2dGradientOp<Context>::ResetDesc() {
         CHECK(algo_is_found)
             << "\nNo algorithms available for <cudnnConvolutionBackwardFilter> "
             << "under the current desc and workspace limit.";
-#else
-        CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(
-            ctx()->cudnn_handle(),
-            input_desc_,
-            output_desc_,
-            conv_desc_,
-            filter_desc_,
-            CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT,
-            CUDNN_CONV_WORKSPACE_LIMIT_BYTES,
-            &bwd_filter_algo_));
-#endif // CUDNN_VERSION_MIN(7, 0, 0)
       }
-      if (dX->has_name()) {
-#if CUDNN_VERSION_MIN(7, 0, 0)
+      {
         int num_valid_algos;
         constexpr int num_algos = CUDNN_CONV_NUM_FWD_ALGOS;
         cudnnConvolutionFwdAlgoPerf_t stats[num_algos];
@@ -386,18 +373,27 @@ void CuDNNConvTranspose2dGradientOp<Context>::ResetDesc() {
         CHECK(algo_is_found)
             << "\nNo algorithms available for <cudnnConvolutionForward> "
             << "under the current desc and workspace limit.";
-#else
-        CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(
-            ctx()->cudnn_handle(),
-            input_desc_,
-            filter_desc_,
-            conv_desc_,
-            output_desc_,
-            CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
-            CUDNN_CONV_WORKSPACE_LIMIT_BYTES,
-            &bwd_data_algo_));
-#endif // CUDNN_VERSION_MIN(7, 0, 0)
       }
+#else
+      CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(
+          ctx()->cudnn_handle(),
+          input_desc_,
+          output_desc_,
+          conv_desc_,
+          filter_desc_,
+          CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT,
+          CUDNN_CONV_WORKSPACE_LIMIT_BYTES,
+          &bwd_filter_algo_));
+      CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(
+          ctx()->cudnn_handle(),
+          input_desc_,
+          filter_desc_,
+          conv_desc_,
+          output_desc_,
+          CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
+          CUDNN_CONV_WORKSPACE_LIMIT_BYTES,
+          &bwd_data_algo_));
+#endif // CUDNN_VERSION_MIN(7, 0, 0)
     }
     cudnn_ws_nbytes_ = SIZE_MAX; // Request a new size
   }
