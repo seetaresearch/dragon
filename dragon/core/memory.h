@@ -76,6 +76,16 @@ class DRAGON_API UnifiedMemory {
     return size_;
   }
 
+  /*! \brief Return the total number of bytes on given device */
+  size_t size(const string& device_type, int device_id) const {
+    if (device_type == "cuda") {
+      if (own_cuda_ptr_ && cuda_ptr_ && device_id_ == device_id) {
+        return size_;
+      }
+    }
+    return size_t(0);
+  }
+
   /*! \brief Return the number of memory chunks */
   size_t num_chunks() const {
     return num_chunks_;
@@ -159,14 +169,17 @@ class DRAGON_API UnifiedMemory {
   /*! \brief The cpu data pointer */
   void* cpu_ptr_ = nullptr;
 
+  /*! \brief The ownership of cpu data pointer */
+  bool own_cpu_ptr_ = true;
+
   /*! \brief The cuda data pointer */
   void* cuda_ptr_ = nullptr;
 
+  /*! \brief The ownership of cuda data pointer */
+  bool own_cuda_ptr_ = true;
+
   /*! \brief The cnml data pointer */
   void* cnml_ptr_ = nullptr;
-
-  /*! \brief The ownership of data pointers */
-  int own_cpu_ptr_ = 1, own_cuda_ptr_ = 1;
 
   /*! \brief The binding cpu tensor for cnml */
   cnmlCpuTensor_t cnml_cpu_tensor_ = nullptr;

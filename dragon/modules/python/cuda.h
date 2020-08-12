@@ -27,14 +27,12 @@ class CudaStream {
 #ifdef USE_CUDA
     CUDADeviceGuard guard(device_id);
     CUDA_CHECK(cudaStreamCreateWithFlags(&stream_, cudaStreamNonBlocking));
-#else
-    CUDA_NOT_COMPILED;
 #endif
   }
 
   ~CudaStream() {
 #ifdef USE_CUDA
-    cudaStreamDestroy(stream_);
+    CUDA_CHECK(cudaStreamDestroy(stream_));
 #endif
   }
 

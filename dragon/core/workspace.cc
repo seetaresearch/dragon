@@ -148,13 +148,15 @@ string Workspace::UniqueName(
   return name + "_" + str::to(index_map[required_name]++) + suffix;
 }
 
-vector<string> Workspace::tensors() const {
+vector<string> Workspace::tensors(bool external) const {
   vector<string> names;
   for (const auto& it : tensor_map_) {
     names.push_back(it.first);
   }
-  for (const auto& it : external_tensor_map_) {
-    names.push_back(it.first);
+  if (external) {
+    for (const auto& it : external_tensor_map_) {
+      names.push_back(it.first);
+    }
   }
   return names;
 }

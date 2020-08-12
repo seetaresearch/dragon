@@ -21,7 +21,7 @@ template <class Context>
 class DropoutOp : public Operator<Context> {
  public:
   DropoutOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws), use_scale_(OpArg<bool>("scale", true)) {
+      : Operator<Context>(def, ws) {
     GET_ARG_WITH_DESC(float, prob, 0.5f);
   }
   USE_OPERATOR_FUNCTIONS;
@@ -32,7 +32,6 @@ class DropoutOp : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  bool use_scale_;
   DECLARE_ARG_WITH_DESC(float, prob);
 };
 
@@ -40,7 +39,7 @@ template <class Context>
 class DropoutGradientOp : public Operator<Context> {
  public:
   DropoutGradientOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws), use_scale_(OpArg<bool>("scale", true)) {
+      : Operator<Context>(def, ws) {
     GET_ARG_WITH_DESC(float, prob, 0.5f);
   }
   USE_OPERATOR_FUNCTIONS;
@@ -51,7 +50,6 @@ class DropoutGradientOp : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  bool use_scale_;
   DECLARE_ARG_WITH_DESC(float, prob);
 };
 

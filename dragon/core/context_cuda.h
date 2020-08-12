@@ -41,16 +41,20 @@ class CUDAObjects {
   ~CUDAObjects() {
     for (int i = 0; i < CUDA_MAX_DEVICES; i++) {
 #ifdef USE_NCCL
-      for (auto& comm : nccl_comms_[i]) {
-        /*!
-         * Temporarily disable the comm destroying,
-         * to avoid an unhandled error.
-         */
+      for (auto& comm_iter : nccl_comms_[i]) {
+        if (comm_iter.second) {
+          NCCL_CHECK(ncclCommDestroy(comm_iter.second));
+        }
       }
 #endif
 #ifdef USE_CUDNN
       for (auto& handle : cudnn_handles_[i]) {
-        if (handle) CUDNN_CHECK(cudnnDestroy(handle));
+        /*!
+         * Temporarily disable the handle destroying,
+         * to avoid the segmentation fault in CUDNN v8.
+         *
+         * if (handle) CUDNN_CHECK(cudnnDestroy(handle));
+         */
       }
 #endif
       for (auto& handle : cublas_handles_[i]) {

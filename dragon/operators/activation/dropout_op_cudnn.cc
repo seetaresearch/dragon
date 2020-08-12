@@ -11,10 +11,7 @@ template <class Context>
 template <typename T>
 void CuDNNDropoutOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0, {0});
-
-  CHECK(this->use_scale_) << "\nCuDNN only supports the scaled dropout.";
   CuDNNSetTensorDesc<T>(&input_desc_, {X.count(), 1, 1, 1});
-
   if (phase() == "TEST") {
     Y->ReshapeLike(X)->CopyFrom(X, ctx());
   } else if (phase() == "TRAIN") {
@@ -46,12 +43,9 @@ void CuDNNDropoutOp<Context>::DoRunWithType() {
             rng_seed_));
       }
     }
-
-    // Allocate for the reserve space
     size_t reserve_size;
     CUDNN_CHECK(cudnnDropoutGetReserveSpaceSize(input_desc_, &reserve_size));
     auto* X_mask = Buffer("X_mask")->Reshape({(int64_t)reserve_size});
-
     CUDNN_CHECK(cudnnDropoutForward(
         ctx()->cudnn_handle(),
         dropout_desc_,
@@ -76,11 +70,9 @@ template <typename T>
 void CuDNNDropoutGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0);
   CuDNNSetTensorDesc<T>(&input_desc_, {dY.count(), 1, 1, 1});
-
   if (phase() == "TEST") {
     NOT_IMPLEMENTED;
   } else if (phase() == "TRAIN") {
-    CHECK(this->use_scale_) << "\nCuDNN only supports the scaled dropout.";
     // Initialize the dropout states
     if (!states_initialized_) {
       states_initialized_ = true;
@@ -102,13 +94,12 @@ void CuDNNDropoutGradientOp<Context>::DoRunWithType() {
         LOG(FATAL) << "Missing dropout states with seed: " << rng_seed_;
       }
     }
-
     // Check the reserve space
     size_t reserve_size;
     CUDNN_CHECK(cudnnDropoutGetReserveSpaceSize(input_desc_, &reserve_size));
     auto* X_mask = Buffer("X_mask");
     CHECK_EQ(X_mask->size(), reserve_size);
-
+    // Compute the gradient using mask
     CUDNN_CHECK(cudnnDropoutBackward(
         ctx()->cudnn_handle(),
         dropout_desc_,

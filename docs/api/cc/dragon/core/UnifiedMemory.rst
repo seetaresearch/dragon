@@ -69,7 +69,11 @@ set_cuda_data
 
 size
 ####
-.. doxygenfunction:: dragon::UnifiedMemory::size
+.. doxygenfunction:: dragon::UnifiedMemory::size() const
+
+size
+####
+.. doxygenfunction:: dragon::UnifiedMemory::size(const string &device_type, int device_id) const
 
 state
 #####

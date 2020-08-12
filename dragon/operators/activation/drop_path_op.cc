@@ -9,7 +9,6 @@ template <class Context>
 template <typename T>
 void DropPathOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0, {0});
-
   if (phase() == "TEST") {
     Y->ReshapeLike(X)->CopyFrom(X, ctx());
   } else if (phase() == "TRAIN") {
@@ -20,20 +19,15 @@ void DropPathOp<Context>::DoRunWithType() {
     } else {
       drop_prob_ = dp; // Fixed to the limit value
     }
-
     auto* mask = Buffer("mask")
                      ->Reshape({X.dim(0)})
                      ->template mutable_data<float, Context>();
-
     auto* scale = Buffer("scale")
                       ->Reshape({})
                       ->template mutable_data<float, CPUContext>();
-
     scale[0] = 1.f / (1.f - drop_prob_);
-
     // Generate mask for each example
     math::RandomUniform(X.dim(0), 0.f, 1.f, mask, ctx());
-
     // Apply mask to the feature
     kernel::DropPath(
         X.dim(0),
@@ -57,7 +51,6 @@ template <class Context>
 template <typename T>
 void DropPathGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0);
-
   if (phase() == "TEST") {
     NOT_IMPLEMENTED;
   } else if (phase() == "TRAIN") {

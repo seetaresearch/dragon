@@ -21,6 +21,7 @@ from dragon.core.device.cuda import current_device
 from dragon.core.device.cuda import enable_cudnn
 from dragon.core.device.cuda import get_device_capability
 from dragon.core.device.cuda import is_available
+from dragon.core.device.cuda import memory_allocated
 from dragon.core.device.cuda import set_default_device
 from dragon.core.device.cuda import set_device
 from dragon.core.device.cuda import synchronize

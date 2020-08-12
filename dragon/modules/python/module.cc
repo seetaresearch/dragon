@@ -135,6 +135,24 @@ PYBIND11_MODULE(libdragon_python, m) {
             }
           })
 
+      /*! \brief Return the size of memory used by tensors on given device */
+      .def(
+          "MemoryAllocated",
+          [](Workspace* self, const string& device_type, int device_id) {
+            size_t size = 0;
+            for (const auto& name : self->tensors(false)) {
+              auto* memory = self->GetTensor(name)->memory(false, true);
+              if (memory) {
+                if (device_type == "cpu") {
+                  size += memory->size();
+                } else {
+                  size += memory->size(device_type, device_id);
+                }
+              }
+            }
+            return size;
+          })
+
       /*! \brief Run the operator */
       .def(
           "RunOperator",
@@ -200,8 +218,8 @@ PYBIND11_MODULE(libdragon_python, m) {
               if (could_be_serialized) {
                 auto msg = string("\n") + def.DebugString();
                 msg.pop_back();
-                PRINT(INFO) << "graph {" << str::replace_all(msg, "\n", "\n  ")
-                            << "\n}\n";
+                LOG(INFO) << "\ngraph {" << str::replace_all(msg, "\n", "\n  ")
+                          << "\n}\n";
               }
             }
             // Return the graph name may be different from the def

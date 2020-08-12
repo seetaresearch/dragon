@@ -16,6 +16,7 @@ from __future__ import print_function
 
 from dragon import backend
 from dragon.core.framework import config
+from dragon.core.framework import workspace
 
 
 class Stream(backend.CudaStream):
@@ -62,14 +63,14 @@ def current_device():
 
 
 def enable_cudnn(enabled=True, benchmark=False):
-    """Enable the CuDNN library.
+    """Enable backend to use the cuDNN library.
 
     Parameters
     ----------
     enabled : bool, optional, default=True
-        **True** to enable the CuDNN.
+        Use cuDNN library or not.
     benchmark : bool, optional, default=False
-        **True** to select algorithms according to benchmark.
+        Select algorithms according to the benchmark or not.
 
     """
     return backend.cudaEnableDNN(enabled, benchmark)
@@ -105,6 +106,32 @@ def is_available():
 
     """
     return backend.cudaIsDriverSufficient()
+
+
+def memory_allocated(device_index=None):
+    """Return the size of memory used by tensors in current workspace.
+
+    If ``device_index`` is **None**, the current device will be selected.
+
+    Parameters
+    ----------
+    device_index : int, optional
+        The device index.
+
+    Returns
+    -------
+    int
+        The total number of allocated bytes.
+
+    See Also
+    --------
+    `dragon.Workspace.memory_allocated(...)`_
+
+    """
+    if device_index is None:
+        device_index = current_device()
+    current_ws = workspace.get_workspace()
+    return current_ws.memory_allocated('cuda', device_index)
 
 
 def set_default_device(device_index=0):

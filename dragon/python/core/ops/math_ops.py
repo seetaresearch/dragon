@@ -16,7 +16,6 @@ from __future__ import print_function
 
 from dragon.core.eager import context
 from dragon.core.framework import ops
-from dragon.core.framework import types
 from dragon.core.ops import math_ops_lib
 from dragon.core.ops.utils import OpSchema
 from dragon.core.ops.utils import parse_args
@@ -122,10 +121,8 @@ def affine(inputs, axis=1, num_axes=1, **kwargs):
     op_lib = math_ops_lib.Affine
     if context.executing_eagerly():
         return op_lib \
-            .instantiate(
-                axis=axis,
-                num_axes=num_axes,
-            ).apply(inputs)
+            .instantiate(axis=axis, num_axes=num_axes) \
+            .apply(inputs)
     else:
         return op_lib.blend(**args)
 
@@ -568,10 +565,8 @@ def fully_connected(inputs, axis=1, transpose_w=True, **kwargs):
     op_lib = math_ops_lib.FullyConnected
     if context.executing_eagerly():
         return op_lib \
-            .instantiate(
-                axis=axis,
-                transpose_w=transpose_w,
-            ).apply(inputs)
+            .instantiate(axis=axis, transpose_w=transpose_w) \
+            .apply(inputs)
     else:
         args.pop('transpose_w')
         args['transW'] = transpose_w

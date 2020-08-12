@@ -80,7 +80,7 @@ class DRAGON_API Workspace {
   }
 
   /*! \brief Return the name of cached tensors */
-  vector<string> tensors() const;
+  vector<string> tensors(bool external = true) const;
 
   /*! \brief Return the name of cached graphs  */
   vector<string> graphs() const;

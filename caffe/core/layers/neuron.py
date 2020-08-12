@@ -45,11 +45,9 @@ class Dropout(Layer):
     def __init__(self, layer_param):
         super(Dropout, self).__init__(layer_param)
         param = layer_param.dropout_param
-        self.arguments = {
-            'prob': param.dropout_ratio,
-            'scale': param.scale_train
-            if hasattr(param, 'scale_train') else True,
-        }
+        if not param.scale_train:
+            raise ValueError('Unscaled dropout is not supported.')
+        self.arguments = {'prob': param.dropout_ratio}
 
     def __call__(self, bottom):
         return activation_ops.dropout(bottom, **self.arguments)

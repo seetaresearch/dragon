@@ -24,6 +24,7 @@ from dragon.core.framework import mapping
 from dragon.core.framework import proto_util
 from dragon.core.framework import types
 from dragon.core.proto import dragon_pb2
+from dragon.core.util import logging
 from dragon.core.util import serialization
 from dragon.core.util import tls
 
@@ -149,7 +150,8 @@ class Workspace(backend.Workspace):
         """
         cfg = config.config()
         if cfg.graph_verbosity == 2:
-            print(graph_def)
+            msg = '\n' + str(graph_def)[:-1]
+            logging.info('\ngraph {' + msg.replace('\n', '\n  ') + '\n}\n')
         return self.CreateGraph(
             serialization.serialize_proto(graph_def),
             cfg.graph_verbosity == 1)
@@ -258,6 +260,24 @@ class Workspace(backend.Workspace):
 
         """
         return self.HasTensor(_stringify_object(tensor))
+
+    def memory_allocated(self, device_type='cpu', device_index=0):
+        """Return the size of memory used by tensors on given device.
+
+        Parameters
+        ----------
+        device_type : str, optional
+            The device type.
+        device_index : int, optional
+            The device index.
+
+        Returns
+        -------
+        int
+            The total number of allocated bytes.
+
+        """
+        return self.MemoryAllocated(device_type, device_index)
 
     def merge_from(self, other):
         """Merge resources from the other.

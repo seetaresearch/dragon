@@ -9,12 +9,10 @@ template <class Context>
 template <typename T>
 void DropBlock2dOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0, {0});
-
   if (phase() == "TEST") {
     Y->ReshapeLike(X)->CopyFrom(X, ctx());
   } else if (phase() == "TRAIN") {
     int64_t feat_h, feat_w, seed_h, seed_w;
-
     if (data_format() == "NCHW") {
       feat_h = X.dim(2), feat_w = X.dim(3);
     } else if (data_format() == "NHWC") {
@@ -22,11 +20,9 @@ void DropBlock2dOp<Context>::DoRunWithType() {
     } else {
       LOG(FATAL) << "Unknown DataFormat: " << data_format();
     }
-
     seed_h = feat_h - block_size_ + 1;
     seed_w = feat_w - block_size_ + 1;
     CHECK(seed_h > 0 && seed_w > 0) << "\nExcepted block_size <= feat_size.";
-
     // Schedule the keep ratio
     auto kp = keep_prob();
     if (decrement_ > 0.f && prob_ > kp) {
@@ -34,27 +30,23 @@ void DropBlock2dOp<Context>::DoRunWithType() {
     } else {
       prob_ = kp; // Fixed to the limit value
     }
-
+    // Compute the drop ratio
     float gamma = (1.f - prob_) / std::pow(block_size_, 2);
     gamma *= (alpha_ * (feat_h * feat_w) / (seed_h * seed_w));
-
+    // Prepare buffers
     auto* mask = Buffer("mask")
                      ->ReshapeLike(X)
                      ->template mutable_data<uint8_t, Context>();
-
     auto* scale = Buffer("scale")
                       ->Reshape({})
                       ->template mutable_data<float, CPUContext>();
-
     auto scratches = ws()->template data<Context>({
         X.dim(0) * seed_h * seed_w * sizeof(uint32_t), // seed points
         X.count() * sizeof(int), // int32 mask for seed growing
     });
-
-    // Fill the mask with ones
+    // Fill mask with ones
     math::Set(X.count(), 1, (int*)scratches[1], ctx());
-
-    // Generate 2d mask from seed region
+    // Generate 2d mask from the seed region
     kernel::DropBlock2d(
         X.dim(0),
         data_format() == "NCHW" ? X.dim(1) : X.dim(-1),
@@ -68,13 +60,12 @@ void DropBlock2dOp<Context>::DoRunWithType() {
         (uint32_t*)scratches[0],
         (int*)scratches[1],
         ctx());
-
-    // Convert to uint8 mask for applying
+    // Convert to uint8 mask
     kernel::Cast(X.count(), (int*)scratches[1], mask, ctx());
-
-    // Count && Apply
+    // Count the number of zeros to compute scale factor
     float normalizer = math::Sum(X.count(), 1.f, (int*)scratches[1], ctx());
     scale[0] = (float)X.count() / std::max(normalizer, 1.f);
+    // Apply mask to the feature
     kernel::ApplyMask(
         X.count(),
         scale[0],
@@ -97,7 +88,6 @@ template <class Context>
 template <typename T>
 void DropBlock2dGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0);
-
   if (phase() == "TEST") {
     NOT_IMPLEMENTED;
   } else if (phase() == "TRAIN") {

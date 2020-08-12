@@ -9,24 +9,14 @@ template <class Context>
 template <typename T>
 void DropoutOp<Context>::DoRunWithType() {
   auto &X = Input(0), *Y = Output(0, {0});
-  auto scale = use_scale_ ? 1.f / (1.f - prob()) : 1.f;
-
   if (phase() == "TEST") {
     Y->ReshapeLike(X)->CopyFrom(X, ctx());
-    if (!use_scale_) {
-      math::Scale(
-          X.count(),
-          1.f - prob(),
-          Y->template data<T, Context>(),
-          Y->template mutable_data<T, Context>(),
-          ctx());
-    }
   } else if (phase() == "TRAIN") {
     Buffer("mask")->ReshapeLike(X);
     kernel::Dropout(
         X.count(),
         prob(),
-        scale,
+        1.f / (1.f - prob()),
         X.template data<T, Context>(),
         Buffer("mask")->template mutable_data<uint8_t, Context>(),
         Y->ReshapeLike(X)->template mutable_data<T, Context>(),
@@ -46,14 +36,12 @@ template <class Context>
 template <typename T>
 void DropoutGradientOp<Context>::DoRunWithType() {
   auto &dY = Input(0), *dX = Output(0);
-  auto scale = use_scale_ ? 1.f / (1.f - prob()) : 1.f;
-
   if (phase() == "TEST") {
     NOT_IMPLEMENTED;
   } else if (phase() == "TRAIN") {
     kernel::ApplyMask(
         dY.count(),
-        scale,
+        1.f / (1.f - prob()),
         dY.template data<T, Context>(),
         Buffer("mask")->template data<uint8_t, Context>(),
         dX->ReshapeLike(dY)->template mutable_data<T, Context>(),

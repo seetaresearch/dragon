@@ -25,17 +25,18 @@ from dragon.core.testing.unittest.common_utils import TEST_CUDA
 class TestCUDA(unittest.TestCase):
     """Test the cuda utilities."""
 
-    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
     def test_stream(self):
         stream = dragon.cuda.Stream(device_index=0)
-        self.assertGreater(stream.ptr, 0)
+        self.assertGreater(stream.ptr, 0 if TEST_CUDA else -1)
         stream.synchronize()
         dragon.cuda.synchronize()
 
-    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_cudnn(self):
+        dragon.cuda.enable_cudnn()
+
     def test_device(self):
         major, minor = dragon.cuda.get_device_capability(0)
-        self.assertGreaterEqual(major, 1)
+        self.assertGreaterEqual(major, 1 if TEST_CUDA else 0)
         self.assertGreaterEqual(minor, 0)
         dragon.cuda.set_device(0)
         self.assertEqual(dragon.cuda.current_device(), 0)

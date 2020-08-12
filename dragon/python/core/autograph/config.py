@@ -8,7 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
-"""Define the options for autograph utilities."""
+"""Autograph options."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -52,9 +52,9 @@ def set_optimization(level=1):
 
     * level = ``1``: Eliminate the unused outputs and operators.
 
-    * level = ``2``: Apply inplace to the inputs if available.
+    * level = ``2``: Apply the inplace to inputs if available.
 
-    * level = ``3``: Allocate shared buffer for the outputs.
+    * level = ``3``: Allocate the shared buffer to outputs if available.
 
     Parameters
     ----------

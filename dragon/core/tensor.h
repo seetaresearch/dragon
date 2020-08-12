@@ -92,11 +92,11 @@ class DRAGON_API Tensor {
       if (d > 0) new_size *= d;
     }
     if (capacity_ < new_size * meta_.itemsize()) {
-      if (own_memory_) {
-        internal_memory_.reset();
+      if (own_memory_ptr_) {
+        memory_.reset();
       } else {
-        external_memory_ = nullptr;
-        own_memory_ = true;
+        mapped_memory_ = nullptr;
+        own_memory_ptr_ = true;
       }
       capacity_ = 0;
     }
@@ -155,26 +155,26 @@ class DRAGON_API Tensor {
     if (memory != nullptr) {
       CHECK_LE(size_, memory->size())
           << "\nShare an external memory with smaller capacity.";
-      internal_memory_.reset();
+      memory_.reset();
       capacity_ = memory->size();
     } else {
-      if (internal_memory_) {
-        capacity_ = internal_memory_->size();
+      if (memory_) {
+        capacity_ = memory_->size();
       }
     }
-    external_memory_ = memory;
-    own_memory_ = (memory == nullptr);
+    mapped_memory_ = memory;
+    own_memory_ptr_ = (memory == nullptr);
   }
 
   /*! \brief Reset tensor to release all resources */
   void Reset() {
     dims_.clear();
     strides_.clear();
-    internal_memory_.reset();
+    memory_.reset();
     meta_ = TypeMeta();
     size_ = capacity_ = 0;
-    own_memory_ = true;
-    external_memory_ = nullptr;
+    own_memory_ptr_ = true;
+    mapped_memory_ = nullptr;
     if (ExternalDeleter != nullptr) {
       ExternalDeleter();
       ExternalDeleter = nullptr;
@@ -283,11 +283,11 @@ class DRAGON_API Tensor {
 
   /*! \brief Return the number of elements counting along the given axes */
   int64_t count(int64_t start, int64_t end) const {
-    int64_t nelements = 1;
+    int64_t num = 1;
     for (int64_t i = start; i < end; i++) {
-      nelements *= dim(i);
+      num *= dim(i);
     }
-    return nelements;
+    return num;
   }
 
   /*! \brief Return the number of elements counting from the given axis */
@@ -302,12 +302,12 @@ class DRAGON_API Tensor {
 
   /*! \brief Return whether the memory is set */
   bool has_memory() const {
-    return internal_memory_ != nullptr || external_memory_ != nullptr;
+    return memory_ != nullptr || mapped_memory_ != nullptr;
   }
 
   /*! \brief Return the memory pointer */
-  UnifiedMemory* memory(bool required = false) const {
-    auto* ptr = own_memory_ ? internal_memory_.get() : external_memory_;
+  UnifiedMemory* memory(bool required = false, bool owned = false) const {
+    auto* ptr = own_memory_ptr_ || owned ? memory_.get() : mapped_memory_;
     if (required) CHECK(ptr) << "\nAccess the empty memory.";
     return ptr;
   }
@@ -320,15 +320,15 @@ class DRAGON_API Tensor {
   /*! \brief Try to return the raw const data pointer */
   template <class Context>
   const void* const_data_ptr() const {
-    TypeId ctx_type = TypeMeta::Id<Context>();
-    if (ctx_type == TypeMeta::Id<CPUContext>()) {
+    TypeId context_type = TypeMeta::Id<Context>();
+    if (context_type == TypeMeta::Id<CPUContext>()) {
       return memory(true)->cpu_data(nbytes());
-    } else if (ctx_type == TypeMeta::Id<CUDAContext>()) {
+    } else if (context_type == TypeMeta::Id<CUDAContext>()) {
       return memory(true)->cuda_data(nbytes());
-    } else if (ctx_type == TypeMeta::Id<CNMLContext>()) {
+    } else if (context_type == TypeMeta::Id<CNMLContext>()) {
       return memory(true)->cnml_data();
     } else {
-      LOG(FATAL) << "Unknown memory type.";
+      LOG(FATAL) << "Unsupported context type.";
       return nullptr;
     }
   }
@@ -336,19 +336,19 @@ class DRAGON_API Tensor {
   /*! \brief Try to return the raw mutable data pointer */
   template <class Context>
   void mutable_data_ptr(void** data_ptr) {
-    auto* mem = memory();
-    if (!mem) {
+    auto* memory_ptr = memory();
+    if (!memory_ptr) {
       *data_ptr = nullptr;
     } else {
-      TypeId ctx_type = TypeMeta::Id<Context>();
-      if (ctx_type == TypeMeta::Id<CPUContext>()) {
-        *data_ptr = mem->mutable_cpu_data(nbytes());
-      } else if (ctx_type == TypeMeta::Id<CUDAContext>()) {
-        *data_ptr = mem->mutable_cuda_data(nbytes());
-      } else if (ctx_type == TypeMeta::Id<CNMLContext>()) {
-        *data_ptr = mem->mutable_cnml_data();
+      TypeId context_type = TypeMeta::Id<Context>();
+      if (context_type == TypeMeta::Id<CPUContext>()) {
+        *data_ptr = memory_ptr->mutable_cpu_data(nbytes());
+      } else if (context_type == TypeMeta::Id<CUDAContext>()) {
+        *data_ptr = memory_ptr->mutable_cuda_data(nbytes());
+      } else if (context_type == TypeMeta::Id<CNMLContext>()) {
+        *data_ptr = memory_ptr->mutable_cnml_data();
       } else {
-        LOG(FATAL) << "Unknown memory type.";
+        LOG(FATAL) << "Unsupported context type.";
       }
     }
   }
@@ -368,7 +368,7 @@ class DRAGON_API Tensor {
     CHECK_GT(size_, 0) << "\nInvalid tensor size.";
     meta_ = meta;
     capacity_ = size_ * meta.itemsize();
-    internal_memory_.reset(new UnifiedMemory(meta_, capacity_));
+    memory_.reset(new UnifiedMemory(meta_, capacity_));
     mutable_data_ptr<Context>(&data_ptr);
     if (meta_.ctor()) meta_.ctor()(data_ptr, size_);
     return data_ptr;
@@ -426,11 +426,11 @@ class DRAGON_API Tensor {
   }
 
   /*! \brief Set to manage the memory */
-  void set_memory(UnifiedMemory* memory) {
-    if (memory != internal_memory_.get()) {
-      internal_memory_.reset(memory);
+  void set_memory(UnifiedMemory* memory_ptr) {
+    if (memory_ptr != memory_.get()) {
+      memory_.reset(memory_ptr);
     }
-    capacity_ = memory->size();
+    capacity_ = memory_ptr->size();
   }
 
  private:
@@ -449,14 +449,14 @@ class DRAGON_API Tensor {
   /*! \brief The dimensions and strides */
   vec64_t dims_, strides_;
 
-  /*! \brief The internal memory */
-  unique_ptr<UnifiedMemory> internal_memory_;
+  /*! \brief The managed memory */
+  unique_ptr<UnifiedMemory> memory_;
 
-  /*! \brief The external memory */
-  UnifiedMemory* external_memory_ = nullptr;
+  /*! \brief The mapped memory */
+  UnifiedMemory* mapped_memory_ = nullptr;
 
-  /*! \brief The external memory indicator */
-  bool own_memory_ = true;
+  /*! \brief The ownership of memory pointer */
+  bool own_memory_ptr_ = true;
 
   DISABLE_COPY_AND_ASSIGN(Tensor);
 };

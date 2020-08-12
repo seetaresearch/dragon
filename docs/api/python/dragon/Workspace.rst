@@ -30,6 +30,10 @@ has_tensor
 ##########
 .. automethod:: dragon.Workspace.has_tensor
 
+memory_allocated
+################
+.. automethod:: dragon.Workspace.memory_allocated
+
 merge_from
 ##########
 .. automethod:: dragon.Workspace.merge_from

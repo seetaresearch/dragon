@@ -190,6 +190,12 @@ class TestWorkspace(unittest.TestCase):
                 pass
         dragon.reset_workspace()
 
+    def test_memory_allocated(self):
+        w = dragon.Workspace()
+        with w.as_default():
+            _ = w.memory_allocated()
+            _ = dragon.cuda.memory_allocated()
+
 
 if __name__ == '__main__':
     run_tests()
