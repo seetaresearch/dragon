@@ -22,7 +22,7 @@ def batch_norm_exporter(op_def, shape_dict, ws):
     node, const_tensors = exporter.translate(**locals())
     node.op_type = 'BatchNormalization'
     for arg in op_def.arg:
-        if arg.name == 'eps':
+        if arg.name == 'epsilon':
             helper.add_attribute(node, 'epsilon', arg.f)
         elif arg.name == 'momentum':
             helper.add_attribute(node, 'momentum', arg.f)
@@ -36,7 +36,7 @@ def group_norm_exporter(op_def, shape_dict, ws):
     node, const_tensors = exporter.translate(**locals())
     node.op_type = 'ATen'  # Currently not supported in ai.onnx
     for arg in op_def.arg:
-        if arg.name == 'eps':
+        if arg.name == 'epsilon':
             helper.add_attribute(node, 'epsilon', arg.f)
         elif arg.name == 'group':
             if arg.i == 0:

@@ -152,7 +152,7 @@ vm.torch
   : Compute the element-wise multiplication.
 
   `multinomial(...) <torch/multinomial.html>`_
-  : Return a tensor where each row sampled from the multinomial distribution.
+  : Return a tensor with index sampled from multinomial distribution.
 
   `narrow(...) <torch/narrow.html>`_
   : Return a new tensor that is a narrowed version of input tensor.

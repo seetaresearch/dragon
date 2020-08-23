@@ -551,16 +551,6 @@ void Assign(
     T* y,
     Context* ctx);
 
-/* framework.gradient */
-
-template <typename T, class Context>
-void GradientTwoSum(
-    const int count,
-    const T* dy1,
-    const T* dy2,
-    T* dx,
-    Context* ctx);
-
 /* loss.generic_loss */
 
 template <typename T, class Context>

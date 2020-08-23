@@ -23,7 +23,7 @@ class GroupNormOpBase : public Operator<Context> {
   GroupNormOpBase(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
         group_(OpArg<int64_t>("group", 0)),
-        eps_(OpArg<float>("eps", 1e-5f)) {}
+        epsilon_(OpArg<double>("epsilon", 1e-5)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void DetermineBaseArguments() {
@@ -45,7 +45,7 @@ class GroupNormOpBase : public Operator<Context> {
   }
 
  protected:
-  float eps_;
+  double epsilon_;
   int64_t group_;
   int64_t N_, C_, G_, D_, S_;
 };
@@ -53,7 +53,7 @@ class GroupNormOpBase : public Operator<Context> {
 #define USE_GROUPNORM_FUNCTIONS                           \
   using GroupNormOpBase<Context>::DetermineBaseArguments; \
   using GroupNormOpBase<Context>::group_;                 \
-  using GroupNormOpBase<Context>::eps_;                   \
+  using GroupNormOpBase<Context>::epsilon_;               \
   using GroupNormOpBase<Context>::N_;                     \
   using GroupNormOpBase<Context>::C_;                     \
   using GroupNormOpBase<Context>::G_;                     \

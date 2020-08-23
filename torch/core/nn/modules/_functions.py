@@ -120,8 +120,8 @@ class BatchNorm(function.Function):
     def __init__(self, key, dev, **kwargs):
         super(BatchNorm, self).__init__(key, dev, **kwargs)
         self.momentum = kwargs.get('momentum', 0.1)
-        self.eps = kwargs.get('eps', 1e-5)
-        self.training = kwargs.get('training', 'False')
+        self.epsilon = kwargs.get('epsilon', 1e-5)
+        self.training = kwargs.get('training', False)
 
     def attributes(self):
         return {
@@ -129,7 +129,7 @@ class BatchNorm(function.Function):
             'arguments': {
                 'axis': 1,
                 'momentum': 1. - self.momentum,
-                'eps': self.eps,
+                'epsilon': self.epsilon,
                 'use_stats': int(not self.training),
             }
         }
@@ -276,15 +276,15 @@ class GroupNorm(function.Function):
     def __init__(self, key, dev, **kwargs):
         super(GroupNorm, self).__init__(key, dev, **kwargs)
         self.group = kwargs.get('group', 32)
-        self.eps = kwargs.get('eps', 1e-5)
+        self.epsilon = kwargs.get('epsilon', 1e-5)
 
     def attributes(self):
         return {
             'op_type': 'GroupNorm',
             'arguments': {
-                'group': self.group,
                 'axis': 1,
-                'eps': self.eps,
+                'group': self.group,
+                'epsilon': self.epsilon,
             }
         }
 
@@ -325,7 +325,7 @@ class LpNormalize(function.Function):
         super(LpNormalize, self).__init__(key, dev, **kwargs)
         self.p = kwargs.get('p', 2)
         self.axis = kwargs.get('axis', 0)
-        self.eps = kwargs.get('eps', 1e-12)
+        self.epsilon = kwargs.get('epsilon', 1e-12)
 
     def attributes(self):
         return {
@@ -333,7 +333,7 @@ class LpNormalize(function.Function):
             'arguments': {
                 'p': self.p,
                 'axis': self.axis,
-                'eps': self.eps,
+                'epsilon': self.epsilon,
                 'num_axes': 1,
                 'reduction': 'SUM',
             }

@@ -22,11 +22,14 @@ from dragon.vm.dali.core.ops.generic_ops import Cast
 from dragon.vm.dali.core.ops.generic_ops import Pad
 from dragon.vm.dali.core.ops.generic_ops import Reshape
 from dragon.vm.dali.core.ops.generic_ops import Slice
+from dragon.vm.dali.core.ops.image_ops import Brightness
 from dragon.vm.dali.core.ops.image_ops import BrightnessContrast
+from dragon.vm.dali.core.ops.image_ops import Contrast
 from dragon.vm.dali.core.ops.image_ops import CropMirrorNormalize
 from dragon.vm.dali.core.ops.image_ops import Hsv
 from dragon.vm.dali.core.ops.image_ops import Paste
 from dragon.vm.dali.core.ops.image_ops import RandomBBoxCrop
+from dragon.vm.dali.core.ops.image_ops import RandomResizedCrop
 from dragon.vm.dali.core.ops.image_ops import Resize
 from dragon.vm.dali.core.ops.random_ops import CoinFlip
 from dragon.vm.dali.core.ops.random_ops import Uniform

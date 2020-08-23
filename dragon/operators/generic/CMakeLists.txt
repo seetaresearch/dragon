@@ -4,17 +4,11 @@ file(GLOB SOURCES *.cc)
 set(MODULE_INCLUDES ${MODULE_INCLUDES} ${INCLUDES})
 set(MODULE_SOURCES ${MODULE_SOURCES} ${SOURCES})
 
-# ---[ CUDA sources
-if (USE_CUDA)
-  file(GLOB CUDA_SOURCES *.cu)
-  set(MODULE_CUDA_SOURCES ${MODULE_CUDA_SOURCES} ${CUDA_SOURCES})
+if (BUILD_RUNTIME)
+  # Remove gradient ops
+  list(REMOVE_ITEM MODULE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/gradient_ops.cc)
 endif()
-
-# ---[ Subdirectory sources
-add_subdirectory(device)
-add_subdirectory(math)
 
 # ---[ Submit to the parent scope
 set(MODULE_INCLUDES ${MODULE_INCLUDES} PARENT_SCOPE)
 set(MODULE_SOURCES ${MODULE_SOURCES} PARENT_SCOPE)
-set(MODULE_CUDA_SOURCES ${MODULE_CUDA_SOURCES} PARENT_SCOPE)

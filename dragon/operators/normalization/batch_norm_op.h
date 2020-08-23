@@ -21,20 +21,20 @@
 namespace dragon {
 
 // Multiple inheritance is forbidden by the registry.
-// So, we should inherit the collective base as the meta.
+// So, we should inherit the collective op base if mpi available.
 #ifdef USE_MPI
-#define BatchNormOpBaseMeta CollectiveOpBase
+#define GenericOpBase CollectiveOpBase
 #else
-#define BatchNormOpBaseMeta Operator
+#define GenericOpBase Operator
 #endif
 
 template <class Context>
-class BatchNormOpBase : public BatchNormOpBaseMeta<Context> {
+class BatchNormOpBase : public GenericOpBase<Context> {
  public:
   BatchNormOpBase(const OperatorDef& def, Workspace* ws)
-      : BatchNormOpBaseMeta<Context>(def, ws),
+      : GenericOpBase<Context>(def, ws),
         momentum_(OpArg<float>("momentum", 0.9f)),
-        eps_(OpArg<float>("eps", 1e-5f)),
+        epsilon_(OpArg<double>("epsilon", 1e-5)),
         use_stats_(OpArg<int64_t>("use_stats", -1)) {}
   USE_OPERATOR_FUNCTIONS;
 
@@ -56,17 +56,18 @@ class BatchNormOpBase : public BatchNormOpBaseMeta<Context> {
   }
 
  protected:
-  float momentum_, eps_;
+  float momentum_;
+  double epsilon_;
   int64_t use_stats_, N_, C_, S_;
   int64_t is_training_, is_recomputing_;
 };
 
-#undef BatchNormOpBaseMeta
+#undef GenericOpBase
 
 #define USE_BATCHNORM_FUNCTIONS                           \
   using BatchNormOpBase<Context>::DetermineBaseArguments; \
   using BatchNormOpBase<Context>::momentum_;              \
-  using BatchNormOpBase<Context>::eps_;                   \
+  using BatchNormOpBase<Context>::epsilon_;               \
   using BatchNormOpBase<Context>::use_stats_;             \
   using BatchNormOpBase<Context>::N_;                     \
   using BatchNormOpBase<Context>::C_;                     \
@@ -148,14 +149,15 @@ template <class Context>
 class CuDNNBatchNormOp final : public BatchNormOpBase<Context> {
  public:
   CuDNNBatchNormOp(const OperatorDef& def, Workspace* ws)
-      : BatchNormOpBase<Context>(def, ws), eps64_(OpArg<float>("eps", 1e-5f)) {
+      : BatchNormOpBase<Context>(def, ws) {
     CuDNNCreateTensorDesc(&bn_desc_);
     CuDNNCreateTensorDesc(&input_desc_);
-    if (eps64_ <= CUDNN_BN_MIN_EPSILON - FLT_EPSILON)
-      LOG(FATAL) << "Provided epsilon is smaller than "
+    if (epsilon_ <= CUDNN_BN_MIN_EPSILON) {
+      LOG(ERROR) << "Provided epsilon is smaller than "
                  << "CUDNN_BN_MIN_EPSILON. \nSet it to "
                  << "CUDNN_BN_MIN_EPSILON instead.";
-    eps64_ = std::max(eps64_, CUDNN_BN_MIN_EPSILON);
+      epsilon_ = CUDNN_BN_MIN_EPSILON;
+    }
   }
   USE_OPERATOR_FUNCTIONS;
   USE_BATCHNORM_FUNCTIONS;
@@ -171,7 +173,6 @@ class CuDNNBatchNormOp final : public BatchNormOpBase<Context> {
   void DoRunWithType();
 
  protected:
-  double eps64_;
   cudnnTensorDescriptor_t input_desc_, bn_desc_;
   cudnnBatchNormMode_t bn_mode_;
 };
@@ -180,15 +181,15 @@ template <class Context>
 class CuDNNBatchNormGradientOp final : public BatchNormGradientOp<Context> {
  public:
   CuDNNBatchNormGradientOp(const OperatorDef& def, Workspace* ws)
-      : BatchNormGradientOp<Context>(def, ws),
-        eps64_(OpArg<float>("eps", 1e-5f)) {
+      : BatchNormGradientOp<Context>(def, ws) {
     CuDNNCreateTensorDesc(&bn_desc_);
     CuDNNCreateTensorDesc(&input_desc_);
-    if (eps64_ <= CUDNN_BN_MIN_EPSILON - FLT_EPSILON)
-      LOG(FATAL) << "Provided epsilon is smaller than "
+    if (epsilon_ <= CUDNN_BN_MIN_EPSILON) {
+      LOG(ERROR) << "Provided epsilon is smaller than "
                  << "CUDNN_BN_MIN_EPSILON. \nSet it to "
                  << "CUDNN_BN_MIN_EPSILON instead.";
-    eps64_ = std::max(eps64_, CUDNN_BN_MIN_EPSILON);
+      epsilon_ = CUDNN_BN_MIN_EPSILON;
+    }
   }
   USE_OPERATOR_FUNCTIONS;
   USE_BATCHNORM_FUNCTIONS;
@@ -204,7 +205,6 @@ class CuDNNBatchNormGradientOp final : public BatchNormGradientOp<Context> {
   void TrainingImpl();
 
  protected:
-  double eps64_;
   cudnnTensorDescriptor_t input_desc_, bn_desc_;
   cudnnBatchNormMode_t bn_mode_;
 };

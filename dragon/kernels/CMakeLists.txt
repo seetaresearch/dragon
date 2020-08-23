@@ -9,7 +9,6 @@ add_subdirectory(vision)
 
 # ---[ Extended sources
 if (NOT BUILD_RUNTIME)
-  add_subdirectory(framework)
   add_subdirectory(loss)
   add_subdirectory(training)
 endif()

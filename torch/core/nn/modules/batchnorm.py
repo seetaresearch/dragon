@@ -47,14 +47,18 @@ class _BatchNorm(Module):
             self.register_buffer('bias', init.zeros(num_features))
         self.register_buffer('running_mean', init.zeros(num_features))
         self.register_buffer('running_var', init.ones(num_features))
-        self.inputs = [self.running_mean, self.running_var,
-                       self.weight, self.bias]
+        self.inputs = [self.running_mean, self.running_var, self.weight, self.bias]
         self.reset_parameters()
 
     def reset_parameters(self):
         if self.affine:
             self.weight.data.one_()
             self.bias.data.zero_()
+
+    def reset_running_stats(self):
+        if self.track_running_stats:
+            self.running_mean.zero_()
+            self.running_var.fill_(1)
 
     def extra_repr(self):
         return '{num_features}, ' \
@@ -65,10 +69,9 @@ class _BatchNorm(Module):
                .format(**self.__dict__)
 
     def forward(self, input):
-        training = self.training or not self.track_running_stats
         return F.batch_norm(
             input, *self.inputs,
-            training=training,
+            training=self.training,
             momentum=self.momentum,
             eps=self.eps
         )
@@ -293,12 +296,10 @@ class SyncBatchNorm(_BatchNorm):
         self.process_group = process_group
 
     def forward(self, input):
-        training = self.training or \
-            not self.track_running_stats
-        if training:
+        if self.training:
             return F.sync_batch_norm(
                 input, *self.inputs,
-                training=training,
+                training=self.training,
                 momentum=self.momentum,
                 eps=self.eps,
                 process_group=self.process_group
@@ -306,7 +307,7 @@ class SyncBatchNorm(_BatchNorm):
         else:
             return F.batch_norm(
                 input, *self.inputs,
-                training=training,
+                training=self.training,
                 momentum=self.momentum,
                 eps=self.eps
             )

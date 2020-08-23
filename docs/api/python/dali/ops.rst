@@ -12,6 +12,9 @@ vm.dali.ops
   `class BBoxPaste <ops/BBoxPaste.html>`_
   : Transform bounding boxes to match the ``Paste`` operator.
 
+  `class Brightness <ops/Brightness.html>`_
+  : Adjust the brightness of image.
+
   `class BrightnessContrast <ops/BrightnessContrast.html>`_
   : Adjust the brightness and contrast of image.
 
@@ -20,6 +23,9 @@ vm.dali.ops
 
   `class CoinFlip <ops/CoinFlip.html>`_
   : Sample values from a bernoulli distribution.
+
+  `class Contrast <ops/Contrast.html>`_
+  : Adjust the contrast of image.
 
   `class CropMirrorNormalize <ops/CropMirrorNormalize.html>`_
   : Crop and normalize image with the horizontal flip.
@@ -45,6 +51,9 @@ vm.dali.ops
   `class RandomBBoxCrop <ops/RandomBBoxCrop.html>`_
   : Return an valid image crop restricted by bounding boxes.
 
+  `class RandomResizedCrop <ops/RandomResizedCrop.html>`_
+  : Return a resized random crop of image.
+
   `class Reshape <ops/Reshape.html>`_
   : Change the dimensions of input.
 
@@ -68,9 +77,11 @@ vm.dali.ops
 
   ops/BbFlip
   ops/BBoxPaste
+  ops/Brightness
   ops/BrightnessContrast
   ops/Cast
   ops/CoinFlip
+  ops/Contrast
   ops/CropMirrorNormalize
   ops/ExternalSource
   ops/Hsv
@@ -79,6 +90,7 @@ vm.dali.ops
   ops/Pad
   ops/Paste
   ops/RandomBBoxCrop
+  ops/RandomResizedCrop
   ops/Reshape
   ops/Resize
   ops/Slice

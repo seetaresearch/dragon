@@ -336,8 +336,7 @@ DRAGON_API void Gemv<float16, CUDAContext>(
     float16* y,
     CUDAContext* ctx,
     const string math_type) {
-  cublasOperation_t cuTransA =
-      TransA == CblasNoTrans ? CUBLAS_OP_T : CUBLAS_OP_N;
+  auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_T : CUBLAS_OP_N;
   int m = cuTransA == CUBLAS_OP_N ? N : M;
   int k = cuTransA == CUBLAS_OP_N ? M : N;
   int LDA = cuTransA == CUBLAS_OP_N ? m : k;
@@ -487,8 +486,7 @@ DRAGON_API void Gemv<float, CUDAContext>(
     float* y,
     CUDAContext* ctx,
     const string math_type) {
-  cublasOperation_t cuTransA =
-      TransA == CblasNoTrans ? CUBLAS_OP_T : CUBLAS_OP_N;
+  auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_T : CUBLAS_OP_N;
   CUBLAS_CHECK(
       cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST));
   CUBLAS_CHECK(cublasSgemv(
@@ -507,8 +505,7 @@ DRAGON_API void Gemv<double, CUDAContext>(
     double* y,
     CUDAContext* ctx,
     const string math_type) {
-  cublasOperation_t cuTransA =
-      TransA == CblasNoTrans ? CUBLAS_OP_T : CUBLAS_OP_N;
+  auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_T : CUBLAS_OP_N;
   const auto alpha64 = static_cast<double>(alpha);
   const auto beta64 = static_cast<double>(beta);
   CUBLAS_CHECK(
@@ -544,10 +541,8 @@ DRAGON_API void Gemm<float16, CUDAContext>(
     const std::string math_type) {
   int lda = (TransA == CblasNoTrans) ? K : M;
   int ldb = (TransB == CblasNoTrans) ? N : K;
-  cublasOperation_t cuTransA =
-      TransA == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
-  cublasOperation_t cuTransB =
-      TransB == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
+  auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
+  auto cuTransB = TransB == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
   CUBLAS_CHECK(
       cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST));
   if (math_type == "float32") {
@@ -697,10 +692,8 @@ DRAGON_API void Gemm<float, CUDAContext>(
     const string math_type) {
   int lda = TransA == CblasNoTrans ? K : M;
   int ldb = TransB == CblasNoTrans ? N : K;
-  cublasOperation_t cuTransA =
-      TransA == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
-  cublasOperation_t cuTransB =
-      TransB == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
+  auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
+  auto cuTransB = TransB == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
   CUBLAS_CHECK(
       cublasSetPointerMode(ctx->cublas_handle(), CUBLAS_POINTER_MODE_HOST));
   CUBLAS_CHECK(cublasSgemm(
@@ -736,10 +729,8 @@ DRAGON_API void Gemm<double, CUDAContext>(
     const string math_type) {
   int lda = (TransA == CblasNoTrans) ? K : M;
   int ldb = (TransB == CblasNoTrans) ? N : K;
-  cublasOperation_t cuTransA =
-      TransA == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
-  cublasOperation_t cuTransB =
-      TransB == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
+  auto cuTransA = TransA == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
+  auto cuTransB = TransB == CblasNoTrans ? CUBLAS_OP_N : CUBLAS_OP_T;
   const auto alpha64 = static_cast<double>(alpha);
   const auto beta64 = static_cast<double>(beta);
   CUBLAS_CHECK(

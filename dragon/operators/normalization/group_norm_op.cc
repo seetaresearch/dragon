@@ -31,7 +31,7 @@ void GroupNormOp<Context>::DoRunWithType() {
     kernel::Moments(4, dims.data(), 2, axes.data(), x, mu, rsig, ctx());
   }
 
-  math::InvStd(N_ * G_, eps_, rsig, rsig, ctx());
+  math::InvStd(N_ * G_, epsilon_, rsig, rsig, ctx());
 
   kernel::GroupNormForward(
       N_,

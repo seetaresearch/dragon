@@ -153,7 +153,7 @@ def batch_norm(
             input.device,
             training=training,
             momentum=momentum,
-            eps=eps,
+            epsilon=eps,
         ).apply(input, running_mean, running_var, weight, bias)
 
 
@@ -670,11 +670,8 @@ def group_norm(input, weight, bias, groups=32, eps=1e-5):
 
     """
     return _functions.GroupNorm \
-        .instantiate(
-            input.device,
-            group=groups,
-            eps=eps,
-        ).apply(input, weight, bias)
+        .instantiate(input.device, group=groups, epsilon=eps) \
+        .apply(input, weight, bias)
 
 
 def interpolate(
@@ -1126,7 +1123,7 @@ def normalize(input, p=2, dim=1, eps=1e-12, out=None):
             input.device,
             p=p,
             axis=dim,
-            eps=eps,
+            epsilon=eps,
         ).apply(input, out)
 
 
@@ -1558,7 +1555,7 @@ def sync_batch_norm(
             input.device,
             training=training,
             momentum=momentum,
-            eps=eps,
+            epsilon=eps,
             process_group=process_group,
         ).apply(input, running_mean, running_var, weight, bias)
 

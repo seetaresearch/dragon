@@ -19,7 +19,7 @@ from dragon.core.framework import config
 from dragon.core.framework import workspace
 
 
-class Stream(backend.CudaStream):
+class Stream(backend.CUDAStream):
     """The CUDA stream wrapper."""
 
     def __init__(self, device_index):

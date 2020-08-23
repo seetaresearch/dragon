@@ -23,7 +23,7 @@ class LpNormalizeOp final : public Operator<Context> {
   LpNormalizeOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
         p_(OpArg<int64_t>("p", 2)),
-        eps_(OpArg<float>("eps", 1e-12f)),
+        epsilon_(OpArg<double>("epsilon", 1e-12)),
         reduction_(OpArg<string>("reduction", "SUM")) {}
   USE_OPERATOR_FUNCTIONS;
 
@@ -33,9 +33,9 @@ class LpNormalizeOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  float eps_;
-  string reduction_;
   int64_t p_;
+  double epsilon_;
+  string reduction_;
 };
 
 template <class Context>
@@ -44,7 +44,7 @@ class LpNormalizeGradientOp final : public Operator<Context> {
   LpNormalizeGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
         p_(OpArg<int64_t>("p", 2)),
-        eps_(OpArg<float>("eps", 1e-12f)),
+        epsilon_(OpArg<double>("epsilon", 1e-12)),
         reduction_(OpArg<string>("reduction", "SUM")) {}
   USE_OPERATOR_FUNCTIONS;
 
@@ -54,9 +54,9 @@ class LpNormalizeGradientOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  float eps_;
-  string reduction_;
   int64_t p_;
+  float epsilon_;
+  string reduction_;
 };
 
 } // namespace dragon

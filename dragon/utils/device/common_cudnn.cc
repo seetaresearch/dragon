@@ -1,6 +1,6 @@
 #ifdef USE_CUDNN
 
-#include "dragon/utils/cudnn_device.h"
+#include "dragon/utils/device/common_cudnn.h"
 #include "dragon/core/tensor.h"
 #include "dragon/core/types.h"
 

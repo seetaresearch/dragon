@@ -30,7 +30,6 @@ def path_to(href, index=False):
 
 # Basic
 html_static_path = ['../_static']
-exclude_patterns = ['../_build']
 master_doc = 'index'
 source_suffix = '.rst'
 
@@ -78,7 +77,7 @@ html_theme_options = {
     'breadcrumb_links': [
         ('Dragon', path_to('../..', 1)),
         ('API', path_to('../../versions', 1)),
-        ('Dragon v{}'.format(version.replace('a0', '-a0')), path_to('../../api', 1)),
+        ('Dragon v{}'.format(version.replace('a0', '')), path_to('../../api', 1)),
         ('C++', path_to('', 1)),
     ],
 }

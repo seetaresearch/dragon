@@ -1200,16 +1200,15 @@ class Tensor(object):
 
         """
 
-    def multinomial(self, num_samples, eps=0.):
-        """Return a tensor where each row contains ``num_samples``,
-        sampled from the multinomial distribution.
+    def multinomial(self, num_samples, epsilon=0):
+        """Return a tensor with index sampled from multinomial distribution.
 
         Parameters
         ----------
         num_samples : int
-            The number of samples.
-        eps : float, optional, default=0.
-            The prob to a uniform sampling.
+            The number of samples in each row.
+        epsilon : float, optional, default=0
+            The epsilon value to apply e-greedy strategy.
 
         Returns
         -------

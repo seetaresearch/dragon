@@ -1,5 +1,5 @@
-#ifndef DRAGON_UTILS_CUB_DEVICE_H_
-#define DRAGON_UTILS_CUB_DEVICE_H_
+#ifndef DRAGON_UTILS_DEVICE_COMMON_CUB_H_
+#define DRAGON_UTILS_DEVICE_COMMON_CUB_H_
 
 #ifdef USE_CUDA
 
@@ -7,7 +7,7 @@
 #include <cub/device/device_select.cuh>
 #include <cub/iterator/counting_input_iterator.cuh>
 
-#include "dragon/utils/cuda_device.h"
+#include "dragon/utils/device/common_cuda.h"
 
 namespace dragon {
 
@@ -18,4 +18,4 @@ using BlockReduce = cub::BlockReduce<T, CUDA_THREADS>;
 
 #endif // USE_CUDA
 
-#endif // DRAGON_UTILS_CUB_DEVICE_H_
+#endif // DRAGON_UTILS_DEVICE_COMMON_CUB_H_

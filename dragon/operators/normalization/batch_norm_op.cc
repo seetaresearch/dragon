@@ -49,7 +49,7 @@ void BatchNormOp<Context>::TrainingImpl() {
 
   // Fuse parameters along channel axis
   // [mu, rsig, alpha, beta] => [scale, bias]
-  math::InvStd(C_, eps_, rsig, rsig, ctx());
+  math::InvStd(C_, epsilon_, rsig, rsig, ctx());
   math::Mul(C_, gamma, rsig, scale, ctx());
   math::Mul(C_, scale, mu, bias, ctx());
   math::Sub(C_, beta, bias, bias, ctx());
@@ -84,7 +84,7 @@ void BatchNormOp<Context>::InferenceImpl() {
 
   // Fuse parameters along channel axis
   // [mu, rsig, alpha, beta] => [scale, bias]
-  math::InvStd(C_, eps_, rv, bias, ctx());
+  math::InvStd(C_, epsilon_, rv, bias, ctx());
   math::Mul(C_, gamma, bias, scale, ctx());
   math::Mul(C_, scale, rm, bias, ctx());
   math::Sub(C_, beta, bias, bias, ctx());
@@ -103,7 +103,7 @@ void BatchNormOp<Context>::RunOnDevice() {
 
   // Get the recomputing flag
   auto* flag = ws()->GetTensor("/share/flag/recomputing");
-  is_recomputing_ = flag->template data<bool, CPUContext>()[0];
+  is_recomputing_ = flag->template data<bool, CPUContext>()[0] ? 1 : 0;
 
   // Dispatch the training or inference impl
   Output(0)->ReshapeLike(Input(0));
@@ -159,7 +159,7 @@ void BatchNormGradientOp<Context>::InferenceImpl() {
   }
 
   // Restore inverse stddev from variance
-  math::InvStd(C_, eps_, rv, rsig, ctx());
+  math::InvStd(C_, epsilon_, rv, rsig, ctx());
 
   // Gradient w.r.t. gamma, beta and input
   kernel::BatchNormBackwardInference(

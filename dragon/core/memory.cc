@@ -1,5 +1,5 @@
 #include "dragon/core/memory.h"
-#include "dragon/utils/cuda_device.h"
+#include "dragon/utils/device/common_cuda.h"
 
 namespace dragon {
 

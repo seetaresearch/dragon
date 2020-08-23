@@ -10,8 +10,8 @@
  * ------------------------------------------------------------
  */
 
-#ifndef DRAGON_OPERATORS_FRAMEWORK_GRADIENT_OP_H_
-#define DRAGON_OPERATORS_FRAMEWORK_GRADIENT_OP_H_
+#ifndef DRAGON_OPERATORS_GENERIC_GRADIENT_OPS_H_
+#define DRAGON_OPERATORS_GENERIC_GRADIENT_OPS_H_
 
 #include "dragon/core/operator.h"
 
@@ -21,10 +21,7 @@ template <class Context>
 class GradientGenerateOp final : public Operator<Context> {
  public:
   GradientGenerateOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws), defaults(OpArgs<float>("defaults")) {
-    CHECK_EQ(InputSize(), OutputSize());
-    CHECK_EQ(defaults.size(), OutputSize());
-  }
+      : Operator<Context>(def, ws), defaults_(OpArgs<float>("defaults")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -33,20 +30,13 @@ class GradientGenerateOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  vector<float> defaults;
+  vector<float> defaults_;
 };
 
 template <class Context>
 class GradientGatherOp final : public Operator<Context> {
  public:
-  GradientGatherOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws) {
-    for (int i = 0; i < InputSize(); i++) {
-      if (Input(i).has_name()) {
-        indices.push_back(i);
-      }
-    }
-  }
+  SIMPLE_CTOR_DTOR(GradientGatherOp);
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -55,7 +45,7 @@ class GradientGatherOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  vec32_t indices;
+  vector<Tensor*> grads_;
 };
 
 template <class Context>
@@ -81,4 +71,4 @@ class StopGradientOp final : public Operator<Context> {
 
 } // namespace dragon
 
-#endif // DRAGON_OPERATORS_FRAMEWORK_GRADIENT_OP_H_
+#endif // DRAGON_OPERATORS_GENERIC_GRADIENT_OPS_H_

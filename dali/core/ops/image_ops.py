@@ -24,6 +24,33 @@ from dragon.vm.dali.core.framework import context
 from dragon.vm.dali.core.framework import types
 
 
+class Brightness(object):
+    """Adjust the brightness of image.
+
+    Examples:
+
+    ```python
+    # Historical jitter range for brightness
+    twist_rng = dali.ops.Uniform(range=[0.6, 1.4])
+
+    brightness = dali.ops.Brightness()
+    y = brightness(inputs['x'], brightness=twist_rng())
+    ```
+
+    """
+
+    def __new__(cls, **kwargs):
+        """Create a ``Brightness`` operator.
+
+        Returns
+        -------
+        nvidia.dali.ops.Brightness
+            The operator.
+
+        """
+        return ops.Brightness(device=context.get_device_type(), **kwargs)
+
+
 class BrightnessContrast(object):
     """Adjust the brightness and contrast of image.
 
@@ -40,7 +67,7 @@ class BrightnessContrast(object):
     """
 
     def __new__(cls, **kwargs):
-        """Create a ``BrightnessContrastBrightnessContrast`` operator.
+        """Create a ``BrightnessContrast`` operator.
 
         Returns
         -------
@@ -49,6 +76,33 @@ class BrightnessContrast(object):
 
         """
         return ops.BrightnessContrast(device=context.get_device_type(), **kwargs)
+
+
+class Contrast(object):
+    """Adjust the contrast of image.
+
+    Examples:
+
+    ```python
+    # Historical jitter range for contrast
+    twist_rng = dali.ops.Uniform(range=[0.6, 1.4])
+
+    contrast = dali.ops.Contrast()
+    y = contrast(inputs['x'], contrast=twist_rng())
+    ```
+
+    """
+
+    def __new__(cls, **kwargs):
+        """Create a ``Contrast`` operator.
+
+        Returns
+        -------
+        nvidia.dali.ops.Contrast
+            The operator.
+
+        """
+        return ops.Contrast(device=context.get_device_type(), **kwargs)
 
 
 class CropMirrorNormalize(object):
@@ -285,6 +339,66 @@ class RandomBBoxCrop(object):
         )
 
 
+class RandomResizedCrop(object):
+    """Return a resized random crop of image.
+
+    Examples:
+
+    ```python
+    resize = dali.ops.RandomResizedCrop(
+        size=(224, 224),
+        # Inception sampling policy for image classification
+        random_area=(0.08, 1.00),
+        random_aspect_ratio=(0.75, 1.33),
+    )
+    y = resize(inputs['x'])
+    ```
+
+    """
+
+    def __new__(
+        cls,
+        size,
+        interp_type='LINEAR',
+        random_area=(0.08, 1.),
+        random_aspect_ratio=(0.75, 1.33),
+        num_attempts=10,
+        **kwargs
+    ):
+        """Create a ``ImageDecoderRandomCrop`` operator.
+
+        Parameters
+        ----------
+        size : Union[int, Sequence[int]]
+            The output image size.
+        interp_type : {'NN', 'LINEAR', 'TRIANGULAR', 'CUBIC', 'GAUSSIAN', 'LANCZOS3'}, optional
+            The interpolation method.
+        random_area : Sequence[float], optional, default=(0.08, 1.)
+            The range of scale for sampling.
+        random_aspect_ratio : Sequence[float], optional, default=(0.75, 1.33)
+            The range of aspect ratio for sampling.
+        num_attempts : int, optional, default=10
+            The max number of sampling trails.
+
+        Returns
+        -------
+        nvidia.dali.ops.ImageDecoderRandomCrop
+            The operator.
+
+        """
+        if isinstance(interp_type, six.string_types):
+            interp_type = getattr(types, 'INTERP_' + interp_type.upper())
+        return ops.RandomResizedCrop(
+            size=size,
+            interp_type=interp_type,
+            random_area=random_area,
+            random_aspect_ratio=random_aspect_ratio,
+            num_attempts=num_attempts,
+            device=context.get_device_type(),
+            **kwargs
+        )
+
+
 class Resize(object):
     """Resize the image.
 
@@ -310,7 +424,8 @@ class Resize(object):
         resize_shorter=None,
         resize_longer=None,
         max_size=None,
-        interp_type='TRIANGULAR',
+        interp_type='LINEAR',
+        **kwargs
     ):
         """Create a ``Resize`` operator.
 
@@ -340,4 +455,5 @@ class Resize(object):
             max_size=max_size,
             interp_type=interp_type,
             device=context.get_device_type(),
+            **kwargs
         )

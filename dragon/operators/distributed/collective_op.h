@@ -32,26 +32,23 @@ class CollectiveOp final : public CollectiveOpBase<Context> {
   void RunOnDevice() override;
 
   template <typename T>
-  void AllReduceMPI(Tensor*);
+  void AllReduceMPI();
 
   template <typename T>
-  void AllReduceNCCL(Tensor*);
+  void AllReduceNCCL();
 
   template <typename T>
-  void AllReduceDispatcher(Tensor*);
+  void BroadcastMPI();
 
   template <typename T>
-  void BroadcastMPI(Tensor*);
+  void BroadcastNCCL();
 
   template <typename T>
-  void BroadcastNCCL(Tensor*);
-
-  template <typename T>
-  void BroadcastDispatcher(Tensor*);
+  void DoRunWithType();
 
  protected:
-  string communication_;
-  string operation_;
+  string communication_, operation_;
+  Tensor *src_tensor_, *dest_tensor_;
 };
 
 } // namespace dragon

@@ -118,7 +118,7 @@ class BatchNorm(Layer):
             'use_stats': int(param.use_global_stats)
             if param.HasField('use_global_stats') else -1,
             'momentum': param.moving_average_fraction,
-            'eps': param.eps,
+            'epsilon': param.eps,
             'axis': 1,
         }
         self.add_blob(value=0, no_grad=True)  # running_mean
@@ -398,7 +398,7 @@ class Normalize(Layer):
         self.l2norm_arguments = {
             'axis': 1,
             'num_axes': -1 if param.across_spatial else 1,
-            'eps': param.eps,
+            'epsilon': param.eps,
         }
         self.affine_arguments = {
             'axis': 1,

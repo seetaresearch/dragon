@@ -80,7 +80,7 @@ def batch_normalization(
         moving_variance],
         axis=axis,
         momentum=momentum,
-        eps=variance_epsilon,
+        epsilon=variance_epsilon,
         use_stats=not trainable,
         name=name,
     )
@@ -131,7 +131,7 @@ def l2_normalize(x, axis=None, epsilon=1e-12, name=None):
         x,
         p=2,
         axis=axis,
-        eps=epsilon,
+        epsilon=epsilon,
         name=name,
     )
 

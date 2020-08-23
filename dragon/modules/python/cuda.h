@@ -21,16 +21,16 @@ namespace python {
 
 namespace cuda {
 
-class CudaStream {
+class CUDAStream {
  public:
-  explicit CudaStream(int device_id) : device_id_(device_id) {
+  explicit CUDAStream(int device_id) : device_id_(device_id) {
 #ifdef USE_CUDA
     CUDADeviceGuard guard(device_id);
     CUDA_CHECK(cudaStreamCreateWithFlags(&stream_, cudaStreamNonBlocking));
 #endif
   }
 
-  ~CudaStream() {
+  ~CUDAStream() {
 #ifdef USE_CUDA
     CUDA_CHECK(cudaStreamDestroy(stream_));
 #endif
@@ -132,19 +132,19 @@ void RegisterModule(py::module& m) {
 #endif
   });
 
-  /*! \brief Export the Stream class */
-  py::class_<CudaStream>(m, "CudaStream")
+  /*! \brief Export the stream class */
+  py::class_<CUDAStream>(m, "CUDAStream")
       /*! \brief Default constructor */
       .def(py::init<int>())
 
       /*! \brief Return the device index */
-      .def_property_readonly("device_id", &CudaStream::device_id)
+      .def_property_readonly("device_id", &CUDAStream::device_id)
 
       /*! \brief Return the stream pointer */
-      .def_property_readonly("ptr", &CudaStream::ptr)
+      .def_property_readonly("ptr", &CUDAStream::ptr)
 
       /*! \brief Synchronize the stream */
-      .def("Synchronize", &CudaStream::Synchronize);
+      .def("Synchronize", &CUDAStream::Synchronize);
 }
 
 } // namespace cuda

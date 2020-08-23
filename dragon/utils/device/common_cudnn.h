@@ -10,8 +10,8 @@
  * ------------------------------------------------------------
  */
 
-#ifndef DRAGON_UTILS_CUDNN_DEVICE_H_
-#define DRAGON_UTILS_CUDNN_DEVICE_H_
+#ifndef DRAGON_UTILS_DEVICE_COMMON_CUDNN_H_
+#define DRAGON_UTILS_DEVICE_COMMON_CUDNN_H_
 
 #ifdef USE_CUDNN
 
@@ -118,4 +118,4 @@ void CuDNNSetBiasDesc(
 
 #endif // USE_CUDNN
 
-#endif // DRAGON_UTILS_CUDNN_DEVICE_H_
+#endif // DRAGON_UTILS_DEVICE_COMMON_CUDNN_H_

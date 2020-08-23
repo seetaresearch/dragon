@@ -10,8 +10,8 @@
  * ------------------------------------------------------------
  */
 
-#ifndef DRAGON_UTILS_CUDA_DEVICE_H_
-#define DRAGON_UTILS_CUDA_DEVICE_H_
+#ifndef DRAGON_UTILS_DEVICE_COMMON_CUDA_H_
+#define DRAGON_UTILS_DEVICE_COMMON_CUDA_H_
 
 #ifdef USE_CUDA
 #include <cublas_v2.h>
@@ -19,10 +19,6 @@
 #include <cuda_runtime.h>
 #include <curand.h>
 #include <device_launch_parameters.h>
-#endif
-
-#ifdef USE_NCCL
-#include <nccl.h>
 #endif
 
 #include "dragon/core/common.h"
@@ -67,14 +63,6 @@ constexpr int CUDA_TENSOR_MAX_DIMS = 8;
     CHECK_EQ(status, CURAND_STATUS_SUCCESS); \
   } while (0)
 
-#ifdef USE_NCCL
-#define NCCL_CHECK(condition)                                            \
-  do {                                                                   \
-    ncclResult_t status = condition;                                     \
-    CHECK_EQ(status, ncclSuccess) << "\n" << ncclGetErrorString(status); \
-  } while (0)
-#endif // USE_NCCL
-
 #define CUDA_TENSOR_DIMS_CHECK(num_dims)        \
   CHECK_LE(num_dims, CUDA_TENSOR_MAX_DIMS)      \
       << "Too many (> " << CUDA_TENSOR_MAX_DIMS \
@@ -114,7 +102,7 @@ inline int CUDA_NUM_DEVICES() {
   return count;
 }
 
-inline int CUDA_GET_DEVICE() {
+inline int GetCUDADevice() {
   int device_id;
   cudaGetDevice(&device_id);
   return device_id;
@@ -138,7 +126,7 @@ inline const cudaDeviceProp& GetCUDADeviceProp(int device_id) {
 }
 
 inline bool CUDA_TRUE_FP16_AVAILABLE() {
-  int device = CUDA_GET_DEVICE();
+  int device = GetCUDADevice();
   auto& prop = GetCUDADeviceProp(device);
   return prop.major >= 6;
 }
@@ -147,7 +135,7 @@ inline bool TENSOR_CORE_AVAILABLE() {
 #if CUDA_VERSION < 9000
   return false;
 #else
-  int device = CUDA_GET_DEVICE();
+  int device = GetCUDADevice();
   auto& prop = GetCUDADeviceProp(device);
   return prop.major >= 7;
 #endif
@@ -172,7 +160,7 @@ class CUDADeviceGuard {
 
 #else
 
-#define CUDA_NOT_COMPILED LOG(FATAL) << "CUDA was not compiled."
+#define CUDA_NOT_COMPILED LOG(FATAL) << "CUDA library is not compiled with."
 
 class CUDADeviceGuard {
  public:
@@ -185,4 +173,4 @@ class CUDADeviceGuard {
 
 } // namespace dragon
 
-#endif // DRAGON_UTILS_CUDA_DEVICE_H_
+#endif // DRAGON_UTILS_DEVICE_COMMON_CUDA_H_

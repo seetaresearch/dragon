@@ -16,7 +16,7 @@
 #include <cstring>
 
 #include "dragon/core/types.h"
-#include "dragon/utils/cuda_device.h"
+#include "dragon/utils/device/common_cuda.h"
 
 namespace dragon {
 

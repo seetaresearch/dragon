@@ -184,7 +184,6 @@ ONNXBackend::get_special_nodes() const {
 const Map<string, Map<string, string>>& ONNXBackend::get_node_renamed_attrs()
     const {
   const static Map<string, Map<string, string>> kPerNodeRenamedAttrs = {
-      {"BatchNormalization", {{"epsilon", "eps"}}},
       {"DepthToSpace", {{"blocksize", "block_size"}}},
       {"Gemm", {{"transB", "transW"}}},
       {"RoiAlign",

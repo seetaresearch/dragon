@@ -850,11 +850,10 @@ def moments(inputs, axis=None, keep_dims=False, **kwargs):
 
 
 @OpSchema.num_inputs(1)
-def multinomial(inputs, num_samples=1, eps=0., normalize=False, **kwargs):
+def multinomial(inputs, num_samples=1, epsilon=0, normalize=False, **kwargs):
     """Return a tensor with index sampled from multinomial distribution.
 
-    If ``normalize`` is **True**, negative input is accepted,
-    and will be normalized by a **Softmax** function.
+    If ``normalize`` is **True**, negative input is accepted.
 
     Otherwise, input should be non-negative.
 
@@ -864,8 +863,8 @@ def multinomial(inputs, num_samples=1, eps=0., normalize=False, **kwargs):
         The input tensor.
     num_samples : int, optional, default=1
         The number of samples.
-    eps : float, optional, default=0.
-        The prob to a uniform sampling.
+    epsilon : float, optional, default=0
+        The epsilon value to apply e-greedy strategy.
     normalize : bool, optional, default=False
         Whether to normalize the input.
 
@@ -876,13 +875,13 @@ def multinomial(inputs, num_samples=1, eps=0., normalize=False, **kwargs):
 
     """
     args = parse_args(locals())
-    args['eps'] = float(eps)
+    args['epsilon'] = float(epsilon)
     op_lib = array_ops_lib.Multinomial
     if context.executing_eagerly():
         return op_lib \
             .instantiate(
                 num_samples=num_samples,
-                eps=args['eps'],
+                epsilon=args['epsilon'],
                 normalize=normalize,
             ).apply([inputs])
     else:

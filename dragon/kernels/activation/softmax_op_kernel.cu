@@ -2,7 +2,7 @@
 
 #include "dragon/core/context_cuda.h"
 #include "dragon/utils/cast.h"
-#include "dragon/utils/cub_device.h"
+#include "dragon/utils/device/common_cub.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 

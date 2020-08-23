@@ -81,7 +81,7 @@ void SyncBatchNormOp<Context>::TrainingImpl() {
 
   // Fuse parameters along channel axis
   // [mu, rsig, alpha, beta] => [scale, bias]
-  math::InvStd(C_, eps_, rsig, rsig, ctx());
+  math::InvStd(C_, epsilon_, rsig, rsig, ctx());
   math::Mul(C_, gamma, rsig, scale, ctx());
   math::Mul(C_, scale, mu, bias, ctx());
   math::Sub(C_, beta, bias, bias, ctx());
@@ -100,7 +100,7 @@ void SyncBatchNormOp<Context>::RunOnDevice() {
 
   // Get the recomputing flag
   auto* flag = ws()->GetTensor("/share/flag/recomputing");
-  is_recomputing_ = flag->template data<bool, CPUContext>()[0];
+  is_recomputing_ = flag->template data<bool, CPUContext>()[0] ? 1 : 0;
 
   // Dispatch the training or inference impl
   Output(0)->ReshapeLike(Input(0));

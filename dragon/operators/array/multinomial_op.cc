@@ -31,11 +31,11 @@ void MultinomialOp<Context>::DoRunWithType() {
   }
 
   auto* rng = ctx()->rand_generator();
-  std::uniform_real_distribution<float> eps_dist;
+  std::uniform_real_distribution<double> epsilon_dist;
 
   for (int i = 0; i < X.count(0, axis); ++i) {
     running_total = 0.;
-    if (eps_ > 0.f && eps_dist(*rng) < eps_) {
+    if (epsilon_ > 0. && epsilon_dist(*rng) < epsilon_) {
       for (int j = 0; j < num_classes; ++j) {
         running_total += uniform_p;
         cdf[j] = running_total;

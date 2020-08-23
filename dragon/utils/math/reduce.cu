@@ -1,6 +1,6 @@
 #ifdef USE_CUDA
 
-#include "dragon/utils/cub_device.h"
+#include "dragon/utils/device/common_cub.h"
 #include "dragon/utils/math/reduce.h"
 #include "dragon/utils/math/utils.h"
 

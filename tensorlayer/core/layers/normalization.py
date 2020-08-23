@@ -157,7 +157,7 @@ class BatchNorm(layer.Layer):
              self.moving_var],
             axis=self.axis,
             momentum=self.decay,
-            eps=self.epsilon,
+            epsilon=self.epsilon,
             use_stats=0 if self.training else 1,
         )
         if self.act:

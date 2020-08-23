@@ -320,7 +320,7 @@ class DRAGON_API Tensor {
   /*! \brief Try to return the raw const data pointer */
   template <class Context>
   const void* const_data_ptr() const {
-    TypeId context_type = TypeMeta::Id<Context>();
+    auto context_type = TypeMeta::Id<Context>();
     if (context_type == TypeMeta::Id<CPUContext>()) {
       return memory(true)->cpu_data(nbytes());
     } else if (context_type == TypeMeta::Id<CUDAContext>()) {
@@ -340,7 +340,7 @@ class DRAGON_API Tensor {
     if (!memory_ptr) {
       *data_ptr = nullptr;
     } else {
-      TypeId context_type = TypeMeta::Id<Context>();
+      auto context_type = TypeMeta::Id<Context>();
       if (context_type == TypeMeta::Id<CPUContext>()) {
         *data_ptr = memory_ptr->mutable_cpu_data(nbytes());
       } else if (context_type == TypeMeta::Id<CUDAContext>()) {

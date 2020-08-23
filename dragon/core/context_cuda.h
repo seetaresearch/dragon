@@ -14,8 +14,9 @@
 #define DRAGON_CORE_CONTEXT_CUDA_H_
 
 #include "dragon/core/common.h"
-#include "dragon/utils/cuda_device.h"
-#include "dragon/utils/cudnn_device.h"
+#include "dragon/utils/device/common_cuda.h"
+#include "dragon/utils/device/common_cudnn.h"
+#include "dragon/utils/device/common_nccl.h"
 
 namespace dragon {
 
@@ -130,7 +131,7 @@ class CUDAObjects {
 
   /*! \brief Return the default cuda stream of current device */
   cudaStream_t default_stream() {
-    return stream(CUDA_GET_DEVICE(), 0);
+    return stream(GetCUDADevice(), 0);
   }
 
   /*! \brief Return the default cuda stream of given device */
@@ -311,7 +312,7 @@ class DRAGON_API CUDAContext {
 
   /*! \brief Return the device index of current thread */
   static int current_device() {
-    return CUDA_GET_DEVICE();
+    return GetCUDADevice();
   }
 
   /*! \brief Return the shared context mutex */

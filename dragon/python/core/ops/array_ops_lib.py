@@ -305,7 +305,7 @@ class Moments(Operator):
 class Multinomial(Operator):
     def __init__(self, key, dev, **kwargs):
         super(Multinomial, self).__init__(key, dev, **kwargs)
-        self.eps = kwargs.get('eps', 0.)
+        self.epsilon = kwargs.get('epsilon', 0.)
         self.normalize = kwargs.get('normalize', False)
         self.num_samples = kwargs.get('num_samples', 1)
 
@@ -313,7 +313,7 @@ class Multinomial(Operator):
         return {
             'op_type': 'Multinomial',
             'arguments': {
-                'eps': self.eps,
+                'epsilon': self.epsilon,
                 'normalize': self.normalize,
                 'num_samples': self.num_samples,
             }

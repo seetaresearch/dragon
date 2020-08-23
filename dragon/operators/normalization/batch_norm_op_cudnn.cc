@@ -17,11 +17,6 @@ void CuDNNBatchNormOp<Context>::DoRunWithType() {
     CuDNNSetTensorDesc<T>(&input_desc_, vec64_t({N_, C_, 1, 1}));
   } else {
     bn_mode_ = CUDNN_BATCHNORM_SPATIAL;
-#if CUDNN_VERSION_MIN(7, 0, 0)
-    if (is_training_ > 0) {
-      bn_mode_ = CUDNN_BATCHNORM_SPATIAL_PERSISTENT;
-    }
-#endif
     CuDNNSetTensorDesc<T>(&input_desc_, Input(0).dims(), data_format());
   }
 
@@ -48,10 +43,10 @@ void CuDNNBatchNormOp<Context>::DoRunWithType() {
         bn_desc_,
         Input(1).template data<ParamType, Context>(), // gamma
         Input(2).template data<ParamType, Context>(), // beta
-        is_recomputing_ ? 0.f : 1.f - this->momentum_,
+        is_recomputing_ > 0 ? 0.f : 1.f - this->momentum_,
         Input(3).template mutable_data<ParamType, Context>(), // rm
         Input(4).template mutable_data<ParamType, Context>(), // rv
-        eps64_,
+        epsilon_,
         X_mu->template mutable_data<ParamType, Context>(), // sm
         X_rsig->template mutable_data<ParamType, Context>())); // sv
   } else {
@@ -69,7 +64,7 @@ void CuDNNBatchNormOp<Context>::DoRunWithType() {
         Input(2).template data<ParamType, Context>(), // beta
         Input(3).template data<ParamType, Context>(), // rm
         Input(4).template data<ParamType, Context>(), // rv
-        eps64_));
+        epsilon_));
   }
 }
 
@@ -79,7 +74,7 @@ void CuDNNBatchNormOp<Context>::RunOnDevice() {
 
   // Get the recomputing flag
   auto* flag = ws()->GetTensor("/share/flag/recomputing");
-  is_recomputing_ = flag->template data<bool, CPUContext>()[0];
+  is_recomputing_ = flag->template data<bool, CPUContext>()[0] ? 1 : 0;
 
   // Dispatch the training or inference impl
   Output(0)->ReshapeLike(Input(0));
@@ -106,9 +101,6 @@ void CuDNNBatchNormGradientOp<Context>::TrainingImpl() {
     CuDNNSetTensorDesc<T>(&input_desc_, vec64_t({N_, C_, 1, 1}));
   } else {
     bn_mode_ = CUDNN_BATCHNORM_SPATIAL;
-#if CUDNN_VERSION_MIN(7, 0, 0)
-    bn_mode_ = CUDNN_BATCHNORM_SPATIAL_PERSISTENT;
-#endif
     CuDNNSetTensorDesc<T>(&input_desc_, Input(0).dims(), data_format());
   }
 
@@ -133,7 +125,7 @@ void CuDNNBatchNormGradientOp<Context>::TrainingImpl() {
       Input(1).template data<ParamType, Context>(), // gamma
       dW->Reshape({C_})->template mutable_data<ParamType, Context>(), // dw
       dB->Reshape({C_})->template mutable_data<ParamType, Context>(), // db
-      eps64_,
+      epsilon_,
       X_mu->template data<ParamType, Context>(), // mu
       X_rsig->template data<ParamType, Context>())); // rsig
 }
@@ -154,7 +146,6 @@ void CuDNNBatchNormGradientOp<Context>::RunOnDevice() {
     if (is_training_ > 0) {
       TrainingImpl<float16>();
     } else {
-      // We will support it some day -:)
       LOG(FATAL) << MessageForUnsupported(
           types::to_string(Input(0).meta()), {"float32"});
     }

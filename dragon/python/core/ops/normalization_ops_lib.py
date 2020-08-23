@@ -22,7 +22,7 @@ class BatchNorm(Operator):
         super(BatchNorm, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', -1)
         self.momentum = kwargs.get('momentum', 0.9)
-        self.eps = kwargs.get('eps', 1e-5)
+        self.epsilon = kwargs.get('epsilon', 1e-5)
         self.use_stats = kwargs.get('use_stats', 0)
         if self.use_stats not in (0, 1):
             raise ValueError('Excepted determined stats mode.')
@@ -33,7 +33,7 @@ class BatchNorm(Operator):
             'arguments': {
                 'axis': self.axis,
                 'momentum': self.momentum,
-                'eps': self.eps,
+                'epsilon': self.epsilon,
                 'use_stats': self.use_stats,
             }
         }
@@ -47,7 +47,7 @@ class GroupNorm(Operator):
         super(GroupNorm, self).__init__(key, dev, **kwargs)
         self.axis = kwargs.get('axis', -1)
         self.group = kwargs.get('group', 32)
-        self.eps = kwargs.get('eps', 1e-5)
+        self.epsilon = kwargs.get('epsilon', 1e-5)
 
     def attributes(self):
         return {
@@ -55,7 +55,7 @@ class GroupNorm(Operator):
             'arguments': {
                 'axis': self.axis,
                 'group': self.group,
-                'eps': self.eps,
+                'epsilon': self.epsilon,
             }
         }
 
@@ -69,7 +69,7 @@ class LpNormalize(Operator):
         self.p = kwargs.get('p', 2)
         self.axis = kwargs.get('axis', 0)
         self.num_axes = kwargs.get('num_axes', -1)
-        self.eps = kwargs.get('eps', 1e-5)
+        self.epsilon = kwargs.get('epsilon', 1e-12)
         self.reduction = kwargs.get('reduction', 'SUM')
 
     def attributes(self):
@@ -79,7 +79,7 @@ class LpNormalize(Operator):
                 'p': self.p,
                 'axis': self.axis,
                 'num_axes': self.num_axes,
-                'eps': self.eps,
+                'epsilon': self.epsilon,
                 'reduction': self.reduction,
             }
         }

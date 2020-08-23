@@ -77,7 +77,7 @@ Name                     Supported Reference
 `Log`_                   |v|       :func:`dragon.math.log`
 `LogSoftmax`_            |v|       :func:`dragon.nn.log_softmax`
 `Loop`_
-`LpNormalization`_       |v|       :func:`dragon.math.l2_normalize`
+`LpNormalization`_       |v|       :func:`dragon.math.lp_normalize`
 `LpPool`_
 `MatMul`_                |v|       :func:`dragon.math.matmul`
 `MatMulInteger`_

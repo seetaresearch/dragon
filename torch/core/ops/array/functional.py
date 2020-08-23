@@ -544,8 +544,8 @@ def min(input, dim=None, keepdim=False, out=None):
     return _reduce(input, 'Min', dim, keepdim, out)
 
 
-def multinomial(input, num_samples, eps=0., out=None):
-    """Return a tensor where each row sampled from the multinomial distribution.
+def multinomial(input, num_samples, epsilon=0, out=None):
+    """Return a tensor with index sampled from multinomial distribution.
 
     Parameters
     ----------
@@ -553,8 +553,8 @@ def multinomial(input, num_samples, eps=0., out=None):
         The input tensor.
     num_samples : int
         The number of samples in each row.
-    eps : float, optional, default=0.
-        The prob to a uniform sampling.
+    epsilon : float, optional, default=0
+        The epsilon value to apply epsilon-greedy strategy.
     out : dragon.vm.torch.Tensor, optional
         The output tensor.
 
@@ -568,7 +568,7 @@ def multinomial(input, num_samples, eps=0., out=None):
         .instantiate(
             input.device,
             num_samples=num_samples,
-            eps=float(eps),
+            epsilon=float(epsilon),
         ).apply(input, out)
 
 

@@ -27,7 +27,7 @@ def batch_norm(
     inputs,
     axis=-1,
     momentum=0.9,
-    eps=1e-5,
+    epsilon=1e-5,
     use_stats=-1,
     **kwargs
 ):
@@ -58,7 +58,7 @@ def batch_norm(
         The channel axis.
     momentum : float, optional, default=0.9
         The momentum for running average.
-    eps : float, optional, default=1e-5
+    epsilon : float, optional, default=1e-5
         The value to :math:`\epsilon`.
     use_stats : int, optional, default=-1
         Whether to use estimated statistics or not.
@@ -70,14 +70,14 @@ def batch_norm(
 
     """
     args = parse_args(locals())
-    args['momentum'], args['eps'] = float(momentum), float(eps)
+    args['momentum'], args['epsilon'] = float(momentum), float(epsilon)
     op_lib = normalization_ops_lib.BatchNorm
     if context.executing_eagerly():
         return op_lib \
             .instantiate(
                 axis=axis,
                 momentum=args['momentum'],
-                eps=args['eps'],
+                epsilon=args['epsilon'],
                 use_stats=use_stats,
             ).apply(inputs)
     else:
@@ -85,7 +85,7 @@ def batch_norm(
 
 
 @OpSchema.num_inputs(3)
-def group_norm(inputs, axis=-1, group=32, eps=1e-5, **kwargs):
+def group_norm(inputs, axis=-1, group=32, epsilon=1e-5, **kwargs):
     r"""Apply the group normalization.
     `[Wu & He, 2018] <https://arxiv.org/abs/1803.08494>`_.
 
@@ -111,7 +111,7 @@ def group_norm(inputs, axis=-1, group=32, eps=1e-5, **kwargs):
         The channel axis.
     group : int, optional, default=32
         The group size.
-    eps : float, optional, default=1e-5
+    epsilon : float, optional, default=1e-5
         The value to :math:`\epsilon`.
 
     Returns
@@ -121,21 +121,21 @@ def group_norm(inputs, axis=-1, group=32, eps=1e-5, **kwargs):
 
     """
     args = parse_args(locals())
-    args['eps'] = float(eps)
+    args['epsilon'] = float(epsilon)
     op_lib = normalization_ops_lib.GroupNorm
     if context.executing_eagerly():
         return op_lib \
             .instantiate(
                 axis=axis,
                 group=group,
-                eps=args['eps'],
+                epsilon=args['epsilon'],
             ).apply(inputs)
     else:
         return op_lib.blend(**args)
 
 
 @OpSchema.num_inputs(3)
-def instance_norm(inputs, axis=-1, eps=1e-5, **kwargs):
+def instance_norm(inputs, axis=-1, epsilon=1e-5, **kwargs):
     r"""Apply the instance normalization.
     `[Ulyanov et.al, 2016] <https://arxiv.org/abs/1607.08022>`_
 
@@ -156,7 +156,7 @@ def instance_norm(inputs, axis=-1, eps=1e-5, **kwargs):
         The tensor ``x``, ``gamma`` and ``beta``.
     axis : int, optional, default=-1
         The channel axis.
-    eps : float, optional, default=1e-5
+    epsilon : float, optional, default=1e-5
         The value to :math:`\epsilon`.
 
     Returns
@@ -165,11 +165,11 @@ def instance_norm(inputs, axis=-1, eps=1e-5, **kwargs):
         The output tensor.
 
     """
-    return group_norm(inputs, axis=axis, group=0, eps=eps, **kwargs)
+    return group_norm(inputs, axis=axis, group=0, epsilon=epsilon, **kwargs)
 
 
 @OpSchema.num_inputs(1)
-def lp_normalize(inputs, axis=None, p=2, eps=1e-12, reduction='sum', **kwargs):
+def lp_normalize(inputs, axis=None, p=2, epsilon=1e-12, reduction='sum', **kwargs):
     r"""Apply the lp normalization.
 
     The **Lp-Normalization** is defined as:
@@ -201,7 +201,7 @@ def lp_normalize(inputs, axis=None, p=2, eps=1e-12, reduction='sum', **kwargs):
         The order of the normalization.
     axis : Union[int, Sequence[int]], optional
         The axis to compute the norm.
-    eps : float, optional, default=1e-12
+    epsilon : float, optional, default=1e-12
         The value to :math:`\epsilon`.
     reduction : {'sum', 'mean'}, optional
         The reduction method for norm.
@@ -222,7 +222,7 @@ def lp_normalize(inputs, axis=None, p=2, eps=1e-12, reduction='sum', **kwargs):
             raise ValueError('The <axis> should be a continuous sequence.')
         args['axis'], args['num_axes'] = axes[0], len(axes)
     args['num_axes'] = kwargs.get('num_axes', args['num_axes'])
-    args['eps'] = float(eps)
+    args['epsilon'] = float(epsilon)
     args['reduction'] = reduction.upper()
     op_lib = normalization_ops_lib.LpNormalize
     if context.executing_eagerly():
@@ -231,7 +231,7 @@ def lp_normalize(inputs, axis=None, p=2, eps=1e-12, reduction='sum', **kwargs):
                 p=p,
                 axis=args['axis'],
                 num_axes=args['num_axes'],
-                eps=args['eps'],
+                epsilon=args['epsilon'],
                 reduction=args['reduction'],
             ).apply([inputs])
     else:
@@ -239,7 +239,7 @@ def lp_normalize(inputs, axis=None, p=2, eps=1e-12, reduction='sum', **kwargs):
 
 
 @OpSchema.num_inputs(3)
-def layer_norm(inputs, axis=-1, eps=1e-5, **kwargs):
+def layer_norm(inputs, axis=-1, epsilon=1e-5, **kwargs):
     r"""Apply the layer normalization.
     `[Ba et.al, 2016] <https://arxiv.org/abs/1607.06450>`_
 
@@ -260,7 +260,7 @@ def layer_norm(inputs, axis=-1, eps=1e-5, **kwargs):
         The tensor ``x``, ``gamma`` and ``beta``.
     axis : int, optional, default=-1
         The channel axis.
-    eps : float, optional, default=1e-5
+    epsilon : float, optional, default=1e-5
         The value to :math:`\epsilon`.
 
     Returns
@@ -269,7 +269,7 @@ def layer_norm(inputs, axis=-1, eps=1e-5, **kwargs):
         The output tensor.
 
     """
-    return group_norm(inputs, axis=axis, group=1, eps=eps, **kwargs)
+    return group_norm(inputs, axis=axis, group=1, epsilon=epsilon, **kwargs)
 
 
 @OpSchema.num_inputs(1)
@@ -337,7 +337,7 @@ def sync_batch_norm(
     inputs,
     axis=-1,
     momentum=0.9,
-    eps=1e-5,
+    epsilon=1e-5,
     use_stats=-1,
     process_group=None,
     **kwargs
@@ -369,7 +369,7 @@ def sync_batch_norm(
         The channel axis.
     momentum : float, optional, default=0.9
         The momentum for average.
-    eps : float, optional, default=1e-5
+    epsilon : float, optional, default=1e-5
         The value to :math:`\epsilon`.
     use_stats : int, optional, default=-1
         Whether to use estimated statistics or not.
@@ -383,7 +383,7 @@ def sync_batch_norm(
 
     """
     args = parse_args(locals())
-    args['momentum'], args['eps'] = float(momentum), float(eps)
+    args['momentum'], args['epsilon'] = float(momentum), float(epsilon)
     if process_group is None:
         process_group = distributed.get_group()
     if process_group is None:
@@ -394,7 +394,7 @@ def sync_batch_norm(
             .instantiate(
                 axis=axis,
                 momentum=args['momentum'],
-                eps=args['eps'],
+                epsilon=args['epsilon'],
                 use_stats=use_stats,
                 process_group=process_group,
             ).apply(inputs)

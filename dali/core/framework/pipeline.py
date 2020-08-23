@@ -54,7 +54,7 @@ try:
                 batch_size=batch_size,
                 num_threads=num_threads,
                 device_id=device_id,
-                seed=seed + device_id,
+                seed=seed,
                 prefetch_queue_depth=prefetch_queue_depth,
             )
 

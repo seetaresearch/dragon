@@ -22,7 +22,7 @@ class MultinomialOp final : public Operator<Context> {
  public:
   MultinomialOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        eps_(OpArg<float>("eps", 0.f)),
+        epsilon_(OpArg<double>("epsilon", 0.)),
         normalize_(OpArg<int64_t>("normalize", 0)),
         num_samples_(OpArg<int64_t>("num_samples", 1)) {}
   USE_OPERATOR_FUNCTIONS;
@@ -33,7 +33,7 @@ class MultinomialOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  float eps_;
+  double epsilon_;
   int64_t normalize_, num_samples_;
 };
 
