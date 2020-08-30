@@ -59,20 +59,19 @@ void MomentsOp<Context>::DoRunWithType() {
 template <class Context>
 void MomentsOp<Context>::RunOnDevice() {
   auto& X = Input(0);
-
-  if (XIsType(X, int8_t)) {
+  if (X.template IsType<int8_t>()) {
     DoRunWithType<int8_t, float>();
-  } else if (XIsType(X, uint8_t)) {
+  } else if (X.template IsType<uint8_t>()) {
     DoRunWithType<uint8_t, float>();
-  } else if (XIsType(X, int)) {
+  } else if (X.template IsType<int>()) {
     DoRunWithType<int, float>();
-  } else if (XIsType(X, int64_t)) {
+  } else if (X.template IsType<int64_t>()) {
     DoRunWithType<int64_t, float>();
-  } else if (XIsType(X, float16)) {
+  } else if (X.template IsType<float16>()) {
     DoRunWithType<float16, float>();
-  } else if (XIsType(X, float)) {
+  } else if (X.template IsType<float>()) {
     DoRunWithType<float, float>();
-  } else if (XIsType(X, double)) {
+  } else if (X.template IsType<double>()) {
     DoRunWithType<double, double>();
   } else {
     LOG(FATAL) << MessageForUnsupported(
@@ -81,9 +80,9 @@ void MomentsOp<Context>::RunOnDevice() {
   }
 }
 
-DEPLOY_CPU(Moments);
+DEPLOY_CPU_OPERATOR(Moments);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Moments);
+DEPLOY_CUDA_OPERATOR(Moments);
 #endif
 
 OPERATOR_SCHEMA(Moments)

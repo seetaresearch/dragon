@@ -35,14 +35,14 @@ class ReshapeOp final : public Operator<Context> {
  public:
   ReshapeOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
-    GET_ARGS_WITH_DESC(int64_t, dims);
+    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, dims);
   }
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
 
  protected:
-  DECLARE_ARGS_WITH_DESC(int64_t, dims);
+  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, dims);
 };
 
 template <class Context>
@@ -50,8 +50,8 @@ class FlattenOp final : public Operator<Context> {
  public:
   FlattenOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        num_axes_(OpArg<int64_t>("num_axes", -1)),
-        keep_axes_(OpArg<int64_t>("keep_axes", INT_MAX)) {}
+        num_axes_(OP_SINGLE_ARG(int64_t, "num_axes", -1)),
+        keep_axes_(OP_SINGLE_ARG(int64_t, "keep_axes", INT_MAX)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -64,7 +64,7 @@ template <class Context>
 class ExpandDimsOp final : public Operator<Context> {
  public:
   ExpandDimsOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws), axes_(OpArgs<int64_t>("axes")) {}
+      : Operator<Context>(def, ws), axes_(OP_REPEATED_ARG(int64_t, "axes")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -77,7 +77,7 @@ template <class Context>
 class SqueezeOp final : public Operator<Context> {
  public:
   SqueezeOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws), axes_(OpArgs<int64_t>("axes")) {}
+      : Operator<Context>(def, ws), axes_(OP_REPEATED_ARG(int64_t, "axes")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -100,7 +100,7 @@ DEFINE_GRADIENT_OP(ExpandDims);
 DEFINE_GRADIENT_OP(Squeeze);
 #undef DEFINE_GRADIENT_OP
 
-DEFINE_ARGS_WITH_DESC(int64_t, ReshapeOp, dims);
+DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, ReshapeOp, dims);
 
 } // namespace dragon
 

@@ -47,12 +47,12 @@ void ReduceMaxOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ReduceMaxOp<Context>::RunOnDevice() {
-  DispatchHelper<MathTensorTypes>::Call(this, Input(0));
+  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(ReduceMax);
+DEPLOY_CPU_OPERATOR(ReduceMax);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ReduceMax);
+DEPLOY_CUDA_OPERATOR(ReduceMax);
 #endif
 
 OPERATOR_SCHEMA(ReduceMax)

@@ -191,14 +191,14 @@ void DotGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(2));
 }
 
-DEPLOY_CPU(Dot);
+DEPLOY_CPU_OPERATOR(Dot);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Dot);
+DEPLOY_CUDA_OPERATOR(Dot);
 #endif
 
-DEPLOY_CPU(DotGradient);
+DEPLOY_CPU_OPERATOR(DotGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(DotGradient);
+DEPLOY_CUDA_OPERATOR(DotGradient);
 #endif
 
 OPERATOR_SCHEMA(Dot)

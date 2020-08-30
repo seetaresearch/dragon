@@ -33,9 +33,9 @@ class BatchNormOpBase : public GenericOpBase<Context> {
  public:
   BatchNormOpBase(const OperatorDef& def, Workspace* ws)
       : GenericOpBase<Context>(def, ws),
-        momentum_(OpArg<float>("momentum", 0.9f)),
-        epsilon_(OpArg<double>("epsilon", 1e-5)),
-        use_stats_(OpArg<int64_t>("use_stats", -1)) {}
+        momentum_(OP_SINGLE_ARG(float, "momentum", 0.9f)),
+        epsilon_(OP_SINGLE_ARG(double, "epsilon", 1e-5)),
+        use_stats_(OP_SINGLE_ARG(int64_t, "use_stats", -1)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void DetermineBaseArguments() {
@@ -48,7 +48,7 @@ class BatchNormOpBase : public GenericOpBase<Context> {
     }
     // Determine the data format
     this->data_format_ = "NCHW";
-    auto axis = OpArg<int64_t>("axis", -1);
+    auto axis = OP_SINGLE_ARG(int64_t, "axis", -1);
     if (axis == -1) axis += X.ndim();
     if (axis + 1 == X.ndim()) this->data_format_ = "NHWC";
     N_ = X.dim(0), C_ = X.dim(axis);

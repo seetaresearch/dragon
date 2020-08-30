@@ -78,9 +78,9 @@ void CuDNNBatchNormOp<Context>::RunOnDevice() {
 
   // Dispatch the training or inference impl
   Output(0)->ReshapeLike(Input(0));
-  if (XIsType(Input(0), float)) {
+  if (Input(0).template IsType<float>()) {
     DoRunWithType<float>();
-  } else if (XIsType(Input(0), float16)) {
+  } else if (Input(0).template IsType<float16>()) {
     DoRunWithType<float16>();
   } else {
     LOG(FATAL) << MessageForUnsupported(
@@ -136,13 +136,13 @@ void CuDNNBatchNormGradientOp<Context>::RunOnDevice() {
 
   // Dispatch the training or inference impl
   Output(0)->ReshapeLike(Input(0));
-  if (XIsType(Input(0), float)) {
+  if (Input(0).template IsType<float>()) {
     if (is_training_ > 0) {
       TrainingImpl<float>();
     } else {
       this->template InferenceImpl<float, float>();
     }
-  } else if (XIsType(Input(0), float16)) {
+  } else if (Input(0).template IsType<float16>()) {
     if (is_training_ > 0) {
       TrainingImpl<float16>();
     } else {
@@ -155,8 +155,8 @@ void CuDNNBatchNormGradientOp<Context>::RunOnDevice() {
   }
 }
 
-DEPLOY_CUDNN(BatchNorm);
-DEPLOY_CUDNN(BatchNormGradient);
+DEPLOY_CUDNN_OPERATOR(BatchNorm);
+DEPLOY_CUDNN_OPERATOR(BatchNormGradient);
 
 } // namespace dragon
 

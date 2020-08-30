@@ -10,16 +10,9 @@ namespace dragon {
 namespace math {
 
 template <>
-DRAGON_API void RandomUniform<uint32_t, CUDAContext>(
-    const int n,
-    const float low,
-    const float high,
-    uint32_t* y,
-    CUDAContext* ctx) {
-  // Note that we ignore the low / high
-  // CuRand could only generates in the range of [0, uint32]
-  auto* rng = ctx->curand_generator();
-  CURAND_CHECK(curandGenerate(rng, y, n));
+DRAGON_API void
+Random<uint32_t, CUDAContext>(const int n, uint32_t* y, CUDAContext* ctx) {
+  CURAND_CHECK(curandGenerate(ctx->curand_generator(), y, n));
 }
 
 template <>
@@ -83,8 +76,8 @@ DRAGON_API void RandomNormal<double, CUDAContext>(
     const float sigma,
     double* y,
     CUDAContext* ctx) {
-  CURAND_CHECK(
-      curandGenerateNormalDouble(ctx->curand_generator(), y, n, mu, sigma));
+  auto* rng = ctx->curand_generator();
+  CURAND_CHECK(curandGenerateNormalDouble(rng, y, n, mu, sigma));
 }
 
 } // namespace math

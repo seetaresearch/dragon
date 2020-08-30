@@ -22,9 +22,9 @@ class RoiPoolOp final : public Operator<Context> {
  public:
   RoiPoolOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        out_h_(OpArg<int64_t>("pooled_h", 0)),
-        out_w_(OpArg<int64_t>("pooled_w", 0)),
-        spatial_scale_(OpArg<float>("spatial_scale", 1.f)) {}
+        out_h_(OP_SINGLE_ARG(int64_t, "pooled_h", 0)),
+        out_w_(OP_SINGLE_ARG(int64_t, "pooled_w", 0)),
+        spatial_scale_(OP_SINGLE_ARG(float, "spatial_scale", 1.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -42,9 +42,9 @@ class RoiPoolGradientOp final : public Operator<Context> {
  public:
   RoiPoolGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        out_h_(OpArg<int64_t>("pooled_h", 0)),
-        out_w_(OpArg<int64_t>("pooled_w", 0)),
-        spatial_scale_(OpArg<float>("spatial_scale", 1.f)) {}
+        out_h_(OP_SINGLE_ARG(int64_t, "pooled_h", 0)),
+        out_w_(OP_SINGLE_ARG(int64_t, "pooled_w", 0)),
+        spatial_scale_(OP_SINGLE_ARG(float, "spatial_scale", 1.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

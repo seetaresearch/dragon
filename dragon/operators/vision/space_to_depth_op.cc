@@ -83,17 +83,17 @@ void SpaceToDepthOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SpaceToDepthOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(SpaceToDepth);
+DEPLOY_CPU_OPERATOR(SpaceToDepth);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SpaceToDepth);
+DEPLOY_CUDA_OPERATOR(SpaceToDepth);
 #endif
 
-DEPLOY_CPU(SpaceToDepthGradient);
+DEPLOY_CPU_OPERATOR(SpaceToDepthGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SpaceToDepthGradient);
+DEPLOY_CUDA_OPERATOR(SpaceToDepthGradient);
 #endif
 
 OPERATOR_SCHEMA(SpaceToDepth)

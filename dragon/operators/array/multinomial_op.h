@@ -22,9 +22,9 @@ class MultinomialOp final : public Operator<Context> {
  public:
   MultinomialOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        epsilon_(OpArg<double>("epsilon", 0.)),
-        normalize_(OpArg<int64_t>("normalize", 0)),
-        num_samples_(OpArg<int64_t>("num_samples", 1)) {}
+        epsilon_(OP_SINGLE_ARG(double, "epsilon", 0.)),
+        normalize_(OP_SINGLE_ARG(int64_t, "normalize", 0)),
+        num_samples_(OP_SINGLE_ARG(int64_t, "num_samples", 1)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

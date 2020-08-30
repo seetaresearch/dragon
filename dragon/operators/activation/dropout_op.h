@@ -22,7 +22,7 @@ class DropoutOp : public Operator<Context> {
  public:
   DropoutOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
-    GET_ARG_WITH_DESC(float, prob, 0.5f);
+    INIT_OP_SINGLE_ARG_WITH_DESC(float, prob, 0.5f);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -32,7 +32,7 @@ class DropoutOp : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  DECLARE_ARG_WITH_DESC(float, prob);
+  DECLARE_OP_SINGLE_ARG_WITH_DESC(float, prob);
 };
 
 template <class Context>
@@ -40,7 +40,7 @@ class DropoutGradientOp : public Operator<Context> {
  public:
   DropoutGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
-    GET_ARG_WITH_DESC(float, prob, 0.5f);
+    INIT_OP_SINGLE_ARG_WITH_DESC(float, prob, 0.5f);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -50,11 +50,11 @@ class DropoutGradientOp : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  DECLARE_ARG_WITH_DESC(float, prob);
+  DECLARE_OP_SINGLE_ARG_WITH_DESC(float, prob);
 };
 
-DEFINE_ARG_WITH_DESC(float, DropoutOp, prob);
-DEFINE_ARG_WITH_DESC(float, DropoutGradientOp, prob);
+DEFINE_OP_SINGLE_ARG_WITH_DESC(float, DropoutOp, prob);
+DEFINE_OP_SINGLE_ARG_WITH_DESC(float, DropoutGradientOp, prob);
 
 #ifdef USE_CUDNN
 

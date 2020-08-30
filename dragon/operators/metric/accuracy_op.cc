@@ -49,19 +49,19 @@ void AccuracyOp<Context>::DoRunWithType() {
 
 template <class Context>
 void AccuracyOp<Context>::RunOnDevice() {
-  if (XIsType(Input(0), float)) {
-    if (XIsType(Input(1), float)) {
+  if (Input(0).template IsType<float>()) {
+    if (Input(1).template IsType<float>()) {
       DoRunWithType<float, float>();
-    } else if (XIsType(Input(1), int64_t)) {
+    } else if (Input(1).template IsType<int64_t>()) {
       DoRunWithType<float, int64_t>();
     } else {
       LOG(FATAL) << MessageForUnsupported(
           types::to_string(Input(1).meta()), {"float32", "int64"});
     }
-  } else if (XIsType(Input(0), double)) {
-    if (XIsType(Input(1), double)) {
+  } else if (Input(0).template IsType<double>()) {
+    if (Input(1).template IsType<double>()) {
       DoRunWithType<double, double>();
-    } else if (XIsType(Input(1), int64_t)) {
+    } else if (Input(1).template IsType<int64_t>()) {
       DoRunWithType<double, int64_t>();
     } else {
       LOG(FATAL) << MessageForUnsupported(
@@ -73,9 +73,9 @@ void AccuracyOp<Context>::RunOnDevice() {
   }
 }
 
-DEPLOY_CPU(Accuracy);
+DEPLOY_CPU_OPERATOR(Accuracy);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Accuracy);
+DEPLOY_CUDA_OPERATOR(Accuracy);
 #endif
 
 OPERATOR_SCHEMA(Accuracy)

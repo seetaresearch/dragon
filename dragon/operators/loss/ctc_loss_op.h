@@ -51,7 +51,7 @@ class CuDNNCTCLossOp final : public Operator<Context> {
  public:
   CuDNNCTCLossOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        padding_mask_(OpArg<int64_t>("padding_mask", -1)) {
+        padding_mask_(OP_SINGLE_ARG(int64_t, "padding_mask", -1)) {
     CuDNNCreateTensorDesc(&prob_desc_);
     CuDNNCreateTensorDesc(&grad_desc_);
     ctc_algo_ = CUDNN_CTC_LOSS_ALGO_DETERMINISTIC;

@@ -22,10 +22,10 @@ class PoolOpBase : public Operator<Context> {
  public:
   PoolOpBase(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        mode_(OpArg<string>("mode", "MAX")),
-        padding_(OpArg<string>("padding", "VALID")),
-        ceil_mode_(OpArg<int64_t>("ceil_mode", 0)),
-        global_pool_(OpArg<int64_t>("global_pooling", 0)) {
+        mode_(OP_SINGLE_ARG(string, "mode", "MAX")),
+        padding_(OP_SINGLE_ARG(string, "padding", "VALID")),
+        ceil_mode_(OP_SINGLE_ARG(int64_t, "ceil_mode", 0)),
+        global_pool_(OP_SINGLE_ARG(int64_t, "global_pooling", 0)) {
     if (data_format() == "NCHW")
       axis_ = 2;
     else if (data_format() == "NHWC")

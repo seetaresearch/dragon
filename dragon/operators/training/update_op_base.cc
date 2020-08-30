@@ -37,7 +37,7 @@ void UpdateOpBase<Context>::AdjustGradient(Tensor* dX, Tensor* X) {
   // Penalty
   auto weight_decay = Parameter("weight_decay");
   if (weight_decay > 0.f) {
-    if (XIsType((*X), float16)) {
+    if (X->template IsType<float16>()) {
       kernel::MixedPrecL2Penalty(
           X->count(),
           weight_decay * decay_mult_,
@@ -58,7 +58,7 @@ void UpdateOpBase<Context>::AdjustGradient(Tensor* dX, Tensor* X) {
 template <class Context>
 template <typename T>
 void UpdateOpBase<Context>::ApplyUpdate(Tensor* dX, Tensor* X) {
-  if (XIsType((*X), float16)) {
+  if (X->template IsType<float16>()) {
     kernel::MixedPrecUpdate(
         X->count(),
         dX->template data<float, Context>(),
@@ -85,11 +85,11 @@ void UpdateOpBase<Context>::RunOnDevice() {
       << "\nParam and grad should have the same dimensions."
       << "\nGot" << X->DimString() << " and " << dX.DimString();
 
-  if (XIsType(dX, float)) {
+  if (dX.template IsType<float>()) {
     AdjustGradient<float>(&dX, X);
     ComputeUpdate(&dX);
     ApplyUpdate<float>(&dX, X);
-  } else if (XIsType(dX, float16)) {
+  } else if (dX.template IsType<float16>()) {
     auto* dX_cast = ws()->CreateTensor(dX.name() + "[float32]");
     kernel::Cast(
         dX.count(),

@@ -47,12 +47,12 @@ void ReduceMinOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ReduceMinOp<Context>::RunOnDevice() {
-  DispatchHelper<MathTensorTypes>::Call(this, Input(0));
+  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(ReduceMin);
+DEPLOY_CPU_OPERATOR(ReduceMin);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ReduceMin);
+DEPLOY_CUDA_OPERATOR(ReduceMin);
 #endif
 
 OPERATOR_SCHEMA(ReduceMin)

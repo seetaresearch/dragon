@@ -138,9 +138,9 @@ void MinimumGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(2));
 }
 
-DEPLOY_CPU(MinimumGradient);
+DEPLOY_CPU_OPERATOR(MinimumGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(MinimumGradient);
+DEPLOY_CUDA_OPERATOR(MinimumGradient);
 #endif
 
 OPERATOR_SCHEMA(MinimumGradient)

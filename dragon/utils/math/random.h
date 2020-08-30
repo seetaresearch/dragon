@@ -20,6 +20,9 @@ namespace dragon {
 namespace math {
 
 template <typename T, class Context>
+DRAGON_API void Random(const int n, T* y, Context* ctx);
+
+template <typename T, class Context>
 DRAGON_API void RandomUniform(
     const int n,
     const float low,

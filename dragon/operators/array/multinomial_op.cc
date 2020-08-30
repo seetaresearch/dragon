@@ -64,9 +64,9 @@ void MultinomialOp<Context>::RunOnDevice() {
   DispatchHelper<TensorTypes<float, double>>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Multinomial);
+DEPLOY_CPU_OPERATOR(Multinomial);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Multinomial);
+DEPLOY_CUDA_OPERATOR(Multinomial);
 #endif
 
 OPERATOR_SCHEMA(Multinomial)

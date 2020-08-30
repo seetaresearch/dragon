@@ -112,7 +112,7 @@ void ResizeOp<Context>::RunOnDevice() {
     LOG(FATAL) << "Specify either <sizes> or <scales>.";
   }
 
-  DispatchHelper<MathTensorTypes>::Call(this, X);
+  DispatchHelper<NumericalTensorTypes>::Call(this, X);
 }
 
 template <class Context>
@@ -192,11 +192,11 @@ void ResizeGradientOp<Context>::RunOnDevice() {
   Buffer("in_dims")->template CopyTo<int64_t>(in_dims_);
   Buffer("out_dims")->template CopyTo<int64_t>(out_dims_);
 
-  if (XIsType(Input(0), float16)) {
+  if (Input(0).template IsType<float16>()) {
     DoRunWithTypeAndCast<float16>();
-  } else if (XIsType(Input(0), float)) {
+  } else if (Input(0).template IsType<float>()) {
     DoRunWithType<float>();
-  } else if (XIsType(Input(0), double)) {
+  } else if (Input(0).template IsType<double>()) {
     DoRunWithTypeAndCast<double>();
   } else {
     LOG(FATAL) << MessageForUnsupported(
@@ -204,14 +204,14 @@ void ResizeGradientOp<Context>::RunOnDevice() {
   };
 }
 
-DEPLOY_CPU(Resize);
+DEPLOY_CPU_OPERATOR(Resize);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Resize);
+DEPLOY_CUDA_OPERATOR(Resize);
 #endif
 
-DEPLOY_CPU(ResizeGradient);
+DEPLOY_CPU_OPERATOR(ResizeGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ResizeGradient);
+DEPLOY_CUDA_OPERATOR(ResizeGradient);
 #endif
 
 OPERATOR_SCHEMA(Resize)

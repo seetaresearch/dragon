@@ -113,14 +113,14 @@ void PReluGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(-1));
 }
 
-DEPLOY_CPU(PRelu);
+DEPLOY_CPU_OPERATOR(PRelu);
 #ifdef USE_CUDA
-DEPLOY_CUDA(PRelu);
+DEPLOY_CUDA_OPERATOR(PRelu);
 #endif
 
-DEPLOY_CPU(PReluGradient);
+DEPLOY_CPU_OPERATOR(PReluGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(PReluGradient);
+DEPLOY_CUDA_OPERATOR(PReluGradient);
 #endif
 
 OPERATOR_SCHEMA(PRelu)

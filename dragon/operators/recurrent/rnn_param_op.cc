@@ -39,9 +39,9 @@ void RNNParamSetOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(RNNParamSet);
+DEPLOY_CPU_OPERATOR(RNNParamSet);
 #ifdef USE_CUDA
-DEPLOY_CUDA(RNNParamSet);
+DEPLOY_CUDA_OPERATOR(RNNParamSet);
 #endif
 
 OPERATOR_SCHEMA(RNNParamSet)

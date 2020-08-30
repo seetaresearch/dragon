@@ -21,9 +21,9 @@ void SinGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(SinGradient);
+DEPLOY_CPU_OPERATOR(SinGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SinGradient);
+DEPLOY_CUDA_OPERATOR(SinGradient);
 #endif
 
 OPERATOR_SCHEMA(SinGradient)

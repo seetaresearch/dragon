@@ -22,8 +22,8 @@ class SeluOp final : public Operator<Context> {
  public:
   SeluOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        alpha_(OpArg<float>("alpha", 1.67326f)),
-        gamma_(OpArg<float>("gamma", 1.0507f)) {}
+        alpha_(OP_SINGLE_ARG(float, "alpha", 1.67326f)),
+        gamma_(OP_SINGLE_ARG(float, "gamma", 1.0507f)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -40,8 +40,8 @@ class SeluGradientOp final : public Operator<Context> {
  public:
   SeluGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        alpha_(OpArg<float>("alpha", 1.67326f)),
-        gamma_(OpArg<float>("gamma", 1.0507f)) {}
+        alpha_(OP_SINGLE_ARG(float, "alpha", 1.67326f)),
+        gamma_(OP_SINGLE_ARG(float, "gamma", 1.0507f)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

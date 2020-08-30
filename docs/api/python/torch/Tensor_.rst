@@ -189,6 +189,14 @@ fill\_
 #######
 .. automethod:: dragon.vm.torch.Tensor.fill_
 
+flatten
+#######
+.. automethod:: dragon.vm.torch.Tensor.flatten
+
+flatten\_
+#########
+.. automethod:: dragon.vm.torch.Tensor.flatten_
+
 float
 #####
 .. automethod:: dragon.vm.torch.Tensor.float
@@ -470,6 +478,7 @@ zero\_
 .. _torch.div(...): div.html
 .. _torch.eq(...): eq.html
 .. _torch.exp(...): exp.html
+.. _torch.flatten(...): flatten.html
 .. _torch.floor(...): floor.html
 .. _torch.ge(...): ge.html
 .. _torch.gt(...): gt.html

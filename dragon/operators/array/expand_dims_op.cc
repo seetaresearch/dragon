@@ -29,14 +29,14 @@ void ExpandDimsOp<Context>::RunOnDevice() {
   Y->Reshape(out_shape)->CopyFrom(X, ctx());
 }
 
-DEPLOY_CPU(ExpandDims);
+DEPLOY_CPU_OPERATOR(ExpandDims);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ExpandDims);
+DEPLOY_CUDA_OPERATOR(ExpandDims);
 #endif
 
-DEPLOY_CPU(ExpandDimsGradient);
+DEPLOY_CPU_OPERATOR(ExpandDimsGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ExpandDimsGradient);
+DEPLOY_CUDA_OPERATOR(ExpandDimsGradient);
 #endif
 
 OPERATOR_SCHEMA(ExpandDims)

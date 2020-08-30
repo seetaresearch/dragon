@@ -40,14 +40,14 @@ void SeluGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Selu);
+DEPLOY_CPU_OPERATOR(Selu);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Selu);
+DEPLOY_CUDA_OPERATOR(Selu);
 #endif
 
-DEPLOY_CPU(SeluGradient);
+DEPLOY_CPU_OPERATOR(SeluGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SeluGradient);
+DEPLOY_CUDA_OPERATOR(SeluGradient);
 #endif
 
 OPERATOR_SCHEMA(Selu)

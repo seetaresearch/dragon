@@ -580,8 +580,8 @@ void CuDNNConvTranspose2dGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(-1));
 }
 
-DEPLOY_CUDNN(ConvTranspose2d);
-DEPLOY_CUDNN(ConvTranspose2dGradient);
+DEPLOY_CUDNN_OPERATOR(ConvTranspose2d);
+DEPLOY_CUDNN_OPERATOR(ConvTranspose2dGradient);
 
 } // namespace dragon
 

@@ -22,14 +22,14 @@ class RNNParamSetOp final : public Operator<Context> {
  public:
   RNNParamSetOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        param_type_(OpArg<string>("param_type", "matrix")),
-        nlayers_(OpArg<int64_t>("num_layers", 1)),
-        ndirections_(OpArg<int64_t>("num_directions", 1)),
-        input_size_(OpArg<int64_t>("input_size", 0)),
-        hidden_size_(OpArg<int64_t>("hidden_size", 0)),
-        layer_id_(OpArg<int64_t>("layer_id", 0)),
-        param_id_(OpArg<int64_t>("param_id", 0)) {
-    auto mode_str = OpArg<string>("rnn_mode", "rnn_tanh");
+        param_type_(OP_SINGLE_ARG(string, "param_type", "matrix")),
+        nlayers_(OP_SINGLE_ARG(int64_t, "num_layers", 1)),
+        ndirections_(OP_SINGLE_ARG(int64_t, "num_directions", 1)),
+        input_size_(OP_SINGLE_ARG(int64_t, "input_size", 0)),
+        hidden_size_(OP_SINGLE_ARG(int64_t, "hidden_size", 0)),
+        layer_id_(OP_SINGLE_ARG(int64_t, "layer_id", 0)),
+        param_id_(OP_SINGLE_ARG(int64_t, "param_id", 0)) {
+    auto mode_str = OP_SINGLE_ARG(string, "rnn_mode", "rnn_tanh");
     if (mode_str == "rnn_tanh") {
       nparams_ = 2;
       spliter_ = 1;

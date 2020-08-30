@@ -24,9 +24,9 @@ class ConvOpBase : public Operator<Context> {
  public:
   ConvOpBase(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        padding_(OpArg<string>("padding", "VALID")),
-        out_channels_(OpArg<int64_t>("out_channels", 0)),
-        group_(OpArg<int64_t>("group", 1)) {
+        padding_(OP_SINGLE_ARG(string, "padding", "VALID")),
+        out_channels_(OP_SINGLE_ARG(int64_t, "out_channels", 0)),
+        group_(OP_SINGLE_ARG(int64_t, "group", 1)) {
     if (data_format() == "NCHW") {
       axis_ = 2;
     } else if (data_format() == "NHWC") {
@@ -35,8 +35,8 @@ class ConvOpBase : public Operator<Context> {
       LOG(FATAL) << "Unknown DataFormat: " << data_format();
     }
     num_axes_ = -1; // Unknown
-    GET_ARGS_WITH_DESC(int64_t, output_shape);
-    GET_ARGS_WITH_DESC(int64_t, output_padding);
+    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, output_shape);
+    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, output_padding);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -50,8 +50,8 @@ class ConvOpBase : public Operator<Context> {
   int64_t in_channels_, out_channels_, out_dim_;
   int64_t x_offset_, w_offset_, y_offset_;
 
-  DECLARE_ARGS_WITH_DESC(int64_t, output_shape);
-  DECLARE_ARGS_WITH_DESC(int64_t, output_padding);
+  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, output_shape);
+  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, output_padding);
 
   void Setup(int num_axes);
   void Reshape(bool backward = false);
@@ -135,8 +135,8 @@ class ConvOpBase : public Operator<Context> {
   int64_t conv_in_channels_, conv_out_channels_, conv_out_dim_;
 };
 
-DEFINE_ARGS_WITH_DESC(int64_t, ConvOpBase, output_shape);
-DEFINE_ARGS_WITH_DESC(int64_t, ConvOpBase, output_padding);
+DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, ConvOpBase, output_shape);
+DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, ConvOpBase, output_padding);
 
 #define USE_CONVOLUTION_FUNCTIONS           \
   using ConvOpBase<Context>::Setup;         \

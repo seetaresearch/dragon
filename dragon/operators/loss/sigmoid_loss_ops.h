@@ -22,7 +22,7 @@ class SigmoidCrossEntropyOp final : public Operator<Context> {
  public:
   SigmoidCrossEntropyOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        reduction_(OpArg<string>("reduction", "VALID")) {}
+        reduction_(OP_SINGLE_ARG(string, "reduction", "VALID")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -39,11 +39,11 @@ class SigmoidFocalLossOp final : public Operator<Context> {
  public:
   SigmoidFocalLossOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        pos_alpha_(OpArg<float>("alpha", 0.25f)),
-        neg_alpha_(1.f - OpArg<float>("alpha", 0.25f)),
-        gamma_(OpArg<float>("gamma", 2.f)),
-        negative_index_(OpArg<int64_t>("negative_index", -1)),
-        reduction_(OpArg<string>("reduction", "VALID")) {}
+        pos_alpha_(OP_SINGLE_ARG(float, "alpha", 0.25f)),
+        neg_alpha_(1.f - OP_SINGLE_ARG(float, "alpha", 0.25f)),
+        gamma_(OP_SINGLE_ARG(float, "gamma", 2.f)),
+        negative_index_(OP_SINGLE_ARG(int64_t, "negative_index", -1)),
+        reduction_(OP_SINGLE_ARG(string, "reduction", "VALID")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -62,7 +62,7 @@ class SigmoidCrossEntropyGradientOp final : public Operator<Context> {
  public:
   SigmoidCrossEntropyGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        reduction_(OpArg<string>("reduction", "VALID")) {}
+        reduction_(OP_SINGLE_ARG(string, "reduction", "VALID")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -79,11 +79,11 @@ class SigmoidFocalLossGradientOp final : public Operator<Context> {
  public:
   SigmoidFocalLossGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        pos_alpha_(OpArg<float>("alpha", 0.25f)),
-        neg_alpha_(1.f - OpArg<float>("alpha", 0.25f)),
-        gamma_(OpArg<float>("gamma", 2.f)),
-        negative_index_(OpArg<int64_t>("negative_index", -1)),
-        reduction_(OpArg<string>("reduction", "VALID")) {}
+        pos_alpha_(OP_SINGLE_ARG(float, "alpha", 0.25f)),
+        neg_alpha_(1.f - OP_SINGLE_ARG(float, "alpha", 0.25f)),
+        gamma_(OP_SINGLE_ARG(float, "gamma", 2.f)),
+        negative_index_(OP_SINGLE_ARG(int64_t, "negative_index", -1)),
+        reduction_(OP_SINGLE_ARG(string, "reduction", "VALID")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

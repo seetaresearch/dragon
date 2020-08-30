@@ -22,9 +22,9 @@ class OneHotOp final : public Operator<Context> {
  public:
   OneHotOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        depth_(OpArg<int64_t>("depth", -1)),
-        on_value_(OpArg<int64_t>("on_value", 1)),
-        off_value_(OpArg<int64_t>("off_value", 0)) {}
+        depth_(OP_SINGLE_ARG(int64_t, "depth", -1)),
+        on_value_(OP_SINGLE_ARG(int64_t, "on_value", 1)),
+        off_value_(OP_SINGLE_ARG(int64_t, "off_value", 0)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

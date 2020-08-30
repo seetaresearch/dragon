@@ -80,7 +80,7 @@ void PadOp<Context>::DoRunWithType() {
 
 template <class Context>
 void PadOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -124,14 +124,14 @@ void PadGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Pad);
+DEPLOY_CPU_OPERATOR(Pad);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Pad);
+DEPLOY_CUDA_OPERATOR(Pad);
 #endif
 
-DEPLOY_CPU(PadGradient);
+DEPLOY_CPU_OPERATOR(PadGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(PadGradient);
+DEPLOY_CUDA_OPERATOR(PadGradient);
 #endif
 
 OPERATOR_SCHEMA(Pad)

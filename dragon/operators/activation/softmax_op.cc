@@ -44,14 +44,14 @@ void SoftmaxGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Softmax);
+DEPLOY_CPU_OPERATOR(Softmax);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Softmax);
+DEPLOY_CUDA_OPERATOR(Softmax);
 #endif
 
-DEPLOY_CPU(SoftmaxGradient);
+DEPLOY_CPU_OPERATOR(SoftmaxGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SoftmaxGradient);
+DEPLOY_CUDA_OPERATOR(SoftmaxGradient);
 #endif
 
 OPERATOR_SCHEMA(Softmax)

@@ -11,14 +11,6 @@ Constructors
 Public Functions
 ----------------
 
-Arg
-###
-.. doxygenfunction:: dragon::Operator::Arg
-
-Args
-####
-.. doxygenfunction:: dragon::Operator::Args
-
 Buffer
 ######
 .. doxygenfunction:: dragon::Operator::Buffer
@@ -26,6 +18,14 @@ Buffer
 Fuse
 ####
 .. doxygenfunction:: dragon::Operator::Fuse
+
+GetArgument
+###########
+.. doxygenfunction:: dragon::Operator::GetArgument(const string &name)
+
+GetArgument
+###########
+.. doxygenfunction:: dragon::Operator::GetArgument(const string &name, const T &default_value)
 
 Input
 #####

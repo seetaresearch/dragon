@@ -31,22 +31,6 @@ def accuracy_spec(args, inputs, outputs):
     return outputs
 
 
-@register('Arange')
-def arange_spec(args, inputs, outputs):
-    _ = locals()
-    outputs[0].dtype = args['dtype']
-    slice_args = args['slice']
-    if len(slice_args) == 2:
-        start, (stop, step) = 0, slice_args
-    else:
-        start, stop, step = slice_args
-    try:
-        outputs[0].shape = (int(math.ceil((stop - start) / step)),)
-    except TypeError:
-        pass
-    return outputs
-
-
 @register(['ArgMax', 'ArgMin'])
 def arg_reduce_spec(args, inputs, outputs):
     outputs[0].dtype = 'int64'
@@ -187,7 +171,6 @@ def concat_spec(args, inputs, outputs):
 @register(['Conv2d', 'DepthwiseConv2d'])
 def conv_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
-    out_shape = None
     try:
         out_shape = list(inputs[0].shape[:])
         num_axes = len(out_shape) - 2
@@ -221,7 +204,6 @@ def conv_spec(args, inputs, outputs):
 @register('ConvTranspose2d')
 def conv_transpose_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
-    out_shape = None
     try:
         out_shape = list(inputs[0].shape[:])
         num_axes = len(out_shape) - 2
@@ -286,6 +268,7 @@ def depth_to_space_spec(args, inputs, outputs):
 
 @register('Dot')
 def dot_spec(args, inputs, outputs):
+    _ = locals()
     outputs[0].dtype = inputs[0].dtype
     try:
         a_shape, b_shape = inputs[0].shape[:], inputs[1].shape[:]
@@ -605,6 +588,20 @@ def pad_spec(args, inputs, outputs):
     return outputs
 
 
+@register('Permutation')
+def permutation_spec(args, inputs, outputs):
+    _ = locals()
+    outputs[0].dtype = args['dtype']
+    if len(inputs) == 1:
+        try:
+            outputs[0].shape = inputs[0].shape[:]
+        except TypeError:
+            pass
+    else:
+        outputs[0].shape = (args['limit'],)
+    return outputs
+
+
 @register('Pool2d')
 def pool_spec(args, inputs, outputs):
     outputs[0].dtype = inputs[0].dtype
@@ -640,6 +637,22 @@ def pool_spec(args, inputs, outputs):
 @register(['PythonPlugin', 'PythonPluginInfer'])
 def python_spec(args, inputs, outputs):
     _ = locals()
+    return outputs
+
+
+@register('Range')
+def range_spec(args, inputs, outputs):
+    _ = locals()
+    outputs[0].dtype = args['dtype']
+    slice_args = args['slice']
+    if len(slice_args) == 2:
+        start, (limit, delta) = 0, slice_args
+    else:
+        start, limit, delta = slice_args
+    try:
+        outputs[0].shape = (int(math.ceil((limit - start) / delta)),)
+    except TypeError:
+        pass
     return outputs
 
 

@@ -6,8 +6,8 @@
 namespace dragon {
 
 #define DETERMINE_RUNTIME_ARGS(tensor)                                       \
-  auto size_splits = OpArgs<int64_t>("size_splits");                         \
-  auto slice_points = OpArgs<int64_t>("slice_points");                       \
+  auto size_splits = OP_REPEATED_ARG(int64_t, "size_splits");                \
+  auto slice_points = OP_REPEATED_ARG(int64_t, "slice_points");              \
   if (!slice_points.empty()) {                                               \
     int64_t index = 0;                                                       \
     size_splits = vec64_t(num_splits);                                       \
@@ -60,7 +60,7 @@ void SplitOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SplitOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -109,14 +109,14 @@ void SplitGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, X);
 }
 
-DEPLOY_CPU(Split);
+DEPLOY_CPU_OPERATOR(Split);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Split);
+DEPLOY_CUDA_OPERATOR(Split);
 #endif
 
-DEPLOY_CPU(SplitGradient);
+DEPLOY_CPU_OPERATOR(SplitGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SplitGradient);
+DEPLOY_CUDA_OPERATOR(SplitGradient);
 #endif
 
 OPERATOR_SCHEMA(Split)

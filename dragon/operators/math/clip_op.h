@@ -22,8 +22,8 @@ class ClipOp : public Operator<Context> {
  public:
   ClipOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        low_(OpArg<float>("low", -FLT_MAX)),
-        high_(OpArg<float>("high", FLT_MAX)) {}
+        low_(OP_SINGLE_ARG(float, "low", -FLT_MAX)),
+        high_(OP_SINGLE_ARG(float, "high", FLT_MAX)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

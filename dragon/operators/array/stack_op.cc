@@ -43,7 +43,7 @@ void StackOp<Context>::DoRunWithType() {
 
 template <class Context>
 void StackOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -71,17 +71,17 @@ void StackGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void StackGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Stack);
+DEPLOY_CPU_OPERATOR(Stack);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Stack);
+DEPLOY_CUDA_OPERATOR(Stack);
 #endif
 
-DEPLOY_CPU(StackGradient);
+DEPLOY_CPU_OPERATOR(StackGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(StackGradient);
+DEPLOY_CUDA_OPERATOR(StackGradient);
 #endif
 
 OPERATOR_SCHEMA(Stack)

@@ -1,5 +1,5 @@
-#include "dragon/operators/loss/l1_loss_ops.h"
 #include "dragon/core/workspace.h"
+#include "dragon/operators/loss/l1_loss_ops.h"
 #include "dragon/utils/math_functions.h"
 #include "dragon/utils/op_kernels.h"
 
@@ -120,14 +120,14 @@ void L1LossGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(L1Loss);
+DEPLOY_CPU_OPERATOR(L1Loss);
 #ifdef USE_CUDA
-DEPLOY_CUDA(L1Loss);
+DEPLOY_CUDA_OPERATOR(L1Loss);
 #endif
 
-DEPLOY_CPU(L1LossGradient);
+DEPLOY_CPU_OPERATOR(L1LossGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(L1LossGradient);
+DEPLOY_CUDA_OPERATOR(L1LossGradient);
 #endif
 
 OPERATOR_SCHEMA(L1Loss)

@@ -82,7 +82,7 @@ void _Dropout<float16>(
       const T* x,                                                            \
       uint8_t* mask,                                                         \
       T* y,                                                                  \
-      uint32_t* scratch,                                                     \
+      uint32_t* r,                                                           \
       CPUContext* ctx) {                                                     \
     _Dropout(count, cast::to<T>(prob), cast::to<T>(scale), x, mask, y, ctx); \
   }

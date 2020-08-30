@@ -40,7 +40,7 @@ void DivOp<Context>::DoRunWithType() {
 
 template <class Context>
 void DivOp<Context>::RunOnDevice() {
-  DispatchHelper<MathTensorTypes>::Call(this, Input(0));
+  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -192,14 +192,14 @@ void DivGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(2));
 }
 
-DEPLOY_CPU(Div);
+DEPLOY_CPU_OPERATOR(Div);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Div);
+DEPLOY_CUDA_OPERATOR(Div);
 #endif
 
-DEPLOY_CPU(DivGradient);
+DEPLOY_CPU_OPERATOR(DivGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(DivGradient);
+DEPLOY_CUDA_OPERATOR(DivGradient);
 #endif
 
 OPERATOR_SCHEMA(Div)

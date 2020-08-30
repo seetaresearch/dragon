@@ -6,46 +6,46 @@ namespace dragon {
 
 template <class Context>
 template <typename T>
-void ArangeOp<Context>::DoRunWithType() {
+void RangeOp<Context>::DoRunWithType() {
   // Determine the slice arguments
   int num_args;
-  float start = 0.f, stop, step;
+  float start = 0.f, limit, delta;
   slice(0, &num_args);
   if (num_args == 2) {
-    stop = slice(0), step = slice(1);
+    limit = slice(0), delta = slice(1);
   } else if (num_args == 3) {
-    start = slice(0), stop = slice(1), step = slice(2);
+    start = slice(0), limit = slice(1), delta = slice(2);
   } else {
     LOG(FATAL) << "Unexcepted number of slice arguments: " << num_args;
   }
 
   // Determine the generating range
   // Values are in a half-open interval: [start, stop)
-  auto count = (int64_t)std::ceil((stop - start) / step);
+  auto count = (int64_t)std::ceil((limit - start) / delta);
   CHECK_GT(count, 0) << "\nInvalid generating range: "
-                     << "[" << start << ", " << stop << ") with step = " << step
-                     << ".";
+                     << "[" << start << ", " << limit
+                     << ") with delta = " << delta << ".";
 
-  kernel::Arange(
+  kernel::Range(
       count,
       start,
-      step,
+      delta,
       Output(0)->Reshape({count})->template mutable_data<T, Context>(),
       ctx());
 }
 
 template <class Context>
-void ArangeOp<Context>::RunOnDevice() {
-  DispatchHelper<MathTensorTypes>::Call(this);
+void RangeOp<Context>::RunOnDevice() {
+  DispatchHelper<NumericalTensorTypes>::Call(this);
 }
 
-DEPLOY_CPU(Arange);
+DEPLOY_CPU_OPERATOR(Range);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Arange);
+DEPLOY_CUDA_OPERATOR(Range);
 #endif
 
-OPERATOR_SCHEMA(Arange).NumInputs(0).NumOutputs(1);
+OPERATOR_SCHEMA(Range).NumInputs(0).NumOutputs(1);
 
-NO_GRADIENT(Arange);
+NO_GRADIENT(Range);
 
 } // namespace dragon

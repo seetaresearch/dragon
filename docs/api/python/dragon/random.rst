@@ -21,6 +21,9 @@ dragon.random
   `normal_like(...) <random/normal_like.html>`_
   : Return a tensor initialized from the normal distribution with shape as the other.
 
+  `permutation(...) <random/permutation.html>`_
+  : Return a tensor with value in the permuted range.
+
   `set_seed(...) <random/set_seed.html>`_
   : Set the global random seed.
 
@@ -41,6 +44,7 @@ dragon.random
   random/multinomial
   random/normal
   random/normal_like
+  random/permutation
   random/set_seed
   random/truncated_normal
   random/uniform

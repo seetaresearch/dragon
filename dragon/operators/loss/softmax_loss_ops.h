@@ -22,7 +22,7 @@ class SoftmaxCrossEntropyOp final : public Operator<Context> {
  public:
   SoftmaxCrossEntropyOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        reduction_(OpArg<string>("reduction", "MEAN")) {}
+        reduction_(OP_SINGLE_ARG(string, "reduction", "MEAN")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -39,8 +39,8 @@ class SparseSoftmaxCrossEntropyOp : public Operator<Context> {
  public:
   SparseSoftmaxCrossEntropyOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        ignore_index_(OpArg<int64_t>("ignore_index", -1)),
-        reduction_(OpArg<string>("reduction", "VALID")) {}
+        ignore_index_(OP_SINGLE_ARG(int64_t, "ignore_index", -1)),
+        reduction_(OP_SINGLE_ARG(string, "reduction", "VALID")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -58,7 +58,7 @@ class SoftmaxCrossEntropyGradientOp final : public Operator<Context> {
  public:
   SoftmaxCrossEntropyGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        reduction_(OpArg<string>("reduction", "MEAN")) {}
+        reduction_(OP_SINGLE_ARG(string, "reduction", "MEAN")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -75,8 +75,8 @@ class SparseSoftmaxCrossEntropyGradientOp : public Operator<Context> {
  public:
   SparseSoftmaxCrossEntropyGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        ignore_index_(OpArg<int64_t>("ignore_index", -1)),
-        reduction_(OpArg<string>("reduction", "VALID")) {}
+        ignore_index_(OP_SINGLE_ARG(int64_t, "ignore_index", -1)),
+        reduction_(OP_SINGLE_ARG(string, "reduction", "VALID")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

@@ -23,6 +23,8 @@ from dragon.core.framework import workspace
 from dragon.core.util import logging
 from dragon.core.util import six
 
+PICKLE_DEFAULT_PROTOCOL = 2
+
 
 def load_weights_from_pickle(f, layer, verbose=False):
     ws = workspace.get_workspace()
@@ -64,4 +66,4 @@ def save_weights_to_pickle(f, layer):
         if weight_impl is not None:
             weight_dict[weight.name] = weight_impl.ToNumpy(True)
     pickle = six.moves.pickle
-    pickle.dump(weight_dict, f, pickle.HIGHEST_PROTOCOL)
+    pickle.dump(weight_dict, f, PICKLE_DEFAULT_PROTOCOL)

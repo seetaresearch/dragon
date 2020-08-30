@@ -138,9 +138,9 @@ void MaximumGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(2));
 }
 
-DEPLOY_CPU(MaximumGradient);
+DEPLOY_CPU_OPERATOR(MaximumGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(MaximumGradient);
+DEPLOY_CUDA_OPERATOR(MaximumGradient);
 #endif
 
 OPERATOR_SCHEMA(MaximumGradient)

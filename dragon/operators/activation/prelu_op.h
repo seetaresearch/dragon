@@ -22,7 +22,7 @@ class PReluOp final : public Operator<Context> {
  public:
   PReluOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        channel_shared_(OpArg<int64_t>("channel_shared", 0)) {}
+        channel_shared_(OP_SINGLE_ARG(int64_t, "channel_shared", 0)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

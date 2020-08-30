@@ -40,7 +40,7 @@ void SubOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SubOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -97,14 +97,14 @@ void SubGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Sub);
+DEPLOY_CPU_OPERATOR(Sub);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Sub);
+DEPLOY_CUDA_OPERATOR(Sub);
 #endif
 
-DEPLOY_CPU(SubGradient);
+DEPLOY_CPU_OPERATOR(SubGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SubGradient);
+DEPLOY_CUDA_OPERATOR(SubGradient);
 #endif
 
 OPERATOR_SCHEMA(Sub)

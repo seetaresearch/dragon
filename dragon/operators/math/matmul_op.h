@@ -22,8 +22,8 @@ class MatMulOp final : public Operator<Context> {
  public:
   MatMulOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        transA_(OpArg<int64_t>("transA", 0)),
-        transB_(OpArg<int64_t>("transB", 0)) {}
+        transA_(OP_SINGLE_ARG(int64_t, "transA", 0)),
+        transB_(OP_SINGLE_ARG(int64_t, "transB", 0)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -40,8 +40,8 @@ class MatMulGradientOp final : public Operator<Context> {
  public:
   MatMulGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        transA_(OpArg<int64_t>("transA", 0)),
-        transB_(OpArg<int64_t>("transB", 0)) {}
+        transA_(OP_SINGLE_ARG(int64_t, "transA", 0)),
+        transB_(OP_SINGLE_ARG(int64_t, "transB", 0)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

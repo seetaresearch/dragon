@@ -22,9 +22,9 @@ class ChannelNormalizeOp final : public Operator<Context> {
  public:
   ChannelNormalizeOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
-    GET_ARGS_WITH_DESC(int64_t, perm);
-    auto mean = OpArgs<float>("mean");
-    auto std = OpArgs<float>("std");
+    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, perm);
+    auto mean = OP_REPEATED_ARG(float, "mean");
+    auto std = OP_REPEATED_ARG(float, "std");
     CHECK_EQ(mean.size(), std.size())
         << "\nSize of <mean> and <std> should be same.";
     X_mean_.Reshape({(int64_t)mean.size()});
@@ -47,10 +47,10 @@ class ChannelNormalizeOp final : public Operator<Context> {
 
  protected:
   Tensor X_mean_, X_std_;
-  DECLARE_ARGS_WITH_DESC(int64_t, perm);
+  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, perm);
 };
 
-DEFINE_ARGS_WITH_DESC(int64_t, ChannelNormalizeOp, perm);
+DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, ChannelNormalizeOp, perm);
 
 } // namespace dragon
 

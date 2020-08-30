@@ -55,12 +55,12 @@ void NonZeroOp<Context>::DoRunWithType() {
 
 template <class Context>
 void NonZeroOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(NonZero);
+DEPLOY_CPU_OPERATOR(NonZero);
 #ifdef USE_CUDA
-DEPLOY_CUDA(NonZero);
+DEPLOY_CUDA_OPERATOR(NonZero);
 #endif
 
 OPERATOR_SCHEMA(NonZero)

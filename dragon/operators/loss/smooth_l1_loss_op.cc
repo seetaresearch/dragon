@@ -120,14 +120,14 @@ void SmoothL1LossGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(SmoothL1Loss);
+DEPLOY_CPU_OPERATOR(SmoothL1Loss);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SmoothL1Loss);
+DEPLOY_CUDA_OPERATOR(SmoothL1Loss);
 #endif
 
-DEPLOY_CPU(SmoothL1LossGradient);
+DEPLOY_CPU_OPERATOR(SmoothL1LossGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SmoothL1LossGradient);
+DEPLOY_CUDA_OPERATOR(SmoothL1LossGradient);
 #endif
 
 OPERATOR_SCHEMA(SmoothL1Loss)

@@ -90,50 +90,50 @@ DISPATCH_WITH_TENSOR_TYPES(RandomUniform, FloatingTensorTypes);
 DISPATCH_WITH_TENSOR_TYPES(TruncatedNormal, FloatingTensorTypes);
 DISPATCH_WITH_TENSOR_TYPES(GlorotNormal, FloatingTensorTypes);
 DISPATCH_WITH_TENSOR_TYPES(GlorotUniform, FloatingTensorTypes);
-DISPATCH_WITH_TENSOR_TYPES(Fill, AllTensorTypes);
-DISPATCH_WITH_TENSOR_TYPES(Eye, AllTensorTypes);
+DISPATCH_WITH_TENSOR_TYPES(Fill, FullTensorTypes);
+DISPATCH_WITH_TENSOR_TYPES(Eye, FullTensorTypes);
 #undef DISPATCH_WITH_TYPES
 #undef DISPATCH_WITH_TENSOR_TYPES
 
-DEPLOY_CPU(Fill);
+DEPLOY_CPU_OPERATOR(Fill);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Fill);
+DEPLOY_CUDA_OPERATOR(Fill);
 #endif
 
-DEPLOY_CPU(Eye);
+DEPLOY_CPU_OPERATOR(Eye);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Eye);
+DEPLOY_CUDA_OPERATOR(Eye);
 #endif
 
-DEPLOY_CPU(GivenTensorFill);
+DEPLOY_CPU_OPERATOR(GivenTensorFill);
 #ifdef USE_CUDA
-DEPLOY_CUDA(GivenTensorFill);
+DEPLOY_CUDA_OPERATOR(GivenTensorFill);
 #endif
 
-DEPLOY_CPU(RandomNormal);
+DEPLOY_CPU_OPERATOR(RandomNormal);
 #ifdef USE_CUDA
-DEPLOY_CUDA(RandomNormal);
+DEPLOY_CUDA_OPERATOR(RandomNormal);
 #endif
 
-DEPLOY_CPU(RandomUniform);
+DEPLOY_CPU_OPERATOR(RandomUniform);
 #ifdef USE_CUDA
-DEPLOY_CUDA(RandomUniform);
+DEPLOY_CUDA_OPERATOR(RandomUniform);
 #endif
 
 #ifdef USE_CUDA
-DEPLOY_CPU_CUDA(TruncatedNormal);
+DEPLOY_CPU_CUDA_OPERATOR(TruncatedNormal);
 #else
-DEPLOY_CPU(TruncatedNormal);
+DEPLOY_CPU_OPERATOR(TruncatedNormal);
 #endif
 
-DEPLOY_CPU(GlorotNormal);
+DEPLOY_CPU_OPERATOR(GlorotNormal);
 #ifdef USE_CUDA
-DEPLOY_CUDA(GlorotNormal);
+DEPLOY_CUDA_OPERATOR(GlorotNormal);
 #endif
 
-DEPLOY_CPU(GlorotUniform);
+DEPLOY_CPU_OPERATOR(GlorotUniform);
 #ifdef USE_CUDA
-DEPLOY_CUDA(GlorotUniform);
+DEPLOY_CUDA_OPERATOR(GlorotUniform);
 #endif
 
 OPERATOR_SCHEMA(Fill).NumInputs(0, 1).NumOutputs(1);

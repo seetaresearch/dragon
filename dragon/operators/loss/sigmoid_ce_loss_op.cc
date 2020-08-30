@@ -98,14 +98,14 @@ void SigmoidCrossEntropyGradientOp<Context>::RunOnDevice() {
   DispatchHelper<TensorTypes<float, double>>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(SigmoidCrossEntropy);
+DEPLOY_CPU_OPERATOR(SigmoidCrossEntropy);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SigmoidCrossEntropy);
+DEPLOY_CUDA_OPERATOR(SigmoidCrossEntropy);
 #endif
 
-DEPLOY_CPU(SigmoidCrossEntropyGradient);
+DEPLOY_CPU_OPERATOR(SigmoidCrossEntropyGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SigmoidCrossEntropyGradient);
+DEPLOY_CUDA_OPERATOR(SigmoidCrossEntropyGradient);
 #endif
 
 OPERATOR_SCHEMA(SigmoidCrossEntropy)

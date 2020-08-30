@@ -36,14 +36,14 @@ void TanhGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Tanh);
+DEPLOY_CPU_OPERATOR(Tanh);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Tanh);
+DEPLOY_CUDA_OPERATOR(Tanh);
 #endif
 
-DEPLOY_CPU(TanhGradient);
+DEPLOY_CPU_OPERATOR(TanhGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(TanhGradient);
+DEPLOY_CUDA_OPERATOR(TanhGradient);
 #endif
 
 OPERATOR_SCHEMA(Tanh)

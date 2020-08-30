@@ -39,7 +39,7 @@ void TransposeOp<Context>::DoRunWithType() {
 
 template <class Context>
 void TransposeOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -66,14 +66,14 @@ void TransposeGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Transpose);
+DEPLOY_CPU_OPERATOR(Transpose);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Transpose);
+DEPLOY_CUDA_OPERATOR(Transpose);
 #endif
 
-DEPLOY_CPU(TransposeGradient);
+DEPLOY_CPU_OPERATOR(TransposeGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(TransposeGradient);
+DEPLOY_CUDA_OPERATOR(TransposeGradient);
 #endif
 
 OPERATOR_SCHEMA(Transpose)

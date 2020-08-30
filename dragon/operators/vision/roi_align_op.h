@@ -22,10 +22,10 @@ class RoiAlignOp final : public Operator<Context> {
  public:
   RoiAlignOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        out_h_(OpArg<int64_t>("pooled_h", 0)),
-        out_w_(OpArg<int64_t>("pooled_w", 0)),
-        spatial_scale_(OpArg<float>("spatial_scale", 1.f)),
-        sampling_ratio_(OpArg<int64_t>("sampling_ratio", 2)) {
+        out_h_(OP_SINGLE_ARG(int64_t, "pooled_h", 0)),
+        out_w_(OP_SINGLE_ARG(int64_t, "pooled_w", 0)),
+        spatial_scale_(OP_SINGLE_ARG(float, "spatial_scale", 1.f)),
+        sampling_ratio_(OP_SINGLE_ARG(int64_t, "sampling_ratio", 2)) {
     CHECK_GT(out_h_, 0) << "\npooled_h must > 0";
     CHECK_GT(out_w_, 0) << "\npooled_w must > 0";
   }
@@ -47,10 +47,10 @@ class RoiAlignGradientOp final : public Operator<Context> {
  public:
   RoiAlignGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        out_h_(OpArg<int64_t>("pooled_h", 0)),
-        out_w_(OpArg<int64_t>("pooled_w", 0)),
-        spatial_scale_(OpArg<float>("spatial_scale", 1.f)),
-        sampling_ratio_(OpArg<int64_t>("sampling_ratio", 2)) {}
+        out_h_(OP_SINGLE_ARG(int64_t, "pooled_h", 0)),
+        out_w_(OP_SINGLE_ARG(int64_t, "pooled_w", 0)),
+        spatial_scale_(OP_SINGLE_ARG(float, "spatial_scale", 1.f)),
+        sampling_ratio_(OP_SINGLE_ARG(int64_t, "sampling_ratio", 2)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

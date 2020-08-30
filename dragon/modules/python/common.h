@@ -104,8 +104,9 @@ class NumpyFeeder : public TensorFeederBase {
     int ndim = PyArray_NDIM(array);
     vec64_t dims(ndim);
     auto* npy_dims = PyArray_DIMS(array);
-    for (int i = 0; i < ndim; i++)
+    for (int i = 0; i < ndim; i++) {
       dims[i] = npy_dims[i];
+    }
     tensor->Reshape(dims);
     if (option.device_type() == PROTO_CUDA) {
 #ifdef USE_CUDA

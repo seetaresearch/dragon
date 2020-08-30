@@ -52,8 +52,8 @@ void CuDNNEluGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CUDNN(Elu);
-DEPLOY_CUDNN(EluGradient);
+DEPLOY_CUDNN_OPERATOR(Elu);
+DEPLOY_CUDNN_OPERATOR(EluGradient);
 
 } // namespace dragon
 

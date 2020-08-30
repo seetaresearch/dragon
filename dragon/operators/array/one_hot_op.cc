@@ -34,9 +34,9 @@ void OneHotOp<Context>::RunOnDevice() {
   DispatchHelper<TensorTypes<int, int64_t, float>>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(OneHot);
+DEPLOY_CPU_OPERATOR(OneHot);
 #ifdef USE_CUDA
-DEPLOY_CUDA(OneHot);
+DEPLOY_CUDA_OPERATOR(OneHot);
 #endif
 
 OPERATOR_SCHEMA(OneHot)

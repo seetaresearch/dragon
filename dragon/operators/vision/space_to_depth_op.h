@@ -21,7 +21,8 @@ template <class Context>
 class SpaceToDepthOp final : public Operator<Context> {
  public:
   SpaceToDepthOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws), block_size_(OpArg<int>("block_size", 2)) {}
+      : Operator<Context>(def, ws),
+        block_size_(OP_SINGLE_ARG(int, "block_size", 2)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

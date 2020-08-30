@@ -41,7 +41,7 @@ void ClipOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ClipOp<Context>::RunOnDevice() {
-  DispatchHelper<MathTensorTypes>::Call(this, Input(0));
+  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -64,14 +64,14 @@ void ClipGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Clip);
+DEPLOY_CPU_OPERATOR(Clip);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Clip);
+DEPLOY_CUDA_OPERATOR(Clip);
 #endif
 
-DEPLOY_CPU(ClipGradient);
+DEPLOY_CPU_OPERATOR(ClipGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ClipGradient);
+DEPLOY_CUDA_OPERATOR(ClipGradient);
 #endif
 
 OPERATOR_SCHEMA(Clip)

@@ -283,7 +283,6 @@ class Workspace(backend.Workspace):
         """Merge resources from the other.
 
         The ``other`` will not be reset until ``self`` is reset.
-        Carefulness should be taken to associate with the workspaces.
 
         Parameters
         ----------

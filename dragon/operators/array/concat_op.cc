@@ -45,7 +45,7 @@ void ConcatOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ConcatOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -77,14 +77,14 @@ void ConcatGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Concat);
+DEPLOY_CPU_OPERATOR(Concat);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Concat);
+DEPLOY_CUDA_OPERATOR(Concat);
 #endif
 
-DEPLOY_CPU(ConcatGradient);
+DEPLOY_CPU_OPERATOR(ConcatGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ConcatGradient);
+DEPLOY_CUDA_OPERATOR(ConcatGradient);
 #endif
 
 OPERATOR_SCHEMA(Concat)

@@ -53,14 +53,14 @@ void ReshapeOp<Context>::RunOnDevice() {
   Y->Reshape(out_shape)->CopyFrom(X, ctx());
 }
 
-DEPLOY_CPU(Reshape);
+DEPLOY_CPU_OPERATOR(Reshape);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Reshape);
+DEPLOY_CUDA_OPERATOR(Reshape);
 #endif
 
-DEPLOY_CPU(ReshapeGradient);
+DEPLOY_CPU_OPERATOR(ReshapeGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ReshapeGradient);
+DEPLOY_CUDA_OPERATOR(ReshapeGradient);
 #endif
 
 OPERATOR_SCHEMA(Reshape)

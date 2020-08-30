@@ -56,14 +56,14 @@ void DropoutGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Dropout);
+DEPLOY_CPU_OPERATOR(Dropout);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Dropout);
+DEPLOY_CUDA_OPERATOR(Dropout);
 #endif
 
-DEPLOY_CPU(DropoutGradient);
+DEPLOY_CPU_OPERATOR(DropoutGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(DropoutGradient);
+DEPLOY_CUDA_OPERATOR(DropoutGradient);
 #endif
 
 OPERATOR_SCHEMA(Dropout)

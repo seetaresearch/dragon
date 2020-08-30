@@ -21,9 +21,6 @@ dragon
   Functions
   ---------
 
-  `arange(...) <dragon/arange.html>`_
-  : Return a tensor of evenly spaced values within a interval.
-
   `assign(...) <dragon/assign.html>`_
   : Assign the value to input.
 
@@ -120,6 +117,9 @@ dragon
   `python_plugin(...) <dragon/python_plugin.html>`_
   : Create a plugin operator from the python class.
 
+  `range(...) <dragon/range.html>`_
+  : Return a tensor of evenly spaced values within a interval.
+
   `repeat(...) <dragon/repeat.html>`_
   : Repeat the elements along the given axis.
 
@@ -165,7 +165,6 @@ dragon
 .. toctree::
   :hidden:
 
-  dragon/arange
   dragon/assign
   dragon/broadcast_to
   dragon/cast
@@ -200,6 +199,7 @@ dragon
   dragon/one_hot
   dragon/pad
   dragon/python_plugin
+  dragon/range
   dragon/repeat
   dragon/reset_workspace
   dragon/reshape

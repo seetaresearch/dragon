@@ -108,9 +108,9 @@ void DropBlock2dGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(DropBlock2d);
+DEPLOY_CPU_OPERATOR(DropBlock2d);
 #ifdef USE_CUDA
-DEPLOY_CUDA(DropBlock2d);
+DEPLOY_CUDA_OPERATOR(DropBlock2d);
 #endif
 
 OPERATOR_SCHEMA(DropBlock2d)
@@ -121,9 +121,9 @@ OPERATOR_SCHEMA(DropBlock2d)
     /* X => Y */
     .AllowInplace({{0, 0}});
 
-DEPLOY_CPU(DropBlock2dGradient);
+DEPLOY_CPU_OPERATOR(DropBlock2dGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(DropBlock2dGradient);
+DEPLOY_CUDA_OPERATOR(DropBlock2dGradient);
 #endif
 
 OPERATOR_SCHEMA(DropBlock2dGradient)

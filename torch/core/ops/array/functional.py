@@ -290,8 +290,8 @@ def cumsum(input, dim, out=None):
     ```python
     x = torch.tensor([[1, 2, 3], [4, 5, 6]])
 
-    # A negative axis is the last-k axis
-    print(torch.cumsum(x, 1))   # [[1, 3, 6], [4, 9, 15]]
+    # A negative dimension is the last-k dimension
+    print(torch.cumsum(x, 1))  # [[1, 3, 6], [4, 9, 15]]
     print(torch.cumsum(x, -1))  # Equivalent
     ```
 
@@ -338,6 +338,52 @@ def expand(input, sizes):
     return _functions.Expand \
         .instantiate(input.device, ndim=len(sizes)) \
         .apply(input, sizes)
+
+
+def flatten(input, start_dim=0, end_dim=-1, out=None):
+    """Return a tensor with dimensions flattened.
+
+    The argument ``start_dim`` and ``end_dim`` could be negative:
+
+    ```python
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
+
+    # A negative axis is the last-k axis
+    print(torch.flatten(x, start_dim=0, end_dim=-1))
+    print(torch.flatten(x, start_dim=0, end_dim=1))  # Equivalent
+    ```
+
+    Parameters
+    ----------
+    input : torch.Tensor
+        The input tensor.
+    start_dim : int, optional, default=0
+        The start dimension to flatten.
+    end_dim : int, optional, default=-1
+        The end dimension to flatten.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    """
+    if end_dim == -1:
+        num_axes = -1
+    else:
+        while end_dim < 0:
+            end_dim += input.ndimension()
+        while start_dim < 0:
+            start_dim += input.ndimension()
+        num_axes = end_dim - start_dim + 1
+    return _functions.Flatten \
+        .instantiate(
+            input.device,
+            axis=start_dim,
+            num_axes=num_axes,
+        ).apply(input, out)
 
 
 def index_select(input, dim, index, out=None):

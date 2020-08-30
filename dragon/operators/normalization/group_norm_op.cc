@@ -55,9 +55,9 @@ void GroupNormOp<Context>::RunOnDevice() {
   DetermineBaseArguments();
   Output(0)->ReshapeLike(Input(0));
 
-  if (XIsType(Input(0), float)) {
+  if (Input(0).template IsType<float>()) {
     DoRunWithType<float, float>();
-  } else if (XIsType(Input(0), float16)) {
+  } else if (Input(0).template IsType<float16>()) {
     DoRunWithType<float16, float>();
   } else {
     LOG(FATAL) << MessageForUnsupported(
@@ -97,9 +97,9 @@ void GroupNormGradientOp<Context>::RunOnDevice() {
   DetermineBaseArguments();
   Output(0)->ReshapeLike(Input(0));
 
-  if (XIsType(Input(0), float)) {
+  if (Input(0).template IsType<float>()) {
     DoRunWithType<float, float>();
-  } else if (XIsType(Input(0), float16)) {
+  } else if (Input(0).template IsType<float16>()) {
     DoRunWithType<float16, float>();
   } else {
     LOG(FATAL) << MessageForUnsupported(
@@ -107,14 +107,14 @@ void GroupNormGradientOp<Context>::RunOnDevice() {
   }
 }
 
-DEPLOY_CPU(GroupNorm);
+DEPLOY_CPU_OPERATOR(GroupNorm);
 #ifdef USE_CUDA
-DEPLOY_CUDA(GroupNorm);
+DEPLOY_CUDA_OPERATOR(GroupNorm);
 #endif
 
-DEPLOY_CPU(GroupNormGradient);
+DEPLOY_CPU_OPERATOR(GroupNormGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(GroupNormGradient);
+DEPLOY_CUDA_OPERATOR(GroupNormGradient);
 #endif
 
 OPERATOR_SCHEMA(GroupNorm)

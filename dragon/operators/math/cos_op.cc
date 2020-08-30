@@ -21,9 +21,9 @@ void CosGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(CosGradient);
+DEPLOY_CPU_OPERATOR(CosGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(CosGradient);
+DEPLOY_CUDA_OPERATOR(CosGradient);
 #endif
 
 OPERATOR_SCHEMA(CosGradient)

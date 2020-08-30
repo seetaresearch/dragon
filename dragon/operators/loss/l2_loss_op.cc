@@ -119,14 +119,14 @@ void L2LossGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(L2Loss);
+DEPLOY_CPU_OPERATOR(L2Loss);
 #ifdef USE_CUDA
-DEPLOY_CUDA(L2Loss);
+DEPLOY_CUDA_OPERATOR(L2Loss);
 #endif
 
-DEPLOY_CPU(L2LossGradient);
+DEPLOY_CPU_OPERATOR(L2LossGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(L2LossGradient);
+DEPLOY_CUDA_OPERATOR(L2LossGradient);
 #endif
 
 OPERATOR_SCHEMA(L2Loss)

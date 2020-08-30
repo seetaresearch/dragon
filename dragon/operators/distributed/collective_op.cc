@@ -139,7 +139,7 @@ void CollectiveOp<Context>::RunOnDevice() {
 #endif
   for (int i = 0; i < InputSize(); i++) {
     src_tensor_ = &Input(i);
-    DispatchHelper<MathTensorTypes>::Call(this, *src_tensor_);
+    DispatchHelper<NumericalTensorTypes>::Call(this, *src_tensor_);
   }
 #ifdef USE_NCCL
 #if NCCL_VERSION_MIN(2, 2, 0)
@@ -151,13 +151,13 @@ void CollectiveOp<Context>::RunOnDevice() {
   src_tensor_ = nullptr;
   for (int i = 0; i < InputSize(); i++) {
     dest_tensor_ = &Input(i);
-    DispatchHelper<MathTensorTypes>::Call(this, *dest_tensor_);
+    DispatchHelper<NumericalTensorTypes>::Call(this, *dest_tensor_);
   }
 }
 
-DEPLOY_CPU(Collective);
+DEPLOY_CPU_OPERATOR(Collective);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Collective);
+DEPLOY_CUDA_OPERATOR(Collective);
 #endif
 
 OPERATOR_SCHEMA(Collective).AllowInplace([](int, int) -> bool { return true; });

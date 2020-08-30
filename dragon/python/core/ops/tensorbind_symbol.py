@@ -143,8 +143,31 @@ def getitem(self, item):
 
     """
     if isinstance(item, Tensor):
-        return _masked_select(self, item)
+        if item.dtype == 'bool' or item.dtype == 'uint8':
+            return _masked_select(self, item)
+        elif item.dtype == 'int64':
+            return _index_select(self, item, 0)
+        else:
+            raise TypeError('Unsupported index type: ' + item.dtype)
     else:
+        if isinstance(item, tuple):
+            axis = None
+            for i, ele in enumerate(item):
+                if isinstance(ele, Tensor):
+                    if ele.dtype == 'int64' and axis is None:
+                        axis = i
+                    else:
+                        axis = None
+                        break
+                elif isinstance(ele, slice):
+                    if ele != slice(None, None, None):
+                        axis = None
+                        break
+                else:
+                    axis = None
+                    break
+            if axis is not None:
+                return _index_select(self, item[axis], axis)
         starts, sizes = _process_index(item)
         return _section_select(self, starts, sizes)
 
@@ -425,19 +448,24 @@ def sub(self, other):
 
 
 def _binary_op(a, b, op_type):
-    """Create the general binary operator."""
+    """Apply the binary operator."""
     a, b = ops.remove_binary_scalar([a, b])
     return OpDef.apply(op_type, [a, b])
 
 
+def _index_select(x, index, axis):
+    """Select elements according to the index."""
+    return OpDef.apply('IndexSelect', [x, index], axis=axis, num_axes=1)
+
+
 def _masked_assign(ref, value, mask):
-    """Create the mask-assign operator."""
+    """Assign value according to the mask."""
     value = ops.scalar_to_tensor(value, ref.dtype)
     return OpDef.apply('MaskedAssign', [value, mask], [ref])
 
 
 def _masked_select(x, mask):
-    """Create the mask-select operator."""
+    """Select elements according to the mask."""
     return OpDef.apply('MaskedSelect', [x, mask])
 
 
@@ -462,18 +490,15 @@ def _process_index(item):
                 sizes.append(ele.stop - starts[-1])
                 if sizes[-1] == 0:
                     raise ValueError(
-                        'The starts and ends of axis {} '
-                        'can not be equal, got {}:{}.'
-                        .format(i, starts[-1], ele.stop))
+                        'The starts and ends of axis {} can not be equal'
+                        ', got {}:{}.'.format(i, starts[-1], ele.stop))
             if ele.step is not None:
                 raise NotImplementedError
         elif isinstance(ele, int):
             starts.append(ele)
             sizes.append(0)
         else:
-            raise TypeError(
-                'Unsupported type of index: {}'
-                .format(type(ele)))
+            raise TypeError('Unsupported index type: {}'.format(type(ele)))
     return starts, sizes
 
 

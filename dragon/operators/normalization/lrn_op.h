@@ -22,10 +22,10 @@ class LRNOp : public Operator<Context> {
  public:
   LRNOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        size_(OpArg<int64_t>("size", 5)),
-        alpha_(OpArg<float>("alpha", 0.0001f)),
-        beta_(OpArg<float>("beta", 0.75f)),
-        bias_(OpArg<float>("bias", 1.f)) {}
+        size_(OP_SINGLE_ARG(int64_t, "size", 5)),
+        alpha_(OP_SINGLE_ARG(float, "alpha", 0.0001f)),
+        beta_(OP_SINGLE_ARG(float, "beta", 0.75f)),
+        bias_(OP_SINGLE_ARG(float, "bias", 1.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -43,10 +43,10 @@ class LRNGradientOp : public Operator<Context> {
  public:
   LRNGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        size_(OpArg<int64_t>("size", 5)),
-        alpha_(OpArg<float>("alpha", 0.0001f)),
-        beta_(OpArg<float>("beta", 0.75f)),
-        bias_(OpArg<float>("bias", 1.f)) {}
+        size_(OP_SINGLE_ARG(int64_t, "size", 5)),
+        alpha_(OP_SINGLE_ARG(float, "alpha", 0.0001f)),
+        beta_(OP_SINGLE_ARG(float, "beta", 0.75f)),
+        bias_(OP_SINGLE_ARG(float, "bias", 1.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

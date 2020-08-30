@@ -21,9 +21,9 @@ void PoolOpBase<Context>::Setup(int num_axes) {
   auto at = [&](const vec64_t& vec, int i) {
     return i < vec.size() ? vec[i] : vec[0];
   };
-  auto pads = OpArgs<int64_t>("pads");
-  auto strides = OpArgs<int64_t>("strides");
-  auto kshape = OpArgs<int64_t>("kernel_shape");
+  auto pads = OP_REPEATED_ARG(int64_t, "pads");
+  auto strides = OP_REPEATED_ARG(int64_t, "strides");
+  auto kshape = OP_REPEATED_ARG(int64_t, "kernel_shape");
   for (int i = 0; i < num_axes_; i++) {
     if (global_pool_) {
       pad_l_.push_back(0);

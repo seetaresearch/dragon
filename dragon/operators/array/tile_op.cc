@@ -33,7 +33,7 @@ void TileOp<Context>::DoRunWithType() {
 
 template <class Context>
 void TileOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -101,14 +101,14 @@ void TileGradientOp<Context>::RunOnDevice() {
   }
 }
 
-DEPLOY_CPU(Tile);
+DEPLOY_CPU_OPERATOR(Tile);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Tile);
+DEPLOY_CUDA_OPERATOR(Tile);
 #endif
 
-DEPLOY_CPU(TileGradient);
+DEPLOY_CPU_OPERATOR(TileGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(TileGradient);
+DEPLOY_CUDA_OPERATOR(TileGradient);
 #endif
 
 OPERATOR_SCHEMA(Tile)

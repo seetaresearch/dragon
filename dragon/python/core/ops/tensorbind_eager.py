@@ -168,8 +168,31 @@ def getitem(self, item):
 
     """
     if isinstance(item, EagerTensor):
-        return _masked_select(self, item)
+        if item.dtype == 'bool' or item.dtype == 'uint8':
+            return _masked_select(self, item)
+        elif item.dtype == 'int64':
+            return _index_select(self, item, 0)
+        else:
+            raise TypeError('Unsupported index type: ' + item.dtype)
     else:
+        if isinstance(item, tuple):
+            axis = None
+            for i, ele in enumerate(item):
+                if isinstance(ele, EagerTensor):
+                    if ele.dtype == 'int64' and axis is None:
+                        axis = i
+                    else:
+                        axis = None
+                        break
+                elif isinstance(ele, slice):
+                    if ele != slice(None, None, None):
+                        axis = None
+                        break
+                else:
+                    axis = None
+                    break
+            if axis is not None:
+                return _index_select(self, item[axis], axis)
         starts, sizes = _process_index(item)
         return _section_select(self, starts, sizes)
 
@@ -665,21 +688,28 @@ def uniform(self, low=0, high=1):
 
 
 def _binary_op(a, b, op_type, outputs=(None,)):
-    """Apply the general binary operation."""
+    """Apply the binary operation."""
     return math_ops_lib.BinaryOp \
         .instantiate(op_type=op_type) \
         .apply(ops.remove_binary_scalar([a, b]), outputs)
 
 
+def _index_select(x, index, axis):
+    """Select elements according to the index."""
+    return array_ops_lib.IndexSelect \
+        .instantiate(axis=axis, num_axes=1) \
+        .apply([x, index])
+
+
 def _masked_assign(ref, value, mask):
-    """Apply the mask-assign operation."""
+    """Assign value according to the mask."""
     value = ops.scalar_to_tensor(value, ref.dtype)
     return control_flow_ops_lib.MaskedAssign \
         .instantiate().apply([ref, value, mask])
 
 
 def _masked_select(x, mask):
-    """Apply the mask-select operation."""
+    """Select elements according to the mask."""
     return array_ops_lib.MaskedSelect \
         .instantiate().apply([x, mask])
 
@@ -705,18 +735,15 @@ def _process_index(item):
                 sizes.append(ele.stop - starts[-1])
                 if sizes[-1] == 0:
                     raise ValueError(
-                        'The starts and ends of axis {} '
-                        'can not be equal, got {}:{}.'
-                        .format(i, starts[-1], ele.stop))
+                        'The starts and ends of axis {} can not be equal'
+                        ', got {}:{}.'.format(i, starts[-1], ele.stop))
             if ele.step is not None:
                 raise NotImplementedError
         elif isinstance(ele, int):
             starts.append(ele)
             sizes.append(0)
         else:
-            raise TypeError(
-                'Unsupported type of index: {}'
-                .format(type(ele)))
+            raise TypeError('Unsupported index type: {}'.format(type(ele)))
     return starts, sizes
 
 

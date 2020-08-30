@@ -22,9 +22,9 @@ class LpNormalizeOp final : public Operator<Context> {
  public:
   LpNormalizeOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        p_(OpArg<int64_t>("p", 2)),
-        epsilon_(OpArg<double>("epsilon", 1e-12)),
-        reduction_(OpArg<string>("reduction", "SUM")) {}
+        p_(OP_SINGLE_ARG(int64_t, "p", 2)),
+        epsilon_(OP_SINGLE_ARG(double, "epsilon", 1e-12)),
+        reduction_(OP_SINGLE_ARG(string, "reduction", "SUM")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -43,9 +43,9 @@ class LpNormalizeGradientOp final : public Operator<Context> {
  public:
   LpNormalizeGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        p_(OpArg<int64_t>("p", 2)),
-        epsilon_(OpArg<double>("epsilon", 1e-12)),
-        reduction_(OpArg<string>("reduction", "SUM")) {}
+        p_(OP_SINGLE_ARG(int64_t, "p", 2)),
+        epsilon_(OP_SINGLE_ARG(double, "epsilon", 1e-12)),
+        reduction_(OP_SINGLE_ARG(string, "reduction", "SUM")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

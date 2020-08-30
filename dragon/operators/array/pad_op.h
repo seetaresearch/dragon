@@ -22,9 +22,9 @@ class PadOp final : public Operator<Context> {
  public:
   PadOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        value_(OpArg<float>("value", 0.f)),
-        mode_(OpArg<string>("mode", "CONSTANT")) {
-    GET_ARGS_WITH_DESC(int64_t, pads);
+        value_(OP_SINGLE_ARG(float, "value", 0.f)),
+        mode_(OP_SINGLE_ARG(string, "mode", "CONSTANT")) {
+    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, pads);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -36,7 +36,7 @@ class PadOp final : public Operator<Context> {
  protected:
   float value_;
   string mode_;
-  DECLARE_ARGS_WITH_DESC(int64_t, pads);
+  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, pads);
 };
 
 template <class Context>
@@ -44,9 +44,9 @@ class PadGradientOp final : public Operator<Context> {
  public:
   PadGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        pad_l_(OpArgs<int64_t>("pad_l")),
-        pad_r_(OpArgs<int64_t>("pad_r")),
-        mode_(OpArg<string>("mode", "CONSTANT")) {
+        pad_l_(OP_REPEATED_ARG(int64_t, "pad_l")),
+        pad_r_(OP_REPEATED_ARG(int64_t, "pad_r")),
+        mode_(OP_SINGLE_ARG(string, "mode", "CONSTANT")) {
     if (pad_r_.empty()) {
       pad_r_ = pad_l_;
     } else {
@@ -66,7 +66,7 @@ class PadGradientOp final : public Operator<Context> {
   vec64_t pad_l_, pad_r_;
 };
 
-DEFINE_ARGS_WITH_DESC(int64_t, PadOp, pads);
+DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, PadOp, pads);
 
 } // namespace dragon
 

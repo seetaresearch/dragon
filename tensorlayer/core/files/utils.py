@@ -27,6 +27,8 @@ from dragon.core.framework import workspace
 from dragon.core.util import nest
 from dragon.core.util import six
 
+PICKLE_DEFAULT_PROTOCOL = 2
+
 
 def assign_weights(value_list, module):
     """Assign the value to the module weights.
@@ -220,10 +222,7 @@ def save_pkl_dict(save_list, name):
             raise ValueError('Input[%d] does not have <name> attribute.')
         save_dict[input.name] = _get_value(input)
     with open(name, 'wb') as f:
-        six.moves.pickle.dump(
-            save_dict, f,
-            six.moves.pickle.HIGHEST_PROTOCOL,
-        )
+        six.moves.pickle.dump(save_dict, f, PICKLE_DEFAULT_PROTOCOL)
 
 
 def save_weights_to_hdf5(filepath, module):

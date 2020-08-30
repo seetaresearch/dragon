@@ -21,7 +21,8 @@ template <class Context>
 class EluOp : public Operator<Context> {
  public:
   EluOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws), alpha_(OpArg<float>("alpha", 1.f)) {}
+      : Operator<Context>(def, ws),
+        alpha_(OP_SINGLE_ARG(float, "alpha", 1.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
   template <typename T>
@@ -37,7 +38,8 @@ template <class Context>
 class EluGradientOp : public Operator<Context> {
  public:
   EluGradientOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws), alpha_(OpArg<float>("alpha", 1.f)) {}
+      : Operator<Context>(def, ws),
+        alpha_(OP_SINGLE_ARG(float, "alpha", 1.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

@@ -25,64 +25,6 @@ from dragon.core.ops.utils import parse_args
 from dragon.core.util import nest
 
 
-def arange(start, stop=None, step=1, dtype='int64', **kwargs):
-    r"""Return a tensor of evenly spaced values within a interval.
-
-    Specify ``start`` and ``stop`` to determine an interval:
-
-    ```python
-    x = dragon.arange(2, 4)  # [2, 3]
-    ```
-
-    If ``stop`` is **None**, interval :math:`[0, start)` will be taken instead:
-
-    ```python
-    x = dragon.arange(5)  # [0, 1, 2, 3, 4]
-    ```
-
-    Set ``step`` to make the strides:
-
-    ```python
-    x = dragon.arange(5, step=2)  # [0, 2, 4]
-    ```
-
-    Parameters
-    ----------
-    start : number
-        The start of interval.
-    stop : number, optional
-        The end of interval.
-    step : number, optional, default=1
-        The spacing between two elements.
-    dtype : str, optional, default='int64'
-        The optional data type.
-
-    Returns
-    -------
-    dragon.Tensor
-        The output tensor.
-
-    """
-    args = parse_args(locals())
-    args['dtype'] = args['dtype'].lower()
-    if stop is None:
-        args['slice'] = (float(start), float(step))
-    else:
-        args['slice'] = (float(start), float(stop), float(step))
-    args.pop('start')
-    args.pop('stop')
-    args.pop('step')
-    op_lib = array_ops_lib.Arange
-    trainable = args.pop('trainable') if 'trainable' in args else False
-    if context.executing_eagerly():
-        return op_lib.instantiate(
-            num_args=len(args['slice']),
-            dtype=dtype,
-        ).apply(args['slice'], trainable=trainable)
-    else:
-        return op_lib.blend(**args)
-
-
 @OpSchema.num_inputs(1)
 def argmax(inputs, axis=None, keep_dims=False, **kwargs):
     """Compute the index of maximum elements along the given axis.
@@ -1033,6 +975,98 @@ def pad(inputs, pads, mode='constant', value=0, **kwargs):
                 value=args['value'],
                 mode=args['mode'],
             ).apply([inputs], args['pads'])
+    else:
+        return op_lib.blend(**args)
+
+
+def permutation(limit, dtype='int64', **kwargs):
+    r"""Return a tensor with value in the permuted range.
+
+    Specify ``limit`` to determine an interval :math:`[0, \text{limit})`:
+
+    ```python
+    x = dragon.permutation(4)
+    ```
+
+    Parameters
+    ----------
+    limit: number
+        The end of interval.
+    dtype : str, optional, default='int64'
+        The optional data type.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    args = parse_args(locals())
+    args['dtype'] = args['dtype'].lower()
+    op_lib = array_ops_lib.Permutation
+    trainable = args.pop('trainable') if 'trainable' in args else False
+    if context.executing_eagerly():
+        return op_lib \
+            .instantiate(dtype=dtype) \
+            .apply(limit, trainable=trainable)
+    else:
+        return op_lib.blend(**args)
+
+
+def range(start, limit=None, delta=1, dtype='int64', **kwargs):
+    r"""Return a tensor of evenly spaced values within a interval.
+
+    Specify ``start`` and ``limit`` to determine an interval:
+
+    ```python
+    x = dragon.range(2, 4)  # [2, 3]
+    ```
+
+    If ``limit`` is **None**, interval :math:`[0, \text{start})` will be taken instead:
+
+    ```python
+    x = dragon.range(5)  # [0, 1, 2, 3, 4]
+    ```
+
+    Set ``delta`` to make the strides:
+
+    ```python
+    x = dragon.range(5, delta=2)  # [0, 2, 4]
+    ```
+
+    Parameters
+    ----------
+    start : number
+        The start of interval.
+    limit: number, optional
+        The end of interval.
+    delta : number, optional, default=1
+        The spacing between two elements.
+    dtype : str, optional, default='int64'
+        The optional data type.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    args = parse_args(locals())
+    args['dtype'] = args['dtype'].lower()
+    if limit is None:
+        args['slice'] = (float(start), float(delta))
+    else:
+        args['slice'] = (float(start), float(limit), float(delta))
+    args.pop('start')
+    args.pop('limit')
+    args.pop('delta')
+    op_lib = array_ops_lib.Range
+    trainable = args.pop('trainable') if 'trainable' in args else False
+    if context.executing_eagerly():
+        return op_lib.instantiate(
+            num_args=len(args['slice']),
+            dtype=dtype,
+        ).apply(args['slice'], trainable=trainable)
     else:
         return op_lib.blend(**args)
 

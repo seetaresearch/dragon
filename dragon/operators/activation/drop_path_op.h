@@ -21,8 +21,9 @@ template <class Context>
 class DropPathOp final : public Operator<Context> {
  public:
   DropPathOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws), inc_(OpArg<float>("increment", 0.f)) {
-    GET_ARG_WITH_DESC(float, prob, 0.2f);
+      : Operator<Context>(def, ws),
+        inc_(OP_SINGLE_ARG(float, "increment", 0.f)) {
+    INIT_OP_SINGLE_ARG_WITH_DESC(float, prob, 0.2f);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -33,7 +34,7 @@ class DropPathOp final : public Operator<Context> {
 
  protected:
   float inc_, drop_prob_ = 0.f;
-  DECLARE_ARG_WITH_DESC(float, prob);
+  DECLARE_OP_SINGLE_ARG_WITH_DESC(float, prob);
 };
 
 template <class Context>
@@ -48,7 +49,7 @@ class DropPathGradientOp final : public Operator<Context> {
   void DoRunWithType();
 };
 
-DEFINE_ARG_WITH_DESC(float, DropPathOp, prob);
+DEFINE_OP_SINGLE_ARG_WITH_DESC(float, DropPathOp, prob);
 
 } // namespace dragon
 

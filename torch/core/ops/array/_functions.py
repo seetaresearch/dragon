@@ -216,6 +216,25 @@ class Expand(function.Function):
         )
 
 
+class Flatten(function.Function):
+    def __init__(self, key, dev, **kwargs):
+        super(Flatten, self).__init__(key, dev, **kwargs)
+        self.axis = kwargs.get('axis', 0)
+        self.num_axes = kwargs.get('num_axes', -1)
+
+    def attributes(self):
+        return {
+            'op_type': 'Flatten',
+            'arguments': {
+                'axis': self.axis,
+                'num_axes': self.num_axes,
+            }
+        }
+
+    def forward(self, input, out=None):
+        return self.dispatch([input], [self.alloc(out)])
+
+
 class IndexSelect(function.Function):
     def __init__(self, key, dev, **kwargs):
         super(IndexSelect, self).__init__(key, dev, **kwargs)

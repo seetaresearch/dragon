@@ -29,9 +29,9 @@ void AbsGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(AbsGradient);
+DEPLOY_CPU_OPERATOR(AbsGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(AbsGradient);
+DEPLOY_CUDA_OPERATOR(AbsGradient);
 #endif
 
 OPERATOR_SCHEMA(AbsGradient)

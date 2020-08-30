@@ -603,12 +603,12 @@ class Tensor(object):
         return self
 
     def cuda(self, device=None):
-        """Switch the internal storage on cuda memory.
+        """Copy memory to the specified cuda device.
 
         Parameters
         ----------
-        device : int, optional
-            The device index.
+        device : Union[int, dragon.vm.torch.device], optional
+            The device to copy to.
 
         Returns
         -------
@@ -619,6 +619,10 @@ class Tensor(object):
         if device is None:
             cfg = config.config()
             device = cfg.device_index
+        if isinstance(device, cpp.device):
+            if device.type != 'cuda':
+                raise ValueError('Excepted cuda device, got: ' + device.type)
+            device = device.index
         self._impl.ToCUDA(device)
         self._device.type, self._device.index = 'cuda', device
         return self
@@ -808,6 +812,48 @@ class Tensor(object):
         -------
         dragon.vm.torch.Tensor
             The self.
+
+        """
+
+    def flatten(self, start_dim=0, end_dim=-1):
+        """Return a new tensor with dimensions flattened.
+
+        Parameters
+        ----------
+        start_dim : int, optional, default=0
+            The start dimension to flatten.
+        end_dim : int, optional, default=-1
+            The end dimension to flatten.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        See Also
+        --------
+        `torch.flatten(...)`_
+
+        """
+
+    def flatten_(self, start_dim=0, end_dim=-1):
+        """Flatten the dimensions.
+
+        Parameters
+        ----------
+        start_dim : int, optional, default=0
+            The start dimension to flatten.
+        end_dim : int, optional, default=-1
+            The end dimension to flatten.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The self.
+
+        See Also
+        --------
+        `torch.flatten(...)`_
 
         """
 

@@ -21,9 +21,9 @@ void RsqrtGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(RsqrtGradient);
+DEPLOY_CPU_OPERATOR(RsqrtGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(RsqrtGradient);
+DEPLOY_CUDA_OPERATOR(RsqrtGradient);
 #endif
 
 OPERATOR_SCHEMA(RsqrtGradient)

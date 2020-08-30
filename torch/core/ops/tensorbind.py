@@ -590,6 +590,52 @@ def fill_(self, value):
     return init_funcs.fill(self, self.shape, value)
 
 
+def flatten(self, start_dim=0, end_dim=-1):
+    """Return a new tensor with dimensions flattened.
+
+    Parameters
+    ----------
+    start_dim : int, optional, default=0
+        The start dimension to flatten.
+    end_dim : int, optional, default=-1
+        The end dimension to flatten.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+
+    See Also
+    --------
+    `torch.flatten(...)`_
+
+    """
+    return array_funcs.flatten(self, start_dim, end_dim)
+
+
+def flatten_(self, start_dim=0, end_dim=-1):
+    """Flatten the dimensions.
+
+    Parameters
+    ----------
+    start_dim : int, optional, default=0
+        The start dimension to flatten.
+    end_dim : int, optional, default=-1
+        The end dimension to flatten.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The self.
+
+    See Also
+    --------
+    `torch.flatten(...)`_
+
+    """
+    return array_funcs.flatten(self, start_dim, end_dim, self)
+
+
 def float(self):
     """Return a float32 tensor with the same data.
 
@@ -688,8 +734,31 @@ def getitem(self, item):
 
     """
     if isinstance(item, Tensor):
-        return self.masked_select(item)
+        if item.dtype == 'bool' or item.dtype == 'uint8':
+            return self.masked_select(item)
+        elif item.dtype == 'int64':
+            return self.index_select(0, item)
+        else:
+            raise TypeError('Unsupported index type: ' + item.dtype)
     else:
+        if isinstance(item, tuple):
+            dim = None
+            for i, ele in enumerate(item):
+                if isinstance(ele, Tensor):
+                    if ele.dtype == 'int64' and dim is None:
+                        dim = i
+                    else:
+                        dim = None
+                        break
+                elif isinstance(ele, slice):
+                    if ele != slice(None, None, None):
+                        dim = None
+                        break
+                else:
+                    dim = None
+                    break
+            if dim is not None:
+                return self.index_select(dim, item[dim])
         starts, sizes = _process_index(item)
         return array_funcs.slice(self, starts, sizes)
 
@@ -1618,7 +1687,7 @@ def topk(self, k, dim=None, largest=True, sorted=True):
     return array_funcs.topk(self, k, dim, largest, sorted)
 
 
-def type(self, dtype=None):
+def _type(self, dtype=None):
     """Return the data type.
 
     If ``dtype`` is not **None**, cast ``self`` to the new tensor.
@@ -1753,18 +1822,15 @@ def _process_index(item):
                 sizes.append(ele.stop - starts[-1])
                 if sizes[-1] == 0:
                     raise ValueError(
-                        'The starts and ends of axis {} '
-                        'can not be equal, got {}:{}.'
-                        .format(i, starts[-1], ele.stop))
+                        'The starts and ends of dim {} can not be equal'
+                        ', got {}:{}.'.format(i, starts[-1], ele.stop))
             if ele.step is not None:
                 raise NotImplementedError
         elif isinstance(ele, int):
             starts.append(ele)
             sizes.append(0)
         else:
-            raise TypeError(
-                'Unsupported type of index: {}'
-                .format(type(ele)))
+            raise TypeError('Unsupported index type: {}'.format(type(ele)))
     return starts, sizes
 
 
@@ -1800,6 +1866,8 @@ Tensor.eq = eq
 Tensor.exp = exp
 Tensor.expand = expand
 Tensor.fill_ = fill_
+Tensor.flatten = flatten
+Tensor.flatten_ = flatten_
 Tensor.float = float
 Tensor.float_ = float_
 Tensor.floor = floor
@@ -1852,7 +1920,7 @@ Tensor.sum = sum
 Tensor.sub = sub
 Tensor.sub_ = sub_
 Tensor.topk = topk
-Tensor.type = type
+Tensor.type = _type
 Tensor.uniform_ = uniform_
 Tensor.unsqueeze = unsqueeze
 Tensor.unsqueeze_ = unsqueeze_

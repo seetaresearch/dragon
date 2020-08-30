@@ -43,7 +43,7 @@ void RepeatOp<Context>::DoRunWithType() {
 
 template <class Context>
 void RepeatOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -79,14 +79,14 @@ void RepeatGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Repeat);
+DEPLOY_CPU_OPERATOR(Repeat);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Repeat);
+DEPLOY_CUDA_OPERATOR(Repeat);
 #endif
 
-DEPLOY_CPU(RepeatGradient);
+DEPLOY_CPU_OPERATOR(RepeatGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(RepeatGradient);
+DEPLOY_CUDA_OPERATOR(RepeatGradient);
 #endif
 
 OPERATOR_SCHEMA(Repeat)

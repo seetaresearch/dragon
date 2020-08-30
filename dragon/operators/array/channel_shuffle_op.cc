@@ -25,7 +25,7 @@ void ChannelShuffleOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ChannelShuffleOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -49,14 +49,14 @@ void ChannelShuffleGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(ChannelShuffle);
+DEPLOY_CPU_OPERATOR(ChannelShuffle);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ChannelShuffle);
+DEPLOY_CUDA_OPERATOR(ChannelShuffle);
 #endif
 
-DEPLOY_CPU(ChannelShuffleGradient);
+DEPLOY_CPU_OPERATOR(ChannelShuffleGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ChannelShuffleGradient);
+DEPLOY_CUDA_OPERATOR(ChannelShuffleGradient);
 #endif
 
 OPERATOR_SCHEMA(ChannelShuffle)

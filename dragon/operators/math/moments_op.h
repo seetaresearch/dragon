@@ -22,8 +22,8 @@ class MomentsOp final : public Operator<Context> {
  public:
   MomentsOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        axes_(OpArgs<int64_t>("axes")),
-        keep_dims_(OpArg<int64_t>("keep_dims", 0)) {}
+        axes_(OP_REPEATED_ARG(int64_t, "axes")),
+        keep_dims_(OP_SINGLE_ARG(int64_t, "keep_dims", 0)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

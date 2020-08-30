@@ -21,7 +21,7 @@ template <class Context>
 class ExpandOp final : public Operator<Context> {
  public:
   ExpandOp(const OperatorDef& def, Workspace* ws) : Operator<Context>(def, ws) {
-    GET_ARGS_WITH_DESC(int64_t, dims);
+    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, dims);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -31,7 +31,7 @@ class ExpandOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  DECLARE_ARGS_WITH_DESC(int64_t, dims);
+  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, dims);
 };
 
 template <class Context>
@@ -46,7 +46,7 @@ class ExpandGradientOp final : public Operator<Context> {
   void DoRunWithType();
 };
 
-DEFINE_ARGS_WITH_DESC(int64_t, ExpandOp, dims);
+DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, ExpandOp, dims);
 
 } // namespace dragon
 

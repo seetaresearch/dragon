@@ -108,14 +108,14 @@ void SoftmaxCrossEntropyGradientOp<Context>::RunOnDevice() {
   DispatchHelper<TensorTypes<float, double>>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(SoftmaxCrossEntropy);
+DEPLOY_CPU_OPERATOR(SoftmaxCrossEntropy);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SoftmaxCrossEntropy);
+DEPLOY_CUDA_OPERATOR(SoftmaxCrossEntropy);
 #endif
 
-DEPLOY_CPU(SoftmaxCrossEntropyGradient);
+DEPLOY_CPU_OPERATOR(SoftmaxCrossEntropyGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SoftmaxCrossEntropyGradient);
+DEPLOY_CUDA_OPERATOR(SoftmaxCrossEntropyGradient);
 #endif
 
 OPERATOR_SCHEMA(SoftmaxCrossEntropy)

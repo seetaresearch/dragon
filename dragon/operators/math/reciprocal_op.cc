@@ -37,14 +37,14 @@ void ReciprocalGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Reciprocal);
+DEPLOY_CPU_OPERATOR(Reciprocal);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Reciprocal);
+DEPLOY_CUDA_OPERATOR(Reciprocal);
 #endif
 
-DEPLOY_CPU(ReciprocalGradient);
+DEPLOY_CPU_OPERATOR(ReciprocalGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ReciprocalGradient);
+DEPLOY_CUDA_OPERATOR(ReciprocalGradient);
 #endif
 
 OPERATOR_SCHEMA(Reciprocal)

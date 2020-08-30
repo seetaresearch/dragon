@@ -91,11 +91,11 @@ void RoiPoolGradientOp<Context>::DoRunWithTypeAndCast() {
 
 template <class Context>
 void RoiPoolGradientOp<Context>::RunOnDevice() {
-  if (XIsType(Input(1), float16)) {
+  if (Input(1).template IsType<float16>()) {
     DoRunWithTypeAndCast<float16>();
-  } else if (XIsType(Input(1), float)) {
+  } else if (Input(1).template IsType<float>()) {
     DoRunWithType<float>();
-  } else if (XIsType(Input(1), double)) {
+  } else if (Input(1).template IsType<double>()) {
     DoRunWithTypeAndCast<double>();
   } else {
     LOG(FATAL) << MessageForUnsupported(
@@ -103,14 +103,14 @@ void RoiPoolGradientOp<Context>::RunOnDevice() {
   };
 }
 
-DEPLOY_CPU(RoiPool);
+DEPLOY_CPU_OPERATOR(RoiPool);
 #ifdef USE_CUDA
-DEPLOY_CUDA(RoiPool);
+DEPLOY_CUDA_OPERATOR(RoiPool);
 #endif
 
-DEPLOY_CPU(RoiPoolGradient);
+DEPLOY_CPU_OPERATOR(RoiPoolGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(RoiPoolGradient);
+DEPLOY_CUDA_OPERATOR(RoiPoolGradient);
 #endif
 
 OPERATOR_SCHEMA(RoiPool)

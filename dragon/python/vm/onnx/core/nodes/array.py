@@ -156,8 +156,7 @@ def flatten_exporter(op_def, shape_dict, ws):
             if arg.i != -1:
                 raise ValueError(
                     'Excepted <num_axes> is -1, '
-                    'got {}.'.format(arg.i)
-                )
+                    'got {}.'.format(arg.i))
         elif arg.name == 'keep_axes':
             raise ValueError('<keep_axes> should not be set.')
     return node, None

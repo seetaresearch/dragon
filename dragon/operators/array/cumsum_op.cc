@@ -23,7 +23,7 @@ void CumSumOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CumSumOp<Context>::RunOnDevice() {
-  DispatchHelper<MathTensorTypes>::Call(this, Input(0));
+  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -48,14 +48,14 @@ void CumSumGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(CumSum);
+DEPLOY_CPU_OPERATOR(CumSum);
 #ifdef USE_CUDA
-DEPLOY_CUDA(CumSum);
+DEPLOY_CUDA_OPERATOR(CumSum);
 #endif
 
-DEPLOY_CPU(CumSumGradient);
+DEPLOY_CPU_OPERATOR(CumSumGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(CumSumGradient);
+DEPLOY_CUDA_OPERATOR(CumSumGradient);
 #endif
 
 OPERATOR_SCHEMA(CumSum)

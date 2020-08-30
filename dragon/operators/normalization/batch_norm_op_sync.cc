@@ -104,7 +104,7 @@ void SyncBatchNormOp<Context>::RunOnDevice() {
 
   // Dispatch the training or inference impl
   Output(0)->ReshapeLike(Input(0));
-  if (XIsType(Input(0), float)) {
+  if (Input(0).template IsType<float>()) {
     if (is_training_ > 0) {
       TrainingImpl<float, float>();
     } else {
@@ -189,7 +189,7 @@ void SyncBatchNormGradientOp<Context>::RunOnDevice() {
 
   // Dispatch the training or inference impl
   Output(0)->ReshapeLike(Input(0));
-  if (XIsType(Input(0), float)) {
+  if (Input(0).template IsType<float>()) {
     if (is_training_ > 0) {
       TrainingImpl<float, float>();
     } else {
@@ -201,14 +201,14 @@ void SyncBatchNormGradientOp<Context>::RunOnDevice() {
   }
 }
 
-DEPLOY_CPU(SyncBatchNorm);
+DEPLOY_CPU_OPERATOR(SyncBatchNorm);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SyncBatchNorm);
+DEPLOY_CUDA_OPERATOR(SyncBatchNorm);
 #endif
 
-DEPLOY_CPU(SyncBatchNormGradient);
+DEPLOY_CPU_OPERATOR(SyncBatchNormGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SyncBatchNormGradient);
+DEPLOY_CUDA_OPERATOR(SyncBatchNormGradient);
 #endif
 
 OPERATOR_SCHEMA(SyncBatchNorm)

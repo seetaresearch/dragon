@@ -107,7 +107,7 @@ void BatchNormOp<Context>::RunOnDevice() {
 
   // Dispatch the training or inference impl
   Output(0)->ReshapeLike(Input(0));
-  if (XIsType(Input(0), float)) {
+  if (Input(0).template IsType<float>()) {
     if (is_training_) {
       TrainingImpl<float, float>();
     } else {
@@ -184,7 +184,7 @@ void BatchNormGradientOp<Context>::RunOnDevice() {
 
   // Dispatch the training or inference impl
   Output(0)->ReshapeLike(Input(0));
-  if (XIsType(Input(0), float)) {
+  if (Input(0).template IsType<float>()) {
     if (is_training_ > 0) {
       TrainingImpl<float, float>();
     } else {
@@ -196,14 +196,14 @@ void BatchNormGradientOp<Context>::RunOnDevice() {
   }
 }
 
-DEPLOY_CPU(BatchNorm);
+DEPLOY_CPU_OPERATOR(BatchNorm);
 #ifdef USE_CUDA
-DEPLOY_CUDA(BatchNorm);
+DEPLOY_CUDA_OPERATOR(BatchNorm);
 #endif
 
-DEPLOY_CPU(BatchNormGradient);
+DEPLOY_CPU_OPERATOR(BatchNormGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(BatchNormGradient);
+DEPLOY_CUDA_OPERATOR(BatchNormGradient);
 #endif
 
 OPERATOR_SCHEMA(BatchNorm)

@@ -26,14 +26,14 @@ void CTCLossGradientOp<Context>::RunOnDevice() {
   DispatchHelper<TensorTypes<float>>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(CTCLoss);
+DEPLOY_CPU_OPERATOR(CTCLoss);
 #ifdef USE_CUDA
-DEPLOY_CUDA(CTCLoss);
+DEPLOY_CUDA_OPERATOR(CTCLoss);
 #endif
 
-DEPLOY_CPU(CTCLossGradient);
+DEPLOY_CPU_OPERATOR(CTCLossGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(CTCLossGradient);
+DEPLOY_CUDA_OPERATOR(CTCLossGradient);
 #endif
 
 OPERATOR_SCHEMA(CTCLoss)

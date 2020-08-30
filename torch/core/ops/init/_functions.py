@@ -38,38 +38,6 @@ class _Initializer(function.Function):
         )
 
 
-class Arange(function.Function):
-    def __init__(self, key, dev, **kwargs):
-        super(Arange, self).__init__(key, dev, **kwargs)
-        self.num_args = kwargs.get('num_args', 3)
-        self.dtype = kwargs.get('dtype', 'int64')
-
-    def attributes(self):
-        return {
-            'op_type': 'Arange',
-            'arguments': {
-                'dtype': self.dtype,
-                'slice_descs': [
-                    '${{HANDLE}}/slice[{}]'
-                    .format(n) for n in range(self.num_args)],
-            }
-        }
-
-    def feed(self, ws, handle, slice_args):
-        for i in range(len(slice_args)):
-            self.feed_arg(
-                ws, '{}/slice[{}]'.format(handle, i),
-                slice_args[i], 'float32')
-
-    def forward(self, slice_args, out=None):
-        return self.dispatch(
-            [], [self.alloc(out)],
-            callback=lambda ws, handle:
-                self.feed(ws, handle, slice_args),
-            no_grad=True,
-        )
-
-
 class Eye(_Initializer):
     def __init__(self, key, dev, **kwargs):
         super(Eye, self).__init__(key, dev, **kwargs)
@@ -104,6 +72,32 @@ class Fill(_Initializer):
                     for n in range(self.ndim)],
             },
         }
+
+
+class Permutation(function.Function):
+    def __init__(self, key, dev, **kwargs):
+        super(Permutation, self).__init__(key, dev, **kwargs)
+        self.dtype = kwargs.get('dtype', 'int64')
+
+    def attributes(self):
+        return {
+            'op_type': 'Permutation',
+            'arguments': {
+                'dtype': self.dtype,
+                'limit_desc': '${HANDLE}/limit',
+            }
+        }
+
+    def feed(self, ws, handle, limit):
+        self.feed_arg(ws, '{}/limit'.format(handle), limit, 'int64')
+
+    def forward(self, limit, out=None):
+        return self.dispatch(
+            [], [self.alloc(out)],
+            callback=lambda ws, handle:
+                self.feed(ws, handle, limit),
+            no_grad=True,
+        )
 
 
 class RandomNormal(_Initializer):
@@ -144,3 +138,35 @@ class RandomUniform(_Initializer):
                     for n in range(self.ndim)],
             },
         }
+
+
+class Range(function.Function):
+    def __init__(self, key, dev, **kwargs):
+        super(Range, self).__init__(key, dev, **kwargs)
+        self.num_args = kwargs.get('num_args', 3)
+        self.dtype = kwargs.get('dtype', 'int64')
+
+    def attributes(self):
+        return {
+            'op_type': 'Range',
+            'arguments': {
+                'dtype': self.dtype,
+                'slice_descs': [
+                    '${{HANDLE}}/slice[{}]'
+                    .format(n) for n in range(self.num_args)],
+            }
+        }
+
+    def feed(self, ws, handle, slice_args):
+        for i in range(len(slice_args)):
+            self.feed_arg(
+                ws, '{}/slice[{}]'.format(handle, i),
+                slice_args[i], 'float32')
+
+    def forward(self, slice_args, out=None):
+        return self.dispatch(
+            [], [self.alloc(out)],
+            callback=lambda ws, handle:
+            self.feed(ws, handle, slice_args),
+            no_grad=True,
+        )

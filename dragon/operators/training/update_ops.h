@@ -22,8 +22,8 @@ class UpdateOpBase : public Operator<Context> {
  public:
   UpdateOpBase(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        lr_mult_(OpArg<float>("lr_mult", 1.f)),
-        decay_mult_(OpArg<float>("decay_mult", 1.f)) {}
+        lr_mult_(OP_SINGLE_ARG(float, "lr_mult", 1.f)),
+        decay_mult_(OP_SINGLE_ARG(float, "decay_mult", 1.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

@@ -49,12 +49,12 @@ void ArgMinOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ArgMinOp<Context>::RunOnDevice() {
-  DispatchHelper<MathTensorTypes>::Call(this, Input(0));
+  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(ArgMin);
+DEPLOY_CPU_OPERATOR(ArgMin);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ArgMin);
+DEPLOY_CUDA_OPERATOR(ArgMin);
 #endif
 
 OPERATOR_SCHEMA(ArgMin)

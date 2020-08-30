@@ -38,19 +38,32 @@ DRAGON_API void TruncatedNormal<float16, CPUContext>(
   CPU_FP16_NOT_SUPPORTED;
 }
 
+#define DEFINE_RANDOM_FUNC(T)                                                 \
+  template <>                                                                 \
+  DRAGON_API void Random<T, CPUContext>(const int n, T* y, CPUContext* ctx) { \
+    auto* rng = ctx->rand_generator();                                        \
+    for (int i = 0; i < n; ++i) {                                             \
+      y[i] = static_cast<T>((*rng)());                                        \
+    }                                                                         \
+  }
+
+DEFINE_RANDOM_FUNC(uint32_t);
+#undef DEFINE_RANDOM_FUNC
+
 #define DEFINE_RANDOM_UNIFORM_FUNC(T, key)                                     \
   template <>                                                                  \
   DRAGON_API void RandomUniform<T, CPUContext>(                                \
       const int n, const float low, const float high, T* y, CPUContext* ctx) { \
     std::uniform_##key##_distribution<T> distribution(low, high);              \
     auto* rng = ctx->rand_generator();                                         \
-    for (int i = 0; i < n; ++i)                                                \
+    for (int i = 0; i < n; ++i) {                                              \
       y[i] = distribution(*rng);                                               \
+    }                                                                          \
   }
 
-DEFINE_RANDOM_UNIFORM_FUNC(uint32_t, int);
 DEFINE_RANDOM_UNIFORM_FUNC(float, real);
 DEFINE_RANDOM_UNIFORM_FUNC(double, real);
+#undef DEFINE_RANDOM_UNIFORM_FUNC
 
 #define DEFINE_RANDOM_NORMAL_FUNC(T)                                           \
   template <>                                                                  \

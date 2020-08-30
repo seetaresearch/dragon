@@ -16,9 +16,9 @@ PythonPluginInferOp<Context>::PythonPluginInferOp(
     const OperatorDef& def,
     Workspace* ws)
     : Operator<Context>(def, ws),
-      module_name_(OpArg<string>("module_name", "")),
-      class_name_(OpArg<string>("class_name", "")),
-      kwargs_str_((OpArg<string>("kwargs_str", ""))) {
+      module_name_(OP_SINGLE_ARG(string, "module_name", "")),
+      class_name_(OP_SINGLE_ARG(string, "class_name", "")),
+      kwargs_str_(OP_SINGLE_ARG(string, "kwargs_str", "")) {
   // Optimization for all python ops
   this->do_sync_ = false;
 
@@ -118,21 +118,21 @@ void PythonPluginGradientOp<Context>::RunOnDevice() {
   }
 }
 
-DEPLOY_CPU(PythonPluginInfer);
+DEPLOY_CPU_OPERATOR(PythonPluginInfer);
 #ifdef USE_CUDA
-DEPLOY_CUDA(PythonPluginInfer);
+DEPLOY_CUDA_OPERATOR(PythonPluginInfer);
 #endif
 OPERATOR_SCHEMA(PythonPluginInfer);
 
-DEPLOY_CPU(PythonPlugin);
+DEPLOY_CPU_OPERATOR(PythonPlugin);
 #ifdef USE_CUDA
-DEPLOY_CUDA(PythonPlugin);
+DEPLOY_CUDA_OPERATOR(PythonPlugin);
 #endif
 OPERATOR_SCHEMA(PythonPlugin);
 
-DEPLOY_CPU(PythonPluginGradient);
+DEPLOY_CPU_OPERATOR(PythonPluginGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(PythonPluginGradient);
+DEPLOY_CUDA_OPERATOR(PythonPluginGradient);
 #endif
 OPERATOR_SCHEMA(PythonPluginGradient);
 

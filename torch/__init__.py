@@ -54,6 +54,7 @@ from dragon.vm.torch.core.ops.array.functional import channel_normalize
 from dragon.vm.torch.core.ops.array.functional import channel_shuffle
 from dragon.vm.torch.core.ops.array.functional import chunk
 from dragon.vm.torch.core.ops.array.functional import cumsum
+from dragon.vm.torch.core.ops.array.functional import flatten
 from dragon.vm.torch.core.ops.array.functional import index_select
 from dragon.vm.torch.core.ops.array.functional import masked_select
 from dragon.vm.torch.core.ops.array.functional import masked_fill
@@ -80,6 +81,7 @@ from dragon.vm.torch.core.ops.init.functional import ones
 from dragon.vm.torch.core.ops.init.functional import ones_like
 from dragon.vm.torch.core.ops.init.functional import rand
 from dragon.vm.torch.core.ops.init.functional import randn
+from dragon.vm.torch.core.ops.init.functional import randperm
 from dragon.vm.torch.core.ops.init.functional import zeros
 from dragon.vm.torch.core.ops.init.functional import zeros_like
 from dragon.vm.torch.core.ops.math.functional import abs

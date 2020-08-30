@@ -81,7 +81,7 @@ template <class Context>
 void CuDNNCTCLossOp<Context>::RunOnDevice() {
   Reshape();
 
-  if (XIsType(Input(0), float)) {
+  if (Input(0).template IsType<float>()) {
     CUDNN_CHECK(cudnnSetCTCLossDescriptor(ctc_desc_, CUDNN_DATA_FLOAT));
     DoRunWithType<float>();
   } else {
@@ -90,7 +90,7 @@ void CuDNNCTCLossOp<Context>::RunOnDevice() {
   }
 }
 
-DEPLOY_CUDNN(CTCLoss);
+DEPLOY_CUDNN_OPERATOR(CTCLoss);
 
 } // namespace dragon
 

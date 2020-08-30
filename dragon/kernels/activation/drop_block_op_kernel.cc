@@ -15,7 +15,7 @@ void _DropBlock2dNCHW(
     const int seed_h,
     const int seed_w,
     const int block_size,
-    const uint32_t* seed,
+    const uint32_t* r,
     int* mask) {
   const int HW = H * W;
   const int CHW = C * HW;
@@ -24,7 +24,7 @@ void _DropBlock2dNCHW(
   std::array<int, 3> dims = {N, seed_h, seed_w};
   int offset;
   for (int i = 0; i < count; ++i) {
-    if (seed[i] > 0) {
+    if (r[i] > 0) {
       offset = idx[0] * CHW + idx[1] * W + idx[2];
       for (int c = 0; c < C; ++c) {
         for (int bh = 0; bh < block_size; ++bh) {
@@ -84,15 +84,15 @@ void DropBlock2d<CPUContext>(
     const int block_size,
     const float gamma,
     const string& data_format,
-    uint32_t* seed,
+    uint32_t* r,
     int* mask,
     CPUContext* ctx) {
   const int count = N * seed_h * seed_w;
-  math::RandomBernoulli(count, gamma, seed, ctx);
+  math::RandomBernoulli(count, gamma, r, ctx);
   if (data_format == "NCHW") {
-    _DropBlock2dNCHW(N, C, H, W, seed_h, seed_w, block_size, seed, mask);
+    _DropBlock2dNCHW(N, C, H, W, seed_h, seed_w, block_size, r, mask);
   } else if (data_format == "NHWC") {
-    _DropBlock2dNHWC(N, C, H, W, seed_h, seed_w, block_size, seed, mask);
+    _DropBlock2dNHWC(N, C, H, W, seed_h, seed_w, block_size, r, mask);
   } else {
     LOG(FATAL) << "Unknown DataFormat: " << data_format;
   }

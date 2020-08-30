@@ -54,8 +54,8 @@ void CuDNNSoftmaxGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CUDNN(Softmax);
-DEPLOY_CUDNN(SoftmaxGradient);
+DEPLOY_CUDNN_OPERATOR(Softmax);
+DEPLOY_CUDNN_OPERATOR(SoftmaxGradient);
 
 } // namespace dragon
 

@@ -19,9 +19,9 @@ void SGDUpdateOp<Context>::ComputeUpdate(Tensor* dX) {
       ctx());
 }
 
-DEPLOY_CPU(SGDUpdate);
+DEPLOY_CPU_OPERATOR(SGDUpdate);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SGDUpdate);
+DEPLOY_CUDA_OPERATOR(SGDUpdate);
 #endif
 
 OPERATOR_SCHEMA(SGDUpdate)

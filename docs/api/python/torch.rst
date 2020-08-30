@@ -94,6 +94,9 @@ vm.torch
   `eye(...) <torch/eye.html>`_
   : Return a tensor constructed as the identity matrix.
 
+  `flatten(...) <torch/flatten.html>`_
+  : Return a tensor with dimensions flattened.
+
   `floor(...) <torch/floor.html>`_
   : Compute the largest integer not greater than input.
 
@@ -184,6 +187,9 @@ vm.torch
   `randn(...) <torch/randn.html>`_
   : Return a tensor from the normal distribution of N(0, 1).
 
+  `randperm(...) <torch/randperm.html>`_
+  : Return a tensor with value in the permuted range.
+
   `reciprocal(...) <torch/reciprocal.html>`_
   : Compute the reciprocal of input.
 
@@ -268,6 +274,7 @@ vm.torch
   torch/eq
   torch/exp
   torch/eye
+  torch/flatten
   torch/floor
   torch/from_numpy
   torch/ge
@@ -299,6 +306,7 @@ vm.torch
   torch/pow
   torch/rand
   torch/randn
+  torch/randperm
   torch/reciprocal
   torch/repeat
   torch/reshape

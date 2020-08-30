@@ -18,40 +18,6 @@ from dragon.core.framework import device_spec
 from dragon.core.framework.ops import Operator
 
 
-class Arange(Operator):
-    def __init__(self, key, dev, **kwargs):
-        super(Arange, self).__init__(key, dev, **kwargs)
-        self.num_args = kwargs.get('num_args', 3)
-        self.dtype = kwargs.get('dtype', 'int64')
-
-    def attributes(self):
-        return {
-            'op_type': 'Arange',
-            'arguments': {
-                'dtype': self.dtype,
-                'slice_descs': [
-                    '${{HANDLE}}/slice[{}]'
-                    .format(n) for n in range(self.num_args)],
-            }
-        }
-
-    def feed(self, ws, handle, slice_args):
-        for i in range(len(slice_args)):
-            self.feed_arg(
-                ws, '{}/slice[{}]'.format(handle, i),
-                slice_args[i], 'float32')
-
-    def forward(self, slice_args, trainable=False):
-        out = self.dispatch(
-            [], [self.alloc()],
-            callback=lambda ws, handle:
-                self.feed(ws, handle, slice_args),
-            no_grad=True,
-        )
-        out._requires_grad = trainable
-        return out
-
-
 class ArgReduce(Operator):
     def __init__(self, key, dev, **kwargs):
         super(ArgReduce, self).__init__(key, dev, **kwargs)
@@ -386,6 +352,68 @@ class Pad(Operator):
             callback=lambda ws, handle:
                 self.feed(ws, handle, pads),
         )
+
+
+class Permutation(Operator):
+    def __init__(self, key, dev, **kwargs):
+        super(Permutation, self).__init__(key, dev, **kwargs)
+        self.dtype = kwargs.get('dtype', 'int64')
+
+    def attributes(self):
+        return {
+            'op_type': 'Permutation',
+            'arguments': {
+                'dtype': self.dtype,
+                'limit_desc': '${HANDLE}/limit',
+            }
+        }
+
+    def feed(self, ws, handle, limit):
+        self.feed_arg(ws, '{}/limit'.format(handle), limit, 'int64')
+
+    def forward(self, limit, trainable=False):
+        out = self.dispatch(
+            [], [self.alloc()],
+            callback=lambda ws, handle:
+                self.feed(ws, handle, limit),
+            no_grad=True,
+        )
+        out._requires_grad = trainable
+        return out
+
+
+class Range(Operator):
+    def __init__(self, key, dev, **kwargs):
+        super(Range, self).__init__(key, dev, **kwargs)
+        self.num_args = kwargs.get('num_args', 3)
+        self.dtype = kwargs.get('dtype', 'int64')
+
+    def attributes(self):
+        return {
+            'op_type': 'Range',
+            'arguments': {
+                'dtype': self.dtype,
+                'slice_descs': [
+                    '${{HANDLE}}/slice[{}]'
+                    .format(n) for n in range(self.num_args)],
+            }
+        }
+
+    def feed(self, ws, handle, slice_args):
+        for i in range(len(slice_args)):
+            self.feed_arg(
+                ws, '{}/slice[{}]'.format(handle, i),
+                slice_args[i], 'float32')
+
+    def forward(self, slice_args, trainable=False):
+        out = self.dispatch(
+            [], [self.alloc()],
+            callback=lambda ws, handle:
+                self.feed(ws, handle, slice_args),
+            no_grad=True,
+        )
+        out._requires_grad = trainable
+        return out
 
 
 class Reduce(Operator):

@@ -59,12 +59,12 @@ void ChannelNormalizeOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ChannelNormalizeOp<Context>::RunOnDevice() {
-  DispatchHelper<MathTensorTypes>::Call(this, Input(0));
+  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(ChannelNormalize);
+DEPLOY_CPU_OPERATOR(ChannelNormalize);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ChannelNormalize);
+DEPLOY_CUDA_OPERATOR(ChannelNormalize);
 #endif
 
 OPERATOR_SCHEMA(ChannelNormalize)

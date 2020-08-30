@@ -15,9 +15,9 @@ void NesterovUpdateOp<Context>::ComputeUpdate(Tensor* dX) {
       ctx());
 }
 
-DEPLOY_CPU(NesterovUpdate);
+DEPLOY_CPU_OPERATOR(NesterovUpdate);
 #ifdef USE_CUDA
-DEPLOY_CUDA(NesterovUpdate);
+DEPLOY_CUDA_OPERATOR(NesterovUpdate);
 #endif
 
 OPERATOR_SCHEMA(NesterovUpdate)

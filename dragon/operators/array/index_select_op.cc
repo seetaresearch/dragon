@@ -7,7 +7,7 @@ namespace dragon {
 
 #define CANONICALIZE_AXES_WITH_TENSOR(tensor)                                 \
   CANONICALIZE_AXIS_WITH_TENSOR(tensor);                                      \
-  auto num_axes = OpArg<int64_t>("num_axes", 1);                              \
+  auto num_axes = OP_SINGLE_ARG(int64_t, "num_axes", 1);                      \
   if (num_axes < 0) {                                                         \
     num_axes = tensor.ndim() - axis;                                          \
   } else if (num_axes == 0) {                                                 \
@@ -24,7 +24,8 @@ void IndexSelectOp<Context>::DoRunWithType() {
   CANONICALIZE_AXES_WITH_TENSOR(X);
 
   CHECK_GT(X_index.count(), 0) << "\nLength of indices must > 0.";
-  CHECK(XIsType(X_index, int64_t)) << "\nType of index should be int64.";
+  CHECK(X_index.template IsType<int64_t>())
+      << "\nType of index should be int64.";
 
   vec64_t X_dims(X.dims());
   vec64_t Y_dims(X_dims.begin(), X_dims.begin() + axis);
@@ -48,7 +49,7 @@ void IndexSelectOp<Context>::DoRunWithType() {
 
 template <class Context>
 void IndexSelectOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -81,14 +82,14 @@ void IndexSelectGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(IndexSelect);
+DEPLOY_CPU_OPERATOR(IndexSelect);
 #ifdef USE_CUDA
-DEPLOY_CUDA(IndexSelect);
+DEPLOY_CUDA_OPERATOR(IndexSelect);
 #endif
 
-DEPLOY_CPU(IndexSelectGradient);
+DEPLOY_CPU_OPERATOR(IndexSelectGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(IndexSelectGradient);
+DEPLOY_CUDA_OPERATOR(IndexSelectGradient);
 #endif
 
 OPERATOR_SCHEMA(IndexSelect)

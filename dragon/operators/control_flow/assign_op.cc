@@ -79,12 +79,12 @@ void AssignOp<Context>::DoRunWithType() {
 
 template <class Context>
 void AssignOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Assign);
+DEPLOY_CPU_OPERATOR(Assign);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Assign);
+DEPLOY_CUDA_OPERATOR(Assign);
 #endif
 
 OPERATOR_SCHEMA(Assign)

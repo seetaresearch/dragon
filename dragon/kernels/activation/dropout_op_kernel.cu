@@ -97,15 +97,15 @@ void Dropout<float16, CUDAContext>(
     const float16* x,
     uint8_t* mask,
     float16* y,
-    uint32_t* scratch,
+    uint32_t* r,
     CUDAContext* ctx) {
-  math::RandomUniform(count, 0.f, 1.f, scratch, ctx);
+  math::Random(count, r, ctx);
   _Dropout<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(
       count,
       static_cast<uint32_t>(UINT_MAX * prob),
       cast::to<half>(scale),
       reinterpret_cast<const half*>(x),
-      scratch,
+      r,
       mask,
       reinterpret_cast<half*>(y));
 }
@@ -130,12 +130,12 @@ void Dropout<float16, CUDAContext>(
       const T* x,                                                            \
       uint8_t* mask,                                                         \
       T* y,                                                                  \
-      uint32_t* scratch,                                                     \
+      uint32_t* r,                                                           \
       CUDAContext* ctx) {                                                    \
-    math::RandomUniform(count, 0.f, 1.f, scratch, ctx);                      \
+    math::Random(count, r, ctx);                                             \
     auto threshold = static_cast<uint32_t>(UINT_MAX * prob);                 \
     _Dropout<<<CUDA_BLOCKS(count), CUDA_THREADS, 0, ctx->cuda_stream()>>>(   \
-        count, threshold, cast::to<T>(scale), x, scratch, mask, y);          \
+        count, threshold, cast::to<T>(scale), x, r, mask, y);                \
   }
 
 DEFINE_KERNEL_LAUNCHER(float);

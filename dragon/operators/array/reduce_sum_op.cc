@@ -54,7 +54,7 @@ void ReduceSumOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ReduceSumOp<Context>::RunOnDevice() {
-  DispatchHelper<MathTensorTypes>::Call(this, Input(0));
+  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -85,14 +85,14 @@ void ReduceSumGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(ReduceSum);
+DEPLOY_CPU_OPERATOR(ReduceSum);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ReduceSum);
+DEPLOY_CUDA_OPERATOR(ReduceSum);
 #endif
 
-DEPLOY_CPU(ReduceSumGradient);
+DEPLOY_CPU_OPERATOR(ReduceSumGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ReduceSumGradient);
+DEPLOY_CUDA_OPERATOR(ReduceSumGradient);
 #endif
 
 OPERATOR_SCHEMA(ReduceSum)

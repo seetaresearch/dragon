@@ -886,10 +886,10 @@ def range(start, limit=None, delta=1, dtype='int64', name=None):
         The output tensor.
 
     """
-    return array_ops.arange(
+    return array_ops.range(
         start=start,
-        stop=limit,
-        step=delta,
+        limit=limit,
+        delta=delta,
         dtype=dtype,
         name=name,
     )

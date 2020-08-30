@@ -10,7 +10,7 @@ template <typename T>
 void MaskedAssignOp<Context>::DoRunWithType() {
   auto &X = Input(0), &X_mask = Input(1), *Y = Output(0);
 
-  CHECK(XIsType(X_mask, bool) || XIsType(X_mask, uint8_t))
+  CHECK(X_mask.template IsType<bool>() || X_mask.template IsType<uint8_t>())
       << "\nExcepted bool or uint8 mask.";
 
   vec64_t X_dims, Y_dims;
@@ -37,12 +37,12 @@ void MaskedAssignOp<Context>::DoRunWithType() {
 
 template <class Context>
 void MaskedAssignOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(MaskedAssign);
+DEPLOY_CPU_OPERATOR(MaskedAssign);
 #ifdef USE_CUDA
-DEPLOY_CUDA(MaskedAssign);
+DEPLOY_CUDA_OPERATOR(MaskedAssign);
 #endif
 
 OPERATOR_SCHEMA(MaskedAssign)

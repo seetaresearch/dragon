@@ -24,8 +24,8 @@ class CollectiveOp final : public CollectiveOpBase<Context> {
  public:
   CollectiveOp(const OperatorDef& def, Workspace* ws)
       : CollectiveOpBase<Context>(def, ws),
-        communication_(OpArg<string>("communication", "")),
-        operation_(OpArg<string>("operation", "MEAN")) {}
+        communication_(OP_SINGLE_ARG(string, "communication", "")),
+        operation_(OP_SINGLE_ARG(string, "operation", "MEAN")) {}
   USE_OPERATOR_FUNCTIONS;
   USE_COLLECTIVE_FUNCTIONS;
 

@@ -23,7 +23,7 @@ import sys
 from dragon.core.util import six
 
 PICKLE_MODULE = six.moves.pickle
-DEFAULT_PROTOCOL = PICKLE_MODULE.HIGHEST_PROTOCOL
+DEFAULT_PROTOCOL = 2
 
 
 def save(obj, f, pickle_module=PICKLE_MODULE, pickle_protocol=DEFAULT_PROTOCOL):

@@ -36,7 +36,7 @@ void ExpandOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ExpandOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -71,14 +71,14 @@ void ExpandGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Expand);
+DEPLOY_CPU_OPERATOR(Expand);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Expand);
+DEPLOY_CUDA_OPERATOR(Expand);
 #endif
 
-DEPLOY_CPU(ExpandGradient);
+DEPLOY_CPU_OPERATOR(ExpandGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ExpandGradient);
+DEPLOY_CUDA_OPERATOR(ExpandGradient);
 #endif
 
 OPERATOR_SCHEMA(Expand)

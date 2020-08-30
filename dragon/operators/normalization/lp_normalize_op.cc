@@ -5,16 +5,16 @@
 
 namespace dragon {
 
-#define CANONICALIZE_AXES_WITH_TENSOR(tensor)         \
-  CANONICALIZE_AXIS_WITH_TENSOR(tensor);              \
-  auto num_axes = OpArg<int64_t>("num_axes", 1);      \
-  if (num_axes < 0) {                                 \
-    num_axes = tensor.ndim() - axis;                  \
-  } else if (num_axes == 0) {                         \
-    num_axes = 1;                                     \
-  }                                                   \
-  CHECK(axis + num_axes <= tensor.ndim())             \
-      << "\nInvalid number of axes. Got " << num_axes \
+#define CANONICALIZE_AXES_WITH_TENSOR(tensor)            \
+  CANONICALIZE_AXIS_WITH_TENSOR(tensor);                 \
+  auto num_axes = OP_SINGLE_ARG(int64_t, "num_axes", 1); \
+  if (num_axes < 0) {                                    \
+    num_axes = tensor.ndim() - axis;                     \
+  } else if (num_axes == 0) {                            \
+    num_axes = 1;                                        \
+  }                                                      \
+  CHECK(axis + num_axes <= tensor.ndim())                \
+      << "\nInvalid number of axes. Got " << num_axes    \
       << ", excepted in the range [1, " << tensor.ndim() - axis << "]."
 
 template <class Context>
@@ -94,14 +94,14 @@ void LpNormalizeGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(LpNormalize);
+DEPLOY_CPU_OPERATOR(LpNormalize);
 #ifdef USE_CUDA
-DEPLOY_CUDA(LpNormalize);
+DEPLOY_CUDA_OPERATOR(LpNormalize);
 #endif
 
-DEPLOY_CPU(LpNormalizeGradient);
+DEPLOY_CPU_OPERATOR(LpNormalizeGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(LpNormalizeGradient);
+DEPLOY_CUDA_OPERATOR(LpNormalizeGradient);
 #endif
 
 OPERATOR_SCHEMA(LpNormalize)

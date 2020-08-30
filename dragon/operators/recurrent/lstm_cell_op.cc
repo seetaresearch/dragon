@@ -19,13 +19,7 @@ template <class Context>
 void LSTMCellOp<Context>::RunOnDevice() {
   Output(0)->ReshapeLike(Input(1));
   Output(1)->ReshapeLike(Input(1));
-
-  if (XIsType(Input(0), float)) {
-    DoRunWithType<float>();
-  } else {
-    LOG(FATAL) << MessageForUnsupported(
-        types::to_string(Input(0).meta()), {"float32"});
-  }
+  DispatchHelper<TensorTypes<float>>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -51,29 +45,22 @@ template <class Context>
 void LSTMCellGradientOp<Context>::RunOnDevice() {
   Output(0)->ReshapeLike(Input(0));
   Output(1)->ReshapeLike(Input(1));
-
   if (!Input(-1).has_name()) {
     // dC will be ignored if C is not solved
     // We should Zero-Reset the dC
     Input(-1).ReshapeLike(Input(-2));
   }
-
-  if (XIsType(Input(0), float)) {
-    DoRunWithType<float>();
-  } else {
-    LOG(FATAL) << MessageForUnsupported(
-        types::to_string(Input(0).meta()), {"float32"});
-  }
+  DispatchHelper<TensorTypes<float>>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(LSTMCell);
+DEPLOY_CPU_OPERATOR(LSTMCell);
 #ifdef USE_CUDA
-DEPLOY_CUDA(LSTMCell);
+DEPLOY_CUDA_OPERATOR(LSTMCell);
 #endif
 
-DEPLOY_CPU(LSTMCellGradient);
+DEPLOY_CPU_OPERATOR(LSTMCellGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(LSTMCellGradient);
+DEPLOY_CUDA_OPERATOR(LSTMCellGradient);
 #endif
 
 OPERATOR_SCHEMA(LSTMCell)

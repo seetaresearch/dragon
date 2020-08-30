@@ -255,40 +255,50 @@ DEFINE_REGISTRY(
 
 /* Macros */
 
-#define INSTANTIATE_GET_SINGLE_ARGUMENT(T, fieldname)                          \
-  template <>                                                                  \
-  DRAGON_API T OperatorBase::Arg(const string& name, const T& default_value) { \
-    if (args_.count(name) == 0) {                                              \
-      return default_value;                                                    \
-    }                                                                          \
-    CHECK(args_[name]->has_##fieldname());                                     \
-    return static_cast<T>(args_[name]->fieldname());                           \
+#define INSTANTIATE_GET_SINGLE_ARGUMENT(T, fieldname, default) \
+  template <>                                                  \
+  DRAGON_API T OperatorBase::GetArgument(                      \
+      const string& name, const T& default_value) {            \
+    if (args_.count(name) == 0) return default_value;          \
+    CHECK(args_[name]->has_##fieldname());                     \
+    return static_cast<T>(args_[name]->fieldname());           \
+  }                                                            \
+  template <>                                                  \
+  DRAGON_API T OperatorBase::GetArgument(const string& name) { \
+    return OperatorBase::GetArgument<T>(name, default);        \
   }
 
-INSTANTIATE_GET_SINGLE_ARGUMENT(float, f)
-INSTANTIATE_GET_SINGLE_ARGUMENT(double, f)
-INSTANTIATE_GET_SINGLE_ARGUMENT(int, i)
-INSTANTIATE_GET_SINGLE_ARGUMENT(bool, i)
-INSTANTIATE_GET_SINGLE_ARGUMENT(int64_t, i)
-INSTANTIATE_GET_SINGLE_ARGUMENT(string, s)
+INSTANTIATE_GET_SINGLE_ARGUMENT(float, f, 0.f)
+INSTANTIATE_GET_SINGLE_ARGUMENT(double, f, 0.);
+INSTANTIATE_GET_SINGLE_ARGUMENT(int, i, 0);
+INSTANTIATE_GET_SINGLE_ARGUMENT(bool, i, false);
+INSTANTIATE_GET_SINGLE_ARGUMENT(int64_t, i, int64_t(0));
+INSTANTIATE_GET_SINGLE_ARGUMENT(string, s, "");
 #undef INSTANTIATE_GET_SINGLE_ARGUMENT
 
-#define INSTANTIATE_GET_REPEATED_ARGUMENT(T, fieldname)            \
-  template <>                                                      \
-  vector<T> DRAGON_API OperatorBase::Args<T>(const string& name) { \
-    if (args_.count(name) == 0) return vector<T>();                \
-    vector<T> values;                                              \
-    for (const auto& v : args_[name]->fieldname())                 \
-      values.push_back(static_cast<T>(v));                         \
-    return values;                                                 \
+#define INSTANTIATE_GET_REPEATED_ARGUMENT(T, fieldname)             \
+  template <>                                                       \
+  vector<T> DRAGON_API OperatorBase::GetArgument<vector<T>>(        \
+      const string& name, const vector<T>& default_value) {         \
+    if (args_.count(name) == 0) return default_value;               \
+    vector<T> values;                                               \
+    for (const auto& v : args_[name]->fieldname()) {                \
+      values.push_back(static_cast<T>(v));                          \
+    }                                                               \
+    return values;                                                  \
+  }                                                                 \
+  template <>                                                       \
+  vector<T> DRAGON_API OperatorBase::GetArgument<vector<T>>(        \
+      const string& name) {                                         \
+    return OperatorBase::GetArgument<vector<T>>(name, vector<T>()); \
   }
 
-INSTANTIATE_GET_REPEATED_ARGUMENT(float, floats)
-INSTANTIATE_GET_REPEATED_ARGUMENT(double, floats)
-INSTANTIATE_GET_REPEATED_ARGUMENT(int, ints)
-INSTANTIATE_GET_REPEATED_ARGUMENT(bool, ints)
-INSTANTIATE_GET_REPEATED_ARGUMENT(int64_t, ints)
-INSTANTIATE_GET_REPEATED_ARGUMENT(string, strings)
+INSTANTIATE_GET_REPEATED_ARGUMENT(float, floats);
+INSTANTIATE_GET_REPEATED_ARGUMENT(double, floats);
+INSTANTIATE_GET_REPEATED_ARGUMENT(int, ints);
+INSTANTIATE_GET_REPEATED_ARGUMENT(bool, ints);
+INSTANTIATE_GET_REPEATED_ARGUMENT(int64_t, ints);
+INSTANTIATE_GET_REPEATED_ARGUMENT(string, strings);
 #undef INSTANTIATE_GET_REPEATED_ARGUMENT
 
 template class Operator<CPUContext>;

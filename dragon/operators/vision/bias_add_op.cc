@@ -73,14 +73,14 @@ void BiasAddGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(BiasAdd);
+DEPLOY_CPU_OPERATOR(BiasAdd);
 #ifdef USE_CUDA
-DEPLOY_CUDA(BiasAdd);
+DEPLOY_CUDA_OPERATOR(BiasAdd);
 #endif
 
-DEPLOY_CPU(BiasAddGradient);
+DEPLOY_CPU_OPERATOR(BiasAddGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(BiasAddGradient);
+DEPLOY_CUDA_OPERATOR(BiasAddGradient);
 #endif
 
 OPERATOR_SCHEMA(BiasAdd)

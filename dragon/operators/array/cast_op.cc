@@ -39,21 +39,21 @@ namespace dragon {
   LOG(FATAL) << MessageForUnsupported(dtype(), ELIGIBLE_TENSOR_TYPES);
 
 #define DISPATCH_WITH_TENSOR(X)                             \
-  if (XIsType(X, bool)) {                                   \
+  if (X.template IsType<bool>()) {                          \
     DISPATCH_TYPE_TO_ALL(bool);                             \
-  } else if (XIsType(X, int8_t)) {                          \
+  } else if (X.template IsType<int8_t>()) {                 \
     DISPATCH_TYPE_TO_ALL(int8_t);                           \
-  } else if (XIsType(X, uint8_t)) {                         \
+  } else if (X.template IsType<uint8_t>()) {                \
     DISPATCH_TYPE_TO_ALL(uint8_t);                          \
-  } else if (XIsType(X, int)) {                             \
+  } else if (X.template IsType<int>()) {                    \
     DISPATCH_TYPE_TO_ALL(int);                              \
-  } else if (XIsType(X, int64_t)) {                         \
+  } else if (X.template IsType<int64_t>()) {                \
     DISPATCH_TYPE_TO_ALL(int64_t);                          \
-  } else if (XIsType(X, float16)) {                         \
+  } else if (X.template IsType<float16>()) {                \
     DISPATCH_TYPE_TO_ALL(float16);                          \
-  } else if (XIsType(X, float)) {                           \
+  } else if (X.template IsType<float>()) {                  \
     DISPATCH_TYPE_TO_ALL(float);                            \
-  } else if (XIsType(X, double)) {                          \
+  } else if (X.template IsType<double>()) {                 \
     DISPATCH_TYPE_TO_ALL(double);                           \
   } else {                                                  \
     LOG(FATAL) << MessageForUnsupported(                    \
@@ -78,14 +78,14 @@ void CastGradientOp<Context>::RunOnDevice() {
   DISPATCH_WITH_TENSOR(Input(-1));
 }
 
-DEPLOY_CPU(Cast);
+DEPLOY_CPU_OPERATOR(Cast);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Cast);
+DEPLOY_CUDA_OPERATOR(Cast);
 #endif
 
-DEPLOY_CPU(CastGradient);
+DEPLOY_CPU_OPERATOR(CastGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(CastGradient);
+DEPLOY_CUDA_OPERATOR(CastGradient);
 #endif
 
 OPERATOR_SCHEMA(Cast)

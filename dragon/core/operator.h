@@ -74,13 +74,13 @@ class DRAGON_API OperatorBase {
     return (int)outputs_.size();
   }
 
-  /*! \brief Return the value of single argument */
+  /*! \brief Return the value of argument */
   template <typename T>
-  T Arg(const string& name, const T& default_value);
+  T GetArgument(const string& name);
 
-  /*! \brief Return the value of repeated argument */
+  /*! \brief Return the value of argument with default */
   template <typename T>
-  vector<T> Args(const string& name);
+  T GetArgument(const string& name, const T& default_value);
 
   /*! \brief Return the message for supported value */
   string MessageForUnsupported(
@@ -199,7 +199,7 @@ class DRAGON_API Operator : public OperatorBase {
   Operator(const OperatorDef& def, Workspace* ws)
       : OperatorBase(def, ws),
         ctx_(def.device_option()),
-        do_sync_(OperatorBase::Arg<bool>("do_sync", false)) {}
+        do_sync_(OperatorBase::GetArgument<bool>("do_sync", false)) {}
 
   /*! \brief Prepare the content of inputs */
   virtual void Prepare();
@@ -279,19 +279,20 @@ OperatorBase* NewOperator(const OperatorDef&, Workspace*);
 
 /* Dispatchers */
 
-#define XIsType(X, type) X.template IsType<type>()
-
 template <typename... Types>
 struct TensorTypes {};
 
-using IntegralTensorTypes = TensorTypes<bool, int8_t, uint8_t, int, int64_t>;
+using IntegralTensorTypes = TensorTypes<int8_t, uint8_t, int, int64_t>;
 
 using FloatingTensorTypes = TensorTypes<float16, float, double>;
 
-using MathTensorTypes =
+using NumericalTensorTypes =
     TensorTypes<int8_t, uint8_t, int, int64_t, float16, float, double>;
 
-using AllTensorTypes =
+using BooleanIntegralTensorTypes =
+    TensorTypes<bool, int8_t, uint8_t, int, int64_t, bool>;
+
+using FullTensorTypes =
     TensorTypes<bool, int8_t, uint8_t, int, int64_t, float16, float, double>;
 
 template <typename Sizes, typename... Args>
@@ -382,30 +383,33 @@ DEFINE_TENSOR_TYPES_DISPATCHER(DoRunWithType);
 
 /* Arguments */
 
-#define OpArg OperatorBase::Arg
-#define OpArgs OperatorBase::Args
+#define OP_SINGLE_ARG(type, name, default) \
+  OperatorBase::GetArgument<type>(name, (default))
 
-#define DECLARE_ARG_WITH_DESC(type, arg) \
-  type arg##_;                           \
-  string arg##_desc_;                    \
+#define OP_REPEATED_ARG(type, name) \
+  OperatorBase::GetArgument<vector<type>>(name)
+
+#define DECLARE_OP_SINGLE_ARG_WITH_DESC(type, arg) \
+  type arg##_;                                     \
+  string arg##_desc_;                              \
   type arg()
 
-#define DECLARE_ARGS_WITH_DESC(type, arg) \
-  string arg##_desc_;                     \
-  vector<type> arg##_;                    \
-  vector<string> arg##_descs_;            \
+#define DECLARE_OP_REPEATED_ARG_WITH_DESC(type, arg) \
+  string arg##_desc_;                                \
+  vector<type> arg##_;                               \
+  vector<string> arg##_descs_;                       \
   type arg(int i, int* num = nullptr)
 
-#define GET_ARG_WITH_DESC(type, arg, default_value) \
-  arg##_ = OpArg<type>(#arg, default_value);        \
-  arg##_desc_ = OpArg<string>(string(#arg) + "_desc", "")
+#define INIT_OP_SINGLE_ARG_WITH_DESC(type, arg, default_value) \
+  arg##_ = OP_SINGLE_ARG(type, #arg, default_value);           \
+  arg##_desc_ = OP_SINGLE_ARG(string, string(#arg) + "_desc", "")
 
-#define GET_ARGS_WITH_DESC(type, arg)                      \
-  arg##_ = OpArgs<type>(#arg);                             \
-  arg##_desc_ = OpArg<string>(string(#arg) + "_desc", ""); \
-  arg##_descs_ = OpArgs<string>(string(#arg) + "_descs")
+#define INIT_OP_REPEATED_ARG_WITH_DESC(type, arg)                  \
+  arg##_ = OP_REPEATED_ARG(type, #arg);                            \
+  arg##_desc_ = OP_SINGLE_ARG(string, string(#arg) + "_desc", ""); \
+  arg##_descs_ = OP_REPEATED_ARG(string, string(#arg) + "_descs")
 
-#define DEFINE_ARG_WITH_DESC(type, classname, arg)                \
+#define DEFINE_OP_SINGLE_ARG_WITH_DESC(type, classname, arg)      \
   template <class Context>                                        \
   type classname<Context>::arg() {                                \
     if (arg##_desc_.empty()) return arg##_;                       \
@@ -419,7 +423,7 @@ DEFINE_TENSOR_TYPES_DISPATCHER(DoRunWithType);
     return arg##_tensor->template data<type, CPUContext>()[0];    \
   }
 
-#define DEFINE_ARGS_WITH_DESC(type, classname, arg)                         \
+#define DEFINE_OP_REPEATED_ARG_WITH_DESC(type, classname, arg)              \
   template <class Context>                                                  \
   type classname<Context>::arg(int i, int* num) {                           \
     const type* data;                                                       \
@@ -451,13 +455,13 @@ DEFINE_TENSOR_TYPES_DISPATCHER(DoRunWithType);
   }
 
 #define CANONICALIZE_AXIS_WITH_TENSOR_AND_OFFSET(tensor, offset)         \
-  auto axis = OpArg<int64_t>("axis", INT_MAX);                           \
+  auto axis = OP_SINGLE_ARG(int64_t, "axis", INT_MAX);                   \
   if (axis != INT_MAX) {                                                 \
     axis = axis < 0 ? axis + tensor.ndim() + offset : axis;              \
     CHECK(axis >= 0 && axis < tensor.ndim() + offset)                    \
         << "\nExcepted the axis in [-" << tensor.ndim() + offset << ", " \
         << tensor.ndim() + offset << "), got "                           \
-        << OpArg<int64_t>("axis", INT_MAX) << ".";                       \
+        << OP_SINGLE_ARG(int64_t, "axis", INT_MAX) << ".";               \
   }
 
 #define CANONICALIZE_AXIS_WITH_TENSOR(tensor) \
@@ -509,24 +513,24 @@ DECLARE_REGISTRY(
 #define REGISTER_CNML_OPERATOR(name, ...) \
   REGISTER_CLASS(CNMLOperatorRegistry, name, __VA_ARGS__)
 
-#define DEPLOY_CPU(name)                             \
+#define DEPLOY_CPU_OPERATOR(name)                    \
   REGISTER_CPU_OPERATOR(name, name##Op<CPUContext>); \
   INSTANTIATE_OPERATOR(name, CPUContext);
 
-#define DEPLOY_CUDA(name)                              \
+#define DEPLOY_CUDA_OPERATOR(name)                     \
   REGISTER_CUDA_OPERATOR(name, name##Op<CUDAContext>); \
   INSTANTIATE_OPERATOR(name, CUDAContext);
 
-#define DEPLOY_CPU_CUDA(name)                         \
+#define DEPLOY_CPU_CUDA_OPERATOR(name)                \
   REGISTER_CPU_OPERATOR(name, name##Op<CPUContext>);  \
   REGISTER_CUDA_OPERATOR(name, name##Op<CPUContext>); \
   INSTANTIATE_OPERATOR(name, CPUContext);
 
-#define DEPLOY_CUDNN(name)                                     \
+#define DEPLOY_CUDNN_OPERATOR(name)                            \
   REGISTER_CUDNN_OPERATOR(name, CuDNN##name##Op<CUDAContext>); \
   INSTANTIATE_CUDNN_OPERATOR(name);
 
-#define DEPLOY_CNML(name)                                    \
+#define DEPLOY_CNML_OPERATOR(name)                           \
   REGISTER_CNML_OPERATOR(name, CnML##name##Op<CNMLContext>); \
   INSTANTIATE_CNML_OPERATOR(name);
 

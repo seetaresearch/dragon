@@ -22,8 +22,8 @@ class NLLLossOp final : public Operator<Context> {
  public:
   NLLLossOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        ignore_index_(OpArg<int64_t>("ignore_index", -1)),
-        reduction_(OpArg<string>("reduction", "VALID")) {}
+        ignore_index_(OP_SINGLE_ARG(int64_t, "ignore_index", -1)),
+        reduction_(OP_SINGLE_ARG(string, "reduction", "VALID")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -41,8 +41,8 @@ class NLLLossGradientOp final : public Operator<Context> {
  public:
   NLLLossGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        ignore_index_(OpArg<int64_t>("ignore_index", -1)),
-        reduction_(OpArg<string>("reduction", "VALID")) {}
+        ignore_index_(OP_SINGLE_ARG(int64_t, "ignore_index", -1)),
+        reduction_(OP_SINGLE_ARG(string, "reduction", "VALID")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

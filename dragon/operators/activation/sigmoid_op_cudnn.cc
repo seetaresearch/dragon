@@ -50,8 +50,8 @@ void CuDNNSigmoidGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CUDNN(Sigmoid);
-DEPLOY_CUDNN(SigmoidGradient);
+DEPLOY_CUDNN_OPERATOR(Sigmoid);
+DEPLOY_CUDNN_OPERATOR(SigmoidGradient);
 
 } // namespace dragon
 

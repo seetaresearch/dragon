@@ -25,14 +25,14 @@ void LRNGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(-1));
 }
 
-DEPLOY_CPU(LRN);
+DEPLOY_CPU_OPERATOR(LRN);
 #ifdef USE_CUDA
-DEPLOY_CUDA(LRN);
+DEPLOY_CUDA_OPERATOR(LRN);
 #endif
 
-DEPLOY_CPU(LRNGradient);
+DEPLOY_CPU_OPERATOR(LRNGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(LRNGradient);
+DEPLOY_CUDA_OPERATOR(LRNGradient);
 #endif
 
 OPERATOR_SCHEMA(LRN)

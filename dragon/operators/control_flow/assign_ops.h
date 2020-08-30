@@ -21,8 +21,8 @@ template <class Context>
 class AssignOp final : public Operator<Context> {
  public:
   AssignOp(const OperatorDef& def, Workspace* ws) : Operator<Context>(def, ws) {
-    GET_ARGS_WITH_DESC(int64_t, starts);
-    GET_ARGS_WITH_DESC(int64_t, sizes);
+    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, starts);
+    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, sizes);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -32,8 +32,8 @@ class AssignOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  DECLARE_ARGS_WITH_DESC(int64_t, starts);
-  DECLARE_ARGS_WITH_DESC(int64_t, sizes);
+  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, starts);
+  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, sizes);
 };
 
 template <class Context>
@@ -48,8 +48,8 @@ class MaskedAssignOp final : public Operator<Context> {
   void DoRunWithType();
 };
 
-DEFINE_ARGS_WITH_DESC(int64_t, AssignOp, starts);
-DEFINE_ARGS_WITH_DESC(int64_t, AssignOp, sizes);
+DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, AssignOp, starts);
+DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, AssignOp, sizes);
 
 } // namespace dragon
 

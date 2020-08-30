@@ -29,14 +29,14 @@ void SqueezeOp<Context>::RunOnDevice() {
   Y->Reshape(out_shape)->CopyFrom(X, ctx());
 }
 
-DEPLOY_CPU(Squeeze);
+DEPLOY_CPU_OPERATOR(Squeeze);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Squeeze);
+DEPLOY_CUDA_OPERATOR(Squeeze);
 #endif
 
-DEPLOY_CPU(SqueezeGradient);
+DEPLOY_CPU_OPERATOR(SqueezeGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SqueezeGradient);
+DEPLOY_CUDA_OPERATOR(SqueezeGradient);
 #endif
 
 OPERATOR_SCHEMA(Squeeze)

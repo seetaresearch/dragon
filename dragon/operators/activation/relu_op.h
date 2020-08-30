@@ -22,8 +22,8 @@ class ReluOp : public Operator<Context> {
  public:
   ReluOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        alpha_(OpArg<float>("alpha", 0.f)),
-        max_value_(OpArg<float>("max_value", 0.f)) {}
+        alpha_(OP_SINGLE_ARG(float, "alpha", 0.f)),
+        max_value_(OP_SINGLE_ARG(float, "max_value", 0.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -40,8 +40,8 @@ class ReluGradientOp : public Operator<Context> {
  public:
   ReluGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        alpha_(OpArg<float>("alpha", 0.f)),
-        max_value_(OpArg<float>("max_value", 0.f)) {}
+        alpha_(OP_SINGLE_ARG(float, "alpha", 0.f)),
+        max_value_(OP_SINGLE_ARG(float, "max_value", 0.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

@@ -50,8 +50,8 @@ void CuDNNTanhGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CUDNN(Tanh);
-DEPLOY_CUDNN(TanhGradient);
+DEPLOY_CUDNN_OPERATOR(Tanh);
+DEPLOY_CUDNN_OPERATOR(TanhGradient);
 
 } // namespace dragon
 

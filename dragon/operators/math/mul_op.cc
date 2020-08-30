@@ -40,7 +40,7 @@ void MulOp<Context>::DoRunWithType() {
 
 template <class Context>
 void MulOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -174,14 +174,14 @@ void MulGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(2));
 }
 
-DEPLOY_CPU(Mul);
+DEPLOY_CPU_OPERATOR(Mul);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Mul);
+DEPLOY_CUDA_OPERATOR(Mul);
 #endif
 
-DEPLOY_CPU(MulGradient);
+DEPLOY_CPU_OPERATOR(MulGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(MulGradient);
+DEPLOY_CUDA_OPERATOR(MulGradient);
 #endif
 
 OPERATOR_SCHEMA(Mul)

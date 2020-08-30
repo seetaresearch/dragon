@@ -19,9 +19,9 @@ void SignGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(SignGradient);
+DEPLOY_CPU_OPERATOR(SignGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SignGradient);
+DEPLOY_CUDA_OPERATOR(SignGradient);
 #endif
 
 OPERATOR_SCHEMA(SignGradient)

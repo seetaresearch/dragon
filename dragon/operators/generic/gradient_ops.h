@@ -21,7 +21,8 @@ template <class Context>
 class GradientGenerateOp final : public Operator<Context> {
  public:
   GradientGenerateOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws), defaults_(OpArgs<float>("defaults")) {}
+      : Operator<Context>(def, ws),
+        defaults_(OP_REPEATED_ARG(float, "defaults")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

@@ -44,7 +44,7 @@ void CuDNNBiasAddGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CUDNN(BiasAddGradient);
+DEPLOY_CUDNN_OPERATOR(BiasAddGradient);
 
 } // namespace dragon
 

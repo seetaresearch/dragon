@@ -75,7 +75,7 @@ def arange(
         slice_args = start, step
     else:
         slice_args = start, end, step
-    out = _functions.Arange \
+    out = _functions.Range \
         .instantiate(
             device if device else cpp.device(),
             num_args=len(slice_args),
@@ -265,6 +265,40 @@ def randn(*size, **kwargs):
     """
     out = kwargs.get('out', utils.new_leaf(size, kwargs))
     return normal_fill(out, 0, 1)
+
+
+def randperm(n, out=None, dtype='int64', device=None, requires_grad=False):
+    """Return a tensor with value in the permuted range.
+
+    Specify ``n`` to determine an interval :math:`[0, n)`:
+
+    ```python
+    print(torch.randperm(4))
+    ```
+
+    Parameters
+    ----------
+    n: number
+        The end of interval.
+    out : dragon.vm.torch.Tensor, optional
+        The optional output tensor.
+    dtype : str, optional, default='int64'
+        The optional data type.
+    device : dragon.vm.torch.device, optional
+        The optional device of returned tensor.
+    requires_grad : bool, optional, default=False
+        **True** to record gradient for returned tensor.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+
+    """
+    out = out if out else utils.new_leaf([n], locals())
+    return _functions.Permutation \
+        .instantiate(out.device, dtype=out.dtype) \
+        .apply(n, out)
 
 
 def uniform_fill(input, low=0, high=1):

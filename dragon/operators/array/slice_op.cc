@@ -66,7 +66,7 @@ void SliceOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SliceOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -102,17 +102,17 @@ void SliceGradientOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SliceGradientOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Slice);
+DEPLOY_CPU_OPERATOR(Slice);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Slice);
+DEPLOY_CUDA_OPERATOR(Slice);
 #endif
 
-DEPLOY_CPU(SliceGradient);
+DEPLOY_CPU_OPERATOR(SliceGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SliceGradient);
+DEPLOY_CUDA_OPERATOR(SliceGradient);
 #endif
 
 OPERATOR_SCHEMA(Slice)

@@ -10,7 +10,7 @@ void WhereOp<Context>::DoRunWithType() {
   auto &A = Input(0), &B = Input(1);
   auto &C = Input(2), *Y = Output(0);
 
-  CHECK(XIsType(C, bool) || XIsType(C, uint8_t))
+  CHECK(C.template IsType<bool>() || C.template IsType<uint8_t>())
       << "\nExcepted bool or uint8 condition tensor.";
 
   vec64_t AB_dims, Y_dims;
@@ -36,7 +36,7 @@ void WhereOp<Context>::DoRunWithType() {
 
 template <class Context>
 void WhereOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -45,7 +45,7 @@ void WhereGradientOp<Context>::DoRunWithType() {
   auto &A = Input(0), &B = Input(1), &C = Input(2), &dY = Input(3);
   auto *dA = Output(0), *dB = Output(1);
 
-  CHECK(XIsType(C, bool) || XIsType(C, uint8_t))
+  CHECK(C.template IsType<bool>() || C.template IsType<uint8_t>())
       << "\nExcepted bool or uint8 condition tensor.";
 
   vec32_t A_broadcast_axes, B_broadcast_axes;
@@ -155,14 +155,14 @@ void WhereGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Where);
+DEPLOY_CPU_OPERATOR(Where);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Where);
+DEPLOY_CUDA_OPERATOR(Where);
 #endif
 
-DEPLOY_CPU(WhereGradient);
+DEPLOY_CPU_OPERATOR(WhereGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(WhereGradient);
+DEPLOY_CUDA_OPERATOR(WhereGradient);
 #endif
 
 OPERATOR_SCHEMA(Where)

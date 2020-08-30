@@ -7,9 +7,9 @@ void ShapeOp<Context>::RunOnDevice() {
   Output(0)->template CopyFrom<int64_t>(Input(0).dims());
 }
 
-DEPLOY_CPU(Shape);
+DEPLOY_CPU_OPERATOR(Shape);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Shape);
+DEPLOY_CUDA_OPERATOR(Shape);
 #endif
 
 OPERATOR_SCHEMA(Shape)

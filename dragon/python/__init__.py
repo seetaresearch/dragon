@@ -54,7 +54,6 @@ from dragon.core.framework.workspace import get_workspace
 from dragon.core.framework.workspace import reset_workspace
 from dragon.core.ops import tensorbind_eager as _
 from dragon.core.ops import tensorbind_symbol as _
-from dragon.core.ops.array_ops import arange
 from dragon.core.ops.array_ops import broadcast_to
 from dragon.core.ops.array_ops import cast
 from dragon.core.ops.array_ops import channel_normalize
@@ -67,6 +66,7 @@ from dragon.core.ops.array_ops import masked_select
 from dragon.core.ops.array_ops import nonzero
 from dragon.core.ops.array_ops import one_hot
 from dragon.core.ops.array_ops import pad
+from dragon.core.ops.array_ops import range
 from dragon.core.ops.array_ops import repeat
 from dragon.core.ops.array_ops import reshape
 from dragon.core.ops.array_ops import shape

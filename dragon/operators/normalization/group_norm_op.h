@@ -22,15 +22,15 @@ class GroupNormOpBase : public Operator<Context> {
  public:
   GroupNormOpBase(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        group_(OpArg<int64_t>("group", 0)),
-        epsilon_(OpArg<double>("epsilon", 1e-5)) {}
+        group_(OP_SINGLE_ARG(int64_t, "group", 0)),
+        epsilon_(OP_SINGLE_ARG(double, "epsilon", 1e-5)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void DetermineBaseArguments() {
     auto& X = Input(0);
     // Determine the data format
     this->data_format_ = "NCHW";
-    auto axis = OpArg<int64_t>("axis", -1);
+    auto axis = OP_SINGLE_ARG(int64_t, "axis", -1);
     if (axis == -1) axis += X.ndim();
     if (axis + 1 == X.ndim()) this->data_format_ = "NHWC";
     if (X.ndim() == 2) this->data_format_ = "NCHW";

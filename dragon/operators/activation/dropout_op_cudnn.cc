@@ -119,8 +119,8 @@ void CuDNNDropoutGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CUDNN(Dropout);
-DEPLOY_CUDNN(DropoutGradient);
+DEPLOY_CUDNN_OPERATOR(Dropout);
+DEPLOY_CUDNN_OPERATOR(DropoutGradient);
 
 } // namespace dragon
 

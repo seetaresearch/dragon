@@ -73,14 +73,14 @@ void Conv2dGradientOp<Context>::RunOnDevice() {
   DispatchHelper<TensorTypes<float, double>>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Conv2d);
+DEPLOY_CPU_OPERATOR(Conv2d);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Conv2d);
+DEPLOY_CUDA_OPERATOR(Conv2d);
 #endif
 
-DEPLOY_CPU(Conv2dGradient);
+DEPLOY_CPU_OPERATOR(Conv2dGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Conv2dGradient);
+DEPLOY_CUDA_OPERATOR(Conv2dGradient);
 #endif
 
 OPERATOR_SCHEMA(Conv2d)

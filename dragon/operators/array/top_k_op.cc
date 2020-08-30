@@ -31,12 +31,12 @@ void TopKOp<Context>::DoRunWithType() {
 
 template <class Context>
 void TopKOp<Context>::RunOnDevice() {
-  DispatchHelper<MathTensorTypes>::Call(this, Input(0));
+  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(TopK);
+DEPLOY_CPU_OPERATOR(TopK);
 #ifdef USE_CUDA
-DEPLOY_CUDA(TopK);
+DEPLOY_CUDA_OPERATOR(TopK);
 #endif
 
 OPERATOR_SCHEMA(TopK)

@@ -72,14 +72,14 @@ void DropPathGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(DropPath);
+DEPLOY_CPU_OPERATOR(DropPath);
 #ifdef USE_CUDA
-DEPLOY_CUDA(DropPath);
+DEPLOY_CUDA_OPERATOR(DropPath);
 #endif
 
-DEPLOY_CPU(DropPathGradient);
+DEPLOY_CPU_OPERATOR(DropPathGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(DropPathGradient);
+DEPLOY_CUDA_OPERATOR(DropPathGradient);
 #endif
 
 OPERATOR_SCHEMA(DropPath)

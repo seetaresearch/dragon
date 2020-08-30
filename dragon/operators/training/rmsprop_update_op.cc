@@ -18,9 +18,9 @@ void RMSpropUpdateOp<Context>::ComputeUpdate(Tensor* dX) {
       ctx());
 }
 
-DEPLOY_CPU(RMSpropUpdate);
+DEPLOY_CPU_OPERATOR(RMSpropUpdate);
 #ifdef USE_CUDA
-DEPLOY_CUDA(RMSpropUpdate);
+DEPLOY_CUDA_OPERATOR(RMSpropUpdate);
 #endif
 
 OPERATOR_SCHEMA(RMSpropUpdate)

@@ -11,7 +11,7 @@ void MaskedSelectOp<Context>::DoRunWithType() {
 
   CHECK_EQ(X.count(), X_mask.count())
       << "\nSize of mask and input should be equal.";
-  CHECK(XIsType(X_mask, bool) || XIsType(X_mask, uint8_t))
+  CHECK(X_mask.template IsType<bool>() || X_mask.template IsType<uint8_t>())
       << "\nExcepted bool or uint8 mask.";
 
   // Store for the gradient calculation
@@ -52,7 +52,7 @@ void MaskedSelectOp<Context>::DoRunWithType() {
 
 template <class Context>
 void MaskedSelectOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -75,14 +75,14 @@ void MaskedSelectGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(MaskedSelect);
+DEPLOY_CPU_OPERATOR(MaskedSelect);
 #ifdef USE_CUDA
-DEPLOY_CUDA(MaskedSelect);
+DEPLOY_CUDA_OPERATOR(MaskedSelect);
 #endif
 
-DEPLOY_CPU(MaskedSelectGradient);
+DEPLOY_CPU_OPERATOR(MaskedSelectGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(MaskedSelectGradient);
+DEPLOY_CUDA_OPERATOR(MaskedSelectGradient);
 #endif
 
 OPERATOR_SCHEMA(MaskedSelect)

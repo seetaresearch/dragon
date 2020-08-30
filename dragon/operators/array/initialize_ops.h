@@ -23,7 +23,7 @@ class InitializeOp : public Operator<Context> {
  public:
   InitializeOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws) {
-    GET_ARGS_WITH_DESC(int64_t, dims);
+    INIT_OP_REPEATED_ARG_WITH_DESC(int64_t, dims);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -31,14 +31,15 @@ class InitializeOp : public Operator<Context> {
 
  protected:
   FillerInfo filler_info_;
-  DECLARE_ARGS_WITH_DESC(int64_t, dims);
+  DECLARE_OP_REPEATED_ARG_WITH_DESC(int64_t, dims);
 };
 
 template <class Context>
 class FillOp final : public InitializeOp<Context> {
  public:
   FillOp(const OperatorDef& def, Workspace* ws)
-      : InitializeOp<Context>(def, ws), value_(OpArg<float>("value", 0.f)) {}
+      : InitializeOp<Context>(def, ws),
+        value_(OP_SINGLE_ARG(float, "value", 0.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -51,10 +52,10 @@ class FillOp final : public InitializeOp<Context> {
 };
 
 template <class Context>
-class ArangeOp final : public Operator<Context> {
+class RangeOp final : public Operator<Context> {
  public:
-  ArangeOp(const OperatorDef& def, Workspace* ws) : Operator<Context>(def, ws) {
-    GET_ARGS_WITH_DESC(float, slice);
+  RangeOp(const OperatorDef& def, Workspace* ws) : Operator<Context>(def, ws) {
+    INIT_OP_REPEATED_ARG_WITH_DESC(float, slice);
   }
   USE_OPERATOR_FUNCTIONS;
 
@@ -64,14 +65,32 @@ class ArangeOp final : public Operator<Context> {
   void DoRunWithType();
 
  protected:
-  DECLARE_ARGS_WITH_DESC(float, slice);
+  DECLARE_OP_REPEATED_ARG_WITH_DESC(float, slice);
+};
+
+template <class Context>
+class PermutationOp final : public Operator<Context> {
+ public:
+  PermutationOp(const OperatorDef& def, Workspace* ws)
+      : Operator<Context>(def, ws) {
+    INIT_OP_SINGLE_ARG_WITH_DESC(int64_t, limit, 0);
+  }
+  USE_OPERATOR_FUNCTIONS;
+
+  void RunOnDevice() override;
+
+  template <typename T>
+  void DoRunWithType();
+
+ protected:
+  DECLARE_OP_SINGLE_ARG_WITH_DESC(int64_t, limit);
 };
 
 template <class Context>
 class EyeOp final : public InitializeOp<Context> {
  public:
   EyeOp(const OperatorDef& def, Workspace* ws)
-      : InitializeOp<Context>(def, ws), k_(OpArg<int64_t>("k", 0)) {}
+      : InitializeOp<Context>(def, ws), k_(OP_SINGLE_ARG(int64_t, "k", 0)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -96,7 +115,7 @@ template <class Context>
 class GivenTensorFillOp final : public Operator<Context> {
  public:
   GivenTensorFillOp(const OperatorDef& def, Workspace* ws)
-      : Operator<Context>(def, ws), shape_(OpArgs<int64_t>("shape")) {}
+      : Operator<Context>(def, ws), shape_(OP_REPEATED_ARG(int64_t, "shape")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -108,7 +127,7 @@ class GivenTensorFillOp final : public Operator<Context> {
 
   template <typename T>
   void ExtractImpl(TypeIdentity<T>) {
-    auto raw_values = OpArgs<T>("values");
+    auto raw_values = OP_REPEATED_ARG(T, "values");
     auto nelements = (int64_t)raw_values.size();
     values_.Reshape({nelements});
     memcpy(
@@ -118,7 +137,7 @@ class GivenTensorFillOp final : public Operator<Context> {
   }
 
   void ExtractImpl(TypeIdentity<float16>) {
-    auto raw_values = OpArgs<float>("values");
+    auto raw_values = OP_REPEATED_ARG(float, "values");
     auto nelements = (int64_t)raw_values.size();
     values_.Reshape({nelements});
     memcpy(
@@ -140,8 +159,8 @@ class RandomNormalOp final : public InitializeOp<Context> {
  public:
   RandomNormalOp(const OperatorDef& def, Workspace* ws)
       : InitializeOp<Context>(def, ws) {
-    auto mu = OpArg<float>("mean", 0.f);
-    auto sigma = OpArg<float>("std", 1.f);
+    auto mu = OP_SINGLE_ARG(float, "mean", 0.f);
+    auto sigma = OP_SINGLE_ARG(float, "std", 1.f);
     this->filler_info_.set_mean(mu);
     this->filler_info_.set_std(sigma);
     this->filler_info_.set_type("normal");
@@ -159,8 +178,8 @@ class RandomUniformOp final : public InitializeOp<Context> {
  public:
   RandomUniformOp(const OperatorDef& def, Workspace* ws)
       : InitializeOp<Context>(def, ws) {
-    auto low = OpArg<float>("low", -1.f);
-    auto high = OpArg<float>("high", 1.f);
+    auto low = OP_SINGLE_ARG(float, "low", -1.f);
+    auto high = OP_SINGLE_ARG(float, "high", 1.f);
     this->filler_info_.set_low(low);
     this->filler_info_.set_high(high);
     this->filler_info_.set_type("uniform");
@@ -178,8 +197,8 @@ class TruncatedNormalOp final : public InitializeOp<Context> {
  public:
   TruncatedNormalOp(const OperatorDef& def, Workspace* ws)
       : InitializeOp<Context>(def, ws) {
-    auto mu = OpArg<float>("mean", 0.f);
-    auto sigma = OpArg<float>("std", 1.f);
+    auto mu = OP_SINGLE_ARG(float, "mean", 0.f);
+    auto sigma = OP_SINGLE_ARG(float, "std", 1.f);
     this->filler_info_.set_mean(mu);
     this->filler_info_.set_std(sigma);
     this->filler_info_.set_low(mu - 2 * sigma);
@@ -199,8 +218,8 @@ class GlorotNormalOp final : public InitializeOp<Context> {
  public:
   GlorotNormalOp(const OperatorDef& def, Workspace* ws)
       : InitializeOp<Context>(def, ws) {
-    auto scale = OpArg<float>("scale", 2.f);
-    auto mode = OpArg<string>("mode", "fan_in");
+    auto scale = OP_SINGLE_ARG(float, "scale", 2.f);
+    auto mode = OP_SINGLE_ARG(string, "mode", "fan_in");
     this->filler_info_.set_type("glorot_normal");
     if (mode == "fan_avg") {
       this->filler_info_.set_variance_norm(FillerInfo_VarianceNorm_FAN_AVG);
@@ -224,8 +243,8 @@ class GlorotUniformOp final : public InitializeOp<Context> {
  public:
   GlorotUniformOp(const OperatorDef& def, Workspace* ws)
       : InitializeOp<Context>(def, ws) {
-    auto scale = OpArg<float>("scale", 3.f);
-    auto mode = OpArg<string>("mode", "fan_in");
+    auto scale = OP_SINGLE_ARG(float, "scale", 3.f);
+    auto mode = OP_SINGLE_ARG(string, "mode", "fan_in");
     this->filler_info_.set_type("glorot_uniform");
     if (mode == "fan_avg") {
       this->filler_info_.set_variance_norm(FillerInfo_VarianceNorm_FAN_AVG);
@@ -244,8 +263,9 @@ class GlorotUniformOp final : public InitializeOp<Context> {
   void DoRunWithType();
 };
 
-DEFINE_ARGS_WITH_DESC(int64_t, InitializeOp, dims);
-DEFINE_ARGS_WITH_DESC(float, ArangeOp, slice);
+DEFINE_OP_SINGLE_ARG_WITH_DESC(int64_t, PermutationOp, limit);
+DEFINE_OP_REPEATED_ARG_WITH_DESC(int64_t, InitializeOp, dims);
+DEFINE_OP_REPEATED_ARG_WITH_DESC(float, RangeOp, slice);
 
 } // namespace dragon
 

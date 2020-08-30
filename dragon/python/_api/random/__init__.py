@@ -15,6 +15,7 @@ from __future__ import print_function as _print_function
 
 from dragon.core.framework.config import set_random_seed as set_seed
 from dragon.core.ops.array_ops import multinomial
+from dragon.core.ops.array_ops import permutation
 from dragon.core.ops.init_ops import glorot_normal
 from dragon.core.ops.init_ops import glorot_uniform
 from dragon.core.ops.init_ops import random_normal as normal

@@ -20,9 +20,9 @@ void ExpGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(ExpGradient);
+DEPLOY_CPU_OPERATOR(ExpGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ExpGradient);
+DEPLOY_CUDA_OPERATOR(ExpGradient);
 #endif
 
 OPERATOR_SCHEMA(ExpGradient)

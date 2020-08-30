@@ -38,7 +38,7 @@ void Dropout(
     const T* x,
     uint8_t* mask,
     T* y,
-    uint32_t* scratch,
+    uint32_t* r,
     Context* ctx);
 
 /* activation.drop_block */
@@ -54,7 +54,7 @@ void DropBlock2d(
     const int block_size,
     const float gamma,
     const string& data_format,
-    uint32_t* seed,
+    uint32_t* r,
     int* mask,
     Context* ctx);
 
@@ -209,16 +209,6 @@ void Tanh(const int count, const T* x, T* y, Context* ctx);
 template <typename T, class Context>
 void TanhGrad(const int count, const T* dy, const T* y, T* dx, Context* ctx);
 
-/* array.arange */
-
-template <typename T, class Context>
-void Arange(
-    const int count,
-    const float start,
-    const float step,
-    T* y,
-    Context* ctx);
-
 /* array.argmax */
 
 template <typename T, class Context>
@@ -322,7 +312,7 @@ void IndexSelectGrad(
     const int inner_dim,
     const int axis_dim,
     const int num_indices,
-    const int64_t* indices,
+    const int64_t* index,
     const T* dy,
     T* dx,
     Context* ctx);
@@ -411,6 +401,21 @@ void OneHot(
     const int depth,
     const int on_value,
     const T* x,
+    T* y,
+    Context* ctx);
+
+/* array.permutation */
+
+template <typename T, class Context>
+void Permutation(const int count, T* y, uint32_t* r, Context* ctx);
+
+/* array.range */
+
+template <typename T, class Context>
+void Range(
+    const int count,
+    const float start,
+    const float delta,
     T* y,
     Context* ctx);
 

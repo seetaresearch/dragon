@@ -171,14 +171,14 @@ void FullyConnectedGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(FullyConnected);
+DEPLOY_CPU_OPERATOR(FullyConnected);
 #ifdef USE_CUDA
-DEPLOY_CUDA(FullyConnected);
+DEPLOY_CUDA_OPERATOR(FullyConnected);
 #endif
 
-DEPLOY_CPU(FullyConnectedGradient);
+DEPLOY_CPU_OPERATOR(FullyConnectedGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(FullyConnectedGradient);
+DEPLOY_CUDA_OPERATOR(FullyConnectedGradient);
 #endif
 
 OPERATOR_SCHEMA(FullyConnected)

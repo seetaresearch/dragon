@@ -1,7 +1,7 @@
-arange
-======
+range
+=====
 
-.. autofunction:: dragon.arange
+.. autofunction:: dragon.range
 
 .. raw:: html
 

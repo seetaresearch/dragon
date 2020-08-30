@@ -76,19 +76,19 @@ void SparseSoftmaxCrossEntropyOp<Context>::DoRunWithType() {
 
 template <class Context>
 void SparseSoftmaxCrossEntropyOp<Context>::RunOnDevice() {
-  if (XIsType(Input(0), float)) {
-    if (XIsType(Input(1), float)) {
+  if (Input(0).template IsType<float>()) {
+    if (Input(1).template IsType<float>()) {
       DoRunWithType<float, float>();
-    } else if (XIsType(Input(1), int64_t)) {
+    } else if (Input(1).template IsType<int64_t>()) {
       DoRunWithType<float, int64_t>();
     } else {
       LOG(FATAL) << MessageForUnsupported(
           types::to_string(Input(1).meta()), {"float32", "int64"});
     }
-  } else if (XIsType(Input(0), double)) {
-    if (XIsType(Input(1), double)) {
+  } else if (Input(0).template IsType<double>()) {
+    if (Input(1).template IsType<double>()) {
       DoRunWithType<double, double>();
-    } else if (XIsType(Input(1), int64_t)) {
+    } else if (Input(1).template IsType<int64_t>()) {
       DoRunWithType<double, int64_t>();
     } else {
       LOG(FATAL) << MessageForUnsupported(
@@ -149,19 +149,19 @@ template <class Context>
 void SparseSoftmaxCrossEntropyGradientOp<Context>::RunOnDevice() {
   Output(0)->ReshapeLike(Input(0));
 
-  if (XIsType(Input(0), float)) {
-    if (XIsType(Input(1), float)) {
+  if (Input(0).template IsType<float>()) {
+    if (Input(1).template IsType<float>()) {
       DoRunWithType<float, float>();
-    } else if (XIsType(Input(1), int64_t)) {
+    } else if (Input(1).template IsType<int64_t>()) {
       DoRunWithType<float, int64_t>();
     } else {
       LOG(FATAL) << MessageForUnsupported(
           types::to_string(Input(1).meta()), {"float32", "int64"});
     }
-  } else if (XIsType(Input(0), double)) {
-    if (XIsType(Input(1), double)) {
+  } else if (Input(0).template IsType<double>()) {
+    if (Input(1).template IsType<double>()) {
       DoRunWithType<double, double>();
-    } else if (XIsType(Input(1), int64_t)) {
+    } else if (Input(1).template IsType<int64_t>()) {
       DoRunWithType<double, int64_t>();
     } else {
       LOG(FATAL) << MessageForUnsupported(
@@ -173,14 +173,14 @@ void SparseSoftmaxCrossEntropyGradientOp<Context>::RunOnDevice() {
   }
 }
 
-DEPLOY_CPU(SparseSoftmaxCrossEntropy);
+DEPLOY_CPU_OPERATOR(SparseSoftmaxCrossEntropy);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SparseSoftmaxCrossEntropy);
+DEPLOY_CUDA_OPERATOR(SparseSoftmaxCrossEntropy);
 #endif
 
-DEPLOY_CPU(SparseSoftmaxCrossEntropyGradient);
+DEPLOY_CPU_OPERATOR(SparseSoftmaxCrossEntropyGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SparseSoftmaxCrossEntropyGradient);
+DEPLOY_CUDA_OPERATOR(SparseSoftmaxCrossEntropyGradient);
 #endif
 
 OPERATOR_SCHEMA(SparseSoftmaxCrossEntropy)

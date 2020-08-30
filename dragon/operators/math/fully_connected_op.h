@@ -22,8 +22,8 @@ class FullyConnectedOp final : public Operator<Context> {
  public:
   FullyConnectedOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        out_channels_(OpArg<int64_t>("out_channels", 0)),
-        transW_(OpArg<int64_t>("transW", 1)) {}
+        out_channels_(OP_SINGLE_ARG(int64_t, "out_channels", 0)),
+        transW_(OP_SINGLE_ARG(int64_t, "transW", 1)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -40,8 +40,8 @@ class FullyConnectedGradientOp final : public Operator<Context> {
  public:
   FullyConnectedGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        out_channels_(OpArg<int64_t>("out_channels", 0)),
-        transW_(OpArg<int64_t>("transW", 1)) {}
+        out_channels_(OP_SINGLE_ARG(int64_t, "out_channels", 0)),
+        transW_(OP_SINGLE_ARG(int64_t, "transW", 1)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

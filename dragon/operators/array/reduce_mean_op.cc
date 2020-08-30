@@ -55,7 +55,7 @@ void ReduceMeanOp<Context>::DoRunWithType() {
 template <class Context>
 void ReduceMeanOp<Context>::RunOnDevice() {
   STORE_INPUT_SPEC(0);
-  DispatchHelper<MathTensorTypes>::Call(this, Input(0));
+  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -86,14 +86,14 @@ void ReduceMeanGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(ReduceMean);
+DEPLOY_CPU_OPERATOR(ReduceMean);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ReduceMean);
+DEPLOY_CUDA_OPERATOR(ReduceMean);
 #endif
 
-DEPLOY_CPU(ReduceMeanGradient);
+DEPLOY_CPU_OPERATOR(ReduceMeanGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ReduceMeanGradient);
+DEPLOY_CUDA_OPERATOR(ReduceMeanGradient);
 #endif
 
 OPERATOR_SCHEMA(ReduceMean)

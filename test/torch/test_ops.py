@@ -210,6 +210,13 @@ class TestTensorOps(OpTestCase):
             data.fill(value)
             self.assertEqual(x, data)
 
+    def test_flatten(self):
+        data = arange((1, 2, 3))
+        x = new_tensor(data)
+        self.assertEqual(x.flatten(), data.flatten())
+        x.flatten_(-3, -2)
+        self.assertEqual(x, data.reshape((2, 3)))
+
     def test_floor(self):
         data = np.array([0.9, 1.4, 1.9])
         x = new_tensor(data)
@@ -218,21 +225,30 @@ class TestTensorOps(OpTestCase):
         self.assertEqual(x, np.floor(data))
 
     def test_getitem(self):
-        data = arange((2, 3))
-        x = new_tensor(data)
-        self.assertEqual(x[x > 2], data[data > 2])
+        data1, data2 = arange((2, 3)), arange((2,), dtype='int64')
+        x, index = new_tensor(data1), new_tensor(data2)
+        self.assertEqual(x[x > 2], data1[data1 > 2])
         entries = [0,
                    slice(None, None, None),
                    slice(0, None, None),
                    slice(0, 0, None),
                    slice(0, 1, None),
-                   slice(0, 1, 1),
-                   data,
-                   (data, data)]
+                   slice(0, 1, 1)]
         for item in entries:
             try:
-                self.assertEqual(x.__getitem__(item), data.__getitem__(item))
-            except (NotImplementedError, ValueError, TypeError):
+                self.assertEqual(x.__getitem__(item), data1.__getitem__(item))
+            except (NotImplementedError, ValueError):
+                pass
+        self.assertEqual(x[index], data1[data2])
+        self.assertEqual(x[:, index], data1[:, data2])
+        entries = [x,
+                   (slice(1, None, None), index),
+                   (1, index),
+                   (index, index)]
+        for item in entries:
+            try:
+                x.__getitem__(item)
+            except TypeError:
                 pass
 
     def test_greater(self):
@@ -522,6 +538,7 @@ class TestTensorOps(OpTestCase):
             getattr(x, name + '_')()
             self.assertEqual(x, data.astype(dtype))
             x.type(dtype)
+            self.assertEqual(x.type(), dtype)
 
     def test_uniform(self):
         data = arange((2, 3))
@@ -560,6 +577,9 @@ class TestTorchOps(OpTestCase):
 
     def test_randn(self):
         self.assertEqual(torch.randn(2, 3).shape, (2, 3))
+
+    def test_randperm(self):
+        self.assertEqual(torch.randperm(4).shape, (4,))
 
     def test_zeros_like(self):
         data = np.zeros((2, 3), dtype='float32')

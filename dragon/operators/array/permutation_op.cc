@@ -1,0 +1,32 @@
+#include "dragon/core/workspace.h"
+#include "dragon/operators/array/initialize_ops.h"
+#include "dragon/utils/op_kernels.h"
+
+namespace dragon {
+
+template <class Context>
+template <typename T>
+void PermutationOp<Context>::DoRunWithType() {
+  auto* Y = Output(0)->Reshape({limit()});
+  kernel::Permutation(
+      Y->count(),
+      Y->template mutable_data<T, Context>(),
+      ws()->template data<uint32_t, Context>({Y->count()})[0],
+      ctx());
+}
+
+template <class Context>
+void PermutationOp<Context>::RunOnDevice() {
+  DispatchHelper<NumericalTensorTypes>::Call(this);
+}
+
+DEPLOY_CPU_OPERATOR(Permutation);
+#ifdef USE_CUDA
+DEPLOY_CUDA_OPERATOR(Permutation);
+#endif
+
+OPERATOR_SCHEMA(Permutation).NumInputs(0).NumOutputs(1);
+
+NO_GRADIENT(Permutation);
+
+} // namespace dragon

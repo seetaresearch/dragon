@@ -20,9 +20,9 @@ void LogGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(LogGradient);
+DEPLOY_CPU_OPERATOR(LogGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(LogGradient);
+DEPLOY_CUDA_OPERATOR(LogGradient);
 #endif
 
 OPERATOR_SCHEMA(LogGradient)

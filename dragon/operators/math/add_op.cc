@@ -40,7 +40,7 @@ void AddOp<Context>::DoRunWithType() {
 
 template <class Context>
 void AddOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -92,14 +92,14 @@ void AddGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Add);
+DEPLOY_CPU_OPERATOR(Add);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Add);
+DEPLOY_CUDA_OPERATOR(Add);
 #endif
 
-DEPLOY_CPU(AddGradient);
+DEPLOY_CPU_OPERATOR(AddGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(AddGradient);
+DEPLOY_CUDA_OPERATOR(AddGradient);
 #endif
 
 OPERATOR_SCHEMA(Add)

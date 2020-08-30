@@ -173,9 +173,9 @@ void PowGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(PowGradient);
+DEPLOY_CPU_OPERATOR(PowGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(PowGradient);
+DEPLOY_CUDA_OPERATOR(PowGradient);
 #endif
 
 OPERATOR_SCHEMA(PowGradient)

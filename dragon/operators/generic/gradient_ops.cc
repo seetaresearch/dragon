@@ -89,24 +89,24 @@ void StopGradientOp<Context>::RunOnDevice() {
   }
 }
 
-DEPLOY_CPU(GradientGenerate);
+DEPLOY_CPU_OPERATOR(GradientGenerate);
 #ifdef USE_CUDA
-DEPLOY_CUDA(GradientGenerate);
+DEPLOY_CUDA_OPERATOR(GradientGenerate);
 #endif
 
-DEPLOY_CPU(GradientGather);
+DEPLOY_CPU_OPERATOR(GradientGather);
 #ifdef USE_CUDA
-DEPLOY_CUDA(GradientGather);
+DEPLOY_CUDA_OPERATOR(GradientGather);
 #endif
 
-DEPLOY_CPU(GradientAdd);
+DEPLOY_CPU_OPERATOR(GradientAdd);
 #ifdef USE_CUDA
-DEPLOY_CUDA(GradientAdd);
+DEPLOY_CUDA_OPERATOR(GradientAdd);
 #endif
 
-DEPLOY_CPU(StopGradient);
+DEPLOY_CPU_OPERATOR(StopGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(StopGradient);
+DEPLOY_CUDA_OPERATOR(StopGradient);
 #endif
 
 OPERATOR_SCHEMA(GradientGenerate)

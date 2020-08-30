@@ -36,8 +36,8 @@ class AxpbyOp final : public Operator<Context> {
  public:
   AxpbyOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        alpha_(OpArg<float>("alpha", 1.f)),
-        beta_(OpArg<float>("beta", 1.f)) {}
+        alpha_(OP_SINGLE_ARG(float, "alpha", 1.f)),
+        beta_(OP_SINGLE_ARG(float, "beta", 1.f)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

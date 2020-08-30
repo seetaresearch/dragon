@@ -398,23 +398,6 @@ class TestActivationOps(OpTestCase):
 class TestArrayOps(OpTestCase):
     """Test the array ops."""
 
-    def test_arange(self):
-        entries = [([5], {'dtype': 'int64'}),
-                   ([0, 5], {'dtype': 'int64'}),
-                   ([0, 5, 2], {'dtype': 'int64'}),
-                   ([0., 1., 0.2], {'dtype': 'float32'})]
-        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
-            with execution_context().mode(execution):
-                for (args, kwargs) in entries:
-                    data = np.arange(*args, **kwargs)
-                    x = dragon.arange(*args, **kwargs)
-                    self.assertEqual(x, data)
-
-    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
-    def test_arange_cuda(self):
-        with dragon.device('cuda'):
-            self.test_arange()
-
     def test_broadcast_to(self):
         entries = [((2, 2, 3, 1), (0, True)),
                    ((1, 2, 3, 2), (3, True)),
@@ -689,6 +672,37 @@ class TestArrayOps(OpTestCase):
     def test_pad_cuda(self):
         with dragon.device('cuda'):
             self.test_pad()
+
+    def test_permutation(self):
+        entries = [([4], {'dtype': 'int64'}),
+                   ([4], {'dtype': 'float32'})]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for (args, kwargs) in entries:
+                    x = dragon.random.permutation(*args, **kwargs)
+                    self.assertEqual(x.shape, (4,))
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_range_cuda(self):
+        with dragon.device('cuda'):
+            self.test_permutation()
+
+    def test_range(self):
+        entries = [([5], {'dtype': 'int64'}),
+                   ([0, 5], {'dtype': 'int64'}),
+                   ([0, 5, 2], {'dtype': 'int64'}),
+                   ([0., 1., 0.2], {'dtype': 'float32'})]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for (args, kwargs) in entries:
+                    data = np.arange(*args, **kwargs)
+                    x = dragon.range(*args, **kwargs)
+                    self.assertEqual(x, data)
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_range_cuda(self):
+        with dragon.device('cuda'):
+            self.test_range()
 
     def test_repeat(self):
         entries = [(None, 2), (1, 2)]
@@ -2719,21 +2733,30 @@ class TestTensorOps(OpTestCase):
     def test_getitem(self):
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):
             with execution_context().mode(execution):
-                data = arange((2, 3))
-                x = new_tensor(data)
-                self.assertEqual(x[x > 2], data[data > 2], test_symbols=False)
+                data1, data2 = arange((2, 3)), arange((2,), dtype='int64')
+                x, index = new_tensor(data1), new_tensor(data2)
+                self.assertEqual(x[x > 2], data1[data1 > 2], test_symbols=False)
                 entries = [0,
                            slice(None, None, None),
                            slice(0, None, None),
                            slice(0, 0, None),
                            slice(0, 1, None),
-                           slice(0, 1, 1),
-                           data,
-                           (data, data)]
+                           slice(0, 1, 1)]
                 for item in entries:
                     try:
-                        self.assertEqual(x.__getitem__(item), data.__getitem__(item))
-                    except (NotImplementedError, ValueError, TypeError):
+                        self.assertEqual(x.__getitem__(item), data1.__getitem__(item))
+                    except (NotImplementedError, ValueError):
+                        pass
+                self.assertEqual(x[index], data1[data2])
+                self.assertEqual(x[:, index], data1[:, data2])
+                entries = [x,
+                           (slice(1, None, None), index),
+                           (1, index),
+                           (index, index)]
+                for item in entries:
+                    try:
+                        x.__getitem__(item)
+                    except TypeError:
                         pass
 
     def test_glorot_normal(self):

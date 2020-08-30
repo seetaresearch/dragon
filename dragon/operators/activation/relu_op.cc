@@ -57,14 +57,14 @@ void ReluGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Relu);
+DEPLOY_CPU_OPERATOR(Relu);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Relu);
+DEPLOY_CUDA_OPERATOR(Relu);
 #endif
 
-DEPLOY_CPU(ReluGradient);
+DEPLOY_CPU_OPERATOR(ReluGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ReluGradient);
+DEPLOY_CUDA_OPERATOR(ReluGradient);
 #endif
 
 OPERATOR_SCHEMA(Relu)

@@ -7,7 +7,7 @@ namespace dragon {
 
 #define CANONICALIZE_AXES_WITH_TENSOR(tensor)                                 \
   CANONICALIZE_AXIS_WITH_TENSOR(tensor);                                      \
-  auto num_axes = OpArg<int64_t>("num_axes", 1);                              \
+  auto num_axes = OP_SINGLE_ARG(int64_t, "num_axes", 1);                      \
   if (num_axes < 0) {                                                         \
     num_axes = tensor.ndim() - axis;                                          \
   } else if (num_axes == 0) {                                                 \
@@ -50,7 +50,7 @@ void AffineOp<Context>::DoRunWithType() {
 
 template <class Context>
 void AffineOp<Context>::RunOnDevice() {
-  DispatchHelper<MathTensorTypes>::Call(this, Input(0));
+  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
 }
 
 template <class Context>
@@ -135,14 +135,14 @@ void AffineGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Affine);
+DEPLOY_CPU_OPERATOR(Affine);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Affine);
+DEPLOY_CUDA_OPERATOR(Affine);
 #endif
 
-DEPLOY_CPU(AffineGradient);
+DEPLOY_CPU_OPERATOR(AffineGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(AffineGradient);
+DEPLOY_CUDA_OPERATOR(AffineGradient);
 #endif
 
 OPERATOR_SCHEMA(Affine)

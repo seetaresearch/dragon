@@ -26,9 +26,9 @@ void SquareGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(SquareGradient);
+DEPLOY_CPU_OPERATOR(SquareGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SquareGradient);
+DEPLOY_CUDA_OPERATOR(SquareGradient);
 #endif
 
 OPERATOR_SCHEMA(SquareGradient)

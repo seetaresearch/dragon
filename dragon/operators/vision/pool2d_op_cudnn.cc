@@ -81,8 +81,8 @@ void CuDNNPool2dGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CUDNN(Pool2d);
-DEPLOY_CUDNN(Pool2dGradient);
+DEPLOY_CUDNN_OPERATOR(Pool2d);
+DEPLOY_CUDNN_OPERATOR(Pool2dGradient);
 
 } // namespace dragon
 

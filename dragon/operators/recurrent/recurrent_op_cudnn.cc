@@ -316,8 +316,8 @@ void CuDNNRecurrentGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CUDNN(Recurrent);
-DEPLOY_CUDNN(RecurrentGradient);
+DEPLOY_CUDNN_OPERATOR(Recurrent);
+DEPLOY_CUDNN_OPERATOR(RecurrentGradient);
 
 } // namespace dragon
 

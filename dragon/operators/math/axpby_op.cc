@@ -27,12 +27,12 @@ void AxpbyOp<Context>::DoRunWithType() {
 
 template <class Context>
 void AxpbyOp<Context>::RunOnDevice() {
-  DispatchHelper<MathTensorTypes>::Call(this, Input(0));
+  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Axpby);
+DEPLOY_CPU_OPERATOR(Axpby);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Axpby);
+DEPLOY_CUDA_OPERATOR(Axpby);
 #endif
 
 OPERATOR_SCHEMA(Axpby)

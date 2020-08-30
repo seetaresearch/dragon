@@ -217,10 +217,10 @@ void ConvOpBase<Context>::Db(const T* dy, T* db) {
 template <class Context>
 void ConvOpBase<Context>::Setup(int num_axes) {
   num_axes_ = num_axes;
-  auto pads = OpArgs<int64_t>("pads");
-  auto strides = OpArgs<int64_t>("strides");
-  auto kshape = OpArgs<int64_t>("kernel_shape");
-  auto dilations = OpArgs<int64_t>("dilations");
+  auto pads = OP_REPEATED_ARG(int64_t, "pads");
+  auto strides = OP_REPEATED_ARG(int64_t, "strides");
+  auto kshape = OP_REPEATED_ARG(int64_t, "kernel_shape");
+  auto dilations = OP_REPEATED_ARG(int64_t, "dilations");
 
   auto at = [&](const vec64_t& vec, int i) {
     return i < vec.size() ? vec[i] : vec[0];

@@ -54,8 +54,8 @@ void CuDNNLRNGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CUDNN(LRN);
-DEPLOY_CUDNN(LRNGradient);
+DEPLOY_CUDNN_OPERATOR(LRN);
+DEPLOY_CUDNN_OPERATOR(LRNGradient);
 
 } // namespace dragon
 

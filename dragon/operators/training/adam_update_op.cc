@@ -21,9 +21,9 @@ void AdamUpdateOp<Context>::ComputeUpdate(Tensor* dX) {
       ctx());
 }
 
-DEPLOY_CPU(AdamUpdate);
+DEPLOY_CPU_OPERATOR(AdamUpdate);
 #ifdef USE_CUDA
-DEPLOY_CUDA(AdamUpdate);
+DEPLOY_CUDA_OPERATOR(AdamUpdate);
 #endif
 
 OPERATOR_SCHEMA(AdamUpdate)

@@ -40,14 +40,14 @@ void FlattenOp<Context>::RunOnDevice() {
   Y->Reshape(out_shape)->CopyFrom(X, ctx());
 }
 
-DEPLOY_CPU(Flatten);
+DEPLOY_CPU_OPERATOR(Flatten);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Flatten);
+DEPLOY_CUDA_OPERATOR(Flatten);
 #endif
 
-DEPLOY_CPU(FlattenGradient);
+DEPLOY_CPU_OPERATOR(FlattenGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(FlattenGradient);
+DEPLOY_CUDA_OPERATOR(FlattenGradient);
 #endif
 
 OPERATOR_SCHEMA(Flatten)

@@ -22,8 +22,8 @@ class TopKOp final : public Operator<Context> {
  public:
   TopKOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        k_(OpArg<int64_t>("k", 1)),
-        largest_(OpArg<int64_t>("largest", 1)) {}
+        k_(OP_SINGLE_ARG(int64_t, "k", 1)),
+        largest_(OP_SINGLE_ARG(int64_t, "largest", 1)) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

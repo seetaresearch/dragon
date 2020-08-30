@@ -44,6 +44,7 @@ from dragon.vm.torch.core.nn.modules.conv import DepthwiseConv2d
 from dragon.vm.torch.core.nn.modules.dropout import DropBlock2d
 from dragon.vm.torch.core.nn.modules.dropout import Dropout
 from dragon.vm.torch.core.nn.modules.dropout import DropPath
+from dragon.vm.torch.core.nn.modules.flatten import Flatten
 from dragon.vm.torch.core.nn.modules.linear import Linear
 from dragon.vm.torch.core.nn.modules.loss import CTCLoss
 from dragon.vm.torch.core.nn.modules.loss import BCEWithLogitsLoss

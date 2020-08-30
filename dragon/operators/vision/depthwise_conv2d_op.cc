@@ -114,14 +114,14 @@ void DepthwiseConv2dGradientOp<Context>::RunOnDevice() {
   DispatchHelper<TensorTypes<float>>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(DepthwiseConv2d);
+DEPLOY_CPU_OPERATOR(DepthwiseConv2d);
 #ifdef USE_CUDA
-DEPLOY_CUDA(DepthwiseConv2d);
+DEPLOY_CUDA_OPERATOR(DepthwiseConv2d);
 #endif
 
-DEPLOY_CPU(DepthwiseConv2dGradient);
+DEPLOY_CPU_OPERATOR(DepthwiseConv2dGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(DepthwiseConv2dGradient);
+DEPLOY_CUDA_OPERATOR(DepthwiseConv2dGradient);
 #endif
 
 OPERATOR_SCHEMA(DepthwiseConv2d)

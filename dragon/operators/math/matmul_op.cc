@@ -158,14 +158,14 @@ void MatMulGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(MatMul);
+DEPLOY_CPU_OPERATOR(MatMul);
 #ifdef USE_CUDA
-DEPLOY_CUDA(MatMul);
+DEPLOY_CUDA_OPERATOR(MatMul);
 #endif
 
-DEPLOY_CPU(MatMulGradient);
+DEPLOY_CPU_OPERATOR(MatMulGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(MatMulGradient);
+DEPLOY_CUDA_OPERATOR(MatMulGradient);
 #endif
 
 OPERATOR_SCHEMA(MatMul)

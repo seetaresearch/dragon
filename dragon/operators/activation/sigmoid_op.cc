@@ -36,14 +36,14 @@ void SigmoidGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Sigmoid);
+DEPLOY_CPU_OPERATOR(Sigmoid);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Sigmoid);
+DEPLOY_CUDA_OPERATOR(Sigmoid);
 #endif
 
-DEPLOY_CPU(SigmoidGradient);
+DEPLOY_CPU_OPERATOR(SigmoidGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(SigmoidGradient);
+DEPLOY_CUDA_OPERATOR(SigmoidGradient);
 #endif
 
 OPERATOR_SCHEMA(Sigmoid)

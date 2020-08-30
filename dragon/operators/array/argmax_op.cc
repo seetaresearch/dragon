@@ -49,12 +49,12 @@ void ArgMaxOp<Context>::DoRunWithType() {
 
 template <class Context>
 void ArgMaxOp<Context>::RunOnDevice() {
-  DispatchHelper<MathTensorTypes>::Call(this, Input(0));
+  DispatchHelper<NumericalTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(ArgMax);
+DEPLOY_CPU_OPERATOR(ArgMax);
 #ifdef USE_CUDA
-DEPLOY_CUDA(ArgMax);
+DEPLOY_CUDA_OPERATOR(ArgMax);
 #endif
 
 OPERATOR_SCHEMA(ArgMax)

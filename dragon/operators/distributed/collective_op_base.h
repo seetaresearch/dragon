@@ -26,8 +26,8 @@ class CollectiveOpBase : public Operator<Context> {
  public:
   CollectiveOpBase(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        comm_((MPI_Comm)OpArg<int64_t>("comm", 0)),
-        group_((MPI_Group)OpArg<int64_t>("group", 0)) {
+        comm_((MPI_Comm)OP_SINGLE_ARG(int64_t, "comm", 0)),
+        group_((MPI_Group)OP_SINGLE_ARG(int64_t, "group", 0)) {
     if ((int64_t)comm_ == 0) return;
     // The given group should be created before
     CHECK((int64_t)group_ != 0) << "\nEncounter the invalid mpi group.";
@@ -38,8 +38,8 @@ class CollectiveOpBase : public Operator<Context> {
 
     // Translate the root into the group
     MPI_Group world_group;
-    auto root = OpArg<int>("root", 0);
-    auto group_world_ranks = OpArgs<int64_t>("ranks");
+    auto root = OP_SINGLE_ARG(int, "root", 0);
+    auto group_world_ranks = OP_REPEATED_ARG(int64_t, "ranks");
     auto group_world_root = (int)group_world_ranks[root];
     group_str_ = Tensor::DimString(group_world_ranks);
     MPI_Comm_group(MPI_COMM_WORLD, &world_group);
@@ -51,7 +51,7 @@ class CollectiveOpBase : public Operator<Context> {
     // Check whether the NCCL backend should be enabled
     // If not, we will fallback to the MPI backend
 #ifdef USE_NCCL
-    enable_nccl_ = OpArg<string>("backend", "MPI") == "NCCL";
+    enable_nccl_ = OP_SINGLE_ARG(string, "backend", "MPI") == "NCCL";
     enable_nccl_ &= (TypeMeta::Id<Context>() == TypeMeta::Id<CUDAContext>());
 #else
     enable_nccl_ = false;

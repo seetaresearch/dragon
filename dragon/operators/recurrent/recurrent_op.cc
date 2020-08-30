@@ -2,14 +2,14 @@
 
 namespace dragon {
 
-DEPLOY_CPU(Recurrent);
+DEPLOY_CPU_OPERATOR(Recurrent);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Recurrent);
+DEPLOY_CUDA_OPERATOR(Recurrent);
 #endif
 
-DEPLOY_CPU(RecurrentGradient);
+DEPLOY_CPU_OPERATOR(RecurrentGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(RecurrentGradient);
+DEPLOY_CUDA_OPERATOR(RecurrentGradient);
 #endif
 
 OPERATOR_SCHEMA(Recurrent)

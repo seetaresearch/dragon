@@ -16,12 +16,12 @@ void CopyOp<Context>::DoRunWithType() {
 
 template <class Context>
 void CopyOp<Context>::RunOnDevice() {
-  DispatchHelper<AllTensorTypes>::Call(this, Input(0));
+  DispatchHelper<FullTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Copy);
+DEPLOY_CPU_OPERATOR(Copy);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Copy);
+DEPLOY_CUDA_OPERATOR(Copy);
 #endif
 
 OPERATOR_SCHEMA(Copy)

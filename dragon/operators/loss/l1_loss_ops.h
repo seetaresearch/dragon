@@ -22,7 +22,7 @@ class L1LossOp final : public Operator<Context> {
  public:
   L1LossOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        reduction_(OpArg<string>("reduction", "MEAN")) {}
+        reduction_(OP_SINGLE_ARG(string, "reduction", "MEAN")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -39,8 +39,8 @@ class SmoothL1LossOp final : public Operator<Context> {
  public:
   SmoothL1LossOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        beta_(OpArg<float>("beta", 1.f)),
-        reduction_(OpArg<string>("reduction", "MEAN")) {}
+        beta_(OP_SINGLE_ARG(float, "beta", 1.f)),
+        reduction_(OP_SINGLE_ARG(string, "reduction", "MEAN")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -58,7 +58,7 @@ class L1LossGradientOp final : public Operator<Context> {
  public:
   L1LossGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        reduction_(OpArg<string>("reduction", "MEAN")) {}
+        reduction_(OP_SINGLE_ARG(string, "reduction", "MEAN")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;
@@ -75,8 +75,8 @@ class SmoothL1LossGradientOp final : public Operator<Context> {
  public:
   SmoothL1LossGradientOp(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
-        beta_(OpArg<float>("beta", 1.f)),
-        reduction_(OpArg<string>("reduction", "MEAN")) {}
+        beta_(OP_SINGLE_ARG(float, "beta", 1.f)),
+        reduction_(OP_SINGLE_ARG(string, "reduction", "MEAN")) {}
   USE_OPERATOR_FUNCTIONS;
 
   void RunOnDevice() override;

@@ -53,16 +53,16 @@ class CuDNNRecurrentOpBase : public Operator<Context> {
   CuDNNRecurrentOpBase(const OperatorDef& def, Workspace* ws)
       : Operator<Context>(def, ws),
         states_initialized_(0),
-        num_layers_(OpArg<int64_t>("num_layers", 1)),
-        hidden_size_(OpArg<int64_t>("hidden_size", 0)),
-        bidirectional_(OpArg<int64_t>("bidirectional", 0)),
-        dropout_ratio_(OpArg<float>("dropout_ratio", 1.f)),
+        num_layers_(OP_SINGLE_ARG(int64_t, "num_layers", 1)),
+        hidden_size_(OP_SINGLE_ARG(int64_t, "hidden_size", 0)),
+        bidirectional_(OP_SINGLE_ARG(int64_t, "bidirectional", 0)),
+        dropout_ratio_(OP_SINGLE_ARG(float, "dropout_ratio", 1.f)),
         rng_seed_(def.device_option().random_seed()) {
     // Determine the rnn direction
     rnn_direction_ =
         bidirectional_ ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL;
     // Determine the rnn mode
-    auto mode_str = OpArg<string>("rnn_mode", "");
+    auto mode_str = OP_SINGLE_ARG(string, "rnn_mode", "");
     if (mode_str == "rnn_tanh") {
       rnn_mode_ = CUDNN_RNN_TANH;
     } else if (mode_str == "rnn_relu") {
@@ -75,7 +75,7 @@ class CuDNNRecurrentOpBase : public Operator<Context> {
       LOG(FATAL) << "Unknown RNN Mode: " << mode_str;
     }
     // Determine the rnn input mode
-    auto input_mode_str = OpArg<string>("rnn_input_mode", "linear");
+    auto input_mode_str = OP_SINGLE_ARG(string, "rnn_input_mode", "linear");
     if (input_mode_str == "skip") {
       rnn_input_mode_ = CUDNN_SKIP_INPUT;
     } else if (input_mode_str == "linear") {
@@ -84,7 +84,7 @@ class CuDNNRecurrentOpBase : public Operator<Context> {
       LOG(FATAL) << "Unknown RNN InputMode: " << input_mode_str;
     }
     // Override the running phase
-    SwitchToPhase(OpArg<string>("phase", ""));
+    SwitchToPhase(OP_SINGLE_ARG(string, "phase", ""));
     CuDNNCreateTensorDesc(&hx_desc_);
     CuDNNCreateTensorDesc(&cx_desc_);
     CuDNNCreateTensorDesc(&hy_desc_);

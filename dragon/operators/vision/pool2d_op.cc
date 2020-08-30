@@ -108,14 +108,14 @@ void Pool2dGradientOp<Context>::RunOnDevice() {
   DispatchHelper<TensorTypes<float, double>>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Pool2d);
+DEPLOY_CPU_OPERATOR(Pool2d);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Pool2d);
+DEPLOY_CUDA_OPERATOR(Pool2d);
 #endif
 
-DEPLOY_CPU(Pool2dGradient);
+DEPLOY_CPU_OPERATOR(Pool2dGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Pool2dGradient);
+DEPLOY_CUDA_OPERATOR(Pool2dGradient);
 #endif
 
 OPERATOR_SCHEMA(Pool2d)

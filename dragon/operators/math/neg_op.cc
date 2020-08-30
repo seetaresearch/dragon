@@ -38,14 +38,14 @@ void NegGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Neg);
+DEPLOY_CPU_OPERATOR(Neg);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Neg);
+DEPLOY_CUDA_OPERATOR(Neg);
 #endif
 
-DEPLOY_CPU(NegGradient);
+DEPLOY_CPU_OPERATOR(NegGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(NegGradient);
+DEPLOY_CUDA_OPERATOR(NegGradient);
 #endif
 
 OPERATOR_SCHEMA(Neg)

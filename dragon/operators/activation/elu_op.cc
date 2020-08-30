@@ -38,14 +38,14 @@ void EluGradientOp<Context>::RunOnDevice() {
   DispatchHelper<FloatingTensorTypes>::Call(this, Input(0));
 }
 
-DEPLOY_CPU(Elu);
+DEPLOY_CPU_OPERATOR(Elu);
 #ifdef USE_CUDA
-DEPLOY_CUDA(Elu);
+DEPLOY_CUDA_OPERATOR(Elu);
 #endif
 
-DEPLOY_CPU(EluGradient);
+DEPLOY_CPU_OPERATOR(EluGradient);
 #ifdef USE_CUDA
-DEPLOY_CUDA(EluGradient);
+DEPLOY_CUDA_OPERATOR(EluGradient);
 #endif
 
 OPERATOR_SCHEMA(Elu)
