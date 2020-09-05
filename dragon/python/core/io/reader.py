@@ -30,6 +30,20 @@ class DataReader(multiprocessing.Process):
     simple_reader = DataReader(dataset=dataset, source=path)
     ```
 
+    Shuffle is supported to randomly sampling into a sequence buffer:
+
+    ```python
+    shuffle_reader = DataReader(
+        dataset=dataset,
+        source=path,
+        shuffle=True,
+        # It is recommended to set a buffer size larger than
+        # the batch size to make batches of single node more diverse.
+        # Default value 1024 is sufficient for most case.
+        initial_fill=1024,
+    )
+    ```
+
     Partition are available over distributed nodes:
 
     ```python
@@ -37,31 +51,17 @@ class DataReader(multiprocessing.Process):
         dataset=dataset,
         source=path,
         part_idx=rank,
-        num_parts=num_ranks,
-    )
-    ```
-
-    There are two shuffle schemes:
-
-    ```python
-    # Recommendation: SSD or dataset is tiny
-    example_wise_shuffle_reader = DataReader(
-        dataset=dataset,
-        source=path,
-        shuffle=True,
-        num_chunks=0,  # Set to the number of examples
-    )
-
-    # Recommendation: HDD or dataset is huge
-    chunk_wise_shuffle_reader = DataReader(
-        dataset=dataset,
-        source=path,
-        shuffle=True,
-        num_chunks=2048,
+        num_parts=world_size,
     )
     ```
 
     """
+
+    class PartBoundaries(object):
+        """Record the boundary of current part."""
+
+        def __init__(self, start, end):
+            self.start, self.end = start, end
 
     def __init__(self, **kwargs):
         """Create a ``DataReader``.
@@ -72,14 +72,14 @@ class DataReader(multiprocessing.Process):
             The dataset class to load examples.
         source : str
             The path of data source.
-        shuffle : bool, optional, default=False
-            Whether to shuffle the data.r
-        num_chunks : int, optional, default=0
-            The number of chunks to split.
-        num_parts : int, optional, default=1
-            The number of partitions over dataset.
         part_idx : int, optional, default=0
-            The index of current partition.
+            The index of partition to read.
+        num_parts : int, optional, default=1
+            The total number of partitions over dataset.
+        shuffle : bool, optional, default=False
+            Whether to shuffle the data.
+        initial_fill : int, optional, default=1024
+            The length of sampling sequence for shuffle.
         seed : int, optional
             The random seed to use instead.
 
@@ -87,65 +87,69 @@ class DataReader(multiprocessing.Process):
         super(DataReader, self).__init__()
         self._dataset = kwargs.get('dataset', None)
         self._source = kwargs.get('source', '')
-        self._shuffle = kwargs.get('shuffle', False)
-        self._num_chunks = kwargs.get('num_chunks', 0)
-        self._num_parts = kwargs.get('num_parts', 1)
         self._part_idx = kwargs.get('part_idx', 0)
+        self._num_parts = kwargs.get('num_parts', 1)
+        self._shuffle = kwargs.get('shuffle', False)
+        self._initial_fill = kwargs.get('initial_fill', 1024) if self._shuffle else 1
         self._seed = kwargs.get('seed', config.config().random_seed)
-        self._begin, self._end = 0, 0
-        self._perm_size, self._perm = 1, None
-        self._chunk_size, self._num_examples = 1, 1
-        self._example_cursor, self._chunk_cursor = 0, 0
+        self._first, self._cursor, self._last = 0, 0, 0
+        self._part_size = 0
+        self._num_examples = 0
+        self._example_buffer = []
+        self._parts = []
         self.q_out = None
         self.daemon = True
 
     def before_first(self):
         """Move the cursor before begin."""
-        self._example_cursor = self._begin
-        self._dataset.redirect(self._begin)
+        self._cursor = self._first
+        self._dataset.redirect(self._first)
 
     def next_example(self):
         """Return the next example."""
-        self._example_cursor += 1
+        self._cursor += 1
         return self._dataset.get()
 
-    def next_chunk(self):
-        """Select the next chunk."""
-        self._chunk_cursor += 1
-        if self._chunk_cursor >= self._perm_size:
-            self.reset()
-        else:
-            chunk_idx = self._part_idx * self._perm_size + int(self._perm[self._chunk_cursor])
-            self._begin = chunk_idx * self._chunk_size
-            if self._begin >= self._num_examples:
-                self.next_chunk()
-            else:
-                self._end = min(self._begin + self._chunk_size, self._num_examples)
-            self.before_first()
-
-    def reset(self):
+    def reset(self, stick_to_part=False):
         """Reset the environment of dataset."""
-        if self._num_parts > 1 or self._shuffle:
-            self._chunk_cursor = -1
+        # Redirect to the adjacent part if available.
+        if not stick_to_part:
             self._part_idx = (self._part_idx + 1) % self._num_parts
-            if self._shuffle:
-                self._perm = numpy.random.permutation(self._perm_size)
-            self.next_chunk()
-        else:
-            self._begin, self._end = 0, self._num_examples
-            self.before_first()
+        self._first = self._part_idx * self._part_size
+        self._last = min(self._first + self._part_size, self._num_examples)
+        self.before_first()
+        # Use the new boundaries to avoid sampling duplicates
+        # when buffer size is greater than dataset size.
+        counter = self._parts[-1].end
+        self._parts.append(DataReader.PartBoundaries(counter, counter))
 
     def run(self):
         """Start the process."""
         self._init_dataset()
         # Persist a loop to read examples.
         while True:
-            self.q_out.put(self.next_example())
-            if self._example_cursor >= self._end:
-                if self._num_parts > 1 or self._shuffle:
-                    self.next_chunk()
-                else:
-                    self.reset()
+            # Pop the depleted part if necessary
+            if self._parts[0].start == self._parts[0].end:
+                self._parts.pop(0)
+            offset = 0
+            if self._shuffle:
+                # Sample a random offset if shuffle required.
+                offset = self._parts[0].end - self._parts[0].start
+                offset = int(numpy.random.uniform(high=offset))
+            # Choose a loaded example from the buffer.
+            i = self._parts[0].start % len(self._example_buffer)
+            j = (self._parts[0].start + offset) % len(self._example_buffer)
+            self.q_out.put(self._example_buffer[j])
+            self._example_buffer[j] = self._example_buffer[i]
+            # Load and push back a new example into the buffer.
+            k = self._parts[-1].end % len(self._example_buffer)
+            self._example_buffer[k] = self.next_example()
+            # Increase the part boundaries
+            self._parts[-1].end += 1
+            self._parts[0].start += 1
+            # Reset the cursor if necessary
+            if self._cursor >= self._last:
+                self.reset()
 
     def _init_dataset(self):
         """Initialize the dataset."""
@@ -154,24 +158,16 @@ class DataReader(multiprocessing.Process):
         # Instantiate the dataset here to avoid a fork of process.
         # Fork will somehow fail if dataset is implemented in C/C++.
         self._dataset = self._dataset(self._source)
+
+        # Determine the part specification.
         self._num_examples = self._dataset.size
+        self._part_size = (self._num_examples + self._num_parts - 1) // self._num_parts
+        self._parts.append(DataReader.PartBoundaries(0, 0))
 
-        # Determine the chunk scheme on different settings.
-        def div_up(a, b):
-            return (a + b - 1) // b
-
-        if self._shuffle:
-            if self._num_chunks <= 0:
-                # Each chunk has at most 1 example (ExampleWise).
-                self._perm_size = div_up(self._num_examples, self._num_parts)
-            else:
-                # Each chunk has several examples (ChunkWise).
-                self._perm_size = div_up(self._num_chunks, self._num_parts)
-                self._chunk_size = div_up(self._num_examples, self._num_chunks)
-        else:
-            # Each chunk has the examples of whole shard (ShardWise).
-            self._chunk_size = div_up(self._num_examples, self._num_parts)
-
-        # Reset the layout of permutation.
-        self._perm = numpy.arange(self._perm_size)
-        self.reset()
+        # Fill the initial buffer to support random sampling.
+        self.reset(stick_to_part=True)
+        for i in range(self._initial_fill):
+            self._example_buffer.append(self.next_example())
+            self._parts[-1].end += 1
+            if self._cursor >= self._last:
+                self.reset()

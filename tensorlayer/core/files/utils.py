@@ -118,7 +118,7 @@ def load_and_assign_pkl_dict(name, module, skip=False):
             value_dict = six.moves.pickle.load(f)
     except UnicodeDecodeError:
         with open(name, 'rb') as f:
-            value_dict = six.moves.pickle.load(f, encoding='iso-8859-1')
+            value_dict = six.moves.pickle.load(f, encoding='bytes')
 
     weight_dict = {w.name: w for w in module.weights}
     return _assign_weights_from_dict(weight_dict, value_dict, skip=skip)

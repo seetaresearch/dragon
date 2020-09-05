@@ -13,8 +13,6 @@
 #ifndef DRAGON_UTILS_CAST_H_
 #define DRAGON_UTILS_CAST_H_
 
-#include <cstring>
-
 #include "dragon/core/types.h"
 #include "dragon/utils/device/common_cuda.h"
 

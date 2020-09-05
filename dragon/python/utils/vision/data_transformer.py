@@ -56,7 +56,7 @@ class DataTransformer(multiprocessing.Process):
             The range of scales to sample a crop randomly.
         random_aspect_ratios : Sequence[float], optional, default=(0.75, 1.33)
             The range of aspect ratios to sample a crop randomly.
-        augment_color : bool, optional, default=False
+        distort_color : bool, optional, default=False
             Whether to apply color distortion.
         inverse_color : bool, option, default=False
             Whether to inverse channels for color images.
@@ -76,7 +76,7 @@ class DataTransformer(multiprocessing.Process):
         self._mirror = kwargs.get('mirror', False)
         self._random_scales = kwargs.get('random_scales', (0.08, 1.))
         self._random_ratios = kwargs.get('random_aspect_ratios', (3. / 4., 4. / 3.))
-        self._augment_color = kwargs.get('augment_color', False)
+        self._distort_color = kwargs.get('distort_color', False)
         self._inverse_color = kwargs.get('inverse_color', False)
         self._phase = kwargs.get('phase', 'TRAIN')
         self._seed = kwargs.get('seed', config.config().random_seed)
@@ -84,7 +84,7 @@ class DataTransformer(multiprocessing.Process):
         self.daemon = True
         if cv2 is None:
             raise ImportError('Failed to import package <cv2>.')
-        if self._augment_color and PIL is None:
+        if self._distort_color and PIL is None:
             raise ImportError('Failed to import package <PIL>.')
 
     def get(self, example):
@@ -105,7 +105,7 @@ class DataTransformer(multiprocessing.Process):
         """
         # Decode.
         img = numpy.frombuffer(example['data'], numpy.uint8)
-        if example['encoded'] > 0:
+        if example.get('encoded', 0) > 0:
             img = cv2.imdecode(img, 1)
         else:
             img = img.reshape(example['shape'])
@@ -117,13 +117,11 @@ class DataTransformer(multiprocessing.Process):
                 pass
             else:
                 if w < h:
-                    ow, oh = size, size * h // w
+                    ow, oh, im_scale = size, size * h // w, float(size) / w
                 else:
-                    oh, ow = size, size * w // h
-                img = cv2.resize(
-                    img, (ow, oh),
-                    interpolation=cv2.INTER_LINEAR,
-                )
+                    oh, ow, im_scale = size, size * w // h, float(size) / h
+                interp = cv2.INTER_AREA if im_scale < 1 else cv2.INTER_LINEAR
+                img = cv2.resize(img, (ow, oh), interpolation=interp)
 
         # Padding.
         if self._padding > 0:
@@ -181,7 +179,9 @@ class DataTransformer(multiprocessing.Process):
                 j = (width - w) // 2
             img = img[i:i + h, j:j + w, :]
             new_size = (self._random_crop_size, self._random_crop_size)
-            img = cv2.resize(img, new_size, interpolation=cv2.INTER_LINEAR)
+            min_scale = self._random_crop_size / max(img.shape[:2])
+            interp = cv2.INTER_AREA if min_scale < 1 else cv2.INTER_LINEAR
+            img = cv2.resize(img, new_size, interpolation=interp)
 
         # CutOut.
         if self._cutout_size > 0:
@@ -199,8 +199,8 @@ class DataTransformer(multiprocessing.Process):
             if numpy.random.randint(0, 2) > 0:
                 img = img[:, ::-1, :]
 
-        # Color augmentation.
-        if self._augment_color:
+        # Color distortion.
+        if self._distort_color:
             img = PIL.Image.fromarray(img)
             transforms = [
                 PIL.ImageEnhance.Brightness,

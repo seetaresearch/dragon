@@ -18,6 +18,7 @@
 #include <array>
 #include <climits>
 #include <cmath>
+#include <cstring>
 #include <ctime>
 #include <functional>
 #include <map>

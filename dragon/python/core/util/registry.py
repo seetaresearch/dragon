@@ -35,8 +35,7 @@ class Registry(object):
         if not self.has(name):
             raise KeyError(
                 "`%s` is not registered in <%s>."
-                % (name, self._name)
-            )
+                % (name, self._name))
         return self._registry[name]
 
     def has(self, name):

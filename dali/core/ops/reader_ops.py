@@ -8,6 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""Reader ops."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -38,6 +39,7 @@ class KPLRecordReader(object):
 
     ```python
     class MyPipeline(dali.Pipeline):
+
         def __init__():
             super(MyPipeline, self).__init__()
             # Assume the we have the following data:
@@ -48,11 +50,11 @@ class KPLRecordReader(object):
                 path='/data'
                 features=('image', 'label'),
                 pipeline=self,
-                # Shuffle globally within specified number of chunks
-                # once an epoch is finished
-                shuffle_after_epoch=True,
-                # Set **0** to split each example as a chunk
-                shuffle_chunks=0,
+                # Shuffle locally in the next ``initial_fill`` examples
+                # It turns to be weak with the decreasing of ``initial_fill``
+                # and disabled if ``initial_fill`` is set to **1**
+                random_shuffle=True,
+                initial_fill=1024,
             )
 
         def iter_step(self):
@@ -71,8 +73,8 @@ class KPLRecordReader(object):
         pipeline,
         shard_id=0,
         num_shards=1,
-        shuffle_after_epoch=False,
-        shuffle_chunks=0,
+        random_shuffle=False,
+        initial_fill=1024,
         **kwargs
     ):
         """Create a ``KPLRecordReader``.
@@ -81,14 +83,18 @@ class KPLRecordReader(object):
         ----------
         path : str
             The folder of record files.
+        features : Sequence[str], required
+            The name of features to extract.
+        pipeline : nvidia.dali.Pipeline, required
+            The pipeline to connect to.
         shard_id : int, optional, default=0
-            The index of specific shard.
+            The index of partition to read.
         num_shards : int, optional, default=1
-            The total number of shards.
-        shuffle_after_epoch : bool, optional, default=False
-            **True** to shuffle examples once an epoch is finished.
-        shuffle_chunks : int, optional, default=0
-            The number of chunks to shuffle.
+            The total number of partitions over dataset.
+        random_shuffle : bool, optional, default=False
+            Whether to shuffle the data.
+        initial_fill : int, optional, default=1024
+            The length of sampling sequence for shuffle.
 
         """
         self._pipe = pipeline
@@ -99,8 +105,8 @@ class KPLRecordReader(object):
             source=path,
             part_idx=shard_id,
             num_parts=num_shards,
-            shuffle=shuffle_after_epoch,
-            num_chunks=shuffle_chunks,
+            shuffle=random_shuffle,
+            initial_fill=initial_fill,
             **kwargs
         )
         self._buffer = self._reader.q_out = mp.Queue(
@@ -197,13 +203,13 @@ class TFRecordReader(object):
         path : str
             The folder of record files.
         shard_id : int, optional, default=0
-            The index of specific shard.
+            The index of partition to read.
         num_shards : int, optional, default=1
-            The total number of shards.
+            The total number of partitions over dataset.
         random_shuffle : bool, optional, default=False
-            **True** to shuffle examples in a sequence.
+            Whether to shuffle the data.
         initial_fill : int, optional, default=1024
-            The length of sequence for shuffle.
+            The length of sampling sequence for shuffle.
 
         Returns
         -------

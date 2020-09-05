@@ -74,8 +74,8 @@ class DataIterator(object):
             The path of data source.
         shuffle : bool, optional, default=False
             Whether to shuffle the data.
-        num_chunks : int, optional, default=0
-            The number of chunks to split.
+        initial_fill : int, optional, default=1024
+            The length of sampling sequence for shuffle.
         resize : int, optional, default=0
             The size for the shortest edge.
         padding : int, optional, default=0
@@ -94,7 +94,7 @@ class DataIterator(object):
             The range of scales to sample a crop randomly.
         random_aspect_ratios : Sequence[float], optional, default=(0.75, 1.33)
             The range of aspect ratios to sample a crop randomly.
-        augment_color : bool, optional, default=False
+        distort_color : bool, optional, default=False
             Whether to apply color distortion.
         inverse_color : bool, option, default=False
             Whether to inverse channels for color images.

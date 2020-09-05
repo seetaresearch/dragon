@@ -66,7 +66,7 @@ def load(f, pickle_module=PICKLE_MODULE):
             f, 'rb', lambda f: pickle_module.load(f))
     except UnicodeDecodeError:
         return _with_file_like(
-            f, 'rb', lambda f: pickle_module.load(f, encoding='iso-8859-1'))
+            f, 'rb', lambda f: pickle_module.load(f, encoding='bytes'))
 
 
 def _save_dict(obj):

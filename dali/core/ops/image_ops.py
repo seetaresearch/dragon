@@ -8,6 +8,7 @@
 #     <https://opensource.org/licenses/BSD-2-Clause>
 #
 # ------------------------------------------------------------
+"""Image ops."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -300,8 +301,8 @@ class RandomBBoxCrop(object):
         aspect_ratio=(0.5, 2.0),
         thresholds=(0.0, 0.1, 0.3, 0.5, 0.7, 0.9),
         allow_no_crop=True,
-        ltrb=True,
         num_attempts=10,
+        bbox_layout=None,
         **kwargs
     ):
         """Create a ``RandomBBoxCrop`` operator.
@@ -316,10 +317,10 @@ class RandomBBoxCrop(object):
             The minimum IoU(s) to satisfy.
         allow_no_crop : bool, optional, default=True
             **True** to include the no-cropping as a option.
-        ltrb : bool, optional, default=True
-            Indicate the bbox is ``ltrb`` or ``xywh`` format.
         num_attempts : int, optional, default=10
             The max number of sampling trails.
+        bbox_layout : str, optional
+            The optional bbox layout.
 
         Returns
         -------
@@ -332,8 +333,8 @@ class RandomBBoxCrop(object):
             aspect_ratio=aspect_ratio,
             thresholds=thresholds,
             allow_no_crop=allow_no_crop,
-            ltrb=ltrb,
             num_attempts=num_attempts,
+            bbox_layout=bbox_layout,
             device='cpu',
             **kwargs
         )
@@ -359,7 +360,9 @@ class RandomResizedCrop(object):
     def __new__(
         cls,
         size,
-        interp_type='LINEAR',
+        interp_type=None,
+        mag_filter=None,
+        min_filter=None,
         random_area=(0.08, 1.),
         random_aspect_ratio=(0.75, 1.33),
         num_attempts=10,
@@ -371,8 +374,12 @@ class RandomResizedCrop(object):
         ----------
         size : Union[int, Sequence[int]]
             The output image size.
-        interp_type : {'NN', 'LINEAR', 'TRIANGULAR', 'CUBIC', 'GAUSSIAN', 'LANCZOS3'}, optional
-            The interpolation method.
+        interp_type : str, optional
+            The interpolation for both up and down sampling.
+        mag_filter : str, optional, default='LINEAR'
+            The interpolation for up sampling.
+        min_filter : str, optional, default='TRIANGULAR'
+            The interpolation for down sampling.
         random_area : Sequence[float], optional, default=(0.08, 1.)
             The range of scale for sampling.
         random_aspect_ratio : Sequence[float], optional, default=(0.75, 1.33)
@@ -388,9 +395,15 @@ class RandomResizedCrop(object):
         """
         if isinstance(interp_type, six.string_types):
             interp_type = getattr(types, 'INTERP_' + interp_type.upper())
+        if isinstance(mag_filter, six.string_types):
+            mag_filter = getattr(types, 'INTERP_' + mag_filter.upper())
+        if isinstance(min_filter, six.string_types):
+            min_filter = getattr(types, 'INTERP_' + min_filter.upper())
         return ops.RandomResizedCrop(
             size=size,
             interp_type=interp_type,
+            mag_filter=mag_filter,
+            min_filter=min_filter,
             random_area=random_area,
             random_aspect_ratio=random_aspect_ratio,
             num_attempts=num_attempts,
@@ -425,6 +438,8 @@ class Resize(object):
         resize_longer=None,
         max_size=None,
         interp_type='LINEAR',
+        mag_filter=None,
+        min_filter=None,
         **kwargs
     ):
         """Create a ``Resize`` operator.
@@ -441,12 +456,20 @@ class Resize(object):
             Resize along the longer side.
         max_size : int, optional, default=0
             The limited size for ``resize_shorter``.
-        interp_type : {'NN', 'LINEAR', 'TRIANGULAR', 'CUBIC', 'GAUSSIAN', 'LANCZOS3'}, optional
-            The interpolation method.
+        interp_type : str, optional
+            The interpolation for both up and down sampling.
+        mag_filter : str, optional, default='LINEAR'
+            The interpolation for up sampling.
+        min_filter : str, optional, default='TRIANGULAR'
+            The interpolation for down sampling.
 
         """
         if isinstance(interp_type, six.string_types):
             interp_type = getattr(types, 'INTERP_' + interp_type.upper())
+        if isinstance(mag_filter, six.string_types):
+            mag_filter = getattr(types, 'INTERP_' + mag_filter.upper())
+        if isinstance(min_filter, six.string_types):
+            min_filter = getattr(types, 'INTERP_' + min_filter.upper())
         return ops.Resize(
             resize_x=resize_x,
             resize_y=resize_y,
@@ -454,6 +477,8 @@ class Resize(object):
             resize_longer=resize_longer,
             max_size=max_size,
             interp_type=interp_type,
+            mag_filter=mag_filter,
+            min_filter=min_filter,
             device=context.get_device_type(),
             **kwargs
         )

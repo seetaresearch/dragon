@@ -14,10 +14,6 @@ before_first
 ############
 .. automethod:: dragon.io.DataReader.before_first
 
-next_chunk
-##########
-.. automethod:: dragon.io.DataReader.next_chunk
-
 next_example
 ############
 .. automethod:: dragon.io.DataReader.next_example
