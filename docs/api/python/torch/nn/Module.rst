@@ -18,6 +18,10 @@ apply
 #####
 .. automethod:: dragon.vm.torch.nn.Module.apply
 
+buffers
+#######
+.. automethod:: dragon.vm.torch.nn.Module.buffers
+
 children
 ########
 .. automethod:: dragon.vm.torch.nn.Module.children
@@ -57,6 +61,10 @@ load_state_dict
 modules
 #######
 .. automethod:: dragon.vm.torch.nn.Module.modules
+
+named_buffers
+#############
+.. automethod:: dragon.vm.torch.nn.Module.named_buffers
 
 named_children
 ##############

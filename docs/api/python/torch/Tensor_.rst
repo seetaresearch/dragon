@@ -425,6 +425,10 @@ sub\_
 #####
 .. automethod:: dragon.vm.torch.Tensor.sub_
 
+to
+##
+.. automethod:: dragon.vm.torch.Tensor.to
+
 topk
 ####
 .. automethod:: dragon.vm.torch.Tensor.topk
@@ -436,6 +440,10 @@ type
 uniform\_
 #########
 .. automethod:: dragon.vm.torch.Tensor.uniform_
+
+unique
+######
+.. automethod:: dragon.vm.torch.Tensor.unique
 
 unsqueeze
 #########
@@ -500,6 +508,7 @@ zero\_
 .. _torch.sub(...): sub.html
 .. _torch.sum(...): sum.html
 .. _torch.topk(...): topk.html
+.. _torch.unique(...): unique.html
 .. _torch.unsqueeze(...): unsqueeze.html
 .. _torch.where(...): where.html
 

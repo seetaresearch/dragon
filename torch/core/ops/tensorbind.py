@@ -1705,7 +1705,7 @@ def _type(self, dtype=None):
     """
     if dtype is None:
         return self.dtype
-    return array_funcs.cast(self, dtype, True)
+    return array_funcs.cast(self, dtype, False)
 
 
 def uniform_(self, low=0, high=1):
@@ -1727,6 +1727,33 @@ def uniform_(self, low=0, high=1):
 
     """
     return init_funcs.uniform_fill(self, low, high)
+
+
+def unique(self, return_inverse=False, return_counts=False, **kwargs):
+    """Return the unique elements.
+
+    Parameters
+    ----------
+    return_inverse : bool, optional, default=False
+        Return the inverse index or not.
+    return_counts : bool, optional, default=False
+        Return the counts or not.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+    dragon.vm.torch.Tensor, optional
+        The inverse index tensor.
+    dragon.vm.torch.Tensor, optional
+        The counts tensor.
+
+    See Also
+    --------
+    `torch.unique(...)`_
+
+    """
+    return array_funcs.unique(self, return_inverse, return_counts, **kwargs)
 
 
 def unsqueeze(self, dim):
@@ -1922,6 +1949,7 @@ Tensor.sub_ = sub_
 Tensor.topk = topk
 Tensor.type = _type
 Tensor.uniform_ = uniform_
+Tensor.unique = unique
 Tensor.unsqueeze = unsqueeze
 Tensor.unsqueeze_ = unsqueeze_
 Tensor.where = where

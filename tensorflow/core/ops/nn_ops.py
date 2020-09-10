@@ -49,7 +49,7 @@ def avg_pool(
     data_format : {'NCHW', 'NCDHW', 'NHWC', 'NDHWC'}, optional
         The optional data format.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -109,7 +109,7 @@ def avg_pool2d(
     data_format : {'NCHW', 'NCDHW', 'NHWC', 'NDHWC'}, optional
         The optional data format.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -164,7 +164,7 @@ def convolution(
     dilations : Sequence[int], optional
         The rate(s) of dilated kernel.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -230,7 +230,7 @@ def conv_transpose(
     dilations : Sequence[int], optional
         The rate(s) of dilated kernel.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -299,7 +299,7 @@ def conv2d(
     dilations : Sequence[int], optional
         The rate(s) of dilated kernel.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -339,7 +339,7 @@ def conv2d_transpose(
     dilations : Sequence[int], optional
         The rate(s) of dilated kernel.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -377,7 +377,7 @@ def depthwise_conv2d(
     dilations : Sequence[int], optional
         The rate(s) of dilated kernel.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -410,7 +410,7 @@ def dropout(x, rate, name=None, **kwargs):
     rate : Union[float, dragon.Tensor]
         The dropping probability.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -441,7 +441,7 @@ def elu(features, alpha=1., name=None, **kwargs):
     alpha : float, optional, default=1.
         The value to :math:`\alpha`.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -475,7 +475,7 @@ def leaky_relu(features, alpha=0.2, name=None, **kwargs):
     alpha : number, optional, default=0.2
         The value to :math:`\alpha`.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -520,7 +520,7 @@ def local_response_normalization(
     data_format : {'NCHW', 'NHWC'}, optional
         The optional data format.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -561,7 +561,7 @@ def log_softmax(logits, axis=-1, name=None):
     axis : int, optional, default=1
         The axis to reduce.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -595,7 +595,7 @@ def max_pool(
     data_format : {'NCHW', 'NCDHW', 'NHWC', 'NDHWC'}, optional
         The optional data format.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -655,7 +655,7 @@ def max_pool2d(
     data_format : {'NCHW', 'NCDHW', 'NHWC', 'NDHWC'}, optional
         The optional data format.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -693,7 +693,7 @@ def relu(features, name=None, **kwargs):
     features : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -722,7 +722,7 @@ def relu6(features, name=None, **kwargs):
     features : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -756,7 +756,7 @@ def selu(features, name=None, **kwargs):
     features : dragon.Tensor
         The tensor :math:`x`.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -797,7 +797,7 @@ def softmax(logits, axis=-1, name=None, **kwargs):
     axis : int, optional, default=-1
         The axis to reduce.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -826,7 +826,7 @@ def softmax_cross_entropy_with_logits(labels, logits, name=None):
     logits : dragon.Tensor
         The logit tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -860,7 +860,7 @@ def sparse_softmax_cross_entropy_with_logits(labels, logits, name=None):
     logits : dragon.Tensor
         The logit tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -888,7 +888,7 @@ def top_k(input, k=1, sorted=True, name=None):
     sorted : bool, optional
         Whether to return in the sorted order.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------

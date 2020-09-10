@@ -64,7 +64,7 @@ def batch_normalization(
     trainable : bool, optional, default=False
         The optional training flag.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -119,7 +119,7 @@ def l2_normalize(x, axis=None, epsilon=1e-12, name=None):
     epsilon : float, optional, default=1e-5
         The value to :math:`\epsilon`.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -171,7 +171,7 @@ def moments(x, axes=None, keepdims=False, name=None):
     keepdims : bool, optional, default=False
         Keep the reduced dimensions or not.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------

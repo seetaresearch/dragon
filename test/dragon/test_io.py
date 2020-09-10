@@ -47,18 +47,11 @@ class TestKPLRecord(unittest.TestCase):
             self.assertEqual(len(dataset), 1)
             dataset.redirect(0)
             self.assertEqual(example, dataset.get())
-            for num_chunks, shuffle in [(0, False), (0, True), (1, True)]:
+            for shuffle, initial_fill in [(False, 1), (True, 1), (True, 1024)]:
                 reader = dragon.io.DataReader(
                     dataset=dragon.io.KPLRecordDataset,
-                    source=path, num_chunks=num_chunks, shuffle=shuffle)
+                    source=path, shuffle=shuffle, initial_fill=initial_fill)
                 reader._init_dataset()
-                for i in range(8):
-                    self.assertEqual(reader.next_example(), example)
-                    if reader._example_cursor >= reader._end:
-                        if reader._num_parts > 1 or reader._shuffle:
-                            reader.next_chunk()
-                        else:
-                            reader.reset()
         except (OSError, PermissionError):
             pass
 

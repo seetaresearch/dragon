@@ -98,6 +98,23 @@ class Module(object):
         fn(self)
         return self
 
+    def buffers(self, recurse=True):
+        """Return an iterator over all buffers.
+
+        Parameters
+        ----------
+        recurse : bool, optional, default=True
+            Yield parameters recursively or not.
+
+        Returns
+        -------
+        Iterator
+            The iterator of buffer.
+
+        """
+        for name, buffer in self.named_buffers(recurse=recurse):
+            yield buffer
+
     def children(self):
         """Return an iterator over immediate modules.
 
@@ -294,6 +311,28 @@ class Module(object):
         for name, module in self.named_modules():
             yield module
 
+    def named_buffers(self, prefix='', recurse=True):
+        """Return an iterator over all buffers.
+
+        Parameters
+        ----------
+        prefix : str, optional, default=''
+            The prefix added to the name.
+        recurse : bool, optional, default=True
+            Yield buffers recursively or not.
+
+        Returns
+        -------
+        Iterator
+            The iterator of (name, buffer).
+
+        """
+        gen = self._named_members(
+            lambda module: module._buffers.items(),
+            prefix=prefix, recurse=recurse)
+        for name, buffer in gen:
+            yield name, buffer
+
     def named_children(self):
         """Return an iterator over immediate modules, yield as *(name, module)*.
 
@@ -320,7 +359,7 @@ class Module(object):
         Returns
         -------
         Iterator
-            The iterator of module.
+            The iterator of (name, module).
 
         """
         if memo is None:
@@ -335,43 +374,43 @@ class Module(object):
                 for m in module.named_modules(memo, submodule_prefix):
                     yield m
 
-    def named_parameters(self, memo=None, prefix=''):
+    def named_parameters(self, prefix='', recurse=True):
         """Return an iterator over all parameters.
 
         Parameters
         ----------
-        memo : Set, optional
-            The optional set to collect parameters.
         prefix : str, optional, default=''
             The prefix added to the name.
+        recurse : bool, optional, default=True
+            Yield parameters recursively or not.
 
         Returns
         -------
         Iterator
-            The iterator of parameter.
+            The iterator of (name, param).
 
         """
-        if memo is None:
-            memo = set()
-        for name, p in self._parameters.items():
-            if p is not None and p not in memo:
-                memo.add(p)
-                yield prefix + ('.' if prefix else '') + name, p
-        for mname, module in self.named_children():
-            submodule_prefix = prefix + ('.' if prefix else '') + mname
-            for name, p in module.named_parameters(memo, submodule_prefix):
-                yield name, p
+        gen = self._named_members(
+            lambda module: module._parameters.items(),
+            prefix=prefix, recurse=recurse)
+        for name, param in gen:
+            yield name, param
 
-    def parameters(self):
+    def parameters(self, recurse=True):
         """Return an iterator over all parameters.
 
+        Parameters
+        ----------
+        recurse : bool, optional, default=True
+            Yield parameters recursively or not.
+
         Returns
         -------
         Iterator
-            The iterator of parameter.
+            The iterator of param.
 
         """
-        for name, param in self.named_parameters():
+        for name, param in self.named_parameters(recurse=recurse):
             yield param
 
     def register_buffer(self, name, tensor):
@@ -535,7 +574,21 @@ class Module(object):
         return self
 
     def _get_name(self):
+        """Return the class name."""
         return self.__class__.__name__
+
+    def _named_members(self, getter, prefix='', recurse=True):
+        """Return the named members."""
+        memo = set()
+        modules = self.named_modules(prefix=prefix) if recurse else [(prefix, self)]
+        for module_prefix, module in modules:
+            members = getter(module)
+            for k, v in members:
+                if v is None or v in memo:
+                    continue
+                memo.add(v)
+                name = module_prefix + ('.' if module_prefix else '') + k
+                yield name, v
 
     def __call__(self, *args, **kwargs):
         """Run the forward pipeline."""

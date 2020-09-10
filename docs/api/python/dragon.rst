@@ -153,6 +153,9 @@ dragon
   `transpose(...) <dragon/transpose.html>`_
   : Permute the dimensions of input.
 
+  `unique(...) <dragon/unique.html>`_
+  : Return the unique elements of input.
+
   `where(...) <dragon/where.html>`_
   : Select the elements from two branches under the condition.
 
@@ -212,6 +215,7 @@ dragon
   dragon/Tensor
   dragon/tile
   dragon/transpose
+  dragon/unique
   dragon/where
   dragon/Workspace
   dragon/zeros

@@ -85,6 +85,8 @@ from dragon.vm.tensorflow.core.ops.array_ops import split
 from dragon.vm.tensorflow.core.ops.array_ops import squeeze
 from dragon.vm.tensorflow.core.ops.array_ops import tile
 from dragon.vm.tensorflow.core.ops.array_ops import transpose
+from dragon.vm.tensorflow.core.ops.array_ops import unique
+from dragon.vm.tensorflow.core.ops.array_ops import unique_with_counts
 from dragon.vm.tensorflow.core.ops.array_ops import zeros
 from dragon.vm.tensorflow.core.ops.array_ops import zeros_like
 from dragon.vm.tensorflow.core.ops.clip_ops import clip_by_value

@@ -982,6 +982,56 @@ def topk(input, k, dim=None, largest=True, sorted=True, out=None):
         ).apply(input, out if out else (None, None))
 
 
+def unique(input, return_inverse=False, return_counts=False, **kwargs):
+    """Return the unique elements of input.
+
+    If ``return_inverse``, return the extra index where input mapping to:
+
+    ```python
+    x = torch.tensor([1, 2, 3, 2])
+    y, index = torch.unique(x, return_inverse=True)
+    print(y)  # [1, 2, 3]
+    print(index)  # [0, 1, 2, 1]
+    ```
+
+    If ``return_counts``, return the extra counts of output:
+
+    ```python
+    x = torch.tensor([1, 2, 3, 2])
+    y, counts = torch.unique(x, return_counts=True)
+    print(y)  # [1, 2, 3]
+    print(counts)  # [1, 2, 1]
+    ```
+
+    Parameters
+    ----------
+    input : dragon.vm.torch.Tensor
+        The input tensor.
+    return_inverse : bool, optional, default=False
+        Return the inverse index or not.
+    return_counts : bool, optional, default=False
+        Return the counts or not.
+
+    Returns
+    -------
+    dragon.vm.torch.Tensor
+        The output tensor.
+    dragon.vm.torch.Tensor, optional
+        The inverse index tensor.
+    dragon.vm.torch.Tensor, optional
+        The counts tensor.
+
+    """
+    if 'sorted' in kwargs:
+        kwargs.pop('sorted')
+    return _functions.Unique \
+        .instantiate(
+            input.device,
+            return_inverse=return_inverse,
+            return_counts=return_counts,
+        ).apply(input)
+
+
 def unsqueeze(input, dim, out=None):
     """Expand the dimensions of input with size 1.
 

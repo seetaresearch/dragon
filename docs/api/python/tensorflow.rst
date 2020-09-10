@@ -93,6 +93,12 @@ vm.tensorflow
   `transpose(...) <tensorflow/transpose.html>`_
   : Permute the dimensions of input.
 
+  `unique(...) <tensorflow/unique.html>`_
+  : Return the unique elements of input.
+
+  `unique_with_counts(...) <tensorflow/unique_with_counts.html>`_
+  : Return the unique elements of input with counts.
+
   `zeros(...) <tensorflow/zeros.html>`_
   : Return a tensor filled with zeros.
 
@@ -130,6 +136,8 @@ vm.tensorflow
   tensorflow/TensorShape
   tensorflow/TensorSpec
   tensorflow/transpose
+  tensorflow/unique
+  tensorflow/unique_with_counts
   tensorflow/zeros
   tensorflow/zeros_like
 

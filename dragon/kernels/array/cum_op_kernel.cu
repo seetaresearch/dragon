@@ -1,5 +1,6 @@
 #ifdef USE_CUDA
 
+#include "dragon/core/context_cuda.h"
 #include "dragon/utils/op_kernels.h"
 
 namespace dragon {

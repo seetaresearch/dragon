@@ -537,13 +537,30 @@ class TestTensorOps(OpTestCase):
             self.assertEqual(getattr(x, name)(), data.astype(dtype))
             getattr(x, name + '_')()
             self.assertEqual(x, data.astype(dtype))
-            x.type(dtype)
-            self.assertEqual(x.type(), dtype)
+            y = x.type(dtype)
+            self.assertEqual(y.type(), dtype)
 
     def test_uniform(self):
         data = arange((2, 3))
         x = new_tensor(data)
         x.uniform_()
+
+    def test_unique(self):
+        data = np.array([1, 1, 3, 5, 5, 7, 9])
+        entries = [(False, False),
+                   (True, False),
+                   (False, True),
+                   (True, True)]
+        for return_inverse, return_counts in entries:
+            x = new_tensor(data)
+            y = x.unique(return_inverse=return_inverse,
+                         return_counts=return_counts,
+                         sorted=True)
+            result = np.unique(
+                data,
+                return_inverse=return_inverse,
+                return_counts=return_counts)
+            self.assertEqual(y, result)
 
     def test_unsqueeze(self):
         entries = [1, -1]

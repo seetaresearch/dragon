@@ -31,7 +31,7 @@ class Loss(object):
         reduction : {'none', 'sum', 'mean', 'valid'}, optional
             The reduction method.
         name : str, optional
-            A optional name for the operation.
+            The operation name.
 
         """
         losses_utils.Reduction.validate(reduction)
@@ -112,7 +112,7 @@ class BinaryCrossentropy(LossFunctionWrapper):
         reduction : {'none', 'sum', 'mean', 'valid'}, optional
             The reduction method.
         name : str, optional
-            A optional name for the operation.
+            The operation name.
 
         """
         super(BinaryCrossentropy, self).__init__(
@@ -155,7 +155,7 @@ class CategoricalCrossentropy(LossFunctionWrapper):
         reduction : {'none', 'sum', 'mean', 'valid'}, optional
             The reduction method.
         name : str, optional
-            A optional name for the operation.
+            The operation name.
 
         """
         super(CategoricalCrossentropy, self).__init__(
@@ -196,7 +196,7 @@ class MeanAbsoluteError(LossFunctionWrapper):
         reduction : {'none', 'sum', 'mean'}, optional
             The reduction method.
         name : str, optional
-            A optional name for the operation.
+            The operation name.
 
         """
         super(MeanAbsoluteError, self).__init__(
@@ -236,7 +236,7 @@ class MeanSquaredError(LossFunctionWrapper):
         reduction : {'none', 'sum', 'mean'}, optional
             The reduction method.
         name : str, optional
-            A optional name for the operation.
+            The operation name.
 
         """
         super(MeanSquaredError, self).__init__(
@@ -282,7 +282,7 @@ class SparseCategoricalCrossentropy(LossFunctionWrapper):
         reduction : {'none', 'sum', 'mean', 'valid'}, optional
             The reduction method.
         name : str, optional
-            A optional name for the operation.
+            The operation name.
 
         """
         super(SparseCategoricalCrossentropy, self).__init__(

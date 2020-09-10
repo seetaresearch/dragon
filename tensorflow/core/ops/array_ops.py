@@ -58,7 +58,7 @@ def broadcast_to(input, shape, name=None):
     shape : Sequence[Union[int, dragon.Tensor]]
         The output shape to broadcast to.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -95,7 +95,7 @@ def concat(values, axis, name='concat'):
     axis : int
         The axis to concatenate
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -129,7 +129,7 @@ def depth_to_space(input, block_size, data_format='NHWC', name=None):
     data_format : {'NCHW', 'NHWC'}, optional
         The optional data format.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -172,7 +172,7 @@ def expand_dims(input, axis, name=None):
     axis : Union[int, Sequence[int]]
         The axis to insert the new dimension(s).
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -203,7 +203,7 @@ def fill(dims, value=0, dtype=None, name=None):
     dtype : str, optional
         The optional data type.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -248,7 +248,7 @@ def gather(params, indices, axis=0, name=None):
     axis : Union[int, Sequence[int]], optional, default=0
         The axis where the indices aligned.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -280,7 +280,7 @@ def identity(input, name=None):
     input : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -307,7 +307,7 @@ def ones(shape, dtype='float32', name=None):
     dtype : str, optional, default='float32'
         The optional data type.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     """
     return init_ops.fill(shape, value=1, dtype=dtype, name=name)
@@ -332,7 +332,7 @@ def ones_like(input, dtype='float32', name=None):
     dtype : str, optional, default='float32'
         The optional data type.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     """
     return init_ops.ones_like(input, dtype=dtype, name=name)
@@ -378,7 +378,7 @@ def one_hot(
     off_value : int, optional, default=0
         The value for not-equal branch.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -439,7 +439,7 @@ def pad(
     constant_values : int, optional, default=0
         The constant value in ``CONSTANT`` mode.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -515,7 +515,7 @@ def reshape(tensor, shape, name=None):
     shape : Union[Sequence[int], dragon.Tensor]
         The output shape.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     """
     return array_ops.reshape(tensor, shape=shape, name=name)
@@ -537,7 +537,7 @@ def shape(input, name=None):
     input : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -580,7 +580,7 @@ def slice(input_, begin, size, name=None):
     size : Union[Sequence[int], dragon.Tensor]
         The number of elements sliced from start.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -614,7 +614,7 @@ def space_to_depth(input, block_size, data_format='NHWC', name=None):
     data_format : {'NCHW', 'NHWC'}, optional
         The optional data format.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -665,7 +665,7 @@ def split(
     axis : int, optional, default=0
         The axis to split.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -704,7 +704,7 @@ def squeeze(input, axis=None, name=None):
     axis : Union[int, Sequence[int]], optional
         The axis to remove.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -740,7 +740,7 @@ def transpose(a, perm=None, name=None):
     perm : Sequence[Union[int, dragon.Tensor]]
         The output permutation.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -749,6 +749,78 @@ def transpose(a, perm=None, name=None):
 
     """
     return array_ops.transpose(a, perm=perm, name=name)
+
+
+def unique(x, name=None, **kwargs):
+    """Return the unique elements of input.
+
+    Unique elements and index where input mapping to are returned:
+
+    ```python
+    x = tf.constant([1, 2, 3, 2])
+    y, index = tf.unique(x)
+    print(y)  # [1, 2, 3]
+    print(index)  # [0, 1, 2, 1]
+    ```
+
+    Parameters
+    ----------
+    x : dragon.Tensor
+        The input tensor.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+    dragon.Tensor
+        The inverse index tensor.
+
+    """
+    if 'out_idx' in kwargs:
+        kwargs.pop('out_idx')
+    return array_ops.unique(x, return_inverse=True, name=name)
+
+
+def unique_with_counts(x, name=None, **kwargs):
+    """Return the unique elements of input with counts.
+
+    Unique elements, remapping index and counts are returned:
+
+    ```python
+    x = tf.constant([1, 2, 3, 2])
+    y, index, counts = tf.unique_with_counts(x)
+    print(y)  # [1, 2, 3]
+    print(index)  # [0, 1, 2, 1]
+    print(counts)  # [1, 2, 1]
+    ```
+
+    Parameters
+    ----------
+    x : dragon.Tensor
+        The input tensor.
+    name : str, optional
+        The operation name.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+    dragon.Tensor
+        The inverse index tensor.
+    dragon.Tensor
+        The counts tensor.
+
+    """
+    if 'out_idx' in kwargs:
+        kwargs.pop('out_idx')
+    return array_ops.unique(
+        x,
+        return_inverse=True,
+        return_counts=True,
+        name=name,
+    )
 
 
 def zeros(shape, dtype='float32', name=None):
@@ -767,7 +839,7 @@ def zeros(shape, dtype='float32', name=None):
     dtype : str, optional, default='float32'
         The optional data type.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     """
     return init_ops.fill(shape, value=0., dtype=dtype, name=name)
@@ -792,7 +864,7 @@ def zeros_like(input, dtype='float32', name=None):
     dtype : str, optional, default='float32'
         The optional data type.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     """
     return init_ops.zeros_like(input, dtype=dtype, name=name)

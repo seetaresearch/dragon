@@ -302,7 +302,7 @@ class RandomBBoxCrop(object):
         thresholds=(0.0, 0.1, 0.3, 0.5, 0.7, 0.9),
         allow_no_crop=True,
         num_attempts=10,
-        bbox_layout=None,
+        bbox_layout='xyXY',
         **kwargs
     ):
         """Create a ``RandomBBoxCrop`` operator.
@@ -316,10 +316,10 @@ class RandomBBoxCrop(object):
         thresholds : Sequence[float], optional
             The minimum IoU(s) to satisfy.
         allow_no_crop : bool, optional, default=True
-            **True** to include the no-cropping as a option.
+            **True** to include the no-cropping as an option.
         num_attempts : int, optional, default=10
             The max number of sampling trails.
-        bbox_layout : str, optional
+        bbox_layout : str, optional, default='xyXY'
             The optional bbox layout.
 
         Returns
@@ -437,7 +437,7 @@ class Resize(object):
         resize_shorter=None,
         resize_longer=None,
         max_size=None,
-        interp_type='LINEAR',
+        interp_type=None,
         mag_filter=None,
         min_filter=None,
         **kwargs

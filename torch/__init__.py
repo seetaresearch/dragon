@@ -73,6 +73,7 @@ from dragon.vm.torch.core.ops.array.functional import squeeze
 from dragon.vm.torch.core.ops.array.functional import stack
 from dragon.vm.torch.core.ops.array.functional import sum
 from dragon.vm.torch.core.ops.array.functional import topk
+from dragon.vm.torch.core.ops.array.functional import unique
 from dragon.vm.torch.core.ops.array.functional import unsqueeze
 from dragon.vm.torch.core.ops.array.functional import where
 from dragon.vm.torch.core.ops.init.functional import arange

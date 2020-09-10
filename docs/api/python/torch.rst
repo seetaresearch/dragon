@@ -235,6 +235,9 @@ vm.torch
   `topk(...) <torch/topk.html>`_
   : Return the top-K largest or smallest elements along the given dimension.
 
+  `unique(...) <torch/unique.html>`_
+  : Return the unique elements of input.
+
   `unsqueeze(...) <torch/unsqueeze.html>`_
   : Expand the dimensions of input with size 1.
 
@@ -325,6 +328,7 @@ vm.torch
   torch/Tensor_
   torch/tensor
   torch/topk
+  torch/unique
   torch/unsqueeze
   torch/where
   torch/zeros_like

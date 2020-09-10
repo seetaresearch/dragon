@@ -89,7 +89,7 @@ class DataIterator(object):
         cutout_size : int, optional, default=0
             The square size for the cutout algorithm.
         mirror : bool, optional, default=False
-            Whether to mirror(flip horizontally) images.
+            Whether to apply the mirror (flip horizontally).
         random_scales : Sequence[float], optional, default=(0.08, 1.)
             The range of scales to sample a crop randomly.
         random_aspect_ratios : Sequence[float], optional, default=(0.75, 1.33)
@@ -133,7 +133,7 @@ class DataIterator(object):
             if kwargs.get('random_crop_size', 0) > 0:
                 self._num_transformers += 1
             # Add a transformer for distortion.
-            if kwargs.get('augment_color', False):
+            if kwargs.get('distort_color', False):
                 self._num_transformers += 1
 
         # Initialize queues.

@@ -39,7 +39,7 @@ def abs(x, name=None):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -69,7 +69,7 @@ def add(x, y, name=None):
     y : dragon.Tensor
         The input2 tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -97,7 +97,7 @@ def add_n(inputs, name=None):
     inputs : Sequence[dragon.Tensor]
         The input tensors.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -138,7 +138,7 @@ def argmax(input, axis=None, name=None):
     axis : int, optional
         The axis to reduce.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -173,7 +173,7 @@ def argmin(input, axis=None, name=None):
     axis : int, optional
         The axis to reduce.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -201,7 +201,7 @@ def cast(x, dtype, name=None):
     dtype : str
         The data type to cast to.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -229,7 +229,7 @@ def ceil(x, name=None):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -257,7 +257,7 @@ def cos(x, name=None):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -308,7 +308,7 @@ def cumsum(x, axis=0, exclusive=False, reverse=False, name=None):
     reverse : bool, optional, default=False
         **True** to compute in the reverse direction.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -346,7 +346,7 @@ def divide(x, y, name=None):
     y : dragon.Tensor
         The input2 tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -379,7 +379,7 @@ def equal(x, y, name=None):
     y : dragon.Tensor
         The input2 tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -407,7 +407,7 @@ def exp(x, name=None):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -435,7 +435,7 @@ def floor(x, name=None):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -468,7 +468,7 @@ def greater(x, y, name=None):
     y : dragon.Tensor
         The input2 tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -501,7 +501,7 @@ def greater_equal(x, y, name=None):
     y : dragon.Tensor
         The input2 tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -529,7 +529,7 @@ def is_inf(x, name=None):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -557,7 +557,7 @@ def is_nan(x, name=None):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -590,7 +590,7 @@ def less(x, y, name=None):
     y : dragon.Tensor
         The input2 tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -623,7 +623,7 @@ def less_equal(x, y, name=None):
     y : dragon.Tensor
         The input2 tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -651,7 +651,7 @@ def log(x, name=None):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -707,7 +707,7 @@ def matmul(
     transpose_b : bool, optional, default=False
         **True** to transpose :math:`b` before computing.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -744,7 +744,7 @@ def multiply(x, y, name=None):
     y : dragon.Tensor
         The input2 tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -770,7 +770,7 @@ def negative(x, name=None):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -803,7 +803,7 @@ def not_equal(x, y, name=None):
     y : dragon.Tensor
         The input2 tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -835,7 +835,7 @@ def pow(x, y, name=None):
     y : Union[dragon.Tensor, number]
         The exponent tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -878,7 +878,7 @@ def range(start, limit=None, delta=1, dtype='int64', name=None):
     dtype : str, optional, default='int64'
         The optional data type.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -912,7 +912,7 @@ def reciprocal(x, name=None):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -949,7 +949,7 @@ def reduce_max(input_tensor, axis=None, keepdims=False, name=None):
     keepdims : bool, optional, default=False
         Keep the reduced dimensions or not.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -994,7 +994,7 @@ def reduce_mean(input_tensor, axis=None, keepdims=False, name=None):
     keepdims : bool, optional, default=False
         Keep the reduced dimensions or not.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -1036,7 +1036,7 @@ def reduce_min(input_tensor, axis=None, keepdims=False, name=None):
     keepdims : bool, optional, default=False
         Keep the reduced dimensions or not.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -1081,7 +1081,7 @@ def reduce_sum(input_tensor, axis=None, keepdims=False, name=None):
     keepdims : bool, optional, default=False
         Keep the reduced dimensions or not.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -1114,7 +1114,7 @@ def round(x, name=None):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -1142,7 +1142,7 @@ def rsqrt(x, name=None):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -1170,7 +1170,7 @@ def sigmoid(x, name=None, **kwargs):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -1204,7 +1204,7 @@ def sign(x, name=None):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -1232,7 +1232,7 @@ def sin(x, name=None):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -1260,7 +1260,7 @@ def sqrt(x, name=None):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -1288,7 +1288,7 @@ def square(x, name=None):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -1320,7 +1320,7 @@ def subtract(x, y, name=None):
     y : dragon.Tensor
         The input2 tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -1349,7 +1349,7 @@ def tanh(x, name=None, **kwargs):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------

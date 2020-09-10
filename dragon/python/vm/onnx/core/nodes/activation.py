@@ -72,7 +72,6 @@ def softmax_exporter(op_def, shape_dict, ws):
             if axis != (ndim - 1):
                 raise ValueError(
                     'Softmax axis could only be the last one.\n'
-                    'Use Exp(LogSoftmax) to compute the softmax instead.'
-                )
+                    'Use Exp(LogSoftmax) to compute the softmax instead.')
             helper.add_attribute(node, 'axis', arg.i)
     return node, const_tensors

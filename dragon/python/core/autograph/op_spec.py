@@ -1045,3 +1045,28 @@ def unchanged_spec(args, inputs, outputs):
     except TypeError:
         pass
     return outputs
+
+
+@register('Unique')
+def unique_spec(args, inputs, outputs):
+    return_inverse = args['return_inverse']
+    return_counts = args['return_counts']
+    outputs[0].dtype = inputs[0].dtype
+    for i in range(1, len(outputs)):
+        outputs[i].dtype = 'int64'
+    outputs[0].shape = (None,)
+    if len(outputs) == 2:
+        if return_inverse:
+            try:
+                outputs[1].shape = inputs[0].shape[:]
+            except TypeError:
+                pass
+        elif return_counts:
+            outputs[1].shape = (None,)
+    elif len(outputs) == 3:
+        try:
+            outputs[1].shape = inputs[0].shape[:]
+        except TypeError:
+            pass
+        outputs[2].shape = (None,)
+    return outputs

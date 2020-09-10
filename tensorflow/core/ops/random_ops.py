@@ -42,7 +42,7 @@ def random_normal(
     seed : int, optional
         The optional random seed.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -79,7 +79,7 @@ def random_uniform(
     seed : int, optional
         The optional random seed.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -117,7 +117,7 @@ def truncated_normal(
     seed : int, optional
         The optional random seed.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------

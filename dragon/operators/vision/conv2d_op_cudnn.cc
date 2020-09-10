@@ -479,26 +479,22 @@ void CuDNNConv2dGradientOp<Context>::DoRunWithType() {
   // Determine the workspace size for selected algorithm
   if (cudnn_ws_nbytes_ == SIZE_MAX) {
     size_t bwd_filter_size = 0, bwd_data_size = 0;
-    if (dW->has_name()) {
-      CUDNN_CHECK(cudnnGetConvolutionBackwardFilterWorkspaceSize(
-          ctx()->cudnn_handle(),
-          output_desc_,
-          input_desc_,
-          conv_desc_,
-          filter_desc_,
-          bwd_filter_algo_,
-          &bwd_filter_size));
-    }
-    if (dX->has_name()) {
-      CUDNN_CHECK(cudnnGetConvolutionBackwardDataWorkspaceSize(
-          ctx()->cudnn_handle(),
-          filter_desc_,
-          input_desc_,
-          conv_desc_,
-          output_desc_,
-          bwd_data_algo_,
-          &bwd_data_size));
-    }
+    CUDNN_CHECK(cudnnGetConvolutionBackwardFilterWorkspaceSize(
+        ctx()->cudnn_handle(),
+        output_desc_,
+        input_desc_,
+        conv_desc_,
+        filter_desc_,
+        bwd_filter_algo_,
+        &bwd_filter_size));
+    CUDNN_CHECK(cudnnGetConvolutionBackwardDataWorkspaceSize(
+        ctx()->cudnn_handle(),
+        filter_desc_,
+        input_desc_,
+        conv_desc_,
+        output_desc_,
+        bwd_data_algo_,
+        &bwd_data_size));
     cudnn_ws_nbytes_ = std::max(bwd_filter_size, bwd_data_size);
   }
 

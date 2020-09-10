@@ -908,6 +908,31 @@ class TestArrayOps(OpTestCase):
         with dragon.device('cuda'):
             self.test_top_k()
 
+    def test_unique(self):
+        data = np.array([1, 1, 3, 5, 5, 7, 9])
+        entries = [(False, False),
+                   (True, False),
+                   (False, True),
+                   (True, True)]
+        for execution in ('EAGER_MODE', 'GRAPH_MODE'):
+            with execution_context().mode(execution):
+                for return_inverse, return_counts in entries:
+                    x = new_tensor(data)
+                    y = dragon.unique(
+                        x,
+                        return_inverse=return_inverse,
+                        return_counts=return_counts)
+                    result = np.unique(
+                        data,
+                        return_inverse=return_inverse,
+                        return_counts=return_counts)
+                    self.assertEqual(y, result, test_symbols=False)
+
+    @unittest.skipIf(not TEST_CUDA, 'CUDA unavailable')
+    def test_unique_cuda(self):
+        with dragon.device('cuda'):
+            self.test_unique()
+
     def test_where(self):
         entries = [((6,), (6,))]
         for execution in ('EAGER_MODE', 'GRAPH_MODE'):

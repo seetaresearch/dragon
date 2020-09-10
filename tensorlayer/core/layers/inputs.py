@@ -84,7 +84,7 @@ def Input(shape, dtype='float32', name=None):
     dtype : str, optional, default='float32'
         The optional data type.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------

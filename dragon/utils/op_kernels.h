@@ -544,8 +544,18 @@ void TopK(
     int64_t* index,
     Context* ctx);
 
-/* control_flow.assgin */
+/* array.unique */
+template <typename T, class Context>
+void Unique(
+    const int dim,
+    const T* x,
+    T* y,
+    int64_t* inverse_index,
+    int64_t* counts,
+    int* num,
+    Context* ctx);
 
+/* control_flow.assgin */
 template <typename T, class Context>
 void Assign(
     const int num_dims,

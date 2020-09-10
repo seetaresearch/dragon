@@ -962,8 +962,7 @@ def pad(inputs, pads, mode='constant', value=0, **kwargs):
         if len(pad) != 2:
             raise ValueError(
                 'The tuple length of <pads> '
-                'should be 2, got {}.'.format(len(pad))
-            )
+                'should be 2, got {}.'.format(len(pad)))
         pads_begin.append(pad[0])
         pads_end.append(pad[1])
     args['pads'] = pads_begin + pads_end
@@ -1560,6 +1559,59 @@ def top_k(inputs, k=1, axis=None, largest=True, sorted=True, **kwargs):
     else:
         args['num_outputs'] = 2
         return op_lib.blend(**args)
+
+
+@OpSchema.num_inputs(1)
+def unique(inputs, return_inverse=False, return_counts=False, **kwargs):
+    """Return the unique elements of input.
+
+    If ``return_inverse``, return the extra index where input mapping to:
+
+    ```python
+    x = dragon.constant([1, 2, 3, 2])
+    y, index = dragon.unique(x, return_inverse=True)
+    print(y)  # [1, 2, 3]
+    print(index)  # [0, 1, 2, 1]
+    ```
+
+    If ``return_counts``, return the extra counts of output:
+
+    ```python
+    x = dragon.constant([1, 2, 3, 2])
+    y, counts = dragon.unique(x, return_counts=True)
+    print(y)  # [1, 2, 3]
+    print(counts)  # [1, 2, 1]
+    ```
+
+    Parameters
+    ----------
+    inputs : dragon.Tensor
+        The input tensor.
+    return_inverse : bool, optional, default=False
+        Return the inverse index or not.
+    return_counts : bool, optional, default=False
+        Return the counts or not.
+
+    Returns
+    -------
+    dragon.Tensor
+        The output tensor.
+    dragon.Tensor, optional
+        The inverse index tensor.
+    dragon.Tensor, optional
+        The counts tensor.
+
+    """
+    args = parse_args(locals())
+    op_lib = array_ops_lib.Unique
+    if context.executing_eagerly():
+        return op_lib.instantiate(
+            return_inverse=return_inverse,
+            return_counts=return_counts,
+        ).apply([inputs])
+    else:
+        num_outputs = 1 + return_inverse + return_counts
+        return op_lib.blend(num_outputs=num_outputs, **args)
 
 
 @OpSchema.num_inputs(1, 3)

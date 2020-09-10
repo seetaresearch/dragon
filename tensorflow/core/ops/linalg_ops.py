@@ -42,7 +42,7 @@ def eye(num_rows, num_columns=None, dtype='float32', name=None):
     dtype : str, optional, default='float32'
         The optional data type.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------

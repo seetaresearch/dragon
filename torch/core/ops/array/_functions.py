@@ -546,6 +546,27 @@ class TopK(function.Function):
         return self.dispatch([input], outputs, no_grad=True)
 
 
+class Unique(function.Function):
+    def __init__(self, key, dev, **kwargs):
+        super(Unique, self).__init__(key, dev, **kwargs)
+        self.return_inverse = kwargs.get('return_inverse', False)
+        self.return_counts = kwargs.get('return_counts', False)
+        self.num_outputs = 1 + self.return_inverse + self.return_counts
+
+    def attributes(self):
+        return {
+            'op_type': 'Unique',
+            'arguments': {
+                'return_inverse': self.return_inverse,
+                'return_counts': self.return_counts,
+            }
+        }
+
+    def forward(self, input):
+        outputs = [self.alloc() for _ in range(self.num_outputs)]
+        return self.dispatch([input], outputs)
+
+
 class UnSqueeze(function.Function):
     def __init__(self, key, dev, **kwargs):
         super(UnSqueeze, self).__init__(key, dev, **kwargs)

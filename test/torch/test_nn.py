@@ -112,7 +112,11 @@ class TestModule(unittest.TestCase):
             pass
         for _, _ in m.named_parameters():
             pass
+        for _, _ in m.named_buffers():
+            pass
         for _ in m.parameters():
+            pass
+        for _ in m.buffers():
             pass
         _, _ = repr(m), repr(m.weight)
 

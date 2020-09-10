@@ -42,7 +42,7 @@ def bitwise_and(x, y, name=None):
     y : dragon.Tensor
         The input2 tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -74,7 +74,7 @@ def bitwise_or(x, y, name=None):
     y : dragon.Tensor
         The input2 tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -106,7 +106,7 @@ def bitwise_xor(x, y, name=None):
     y : dragon.Tensor
         The input2 tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------
@@ -139,7 +139,7 @@ def invert(x, name=None):
     x : dragon.Tensor
         The input tensor.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------

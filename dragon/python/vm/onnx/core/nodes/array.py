@@ -494,3 +494,27 @@ def top_k_exporter_v11(op_def, shape_dict, ws):
     )
     node.input.extend([k.name])
     return node, [k]
+
+
+@exporter.register('Unique')
+def unique_exporter(op_def, shape_dict, ws):
+    node, const_tensors = exporter.translate(**locals())
+    helper.add_attribute(node, 'sorted', 1)
+    return_inverse = return_counts = 0
+    for arg in op_def.arg:
+        if arg.name == 'return_inverse':
+            return_inverse = arg.i
+        elif arg.name == 'return_counts':
+            return_counts = arg.i
+    outputs = [op_def.output[0]]
+    if len(op_def.output) > 1:
+        outputs.append('')
+    if len(op_def.output) == 2:
+        if return_inverse:
+            outputs.append(op_def.output[1])
+        elif return_counts:
+            outputs.extend(['', op_def.output[1]])
+    elif len(op_def.output) == 3:
+        outputs.extend([op_def.output[1], op_def.output[2]])
+    node.output[:] = outputs
+    return node, const_tensors

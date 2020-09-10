@@ -564,12 +564,10 @@ class Tensor(object):
             src._impl,
             proto_util.get_device_option(
                 self._device.type,
-                self._device.index
-            ).SerializeToString(),
+                self._device.index).SerializeToString(),
             proto_util.get_device_option(
                 src._device.type,
-                src._device.index
-            ).SerializeToString(),
+                src._device.index).SerializeToString(),
         )
         return self
 
@@ -1803,6 +1801,54 @@ class Tensor(object):
 
         """
 
+    def to(self, *args, **kwargs):
+        """Convert to the specified data type or device.
+
+        The arguments could be ``torch.dtype`` or ``torch.device``:
+
+        ```python
+        x = torch.FloatTensor(1)
+        x.to(torch.int32)  # Equivalent to ``x.int()``
+        x.to(torch.device('cpu'))  # Equivalent to ``x.cpu()``
+        x.to(torch.device('cuda'), torch.float32)  # Convert both
+        ```
+
+        Or ``torch.Tensor`` to provide both ``dtype`` and ``device``:
+
+        ```python
+        a, b = torch.tensor(1.), torch.tensor(2)
+        print(a.to(b))  # 1
+        ```
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+
+        """
+        dtype = kwargs.get('dtype', None)
+        device = kwargs.get('device', None)
+        for arg in args:
+            if isinstance(arg, cpp.dtype):
+                dtype = arg
+            elif isinstance(arg, cpp.device):
+                device = arg
+            elif isinstance(arg, Tensor):
+                dtype, device = arg.dtype, arg.device
+                break
+            else:
+                raise ValueError('Unsupported conversion target.')
+        if device is not None:
+            if device.type == 'cpu':
+                self.cpu()
+            elif device.type == 'cuda':
+                self.cuda(device.index)
+            else:
+                raise ValueError('Unsupported device type: ' + device.type)
+        if dtype is not None:
+            return self.type(dtype)
+        return self
+
     def topk(self, k, dim=None, largest=True, sorted=True):
         """Return the top-K largest or smallest elements.
 
@@ -1829,19 +1875,17 @@ class Tensor(object):
         """
 
     def type(self, dtype=None):
-        """Return the data type.
-
-        If ``dtype`` is not **None**, cast ``self`` to the new tensor.
+        """Return the data type or copied tensor with specified type.
 
         Parameters
         ----------
         dtype : str, optional
-            The specified type.
+            The specified type to convert to.
 
         Returns
         -------
         Union[str, dragon.vm.torch.Tensor]
-            The data type or new tensor.
+            The data type or copied tensor.
 
         """
 
@@ -1861,6 +1905,31 @@ class Tensor(object):
         -------
         dragon.vm.torch.Tensor
             The self.
+
+        """
+
+    def unique(self, return_inverse=False, return_counts=False, **kwargs):
+        """Return the unique elements.
+
+        Parameters
+        ----------
+        return_inverse : bool, optional, default=False
+            Return the inverse index or not.
+        return_counts : bool, optional, default=False
+            Return the counts or not.
+
+        Returns
+        -------
+        dragon.vm.torch.Tensor
+            The output tensor.
+        dragon.vm.torch.Tensor, optional
+            The inverse index tensor.
+        dragon.vm.torch.Tensor, optional
+            The counts tensor.
+
+        See Also
+        --------
+        `torch.unique(...)`_
 
         """
 

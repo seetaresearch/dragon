@@ -251,7 +251,8 @@ class DragonFrontend(object):
         for e in op_def.output:
             outputs.append(e + '_%d' % blob_versions[e]
                            if blob_versions[e] > 0 else e)
-            blob_versions[e] += 1
+            if e != '':
+                blob_versions[e] += 1
             blob_names[e] = outputs[-1]
         op_def.ClearField('input')
         op_def.ClearField('output')

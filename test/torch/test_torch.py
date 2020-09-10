@@ -83,6 +83,25 @@ class TestTensor(unittest.TestCase):
         self.assertEqual(x_from_dlpack.dtype, str(data.dtype))
         self.assertLessEqual(np.abs(x_from_dlpack.numpy() - data).max(), 1e-5)
 
+    def test_internal_converter(self):
+        data = np.array([0., 1., 2.], 'float32')
+        x = torch.tensor(data)
+        y = x.to(torch.int32)
+        self.assertEqual(y.dtype, 'int32')
+        y = x.to(torch.device('cpu'))
+        self.assertEqual(y.device, torch.device('cpu'))
+        y = x.to(torch.FloatTensor(1))
+        self.assertEqual(y.dtype, 'float32')
+        self.assertEqual(y.device, torch.device('cpu'))
+        try:
+            _ = x.to(data)
+        except ValueError:
+            pass
+        try:
+            _ = x.to(torch.device('gpu'))
+        except ValueError:
+            pass
+
     def test_numpy_converter(self):
         data = np.array([0., 1., 2.], 'float32')
         x = torch.from_numpy(data)

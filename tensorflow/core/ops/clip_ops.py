@@ -47,7 +47,7 @@ def clip_by_value(
     clip_value_max : number, optional
         The value to :math:`\text{high}`.
     name : str, optional
-        A optional name for the operation.
+        The operation name.
 
     Returns
     -------

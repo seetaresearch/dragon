@@ -16,6 +16,7 @@ void GraphOptimizer::BuildDAG(const GraphDef& graph) {
       reference_count_[in] += 1;
     }
     for (const auto& out : op.output()) {
+      if (out.empty()) continue;
       if (op.input().empty()) {
         nodes_[""].childs.push_back(out);
         nodes_[out].parents.push_back("");

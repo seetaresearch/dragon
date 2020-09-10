@@ -76,6 +76,7 @@ from dragon.core.ops.array_ops import squeeze
 from dragon.core.ops.array_ops import stack
 from dragon.core.ops.array_ops import tile
 from dragon.core.ops.array_ops import transpose
+from dragon.core.ops.array_ops import unique
 from dragon.core.ops.array_ops import where
 from dragon.core.ops.control_flow_ops import assign
 from dragon.core.ops.control_flow_ops import copy

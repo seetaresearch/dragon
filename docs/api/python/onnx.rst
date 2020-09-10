@@ -161,7 +161,7 @@ Name                     Supported Reference
 `Tile`_                  |v|       :func:`dragon.tile`
 `TopK`_                  |v|       :func:`dragon.math.top_k`
 `Transpose`_             |v|       :func:`dragon.transpose`
-`Unique`_
+`Unique`_                |v|       :func:`dragon.unique`
 `Unsqueeze`_             |v|       :func:`dragon.unsqueeze`
 `Upsample`_              |v|       :func:`dragon.vision.resize`
 `Where`_                 |v|       :func:`dragon.where`
